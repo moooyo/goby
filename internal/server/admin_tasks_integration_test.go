@@ -10,9 +10,16 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/moooyo/goby/internal/tasks"
 )
 
 func adminTaskHTTPFixture(t *testing.T) (*serverFixture, *http.Cookie, string, string) {
+	t.Helper()
+	return adminTaskHTTPFixtureForKey(t, tasks.LibraryScanKey)
+}
+
+func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http.Cookie, string, string) {
 	t.Helper()
 	f := newServerFixture(t)
 	f.bootstrap(t)
@@ -21,12 +28,32 @@ func adminTaskHTTPFixture(t *testing.T) (*serverFixture, *http.Cookie, string, s
 	expectStatus(t, response, http.StatusOK)
 	page := jsonObject(t, response)
 	items, ok := page["Items"].([]any)
-	if !ok || len(items) != 1 || page["TotalRecordCount"] != float64(1) {
-		t.Fatal("task startup did not register exactly one executable library task")
+	if !ok || len(items) != 2 || page["TotalRecordCount"] != float64(2) {
+		t.Fatal("task startup did not register exactly two executable library tasks")
 	}
-	definition, ok := items[0].(map[string]any)
-	if !ok || definition["Key"] != "library.scan" || definition["Enabled"] != true || definition["Revision"] != "1" {
-		t.Fatal("native task definition lost its stable public metadata")
+	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details"}
+	definitions := make(map[string]map[string]any)
+	identities := make(map[string]bool)
+	for _, raw := range items {
+		definition, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatal("native task definition is not an object")
+		}
+		definitionKey := stringValue(t, definition, "Key")
+		name, known := expected[definitionKey]
+		if !known || definitions[definitionKey] != nil || definition["Name"] != name || definition["Enabled"] != true || definition["Revision"] != "1" {
+			t.Fatal("native task definition lost its stable public metadata")
+		}
+		id := stringValue(t, definition, "Id")
+		if len(id) != 32 || identities[id] {
+			t.Fatal("native task definitions lost their distinct stable identities")
+		}
+		identities[id] = true
+		definitions[definitionKey] = definition
+	}
+	definition := definitions[key]
+	if definition == nil {
+		t.Fatal("native task fixture did not find the requested executable definition")
 	}
 	id := stringValue(t, definition, "Id")
 	if len(id) != 32 || response.Header().Get("Cache-Control") != "no-store" {
@@ -73,7 +100,16 @@ func adminTaskHTTPNoPrivateFields(t *testing.T, value any) {
 }
 
 func TestHTTPAdminTasksAuthenticateValidateAndRetainDurableRequestReceipts(t *testing.T) {
-	f, cookie, csrf, taskID := adminTaskHTTPFixture(t)
+	testHTTPAdminTaskRequestReceipts(t, tasks.LibraryScanKey)
+}
+
+func TestHTTPAdminRefreshMediaTaskAuthenticateValidateAndRetainDurableRequestReceipts(t *testing.T) {
+	testHTTPAdminTaskRequestReceipts(t, tasks.LibraryRefreshMediaKey)
+}
+
+func testHTTPAdminTaskRequestReceipts(t *testing.T, key string) {
+	t.Helper()
+	f, cookie, csrf, taskID := adminTaskHTTPFixtureForKey(t, key)
 	base := "/admin/v1/tasks/" + taskID
 	expectStatus(t, f.request(t, http.MethodGet, "/admin/v1/tasks", nil, nil), http.StatusUnauthorized)
 	emby := f.embyLogin(t, "Administrator", "administrator-password")
@@ -132,7 +168,16 @@ func TestHTTPAdminTasksAuthenticateValidateAndRetainDurableRequestReceipts(t *te
 }
 
 func TestHTTPAdminTaskSchedulesUseExactTicksAndRevisionConflicts(t *testing.T) {
-	f, cookie, csrf, taskID := adminTaskHTTPFixture(t)
+	testHTTPAdminTaskSchedules(t, tasks.LibraryScanKey)
+}
+
+func TestHTTPAdminRefreshMediaTaskSchedulesUseExactTicksAndRevisionConflicts(t *testing.T) {
+	testHTTPAdminTaskSchedules(t, tasks.LibraryRefreshMediaKey)
+}
+
+func testHTTPAdminTaskSchedules(t *testing.T, key string) {
+	t.Helper()
+	f, cookie, csrf, taskID := adminTaskHTTPFixtureForKey(t, key)
 	base := "/admin/v1/tasks/" + taskID + "/triggers"
 	headers := http.Header{"X-CSRF-Token": {csrf}}
 	triggers := []map[string]any{{"Kind": "interval", "IntervalTicks": "100000000", "MaxRuntimeTicks": "0"},

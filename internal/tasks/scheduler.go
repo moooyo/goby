@@ -48,41 +48,42 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 	if err != nil {
 		return err
 	}
-	// Only the registered library executor is runnable. Its active rule count
-	// is bounded by the schema's unique positions, independently of history.
-	rows, err := s.pool.Query(ctx, `SELECT t.id FROM task_triggers t
+	// Both fixed library executors are runnable. Each active rule set is bounded
+	// by the schema's unique positions, independently of retained history.
+	rows, err := s.pool.Query(ctx, `SELECT t.id, d.key FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
-        WHERE d.key = $1 AND d.enabled AND t.retired_at IS NULL
-            AND t.calculation_error = '' AND t.created_at <= $2
-        ORDER BY t.position, t.id LIMIT $3`, LibraryScanKey, startupAt, MaxTriggers)
+        WHERE d.key IN ($1,$2) AND d.enabled AND t.retired_at IS NULL
+            AND t.calculation_error = '' AND t.created_at <= $3
+        ORDER BY d.key, t.position, t.id LIMIT $4`, LibraryScanKey, LibraryRefreshMediaKey, startupAt, 2*MaxTriggers)
 	if err != nil {
 		return fmt.Errorf("list startup task rules: %w", err)
 	}
-	ids := make([]string, 0, MaxTriggers)
+	type startupRule struct{ id, key string }
+	rules := make([]startupRule, 0, 2*MaxTriggers)
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
+		var rule startupRule
+		if err := rows.Scan(&rule.id, &rule.key); err != nil {
 			rows.Close()
 			return fmt.Errorf("read startup task rule: %w", err)
 		}
-		ids = append(ids, id)
+		rules = append(rules, rule)
 	}
 	err = rows.Err()
 	rows.Close()
 	if err != nil {
 		return fmt.Errorf("read startup task rules: %w", err)
 	}
-	for _, id := range ids {
-		if err := s.initializeSchedule(ctx, id, startupAt); err != nil {
+	for _, rule := range rules {
+		if err := s.initializeSchedule(ctx, rule.id, rule.key, startupAt); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Store) initializeSchedule(ctx context.Context, id string, startupAt time.Time) error {
+func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupAt time.Time) error {
 	return s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
-		definition, err := lockScheduledDefinition(tx)
+		definition, err := lockScheduledDefinition(tx, key)
 		if errors.Is(err, ErrNotFound) {
 			return nil
 		}
@@ -156,12 +157,24 @@ func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
 func (s *Store) dispatchOneSchedule(ctx context.Context) (bool, error) {
 	processed := false
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
-		definition, err := lockScheduledDefinition(tx)
-		if errors.Is(err, ErrNotFound) {
-			return nil
+		// Lock every supported definition in the same fixed order as Reconcile,
+		// before locking any trigger or run. Selecting across their due rules
+		// prevents one definition from starving the other when limit is one.
+		definitions := make(map[string]Definition, 2)
+		ids := make([]string, 0, 2)
+		for _, key := range []string{LibraryScanKey, LibraryRefreshMediaKey} {
+			definition, err := lockScheduledDefinition(tx, key)
+			if errors.Is(err, ErrNotFound) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			definitions[definition.ID] = definition
+			ids = append(ids, definition.ID)
 		}
-		if err != nil {
-			return err
+		if len(ids) == 0 {
+			return nil
 		}
 		var now time.Time
 		if err := tx.QueryRow(`SELECT clock_timestamp()`).Scan(&now); err != nil {
@@ -169,15 +182,19 @@ func (s *Store) dispatchOneSchedule(ctx context.Context) (bool, error) {
 		}
 		now = now.UTC()
 		var trigger Trigger
-		err = decodeRow(tx.QueryRow(`SELECT to_jsonb(t) FROM task_triggers t
-            WHERE task_id = $1 AND retired_at IS NULL AND calculation_error = ''
+		err := decodeRow(tx.QueryRow(`SELECT to_jsonb(t) FROM task_triggers t
+            WHERE task_id = ANY($1::text[]) AND retired_at IS NULL AND calculation_error = ''
                 AND kind <> 'startup' AND next_fire_at <= $2
-            ORDER BY next_fire_at, position, id LIMIT 1 FOR UPDATE`, definition.ID, now), &trigger)
+            ORDER BY next_fire_at, position, id LIMIT 1 FOR UPDATE`, ids, now), &trigger)
 		if errors.Is(err, ErrNotFound) {
 			return nil
 		}
 		if err != nil {
 			return err
+		}
+		definition, exists := definitions[trigger.TaskID]
+		if !exists {
+			return ErrInconsistent
 		}
 		processed = true
 		due, err := summarizeScheduleDue(triggerScheduleRule(trigger), *trigger.NextFireAt, now)
@@ -206,18 +223,21 @@ func (s *Store) NextDue(ctx context.Context) (*time.Time, error) {
 	var next *time.Time
 	if err := s.pool.QueryRow(ctx, `SELECT min(t.next_fire_at) FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
-        WHERE d.key = $1 AND d.enabled AND t.retired_at IS NULL
-            AND t.calculation_error = '' AND t.kind <> 'startup'`, LibraryScanKey).Scan(&next); err != nil {
+        WHERE d.key IN ($1,$2) AND d.enabled AND t.retired_at IS NULL
+            AND t.calculation_error = '' AND t.kind <> 'startup'`, LibraryScanKey, LibraryRefreshMediaKey).Scan(&next); err != nil {
 		return nil, fmt.Errorf("read next task occurrence: %w", err)
 	}
 	utcPointer(&next)
 	return next, nil
 }
 
-func lockScheduledDefinition(tx library.OwnedTx) (Definition, error) {
+func lockScheduledDefinition(tx library.OwnedTx, key string) (Definition, error) {
+	if _, supported := library.TaskScanOptions(key); !supported {
+		return Definition{}, ErrNotFound
+	}
 	var definition Definition
 	err := decodeRow(tx.QueryRow(`SELECT to_jsonb(d) FROM task_definitions d
-        WHERE key = $1 AND enabled FOR UPDATE`, LibraryScanKey), &definition)
+        WHERE key = $1 AND enabled FOR UPDATE`, key), &definition)
 	return definition, err
 }
 

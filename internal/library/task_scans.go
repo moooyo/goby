@@ -17,6 +17,25 @@ var (
 	ErrTaskScanInactive  = errors.New("task scan child is no longer admissible")
 )
 
+// These fixed executor keys are shared with the task repository without a
+// reverse package dependency. The parent run snapshots one key at admission.
+const (
+	TaskLibraryScanKey         = "library.scan"
+	TaskLibraryRefreshMediaKey = "library.refresh_media"
+)
+
+// TaskScanOptions resolves only the built-in immutable parent-run modes.
+func TaskScanOptions(key string) (ScanOptions, bool) {
+	switch key {
+	case TaskLibraryScanKey:
+		return ScanOptions{}, true
+	case TaskLibraryRefreshMediaKey:
+		return ScanOptions{ForceProbe: true}, true
+	default:
+		return ScanOptions{}, false
+	}
+}
+
 type ScanAdmissionKind string
 
 const (
@@ -70,6 +89,8 @@ func validTaskChildID(id string) bool {
 
 type taskScanChild struct {
 	id, runID, runState, stopReason string
+	runKey                          string
+	forceProbe                      bool
 	libraryID, state, scanID        string
 	scanned, added, updated         int64
 	errorCode, errorMessage         string
@@ -101,14 +122,19 @@ func lockTaskScanChild(tx OwnedTx, childID string) (*taskScanChild, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = tx.QueryRow("SELECT state, stop_reason FROM task_runs WHERE id = $1 FOR UPDATE", child.runID).
-		Scan(&child.runState, &child.stopReason)
+	err = tx.QueryRow("SELECT state, stop_reason, task_key FROM task_runs WHERE id = $1 FOR UPDATE", child.runID).
+		Scan(&child.runState, &child.stopReason, &child.runKey)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
+	options, supported := TaskScanOptions(child.runKey)
+	if !supported {
+		return nil, taskScanAssociationError()
+	}
+	child.forceProbe = options.ForceProbe
 	err = tx.QueryRow(`SELECT library_id, state, COALESCE(scan_job_id, ''), scanned, added, updated,
 		error_code, error_message, started_at, finished_at FROM task_run_children
 		WHERE id = $1 AND run_id = $2 FOR UPDATE`, child.id, child.runID).
@@ -124,7 +150,7 @@ func lockTaskScanChild(tx OwnedTx, childID string) (*taskScanChild, error) {
 }
 
 func validateTaskScanLink(child *taskScanChild, job Job) error {
-	if child == nil || child.scanID != job.ID || child.id != job.TaskChildID || child.libraryID != job.LibraryID {
+	if child == nil || child.scanID != job.ID || child.id != job.TaskChildID || child.libraryID != job.LibraryID || child.forceProbe != job.ForceProbe {
 		return taskScanAssociationError()
 	}
 	return nil
@@ -160,7 +186,7 @@ func taskScanErrorCode(status string) string {
 }
 
 func taskSnapshotMatches(child *taskScanChild, job Job) bool {
-	return child.state == strings.ToLower(job.Status) && child.scanned == int64(job.Scanned) &&
+	return child.forceProbe == job.ForceProbe && child.state == strings.ToLower(job.Status) && child.scanned == int64(job.Scanned) &&
 		child.added == int64(job.Added) && child.updated == int64(job.Updated) &&
 		child.errorCode == taskScanErrorCode(job.Status) && child.errorMessage == job.Error &&
 		sameScanTime(child.startedAt, job.StartedAt) && sameScanTime(child.finishedAt, job.FinishedAt)
@@ -243,7 +269,7 @@ func lockTaskScanRelation(tx OwnedTx, jobID, expectedChildID string) (taskScanRe
 }
 
 func validateRetainedTaskSnapshot(child *taskScanChild, cached Job) error {
-	if child == nil || child.scanID != cached.ID || child.id != cached.TaskChildID || child.libraryID != cached.LibraryID ||
+	if child == nil || child.scanID != cached.ID || child.id != cached.TaskChildID || child.libraryID != cached.LibraryID || child.forceProbe != cached.ForceProbe ||
 		!taskChildTerminal(child.state) || child.finishedAt == nil || child.scanned != int64(cached.Scanned) ||
 		child.added != int64(cached.Added) || child.updated != int64(cached.Updated) || !sameScanTime(child.startedAt, cached.StartedAt) {
 		return taskScanAssociationError()
@@ -338,8 +364,8 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 		if err != nil {
 			return err
 		}
-		job, err := scanJob(tx.QueryRow(`INSERT INTO scan_jobs (id, library_id, status, task_child_id)
-			VALUES ($1, $2, 'Queued', $3) RETURNING `+jobColumns, id, libraryID, child.id))
+		job, err := scanJob(tx.QueryRow(`INSERT INTO scan_jobs (id, library_id, status, task_child_id, force_probe)
+			VALUES ($1, $2, 'Queued', $3, $4) RETURNING `+jobColumns, id, libraryID, child.id, child.forceProbe))
 		if err != nil {
 			return err
 		}
@@ -459,6 +485,9 @@ func (s *Store) startTaskScan(task *scanTask) (bool, error) {
 		}
 		if relation.missing {
 			return validateRetainedTaskSnapshot(relation.child, task.job)
+		}
+		if relation.child != nil && relation.child.forceProbe != task.job.ForceProbe {
+			return taskScanAssociationError()
 		}
 		current = relation.job
 		if current.Status != "Queued" {

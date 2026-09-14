@@ -1,21 +1,38 @@
 # Task Execution and Scheduling
 
-**M5f task increment accepted.** The
+**The fixed native media-refresh increment is implemented and verified.** Its
+[focused/browser acceptance](task-media-refresh-verification.json) and
+[final ordinary regression](m5-final-regression-verification.json) passed
+independent review and resource closure. The final source passed all 25 ordinary
+packages: 2,295 top-level passes, zero failures and one declared mount-profile
+skip, followed by the ordinary Linux build. The separate browser scenario
+retains its exact source bridge; these results are not added into one test count.
+
+The historical M5f normal-scan
 [complete Go race summary](m5f-full-race-summary.json) records 1190 passing
 top-level tests across thirteen tested packages with no skipped tests or race
 findings. The [isolated browser/restart workflow](m5f-tasks-browser.json) has
 also passed, as have [deployment](m5f-deployment-evidence.json) and the
-[deployed workflow](m5f-deployed-tasks.json). This document describes source behavior, not a full
-client release.
+[deployed workflow](m5f-deployed-tasks.json). Those results cover the original
+`library.scan` contract and retain that historical scope. This document describes
+the implementation contract, not a full client release. The
+[media-refresh plan](task-media-refresh-plan.md) records the completed acceptance
+scope and its remaining release boundaries.
 The [API contract](../api/tasks.md) specifies request and response formats.
 
-## Definitions, runs, and schema 19
+## Fixed definitions and retained schema
 
-`internal/tasks` currently registers only `library.scan` / `RefreshLibrary`,
-which performs a normal full-library scan. Registry reconciliation allocates
-its definition ID once, maintains code-owned labels, preserves schedules and
-history, and disables unavailable definitions. It creates neither a run nor
-an automatic schedule. Newly initialized task configuration is manual-only.
+The increment retains `library.scan` / `RefreshLibrary` for normal scans and
+adds `library.refresh_media`, named `Refresh media details`, with an empty
+internal Emby key. The new definition is native-only and forces media probing;
+it does not add an external alias or arbitrary executor parameters. Public
+Store/Manager method signatures, native routes and DTOs remain unchanged.
+
+Registry reconciliation allocates each definition ID once, maintains code-owned
+labels and preserves existing IDs, enabled states, revisions, schedules and
+history of the two supported definitions. It disables unavailable definitions
+without fabricating runs. New definitions are manual-only: registration creates
+no trigger or execution.
 
 Each admitted execution receives a new run ID and a snapshot of all current
 library IDs/names, ordered by library ID. Each library gets a separate child
@@ -25,8 +42,10 @@ run, child, library, and scan-job IDs have distinct roles. Native task IDs are
 opaque 32-character hexadecimal strings; revisions and 100 ns values are
 decimal strings on the native wire.
 
-[Migration 0019](../../internal/database/migrations/0019_scheduled_tasks.sql)
-adds six tables and the nullable `scan_jobs.task_child_id` association:
+The original [migration 0019](../../internal/database/migrations/0019_scheduled_tasks.sql)
+introduced six tables and the nullable `scan_jobs.task_child_id` association.
+The media-refresh increment reuses them without a new migration; the current
+schema remains 28:
 
 | Table | Durable responsibility |
 | --- | --- |
@@ -83,16 +102,25 @@ does not queue a later execution behind it.
 
 Receipts are scoped by definition and visible-ASCII request ID, at most 128
 bytes. Their fingerprints bind the definition, executor, and native/compatibility
-source. A matching retry returns the original run after completion or restart;
+source using the actual executor key. Existing normal-scan requests preserve
+their exact previous fingerprint bytes. A matching retry returns the original run after completion or restart;
 different input is a conflict. Coalescing preserves a receipt for every accepted
 request without replacing the originating run's `RequestId`. IDs are not bearer
 credentials, and current management authorization is still required on replay.
 Omitted/empty IDs have no replay protection after a run finishes.
 
-`Library/Refresh` now uses the same durable full-library admission. Existing
-per-library scans and forced refreshes remain independent scanner jobs. The
-generic executor does not turn a normal scan into `ForceProbe` or accept
-client-supplied executables or arbitrary task parameters.
+`Library/Refresh` uses normal-scan admission only. Existing per-library scans
+and forced refreshes remain independent scanner jobs. A new run snapshots
+`task_key`; its immutable value fixes normal versus forced probing for all
+children, without consulting a mutable definition to change an admitted run.
+The new task does not turn a normal scan into `ForceProbe` or accept
+client-supplied executables, options or arbitrary task parameters.
+
+Compatibility listing and every by-ID task route exclude the definition with
+an empty Emby key. The store also rejects compatibility-audience starts and
+trigger replacement for that definition, so bypassing the HTTP projection does
+not grant access. Existing authorization/not-found errors are reused; no new
+public error code or compatibility key is added.
 
 ## Scanner bridge, progress, and cancellation
 
@@ -100,6 +128,12 @@ The [scan bridge](../../internal/library/task_scans.go) admits by child ID.
 It checks both `child.scan_job_id` and `scan_jobs.task_child_id`, with parent,
 child, then scan locks. It never adopts or cancels a job merely because it
 belongs to the same library.
+
+The bridge maps the persisted parent `task_key` to its fixed scan options.
+Both newly linked jobs and reused associations must have `job.force_probe`
+equal to that mode, including stop and recovery paths. An unknown executor
+or mismatched association is an unavailable/inconsistent-state error, not
+permission to relabel a job, adopt another scan or report success.
 
 | Scanner outcome | Coordinator behavior |
 | --- | --- |
@@ -109,8 +143,10 @@ belongs to the same library.
 | Queue full | Leave the child waiting; stop this admission pass and retry |
 | Library no longer exists | Persist child `unavailable`; the parent eventually fails |
 
-The existing scanner's two workers, 128-slot queue, safe probing, and normal
-scan semantics remain in use. The task coordinator adds bounded reconciliation,
+The existing scanner's two workers, 128-slot queue, safe probing, and normal/
+forced scan semantics remain in use. A busy library leaves either task's child
+waiting for its own admission; stopping one definition cannot cancel the
+other's job. The task coordinator adds bounded reconciliation,
 not another worker pool. Its default poll is 500 ms; scan hints and explicit
 wakes are coalesced. It examines a bounded batch of up to 200 children/runs per
 pass and advances cursors, so active prefixes cannot hide later children.
@@ -178,6 +214,14 @@ one durable event receipt; retries cannot duplicate a run after the first
 attempt completes. A startup rule saved later in that process waits for the
 next startup. No restart is implied by saving a schedule.
 
+The public limit remains 32 triggers per task. Startup initialization accounts
+for both fixed definitions, at most 64 rules in total, without truncating the
+second definition's rules or creating schedules by default. Definition locks
+use a fixed normal-scan then media-refresh order. Timed dispatch takes a fresh
+database clock after locking and selects due rules across both definitions by
+`next_fire_at`, position and ID. A small batch, including a limit of one, must
+continue making progress across definitions instead of always choosing the first.
+
 During normal delayed dispatch, all older due occurrences are recorded as
 missed and only the latest is offered for execution. An active run produces
 an `overlap` occurrence pointing to it, without starting or queuing more work.
@@ -235,6 +279,11 @@ edit typed schedules, and preview three upcoming times. Saving requires a
 preview matching the current draft. Conflicts and uncertain saves require an
 explicit reload; mutations are not blindly replayed. Draft navigation is guarded.
 
+The additional native card is `Refresh media details`. Its Start, run details,
+Stop and schedule controls use the existing routes and DTOs. This task reuses
+forced probing and supported index reconstruction; it does not edit source
+media, replace manual metadata/UserData, or introduce a new playback pipeline.
+
 Start receipts use a random UUID kept in memory and sessionStorage under the
 current user/task. A failed or interrupted response retains it for explicit
 recovery; it is cleared only after the acknowledged run is rendered. This
@@ -245,8 +294,9 @@ until refresh. The UI manages server work and contains no consumer media player.
 No new database engine, secret, or independent task-process service is required.
 The existing PostgreSQL owner and scanner configuration are reused. Backups
 must retain the database's definitions, receipts, rules, occurrence history,
-and the existing application-key master file together. A product backup/restore
-workflow and arbitrary task plug-in execution are not provided here.
+and the existing application-key master file together. The task API is not a
+backup/restore workflow or arbitrary task plug-in service; completed native
+backup/recovery evidence remains separate and is not queued again here.
 
 The [reference read](../research/scheduled-tasks-reference.md) and
 [fresh mutation](../research/scheduled-tasks-mutation-reference.md) studies
@@ -256,4 +306,5 @@ reference accepting its JSON. Weekly/numeric-weekday tolerance, DST, missed
 work, monotonic runtime, and durable native receipts require Goby's own evidence;
 reference readback does not prove timer execution. Real-client and broader
 release acceptance remain pending; see the
-[M5f verification report](verification-m5f-tasks.md) for the current gates.
+[M5f verification report](verification-m5f-tasks.md) for its historical gates
+and the [media-refresh plan](task-media-refresh-plan.md) for the new checks.

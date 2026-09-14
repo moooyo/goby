@@ -241,6 +241,22 @@ func TestEmbyScheduledTaskTriggerBodyAndQueryValidation(t *testing.T) {
 	}
 }
 
+func TestEmbyScheduledTaskExecutorExcludesNativeRefreshMedia(t *testing.T) {
+	for _, test := range []struct {
+		key, embyKey string
+		allowed      bool
+	}{
+		{tasks.LibraryScanKey, tasks.LibraryScanEmbyKey, true},
+		{tasks.LibraryRefreshMediaKey, "", false},
+		{tasks.LibraryRefreshMediaKey, tasks.LibraryScanEmbyKey, false},
+		{tasks.LibraryScanKey, "", false},
+	} {
+		if executableEmbyTask(tasks.Definition{Key: test.key, EmbyKey: test.embyKey}) != test.allowed {
+			t.Fatalf("task key %q crossed the declared Emby executor boundary", test.key)
+		}
+	}
+}
+
 func TestEmbyScheduledTaskDTOUsesDefinitionIdentityAndRetainsTerminalResult(t *testing.T) {
 	zone := time.FixedZone("synthetic-offset", 8*3600)
 	started := time.Date(2026, 9, 10, 8, 1, 2, 0, zone)

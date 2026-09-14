@@ -1,0 +1,98 @@
+{
+  "kind": "candidate-disk-full-application-recovery",
+  "version": 1,
+  "status": "original_applications_restored_and_independently_reviewed",
+  "date": "2026-09-14",
+  "remoteScope": "/opt/goby-test/candidate-disk-full-recovery-20260914",
+  "originalIncident": {
+    "document": "docs/development/m5-refresh-preflight-incident.json",
+    "sha256": "9a1e92e256cfadf2dc7948064f51361a86e5e3c3d8e7a6f6802fd7e656ada63d",
+    "historicalObservationsPreserved": true
+  },
+  "applicationRecovery": {
+    "applicationStartRequests": 2,
+    "applicationStopRequests": 0,
+    "postgresRestartRequests": 0,
+    "loginRequests": 0,
+    "businessHttpRequests": 0,
+    "healthAndReadinessRequests": 4,
+    "healthAndReadinessAllPassed": true,
+    "postRestartReadOnlySqlSessions": 8,
+    "readersClosed": true,
+    "deploymentLockReleased": true,
+    "originalBinariesAndConfigurationsPreserved": true,
+    "mainAndControlRemainInactive": true,
+    "protectedPostmasterPids": [893, 363520, 749626],
+    "controllerCommands": 72,
+    "controllerMetadataCommands": 70,
+    "controllerCommandsAllClosedAndSuccessful": true
+  },
+  "candidates": {
+    "old": {
+      "runId": "20260913T073217Z-ef77f9ffcf0b",
+      "binarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+      "applicationPid": 884062,
+      "applicationStartTicks": "11731536",
+      "applicationInvocationId": "e40d4098e85c4a3b9e0a315bba0a9193",
+      "uniqueDeploymentLeaseOwned": true,
+      "sourceRows": 225,
+      "retainedRecoveryRows": 147,
+      "sourceAndRecoveryTablesAndSequencesEqual": true,
+      "diagnosticLogsAfterStartup": 5,
+      "newActiveDiagnosticLogs": 1,
+      "oldDiagnosticLogsPreserved": true
+    },
+    "fresh": {
+      "runId": "20260914T083143Z-9b73ad46f2e6",
+      "binarySha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312",
+      "applicationPid": 884123,
+      "applicationStartTicks": "11731606",
+      "applicationInvocationId": "57e60d938686483fb2cdcd7d9f420047",
+      "uniqueDeploymentLeaseOwned": true,
+      "sourceRows": 141,
+      "retainedRecoveryRows": 131,
+      "sourceAndRecoveryTablesAndSequencesEqual": true,
+      "diagnosticLogsAfterStartup": 2,
+      "newActiveDiagnosticLogs": 1,
+      "oldDiagnosticLogsPreserved": true
+    }
+  },
+  "preservation": {
+    "databasesCompared": 4,
+    "tablesPerDatabase": 35,
+    "sequencesPerDatabase": 5,
+    "preRestartReadOnlySqlSessions": 10,
+    "allRowsAndSequencesMatchSavedBaselines": true,
+    "comparisonExcludesCaptureTimestamp": true,
+    "backupLifecycleControlAndStagedGenerationChecksPassed": true,
+    "terminalOperationsAndNonemptyStagedRecoverySlotsRetained": true,
+    "oldPreparedPlaybackRowsRetained": true,
+    "historicalAdmissionsAndConsumedActorsReplayed": false,
+    "rawSnapshotsAndLogsRemainRemotePrivate": true
+  },
+  "evidence": {
+    "readonly-execution.json": "591da28976ec05c7898a7aafd50e6d754f8fdc75d611a12d11cc5e11013cb25f",
+    "readonly-01/result.json": "08bcc214e17c72edb66b34a6a3ec72dda8bea42da9d2e6a8674dc9b8143291b2",
+    "native-execution.json": "d2721d724669395eb6be4c981f222700b5f43e8a9086153d95c89e01e08d2f3d",
+    "native-01/result.json": "ac90853f59701a22b47722b5b9846227d4b55bbaab4be3b9ea617fe9f483a0cc",
+    "restart-configuration-observation.json": "40df2510717645c3fb1c6ea683b3bad55ec9a7096a113d0827af067174d47335",
+    "auxiliary-before.json": "170cb60f3436216055d4dfe96d9e57854e498f23fcb624207cb903f9dc9dc17e",
+    "restart-preflight.json": "45ba778204812f0ba389745b9c11ac668ea1aa2803406dc2f4ed95a400ea076f",
+    "restart-execution.json": "3dfb3639001f63a1b7545022e648480db7f777f8d81222e26d49dd8b340c2f8f",
+    "restart-independent-review.json": "8c97fe729fbde2694ba1a9354f6b276bfa8f675c87575a05fcb2b18213a954dc",
+    "diagnostics-restart-review.json": "20ddfe1296eb01809619bce6e93020b4a07b1dc38bedf2c2c6244ae38e7de0ea"
+  },
+  "executionSourceSha256": "5384f1bcb05db43b915c9ed8109d6ba88fb16de79d252edf7806692461d9f22a",
+  "nextRequired": [
+    "Bind the unchanged M5 product source and frozen worker to the recovered current runtime using separate reviewed preparation and execution inputs.",
+    "Run focused and administrator-browser verification on test-env with a fresh resource check and isolated compiler cache.",
+    "Complete final changed-source regression, independent review and resource closure before committing the M5 increment."
+  ],
+  "limitations": [
+    "Logical snapshot equality is not a physical database integrity, xmin or durability proof.",
+    "This incident and recovery are not planned disk-pressure, filesystem-stall, power-loss or host-restart acceptance.",
+    "Generation configuration and runtime environment were compared by digest without decoding their contents; master files were observed by metadata only.",
+    "The configured default master path and historical identity of every native file were not established.",
+    "The M5 production changes have not been deployed or tested by this application recovery."
+  ]
+}

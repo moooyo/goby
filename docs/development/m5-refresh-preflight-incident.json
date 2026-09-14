@@ -1,0 +1,118 @@
+{
+  "kind": "m5-refresh-preflight-resource-incident",
+  "version": 1,
+  "status": "capacity_restored_candidate_applications_require_recovery",
+  "observedThrough": "2026-09-14T21:22:15.15154+08:00",
+  "remoteScope": "/opt/goby-test/m5-refresh-task-20260914",
+  "source": {
+    "productionAndTestSourceChangedDuringIncident": false,
+    "planningAmendmentSha256": "e2af8d47f8e54d15a1887b07b0fa94f30082b41eea549718425f2a53d106ade6",
+    "baseGitHead": "0b4e012976a2d6676c63989da2317708296c1b7f",
+    "inputSha256": "25faecc9db9bbb133996e976d70d883d77c3dda2905f207819b73f5d50899b01",
+    "archiveSha256": "4bc41debd136c672be006ddc86a258683a016946aca03b6c32214546bd1cec48"
+  },
+  "m5Verification": {
+    "status": "not_started",
+    "postgresStarts": 0,
+    "testsInvoked": 0,
+    "browserJourneys": 0,
+    "workerStarts": 0,
+    "fixtureDirectoryCreated": false,
+    "ramScopeCreated": false
+  },
+  "observedFailureChain": [
+    "The capacity preflight rejected execution before any M5 runtime was created.",
+    "Both candidate PostgreSQL logs recorded PANIC and no space left on device, followed by reinitialization.",
+    "Both applications logged unexpected_eof and database_lease_unavailable, then exited with status 1.",
+    "The original cleanup guard rejected changed application PIDs without performing any clean."
+  ],
+  "candidateProcesses": {
+    "old": {
+      "serverInvocationId": "9f936a88b545499a99d024437e0b57c5",
+      "originalServerPid": 486706,
+      "serverExitTimeUtc": "2026-09-14T13:03:54Z",
+      "postgresReadyLogTimeUtc": "2026-09-14T13:19:49.457Z",
+      "postgresPid": 363520,
+      "serverStateAfterReclamation": "failed"
+    },
+    "fresh": {
+      "serverInvocationId": "1207d4e0a2a14545b504932db0e6d6c4",
+      "originalServerPid": 749711,
+      "serverExitTimeUtc": "2026-09-14T13:00:31Z",
+      "postgresReadyLogTimeUtc": "2026-09-14T13:19:49.059Z",
+      "postgresPid": 749626,
+      "serverStateAfterReclamation": "failed"
+    },
+    "sqlRequests": 0,
+    "httpRequests": 0,
+    "mainPostgresPid": 893,
+    "applicationRestartCommands": 0,
+    "mainAndControlRemainInactive": true,
+    "postgresRestartCommands": 0
+  },
+  "cacheReclamation": {
+    "completedCommands": 15,
+    "command": [
+      "/opt/goby-toolchains/go1.27.1/bin/go",
+      "clean",
+      "-cache"
+    ],
+    "allocationBefore": {
+      "directoriesIncludingRoot": 269,
+      "directoryAllocatedBytes": 4628480,
+      "regularAllocatedBytes": 8117002240,
+      "regularFiles": 28672,
+      "regularLogicalBytes": 8015674755,
+      "totalAllocatedBytes": 8121630720
+    },
+    "protectedStatesUnchangedDuringClean": true,
+    "accountingCorrection": "The audit total includes directory allocation. The rejected guard compared that total to regular-file allocation; the corrected guard compares total file and directory allocation with the original audit total.",
+    "originalRejectionsPreserved": true,
+    "moduleDirectoryMetadataUnchanged": true,
+    "rootFreeBytesAfter": 7582253056,
+    "actualCleanCommands": 1,
+    "unitMetadataCommands": 14,
+    "rootFreeBytesBefore": 0,
+    "lockReleased": true,
+    "removedRegularFiles": 28670,
+    "target": "/opt/goby-test/go-caches-m5h/build",
+    "remainingRegularFiles": [
+      "README",
+      "trim.txt"
+    ]
+  },
+  "postReclamation": {
+    "candidateApplicationsRestored": false,
+    "bothPostgresLogsRecordRedoCheckpointAndReady": true,
+    "bothPostmastersRetainOriginalIdentity": true,
+    "databaseIntegrityVerified": false,
+    "memAvailableBytes": 7071395840,
+    "rootFreeBytes": 7582126080
+  },
+  "evidence": {
+    "input-preflight.json": "4f98f8ae6115e33cfbfa49d61784bc046e3433564124ebc022b1171d8af8a44f",
+    "resource-rejection-observation.json": "2b78c319e8ee05fc21b33f6893b6b33fe4a0789be730130315c645226a4ae958",
+    "private/cache-reclaim-audit.json": "5f8118fe3b0da7d1a565231bba6e29d592791bacac01db92e0ace444102d4faf",
+    "cache-reclamation.json": "578f0ecae1216259f86755d9cfb81182448b0d2dda2b9c4fc2e9dc2a31c35a99",
+    "protected-server-exit-observation.json": "c8bbf2784494697ea996c5a1f9cae8c7bcda648207e0f7080c307d97bdaf3ee6",
+    "protected-exit-log-observation.json": "4bbd5386911beb17e627e5d1dc6702c658f20a3141a9bd3f6c2662dec9f6c7a5",
+    "protected-postgres-log-observation.json": "14ea0ddece2edb8038693eec0f7f6cad3f31ce4da8e1a81bc023204e121a48f8",
+    "cache-transition-review.json": "f8672a02fa65e0e3fda5642d59240861c6fa56e13cc127547506fb8c12b8f002",
+    "cache-reclamation-after-disk-full.json": "8114578774b6b7b9660a985d85a4c4bc0a03cc1060585be9be95f27b9ba85dfe",
+    "cache-reclamation-accounting.json": "1fe4eaf66639331ba9c64b2d746432defabe060a943cf9b93e287e850158c13f",
+    "post-reclamation-observation.json": "804f554e7cb24b34e18707443da1eedbd8d980badc66313776bb04da5911d442"
+  },
+  "nextRequired": [
+    "Review existing database, lifecycle and installation state after PG recovery before restoring each unchanged candidate application and its new database lease.",
+    "Record replacement runtime identities and preservation results without rewriting historical admissions or replaying consumed actors, seeds or client journeys.",
+    "Bind subsequent independent M5 verification to the reviewed current environment. Its original live-PID preparation input has not been admitted for the changed state.",
+    "Complete focused and browser acceptance, final changed-source regression, independent review and resource closure before committing the M5 increment."
+  ],
+  "limitations": [
+    "This incident is not planned disk-pressure, filesystem-stall, power-loss or durability acceptance.",
+    "PostgreSQL ready log entries do not establish database integrity or application health.",
+    "Only the audited reproducible Go build cache was cleaned; modules, source, databases, retained evidence, installations and the paused M2 workspace were not selected for deletion.",
+    "The source of additional root-filesystem consumption has not been attributed.",
+    "Private application and PostgreSQL log captures remain on test-env."
+  ]
+}

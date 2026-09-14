@@ -1,0 +1,74 @@
+{
+  "kind": "m5-refresh-first-focused-verification",
+  "version": 1,
+  "status": "failed_test_preserved_and_resources_closed",
+  "date": "2026-09-14",
+  "remoteScope": "/opt/goby-test/m5-refresh-task-20260914",
+  "workerScope": "ram/m5-refresh-task-20260914-20260914T150731Z-ad6926a82a60",
+  "sourceArchiveSha256": "4bc41debd136c672be006ddc86a258683a016946aca03b6c32214546bd1cec48",
+  "workerSha256": "c6fb4a41570bc9df24a80f2390214aef7717c21be68230cff64563594473242b",
+  "results": {
+    "allInventoriesCompiledBeforeTesting": true,
+    "listedTopLevelTests": 110,
+    "executedTopLevelTests": 90,
+    "passedTopLevelTests": 89,
+    "failedTopLevelTests": 1,
+    "skippedTopLevelTests": 0,
+    "passedSubtests": 98,
+    "plans": {
+      "tasks": {"listed": 63, "executed": true, "passed": 63, "failed": 0},
+      "library": {"listed": 27, "executed": true, "passed": 26, "failed": 1},
+      "server": {"listed": 19, "executed": false, "passed": 0, "failed": 0},
+      "browser": {"listed": 1, "executed": false, "passed": 0, "failed": 0}
+    },
+    "fullSuite": false,
+    "browserJourneysExecuted": 0,
+    "overallPassed": false
+  },
+  "failure": {
+    "test": "TestStoreForceProbeRepairsMissingEffectiveGenreOnlyAfterSuccessfulProbe",
+    "sourceFile": "internal/library/force_probe_entity_repair_integration_test.go",
+    "frozenSourceLine": 117,
+    "assertion": "entity repair changed administrator metadata, locks, or editor history",
+    "phase": "ordinary_cached_scan_preservation_before_force_probe",
+    "precedingPersistentRowAndXminComparisonPassed": true,
+    "forceProbeStepExecutedInThisTest": false,
+    "timeout": false,
+    "interpretation": "The aggregate assertion compares an Update response with a persisted GET response, including raw JSON message bytes. Static review identified compact JSON versus PostgreSQL JSONB representation as a baseline mismatch. This failure does not establish a ForceProbe product failure."
+  },
+  "closure": {
+    "independentReviewPassed": true,
+    "allWorkerCleanupChecksPassed": true,
+    "ownedPostgresStopped": true,
+    "privatePostgresBindRemoved": true,
+    "recursiveCgroupEmpty": true,
+    "ramUnmountedNormally": true,
+    "deploymentLockReleased": true,
+    "protectedCandidateStateUnchanged": true,
+    "originalFailureAndPrivateArchivesRetained": true,
+    "rawLogsAndDatabaseArchivesRemainRemotePrivate": true
+  },
+  "evidence": {
+    "private/input-recovered.json": "80f51f90acb7bc076a3f49ffdbc81ba3ea2e8a8ae4bef108ffaaf61b06b29d32",
+    "preparation.json": "f3297d25cfbf68d32ef0701760d698cd6459b96f04cbb66fe6949c646c37bdee",
+    "execution.json": "247fb4b304e92f7ee62c4d2e58e35ea44482301100231487e86f50bf5fbb8216",
+    "closure.json": "4f793052efae9ba3f9c6d9666602eb3bb3d96ff9478da11b424537c2af2b3eef",
+    "independent-failure-review.json": "fd33bd4fe14c85804f708d66362b838a5293bee48cabe5445f7e23cec250db04"
+  },
+  "correctiveSource": {
+    "remoteScope": "/opt/goby-test/m5-refresh-corrected-20260914",
+    "sourcePreparationSha256": "8847fdefc7d467855da46cc73457cf4b1550e8332251bb5d6f2bea840e4c93d1",
+    "sourceArchiveSha256": "1ceba64684eee23893828fc36d791dcf1403672a6cc8c8157e9d2acf90b67414",
+    "changedMember": "internal/library/force_probe_entity_repair_integration_test.go",
+    "changedMemberSha256": "b4e71c2cfcf3f97a4378f34c624929fef025e928100f50ab9d2688d8e7a0d729",
+    "change": "Read the persisted metadata detail immediately after the edit, before checking expected manual values and establishing the preservation baseline. Retain every existing assertion.",
+    "productionChangedByCorrection": false,
+    "otherArchiveMembersUnchanged": true,
+    "remoteFormattingComplete": true,
+    "runtimeVerificationExecuted": false
+  },
+  "nextRequired": [
+    "Verify the corrected source and all four focused/browser plans in a new isolated runtime, preserving this failed run and its consumed input.",
+    "Complete independent result review, resource closure and final changed-source full regression before accepting or committing the M5 production increment."
+  ]
+}

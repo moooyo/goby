@@ -463,7 +463,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := writeScannedMusicSource(state.task.ctx, tx, id, itemType, probe); err != nil {
 		return err
 	}
-	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: stored.id == ""}); err != nil {
+	// A successful explicit refresh also repairs derived entity associations
+	// from the accepted projection, retaining the current overrides and locks.
+	if err := syncScannedMetadata(state.task.ctx, tx, id, scannedMetadataOptions{ForceEntities: stored.id == "" || state.task.job.ForceProbe}); err != nil {
 		return err
 	}
 	if err := deactivateInvalidThemeChildren(state.task.ctx, tx, []string{id}); err != nil {

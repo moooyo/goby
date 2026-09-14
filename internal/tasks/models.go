@@ -6,17 +6,19 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/library"
 )
 
 const (
-	LibraryScanKey     = "library.scan"
-	LibraryScanEmbyKey = "RefreshLibrary"
-	DefaultPageLimit   = 50
-	MaxPageLimit       = 200
-	MaxStartIndex      = 2147483647
-	MaxTriggers        = 32
-	MaxRequestIDBytes  = 128
-	MaxErrorBytes      = 2048
+	LibraryScanKey         = library.TaskLibraryScanKey
+	LibraryRefreshMediaKey = library.TaskLibraryRefreshMediaKey
+	LibraryScanEmbyKey     = "RefreshLibrary"
+	DefaultPageLimit       = 50
+	MaxPageLimit           = 200
+	MaxStartIndex          = 2147483647
+	MaxTriggers            = 32
+	MaxRequestIDBytes      = 128
+	MaxErrorBytes          = 2048
 )
 
 var (

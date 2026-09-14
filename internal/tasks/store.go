@@ -32,32 +32,51 @@ func New(pool *pgxpool.Pool, owner library.OwnedTransactions) (*Store, error) {
 // Reconcile registers only executable definitions and never creates a run or
 // schedule. Administrator choices and existing definition identities survive.
 func (s *Store) Reconcile(ctx context.Context) error {
-	id, err := randomID()
-	if err != nil {
-		return err
+	definitions := []struct{ id, key, embyKey, name, description string }{
+		{"", LibraryScanKey, LibraryScanEmbyKey, "Scan media library", "Scan all registered media libraries."},
+		{"", LibraryRefreshMediaKey, "", "Refresh media details", "Refresh media details in all registered libraries, including unchanged files."},
+	}
+	for index := range definitions {
+		id, err := randomID()
+		if err != nil {
+			return err
+		}
+		definitions[index].id = id
 	}
 	return s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
-		_, err := tx.Exec(`INSERT INTO task_definitions
+		for _, definition := range definitions {
+			_, err := tx.Exec(`INSERT INTO task_definitions
             (id, key, emby_key, name, description, category)
-            VALUES ($1,$2,$3,'Scan media library','Scan all registered media libraries.','Library')
+            VALUES ($1,$2,$3,$4,$5,'Library')
             ON CONFLICT (key) DO UPDATE SET emby_key = EXCLUDED.emby_key,
                 name = EXCLUDED.name, description = EXCLUDED.description,
                 category = EXCLUDED.category, updated_at = clock_timestamp()
             WHERE (task_definitions.emby_key, task_definitions.name,
                 task_definitions.description, task_definitions.category)
                 IS DISTINCT FROM (EXCLUDED.emby_key, EXCLUDED.name,
-                    EXCLUDED.description, EXCLUDED.category)`, id, LibraryScanKey, LibraryScanEmbyKey)
-		if err != nil {
-			return fmt.Errorf("register library task: %w", err)
+					EXCLUDED.description, EXCLUDED.category)`, definition.id, definition.key, definition.embyKey, definition.name, definition.description)
+			if err != nil {
+				return fmt.Errorf("register library task: %w", err)
+			}
 		}
-		_, err = tx.Exec(`UPDATE task_definitions SET enabled = false,
+		_, err := tx.Exec(`UPDATE task_definitions SET enabled = false,
             revision = revision + 1, updated_at = clock_timestamp()
-            WHERE key <> $1 AND enabled`, LibraryScanKey)
+            WHERE key NOT IN ($1,$2) AND enabled`, LibraryScanKey, LibraryRefreshMediaKey)
 		if err != nil {
 			return fmt.Errorf("disable unavailable task definitions: %w", err)
 		}
 		return nil
 	})
+}
+
+func checkTaskExecutor(key string, actor Actor) error {
+	if _, supported := library.TaskScanOptions(key); !supported {
+		return ErrUnavailable
+	}
+	if actor.Audience == identity.AdministratorEmby && key != LibraryScanKey {
+		return identity.ErrClientSessionForbidden
+	}
+	return nil
 }
 
 // Each projection is one database statement, so its definition, active run,

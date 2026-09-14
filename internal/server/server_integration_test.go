@@ -40,11 +40,21 @@ type serverFixture struct {
 // Cleanup only removes that schema after CREATE SCHEMA has succeeded.
 func newServerFixture(t *testing.T) *serverFixture {
 	t.Helper()
+	return newServerFixtureWithTimeout(t, 90*time.Second)
+}
+
+// Explicit browser profiles may use a larger deadline while ordinary API tests
+// retain their existing deadline and the same independently bounded cleanup.
+func newServerFixtureWithTimeout(t *testing.T, timeout time.Duration) *serverFixture {
+	t.Helper()
+	if timeout <= 0 {
+		t.Fatal("server fixture timeout must be positive")
+	}
 	databaseURL := os.Getenv("GOBY_TEST_DATABASE_URL")
 	if databaseURL == "" {
 		t.Skip("GOBY_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	t.Cleanup(cancel)
 	adminPool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {

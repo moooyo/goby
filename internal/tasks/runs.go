@@ -15,7 +15,7 @@ import (
 	"github.com/moooyo/goby/internal/library"
 )
 
-// Start admits a durable normal full-library scan or returns the run already
+// Start admits a durable built-in library task or returns the run already
 // associated with this request. A coalesced request receives its own receipt.
 func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (Admission, error) {
 	if err := validateRequestID(request.RequestID); err != nil {
@@ -29,8 +29,6 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 	if actor.Audience == identity.AdministratorEmby {
 		source = "compatibility"
 	}
-	encoded, _ := json.Marshal(struct{ TaskID, Executor, Source string }{request.TaskID, LibraryScanKey, source})
-	fingerprint := sha256.Sum256(encoded)
 	var result Admission
 	err = s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		if err := checkActor(tx, actor, true); err != nil {
@@ -44,6 +42,13 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 		if err := checkActor(tx, actor, false); err != nil {
 			return err
 		}
+		if err := checkTaskExecutor(definition.Key, actor); err != nil {
+			return err
+		}
+		// Preserve the original ordinary-scan JSON field order and values. New
+		// modes bind the fingerprint to the locked definition's actual key.
+		encoded, _ := json.Marshal(struct{ TaskID, Executor, Source string }{request.TaskID, definition.Key, source})
+		fingerprint := sha256.Sum256(encoded)
 		if request.RequestID != "" {
 			var priorID string
 			var priorFingerprint []byte
@@ -67,9 +72,6 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 		}
 		if !definition.Enabled {
 			return ErrDisabled
-		}
-		if definition.Key != LibraryScanKey {
-			return ErrUnavailable
 		}
 		var activeID string
 		err := tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
@@ -493,6 +495,16 @@ func readRun(tx library.OwnedTx, id string, lock bool) (Run, error) {
 // The parent run is already locked. Child and scan locks follow in a stable
 // order; cancelled scans from another run or a standalone request are excluded.
 func lockRunChildrenAndScans(tx library.OwnedTx, runID string) error {
+	// The caller holds the parent lock. Cancellation and startup recovery must
+	// not relabel a normal scan as a forced refresh, or the reverse.
+	var taskKey string
+	if err := tx.QueryRow(`SELECT task_key FROM task_runs WHERE id=$1`, runID).Scan(&taskKey); err != nil {
+		return fmt.Errorf("read task execution mode: %w", err)
+	}
+	options, supported := library.TaskScanOptions(taskKey)
+	if !supported {
+		return ErrInconsistent
+	}
 	rows, err := tx.Query(`SELECT id FROM task_run_children WHERE run_id = $1 ORDER BY id FOR UPDATE`, runID)
 	if err != nil {
 		return fmt.Errorf("lock task children: %w", err)
@@ -512,7 +524,8 @@ func lockRunChildrenAndScans(tx library.OwnedTx, runID string) error {
 	var inconsistent bool
 	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_run_children c LEFT JOIN scan_jobs j
         ON j.id = c.scan_job_id AND j.task_child_id = c.id WHERE c.run_id = $1
-        AND c.state IN ('queued','running') AND j.id IS NULL)`, runID).Scan(&inconsistent); err != nil {
+        AND ((c.state IN ('queued','running') AND j.id IS NULL)
+            OR (j.id IS NOT NULL AND (j.library_id <> c.library_id OR j.force_probe <> $2))))`, runID, options.ForceProbe).Scan(&inconsistent); err != nil {
 		return fmt.Errorf("check task scan ownership: %w", err)
 	}
 	if inconsistent {

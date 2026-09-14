@@ -1,20 +1,77 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after the real small-media capacity test and affected
-shared-fixture regression passed independent review and evidence/resource
-closure. Ordinary regression and fresh-candidate admission retain
-their completed scopes; client-video acceptance remains open.
+Reviewed on 2026-09-15 after candidate recovery and the fixed native
+media-refresh increment completed focused/browser acceptance, final ordinary
+regression, independent review and resource closure. Earlier regression and
+candidate admissions retain their original scopes; client-video acceptance
+remains open.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
+
+The [M5 preflight resource incident](m5-refresh-preflight-incident.json)
+required candidate recovery before verification continued. Disk exhaustion caused PostgreSQL PANIC/recovery and
+both candidate applications exited after losing their database leases. One
+audited build-cache clean restored 7,582,253,056 available root bytes. A later
+read-only checkpoint matched every row in 35 tables and all five sequences
+in each of the four retained databases against its saved baseline. Native
+backup, lifecycle, control and staged-generation checks also passed independent
+review. Physical database integrity is not established by those observations.
+Both candidate applications have subsequently started once with their original
+binaries/configuration and passed health/readiness, new lease ownership and
+retained-state checks. Independent review of the [application recovery](candidate-disk-full-recovery.json)
+and old diagnostic-log preservation passed. The subsequent [first M5 focused run](m5-refresh-first-verification.json)
+failed one library test after 89 top-level passes. Its failed result, source
+and closed resources passed independent review; server/browser checks were not
+executed. The [corrected run](m5-refresh-corrected-verification.json) subsequently
+passed all 109 ordinary focused tests but failed the browser interval scenario.
+Its result and closed resources passed independent review. The subsequent
+[fresh browser run](task-media-refresh-verification.json) passed the full
+scenario and independent review/closure, with unchanged ordinary inputs and
+embedded assets. Accepted focused coverage is 109 retained tests plus one
+browser Go test. The subsequent
+[final-source ordinary regression](m5-final-regression-verification.json)
+passed all 25 packages from the beginning: 2,295 top-level passes, zero failures
+and one declared mount-profile skip, followed by the Linux amd64 build.
+Independent result and closure reviews passed. The 109 focused ordinary
+results are not added to the full-suite count. Preserve the separate capacity
+rejection, the final run's zero-dispatch loop-metadata rejection and its first
+reader rejection; the actual product suite ran once. Four private archives
+passed readback, owned processes/PG/cgroups closed, and ext4, loop and RAM were
+released with protected runtime metadata unchanged. The next increment is an
+internal amd64 embedded systemd package and actual installation acceptance.
+Historical candidate admissions retain their original scope.
+
+The saved recovery scope is
+`/opt/goby-test/candidate-disk-full-recovery-20260914` on `test-env`.
+Its read-only execution receipt has SHA256
+`591da28976ec05c7898a7aafd50e6d754f8fdc75d611a12d11cc5e11013cb25f`;
+its native execution receipt has SHA256
+`d2721d724669395eb6be4c981f222700b5f43e8a9086153d95c89e01e08d2f3d`.
+Both released the deployment lock. Raw database and native snapshots remain
+private on the remote host. The earlier incident report retains its original
+pre-observation timestamp and has not been relabeled as application recovery.
+The subsequent restart execution receipt has SHA256
+`3dfb3639001f63a1b7545022e648480db7f777f8d81222e26d49dd8b340c2f8f`.
+It records two application starts, four health/readiness requests, eight
+read-only SQL sessions, unchanged data/sequences across all four databases,
+closed readers and a released lock. PostgreSQL processes were not restarted.
+The separate M5 recovered input has SHA256
+`80f51f90acb7bc076a3f49ffdbc81ba3ea2e8a8ae4bef108ffaaf61b06b29d32`;
+its preparation receipt has SHA256
+`f3297d25cfbf68d32ef0701760d698cd6459b96f04cbb66fe6949c646c37bdee`.
+The original product-source archive, worker, failed preflight and historical
+candidate metadata remain unchanged. The revised input binds both new
+application identities and all unchanged protected resources explicitly.
 
 ## Current gates
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
-| Intended-version regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Prior partial Library counts are excluded. No tagged full-suite or privileged mount acceptance; new candidate provisioning does not pass runtime or client acceptance |
+| Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
+| Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package still needs actual installation acceptance |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
@@ -781,7 +838,11 @@ All compilation, formatting tools, tests, browser checks, media probes and runti
 verification use `ssh test-env`. Local verification requires explicit permission
 in the current task. An unavailable test environment blocks verification; it
 does not authorize a local fallback. Reuse unchanged verification and limit new
-checks to the changed risk. No product-wide rerun is needed for these tool edits.
+checks to the changed risk. Future production changes require relevant focused
+checks, including browser checks where applicable, followed by full regression
+of the final intended source.
+The fixed media-refresh increment has completed these gates within its recorded
+scope; it does not waive them for later production changes.
 
 ## Supported capacity boundaries
 

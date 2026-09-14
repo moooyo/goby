@@ -1,14 +1,73 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after the real small-media capacity test and affected
-shared-fixture regression passed independent review and resource closure.
-Status: **two focused tests and evidence closure complete; core-video and
-complete release gates remain open**. Completed ordinary regression and
-fresh-candidate admission retain their original scopes.
+Reviewed on 2026-09-15 after candidate recovery and the M5 media-refresh
+increment passed focused/browser acceptance, final ordinary regression and
+independent result/resource closure reviews.
+Status: **the fixed M5 refresh increment is accepted; an internal amd64 systemd
+package is next; core-video and complete release gates remain open**. Earlier
+regression and candidate admissions retain their original source and execution
+scopes.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
 inputs are evidence, not alternative execution instructions.
+
+The [M5 preflight resource incident](../development/m5-refresh-preflight-incident.json)
+required candidate recovery before M5 verification. The root filesystem filled before M5 testing
+started. Both candidate PostgreSQL instances recorded ENOSPC/PANIC and recovery;
+both applications lost their database lease and exited. One audited Go cache
+clean restored 7,582,253,056 available root bytes. The subsequent read-only
+recovery checkpoint matched all rows in 35 tables and all five sequences in
+each of four retained databases against its saved baseline. Native backup,
+lifecycle, control and staged-generation checks also passed independent review.
+These are logical preservation and native-state observations, not physical
+database integrity acceptance. Both unchanged applications have now started
+once, passed liveness/readiness and acquired their own new database leases.
+All four databases' tables and sequences matched again after startup, and
+retained native state and old diagnostic logs remained intact. Independent
+review of the [completed application recovery](../development/candidate-disk-full-recovery.json)
+passed. The first isolated M5 focused/browser verification is now
+[failed and independently closed](../development/m5-refresh-first-verification.json):
+89 top-level passes, one library-test failure and no server/browser execution.
+The [corrected four-plan run](../development/m5-refresh-corrected-verification.json)
+passed all 109 ordinary focused tests but failed its browser scenario at the
+interval step. Independent review and resource closure passed; the separate
+zero-dispatch capacity rejection also remains preserved. The subsequent
+[browser-only correction and verification](../development/task-media-refresh-verification.json)
+passed its complete scenario and independent review/closure. The accepted
+focused coverage is 109 retained ordinary tests plus one new browser Go test,
+with a verified source bridge; it is not a single 110-test run or full suite.
+The [final-source ordinary regression](../development/m5-final-regression-verification.json)
+has now passed all 25 packages from the beginning: 2,295 top-level passes,
+zero failures and one declared mount-profile skip, plus the Linux amd64 build.
+Independent result and closure reviews passed. The initial zero-dispatch loop
+metadata rejection and first reader rejection are retained; one actual full
+worker ran. All private archives passed readback and the owned ext4, loop and
+RAM resources closed. The ordinary focused counts are not added to this total.
+Preserve all old admissions, original preflight/cleanup rejections and private
+incident logs.
+
+The pre-incident recovery review on 2026-09-14 recorded baseline `0b4e012` and 24
+uncommitted M5 source/documentation changes. At that historical checkpoint,
+focused tests, browser acceptance and final changed-source regression were still
+pending. The focused and browser work has since closed as described above.
+The earlier source archive remains a retained preparation snapshot; it does not
+cover later corrections or this planning amendment.
+
+The immediate queue is:
+
+1. Complete the verified M5 source checkpoint, then build an internal Linux
+   amd64 embedded systemd package containing the binary, build manifest,
+   shipped unit, environment template and installation instructions. Align the
+   template with embedded administrator assets and verify the complete archive.
+2. Under a separately admitted fresh scope, use the shipped nonroot systemd
+   template for actual installation, bootstrap/login, small real-media catalog
+   and normal stop/start preservation checks. Recheck target-path absence and
+   capacity; retain unit hardening and protect every existing candidate and PG.
+   Close the new installation and its resources before accepting the increment.
+3. Continue the remaining M2-M6 obligations under their own prerequisites.
+   This fixed M5 increment does not complete M5, pass core video acceptance,
+   authorize main promotion or complete the overall goal. M7 remains deferred.
 
 The goal remains an independent Linux media server using Go, PostgreSQL and
 FFmpeg, an administrator-only React/MUI dashboard and unmodified compatible
@@ -298,9 +357,37 @@ workspace outside every new resource budget.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
+| 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
+| 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
+| 0b. Internal amd64 embedded systemd package | Extend the existing release builder with an optional systemd package, align its environment template with embedded assets and provide manual installation instructions; then exercise the shipped nonroot unit with a fresh private DB/catalog and normal stop/start | Validate archive members and actual installed source/unit/asset identities, credential cleanup, catalog preservation and owned-resource disposal. Keep existing candidates untouched. This is an internal installation candidate, not public distribution, upgrade, core-video, native arm64/GPU or OCI acceptance |
 | 1. Core video and subtitle acceptance | Prioritize this promotion gate when new discriminating evidence or a justified product correction supports a bounded journey on a reviewed current candidate and retained-state input | No new journey is admitted yet. Context291 identifies physical294, not293; the earlier cancellation and original page errors remain unresolved. Preserve the completed identity review. Without new grounds, keep this gate open and continue independent work; do not repeat the review, replay consumed actors or add another observation framework |
 | 2. Independent remaining M2-M6 delivery | Separately address representative capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | Require measurable limits and bounded shutdown. This track may progress independently, while heavy work follows the shared-resource limits above; small catalogs, root-profile restarts and cross-builds do not close the release gates |
 | 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+
+The completed independent increment is [native scheduled media refresh](../development/task-media-refresh-plan.md):
+register `library.refresh_media`, retain ordinary `library.scan` behavior, and
+verify explicit ForceProbe execution, request replay, cancellation, scheduling
+and administrator UI behavior. Implementation, static review and remote formatting
+are complete. The first run passed all 63 task tests but failed one of 27 library
+tests before its force-probe step; server/browser checks were not executed.
+Its result and resource closure are independently reviewed. The corrected test
+uses a persisted metadata baseline and has passed all 27 library tests, including
+successful repair and failed-probe preservation. Tasks and server groups also
+passed. The complete browser scenario subsequently passed after the two
+browser-test-only corrections, with independent source-bridge and resource
+closure review. The plan now binds
+entity-repair checks to a missing Genre association, assigns replay and independent
+scan isolation to Go/API tests, and limits browser evidence to its actual manual,
+cancelled and scheduled workflow. Focused/browser checks and the final ordinary
+regression are complete, with independent reviews and resource closure. This
+increment does not admit a core-client replay or main promotion.
+
+The next independent increment is the internal amd64 systemd package in row 0b.
+Its implementation drafts have not been applied or executed. Use the existing
+release builder and deployment template, preserve ordinary build compatibility,
+and keep new installation acceptance separate from historical custom-unit
+candidate proofs. Project licensing remains unresolved, so no external
+distribution is admitted by this package work.
 
 The M2 full-scan mount experiment remains paused outside this execution order.
 Its helper compiled, but PostgreSQL and all seven scan stages remain unexecuted.

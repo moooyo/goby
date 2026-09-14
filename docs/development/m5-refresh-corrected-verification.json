@@ -1,0 +1,101 @@
+{
+  "kind": "m5-refresh-corrected-focused-verification",
+  "version": 1,
+  "status": "ordinary_focused_groups_passed_browser_failed_resources_closed",
+  "remoteScope": "/opt/goby-test/m5-refresh-corrected-20260914",
+  "sourceArchiveSha256": "1ceba64684eee23893828fc36d791dcf1403672a6cc8c8157e9d2acf90b67414",
+  "workerSha256": "ac5f40413c6f71154c2f5acbbcb0380356da69b23d3c58aa7bcad065198b2e9c",
+  "results": {
+    "listedTopLevelTests": 110,
+    "executedTopLevelTests": 110,
+    "passedTopLevelTests": 109,
+    "failedTopLevelTests": 1,
+    "skippedTopLevelTests": 0,
+    "plans": {
+      "tasks": {"passed": 63, "failed": 0, "packageResult": "pass"},
+      "library": {"passed": 27, "failed": 0, "packageResult": "pass"},
+      "server": {"passed": 19, "failed": 0, "packageResult": "pass"},
+      "browser": {"passed": 0, "failed": 1, "packageResult": "fail"}
+    },
+    "raceEnabled": true,
+    "previousLibraryFailureCasePassed": true,
+    "fullSuite": false,
+    "overallPassed": false
+  },
+  "browser": {
+    "actuallyInvoked": true,
+    "complete": false,
+    "playwrightTimeoutMilliseconds": 180000,
+    "nodeElapsedMilliseconds": 181439,
+    "nodeExitCode": 1,
+    "recordedChecks": {
+      "ManualRefreshAllLibrariesForceProbe": true,
+      "ActiveRefreshCancelledThroughRunDialog": true
+    },
+    "activeStopDialogObserved": true,
+    "recordedIntervalRuns": 0,
+    "primaryAwaitLocationEstablished": false,
+    "primaryFailureMaskedByFinallyRead": true,
+    "browserLogoutStatus": 403,
+    "sameCookieStatusBeforeEmergencyRevocation": 200,
+    "httpLogoutAndRejectionPassed": false,
+    "emergencySessionRevocations": 1,
+    "savedSessionRows": 2,
+    "allSavedSessionsRevoked": true,
+    "postEmergencySameCookieHttpRejectionObserved": false,
+    "interpretation": "The browser timed out in the interval portion after recording the manual completion and real cancellation checks. The exact primary await was masked by the finally read. The Go cleanup used a noncanonical Header map key for CSRF; Header.Get therefore could not retrieve it. The saved 403/200 pair is a failure, not successful HTTP logout."
+  },
+  "capacityAdmission": {
+    "originalRejectionPreserved": true,
+    "originalRunnerAttempts": 0,
+    "originalClosedMetadataCommands": 14,
+    "originalInternalResourceSampleRecovered": false,
+    "readmissionChecks": 1,
+    "readmissionWaits": 0,
+    "thresholdsLowered": false,
+    "admittedMemoryAvailableBytes": 6614568960,
+    "admittedRootFreeBytes": 7115112448,
+    "actualWorkerDispatches": 1
+  },
+  "closure": {
+    "independentReviewPassed": true,
+    "workerCleanupComplete": true,
+    "ownedPostgresStopped": true,
+    "recursiveCgroupEmpty": true,
+    "ramUnmountedNormally": true,
+    "deploymentLockReleased": true,
+    "protectedCandidateMetadataUnchanged": true,
+    "rawLogsSnapshotsAndCredentialsRemainRemotePrivate": true,
+    "failedOutcomeReclassified": false
+  },
+  "evidence": {
+    "private/input.json": "f6aee53ee082a4ba8d9743ae28393bb1fbc42fa38acb19c994b3e628b27ae91e",
+    "preparation.json": "55dfa8ebd3f8e6498dc04c31077ea82eea015474b2dc55046cf4031b29ef9634",
+    "execution.json": "6949aec25f758ae000158ea9fcc125a853a5de0ed81cf651d53ddf1dfc05490d",
+    "execution-after-capacity.json": "4c13e3dec58e22c8958914e4f7f9b52bc698149f764087958c7e3abf087a2b63",
+    "closure.json": "e72d3c3b470db4d3cb6df95fb6d38769e3ddfb7e7978466e29afc2113072bbcd",
+    "independent-failure-review.json": "a5b55a8d13680001e7c8022fa47f60b2a70338369f3033e885439e1b2bbbdf9f"
+  },
+  "nextBrowserSource": {
+    "remoteScope": "/opt/goby-test/m5-refresh-browser-20260915",
+    "sourcePreparationSha256": "663738cc8b3afcc2d74d53d451c42dd9ec3c7b7a620530083483d1585f2c8dcf",
+    "sourceArchiveSha256": "419e734a637902c15687b3dc7e5912afc1bd7e6c27bc2a6f9e53bc10070cce55",
+    "changedMembers": [
+      "internal/server/refresh_media_browser_integration_test.go",
+      "web/admin/e2e/scheduled-tasks.spec.ts"
+    ],
+    "changes": [
+      "Construct the real logout request with Header.Set so CSRF lookup receives the canonical header.",
+      "Assert the fresh UTC default instead of sending an unnecessary Escape that can close a clean schedule editor.",
+      "Save bounded browser stages and retain primary and cleanup failure identities separately. Stage recording cannot prevent cleanup."
+    ],
+    "ordinaryGoInputsAndEmbeddedAssetsUnchanged": true,
+    "runtimeVerificationExecuted": false,
+    "escapeAsUniqueHistoricalTimeoutCauseProven": false
+  },
+  "nextRequired": [
+    "Verify the complete corrected browser scenario in a new isolated runtime and independently review its actual UI, media, task and cleanup evidence.",
+    "Reuse the 109 passed ordinary focused tests only with the verified browser-only source bridge; do not count the failed browser as passed.",
+    "Complete final intended-source ordinary full regression and closure before accepting or committing the M5 production increment."
+  ]
+}

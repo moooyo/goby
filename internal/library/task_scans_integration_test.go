@@ -679,6 +679,11 @@ type taskScanChildSnapshot struct {
 
 func taskScanFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool, libraries ...Library) (string, []string) {
 	t.Helper()
+	return taskScanFixtureForKey(t, ctx, pool, TaskLibraryScanKey, libraries...)
+}
+
+func taskScanFixtureForKey(t *testing.T, ctx context.Context, pool *pgxpool.Pool, taskKey string, libraries ...Library) (string, []string) {
+	t.Helper()
 	definitionID, err := randomID()
 	if err != nil {
 		t.Fatal(err)
@@ -692,14 +697,21 @@ func taskScanFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool, libr
 		t.Fatalf("begin the task scan fixture: %v", err)
 	}
 	defer rollback(tx)
+	embyKey := ""
+	if taskKey == TaskLibraryScanKey {
+		embyKey = "RefreshLibrary"
+	}
+	// Independent definition IDs allow existing bridge tests to retain several
+	// active runs. Execution mode belongs to the immutable run-key snapshot,
+	// not to this fixture's current definition key.
 	if _, err := tx.Exec(ctx, `INSERT INTO task_definitions (id, key, emby_key, name)
-		VALUES ($1, $2, 'RefreshLibrary', 'Scan bridge fixture')`, definitionID, "scan-bridge-"+definitionID); err != nil {
+		VALUES ($1, $2, $3, 'Scan bridge fixture')`, definitionID, "scan-bridge-"+definitionID, embyKey); err != nil {
 		t.Fatalf("create the task definition fixture: %v", err)
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO task_runs
 		(id, task_id, state, source, task_key, task_emby_key, task_name, started_at, total_children)
-		VALUES ($1, $2, 'running', 'manual', $3, 'RefreshLibrary', 'Scan bridge fixture', now(), $4)`,
-		runID, definitionID, "scan-bridge-"+definitionID, len(libraries)); err != nil {
+		VALUES ($1, $2, 'running', 'manual', $3, $4, 'Scan bridge fixture', now(), $5)`,
+		runID, definitionID, taskKey, embyKey, len(libraries)); err != nil {
 		t.Fatalf("create the task run fixture: %v", err)
 	}
 	children := make([]string, 0, len(libraries))

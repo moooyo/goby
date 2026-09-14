@@ -1,0 +1,439 @@
+{
+  "archives": {
+    "binaryArchive": {
+      "archive": {
+        "bytes": 13514296,
+        "path": "/opt/goby-test/m5-final-regression-20260914/retained/binary.tar.gz",
+        "sha256": "7c9b573e0433ec3c72022f3da43463bf4e0ba806bbf5b063e9d798ddfb0113ff"
+      },
+      "directories": 1,
+      "files": 1,
+      "ownershipAndModeReadbackMatched": true,
+      "readbackMatched": true,
+      "uncompressedBytes": 29570703
+    },
+    "evidenceArchive": {
+      "archive": {
+        "bytes": 1488946,
+        "path": "/opt/goby-test/m5-final-regression-20260914/retained/evidence.tar.gz",
+        "sha256": "ce1d520bb5dbf8f7b5bf69b11024b8b60c98759472ccca33d3f2f272c44d038e"
+      },
+      "directories": 12,
+      "files": 323,
+      "ownershipAndModeReadbackMatched": true,
+      "readbackMatched": true,
+      "uncompressedBytes": 14366455
+    },
+    "privateClosedPostgres": {
+      "archive": {
+        "bytes": 83571509,
+        "path": "/opt/goby-test/m5-final-regression-20260914/retained/closed-postgres-private.tar.gz",
+        "sha256": "a85df39ef6bb1067f0e68160848e9c7c380a52d1ebf638bb860a401e26eb09eb"
+      },
+      "directories": 33,
+      "files": 2183,
+      "ownershipAndModeReadbackMatched": true,
+      "readbackMatched": true,
+      "uncompressedBytes": 414279248
+    },
+    "privateFixtureImage": {
+      "archive": {
+        "bytes": 19804786,
+        "path": "/opt/goby-test/m5-final-regression-20260914/retained/fixture-image-private.tar.gz",
+        "sha256": "3f967c9616b7231ada51765bb84aeda56b33972d2ea5160b2ab57f4427366dd1"
+      },
+      "directories": 0,
+      "files": 1,
+      "ownershipAndModeReadbackMatched": true,
+      "readbackMatched": true,
+      "uncompressedBytes": 536870912
+    }
+  },
+  "boundaries": {
+    "coreVideoAcceptance": false,
+    "hostDurabilityAccepted": false,
+    "m2ThroughM6Complete": false,
+    "m5OverallComplete": false,
+    "m7Deferred": true,
+    "mainPromoted": false,
+    "nativeArm64OrGpuAccepted": false,
+    "taggedFullSuite": false
+  },
+  "closure": {
+    "ext4Unmounted": true,
+    "independentlyReviewed": true,
+    "lockReleased": true,
+    "loopDetached": true,
+    "ownedProcessesClosed": true,
+    "postgresInventory": {
+      "bytes": 414279248,
+      "directories": 33,
+      "files": 2183
+    },
+    "privateArchivesRemoteOnly": true,
+    "protectedMetadataUnchanged": true,
+    "ramUnmounted": true,
+    "rootFreeBytesAtSeal": 6835978240,
+    "sourceArchiveRetainedOnce": true,
+    "underlyingDirectoriesRetainedEmpty": true
+  },
+  "environment": "ssh test-env",
+  "evidence": {
+    "closure": {
+      "bytes": 72674,
+      "path": "/opt/goby-test/m5-final-regression-20260914/closure.json",
+      "sha256": "3e8d545c9f63037c0c1515ec598f3b186171331a5431a3caec68e086b93f6edc"
+    },
+    "execution": {
+      "bytes": 70985,
+      "path": "/opt/goby-test/m5-final-regression-20260914/execution-corrected.json",
+      "sha256": "6af27bc16fbba738e82487d75b879b6b90d82a2c033a488edf0f47f640cc54b8"
+    },
+    "independentClosureReview": {
+      "bytes": 13930,
+      "path": "/opt/goby-test/m5-final-regression-20260914/closure-independent-review.json",
+      "sha256": "da12d36127dfdec978c1335fc434d70bf950a91fd304e688d65fb457ceca246c"
+    },
+    "independentReview": {
+      "bytes": 190186,
+      "path": "/opt/goby-test/m5-final-regression-20260914/independent-review-corrected.json",
+      "sha256": "92783038b7ca9f2faa0dac5fc2ce2b5cf902d9ecf67104639738e0d9565b2c7f"
+    },
+    "input": {
+      "path": "/opt/goby-test/m5-final-regression-20260914/private/input.json",
+      "sha256": "2204ffb6550b4c5f22b6732b7b68528300706c158e094e9294f68918000ebc18"
+    },
+    "parent": {
+      "archive": {
+        "bytes": 1488946,
+        "path": "/opt/goby-test/m5-final-regression-20260914/retained/evidence.tar.gz",
+        "sha256": "ce1d520bb5dbf8f7b5bf69b11024b8b60c98759472ccca33d3f2f272c44d038e"
+      },
+      "bytes": 435289,
+      "member": "scope/report.json",
+      "sha256": "cf64fd02370199cb56a013916b01db8f1e065ee147df1c412ecc40288ec08207"
+    },
+    "preparation": {
+      "bytes": 63258,
+      "path": "/opt/goby-test/m5-final-regression-20260914/preparation.json",
+      "sha256": "27d6b709db6e7e2b214799868d0d2299e88e13ecb8edd705411200752839f66c"
+    },
+    "sourcePreparation": {
+      "bytes": 5131,
+      "path": "/opt/goby-test/m5-final-regression-20260914/source-preparation.json",
+      "sha256": "e428ff27b8180cdc47444e7a8067b677c8c4c10228c3161a3c391a3d0ed13383"
+    },
+    "worker": {
+      "archive": {
+        "bytes": 1488946,
+        "path": "/opt/goby-test/m5-final-regression-20260914/retained/evidence.tar.gz",
+        "sha256": "ce1d520bb5dbf8f7b5bf69b11024b8b60c98759472ccca33d3f2f272c44d038e"
+      },
+      "bytes": 412499,
+      "member": "scope/worker-report.json",
+      "sha256": "1cac5ab32f33f7da616b5f706fc33d2d7abeb59fda5480bc544d778fd80b450b"
+    }
+  },
+  "execution": {
+    "buildTag": "ordinary, no goby_embed_admin",
+    "completePackages": 25,
+    "count": 1,
+    "historicalCountsReused": false,
+    "packageParallelism": 1,
+    "packages": [
+      {
+        "commandSeconds": 40.127,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/cmd/goby",
+        "passed": 21,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 3.474,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/activity",
+        "passed": 23,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 2.319,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/artwork",
+        "passed": 20,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 12.143,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/backupformat",
+        "passed": 14,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 53.337,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/backuppg",
+        "passed": 85,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 2.77,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/backupstore",
+        "passed": 32,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1.667,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/config",
+        "passed": 27,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 11.589,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/database",
+        "passed": 55,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1.718,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/diagnostics",
+        "passed": 41,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1.768,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/events",
+        "passed": 23,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 371.573,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/identity",
+        "passed": 134,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1059.434,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/library",
+        "passed": 606,
+        "skipped": 1
+      },
+      {
+        "commandSeconds": 3.591,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/lifecycle",
+        "passed": 17,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 6.298,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/media",
+        "passed": 117,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1.825,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/metadata",
+        "passed": 20,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 2.522,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/playback",
+        "passed": 170,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 260.958,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/recovery",
+        "passed": 26,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 3.79,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/recoverycontrol",
+        "passed": 16,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1002.662,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/server",
+        "passed": 555,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 18.256,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/settings",
+        "passed": 27,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 2.169,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/storagebinding",
+        "passed": 11,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 1.467,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/subtitle",
+        "passed": 12,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 50.075,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/tasks",
+        "passed": 63,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 61.51,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/transcode",
+        "passed": 169,
+        "skipped": 0
+      },
+      {
+        "commandSeconds": 44.957,
+        "failed": 0,
+        "package": "github.com/moooyo/goby/internal/recoverydb",
+        "passed": 11,
+        "skipped": 0
+      }
+    ],
+    "raceEnabled": true,
+    "singleRunFullSuite": true,
+    "testCounts": {
+      "failed": 0,
+      "passed": 2295,
+      "skipped": 1
+    },
+    "testParallelism": 1,
+    "workerAttempts": 1
+  },
+  "explicitSkip": {
+    "package": "github.com/moooyo/goby/internal/library",
+    "profileExecuted": false,
+    "reason": "the full-scan mount scenario requires its explicit reviewed opt-in scope",
+    "test": "TestRootBindingFullScanMountNamespaceHelper"
+  },
+  "focusedAcceptance": {
+    "browserGoTests": 1,
+    "countingBoundary": "The 109 ordinary focused results are not added to this full-suite count; the browser remains a separate tagged scenario with an exact non-documentation source bridge.",
+    "ordinaryFocusedTests": 109,
+    "record": "task-media-refresh-verification.json",
+    "sha256": "d712bd3b560bfc73071c38ea566cd0af352d9ef4c8686a4224b5eff4a5aee2b0"
+  },
+  "kind": "m5-final-ordinary-regression-verification",
+  "limits": {
+    "businessSeconds": 4200,
+    "commandSeconds": 1560,
+    "ext4ImageBytes": 536870912,
+    "outerSeconds": 5340,
+    "ramBytes": 3221225472,
+    "retainedBudgetBytes": 1073741824,
+    "rootReserveBytes": 536870912,
+    "runtimeSeconds": 4800,
+    "testSeconds": 1500
+  },
+  "logEvidence": {
+    "earlierOuterStreamBytesCryptographicallyProvenUnchanged": false,
+    "outerStreamDigestsFirstCapturedAtReview": true,
+    "outerStreamsMatchedRecordedSizes": true,
+    "workerStreamsMatchedRecordedDigests": true
+  },
+  "nextAction": "Commit the verified media-refresh increment, then implement and verify the internal amd64 embedded systemd package under a separate fresh installation scope.",
+  "ordinaryBinary": {
+    "arch": "amd64",
+    "archive": {
+      "bytes": 13514296,
+      "path": "/opt/goby-test/m5-final-regression-20260914/retained/binary.tar.gz",
+      "sha256": "7c9b573e0433ec3c72022f3da43463bf4e0ba806bbf5b063e9d798ddfb0113ff"
+    },
+    "bytes": 29570703,
+    "cgoEnabled": false,
+    "embeddedAdministrator": false,
+    "member": "bin/goby-linux-amd64",
+    "os": "linux",
+    "sha256": "199a51f975d1e1bd3b843ef434c7d7fcd43b25643f352ccc6beeac8f32cdd0e2"
+  },
+  "preservedRejections": [
+    {
+      "correction": "Retain exact loop backing and all eleven stable block-device identity/permission fields; record mtimeNs/ctimeNs separately.",
+      "errorCode": "prepared_loop_changed",
+      "evidence": {
+        "bytes": 40795,
+        "path": "/opt/goby-test/m5-final-regression-20260914/execution.json",
+        "sha256": "12736127b73cf09c5fd6ab781cf778d6814a91c3e507f0a7a7c9ad85748ab059"
+      },
+      "historicalFailureFieldValuesReconstructed": false,
+      "stage": "before_worker_dispatch",
+      "status": "failed",
+      "workerAttempts": 0
+    },
+    {
+      "correction": "The outer command descriptors record path and bytes, not a historical SHA256. Match those sizes and capture new digests at review; retain the worker logs recorded SHA256 checks.",
+      "evidence": {
+        "bytes": 42544,
+        "path": "/opt/goby-test/m5-final-regression-20260914/independent-review.json",
+        "sha256": "ea9f7dcda5407a72099bf8fac5f428730020e11ecbceb586a77b5bfd63d4a3f0"
+      },
+      "failureType": "KeyError",
+      "stage": "saved_evidence_review",
+      "status": "rejected"
+    }
+  ],
+  "scope": "/opt/goby-test/m5-final-regression-20260914",
+  "source": {
+    "archive": {
+      "bytes": 32560341,
+      "path": "/opt/goby-test/m5-final-regression-20260914/private/source.tar.gz",
+      "sha256": "f5b70c003eb43cfa0a58fb2eba88a13b7137f3c6c3f1da99307c821e80e336c5"
+    },
+    "baseGitHead": "0b4e012976a2d6676c63989da2317708296c1b7f",
+    "browserSource": {
+      "bytes": 32760355,
+      "path": "/opt/goby-test/m5-refresh-browser-20260915/private/source.tar.gz",
+      "sha256": "419e734a637902c15687b3dc7e5912afc1bd7e6c27bc2a6f9e53bc10070cce55"
+    },
+    "bytePreservationRule": {
+      "attribute": "-text",
+      "document": "docs/development/m5-refresh-preflight-incident.json",
+      "path": ".gitattributes",
+      "preservedSha256": "9a1e92e256cfadf2dc7948064f51361a86e5e3c3d8e7a6f6802fd7e656ada63d"
+    },
+    "embeddedAssetFiles": 57,
+    "files": 5323,
+    "manifest": {
+      "bytes": 1077825,
+      "path": "/opt/goby-test/m5-final-regression-20260914/private/source-manifest.json",
+      "sha256": "81e3883c4f54a44f69693f571598eea766ee8819e235c6579fbda9b8d43adfd2"
+    },
+    "nonDocumentationMembersUnchangedFromBrowserSource": true,
+    "postVerificationAmendment": "Final status/plan records and a document-specific Git byte-preservation rule were added after this source freeze; all production and test inputs remain the verified bytes.",
+    "uncompressedBytes": 118403051
+  },
+  "status": "passed_with_explicit_profile_gap",
+  "unexercisedDefaultReturnHelpers": [
+    "TestRootTopologyMountNamespaceHelper",
+    "TestRootBindingScanMountNamespaceHelper"
+  ],
+  "verifiedDate": "2026-09-15",
+  "version": 1
+}

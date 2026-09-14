@@ -3,8 +3,8 @@ import { constants } from 'node:fs';
 import { lstat, open, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import type { APIRequestContext, Locator, Page, Response, Route } from '@playwright/test';
-import type { Job, LoginSession, TaskAdmissionResponse, TaskDefinition, TaskDefinitionResponse, TaskRunDetail, TaskRunsResponse, TaskScheduleInput, TaskSchedulePreview, TaskTrigger, TaskTriggerInput } from '../src/api';
+import type { APIRequestContext, BrowserContext, Locator, Page, Response, Route } from '@playwright/test';
+import type { Job, LibrariesResponse, LoginSession, MetadataDetail, MetadataItemsResponse, TaskAdmissionResponse, TaskDefinition, TaskDefinitionResponse, TaskDefinitionsResponse, TaskRunDetail, TaskRunResponse, TaskRunsResponse, TaskScheduleInput, TaskSchedulePreview, TaskTrigger, TaskTriggerInput } from '../src/api';
 
 interface FixtureLibrary { Id: string; Name: string; Path: string; FileCount: number }
 interface TasksFixture {
@@ -19,6 +19,12 @@ interface TasksFixture {
   ResultPath: string;
 }
 
+interface RefreshTaskFixture extends Omit<TasksFixture, 'MediaSHA256'> {
+  ScanTaskId: string;
+  PreservedItemIds: string[];
+  CancellationReadyPath: string;
+}
+
 interface PrivateResult {
   Marker: string;
   RunId: string;
@@ -30,6 +36,8 @@ interface PrivateResult {
   BrowserCSRF?: string;
   BrowserSecrets: string[];
   ManualRunId?: string;
+  CancelledRunId?: string;
+  ScanTaskId?: string;
   ReceiptRequestId?: string;
   ReceiptRunId?: string;
   IntervalRunIds: string[];
@@ -37,7 +45,9 @@ interface PrivateResult {
   FinalTriggers?: TaskTrigger[];
   FinalTimezone?: string;
   Checks: Record<string, boolean>;
-  Observations: { ActiveStopDialogObserved: boolean };
+  Observations: { ActiveStopDialogObserved: boolean; Stage?: string };
+  Failure?: { Stage: string; Name: string };
+  CleanupFailure?: { Name: string };
 }
 
 const fixtureMarker = 'goby-tasks-browser-fixtures-v1';
@@ -111,16 +121,124 @@ async function verifyMedia(fixture: TasksFixture) {
   }
 }
 
+async function loadRefreshTaskFixture(filename: string, baseURL: string): Promise<RefreshTaskFixture> {
+  const owner = process.getuid?.();
+  if (process.platform !== 'linux' || owner === undefined || !path.isAbsolute(filename)
+    || filename !== path.resolve(filename) || await realpath(filename) !== filename) {
+    throw new Error('The refresh task requires its fresh Linux integration fixture.');
+  }
+  const directory = await lstat(path.dirname(filename));
+  if (!directory.isDirectory() || directory.isSymbolicLink() || directory.uid !== owner || (directory.mode & 0o777) !== 0o700) {
+    throw new Error('The refresh task fixture directory must be private and owned by this runner.');
+  }
+  const file = await open(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
+  let fixture: RefreshTaskFixture;
+  try {
+    const status = await file.stat();
+    if (!status.isFile() || status.uid !== owner || (status.mode & 0o777) !== 0o600 || status.nlink !== 1
+      || status.size > 32 * 1024 || await realpath(`/proc/self/fd/${file.fd}`) !== filename) {
+      throw new Error('The refresh task fixture must be a bounded private regular file.');
+    }
+    fixture = JSON.parse(await file.readFile('utf8')) as RefreshTaskFixture;
+  } finally { await file.close(); }
+  const origin = new URL(baseURL);
+  const identifier = /^[0-9a-f]{32}$/;
+  if (!fixture || fixture.Marker !== 'goby-refresh-task-browser-fixtures-v1'
+    || typeof fixture.RunId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$/.test(fixture.RunId)
+    || fixture.RunId !== process.env.GOBY_REFRESH_TASK_RUN_ID || fixture.Origin !== origin.origin
+    || origin.protocol !== 'http:' || origin.hostname !== '127.0.0.1' || !origin.port
+    || origin.username || origin.password || origin.pathname !== '/' || origin.search || origin.hash
+    || !fixture.Administrator || !identifier.test(fixture.Administrator.Id)
+    || typeof fixture.Administrator.Name !== 'string' || !fixture.Administrator.Name
+    || !identifier.test(fixture.TaskId) || fixture.TaskKey !== 'library.refresh_media'
+    || !identifier.test(fixture.ScanTaskId) || fixture.ScanTaskId === fixture.TaskId
+    || typeof fixture.ResultPath !== 'string' || !path.isAbsolute(fixture.ResultPath)
+    || fixture.ResultPath !== path.resolve(fixture.ResultPath) || fixture.ResultPath === filename
+    || path.dirname(fixture.ResultPath) !== path.dirname(filename) || path.extname(fixture.ResultPath) !== '.json'
+    || typeof fixture.CancellationReadyPath !== 'string' || !path.isAbsolute(fixture.CancellationReadyPath)
+    || fixture.CancellationReadyPath !== path.resolve(fixture.CancellationReadyPath)
+    || [filename, fixture.ResultPath].includes(fixture.CancellationReadyPath)
+    || path.dirname(fixture.CancellationReadyPath) !== path.dirname(filename) || path.extname(fixture.CancellationReadyPath) !== '.json'
+    || !Array.isArray(fixture.Libraries) || fixture.Libraries.length !== 2
+    || !fixture.Libraries.every((library) => identifier.test(library.Id) && typeof library.Name === 'string' && library.Name
+      && typeof library.Path === 'string' && path.isAbsolute(library.Path) && library.Path === path.resolve(library.Path)
+      && library.FileCount === 1)
+    || new Set(fixture.Libraries.map((library) => library.Id)).size !== 2
+    || new Set(fixture.Libraries.map((library) => library.Path)).size !== 2
+    || !Array.isArray(fixture.PreservedItemIds) || fixture.PreservedItemIds.length !== 2
+    || !fixture.PreservedItemIds.every((id) => identifier.test(id)) || new Set(fixture.PreservedItemIds).size !== 2) {
+    throw new Error('The refresh task fixture does not match the fresh integration run.');
+  }
+  try {
+    await lstat(fixture.CancellationReadyPath);
+    throw new Error('The refresh cancellation signal must not exist before the browser starts.');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+  return fixture;
+}
+
+async function waitForCancellationProbes(fixture: RefreshTaskFixture) {
+  await expect.poll(async () => {
+    let file;
+    try { file = await open(fixture.CancellationReadyPath, constants.O_RDONLY | constants.O_NOFOLLOW); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+      throw error;
+    }
+    try {
+      const status = await file.stat();
+      if (!status.isFile() || status.uid !== process.getuid?.() || (status.mode & 0o777) !== 0o600
+        || status.nlink !== 1 || status.size > 4096
+        || await realpath(`/proc/self/fd/${file.fd}`) !== fixture.CancellationReadyPath) {
+        throw new Error('The refresh cancellation signal must remain private and owned by this integration run.');
+      }
+      if (status.size === 0) return false;
+      expect(JSON.parse(await file.readFile('utf8'))).toEqual({ RunId: fixture.RunId, Ready: true });
+      return true;
+    } finally { await file.close(); }
+  }, { timeout: 30_000, intervals: [100, 250, 500], message: 'Both controlled refresh probes must enter before the UI requests cancellation.' }).toBe(true);
+}
+
 async function saveResult(filename: string, value: PrivateResult, create = false) {
   const file = await open(filename, constants.O_WRONLY | constants.O_NOFOLLOW | (create ? constants.O_CREAT | constants.O_EXCL : 0), 0o600);
   try {
     const status = await file.stat();
-    if (!status.isFile() || status.uid !== 0 || (status.mode & 0o777) !== 0o600 || status.nlink !== 1
+    if (!status.isFile() || status.uid !== process.getuid?.() || (status.mode & 0o777) !== 0o600 || status.nlink !== 1
       || await realpath(`/proc/self/fd/${file.fd}`) !== filename) throw new Error('The task browser result must remain private.');
     await file.truncate(0);
     await file.writeFile(`${JSON.stringify(value)}\n`, 'utf8');
     await file.sync();
   } finally { await file.close(); }
+}
+
+async function loginTaskAdministrator(page: Page, context: BrowserContext,
+  fixture: Pick<TasksFixture, 'Administrator' | 'Origin' | 'ResultPath'>, name: string, password: string,
+  result: PrivateResult, sensitive: string[]): Promise<Record<string, string>> {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/admin/tasks');
+  await expect(page.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
+  await page.getByLabel(/^Username/).fill(name);
+  await page.getByLabel(/^Password/).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Available tasks', exact: true })).toHaveAttribute('aria-selected', 'true');
+  const sessionResponse = await context.request.get('/admin/v1/session');
+  expect(sessionResponse.status()).toBe(200);
+  const session = await sessionResponse.json() as { CSRFToken: string; User: { Id: string } };
+  expect(session.User.Id).toBe(fixture.Administrator.Id);
+  const cookie = (await context.cookies()).find((value) => value.name === 'goby_session');
+  if (!cookie || typeof session.CSRFToken !== 'string' || !session.CSRFToken) throw new Error('The browser did not receive its independent administrator session.');
+  result.BrowserCookie = `goby_session=${cookie.value}`;
+  result.BrowserCSRF = session.CSRFToken;
+  result.BrowserSecrets = [cookie.value, result.BrowserCookie, session.CSRFToken];
+  sensitive.push(...result.BrowserSecrets);
+  const sessionsResponse = await context.request.get('/admin/v1/sessions?Kind=admin&Status=active&Limit=200');
+  expect(sessionsResponse.status()).toBe(200);
+  const current = (await sessionsResponse.json() as { Items: LoginSession[] }).Items.filter((login) => login.IsCurrent);
+  expect(current).toHaveLength(1);
+  result.BrowserSessionId = current[0].Id;
+  await saveResult(fixture.ResultPath, result);
+  return { Origin: fixture.Origin, 'X-CSRF-Token': session.CSRFToken };
 }
 
 function responseFor(page: Page, method: string, pathname: string, query: Record<string, string> = {}): Promise<Response> {
@@ -131,7 +249,7 @@ function responseFor(page: Page, method: string, pathname: string, query: Record
   });
 }
 
-async function readTask(request: APIRequestContext, fixture: TasksFixture): Promise<TaskDefinition> {
+async function readTask(request: APIRequestContext, fixture: Pick<TasksFixture, 'TaskId' | 'TaskKey'>): Promise<TaskDefinition> {
   const response = await request.get(taskPath(fixture.TaskId));
   expect(response.status()).toBe(200);
   const result = await response.json() as TaskDefinitionResponse;
@@ -140,7 +258,7 @@ async function readTask(request: APIRequestContext, fixture: TasksFixture): Prom
   return result.Task;
 }
 
-async function readRuns(request: APIRequestContext, fixture: TasksFixture): Promise<TaskRunsResponse> {
+async function readRuns(request: APIRequestContext, fixture: Pick<TasksFixture, 'TaskId'>): Promise<TaskRunsResponse> {
   const response = await request.get(`${taskPath(fixture.TaskId)}/runs?StartIndex=0&Limit=200`);
   expect(response.status()).toBe(200);
   const result = await response.json() as TaskRunsResponse;
@@ -156,7 +274,7 @@ async function readRun(request: APIRequestContext, id: string): Promise<TaskRunD
   return result;
 }
 
-async function completeRun(request: APIRequestContext, fixture: TasksFixture, id: string): Promise<TaskRunDetail> {
+async function completeRun(request: APIRequestContext, fixture: Pick<TasksFixture, 'TaskId' | 'Libraries'>, id: string): Promise<TaskRunDetail> {
   await expect.poll(async () => active((await readRun(request, id)).Run.State), {
     timeout: 90_000, intervals: [100, 250, 500, 1000], message: 'The real fixture task must reach a terminal state.',
   }).toBe(false);
@@ -180,7 +298,7 @@ async function completeRun(request: APIRequestContext, fixture: TasksFixture, id
   return observed;
 }
 
-async function waitForIdle(request: APIRequestContext, fixture: TasksFixture) {
+async function waitForIdle(request: APIRequestContext, fixture: Pick<TasksFixture, 'TaskId' | 'TaskKey'>) {
   await expect.poll(async () => (await readRuns(request, fixture)).Items.some((run) => active(run.State)), {
     timeout: 90_000, intervals: [100, 250, 500, 1000], message: 'All owned task runs must settle before continuing.',
   }).toBe(false);
@@ -218,7 +336,7 @@ async function timezone(page: Page, value: string) {
   await input.press('Escape');
 }
 
-async function previewSchedule(page: Page, fixture: TasksFixture): Promise<{ result: TaskSchedulePreview; input: TaskScheduleInput }> {
+async function previewSchedule(page: Page, fixture: Pick<TasksFixture, 'TaskId'>): Promise<{ result: TaskSchedulePreview; input: TaskScheduleInput }> {
   const response = responseFor(page, 'POST', `${taskPath(fixture.TaskId)}/triggers/preview`);
   await scheduleDialog(page).getByRole('button', { name: 'Preview schedule', exact: true }).click();
   const preview = await response;
@@ -231,7 +349,7 @@ async function previewSchedule(page: Page, fixture: TasksFixture): Promise<{ res
   return { result, input };
 }
 
-async function saveSchedule(page: Page, fixture: TasksFixture, previous: TaskDefinition): Promise<TaskDefinition> {
+async function saveSchedule(page: Page, fixture: Pick<TasksFixture, 'TaskId'>, previous: TaskDefinition): Promise<TaskDefinition> {
   const response = responseFor(page, 'PUT', `${taskPath(fixture.TaskId)}/triggers`);
   await scheduleDialog(page).getByRole('button', { name: 'Save schedule', exact: true }).click();
   const saved = await response;
@@ -310,6 +428,72 @@ function futureCalendar(serverTime: string) {
   return { daily: `${time}.1234567`, weekly: `${time}.7654321`, day: (date.getUTCDay() + 3) % 7 };
 }
 
+async function refreshPreservation(request: APIRequestContext, fixture: RefreshTaskFixture) {
+  const response = await request.get('/admin/v1/libraries');
+  expect(response.status()).toBe(200);
+  const libraries = await response.json() as LibrariesResponse;
+  expect(libraries.TotalRecordCount).toBe(2);
+  expect(libraries.Items.map((library) => library.Id).sort()).toEqual(fixture.Libraries.map((library) => library.Id).sort());
+  const catalog: MetadataItemsResponse[] = [];
+  const metadata: MetadataDetail[] = [];
+  for (const library of fixture.Libraries) {
+    const stored = libraries.Items.find((entry) => entry.Id === library.Id);
+    expect(stored?.Name).toBe(library.Name);
+    expect(stored?.Paths).toEqual([library.Path]);
+    const itemsResponse = await request.get(`/admin/v1/libraries/${library.Id}/items?StartIndex=0&Limit=200`);
+    expect(itemsResponse.status()).toBe(200);
+    const items = await itemsResponse.json() as MetadataItemsResponse;
+    expect(items.Library.Id).toBe(library.Id);
+    expect(items.TotalRecordCount).toBe(library.FileCount);
+    expect(items.Items).toHaveLength(library.FileCount);
+    expect(items.Items.every((item) => item.LibraryId === library.Id)).toBe(true);
+    catalog.push(items);
+    const preserved = items.Items.filter((item) => fixture.PreservedItemIds.includes(item.Id));
+    expect(preserved).toHaveLength(1);
+    const detailResponse = await request.get(`/admin/v1/items/${preserved[0].Id}/metadata`);
+    expect(detailResponse.status()).toBe(200);
+    const detail = await detailResponse.json() as MetadataDetail;
+    expect(detail.Item.Id).toBe(preserved[0].Id);
+    expect(detail.Item.LibraryId).toBe(library.Id);
+    metadata.push(detail);
+  }
+  return { libraries: libraries.Items.map(({ Id, Name, CollectionType, Paths }) => ({ Id, Name, CollectionType, Paths }))
+    .sort((left, right) => left.Id.localeCompare(right.Id)), catalog, metadata };
+}
+
+async function refreshJobs(request: APIRequestContext, fixture: RefreshTaskFixture, detail: TaskRunDetail) {
+  const response = await request.get('/admin/v1/jobs');
+  expect(response.status()).toBe(200);
+  const jobs = (await response.json() as { Items: Job[] }).Items;
+  expect(detail.Run.TaskId).toBe(fixture.TaskId);
+  expect(detail.Children.Items.map((child) => child.LibraryId).sort()).toEqual(fixture.Libraries.map((library) => library.Id).sort());
+  const linked = detail.Children.Items.filter((child) => child.ScanJobId !== null);
+  expect(linked.length).toBeGreaterThan(0);
+  for (const child of linked) {
+    const job = jobs.find((entry) => entry.Id === child.ScanJobId);
+    expect(job).toBeDefined();
+    expect(job?.LibraryId).toBe(child.LibraryId);
+    expect(job?.ForceProbe).toBe(true);
+    expect(job?.Status).toBe(child.State);
+    if (child.State === 'completed') {
+      expect(job?.Scanned).toBe(fixture.Libraries.find((library) => library.Id === child.LibraryId)?.FileCount);
+      expect(job?.Added).toBe(0);
+      expect(job?.Error).toBe('');
+    }
+  }
+}
+
+async function showRefreshRunState(page: Page, detail: TaskRunDetail) {
+  await expect(runDialog(page)).toHaveAccessibleName('Run details · Refresh media details');
+  await expect(runDialog(page).getByText(detail.Run.Id, { exact: true })).toBeVisible();
+  const state = detail.Run.State[0].toUpperCase() + detail.Run.State.slice(1);
+  await expect(runDialog(page).getByText(state, { exact: true }))
+    .toHaveCount(1 + detail.Children.Items.filter((child) => child.State === detail.Run.State).length, { timeout: 15_000 });
+  await expect(runDialog(page).getByRole('progressbar', { name: 'Library progress', exact: true }))
+    .toHaveAttribute('aria-valuetext', `${detail.Run.TerminalChildren} of 2 libraries finished`);
+  await expect(runDialog(page).getByRole('list', { name: 'Task library work', exact: true }).getByRole('listitem')).toHaveCount(2);
+}
+
 // The isolated runner creates real libraries and media, and owns both restarts
 // and complete credential/database cleanup. This journey never uses mock data.
 // Fault injection drops a real committed response; subsequent assertions query
@@ -339,30 +523,7 @@ test('isolated native scheduled tasks, durable admissions, schedule editing, and
   let keepFutureRules = false;
   let task: TaskDefinition;
   try {
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto('/admin/tasks');
-    await expect(page.getByRole('heading', { name: 'Sign in to Goby', exact: true })).toBeVisible();
-    await page.getByLabel(/^Username/).fill(name);
-    await page.getByLabel(/^Password/).fill(password);
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(page.getByRole('tab', { name: 'Available tasks', exact: true })).toHaveAttribute('aria-selected', 'true');
-    const sessionResponse = await context.request.get('/admin/v1/session');
-    expect(sessionResponse.status()).toBe(200);
-    const session = await sessionResponse.json() as { CSRFToken: string; User: { Id: string } };
-    expect(session.User.Id).toBe(fixture.Administrator.Id);
-    const cookie = (await context.cookies()).find((value) => value.name === 'goby_session');
-    if (!cookie || typeof session.CSRFToken !== 'string' || !session.CSRFToken) throw new Error('The browser did not receive its independent administrator session.');
-    result.BrowserCookie = `goby_session=${cookie.value}`;
-    result.BrowserCSRF = session.CSRFToken;
-    result.BrowserSecrets = [cookie.value, result.BrowserCookie, session.CSRFToken];
-    sensitive.push(...result.BrowserSecrets);
-    const sessionsResponse = await context.request.get('/admin/v1/sessions?Kind=admin&Status=active&Limit=200');
-    expect(sessionsResponse.status()).toBe(200);
-    const current = (await sessionsResponse.json() as { Items: LoginSession[] }).Items.filter((login) => login.IsCurrent);
-    expect(current).toHaveLength(1);
-    result.BrowserSessionId = current[0].Id;
-    await saveResult(fixture.ResultPath, result);
-    nativeHeaders = { Origin: fixture.Origin, 'X-CSRF-Token': session.CSRFToken };
+    nativeHeaders = await loginTaskAdministrator(page, context, fixture, name, password, result, sensitive);
     task = await readTask(context.request, fixture);
     expect(task.Triggers).toEqual([]);
     expect(task.CurrentRun).toBeNull();
@@ -671,5 +832,254 @@ test('isolated native scheduled tasks, durable admissions, schedule editing, and
       expect(cleared.status()).toBe(200);
     }
     await saveResult(fixture.ResultPath, result);
+  }
+});
+
+// A fresh Go integration fixture owns the database, HTTP server, media, and
+// prober. The first manual refresh completes; the second blocks in the prober
+// until its context is cancelled. Later scheduled refreshes complete normally.
+// The driver also verifies filesystem and UserData preservation and always
+// disposes the fixture, including sessions retained in the private result.
+test('fresh native refresh task completes, cancels active library work, and runs a removable interval', async ({ page, context }, testInfo) => {
+  test.skip(process.env.GOBY_SMOKE_REFRESH_TASK_DISPOSABLE_DATABASE !== '1'
+    || process.env.GOBY_SMOKE_REFRESH_TASK_DEDICATED_ADMIN !== '1',
+  'The integration driver must confirm its fresh database and administrator.');
+  test.setTimeout(180_000);
+  const name = process.env.GOBY_SMOKE_NAME;
+  const password = process.env.GOBY_SMOKE_PASSWORD;
+  const baseURL = process.env.GOBY_SMOKE_BASE_URL;
+  const manifest = process.env.GOBY_SMOKE_REFRESH_TASK_FIXTURE_MANIFEST;
+  if (!name || !password || !baseURL || !manifest) throw new Error('The fresh refresh task environment is incomplete.');
+  const fixture = await loadRefreshTaskFixture(manifest, baseURL);
+  expect(new URL(testInfo.project.use.baseURL ?? '').origin).toBe(fixture.Origin);
+  expect(name).toBe(fixture.Administrator.Name);
+  const result: PrivateResult = { Marker: 'goby-refresh-task-browser-result-v1', RunId: fixture.RunId, Complete: false,
+    TaskId: fixture.TaskId, ScanTaskId: fixture.ScanTaskId, Libraries: fixture.Libraries, BrowserSecrets: [],
+    IntervalRunIds: [], Checks: {}, Observations: { ActiveStopDialogObserved: false } };
+  await saveResult(fixture.ResultPath, result, true);
+  const pageErrors: string[] = [];
+  const writes: { method: string; pathname: string }[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('request', (request) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method())) {
+      writes.push({ method: request.method(), pathname: new URL(request.url()).pathname });
+    }
+  });
+  let nativeHeaders: Record<string, string> | undefined;
+  let journeyComplete = false;
+  let primaryFailed = false;
+  const markStage = async (stage: string) => {
+    result.Observations.Stage = stage;
+    await saveResult(fixture.ResultPath, result);
+  };
+  try {
+    await markStage('login');
+    nativeHeaders = await loginTaskAdministrator(page, context, fixture, name, password, result, [password]);
+    const definitionsResponse = await context.request.get('/admin/v1/tasks');
+    expect(definitionsResponse.status()).toBe(200);
+    const definitions = await definitionsResponse.json() as TaskDefinitionsResponse;
+    expect(definitions.Items.filter((task) => task.Key === fixture.TaskKey).map((task) => task.Id)).toEqual([fixture.TaskId]);
+    expect(definitions.Items.filter((task) => task.Key === 'library.scan').map((task) => task.Id)).toEqual([fixture.ScanTaskId]);
+    let task = await readTask(context.request, fixture);
+    expect(task.Name).toBe('Refresh media details');
+    expect(task.Enabled).toBe(true);
+    expect(task.IsHidden).toBe(false);
+    expect(task.Triggers).toEqual([]);
+    expect(task.CurrentRun).toBeNull();
+    expect((await readRuns(context.request, fixture)).TotalRecordCount).toBe(0);
+    const scan = { TaskId: fixture.ScanTaskId, TaskKey: 'library.scan' };
+    const scanBefore = await readTask(context.request, scan);
+    const scanRunsBefore = await readRuns(context.request, scan);
+    expect(scanBefore.Triggers).toEqual([]);
+    expect(scanBefore.CurrentRun).toBeNull();
+    expect(scanRunsBefore.TotalRecordCount).toBe(0);
+    const preserved = await refreshPreservation(context.request, fixture);
+    await expect(taskCard(page, 'Refresh media details')).toBeVisible();
+    await expect(taskCard(page, scanBefore.Name)).toBeVisible();
+
+    await test.step('start the refresh card and read completed work for every registered library', async () => {
+      await markStage('manual-refresh');
+      const response = responseFor(page, 'POST', `${taskPath(task.Id)}/runs`);
+      await taskCard(page, task.Name).getByRole('button', { name: 'Start task', exact: true }).click();
+      const started = await response;
+      expect(started.status()).toBe(202);
+      const admission = await started.json() as TaskAdmissionResponse;
+      expect(admission.Admitted).toBe(true);
+      expect(admission.Run.TaskId).toBe(fixture.TaskId);
+      expect(admission.Run.Source).toBe('manual');
+      const input = started.request().postDataJSON() as { RequestId: string };
+      expect(Object.keys(input)).toEqual(['RequestId']);
+      expect(input.RequestId).toMatch(uuidPattern);
+      result.ManualRunId = admission.Run.Id;
+      await saveResult(fixture.ResultPath, result);
+      const completed = await completeRun(context.request, fixture, admission.Run.Id);
+      await refreshJobs(context.request, fixture, completed);
+      await showRefreshRunState(page, completed);
+      await expect(runDialog(page).getByRole('button', { name: 'Stop run', exact: true })).toHaveCount(0);
+      await runDialog(page).getByRole('button', { name: 'Close', exact: true }).click();
+      result.Checks.ManualRefreshAllLibrariesForceProbe = true;
+    });
+
+    await test.step('confirm a real stop while the second refresh is probing media', async () => {
+      await markStage('cancel-refresh');
+      await refreshTasks(page);
+      const response = responseFor(page, 'POST', `${taskPath(task.Id)}/runs`);
+      await taskCard(page, task.Name).getByRole('button', { name: 'Start task', exact: true }).click();
+      const started = await response;
+      expect(started.status()).toBe(202);
+      const admission = await started.json() as TaskAdmissionResponse;
+      expect(admission.Admitted).toBe(true);
+      expect(admission.Run.TaskId).toBe(fixture.TaskId);
+      expect(admission.Run.Source).toBe('manual');
+      expect(admission.Run.Id).not.toBe(result.ManualRunId);
+      result.CancelledRunId = admission.Run.Id;
+      await saveResult(fixture.ResultPath, result);
+      await waitForCancellationProbes(fixture);
+      await expect.poll(async () => {
+        const probing = await readRun(context.request, admission.Run.Id);
+        return probing.Run.State === 'running' && probing.Children.Items.length === 2
+          && probing.Children.Items.every((child) => child.State === 'running' && child.ScanJobId !== null);
+      }, { timeout: 10_000, intervals: [100, 250, 500], message: 'Both gated probes must also appear as running library work.' }).toBe(true);
+      await runDialog(page).getByRole('button', { name: 'Stop run', exact: true }).click();
+      const confirmation = page.getByRole('dialog', { name: 'Stop this run?', exact: true });
+      await expect(confirmation).toBeVisible();
+      result.Observations.ActiveStopDialogObserved = true;
+      const cancelledResponse = responseFor(page, 'POST', `${runPath(admission.Run.Id)}/cancel`);
+      await confirmation.getByRole('button', { name: 'Stop run', exact: true }).click();
+      const cancelled = await cancelledResponse;
+      expect(cancelled.status()).toBe(202);
+      const acknowledged = (await cancelled.json() as TaskRunResponse).Run;
+      expect(acknowledged.Id).toBe(admission.Run.Id);
+      expect(['stopping', 'cancelled']).toContain(acknowledged.State);
+      await expect(confirmation).toHaveCount(0);
+      await expect.poll(async () => (await readRun(context.request, admission.Run.Id)).Run.State, {
+        timeout: 30_000, intervals: [100, 250, 500], message: 'Confirmed cancellation must end the owned refresh run.',
+      }).toBe('cancelled');
+      const stopped = await readRun(context.request, admission.Run.Id);
+      expect(stopped.Run.StopReason).toBe('administrator');
+      expect(stopped.Run.StopRequestedAt).not.toBeNull();
+      expect(stopped.Run.TotalChildren).toBe(2);
+      expect(stopped.Run.TerminalChildren).toBe(2);
+      expect(stopped.Run.CancelledChildren).toBeGreaterThan(0);
+      expect(stopped.Run.FailedChildren + stopped.Run.InterruptedChildren + stopped.Run.UnavailableChildren).toBe(0);
+      await refreshJobs(context.request, fixture, stopped);
+      await showRefreshRunState(page, stopped);
+      await expect(runDialog(page).getByText('Stop reason: administrator', { exact: true })).toBeVisible();
+      await runDialog(page).getByRole('button', { name: 'Close', exact: true }).click();
+      result.Checks.ActiveRefreshCancelledThroughRunDialog = true;
+    });
+
+    await test.step('save a 30-second interval, observe one real run, and clear the interval', async () => {
+      await markStage('open-interval-editor');
+      await waitForIdle(context.request, fixture);
+      await refreshTasks(page);
+      task = await openSchedule(page, task);
+      expect(task.ScheduleTimezone).toBe('UTC');
+      await markStage('configure-interval');
+      await scheduleDialog(page).getByRole('button', { name: 'Add trigger', exact: true }).click();
+      await choose(page, triggerRegion(page, 0), 'When to run', 'At an interval');
+      await choose(page, triggerRegion(page, 0), 'Interval unit', 'Seconds');
+      await triggerRegion(page, 0).getByRole('textbox', { name: 'Interval', exact: true }).fill('30');
+      await markStage('preview-interval');
+      const preview = await previewSchedule(page, fixture);
+      expect(preview.input.ScheduleTimezone).toBe('UTC');
+      expect(preview.input.Triggers).toHaveLength(1);
+      expect(preview.input.Triggers[0].Kind).toBe('interval');
+      expect(preview.input.Triggers[0].IntervalTicks).toBe('300000000');
+      expect(preview.result.Items[0].Occurrences).toHaveLength(3);
+      const before = new Set((await readRuns(context.request, fixture)).Items.map((run) => run.Id));
+      expect([...before].sort()).toEqual([result.ManualRunId, result.CancelledRunId].sort());
+      await markStage('save-interval');
+      task = await saveSchedule(page, fixture, task);
+      expect(task.Triggers).toHaveLength(1);
+      expect(task.Triggers[0].IntervalTicks).toBe('300000000');
+      await markStage('wait-for-interval');
+      await expect.poll(async () => (await readRuns(context.request, fixture)).Items
+        .some((run) => !before.has(run.Id) && run.Source === 'schedule'), {
+        timeout: 45_000, intervals: [100, 250, 500], message: 'The refresh interval must admit a real scheduled run.',
+      }).toBe(true);
+      const triggered = (await readRuns(context.request, fixture)).Items.filter((run) => !before.has(run.Id) && run.Source === 'schedule');
+      expect(triggered).toHaveLength(1);
+      const completedInterval = await completeRun(context.request, fixture, triggered[0].Id);
+      await markStage('remove-interval');
+      await removeTriggers(page);
+      await previewSchedule(page, fixture);
+      task = await saveSchedule(page, fixture, task);
+      expect(task.Triggers).toEqual([]);
+      expect(task.NextRunAt).toBeNull();
+      await scheduleDialog(page).getByRole('button', { name: 'Close', exact: true }).click();
+      await waitForIdle(context.request, fixture);
+      const scheduled = (await readRuns(context.request, fixture)).Items.filter((run) => !before.has(run.Id) && run.Source === 'schedule');
+      expect(scheduled).toHaveLength(1);
+      expect(scheduled[0].Id).toBe(completedInterval.Run.Id);
+      result.IntervalRunIds = scheduled.map((run) => run.Id);
+      await saveResult(fixture.ResultPath, result);
+      await refreshJobs(context.request, fixture, completedInterval);
+      await refreshTasks(page);
+      await taskCard(page, task.Name).getByRole('button', { name: 'View runs', exact: true }).click();
+      const row = runDialog(page).getByRole('table', { name: 'Task runs', exact: true }).getByRole('row')
+        .filter({ has: page.getByText('schedule', { exact: true }) }).first();
+      await row.getByRole('button', { name: 'View run', exact: true }).click();
+      await showRefreshRunState(page, await readRun(context.request, scheduled[0].Id));
+      await runDialog(page).getByRole('button', { name: 'Close', exact: true }).click();
+      result.Checks.RefreshIntervalFiredAndRemoved = true;
+    });
+
+    await markStage('verify-final-state');
+    const finalRuns = await readRuns(context.request, fixture);
+    expect(finalRuns.TotalRecordCount).toBe(3);
+    expect(finalRuns.Items.map(({ Id, Source, State }) => ({ Id, Source, State })).sort((left, right) => left.Id.localeCompare(right.Id))).toEqual([
+      { Id: result.ManualRunId, Source: 'manual', State: 'completed' },
+      { Id: result.CancelledRunId, Source: 'manual', State: 'cancelled' },
+      { Id: result.IntervalRunIds[0], Source: 'schedule', State: 'completed' },
+    ].sort((left, right) => left.Id!.localeCompare(right.Id!)));
+    expect(await refreshPreservation(context.request, fixture)).toEqual(preserved);
+    expect(await readTask(context.request, scan)).toEqual(scanBefore);
+    expect(await readRuns(context.request, scan)).toEqual(scanRunsBefore);
+    expect(writes.every(({ method, pathname }) => (method === 'POST' && ['/admin/v1/session',
+      `${taskPath(fixture.TaskId)}/runs`, `${taskPath(fixture.TaskId)}/triggers/preview`,
+      `${runPath(result.CancelledRunId!)}/cancel`].includes(pathname))
+      || (method === 'PUT' && pathname === `${taskPath(fixture.TaskId)}/triggers`))).toBe(true);
+    expect(pageErrors).toEqual([]);
+    task = await readTask(context.request, fixture);
+    expect(task.Triggers).toEqual([]);
+    expect(task.CurrentRun).toBeNull();
+    result.FinalRevision = task.Revision; result.FinalTriggers = task.Triggers; result.FinalTimezone = task.ScheduleTimezone;
+    result.Checks.CatalogAndMetadataPreserved = true;
+    result.Checks.OrdinaryScanTaskUnchanged = true;
+    result.Checks.NativeTaskWritesOnly = true;
+    result.Checks.NoPageErrors = true;
+    journeyComplete = true;
+  } catch (error) {
+    primaryFailed = true;
+    result.Failure = { Stage: result.Observations.Stage ?? 'unknown', Name: error instanceof Error ? error.name : 'UnknownError' };
+    throw error;
+  } finally {
+    try {
+      result.Observations.Stage = 'cleanup';
+      if (nativeHeaders) {
+        const current = await readTask(context.request, fixture);
+        if (current.Triggers.length) {
+          const cleared = await context.request.put(`${taskPath(fixture.TaskId)}/triggers`, {
+            headers: nativeHeaders, data: { Revision: current.Revision, ScheduleTimezone: 'UTC', Triggers: [] },
+          });
+          expect(cleared.status()).toBe(200);
+        }
+        for (const run of (await readRuns(context.request, fixture)).Items.filter((entry) => active(entry.State))) {
+          const cancelled = await context.request.post(`${runPath(run.Id)}/cancel`, { headers: nativeHeaders, data: {} });
+          expect(cancelled.status()).toBe(202);
+        }
+        await waitForIdle(context.request, fixture);
+        result.Checks.NoRemainingTriggersOrActiveRuns = true;
+      }
+      expect(pageErrors).toEqual([]);
+      result.Complete = journeyComplete;
+    } catch (error) {
+      result.CleanupFailure = { Name: error instanceof Error ? error.name : 'UnknownError' };
+      if (!primaryFailed) throw error;
+    } finally {
+      try { await saveResult(fixture.ResultPath, result); }
+      catch (error) { if (!primaryFailed) throw error; }
+    }
   }
 });

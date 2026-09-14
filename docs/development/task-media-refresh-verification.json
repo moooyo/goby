@@ -1,0 +1,100 @@
+{
+  "kind": "native-media-refresh-focused-verification",
+  "version": 1,
+  "status": "focused_acceptance_verified_final_regression_pending",
+  "date": "2026-09-15",
+  "taskKey": "library.refresh_media",
+  "schemaVersion": 28,
+  "scope": {
+    "nativeAdministratorTask": true,
+    "ordinaryLibraryScanAndCompatibilityTaskPreserved": true,
+    "newAutomaticTriggersInstalledByRegistration": false,
+    "mainOrCandidateDeploymentPerformed": false,
+    "completeM5OrM2ThroughM6Claimed": false,
+    "finalChangedSourceFullRegressionComplete": false
+  },
+  "focusedTests": {
+    "passedGoTopLevelAcrossTwoPhases": 110,
+    "retainedOrdinaryPhase": {
+      "remoteScope": "/opt/goby-test/m5-refresh-corrected-20260914",
+      "sourceArchiveSha256": "1ceba64684eee23893828fc36d791dcf1403672a6cc8c8157e9d2acf90b67414",
+      "passed": {"tasks": 63, "library": 27, "server": 19},
+      "allThreePackagesPassed": true,
+      "reviewSha256": "a5b55a8d13680001e7c8022fa47f60b2a70338369f3033e885439e1b2bbbdf9f",
+      "failedBrowserExcluded": true
+    },
+    "newBrowserPhase": {
+      "remoteScope": "/opt/goby-test/m5-refresh-browser-20260915",
+      "sourceArchiveSha256": "419e734a637902c15687b3dc7e5912afc1bd7e6c27bc2a6f9e53bc10070cce55",
+      "goTopLevelPassed": 1,
+      "goFailed": 0,
+      "goSkipped": 0,
+      "playwrightCasesPassed": 1,
+      "playwrightCountIsSeparateFromGoCount": true
+    },
+    "sourceBridge": {
+      "onlyBrowserDriverAndE2eTestChangedBetweenPhases": true,
+      "ordinaryGoInputsUnchanged": true,
+      "embeddedAdministratorAssetsUnchanged": 57,
+      "productionSourceUnchangedBetweenPhases": true,
+      "singleRunOf110Claimed": false,
+      "fullSuiteClaimed": false
+    }
+  },
+  "browserAcceptance": {
+    "goDriverComplete": true,
+    "playwrightComplete": true,
+    "allEightWorkflowChecksPassed": true,
+    "manualRefreshRuns": 1,
+    "actuallyCancelledRefreshRuns": 1,
+    "scheduledRefreshRuns": 1,
+    "intervalSeconds": 30,
+    "triggerRetiredAfterActualRun": true,
+    "taskRuns": 3,
+    "ownedTaskChildren": 6,
+    "realProbeCalls": 6,
+    "cancelledProbeGates": 2,
+    "manualRequestMappings": 2,
+    "requestIdReplayPerformedByBrowser": false,
+    "ordinaryCachedScanRetainedMissingGenreAssociation": true,
+    "completedRefreshRestoredExpectedGenreAssociations": true,
+    "metadataAndUserDataIncludingXminSnapshotExact": true,
+    "manualOverridesAndLockedValuesPreserved": true,
+    "mediaAndNfoPreservationAssertionsPassed": true,
+    "browserLogoutStatus": 204,
+    "sameCookieStatus": 401,
+    "emergencySessionRevocations": 0,
+    "ownedSessionsRevoked": true,
+    "pageErrors": 0
+  },
+  "independentReviewAndClosure": {
+    "passed": true,
+    "ownedPostgresStopped": true,
+    "privatePostgresBindRemoved": true,
+    "recursiveCgroupEmpty": true,
+    "ramUnmountedNormally": true,
+    "deploymentLockReleased": true,
+    "protectedCandidateRuntimeUnchanged": true,
+    "rawArtifactsRemainRemotePrivate": true,
+    "earlierTestAndCapacityFailuresPreserved": true,
+    "earlierFailuresReclassified": false
+  },
+  "evidence": {
+    "remoteScope": "/opt/goby-test/m5-refresh-browser-20260915",
+    "source-preparation.json": "663738cc8b3afcc2d74d53d451c42dd9ec3c7b7a620530083483d1585f2c8dcf",
+    "private/input.json": "ee93341937e01ac708b7f7245b7deae5cecb37451f04c44aa637da811c957332",
+    "preparation.json": "5dbde59373c9c70630b512784a6cb0740449fdf0cd80774ce6aec51ba85e1590",
+    "execution.json": "b6d3b631a9249a984427afd75368c5e19ef79d7dd72eda55e352bbdbf563fd76",
+    "closure.json": "a0b616dd72a747f84abe03aa1fea3a80e936dc5d1db88b5e392e67f931bf6851",
+    "independent-review.json": "ce7160b1cc631f34f737867e20c95af2d20be5709ef73cd752de38c3aaec189c"
+  },
+  "limitations": [
+    "Final media stat/hash preservation is established by the executed Go assertions; no separate MediaAfter artifact was saved.",
+    "This scoped acceptance is not the final-source ordinary full regression, a tagged full suite, a release deployment or complete M5 acceptance.",
+    "The original browser timeout has not been uniquely attributed. Its failed outcome remains preserved."
+  ],
+  "nextRequired": [
+    "Freeze the final intended source and verify all 25 ordinary packages with race instrumentation and the ordinary Linux build on test-env.",
+    "Independently review and close that full regression, update delivery records and commit the verified M5 increment."
+  ]
+}

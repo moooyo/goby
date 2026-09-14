@@ -1,18 +1,31 @@
 # Tasks API
 
-**M5f task increment accepted.** This describes the current source contract.
-The [complete Go race run](../development/m5f-full-race-summary.json)
-and [isolated browser/restart workflow](../development/m5f-tasks-browser.json)
-have passed, as have [deployment](../development/m5f-deployment-evidence.json)
-and the [deployed workflow](../development/m5f-deployed-tasks.json). See
-[implementation and scheduling](../development/tasks.md) for persistence,
-ownership, recovery, and timing rules.
+**Historical M5f normal-scan increment accepted; media-refresh increment pending.**
+The [complete Go race run](../development/m5f-full-race-summary.json),
+[isolated browser/restart workflow](../development/m5f-tasks-browser.json),
+[deployment](../development/m5f-deployment-evidence.json) and
+[deployed workflow](../development/m5f-deployed-tasks.json) passed for the
+original `library.scan` contract. They do not accept the new fixed native-only
+executor. Its implementation and verification are pending. See
+[implementation and scheduling](../development/tasks.md) for ownership and
+timing rules, and the [media-refresh plan](../development/task-media-refresh-plan.md)
+for the new acceptance scope.
 
-The only registered executor is `library.scan`, named `Scan media library`,
-with compatibility key `RefreshLibrary`. It performs normal scans of every
-library present when a new run is admitted. Definitions are stable operations;
-runs are executions; children are the run's snapshotted libraries. Existing
-per-library scan jobs and forced media refresh remain separate operations.
+The incremental contract has two fixed executors; it adds no public route,
+request field, DTO field or schema migration. The database remains schema 28.
+
+| Native key | Name | Scan mode | Emby exposure |
+| --- | --- | --- | --- |
+| `library.scan` | `Scan media library` | Normal cached scan | Existing `RefreshLibrary` key |
+| `library.refresh_media` | `Refresh media details` | Forced media probing for each admitted library | Native only; internal Emby key is empty |
+
+Each snapshots every library present at admission. Definitions are stable
+operations; runs are executions; children are the run's snapshotted libraries.
+Both start as manual-only definitions without automatic schedules. Existing
+IDs, enabled state, revisions, schedules and history of the two supported
+definitions are preserved.
+Per-library scan/refresh jobs remain separate operations. Neither the existing
+`RefreshLibrary` task nor `Library/Refresh` becomes a forced refresh.
 
 ## Native administrator routes
 
@@ -68,6 +81,12 @@ has no timed next occurrence. `Enabled` is separate from having schedules;
 there is no public endpoint here for changing it. DTOs omit bearer credentials,
 request fingerprints, and internal actor audit identities.
 
+Discover `library.refresh_media` by the native Task's `Key` and use its returned
+`Id`. The start body remains `{}` or `{RequestId}`: do not send `ForceProbe`,
+an executor name or arbitrary options. The persisted run's `task_key` fixes
+the mode. Native Run/Child DTOs gain no `ForceProbe` field; a child links to
+the existing scan-job DTO by `ScanJobId`, where the job's `ForceProbe` is visible.
+
 Native run states are `pending`, `running`, `stopping`, `completed`, `failed`,
 `cancelled`, and `interrupted`. Child states are `waiting`, `queued`, `running`,
 `completed`, `failed`, `cancelled`, `unavailable`, and `interrupted`.
@@ -91,6 +110,13 @@ the recorded run even after completion or restart. Each coalesced request gets
 its own durable receipt; `Run.RequestId` still describes the originating run
 request. Reusing a receipt for different input returns `409 request_conflict`.
 Without a receipt, a retry after the previous run finishes can start new work.
+
+The fingerprint uses the actual executor key. Existing `library.scan` requests
+keep their previous fingerprint bytes and replay semantics. A refresh run
+cannot be rebound to a normal scan by later definition reads. Normal and forced
+definitions have separate active-run/receipt identities, while both use the
+same bounded scanner. If an independent scan already owns a library, a task's
+child waits; it must not adopt or cancel that independent job.
 
 Native cancellation is by run ID and is idempotent for a known terminal run.
 It persists stop flags before returning; the coordinator then cancels only
@@ -116,7 +142,11 @@ explicit `ScheduleTimezone`, and the complete `Triggers` array. For example:
 
 Use UTC or a loadable explicit IANA timezone, at most 128 bytes. `Local`,
 filesystem paths, `posix/` and `right/` names are rejected. At most 32 rules
-are accepted. Every rule requires `Kind`; the only optional fields are
+are accepted per definition, not 64 rules in one request. The two fixed
+definitions therefore have at most 64 rules for startup initialization.
+Timed dispatch selects due work fairly across both definitions; a small batch
+must not starve one behind the other. Every rule requires `Kind`; the only
+optional fields are
 `IntervalTicks`, `TimeOfDayTicks`, `DayOfWeek`, and `MaxRuntimeTicks`.
 Irrelevant fields must be absent or null, not populated.
 
@@ -163,6 +193,13 @@ credentials. Key authorization is a Goby implementation contract; the reference
 task studies did not test application-key requests. Mutations revalidate live
 authority in the owned database transaction.
 
+Only definitions with an approved compatibility key are exposed here.
+`library.refresh_media` is absent from Emby task lists and cannot be read,
+started, stopped or scheduled through an Emby route even if its native ID is
+known. Authorized compatibility callers receive the existing unknown-task
+response for that ID. No new Emby key or alias is introduced; `RefreshLibrary`
+continues to perform only normal scans.
+
 | Method and canonical path | Success |
 | --- | --- |
 | `GET /emby/ScheduledTasks` | `200`, bare TaskInfo array |
@@ -182,7 +219,8 @@ task routes accept only the declared
 4 KiB. No paging envelope or placeholder reference tasks are returned.
 
 TaskInfo contains `Id`, `Name`, `Key`, `Description`, `Category`, `IsHidden`,
-`State`, and `Triggers`. The current executor emits `Key: "RefreshLibrary"`.
+`State`, and `Triggers`. The normal-scan executor emits `Key: "RefreshLibrary"`;
+the native-only refresh definition emits no TaskInfo.
 Pending/running native runs project as `Running`, stopping as `Cancelling`,
 and no active run as `Idle`. Active progress is the percentage of terminal
 library children, not estimated per-file progress. `CurrentProgressPercentage`

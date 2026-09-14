@@ -865,7 +865,9 @@ func persistThemeFile(ctx context.Context, tx pgx.Tx, file *preparedThemeFile) e
 	if err := writeScannedMusicSource(ctx, tx, file.id, file.itemType, file.input.probe); err != nil {
 		return err
 	}
-	return syncScannedMetadata(ctx, tx, file.id, scannedMetadataOptions{ForceEntities: file.input.stored.id == ""})
+	// Theme and extra files share the same successful-refresh repair contract;
+	// the projection still contains only this resource's own accepted metadata.
+	return syncScannedMetadata(ctx, tx, file.id, scannedMetadataOptions{ForceEntities: file.input.stored.id == "" || file.state.task.job.ForceProbe})
 }
 
 func uniqueThemeIDs(values []string) []string {
