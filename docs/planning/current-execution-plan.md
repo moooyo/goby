@@ -1,8 +1,9 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after ordinary full-regression continuation, independent
-review and evidence/resource closure. Status: **25 packages complete with one
-explicit profile skip; independent nonroot candidate admission is next**.
+Reviewed on 2026-09-14 after independent review of the fresh nonroot candidate's
+initial inspection, seed and native admission. Status: **25 ordinary packages
+complete with one explicit profile skip; fresh embedded candidate admitted and
+independently reviewed; client-video and complete release gates remain open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -53,17 +54,75 @@ the lock closed. The source archive remains stored once in the first scope.
 Original timeout/archive-capacity failures remain preserved. Two older closed
 build caches were reclaimed after their zero-command lock rejection was
 preserved, without changing source/modules/logs/databases/artifacts. The final
-closure observed 1,561,907,200 free root bytes; future admission still needs a
-fresh capacity check. The next independent nonroot embedded-candidate helper
-is prepared and guard-tested: 38 corrected preparation guards and 8 seed,
-8 reconcile and 7 runtime guards passed, separately from the Go 2,276 count.
-The original test assertion matching UnsetEnvironment is retained. The actual
-read-only product gate selected the embedded `59096592...` binary and no external admin
-assets. Old-pinned seed/runtime/admission consumers still need adaptation and
-new inputs; no provision, seed or admission has run.
+closure observed 1,561,907,200 free root bytes; future work still needs a
+fresh capacity check. That regression checkpoint retains its original
+pre-provision state and 61 guard results.
 
-Candidate admission does not wait for the paused mount
-experiment or unresolved video diagnosis. Later product edits require their
+The later [fresh-candidate checkpoint](../development/fresh-embedded-candidate-checkpoint.json)
+records one actual independent nonroot provision using embedded `59096592...`,
+57 administrator assets and no external administrator directory. The app and
+PostgreSQL use separate nonroot accounts. Provisioning observed schema 28,
+28 migrations, zero users and 1,481,416,704 free root bytes. The candidate's
+direct HTTP port is 28698; the reserved browser origin on 28696 does not establish
+a gateway. Preserve this installation and its private manifest. Current remote
+operator guards passed 42 preparation, 31 inspector, 83 seed, 39 admission and
+18 legacy TV checks: 213 in total. Superseded guard revisions are not counted
+again, and these results remain separate from the Go 2,276 count. The final
+seed revision adds bounded private failure capture; the admission revision adds
+a private runtime-inspection failure sink without expanding business budgets.
+
+The original initial-inspection attempts remain failed. The first made no SQL
+or HTTP call: `systemctl show` omitted empty PostgreSQL `EnvironmentFiles`.
+Typed D-Bus reads established that property and unchanged unit identity.
+The corrected second attempt made one SQL call and no HTTP call, then rejected
+unrecorded command output. A separate bounded read-only diagnostic established
+that `PGPASSFILE=/dev/null` emits a 55-byte warning even when psql exits 0.
+The diagnostic's frontend/backend closed, no other postgres/psql backend
+remained and the postmaster identity stayed unchanged. This diagnosis does
+not relabel the original failed inspection or its incomplete closure record.
+
+The reviewed correction uses an explicitly absent password-file path within
+the owned scope, retains strict stderr checks and captures failed-command
+outputs and exit facts. The corrected initial inspection passed, with independent
+review: nine SQL calls, 63 HTTP requests and 1,107,438 response bytes checked all
+57 embedded assets and five HTML references. It made zero business writes,
+preserved process/protected identities and closed its readers. This new result
+does not rewrite either original failure.
+
+One fresh seed then passed and was independently reviewed: 49 normal requests
+plus four cleanup requests, 14 independent media copies totaling 201,156,949
+bytes, eight users, three libraries/scans, ten public catalog DTOs and thirteen
+stored items. Both owned credentials completed logout 204 / exact-credential
+401 checks and stored revocation; no playback ran. The review confirms seven
+closed SQL frontend commands, four cluster-identity and 109 server/listener
+checks. It does not invent per-SQL backend-absence receipts or a final complete
+PostgreSQL process-identity receipt that this seed did not record.
+
+The same candidate's native admission exited 0 after 601,357 milliseconds.
+Its final receipt reports `admitted_for_core_client` and
+`candidateAdmissionComplete=true`, with 82 normal and six cleanup requests
+(88 actual requests), no failure and no cleanup failures. Its inactive restore
+stage remains retained. The 600-second health window and 129-request cap were
+unchanged; the cap is not an actual request count. Independent saved-evidence
+review passed, confirming all 88 HTTP exchanges, eleven health samples spanning
+exactly 600,000 milliseconds, nine TV checks and all three logout 204 /
+same-token 401 pairs with stored revocation. It verified the declared source
+delta, a matching 290,038-byte backup download, the retained cancelled stage,
+and reader/runtime evidence. `clientAcceptance=false` remains explicit.
+Inspection, seed and this admission input are consumed;
+no repeat, reset, reprovision or old-actor replay is queued.
+
+A separate post-admission metadata checkpoint matches all five protected
+identities and the candidate/PostgreSQL PID, boot, start ticks, UID, executable
+inode, cgroup and listeners to their provisioned identities. Both owned libpq
+password-file paths remain absent and its metadata commands closed, with zero
+SQL, HTTP, service changes or replay. It observed 1,233,956,864 free root bytes
+and 8,227,144 KiB MemAvailable. This is the later capacity observation, not a
+reservation or retroactive evidence for the seed's missing SQL-backend records;
+any new heavy build needs a separate current resource budget.
+
+This candidate admission completed independently of the paused mount
+experiment and unresolved video diagnosis. Later product edits require their
 affected checks and full regression of the final intended snapshot; unchanged
 historical evidence retains its original scope.
 Capacity, blocked I/O and the remaining M4-M6 obligations may progress in
@@ -170,17 +229,18 @@ and every failure; do not extend the generic observation framework.
 
 | Area | Accepted result | Remaining limit |
 | --- | --- | --- |
-| Product | TV parent metadata and earlier fixes passed [2,270 tests/25 packages with race instrumentation and a Linux build](../development/tv-parent-metadata-full-verification.json), without failures or skips | Reuse this exact source and binary; this is not client acceptance |
-| Candidate | [TV successor transition](../development/tv-parent-candidate-transition-closeout.json) and [affected admission05](../development/tv-parent-affected-admission-closeout.json) passed | Admission05 checks changed TV projections/access and reuses admission04 for unchanged contracts; main is separate |
+| Earlier client-candidate product | TV parent metadata and earlier fixes passed [2,270 tests/25 packages with race instrumentation and a Linux build](../development/tv-parent-metadata-full-verification.json), without failures or skips | This proof belongs to the earlier audited/client candidate's exact source and binary; it is not the new embedded artifact's regression or client acceptance |
+| Earlier audited/client candidate | [TV successor transition](../development/tv-parent-candidate-transition-closeout.json) and [affected admission05](../development/tv-parent-affected-admission-closeout.json) passed | Admission05 checks changed TV projections/access and reuses admission04 for unchanged contracts; neither transfers to the fresh embedded candidate or main |
+| Fresh embedded candidate | [Initial inspection, seed and native admission](../development/fresh-embedded-candidate-checkpoint.json) passed independent review on embedded `59096592...`; admission used 88 actual requests with no cleanup failures | Client acceptance is false and the inactive cancelled stage remains retained. Ordinary regression, source binding and candidate admission do not retroactively pass the earlier client journeys |
 | MP3/FLAC | Both declared journeys, physical delivery, durable state and owned cleanup [passed](../development/audited-flac-client01-closeout.json), with zero page errors | Only these client/media profiles pass; no audible-output or general codec claim |
 | Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
 | Main | Native backup, selected rollback/restart, [actual old installation return/source32 recovery](../development/isolated-source32-recovery.json) and [final cluster/credential disposal](../development/isolated-restore-disposal.json) passed. Original failures and private evidence remain preserved; main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host durability and the remaining M2-M6 release obligations are unchanged |
-| M6 embedded assets | Focused build/tagged checks and root-profile native amd64 runtime passed; the completed ordinary suite separately binds the same 374 production Go/embed/module files | Distinct ordinary and embedded binaries; no tagged full-suite, nonroot candidate admission or native arm64 claim. OCI, GPU, license and full M6 remain open |
+| M6 embedded assets | Focused build/tagged checks and root-profile native amd64 runtime passed; the completed ordinary suite separately binds the same 374 production Go/embed/module files | Distinct ordinary and embedded binaries; no tagged full-suite or native arm64 claim. The fresh nonroot admission result has its separate review boundary above. OCI, GPU, license and full M6 remain open |
 | Native catalog restart | One real stop/start run passed 156 cumulative HTTP requests, nine core tables' rows/xmin and seven media checks; independent review and closure passed | Same PG and root profile only. No playback/nonzero-resume/browser, nonroot, PG restart, capacity or host-durability claim |
 
-The selected binary is
+The earlier audited/client candidate uses binary
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
 under epoch `76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac`.
 Subtitles01 closed twenty-one revoked sessions, thirteen play rows, six userdata
@@ -196,11 +256,15 @@ The order sets the immediate focus, not a serial dependency across every row.
 Independent reviews and implementation may run in parallel; paused experiments
 retain their own stop conditions. Prefer bounded product changes and existing
 verification tools over extending launcher or observation infrastructure.
+On the shared test environment, serialize heavy builds/tests and shared-fixture
+writes. Recheck current disk, RAM and execution limits before each such phase;
+historical capacity readings are not reservations. Keep the paused M2 RAM
+workspace outside every new resource budget.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 1. Independent nonroot embedded-candidate admission | Use the prepared, guard-tested v2 helper; adapt old-pinned seed/runtime/admission consumers and bind new inputs to the ordinary-suite proof, embedded artifact/source bridge and exact private runtime/fixture limits | No candidate provision, seed or admission has run. Old consumer guards do not make their fixed historical manifest/epoch workflows valid for v2. Use a new independent scope; ordinary regression/source equality does not prove tagged full-suite, nonroot runtime or client-video acceptance |
-| 2. Independent remaining M2-M6 delivery | Start with representative catalog capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | This track can proceed alongside version validation. Require measurable limits and bounded shutdown. Seven-file catalogs, root-profile process restarts and cross-builds do not establish capacity, nonroot/host durability, native hardware acceptance or complete release readiness |
+| 1. Prepare the independent catalog baseline | Prepare an isolated 10,000-item profile with a current resource budget and explicit query/state expectations | Not yet executed. This baseline is not an SLO, actual blocked-filesystem or scan-throughput result, and no new unverified test is included in the completed ordinary suite. Fresh-candidate inspection, seed, admission and independent review are complete and consumed |
+| 2. Independent remaining M2-M6 delivery | Separately address representative capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | Require measurable limits and bounded shutdown. This track may progress independently, while heavy work follows the shared-resource limits above; small catalogs, root-profile restarts and cross-builds do not close the release gates |
 | 3. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
 | 4. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
 | 5. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
@@ -238,8 +302,9 @@ retained; all 57 assets and five HTML references were checked, the 911-file
 source archive was reread, and ordinary unmount closed the M6 build tmpfs.
 This completed increment is not pending work. The later ordinary regression is
 now separately complete with its explicit profile gap and production-source
-bridge. Tagged full-suite, native arm64 and new candidate admission remain
-unproved; no result inherits the older selected binary's 2,270-test proof.
+bridge. Tagged full-suite and native arm64 remain unproved; fresh candidate
+admission and its independent review have passed separately. No result
+inherits the older client candidate's 2,270-test proof.
 
 The later native run used two processes, PIDs 557934 and 557978, with normal SIGTERM
 stops, exit 0, complete shutdown and no ERROR-level application log events.
@@ -275,6 +340,7 @@ These entries preserve prior decisions and results; they are not the next queue.
 | 10. Subtitle response-identity review — complete | Saved context291 response ID matches physical294 and excludes293 | The old cancellation/timing failure and page errors remain unresolved; no new business request, repeated review or new observer layer is authorized by this result |
 | 11. Native catalog restart — complete | One root-profile native amd64 run passed across two processes with the same PG, stable catalog/ACL/UserData, eight logout pairs and 156 cumulative requests; independent review and closure passed | Preserve the consumed run and its artifacts. This is not PG restart, playback/nonzero resume, browser, nonroot, capacity, host durability, full regression or main promotion |
 | 12. Ordinary full regression — complete with explicit profile gap | Same-source 11+14 complete packages yield 2,276 passes/0 failures/1 opt-in skip; ordinary Linux build, independent review and volume/archive closure passed | Exclude the first partial Library counts, retain its timeout, and preserve the paused mount gap. The separate 374-file embedded-source bridge is not tagged full-suite or candidate admission |
+| 13. Fresh embedded initial inspection, seed and admission — complete and consumed | All three stages passed independent review; native admission exited 0 with eleven health samples spanning exactly 600,000 ms, 88 actual requests, no cleanup failures and its inactive stage retained | Preserve both original inspection failures, the separate diagnostic and seed evidence limits. Client acceptance remains false; no replay or earlier-client acceptance claim follows |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation

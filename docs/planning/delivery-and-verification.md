@@ -28,11 +28,38 @@ has since passed its in-process Store-reopen checks, followed by a separate
 That root-profile run passed once with the same PG, nine core tables' rows/xmin
 preserved, 156 cumulative HTTP requests and complete independent evidence/resource
 closure. It does not establish nonroot operation, PG restart, playback/browser,
-nonzero resume, native arm64/GPU, capacity or host durability. No main/candidate
-deployment or full changed-version regression/admission is claimed.
-The immediate queue is now intended-source freeze, full race/Linux-build
-verification and corresponding candidate admission. Capacity/blocked-I/O and
-other independent M2-M6 preparation can proceed in parallel. The saved subtitle response-identity review is complete; its
+nonzero resume, native arm64/GPU, capacity or host durability. That native
+restart checkpoint does not claim main/candidate deployment or full regression.
+The later [ordinary-suite continuation](../development/full-regression-continuation-verification.json)
+completed 25 packages across two phases, with 2,276 passes, zero failures and
+one explicit mount-profile skip, plus an ordinary amd64 build and a production
+source bridge to the separately verified embedded artifact. A [fresh nonroot
+candidate](../development/fresh-embedded-candidate-checkpoint.json) has since
+been provisioned once. Corrected initial inspection and one seed passed
+independent review; eight users, three libraries/scans and fourteen independent
+media files are now bound to it. Both original inspection failures and their
+separate diagnostic remain unchanged. Current operator guards total 213,
+separate from the Go 2,276 results. Native admission has now exited 0 after
+601,357 milliseconds, with 82 normal and six cleanup requests, no failure or
+cleanup failures, and its inactive restore stage retained. Its report records
+`admitted_for_core_client` while keeping `clientAcceptance=false`. Independent
+saved-evidence review passed, confirming eleven health samples spanning exactly
+600,000 milliseconds, owned credential cleanup, declared data deltas and the
+retained cancelled stage. Inspection, seed and admission are complete and
+consumed; none is queued for repetition.
+The 600-second health window and 129-request cap remained unchanged; the actual
+request count is 88.
+The separate post-admission metadata check preserved candidate/PostgreSQL and
+protected identities, without SQL, HTTP or service changes. Its observed
+1,233,956,864 free root bytes are not a budget reservation; a new heavy phase
+requires its own current capacity check.
+
+The next concrete increment is preparation of an independent 10,000-item catalog
+baseline. Other M2-M6 work follows its own resource and safety prerequisites, with heavy
+work serialized on the shared environment. The new profile has not run and
+does not establish an SLO, actual blocked-filesystem behavior or scan throughput.
+Representative capacity, blocked I/O and host durability retain their separate
+gates. The saved subtitle response-identity review is complete; its
 cancellation and page-error gaps remain open. The M2 full-scan mount experiment remains paused after
 two launcher failures, with compilation only and no executed scan stages.
 [Third-party notices](../../THIRD_PARTY_NOTICES.md) provide a verified

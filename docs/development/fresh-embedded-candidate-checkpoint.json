@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "kind": "fresh-embedded-candidate-checkpoint",
+  "status": "admitted_for_core_client_independently_reviewed",
+  "reviewDate": "2026-09-14",
+  "verificationEnvironment": "ssh test-env",
+  "reviewBoundary": "Readback of existing remote receipts and their SHA256 pins. This checkpoint starts no new inspection, seed, admission or service action.",
+  "precedingRegression": "full-regression-continuation-verification.json",
+  "candidate": {
+    "runId": "20260914T083143Z-9b73ad46f2e6",
+    "root": "/opt/goby-audited-candidate-20260914T083143Z-9b73ad46f2e6",
+    "binarySha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312",
+    "safeProvisionReceipt": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/provision-safe-checkpoint.json",
+      "sha256": "f7b0dc4063f866da73f034d2479734169237ccea6c0161249bc8ed3da187eefd",
+      "bytes": 6184
+    },
+    "privateManifest": {
+      "path": "/opt/goby-audited-candidate-20260914T083143Z-9b73ad46f2e6/private/manifest.json",
+      "sha256": "4fe0482ac0e381129d46fa73e1d4c603dae3ec1d42e36e1a0691f33d4cd02eb0",
+      "rawContentsRemainRemotePrivate": true
+    },
+    "serverUid": 995,
+    "postgresUid": 103,
+    "directHttpPort": 28698,
+    "postgresPort": 25698,
+    "reservedBrowserOrigin": "http://127.0.0.1:28696",
+    "browserGatewayEstablished": false,
+    "provisionedSourceState": {"schema": 28, "migrations": 28, "users": 0},
+    "embeddedAdministratorAssets": 57,
+    "externalAdministratorDirectoryInstalled": false,
+    "backupLimitsBytes": {"maximumObject": 67108864, "maximumTotal": 268435456},
+    "rootFreeBytesAtProvisionCheckpoint": 1481416704,
+    "freshCapacityCheckRequiredBeforeFurtherWork": true,
+    "provisionExecutedOnce": true,
+    "provisionReceiptIsHistoricalNotALiveHealthClaim": true,
+    "bootstrapExecuted": true,
+    "seedExecuted": true,
+    "admissionExecuted": true,
+    "admissionCompleted": true
+  },
+  "operatorGuards": {
+    "preparation": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/preparation-verification.json",
+        "sha256": "502ac890438d94f08b7ea6593f12c18ed7858e92a60fd567b6f86ded570b87f0"
+      },
+      "testsPassed": 42,
+      "helperSha256": "cecd04aa13f76a389ae7f42e2215b5c127eaf60c4a3d2c82702fea70352884d2"
+    },
+    "seedAndAdmission": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/operator-guard-verification.json",
+        "sha256": "8d8a23ff959da01e7d013e99e7795f60bda98f3c745cb1119dbb918d8ed39c55"
+      },
+      "seedTestsPassed": 67,
+      "admissionTestsPassed": 35,
+      "legacyTvAdmissionTestsPassed": 18,
+      "originalInspectorTestsPassed": 16,
+      "originalInspectorCountIncludedInCurrentTotal": false,
+      "seedHelperSha256": "d38d9f2bb75397e6c2194b2e8f9c9774b9d8d4e0954a3ac3cc5f5952b7b389ef",
+      "admissionHelperSha256": "09a1ff7056d466eef2c6fede4428f6a78f2b5acc1357021630599e2f8494bc8c"
+    },
+    "metadataCorrectedInspector": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/inspection-correction-guard-verification.json",
+        "sha256": "228eecb707f375d612697fe2fd4b97ebd8b628b3d9132ef1d0dc0f49f26c15e5"
+      },
+      "testsPassed": 21,
+      "helperSha256": "fb69aba3168ae896423f17dcd125aeab63ae43d3710e1e0cb6bebc0a81c96bde"
+    },
+    "historicalPassingGuardCountBeforeSqlCorrection": 183,
+    "sqlCorrection": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/inspection-sql-correction-guard-verification.json",
+        "sha256": "74e10ebce9353a70f051e9152962508b678b6cca3f23a1aaaccbe6a1eed893c4",
+        "bytes": 2293
+      },
+      "inspectorTestsPassed": 31,
+      "seedTestsPassedAtThatRevision": 82,
+      "seedCountSupersededByPrivateFailureCaptureRevision": true,
+      "inspectorHelperSha256": "ae902d49498e4b2375663b42206f35e0b7f1493597a00a49ee5f37e4fa7e8705"
+    },
+    "reviewedSeed": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/seed-private-failure-guard-verification.json",
+        "sha256": "1aacd068852eb7bc9c25c272fd45831b8f4bd54b262d1f06a24d2fd57382fee8"
+      },
+      "testsPassed": 83,
+      "actualInputGatePassed": true,
+      "helperSha256": "01b4a3e45eb5f6d50f676e6df645c9d302688439b2fe1d627de5786cd9eda32a",
+      "change": "Private failure errorMessage capture bounded to 4096 characters; no business-scope expansion."
+    },
+    "reviewedAdmission": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/admission-reader-guard-verification.json",
+        "sha256": "9cce65eda35e7a30b875cde49d6840c90b8bc6bdb9f3c3c53399dc137a53a521",
+        "bytes": 957
+      },
+      "testsPassed": 39,
+      "helperSha256": "3d3dd9ab5958c8662abc4a024071bdcf15d0eba30b85951be19c1c9771c2b90f",
+      "privateRuntimeInspectionFailureSink": true
+    },
+    "currentPassingGuardCounts": {"preparation": 42, "inspection": 31, "seed": 83, "admission": 39, "legacyTv": 18},
+    "currentPassingGuardCount": 213,
+    "includedInGo2276Count": false,
+    "actualInitialInspectionPassed": true,
+    "gitPublication": "Tracked separately from runtime and guard evidence."
+  },
+  "initialInspectionFailures": [
+    {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/initial-runtime-inspection-01/report.json",
+        "sha256": "7622127b9f288bc274566f1f05af80883120258dc55641d5d71618a40a26605d"
+      },
+      "status": "inspection_failed",
+      "stage": "runtime_configuration",
+      "code": "unit_process_changed",
+      "sqlSessions": 0,
+      "httpRequests": 0,
+      "readProcessesClosed": true,
+      "diagnosis": "systemctl show omitted the empty PostgreSQL EnvironmentFiles property. Typed D-Bus reads established the empty value and unchanged unit identity.",
+      "diagnosticReceipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/empty-environment-files-review.json",
+        "sha256": "1b518abf9491027366936e7b88e4738d22c0a609d87c029e2f5d54b11c8c9ce8"
+      }
+    },
+    {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/initial-runtime-inspection-02/report.json",
+        "sha256": "1aaad33511366fd3b9eb54923460314f0bdd63c4160deb6fa3710ba4816f83db"
+      },
+      "status": "inspection_failed",
+      "stage": "database_identity_and_lease",
+      "code": "read_command_failed",
+      "sqlSessions": 1,
+      "httpRequests": 0,
+      "readProcessesClosed": false,
+      "sqlResultCaptured": false,
+      "originalFailureRetained": true
+    }
+  ],
+  "separateSqlDiagnostic": {
+    "receipt": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/private/first-sql-diagnostic/report.json",
+      "sha256": "65370c3558444a5e7503e8709ea30ceee4e1cf11c61a468699cc6d2ac882c47d",
+      "bytes": 3182
+    },
+    "status": "diagnostic_complete",
+    "classification": "libpq_nonregular_password_file_warning",
+    "cause": "PGPASSFILE=/dev/null emits a warning that the password file is not a plain file. The inspector requires empty stderr.",
+    "readOnlySqlCommands": 1,
+    "frontendExitCode": 0,
+    "stderrBytes": 55,
+    "stderrSha256": "88cb46494b3249cb7cc354338357ec6718eae891e2a2bbf86715ce129869ecff",
+    "frontendGroupClosed": true,
+    "backendGone": true,
+    "otherPostgresPsqlBackendCount": 0,
+    "postmasterUnchanged": true,
+    "httpRequests": 0,
+    "serviceChanges": 0,
+    "originalFailedInspectionRelabeled": false
+  },
+  "initialInspection": {
+    "reviewedOutcome": "passed",
+    "input": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/private/inspection-sql-corrected-input.json",
+      "sha256": "ffae1835a7fefe82d67dff88b867f3ea79e907bd456d2a3dc50b21cdaec8cae3"
+    },
+    "receipt": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/initial-runtime-inspection-sql-corrected/report.json",
+      "sha256": "3ba2a2dfbd0952644a6c0cce113ca8c3a313008161d3308b6cf42a2fa962a1f4"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/initial-inspection-independent-review.json",
+      "sha256": "4f6091052a824600ec142d32650afea038bbab13c11a342c3ca03393788522d1",
+      "bytes": 22768
+    },
+    "sqlCalls": 9,
+    "httpRequests": 63,
+    "httpBytes": 1107438,
+    "commands": 298,
+    "unitCalls": 284,
+    "administratorAssetsVerified": 57,
+    "htmlReferencesVerified": 5,
+    "businessWrites": 0,
+    "sameProcesses": true,
+    "protectedUnchanged": true,
+    "readProcessesClosed": true,
+    "originalFailuresPreserved": true
+  },
+  "seed": {
+    "reviewedOutcome": "passed",
+    "input": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/private/seed-input.json",
+      "sha256": "69886d79be62817aafe39aa7d8c50236358a7c65711613bb70d81b845c6d44e8"
+    },
+    "privateManifest": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/candidate-seed-01/private/manifest.json",
+      "sha256": "cc5a92283d895e1703cc5a6b9e5c028d11f6e867046cd3809f44affd3e95906a",
+      "rawContentsRemainRemotePrivate": true
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/seed-independent-review.json",
+      "sha256": "e659ec6be2c2565a7c15a59eb355841167baa3714779fe03190b0cb693f518d4",
+      "bytes": 12183
+    },
+    "normalHttpRequests": 49,
+    "cleanupHttpRequests": 4,
+    "elapsedMilliseconds": 19096,
+    "independentMediaFiles": 14,
+    "mediaBytes": 201156949,
+    "users": 8,
+    "libraries": 3,
+    "scans": 3,
+    "publicCatalogDtos": 10,
+    "storedCatalogItems": 13,
+    "logout204AndExactCredential401Pairs": 2,
+    "storedCredentialRevocationVerified": true,
+    "playbackExecuted": false,
+    "sqlFrontendCommandsClosed": 7,
+    "clusterIdentityChecks": 4,
+    "serverListenerChecks": 109,
+    "everySqlBackendGoneReceiptRecorded": false,
+    "finalCompletePostgresProcessIdentityRecorded": false,
+    "evidenceBoundary": "Independent review accepts the recorded frontend closure and sampled identities; it does not invent missing per-SQL backend-absence or final full PostgreSQL process-identity receipts."
+  },
+  "admission": {
+    "status": "admitted_for_core_client",
+    "input": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/private/admission-input.json",
+      "sha256": "53f407f8c2dbe2d83b5dcc29387ec8db4758dae44adc686fa30ce4d044261747",
+      "bytes": 2297
+    },
+    "helperSha256": "3d3dd9ab5958c8662abc4a024071bdcf15d0eba30b85951be19c1c9771c2b90f",
+    "receipt": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/candidate-live-admission-01/private/report.json",
+      "sha256": "5d24a24574bc3aa3bea526fb7cca412486299ed973d0f55f83fbadc79fd1f05c",
+      "rawContentsRemainRemotePrivate": true
+    },
+    "exitCode": 0,
+    "candidateAdmissionComplete": true,
+    "clientAcceptance": false,
+    "elapsedMilliseconds": 601357,
+    "normalHttpRequests": 82,
+    "cleanupHttpRequests": 6,
+    "totalHttpRequests": 88,
+    "failure": null,
+    "cleanupFailures": [],
+    "inactiveStageRetained": true,
+    "healthWindowSeconds": 600,
+    "maximumHttpRequests": 129,
+    "businessBudgetExpanded": false,
+    "finalReceiptAvailable": true,
+    "executionPassed": true,
+    "independentReviewComplete": true,
+    "independentReview": {
+      "receipt": {
+        "path": "/opt/goby-test/embedded-candidate-20260914/admission-independent-review.json",
+        "sha256": "4a8f7142cb5ac7936dd99aa089cc3c26efb1f89619976797ed6af656177e3c98",
+        "bytes": 6739
+      },
+      "status": "saved_admission_verified_for_core_client",
+      "httpRequestsVerified": 88,
+      "healthSamples": 11,
+      "healthSampleSpanMilliseconds": 600000,
+      "tvChecks": 9,
+      "logout204SameToken401AndStoredRevocationPairs": 3,
+      "sourceDelta": {
+        "newRevokedSessions": 3,
+        "newDevices": 2,
+        "newActivityRows": 14,
+        "otherTablesUnchanged": 32,
+        "oldRowsPreserved": true,
+        "sequencesValidated": 5,
+        "sequenceChangesRestrictedToDeclaredDelta": true
+      },
+      "backup": {
+        "headRangeAndFullDownloadMatched": true,
+        "fullDownloadBytes": 290038
+      },
+      "recovery": {
+        "readyThenCancelled": true,
+        "inactiveStageRetained": true,
+        "tablesCompared": 35,
+        "sequencesCompared": 5,
+        "onlyComparisonExclusion": "capturedAt"
+      },
+      "runtimeSqlSamplesChecked": 23,
+      "runtimeSqlRawRecordsAndIntentsChecked": true,
+      "readerCommandsCompleteAndClosed": 101,
+      "consistentLeaseChecks": 14,
+      "fixtureFilesVerified": 14,
+      "serverListenerChecks": 190,
+      "postAdmissionMetadataReceiptSha256": "7cd2ab30584f2baecdbb258cfc429c16dda2b5c71b98b5e5398860c3a4dbe36b",
+      "newSqlCommands": 0,
+      "newHttpRequests": 0,
+      "serviceChanges": 0,
+      "newRuntimeProbes": 0,
+      "businessReplay": false
+    }
+  },
+  "postAdmissionMetadata": {
+    "receipt": {
+      "path": "/opt/goby-test/embedded-candidate-20260914/final-candidate-metadata.json",
+      "sha256": "7cd2ab30584f2baecdbb258cfc429c16dda2b5c71b98b5e5398860c3a4dbe36b",
+      "bytes": 4434
+    },
+    "status": "current_metadata_matches_provision",
+    "protectedIdentitiesMatched": 5,
+    "candidateAndPostgresFullProcessAndListenerIdentitiesMatched": true,
+    "identityFields": ["pid", "bootId", "startTicks", "uid", "executableInode", "cgroup", "listeners"],
+    "ownedLibpqPasswordFilesConfirmedAbsent": 2,
+    "metadataCommandsClosed": true,
+    "sqlCommands": 0,
+    "httpRequests": 0,
+    "serviceChanges": 0,
+    "initialInspectionReplayed": false,
+    "rootFreeBytes": 1233956864,
+    "memAvailableKiB": 8227144,
+    "capacityIsAnObservationNotAReservation": true,
+    "continuousMonitoring": false,
+    "newHeavyBuildRequiresSeparateBudget": true,
+    "retroactivelyFillsMissingSeedSqlBackendEvidence": false
+  },
+  "nextRequiredResults": [
+    "Prepare an independent 10,000-item baseline catalog profile; it has not run and is not an SLO, real blocked-filesystem or scan-throughput result.",
+    "Continue the remaining M2-M6 obligations under their own resource and acceptance prerequisites; keep the paused full-scan mount and unresolved video gates explicit.",
+    "Preserve both initial failures, their separate diagnostic and all consumed source/input records. No repeated inspection, seed or admission is queued. Candidate admission remains separate from client video and the complete M2-M6 release gates."
+  ],
+  "boundaries": {
+    "initialInspectionAccepted": true,
+    "candidateAdmitted": true,
+    "candidateAdmissionIndependentReviewComplete": true,
+    "clientVideoAccepted": false,
+    "mainPromoted": false,
+    "pausedFullScanMountExperimentResumed": false,
+    "consumedClientOrRecoveryOperationsReplayed": false,
+    "completeM2ThroughM6Claimed": false,
+    "m7Deferred": true
+  }
+}

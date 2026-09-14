@@ -23,6 +23,30 @@ R = Path("/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14")
 MEDIA = Path("/opt/goby-fixtures/client-m3e")
 MANIFEST = {"path": str(C / "private/manifest.json"), "sha256": "022ca1e48aac6159750df72157dcddff3738e67962012f556825e26b0f0dfb09"}
 INSPECTION = {"path": str(R / "candidate-runtime-inspection-01/report-02.json"), "sha256": "99ef8f05d9ad6f1b1534ea678fcdc36b3c920680d2de2ae4053968ab8197ae95"}
+E3 = Path("/opt/goby-test/embedded-candidate-20260914")
+INITIAL_INSPECTION = E3 / "initial-runtime-inspection-sql-corrected"
+INSPECTION_HELPER = E3 / "private/operators-sql-corrected/inspect-audited-candidate.py"
+INSPECTION_PRIORS = {
+    "priorMetadataFailure": {"path": str(E3 / "initial-runtime-inspection-01/report.json"), "sha256": "7622127b9f288bc274566f1f05af80883120258dc55641d5d71618a40a26605d"},
+    "priorSqlFailure": {"path": str(E3 / "initial-runtime-inspection-02/report.json"), "sha256": "1aaad33511366fd3b9eb54923460314f0bdd63c4160deb6fa3710ba4816f83db"},
+    "sqlFailureDiagnostic": {"path": str(E3 / "private/first-sql-diagnostic/report.json"), "sha256": "65370c3558444a5e7503e8709ea30ceee4e1cf11c61a468699cc6d2ac882c47d"},
+}
+INSPECTION_METADATA_REVIEW = {"path": str(E3 / "empty-environment-files-review.json"), "sha256": "1b518abf9491027366936e7b88e4738d22c0a609d87c029e2f5d54b11c8c9ce8"}
+INSPECTION_SQL_CORRECTION = {"priorFailurePreserved": True, "priorSqlResultRecovered": False, "diagnosticReadProcessesClosed": True,
+                             "passfilePolicy": "owned_socket_path_required_absent", "stderrPolicy": "empty_required"}
+INSPECTION_BUDGETS = {"maximumSeconds": 180, "maximumSqlSessions": 16, "maximumHttpRequests": 64, "maximumHttpBodyBytes": 4194304}
+EMBEDDED_BINARY_SHA = "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312"
+PRODUCT_EVIDENCE = {
+    "sourceArchive": {"path": "/opt/goby-test/full-regression-20260914/retained/source.tar.gz", "sha256": "418f9803237e02e0859f9bef8f6ed646730acb590a3482867a288cd64e8a0fad"},
+    "sourceManifest": {"path": "/opt/goby-test/full-regression-continuation-20260914/retained/source-manifest.json", "sha256": "95fe6a40ecabdfe6b48260dcf200cf8a49d0cf9664c407ca91cd9eaba539d6f6"},
+    "embeddedBuildManifest": {"path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/manifest.json", "sha256": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683"},
+    "productionSourceBinding": {"path": "/opt/goby-test/full-regression-20260914/production-source-binding.json", "sha256": "823870bb9bcf9e2ca4b35e483d617de34e1c541b273cd6bf02e647a066e920dc"},
+    "regressionReview": {"path": "/opt/goby-test/full-regression-continuation-20260914/independent-review.json", "sha256": "5b946d4b4bfee2b177b53861c89fad690c08c406b832a26f778d563ed4174b72"},
+    "regressionClosure": {"path": "/opt/goby-test/full-regression-continuation-20260914/closure.json", "sha256": "6cd0b024834315db240d6268c94b578e4beb99977fd1740d51c5494cf4508b1c"},
+}
+FRESH_INACCESSIBLE = ("/opt/goby-test", "/opt/goby-dev", "/opt/goby-client-m3e", "/opt/goby-fixtures", "/var/lib/goby-test", "/var/lib/postgresql", str(C))
+MEDIA_TOTAL_BYTES = 201156949
+MEDIA_MIN_FREE_BYTES = 64 << 20
 BUDGETS = {"maximumSeconds": 1200, "cleanupSeconds": 120, "maximumRequests": 240, "cleanupRequests": 8}
 SCENARIOS = ("movie", "episode", "mp3", "flac", "subtitles", "tv-browse")
 MOVIE_SHA = "7265bc56bd7f495bcbd5224adcf6df94478a99d1994ba713274a194f8f9db088"
@@ -102,6 +126,109 @@ def descriptor(row):
     return parse(read_checked(row["path"], row["sha256"]))
 
 
+def scoped_descriptor(row, root, suffix=None):
+    """Validate a metadata selector without opening it or changing its root."""
+    need(isinstance(row, dict) and set(row) == {"path", "sha256"} and isinstance(row["path"], str) and
+         isinstance(row["sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", row["sha256"]), "Invalid scoped descriptor.")
+    path = Path(row["path"])
+    need(path.is_absolute() and str(path) == row["path"] and path.is_relative_to(root) and ".." not in path.parts and
+         not any(c in row["path"] for c in "\\\r\n\x00") and path.name not in FORBIDDEN and
+         (suffix is None or path.suffix == suffix), "Metadata escaped its declared authority scope.")
+    return row
+
+
+def fresh_candidate_root(pin):
+    scoped_descriptor(pin, Path("/opt"), ".json")
+    root = Path(pin["path"]).parent.parent
+    need(root.parent == Path("/opt") and root != C and
+         re.fullmatch(r"goby-audited-candidate-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}", root.name) and
+         pin["path"] == str(root / "private/manifest.json"), "A fresh embedded candidate cannot select a legacy or arbitrary root.")
+    return root
+
+
+def validate_seed_input(value, input_pin=None, source_pin=None):
+    common = {"kind", "version", "runId", "output", "candidateManifest", "runtimeInspection", "runtimeHelper", "mediaManifest", "budgets"}
+    need(isinstance(value, dict) and type(value.get("version")) is int and value["version"] in (1, 2) and
+         set(value) == common | ({"provisionInput", "inspectionHelper"} if value["version"] == 2 else set()) and
+         value["kind"] == "audited-candidate-seed-input" and value["budgets"] == BUDGETS and
+         re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", value["runId"]), "Unexpected one-shot seed contract.")
+    if value["version"] == 2:
+        fresh_candidate_root(value["candidateManifest"])
+        for key, suffix in (("runtimeInspection", ".json"), ("provisionInput", ".json"), ("runtimeHelper", ".py"), ("inspectionHelper", ".py"), ("mediaManifest", ".json")):
+            scoped_descriptor(value[key], E3, suffix)
+        need(value["runtimeInspection"]["path"] == str(INITIAL_INSPECTION / "report.json") and value["inspectionHelper"]["path"] == str(INSPECTION_HELPER),
+             "Only the reviewed SQL-corrected initial inspection is admitted.")
+        output = Path(value["output"])
+        need(output.parent == E3 and str(output) == value["output"] and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", output.name), "Fresh seed output escaped its scope.")
+        if input_pin is not None:
+            scoped_descriptor(input_pin, E3, ".json")
+        if source_pin is not None:
+            scoped_descriptor(source_pin, E3, ".py")
+    return value
+
+
+def validate_fresh_authority(value, candidate, attestation, inspection_input, provision_input):
+    """Bind the fresh instance and its initial read-only evidence without IO."""
+    root = fresh_candidate_root(value["candidateManifest"])
+    for key, suffix in (("runtimeInspection", ".json"), ("runtimeHelper", ".py"), ("inspectionHelper", ".py")):
+        scoped_descriptor(value[key], E3, suffix)
+    scoped_descriptor(attestation["input"], E3, ".json")
+    need(value["runtimeInspection"]["path"] == str(INITIAL_INSPECTION / "report.json") and value["inspectionHelper"]["path"] == str(INSPECTION_HELPER),
+         "Only the reviewed SQL-corrected initial inspection is admitted.")
+    need(re.fullmatch(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}", candidate["runId"]) and
+         root.name == "goby-audited-candidate-" + candidate["runId"] and candidate["dataDirectory"] == str(root / "data"), "Candidate run identity differs.")
+    need(type(candidate.get("provisionVersion")) is int and candidate["provisionVersion"] == 2 and candidate["status"] == "running_awaiting_live_acceptance" and
+         all(candidate.get(key) is False for key in ("bootstrapExecuted", "recoveryRestoreExecuted", "candidateAdmissionComplete", "clientAcceptance")) and
+         candidate["binary"] == {"path": str(root / "install/goby"), "sha256": EMBEDDED_BINARY_SHA} and
+         candidate["runtime"]["path"] == str(root / "private/runtime.env") and candidate["productEvidence"] == PRODUCT_EVIDENCE and
+         candidate["ordinaryRegressionStatus"] == "passed_with_explicit_profile_gap" and candidate["ordinaryRegressionPhases"] == 2 and
+         candidate["taggedFullRegressionClaimed"] is False and candidate["sourceState"] == {"users": 0, "schema": 28, "migrations": 28},
+         "The candidate is not the selected fresh embedded preparation.")
+    need(candidate["dashboard"] == {"mode": "embedded", "buildManifest": PRODUCT_EVIDENCE["embeddedBuildManifest"], "assetCount": 57,
+         "externalDirectoryInstalled": False, "webDirectoryOverridePresent": False} and
+         len(candidate["inaccessiblePaths"]) == len(FRESH_INACCESSIBLE) and set(candidate["inaccessiblePaths"]) == set(FRESH_INACCESSIBLE) and
+         all(candidate["loadedInaccessiblePaths"][role] == sorted(FRESH_INACCESSIBLE) for role in ("server", "postgres")),
+         "The embedded dashboard or protected-instance boundary differs.")
+    suffix = candidate["runId"].split("-")[-1]
+    need(candidate["database"] == "goby_candidate_" + suffix and candidate["recoveryDatabase"] == "goby_recovery_" + suffix and
+         type(candidate["serverIdentity"]["uid"]) is int and candidate["serverIdentity"]["uid"] > 0 and
+         type(candidate["postgresIdentity"]["uid"]) is int and candidate["postgresIdentity"]["uid"] > 0,
+         "The new database slots or non-root identities differ.")
+    scoped_descriptor(candidate["input"], E3, ".json")
+    need(value.get("provisionInput", candidate["input"]) == candidate["input"] == attestation["provisionInput"] == inspection_input["provisionInput"] and
+         provision_input.get("kind") == "audited-candidate-provision-input" and type(provision_input.get("version")) is int and provision_input["version"] == 2 and
+         provision_input["runId"] == candidate["runId"] and provision_input["ports"] == candidate["ports"] and
+         provision_input["public_url"] == candidate["publicUrl"] and provision_input["dashboardProfile"] == "embedded-administrator-v1" and
+         all(provision_input[key] == pin for key, pin in PRODUCT_EVIDENCE.items()), "The fresh provision input or product evidence changed.")
+    need(attestation.get("kind") == "audited-candidate-runtime-inspection" and type(attestation.get("version")) is int and attestation["version"] == 3 and
+         attestation["status"] == "ready_pending_seed" and attestation["stage"] == "complete" and attestation["failure"] is None and
+         attestation["provisionManifest"] == value["candidateManifest"] and
+         attestation["provisionHelper"] == value["runtimeHelper"] == inspection_input["provisionHelper"] and
+         attestation["helper"] == value["inspectionHelper"] and attestation["sourceEvidence"] == candidate["productEvidence"] and
+         attestation["binary"] == candidate["binary"] and type(attestation.get("databaseWrites")) is int and attestation["databaseWrites"] == 0 and
+         all(attestation.get(key) is False for key in ("bootstrapPerformed", "restorePerformed", "serviceChangesPerformed", "candidateAdmissionComplete", "clientAcceptance")),
+         "Fresh runtime inspection has an invalid result or authority binding.")
+    inspection_keys = {"kind", "version", "output", "provisionManifest", "provisionInput", "provisionHelper", "sourceArchive", "sourceManifest", "budgets"} | set(INSPECTION_PRIORS)
+    need(set(inspection_input) == inspection_keys and inspection_input.get("kind") == "audited-candidate-inspection-input" and
+         type(inspection_input.get("version")) is int and inspection_input["version"] == 3 and
+         inspection_input["output"] == str(INITIAL_INSPECTION) and inspection_input["provisionManifest"] == value["candidateManifest"] and
+         inspection_input["sourceArchive"] == PRODUCT_EVIDENCE["sourceArchive"] and inspection_input["sourceManifest"] == PRODUCT_EVIDENCE["sourceManifest"] and
+         encoded(inspection_input["budgets"]) == encoded(INSPECTION_BUDGETS),
+         "The initial inspection selected another candidate or source.")
+    need(all(inspection_input[key] == pin and attestation.get(key) == pin for key, pin in INSPECTION_PRIORS.items()) and
+         attestation.get("metadataCorrectionReview") == INSPECTION_METADATA_REVIEW and
+         encoded(attestation.get("sqlCorrection")) == encoded(INSPECTION_SQL_CORRECTION) and attestation.get("readProcessesClosed") is True,
+         "The reviewed inspection correction omitted or changed its preserved failure evidence.")
+    database = attestation["database"]
+    need(database["sourceSchemaVersion"] == 28 and database["sourceMigrationCount"] == 28 and type(database["sourceUsers"]) is int and database["sourceUsers"] == 0 and
+         database["recoveryTargetEmpty"] is True and database["allSqlTransactionsReadOnly"] is True and
+         all(all(attestation["processes"][role].get(key) == item for key, item in candidate[role + "Identity"].items()) for role in ("server", "postgres")) and
+         attestation["httpListener"]["socketInode"] == candidate["listener"]["socketInode"], "The initial database/process snapshot differs.")
+    need(attestation["dashboard"]["assetCount"] == 57 and attestation["dashboard"]["allAssetsMatched"] is True and
+         attestation["dashboard"]["entryReferencesMatched"] == 5, "The fresh embedded dashboard inspection is incomplete.")
+    return root
+
+
 def sync_dir(path):
     fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
@@ -133,16 +260,33 @@ def response_complete(response, method, raw, maximum):
     return response.isclosed()
 
 
+def fresh_sql_environment(environment, root):
+    """Disable libpq's default credential-file lookup for this loaded instance."""
+    socket = root / "postgres/socket"
+    return {**environment, "PGPASSFILE": str(socket / ".goby-inspection-no-password"),
+            "PGSERVICEFILE": str(socket / ".goby-inspection-no-service"), "PGCONNECT_TIMEOUT": "3"}
+
+
 class CandidateIO:
     """Bound IO only. Construction never authenticates or changes the candidate."""
-    def __init__(self, value, input_pin, source_pin):
+    def __init__(self, value, input_pin, source_pin, *, fresh=False):
         self.value, self.input_pin, self.source_pin = value, input_pin, source_pin
+        self.fresh = fresh or (value.get("kind") == "audited-candidate-seed-input" and type(value.get("version")) is int and value["version"] == 2)
+        self.root = fresh_candidate_root(value["candidateManifest"]) if self.fresh else C
         self.output, self.private = Path(value["output"]), Path(value["output"]) / "private"
         self.budgets, self.requests = value["budgets"], {"normal": 0, "cleanup": 0}
         self.started, self.byte_count, self.last_response = time.monotonic(), 0, None
         self.created, self.request_states = False, []
-        need(self.output.parent == R and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", self.output.name), "Fresh output must be directly within the resumed scope.")
-        need(value["candidateManifest"] == MANIFEST and value["runtimeInspection"] == INSPECTION, "Candidate authority differs.")
+        need(self.output.parent == (E3 if self.fresh else R) and str(self.output) == value["output"] and
+             re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", self.output.name), "Fresh output must be directly within its declared evidence scope.")
+        if self.fresh:
+            for pin, suffix in ((input_pin, ".json"), (source_pin, ".py"), (value["runtimeInspection"], ".json"),
+                                (value["runtimeHelper"], ".py"), (value["inspectionHelper"], ".py")):
+                scoped_descriptor(pin, E3, suffix)
+            need(value["runtimeInspection"]["path"] == str(INITIAL_INSPECTION / "report.json") and value["inspectionHelper"]["path"] == str(INSPECTION_HELPER),
+                 "Fresh IO requires the reviewed SQL-corrected initial inspection.")
+        else:
+            need(value["candidateManifest"] == MANIFEST and value["runtimeInspection"] == INSPECTION, "Candidate authority differs.")
         need(set(self.budgets) == set(BUDGETS) and all(type(n) is int and n > 0 for n in self.budgets.values()) and
              self.budgets["maximumSeconds"] <= 1200 and self.budgets["cleanupSeconds"] < self.budgets["maximumSeconds"] and
              self.budgets["maximumRequests"] <= 240 and self.budgets["cleanupRequests"] < self.budgets["maximumRequests"], "Invalid IO budget.")
@@ -156,23 +300,36 @@ class CandidateIO:
         need(not os.path.lexists(self.output), "Fresh output collision; resume is forbidden.")
         self.candidate = descriptor(self.value["candidateManifest"])
         attestation = descriptor(self.value["runtimeInspection"])
-        need(attestation["kind"] == "audited-candidate-runtime-inspection" and attestation["status"] == "ready_pending_live_acceptance" and
-             attestation["failure"] is None and attestation["manifest"] == MANIFEST and attestation["database"]["sourceSchemaVersion"] == 28 and
-             attestation["database"]["sourceUsers"] == 0 and attestation["database"]["recoveryTargetEmpty"] is True and
-             attestation["processes"]["server"] == self.candidate["serverIdentity"] and
-             attestation["processes"]["postgres"] == self.candidate["postgresIdentity"] and
-             attestation["httpListener"]["socketInode"] == self.candidate["listener"]["socketInode"], "Runtime inspection binding differs.")
+        self.attestation = attestation
+        if self.fresh:
+            scoped_descriptor(attestation["input"], E3, ".json")
+            scoped_descriptor(self.candidate["input"], E3, ".json")
+            self.inspection_input = descriptor(attestation["input"])
+            self.provision_input = descriptor(self.candidate["input"])
+            need(validate_fresh_authority(self.value, self.candidate, attestation, self.inspection_input, self.provision_input) == self.root,
+                 "Fresh candidate authority changed.")
+            read_checked(self.value["inspectionHelper"]["path"], self.value["inspectionHelper"]["sha256"])
+        else:
+            need(attestation["kind"] == "audited-candidate-runtime-inspection" and attestation["status"] == "ready_pending_live_acceptance" and
+                 attestation["failure"] is None and attestation["manifest"] == MANIFEST and attestation["database"]["sourceSchemaVersion"] == 28 and
+                 attestation["database"]["sourceUsers"] == 0 and attestation["database"]["recoveryTargetEmpty"] is True and
+                 attestation["processes"]["server"] == self.candidate["serverIdentity"] and
+                 attestation["processes"]["postgres"] == self.candidate["postgresIdentity"] and
+                 attestation["httpListener"]["socketInode"] == self.candidate["listener"]["socketInode"], "Runtime inspection binding differs.")
         helper = self.value["runtimeHelper"]
-        need(Path(helper["path"]).is_relative_to(R) and Path(helper["path"]).suffix == ".py", "Runtime helper escaped the approved scope.")
+        need(Path(helper["path"]).is_relative_to(E3 if self.fresh else R) and Path(helper["path"]).suffix == ".py", "Runtime helper escaped the approved scope.")
         module = types.ModuleType("frozen_candidate_provision")
         module.__file__ = helper["path"]
         exec(compile(read_checked(helper["path"], helper["sha256"]), helper["path"], "exec"), module.__dict__)
-        self.provision = module.Provision({"runId": self.candidate["runId"], "ports": self.candidate["ports"]}, self.input_pin, helper)
+        self.runtime_module = module
+        self.provision = module.Provision(self.provision_input if self.fresh else {"runId": self.candidate["runId"], "ports": self.candidate["ports"]}, self.input_pin, helper)
         self.provision.private = self.private
-        self.provision.argv = {"server": [str(C / "install/goby")], "postgres": [str(module.PG / "postgres"), "-D", str(C / "postgres/data"), "-c", "config_file=" + str(C / "postgres/server.conf")]}
+        self.provision.argv = {"server": [str(self.root / "install/goby")], "postgres": [str(module.PG / "postgres"), "-D", str(self.root / "postgres/data"), "-c", "config_file=" + str(self.root / "postgres/server.conf")]}
         self.provision.pg_identity, self.provision.pg_version = self.candidate["postgresIdentity"], self.candidate["postgresVersionNum"]
-        need(self.provision.root == C and self.candidate["dataDirectory"] == str(C / "data") and
+        need(self.provision.root == self.root and self.candidate["dataDirectory"] == str(self.root / "data") and
              self.candidate["status"] == "running_awaiting_live_acceptance" and self.candidate["bootstrapExecuted"] is False, "Unexpected candidate layout.")
+        if self.fresh:
+            self.configure_fresh_sql_environment()
         for role in ("server", "postgres"):
             need(self.candidate["units"][role]["path"] == "/run/systemd/system/" + self.provision.units[role], "Unit binding differs.")
             read_checked(**dict(path=self.candidate["units"][role]["path"], sha256=self.candidate["units"][role]["sha256"]))
@@ -187,11 +344,47 @@ class CandidateIO:
         sync_dir(self.output.parent)
         os.mkdir(self.private, 0o700)
         sync_dir(self.output)
-        write_json_once(self.private / "binding.json", {"candidate": MANIFEST, "runtimeInspection": INSPECTION, "runtimeHelper": helper, "input": self.input_pin, "source": self.source_pin})
+        binding = {"candidate": self.value["candidateManifest"], "runtimeInspection": self.value["runtimeInspection"], "runtimeHelper": helper, "input": self.input_pin, "source": self.source_pin}
+        if self.fresh:
+            binding.update(version=2, provisionInput=self.candidate["input"], inspectionInput=attestation["input"],
+                           inspectionHelper=self.value["inspectionHelper"], sourceEvidence=self.candidate["productEvidence"])
+        write_json_once(self.private / "binding.json", binding)
         self.pin()
         return self
 
+    def configure_fresh_sql_environment(self):
+        """Wrap only this fresh instance's existing SQL command entry point."""
+        need(self.fresh, "Legacy SQL environments must remain unchanged.")
+        self.sql_environment = fresh_sql_environment(self.runtime_module.ENV, self.root)
+        self.runtime_module.ENV = dict(self.sql_environment)
+        self.sql_socket_identity = None
+        self.check_fresh_sql_environment()
+        original = self.provision.psql
+
+        def checked_psql(label, sql, database="postgres"):
+            self.check_fresh_sql_environment()
+            try:
+                return original(label, sql, database)
+            finally:
+                self.check_fresh_sql_environment()
+
+        self.provision.psql = checked_psql
+
+    def check_fresh_sql_environment(self):
+        uid = self.candidate["postgresIdentity"]["uid"]
+        socket = self.root / "postgres/socket"
+        info = safe_path(socket, (0, uid), True)
+        identity = (info.st_dev, info.st_ino, info.st_uid, info.st_gid, info.st_mode)
+        need(info.st_uid == uid and stat.S_IMODE(info.st_mode) == 0o700 and
+             (self.sql_socket_identity is None or identity == self.sql_socket_identity) and
+             self.runtime_module.ENV == self.sql_environment and
+             all(not os.path.lexists(self.sql_environment[key]) for key in ("PGPASSFILE", "PGSERVICEFILE")),
+             "The fresh SQL socket authority or absent credential-file policy changed.")
+        self.sql_socket_identity = identity
+
     def pin(self):
+        if self.fresh:
+            self.check_fresh_sql_environment()
         for role in ("server", "postgres"):
             need(self.provision.show(self.provision.units[role]) == self.candidate["processes"][role] and
                  self.provision.process(role, self.candidate["processes"][role]) == self.candidate[role + "Identity"], "Candidate unit or process drifted.")
@@ -315,6 +508,104 @@ def completed_job(job, library_id, job_id):
     return False
 
 
+def validate_media_manifest(manifest, fresh=False):
+    """Bind reused fixture bytes to a new metadata receipt without reusing actors."""
+    need(manifest["marker"] == "goby-client-media-m3e-v1" and manifest["files"] == FILES,
+         "The approved fourteen-file media closure differs.")
+    if fresh:
+        need(set(manifest) == {"kind", "version", "sourceRoot", "marker", "files", "fileBytes", "totalBytes"} and
+             manifest["kind"] == "audited-candidate-media-fixture-manifest" and type(manifest["version"]) is int and manifest["version"] == 2 and
+             manifest["sourceRoot"] == str(MEDIA) and isinstance(manifest["fileBytes"], dict) and set(manifest["fileBytes"]) == set(FILES) and
+             all(type(size) is int and size > 0 for size in manifest["fileBytes"].values()) and
+             type(manifest["totalBytes"]) is int and sum(manifest["fileBytes"].values()) == manifest["totalBytes"] == MEDIA_TOTAL_BYTES,
+             "The fresh media byte inventory or source scope differs.")
+    return manifest
+
+
+def validate_fixture_hardlinks(identities):
+    """Allow only the complete declared four-path movie inode group."""
+    need(set(identities) == set(FILES), "Fixture identity membership differs.")
+    movies = [identities[name] for name, checksum in FILES.items() if checksum == MOVIE_SHA]
+    need(len(movies) == 4 and len({tuple(row[:2]) for row in movies}) == 1 and
+         all(row[5] == 4 and row[6] == 48786888 for row in movies) and
+         all(identities[name][5] == 1 for name, checksum in FILES.items() if checksum != MOVIE_SHA),
+         "The declared source hardlink group is incomplete or changed.")
+
+
+STORED_Q_POLICY = {**PLAYBACK, "EnableAllFolders": False, "EnabledFolders": [], "IsAdministrator": False, "IsDisabled": False}
+SOURCE_STATE_QUERY = """BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SELECT json_build_object(
+ 'schema',(SELECT max(version) FROM schema_migrations),
+ 'users',(SELECT json_agg(json_build_object('id',id,'name',name,'admin',is_administrator,'disabled',is_disabled,'policy',policy) ORDER BY id) FROM users),
+ 'libraries',(SELECT json_agg(json_build_object('id',id,'name',name,'collectionType',collection_type) ORDER BY id) FROM libraries),
+ 'roots',(SELECT json_agg(json_build_object('id',id,'libraryId',library_id,'path',path) ORDER BY id) FROM library_roots),
+ 'jobs',(SELECT json_agg(json_build_object('id',id,'libraryId',library_id,'status',status,'error',error,'forceProbe',force_probe) ORDER BY id) FROM scan_jobs),
+ 'items',(SELECT json_agg(json_build_object('id',id,'parentId',parent_id,'name',name,'type',type,'path',path) ORDER BY id) FROM items),
+ 'sessions',(SELECT json_agg(json_build_object('userId',user_id,'kind',kind,'tokenSha256',encode(token_hash,'hex'),'revoked',revoked_at IS NOT NULL) ORDER BY id) FROM sessions),
+ 'historyRows',(SELECT count(*) FROM user_item_data));
+COMMIT;"""
+
+
+class StateCheckError(ValueError):
+    def __init__(self, code):
+        super().__init__(code)
+        self.code = code
+
+
+def validate_source_state(snapshot, details, libraries, actors, resources, cleanup, catalog):
+    """Compare stored rows with captured projections and exact helper revocations."""
+    def check(value, code):
+        if not value:
+            raise StateCheckError(code)
+    try:
+        check(snapshot["schema"] == 28 and snapshot["historyRows"] == 0 and len(snapshot["users"]) == 8 and
+              len(resources["users"]) == 8 and {row["id"] for row in snapshot["users"]} == set(resources["users"]) == {row["id"] for row in actors.values()},
+              "source_schema_or_user_membership_differs")
+        by_id = {row["id"]: row for row in snapshot["users"]}
+        for role, actor in actors.items():
+            row = by_id[actor["id"]]
+            check(row["name"] == actor["username"] and row["admin"] is (role == "admin") and row["disabled"] is False and isinstance(row["policy"], dict), "stored_account_identity_differs")
+            if role == "control-q":
+                check(set(row["policy"]) == set(STORED_Q_POLICY) and row["policy"]["EnabledFolders"] == [] and
+                      all(row["policy"][key] is expected for key, expected in STORED_Q_POLICY.items() if key != "EnabledFolders"), "stored_q_policy_differs")
+            else:
+                check(row["policy"] == {}, "stored_default_policy_differs")
+        library_ids = {row["Id"] for row in libraries.values()}
+        check(len(libraries) == len(snapshot["libraries"]) == len(snapshot["roots"]) == len(library_ids) == 3 and
+              len({row["id"] for row in snapshot["roots"]}) == 3, "library_root_count_differs")
+        for library in libraries.values():
+            check({"id": library["Id"], "name": library["Name"], "collectionType": library["CollectionType"]} in snapshot["libraries"] and
+                  [row["path"] for row in snapshot["roots"] if row["libraryId"] == library["Id"]] == library["Paths"], "library_root_mapping_differs")
+        check(len(snapshot["jobs"]) == len(resources["jobs"]) == 3 and
+              {(row["id"], row["libraryId"]) for row in snapshot["jobs"]} == {(row["id"], row["libraryId"]) for row in resources["jobs"]} and
+              all(row["status"] == "Completed" and row["error"] == "" and row["forceProbe"] is False for row in snapshot["jobs"]), "scan_completion_differs")
+        detail_ids = {row["Id"] for row in details}
+        check(len(details) == len(detail_ids) == 10 and not detail_ids & library_ids and len(snapshot["items"]) == 13 and
+              {row["id"] for row in snapshot["items"]} == detail_ids | library_ids, "stored_item_membership_differs")
+        stored = {row["id"]: row for row in snapshot["items"]}
+        for library in libraries.values():
+            check(stored[library["Id"]] == {"id": library["Id"], "name": library["Name"], "type": "CollectionFolder", "parentId": None, "path": ""}, "collection_folder_shape_differs")
+        for dto in details:
+            row = stored[dto["Id"]]
+            if dto["Type"] == "MusicAlbum":
+                check(dto["Id"] == catalog["album"]["id"] and "Path" not in dto and row["path"] == "" and
+                      row["parentId"] == dto["ParentId"] == libraries["Music"]["Id"], "root_album_projection_differs")
+                observed_path = ""
+            else:
+                observed_path = dto["Path"]
+            check((row["name"], row["type"], row["path"], row["parentId"]) == (dto["Name"], dto["Type"], observed_path, dto["ParentId"]), "catalog_item_projection_differs")
+        check(len(cleanup) == 2 and {row["kind"] for row in cleanup} == {"native", "emby"}, "helper_cleanup_kind_binding_differs")
+        expected_sessions = {("admin" if row["kind"] == "native" else "emby", row["tokenSha256"]) for row in cleanup}
+        check(len(snapshot["sessions"]) == 2 and {row["kind"] for row in snapshot["sessions"]} == {"admin", "emby"} and
+              all(row["revoked"] is True and row["userId"] == actors["admin"]["id"] for row in snapshot["sessions"]) and
+              {(row["kind"], row["tokenSha256"]) for row in snapshot["sessions"]} == expected_sessions, "helper_token_revocation_differs")
+        return {"users": 8, "libraries": 3, "roots": 3, "completedScans": 3, "storedItems": 13, "publicItems": 10, "collectionRoots": 3, "revokedHelperSessions": 2, "historyRows": 0}
+    except StateCheckError:
+        raise
+    except (KeyError, TypeError, ValueError, IndexError):
+        raise StateCheckError("source_snapshot_shape_invalid") from None
+
+
 class Seed:
     def __init__(self, io):
         self.io, self.stage, self.sessions = io, "preflight", {}
@@ -325,17 +616,27 @@ class Seed:
         return self.io.request(label, method, route, body, auth, expected)["body"]
 
     def copy_media(self):
-        need(self.io.value["mediaManifest"]["path"] == str(MEDIA / "manifest.json"), "Original media manifest path differs.")
-        manifest = descriptor(self.io.value["mediaManifest"])
-        need(manifest["marker"] == "goby-client-media-m3e-v1" and manifest["files"] == FILES,
-             "The approved fourteen-file media closure differs.")
+        if self.io.fresh:
+            scoped_descriptor(self.io.value["mediaManifest"], E3, ".json")
+        else:
+            need(self.io.value["mediaManifest"]["path"] == str(MEDIA / "manifest.json"), "Original media manifest path differs.")
+        manifest = validate_media_manifest(descriptor(self.io.value["mediaManifest"]), self.io.fresh)
         account = pwd.getpwnam("goby")
-        destination = C / "data/media"
+        destination = self.io.root / "data/media"
         safe_path(destination, (0, account.pw_uid), True)
         need(destination.stat().st_uid == account.pw_uid and not list(destination.iterdir()), "Candidate media root must be empty.")
+        if self.io.fresh:
+            disk = os.statvfs(destination)
+            need(disk.f_bavail * disk.f_frsize >= MEDIA_TOTAL_BYTES + MEDIA_MIN_FREE_BYTES, "The media copy would consume the preserved free-space floor.")
         entries = list(MEDIA.rglob("*"))
         need(len(entries) <= 30 and all(not path.is_symlink() for path in entries) and
              {str(path.relative_to(MEDIA)) for path in entries if not path.is_dir()} == set(FILES) | {"manifest.json"}, "Original media membership differs.")
+        source_identities = {}
+        if self.io.fresh:
+            source_identities = {name: file_identity(safe_path(MEDIA / name)) for name in FILES}
+            validate_fixture_hardlinks(source_identities)
+            need(all(source_identities[name][6] == size for name, size in manifest["fileBytes"].items()), "The fixture inventory changed before copying.")
+            write_json_once(self.io.private / "source-fixture-identities.json", source_identities)
         write_json_once(self.io.private / "media-root-permissions-intent.json", {"operation": "protect-empty-media-root", "path": str(destination), "before": file_identity(destination.stat()), "owner": "root", "group": "goby", "mode": "0750"})
         os.chown(destination, 0, account.pw_gid)
         os.chmod(destination, 0o750)
@@ -346,6 +647,10 @@ class Seed:
             source, target = MEDIA / name, destination / name
             before = safe_path(source)
             need(before.st_nlink in ((1, 4) if checksum == MOVIE_SHA else (1,)) and before.st_size <= 256 << 20, "Original fixture file bound differs.")
+            if self.io.fresh:
+                disk = os.statvfs(destination)
+                need(file_identity(before) == source_identities[name] and before.st_size == manifest["fileBytes"][name] and
+                     disk.f_bavail * disk.f_frsize >= MEDIA_TOTAL_BYTES - total + MEDIA_MIN_FREE_BYTES, "Fresh fixture size or remaining disk budget differs.")
             total += before.st_size
             need(total <= 512 << 20, "Media copy budget exceeded.")
             write_json_once(self.io.private / ("copy-%02d-intent.json" % number), {"source": str(source), "sourceIdentity": file_identity(before), "sha256": checksum, "destination": str(target), "bytes": before.st_size})
@@ -379,6 +684,9 @@ class Seed:
             with open(target, "rb") as stream:
                 need(hashlib.file_digest(stream, "sha256").hexdigest() == checksum and file_identity(os.fstat(stream.fileno())) == file_identity(copied), "Copied bytes differ.")
             self.resources["copiedFiles"].append(write_json_once(self.io.private / ("copy-%02d-result.json" % number), {"path": str(target), "sha256": checksum, "bytes": copied.st_size, "identity": file_identity(copied)}))
+        if self.io.fresh:
+            need(total == MEDIA_TOTAL_BYTES and len(self.resources["copiedFiles"]) == len(FILES) and
+                 all(file_identity(safe_path(MEDIA / name)) == identity for name, identity in source_identities.items()), "The fresh media copy is incomplete or its source changed.")
 
     def credential(self, role, username, password, user_id):
         pin = write_json_once(self.io.private / (role + "-credentials.json"), {"actorId": item_id(user_id), "serverId": self.server_id, "username": username, "password": password})
@@ -470,10 +778,10 @@ class Seed:
             for directory, name, collection in LIBRARIES:
                 route = "/admin/v1/libraries"
                 library = self.api("create-library-" + directory.lower(), "POST", route,
-                    {"Name": name, "CollectionType": collection, "Paths": [str(C / "data/media" / directory)], "Scan": False}, auth, (201,))["Library"]
+                    {"Name": name, "CollectionType": collection, "Paths": [str(self.io.root / "data/media" / directory)], "Scan": False}, auth, (201,))["Library"]
                 library_id = item_id(library["Id"])
                 self.resources["libraries"].append(library_id)
-                need(library["Name"] == name and library["CollectionType"] == collection and library["Paths"] == [str(C / "data/media" / directory)], "Native library mapping differs.")
+                need(library["Name"] == name and library["CollectionType"] == collection and library["Paths"] == [str(self.io.root / "data/media" / directory)], "Native library mapping differs.")
                 self.libraries[directory] = library
                 job = self.api("start-scan-" + directory.lower(), "POST", route + "/" + library_id + "/scan", {}, auth, (202,))["Job"]
                 job_id = item_id(job["Id"])
@@ -506,16 +814,39 @@ class Seed:
         need(len(self.cleanup) == 2 and all(row["logoutAcknowledged"] and row["sameTokenRejected"] for row in self.cleanup), "Helper credential cleanup remains incomplete.")
         self.io.deadline(cleanup=True)
         provision_input = descriptor(self.io.candidate["input"])
+        effects = {}
+        if self.io.fresh:
+            self.stage = "stored_effects_and_helper_revocation"
+            self.io.pin()
+            need(provision_input == self.io.provision_input and self.io.provision.cluster(pg) == self.io.candidate["clusterSystemIdentifier"], "The provision or database authority changed.")
+            snapshot = parse(self.io.provision.psql("seed-final-stored-state", SOURCE_STATE_QUERY, self.io.candidate["database"]))
+            snapshot_pin = write_json_once(self.io.private / "source-state-after-cleanup.json", snapshot)
+            counts = validate_source_state(snapshot, self.details, self.libraries,
+                {"admin": self.admin, **self.actors, "control-q": self.control}, self.resources, self.cleanup, catalog)
+            target = parse(self.io.provision.psql("seed-final-recovery-empty", "BEGIN READ ONLY; SELECT json_build_object('relations',(SELECT count(*) FROM pg_class WHERE relnamespace='public'::regnamespace),'functions',(SELECT count(*) FROM pg_proc WHERE pronamespace='public'::regnamespace),'types',(SELECT count(*) FROM pg_type WHERE typnamespace='public'::regnamespace),'schemas',(SELECT json_agg(nspname ORDER BY nspname) FROM pg_namespace WHERE nspname!~'^pg_' AND nspname<>'information_schema')); COMMIT;", self.io.candidate["recoveryDatabase"]))
+            need(target == {"relations": 0, "functions": 0, "types": 0, "schemas": ["public"]}, "The isolated recovery target is no longer empty.")
+            account = pwd.getpwnam("goby")
+            for pin in self.resources["copiedFiles"]:
+                copied = descriptor(pin)
+                info = safe_path(Path(copied["path"]), (0, account.pw_uid))
+                need(list(file_identity(info)) == copied["identity"], "A copied fixture changed after scanning.")
+            need(self.io.provision.cluster(pg) == self.io.candidate["clusterSystemIdentifier"], "The final cluster identity changed.")
+            effects = {"sourceState": snapshot_pin, "effectValidation": {**counts, "recoveryTargetEmpty": True, "copiedFilesUnchanged": True}}
         read_checked(self.io.candidate["binary"]["path"], self.io.candidate["binary"]["sha256"])
         candidate_process = self.io.pin()
         self.io.deadline(cleanup=True)
         self.stage = "complete"
-        return write_json_once(self.io.private / "manifest.json", {"kind": "audited-candidate-seed-manifest", "version": 1, "status": "seeded_pending_live_acceptance", "input": self.io.input_pin,
-            "helper": self.io.source_pin, "candidateManifest": MANIFEST, "runtimeInspection": INSPECTION, "serverId": self.server_id, "admin": self.admin, "actors": self.actors, "controlQ": self.control,
+        result = {"kind": "audited-candidate-seed-manifest", "version": 2 if self.io.fresh else 1, "status": "seeded_pending_live_acceptance", "input": self.io.input_pin,
+            "helper": self.io.source_pin, "candidateManifest": self.io.value["candidateManifest"], "runtimeInspection": self.io.value["runtimeInspection"], "serverId": self.server_id, "admin": self.admin, "actors": self.actors, "controlQ": self.control,
             "catalog": catalog, "catalogFile": self.catalog_pin, "actualCatalogDtos": self.dto_pin, "libraries": self.libraries, "roots": {directory: library["Paths"][0] for directory, library in self.libraries.items()},
             "source": {"manifestSha256": provision_input["sourceManifest"]["sha256"], "binarySha256": self.io.candidate["binary"]["sha256"], "schema": 28},
             "processes": {"candidate": candidate_process}, "resources": self.resources, "cleanup": self.cleanup, "requests": self.io.requests, "budgets": BUDGETS,
-            "elapsedMilliseconds": round((time.monotonic() - self.io.started) * 1000), "playbackRequests": 0, "clientAcceptance": False, "candidateAdmissionComplete": False})
+            "elapsedMilliseconds": round((time.monotonic() - self.io.started) * 1000), "playbackRequests": 0, "clientAcceptance": False, "candidateAdmissionComplete": False}
+        if self.io.fresh:
+            result.update(sourceEvidence=self.io.candidate["productEvidence"], provisionInput=self.io.candidate["input"],
+                          provisionHelper=self.io.value["runtimeHelper"], inspectionInput=self.io.attestation["input"],
+                          inspectionHelper=self.io.value["inspectionHelper"], mediaManifest=self.io.value["mediaManifest"], **effects)
+        return write_json_once(self.io.private / "manifest.json", result)
 
     def catalog(self, auth):
         base = "/emby/Users/" + self.admin["id"]
@@ -532,20 +863,21 @@ class Seed:
                 details.append(detail)
         need(len({row["Id"] for row in details}) == len(details) == 10, "The expected ten-item catalog closure differs.")
         self.dto_pin = write_json_once(self.io.private / "actual-catalog-dtos.json", details)
-        return map_catalog(details, self.libraries)
+        self.details = details
+        return map_catalog(details, self.libraries, root=self.io.root, observed_tv=self.io.fresh)
 
 
-def mapped_subtitle(row, codec):
+def mapped_subtitle(row, codec, root=C):
     path = "Movies/M3e Client Movie.en." + codec
     need(codec in ("srt", "vtt") and row["Codec"] == codec and row["IsExternal"] is True and row["Language"] in ("en", "eng") and
-         type(row["Index"]) is int and row["Index"] >= 0 and row["Path"] == str(C / "data/media" / path), "Actual external subtitle fields differ.")
+         type(row["Index"]) is int and row["Index"] >= 0 and row["Path"] == str(root / "data/media" / path), "Actual external subtitle fields differ.")
     return {"index": row["Index"], "codec": codec, "language": row["Language"], "external": True, "sha256": FILES[path]}
 
 
-def map_catalog(details, libraries):
-    """Map observed native hierarchy; SeriesId is derived from actual parent edges."""
+def map_catalog(details, libraries, root=C, *, observed_tv=False):
+    """Map parent edges; fresh embedded catalogs must also expose the TV metadata."""
     def only(kind, path=None):
-        rows = [row for row in details if row["Type"] == kind and (path is None or row.get("Path") == str(C / "data/media" / path))]
+        rows = [row for row in details if row["Type"] == kind and (path is None or row.get("Path") == str(root / "data/media" / path))]
         need(len(rows) == 1, "Actual catalog mapping is absent or ambiguous.")
         return rows[0]
 
@@ -553,7 +885,7 @@ def map_catalog(details, libraries):
         need(row["Type"] == kind and (name is None or row["Name"] == name), "Actual item title/type differs.")
         result = {"id": item_id(row["Id"]), "type": kind, "name": row["Name"], "path": row["Path"]}
         if kind in ("Movie", "Episode", "Audio"):
-            relative = str(Path(row["Path"]).relative_to(C / "data/media"))
+            relative = str(Path(row["Path"]).relative_to(root / "data/media"))
             need(relative in FILES and type(row["RunTimeTicks"]) is int and row["RunTimeTicks"] > 0, "Unapproved playable item.")
             sources = row["MediaSources"]
             need(len(sources) == 1 and sources[0]["Path"] == row["Path"] and sources[0]["ItemId"] == row["Id"] and sources[0]["RunTimeTicks"] == row["RunTimeTicks"] and
@@ -573,10 +905,12 @@ def map_catalog(details, libraries):
     for codec in ("srt", "vtt"):
         matching = [row for row in subtitles if row["Codec"] == codec]
         need(len(matching) == 1, "Subtitle codec mapping differs.")
-        result["subtitles"].append(mapped_subtitle(matching[0], codec))
+        result["subtitles"].append(mapped_subtitle(matching[0], codec, root=root))
     need(len({row["index"] for row in result["subtitles"]}) == 2, "Subtitle indexes overlap.")
     album = only("MusicAlbum")
     need(album["Name"] in ("Music", "M3e Synthetic Album"), "Album name differs.")
+    if observed_tv:
+        need("Path" not in album and album["ParentId"] == libraries["Music"]["Id"], "The root album projection differs.")
     result["album"] = {"id": item_id(album["Id"]), "name": album["Name"]}
     for codec in ("mp3", "flac"):
         row = only("Audio", "Music/M3e Client Audio." + codec)
@@ -587,21 +921,37 @@ def map_catalog(details, libraries):
     series = only("Series", "TV/M3e Client Series")
     result["series"] = mapped(series, "Series", "M3e Client Series")
     result["seasons"], result["episodes"] = [], []
+    seasons = {}
     for number in (1, 2):
         rows = [row for row in details if row["Type"] == "Season" and row["ParentId"] == series["Id"] and row["IndexNumber"] == number]
         need(len(rows) == 1, "Actual season parent edge differs.")
         row = rows[0]
+        seasons[number] = row
+        if observed_tv:
+            need(row["SeriesId"] == series["Id"] and row["SeriesName"] == series["Name"], "The observed season relationship metadata differs.")
         result["seasons"].append({"id": item_id(row["Id"]), "type": "Season", "indexNumber": number, "seriesId": series["Id"], "parentId": row["ParentId"]})
     for season, episode in ((1, 1), (1, 2), (2, 1)):
         path = "TV/M3e Client Series/Season %02d/M3e Client Series S%02dE%02d.mp4" % (season, season, episode)
         row = only("Episode", path)
         need(row["ParentId"] == result["seasons"][season - 1]["id"] and row["ParentIndexNumber"] == season and row["IndexNumber"] == episode, "Actual episode parent edge differs.")
+        if observed_tv:
+            need(row["SeriesId"] == series["Id"] and row["SeriesName"] == series["Name"] and
+                 row["SeasonId"] == seasons[season]["Id"] and row["SeasonName"] == seasons[season]["Name"], "The observed episode relationship metadata differs.")
         projected = mapped(row, "Episode", "Episode %d-%d" % (season, episode))
         need(projected["runtimeTicks"] >= 1200000000, "Episode duration differs.")
         result["episodes"].append({**projected, "seriesId": series["Id"], "parentId": row["ParentId"], "parentIndexNumber": season, "indexNumber": episode})
     for field, directory in (("musicLibrary", "Music"), ("tvLibrary", "TV")):
         result[field] = {"id": item_id(libraries[directory]["Id"]), "name": libraries[directory]["Name"]}
     return result
+
+
+def private_failure_receipt(failure, error):
+    """Keep a bounded diagnostic only in the private receipt copy."""
+    return {**failure, "errorMessage": str(error)[:4096]}
+
+
+def public_failure_summary(failure):
+    return {key: failure[key] for key in ("status", "stage", "errorType", "receipt", "candidateAdmissionComplete")}
 
 
 def main():
@@ -613,12 +963,10 @@ def main():
         parser.add_argument("--" + name, required=True)
     args = parser.parse_args()
     source_pin = {"path": str(Path(__file__).absolute()), "sha256": args.source_sha256}
-    read_checked(source_pin["path"], source_pin["sha256"])
     input_pin = {"path": args.input, "sha256": args.input_sha256}
     value = descriptor(input_pin)
-    need(set(value) == {"kind", "version", "runId", "output", "candidateManifest", "runtimeInspection", "runtimeHelper", "mediaManifest", "budgets"} and
-         value["kind"] == "audited-candidate-seed-input" and value["version"] == 1 and value["budgets"] == BUDGETS and
-         re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", value["runId"]), "Unexpected one-shot seed contract.")
+    validate_seed_input(value, input_pin, source_pin)
+    read_checked(source_pin["path"], source_pin["sha256"])
     job = Seed(CandidateIO(value, input_pin, source_pin))
     try:
         manifest = job.run()
@@ -630,10 +978,10 @@ def main():
                    "candidateAdmissionComplete": False, "receipt": None}
         try:
             if job.io.created:
-                failure["receipt"] = write_json_once(job.io.private / "failure.json", failure)
+                failure["receipt"] = write_json_once(job.io.private / "failure.json", private_failure_receipt(failure, error))
         except Exception as receipt_error:
             failure["receiptErrorType"] = type(receipt_error).__name__
-        print(json.dumps(failure))
+        print(json.dumps(public_failure_summary(failure) if job.io.fresh else failure))
         return 2
 
 

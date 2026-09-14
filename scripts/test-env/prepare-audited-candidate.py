@@ -2,6 +2,7 @@
 """Provision one fresh audited candidate; leave bootstrap and acceptance pending."""
 from __future__ import annotations
 import argparse
+import fcntl
 from datetime import datetime, timezone
 import hashlib
 import http.client
@@ -28,6 +29,9 @@ ENV = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.
 PROTECTED = ("goby-client-m3e.service", "goby-foundation-test.service", "postgresql@17-main.service")
 INACCESSIBLE = ("/opt/goby-test", "/opt/goby-dev", "/opt/goby-client-m3e", "/opt/goby-fixtures", "/var/lib/goby-test", "/var/lib/postgresql")
 PRESERVED_AUDITED_CANDIDATE = "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b"
+PRESERVED_AUDITED_UNITS = tuple("goby-audited-20260913T073217Z-ef77f9ffcf0b-" + role + ".service" for role in ("postgres", "server"))
+DEPLOYMENT_LOCK = Path("/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock")
+BOUNDED_BACKUP_ENV = {"GOBY_BACKUP_MAX_OBJECT_BYTES": "67108864", "GOBY_BACKUP_MAX_TOTAL_BYTES": "268435456"}
 M6 = Path("/opt/goby-test/m6-embedded-20260914")
 FULL_PRIOR = Path("/opt/goby-test/full-regression-20260914")
 FULL_CONTINUATION = Path("/opt/goby-test/full-regression-continuation-20260914")
@@ -366,12 +370,37 @@ def dashboard_environment(value, install):
     return {} if value.get("version", 1) == 2 else {"GOBY_WEB_DIR": str(install / "admin")}
 
 
+def backup_environment(value):
+    return dict(BOUNDED_BACKUP_ENV) if value.get("version", 1) == 2 else {}
+
+
+def protected_units(value):
+    return PROTECTED + (PRESERVED_AUDITED_UNITS if value.get("version", 1) == 2 else ())
+
+
+def acquire_deployment_lock(value):
+    """Use the existing deployment lock without creating or changing its file."""
+    if value.get("version", 1) != 2:
+        return None
+    before = owned(DEPLOYMENT_LOCK)
+    need(before.st_nlink == 1, "The deployment lock must be the original regular file.")
+    descriptor = os.open(DEPLOYMENT_LOCK, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        need(identity(os.fstat(descriptor)) == identity(before), "The deployment lock changed during open.")
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 def product_manifest_fields(value):
     if value["version"] == 1:
         return {"frontendReport": value["frontendReport"], "backendReport": value["backendReport"]}
     return {"provisionVersion": 2, "productEvidence": {key: value[key] for key in
             ("sourceArchive", "sourceManifest", "embeddedBuildManifest", "productionSourceBinding", "regressionReview", "regressionClosure")},
             "ordinaryRegressionStatus": FULL_STATUS, "ordinaryRegressionPhases": 2, "taggedFullRegressionClaimed": False,
+            "backupProfile": {"name": "bounded-fixture-backup-v1", "environment": backup_environment(value)},
             "dashboard": {"mode": "embedded", "buildManifest": value["embeddedBuildManifest"], "assetCount": 57,
                           "externalDirectoryInstalled": False, "webDirectoryOverridePresent": False}}
 
@@ -621,14 +650,28 @@ class Provision:
              "The embedded candidate received an external dashboard override.")
         need(self.show(self.units["server"]) == observed, "Candidate changed during embedded-environment inspection.")
 
+    def protection_snapshot(self):
+        units = {unit: self.show(unit) for unit in protected_units(self.value)}
+        need(all(units[unit].get("ActiveState") == "inactive" and units[unit].get("MainPID") == "0" for unit in PROTECTED[:2]),
+             "The preserved source55 and primary services must retain the reviewed inactive baseline.")
+        snapshot = {"units": units}
+        if self.value.get("version", 1) == 2:
+            for unit in (PROTECTED[2], *PRESERVED_AUDITED_UNITS):
+                state = units[unit]
+                need(state.get("ActiveState") == "active" and state.get("SubState") == "running" and
+                     str(state.get("MainPID", "")).isdigit() and int(state["MainPID"]) > 1 and
+                     re.fullmatch(r"[0-9a-f]{32}", state.get("InvocationID", "")), "A preserved running service changed identity.")
+            snapshot["bootId"] = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+            need(re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", snapshot["bootId"]), "Invalid preserved boot identity.")
+        return snapshot
+
     def run(self):
         report, binary, assets = verify_products(self.value)
         for unit in self.units.values():
             need(not os.path.lexists(Path("/run/systemd/system") / unit) and self.show(unit).get("LoadState") == "not-found", "New unit collision.")
         need(not os.path.lexists(self.root), "Fresh candidate scope already exists.")
-        protected = {unit: self.show(unit) for unit in PROTECTED}
-        need(all(protected[unit].get("ActiveState") == "inactive" and protected[unit].get("MainPID") == "0" for unit in PROTECTED[:2]),
-             "The preserved source55 and primary services must retain the reviewed inactive baseline.")
+        protection = self.protection_snapshot()
+        protected = protection["units"]
         if self.value["version"] == 2:
             identities = {pwd.getpwnam(user).pw_uid for user in ("goby", "postgres")}
             need(len(identities) == 2 and all(uid > 0 for uid in identities), "The new application and PostgreSQL must use distinct non-root OS accounts.")
@@ -642,7 +685,8 @@ class Provision:
             self.mkdir(self.root, mode=0o755)
             self.mkdir(self.private)
             self.created = True
-            self.save("provision-intent.json", {"input": self.input_pin, "source": self.source_pin, "scope": str(self.root), "units": self.units, "protected": protected})
+            self.save("provision-intent.json", {"input": self.input_pin, "source": self.source_pin, "scope": str(self.root), "units": self.units, "protected": protected,
+                      **({"protectedBootId": protection["bootId"]} if self.value["version"] == 2 else {})})
             self.mkdir(self.install, mode=0o755)
             self.install_dashboard(assets)
             installed = self.write(self.install / "goby", binary, mode=0o755)
@@ -662,7 +706,7 @@ class Provision:
             self.write(self.pgroot / "hba.conf", f"local all postgres peer\nlocal all all reject\nhost {db} {db} 127.0.0.1/32 scram-sha-256\nhost {target_db} {target_db} 127.0.0.1/32 scram-sha-256\nhost all all 0.0.0.0/0 reject\nhost all all ::0/0 reject\n".encode(), "postgres")
             password, target_password, setup = secrets.token_hex(32), secrets.token_hex(32), secrets.token_hex(32)
             need(len({password, target_password, setup}) == 3, "Independent candidate credentials must be distinct.")
-            runtime = {**SOFTWARE_ENV, **dashboard_environment(self.value, self.install), "GOBY_DATABASE_URL": f"postgres://{db}:{password}@127.0.0.1:{port}/{db}?sslmode=disable", "GOBY_LISTEN": f"127.0.0.1:{webport}",
+            runtime = {**SOFTWARE_ENV, **backup_environment(self.value), **dashboard_environment(self.value, self.install), "GOBY_DATABASE_URL": f"postgres://{db}:{password}@127.0.0.1:{port}/{db}?sslmode=disable", "GOBY_LISTEN": f"127.0.0.1:{webport}",
                        "GOBY_PUBLIC_URL": self.value["public_url"], "GOBY_SETUP_TOKEN": setup,
                        "GOBY_COOKIE_SECURE": "false", "GOBY_STARTUP_TIMEOUT": "45s", "GOBY_MEDIA_ROOTS": str(self.data / "media"),
                        "GOBY_API_KEY_MASTER_KEY_FILE": str(self.data / "master.key"), "GOBY_BACKUP_DIR": str(self.data / "backups"),
@@ -783,7 +827,7 @@ class Provision:
             if self.value["version"] == 2:
                 self.verify_embedded_runtime(server)
             read(self.install / "goby", installed["sha256"], len(binary))
-            need({unit: self.show(unit) for unit in PROTECTED} == protected, "An unrelated service identity changed.")
+            need(self.protection_snapshot() == protection, "An unrelated service or boot identity changed.")
             final_listener = self.listener(server, server_identity)
             need(final_listener == listen_anchor, "Candidate listener changed before manifest publication.")
             manifest = {"kind": "audited-candidate-private-manifest", "status": "running_awaiting_live_acceptance", "runId": self.value["runId"],
@@ -798,6 +842,7 @@ class Provision:
                         "startCalls": self.starts, "commandResponsibilities": self.command_responsibilities}
             if self.value["version"] == 2:
                 manifest["loadedInaccessiblePaths"] = self.loaded_inaccessible_paths
+                manifest["protectedBaseline"] = protection
             return self.save("manifest.json", manifest)
         finally:
             for reservation in reservations:
@@ -828,12 +873,32 @@ def main():
     read(Path(__file__).absolute(), args.source_sha256)
     pin = {"path": args.input, "sha256": args.input_sha256}
     job = Provision(validate_input(descriptor(pin)), pin, {"path": str(Path(__file__).absolute()), "sha256": args.source_sha256})
+    lock = None
+    guarded = job.value["version"] == 2
+    def interrupted(_number, _frame):
+        raise ValueError("Candidate provisioning was interrupted; retain its recorded resources.")
+    if guarded:
+        for number in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGALRM):
+            signal.signal(number, interrupted)
+        signal.alarm(900)
     try:
+        lock = acquire_deployment_lock(job.value)
         result = job.run()
         print(json.dumps({"status": "running_awaiting_live_acceptance", "manifest": result, "candidateAdmissionComplete": False}))
     except Exception as error:
+        if guarded:
+            signal.alarm(0)
+            for number in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGALRM):
+                signal.signal(number, signal.SIG_IGN)
         print(json.dumps(failure_report(job, error)))
         return 2
+    finally:
+        if guarded:
+            signal.alarm(0)
+            for number in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP, signal.SIGALRM):
+                signal.signal(number, signal.SIG_IGN)
+        if lock is not None:
+            os.close(lock)
     return 0
 
 

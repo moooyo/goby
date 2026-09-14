@@ -1,7 +1,8 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after ordinary full regression completed across two
-phases, with independent review and evidence/resource closure.
+Reviewed on 2026-09-14 after ordinary regression closure and independent review
+of the fresh nonroot candidate's initial inspection, seed and native admission.
+Candidate admission is complete; client-video acceptance remains open.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -11,9 +12,10 @@ their original meanings and are not fresh deployment observations.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the selected baseline's latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance; later working-tree changes require their own verification |
-| Intended-version regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Prior partial Library counts are excluded. No tagged full-suite or privileged mount acceptance; the new independent nonroot embedded candidate is not provisioned, seeded or admitted |
-| Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
+| Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
+| Intended-version regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Prior partial Library counts are excluded. No tagged full-suite or privileged mount acceptance; new candidate provisioning does not pass runtime or client acceptance |
+| Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
+| Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
 | M2 catalog | The rescan/ACL Store-reopen test and separate real native amd64 service stop/start run passed; independent saved-evidence review and resource closure are complete | The native run uses a root profile and the same PG process. Nonroot, PG restart, host durability, representative capacity and the paused full-scan mount proof are not established |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
@@ -45,17 +47,93 @@ owned processes/PG/cgroups, ext4 mount/loop, RAM and the lock closed. The source
 archive remains stored once under the first scope; raw database archives and
 logs stay remote/private. Two closed older build caches were reclaimed without
 source/module/log/database changes, preserving the earlier zero-command lock
-rejection. Root free space was 1,561,907,200 bytes after sealing. The next v2
-nonroot embedded-candidate helper is prepared and guard-tested: 38 corrected
-preparation guards plus 8 seed, 8 reconcile and 7 runtime guards passed. These
-61 guards are separate from the Go 2,276 count. The original Environment versus
-UnsetEnvironment test-assertion failure is retained. Its read-only product gate
-selected the embedded `59096592...` artifact and zero external administrator assets.
-Existing seed/runtime/admission consumers still bind old manifest/epoch inputs;
-they require separate adaptation and new v2 inputs. No provision, seed or
-candidate admission has run.
+rejection. Root free space was 1,561,907,200 bytes after sealing. The regression
+receipt's 61 preparation/legacy-consumer guards and pre-provision status remain
+historical facts. The original Environment versus UnsetEnvironment assertion
+failure is retained.
 
-All four first-run worker cleanup checks passed, PG stopped normally and the
+The subsequent [fresh-candidate checkpoint](fresh-embedded-candidate-checkpoint.json)
+records one actual independent nonroot provision of embedded `59096592...`.
+The app uid 995 and PostgreSQL uid 103 use separate owned directories; the old
+candidate and protected paths are hidden from both services. All 57 embedded
+administrator assets are selected with no external administrator directory.
+Provisioning observed schema 28/28 migrations/zero users and 1,481,416,704 free
+root bytes. Direct HTTP uses 28698; 28696 is only a reserved browser origin,
+not a verified gateway. Private credentials and the raw manifest stay remote.
+These process and capacity facts retain their observation time and must be
+rechecked before dependent work.
+
+Fresh seed and admission adapters are implemented in the working tree. Current
+remote guards passed 42 preparation, 31 SQL-corrected inspector, 83 seed,
+39 admission and 18 legacy TV tests: 213 guards. Superseded revisions are not
+counted again; all operator counts are separate from the Go 2,276 results.
+The final seed revision only adds private failure text bounded to 4,096
+characters; the admission reader adds a private runtime-inspection failure sink.
+
+The first two initial-inspection attempts failed before any HTTP, bootstrap,
+seed or admission at those checkpoints.
+Attempt 01 stopped before SQL because `systemctl show` omitted the empty PG
+`EnvironmentFiles` property; typed D-Bus reads established its exact empty
+value and unchanged unit identity. Attempt 02 passed that correction and made
+one SQL call, but rejected its unrecorded output and retained
+`readProcessesClosed=false`. A separate one-command read-only diagnostic
+confirmed psql exit 0 with a 55-byte warning caused by `PGPASSFILE=/dev/null`.
+That diagnostic's frontend and backend closed, no other postgres/psql backend
+remained, and the postmaster identity was unchanged. Neither this diagnosis
+nor the successful diagnostic SQL retroactively passes attempt 02.
+
+The reviewed SQL correction uses an explicitly absent password-file path in
+the owned scope, retains strict stderr checking and captures failed-command
+outputs and exit facts. Corrected initial inspection then passed and was
+independently reviewed: nine SQL calls, 63 HTTP requests, 1,107,438 response
+bytes, 298 commands and 284 unit calls. All 57 embedded assets and five HTML
+references matched. It made zero business writes, preserved process and
+protected identities and closed its readers. The original two failures remain
+unchanged.
+
+One fresh seed also passed independent review. It used 49 normal and four
+cleanup requests over 19,096 milliseconds, copied fourteen independent media
+files totaling 201,156,949 bytes and created eight users, three libraries and
+three scans. Ten public catalog DTOs correspond to thirteen stored items.
+Both owned credentials passed logout 204 / exact-credential 401 and stored
+revocation checks; no playback ran. The review confirms seven closed SQL
+frontend commands, four cluster-identity and 109 server/listener checks. It
+does not claim per-SQL backend-absence receipts or a final complete PostgreSQL
+process-identity receipt that the seed did not record.
+
+Native admission against this same candidate exited 0 after 601,357 milliseconds.
+Its final report records `admitted_for_core_client`,
+`candidateAdmissionComplete=true` and `clientAcceptance=false`. Actual traffic
+was 82 normal plus six cleanup requests, 88 in total, with no failure and no
+cleanup failures. The inactive restore stage remains retained. The fixed
+600-second health window and 129-request cap were not expanded; the cap is
+not an observed request count. Independent saved-evidence review passed:
+eleven health samples span exactly 600,000 milliseconds, all nine TV checks
+match, and three new sessions completed logout 204 / same-token 401 with
+stored revocation. Source changes are limited to those sessions, two devices
+and fourteen activity rows; the other 32 tables, preserved old rows and all
+five bounded sequence expectations matched. Backup HEAD, range and full
+download agree on the 290,038-byte archive. The ready-to-cancelled inactive
+stage preserves all 35 tables and five sequences, excluding only `capturedAt`
+from snapshot comparison.
+
+The review also checked 23 runtime SQL samples with their raw outputs, records
+and intents, 101 complete and closed reader commands, fourteen consistent
+lease checks, fourteen fixtures and 190 server/listener checks. It bound the
+separate current metadata checkpoint below without new SQL, HTTP, service
+changes, runtime probes or business replay. Initial inspection, seed and
+admission are consumed; do not repeat them, reprovision or reset the candidate.
+
+An independent post-admission metadata check matched five protected identities
+and the candidate/PostgreSQL process/listener identities, including PID, boot,
+start ticks, UID, executable inode and cgroup. Both owned libpq password-file
+paths remained absent; metadata commands closed with zero SQL, HTTP, service
+changes or initial-inspection replay. Its later capacity observation was
+1,233,956,864 free root bytes and 8,227,144 KiB MemAvailable. These values are
+not a reservation for another heavy build. This check does not supply missing
+historical per-SQL backend evidence from the seed.
+
+All four first-regression-run worker cleanup checks passed, PG stopped normally and the
 unit/cgroup closed. The reviewed copy-only archive closure subsequently closed
 the ext4 mount, exact loop and RAM mount, retaining original failed artifacts
 and complete private archives. Rebuildable Go-cache release preserved source,
@@ -144,14 +222,16 @@ owned M6 build tmpfs. Protected state and the frozen module cache stayed exact.
 The [build document](embedded-administrator-build.md) preserves the detailed
 receipts and scope. That immutable M6 build checkpoint records no native runtime
 execution at its own boundary. The later native amd64 test above is separate
-evidence; no main/candidate deployment occurred. New candidate admission remains
-pending. Ordinary full
+evidence; no main/candidate deployment occurred at that historical checkpoint.
+The fresh nonroot admission and its independent review have now passed
+separately. Ordinary full
 regression and the 374-file source bridge are now complete as recorded above;
 they neither establish tagged full-suite acceptance nor inherit the old
 2,270-test proof. Native arm64, OCI, GPU, licensing and full M6 remain open.
-Next, prepare and admit a new independent nonroot embedded candidate, preserving
-all existing instances and evidence. Capacity/blocked-I/O preparation
-can proceed independently; the paused M2 launcher and consumed client/recovery
+Next, prepare an independent 10,000-item catalog baseline under its own resource
+limits; that profile has not run and is not an SLO, actual blocked-filesystem
+or scan-throughput result. Representative capacity and blocked I/O remain
+separate obligations. The paused M2 launcher and consumed client/recovery
 scopes retain their existing limits.
 
 The [subtitle response-identity review](audited-subtitles-client01-review.md)

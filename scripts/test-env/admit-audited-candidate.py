@@ -29,6 +29,22 @@ from urllib.parse import urlencode
 MIB = 1 << 20
 LIMITS = {"maximumSeconds": 900, "cleanupSeconds": 180,
           "maximumRequests": 120, "cleanupRequests": 10}
+FRESH_LIMITS = {**LIMITS, "maximumRequests": 129}
+FRESH_ROOT = Path("/opt/goby-test/embedded-candidate-20260914")
+FRESH_SOURCE_MANIFEST = {
+    "path": "/opt/goby-test/full-regression-continuation-20260914/retained/source-manifest.json",
+    "sha256": "95fe6a40ecabdfe6b48260dcf200cf8a49d0cf9664c407ca91cd9eaba539d6f6"}
+FRESH_BINARY_SHA = "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312"
+FRESH_PRODUCT_HASHES = {
+    "sourceArchive": "418f9803237e02e0859f9bef8f6ed646730acb590a3482867a288cd64e8a0fad",
+    "sourceManifest": FRESH_SOURCE_MANIFEST["sha256"],
+    "embeddedBuildManifest": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683",
+    "productionSourceBinding": "823870bb9bcf9e2ca4b35e483d617de34e1c541b273cd6bf02e647a066e920dc",
+    "regressionReview": "5b946d4b4bfee2b177b53861c89fad690c08c406b832a26f778d563ed4174b72",
+    "regressionClosure": "6cd0b024834315db240d6268c94b578e4beb99977fd1740d51c5494cf4508b1c"}
+FRESH_BACKUP_PROFILE = {"name": "bounded-fixture-backup-v1", "environment": {
+    "GOBY_BACKUP_MAX_OBJECT_BYTES": "67108864", "GOBY_BACKUP_MAX_TOTAL_BYTES": "268435456"}}
+FRESH_INSPECTION_BUDGETS = {"maximumSeconds": 900, "maximumSqlSessions": 64}
 CATALOG_RELATIVE = "internal/backuppg/catalogs/schema-28-postgresql-17.json"
 SOURCE_MANIFEST_SHA = "6382c327bada158e06a3fda318d6bf85836a7be4457cf523314f87fbb64f8c0b"
 INSPECTION_SHA = "2347a80728803612de59d4de34f6a90f7a1005a30f5ed4092813f1915548c5bf"
@@ -184,12 +200,15 @@ def validate_input(value):
     common = {"kind", "version", "runId", "runtimeHelper", "admissionHelper", "compiledCatalog", "output", "budgets"}
     versions = {1: common | {"candidateManifest", "seedManifest", "runtimeInspection", "seedHelper", "inspectionHelper", "sourceManifest"},
                 2: common | {"runtimeEpoch", "seedRuntimeBinding"},
-                3: common | {"runtimeEpoch", "seedRuntimeBinding", "admissionKind", "reusedAdmission04", "transitionCloseout"}}
+                3: common | {"runtimeEpoch", "seedRuntimeBinding", "admissionKind", "reusedAdmission04", "transitionCloseout"},
+                4: common | {"candidateManifest", "seedManifest", "runtimeInspection", "seedHelper", "inspectionHelper", "sourceManifest", "admissionKind"}}
     need(isinstance(value, dict) and type(value.get("version")) is int and value["version"] in versions,
          "admission_input_version")
     fields = versions[value["version"]]
+    limits = FRESH_LIMITS if value["version"] == 4 else TV_LIMITS if value["version"] == 3 else LIMITS
+    same_limits = canonical(value.get("budgets")) == canonical(limits) if value["version"] == 4 else value.get("budgets") == limits
     need(isinstance(value, dict) and set(value) == fields and value["kind"] == "audited-candidate-admission-input"
-         and value["budgets"] == (TV_LIMITS if value["version"] == 3 else LIMITS), "admission_input_contract")
+         and same_limits, "admission_input_contract")
     need(isinstance(value["runId"], str) and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}", value["runId"]),
          "invalid_admission_run_id")
     pins = fields - {"kind", "version", "runId", "output", "budgets", "admissionKind"}
@@ -206,7 +225,84 @@ def validate_input(value):
     need(output.is_absolute() and str(output).startswith("/opt/goby-test/") and ".." not in output.parts and
          output.name.startswith("candidate-live-admission-") and
          all(not Path(value[key]["path"]).is_relative_to(output) for key in pins), "invalid_admission_output_scope")
+    if value["version"] == 4:
+        need(value["admissionKind"] == "fresh_embedded" and output.parent == FRESH_ROOT and
+             canonical(value["sourceManifest"]) == canonical(FRESH_SOURCE_MANIFEST), "fresh_admission_source_or_scope")
+        for key in ("runtimeHelper", "seedHelper", "admissionHelper", "inspectionHelper", "seedManifest", "runtimeInspection"):
+            need(Path(value[key]["path"]).is_relative_to(FRESH_ROOT), "fresh_admission_helper_or_evidence_scope")
     return value
+
+
+def validate_fresh_embedded_authority(value, candidate, provision_input, seed, inspection):
+    """Bind a new provision and seed directly; historical epochs are not actors."""
+    need(value.get("version") == 4 and all(isinstance(row, dict) for row in (candidate, provision_input, seed, inspection)),
+         "fresh_admission_authority_shape")
+    run_id = candidate.get("runId", "")
+    need(isinstance(run_id, str) and re.fullmatch(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}", run_id), "fresh_candidate_run_id")
+    root = Path("/opt/goby-audited-candidate-" + run_id)
+    need(root != Path("/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b") and
+         candidate.get("kind") == "audited-candidate-private-manifest" and type(candidate.get("provisionVersion")) is int and
+         candidate["provisionVersion"] == 2 and
+         candidate.get("status") == "running_awaiting_live_acceptance" and
+         candidate.get("bootstrapExecuted") is False and candidate.get("recoveryRestoreExecuted") is False and
+         candidate.get("clientAcceptance") is False and candidate.get("candidateAdmissionComplete") is False,
+         "fresh_candidate_provision_required")
+    need(provision_input.get("kind") == "audited-candidate-provision-input" and type(provision_input.get("version")) is int and
+         provision_input["version"] == 2 and provision_input.get("runId") == run_id and
+         provision_input.get("dashboardProfile") == "embedded-administrator-v1" and
+         provision_input.get("transcodingProfile") == "software-baseline-v1", "fresh_provision_input_profile")
+    product = candidate.get("productEvidence", {})
+    need(set(product) == set(FRESH_PRODUCT_HASHES) and
+         canonical(product) == canonical({key: provision_input.get(key) for key in FRESH_PRODUCT_HASHES}) and
+         all(descriptor(product[key])["sha256"] == digest for key, digest in FRESH_PRODUCT_HASHES.items()) and
+         canonical(product["sourceManifest"]) == canonical(value["sourceManifest"]), "fresh_product_evidence_binding")
+    need(candidate.get("binary") == {"path": str(root / "install/goby"), "sha256": FRESH_BINARY_SHA} and
+         candidate.get("dataDirectory") == str(root / "data") and
+         value["candidateManifest"]["path"] == str(root / "private/manifest.json"), "fresh_candidate_layout_or_binary")
+    dashboard = {"mode": "embedded", "buildManifest": product["embeddedBuildManifest"], "assetCount": 57,
+                 "externalDirectoryInstalled": False, "webDirectoryOverridePresent": False}
+    need(canonical(candidate.get("dashboard")) == canonical(dashboard) and
+         canonical(candidate.get("backupProfile")) == canonical(FRESH_BACKUP_PROFILE) and
+         candidate.get("ordinaryRegressionStatus") == "passed_with_explicit_profile_gap" and
+         type(candidate.get("ordinaryRegressionPhases")) is int and candidate["ordinaryRegressionPhases"] == 2 and
+         candidate.get("taggedFullRegressionClaimed") is False,
+         "fresh_embedded_or_backup_profile_changed")
+    need(inspection.get("kind") == "audited-candidate-runtime-inspection" and type(inspection.get("version")) is int and inspection["version"] == 3 and
+         inspection.get("status") == "ready_pending_seed" and inspection.get("failure") is None and
+         canonical(inspection.get("provisionManifest")) == canonical(value["candidateManifest"]) and
+         canonical(inspection.get("provisionInput")) == canonical(candidate["input"]) and
+         canonical(inspection.get("provisionHelper")) == canonical(value["runtimeHelper"]) and
+         canonical(inspection.get("helper")) == canonical(value["inspectionHelper"]) and
+         canonical(inspection.get("sourceEvidence")) == canonical(product), "fresh_initial_inspection_binding")
+    initial_database, initial_dashboard = inspection.get("database", {}), inspection.get("dashboard", {})
+    need(type(initial_database.get("sourceSchemaVersion")) is int and initial_database["sourceSchemaVersion"] == 28 and
+         type(initial_database.get("sourceUsers")) is int and initial_database["sourceUsers"] == 0 and
+         initial_database.get("recoveryTargetEmpty") is True and type(initial_dashboard.get("assetCount")) is int and initial_dashboard["assetCount"] == 57 and
+         initial_dashboard.get("allAssetsMatched") is True and type(initial_dashboard.get("entryReferencesMatched")) is int and
+         initial_dashboard["entryReferencesMatched"] == 5, "fresh_initial_inspection_incomplete")
+    need(canonical(inspection.get("processes")) == canonical({"server": candidate["serverIdentity"], "postgres": candidate["postgresIdentity"]}) and
+         inspection["httpListener"]["socketInode"] == candidate["listener"]["socketInode"], "fresh_initial_process_or_listener_changed")
+    need(seed.get("kind") == "audited-candidate-seed-manifest" and type(seed.get("version")) is int and seed["version"] == 2 and
+         seed.get("status") == "seeded_pending_live_acceptance" and type(seed.get("playbackRequests")) is int and seed["playbackRequests"] == 0 and
+         seed.get("clientAcceptance") is False and seed.get("candidateAdmissionComplete") is False and
+         len(seed.get("cleanup", [])) == 2 and
+         all(row.get("logoutAcknowledged") is True and row.get("sameTokenRejected") is True for row in seed["cleanup"]),
+         "fresh_seed_or_cleanup_incomplete")
+    for key, expected in (("candidateManifest", value["candidateManifest"]), ("runtimeInspection", value["runtimeInspection"]),
+                          ("helper", value["seedHelper"]), ("provisionInput", candidate["input"]),
+                          ("provisionHelper", value["runtimeHelper"]), ("inspectionInput", inspection["input"]),
+                          ("inspectionHelper", value["inspectionHelper"]), ("sourceEvidence", product)):
+        need(canonical(seed.get(key)) == canonical(expected), "fresh_seed_provenance_changed:" + key)
+    need(canonical(seed.get("source")) == canonical({"manifestSha256": FRESH_SOURCE_MANIFEST["sha256"],
+         "binarySha256": FRESH_BINARY_SHA, "schema": 28}), "fresh_seed_source_changed")
+    return root
+
+
+def validate_fresh_backup_status(value, backups, operations):
+    validate_status(value, generation="0")
+    need(value["Limits"]["MaxBackupBytes"] == "67108864" and value["Limits"]["MaxStoredBytes"] == "268435456" and
+         value["Storage"] == {"Bytes": "0", "Objects": 0} and not backups and not operations,
+         "fresh_backup_limits_or_initial_inventory")
 
 
 def validate_epoch_admission(value, epoch, binding, seed, full_report, transition, *, product_epoch=None, configuration_input=None):
@@ -792,7 +888,7 @@ class Admission:
         self.evidence[name] = self.save(name, value)
         return value
 
-    def preflight(self):
+    def seed_authority(self):
         seed = self.seed
         need(seed["kind"] == "audited-candidate-seed-manifest" and seed["version"] == 1 and
              seed["status"] == "seeded_pending_live_acceptance" and seed["playbackRequests"] == 0 and
@@ -807,7 +903,14 @@ class Admission:
             need(source_input["sourceManifest"] == self.io.value["sourceManifest"], "candidate_source_manifest_cross_binding")
         else:
             need(self.io.epoch == self.epoch and self.io.binding == self.binding and self.io.candidate == self.epoch["candidate"],
-                 "epoch_runtime_reader_cross_binding")
+                  "epoch_runtime_reader_cross_binding")
+
+    def media_root(self):
+        return self.helper.C / "data/media"
+
+    def preflight(self):
+        seed = self.seed
+        self.seed_authority()
         need(self.expected_process == self.io.pin(), "current_candidate_process_changed")
         need(self.load(seed["catalogFile"]) == seed["catalog"], "seed_catalog_descriptor_changed")
         self.inspector.assert_target_cluster()
@@ -975,7 +1078,7 @@ class Admission:
         for pin in self.seed["resources"]["copiedFiles"]:
             row = self.load(pin)
             path = Path(row["path"])
-            need(path.is_relative_to(self.helper.C / "data/media") and row["bytes"] <= 256 * MIB,
+            need(path.is_relative_to(self.media_root()) and row["bytes"] <= 256 * MIB,
                  "fixture_path_escaped_candidate")
             before = self.helper.safe_path(path, (0, self.io.candidate["serverIdentity"]["uid"]))
             need(list(self.helper.file_identity(before)) == row["identity"] and before.st_nlink == 1,
@@ -997,7 +1100,7 @@ class Admission:
     def storage(self):
         self.phase = "storage"
         storage = self.req("storage-roots", "GET", "/admin/v1/storage/roots", role="admin")["body"]
-        need(storage["Configured"] is True and storage["Items"] == [{"Path": str(self.helper.C / "data/media"), "Available": True}],
+        need(storage["Configured"] is True and storage["Items"] == [{"Path": str(self.media_root()), "Available": True}],
              "storage_root_not_available")
         libraries = self.helper.items(self.req("libraries", "GET", "/admin/v1/libraries", role="admin")["body"])
         wanted = self.seed["libraries"]
@@ -1232,6 +1335,126 @@ class Admission:
         need(resources["unit"]["NRestarts"] == self.counters_before["unit"]["NRestarts"], "candidate_restarted")
         self.helper.read_checked(self.io.candidate["binary"]["path"], self.io.candidate["binary"]["sha256"])
         return proof
+
+
+class FreshEmbeddedAdmission(Admission):
+    """Run the full sequence and nine TV reads against the new embedded actor."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.stage_caps["tvParents"] = 9
+        self.fresh_tv_complete = False
+
+    def seed_authority(self):
+        self.initial_inspection = self.load(self.io.value["runtimeInspection"])
+        self.fresh_root = validate_fresh_embedded_authority(
+            self.io.value, self.io.candidate, self.load(self.io.candidate["input"]), self.seed, self.initial_inspection)
+        need(self.io.provision.root == self.fresh_root, "fresh_io_root_changed")
+
+    def media_root(self):
+        return Path(self.io.candidate["dataDirectory"]) / "media"
+
+    def preflight(self):
+        super().preflight()
+        self.tv = tv_rows(self.seed, self.before)
+        seasons = [row for row in self.seed["catalog"]["seasons"] if row["indexNumber"] == 2]
+        episodes = [row for row in self.seed["catalog"]["episodes"] if (row["parentIndexNumber"], row["indexNumber"]) == (2, 1)]
+        need(len(seasons) == len(episodes) == 1, "fresh_tv_detail_fixture_membership")
+        self.detail_ids = [seasons[0]["id"], episodes[0]["id"]]
+
+    def authenticate(self):
+        super().authenticate()
+        validate_fresh_backup_status(self.status_before, self.old_backups, self.old_operations)
+
+    def storage(self):
+        super().storage()
+        self.phase = "tvParents"
+        p, q = (self.credentials[role]["actorId"] for role in ("P", "Q"))
+        catalog = self.seed["catalog"]
+        series = catalog["series"]["id"]
+        for label, route, wanted in (
+                ("default-seasons", "/emby/Shows/" + series + "/Seasons?" + urlencode({"UserId": p}), [row["id"] for row in catalog["seasons"]]),
+                ("default-episodes", "/emby/Shows/" + series + "/Episodes?" + urlencode({"UserId": p}), [row["id"] for row in catalog["episodes"]]),
+                ("default-tv", "/emby/Users/" + p + "/Items?" + urlencode({"ParentId": self.seed["libraries"]["TV"]["Id"], "Recursive": "true", "Limit": 100}), list(self.tv))):
+            validate_tv_inventory(self.req(label, "GET", route, role="P")["body"], wanted, self.tv, self.server_id)
+        for index, item_id in enumerate(self.detail_ids):
+            dto = self.req("detail-p-%d" % index, "GET", "/emby/Users/" + p + "/Items/" + item_id, role="P")["body"]
+            validate_tv_dto(dto, self.tv[item_id], self.tv, self.server_id, detail=True)
+        invisible = self.req("invisible-q-list", "GET", "/emby/Users/" + q + "/Items?" +
+                             urlencode({"Ids": ",".join(self.detail_ids), "Limit": 100}), role="Q")["body"]
+        need(self.helper.items(invisible) == [], "fresh_tv_control_list_exposed_items")
+        for index, item_id in enumerate(self.detail_ids):
+            response = self.req("invisible-q-detail-%d" % index, "GET", "/emby/Users/" + q + "/Items/" + item_id,
+                                role="Q", expected=(404,))
+            need(response["body"]["ResponseStatus"]["ErrorCode"] == "not_found", "fresh_tv_control_detail_error")
+        denied = self.req("cross-user-q-detail", "GET", "/emby/Users/" + p + "/Items/" + self.detail_ids[1],
+                          role="Q", expected=(403,))
+        need(denied["body"]["ResponseStatus"]["ErrorCode"] == "access_denied", "fresh_tv_cross_user_authorization_error")
+        need(self.phase_counts["tvParents"] == 9, "fresh_tv_request_count")
+        self.fresh_tv_complete = True
+
+    def reconcile(self):
+        need(self.fresh_tv_complete, "fresh_tv_checks_incomplete")
+        return super().reconcile()
+
+    def bind_reader_evidence(self):
+        reader = self.inspector
+        need(reader is not None and reader.runtime_context is True and reader.private is None and
+             reader.active_command is None and not reader.command_records and not reader.command_failure_raw and
+             reader.sql_sessions == 0, "fresh_runtime_reader_already_used")
+        self.helper.safe_path(self.io.private, (0,), directory=True)
+        directory = self.io.private / "runtime-inspection"
+        directory.mkdir(mode=0o700)
+        reader.private = directory
+        self.helper.sync_dir(self.io.private)
+
+    def close_reader(self, complete):
+        if self.inspector is None:
+            return
+        reader = self.inspector
+        close_failure = None
+        try:
+            reader.close()
+        except Exception as error:
+            close_failure = safe_failure(error, "runtime_reader_close")
+        retention_errors = []
+
+        def retain(name, raw):
+            try:
+                return self.helper.write_once(self.io.private / name, raw)
+            except Exception as error:
+                retention_errors.append({"name": name, "type": type(error).__name__, "code": "runtime_reader_retention_failed"})
+                return None
+
+        raw_pins = [retain("runtime-sql-%02d.raw" % (index + 1), raw) for index, raw in enumerate(reader.sql_raw)]
+        command_raw = []
+        for row in reader.command_failure_raw:
+            ordinal = row["ordinal"]
+            need(type(ordinal) is int and 1 <= ordinal <= 65536, "fresh_runtime_command_ordinal")
+            command_raw.append({"ordinal": ordinal,
+                "stdout": retain("runtime-command-%04d-stdout.raw" % ordinal, row["stdout"]),
+                "stderr": retain("runtime-command-%04d-stderr.raw" % ordinal, row["stderr"])})
+        self.evidence["runtimeReader"] = self.save("runtime-reader", {"helper": self.io.value["inspectionHelper"],
+            "private": str(reader.private) if reader.private is not None else None,
+            "sqlSessions": reader.sql_sessions, "records": reader.sql_records, "raw": raw_pins,
+            "commands": reader.command_records, "commandFailureRaw": command_raw,
+            "httpRequests": reader.public_requests, "activeCommandClosed": reader.active_command is None,
+            "closeFailure": close_failure, "retentionErrors": retention_errors})
+        need(close_failure is None and reader.active_command is None, "fresh_runtime_reader_unclosed")
+        need(not retention_errors, "fresh_runtime_reader_retention_incomplete")
+        if complete:
+            need(reader.private == self.io.private / "runtime-inspection" and
+                 reader.sql_sessions == len(raw_pins) == len(reader.sql_records) and
+                 reader.public_requests == 0 and all(
+                     all(row.get(key) is True for key in ("readOnly", "frontendGroupClosed", "backendGone", "commitAcknowledged")) and
+                     row["stdoutSha256"] == sha(raw) for row, raw in zip(reader.sql_records, reader.sql_raw)) and
+                 not reader.command_failure_raw and reader.command_records and
+                 [row.get("ordinal") for row in reader.command_records] == list(range(1, len(reader.command_records) + 1)) and
+                 all(row.get("processCreated") is True and type(row.get("pid")) is int and row["pid"] > 1 and
+                     row.get("processGroup") == row["pid"] and row.get("stdinComplete") is True and
+                     type(row.get("exitCode")) is int and row["exitCode"] == 0 and row.get("frontendGroupClosed") is True and
+                     row.get("failure") is None and row.get("cleanupFailure") is None and row.get("retentionErrors") == [] and
+                     row["stdout"]["complete"] is True and row["stderr"]["complete"] is True for row in reader.command_records),
+                 "fresh_runtime_reader_evidence_incomplete")
 
 
 class TVParentAdmission(Admission):
@@ -1503,16 +1726,21 @@ def main():
     if value["version"] == 3:
         return run_tv_parent_admission(value, input_pin, run_started)
     epoch, binding, expected_process = None, None, None
-    if value["version"] == 1:
+    if value["version"] in (1, 4):
         helper_pin = value["seedHelper"]
         helper = import_bytes("frozen_admission_seed", helper_pin["path"], initial_read(helper_pin["path"], helper_pin["sha256"]))
         inspector_pin = value["inspectionHelper"]
         inspector_module = import_bytes("frozen_admission_inspection", inspector_pin["path"], helper.read_checked(inspector_pin["path"], inspector_pin["sha256"]))
         seed = parse(helper.read_checked(**value["seedManifest"]))
         source_pin = value["sourceManifest"]
-        io = helper.CandidateIO(value, input_pin, value["admissionHelper"])
-        inspector = inspector_module.CandidateInspection()
+        io = helper.CandidateIO(value, input_pin, value["admissionHelper"], fresh=True) if value["version"] == 4 else helper.CandidateIO(value, input_pin, value["admissionHelper"])
+        inspector = None if value["version"] == 4 else inspector_module.CandidateInspection()
         provenance = {"seed": value["seedManifest"], "candidateManifest": value["candidateManifest"]}
+        if value["version"] == 4:
+            provenance.update(admissionKind="fresh_embedded", runtimeInspection=value["runtimeInspection"],
+                              seedExecutor=value["seedHelper"], inspectionHelper=value["inspectionHelper"],
+                              runtimeHelper=value["runtimeHelper"], sourceManifest=source_pin,
+                              previousLiveAdmissionsReused=False)
     else:
         runtime_pin = value["runtimeHelper"]
         runtime = import_bytes("frozen_admission_epoch", runtime_pin["path"], initial_read(runtime_pin["path"], runtime_pin["sha256"]))
@@ -1553,7 +1781,8 @@ def main():
     source = parse(helper.read_checked(**source_pin))
     validate_catalog(catalog, source, value["compiledCatalog"])
     io.started = run_started
-    job = Admission(io, helper, inspector, seed, catalog, epoch=epoch, binding=binding, expected_process=expected_process)
+    job_type = FreshEmbeddedAdmission if value["version"] == 4 else Admission
+    job = job_type(io, helper, inspector, seed, catalog, epoch=epoch, binding=binding, expected_process=expected_process)
     def expired(_number, _frame):
         raise AdmissionError("absolute_admission_deadline")
     signal.signal(signal.SIGALRM, expired)
@@ -1563,7 +1792,18 @@ def main():
     failure, proof = None, None
     try:
         io.open()
-        if epoch is not None:
+        if value["version"] == 4:
+            job.seed_authority()
+            inspection_input = job.load(seed["inspectionInput"])
+            job.inspector = inspector_module.CandidateInspection(
+                inspection_input, seed["inspectionInput"], value["inspectionHelper"], provision=io.provision,
+                runtime_context=True, caller_deadline=lambda: job.remaining(job.cleanup_end is not None),
+                runtime_budgets=dict(FRESH_INSPECTION_BUDGETS))
+            job.bind_reader_evidence()
+            provenance["currentSource"] = {"sourceManifest": source_pin, "compiledCatalog": value["compiledCatalog"],
+                                           "binary": io.candidate["binary"], "productEvidence": io.candidate["productEvidence"],
+                                           "archiveSha256": FRESH_PRODUCT_HASHES["sourceArchive"], "schema": 28}
+        elif epoch is not None:
             job.inspector = io.reader
         job.run()
     except Exception as error:
@@ -1576,16 +1816,26 @@ def main():
             proof = job.reconcile()
         except Exception as error:
             failure = safe_failure(error, "reconciliation")
+    if value["version"] == 4 and io.created:
+        try:
+            job.close_reader(failure is None and not job.failures and proof is not None)
+        except Exception as error:
+            job.failures.append(safe_failure(error, "runtime_reader_closeout"))
     successful = failure is None and not job.failures and proof is not None
     result = {"kind": "audited-candidate-live-admission", "version": value["version"], "status": "admitted_for_core_client" if successful else "admission_failed_resources_retained",
               "input": input_pin, "helper": value["admissionHelper"], **provenance,
-              "failure": failure, "cleanupFailures": job.failures, "budgets": LIMITS, "requests": io.requests, "phaseRequests": dict(job.phase_counts),
+              "failure": failure, "cleanupFailures": job.failures, "budgets": value["budgets"], "requests": io.requests, "phaseRequests": dict(job.phase_counts),
               "elapsedMilliseconds": round((time.monotonic() - io.started) * 1000), "stabilitySamples": job.samples,
               "operations": job.operations, "backup": job.backup, "evidence": job.evidence, "preservation": proof,
               "requestResponsibilities": io.request_states, "controllerSessions": {key: {"credentialId": row.get("initialSession", {}).get("id"),
                   "tokenSha256": sha(row["auth"]["token"].encode()), "sameTokenRejected": row["logout401"]} for key, row in job.logins.items()},
               "candidateAdmissionComplete": successful, "clientAcceptance": False, "playbackRequests": 0, "applyRequests": 0, "rollbackRequests": 0,
               "inactiveStageRetained": successful, "activeGenerationChanged": False if successful else None}
+    if value["version"] == 4:
+        result["freshEmbeddedChecks"] = {"tvParents": job.fresh_tv_complete,
+            "tvParentReadRequests": job.phase_counts["tvParents"], "embeddedAssetsInspection": value["runtimeInspection"],
+            "fullLiveSequenceComplete": successful, "initialInspectionAssetsReplayed": False,
+            "independentRecoveryTargetValidated": successful, "reservedPublicGatewayProbed": False}
     if io.created:
         summary = {"status": result["status"], "scope": str(io.output), "report": None,
                    "candidateAdmissionComplete": successful, "clientAcceptance": False, "requests": io.requests,

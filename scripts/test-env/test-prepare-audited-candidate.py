@@ -706,7 +706,11 @@ class EmbeddedGuards(unittest.TestCase):
             return {"path": str(path), "sha256": "c" * 64}
 
         def show(unit):
-            return {"LoadState": "not-found"} if unit in job.units.values() else {"ActiveState": "inactive", "MainPID": "0"}
+            if unit in job.units.values():
+                return {"LoadState": "not-found"}
+            if unit in M.PROTECTED[:2]:
+                return {"ActiveState": "inactive", "MainPID": "0"}
+            return {"ActiveState": "active", "SubState": "running", "MainPID": "893", "InvocationID": "a" * 32}
 
         def loaded(argv, **kwargs):
             self.assertEqual(argv[:2], ["/usr/bin/systemctl", "show"])
@@ -738,6 +742,7 @@ class EmbeddedGuards(unittest.TestCase):
              patch.object(job, "save"), patch.object(job, "write", side_effect=write), patch.object(job, "command"), \
              patch.object(M.secrets, "token_hex", side_effect=["1" * 64, "2" * 64, "3" * 64]), \
              patch.object(M.subprocess, "check_output", side_effect=loaded), \
+             patch.object(Path, "read_text", return_value="4de83999-7586-4716-83d1-0d81c9343126\n"), \
              patch.object(job, "start", side_effect=RuntimeError("The loaded-unit guard has completed.")) as start, \
              patch.object(job, "psql", side_effect=AssertionError("No SQL is permitted.")):
             if hiding is not None or unset is not None:
@@ -755,6 +760,9 @@ class EmbeddedGuards(unittest.TestCase):
         job, written = self.provision_to_loaded_guard()
         runtime = written[str(job.private / "runtime.env")].decode()
         self.assertFalse(any(line.startswith("GOBY_WEB_DIR=") for line in runtime.splitlines()))
+        self.assertIn("GOBY_BACKUP_MAX_OBJECT_BYTES=67108864\n", runtime)
+        self.assertIn("GOBY_BACKUP_MAX_TOTAL_BYTES=268435456\n", runtime)
+        self.assertIn("GOBY_BACKUP_MIN_FREE_BYTES=67108864\n", runtime)
         for role in ("postgres", "server"):
             unit = written[str(Path("/run/systemd/system") / job.units[role])].decode()
             with self.subTest(role=role):
@@ -782,8 +790,72 @@ class EmbeddedGuards(unittest.TestCase):
                          ("sourceArchive", "sourceManifest", "embeddedBuildManifest", "productionSourceBinding", "regressionReview", "regressionClosure")})
         self.assertEqual(fields["dashboard"], {"mode": "embedded", "buildManifest": value["embeddedBuildManifest"], "assetCount": 57,
                                                "externalDirectoryInstalled": False, "webDirectoryOverridePresent": False})
+        self.assertEqual(fields["backupProfile"], {"name": "bounded-fixture-backup-v1", "environment": {
+            "GOBY_BACKUP_MAX_OBJECT_BYTES": "67108864", "GOBY_BACKUP_MAX_TOTAL_BYTES": "268435456"}})
         legacy = Guards.input(self)
         self.assertEqual(M.product_manifest_fields(legacy), {"frontendReport": legacy["frontendReport"], "backendReport": legacy["backendReport"]})
+
+
+class LifecycleGuards(unittest.TestCase):
+    def value(self, version=2):
+        return {**Guards.input(self), "version": version}
+
+    def test_legacy_backup_and_protected_scope_remain_unchanged(self):
+        self.assertEqual(M.backup_environment(self.value(1)), {})
+        self.assertEqual(M.protected_units(self.value(1)), M.PROTECTED)
+        job = M.Provision(self.value(1), {}, {})
+        states = {unit: {"ActiveState": "inactive", "MainPID": "0"} for unit in M.PROTECTED}
+        with patch.object(job, "show", side_effect=states.__getitem__), patch.object(Path, "read_text") as read:
+            self.assertEqual(job.protection_snapshot(), {"units": states})
+            read.assert_not_called()
+
+    def test_new_protection_requires_the_three_running_services_and_boot(self):
+        job = M.Provision(self.value(), {}, {})
+        states = {unit: {"ActiveState": "inactive", "MainPID": "0"} for unit in M.PROTECTED[:2]}
+        states.update({unit: {"ActiveState": "active", "SubState": "running", "MainPID": str(100 + number),
+                             "InvocationID": "a" * 32} for number, unit in enumerate((M.PROTECTED[2], *M.PRESERVED_AUDITED_UNITS))})
+        boot = "4de83999-7586-4716-83d1-0d81c9343126"
+        with patch.object(job, "show", side_effect=states.__getitem__), patch.object(Path, "read_text", return_value=boot):
+            self.assertEqual(job.protection_snapshot(), {"units": states, "bootId": boot})
+            self.assertEqual(len(states), 5)
+        for unit in (M.PROTECTED[2], *M.PRESERVED_AUDITED_UNITS):
+            for field, invalid in (("ActiveState", "inactive"), ("SubState", "dead"), ("MainPID", "0"), ("InvocationID", "")):
+                changed = copy.deepcopy(states)
+                changed[unit][field] = invalid
+                with self.subTest(unit=unit, field=field), patch.object(job, "show", side_effect=changed.__getitem__), \
+                     patch.object(Path, "read_text", return_value=boot), self.assertRaises(ValueError):
+                    job.protection_snapshot()
+        with patch.object(job, "show", side_effect=states.__getitem__), patch.object(Path, "read_text", return_value="unknown"), self.assertRaises(ValueError):
+            job.protection_snapshot()
+
+    def lock_stat(self, inode=123):
+        return Mock(st_dev=2049, st_ino=inode, st_mode=0o100600, st_uid=0, st_gid=0, st_nlink=1,
+                    st_size=0, st_mtime_ns=1, st_ctime_ns=1)
+
+    def test_existing_lock_is_nonblocking_and_never_created(self):
+        original = self.lock_stat()
+        with patch.object(M, "owned", return_value=original), patch.object(M.os, "open", return_value=41) as opened, \
+             patch.object(M.os, "fstat", return_value=original), patch.object(M.fcntl, "flock") as lock, patch.object(M.os, "close") as close:
+            self.assertEqual(M.acquire_deployment_lock(self.value()), 41)
+            opened.assert_called_once_with(M.DEPLOYMENT_LOCK, M.os.O_RDONLY | M.os.O_NOFOLLOW | M.os.O_CLOEXEC)
+            lock.assert_called_once_with(41, M.fcntl.LOCK_EX | M.fcntl.LOCK_NB)
+            close.assert_not_called()
+        with patch.object(M, "owned") as owned, patch.object(M.os, "open") as opened:
+            self.assertIsNone(M.acquire_deployment_lock(self.value(1)))
+            owned.assert_not_called()
+            opened.assert_not_called()
+
+    def test_lock_collision_or_replacement_closes_the_open_descriptor(self):
+        for replaced in (False, True):
+            original = self.lock_stat()
+            with self.subTest(replaced=replaced), patch.object(M, "owned", return_value=original), \
+                 patch.object(M.os, "open", return_value=41), patch.object(M.os, "fstat", return_value=self.lock_stat(124) if replaced else original), \
+                 patch.object(M.fcntl, "flock", side_effect=BlockingIOError) as lock, patch.object(M.os, "close") as close:
+                with self.assertRaises(ValueError if replaced else BlockingIOError):
+                    M.acquire_deployment_lock(self.value())
+                close.assert_called_once_with(41)
+                if replaced:
+                    lock.assert_not_called()
 
 
 if __name__ == "__main__":
