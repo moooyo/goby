@@ -1,10 +1,10 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after the isolated SQL-seeded catalog baseline passed
-its single race test, independent review and resource closure. Status:
-**ordinary regression and fresh-candidate admission complete within their
-declared scopes; catalog transaction-isolation baseline passed; real-file
-scan capacity, client-video and complete release gates remain open**.
+Reviewed on 2026-09-14 after the real small-media capacity test and affected
+shared-fixture regression passed independent review and resource closure.
+Status: **two focused tests and evidence closure complete; core-video and
+complete release gates remain open**. Completed ordinary regression and
+fresh-candidate admission retain their original scopes.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -142,8 +142,22 @@ reviewer-only rejection of a PostgreSQL-owned log remains preserved. All private
 evidence and the closed-PG archive were reread; normal PG shutdown and ordinary
 unmount closed the independent 3 GiB RAM scope. Empty underlying directories
 remain, protected state stayed exact, and closure observed 1,190,330,368 free
-root bytes. The next increment prepares real small-media scan/rescan capacity;
+root bytes. The following real small-media scan/rescan increment has now run;
 do not repeat this consumed SQL baseline or reopen the paused mount experiment.
+
+The [real-media capacity checkpoint](../development/catalog-real-media-capacity-verification.json)
+records two passing tests, zero failures/skips and nineteen completed commands.
+The new 10,000-leaf test took 293.55 seconds; the existing seven-file test passed
+in a new independent scope as regression for the changed shared test helper.
+Production files are unchanged. These targeted results neither rerun the old
+seven-file scope nor add two tests to the historical 2,276-test suite.
+Cold scan, in-process Store reopen, cached rescan and replacement of one movie
+with no UserData passed their selected identity, hierarchy, ACL and seeded
+UserData checks. Independent review passed once, including source/tool bindings,
+capacity markers and cleanup/protection. Both archives were reread, PG/worker
+and unit/cgroup closed, and RAM was ordinarily unmounted. Empty underlying
+directories remain; the private PG archive stays remote. This increment is
+complete and consumed, with no production change or whole-suite rerun required.
 Capacity, blocked I/O and the remaining M4-M6 obligations may progress in
 parallel under their own prerequisites. Completed backup/recovery workflows
 stay closed; a new client journey still needs a discriminating question or a
@@ -259,6 +273,7 @@ and every failure; do not extend the generic observation framework.
 | M6 embedded assets | Focused build/tagged checks and root-profile native amd64 runtime passed; the completed ordinary suite separately binds the same 374 production Go/embed/module files | Distinct ordinary and embedded binaries; no tagged full-suite or native arm64 claim. The fresh nonroot admission result has its separate review boundary above. OCI, GPU, license and full M6 remain open |
 | Native catalog restart | One real stop/start run passed 156 cumulative HTTP requests, nine core tables' rows/xmin and seven media checks; independent review and closure passed | Same PG and root profile only. No playback/nonzero-resume/browser, nonroot, PG restart, capacity or host-durability claim |
 | Catalog capacity/isolation baseline | [One targeted race test](../development/catalog-capacity-isolation-verification.json) passed on 10,000 SQL-seeded leaves/442 folders, preserving ACL behavior and all ten UserData rows during an owned transaction block and rollback; review and closure passed | No real media/scan throughput, native TCP/service performance, RSS/SLO, whole-catalog raw-row preservation or actual filesystem-stall claim. This new test is not part of the earlier 2,276-test full-suite count |
+| Real small-media capacity | [The 10,000-leaf scan/rescan test and affected seven-file regression](../development/catalog-real-media-capacity-verification.json) passed independent review and resource closure, with zero failures/skips and production unchanged | Tiny-file measured cost and in-process Store reopen do not establish HTTP/service performance, service/PG/host restart, real filesystem stalls, representative throughput or complete M2 |
 
 The earlier audited/client candidate uses binary
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -283,13 +298,33 @@ workspace outside every new resource budget.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 1. Prepare real-file scan/rescan capacity | Define an independent bounded profile using real small media files, with an explicit count/byte mix, scan/rescan expectations and current disk/RAM/cleanup budgets | Preparation only; no result yet. Reuse the completed SQL baseline as scoped query/isolation evidence, not scanner throughput or a release capacity limit. Do not repeat its consumed run or reuse the paused full-scan mount workspace |
+| 1. Core video and subtitle acceptance | Prioritize this promotion gate when new discriminating evidence or a justified product correction supports a bounded journey on a reviewed current candidate and retained-state input | No new journey is admitted yet. Context291 identifies physical294, not293; the earlier cancellation and original page errors remain unresolved. Preserve the completed identity review. Without new grounds, keep this gate open and continue independent work; do not repeat the review, replay consumed actors or add another observation framework |
 | 2. Independent remaining M2-M6 delivery | Separately address representative capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | Require measurable limits and bounded shutdown. This track may progress independently, while heavy work follows the shared-resource limits above; small catalogs, root-profile restarts and cross-builds do not close the release gates |
-| 3. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
-| 4. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
-| 5. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+| 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
 
-The latest catalog-baseline closure observed 1,190,330,368 root bytes available. Further
+The M2 full-scan mount experiment remains paused outside this execution order.
+Its helper compiled, but PostgreSQL and all seven scan stages remain unexecuted.
+Reopening requires new evidence supporting a reviewed correction to the failed
+UID transition. Preserve its launcher evidence; no third renamed attempt,
+repeated review without new evidence or unsupported `NoNewPrivileges`
+attribution is queued.
+
+The completed real-file increment used committed `a2f0009` plus two test-only
+changes. Its affected shared-fixture regression and resource closure passed;
+these edits do not require another full product suite. Select the next heavy
+execution from the remaining evidence gaps, not an inferred percentage complete.
+If a later increment exposes a production defect, review the fix and run
+its relevant checks, then verify the final intended product snapshot before
+claiming changed-version acceptance.
+
+The 10,000 leaves are an initial correctness and measured-cost baseline using
+tiny valid media files. Store reopen is not a native service or host restart,
+and this profile does not close real storage stalls, host durability, realistic
+media throughput or release-capacity claims. Keep the independent remaining
+gates visible; unresolved video acceptance continues to block the corresponding
+main promotion despite the completed catalog increment.
+
+The latest real-file closure observed 1,124,679,680 root bytes available. Further
 builds need a separately budgeted compiler scratch/cache location after a fresh
 capacity check. Ordinary strong-filesystem tests require an exclusive owned
 ext4 GOTMPDIR; do not substitute tmpfs or confuse it with compiler scratch.
@@ -362,6 +397,7 @@ These entries preserve prior decisions and results; they are not the next queue.
 | 12. Ordinary full regression — complete with explicit profile gap | Same-source 11+14 complete packages yield 2,276 passes/0 failures/1 opt-in skip; ordinary Linux build, independent review and volume/archive closure passed | Exclude the first partial Library counts, retain its timeout, and preserve the paused mount gap. The separate 374-file embedded-source bridge is not tagged full-suite or candidate admission |
 | 13. Fresh embedded initial inspection, seed and admission — complete and consumed | All three stages passed independent review; native admission exited 0 with eleven health samples spanning exactly 600,000 ms, 88 actual requests, no cleanup failures and its inactive stage retained | Preserve both original inspection failures, the separate diagnostic and seed evidence limits. Client acceptance remains false; no replay or earlier-client acceptance claim follows |
 | 14. SQL catalog capacity/isolation baseline — complete and consumed | One race test passed with 10,000 leaves/442 folders, twenty timed query samples, ACL isolation and ten UserData rows exact across transaction blocking/cancellation/rollback; independent review and resource closure passed | Preserve the initial reviewer-only log-ownership rejection. No test rerun, physical scan, actual filesystem stall, native service benchmark or addition to the prior full-suite count |
+| 15. Real small-media capacity — complete and consumed | The new 10,000-leaf cold/cached scan and Store-reopen test plus affected seven-file regression passed; independent review, both archive readbacks and ordinary RAM unmount completed | Production is unchanged; do not add these two results to the historical 2,276-test count. UserData was seeded after cold scan, with no final post-Close snapshot. This tiny-file profile does not pass throughput SLO, service/PG/host restart, storage stalls or complete M2-M6 |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation
@@ -428,7 +464,7 @@ restore retains its inactive staged database; bind that occupied state explicitl
 | Gate | Blocks | Independent work that remains possible |
 | --- | --- | --- |
 | Source identity, authorization, ownership, preservation and recovery safety | Affected admission, mutation or promotion | Read-only diagnosis and preparation |
-| Supported core real-client regression | New-binary main promotion claiming that playback workflow | Separately admitted source32 backup, isolated recovery rehearsal and unrelated M2-M6 work |
+| Supported core real-client regression | New-binary main promotion claiming that playback workflow | Completed source32 backup and isolated recovery evidence remain reusable within their original scopes; unrelated M2-M6 work can continue |
 | Positive global NextUp and client behavior | Complete NextUp selection/order/refresh claims | Unrelated verified playback and an explicitly partial internal checkpoint |
 | Positive LibraryChanged automatic refresh | Automatic-refresh compatibility claims | Core playback and an internal upgrade with the limitation recorded |
 | Complete supported release profile | M6 completion or broad compatibility release | Partial milestones with exact scope and known gaps |
@@ -468,8 +504,10 @@ profile is not enabled. Report that skip by exact name; do not claim zero skips
 or execute the paused seven-stage experiment to suppress it. Every other skip
 or failure is rejected. The two older mount helpers can return normally without
 their opt-in environment, so their passing test nodes do not establish that
-those mount profiles executed. Continue the complete ordinary suite with this
-explicit evidence boundary and the separate ext4-fixture/compiler budgets above.
+those mount profiles executed. The completed ordinary suite remains accepted
+for its frozen source. A future product change's final verification retains
+this explicit evidence boundary and the separate ext4-fixture/compiler budgets
+above; it does not replay the consumed ordinary-regression inputs.
 
 Reuse tested operators and immutable receipts. Pin the history actually consumed
 and distinguish it from freshly checked live resources. Do not claim narrower

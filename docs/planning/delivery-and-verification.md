@@ -63,11 +63,22 @@ TCP/service performance, RSS/SLO or a kernel filesystem stall. The initial
 reviewer-only log-ownership rejection remains preserved; the test was not rerun.
 The new test is separate from the earlier 2,276-test ordinary suite.
 
-Next, prepare a bounded real small-media scan/rescan capacity profile. Other
+The following [real small-media capacity increment](../development/catalog-real-media-capacity-verification.json)
+has now passed its new 10,000-leaf test and affected seven-file shared-fixture
+regression, with zero failures/skips and production unchanged. Independent
+review passed once; both archives were reread, all processes closed and RAM
+was ordinarily unmounted. Cold scan, cached rescan, one replacement
+and in-process Store reopen provide tiny-file correctness and measured cost,
+not HTTP/service performance, native service/PG/host restart or a throughput SLO.
+The two targeted results are separate from the historical 2,276-test suite.
+
+This increment is complete and consumed. Prioritize core video when new discriminating
+evidence or a justified correction supports a bounded journey. No repeated
+identity review, consumed input or new generic observer is queued. Other
 M2-M6 work follows its own resource and safety prerequisites, with heavy work
-serialized on the shared environment. The new real-file profile has not run;
-representative throughput, actual blocked I/O and host durability retain their
-separate gates. Catalog-baseline closure observed 1,190,330,368 free root bytes,
+serialized on the shared environment. Representative throughput, actual blocked
+I/O and host durability retain their separate gates. The latest real-file
+closure observed 1,124,679,680 free root bytes,
 not a reservation for another phase. The saved subtitle response-identity review is complete; its
 cancellation and page-error gaps remain open. The M2 full-scan mount experiment remains paused after
 two launcher failures, with compilation only and no executed scan stages.

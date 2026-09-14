@@ -1,0 +1,279 @@
+{
+  "version": 1,
+  "kind": "catalog-real-media-capacity-verification",
+  "status": "two_targeted_tests_independent_review_and_resource_closure_passed",
+  "verificationDate": "2026-09-14",
+  "verificationEnvironment": "ssh test-env",
+  "milestone": "M2",
+  "milestoneComplete": false,
+  "evidenceRoot": "/opt/goby-test/catalog-real-media-capacity-20260914",
+  "scope": "Cold scan, in-process Store reopen, cached rescan and one new-inode replacement over 10,000 tiny valid media files in two libraries, with an affected seven-file shared-fixture regression.",
+  "source": {
+    "baseGit": "a2f0009",
+    "productionChanged": false,
+    "changedSharedTestHelper": {
+      "path": "internal/library/store_integration_test.go",
+      "sha256": "8073ba32c4a4c7694e5874fd763326f7ea60504f75a20ad41cc4e5aeaf5a1755"
+    },
+    "newTest": {
+      "path": "internal/library/catalog_scan_capacity_integration_test.go",
+      "sha256": "af574d7c81404eb8ee63d90495a22690367d16f40d0403152e0c6202131d5ec5",
+      "bytes": 31515
+    },
+    "archive": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/private/source.tar.gz",
+      "sha256": "343bee7799e7ef9418c5e8a4e681de119bef4ec02bbf23cb786b6a914206c468",
+      "bytes": 32074034,
+      "files": 5252,
+      "uncompressedSourceBytes": 117088239
+    },
+    "preparation": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/source-preparation.json",
+      "sha256": "238553cc4458c8a63220ab1e22e9bd1ecaf769c6622ae56306b6336101ae6fa6",
+      "bytes": 4315
+    },
+    "baseFileInventory": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/private/base-source-files.json",
+      "sha256": "646708c7db80aef5d741efd3d64796b04385a3599979afb25f5fad90287f6ea9",
+      "bytes": 1117611
+    },
+    "newTestIncludedInHistorical2276TestSuite": false,
+    "sevenFileRegressionAlreadyIncludedInHistoricalSuite": true,
+    "targetedResultsAddedToHistoricalSuiteCount": false,
+    "wholeSuiteRerunRequiredForTheseTestOnlyEdits": false
+  },
+  "recordedReceipts": {
+    "input": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/private/input.json",
+      "sha256": "9c56240c2b50380d2f07b1c76d5d06ca2e483445462a0d3c24ed2d1c7b602898",
+      "bytes": 2134
+    },
+    "preparation": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/preparation.json",
+      "sha256": "2a3cd8f85952890f9b3aedb4800430155567d48ea7f7f76ccca9239caded82f8"
+    },
+    "execution": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/execution.json",
+      "sha256": "ce0d26643ffdfa22a7f95fdc12fc6e4169b9391f46b2b81cc7a3bbd5498ab336",
+      "bytes": 34306
+    },
+    "parent": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/report.json",
+      "sha256": "3a9ca8803e0b3c109c011c76addf8ff8e2531a35af0d11b740793054cd04af1b",
+      "bytes": 22004
+    },
+    "worker": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/worker-report.json",
+      "sha256": "946b079a725e9df26788ecb3ffcc5cb4a85f910b3cc0835d905e2ae79ecffbdb",
+      "bytes": 19955
+    },
+    "sourceManifest": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/source-manifest.json",
+      "sha256": "06b2a0d9c302824df6532b6113dca7d2abbe995b6b31e9165ca2877a9bd87d6d",
+      "bytes": 975732
+    },
+    "moduleCacheManifest": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/module-cache-manifest.json",
+      "sha256": "4b72187093d2c87aed22857cd5464e33cbd6cb1349d0052474f9d27235c97f03",
+      "bytes": 350118
+    },
+    "config": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/config.json",
+      "sha256": "a47ab5c8757699d88401c4b03dd28102acbeeb79eb483b3c7c7cb8c09976147e",
+      "bytes": 853
+    },
+    "owner": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/OWNER.json",
+      "sha256": "f8d79e24924dbaf6c5ef17345e8421d629dabe4905b0a9facb2fe3289a153f6d",
+      "bytes": 252
+    },
+    "finalPreservedPathsPending": false
+  },
+  "testExecution": {
+    "counts": {"passed": 2, "failed": 0, "skipped": 0},
+    "commandsCompleted": 19,
+    "newCapacityTest": {
+      "name": "TestCatalogRealMediaCapacityScanAndCachedRescan",
+      "goTestElapsedSeconds": 293.55,
+      "bodyElapsedSeconds": 293.433280093
+    },
+    "affectedSharedFixtureRegression": {
+      "name": "TestCatalogRescanRealMediaMovePreservesACLAndDerivedUserDataAcrossStoreReopen",
+      "goTestElapsedSeconds": 1.28,
+      "newIndependentEnvironment": true,
+      "oldExecutionScopeReplayed": false
+    },
+    "packageElapsedSeconds": 295.846,
+    "goCommandElapsedSecondsIncludingColdCompilation": 328.889,
+    "logMembersInEvidenceArchive": {
+      "stdout": {
+        "member": "logs/018-go-test.stdout",
+        "sha256": "fb822ce7ffe024b0feb6db5f39cc13ea4825d97cc0ca5b13cb47fb971b3755e6",
+        "bytes": 8067
+      },
+      "stderr": {
+        "member": "logs/018-go-test.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    }
+  },
+  "corpus": {
+    "libraries": 2,
+    "perLibrary": {"movies": 2000, "episodes": 2000, "audio": 1000},
+    "mediaLeaves": 10000,
+    "catalogItems": 10688,
+    "catalogFoldersIncludingPhysicalAndSynthetic": 688,
+    "regularFilesIncludingAlbumNfo": 10200,
+    "albumNfoFiles": 200,
+    "independentDeviceInodeIdentities": true,
+    "linksPerFile": 1,
+    "videoTemplateBytes": 1481,
+    "audioTemplateBytes": 12610,
+    "mediaBytes": 37068000,
+    "allocatedBytes": 68333568,
+    "logicalMediaLimitBytes": 98304000,
+    "allocatedLimitBytes": 134217728,
+    "parentAndRegressionFixtureAllowanceBytes": 1048576,
+    "ramLimitBytes": 3221225472,
+    "rootReserveBytes": 536870912,
+    "archiveTargetBytes": 268435456,
+    "archiveHardLimitBytes": 402653184
+  },
+  "measuredPhases": {
+    "coldScan": {
+      "elapsedSeconds": 174.017780807,
+      "libraryASeconds": 173.646722,
+      "libraryBSeconds": 173.841173,
+      "probeCalls": 10000,
+      "compoundViewAssertionsSeconds": 11.125615021
+    },
+    "storeReopen": {
+      "elapsedSecondsIncludingAssertions": 12.599287665,
+      "includedCompoundViewAssertionsSeconds": 12.507769345,
+      "additionalProbeCalls": 0,
+      "bareOpenDurationClaimed": false
+    },
+    "cachedRescan": {
+      "elapsedSeconds": 82.768231658,
+      "libraryASeconds": 80.87908,
+      "libraryBSeconds": 82.545494,
+      "additionalProbeCalls": 1,
+      "compoundViewAssertionsSeconds": 10.981390067
+    },
+    "totalProbeCalls": 10001,
+    "completedScanJobs": 4,
+    "scanJobErrors": 0,
+    "scanJobWarnings": 0,
+    "viewAssertionTimesAreApiPageLatencies": false,
+    "phaseTimesAreThroughputSlos": false
+  },
+  "preservation": {
+    "replacementTargetHadSeededUserData": false,
+    "replacementCreatedBeforeOldFileRemoval": true,
+    "replacementUsedNewInode": true,
+    "oldItemIdAndPathAbsentAfterReplacement": true,
+    "newItemIdDifferent": true,
+    "otherSelectedCatalogIdentityAndHierarchyFieldsPreserved": true,
+    "allRawCatalogColumnsPreservedClaimed": false,
+    "aclViewsMatched": true,
+    "userDataRows": 8,
+    "userDataSeededAfterColdScan": true,
+    "userDataAllFieldsTimestampsAndXminMatched": true,
+    "userDataComparisonCheckpoints": ["after cold scan and UserData seed", "after Store reopen", "after cached rescan"],
+    "separateUserDataSnapshotAfterFinalStoreClose": false
+  },
+  "observedExecutionTermination": {
+    "unit": "goby-catalog-real-media-capacity-20260914-d28d0fe1c69a.service",
+    "scopeName": "catalog-real-media-capacity-20260914-20260914T112835Z-d28d0fe1c69a",
+    "postgresPid": 765929,
+    "workerPid": 765894,
+    "postgresExited": true,
+    "workerExited": true,
+    "unitNotFound": true,
+    "mainPid": 0,
+    "cgroupEmpty": true,
+    "ramMountedAtExecutionReceiptForEvidencePreservation": true
+  },
+  "independentReview": {
+    "receipt": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/independent-review.json",
+      "sha256": "ff3af857f46221cf0f3a7ddb6f547088f56b6e82055e5a6d3fa0f7314d564e4e",
+      "bytes": 26811
+    },
+    "outcome": "passed",
+    "reviewer": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/private/review-catalog-real-media-capacity.py",
+      "sha256": "ca79e075bf77c1aec72a17155eb0b7913be1c0b2f1efd89df9a58ed0d8cdd949",
+      "bytes": 30110
+    },
+    "sourceFilesMatched": 5252,
+    "basePlusTwoChangesMatched": true,
+    "toolPinsMatched": 12,
+    "commandsChecked": 19,
+    "testCountsVerified": {"passed": 2, "failed": 0, "skipped": 0},
+    "actualCapacityMarkersVerified": true,
+    "executionCleanupAndProtectedStateVerified": true,
+    "allReadersClosed": true,
+    "testOrBusinessReplay": false
+  },
+  "closure": {
+    "receipt": {
+      "path": "/opt/goby-test/catalog-real-media-capacity-20260914/closure.json",
+      "sha256": "4e5d15817418bc21c57dae082389c8a5503e8437944b4ea76be73076981feb82",
+      "bytes": 63053
+    },
+    "status": "capacity_execution_evidence_preserved_and_owned_ram_closed",
+    "exitCode": 0,
+    "archivesComplete": true,
+    "ramUnmounted": true,
+    "lockReleased": true,
+    "protectedUnchanged": true,
+    "ownedProcessesClosed": true,
+    "underlyingRamAndFixtureDirectoriesEmptyAndRetained": true,
+    "newLoopDevices": 0,
+    "newAccounts": 0,
+    "rootFreeBytesAfter": 1124679680,
+    "additionalOutputBytesBeforeReceipt": 31115959,
+    "independentTestBinaryRetained": false,
+    "originalSourceArchiveAndBaseInventoryRetainedInPlaceAndRepinned": true,
+    "secondBaseSourceArchiveCopied": false,
+    "archives": {
+      "evidence": {
+        "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/evidence.tar.gz",
+        "sha256": "b83c99ae049b278c97462c80b597d4df4d02f28917cc90e14db8fcab0381d7e9",
+        "bytes": 394624,
+        "files": 52,
+        "directories": 1,
+        "uncompressedBytes": 1425465,
+        "allMembersReadBack": true
+      },
+      "closedPostgres": {
+        "path": "/opt/goby-test/catalog-real-media-capacity-20260914/retained/closed-postgres-private.tar.gz",
+        "sha256": "4bb384957460bb928231a969c9f282abcca76d892d36626accab834cc083948c",
+        "bytes": 29341271,
+        "files": 1879,
+        "directories": 33,
+        "uncompressedBytes": 183247826,
+        "allMembersReadBack": true,
+        "rawDatabaseRemainsRemotePrivate": true
+      }
+    }
+  },
+  "boundaries": {
+    "tinyRealMediaCorrectnessAndMeasuredCostOnly": true,
+    "incrementCompleteAndConsumed": true,
+    "inProcessStoreReopenOnly": true,
+    "httpOrNativeTcpPerformanceAccepted": false,
+    "nativeServiceOrPostgresRestartAccepted": false,
+    "hostRestartOrPowerLossDurabilityAccepted": false,
+    "actualFilesystemStallExercised": false,
+    "representativeMediaThroughputSloAccepted": false,
+    "pausedFullScanMountExperimentResumed": false,
+    "clientVideoAcceptanceChanged": false,
+    "mainPromoted": false,
+    "completeM2ThroughM6Claimed": false,
+    "m7Deferred": true
+  },
+  "nextRequiredResult": "Prioritize core video only when new discriminating evidence or a justified correction supports a bounded journey. Continue independent M2-M6 obligations under their own prerequisites; no consumed input, paused mount attempt or generic observer is queued for replay."
+}

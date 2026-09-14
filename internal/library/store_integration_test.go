@@ -26,11 +26,21 @@ import (
 // Every test owns a random schema and only removes the schema it created.
 func libraryIntegrationStore(t *testing.T, prober Prober, allowedCloseErrors ...error) (context.Context, *pgxpool.Pool, *Store, string, string) {
 	t.Helper()
+	return libraryIntegrationStoreWithTimeout(t, prober, 90*time.Second, allowedCloseErrors...)
+}
+
+// Capacity profiles may supply a larger deadline without changing the ordinary
+// integration fixture's 90-second default or its independently bounded cleanup.
+func libraryIntegrationStoreWithTimeout(t *testing.T, prober Prober, timeout time.Duration, allowedCloseErrors ...error) (context.Context, *pgxpool.Pool, *Store, string, string) {
+	t.Helper()
 	databaseURL := os.Getenv("GOBY_TEST_DATABASE_URL")
 	if databaseURL == "" {
 		t.Skip("GOBY_TEST_DATABASE_URL is required for PostgreSQL integration tests")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	if timeout <= 0 {
+		t.Fatal("integration fixture timeout must be positive")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	t.Cleanup(cancel)
 	adminPool, err := pgxpool.New(ctx, databaseURL)
 	if err != nil {
@@ -224,9 +234,22 @@ func libraryIntegrationCreate(t *testing.T, ctx context.Context, store *Store, n
 
 func libraryIntegrationWaitJob(t *testing.T, ctx context.Context, store *Store, id, wantStatus string) Job {
 	t.Helper()
-	waitCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	return libraryIntegrationWaitJobWithTimeout(t, ctx, store, id, wantStatus, 15*time.Second)
+}
+
+func libraryIntegrationWaitJobWithTimeout(t *testing.T, ctx context.Context, store *Store, id, wantStatus string, timeout time.Duration) Job {
+	t.Helper()
+	if timeout <= 0 {
+		t.Fatal("integration scan wait timeout must be positive")
+	}
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	ticker := time.NewTicker(10 * time.Millisecond)
+	pollInterval := 10 * time.Millisecond
+	if timeout > 15*time.Second {
+		// Long capacity scans should not add a 100-query/second observer load.
+		pollInterval = 250 * time.Millisecond
+	}
+	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 	for {
 		job, err := store.GetJob(waitCtx, id)
