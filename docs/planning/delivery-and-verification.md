@@ -13,6 +13,17 @@ without blocking every unrelated internal increment. The project requires
 PostgreSQL, stable Go/FFmpeg releases and Linux hardware decoding. Documentation
 updates alone do not close any milestone or reference evidence gap.
 
+The latest fixed M5 media-refresh increment is committed and pushed as
+`5faf854`. Its [final ordinary regression](../development/m5-final-regression-verification.json)
+passed one complete 25-package run with 2,295 passes, zero failures and one
+declared mount-profile skip; focused/browser acceptance, independent reviews
+and resource closure also passed. The next
+[internal systemd package](../development/systemd-package-build-verification.json)
+has passed three builds, focused checks, 26 guards, independent review and
+build resource closure. Actual nonroot installation and normal
+stop/start remain pending. These increments retain their own source and
+execution scopes and do not close complete M5, M6 or core-video acceptance.
+
 The [fresh source32 backup](../development/audited-main-native-backup-completed.json),
 both [selected rollback/restart](../development/isolated-selected-online-rollback.json)
 and [actual source32 recovery/restart](../development/isolated-source32-recovery.json)

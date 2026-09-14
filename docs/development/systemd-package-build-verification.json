@@ -1,0 +1,300 @@
+{
+  "actualBuildCount": 3,
+  "actualBuilds": [
+    {
+      "binary": {
+        "bytes": 30691123,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/goby",
+        "sha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1"
+      },
+      "buildManifest": {
+        "bytes": 173346,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/manifest.json",
+        "sha256": "851cf3b02372fb99b42f75f4548556ca3eb693ddf3290055e2363c16fb91f43a"
+      },
+      "elfMachine": 62,
+      "nativeRuntimeExecuted": false,
+      "profile": "linux-amd64-systemd"
+    },
+    {
+      "binary": {
+        "bytes": 30691123,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64/goby",
+        "sha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1"
+      },
+      "buildManifest": {
+        "bytes": 173338,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64/manifest.json",
+        "sha256": "74113b7ae6c45ef6591828951d0128616a78a14044a7bc8f8574ff2af8843349"
+      },
+      "elfMachine": 62,
+      "nativeRuntimeExecuted": false,
+      "profile": "linux-amd64"
+    },
+    {
+      "binary": {
+        "bytes": 28599251,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-arm64/goby",
+        "sha256": "97d14c96229217d3fc6c9a5e3ae21a32e0dcff5d5d4576c6e18ab1e68fc138c9"
+      },
+      "buildManifest": {
+        "bytes": 173340,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-arm64/manifest.json",
+        "sha256": "56706f409b60acef68399989e51c47f4fd4b120c73b36fd02a39c53775f6e2a3"
+      },
+      "elfMachine": 183,
+      "nativeRuntimeExecuted": false,
+      "profile": "linux-arm64"
+    }
+  ],
+  "amd64PackageAndLegacyBinaryEqual": true,
+  "baseGitHead": "5faf854faf8af800438a02590116b0f9cdb983ac",
+  "closure": {
+    "allOwnedCommandsClosed": true,
+    "artifactsRetained": true,
+    "emergencyFailureReceiptWritesUsed": false,
+    "emptyUnderlyingDirectoryRetained": true,
+    "guardFixturesArchive": {
+      "bytes": 192829440,
+      "completeMemberReadback": true,
+      "members": 1084,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/seal/guard-fixtures.tar",
+      "sha256": "d394f585100c62d320a1c66da6237b5df02e277cecafeea360dd6395e721e0b2",
+      "symlinksFollowedOrExtracted": false
+    },
+    "lockReleased": true,
+    "outerEvidenceArchive": {
+      "bytes": 1361920,
+      "completeMemberReadback": true,
+      "members": 137,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/seal/outer-evidence.tar",
+      "sha256": "008b1aa71c0de3140243242700acc8bda710aa4b3fc91fe778ee2c997623f9f8",
+      "symlinksFollowedOrExtracted": false
+    },
+    "ownedTmpfsOrdinarilyUnmounted": true,
+    "privateArchivesRemainRemote": true,
+    "protectedRuntimeMetadataExact": true,
+    "rawLogOrDatabaseOrCredentialContentPublished": false,
+    "retainedArtifactFiles": 13,
+    "retainedBytes": 329647450,
+    "rootFreeBytesAtClosure": 6428753920
+  },
+  "evidence": {
+    "build": {
+      "bytes": 67157,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/build.json",
+      "sha256": "17ce0192460ab851a407ce8ff252c9cf1551c1454142c7ba99c846a093372392"
+    },
+    "closure": {
+      "bytes": 66196,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/closure.json",
+      "sha256": "ddd923140b973d95d602d3f7d75ac9c46c2d9f3a6946559d370cdd5438ec4ebe"
+    },
+    "guards": {
+      "bytes": 48458,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/package-guards.json",
+      "sha256": "6fb2dd0840c26fa0d3468703b8e6b0214e3171cc99ffb123a2c866412376d73c"
+    },
+    "independentReview": {
+      "bytes": 639163,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/independent-review.json",
+      "sha256": "1c8ad36b8ca3f7600002055a0ff967b5ef5a026942057626b2ec07a2f880c7c3"
+    },
+    "input": {
+      "bytes": 2996,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/build-input.json",
+      "sha256": "aa8521e2bec483ad323b96dcece0dd494551d2866766e5e2f6d106289fdcc0b3"
+    },
+    "preparation": {
+      "bytes": 58009,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/preparation.json",
+      "sha256": "c45d2c4ad5232b4338d4747bfb53591759cb2805dd714e63499741b21b297321"
+    },
+    "sourcePreparation": {
+      "bytes": 43654,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/source-preparation.json",
+      "sha256": "3e18fabea6c83b4eaf25ba1662203d59c29c38b7751f773eb92ba75e53111688"
+    },
+    "toolPins": {
+      "bytes": 5175,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/tool-pins.json",
+      "sha256": "fb5ecd65848e63edd03161ef0654a361efd4200a3ee8f2e8e158da21f23c9181"
+    }
+  },
+  "focusedTests": {
+    "failed": 0,
+    "groups": [
+      {
+        "failed": 0,
+        "name": "dashboard-handler",
+        "passedIncludingSubtests": 22,
+        "race": true,
+        "skipped": 0,
+        "topLevelPassed": 3
+      },
+      {
+        "failed": 0,
+        "name": "dashboard-external",
+        "passedIncludingSubtests": 2,
+        "race": true,
+        "skipped": 0,
+        "topLevelPassed": 2
+      },
+      {
+        "failed": 0,
+        "name": "dashboard-embedded",
+        "passedIncludingSubtests": 2,
+        "race": true,
+        "skipped": 0,
+        "topLevelPassed": 2
+      }
+    ],
+    "passedIncludingSubtests": 26,
+    "skipped": 0,
+    "topLevelPassed": 7
+  },
+  "guards": {
+    "actualArchivePositive": 1,
+    "allOwnedProcessGroupsClosed": true,
+    "archiveRejections": 13,
+    "cliRejections": 12,
+    "failed": 0,
+    "passed": 26,
+    "syntheticGoIsBuildEvidence": false,
+    "testCount": 26,
+    "unexecuted": 0
+  },
+  "helpers": {
+    "m6-systemd-package-build.py": {
+      "bytes": 44798,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/m6-systemd-package-build.py",
+      "sha256": "a59008c789c96a237b12eb0c24c9c2421170c4bf4fe01074a9d73b2e8a6d625b"
+    },
+    "m6-systemd-package-guards.py": {
+      "bytes": 31068,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/m6-systemd-package-guards.py",
+      "sha256": "1e510ce9e4422e6869e7aafe971e73bf31507e58f97b0497d6f2404d52661547"
+    },
+    "m6-systemd-package-seal.py": {
+      "bytes": 56405,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/m6-systemd-package-seal.py",
+      "sha256": "f82989ed3daaaa0c8d7109f8d75165a7c61bca1ecba99253e689026b99fed6af"
+    },
+    "m6-systemd-package-source.py": {
+      "bytes": 16190,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/m6-systemd-package-source.py",
+      "sha256": "79259e993596dbf4bb7bae5d15ec684367f00dc9ae6dc982cb92a80e21c0943b"
+    }
+  },
+  "kind": "internal-systemd-package-build-verification",
+  "limits": {
+    "applicationStarted": false,
+    "coreVideoAcceptance": false,
+    "databaseConnected": false,
+    "externalDistributionAccepted": false,
+    "gpuAcceptance": false,
+    "hostDurabilityAcceptance": false,
+    "installationAcceptance": false,
+    "nativeArm64Runtime": false,
+    "newFullSuiteRun": false,
+    "ociBuilt": false,
+    "projectLicenseResolved": false,
+    "serviceInstalled": false,
+    "taggedFullSuiteAcceptance": false,
+    "upgradeAcceptance": false,
+    "wholeGoalComplete": false,
+    "wholeM6Complete": false
+  },
+  "nextRequiredResult": "Install this exact package using the shipped nonroot systemd template in a fresh isolated PostgreSQL/media scope; verify normal stop/start and data preservation, then close the owned installation.",
+  "package": {
+    "archive": {
+      "bytes": 14072899,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/goby-linux-amd64-systemd.tar.gz",
+      "sha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a"
+    },
+    "canonicalUstarAndGzipVerified": true,
+    "completeIndependentReadback": true,
+    "manifest": {
+      "bytes": 5997,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/package-manifest.json",
+      "sha256": "54639571120a36988ca7a91d1af45da44ff8c6b663db63c027c0411486fd5d2f"
+    },
+    "regularMembers": 5,
+    "topDirectories": 1
+  },
+  "scope": "/opt/goby-test/m6-systemd-package-20260915",
+  "source": {
+    "administratorAssetBytes": 1106130,
+    "administratorAssets": 57,
+    "archive": {
+      "bytes": 2708124,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/source.tar.gz",
+      "sha256": "e9143f909ac2383aefe4aa53209d7806d31ab74388881d0dce124b0fcfaed510"
+    },
+    "files": 921,
+    "htmlEntryReferences": 5,
+    "inheritedBaselineFiles": 917,
+    "manifest": {
+      "bytes": 158020,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/source-manifest.json",
+      "sha256": "acdda037db9fedbaa388a09b512050e898727b19506b03595d0e53a65705bea8"
+    },
+    "newFrontendBuild": false,
+    "sourceInventoryFiles": 858,
+    "uncompressedBytes": 13222740,
+    "workingTreePackageChangesIncluded": true
+  },
+  "status": "build_verified_installation_pending",
+  "tools": {
+    "gcc": {
+      "path": "/usr/bin/x86_64-linux-gnu-gcc-14",
+      "resolvedPath": "/usr/bin/x86_64-linux-gnu-gcc-14",
+      "sha256": "a23ecab8ff08f09ad8c80602c2c5df7f49e09c25905cb8975902e101bf72635f",
+      "version": "x86_64-linux-gnu-gcc-14 (Debian 14.2.0-19) 14.2.0"
+    },
+    "go": {
+      "path": "/opt/goby-toolchains/go1.27.1/bin/go",
+      "resolvedPath": "/opt/goby-toolchains/go1.27.1/bin/go",
+      "sha256": "30969f97169d7f43fe6a085873d75613adc21e30818a8c61d95bd27275df4624",
+      "version": "go version go1.27.1 linux/amd64"
+    },
+    "gzip": {
+      "path": "/usr/bin/gzip",
+      "resolvedPath": "/usr/bin/gzip",
+      "sha256": "748e292cdaae29c1dbd3b6407086a27d5062331deb48d2da613d3912347cea5b",
+      "version": "gzip 1.13"
+    },
+    "mount": {
+      "path": "/usr/bin/mount",
+      "resolvedPath": "/usr/bin/mount",
+      "sha256": "2f36342bd2fef42343c4fa4a2a396a7f56c7c8f4ddcbd31c43205c62e152e6d4",
+      "version": "mount from util-linux 2.41.5 (libmount 2.41.5: selinux, smack, btrfs, verity, namespaces, idmapping, fd-based-mount, statmount, statx, assert, debug)"
+    },
+    "node": {
+      "path": "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+      "resolvedPath": "/opt/goby-test/exec-work-m3e/client-library-changed-source44-tool-01/node",
+      "sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327",
+      "version": "v22.23.2"
+    },
+    "python": {
+      "path": "/usr/bin/python3",
+      "resolvedPath": "/usr/bin/python3.13",
+      "sha256": "889c603f0d17cb54060951bcf4c4f9b8c9ebd9e52b392c70209bbb9755d797d9",
+      "version": "Python 3.13.5"
+    },
+    "tar": {
+      "path": "/usr/bin/tar",
+      "resolvedPath": "/usr/bin/tar",
+      "sha256": "38adf50825f773d353d6bda1a7cd70c22f8877823e44821c1d2bd0a52ddc3871",
+      "version": "tar (GNU tar) 1.35"
+    },
+    "umount": {
+      "path": "/usr/bin/umount",
+      "resolvedPath": "/usr/bin/umount",
+      "sha256": "3f3046ef1cdc5134eb0b7ac586c6fea3bcea22aa6614830a14e274f3905b6cd5",
+      "version": "umount from util-linux 2.41.5 (libmount 2.41.5: selinux, smack, btrfs, verity, namespaces, idmapping, fd-based-mount, statmount, statx, assert, debug)"
+    }
+  },
+  "verifiedDate": "2026-09-15",
+  "version": 1
+}

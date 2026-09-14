@@ -1,7 +1,8 @@
 # Embedded administrator build
 
-Status: **focused remote checks, actual amd64 embedded build, arm64 cross-build
-and artifact/resource closure passed**, 2026-09-14. This is partial M6 evidence.
+Historical checkpoint: **focused remote checks, actual amd64 embedded build,
+arm64 cross-build and artifact/resource closure passed**, 2026-09-14.
+This is partial M6 evidence.
 At that build checkpoint neither binary had run as a service or been deployed.
 The later [native catalog restart](native-catalog-restart-verification.json)
 passed two amd64 `goby serve` invocations in an isolated fixture. Both served
@@ -11,6 +12,16 @@ it is not a deployment or a native arm64 result. Full regression
 and candidate admission for the changed version remain separate requirements;
 the selected baseline's earlier 2,270-test result is not inherited. Native
 arm64, OCI, GPU, license and distribution obligations remain open.
+
+The current [internal systemd package increment](systemd-package-plan.md)
+follows the accepted M5 checkpoint `5faf854`. Its optional `--package systemd`
+implementation, embedded-compatible environment example and manual installation
+instructions have passed [current package build verification](systemd-package-build-verification.json):
+three actual builds, seven focused top-level tests (26 including subtests),
+26 package guards, independent review and artifact/resource closure. The
+package and legacy amd64 binaries are byte-identical; arm64 remains a cross-build.
+The existing unit is unchanged. Actual nonroot installation and normal stop/start
+acceptance remain pending. The historical results below retain their old scope.
 
 ## Recorded remote results
 
@@ -99,7 +110,22 @@ node scripts/build-release.mjs --arch amd64 --output-dir bin/release-linux-amd64
 node scripts/build-release.mjs --arch arm64 --output-dir bin/release-linux-arm64
 ```
 
-Each fresh output directory contains `goby` and `manifest.json`. Existing output
+For the internal amd64 systemd package, use a different fresh output directory:
+
+```text
+node scripts/build-release.mjs --arch amd64 --package systemd --output-dir bin/release-linux-amd64-systemd
+```
+
+This optional mode adds `goby-linux-amd64-systemd.tar.gz`, its staging directory
+and a separate `package-manifest.json`. The archive contains the embedded binary,
+the original build manifest, the unchanged systemd unit, an environment example
+and [manual installation instructions](../../deploy/linux/INSTALL.md). The
+external package manifest binds every member's hash, size and mode, the complete
+archive, deployment inputs and the GNU tar/gzip tools. The builder reads back the
+saved archive before writing that completion manifest. Systemd packaging is
+currently restricted to amd64; arm64 retains the existing no-package mode.
+
+The no-package mode creates only `goby` and `manifest.json`. Existing output
 directories are refused and failed build output is retained. The manifest
 records the target, binary SHA256/size, Go build metadata and every input asset's
 relative path, SHA256 and size. Its `sourceInventory` also records every regular

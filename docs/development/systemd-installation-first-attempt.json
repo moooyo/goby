@@ -1,0 +1,164 @@
+{
+  "kind": "goby-systemd-installation-first-attempt",
+  "version": 1,
+  "status": "failed_installation_evidence_preserved_and_owned_resources_closed",
+  "scope": "/opt/goby-test/m6-systemd-install-20260915",
+  "packageArchiveSha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a",
+  "preparation": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915/preparation.json",
+    "sha256": "0b67cdb2943fc254ac309e9f6e938cba883342e8ab7695dbc9effce9708687b6",
+    "bytes": 379114,
+    "status": "prepared_for_systemd_runtime"
+  },
+  "runtimeEntry": {
+    "sourceSha256": "9dcbe03de5e43b3d5ab52b5a4d6073b13d3d63a1405f2bcfb2a0cae7fea08d77",
+    "inputSha256": "1ee921454c4ac1a458bdb519f7548eb8e490271fda410978b6da6cc6ca14caaa",
+    "observedStatus": "rejected_before_runtime",
+    "observedErrorCode": "NameError",
+    "evidenceSource": "calling_tool_output_preserved_in_closeout",
+    "cause": "The runtime controller referenced sys before importing it.",
+    "applicationStarts": 0,
+    "httpRequests": 0,
+    "sqlConnections": 0,
+    "executionReceiptCreated": false
+  },
+  "ownedServiceCloseout": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915/private/runtime-entry-failure-closeout.json",
+    "sha256": "185a63228e7c67743da98f49a36fcbc48efdb6965b896649aa36f72e7eb1e3ae",
+    "bytes": 44038,
+    "status": "owned_infrastructure_stopped_failure_retained",
+    "postgresStopped": true,
+    "anchorStopped": true,
+    "applicationNeverStarted": true,
+    "protectedBeforeEqualsAfter": true,
+    "allOwnedCommandsClosed": true,
+    "lockReleased": true,
+    "postgresTmpfsRetained": true,
+    "installationFilesRetained": true
+  },
+  "importCorrection": {
+    "sourceSha256": "af405ee69cd512896e13ed9fe1e20fc9baa637484bd4b4a19b3d20fbe2c756c3",
+    "change": "Add the missing sys import; all other runtime source bytes are unchanged.",
+    "checks": {
+      "path": "/opt/goby-test/m6-systemd-install-20260915/private/runtime-import-correction-checks.json",
+      "sha256": "5bc6ca4f0cec4a2911cc143052c3bb107339ced8331cd6aa4b65cbed092661e3",
+      "bytes": 1165,
+      "status": "passed",
+      "oldUnresolvedGlobals": ["sys"],
+      "newUnresolvedGlobals": [],
+      "invalidInputEntryInvocations": 1,
+      "validBusinessInputsExecuted": 0,
+      "serviceCommands": 0
+    }
+  },
+  "firstPreservationAttempt": {
+    "operatorSha256": "480cfd319ff9ba608cb986c4c87e45a12213f5a2b3028b6ea10ffa223d44bcf5",
+    "inputSha256": "d6511ff35fa87f220039b2ce893443347ced4274df804c05fd3ef3591d2746d9",
+    "failureReceipt": {
+      "path": "/opt/goby-test/m6-systemd-install-20260915/entry-failure-seal-failure.json",
+      "sha256": "b115855dbe12a5d32fe262b6c0327a0671327a1c88e034d00ad7e4ee3cdec759",
+      "bytes": 6994
+    },
+    "errorCode": "recorded_stop_not_normal",
+    "cause": "The checker required process-exit codes that the actual stopped-unit receipt did not retain: both codes were zero and InvocationID was empty.",
+    "metadataCommands": 10,
+    "allOwnedCommandsClosed": true,
+    "lockReleased": true,
+    "reviewPassed": false,
+    "archivesCreated": 0,
+    "pathsMoved": 0,
+    "filesRemoved": 0,
+    "postgresUnmounted": false
+  },
+  "postgresShutdownLogObservation": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915/private/pg.stderr",
+    "sha256": "cac786a01258afdcb7464a5b6e81b50825bc7371e6b1ca253898ce16c631f2f0",
+    "bytes": 1374,
+    "fastShutdownRequestObserved": true,
+    "databaseShutdownObserved": true,
+    "panicObserved": false,
+    "fatalObserved": false,
+    "rawLogRemainsPrivate": true
+  },
+  "boundary": {
+    "installationAcceptance": false,
+    "normalApplicationRestartAccepted": false,
+    "originalFailureRelabeled": false,
+    "runtimeInputReplayed": false,
+    "newInstallationAttemptsPaused": true,
+    "wholeM6Accepted": false,
+    "coreVideoAccepted": false,
+    "mainPromotionAccepted": false,
+    "rawDatabaseConfigurationAndCredentialsRemainPrivate": true
+  },
+  "affectedHelperGlobalCheck": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915/private/helper-global-symbol-check.json",
+    "sha256": "f58afbf8629acaa4ff17dd713c2523c2ddc37427ec249430f9c5655b706417cf",
+    "bytes": 2441,
+    "status": "passed",
+    "checkedFiles": 7,
+    "actorMainsExecuted": 0,
+    "serviceCommands": 0
+  },
+  "correctedPreservation": {
+    "operatorSha256": "88385bdfabd09608a5d4accecd2a8a91c01e18aacdabc8932af04abc17d645c1",
+    "inputSha256": "05e3298524f42b5f70f4fa94f9ca3713ba305344bc6f8359778e46f7a20e93b6",
+    "actualReadOnlyPrecheck": {
+      "path": "/opt/goby-test/m6-systemd-install-20260915/private/entry-failure-seal-corrected-readonly.json",
+      "sha256": "5b79ee8ae327d3a2939d3eb6d0b191b04510eded7ed940d19e9d8d0a6898e3cc",
+      "bytes": 90378,
+      "status": "actual_readonly_contract_passed"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m6-systemd-install-20260915/entry-failure-independent-review.json",
+      "sha256": "220893dd42fe90403f1dc9dfe8d2a5d382e6b4533e3450213283328012808029",
+      "bytes": 78811
+    },
+    "closure": {
+      "path": "/opt/goby-test/m6-systemd-install-20260915/entry-failure-closure.json",
+      "sha256": "453ae8edf74b4b429b024bcf106f04b402c95e9c4bd8e5713e56fc46deeff59b",
+      "bytes": 109536,
+      "status": "entry_failure_evidence_preserved_and_owned_resources_closed"
+    },
+    "finalReadback": {
+      "path": "/opt/goby-test/m6-systemd-install-20260915/private/entry-failure-closure-readback-final.json",
+      "sha256": "0efb7b0d7556e3bcf70c4e718c02ca6e0cb4ada80d935063ae119a1fe05ee4ab",
+      "bytes": 3691
+    },
+    "closedPostgresArchive": {
+      "sha256": "8858c47530049571720b24a204fe7736e9d5944fca06afbe0540cb15a0e315ae",
+      "bytes": 6438237,
+      "files": 1271,
+      "readbackMatched": true
+    },
+    "originalEvidenceArchive": {
+      "sha256": "ad57ce54a53139b3fd64f8180764c15a3ea7d11a1ae7f135fcef5c69202db2b6",
+      "bytes": 302542,
+      "files": 360,
+      "readbackMatched": true
+    },
+    "commands": {
+      "total": 43,
+      "readOnlyMetadata": 41,
+      "daemonReload": 1,
+      "ordinaryUnmount": 1
+    },
+    "retainedTreesVerified": 2,
+    "retainedInstallationCopiesVerified": 5,
+    "originalFailuresPreserved": true,
+    "postgresUnmounted": true,
+    "unitRegistrationsAbsent": true,
+    "installationPathsAbsent": true,
+    "networkNamespaceAbsent": true,
+    "emptyFixtureDirectoriesRetained": true,
+    "sharedAccountsUnchanged": true,
+    "protectedStateUnchanged": true,
+    "allOwnedCommandsClosed": true,
+    "lockReleased": true,
+    "masterFilesRead": false,
+    "processExitCodesRetained": false,
+    "normalProcessExitClaimed": false,
+    "rootFreeBytesAfterClosure": 6387773440
+  },
+  "nextAction": "Keep new installation attempts paused, publish the scoped package-build and failed-installation checkpoint, and reassess the execution approach before further installation business. Complete independent remaining M2-M6 obligations under their own prerequisites."
+}

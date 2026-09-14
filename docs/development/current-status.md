@@ -39,8 +39,26 @@ results are not added to the full-suite count. Preserve the separate capacity
 rejection, the final run's zero-dispatch loop-metadata rejection and its first
 reader rejection; the actual product suite ran once. Four private archives
 passed readback, owned processes/PG/cgroups closed, and ext4, loop and RAM were
-released with protected runtime metadata unchanged. The next increment is an
-internal amd64 embedded systemd package and actual installation acceptance.
+released with protected runtime metadata unchanged. The verified M5 increment
+is committed and pushed as `5faf854`. The next increment is an
+[internal amd64 embedded systemd package](systemd-package-plan.md) and actual
+installation acceptance. Its build-script, environment-template and manual
+installation changes are applied in the working tree. The
+[package build verification](systemd-package-build-verification.json) passed
+three actual builds, seven focused top-level tests (26 including subtests),
+26 guards, independent review and build resource closure. The archive and
+private evidence are retained. The first actual installation preparation passed,
+but its runtime controller failed at entry because of a missing `sys` import.
+Goby never started. The owned PostgreSQL and network anchor stopped; the first
+preservation checker then rejected unavailable process-exit fields. Its failure
+is retained. Corrected preservation passed actual read-only prechecks, independent
+evidence review, archive readback and final resource checks. Configuration/media
+and five installation-file copies remain private; the original installation
+paths, units, namespace and PG tmpfs are closed. The import-only correction passed remote
+symbol and invalid-input entry checks. See the
+[first installation attempt](systemd-installation-first-attempt.json).
+Installation acceptance remains open and new attempts are paused pending a
+review of the execution approach. The shipped unit is unchanged.
 Historical candidate admissions retain their original scope.
 
 The saved recovery scope is
@@ -72,6 +90,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package still needs actual installation acceptance |
+| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards, independent result review and resource closure passed after M5 checkpoint `5faf854`; package/legacy amd64 binaries are byte-identical and arm64 is cross-built. The first installation failed before Goby started, and both its original failure and preservation-checker rejection are retained with completed resource closure | Keep installation attempts paused while reviewing the execution approach. Normal nonroot application stop/start and data preservation acceptance remains open, along with native arm64, upgrade and whole-M6 acceptance |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |

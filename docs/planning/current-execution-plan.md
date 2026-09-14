@@ -3,8 +3,12 @@
 Reviewed on 2026-09-15 after candidate recovery and the M5 media-refresh
 increment passed focused/browser acceptance, final ordinary regression and
 independent result/resource closure reviews.
-Status: **the fixed M5 refresh increment is accepted; an internal amd64 systemd
-package is next; core-video and complete release gates remain open**. Earlier
+Status: **the fixed M5 refresh increment is accepted and committed; the internal
+amd64 systemd package build is verified and closed; its first installation
+prepared successfully but failed at controller entry before Goby started.
+Owned resources are now preserved and closed; installation attempts are paused
+pending execution review. The scoped source checkpoint is next; core-video
+and complete release gates remain open**. Earlier
 regression and candidate admissions retain their original source and execution
 scopes.
 This is the active queue. [Current status](../development/current-status.md)
@@ -56,16 +60,49 @@ cover later corrections or this planning amendment.
 
 The immediate queue is:
 
-1. Complete the verified M5 source checkpoint, then build an internal Linux
-   amd64 embedded systemd package containing the binary, build manifest,
-   shipped unit, environment template and installation instructions. Align the
-   template with embedded administrator assets and verify the complete archive.
-2. Under a separately admitted fresh scope, use the shipped nonroot systemd
+1. Continue from the completed M5 source checkpoint `5faf854` and the
+   [verified systemd package build](../development/systemd-package-build-verification.json).
+   Three actual builds, focused checks and 26 guards passed independent review;
+   artifacts and private evidence are retained, and the build tmpfs is closed.
+   Preserve this exact package for any subsequently reviewed installation work.
+2. Retain the closed [first installation attempt](../development/systemd-installation-first-attempt.json).
+   Preparation passed; the runtime controller then raised `NameError` because
+   it lacked `import sys`, before any application start, HTTP or runtime SQL.
+   The owned PostgreSQL and network anchor stopped with their processes and
+   cgroups closed and protected state unchanged. PostgreSQL's private log records
+   shutdown completion; process-exit codes were not retained. Corrected failure
+   preservation and resource closure passed,
+   including private archives, retained configuration/media and five installation
+   copies. The first preservation checker also
+   rejected the actual stopped-unit receipt because process-exit codes were
+   unavailable. It ran ten metadata commands and moved or removed no paths.
+   New installation attempts remain paused. Preserve both failures and reassess
+   the execution approach before any further installation business. The import-only correction passed remote
+   symbol and invalid-input entry checks; no business input was replayed.
+   Actual installation acceptance must still use the shipped nonroot systemd
    template for actual installation, bootstrap/login, small real-media catalog
    and normal stop/start preservation checks. Recheck target-path absence and
    capacity; retain unit hardening and protect every existing candidate and PG.
+   The recovery-plan review corrected the combined lifetime budget: the owned
+   anchor now has a 3,600-second ceiling, and all three handoffs enforce remaining
+   time from its original start, including phase and shutdown reserves. The
+   correction passed independent static review, 28 remote synthetic boundary
+   checks and remote syntax checks of all seven helpers. Those results did not
+   cover the missing runtime import. Preserve the consumed inputs and original
+   failure; a subsequent attempt needs an explicit reviewed decision based on
+   the demonstrated correction. Do not keep a live fixture waiting for more
+   operator development.
    Close the new installation and its resources before accepting the increment.
-3. Continue the remaining M2-M6 obligations under their own prerequisites.
+3. Publish the installation result and its exact limitations, reconcile the
+   retained package with the final staged source, and commit/push this reviewed
+   partial M6 checkpoint before starting the next implementation increment.
+   Reuse the completed package build and M5 regression while their bound inputs
+   remain unchanged; expand verification only for a concrete change or failure.
+4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded
+   retained-state journey when new discriminating evidence or a justified
+   correction supports it; this gate can progress independently of packaging.
+   Core acceptance still blocks new-binary main promotion.
+5. Continue the remaining M2-M6 obligations under their own prerequisites.
    This fixed M5 increment does not complete M5, pass core video acceptance,
    authorize main promotion or complete the overall goal. M7 remains deferred.
 
@@ -359,7 +396,7 @@ workspace outside every new resource budget.
 | --- | --- | --- |
 | 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
-| 0b. Internal amd64 embedded systemd package | Extend the existing release builder with an optional systemd package, align its environment template with embedded assets and provide manual installation instructions; then exercise the shipped nonroot unit with a fresh private DB/catalog and normal stop/start | Validate archive members and actual installed source/unit/asset identities, credential cleanup, catalog preservation and owned-resource disposal. Keep existing candidates untouched. This is an internal installation candidate, not public distribution, upgrade, core-video, native arm64/GPU or OCI acceptance |
+| 0b. Internal amd64 embedded systemd package — build complete, installation paused | Complete the staged-source bridge and partial checkpoint, retaining the verified package and independently closed failed installation | Three builds, seven focused top-level tests (26 including subtests), 26 package guards and build closure passed. The runtime entry and first preservation checker failed; both failures remain preserved and owned resources are now closed. Review the execution approach before further installation business. Nonroot application restart, public distribution, upgrade, core-video, native arm64/GPU and OCI remain separate gates |
 | 1. Core video and subtitle acceptance | Prioritize this promotion gate when new discriminating evidence or a justified product correction supports a bounded journey on a reviewed current candidate and retained-state input | No new journey is admitted yet. Context291 identifies physical294, not293; the earlier cancellation and original page errors remain unresolved. Preserve the completed identity review. Without new grounds, keep this gate open and continue independent work; do not repeat the review, replay consumed actors or add another observation framework |
 | 2. Independent remaining M2-M6 delivery | Separately address representative capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | Require measurable limits and bounded shutdown. This track may progress independently, while heavy work follows the shared-resource limits above; small catalogs, root-profile restarts and cross-builds do not close the release gates |
 | 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
@@ -383,11 +420,19 @@ regression are complete, with independent reviews and resource closure. This
 increment does not admit a core-client replay or main promotion.
 
 The next independent increment is the internal amd64 systemd package in row 0b.
-Its implementation drafts have not been applied or executed. Use the existing
-release builder and deployment template, preserve ordinary build compatibility,
-and keep new installation acceptance separate from historical custom-unit
-candidate proofs. Project licensing remains unresolved, so no external
-distribution is admitted by this package work.
+Its build-script, environment-template and installation-document changes are
+applied in the working tree; the shipped unit is unchanged. The
+[actual package builds and guards](../development/systemd-package-build-verification.json)
+passed independent review and resource closure. The verified archive is retained
+outside the now-closed build tmpfs. Installation preparation passed, but the
+runtime entry failed before Goby started. That failed scope is now preserved and
+closed; installation remains paused. Complete the staged-source bridge and
+partial checkpoint described in the immediate queue. The M5
+source checkpoint `5faf854` is committed and pushed. Follow the
+[package plan](../development/systemd-package-plan.md), preserve existing
+build compatibility, and keep new installation acceptance separate from
+historical custom-unit candidate proofs. Project licensing remains unresolved,
+so no external distribution is admitted by this package work.
 
 The M2 full-scan mount experiment remains paused outside this execution order.
 Its helper compiled, but PostgreSQL and all seven scan stages remain unexecuted.
