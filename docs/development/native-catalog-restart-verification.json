@@ -1,0 +1,331 @@
+{
+  "applicationBuild": {
+    "binary": {
+      "build_manifest_sha256": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683",
+      "build_source_archive_sha256": "10d88202cc2a06071b3a216330f70e92512f292f51c46764a4230aa136639dff",
+      "bytes": 30678868,
+      "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/goby",
+      "sha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312"
+    },
+    "changesSinceBuildCommit": "Git be18be9..968835c contains documentation and one catalog integration test; no production source change.",
+    "completeChangedVersionRegressionEstablished": false,
+    "sourceBoundary": "The M6 build source and binary remain separately pinned. The two-file scenario manifest is not application build provenance.",
+    "sourceEvidence": "embedded-administrator-verification.json",
+    "workspaceHeadAtExecution": "968835c"
+  },
+  "evidence": {
+    "closure.json": {
+      "bytes": 14424,
+      "path": "/opt/goby-test/native-catalog-20260914/closure.json",
+      "sha256": "b4d4993692477d448a67d8ac7acbf0c4ee637013b2d8e2c781db5f979ea9eb0f"
+    },
+    "execution.json": {
+      "bytes": 18243,
+      "path": "/opt/goby-test/native-catalog-20260914/execution.json",
+      "sha256": "7334db4546c9310fae9b01d8074dd3458897a18446c5da73e5f2c289aba52009"
+    },
+    "independent-review.json": {
+      "bytes": 2827,
+      "path": "/opt/goby-test/native-catalog-20260914/independent-review.json",
+      "sha256": "3cb9b9e2b7e789cf0dde23585fb8707f65baf590f069ef96661f6c3f2e51fbee"
+    },
+    "preparation.json": {
+      "bytes": 19278,
+      "path": "/opt/goby-test/native-catalog-20260914/preparation.json",
+      "sha256": "dc7073f5ad723cf73d3b62ac1b81c78ea86943058befe9e3183227adafd16da0"
+    },
+    "retained-report.json": {
+      "bytes": 135862,
+      "path": "/opt/goby-test/native-catalog-20260914/retained/native-attempt/report.json",
+      "sha256": "8b293826aea9bd0c63c58c1379a775cff6aa415061d882c07585270edfd682e7"
+    },
+    "retained-worker-report.json": {
+      "bytes": 127696,
+      "path": "/opt/goby-test/native-catalog-20260914/retained/native-attempt/worker-report.json",
+      "sha256": "70f9b462e747a60d43ea956697d739ce7d7210c00744af1c6e14eb6eb4714aae"
+    }
+  },
+  "executionAttempts": 1,
+  "historicalRuntimeScope": "/opt/goby-test/native-catalog-20260914/ram/native-catalog-20260914-20260914T052953Z-5fc4e4190495",
+  "inputs": {
+    "closureScript": {
+      "bytes": 24898,
+      "path": "/opt/goby-test/native-catalog-20260914/private/native-catalog-seal.py",
+      "sha256": "87cb7a716fd2eedd0c960366912e738d631cb74340a698c20a1374b30b2a12a0"
+    },
+    "publicationScript": {
+      "bytes": 7640,
+      "path": "/opt/goby-test/native-catalog-20260914/private/native-catalog-publish.py",
+      "sha256": "36d40401d9bc3a4319caca6bf04e7edc0301e09c1e7de8d7400c81e3b29e587e"
+    },
+    "scenarioArchive": {
+      "bytes": 77824,
+      "path": "/opt/goby-test/native-catalog-20260914/private/scenario.tar",
+      "sha256": "5a14413e52edb95e072260b8c018a966c4a370f631f638f00cbd7ad68c098067"
+    },
+    "scenarioFiles": {
+      "native-catalog-journey.py": {
+        "bytes": 39059,
+        "sha256": "63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4"
+      },
+      "native-catalog-runtime.py": {
+        "bytes": 36176,
+        "sha256": "9e98a568aabfebbe7c0a3219eb33ffd1661669efa300cdf02dd9e3b1700d6585"
+      }
+    },
+    "scenarioManifest": {
+      "bytes": 281,
+      "path": "/opt/goby-test/native-catalog-20260914/retained/native-attempt/source-manifest.json",
+      "sha256": "cad1b0cb3372d09e2e9a0666b38eae8efacf041de335555f2727fb97aaccaadf"
+    },
+    "scripts": {
+      "native-catalog-execute.py": {
+        "bytes": 4257,
+        "sha256": "148eb269928c2423026c39c1eb3af3d8cb030120903a241775783ed2ced5ed52"
+      },
+      "native-catalog-prepare.py": {
+        "bytes": 3979,
+        "sha256": "4bf3e7f7c6cfba061a16ba7ba29970a4bb6bb2d3ed615af468635f54954830fc"
+      },
+      "verify-native-catalog-20260914.py": {
+        "bytes": 31799,
+        "sha256": "c154b7dae850ec058a803b911e06b14140a86951b6e9cbb5a515abc7e741fd26"
+      }
+    },
+    "tools": {
+      "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg": {
+        "bytes": 31398016,
+        "sha256": "235f82493b145f9d2e5913039ebc54e99caa213c1ce0b8592cac05adea41815e"
+      },
+      "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe": {
+        "bytes": 31184864,
+        "sha256": "8b86ad18818830b003f4d5191c1bd0c9b3722539c6203fae30de4da7f04cc872"
+      },
+      "/usr/lib/postgresql/17/bin/initdb": {
+        "bytes": 196520,
+        "sha256": "a0363354125bc00f25075bb47fc32a2838fa7668c008326227f5bc04d628ca1d"
+      },
+      "/usr/lib/postgresql/17/bin/pg_ctl": {
+        "bytes": 80568,
+        "sha256": "c8a0fa6df90600186575e3f3c47a352bafac73547416cf67675b41991b5b5d74"
+      },
+      "/usr/lib/postgresql/17/bin/pg_dump": {
+        "bytes": 483936,
+        "sha256": "b5f14f509728e44d97ff876b570c85c9d641fc22898b394ec0f5a923ec6ef793"
+      },
+      "/usr/lib/postgresql/17/bin/pg_restore": {
+        "bytes": 249664,
+        "sha256": "6a5c329542ccbb58957edbc8c0aa08e103cb32f8257c1f2d3b8dad19ce947692"
+      },
+      "/usr/lib/postgresql/17/bin/postgres": {
+        "bytes": 10189096,
+        "sha256": "6468a969338215cb3912cf9c0b894bdbbd37b9a709926db078e9a5bf8bdc3e16"
+      },
+      "/usr/lib/postgresql/17/bin/psql": {
+        "bytes": 822816,
+        "sha256": "3c94c29652ea7ff8803ab1ca35e48c38a39c8a94a8c8eeadbb1d87c68494506c"
+      }
+    }
+  },
+  "kind": "native-catalog-restart-verification",
+  "localVerificationExecuted": false,
+  "milestoneScope": [
+    "M2 native process restart increment",
+    "M6 embedded amd64 runtime increment"
+  ],
+  "nextAction": "Freeze the intended changed source and run complete ordinary race regression and Linux build, accounting explicitly for unexecuted opt-in profiles before candidate admission.",
+  "notEstablished": [
+    "Real-client movie, episode or subtitle acceptance; browser execution or playback.",
+    "Nonzero resume progress, PostgreSQL restart, host reboot or power-loss durability.",
+    "Non-root deployment, representative catalog capacity, blocked I/O or the paused seven-stage mount experiment.",
+    "Native arm64, GPU, OCI or broad packaging and hardware compatibility.",
+    "Full regression, candidate admission or main promotion for the changed version; complete M2-M6 delivery."
+  ],
+  "profile": {
+    "applicationProcessBoundary": "Two distinct native goby serve invocations inside one isolated worker unit.",
+    "applicationUid": 0,
+    "architecture": "amd64",
+    "mediaFilesystem": "ext4",
+    "network": "Private network namespace; loopback HTTP and PostgreSQL only.",
+    "ordinaryDatabaseOwner": true,
+    "os": "Linux",
+    "postgresFilesystem": "Separate bounded 3 GiB tmpfs; the same PostgreSQL process spans both app invocations.",
+    "recoveryDatabaseConfigured": false,
+    "transcodingEnabled": false,
+    "webDirectoryOverrideConfigured": false
+  },
+  "remoteEnvironment": "ssh test-env",
+  "results": {
+    "authorizationChecks": "Restricted users receive 404 for hidden items and 403 for cross-user reads; count-only Limit=0 and visible views are checked.",
+    "authorizedLeafCounts": {
+      "administrator": 7,
+      "hiddenLibraryUser": 2,
+      "visibleLibraryUser": 5
+    },
+    "credentialClosure": {
+      "issued": 8,
+      "logout204ThenSameCredential401": 8,
+      "remainingUnrevokedSessions": 0
+    },
+    "database": {
+      "coreTablesAndXminExact": 9,
+      "counts": {
+        "catalog_entities": 1,
+        "item_entities": 16,
+        "item_metadata_state": 14,
+        "items": 14,
+        "libraries": 2,
+        "library_roots": 2,
+        "scan_jobs": 2,
+        "user_item_data": 5,
+        "users": 3
+      },
+      "playbackPositionsZero": true,
+      "privateSnapshotsByteEqual": true,
+      "schemaVersion": 28,
+      "snapshotSha256": "b4ef19d73530ad7704a946b5961f8de48fd6cdc78e3091e635d8e8f6c86dedc0",
+      "unrevokedSessions": 0
+    },
+    "goTestsExecutedInThisJourney": false,
+    "http": {
+      "allRequestIdsInApplicationLogs": true,
+      "apiCatalogEqual": true,
+      "embeddedIndexBytes": 800,
+      "embeddedIndexSha256": "60f1aa03d54480eecddf21ed5458b9f7e06a212413601f421e47e4846130d358",
+      "logout204Then401Pairs": 8,
+      "phaseCumulativeCounts": [
+        89,
+        156
+      ],
+      "requests": 156,
+      "secondStageNoScanOrUserDataWrite": true,
+      "traceSha256": "fec279137367717fd10361c631bd0f796eb99417de030742958162b7c48ef863"
+    },
+    "media": {
+      "bytes": 66189,
+      "files": 7,
+      "metadataAndHashesExact": true
+    },
+    "nativeInvocations": [
+      {
+        "eventCount": 101,
+        "exitCode": 0,
+        "normalStartAndShutdown": true,
+        "number": 1,
+        "pid": 557934,
+        "startTicks": 8346923,
+        "stdoutSha256": "b737e09ac5d7c1e0001df2565cb3180c871e5c0ba1ee66e204a3cd14b18026e6"
+      },
+      {
+        "eventCount": 70,
+        "exitCode": 0,
+        "normalStartAndShutdown": true,
+        "number": 2,
+        "pid": 557978,
+        "startTicks": 8347144,
+        "stdoutSha256": "664f6102527025c0406bdba5b28a21b236b986a5ff2205c9da61a0ea261c7f53"
+      }
+    ],
+    "processAndCommandClosure": {
+      "allCommandsExitZero": true,
+      "cgroupEmpty": true,
+      "commandLogsMatch": true,
+      "commands": 31,
+      "fiveWorkerCleanupFactsTrue": true,
+      "ownedAppAndPostgresPidsAbsent": true,
+      "terminal": {
+        "ActiveState": "inactive",
+        "ExecMainStatus": "0",
+        "LoadState": "not-found",
+        "MainPID": "0",
+        "Result": "success",
+        "SubState": "dead"
+      },
+      "unit": "goby-native-catalog-20260914-5fc4e4190495.service"
+    },
+    "sessionDeviceActivityWholeTableEqualityClaimed": false,
+    "tableComparison": "Every row field and xmin in the nine named core tables is exact. server_settings comparison covers server_id value only.",
+    "tableProof": {
+      "catalog_entities": {
+        "count": 1,
+        "rowsSha256": "9969e168796de50ebaa49540a8f4de36ee78cdfb628031effc0757b69d0dd11c"
+      },
+      "item_entities": {
+        "count": 16,
+        "rowsSha256": "1383072a06a5506736381978790d46e3c396180222ffa903f6c39d29b2f8a361"
+      },
+      "item_metadata_state": {
+        "count": 14,
+        "rowsSha256": "9eef01622250ef5dab9a8a7cf2d8491f158796a2ab6b14dd79ab0067152c25c1"
+      },
+      "items": {
+        "count": 14,
+        "rowsSha256": "8b10591a57715f15f522085c1ee086a1dd42e750a78935bf343edffe8a46de73"
+      },
+      "libraries": {
+        "count": 2,
+        "rowsSha256": "47c74bcfedd4dd56f66d9f226c5cd079ec9bf70d3c105a283e5e1fb47768c3cd"
+      },
+      "library_roots": {
+        "count": 2,
+        "rowsSha256": "ee836f2d3532e9dd800af145dfa194417b0228f855406d090f4c56b7a64d6a8c"
+      },
+      "scan_jobs": {
+        "count": 2,
+        "rowsSha256": "08d1fb6e90ed4024b1972b4347b73ee60d7583042b109caf64dea4e05536c19e"
+      },
+      "user_item_data": {
+        "count": 5,
+        "rowsSha256": "7f7c8cd256e48a350dde9ee2534050dda3ea4c90cbf1353500718b5b2e3659ef"
+      },
+      "users": {
+        "count": 3,
+        "rowsSha256": "e890152ae34445ee5340f680725c1a3502a1b5f85fba3d2130b87b75fcac6447"
+      }
+    }
+  },
+  "retention": {
+    "compressedBytes": 11061258,
+    "emptyRamDirectoryRetained": true,
+    "evidenceArchive": {
+      "archive": {
+        "bytes": 125654,
+        "path": "/opt/goby-test/native-catalog-20260914/retained/native-attempt/evidence.tar.gz",
+        "sha256": "451ff51b62fac8a04a68138e96e27375a252d59da186310b6b45bb7222b2c9a3"
+      },
+      "directories": 21,
+      "files": 114,
+      "readbackMatched": true,
+      "uncompressedBytes": 928946
+    },
+    "mediaFilesRetained": 7,
+    "ownedProcessesClosed": true,
+    "ownedRamOrdinarilyUnmounted": true,
+    "privateClosedPostgresArchive": {
+      "archive": {
+        "bytes": 10935604,
+        "path": "/opt/goby-test/native-catalog-20260914/retained/native-attempt/closed-postgres-private.tar.gz",
+        "sha256": "21eaf92fdfe3762ddea16e85efed09b4da148758b4b1628b953642dac7bc7cd5"
+      },
+      "directories": 32,
+      "files": 2087,
+      "readbackMatched": true,
+      "uncompressedBytes": 83038539
+    },
+    "protectedBoundary": "The predeclared main/control/candidate unit, process and critical-file metadata stayed exact. This is not a full comparison of their databases.",
+    "rawDatabaseAndApplicationMaterialRemainRemoteOnly": true
+  },
+  "reviewedOn": "2026-09-14",
+  "root": "/opt/goby-test/native-catalog-20260914",
+  "scenario": [
+    "Create one movie, one episode and five FLAC tracks in two fresh libraries.",
+    "Bootstrap an administrator; create two users with disjoint library access; explicitly scan each library once.",
+    "Compare authorized browsing, counts, hierarchy and stable identities; set favorite and played state through six API mutations affecting five rows.",
+    "Log out all four issued credentials, verify each same credential receives 401, and stop the first native process with SIGTERM.",
+    "Start a second native process over the same PostgreSQL, media and app directories; read before any new scan or UserData mutation.",
+    "Compare API catalog and raw private core-table snapshots; log out all four new credentials and stop normally.",
+    "Stop the owned PostgreSQL normally, independently review saved evidence, preserve private archives and ordinarily unmount the RAM scope."
+  ],
+  "status": "passed",
+  "version": 1
+}

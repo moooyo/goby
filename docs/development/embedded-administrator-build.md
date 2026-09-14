@@ -2,7 +2,12 @@
 
 Status: **focused remote checks, actual amd64 embedded build, arm64 cross-build
 and artifact/resource closure passed**, 2026-09-14. This is partial M6 evidence.
-The new binaries have not run as services or been deployed. Full regression
+At that build checkpoint neither binary had run as a service or been deployed.
+The later [native catalog restart](native-catalog-restart-verification.json)
+passed two amd64 `goby serve` invocations in an isolated fixture. Both served
+the exact 800-byte embedded index with no external dashboard directory override,
+and stopped normally. This is a root application profile with seven media files;
+it is not a deployment or a native arm64 result. Full regression
 and candidate admission for the changed version remain separate requirements;
 the selected baseline's earlier 2,270-test result is not inherited. Native
 arm64, OCI, GPU, license and distribution obligations remain open.

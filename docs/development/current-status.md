@@ -1,7 +1,8 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after the independent M2 catalog rescan/ACL target and
-its closure; the separate full-scan mount experiment remains paused. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after native catalog restart verification and independent
+evidence/resource closure; the separate full-scan mount experiment remains
+paused. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -13,7 +14,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the selected baseline's latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance; later working-tree changes require their own verification |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| M2 catalog | One real-media rescan/move/ACL integration test passed under race instrumentation, with four state checkpoints and all ten original UserData rows/xmin exact | Actual native-service restart/catalog consistency, representative capacity, blocked I/O and host durability remain separate; the full-scan mount experiment is still paused |
+| M2 catalog | The rescan/ACL Store-reopen test and separate real native amd64 service stop/start run passed; independent saved-evidence review and resource closure are complete | The native run uses a root profile and the same PG process. Nonroot, PG restart, host durability, representative capacity and the paused full-scan mount proof are not established |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -45,6 +46,42 @@ empty cgroup and the underlying/fixture directories retained. This is Store
 reopen evidence, not an OS service/PG restart, representative capacity or host
 durability. It does not supply the paused mount experiment's seven unrun stages.
 
+The separate [native catalog restart run](native-catalog-restart-verification.json)
+passed once in `/opt/goby-test/native-catalog-20260914`, with independent
+evidence review and sealing complete. It used the saved embedded
+amd64 binary `59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312`
+under a root/private-network profile, with an owned tmpfs PostgreSQL cluster and
+seven ext4 media files. `GOBY_WEB_DIR` was absent. The first process scanned five
+mixed-library and two hidden-library files, managed three users and their ACLs,
+and made six favorite/played writes resulting in five UserData rows. Four owned
+logout 204 / same-credential 401 pairs closed before its normal SIGTERM shutdown.
+
+The second real process started against the same PG without another bootstrap
+POST, scan or UserData mutation. Catalog/ACL/count/UserData checks matched;
+four more logout pairs closed. Request counts were 89 after the first phase and
+156 cumulatively. All rows and PostgreSQL `xmin` matched in nine core tables:
+users 3, libraries 2, roots 2, items 14, catalog entities 1, item-entity links 16,
+metadata-state rows 14, UserData 5 and scan jobs 2. Both schema28 checkpoints had
+zero unrevoked sessions; all seven media files retained their metadata and hash.
+The 800-byte embedded index matched the actual M6 manifest.
+
+PIDs 557934 and 557978 had distinct start ticks. Both exited 0 with shutdown
+complete, no forced termination or residual processes and no ERROR-level
+application log events. All 31 worker commands exited 0; PostgreSQL stopped
+normally and all owned cgroups emptied.
+Independent review SHA256
+`3cb9b9e2b7e789cf0dde23585fb8707f65baf590f069ef96661f6c3f2e51fbee`
+checked all 156 HTTP pairs and their request-ID/log bindings, both SQL snapshots
+byte-for-byte and all seven media files totaling 66,189 bytes. Closure SHA256
+`b4d4993692477d448a67d8ac7acbf0c4ee637013b2d8e2c781db5f979ea9eb0f`
+binds both reread private archives, complete app/PG/worker/cgroup closure and
+ordinary unmount of the independent 3 GiB RAM mount. The seven ext4 media files
+and empty underlying RAM directory remain retained.
+The run is consumed and must not be replayed. It proves
+neither PG restart, nonzero playback resume, playback/browser behavior, nonroot
+operation, native arm64/GPU, capacity, host durability nor full regression or
+main promotion.
+
 The [M6 embedded administrator increment](embedded-administrator-verification.json)
 now has actual remote results. All 22 handler tests/subtests and two ordinary
 plus two embedded provider tests passed with race instrumentation, without
@@ -62,13 +99,15 @@ with ELF machine 183 confirmed. Both artifacts/manifests, the verified 911-file
 source archive and command logs were retained, and ordinary unmount closed the
 owned M6 build tmpfs. Protected state and the frozen module cache stayed exact.
 The [build document](embedded-administrator-build.md) preserves the detailed
-receipts and scope. No new binary ran as a service or was deployed; full
-regression and candidate admission for this changed version are still pending,
-and the old 2,270-test proof is not inherited. Native arm64, OCI, GPU, licensing
-and full M6 remain open. The next catalog increment is an independent native
-service restart with catalog/ACL/UserData consistency checks, followed by
-bounded capacity and blocked-I/O preparation. It must preserve the separate
-paused M2 launcher and all consumed client/recovery scopes.
+receipts and scope. That immutable M6 build checkpoint records no native runtime
+execution at its own boundary. The later native amd64 test above is separate
+evidence; no main/candidate deployment occurred. Full regression and candidate
+admission for the intended changed version remain pending, and the old
+2,270-test proof is not inherited. Native arm64, OCI, GPU, licensing and full M6
+remain open. Next, freeze the intended source for full race regression/Linux
+build and corresponding candidate admission. Capacity/blocked-I/O preparation
+can proceed independently; the paused M2 launcher and consumed client/recovery
+scopes retain their existing limits.
 
 The [subtitle response-identity review](audited-subtitles-client01-review.md)
 has also completed once using saved evidence. Context request 291's response ID
@@ -547,7 +586,7 @@ discriminating evidence or a concrete product decision before reopening.
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
-| Catalog and operations | Actual native-service restart/catalog consistency, representative capacity, blocked storage, host reboot and filesystem measurements; the real-media rescan/ACL Store-reopen test has passed |
+| Catalog and operations | Native restart evidence and closure passed; representative capacity, blocked storage, host reboot, nonroot and filesystem measurements remain open |
 | Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
 | Administration | Selected policy, executor and provider extensions from the delivery plan |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |

@@ -1,8 +1,8 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after the independent real-media catalog rescan/ACL test
-and its closure. Status: **selected product/candidate verified; scoped M6 and
-catalog targets passed; joint mount scan paused and video acceptance open**.
+Reviewed on 2026-09-14 after native catalog restart verification and independent
+evidence/resource closure. Status: **scoped M6/catalog/native restart targets
+passed; intended-version full regression pending; mount and video gates open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -12,16 +12,16 @@ The goal remains an independent Linux media server using Go, PostgreSQL and
 FFmpeg, an administrator-only React/MUI dashboard and unmodified compatible
 clients. This review adds no consumer player and removes no release obligations.
 
-The resumption review keeps the native-service restart as the next bounded
-result. The HTTP journey helper has been authored and statically reviewed;
-the new native process workflow has not executed. Its acceptance compares
-catalog identities, authorized counts and persisted favorite/played state
-across a real Goby stop/start, before any second scan or UserData mutation.
-This does not establish nonzero playback resume, a PostgreSQL restart or host
-durability. Check current remote capacity and reuse the existing isolated
-runner before executing; historical free-space readings are not admission.
+The [native catalog restart increment](../development/native-catalog-restart-verification.json)
+has passed once and its independent evidence/resource closure is complete.
+The saved embedded amd64 binary ran through two distinct native processes in
+a root/private-network profile. Catalog/ACL/counts and favorite/played rows
+remained consistent across normal stop/start, with no second bootstrap POST,
+scan or UserData mutation and no PG restart. This establishes neither nonzero
+playback resume nor browser, nonroot, capacity, native arm64/GPU or host-durability
+acceptance. The consumed run must not be replayed.
 
-After this increment, freeze the intended changed source for full regression
+Next, freeze the intended changed source for full regression
 and candidate admission. These checks do not wait for the paused mount
 experiment or unresolved video diagnosis. Later product edits require their
 affected checks and full regression of the final intended snapshot; unchanged
@@ -137,7 +137,8 @@ and every failure; do not extend the generic observation framework.
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
 | Main | Native backup, selected rollback/restart, [actual old installation return/source32 recovery](../development/isolated-source32-recovery.json) and [final cluster/credential disposal](../development/isolated-restore-disposal.json) passed. Original failures and private evidence remain preserved; main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host durability and the remaining M2-M6 release obligations are unchanged |
-| M6 embedded assets | [Focused race tests, negative manifest guards, actual amd64 embedded build and arm64 cross-build](../development/embedded-administrator-verification.json) passed; artifacts/source/logs were retained and the owned build tmpfs closed | No service deployment or native arm64 execution. The changed version still needs full regression and candidate admission; OCI, GPU, license and full M6 remain open |
+| M6 embedded assets | Focused build checks and amd64/arm64 artifacts passed; a later [root-profile native amd64 run](../development/native-catalog-restart-verification.json) served the embedded index without GOBY_WEB_DIR | The earlier build receipt's no-runtime field is historical. No main/candidate deployment or native arm64 execution; full regression/candidate admission, OCI, GPU, license and full M6 remain open |
+| Native catalog restart | One real stop/start run passed 156 cumulative HTTP requests, nine core tables' rows/xmin and seven media checks; independent review and closure passed | Same PG and root profile only. No playback/nonzero-resume/browser, nonroot, PG restart, capacity or host-durability claim |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -158,16 +159,17 @@ verification tools over extending launcher or observation infrastructure.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 1. Independent native-service restart/catalog consistency | Freeze one bounded service-level stop/start contract over a persisted real-media catalog, with source/configuration identity, native query counts, ACLs and UserData checked before and after startup | Reuse the completed rescan/ACL evidence without rerunning it. Require an actual service process boundary; Store.Close/New is insufficient. Keep the paused mount scope separate and reserve resources/cleanup before execution |
-| 2. Changed-version validation | Freeze the intended changed source after the bounded catalog increment, run its complete race regression and Linux build, then admit the corresponding candidate artifact | Do not wait for paused mount/video diagnosis or inherit the old 2,270-test result. Before a changed-binary real-client journey, require that artifact's regression and admission. Full regression does not replace real-client acceptance |
-| 3. Independent remaining M2-M6 delivery | Start with representative catalog capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | This track can proceed alongside version validation. Require measurable limits and bounded shutdown. Seven-file catalogs, process restarts, cross-builds and partial M6 checks do not establish capacity, host durability, native hardware acceptance or complete release readiness |
-| 4. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
-| 5. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
-| 6. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+| 1. Intended-version freeze, full regression and candidate admission | Freeze the intended source now that the bounded catalog/native targets have passed; run the complete ordinary race suite and Linux build, then admit that exact candidate artifact | Preserve the actual opt-in mount-helper skip described below, reject every other unexpected skip/failure and do not inherit the old 2,270-test result. This work does not wait for paused mount/video diagnosis; it precedes a changed-binary client journey and cannot replace client acceptance |
+| 2. Independent remaining M2-M6 delivery | Start with representative catalog capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | This track can proceed alongside version validation. Require measurable limits and bounded shutdown. Seven-file catalogs, root-profile process restarts and cross-builds do not establish capacity, nonroot/host durability, native hardware acceptance or complete release readiness |
+| 3. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
+| 4. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
+| 5. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
 
-The earlier planning review confirmed SSH availability and observed only
-335,413,248 available bytes on the root filesystem. Further builds need a separately budgeted scratch
-and cache location after a fresh capacity check. Preserve the paused M2 workspace;
+After native closure the root filesystem had 167,337,984 bytes available. Further
+builds need a separately budgeted compiler scratch/cache location after a fresh
+capacity check. Ordinary strong-filesystem tests require an exclusive owned
+ext4 GOTMPDIR; do not substitute tmpfs or confuse it with compiler scratch.
+Preserve the paused M2 workspace;
 do not repurpose its RAM mount or assume historical free-space figures.
 
 The [M2 preparation checkpoint](../development/m2-fullscan-mount-preparation.json)
@@ -198,6 +200,22 @@ This completed increment is not pending work. Native arm64, full regression and
 candidate admission for the changed version remain unproved; neither M2 helper
 compilation nor the new M6 results inherit the selected binary's 2,270-test proof.
 
+The later native run used two processes, PIDs 557934 and 557978, with normal SIGTERM
+stops, exit 0, complete shutdown and no ERROR-level application log events.
+Its first 89 requests became 156 cumulatively after restart; eight owned
+logout 204 / same-credential 401 pairs left zero unrevoked
+sessions at both schema28 checkpoints. Nine core tables' rows/xmin matched,
+including five UserData rows, and all seven media files totaling 66,189 bytes
+kept their metadata/hashes. The 800-byte embedded index matched the M6 manifest.
+All 31 worker commands succeeded. Independent review SHA256
+`3cb9b9e2b7e789cf0dde23585fb8707f65baf590f069ef96661f6c3f2e51fbee`
+matched 156 HTTP pairs/request-ID log bindings and both raw SQL snapshots.
+Closure SHA256
+`b4d4993692477d448a67d8ac7acbf0c4ee637013b2d8e2c781db5f979ea9eb0f`
+sealed two private archives totaling 11,061,258 bytes, all app/PG/worker/cgroup
+closure and ordinary unmount of the independent 3 GiB RAM. The ext4 media and
+empty underlying RAM directory remain retained; protected metadata is unchanged.
+
 ## Completed and consumed checkpoints
 
 These entries preserve prior decisions and results; they are not the next queue.
@@ -214,6 +232,7 @@ These entries preserve prior decisions and results; they are not the next queue.
 | 8. Embedded administrator assets — scoped verification complete | Focused race tests, actual embedded amd64 build, arm64 cross-build, source/asset guards and artifact/tmpfs closure passed | Preserve the exact verification and artifacts. No new service/deployment, native arm64 or full changed-version acceptance is claimed |
 | 9. Real-media catalog rescan/ACL target — complete | One race test passed four state checkpoints; same-inode album move, direct/derived counts, ACL queries and all ten UserData rows/xmin remained correct across Store reopen and cached rescan; scope closed | Preserve the first test-contract failure and both sources/logs. This is not native service/PG restart, representative capacity or the paused mount proof |
 | 10. Subtitle response-identity review — complete | Saved context291 response ID matches physical294 and excludes293 | The old cancellation/timing failure and page errors remain unresolved; no new business request, repeated review or new observer layer is authorized by this result |
+| 11. Native catalog restart — complete | One root-profile native amd64 run passed across two processes with the same PG, stable catalog/ACL/UserData, eight logout pairs and 156 cumulative requests; independent review and closure passed | Preserve the consumed run and its artifacts. This is not PG restart, playback/nonzero resume, browser, nonroot, capacity, host durability, full regression or main promotion |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation
@@ -313,6 +332,15 @@ or documentation edits do not require another full product suite. Product
 changes require relevant regressions and one final full verification of the
 frozen snapshot. High-risk ownership, credential, migration and recovery
 transitions retain independent review and closure.
+
+The intended full-suite profile has exactly one known opt-in skip:
+`TestRootBindingFullScanMountNamespaceHelper` calls `t.Skip` when its privileged
+profile is not enabled. Report that skip by exact name; do not claim zero skips
+or execute the paused seven-stage experiment to suppress it. Every other skip
+or failure is rejected. The two older mount helpers can return normally without
+their opt-in environment, so their passing test nodes do not establish that
+those mount profiles executed. Continue the complete ordinary suite with this
+explicit evidence boundary and the separate ext4-fixture/compiler budgets above.
 
 Reuse tested operators and immutable receipts. Pin the history actually consumed
 and distinguish it from freshly checked live resources. Do not claim narrower

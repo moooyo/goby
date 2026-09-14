@@ -20,18 +20,32 @@ proofs, and [final fixture disposal](../development/isolated-restore-disposal.js
 are complete. [M6 embedded-asset focused verification](../development/embedded-administrator-verification.json)
 has also passed its race checks, manifest guards, actual amd64 build and arm64
 cross-build, with artifacts preserved and the build tmpfs closed. It is partial
-M6 evidence: no service deployment/native arm64 runtime or full regression and
-candidate admission for the changed version is established. The independent
+M6 evidence: that immutable build record did not execute a native runtime.
+The independent
 [real-media catalog rescan/ACL target](../development/catalog-rescan-acl-verification.json)
-has since passed its in-process Store-reopen checks. The immediate queue moves
-to native-service restart/catalog consistency and bounded capacity/blocked-I/O
-preparation. The saved subtitle response-identity review is complete; its
+has since passed its in-process Store-reopen checks, followed by a separate
+[native amd64 catalog restart](../development/native-catalog-restart-verification.json).
+That root-profile run passed once with the same PG, nine core tables' rows/xmin
+preserved, 156 cumulative HTTP requests and complete independent evidence/resource
+closure. It does not establish nonroot operation, PG restart, playback/browser,
+nonzero resume, native arm64/GPU, capacity or host durability. No main/candidate
+deployment or full changed-version regression/admission is claimed.
+The immediate queue is now intended-source freeze, full race/Linux-build
+verification and corresponding candidate admission. Capacity/blocked-I/O and
+other independent M2-M6 preparation can proceed in parallel. The saved subtitle response-identity review is complete; its
 cancellation and page-error gaps remain open. The M2 full-scan mount experiment remains paused after
 two launcher failures, with compilation only and no executed scan stages.
 [Third-party notices](../../THIRD_PARTY_NOTICES.md) provide a verified
 initial collection for locked dependencies and actual fonts. Project-license,
 relevant upstream/inclusion gaps and the complete packaging/release gate remain
 open; this partial evidence does not narrow the M2-M6 scope.
+
+The full ordinary-suite report must explicitly retain the one expected opt-in
+`TestRootBindingFullScanMountNamespaceHelper` skip; all other skips/failures are
+rejected. Older mount helpers' default returns do not prove privileged-profile
+execution. Strong-filesystem tests require an owned ext4 GOTMPDIR, with compiler
+scratch/cache budgeted separately because root-disk space is low. None of this
+reopens the paused mount experiment or narrows its missing acceptance evidence.
 
 ## Milestones and dependencies
 

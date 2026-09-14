@@ -1,8 +1,8 @@
 # Storage root bindings and missing-file reconciliation
 
-Reviewed on 2026-09-14. Status: **independent real-media catalog rescan/ACL test
-passed; existing PostgreSQL, mount-helper and live UI proofs retained; joint
-full-scan mount experiment remains paused and complete M2 remains open**.
+Reviewed on 2026-09-14. Status: **rescan/ACL and real native catalog restart
+verification/closure passed; joint full-scan mount experiment remains paused
+and complete M2 remains open**.
 
 ## Current evidence boundary
 
@@ -40,6 +40,38 @@ PostgreSQL stopped normally, its cgroup emptied, the owned 3 GiB tmpfs was
 ordinarily unmounted, and the closed PG archive/evidence were retained. Empty
 underlying and fixture directories remain. This does not prove native service/PG
 restart, host durability, representative capacity or mount-loss safety.
+
+The separate [native catalog restart run](native-catalog-restart-verification.json)
+has since passed once using the saved embedded amd64 binary SHA256
+`59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312`.
+Scope `/opt/goby-test/native-catalog-20260914` used a root/private-network
+profile, owned tmpfs PG and seven ext4 media files, without `GOBY_WEB_DIR`.
+The first start scanned five mixed-library and two hidden-library files and managed three users/ACLs;
+six favorite/played mutations produced five UserData rows. After normal
+SIGTERM stop, a second process used the same PG and repeated native catalog
+queries without bootstrap POST, scan or UserData mutations. Nine core tables'
+complete rows and `xmin` stayed exact, together with catalog/ACL/count results
+and all seven media metadata/hash observations. The embedded 800-byte index
+matched the M6 manifest. Four logout 204 / same-credential 401 pairs per process
+left no unrevoked sessions; 156 requests were recorded cumulatively, not 89 plus 156.
+
+The two PIDs 557934 and 557978 and their start ticks were distinct; both exited 0
+with complete shutdown, no forced termination or residuals and no ERROR-level
+application log events. All 31 worker commands exited 0, PG stopped normally
+and all owned cgroups emptied. The independent saved-evidence review passed
+all 156 HTTP pair/request-ID/log
+bindings, byte-identical retained SQL snapshots and seven media files totaling
+66,189 bytes. Its SHA256 is
+`3cb9b9e2b7e789cf0dde23585fb8707f65baf590f069ef96661f6c3f2e51fbee`.
+Closure SHA256
+`b4d4993692477d448a67d8ac7acbf0c4ee637013b2d8e2c781db5f979ea9eb0f`
+records both private archives reread, complete resource closure and ordinary
+unmount of the independent 3 GiB RAM. The seven ext4 files and empty underlying
+directory are retained; protected metadata is unchanged. The passed run is
+consumed. This is an application process restart with unchanged
+PG, not a PG restart, nonroot profile, nonzero playback-resume or real-client
+playback/browser acceptance. Native arm64, GPU, capacity, host durability,
+full changed-version regression and main promotion remain outside its scope.
 
 The [real private-mount recovery](storage-binding-scan-mount-v2-terminal.json)
 passed independently on source54. Its actual helper uses ext4 bind mounts,
@@ -89,9 +121,10 @@ checks/builds and the catalog test above have since passed their limited scopes;
 neither restarts this paused experiment or supplies its seven missing scan stages.
 No new generic runner or consumed recovery replay is required.
 
-The next bounded catalog gap is consistency across an actual native-service
-restart, including the persisted catalog, ACL-safe counts and UserData. The
-passing Store reopen must not be relabeled as that result. Later work includes
+The native-service restart run and independent closure now supply their own
+limited evidence, separate from the earlier Store reopen. Freeze the intended
+changed source for full regression and candidate
+admission. Independent catalog/operations preparation continues with
 representative capacity/concurrent
 scan-query measurements, truly blocked I/O and bounded shutdown, and supported
 filesystem/profile rows beyond the observed ext4 scope. Fast EACCES or a missing
