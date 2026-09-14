@@ -1,0 +1,129 @@
+{
+  "activationData": {
+    "activitySequenceDelta": 1,
+    "addedAudit": {
+      "action": "restore.applied",
+      "actor_credential_id": "",
+      "actor_id": "",
+      "actor_kind": "system",
+      "affected_count": 0,
+      "changed_fields": [],
+      "observation_fingerprint": "",
+      "previous_revision": 0,
+      "request_id": "",
+      "resource_id": "2e5da2c5d865ab5a2f5aa018eb25fad8",
+      "resource_kind": "restore",
+      "revision": 0,
+      "severity": "Info",
+      "source": "system",
+      "state": "completed"
+    },
+    "auditId": 22,
+    "oldRowsExact": 406,
+    "otherSequencesExact": 4,
+    "tables": 35,
+    "totalRows": 407
+  },
+  "activationReceipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-activation/execution.json",
+    "sha256": "be91d5197076e0a1dc89cd4e6102a5b07aca97f1b11e45c7a12de6c552fac5fc"
+  },
+  "allCommandGroupsClosed": true,
+  "archiveSha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f",
+  "comparisonReceipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-stage/private/stage-data-comparison-02.json",
+    "sha256": "f97e2ad1a8b267096b8548a969f16030a8e692ca7b1f457cd1737f1e7b5bfab5"
+  },
+  "configAndMasterDescriptorsMatchedArchive": true,
+  "current": {
+    "databaseSlot": "recovery",
+    "deploymentId": "5f9a6b206446c5176ab1605aeb63ff22",
+    "generationId": "f20a5b87bf8e9ca873c8889db6566433",
+    "master": "generation",
+    "revision": 1
+  },
+  "dataComparison": {
+    "activationClaimed": false,
+    "allOtherRowFieldsExact": true,
+    "archiveSha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f",
+    "ioPerformed": false,
+    "kind": "isolated-selected-stage-data-comparison",
+    "normalization": {
+      "bindingRowsChanged": 1,
+      "expiredPlayback": 1,
+      "migrationRowsAdded": 1,
+      "revokedCredentials": 17
+    },
+    "observedSequencesMatched": 5,
+    "operationId": "2e5da2c5d865ab5a2f5aa018eb25fad8",
+    "rawRowValuesReturned": false,
+    "schema": 28,
+    "sequenceBoundary": "Expected observed values only; sequences are non-MVCC and are absent from SourceFacts. Native restore independently validates dump setval bounds.",
+    "sequenceDumpValuesIndependentlyAuthenticated": false,
+    "sourceNativeFingerprintsMatched": 35,
+    "sourceRows": 405,
+    "stageNativeRetainedFingerprintsMatched": 35,
+    "stageRows": 406,
+    "status": "matched",
+    "tables": 35,
+    "version": 1
+  },
+  "defaultMasterAbsent": true,
+  "firstComparisonFailure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-stage/private/stage-data-comparison-01.json",
+    "reason": "The wrapper compared the parsed inner snapshot to the raw outer envelope before entering the comparator. The correction compared matching layers; no restore was repeated.",
+    "sha256": "49ebc8bbe134425e1c683436390a185872d4c054fd92412a7b689c401d84bf44"
+  },
+  "httpRequests": 0,
+  "limitations": [
+    "No restored-account login or persistent serve invocation has run.",
+    "Online B-to-A activation and actual rollback to B remain required.",
+    "Selected restart, actual installation return, independent source32 restore and final disposal remain required.",
+    "The initial offline accept-no-rollback step does not prove rollback; M2-M6 and main promotion remain open."
+  ],
+  "localBackupId": "c2aea0de5ee83bf805ed27526ad1af97",
+  "lockReleased": true,
+  "nativeCommands": 5,
+  "nativeFilesAfter": {
+    "backups": {
+      "directories": 1,
+      "regularFiles": 4
+    },
+    "cache": {
+      "directories": 1,
+      "regularFiles": 2
+    },
+    "logs": {
+      "directories": 1,
+      "regularFiles": 0
+    },
+    "operations": {
+      "directories": 1,
+      "regularFiles": 4
+    },
+    "recovery": {
+      "directories": 2,
+      "regularFiles": 6
+    },
+    "tmp": {
+      "directories": 1,
+      "regularFiles": 0
+    },
+    "vault": {
+      "directories": 1,
+      "regularFiles": 0
+    }
+  },
+  "planId": "2e5da2c5d865ab5a2f5aa018eb25fad8",
+  "protectedHostUnchanged": true,
+  "rollbackCalls": 0,
+  "serveStarts": 0,
+  "sqlObserversClosed": 5,
+  "stageReceipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-stage/execution.json",
+    "sha256": "7c0696cf86758b4d471d01315ea4f8250e658e5a642e6004fc6b8d825d0bb262"
+  },
+  "stagedPlanRevision": "4",
+  "status": "selected_initial_restore_and_offline_activation_complete",
+  "version": 1
+}

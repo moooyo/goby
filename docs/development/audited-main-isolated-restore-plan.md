@@ -1,7 +1,7 @@
 # Isolated schema27 recovery and installation rollback
 
-Status: **ISOLATED CLUSTER, EMPTY TARGETS AND MATERIALS READY; NATIVE EXECUTION
-NOT ADMITTED**, 2026-09-14. The first infrastructure execution,
+Status: **INITIAL SELECTED RESTORE AND OFFLINE ACTIVATION COMPLETE; SERVE,
+ONLINE ROLLBACK AND SOURCE32 PROOF OPEN**, 2026-09-14. The first infrastructure execution,
 `/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/infrastructure-execution.json`, SHA256
 `c0bbc8730f7548d159840ed2f19316f772a8223c3f0b8577d7f66712ab713f10`,
 succeeded. All three profile isolation checks passed; one fresh PG maintenance
@@ -14,10 +14,16 @@ remote `target-preparation/execution.json` SHA256
 created all four empty ordinary-role targets, prepared 474 installation files
 and copied private archive/passphrase inputs under their required ownership.
 All five SQL backends exited naturally; protected host state remained exact.
-No Goby executable or native restoration has run. Reuse these resources;
-neither infrastructure nor target/material provisioning may be repeated.
-This plan specifies the remaining complete restoration/rollback sequence and
-does not turn infrastructure success into native execution admission.
+Those preparation inputs are consumed and must not be repeated. The subsequent
+[selected initial activation](isolated-selected-initial-activation.json) completed
+one import, one ready native plan and one offline apply. The private source405
+and staged406 fingerprints matched all 35 tables, with only the declared
+normalization/migration/binding changes. Apply preserved all 406 staged rows and
+added exactly one `restore.applied` audit: B now has407 rows and is selected at
+lifecycle revision1, generation `f20a5b87bf8e9ca873c8889db6566433`.
+Its CLI, observers and owned process groups are closed. No serve invocation or
+HTTP login has run. Preserve these completed steps; online A activation, real
+rollback to B, restarts and the independent source32 proof remain required.
 
 The [completed source32 backup](audited-main-native-backup-completed.json)
 supplies archive `69f5e597c99f65099647cd3322d3174c`, 196,310 bytes, SHA256
@@ -25,8 +31,10 @@ supplies archive `69f5e597c99f65099647cd3322d3174c`, 196,310 bytes, SHA256
 It contains schema27, 35 tables and 405 snapshot rows. Completion checkpoint
 `3a9ff1ddf45213331aa4f23d66d1beedd44da9f18df8e168e9e56badc6a925cf`
 reconciles the separate 408-row post-workflow state and policy cleanup. Native
-source-key authentication passed; archive-passphrase decryption and restoration
-authentication remain to be proved here.
+source-key authentication passed. The selected native plan now also proves
+archive-passphrase decryption and restoration validation, with generation master
+and configuration descriptors matching the archive. Actual source32 restoration
+and restored-account login remain separate uncompleted proofs.
 
 The original archive, its original private passphrase and the old installation
 tar remain on persistent storage in their existing pinned scopes. The old tar
@@ -68,9 +76,9 @@ creation, never invented as admission inputs.
 | D | `goby_r69_d` | `goby_r69_d` | Source32 `GOBY_RECOVERY_DATABASE_URL` |
 
 Cluster system identifier is `7685171266320400886`. A/B/C/D database OIDs are
-16392/16393/16394/16395 and owner-role OIDs are16388/16389/16390/16391. Each has
-public schema2200 owned through `pg_database_owner`, zero application relations,
-routines and types, and only `plpgsql`. Database ACLs grant access only to the
+16392/16393/16394/16395 and owner-role OIDs are16388/16389/16390/16391. At construction
+each had public schema2200 owned through `pg_database_owner`, zero application
+relations, routines and types, and only `plpgsql`. Database ACLs grant access only to the
 respective owner; roles have no administrative flags or memberships. These are
 measured preparation facts, to be rebound before native access.
 
@@ -184,6 +192,11 @@ resources; both slots are real databases.
    Require actual ready state, successful decryption/key recovery, target B
    schema28 and the data contract's normalization/migration/binding results.
    Record the returned operation ID/revision and target lease closure.
+   **Completed:** local BackupId `c2aea0de5ee83bf805ed27526ad1af97`, plan
+   `2e5da2c5d865ab5a2f5aa018eb25fad8`, ready revision4. Independent comparison
+   matched all source/staged table fingerprints, all unlisted row fields and
+   the five expected sequence observations. Its original wrapper-level
+   comparison failure is retained; no import or restore plan was repeated.
 2. **Offline apply and serve B.** Apply that operation with the returned
    revisions and `--accept-no-rollback`; A is still empty and is not being
    certified as a rollback image by this initial step. Require the native
@@ -194,6 +207,12 @@ resources; both slots are real databases.
    `StartService=true` do not prove a daemon is running. Start the selected
    serve unit separately and prove B's actual generation/master, schema28,
    readiness, restored server/data identity and selected assets.
+   **Offline apply completed; serve pending:** activation receipt SHA256
+   `be91d5197076e0a1dc89cd4e6102a5b07aca97f1b11e45c7a12de6c552fac5fc`
+   confirms B/revision1, matched generation master/config descriptors, A
+   unclaimed, B active, no pending journal, 406 old rows exact and one complete
+   system audit. Activity sequence advanced1; the other four remained exact.
+   The initial cache marker/lock now exist; selected logs remain empty.
 3. **Online plan into A.** Authenticate an owned restored administrator on B.
    Use `POST /admin/v1/restores/plans` with the already imported archive ID,
    fixed SHA256, a new fixed RequestId, `RestoreDefaults=false`,
@@ -316,8 +335,9 @@ The same-mount PG/app restarts prove process-restart continuity only. They do
 not prove host reboot, power-loss or persistent tmpfs data; the M2 durability
 gate remains open. Separate closeouts must identify the selected native rollback,
 actual installation replacement/source32 recovery, final credential/resource
-disposal and protected main/candidate boundaries. Both proofs are still
-unexecuted. Core video acceptance, main promotion and complete M2–M6 remain
+disposal and protected main/candidate boundaries. The selected initial restore
+and offline activation are complete; its remaining online/restart proof and the
+source32 proof are uncompleted. Core video acceptance, main promotion and complete M2–M6 remain
 subject to the [umbrella contract](audited-main-upgrade-plan.md) and
 [current execution plan](../planning/current-execution-plan.md). All eventual
 execution and verification is confined to `ssh test-env`; this document runs none.

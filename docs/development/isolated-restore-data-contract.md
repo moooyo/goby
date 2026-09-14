@@ -1,8 +1,11 @@
 # Isolated restore data comparison contract
 
-Status: **DRAFT / NOT ADMITTED**, 2026-09-14. This is a comparison specification,
-not an executor or a passed restoration. It adds no SQL, service, authentication,
-fixture, or resource action. Admission and actual phase receipts remain required.
+Status: **INITIAL SELECTED STAGE AND OFFLINE ACTIVATION COMPARED; LATER PHASES
+OPEN**, 2026-09-14. This remains the comparison specification for the complete
+rehearsal. The [initial selected proof](isolated-selected-initial-activation.json)
+now binds the actual 405-row archive reconstruction, 406-row staged target and
+407-row activated target. Later online transitions, account use, restarts and
+source32 restoration require their own observed phase evidence.
 
 ## Fixed recovery point and independent targets
 
@@ -171,10 +174,20 @@ sets and sequence facts; reject every unexplained change. Do not mask whole
 tables or discard timestamps, tokens, ciphertext or audit fields from private
 comparisons. Publish only receipt hashes, counters and safe identity/status.
 
-Still to measure/admit: actual archive-decoded rows and sequence values; phase
-database-clock bounds; native B/A retained records and generation IDs; exact
-owned authentication count; startup/cache and task/retention effects under the
-frozen configuration. Original activities begin 2026-09-10; admission must choose
+The first comparison used saved original PostgreSQL JSONB row spans to reconstruct
+the 405-row archive image, then matched all35 native manifest fingerprints. All35
+staged fingerprints independently matched the ready target facts; the exact
+normalization counts above passed. Five observed sequence values matched their
+expected backup-phase values, without claiming SourceFacts authenticates setval.
+The first wrapper-level envelope/inner-object mismatch was preserved; the corrected
+comparison required matching layers and did not repeat native work. Offline apply
+subsequently preserved all406 rows and added one complete system audit, with only
+the activity sequence advancing1.
+
+Still to measure/admit for the later phases: their database-clock bounds; native
+B/A retained records and return generation IDs; exact owned authentication count;
+startup/cache and task/retention effects under the frozen configuration. Original
+activities begin 2026-09-10; admission must choose
 and record a retention window that preserves them, or explicitly account for
 the real bounded deletion predicate. No active scans/runs/unretired schedules
 exist in the saved input, but unexpected matches or writes stop the rehearsal.

@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after native schema27 backup completion and policy cleanup. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after initial isolated selected restoration and offline activation. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,7 +12,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main recovery and deployment | One fresh schema27 native archive and source-key witness are complete; 402 old rows remain exact, with one revoked session and five audits. Main is inactive, capacity retained and the temporary fence removed. The separate empty recovery cluster passed its isolation checks | Complete selected/schema28 restoration and actual online rollback, then installation return to source32 with independent schema27 restoration and restart. Main promotion still requires core acceptance and complete recovery evidence |
+| Main recovery and deployment | Main's native archive and source-key witness are complete. The isolated selected restore passed all source405/staged406 table fingerprints and exact normalization checks; offline apply selected B/revision1 with407 rows. Main remains inactive | Serve/authenticate B, perform online A activation and real rollback to B, then restart and complete actual installation return plus independent source32/schema27 recovery. Main promotion still requires core acceptance and complete recovery evidence |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
@@ -21,8 +21,9 @@ At that checkpoint private credential metadata was reconciled, while key and
 passphrase authentication remained unproved. The standalone key observer stopped at a helper-mode mismatch
 before any database connection or master read. The native backup's same-snapshot
 `WitnessBackup` was the required authentication step; no repeat observer is queued.
-The later native create passed that witness. Archive-passphrase restoration
-authentication remains unproved until the isolated recovery work.
+The later native create passed that witness. The isolated selected native plan
+has now authenticated the archive/passphrase and restored generation master;
+restored-account login and the actual source32 restore remain unproved.
 
 The [native-backup scope](audited-main-native-backup-plan.md) is consumed. Its
 first controller rejected a retained preparation filename before locking. The
@@ -76,8 +77,15 @@ transport guards covered process-group closure before provisioning. The subseque
 [target/material preparation](isolated-restore-targets.json) created four empty
 ordinary-role databases, copied all 474 selected/old installation files and prepared
 separate private configuration/archive/passphrase inputs. All five preparation SQL
-backends closed naturally. No Goby executable, native import, restoration or
-rollback has run. Persistent originals
+backends closed naturally. This completed preparation was followed by the
+[selected initial restore and activation](isolated-selected-initial-activation.json).
+One native import/plan and one offline apply completed, with all source/staged
+table fingerprints matched. B is active at lifecycle revision1 with407 rows:
+all406 staged rows remained exact and one complete system restore audit was
+added. Its activity sequence advanced1; the other four stayed exact. Native
+master/config descriptors match the archive, the default master remains absent,
+and all CLI/observer processes are closed. No serve/login or online rollback
+has run. Persistent originals
 remain outside tmpfs; same-mount process restarts will not establish host-reboot
 or power-loss durability, so the M2 durability gate remains open.
 

@@ -58,9 +58,10 @@ not also prevent the old source32 backup and isolated recovery work. Those
 actions require their own safety admission; core acceptance continues to block
 new-binary main promotion. Separate backup inputs from backup outputs, and allow
 independent M2-M6 obligations to progress under their own prerequisites. The next
-deliverable is the actual native restoration and rollback sequence consuming
-this one archive. The independent PostgreSQL cluster, isolation checks, four
-empty targets and private installation/recovery materials are now ready.
+deliverable is online A activation and actual rollback to B, followed by both
+restart and old-compatible installation/recovery proofs. The selected initial
+restore and offline B activation have completed with exact data comparison;
+reuse their accepted state and preserve all remaining requirements.
 Preserve the page-error rule
 and every failure; do not extend the generic observation framework.
 
@@ -95,7 +96,7 @@ resolve the separately recorded media cancellation timing discrepancy.
 | 3. First subtitle increment — consumed | The declared journey completed; native reasons are confirmed as undefined; owned state and workers are closed | Preserve the two original errors and unresolved partial293 timing; subtitle acceptance remains open and the input cannot be repeated |
 | 4. Source32 backup start — consumed; cleanup closed | Two controller failures are preserved; the second installed capacity/fence and started source32 once before environment rejection. The exact invocation was stopped, with zero HTTP and exact database preservation | Do not execute this input again, remove its evidence or reset its file baseline. Native backup creation and key authentication did not occur |
 | 5. Reviewed native backup — complete | Stop authority was corrected before strict configuration acceptance; a separately admitted child phase created/downloaded the fresh archive and reconciled all data/files. Policy-only cleanup closed the final shared-parent rejection | Retain the original failure and new completion checkpoint. This input is consumed; do not create another backup or start main for a cleanup retry |
-| 6. Isolated recovery proofs — targets and materials ready | The [independent PG cluster](../development/isolated-restore-infrastructure.json) passed three sandbox profiles; [four empty targets and private materials](../development/isolated-restore-targets.json) are prepared. Follow the [complete recovery sequence](../development/audited-main-isolated-restore-plan.md): selected/schema28 with online native rollback, followed by actual installation return and independent source32/schema27 recovery | Rebind live identities and phase capacity before native execution. Apply temporarily starts listeners/task management. No Goby executable or product restore has run; both proofs precede main promotion and do not require video acceptance. Same-mount restart does not close the M2 host-durability gate |
+| 6. Isolated recovery proofs — initial selected activation complete | The [selected source405/staged406 comparison and offline activation](../development/isolated-selected-initial-activation.json) passed. B/revision1 has407 rows, including exactly one new restore audit; five native CLI commands are closed. Continue the [complete recovery sequence](../development/audited-main-isolated-restore-plan.md): serve/authenticate B, online A activation, real rollback to B, restart, then actual installation return and independent source32 recovery | Rebind live identities and phase capacity. Initial `--accept-no-rollback` does not satisfy online rollback. No serve/login or online transition has run. Both full proofs precede main promotion and do not require video acceptance; same-mount restart does not close the M2 host-durability gate |
 | 7. Distribution notices — partial parallel progress | [Original legal texts and versioned inventory](../../THIRD_PARTY_NOTICES.md) cover current Go requirements, production npm entries and actual fonts; source/copy checks passed remotely | Resolve project license and the relevant upstream/inclusion gaps against the actual future package. This collection does not close M6 or external distribution |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
