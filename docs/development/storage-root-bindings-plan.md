@@ -1,8 +1,8 @@
 # Storage root bindings and missing-file reconciliation
 
-Reviewed on 2026-09-14. Status: **implemented with bounded PostgreSQL,
-real-mount and live administrator-UI acceptance; joint real-media full-scan
-mount experiment paused after two launcher failures; complete M2 remains open**.
+Reviewed on 2026-09-14. Status: **independent real-media catalog rescan/ACL test
+passed; existing PostgreSQL, mount-helper and live UI proofs retained; joint
+full-scan mount experiment remains paused and complete M2 remains open**.
 
 ## Current evidence boundary
 
@@ -14,6 +14,32 @@ passed; the latter recorded 2,173 tests across 25 packages. The later selected
 product passed [2,270 tests/25 packages and a Linux build](tv-parent-metadata-full-verification.json).
 These frozen product proofs supersede the historical running/draft statuses
 below, but do not turn unexecuted privileged helpers into runtime acceptance.
+
+The independent [catalog rescan/ACL checkpoint](catalog-rescan-acl-verification.json)
+passed one race-instrumented integration test with no failures or skips. Its
+four state checkpoints are assertions within that one test, not four tests.
+The source was `be18be9` plus the new
+`internal/library/catalog_rescan_acl_integration_test.go`; there was no
+production repair. Seven real ext4 media files across two libraries comprise
+one movie, one episode and five FLAC tracks, with actual FFmpeg/ffprobe use.
+Moving T2 from album A to B within the mixed library retained its inode and item
+identity. Direct album counts changed from 2/1 to 1/2 and derived Played values
+followed the changed membership. Authorized audio counts were 3/2/5; artist
+entity counts were 5/3/8 because they
+include visible albums. All ten original UserData rows, including every field
+and PostgreSQL `xmin`, stayed exact through the move, `Store.Close/New` queries
+without scanning and the reopened Store's cache-aware rescan.
+
+The first catalog attempt failed before the move because the test used
+`ListEntities` with `MusicArtist`. The correction used `GetEntityByID` and
+`ArtistIds`/`AlbumArtistIds` item filters; the next attempt passed. Both source
+versions and logs remain preserved. Scope `/opt/goby-test/m2-catalog-20260914`
+closed with receipt SHA256
+`3771f27a9a3b9b133615a5a48333373cce07ba75e8852ebf2352c7889427c3ff`:
+PostgreSQL stopped normally, its cgroup emptied, the owned 3 GiB tmpfs was
+ordinarily unmounted, and the closed PG archive/evidence were retained. Empty
+underlying and fixture directories remain. This does not prove native service/PG
+restart, host durability, representative capacity or mount-loss safety.
 
 The [real private-mount recovery](storage-binding-scan-mount-v2-terminal.json)
 passed independently on source54. Its actual helper uses ext4 bind mounts,
@@ -58,12 +84,15 @@ There is no automatic retry or third renamed attempt. The observed unit
 CapabilityBoundingSet includes SETUID and SETGID; the failed UID transition's
 cause is not yet attributed, and NoNewPrivileges is not established as its
 cause. The joint scenario has **not passed**. Preserve both failed scopes and
-all previously accepted source54/UI evidence. Independent M6 embedded-asset
-functional verification is the next work item; this pause does not require a
-new generic runner or reopen consumed recovery operations.
+all previously accepted source54/UI evidence. The independent M6 embedded-asset
+checks/builds and the catalog test above have since passed their limited scopes;
+neither restarts this paused experiment or supplies its seven missing scan stages.
+No new generic runner or consumed recovery replay is required.
 
-Remaining boundaries include representative movie/TV/music rescan and actual
-service-restart/ACL list-count coverage, representative capacity/concurrent
+The next bounded catalog gap is consistency across an actual native-service
+restart, including the persisted catalog, ACL-safe counts and UserData. The
+passing Store reopen must not be relabeled as that result. Later work includes
+representative capacity/concurrent
 scan-query measurements, truly blocked I/O and bounded shutdown, and supported
 filesystem/profile rows beyond the observed ext4 scope. Fast EACCES or a missing
 path does not prove blocked-I/O handling. Physical binding across a host reboot

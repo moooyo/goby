@@ -1,8 +1,8 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after M6 embedded-asset verification and artifact/resource
-closure. Status: **selected product/candidate verified; scoped M6 checks/builds
-passed; M2 joint scan paused and video acceptance open**.
+Reviewed on 2026-09-14 after the independent real-media catalog rescan/ACL test
+and its closure. Status: **selected product/candidate verified; scoped M6 and
+catalog targets passed; joint mount scan paused and video acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -138,11 +138,12 @@ verification tools over extending launcher or observation infrastructure.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 1. Independent M2 catalog/operations gap selection | Use existing movie/TV/music and storage evidence to select one bounded rescan/restart and ACL-safe count gap that is independent of the paused mount launcher | Freeze the supported profile, expected state changes, resource budget and smallest meaningful check before execution. Do not bypass the M2 pause by renaming its failed experiment; process restart is not host durability |
-| 2. Core video and subtitle evidence review | Perform a bounded read-only review for one discriminating question or justified product correction before admitting another journey | Existing movie, episode and subtitle errors remain failures. No automatic playback replay or generic observation-tool expansion; core video still blocks main promotion |
+| 1. Independent native-service restart/catalog consistency | Freeze one bounded service-level stop/start contract over a persisted real-media catalog, with source/configuration identity, native query counts, ACLs and UserData checked before and after startup | Reuse the completed rescan/ACL evidence without rerunning it. Require an actual service process boundary; Store.Close/New is insufficient. Keep the paused mount scope separate and reserve resources/cleanup before execution |
+| 2. Capacity and blocked-I/O preparation | Define the next representative catalog profile and a safely isolated blocked-I/O case, with measurable limits and bounded shutdown requirements | The seven-file catalog result is not representative capacity. Do not fill the host root disk, equate fast EACCES with blocked I/O or claim host durability from process restart |
 | 3. M2 full-scan mount experiment — paused | Review retained launcher evidence to determine the UID-transition failure before proposing any execution change | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. Preserve both failures/resources; no third renamed attempt and no unsupported `NoNewPrivileges` attribution |
 | 4. Changed-version validation and remaining M4-M6 delivery | Freeze the intended changed source for its required full regression and later candidate admission; continue independent media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work | Reuse the completed focused M6 checks within their exact scope. The new embedded binaries are not deployed, arm64 cross-build is not native acceptance, and partial checks do not close full M6 or the unresolved license gate |
-| 5. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+| 5. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
+| 6. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
 
 The earlier planning review confirmed SSH availability and observed only
 335,413,248 available bytes on the root filesystem. Further builds need a separately budgeted scratch
@@ -154,6 +155,18 @@ records a missing assumed module cache, followed by successful helper compilatio
 and `runuser: cannot set user id: Operation not permitted` before `initdb`.
 Its unit is terminal with no owned process; the compiled helper and evidence are
 retained. Compilation does not pass the full-scan deletion-protection scenario.
+The independent [catalog rescan/ACL target](../development/catalog-rescan-acl-verification.json)
+has now passed one race test with four state checkpoints, not four tests. Seven
+real media files in two ext4 libraries covered movie/episode identity, a T2 move
+between albums within the mixed library, direct/derived counts and ACL-safe
+queries. All ten original UserData rows and `xmin` stayed exact across
+`Store.Close/New` and cache-aware rescan. The first before-move failure was a
+test API-contract error (`ListEntities` with `MusicArtist`); correcting it to
+artist detail and artist/album-artist filters required no production fix.
+Both attempts and their closed-PG archives were retained; normal PG stop and ordinary
+unmount closed this separate 3 GiB tmpfs scope. Native service/PG restart, host
+durability, representative capacity and the paused mount's seven stages remain
+unproved by this result.
 The [embedded build checkpoint](../development/embedded-administrator-verification.json)
 now records 22 handler tests/subtests plus two ordinary and two tagged provider
 tests with race instrumentation, all passing. Eleven negative manifest cases,
@@ -179,6 +192,8 @@ These entries preserve prior decisions and results; they are not the next queue.
 | 6. Isolated recovery proofs and disposal — complete | Selected rollback/restart, actual old installation return and independent source32 recovery/restart passed. [Final disposal](../development/isolated-restore-disposal.json) sealed exact A410/B419, normal PG shutdown, ordinary unmount, anchor/unit closure and inactive A credential disposal | Preserve all consumed inputs, original failures, private evidence and explicitly retained accounts/files. No recovery replay is queued; core video, M2 host durability and complete M2-M6 remain open |
 | 7. Distribution notices — partial parallel progress | [Original legal texts and versioned inventory](../../THIRD_PARTY_NOTICES.md) cover current Go requirements, production npm entries and actual fonts; source/copy checks passed remotely | Resolve project license and the relevant upstream/inclusion gaps against the actual future package. This collection does not close M6 or external distribution |
 | 8. Embedded administrator assets — scoped verification complete | Focused race tests, actual embedded amd64 build, arm64 cross-build, source/asset guards and artifact/tmpfs closure passed | Preserve the exact verification and artifacts. No new service/deployment, native arm64 or full changed-version acceptance is claimed |
+| 9. Real-media catalog rescan/ACL target — complete | One race test passed four state checkpoints; same-inode album move, direct/derived counts, ACL queries and all ten UserData rows/xmin remained correct across Store reopen and cached rescan; scope closed | Preserve the first test-contract failure and both sources/logs. This is not native service/PG restart, representative capacity or the paused mount proof |
+| 10. Subtitle response-identity review — complete | Saved context291 response ID matches physical294 and excludes293 | The old cancellation/timing failure and page errors remain unresolved; no new business request, repeated review or new observer layer is authorized by this result |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation
@@ -192,9 +207,11 @@ completed this bounded increment. Its initial synthetic redirect fixture failed
 and was corrected within the same scope of work; both verification workers are
 closed. The product remained unchanged. Do not reopen diagnostic tooling by default.
 The [subtitle result review](../development/audited-subtitles-client01-review.md)
-now supersedes its execution instruction. Native undefined provides no response
-association, and partial293 has a separate unexplained timing difference. Keep
-these explicit gaps and stop the same video/diagnostic cycle. The independent
+now includes the completed response-identity inspection: context291's response
+belongs to physical294, not293. Native undefined still provides no error-cause
+association, and partial293 retains its unexplained cancellation/timing failure.
+Keep these gaps and stop the same video/diagnostic cycle; the read-only review
+itself is not queued again. The independent
 recovery work has now closed. Advance the remaining M2-M6 requirements under
 their own prerequisites; recovery completion cannot pass core acceptance or
 admit promotion.

@@ -21,9 +21,12 @@ are complete. [M6 embedded-asset focused verification](../development/embedded-a
 has also passed its race checks, manifest guards, actual amd64 build and arm64
 cross-build, with artifacts preserved and the build tmpfs closed. It is partial
 M6 evidence: no service deployment/native arm64 runtime or full regression and
-candidate admission for the changed version is established. The immediate queue
-returns to a bounded independent M2 catalog/operations gap selection and core
-video evidence review. The M2 full-scan mount experiment remains paused after
+candidate admission for the changed version is established. The independent
+[real-media catalog rescan/ACL target](../development/catalog-rescan-acl-verification.json)
+has since passed its in-process Store-reopen checks. The immediate queue moves
+to native-service restart/catalog consistency and bounded capacity/blocked-I/O
+preparation. The saved subtitle response-identity review is complete; its
+cancellation and page-error gaps remain open. The M2 full-scan mount experiment remains paused after
 two launcher failures, with compilation only and no executed scan stages.
 [Third-party notices](../../THIRD_PARTY_NOTICES.md) provide a verified
 initial collection for locked dependencies and actual fonts. Project-license,

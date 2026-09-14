@@ -1,7 +1,7 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after M6 embedded-asset verification and artifact/resource
-closure, with M2 still paused. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after the independent M2 catalog rescan/ACL target and
+its closure; the separate full-scan mount experiment remains paused. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -13,6 +13,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the selected baseline's latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance; later working-tree changes require their own verification |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
+| M2 catalog | One real-media rescan/move/ACL integration test passed under race instrumentation, with four state checkpoints and all ten original UserData rows/xmin exact | Actual native-service restart/catalog consistency, representative capacity, blocked I/O and host durability remain separate; the full-scan mount experiment is still paused |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
@@ -24,6 +25,25 @@ started, and none of the seven planned scan stages ran. The failed unit has no
 owned process, while its RAM workspace, compiled helper and evidence remain
 retained. The UID failure's cause remains unassigned; no third renamed attempt
 is queued. This result does not accept full-scan deletion protection or complete M2.
+
+An independent [catalog rescan/ACL target](catalog-rescan-acl-verification.json)
+subsequently passed one race test, zero failures/skips, across four state
+checkpoints. Seven real media files in two ext4 libraries comprised one movie,
+one episode and five FLAC tracks. T2 moved from album A to B within the mixed
+library with the same inode and item ID; direct album counts changed from 2/1
+to 1/2 and derived Played values reversed with membership. Audio ACL counts were
+3/2/5, while artist entity counts were 5/3/8 including visible albums. All ten original UserData rows retained
+every field and `xmin`. Queries after `Store.Close/New` required no scan, and
+the following cached rescan preserved the same results.
+
+The initial test failed before the move by using `ListEntities` for `MusicArtist`.
+Correcting the test to `GetEntityByID` and `ArtistIds`/`AlbumArtistIds` queries
+produced the passing second attempt; no production fix was made. Both attempts'
+sources/logs and their private closed-PG archives were retained. The catalog scope
+closed PostgreSQL normally and ordinarily unmounted its 3 GiB tmpfs, with an
+empty cgroup and the underlying/fixture directories retained. This is Store
+reopen evidence, not an OS service/PG restart, representative capacity or host
+durability. It does not supply the paused mount experiment's seven unrun stages.
 
 The [M6 embedded administrator increment](embedded-administrator-verification.json)
 now has actual remote results. All 22 handler tests/subtests and two ordinary
@@ -45,9 +65,18 @@ The [build document](embedded-administrator-build.md) preserves the detailed
 receipts and scope. No new binary ran as a service or was deployed; full
 regression and candidate admission for this changed version are still pending,
 and the old 2,270-test proof is not inherited. Native arm64, OCI, GPU, licensing
-and full M6 remain open. Immediate work returns to a bounded independent M2
-catalog/operations gap selection and retained core-video evidence review,
-without restarting the paused M2 launcher or consumed client/recovery scenarios.
+and full M6 remain open. The next catalog increment is an independent native
+service restart with catalog/ACL/UserData consistency checks, followed by
+bounded capacity and blocked-I/O preparation. It must preserve the separate
+paused M2 launcher and all consumed client/recovery scopes.
+
+The [subtitle response-identity review](audited-subtitles-client01-review.md)
+has also completed once using saved evidence. Context request 291's response ID
+identifies physical exchange 294, not 293; matching URL/Range alone did not identify the
+earlier physical response. Neither its cancellation cause nor the two original
+page errors is resolved. The original timing failure and formal rejection
+remain. No duplicate read-only review, new browser run or additional observation
+framework is queued without new discriminating evidence.
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
 executable and 415 administrator files in a verified 16,590,013-byte archive.
@@ -518,7 +547,7 @@ discriminating evidence or a concrete product decision before reopening.
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
-| Catalog and operations | Representative capacity, blocked storage, reboot and filesystem measurements |
+| Catalog and operations | Actual native-service restart/catalog consistency, representative capacity, blocked storage, host reboot and filesystem measurements; the real-media rescan/ACL Store-reopen test has passed |
 | Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
 | Administration | Selected policy, executor and provider extensions from the delivery plan |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |

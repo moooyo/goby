@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "kind": "catalog-rescan-acl-verification",
+  "status": "corrected_targeted_test_passed_both_attempts_closed",
+  "milestone": "M2",
+  "milestoneComplete": false,
+  "verificationEnvironment": "ssh test-env",
+  "verificationDate": "2026-09-14",
+  "evidenceRoot": "/opt/goby-test/m2-catalog-20260914",
+  "changeKind": "test_only",
+  "productionFixClaimed": false,
+  "scope": "A bounded real-media catalog rescan, same-library physical move, two-library authorization matrix and in-process Store close/reopen test.",
+  "preparation": {
+    "path": "/opt/goby-test/m2-catalog-20260914/preparation.json",
+    "sha256": "50b314fa25068d6f92aafc6ea65c729f9c67941daddafb93827e90a02cd6231c",
+    "bytes": 14900,
+    "status": "independent_catalog_ram_and_ext4_fixture_prepared",
+    "fixtureFilesystem": "ext4"
+  },
+  "closure": {
+    "path": "/opt/goby-test/m2-catalog-20260914/closure.json",
+    "sha256": "3771f27a9a3b9b133615a5a48333373cce07ba75e8852ebf2352c7889427c3ff",
+    "bytes": 19057,
+    "status": "catalog_test_evidence_preserved_and_owned_ram_closed"
+  },
+  "test": {
+    "name": "TestCatalogRescanRealMediaMovePreservesACLAndDerivedUserDataAcrossStoreReopen",
+    "package": "github.com/moooyo/goby/internal/library",
+    "sourcePath": "internal/library/catalog_rescan_acl_integration_test.go",
+    "correctedSourceSha256": "b87a387aa8c99fd98b12a02925dbeb2f964cecd5a0709ae8e2a4ea556c443d56",
+    "correctedSourceBytes": 19003,
+    "command": [
+      "/opt/goby-toolchains/go1.27.1/bin/go",
+      "test",
+      "-race",
+      "-p=1",
+      "-parallel=1",
+      "-count=1",
+      "-timeout=210s",
+      "-json",
+      "-run",
+      "^TestCatalogRescanRealMediaMovePreservesACLAndDerivedUserDataAcrossStoreReopen$",
+      "github.com/moooyo/goby/internal/library"
+    ],
+    "correctedCounts": {"passed": 1, "failed": 0, "skipped": 0},
+    "raceEnabled": true,
+    "testElapsedSeconds": 1.24,
+    "goCommandElapsedSeconds": 34.979,
+    "capacityResultClaimed": false,
+    "checkpoints": [
+      "before the physical move",
+      "after the physical move and rescan",
+      "after Store.Close/New without another scan",
+      "after the reopened Store's cache-aware rescan"
+    ]
+  },
+  "attempts": [
+    {
+      "name": "initial-failure",
+      "status": "failed",
+      "originalScope": "/opt/goby-test/m2-catalog-20260914/ram/catalog-reconciliation-20260914-20260914T041408Z-01422ea55a14",
+      "report": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/initial-failure/report.json",
+        "sha256": "12fbd7faf68d49b3c09feb36450ccfd221d363814c5ab72683012c26e2fe0e1b",
+        "bytes": 17441
+      },
+      "workerReport": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/initial-failure/worker-report.json",
+        "sha256": "3b4cbd8301587f68a2571324b3ebecae2fa1d61ad56096bec608507a62ae2f1d",
+        "bytes": 15702
+      },
+      "sourceManifest": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/initial-failure/source-manifest.json",
+        "sha256": "284d965ccbe804f94ce74d7db71af642c2895f55a3463c7977371a1901f4943c",
+        "bytes": 131159,
+        "files": 852
+      },
+      "sourceArchiveSha256": "849b967d05f532d65b67367be1a41a2f212fa3b0a9432a87d343d22f4dacb0a0",
+      "testSourceSha256": "6dbb15f38ca03ab6320a26859fbd614135cb28b602ac98ff071a0d0abb8d53be",
+      "testSourceBytes": 18349,
+      "testCounts": {"passed": 0, "failed": 1, "skipped": 0},
+      "testElapsedSeconds": 0.69,
+      "failure": {
+        "workerCode": "test_failure",
+        "checkpoint": "before the physical move",
+        "observedError": "invalid library input",
+        "classification": "incorrect_test_api_and_count_contract",
+        "explanation": "The test called ListEntities with MusicArtist and expected audio-only entity counts. The seven-media initial import assertions had completed, but this incorrect assertion failed before the physical move. The failed attempt remains failed."
+      },
+      "testStdout": {
+        "archiveMember": "logs/018-go-test.stdout",
+        "sha256": "ea66dd439a2d0cf82ee160bfbe4b3cce164af680ef16714cfb51158f17987a71",
+        "bytes": 2413
+      },
+      "evidenceArchive": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/initial-failure/evidence.tar.gz",
+        "sha256": "8db9a4ae2a1c9435be4d27e8b9771b4615960ced38b7f71098c6fa4fec32804f",
+        "bytes": 4668622,
+        "files": 902,
+        "uncompressedBytes": 25061992,
+        "closureRecordedMemberReadbackMatched": true
+      },
+      "privateClosedPostgresArchiveReferenceOnly": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/initial-failure/closed-postgres-private.tar.gz",
+        "sha256": "34e610d6b97c291167db40cf3238ede3cb73efce079bf91ff651546d9b25798c",
+        "bytes": 10996114,
+        "closureRecordedMemberReadbackMatched": true,
+        "contentsReadForThisDocument": false,
+        "copiedLocally": false
+      },
+      "terminal": {
+        "unit": "goby-catalog-reconciliation-20260914-01422ea55a14.service",
+        "exitCode": 1,
+        "mainPid": 0,
+        "activeState": "failed",
+        "recursiveCgroupEmpty": true,
+        "transientUnitMetadataRetained": true
+      },
+      "cleanup": {
+        "ownedPostgresNormallyStopped": true,
+        "privateBindRemoved": true,
+        "sourceUnchanged": true,
+        "onlyWorkerProcessRemainedBeforeUnitExit": true,
+        "existingServicesModified": false
+      }
+    },
+    {
+      "name": "corrected-pass",
+      "status": "passed",
+      "originalScope": "/opt/goby-test/m2-catalog-20260914/ram/catalog-reconciliation-20260914-20260914T042149Z-1502d843178d",
+      "report": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/corrected-pass/report.json",
+        "sha256": "f90b8c6b9b55bccbaefa682723d15b0fc6eadcf8bb9151a2db2d5c1d533b6239",
+        "bytes": 17408
+      },
+      "workerReport": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/corrected-pass/worker-report.json",
+        "sha256": "116a4372e4abba9ae5504ada5a2341fb6185cacbcbb4971856d2d40f81154910",
+        "bytes": 15670
+      },
+      "sourceManifest": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/corrected-pass/source-manifest.json",
+        "sha256": "b12b122d953c3ec7bee010cc36b6900f9e2864362dc1229595c89c13aaf63097",
+        "bytes": 131159,
+        "files": 852
+      },
+      "sourceArchive": {
+        "path": "/opt/goby-test/m2-catalog-20260914/source-corrected.tar",
+        "sha256": "c0fd3e4e9e5923de3e8dd82013a81a54d1ec10ab4dee1e63b3cef8fbbe829f02",
+        "bytes": 12595200
+      },
+      "testStdout": {
+        "archiveMember": "logs/018-go-test.stdout",
+        "sha256": "e4b7c7a4cc7b66e64339759ffbdae52ce55c5cea175a3a64eefdb523e1a40039",
+        "bytes": 2873
+      },
+      "evidenceArchive": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/corrected-pass/evidence.tar.gz",
+        "sha256": "9b4b965a7cc41165fe53b0310fbdc0990c287e7bcc37e4f376917af355784c50",
+        "bytes": 4668908,
+        "files": 902,
+        "uncompressedBytes": 25064065,
+        "closureRecordedMemberReadbackMatched": true
+      },
+      "privateClosedPostgresArchiveReferenceOnly": {
+        "path": "/opt/goby-test/m2-catalog-20260914/retained/corrected-pass/closed-postgres-private.tar.gz",
+        "sha256": "6619050dff73a061fcd75a8ed1a7978dc92643e76b54de87ed5dbf065eb626c0",
+        "bytes": 11003342,
+        "closureRecordedMemberReadbackMatched": true,
+        "contentsReadForThisDocument": false,
+        "copiedLocally": false
+      },
+      "terminal": {
+        "unit": "goby-catalog-reconciliation-20260914-1502d843178d.service",
+        "exitCode": 0,
+        "mainPid": 0,
+        "activeState": "inactive",
+        "loadState": "not-found",
+        "result": "success",
+        "recursiveCgroupEmpty": true
+      },
+      "cleanup": {
+        "ownedPostgresNormallyStopped": true,
+        "privateBindRemoved": true,
+        "sourceUnchanged": true,
+        "onlyWorkerProcessRemainedBeforeUnitExit": true,
+        "existingServicesModified": false
+      }
+    }
+  ],
+  "testCorrection": {
+    "sourceManifestChangedEntries": ["internal/library/catalog_rescan_acl_integration_test.go"],
+    "productionFilesChangedBetweenAttempts": 0,
+    "correctContract": "GetEntityByID verifies the shared MusicArtist and its visible associated-item count, including albums. QueryItems with ArtistIds, AlbumArtistIds and both filters verifies the exact authorized audio IDs and counts independently.",
+    "originalFailureOverwritten": false,
+    "originalScopeReused": false
+  },
+  "assertedContracts": {
+    "realMedia": {
+      "filesystem": "ext4",
+      "files": 7,
+      "movieFiles": 1,
+      "episodeFiles": 1,
+      "flacFiles": 5,
+      "maximumBytesPerFile": 1048576,
+      "realFFmpegFixtureGeneration": true,
+      "realFFprobeInitialCalls": 7,
+      "libraries": {"mixed": 5, "hiddenMusic": 2},
+      "movieEpisodeSeriesSeasonKindsAndIdentitiesChecked": true
+    },
+    "authorization": {
+      "subjects": ["mixed-library viewer", "hidden-library viewer", "unrestricted fixture user"],
+      "audioCounts": [3, 2, 5],
+      "artistEntityCountsIncludingAlbums": [5, 3, 8],
+      "artistAndAlbumArtistFiltersCheckedSeparatelyAndTogether": true,
+      "duplicateCreditRolesDoNotDuplicateAudioResults": true,
+      "exactResultIdsAndTotalCountsChecked": true,
+      "hiddenDirectItemsAndAlbumParentRejected": true,
+      "visiblePagingTotalPreserved": true
+    },
+    "physicalMove": {
+      "track": "T2",
+      "from": "mixed/A/02 Moving.flac",
+      "to": "mixed/B/02 Moving.flac",
+      "sameLibrary": true,
+      "crossLibraryMoveTested": false,
+      "sameDeviceAndInode": true,
+      "sizeAndScannerModifiedTimePreserved": true,
+      "oldPathAbsent": true,
+      "rescan": {"scanned": 5, "added": 0, "updated": 1},
+      "catalogIdAndUserHistoryRetained": true,
+      "physicalAlbumReferenceChangesFromAToB": true,
+      "embeddedAlbumTextRemainsAlbumA": true,
+      "ctimeTriggeredReprobeAllowed": true
+    },
+    "derivedAlbumState": {
+      "albumChildrenBefore": {"A": 2, "B": 1},
+      "albumChildrenAfter": {"A": 1, "B": 2},
+      "unplayedChildrenBefore": {"A": 1, "B": 0},
+      "unplayedChildrenAfter": {"A": 0, "B": 1},
+      "derivedPlayedBefore": {"A": false, "B": true},
+      "derivedPlayedAfter": {"A": true, "B": false},
+      "favoritesPreserved": true,
+      "albumBNameFallsBackToDirectoryAfterMemberDisagreement": true,
+      "filteredLatestCountsDistinguishedFromFullAlbumChildCounts": true
+    },
+    "durability": {
+      "allSeededUserDataColumnsTimestampsAndXminExactlyPreserved": true,
+      "movieAndEpisodeProbeAndTelevisionParentFactsPreserved": true,
+      "allSevenOriginalMediaHashesSizesModifiedTimesAndFileIdentitiesPreserved": true,
+      "storeCloseThenNewInSameProcess": true,
+      "allAssertionsRepeatedBeforeAnyPostReopenScan": true,
+      "reopenAndReadOnlyQueriesDoNotProbe": true,
+      "reopenedCacheAwareRescan": {"scanned": 5, "added": 0, "updated": 0, "additionalProbeCalls": 0}
+    }
+  },
+  "toolsAndExecution": {
+    "goVersion": "go version go1.27.1 linux/amd64",
+    "postgresVersion": "postgres (PostgreSQL) 17.11 (Debian 17.11-0+deb13u1)",
+    "goPath": "/opt/goby-toolchains/go1.27.1/bin/go",
+    "postgresDirectory": "/usr/lib/postgresql/17/bin",
+    "ffmpegPath": "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffmpeg",
+    "ffprobePath": "/opt/goby-toolchains/ffmpeg-9.0.1/bin/ffprobe",
+    "completeToolBinaryPrehashPerformed": false,
+    "toolEvidenceBoundary": "Go and PostgreSQL version stdout was recorded. FFmpeg and ffprobe paths are fixed by the archived runner and required to be executable by the test. No before-execution binary SHA256 set or independently observed FFmpeg version is claimed.",
+    "runner": {
+      "evidenceArchive": "corrected-pass",
+      "member": "verify-isolated.py",
+      "sha256": "a28b7c54be0070b9eabae16e2dbc8213003289eb8b2f5c016dc220d4b7c454e0",
+      "bytes": 35114
+    },
+    "versionLogMembers": [
+      {"member": "logs/001-go-version.stdout", "sha256": "f554cfdb85411c2bb1d503df3f53dfbad1f753eb8271938833166a5d26a7547c", "bytes": 32},
+      {"member": "logs/004-postgres-version.stdout", "sha256": "bff7373d2309d3b3cdff08f03dfe8fed4fe20c3039a5e11d14526964b2fcca39", "bytes": 53}
+    ],
+    "workerCommandsPerAttempt": 19,
+    "successfulAttemptCommandFailures": 0,
+    "initialAttemptOnlyNonzeroCommand": "go-test",
+    "interruptedOrTimedOutCommands": 0,
+    "privateNetwork": true,
+    "privateMounts": true,
+    "privateTmp": true,
+    "protectSystem": "strict",
+    "unitRestartPolicy": "no",
+    "postgresPerAttempt": "A fresh owned PostgreSQL cluster in the private unit namespace, with separate test/source/target databases prepared by the existing runner.",
+    "postgresShutdown": "The runner rechecks the owned process identity, opens a pidfd, sends SIGINT, waits for process exit and requires postmaster.pid to be absent. This is normal PostgreSQL fast shutdown."
+  },
+  "evidenceReadback": {
+    "method": "Read-only ssh test-env access to sealed JSON and selected evidence-archive members; no new tests, SQL, HTTP, browser or service operations.",
+    "providedReportAndManifestPinsMatched": true,
+    "bothEvidenceArchiveHashesMatchedClosure": true,
+    "correctedSourceArchiveHashMatchedReport": true,
+    "selectedTestSourceAndStdoutHashesMatchedRecordedEvidence": true,
+    "successfulStdoutContainsExactlyTheFourCheckpointsAndOneTestPass": true,
+    "sourceManifestDifferenceLimitedToTheTestFile": true,
+    "privatePostgresArchiveContentsRead": false
+  },
+  "finalResourceState": {
+    "evidenceField": "closure.json",
+    "bothOwnedPostgresProcessesStopped": true,
+    "bothRecursiveCgroupsEmpty": true,
+    "ramOrdinarilyUnmounted": true,
+    "fixturesEmpty": true,
+    "emptyRamAndFixtureDirectoriesRetained": true,
+    "disposableCachesReleasedAfterInputAndEvidencePreservation": true,
+    "frozenModuleFilesUnchanged": 2119,
+    "protectedStateEqualFromPreparationThroughClosure": true,
+    "initialFailedTransientUnitMetadataRetainedWithMainPidZero": true,
+    "privateClosedDatabaseArchivesRetainedRemotely": true,
+    "allEvidenceOrDatabaseFilesDeletedClaimed": false
+  },
+  "limitations": [
+    "The only source correction between attempts is in the test; this result does not claim a production bug fix.",
+    "The 1.24-second passing test uses seven tiny real media files. It is not a capacity, throughput or large-library result.",
+    "The physical move is within the mixed library. The second library supplies independent hidden-source authorization coverage; no cross-library physical move is claimed.",
+    "Store.Close/New occurs inside one test process. It does not demonstrate a Goby OS service restart, a PostgreSQL restart, mount-loss handling or a user-ID transition.",
+    "Fresh owned test clusters were started and normally stopped. Existing services, main databases, installed binaries and deployment state were not upgraded or restarted.",
+    "This does not execute or resolve the separately paused M2 full-scan mount experiment. Its mount-loss scenario remains unexecuted and cannot borrow this result.",
+    "Only the named target test ran; no full backend suite, browser acceptance or main-environment promotion is claimed.",
+    "M2 remains incomplete. Private stopped-cluster archives and the initial failed unit metadata remain retained evidence."
+  ]
+}
