@@ -27,6 +27,28 @@ FORBIDDEN = {"dispose-source41-resource-full-failed-pair.py", "test-dispose-sour
 ENV = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
 PROTECTED = ("goby-client-m3e.service", "goby-foundation-test.service", "postgresql@17-main.service")
 INACCESSIBLE = ("/opt/goby-test", "/opt/goby-dev", "/opt/goby-client-m3e", "/opt/goby-fixtures", "/var/lib/goby-test", "/var/lib/postgresql")
+PRESERVED_AUDITED_CANDIDATE = "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b"
+M6 = Path("/opt/goby-test/m6-embedded-20260914")
+FULL_PRIOR = Path("/opt/goby-test/full-regression-20260914")
+FULL_CONTINUATION = Path("/opt/goby-test/full-regression-continuation-20260914")
+FULL_SCOPE = FULL_CONTINUATION / "ram/full-regression-continuation-20260914-20260914T070836Z-1465ffb74e7e"
+FULL_STATUS = "passed_with_explicit_profile_gap"
+FULL_SOURCE_ARCHIVE = {"path": str(FULL_PRIOR / "retained/source.tar.gz"), "sha256": "418f9803237e02e0859f9bef8f6ed646730acb590a3482867a288cd64e8a0fad"}
+FULL_SOURCE_MANIFEST = {"path": str(FULL_CONTINUATION / "retained/source-manifest.json"), "sha256": "95fe6a40ecabdfe6b48260dcf200cf8a49d0cf9664c407ca91cd9eaba539d6f6"}
+PRODUCTION_BINDING = {"path": str(FULL_PRIOR / "production-source-binding.json"), "sha256": "823870bb9bcf9e2ca4b35e483d617de34e1c541b273cd6bf02e647a066e920dc"}
+REGRESSION_REVIEW = {"path": str(FULL_CONTINUATION / "independent-review.json"), "sha256": "5b946d4b4bfee2b177b53861c89fad690c08c406b832a26f778d563ed4174b72"}
+REGRESSION_CLOSURE = {"path": str(FULL_CONTINUATION / "closure.json"), "sha256": "6cd0b024834315db240d6268c94b578e4beb99977fd1740d51c5494cf4508b1c"}
+EMBEDDED_MANIFEST = {"path": str(M6 / "artifacts/linux-amd64/manifest.json"), "sha256": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683"}
+EMBEDDED_BINARY = {"path": str(M6 / "artifacts/linux-amd64/goby"), "sha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312", "bytes": 30678868}
+MODULE = "github.com/moooyo/goby/"
+PRIOR_PACKAGES = tuple(MODULE + name for name in ("cmd/goby", "internal/activity", "internal/artwork", "internal/backupformat",
+    "internal/backuppg", "internal/backupstore", "internal/config", "internal/database", "internal/diagnostics", "internal/events", "internal/identity"))
+CURRENT_PACKAGES = tuple(MODULE + name for name in ("internal/library", "internal/lifecycle", "internal/media", "internal/metadata", "internal/playback",
+    "internal/recovery", "internal/recoverycontrol", "internal/server", "internal/settings", "internal/storagebinding", "internal/subtitle", "internal/tasks", "internal/transcode", "internal/recoverydb"))
+PROFILE_PACKAGE = MODULE + "internal/library"
+PROFILE_TEST = "TestRootBindingFullScanMountNamespaceHelper"
+PROFILE_REASON = "the full-scan mount scenario requires its explicit reviewed opt-in scope"
+INERT_HELPERS = ("TestRootTopologyMountNamespaceHelper", "TestRootBindingScanMountNamespaceHelper")
 SOFTWARE_ENV = {"GOBY_TRANSCODING_ENABLED": "true", "GOBY_HW_DECODER": "software", "GOBY_HW_ENCODER": "software", "GOBY_HW_DEVICE": "",
                 "GOBY_TRANSCODE_THREADS": "2", "GOBY_TRANSCODE_MAX_JOBS": "2", "GOBY_TRANSCODE_MAX_USER_JOBS": "1", "GOBY_TRANSCODE_MAX_SESSION_JOBS": "1",
                 "GOBY_TRANSCODE_MAX_QUEUE_JOBS": "16", "GOBY_TRANSCODE_MAX_RETAINED_JOBS": "128", "GOBY_TRANSCODE_MAX_CACHE_BYTES": str(2 << 30),
@@ -107,9 +129,19 @@ def file_spec(row):
 
 
 def validate_input(value):
-    need(set(value) == {"kind", "version", "runId", "backendReport", "sourceManifest", "frontendReport", "ports", "public_url", "transcodingProfile"} and
-         value["kind"] == "audited-candidate-provision-input" and type(value["version"]) is int and value["version"] == 1,
-         "Unexpected provision contract.")
+    common = {"kind", "version", "runId", "sourceManifest", "ports", "public_url", "transcodingProfile"}
+    versions = {1: {"backendReport", "frontendReport"},
+                2: {"sourceArchive", "embeddedBuildManifest", "productionSourceBinding", "regressionReview", "regressionClosure", "dashboardProfile"}}
+    need(isinstance(value, dict) and type(value.get("version")) is int and value["version"] in versions and
+         set(value) == common | versions[value["version"]] and value["kind"] == "audited-candidate-provision-input", "Unexpected provision contract.")
+    if value["version"] == 2:
+        need(value["dashboardProfile"] == "embedded-administrator-v1", "The new candidate requires the retained embedded administrator artifact.")
+        for name, expected in (("sourceArchive", FULL_SOURCE_ARCHIVE), ("sourceManifest", FULL_SOURCE_MANIFEST),
+                               ("embeddedBuildManifest", EMBEDDED_MANIFEST), ("productionSourceBinding", PRODUCTION_BINDING),
+                               ("regressionReview", REGRESSION_REVIEW), ("regressionClosure", REGRESSION_CLOSURE)):
+            need(value[name] == expected, "A version2 source or artifact descriptor is not the selected evidence.")
+        for name, filename in (("regressionReview", "independent-review.json"), ("regressionClosure", "closure.json")):
+            need(receipt_pin(value[name]) == value[name] and value[name]["path"] == str(FULL_CONTINUATION / filename), "Unexpected continuation evidence descriptor.")
     need(value["transcodingProfile"] == "software-baseline-v1", "The admitted candidate requires its explicit enabled software engine profile.")
     need(re.fullmatch(r"[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}", value["runId"]), "Invalid fresh run ID.")
     need(set(value["ports"]) == {"postgres", "http"} and len(set(value["ports"].values())) == 2 and
@@ -122,6 +154,8 @@ def validate_input(value):
 
 
 def verify_products(value):
+    if value["version"] == 2:
+        return verify_embedded_products(value)
     report = descriptor(value["backendReport"])
     worker = report["worker"]
     need(report["status"] == worker["status"] == "passed" and report["mode"] == worker["mode"] == "full" and
@@ -165,15 +199,199 @@ def verify_products(value):
     return report, binary_raw, assets
 
 
-def unit_text(user, command, writable, work, log, environment=None):
+def receipt_pin(value):
+    """Project a saved receipt descriptor without changing its original path."""
+    need(isinstance(value, dict) and set(value) in ({"path", "sha256"}, {"path", "sha256", "bytes"}) and
+         isinstance(value.get("path"), str) and isinstance(value.get("sha256"), str) and
+         re.fullmatch(r"[0-9a-f]{64}", value["sha256"]), "Invalid saved evidence descriptor.")
+    if "bytes" in value:
+        need(type(value["bytes"]) is int and 0 < value["bytes"] <= 256 << 20, "Invalid saved evidence byte count.")
+    return {key: value[key] for key in ("path", "sha256")}
+
+
+def same_json(left, right):
+    return encoded(left) == encoded(right)
+
+
+def verify_embedded_products(value):
+    """Admit one closed two-phase ordinary suite bridged to the saved M6 binary."""
+    validate_input(value)
+    review = descriptor(value["regressionReview"])
+    need(review.get("kind") == "full-regression-continuation-independent-review" and type(review.get("version")) is int and review["version"] == 1 and
+         review.get("status") == "passed" and review.get("ordinaryAcceptanceStatus") == FULL_STATUS and
+         review.get("ordinarySuiteCompletedAcrossPhases") is True and review.get("singleRunFullSuite") is False and
+         review.get("gobyEmbedAdminSuiteExecuted") is False and review.get("failures") == [] and review.get("scope") == str(FULL_SCOPE),
+         "The independent ordinary-regression review is not complete.")
+    cleanup = review["cleanup"]
+    need(all(cleanup.get(key) is True for key in ("workerFactsExact", "ownedProcessesAbsent", "cgroupEmpty", "fixtureEmpty", "scopeTmpEmpty", "postgresNormalShutdownRecorded")),
+         "Independent regression cleanup is incomplete.")
+    terminal = cleanup["terminalUnit"]
+    need(terminal.get("MainPID") == "0" and terminal.get("ActiveState") in (None, "", "inactive", "failed") and
+         terminal.get("SubState") in (None, "", "dead", "failed") and
+         (terminal.get("LoadState") == "not-found" or terminal.get("ActiveState") in ("inactive", "failed")),
+         "The reviewed regression unit is still running.")
+    closure = descriptor(value["regressionClosure"])
+    need(closure.get("kind") == "full-regression-continuation-seal" and type(closure.get("version")) is int and closure["version"] == 1 and
+         closure.get("status") == "continuation_evidence_preserved_and_owned_volumes_closed" and closure.get("scope") == str(FULL_SCOPE) and
+         all(closure.get(key) is True for key in ("archivesComplete", "ownedProcessesClosed", "ext4Unmounted", "loopDetached", "ramUnmounted", "lockReleased", "sourceArchiveStillRetainedInE1")) and
+         closure.get("profileGapClosed") is False and closure.get("independentReviewStatus") == "passed" and
+         receipt_pin(closure["review"]) == value["regressionReview"], "The continuation evidence or resource seal is incomplete.")
+    source = review["source"]
+    need(source.get("archiveSha256") == FULL_SOURCE_ARCHIVE["sha256"] and source.get("sourceManifestSha256") == FULL_SOURCE_MANIFEST["sha256"] and
+         type(source.get("files")) is int and source["files"] == 5244 and source.get("gitCommit") == "badf39635014ab221da7a75762f3fb40aee28033",
+         "The reviewed full-suite source differs.")
+    records = closure["retainedRecords"]
+    loaded = {}
+    for key, filename in (("sourceManifest", "source-manifest.json"), ("parent", "report.json"), ("worker", "worker-report.json")):
+        record = records[key]
+        original, retained = record["original"], record["retained"]
+        need(record.get("sameBytes") is True and receipt_pin(original)["path"] == str(FULL_SCOPE / filename) and
+             receipt_pin(retained)["path"] == str(FULL_CONTINUATION / "retained" / filename) and
+             original["sha256"] == retained["sha256"] and type(original.get("bytes")) is int and original["bytes"] == retained.get("bytes"),
+             "A retained continuation record changed identity or bytes.")
+        if key == "sourceManifest":
+            need(receipt_pin(retained) == value["sourceManifest"] and receipt_pin(closure["sourceManifest"]) == receipt_pin(original) and
+                 original["bytes"] == 974367, "The source manifest is not the sealed original record.")
+        else:
+            need(receipt_pin(original) == review["evidence"][key] == receipt_pin(closure[key]), "Review and closure bind different original reports.")
+        loaded[key] = parse(read(retained["path"], retained["sha256"], retained["bytes"]))
+    evidence = review["evidence"]
+    need(receipt_pin(closure["execution"]) == evidence["execution"] and evidence["execution"]["path"] == str(FULL_CONTINUATION / "execution.json") and
+         evidence["priorWorker"] == {"path": str(FULL_PRIOR / "private/retained-worker-report.json"), "sha256": "2a2b8e82dfa16b81afec4e73ba3460fcd44155ce2f10ea378a733fab3fc4e99d"} and
+         evidence["priorReview"] == {"path": str(FULL_PRIOR / "partial-review.json"), "sha256": "70e2d76ee0c59764cf2b7b461ef5b35518f6899ea2402d523a89feb727759b00"},
+         "The continuation execution or prior evidence binding differs.")
+    execution = descriptor(evidence["execution"])
+    parent, worker = loaded["parent"], loaded["worker"]
+    need(parent.get("status") == worker.get("status") == execution.get("status") == FULL_STATUS and
+         parent.get("mode") == worker.get("mode") == "full" and parent.get("scope") == worker.get("scope") == str(FULL_SCOPE) and
+         type(parent.get("unit_exit_code")) is int and parent["unit_exit_code"] == 0 and parent.get("private_unit_empty") is True and parent.get("recursive_cgroup_empty") is True and
+         parent.get("singleRunFullSuite") is False and same_json(parent.get("worker"), worker) and parent.get("worker_report_sha256") == evidence["worker"]["sha256"] and
+         parent.get("archive_sha256") == FULL_SOURCE_ARCHIVE["sha256"] and execution["runner"]["reportSha256"] == evidence["parent"]["sha256"] and
+         execution["runner"]["scope"] == str(FULL_SCOPE) and same_json(execution["protectedBefore"], execution["protectedAfter"]),
+         "Only the final closed two-phase ordinary regression is admitted.")
+    need(all(worker.get(key) is True for key in ("ordinarySuiteCompletedAcrossPhases", "ordinary_suite_passed", "continuationPackagesPassed", "build_executed")) and
+         worker.get("singleRunFullSuite") is False and all(worker.get("cleanup", {}).get(key) is True for key in
+         ("only_worker_process_remains", "owned_postgres_stopped", "private_bind_removed", "source_unchanged")), "The continuation worker is incomplete.")
+    coverage = review["packageCoverage"]
+    reused, current = coverage["reusedCompletePackages"], coverage["currentCompletePackages"]
+    need(len(reused) == len(PRIOR_PACKAGES) and {row["package"] for row in reused} == set(PRIOR_PACKAGES) and
+         len(current) == len(CURRENT_PACKAGES) and {row["package"] for row in current} == set(CURRENT_PACKAGES) and
+         len(coverage["expectedAllPackages"]) == 25 and set(coverage["expectedAllPackages"]) == set(PRIOR_PACKAGES + CURRENT_PACKAGES) and
+         same_json(worker["expectedAllPackages"], coverage["expectedAllPackages"]) and worker["expected_packages"] == [row["package"] for row in current],
+         "The two-phase package inventory is incomplete, replaced or overlapping.")
+    need(all(type(row.get("topLevelPasses")) is int and row["topLevelPasses"] >= 0 and type(row.get("commandExitCode")) is int and row["commandExitCode"] == 0
+             for row in reused + current) and sum(row["topLevelPasses"] for row in reused) == coverage["reusedTopLevelPasses"] == 475 and
+         type(coverage.get("priorPartialLibraryPassesReused")) is int and coverage["priorPartialLibraryPassesReused"] == 0,
+         "Prior partial results or incomplete package commands were counted.")
+    current_passes = sum(row["topLevelPasses"] for row in current)
+    counts = {"passed": 475 + current_passes, "failed": 0, "skipped": 1}
+    current_counts = {"passed": current_passes, "failed": 0, "skipped": 1}
+    need(current_passes > 0 and type(coverage.get("currentTopLevelPasses")) is int and coverage["currentTopLevelPasses"] == current_passes and
+         type(coverage.get("packageCount")) is int and coverage["packageCount"] == 25 and worker.get("combinedPackageCount") == 25 and
+         same_json(coverage["combinedTestCounts"], counts) and same_json(worker["combinedTestCounts"], counts) and same_json(worker["test_counts"], current_counts),
+         "Combined ordinary-regression counts differ.")
+    skipped = {"package": PROFILE_PACKAGE, "test": PROFILE_TEST}
+    need(worker["tests"]["failed"] == [] and worker["tests"]["skipped"] == [skipped] and
+         len(worker["tests"]["passed"]) == current_passes and
+         len({(row["package"], row["test"]) for row in worker["tests"]["passed"]}) == current_passes and
+         all(row["package"] in CURRENT_PACKAGES and "/" not in row["test"] for row in worker["tests"]["passed"]), "The current test identities or unique skip differ.")
+    for row, observed in zip(current, worker["packages"]):
+        expected = {"package": row["package"], "result": "pass", "exit_code": 0, "top_level_passes": row["topLevelPasses"], "failed": 0,
+                    "skipped": 1 if row["package"] == PROFILE_PACKAGE else 0}
+        need(same_json(observed, expected) and row["skippedTests"] == ([PROFILE_TEST] if row["package"] == PROFILE_PACKAGE else []) and
+             sum(entry["package"] == row["package"] for entry in worker["tests"]["passed"]) == row["topLevelPasses"], "A complete package result changed.")
+    need(len(worker["packages"]) == 14, "A complete package report is missing.")
+    declared = [{**skipped, "reason": PROFILE_REASON, "profileStatus": "not_executed"}]
+    profiles = [{**skipped, "rawGoAction": "skip", "status": "paused", "reason": PROFILE_REASON, "sevenFullScanStagesExecuted": False},
+                *({"package": PROFILE_PACKAGE, "test": name, "rawGoAction": "pass", "status": "not_exercised",
+                   "reason": "The helper returns before its scenario when its explicit operator opt-in is absent."} for name in INERT_HELPERS)]
+    need(same_json(worker["declared_profile_skips"], declared) and same_json(worker["profile_not_executed"], profiles) and
+         same_json(review["profiles"], profiles) and same_json(closure["rawDeclaredProfileSkips"], declared) and same_json(closure["rawProfileNotExecuted"], profiles) and
+         all({"package": PROFILE_PACKAGE, "test": name} in worker["tests"]["passed"] for name in INERT_HELPERS), "Paused or inert mount profiles were erased or promoted.")
+    observed = {"parentStatus": FULL_STATUS, "workerStatus": FULL_STATUS, "executionStatus": FULL_STATUS, "currentTestCounts": current_counts}
+    need(same_json(review["observedResult"], observed) and same_json(closure["reportedResults"], {**observed, "combinedTestCounts": counts,
+         "combinedPackageCount": 25, "ordinarySuiteCompletedAcrossPhases": True, "singleRunFullSuite": False}), "The seal does not preserve the reviewed original outcome.")
+    build = review["build"]
+    ordinary = worker["binary"]
+    need(build.get("executed") is True and build.get("verified") is True and build.get("ordinary") is True and build.get("gobyEmbedAdminTagged") is False and
+         ordinary.get("embeddedAdministrator") is False and ordinary.get("path") == "bin/goby-linux-amd64" and
+         ordinary.get("GOOS") == "linux" and ordinary.get("GOARCH") == "amd64" and ordinary.get("CGO_ENABLED") == "0" and
+         same_json(build["artifact"], {"path": str(FULL_SCOPE / ordinary["path"]), "sha256": ordinary["sha256"], "bytes": ordinary["bytes"]}) and
+         ordinary["sha256"] != EMBEDDED_BINARY["sha256"], "The ordinary regression build cannot substitute for the embedded artifact.")
+    sources = loaded["sourceManifest"]
+    need(isinstance(sources, dict) and len(sources) == 5244, "Unexpected sealed source inventory.")
+    for name, row in sources.items():
+        relative(name)
+        file_spec(row)
+    read(FULL_SOURCE_ARCHIVE["path"], FULL_SOURCE_ARCHIVE["sha256"], 32143107)
+    retained_source = closure["sourceAlreadyRetained"]
+    need(receipt_pin({key: retained_source[key] for key in ("path", "sha256", "bytes")}) == FULL_SOURCE_ARCHIVE and
+         retained_source["bytes"] == 32143107 and retained_source.get("permanentCopyCreatedByThisSeal") is False, "The shared source archive was replaced.")
+    binding = descriptor(value["productionSourceBinding"])
+    manifest = descriptor(value["embeddedBuildManifest"])
+    need(binding.get("kind") == "m6-to-ordinary-full-production-source-binding" and type(binding.get("version")) is int and binding["version"] == 1 and binding.get("status") == "passed" and
+         all(binding.get(key) is True for key in ("productionSourceBindingPassed", "productionArchiveSetsExact", "productionBytesExact", "m6WholeArchiveManifestMatched", "readerWorkComplete")) and
+         binding.get("productionDifferences") == [] and binding.get("comparedFiles") == 374 and binding.get("productionGoFiles") == 338 and
+         binding.get("productionEmbedResourceFiles") == 34 and binding.get("moduleFiles") == 2 and binding.get("ordinarySourceManifestFiles") == 5244 and
+         binding.get("ordinarySuiteIsTaggedFullSuite") is False and binding.get("fullSuiteCompletionEstablished") is False,
+         "The embedded artifact lacks its independent production-source bridge.")
+    need(receipt_pin(binding["inputs"]["ordinaryFullSourceArchive"]) == FULL_SOURCE_ARCHIVE and
+         binding["ordinarySourceManifest"]["sha256"] == FULL_SOURCE_MANIFEST["sha256"] and
+         same_json(binding["binary"]["descriptor"], EMBEDDED_BINARY) and receipt_pin(binding["binary"]["manifest"]) == EMBEDDED_MANIFEST and
+         binding["binary"].get("tag") == "goby_embed_admin" and binding["binary"].get("elfMachine") == 62,
+         "The production bridge selects another source or binary.")
+    need(manifest.get("kind") == "goby-linux-embedded-administrator-build" and type(manifest.get("version")) is int and manifest["version"] == 1 and
+         same_json(manifest.get("target"), {"os": "linux", "arch": "amd64", "cgoEnabled": False}) and
+         same_json(manifest["binary"], {"name": "goby", "sha256": EMBEDDED_BINARY["sha256"], "bytes": EMBEDDED_BINARY["bytes"]}),
+         "The saved M6 manifest is not the selected embedded amd64 artifact.")
+    assets = binding["administratorAssets"]
+    need(assets.get("archiveManifestHashMatches") is True and assets.get("ordinarySourceArchiveContainsDist") is False and
+         assets.get("fileCount") == 57 and assets.get("totalBytes") == 1106130 and assets.get("entryReferencesMatched") == 5 and
+         same_json(assets["files"], manifest["administratorAssets"]) and same_json(assets["entryReferences"], manifest["administratorEntryReferences"]) and
+         manifest["administratorAssetBytes"] == 1106130 and len({row["name"] for row in assets["files"]}) == 57,
+         "The embedded administrator asset manifest differs.")
+    for row in assets["files"]:
+        relative(row["name"])
+        file_spec({key: row[key] for key in ("sha256", "bytes")})
+    binary_raw = read(EMBEDDED_BINARY["path"], EMBEDDED_BINARY["sha256"], EMBEDDED_BINARY["bytes"])
+    need(binary_raw[:6] == b"\x7fELF\x02\x01" and int.from_bytes(binary_raw[18:20], "little") == 62, "The embedded binary is not an amd64 ELF.")
+    return review, binary_raw, {}
+
+
+def inaccessible_paths(value):
+    return INACCESSIBLE + ((PRESERVED_AUDITED_CANDIDATE,) if value.get("version", 1) == 2 else ())
+
+
+def dashboard_environment(value, install):
+    return {} if value.get("version", 1) == 2 else {"GOBY_WEB_DIR": str(install / "admin")}
+
+
+def product_manifest_fields(value):
+    if value["version"] == 1:
+        return {"frontendReport": value["frontendReport"], "backendReport": value["backendReport"]}
+    return {"provisionVersion": 2, "productEvidence": {key: value[key] for key in
+            ("sourceArchive", "sourceManifest", "embeddedBuildManifest", "productionSourceBinding", "regressionReview", "regressionClosure")},
+            "ordinaryRegressionStatus": FULL_STATUS, "ordinaryRegressionPhases": 2, "taggedFullRegressionClaimed": False,
+            "dashboard": {"mode": "embedded", "buildManifest": value["embeddedBuildManifest"], "assetCount": 57,
+                          "externalDirectoryInstalled": False, "webDirectoryOverridePresent": False}}
+
+
+def verify_inaccessible_paths(paths, value):
+    expected = inaccessible_paths(value)
+    need(len(paths) == len(expected) and {path.removeprefix("-") for path in paths} == set(expected), "Old instance state is not hidden from the new unit.")
+
+
+def unit_text(user, command, writable, work, log, environment=None, *, inaccessible=INACCESSIBLE, embedded=False):
     lines = ["[Unit]", "Description=Fresh audited Goby candidate", "[Service]", "Type=exec", "User=" + user, "Group=" + user,
              "UMask=0077", "Restart=no", "NoNewPrivileges=yes", "ProtectSystem=strict", "ProtectHome=yes", "PrivateTmp=yes",
              "KillMode=control-group", "TimeoutStopSec=20", "MemoryMax=" + ("256M" if user == "postgres" else "768M"),
              "MemorySwapMax=0", "TasksMax=128", "CPUQuota=100%", "WorkingDirectory=" + str(work),
-             "ReadWritePaths=" + str(writable), "InaccessiblePaths=" + " ".join("-" + path for path in INACCESSIBLE),
+             "ReadWritePaths=" + str(writable), "InaccessiblePaths=" + " ".join("-" + path for path in inaccessible),
              "StandardOutput=append:" + str(log), "StandardError=inherit", "ExecStart=" + command]
     if environment:
         lines.append("EnvironmentFile=" + str(environment))
+    if embedded:
+        lines.append("UnsetEnvironment=GOBY_WEB_DIR")
     if user == "postgres":
         lines.append("KillSignal=SIGINT")
     return ("\n".join(lines) + "\n").encode()
@@ -217,6 +435,7 @@ class Provision:
         self.number, self.created, self.starts, self.stage, self.argv = 0, False, [], "preflight", {}
         self.pg_identity, self.pg_version = None, None
         self.command_responsibilities, self.listener_count = [], 0
+        self.loaded_inaccessible_paths = {}
 
     def mkdir(self, path, user="root", mode=0o700):
         account = pwd.getpwnam(user)
@@ -380,6 +599,28 @@ class Provision:
             "'schemas',(SELECT json_agg(nspname ORDER BY nspname) FROM pg_namespace WHERE nspname!~'^pg_' AND nspname<>'information_schema'));", name).encode())
         return {"identity": facts, "objects": objects}
 
+    def install_dashboard(self, assets):
+        if self.value["version"] == 2:
+            need(assets == {} and not os.path.lexists(self.install / "admin"), "An embedded candidate must not install an external administrator directory.")
+            return
+        self.mkdir(self.install / "admin", mode=0o755)
+        for name, raw in assets.items():
+            target = self.install / "admin" / relative(name)
+            for directory in reversed(target.parent.parents):
+                if directory.is_relative_to(self.install / "admin") and not directory.exists():
+                    self.mkdir(directory, mode=0o755)
+            if not target.parent.exists():
+                self.mkdir(target.parent, mode=0o755)
+            self.write(target, raw, mode=0o644)
+
+    def verify_embedded_runtime(self, observed):
+        need(not os.path.lexists(self.install / "admin"), "An external administrator directory appeared in the embedded candidate.")
+        with (Path("/proc") / observed["MainPID"] / "environ").open("rb") as stream:
+            environment = stream.read((1 << 20) + 1)
+        need(len(environment) <= 1 << 20 and not any(row.startswith(b"GOBY_WEB_DIR=") for row in environment.split(b"\0")),
+             "The embedded candidate received an external dashboard override.")
+        need(self.show(self.units["server"]) == observed, "Candidate changed during embedded-environment inspection.")
+
     def run(self):
         report, binary, assets = verify_products(self.value)
         for unit in self.units.values():
@@ -388,6 +629,9 @@ class Provision:
         protected = {unit: self.show(unit) for unit in PROTECTED}
         need(all(protected[unit].get("ActiveState") == "inactive" and protected[unit].get("MainPID") == "0" for unit in PROTECTED[:2]),
              "The preserved source55 and primary services must retain the reviewed inactive baseline.")
+        if self.value["version"] == 2:
+            identities = {pwd.getpwnam(user).pw_uid for user in ("goby", "postgres")}
+            need(len(identities) == 2 and all(uid > 0 for uid in identities), "The new application and PostgreSQL must use distinct non-root OS accounts.")
         reservations = []
         try:
             for role in ("postgres", "http"):
@@ -400,15 +644,7 @@ class Provision:
             self.created = True
             self.save("provision-intent.json", {"input": self.input_pin, "source": self.source_pin, "scope": str(self.root), "units": self.units, "protected": protected})
             self.mkdir(self.install, mode=0o755)
-            self.mkdir(self.install / "admin", mode=0o755)
-            for name, raw in assets.items():
-                target = self.install / "admin" / relative(name)
-                for directory in reversed(target.parent.parents):
-                    if directory.is_relative_to(self.install / "admin") and not directory.exists():
-                        self.mkdir(directory, mode=0o755)
-                if not target.parent.exists():
-                    self.mkdir(target.parent, mode=0o755)
-                self.write(target, raw, mode=0o644)
+            self.install_dashboard(assets)
             installed = self.write(self.install / "goby", binary, mode=0o755)
             self.mkdir(self.data, "goby")
             for name in ("backups", "recovery", "operations", "diagnostics", "cache", "media"):
@@ -426,8 +662,8 @@ class Provision:
             self.write(self.pgroot / "hba.conf", f"local all postgres peer\nlocal all all reject\nhost {db} {db} 127.0.0.1/32 scram-sha-256\nhost {target_db} {target_db} 127.0.0.1/32 scram-sha-256\nhost all all 0.0.0.0/0 reject\nhost all all ::0/0 reject\n".encode(), "postgres")
             password, target_password, setup = secrets.token_hex(32), secrets.token_hex(32), secrets.token_hex(32)
             need(len({password, target_password, setup}) == 3, "Independent candidate credentials must be distinct.")
-            runtime = {**SOFTWARE_ENV, "GOBY_DATABASE_URL": f"postgres://{db}:{password}@127.0.0.1:{port}/{db}?sslmode=disable", "GOBY_LISTEN": f"127.0.0.1:{webport}",
-                       "GOBY_PUBLIC_URL": self.value["public_url"], "GOBY_SETUP_TOKEN": setup, "GOBY_WEB_DIR": str(self.install / "admin"),
+            runtime = {**SOFTWARE_ENV, **dashboard_environment(self.value, self.install), "GOBY_DATABASE_URL": f"postgres://{db}:{password}@127.0.0.1:{port}/{db}?sslmode=disable", "GOBY_LISTEN": f"127.0.0.1:{webport}",
+                       "GOBY_PUBLIC_URL": self.value["public_url"], "GOBY_SETUP_TOKEN": setup,
                        "GOBY_COOKIE_SECURE": "false", "GOBY_STARTUP_TIMEOUT": "45s", "GOBY_MEDIA_ROOTS": str(self.data / "media"),
                        "GOBY_API_KEY_MASTER_KEY_FILE": str(self.data / "master.key"), "GOBY_BACKUP_DIR": str(self.data / "backups"),
                        "GOBY_RECOVERY_STATE_DIR": str(self.data / "recovery"), "GOBY_RECOVERY_OPERATIONS_DIR": str(self.data / "operations"),
@@ -441,13 +677,19 @@ class Provision:
                                                    ("server", "goby", str(self.install / "goby"), self.data)):
                 self.argv[role] = shlex.split(command)
                 unit_pins[role] = self.write(Path("/run/systemd/system") / self.units[role], unit_text(user, command, writable, writable,
-                                                  self.private / (role + "-unit.log"), self.private / "runtime.env" if role == "server" else None))
+                                                  self.private / (role + "-unit.log"), self.private / "runtime.env" if role == "server" else None,
+                                                  inaccessible=inaccessible_paths(self.value), embedded=self.value["version"] == 2 and role == "server"))
             self.command("daemon-reload", ["/usr/bin/systemctl", "daemon-reload"])
             for role, user, write_path in (("postgres", "postgres", self.pgroot), ("server", "goby", self.data)):
-                raw = subprocess.check_output(["/usr/bin/systemctl", "show", self.units[role], "--property=Type,User,Group,Restart,ProtectSystem,ProtectHome,PrivateTmp,NoNewPrivileges,ReadWritePaths,InaccessiblePaths,ExecStart,MemoryMax,MemorySwapMax,TasksMax"], env=ENV, timeout=10).decode()
+                embedded = self.value["version"] == 2 and role == "server"
+                properties = "Type,User,Group,Restart,ProtectSystem,ProtectHome,PrivateTmp,NoNewPrivileges,ReadWritePaths,InaccessiblePaths,ExecStart,MemoryMax,MemorySwapMax,TasksMax"
+                raw = subprocess.check_output(["/usr/bin/systemctl", "show", self.units[role], "--property=" + properties + (",UnsetEnvironment" if embedded else "")], env=ENV, timeout=10).decode()
                 loaded = dict(line.split("=", 1) for line in raw.splitlines() if "=" in line)
                 blocked = loaded.pop("InaccessiblePaths").split()
-                need(len(blocked) == len(INACCESSIBLE) and {path.removeprefix("-") for path in blocked} == set(INACCESSIBLE), "Old instance state is not hidden from the new unit.")
+                verify_inaccessible_paths(blocked, self.value)
+                self.loaded_inaccessible_paths[role] = sorted(path.removeprefix("-") for path in blocked)
+                if embedded:
+                    need(loaded.pop("UnsetEnvironment", None) == "GOBY_WEB_DIR", "The loaded unit does not suppress external dashboard overrides.")
                 command = loaded.pop("ExecStart")
                 need(command.count("argv[]=") == 1 and shlex.split(command.split("argv[]=", 1)[1].split(";", 1)[0]) == self.argv[role], "Loaded unit command differs.")
                 need(loaded == {"Type": "exec", "User": user, "Group": user, "Restart": "no", "ProtectSystem": "strict", "ProtectHome": "yes", "PrivateTmp": "yes",
@@ -538,20 +780,24 @@ class Provision:
                 databases[slot]["afterStart"] = after
             self.save("databases-after-start.json", databases)
             need(self.show(self.units["server"]) == server and self.process("server", server) == server_identity, "Candidate changed after readiness.")
+            if self.value["version"] == 2:
+                self.verify_embedded_runtime(server)
             read(self.install / "goby", installed["sha256"], len(binary))
             need({unit: self.show(unit) for unit in PROTECTED} == protected, "An unrelated service identity changed.")
             final_listener = self.listener(server, server_identity)
             need(final_listener == listen_anchor, "Candidate listener changed before manifest publication.")
             manifest = {"kind": "audited-candidate-private-manifest", "status": "running_awaiting_live_acceptance", "runId": self.value["runId"],
-                        "input": self.input_pin, "binary": installed, "frontendReport": self.value["frontendReport"], "backendReport": self.value["backendReport"],
+                        "input": self.input_pin, "binary": installed, **product_manifest_fields(self.value),
                         "runtime": env_pin, "units": unit_pins, "processes": {"postgres": pg, "server": server}, "serverIdentity": server_identity,
                         "postgresIdentity": self.pg_identity, "postgresVersionNum": self.pg_version, "clusterSystemIdentifier": cluster_id,
-                        "inaccessiblePaths": list(INACCESSIBLE), "transcodingProfile": self.value["transcodingProfile"], "transcodingEnvironment": SOFTWARE_ENV,
+                        "inaccessiblePaths": list(inaccessible_paths(self.value)), "transcodingProfile": self.value["transcodingProfile"], "transcodingEnvironment": SOFTWARE_ENV,
                         "database": db, "ports": self.value["ports"], "directUrl": f"http://127.0.0.1:{webport}", "publicUrl": self.value["public_url"],
                         "dataDirectory": str(self.data), "setupToken": setup, "recoveryDatabase": target_db, "databases": databases,
                         "sourceState": facts, "recoveryRestoreExecuted": False, "listener": final_listener,
                         "bootstrapExecuted": False, "clientAcceptance": False, "candidateAdmissionComplete": False,
                         "startCalls": self.starts, "commandResponsibilities": self.command_responsibilities}
+            if self.value["version"] == 2:
+                manifest["loadedInaccessiblePaths"] = self.loaded_inaccessible_paths
             return self.save("manifest.json", manifest)
         finally:
             for reservation in reservations:

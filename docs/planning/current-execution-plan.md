@@ -1,8 +1,8 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after the first full-regression attempt and resource
-closure. Status: **11 packages complete; same-source continuation running;
-ordinary full suite incomplete; mount and video gates open**.
+Reviewed on 2026-09-14 after ordinary full-regression continuation, independent
+review and evidence/resource closure. Status: **25 packages complete with one
+explicit profile skip; independent nonroot candidate admission is next**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
@@ -29,19 +29,40 @@ raw 1,012 passes are not a passing suite. The active test had run only 9.497893
 seconds; historical library/server/total durations were
 782.265/992.994/2755.104 seconds, exceeding the old command/business budgets.
 
-The continuation at `/opt/goby-test/full-regression-continuation-20260914`
-passed its prior-input review and started on 2026-09-14 at 07:08:36 UTC in
-`goby-full-regression-continuation-20260914-1465ffb74e7e.service`.
-Observe that existing invocation until it is terminal; do not launch a duplicate.
-Use TEST=1500/COMMAND=1560/BUSINESS=4200/RUNTIME=4800 seconds on the same source,
-25-package inventory and 12 tool pins. Complete only the other 14 packages,
-then the ordinary Linux build and closure; do not repeat the 11 completed
-packages or count partial package output as complete. First-run workers, PG,
-ext4 mount/loop and RAM are closed; original archive-byte/capacity failures
-and the corrected private archives remain preserved. The source, modules and
-evidence were not removed with the separately verified rebuildable Go cache.
+The [completed continuation](../development/full-regression-continuation-verification.json)
+passed the other 14 packages and ordinary Linux amd64 build on the same
+`badf396` source, 25-package inventory and 12 tool pins. It used the corrected
+TEST=1500/COMMAND=1560/BUSINESS=4200/RUNTIME=4800-second limits. Independent
+review combines the 11 retained complete packages/475 passes with 14 new
+complete packages/1,801 passes: 25 packages, 2,276 passed, zero failed and one
+explicit `TestRootBindingFullScanMountNamespaceHelper` skip. The earlier
+537 partial Library passes are excluded, and older opt-in helpers' default
+returns do not prove those profiles ran. The ordinary suite is complete across
+two phases; neither the original failed run nor the paused profile is relabeled.
 
-Full regression and candidate admission do not wait for the paused mount
+The ordinary binary is `d6fc493d5664f85b6c7258c48d05081050457c1eac4965414528291695c66e53`
+(29,560,432 bytes). A separate comparison matched all 374 production Go,
+Go-embed-resource and module files to the embedded M6 artifact `59096592...`.
+This supports an exact production-source bridge, not binary identity or a
+`goby_embed_admin` full-suite claim. The embedded artifact retains its separate
+build, focused-tagged and root-profile runtime proofs.
+
+Independent review and sealing passed. Parent/worker/manifest records and all
+private archives were reread; processes, PG, cgroups, ext4 mount/loop, RAM and
+the lock closed. The source archive remains stored once in the first scope.
+Original timeout/archive-capacity failures remain preserved. Two older closed
+build caches were reclaimed after their zero-command lock rejection was
+preserved, without changing source/modules/logs/databases/artifacts. The final
+closure observed 1,561,907,200 free root bytes; future admission still needs a
+fresh capacity check. The next independent nonroot embedded-candidate helper
+is prepared and guard-tested: 38 corrected preparation guards and 8 seed,
+8 reconcile and 7 runtime guards passed, separately from the Go 2,276 count.
+The original test assertion matching UnsetEnvironment is retained. The actual
+read-only product gate selected the embedded `59096592...` binary and no external admin
+assets. Old-pinned seed/runtime/admission consumers still need adaptation and
+new inputs; no provision, seed or admission has run.
+
+Candidate admission does not wait for the paused mount
 experiment or unresolved video diagnosis. Later product edits require their
 affected checks and full regression of the final intended snapshot; unchanged
 historical evidence retains its original scope.
@@ -156,7 +177,7 @@ and every failure; do not extend the generic observation framework.
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
 | Main | Native backup, selected rollback/restart, [actual old installation return/source32 recovery](../development/isolated-source32-recovery.json) and [final cluster/credential disposal](../development/isolated-restore-disposal.json) passed. Original failures and private evidence remain preserved; main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host durability and the remaining M2-M6 release obligations are unchanged |
-| M6 embedded assets | Focused build checks and amd64/arm64 artifacts passed; a later [root-profile native amd64 run](../development/native-catalog-restart-verification.json) served the embedded index without GOBY_WEB_DIR | The earlier build receipt's no-runtime field is historical. No main/candidate deployment or native arm64 execution; full regression/candidate admission, OCI, GPU, license and full M6 remain open |
+| M6 embedded assets | Focused build/tagged checks and root-profile native amd64 runtime passed; the completed ordinary suite separately binds the same 374 production Go/embed/module files | Distinct ordinary and embedded binaries; no tagged full-suite, nonroot candidate admission or native arm64 claim. OCI, GPU, license and full M6 remain open |
 | Native catalog restart | One real stop/start run passed 156 cumulative HTTP requests, nine core tables' rows/xmin and seven media checks; independent review and closure passed | Same PG and root profile only. No playback/nonzero-resume/browser, nonroot, PG restart, capacity or host-durability claim |
 
 The selected binary is
@@ -178,13 +199,13 @@ verification tools over extending launcher or observation infrastructure.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 1. Complete the frozen-source regression continuation | Observe the running continuation, preserving the first run's 11 complete packages/475 passes; complete only the remaining 14 on the same badf396 source, 25-package inventory and 12 tool pins with corrected timing, then Linux build and closure | Only 14 complete package results plus build/closure can combine with the 11 retained packages into ordinary-suite completion. Preserve failures and the declared profile gap; candidate admission follows a completed artifact and does not replace client acceptance |
+| 1. Independent nonroot embedded-candidate admission | Use the prepared, guard-tested v2 helper; adapt old-pinned seed/runtime/admission consumers and bind new inputs to the ordinary-suite proof, embedded artifact/source bridge and exact private runtime/fixture limits | No candidate provision, seed or admission has run. Old consumer guards do not make their fixed historical manifest/epoch workflows valid for v2. Use a new independent scope; ordinary regression/source equality does not prove tagged full-suite, nonroot runtime or client-video acceptance |
 | 2. Independent remaining M2-M6 delivery | Start with representative catalog capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | This track can proceed alongside version validation. Require measurable limits and bounded shutdown. Seven-file catalogs, root-profile process restarts and cross-builds do not establish capacity, nonroot/host durability, native hardware acceptance or complete release readiness |
 | 3. M2 full-scan mount experiment — paused | Preserve the retained launcher evidence; reopen only when new evidence supports a reviewed correction to the failed UID transition | Helper compilation passed, but PostgreSQL and all seven scan stages remain unexecuted. No third renamed attempt, repeated review without new evidence or unsupported `NoNewPrivileges` attribution |
 | 4. Core video and subtitle acceptance — evidence gap retained | The saved response-identity review is complete; preserve its narrower result and wait for new discriminating evidence or a justified product correction before proposing another journey | Context291 identifies physical294, not293. The earlier cancellation and original page errors remain unresolved. No repeated read-only review, browser replay or additional observation framework is queued |
 | 5. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
 
-After native closure the root filesystem had 167,337,984 bytes available. Further
+After regression sealing the root filesystem had 1,561,907,200 bytes available. Further
 builds need a separately budgeted compiler scratch/cache location after a fresh
 capacity check. Ordinary strong-filesystem tests require an exclusive owned
 ext4 GOTMPDIR; do not substitute tmpfs or confuse it with compiler scratch.
@@ -215,9 +236,10 @@ ordinary-provider tests without `dist` and the expected tagged-compile rejection
 also passed their declared checks. Actual amd64/arm64 embedded artifacts were
 retained; all 57 assets and five HTML references were checked, the 911-file
 source archive was reread, and ordinary unmount closed the M6 build tmpfs.
-This completed increment is not pending work. Native arm64, full regression and
-candidate admission for the changed version remain unproved; neither M2 helper
-compilation nor the new M6 results inherit the selected binary's 2,270-test proof.
+This completed increment is not pending work. The later ordinary regression is
+now separately complete with its explicit profile gap and production-source
+bridge. Tagged full-suite, native arm64 and new candidate admission remain
+unproved; no result inherits the older selected binary's 2,270-test proof.
 
 The later native run used two processes, PIDs 557934 and 557978, with normal SIGTERM
 stops, exit 0, complete shutdown and no ERROR-level application log events.
@@ -252,6 +274,7 @@ These entries preserve prior decisions and results; they are not the next queue.
 | 9. Real-media catalog rescan/ACL target — complete | One race test passed four state checkpoints; same-inode album move, direct/derived counts, ACL queries and all ten UserData rows/xmin remained correct across Store reopen and cached rescan; scope closed | Preserve the first test-contract failure and both sources/logs. This is not native service/PG restart, representative capacity or the paused mount proof |
 | 10. Subtitle response-identity review — complete | Saved context291 response ID matches physical294 and excludes293 | The old cancellation/timing failure and page errors remain unresolved; no new business request, repeated review or new observer layer is authorized by this result |
 | 11. Native catalog restart — complete | One root-profile native amd64 run passed across two processes with the same PG, stable catalog/ACL/UserData, eight logout pairs and 156 cumulative requests; independent review and closure passed | Preserve the consumed run and its artifacts. This is not PG restart, playback/nonzero resume, browser, nonroot, capacity, host durability, full regression or main promotion |
+| 12. Ordinary full regression — complete with explicit profile gap | Same-source 11+14 complete packages yield 2,276 passes/0 failures/1 opt-in skip; ordinary Linux build, independent review and volume/archive closure passed | Exclude the first partial Library counts, retain its timeout, and preserve the paused mount gap. The separate 374-file embedded-source bridge is not tagged full-suite or candidate admission |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
 the completed diagnostic hypothesis, limits and remote checks. Its implementation

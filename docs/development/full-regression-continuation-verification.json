@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "kind": "full-regression-continuation-verification",
+  "status": "passed_with_explicit_profile_gap",
+  "verificationEnvironment": "ssh test-env",
+  "verificationDate": "2026-09-14",
+  "ordinarySuiteCompletedAcrossPhases": true,
+  "singleRunFullSuite": false,
+  "gobyEmbedAdminFullSuiteExecuted": false,
+  "source": {
+    "gitCommit": "badf39635014ab221da7a75762f3fb40aee28033",
+    "files": 5244,
+    "archive": {
+      "path": "/opt/goby-test/full-regression-20260914/retained/source.tar.gz",
+      "sha256": "418f9803237e02e0859f9bef8f6ed646730acb590a3482867a288cd64e8a0fad",
+      "bytes": 32143107
+    },
+    "manifest": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/source-manifest.json",
+      "sha256": "95fe6a40ecabdfe6b48260dcf200cf8a49d0cf9664c407ca91cd9eaba539d6f6",
+      "bytes": 974367
+    },
+    "toolFilesVerified": 12,
+    "toolPinsSha256": "79e91ddd2c1150b9dc30f3889d378e407d1ac9d6899f56bb6b0d53fc2970ee41",
+    "newPermanentSourceArchiveCopies": 0
+  },
+  "coverage": {
+    "packageCount": 25,
+    "priorCompletedPackagesReused": 11,
+    "priorTopLevelPassesReused": 475,
+    "continuationCompletedPackages": 14,
+    "continuationTopLevelPasses": 1801,
+    "combinedCounts": {"passed": 2276, "failed": 0, "skipped": 1},
+    "priorPartialLibraryPasses": 537,
+    "priorPartialLibraryPassesIncluded": 0,
+    "packageCoverageIndependentlyVerified": true,
+    "raceEnabled": true,
+    "priorFailurePreserved": "full-regression-partial-verification.json"
+  },
+  "evidence": {
+    "independentReview": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/independent-review.json",
+      "sha256": "5b946d4b4bfee2b177b53861c89fad690c08c406b832a26f778d563ed4174b72"
+    },
+    "execution": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/execution.json",
+      "sha256": "0436d3d84af6cb936f8f8da7400591ca835644beb2672ce5dbf360b9d34986d5"
+    },
+    "parent": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/report.json",
+      "sha256": "501ab0157f269aa37a916add21c6bc08b822ac4f683019e0487df8d579ee6882",
+      "bytes": 356114
+    },
+    "worker": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/worker-report.json",
+      "sha256": "fff21de5635bb87ce1f119d72fdbff55a6a9159e97a1ee9dc98845e213bded02",
+      "bytes": 337449
+    },
+    "retainedRecordsMatchOriginalRuntimeBytes": true
+  },
+  "ordinaryLinuxAmd64Build": {
+    "sha256": "d6fc493d5664f85b6c7258c48d05081050457c1eac4965414528291695c66e53",
+    "bytes": 29560432,
+    "exitCode": 0,
+    "gobyEmbedAdminTagged": false,
+    "retainedArchive": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/binary.tar.gz",
+      "sha256": "26c0f56c20f3306b7626d6d5fd97d9b734d2dae6f615a3cebda240cb5283ab28",
+      "bytes": 13510200
+    },
+    "archiveReadbackMatched": true
+  },
+  "embeddedProductionSourceBinding": {
+    "receipt": {
+      "path": "/opt/goby-test/full-regression-20260914/production-source-binding.json",
+      "sha256": "823870bb9bcf9e2ca4b35e483d617de34e1c541b273cd6bf02e647a066e920dc"
+    },
+    "status": "passed",
+    "comparedFiles": 374,
+    "productionGoFiles": 338,
+    "productionEmbedResourceFiles": 34,
+    "moduleFiles": 2,
+    "comparedBytes": 5667520,
+    "comparedInventorySha256": "fb5b131d09f56b41689fe09c092a5161797cb2c2d2eb7efa664aaec98b0ff504",
+    "productionSetsAndBytesExact": true,
+    "embeddedBinary": {
+      "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/goby",
+      "sha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312",
+      "bytes": 30678868
+    },
+    "embeddedManifest": {
+      "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/manifest.json",
+      "sha256": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683"
+    },
+    "administratorAssetsSeparatelyBound": 57,
+    "administratorAssetBytes": 1106130,
+    "htmlEntryReferencesMatched": 5,
+    "javascriptOrCssDependencyGraphProven": false,
+    "readerSourcePinAvailable": false,
+    "readerBoundary": "The source-binding reader ran through SSH stdin; the pinned receipt records comparison facts without inventing a separately retained reader-script pin.",
+    "scopeBoundary": "Production Go, module and Go embed-resource equality plus separately pinned M6 assets. This is not whole-archive identity, binary identity or a tagged full-suite run; frontend-input, test, documentation and tooling differences retain their recorded boundaries."
+  },
+  "profiles": [
+    {"test": "TestRootBindingFullScanMountNamespaceHelper", "rawGoAction": "skip", "status": "paused", "sevenScanStagesExecuted": false},
+    {"test": "TestRootTopologyMountNamespaceHelper", "rawGoAction": "pass", "status": "not_exercised", "reason": "Default return before the opt-in scenario."},
+    {"test": "TestRootBindingScanMountNamespaceHelper", "rawGoAction": "pass", "status": "not_exercised", "reason": "Default return before the opt-in scenario."}
+  ],
+  "closure": {
+    "receipt": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/closure.json",
+      "sha256": "6cd0b024834315db240d6268c94b578e4beb99977fd1740d51c5494cf4508b1c",
+      "bytes": 32241
+    },
+    "status": "continuation_evidence_preserved_and_owned_volumes_closed",
+    "archivesComplete": true,
+    "ownedProcessesClosed": true,
+    "postgresNormalShutdownRecorded": true,
+    "cgroupsEmpty": true,
+    "ext4Unmounted": true,
+    "loopDetached": true,
+    "ramUnmounted": true,
+    "lockReleased": true,
+    "errors": [],
+    "profileGapClosed": false,
+    "rootFreeBytesAfter": 1561907200,
+    "privateArchivesRemoteOnly": true,
+    "evidenceArchive": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/evidence.tar.gz",
+      "sha256": "8df30bf69a570790231d17842672552c03d91d100b824660f9d392a96683d429",
+      "bytes": 975751
+    },
+    "closedPostgresArchive": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/closed-postgres-private.tar.gz",
+      "sha256": "306dd34b68bbb507e57cbdaa741f39d5ef1e6a9bf2fd24ae9a1a24d543d4e188",
+      "bytes": 82300012
+    },
+    "fixtureImageArchive": {
+      "path": "/opt/goby-test/full-regression-continuation-20260914/retained/fixture-image-private.tar.gz",
+      "sha256": "03d478cfcf00616d5fb5c070ac8aee1c969a275a2ae561522b442f85fbb4f7b4",
+      "bytes": 17772118
+    },
+    "allArchiveReadbacksMatched": true,
+    "emptyUnderlyingDirectoriesRetained": true
+  },
+  "olderCacheReclamation": {
+    "receipt": {
+      "path": "/opt/goby-test/full-regression-20260914/older-cache-reclaim-after-regression.json",
+      "sha256": "2dacdf561b9e776cd50abf2264275ed50897ff6bdba8cc500f42064fe4ae488d"
+    },
+    "status": "closed_older_build_caches_reclaimed_after_regression",
+    "closedBuildCachesReclaimed": 2,
+    "rootFreeBytesBefore": 554663936,
+    "rootFreeBytesAfter": 1678409728,
+    "sourceModulesLogsDatabasesAndArtifactsUnchanged": true,
+    "priorLockRejection": {
+      "path": "/opt/goby-test/full-regression-20260914/older-cache-reclaim.json",
+      "sha256": "ed8f2a66dca0a3b3574094a23670f08b811bf4c4dace360c5d3431d05af127c1",
+      "commandCount": 0,
+      "preserved": true
+    }
+  },
+  "followingCandidatePreparation": {
+    "status": "prepared_and_guard_tested_not_provisioned_seeded_or_admitted",
+    "helperSha256": "5f32600dfb7a63530105d42831e4e49caa0b7fbda740f0cc82273beebe4ac579",
+    "helperBytes": 62886,
+    "testSourceSha256": "1f79f1522bb043a4190a20ba2337e0337f5d37ed0a14b4478f588fece19c9040",
+    "testSourceBytes": 57060,
+    "initialGuards": {
+      "receiptSha256": "d590a752656983169f43af5c408492628296cc5b47fd653e63aba08e01f4a8f9",
+      "status": "failed",
+      "tests": 38,
+      "failedAssertions": 1,
+      "reason": "The test matched UnsetEnvironment while checking Environment; the original failed receipt is retained."
+    },
+    "correctedGuards": {
+      "receiptSha256": "34e96423c69f839377ea359ab3a7c16e5b6f0a6c563743a8543c40edb1c9b08b",
+      "status": "passed",
+      "tests": 38,
+      "change": "Test-only line-start matching correction."
+    },
+    "consumerGuardsAndProductGate": {
+      "receiptSha256": "163b9456c6b1e98faa81f08b3a01d2260110cb0edfb93705917db440a15c48fc",
+      "status": "passed",
+      "seedGuards": 8,
+      "reconcileGuards": 8,
+      "runtimeGuards": 7,
+      "actualSealedProductEvidenceReadOnlyGatePassed": true,
+      "selectedEmbeddedBinarySha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312",
+      "externalAdministratorAssets": 0
+    },
+    "totalPassingUnitGuards": 61,
+    "includedInGo2276Count": false,
+    "provisionSeedAdmissionExecuted": false,
+    "remainingAdapterBoundary": "Existing seed/runtime/admission consumers still contain old manifest/epoch pins and require independent adaptation and new inputs before use with v2. Passing their pure guards does not admit unchanged legacy workflows for the new candidate."
+  },
+  "nextBoundary": "Independent nonroot embedded candidate using the prepared and guard-tested v2 helper; adapt old-pinned seed/runtime/admission consumers and freeze new inputs. No provision, seed or admission is established by this checkpoint.",
+  "candidateAdmitted": false,
+  "clientVideoAccepted": false,
+  "nativeArm64Accepted": false,
+  "nonrootRuntimeAcceptedByThisCheckpoint": false,
+  "mainPromoted": false,
+  "completeM2ThroughM6Claimed": false,
+  "m7Deferred": true
+}
