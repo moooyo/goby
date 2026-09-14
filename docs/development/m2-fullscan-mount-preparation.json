@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "kind": "m2-fullscan-mount-preparation-checkpoint",
+  "status": "experiment_paused_after_two_launcher_failures",
+  "documentedOn": "2026-09-14",
+  "experimentScope": "/opt/goby-test/m2-fullscan-20260914",
+  "workingRoot": "/opt/goby-m2-fullscan-20260914",
+  "ramRoot": "/dev/shm/goby-m2-fullscan-20260914",
+  "preparation": {
+    "receipt": {
+      "path": "/opt/goby-test/m2-fullscan-20260914/preparation.json",
+      "sha256": "1d18255ce7812f33a26294cc426f27946b9e4ded321718addea23885e23082d2"
+    },
+    "baseGitCommit": "2577d3fb2fd000402d334cecfd419a02f28273ff",
+    "baseArchiveSha256": "d48be6400b0e6eb9cab14b76699dbb0d5a82c1410b4c66c9652f091bfedafa6c",
+    "baseFiles": 841,
+    "addedHelper": {
+      "repositoryPath": "internal/library/root_binding_full_scan_mount_namespace_test.go",
+      "testName": "TestRootBindingFullScanMountNamespaceHelper",
+      "bytes": 15851,
+      "sha256": "e09fa5213390476def66ba20b8dd02b7baab3e941079659559eba74592678bfb"
+    },
+    "mergedSourceFiles": 842,
+    "mergedSourceManifestSha256": "4520042b342b14df394d140c8aba92035d6e9e8dee4bc60eb5968a1202554d55",
+    "media": {
+      "path": "/opt/goby-m2-fullscan-20260914/private/seed.mp4",
+      "bytes": 4069,
+      "sha256": "e99dc785bcd4384f9cf0d878a04dc562d82f08afcc06b10a8f7f1b121d4837cb"
+    }
+  },
+  "firstLauncherFailure": {
+    "receipt": {
+      "path": "/opt/goby-test/m2-fullscan-20260914/execution-only-child/report.json",
+      "sha256": "cff62626cdc750ccb9e3e8642465b66c13b2867354308bd29601e7b1e3a2398c"
+    },
+    "failureCode": "module_cache_binding_prerequisite",
+    "cause": "The launcher assumed the Go default /root/go/pkg/mod was the actual module cache; that directory did not exist.",
+    "unitsStarted": 0,
+    "postgresDaemonsStarted": 0,
+    "buildsStarted": 0,
+    "helperTestsExecuted": 0,
+    "ramMountedAndEmptyAtFailure": true,
+    "receiptPreserved": true
+  },
+  "reviewedModuleCache": {
+    "receipt": {
+      "path": "/opt/goby-test/m2-fullscan-20260914/private/cache-directory-review.json",
+      "sha256": "81d654b56e68c7be79aeafa406547658482d227bad95cb01c5f96355db074f5d"
+    },
+    "source": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/modules",
+    "manifestSha256": "4b72187093d2c87aed22857cd5464e33cbd6cb1349d0052474f9d27235c97f03",
+    "filesVerified": 2119,
+    "bytesVerified": 61499652,
+    "everyFileSizeAndSha256Matched": true,
+    "bindingReadOnly": true,
+    "sameRetainedRamScopeReused": true
+  },
+  "secondLauncherFailure": {
+    "receipt": {
+      "path": "/opt/goby-test/m2-fullscan-20260914/execution-only-child/after-module-cache-review/report.json",
+      "sha256": "07faf6013d24789bab58893a2f56c9fcd25718bd437c70ddbd3617ed58ecaa9d"
+    },
+    "workerReceipt": {
+      "path": "/opt/goby-test/m2-fullscan-20260914/execution-only-child/after-module-cache-review/worker-report.json",
+      "sha256": "58e05623b95b8bc1b2539bc0aa523903c53609d6ea72c5e4b39117f446c9020c"
+    },
+    "limitedCompilationResult": {
+      "phase": "compile-library-helper",
+      "exitCode": 0,
+      "raceInstrumentation": true,
+      "stderrBytes": 0,
+      "binary": {
+        "path": "/dev/shm/goby-m2-fullscan-20260914/bin/library.test",
+        "bytes": 35890287,
+        "sha256": "6ffd048b2b3a4dcf92e95cd8f1a0e42c5ea9f604af01ea9a71d60c335b682f59"
+      },
+      "helperTestExecutionClaimed": false
+    },
+    "failedPhase": "initdb frontend",
+    "frontend": "runuser",
+    "exitCode": 1,
+    "stderrExact": "runuser: cannot set user id: Operation not permitted\n",
+    "capabilityBoundingSetIncludesSetuidAndSetgid": true,
+    "uidTransitionFailureCauseAttributed": false,
+    "noNewPrivilegesEstablishedAsCause": false,
+    "postgresDaemonsStarted": 0,
+    "helperTestsExecuted": 0,
+    "plannedScanStages": 7,
+    "executedScanStages": 0,
+    "postgresDataDirectoryEmpty": true,
+    "postgresSocketDirectoryEmpty": true,
+    "unitTerminal": {
+      "ActiveState": "failed",
+      "MainPID": "0",
+      "ControlGroup": ""
+    },
+    "ownedProcessClosureConfirmed": true
+  },
+  "retentionAndBoundary": {
+    "experimentPaused": true,
+    "automaticRetry": false,
+    "thirdRenamedAttemptQueued": false,
+    "ramMountRetained": true,
+    "workingFilesCompiledHelperAndEvidenceRetained": true,
+    "originalFrozenSourcesAndModuleCacheUnchanged": true,
+    "protectedHostStateUnchanged": true,
+    "mainServiceStarts": 0,
+    "completedRecoveryExperimentsReplayed": false
+  },
+  "nextIndependentWork": "M6 embedded-asset functional verification",
+  "scenarioPassed": false,
+  "massRemovalPreventionAcceptedByThisExperiment": false,
+  "m2Complete": false,
+  "overallGoalComplete": false
+}

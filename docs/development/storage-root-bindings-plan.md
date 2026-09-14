@@ -1,25 +1,82 @@
 # Storage root bindings and missing-file reconciliation
 
-Status: the identity/topology adapters, shared model and real isolated mount
-observations have bounded remote verification. Schema28 persistence, structural
-backup checks and audit fields are drafted; the actual PostgreSQL catalog was
-generated. Source48 feature/migration/archive acceptance passed all 143 targeted
-tests after two fixture corrections. Source49 full regression ended with 2,105
-passes and two historical recovery fixture failures. The exact failed pair was
-disposed with evidence preserved; source50's fixture repair passed in source54's
-74-test PostgreSQL target. Source54 full regression and Linux build are running.
-Native binding/rebind, per-root
-anchor publication and administrator UI are drafted; source45 passed 36 selected
-non-database race checks and the UI passed 68 decoder/mocked-browser checks.
-New-registration automatic binding passed its selected non-database checks.
-Source53's original-root recovery and directory-evidence helpers passed 20
-selected race checks without database access. The full scanner/delete path and
-shared music-completeness gate are integrated in source54 and passed 28 selected
-non-database race checks and related package compilation, followed by 74 passing
-PostgreSQL checks. Actual private-mount scan recovery and complete release
-acceptance remain pending.
-Source44's repair of the
-source41 scan-throughput regression passed its 2,002-test full run and is published.
+Reviewed on 2026-09-14. Status: **implemented with bounded PostgreSQL,
+real-mount and live administrator-UI acceptance; joint real-media full-scan
+mount experiment paused after two launcher failures; complete M2 remains open**.
+
+## Current evidence boundary
+
+Schema28 persistence, structural archive validation, audit fields, native
+binding/rebind, automatic registration, per-root anchor recovery and scanner
+reconciliation are implemented. Source54's [74 PostgreSQL checks](storage-binding-scan-source54-postgresql.json)
+and [full regression/Linux build](storage-binding-scan-source54-full.json)
+passed; the latter recorded 2,173 tests across 25 packages. The later selected
+product passed [2,270 tests/25 packages and a Linux build](tv-parent-metadata-full-verification.json).
+These frozen product proofs supersede the historical running/draft statuses
+below, but do not turn unexecuted privileged helpers into runtime acceptance.
+
+The [real private-mount recovery](storage-binding-scan-mount-v2-terminal.json)
+passed independently on source54. Its actual helper uses ext4 bind mounts,
+calls `prepareRootBindingScan`, rejects detached/replacement storage, recovers
+the original source without rebind and preserves catalog/approval rows and
+held descriptors. It does not execute the complete media scan/delete pass.
+The separate PostgreSQL full-scan tests cover real directory rename/unavailable
+paths and retained identity/UserData using a fixture prober. The mount helper
+returns without action in an ordinary test run unless its explicit helper
+environment is supplied; a passing test name alone is not that mount proof.
+
+The [live UI Run5 independent terminal](storage-binding-live-ui-accepted-terminal.json)
+passed 15 browser checks and 10 IPC stages against the real schema28 backend.
+It includes actual uid995 permission-unavailable observation, a stale-revision409,
+explicit rebind/initial bind and exact session/resource closure. Its controller
+retains `awaiting_outer_attestation` by design; the terminal is the acceptance
+authority. The [accepted UI contract](storage-binding-live-ui-acceptance-plan.md)
+uses `Scan:false` and creates no scan jobs, so it does not establish full-scan
+mass-removal prevention. Its 68 earlier mocked-browser checks retain their own
+scope and are not additional live cases.
+
+The new `TestRootBindingFullScanMountNamespaceHelper` preparation is recorded
+in the [M2 preparation/failure checkpoint](m2-fullscan-mount-preparation.json).
+Its 4,069-byte MP4 and frozen 842-file source manifest exist. The first launcher
+rejected `module_cache_binding_prerequisite` before any unit, PostgreSQL, build
+or test: `/root/go/pkg/mod` was the assumed Go default, not an existing cache.
+The original empty RAM mount and failed receipt were retained.
+
+After an independent review, the continuation reused that same RAM scope and
+bound the actual frozen module cache read-only, with all 2,119 files checked by
+size/hash. Race-instrumented `library.test` compilation succeeded with exit0 and
+empty stderr. This is a component compilation result only. The next `initdb`
+frontend failed with `runuser: cannot set user id: Operation not permitted`.
+No PostgreSQL daemon or helper test started; all seven planned scan stages
+remain unexecuted, and the PostgreSQL data/socket directories remain empty.
+The unit is failed with MainPID0 and an empty ControlGroup; its owned processes
+are closed. The RAM mount, compiled helper, working files and evidence are
+retained, and protected host/main state is unchanged.
+
+Two launcher failures pause this experiment under the existing execution rule.
+There is no automatic retry or third renamed attempt. The observed unit
+CapabilityBoundingSet includes SETUID and SETGID; the failed UID transition's
+cause is not yet attributed, and NoNewPrivileges is not established as its
+cause. The joint scenario has **not passed**. Preserve both failed scopes and
+all previously accepted source54/UI evidence. Independent M6 embedded-asset
+functional verification is the next work item; this pause does not require a
+new generic runner or reopen consumed recovery operations.
+
+Remaining boundaries include representative movie/TV/music rescan and actual
+service-restart/ACL list-count coverage, representative capacity/concurrent
+scan-query measurements, truly blocked I/O and bounded shutdown, and supported
+filesystem/profile rows beyond the observed ext4 scope. Fast EACCES or a missing
+path does not prove blocked-I/O handling. Physical binding across a host reboot
+and host-reboot/power-loss durability remain separate: process/Store restarts,
+same-mount PG restarts, live device/inode/mount witnesses and tmpfs evidence
+cannot establish them. These limits do not undo the accepted narrower cases.
+
+## Historical implementation record: source38-source54
+
+The following sequence preserves the original implementation and failure
+history. Its receipt identities and scopes are unchanged. The current boundary
+above governs progress; the later sections preserve the design and acceptance
+contract rather than implying that implemented work is still only a draft.
 
 The [first remote capability observation](root-binding-capability-v1.json)
 established that `FS_IOC_GETFSUUID` and `name_to_handle_at` both work for one
@@ -30,10 +87,11 @@ and matched again after the original directory was restored. This is a bounded
 API feasibility result. A [separate unprivileged observation](root-binding-unprivileged-capability-v1.json)
 also obtained both identifiers on an owned ext4 fixture as the actual `goby`
 service uid, with no supplementary groups, an empty capability bounding set,
-and NoNewPrivileges. System reboot, nested mounts, network filesystems, the
-complete service sandbox, and product deletion authorization remain unverified.
+and NoNewPrivileges. At that observation, system reboot, nested mounts, network
+filesystems, the complete service sandbox and product deletion authorization
+were outside its scope; later topology and product receipts are separate.
 
-The frozen source38 change set covers 19 Go files, including the implemented
+The frozen source38 change set covered 19 Go files, including the implemented
 `root_identity` adapter and its `linux-fsuuid-filehandle-v1` identity profile.
 The adapter separates the complete filesystem UUID and opaque directory handle
 from the live device/inode/mount witness; it does not persist or approve a root
@@ -49,15 +107,16 @@ matched the identity and live witness on an owned ext4 fixture as service uid
 995, with an empty capability bounding set and NoNewPrivileges. Its record
 SHA-256 is
 `0ce31db107330c124a758c806feb59051f382bc66e460cdf41037030d8e2885b`.
-These results advance the earlier API feasibility observations to a tested
-adapter; system reboot, nested mounts, other filesystems and the complete
-service sandbox remain unverified. Source38 also passed its separate
+These results advanced the earlier API feasibility observations to a tested
+adapter; they did not verify system reboot, nested mounts, other filesystems or
+the complete service sandbox. Source38 also passed its separate
 [95-test PostgreSQL notification/lock checks](m3e-library-changed-aux-verification.json);
 its full-suite regression passed 1,953 tests across 24 packages with no failures
-or skips and all cleanup checks true. The persistence and reconciliation
-steps below remain planned and are not deletion authorization.
+or skips and all cleanup checks true. Persistence and reconciliation were later
+implemented and verified; these source38 adapter receipts alone were not
+deletion authorization.
 
-The subsequent root topology observer is implemented in eight separate files,
+The subsequent root topology observer was implemented in eight separate files,
 but [its first remote race run](root-topology-go-verification-failed.json) failed:
 15 tests passed and four real filesystem tests rejected a valid external nsfs
 mountinfo root name. Source39 and its failed test scope remain immutable; the
@@ -66,10 +125,10 @@ with zero failures/skips and unchanged source files. Report SHA-256:
 `52881360e7561cbc8f38da4c724396cdbeab2d33e8d4b7fbe1e89582e70a7677`.
 External nsfs namespace names are parsed narrowly; related namespace dentries
 still fail explicitly. Source41 full regression later failed two capacity cases.
-Source44 removes unnecessary empty-theme snapshot work and passed both cases plus
+Source44 removed unnecessary empty-theme snapshot work and passed both cases plus
 real auxiliary HTTP/WebSocket acceptance in its
-[targeted run](m3e-library-changed-capacity-verification.json). Full regression
-remains pending.
+[targeted run](m3e-library-changed-capacity-verification.json). Its subsequent
+2,002-test full regression passed and the repair was published.
 
 Source42 passed [46 shared-model/alias race tests](storage-binding-model-go-verification.json).
 Its [real mount namespace helper](root-topology-mount-verification.json) verified
@@ -83,20 +142,33 @@ Source43's [bootstrap preflight](storage-binding-schema28-bootstrap-source.json)
 [frontend checks](storage-binding-audit-web-verification.json) and
 [112 runner guards](storage-binding-schema28-runner-guards.json) passed.
 The actual schema28 catalog subsequently passed
-[generation](storage-binding-schema28-catalog-verification.json). Source47 includes
+[generation](storage-binding-schema28-catalog-verification.json). Source47 included
 it together with the archive integration test, source44 repair, binding workflow,
-initial registration and verified UI. Database feature acceptance is running.
+initial registration and the verified mocked UI. Source48 feature/migration/archive
+acceptance subsequently passed all 143 targeted tests after two fixture corrections.
 
-Source45 adds the read/write services, native routes, root-specific retained
+Source45 added the read/write services, native routes, root-specific retained
 anchor installation and archive/reset-proof tests. Its
 [36 selected race checks](storage-binding-workflow-pure-verification.json)
 passed without database access; this verifies bounded projections, directory
 observations, input parsing and handle isolation/lifetime, not the binding write
 transaction or migration/archive workflows. The administrator dialog passed
 [68 decoder/mocked browser checks](storage-binding-workflow-web-accessibility-verification.json)
-and desktop/narrow-screen visual review. Current work still needs PostgreSQL
-integration, complete-scan reconciliation, live browser
-acceptance and deployment before this plan can be marked complete.
+and desktop/narrow-screen visual review. Later PostgreSQL integration and live
+UI acceptance are recorded separately above; these mocked checks did not prove them.
+
+Source49 full regression ended with 2,105 passes and two historical recovery
+fixture failures. The exact failed pair was disposed with evidence preserved;
+source50's fixture repair passed in source54's 74-test PostgreSQL target.
+New-registration automatic binding passed its selected non-database checks.
+Source53's original-root recovery and directory-evidence helpers passed 20
+selected race checks without database access. Source54 integrated the full
+scanner/delete path and shared music-completeness gate, passing 28 selected
+non-database race checks and related compilation, then 74 PostgreSQL checks,
+the 2,173-test full regression/Linux build and the independent private-mount
+helper gate. Live UI Run5 subsequently passed its separate acceptance. None of
+these results closes the pending joint real-media full-scan mount or broader
+M2-M6 evidence requirements.
 
 ## Problem and acceptance boundary
 
