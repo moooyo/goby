@@ -10,9 +10,11 @@ open. See the [first attempt](systemd-installation-first-attempt.json). Reviewed
 on 2026-09-15. The M5 increment completed focused/browser
 acceptance, its 25-package ordinary regression (2,295 passes, zero failures and
 one declared opt-in skip), independent reviews and resource closure. Its source
-checkpoint is committed and pushed as `5faf854`. The current build-script,
-environment-template and installation-document changes are in the working
-tree; the shipped unit remains unchanged. The
+checkpoint is committed and pushed as `5faf854`. The subsequent build-script,
+environment-template, installation-document and scoped evidence checkpoint is
+committed and pushed as `beaea34`; the shipped unit remains unchanged. Its staged
+tree matched all 863 backend/module/package inputs in the E11 source manifest;
+the 58 generated asset/provenance files retain their separate build bindings. The
 [package build receipt](systemd-package-build-verification.json) records three
 actual builds, seven focused top-level tests (26 including subtests), and 26
 package guards, with no failures or skips. All artifacts and private evidence

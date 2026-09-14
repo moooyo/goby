@@ -40,10 +40,10 @@ rejection, the final run's zero-dispatch loop-metadata rejection and its first
 reader rejection; the actual product suite ran once. Four private archives
 passed readback, owned processes/PG/cgroups closed, and ext4, loop and RAM were
 released with protected runtime metadata unchanged. The verified M5 increment
-is committed and pushed as `5faf854`. The next increment is an
+is committed and pushed as `5faf854`. The subsequent partial increment is an
 [internal amd64 embedded systemd package](systemd-package-plan.md) and actual
 installation acceptance. Its build-script, environment-template and manual
-installation changes are applied in the working tree. The
+installation changes are committed and pushed in `beaea34`. The
 [package build verification](systemd-package-build-verification.json) passed
 three actual builds, seven focused top-level tests (26 including subtests),
 26 guards, independent review and build resource closure. The archive and
@@ -59,6 +59,9 @@ symbol and invalid-input entry checks. See the
 [first installation attempt](systemd-installation-first-attempt.json).
 Installation acceptance remains open and new attempts are paused pending a
 review of the execution approach. The shipped unit is unchanged.
+The staged-source bridge matched 863 backend, module and package inputs to
+the verified E11 source. Its 58 generated asset/provenance inputs retain their
+separate build evidence. This checkpoint does not complete M6.
 Historical candidate admissions retain their original scope.
 
 The saved recovery scope is

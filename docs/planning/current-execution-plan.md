@@ -7,7 +7,7 @@ Status: **the fixed M5 refresh increment is accepted and committed; the internal
 amd64 systemd package build is verified and closed; its first installation
 prepared successfully but failed at controller entry before Goby started.
 Owned resources are now preserved and closed; installation attempts are paused
-pending execution review. The scoped source checkpoint is next; core-video
+pending execution review. The scoped source checkpoint is committed as `beaea34`; core-video
 and complete release gates remain open**. Earlier
 regression and candidate admissions retain their original source and execution
 scopes.
@@ -60,7 +60,8 @@ cover later corrections or this planning amendment.
 
 The immediate queue is:
 
-1. Continue from the completed M5 source checkpoint `5faf854` and the
+1. Continue from partial M6 checkpoint `beaea34`, which retains the completed
+   M5 source checkpoint `5faf854` and the
    [verified systemd package build](../development/systemd-package-build-verification.json).
    Three actual builds, focused checks and 26 guards passed independent review;
    artifacts and private evidence are retained, and the build tmpfs is closed.
@@ -93,9 +94,13 @@ The immediate queue is:
    the demonstrated correction. Do not keep a live fixture waiting for more
    operator development.
    Close the new installation and its resources before accepting the increment.
-3. Publish the installation result and its exact limitations, reconcile the
-   retained package with the final staged source, and commit/push this reviewed
-   partial M6 checkpoint before starting the next implementation increment.
+3. The installation result, its limitations and the staged-source bridge are
+   committed and pushed in partial M6 checkpoint `beaea34`. All 863 backend,
+   module and package inputs matched the E11 source; the 58 generated inputs
+   retain their separate artifact evidence. Continue the actual distribution
+   component inventory and outstanding third-party notice/source materials.
+   Project-license selection is still pending user input. In parallel, review
+   the stopped-unit evidence contract before admitting more installation work.
    Reuse the completed package build and M5 regression while their bound inputs
    remain unchanged; expand verification only for a concrete change or failure.
 4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded
@@ -396,7 +401,7 @@ workspace outside every new resource budget.
 | --- | --- | --- |
 | 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
-| 0b. Internal amd64 embedded systemd package — build complete, installation paused | Complete the staged-source bridge and partial checkpoint, retaining the verified package and independently closed failed installation | Three builds, seven focused top-level tests (26 including subtests), 26 package guards and build closure passed. The runtime entry and first preservation checker failed; both failures remain preserved and owned resources are now closed. Review the execution approach before further installation business. Nonroot application restart, public distribution, upgrade, core-video, native arm64/GPU and OCI remain separate gates |
+| 0b. Internal amd64 embedded systemd package — partial checkpoint committed, installation paused | Retain checkpoint `beaea34`, its source bridge, verified package and independently closed failed installation; review the execution approach and continue independent release evidence | Three builds, seven focused top-level tests (26 including subtests), 26 package guards and build closure passed. The runtime entry and first preservation checker failed; both failures remain preserved and owned resources are now closed. Nonroot application restart, public distribution, upgrade, core-video, native arm64/GPU and OCI remain separate gates |
 | 1. Core video and subtitle acceptance | Prioritize this promotion gate when new discriminating evidence or a justified product correction supports a bounded journey on a reviewed current candidate and retained-state input | No new journey is admitted yet. Context291 identifies physical294, not293; the earlier cancellation and original page errors remain unresolved. Preserve the completed identity review. Without new grounds, keep this gate open and continue independent work; do not repeat the review, replay consumed actors or add another observation framework |
 | 2. Independent remaining M2-M6 delivery | Separately address representative capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | Require measurable limits and bounded shutdown. This track may progress independently, while heavy work follows the shared-resource limits above; small catalogs, root-profile restarts and cross-builds do not close the release gates |
 | 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
@@ -419,15 +424,16 @@ cancelled and scheduled workflow. Focused/browser checks and the final ordinary
 regression are complete, with independent reviews and resource closure. This
 increment does not admit a core-client replay or main promotion.
 
-The next independent increment is the internal amd64 systemd package in row 0b.
+The completed partial checkpoint is the internal amd64 systemd package in row 0b.
 Its build-script, environment-template and installation-document changes are
-applied in the working tree; the shipped unit is unchanged. The
+committed and pushed in `beaea34`; the shipped unit is unchanged. The
 [actual package builds and guards](../development/systemd-package-build-verification.json)
 passed independent review and resource closure. The verified archive is retained
 outside the now-closed build tmpfs. Installation preparation passed, but the
 runtime entry failed before Goby started. That failed scope is now preserved and
-closed; installation remains paused. Complete the staged-source bridge and
-partial checkpoint described in the immediate queue. The M5
+closed; installation remains paused. The staged-source bridge and partial
+checkpoint are complete. Follow the independent release-evidence work and
+execution review in the immediate queue. The M5
 source checkpoint `5faf854` is committed and pushed. Follow the
 [package plan](../development/systemd-package-plan.md), preserve existing
 build compatibility, and keep new installation acceptance separate from
