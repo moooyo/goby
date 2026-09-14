@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "kind": "isolated-selected-online-rollback-closeout",
+  "status": "selected_online_rollback_and_process_restart_complete_source32_and_disposal_open",
+  "documentedOn": "2026-09-14",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online",
+  "selectedBinarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+  "archiveSha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f",
+  "originalExecution": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online/execution.json",
+    "sha256": "50d0116fa4d7dfff422933789d4b15ab5616fe7210ddd73d13c6d9ec5b11056c",
+    "status": "failed",
+    "phase": "native-rollback-b",
+    "httpRequests": 18,
+    "allHttpResponsesComplete": true,
+    "rollbackRequests": 1,
+    "completedBeforeFailure": [
+      "Initial B serve, readiness and restored-administrator login",
+      "Online native plan of the same archive into A and complete 35-table comparison",
+      "Online apply selecting A at lifecycle revision2",
+      "A restored-administrator login and native retained B412 comparison"
+    ],
+    "failure": {
+      "class": "application_memory_limit_oom_kill",
+      "applicationPid": 524578,
+      "memoryMaxBytes": 536870912,
+      "memoryPeakBytes": 536875008,
+      "signal": 9,
+      "processAbsent": true,
+      "cgroupClosed": true
+    },
+    "preservedWithoutReclassification": true
+  },
+  "postOomData": {
+    "receipt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online/after-oom-observation/result.json",
+      "sha256": "ed261ca67b44f80a583dc0605c693590844d7f3abbd1d1e61fe159cb71090533"
+    },
+    "status": "oom_data_preserved_before_rollback_publication",
+    "rowsA": 410,
+    "rowsB": 412,
+    "aOnlyRollbackRequestAuditAdded": true,
+    "originalBUnchanged": true,
+    "currentASessionUnrevoked": true,
+    "currentRevision": 2,
+    "transitionPhase": "retiring",
+    "canReturn": true,
+    "lifecycleJournalAbsent": true
+  },
+  "memoryContinuation": {
+    "receipt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online/after-memory-review/execution.json",
+      "sha256": "f5d3fe73496d1b4b650c604f1e420c201492f00dec65307bb539339c4a7b9135"
+    },
+    "operationId": "6957d09764e1d0dbfe98339a5f00685d",
+    "originalUnitBytesRetained": true,
+    "unitMemoryMaxBytes": 2147483648,
+    "goMemoryLimit": "768MiB",
+    "binaryAndApplicationEnvironmentFileUnchanged": true,
+    "serveStarts": 1,
+    "normalApplicationStops": 1,
+    "httpRequests": 0,
+    "newPlanRequests": 0,
+    "newApplyRequests": 0,
+    "newRollbackRequests": 0,
+    "postgresStarts": 0,
+    "postgresStops": 0,
+    "operationState": "completed",
+    "operationPhase": "finished",
+    "activationAccepted": true,
+    "applicationInactiveAndClosed": true
+  },
+  "independentDataClosure": {
+    "receipt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online/after-memory-observation/result.json",
+      "sha256": "e777a07ce9a960e4b6728eb90b7de991181525778ea7e177dd07184183c9750d"
+    },
+    "status": "resumed_rollback_a410_b413_verified_application_closed",
+    "tables": 35,
+    "aRowsExact": 410,
+    "bRowsBefore": 412,
+    "bRowsAfter": 413,
+    "bSessionsRevoked": 1,
+    "bBindingRowsChanged": 1,
+    "bAddedAudit": "restore.applied",
+    "bActivitySequenceDelta": 1,
+    "bOtherSequencesExact": 4,
+    "allUnlistedRowsAndFieldsExact": true
+  },
+  "rollbackCheckpoint": {
+    "deploymentId": "5f9a6b206446c5176ab1605aeb63ff22",
+    "databaseSlot": "recovery",
+    "database": "goby_r69_b",
+    "revision": 3,
+    "generationId": "2a66c343e7265878629a21c7ea0336f0",
+    "master": "generation",
+    "pendingTransition": false,
+    "lifecycleJournalPresent": false,
+    "selectedApplicationState": "inactive",
+    "originalPostgresPid": 516649,
+    "originalAnchorPid": 516461,
+    "postgresAndAnchorInvocationsUnchanged": true,
+    "inactiveACredentialDisposalRequired": true
+  },
+  "restartCompletion": {
+    "receipt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online/selected-restart-completion/execution.json",
+      "sha256": "b34cb7e9a6553fadeb2c86a233b41de3f726626942b1b1b0d07249d04ed86cf4"
+    },
+    "controllerSha256": "f0399289890a1718290a95ae4b62ee824047d9c9523ffa094373167ae2f81b7c",
+    "status": "selected_restart_completion_passed_pending_source32_and_disposal",
+    "executionCount": 1,
+    "httpRequests": 16,
+    "allResponsesComplete": true,
+    "httpErrors": 0,
+    "unknownCommits": 0,
+    "newLogins": 2,
+    "logout204AndSameCookie401Pairs": 2,
+    "originalBAndRetainedACookiesRejected401AtB": true,
+    "retainedARejectionIsNotDatabaseRevocation": true,
+    "readOnlyObserversNaturallyClosed": 10,
+    "applicationStarts": 2,
+    "normalApplicationStops": 2,
+    "normalPostgresSigintStops": 1,
+    "postgresStarts": 1,
+    "samePostgresMountRetained": true,
+    "postgresSystemIdentifierUnchanged": true,
+    "anchorInvocationUnchanged": true,
+    "source32TreeExact": true,
+    "protectedMainSource55AndCandidateExact": true,
+    "aRowsExact": 410,
+    "bRowProgression": [413, 416, 419],
+    "eachAuthenticationDelta": {
+      "newRevokedSessions": 1,
+      "newAudits": 2,
+      "allUnlistedRowsAndFieldsExactAcross35Tables": true,
+      "allFiveSequenceExpectationsMatched": true
+    },
+    "restartOnlyDataChanges": 0,
+    "inputPreflightFailure": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/selected-online/private/restart-input-import-failure.json",
+      "reason": "Python's default import path selected /root/inspect.py instead of the standard library module.",
+      "httpRequests": 0,
+      "sqlConnections": 0,
+      "productInvocations": 0,
+      "resolution": "Isolated Python flags -I -B allowed the saved-cookie input check to complete. The actual restart workflow executed once."
+    }
+  },
+  "currentAtCloseout": {
+    "checkpoint": "selected_restart_completion",
+    "deploymentId": "5f9a6b206446c5176ab1605aeb63ff22",
+    "databaseSlot": "recovery",
+    "database": "goby_r69_b",
+    "revision": 3,
+    "generationId": "2a66c343e7265878629a21c7ea0336f0",
+    "master": "generation",
+    "rowsA": 410,
+    "rowsB": 419,
+    "pendingTransition": false,
+    "lifecycleJournalPresent": false,
+    "selectedApplicationState": "inactive",
+    "postgresPid": 529062,
+    "postgresStartTicks": "7006822",
+    "postgresInvocationId": "d820096e54ef47ebae60300554e8824e",
+    "postgresSystemIdentifier": "7685171266320400886",
+    "anchorPid": 516461,
+    "anchorInvocationUnchanged": true,
+    "mainAndSource55Inactive": true,
+    "inactiveACredentialDisposalRequired": true
+  },
+  "remaining": [
+    "Actual return of the shared installation to source32 and independent schema27 restore, activation and restart",
+    "Final fixture, retained database and inactive A credential disposal",
+    "M2 host-reboot/power-loss durability, core video acceptance and complete M2-M6 obligations"
+  ],
+  "restartCompletionClaimed": true,
+  "source32ProofComplete": false,
+  "finalDisposalComplete": false,
+  "clientAcceptanceClaimed": false,
+  "mainPromotionAdmitted": false
+}

@@ -1,9 +1,16 @@
 # Audited main upgrade contract
 
-Status: **DRAFT for restoration and main promotion, updated 2026-09-14; native backup completed**. The TV successor's
+Status: **RECOVERY REHEARSALS AND DISPOSAL COMPLETE; MAIN PROMOTION DRAFT**, updated 2026-09-14. The TV successor's
 affected admission05 has passed and reuses the preceding admission04 contracts.
-Core original-client acceptance, both isolated restoration proofs and main
-promotion remain open. The [read-only preparation review](audited-main-readonly-preparation.md) extended the
+Core original-client acceptance and main promotion remain open. The
+[selected restore, online rollback and restart](isolated-selected-online-rollback.json)
+and [actual source32 installation return and schema27 recovery](isolated-source32-recovery.json)
+have completed. The final A410/B419 comparison passed before normal PG shutdown,
+ordinary tmpfs unmount, final anchor shutdown and removal of 61 owned runtime
+unit files. The temporary cluster and its credentials are disposed; private
+evidence, original recovery materials and the two fixture OS accounts remain.
+Same-mount process restarts do not establish host-reboot or power-loss durability.
+The [read-only preparation review](audited-main-readonly-preparation.md) extended the
 initial service/file observation with private configured-path selection,
 captured lifecycle/control/backup metadata and actual PostgreSQL/schema27 binding.
 The subsequent [startup/capacity preparation](audited-main-startup-preparation.md)
@@ -73,6 +80,7 @@ completion.
 
 | Accepted record | Reusable conclusion | Boundary |
 | --- | --- | --- |
+| [Selected online rollback/restart](isolated-selected-online-rollback.json) and [source32 recovery/disposal](isolated-source32-recovery.json) | The same schema27 archive restored with the selected binary to schema28 and with the actual returned source32 installation to schema27. Native activation, selected online rollback, restored-account authentication, normal process restarts and final cluster/credential disposal passed | Retain the original selected OOM and its same-operation recovery. Private evidence and OS accounts remain. These proofs do not establish core-client acceptance, host-reboot/power-loss durability or main promotion |
 | [Native source32 backup completion](audited-main-native-backup-completed.json) and [ownership correction](audited-main-backup-ownership-correction.md) | One complete schema27 archive and native source-key witness; 13 HTTP calls, owned logout and exact 402-to408 operational reconciliation; separate policy cleanup completed | Reuse this archive and sealed post-workflow baseline. These results do not establish either isolated restoration, archive-passphrase restore authentication, core-client acceptance or main promotion |
 | [TV successor full verification](tv-parent-metadata-full-verification.json), [transition](tv-parent-candidate-transition-closeout.json) and [admission05](tv-parent-affected-admission-closeout.json) | The currently selected snapshot passed 2,270 tests in 25 packages with race instrumentation and a Linux build; the installed successor passed affected admission | Reuse the selected product proof; core-client acceptance and main safety/admission remain separate |
 | [Cancellation-fix full verification](restore-cancellation-full-verification.json), [source freeze](restore-cancellation-source-freeze.json) and [binary transition](audited-candidate-cancellation-transition.json) | The predecessor snapshot passed 2,264 tests in 25 packages with race instrumentation and a Linux build; that predecessor was installed in the isolated candidate | Historical predecessor verification, not the current successor's final product proof or core/main admission |
@@ -156,8 +164,9 @@ restored the original restart policy and released the unchanged deployment
 lock. Main and source55 are inactive; capacity remains installed. Reuse this
 baseline with 408 rows, twelve closed logs, the removed fence and the preserved failure chain.
 Do not restore the obsolete pre-start baseline or create another backup to
-reproduce already completed evidence. Neither archive-passphrase restoration
-authentication nor either isolated restoration has run.
+reproduce already completed evidence. Archive-passphrase authentication and both
+isolated restoration proofs were still open at that backup checkpoint. They
+have since passed through the separate rehearsal and disposal receipts above.
 
 The following fields distinguish historical backup inputs from completed
 outputs and remaining admission requirements. Reuse the particular receipts
@@ -178,7 +187,7 @@ identity and ownership before use, and do not recreate an absent lock.
 | Operational isolation | Exact new evidence/staging/rehearsal paths and ownership; free resources and bounded controller budget; candidate, source55 control, proxy, workspace15432 and media boundaries that this action could affect. Record fresh witnesses for those resources and permitted concurrent changes |
 
 Main is inactive after the closed native-backup invocation and policy cleanup.
-Preserve that baseline while admitting the isolated fixtures. The completed
+Preserve that baseline after closing the isolated fixtures. The completed
 backup input has no remaining start or create slot. If main is independently
 live later, bind that exact invocation and review its drain boundary rather
 than adopting an old running-PID template. Before migration, require no unowned
@@ -253,7 +262,7 @@ restore/finalizer to establish legal local binding and generations, or rehearse
 the exact identity-preserving restoration method; never edit markers to make a
 copied layout appear accepted.
 
-## Completed backup and required isolated rehearsal
+## Completed backup and isolated rehearsal requirements
 
 The existing source32 HTTP backup workflow completed after its own main safety
 review and concrete admission. This old-binary preservation scope and the two
@@ -305,6 +314,10 @@ acceptance nor a returned error proves successful publication or cleanup.
 Source32 also lacks the later `ValidateDump` call in the current engine. Full
 download verification and both independent native restoration proofs remain
 mandatory; do not transfer current implementation guarantees to the old binary.
+
+The five requirements below were executed and closed by the linked rehearsal
+receipts. Their inputs are consumed; they describe the accepted proof and do
+not queue another import, restore, rollback or fixture construction.
 
 1. Retain the completed, pinned native schema27 archive with its SourceFacts,
    configuration/master provenance, size/SHA256 and private passphrase. Bind

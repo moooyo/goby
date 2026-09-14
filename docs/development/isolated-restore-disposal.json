@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "kind": "isolated-restore-fixture-disposal-closeout",
+  "status": "isolated_cluster_credentials_and_processes_disposed_private_evidence_retained",
+  "phase": "closed",
+  "documentedOn": "2026-09-14",
+  "receipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/fixture-disposal/execution.json",
+    "sha256": "0fb6cde172d0a0127cc40dc144d7be72b84d538755cdb671e9261b5dd84ced23"
+  },
+  "controllerSha256": "552568b56c86bc1d0595189f8cb99d59bbc6a9b471ac6847fc01155ceabd2573",
+  "executionCount": 1,
+  "failure": null,
+  "selectedProof": "isolated-selected-online-rollback.json",
+  "source32Proof": "isolated-source32-recovery.json",
+  "finalRetainedData": {
+    "rowsAExact": 410,
+    "rowsBExact": 419,
+    "tablesExactPerDatabase": 35,
+    "sequencesExactPerDatabase": 5,
+    "readOnlyObserversNaturallyClosed": 2
+  },
+  "processAndMountClosure": {
+    "postgresClosed": true,
+    "postgresShutdown": "normal SIGINT",
+    "tmpfsUnmounted": true,
+    "unmountMethod": "ordinary unmount; no force or lazy unmount",
+    "mountId": 319,
+    "mountDevice": 55,
+    "mountCapacityBytes": 805306368,
+    "mountIdentityMatchedBeforeUnmount": true,
+    "anchorClosed": true,
+    "anchorStoppedNormallyAfterUnmount": true,
+    "allOwnedPidsAbsent": true,
+    "allOwnedCgroupsClosed": true,
+    "ownedNetworkNamespaceGone": true
+  },
+  "runtimeUnits": {
+    "exactUnitFilesPreservedPrivatelyAndRemoved": 61,
+    "daemonReloadCompleted": true,
+    "allUnitsInactive": true,
+    "allFragmentPathsAbsent": true,
+    "remainingRuntimeUnitFiles": 0
+  },
+  "credentialClosure": {
+    "temporaryClusterDisposed": true,
+    "databasesDisposed": ["goby_r69_a", "goby_r69_b", "goby_r69_c", "goby_r69_d"],
+    "databaseRolesDisposedWithCluster": true,
+    "inactiveACredentialResponsibilityClosedByDisposal": true,
+    "inactiveARevokedAtFabricatedOrUpdated": false
+  },
+  "retainedResources": {
+    "workingRoot": "/opt/goby-restore-69f5e597",
+    "privateEvidenceRoot": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01",
+    "workingAndPrivateEvidenceFilesRetained": true,
+    "operatingSystemAccountsRetained": ["goby-r69pg", "goby-r69app"],
+    "operatingSystemAccountsRemainExplicitlyOwned": true,
+    "recursiveDeletes": 0,
+    "operatingSystemAccountDeletes": 0,
+    "originalBackupPassphraseAndOldInstallationArchiveUnchanged": true
+  },
+  "protectedMainSource55AndCandidateUnchanged": true,
+  "distinctSelectedAndSource32RecoveryProofsComplete": true,
+  "actualOldInstallationReturnComplete": true,
+  "declaredProcessRestartProofsComplete": true,
+  "declaredFixtureDisposalComplete": true,
+  "hostRebootOrPowerLossDurabilityClaimed": false,
+  "coreVideoAcceptanceClaimed": false,
+  "mainPromotionAdmitted": false,
+  "completeM2ThroughM6Claimed": false,
+  "overallGoalComplete": false
+}

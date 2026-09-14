@@ -1,6 +1,6 @@
 # Current execution plan
 
-Reviewed on 2026-09-14 after native schema27 backup completion and policy cleanup. Status: **product and
+Reviewed on 2026-09-14 after both isolated recovery/restart proofs and final fixture disposal. Status: **product and
 candidate verified; MP3 and FLAC accepted; video client acceptance open**.
 This is the active queue. [Current status](../development/current-status.md)
 records accepted facts. [Delivery and verification](delivery-and-verification.md)
@@ -51,17 +51,57 @@ binds a 196,310-byte schema27 archive with 405 rows. The operational database ha
 audits. A final shared-parent cleanup rejection remains in the execution receipt;
 reviewed policy-only cleanup removed the exact restored fence and empty owned
 directory. Main is inactive, capacity remains installed and no business request
-was repeated. Both isolated restoration proofs remain open.
+was repeated. Those backup and cleanup inputs remain consumed.
 
 The ordering needed a substantive correction: paused video investigation must
 not also prevent the old source32 backup and isolated recovery work. Those
 actions require their own safety admission; core acceptance continues to block
 new-binary main promotion. Separate backup inputs from backup outputs, and allow
-independent M2-M6 obligations to progress under their own prerequisites. The next
-deliverable is online A activation and actual rollback to B, followed by both
-restart and old-compatible installation/recovery proofs. The selected initial
-restore and offline B activation have completed with exact data comparison;
-reuse their accepted state and preserve all remaining requirements.
+independent M2-M6 obligations to progress under their own prerequisites. Both
+declared restoration/restart sequences and their final fixture disposal have
+completed. Continue independent M2-M6 work and reopen retained-state video
+diagnosis only with new discriminating evidence or a justified correction.
+The [selected online rollback closeout](../development/isolated-selected-online-rollback.json)
+records B serve/login, online A plan/apply/login and the committed rollback's
+completion at B/revision3. The first online process hit its 512 MiB memory
+limit after the single rollback request; its failed receipt remains unchanged.
+Post-OOM comparison proved A410 with only its rollback-request audit and B412
+exact. A reviewed 2 GiB unit limit and `GOMEMLIMIT=768MiB` allowed one new serve
+invocation to resume that same operation, without HTTP or another request.
+After normal app stop, A410 remained exact; B413 contained only the declared
+credential revocation, generation binding and restore audit. That recovery
+checkpoint is preserved separately from the subsequent restart result.
+Post-rollback authentication and same-mount PG/application restart have now
+passed: 16 complete HTTP responses, two new login/logout/401 pairs, ten naturally
+closed read-only observers, A410 exact and B413-to416-to419 with only the two
+declared authentication deltas. Both app invocations stopped normally; one
+normal PG shutdown/restart retained the mount, cluster identity and B/revision3.
+That selected checkpoint records PG529062 and unchanged anchor516461; it remains
+historical evidence and is not relabeled as the later source32 state.
+
+The [actual installation return and source32 proof](../development/isolated-source32-recovery.json)
+then each succeeded once. Two exclusive renames restored all 416 old installation
+files and retained all 58 selected files. Native source32 restored the same
+archive into independent D at schema27: all 35 source/target fingerprints
+matched, with 17 credential revocations, one expired play, one binding and no
+schema28 migration. D advanced405-to406-to409-to412 through apply and two owned
+login/logout workflows; every other field and all five sequence expectations
+matched. Fourteen complete HTTP responses, five CLI commands and ten read-only
+observers closed. Two app invocations and one same-mount PG restart stopped
+normally at their required boundaries. That source32 checkpoint retains PG532226
+and original anchor516461 as historical identities. Selected files and protected
+main/candidate state stayed exact.
+
+The [final disposal](../development/isolated-restore-disposal.json) then succeeded
+once. Final A410/B419 reads matched all35 tables and five sequences per database;
+both observers closed. Normal PG shutdown, ordinary unmount of the exact768 MiB
+tmpfs and final anchor stop removed the temporary cluster and network namespace.
+All61 owned runtime unit files were preserved privately and removed; their
+units are inactive with no FragmentPath. Inactive A's credential responsibility
+ended through cluster disposal, without changing its revoked_at value. Private
+working/evidence files and the two dedicated OS accounts remain explicitly
+retained. No recursive deletion, account deletion or protected-host change was
+part of this closure. Do not queue these consumed recovery operations again.
 Preserve the page-error rule
 and every failure; do not extend the generic observation framework.
 
@@ -75,7 +115,7 @@ and every failure; do not extend the generic observation framework.
 | Episode01 | Full TV browsing and playback controls completed; [owned state is closed](../development/audited-episode-client01-closeout.json) | Three page errors preserve the formal rejection; neither episode nor overlapping TV browse acceptance passes |
 | Subtitles01 | SRT/VTT selection, visible cues, seek and Off/stop/logout completed; [owned state is closed](../development/audited-subtitles-client01-closeout.json) | Two native undefined errors remain unattributed; one media cancellation timing check remains unresolved; formal acceptance stays open |
 | Movie | Movie05's two counted play chains and movie06's pre-playback failure have closed owned state | Four old page errors remain unknown; movie06 did not play; the old movie05 baseline is stale for another run |
-| Main | [Native-backup completion](../development/audited-main-native-backup-completed.json) proves one schema27 archive, source-key witness and exact 402-to408 operational delta. Main is inactive, capacity retained, temporary fence removed; cache markers, twelve closed logs and old installation materials are retained | Independently prove selected/schema28 and actual source32/schema27 restoration, activation and restart; archive creation alone does not prove either restoration or main promotion |
+| Main | Native backup, selected rollback/restart, [actual old installation return/source32 recovery](../development/isolated-source32-recovery.json) and [final cluster/credential disposal](../development/isolated-restore-disposal.json) passed. Original failures and private evidence remain preserved; main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host durability and the remaining M2-M6 release obligations are unchanged |
 
 The selected binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`,
@@ -96,7 +136,7 @@ resolve the separately recorded media cancellation timing discrepancy.
 | 3. First subtitle increment — consumed | The declared journey completed; native reasons are confirmed as undefined; owned state and workers are closed | Preserve the two original errors and unresolved partial293 timing; subtitle acceptance remains open and the input cannot be repeated |
 | 4. Source32 backup start — consumed; cleanup closed | Two controller failures are preserved; the second installed capacity/fence and started source32 once before environment rejection. The exact invocation was stopped, with zero HTTP and exact database preservation | Do not execute this input again, remove its evidence or reset its file baseline. Native backup creation and key authentication did not occur |
 | 5. Reviewed native backup — complete | Stop authority was corrected before strict configuration acceptance; a separately admitted child phase created/downloaded the fresh archive and reconciled all data/files. Policy-only cleanup closed the final shared-parent rejection | Retain the original failure and new completion checkpoint. This input is consumed; do not create another backup or start main for a cleanup retry |
-| 6. Isolated recovery proofs — initial selected activation complete | The [selected source405/staged406 comparison and offline activation](../development/isolated-selected-initial-activation.json) passed. B/revision1 has407 rows, including exactly one new restore audit; five native CLI commands are closed. Continue the [complete recovery sequence](../development/audited-main-isolated-restore-plan.md): serve/authenticate B, online A activation, real rollback to B, restart, then actual installation return and independent source32 recovery | Rebind live identities and phase capacity. Initial `--accept-no-rollback` does not satisfy online rollback. No serve/login or online transition has run. Both full proofs precede main promotion and do not require video acceptance; same-mount restart does not close the M2 host-durability gate |
+| 6. Isolated recovery proofs and disposal — complete | Selected rollback/restart, actual old installation return and independent source32 recovery/restart passed. [Final disposal](../development/isolated-restore-disposal.json) sealed exact A410/B419, normal PG shutdown, ordinary unmount, anchor/unit closure and inactive A credential disposal | Preserve all consumed inputs, original failures, private evidence and explicitly retained accounts/files. No recovery replay is queued; core video, M2 host durability and complete M2-M6 remain open |
 | 7. Distribution notices — partial parallel progress | [Original legal texts and versioned inventory](../../THIRD_PARTY_NOTICES.md) cover current Go requirements, production npm entries and actual fonts; source/copy checks passed remotely | Resolve project license and the relevant upstream/inclusion gaps against the actual future package. This collection does not close M6 or external distribution |
 
 The [Episode01 review](../development/audited-episode-client01-review.md) records
@@ -113,9 +153,10 @@ closed. The product remained unchanged. Do not reopen diagnostic tooling by defa
 The [subtitle result review](../development/audited-subtitles-client01-review.md)
 now supersedes its execution instruction. Native undefined provides no response
 association, and partial293 has a separate unexplained timing difference. Keep
-these explicit gaps and stop the same video/diagnostic cycle. Advance the
-independent main safety/recovery work below, with its own admission before
-mutations; it cannot pass core acceptance or admit promotion.
+these explicit gaps and stop the same video/diagnostic cycle. The independent
+recovery work has now closed. Advance the remaining M2-M6 requirements under
+their own prerequisites; recovery completion cannot pass core acceptance or
+admit promotion.
 
 If two successive tool/checker failures block the same planned observation,
 pause that experiment and reassess its shared cause and value. Preserve failed
@@ -131,10 +172,11 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
 
 ## Remaining work and dependencies
 
-1. Retain the completed source32 native archive and its exact operational
-   closeout. Admit and complete the two distinct isolated restoration proofs;
-   no consumed backup input is replayed. Fresh ownership, configuration,
-   capacity, write budgets and private recovery material govern these actions.
+1. Retain the completed native archive, both distinct restoration/restart proofs,
+   actual old installation return and final cluster/credential disposal records.
+   No consumed recovery input is replayed. Continue independent M2-M6 obligations
+   under their own prerequisites; retained private files and OS accounts remain
+   explicitly inventoried rather than silently treated as removed.
 2. Core acceptance remains open for movie/TV playback and external subtitles.
    Reuse accepted MP3/FLAC and unchanged controls. Resume a consumed video path
    only with a reviewed retained-state input and a discriminating question or

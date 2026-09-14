@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "kind": "isolated-source32-recovery-closeout",
+  "status": "source32_restoration_and_restart_complete_fixture_disposal_closed",
+  "documentedOn": "2026-09-14",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01",
+  "source32BinarySha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620",
+  "archiveSha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f",
+  "installationReturn": {
+    "receipt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/old-installation-return/execution.json",
+      "sha256": "699c0178030b658425ac005f051a4fe3a9a29d4319f562abb85264378e6b5d0b"
+    },
+    "controllerSha256": "1327e447a0ea10b5e46f0284992af0c20fccf1442a2c0807be006d46590f3775",
+    "status": "source32_installation_returned",
+    "executionCount": 1,
+    "exclusiveRenames": 2,
+    "sharedInstallationPath": "/opt/goby-restore-69f5e597/install",
+    "source32FilesExact": 416,
+    "source32BytesExact": 40869739,
+    "selectedFilesRetained": 58,
+    "selectedBytesRetained": 30667532,
+    "nativeCommands": 0,
+    "httpRequests": 0,
+    "sqlConnections": 0
+  },
+  "source32Execution": {
+    "receipt": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/source32-completion/execution.json",
+      "sha256": "dabe94b468671c2892016381e1c69ba747df093e4eaf2c6e677f751318bcd2b4"
+    },
+    "controllerSha256": "111dd9ad128bd87b6372bfba916b4152fd7d5e21ef37ed4632e4380f9c363384",
+    "status": "source32_restore_authentication_and_restart_passed_pending_disposal",
+    "executionCount": 1,
+    "primaryDatabase": "goby_r69_c",
+    "recoveryDatabase": "goby_r69_d",
+    "primaryCEmpty": true,
+    "importOperationId": "633d34f4ccdda962c749034e291ef4f3",
+    "localBackupId": "53000289dfc63f835c1b0d0c78b417a7",
+    "planId": "205b126d5caffe67b19cbf25f485de1f",
+    "nativeCliCommands": 5,
+    "allNativeCliCommandsClosed": true,
+    "readOnlyObserversNaturallyClosed": 10,
+    "httpRequests": 14,
+    "allHttpResponsesComplete": true,
+    "httpErrors": 0,
+    "unknownCommits": 0,
+    "newLogins": 2,
+    "logout204AndSameCookie401Pairs": 2,
+    "applicationStarts": 2,
+    "normalApplicationStops": 2,
+    "normalPostgresSigintStops": 1,
+    "postgresStarts": 1,
+    "samePostgresMountRetained": true,
+    "postgresSystemIdentifierUnchanged": true,
+    "anchorInvocationUnchanged": true
+  },
+  "dataComparison": {
+    "sourceSchema": 27,
+    "targetSchema": 27,
+    "sourceRows": 405,
+    "stagedRows": 405,
+    "sourceNativeFingerprintsMatched": 35,
+    "targetNativeFingerprintsMatched": 35,
+    "normalization": {
+      "revokedCredentials": 17,
+      "expiredPlaybackRows": 1,
+      "bindingRowsChanged": 1,
+      "schema28MigrationApplied": false
+    },
+    "dRowProgression": {
+      "staged": 405,
+      "activated": 406,
+      "afterFirstLoginLogout": 409,
+      "afterRestartLoginLogout": 412
+    },
+    "activationAddedRestoreAudit": 1,
+    "eachAuthenticationDelta": {
+      "newRevokedSessions": 1,
+      "newAudits": 2
+    },
+    "allUnlistedRowsAndFieldsExactAcross35Tables": true,
+    "allFiveSequenceExpectationsMatched": true,
+    "restartOnlyDataChanges": 0
+  },
+  "source32CheckpointBeforeDisposal": {
+    "deploymentId": "d4d1469c3a03a1b8a398521ebf19b032",
+    "databaseSlot": "recovery",
+    "database": "goby_r69_d",
+    "revision": 1,
+    "generationId": "5f41cda3df2b444bf83236099819c74d",
+    "schema": 27,
+    "rowsD": 412,
+    "source32ApplicationState": "inactive",
+    "postgresPid": 532226,
+    "postgresStartTicks": "7112069",
+    "postgresInvocationId": "450ca1fbec084033ad38ddac2afd5030",
+    "postgresSystemIdentifier": "7685171266320400886",
+    "anchorPid": 516461,
+    "anchorInvocationUnchanged": true,
+    "selectedTreeUnchanged": true,
+    "protectedMainAndCandidateExact": true,
+    "finalRetainedABDataCheckPending": true,
+    "inactiveACredentialDisposalRequired": true
+  },
+  "selectedProof": "isolated-selected-online-rollback.json",
+  "fixtureDisposal": "isolated-restore-disposal.json",
+  "remaining": [
+    "M2 host-reboot/power-loss durability, core video acceptance and complete M2-M6 release obligations"
+  ],
+  "finalDisposalComplete": true,
+  "hostDurabilityClaimed": false,
+  "clientAcceptanceClaimed": false,
+  "mainPromotionAdmitted": false,
+  "overallGoalComplete": false
+}

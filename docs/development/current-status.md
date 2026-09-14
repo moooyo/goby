@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after initial isolated selected restoration and offline activation. The [execution plan](../planning/current-execution-plan.md)
+Reviewed on 2026-09-14 after both isolated recovery/restart proofs and final fixture disposal. The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
@@ -12,7 +12,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main recovery and deployment | Main's native archive and source-key witness are complete. The isolated selected restore passed all source405/staged406 table fingerprints and exact normalization checks; offline apply selected B/revision1 with407 rows. Main remains inactive | Serve/authenticate B, perform online A activation and real rollback to B, then restart and complete actual installation return plus independent source32/schema27 recovery. Main promotion still requires core acceptance and complete recovery evidence |
+| Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
@@ -23,7 +23,9 @@ before any database connection or master read. The native backup's same-snapshot
 `WitnessBackup` was the required authentication step; no repeat observer is queued.
 The later native create passed that witness. The isolated selected native plan
 has now authenticated the archive/passphrase and restored generation master;
-restored-account login and the actual source32 restore remain unproved.
+restored-account login has since passed on selected B and A, including B after
+rollback and process restart. The separate actual source32 restoration and
+authentication/restart have also passed, as recorded below.
 
 The [native-backup scope](audited-main-native-backup-plan.md) is consumed. Its
 first controller rejected a retained preparation filename before locking. The
@@ -68,7 +70,7 @@ and same-mount PG/application restart. Two offline applications do not retain a
 usable rollback image. The separate source32 proof also requires replacing the
 same isolated installation with the preserved old binary and 415 assets.
 
-The [isolated infrastructure](isolated-restore-infrastructure.json) is now ready:
+The [isolated infrastructure](isolated-restore-infrastructure.json) checkpoint records
 an independent PostgreSQL17 cluster, dedicated PG/application identities, a
 private network namespace and a capped 768 MiB PostgreSQL tmpfs. All 158 checks
 across three sandbox profiles passed; its maintenance identity backend exited
@@ -80,13 +82,88 @@ separate private configuration/archive/passphrase inputs. All five preparation S
 backends closed naturally. This completed preparation was followed by the
 [selected initial restore and activation](isolated-selected-initial-activation.json).
 One native import/plan and one offline apply completed, with all source/staged
-table fingerprints matched. B is active at lifecycle revision1 with407 rows:
+table fingerprints matched. At that checkpoint B was active at lifecycle revision1 with407 rows:
 all406 staged rows remained exact and one complete system restore audit was
 added. Its activity sequence advanced1; the other four stayed exact. Native
 master/config descriptors match the archive, the default master remains absent,
-and all CLI/observer processes are closed. No serve/login or online rollback
-has run. Persistent originals
-remain outside tmpfs; same-mount process restarts will not establish host-reboot
+and all CLI/observer processes were closed.
+
+The [online rollback closeout](isolated-selected-online-rollback.json) now records
+B serve/login, a second native plan into A, online apply at revision2 and A
+login. After the sole rollback request returned202, the selected process was
+OOM-killed at its 512 MiB unit limit. Its original failed execution remains
+preserved. Independent post-OOM comparison proved A410 with only the new
+rollback-request audit and all B412 rows exact. The control store retained the same
+authorized rollback in `retiring`, with A/revision2 still current.
+
+A reviewed unit revision changed only `MemoryMax=2G` and added
+`GOMEMLIMIT=768MiB`. One new serve invocation resumed operation
+`6957d09764e1d0dbfe98339a5f00685d`, without HTTP or new plan/apply/rollback
+requests, then stopped normally. The independent result proves A410 exact and
+B413: one session revoked, one binding changed and one `restore.applied` audit
+added, with the activity sequence advancing1 and the other four exact. That
+checkpoint selected B/revision3, generation `2a66c343e7265878629a21c7ea0336f0`, with no
+transition or lifecycle journal. At that closeout the app was inactive and the
+original PG516649 and anchor516461 were still live.
+
+The subsequent restart completion passed once, with 16 complete HTTP responses
+and no HTTP errors or unknown commits. Both old credentials returned401 at B;
+this does not revoke the retained A row. Two new administrator logins each
+closed with DELETE204 and same-cookie401. B advanced413-to416-to419, each time
+adding only one revoked session and two audits; all other table fields and all
+five sequence expectations matched. A410 remained exact and ten read-only
+observer backends closed naturally. The app started and stopped normally twice.
+One normal SIGINT shutdown/restart of the isolated PG retained the exact mount,
+system identifier and B/revision3 generation. At that checkpoint PG was PID529062, start ticks
+7006822, invocation `d820096e54ef47ebae60300554e8824e`; anchor516461 is unchanged.
+Main/source55 and protected resources remained exact, and the complete source32
+tree was unchanged. This selected checkpoint remains historical and unchanged.
+
+A saved-input preflight failure is retained: default Python import resolution
+selected `/root/inspect.py` instead of the standard library, before HTTP, SQL
+or product execution. The input check passed under `-I -B`; the actual restart
+workflow was executed once. Both this failure and the earlier OOM remain in the
+[combined checkpoint](isolated-selected-online-rollback.json).
+
+The [actual installation return and source32 closeout](isolated-source32-recovery.json)
+now records two successful, single executions. Two exclusive renames returned
+the shared installation to all 416 old files (40,869,739 bytes), retaining all
+58 selected files (30,667,532 bytes); this installation step ran no product,
+HTTP or SQL. The source32 workflow then restored the original archive into
+independent D while C remained empty. Source405 and staged405 matched all 35
+source/target fingerprints at schema27, with 17 credential revocations, one
+expired play and one new binding; migration28 was not applied. Apply added one
+restore audit to406 rows. Two login/logout workflows advanced D to409 and412,
+preserving all other fields and all five sequence expectations.
+
+All 14 HTTP responses completed without error or unknown commit; both cookies
+closed with logout204 and same-cookie401. Five native CLI commands and ten
+read-only observer backends closed, two app starts/stops were normal, and one
+normal PG SIGINT shutdown/restart retained the mount and cluster identity.
+At its closeout source32 was inactive at D/revision1, generation
+`5f41cda3df2b444bf83236099819c74d`, deployment
+`d4d1469c3a03a1b8a398521ebf19b032`. PG532226 has start ticks7112069 and invocation
+`450ca1fbec084033ad38ddac2afd5030`; original anchor516461 was unchanged at that
+source32 checkpoint. The selected tree and protected main/candidate state stayed exact.
+
+The [final fixture disposal](isolated-restore-disposal.json) then completed once.
+Final A410/B419 observations matched all35 tables and five sequences per database,
+with both observer backends naturally closed. PG stopped normally by SIGINT;
+ordinary unmount removed the exact mount319/dev55/768 MiB tmpfs, and the anchor
+stopped normally last. All owned PIDs, cgroups and the private network namespace
+are gone. All61 exact runtime unit files were preserved in private evidence and
+removed, followed by reload; every unit is inactive with no FragmentPath and no
+runtime unit file remains. The temporary cluster, A/B/C/D and their roles are
+disposed, closing inactive A's credential responsibility without fabricating or
+updating revoked_at. Protected main/source55/candidate state and the original
+backup, passphrase and old installation archive remain unchanged.
+
+The fixture working/evidence files and dedicated `goby-r69pg`/`goby-r69app` OS
+accounts remain explicitly retained; no recursive deletion or account deletion
+was performed. Both recovery/restart proofs and their declared disposal are
+complete, while core video acceptance, main promotion and full M2-M6 remain open.
+
+Persistent originals remain outside tmpfs; same-mount process restarts will not establish host-reboot
 or power-loss durability, so the M2 durability gate remains open.
 
 [Third-party notices](../../THIRD_PARTY_NOTICES.md) now retain 182 original legal
@@ -379,9 +456,13 @@ and owned stop were closed; capacity and the fence were installed, both cache
 markers existed and all eleven diagnostic entries were closed. That input was paused
 after two controller failures. The later
 [reviewed correction](audited-main-backup-ownership-correction.md) used this exact
-retained state and completed the native backup/source-key witness. Both isolated
-restoration proofs and main promotion remain open; the current baseline and
-removed-fence state are in its completed checkpoint.
+retained state and completed the native backup/source-key witness. Selected
+online rollback and same-mount restart have subsequently closed through the
+[A410/B419 checkpoint](isolated-selected-online-rollback.json). Actual source32
+installation return/recovery/restart has since passed its [separate checkpoint](isolated-source32-recovery.json).
+Final cluster/credential disposal has also [completed](isolated-restore-disposal.json).
+Main promotion remains blocked by core video acceptance. The backup's
+removed-fence state is retained in its original completed checkpoint.
 
 The [replacement main upgrade contract](audited-main-upgrade-plan.md) requires
 one fresh native archive and two distinct isolated restorations: new binary to
