@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "kind": "catalog-capacity-isolation-verification",
+  "status": "targeted_race_test_independent_review_and_resource_closure_passed",
+  "verificationDate": "2026-09-14",
+  "verificationEnvironment": "ssh test-env",
+  "milestone": "M2",
+  "milestoneComplete": false,
+  "evidenceRoot": "/opt/goby-test/catalog-capacity-20260914",
+  "scope": "A SQL-seeded two-library catalog and in-process HTTP-handler baseline, including ACL-safe reads and UserData preservation during an owned transaction block, cancellation and rollback.",
+  "source": {
+    "baseGit": "892c536eb739d04d4a9e6c42fc227e936a519d02",
+    "baseHasGoOrModuleChangesFromOrdinaryRegressionBadf396": false,
+    "baseFileCount": 5249,
+    "addedFileCount": 1,
+    "executedFileCount": 5250,
+    "executedSourceBytes": 117040342,
+    "newTest": {
+      "path": "internal/server/catalog_capacity_isolation_integration_test.go",
+      "sha256": "83003415c0b2f67f669a5dcbd0728040513a63fdd69aa961722b3af57815479a",
+      "bytes": 25680,
+      "remoteGofmtChangeWasFormattingOnly": true
+    },
+    "archive": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/private/source.tar.gz",
+      "sha256": "b6cf122d9ce749fa5b1cb76a44304bc39550c09f1a0b64f1c9663ad0784b6a31",
+      "bytes": 32258248
+    },
+    "productionFixClaimed": false,
+    "newTestIncludedInEarlier2276TestOrdinarySuite": false
+  },
+  "input": {
+    "path": "/opt/goby-test/catalog-capacity-20260914/private/input.json",
+    "sha256": "3b656b383810ced6e0dc78fb600a3129c13999bb463218e4e2d895b9784825a9"
+  },
+  "preflight": {
+    "path": "/opt/goby-test/catalog-capacity-20260914/input-preflight.json",
+    "sha256": "2643fd0ca5966def135d2f36da9af00535a463d7003af78073fb92be52daef06",
+    "bytes": 17011
+  },
+  "preparation": {
+    "path": "/opt/goby-test/catalog-capacity-20260914/preparation.json",
+    "sha256": "c63d4de67fdbe0ef18c4b623eeef2f14485b3b5b5bfd6d516319271c2cea327c"
+  },
+  "execution": {
+    "path": "/opt/goby-test/catalog-capacity-20260914/execution.json",
+    "sha256": "b750026b7345166b9da1c3aeb1c469173b4d4bee0cb00342b583906fb7ce9126"
+  },
+  "retainedRecords": {
+    "parent": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/retained/report.json",
+      "sha256": "ebdffa57a10ba2bd93c8373208951647f6444fc1fbc94ef4420b3d621ddb6be0",
+      "bytes": 21531
+    },
+    "worker": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/retained/worker-report.json",
+      "sha256": "b612a73e0d7e5b8a5f1e7895d96257ed5dd056d6306af3428689a224d27833e6",
+      "bytes": 19523
+    },
+    "sourceManifest": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/retained/source-manifest.json",
+      "sha256": "2f6a5148c30906c75ff827d79fb72f5a3e368d540f4975a93492de4a26b06604",
+      "bytes": 975386
+    },
+    "moduleCacheManifest": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/retained/module-cache-manifest.json",
+      "sha256": "4b72187093d2c87aed22857cd5464e33cbd6cb1349d0052474f9d27235c97f03",
+      "bytes": 350118
+    },
+    "config": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/retained/config.json",
+      "sha256": "289ae84edcf0a3e6dde64c745bde6358704aff892979fe59cd2faca7867dc6ae",
+      "bytes": 757
+    },
+    "owner": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/retained/OWNER.json",
+      "sha256": "bc26b31853feff8a794844d9f684a072145843757ef93ede23a88e2fb9630335",
+      "bytes": 219
+    },
+    "allSixRecordsRetainedWithIdenticalBytes": true
+  },
+  "test": {
+    "name": "TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock",
+    "package": "github.com/moooyo/goby/internal/server",
+    "flags": ["-race", "-p=1", "-parallel=1", "-count=1", "-timeout=180s"],
+    "counts": {"passed": 1, "failed": 0, "skipped": 0},
+    "runtimeExec": "/usr/bin/env",
+    "runtimeTmpdirAndGotmpdir": "/opt/goby-test/catalog-capacity-20260914/fixtures",
+    "runtimeFilesystem": "owned ext4",
+    "compilerSourceAndCachePlacement": "New independent 3 GiB RAM mount, now unmounted.",
+    "privatePostgresNetworkAndMount": true,
+    "pinnedToolCount": 12,
+    "toolVersions": {"go": "1.27.1", "postgresql": "17.11", "gcc": "14.2.0"},
+    "testElapsedSeconds": 6.16,
+    "testBodyMilliseconds": 6135,
+    "packageElapsedSeconds": 7.174,
+    "goCommandElapsedSecondsIncludingColdCompilation": 49.816,
+    "independentTestBinaryRetained": false,
+    "buildCacheIsNotABinaryArtifact": true
+  },
+  "profile": {
+    "fixtureKind": "synthetic metadata created by SQL",
+    "libraries": 2,
+    "perLibrary": {"movies": 2000, "series": 20, "seasonsPerSeries": 5, "episodesPerSeason": 20, "albums": 100, "tracksPerAlbum": 10},
+    "leaves": 10000,
+    "folders": 442,
+    "items": 10442,
+    "sharedArtists": 1,
+    "credits": 4400,
+    "userDataRows": 10,
+    "physicalMediaBytes": 0,
+    "schemaAllocatedBytes": 25198592,
+    "sqlSeedMilliseconds": 3937
+  },
+  "observations": {
+    "timedPageAndCountOnlyChecks": 20,
+    "timedChecksByPhase": {"before": 8, "duringBlock": 4, "after": 8},
+    "pageChecks": 15,
+    "itemsPerPage": 64,
+    "countOnlyChecksWithLimitZero": 5,
+    "cumulativeSampleMilliseconds": 1315,
+    "cumulativeSamplesIncludeConcurrentOverlap": true,
+    "maximumSampleMilliseconds": 234,
+    "confirmedBlockToGateRollbackReturnMilliseconds": 245,
+    "blockIntervalIsExactPostgresWaitDuration": false,
+    "aclIsolationPreserved": true,
+    "userDataAllFieldsTimestampsAndXminPreserved": true,
+    "userDataCheckpoints": ["before", "during the owned transaction block", "after caller cancellation while still blocked", "after gate release and rollback", "after application closure"],
+    "allCatalogRowsRawPreservationClaimed": false
+  },
+  "preExecutionBudgetReview": {
+    "correctedBeforeProductExecution": true,
+    "wasAnExecutionFailure": false,
+    "businessSeconds": 720,
+    "cleanupSeconds": 180,
+    "unitRuntimeSeconds": 900,
+    "unitStopSeconds": 180,
+    "commandSeconds": 600,
+    "testSeconds": 180,
+    "outerSeconds": 1500
+  },
+  "independentReview": {
+    "original": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/independent-review.json",
+      "sha256": "91409ee46170444f03b4bfa2606540cce5df810e3361281d7a0248365206fd4a",
+      "bytes": 19438,
+      "outcome": "failed",
+      "cause": "The reviewer incorrectly required root ownership for the PostgreSQL-owned log.",
+      "productTestFailed": false,
+      "retained": true
+    },
+    "corrected": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/independent-review-corrected.json",
+      "sha256": "f792ba428e096e5f88923c1df8e03f99b9b357ed63f0ce00c70b15edb39e6d37",
+      "bytes": 23577,
+      "outcome": "passed",
+      "postgresLogReadGuard": {"uid": 103, "gid": 106, "mode": "0600", "links": 1},
+      "sourceFilesMatched": 5250,
+      "toolPinsMatched": 12,
+      "commandsChecked": 19,
+      "goJsonEventsChecked": 13,
+      "protectedUnitsMatched": 7,
+      "criticalMetadataMatches": 4,
+      "cleanupChecked": true,
+      "testRerun": false
+    }
+  },
+  "closure": {
+    "receipt": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/closure.json",
+      "sha256": "10807666c71ce0d55dbf23c50245860b66e3729c7beda9e84aa01c272a63879f",
+      "bytes": 56740
+    },
+    "status": "capacity_execution_evidence_preserved_and_owned_ram_closed",
+    "archivesComplete": true,
+    "ramUnmounted": true,
+    "lockReleased": true,
+    "protectedUnchanged": true,
+    "postgresPidAtExecution": 760085,
+    "postgresSystemId": "7685338679263557901",
+    "postgresStoppedNormally": true,
+    "privateBindGone": true,
+    "ownedCgroupsEmpty": true,
+    "emptyFixtureAndUnderlyingDirectoriesRetained": true,
+    "newLoopDevices": 0,
+    "newAccounts": 0,
+    "rootFreeBytesAfter": 1190330368,
+    "newOutputBytesBeforeClosureReceipt": 16198778,
+    "archives": {
+      "evidence": {
+        "path": "/opt/goby-test/catalog-capacity-20260914/retained/evidence.tar.gz",
+        "sha256": "ca1999f6d3f9f19c9208b82cf3c55d97c4758a32fdd1c4ca1772f7ad0072a780",
+        "bytes": 393916,
+        "files": 52,
+        "directories": 1,
+        "readbackPassed": true
+      },
+      "closedPostgres": {
+        "path": "/opt/goby-test/catalog-capacity-20260914/retained/closed-postgres-private.tar.gz",
+        "sha256": "94ca3ff0a76baf570d0bfaa42c63186120c3b0fada5e69f6eba645859ead5cb0",
+        "bytes": 14426233,
+        "files": 1872,
+        "directories": 33,
+        "uncompressedBytes": 114479115,
+        "readbackPassed": true,
+        "rawDatabaseRemainsRemotePrivate": true
+      }
+    }
+  },
+  "operators": {
+    "verifier": {
+      "path": "/opt/goby-test/catalog-capacity-20260914/private/verify-catalog-capacity-20260914.py",
+      "sha256": "507cffe14074cabc161c82b5d5dd857c122b308b3382fc711b6f391d7eafceb8"
+    },
+    "preparationSourceSha256": "74685631054df5de7bb9c4c48858a07ad7f447becb699048833c2d1818ea27b7",
+    "executionSourceSha256": "f156b2e4e9c09309009d573a0ea4ed6952ef2cfc48d1782e0d1d44cdc2b66775",
+    "sealingSourceSha256": "e1d20eeba1798de131032da03f61ebae7a754bc1792817e1f6357b98b64d5254"
+  },
+  "boundaries": {
+    "sqlBaselineCompleteAndConsumed": true,
+    "newRealSmallMediaScanRescanProfileExecuted": false,
+    "physicalMediaOrFfprobeOrScannerExercised": false,
+    "scanThroughputAccepted": false,
+    "nativeTcpOrServicePerformanceAccepted": false,
+    "rssOrReleaseSloAccepted": false,
+    "actualKernelFilesystemStallExercised": false,
+    "hostDurabilityAccepted": false,
+    "pausedFullScanMountExperimentResumed": false,
+    "clientVideoAcceptanceChanged": false,
+    "mainPromoted": false,
+    "completeM2ThroughM6Claimed": false,
+    "m7Deferred": true
+  },
+  "nextRequiredResult": "Prepare a separately budgeted real small-media scan/rescan capacity profile. Do not rerun this consumed SQL baseline, the paused mount experiment or consumed client/recovery workflows."
+}

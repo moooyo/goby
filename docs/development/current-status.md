@@ -1,8 +1,8 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-14 after ordinary regression closure and independent review
-of the fresh nonroot candidate's initial inspection, seed and native admission.
-Candidate admission is complete; client-video acceptance remains open.
+Reviewed on 2026-09-14 after the isolated SQL catalog capacity/isolation test,
+independent review and resource closure. Ordinary regression and fresh-candidate
+admission retain their completed scopes; client-video acceptance remains open.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -17,9 +17,42 @@ their original meanings and are not fresh deployment observations.
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| M2 catalog | The rescan/ACL Store-reopen test and separate real native amd64 service stop/start run passed; independent saved-evidence review and resource closure are complete | The native run uses a root profile and the same PG process. Nonroot, PG restart, host durability, representative capacity and the paused full-scan mount proof are not established |
+| M2 catalog | Real-media rescan/ACL and native amd64 stop/start proofs passed. A separate SQL-seeded 10,000-leaf/442-folder handler test now passes ACL/UserData isolation during an owned transaction block; all scopes have independent review and closure | The latest baseline is not physical scan throughput, native TCP/service performance, RSS/SLO or actual kernel filesystem blocking. Representative real-file capacity, host durability and the paused full-scan mount proof remain open |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
+
+The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
+passed one race test with zero failures/skips on base `892c536` plus one new
+server test. That base changes no Go or module files relative to `badf396`;
+the new test was not in the earlier 2,276-test ordinary suite. SQL created
+10,000 leaves and 442 folders across two libraries, one shared artist, 4,400
+credits and ten UserData rows. No physical media, scanner or native TCP service
+was exercised.
+
+Twenty timed page/count-only checks covered eight before, four during and eight
+after the owned transaction block: fifteen 64-item pages and five `Limit=0`
+queries. Their cumulative 1,315 ms includes concurrent overlap; the maximum
+sample was 234 ms. The 245 ms interval runs from first confirmed PostgreSQL
+blocking to the gate rollback's return, not an exact PostgreSQL wait duration.
+All ten UserData rows retained every field, timestamp and `xmin` before, during,
+after cancellation/rollback and through closure. Schema allocation was
+25,198,592 bytes and SQL seeding took 3,937 ms. The test took 6.16 seconds,
+the package 7.174 seconds and the cold-compile Go command 49.816 seconds.
+These are bounded observations, not an SLO, RSS measurement, scan-throughput
+result, complete raw-catalog preservation proof or actual filesystem stall.
+
+The first independent reviewer rejected a PostgreSQL-owned log under an
+incorrect root-only assumption; the product test did not fail. Corrected review
+used the fixed UID 103/GID 106, mode 0600, single-link guard and passed without
+rerunning the test. It verified the exact 5,250-file source, twelve tool pins,
+nineteen commands, thirteen Go JSON events, cleanup and protected state.
+Closure preserved and reread the evidence and private closed-PG archives, stopped
+PG normally, removed its private bind/cgroup and ordinarily unmounted the new
+3 GiB RAM scope. The empty fixtures/underlying directories remain; no loop or
+account was created. Six JSON records retain identical bytes under `retained/`.
+No independent test binary was retained. Root free space at closure was
+1,190,330,368 bytes; future work requires a fresh resource budget. The next
+increment prepares real small-media scanning/rescanning, not another SQL baseline.
 
 The [partial full-regression checkpoint](full-regression-partial-verification.json)
 records a 570-second package timeout and natural Go exit 1 after 576.293 seconds.
@@ -228,11 +261,11 @@ separately. Ordinary full
 regression and the 374-file source bridge are now complete as recorded above;
 they neither establish tagged full-suite acceptance nor inherit the old
 2,270-test proof. Native arm64, OCI, GPU, licensing and full M6 remain open.
-Next, prepare an independent 10,000-item catalog baseline under its own resource
-limits; that profile has not run and is not an SLO, actual blocked-filesystem
-or scan-throughput result. Representative capacity and blocked I/O remain
-separate obligations. The paused M2 launcher and consumed client/recovery
-scopes retain their existing limits.
+The independent SQL catalog baseline above has now passed its declared scope.
+Next, prepare a bounded real small-media scan/rescan capacity profile under its
+own resource limits. Actual filesystem blocking, representative throughput and
+host durability remain separate obligations. The paused M2 launcher and consumed
+client/recovery scopes retain their existing limits.
 
 The [subtitle response-identity review](audited-subtitles-client01-review.md)
 has also completed once using saved evidence. Context request 291's response ID
@@ -711,7 +744,7 @@ discriminating evidence or a concrete product decision before reopening.
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
-| Catalog and operations | Native restart evidence and closure passed; representative capacity, blocked storage, host reboot, nonroot and filesystem measurements remain open |
+| Catalog and operations | Native restart and the bounded SQL catalog/isolation baseline passed with closure; real-file scan/rescan capacity, actual blocked storage, host reboot, native nonroot restart and filesystem measurements remain open |
 | Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
 | Administration | Selected policy, executor and provider extensions from the delivery plan |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |
