@@ -1,0 +1,146 @@
+{
+  "allCommandGroupsClosed": true,
+  "anchor": {
+    "cgroup": "0::/system.slice/goby-restore-69f5e597-anchor.service",
+    "exe": "/usr/bin/sleep",
+    "networkNamespace": "net:[4026532602]",
+    "pid": 516461,
+    "startTicks": "6304642",
+    "uid": 0
+  },
+  "applicationDatabaseConnections": 0,
+  "capacityAfter": {
+    "pgTmpfsFreeBytes": 765091840,
+    "rootFreeBytes": 453623808
+  },
+  "capacityBefore": {
+    "memoryAvailableBytes": 9936785408,
+    "pgTmpfsMaxBytes": 805306368,
+    "rootFreeBytes": 453992448,
+    "rootFreeInodes": 3553694
+  },
+  "cluster": {
+    "backendPid": 516849,
+    "database": "postgres",
+    "fsync": "on",
+    "fullPageWrites": "on",
+    "port": "25441",
+    "synchronousCommit": "on",
+    "systemIdentifier": "7685171266320400886",
+    "user": "postgres",
+    "version": "170011"
+  },
+  "commands": 67,
+  "isolation": {
+    "postgres": {
+      "checks": 54,
+      "failureCodes": [],
+      "identity": {
+        "effectiveGid": 55241,
+        "effectiveUid": 55241,
+        "gid": 55241,
+        "uid": 55241
+      },
+      "network": {
+        "expectedAnchor": "net:[4026532602]",
+        "expectedHost": "net:[4026531840]",
+        "self": "net:[4026532602]"
+      },
+      "status": "passed"
+    },
+    "selected": {
+      "checks": 52,
+      "failureCodes": [],
+      "identity": {
+        "effectiveGid": 55242,
+        "effectiveUid": 55242,
+        "gid": 55242,
+        "uid": 55242
+      },
+      "network": {
+        "expectedAnchor": "net:[4026532602]",
+        "expectedHost": "net:[4026531840]",
+        "self": "net:[4026532602]"
+      },
+      "status": "passed"
+    },
+    "source32": {
+      "checks": 52,
+      "failureCodes": [],
+      "identity": {
+        "effectiveGid": 55242,
+        "effectiveUid": 55242,
+        "gid": 55242,
+        "uid": 55242
+      },
+      "network": {
+        "expectedAnchor": "net:[4026532602]",
+        "expectedHost": "net:[4026531840]",
+        "self": "net:[4026532602]"
+      },
+      "status": "passed"
+    }
+  },
+  "limitations": [
+    "No application target database or role created.",
+    "No Goby executable, import, restore, authentication or rollback has run.",
+    "Anchor and PostgreSQL remain live within finite unit budgets.",
+    "The tmpfs is temporary; this is not host reboot or power-loss durability evidence."
+  ],
+  "lockReleased": true,
+  "mainControlAndCandidateBoundaryUnchanged": true,
+  "maintenanceReadOnlyConnections": 1,
+  "mount": {
+    "metadata": {
+      "bytes": 40,
+      "ctimeNs": 1789343371809051993,
+      "device": 55,
+      "gid": 55241,
+      "inode": 1,
+      "links": 2,
+      "mode": 448,
+      "mtimeNs": 1789343371809051993,
+      "type": 16384,
+      "uid": 55241
+    },
+    "mountinfo": [
+      "319 29 0:55 / /opt/goby-restore-69f5e597/postgres-volume rw,nosuid,nodev,noexec,relatime shared:325 - tmpfs goby-restore-69f5e597-postgres rw,size=786432k,nr_inodes=32768,mode=700,uid=55241,gid=55241,inode64"
+    ],
+    "path": "/opt/goby-restore-69f5e597/postgres-volume"
+  },
+  "postgres": {
+    "process": {
+      "cgroup": "0::/system.slice/goby-restore-69f5e597-postgres.service",
+      "exe": "/usr/lib/postgresql/17/bin/postgres",
+      "networkNamespace": "net:[4026532602]",
+      "pid": 516649,
+      "startTicks": "6304747",
+      "uid": 55241
+    },
+    "unit": {
+      "ActiveState": "active",
+      "ControlGroup": "/system.slice/goby-restore-69f5e597-postgres.service",
+      "DropInPaths": "",
+      "ExecMainCode": "0",
+      "ExecMainExitTimestampMonotonic": "0",
+      "ExecMainPID": "516649",
+      "ExecMainStartTimestampMonotonic": "63047476426",
+      "ExecMainStatus": "0",
+      "FragmentPath": "/run/systemd/system/goby-restore-69f5e597-postgres.service",
+      "Id": "goby-restore-69f5e597-postgres.service",
+      "InvocationID": "f24ff9504cff4c50b223bb8014beed0d",
+      "LoadState": "loaded",
+      "MainPID": "516649",
+      "Result": "success",
+      "SubState": "running"
+    }
+  },
+  "productInvocations": 0,
+  "receipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/infrastructure-execution.json",
+    "sha256": "c0bbc8730f7548d159840ed2f19316f772a8223c3f0b8577d7f66712ab713f10"
+  },
+  "restoreRequests": 0,
+  "status": "empty_isolated_cluster_ready",
+  "version": 1
+}

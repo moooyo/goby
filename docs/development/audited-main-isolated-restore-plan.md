@@ -1,236 +1,323 @@
-# Audited main isolated restore plan
+# Isolated schema27 recovery and installation rollback
 
-Status: **DRAFT / NOT ADMITTED**, prepared on 2026-09-14. This document records
-source-reviewed execution contracts. It creates no fixture, runs no command,
-and reports no successful restoration, activation or restart. The
-[completed source32 backup](audited-main-native-backup-completed.json) now supplies
-the common archive and main-workflow closeout. Fixture resource, ownership and
-execution admission remain pending.
+Status: **ISOLATED CLUSTER, EMPTY TARGETS AND MATERIALS READY; NATIVE EXECUTION
+NOT ADMITTED**, 2026-09-14. The first infrastructure execution,
+`/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/infrastructure-execution.json`, SHA256
+`c0bbc8730f7548d159840ed2f19316f772a8223c3f0b8577d7f66712ab713f10`,
+succeeded. All three profile isolation checks passed; one fresh PG maintenance
+identity read completed and its backend exited naturally. That increment created
+no application database. The
+[infrastructure checkpoint](isolated-restore-infrastructure.json) records this
+boundary. The subsequent [target/material checkpoint](isolated-restore-targets.json),
+remote `target-preparation/execution.json` SHA256
+`38391c8fe5120138dbd9dcdd3801bba2b9300c212e6c3899188d5a13f6bab395`,
+created all four empty ordinary-role targets, prepared 474 installation files
+and copied private archive/passphrase inputs under their required ownership.
+All five SQL backends exited naturally; protected host state remained exact.
+No Goby executable or native restoration has run. Reuse these resources;
+neither infrastructure nor target/material provisioning may be repeated.
+This plan specifies the remaining complete restoration/rollback sequence and
+does not turn infrastructure success into native execution admission.
 
-The common archive is `69f5e597c99f65099647cd3322d3174c`, 196,310 bytes, SHA256
-`0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f`,
-schema27 with 405 snapshot rows across 35 tables. It is retained privately under
-the backup's `after-ownership-review/private` directory. Its original private
-passphrase is retained in the parent experiment; no value is copied here.
-Native source-key authentication is proved, while decryption/restore validation
-of that archive remains part of these forthcoming proofs.
+The [completed source32 backup](audited-main-native-backup-completed.json)
+supplies archive `69f5e597c99f65099647cd3322d3174c`, 196,310 bytes, SHA256
+`0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f`.
+It contains schema27, 35 tables and 405 snapshot rows. Completion checkpoint
+`3a9ff1ddf45213331aa4f23d66d1beedd44da9f18df8e168e9e56badc6a925cf`
+reconciles the separate 408-row post-workflow state and policy cleanup. Native
+source-key authentication passed; archive-passphrase decryption and restoration
+authentication remain to be proved here.
 
-The [resource observation](audited-main-restore-resources.json) found two unused
-database/role identities and ports18241/18242, with no fixture creation or
-reservation. The root/PostgreSQL volume had 464,678,912 free bytes, while tmpfs
-had about 5.83 GiB available. Sharing the existing PostgreSQL17 cluster is valid
-for distinct fresh target databases, but a provisional 528 MiB combined allowance
-exceeds the observed root free space. That allowance is not an established
-growth bound; target/index/WAL sizing and the final layout must be resolved
-before admission. `max_wal_size=128MB` is a soft target, not a hard storage cap.
+The original archive, its original private passphrase and the old installation
+tar remain on persistent storage in their existing pinned scopes. The old tar
+is 16,590,013 bytes, SHA256
+`f24ad82c66d7a8a1ba2128ed547210a95804f8cd62448ba5ffdb2a14fcac66fb`.
+Root stages verified working copies without moving or modifying those originals.
+The phase comparisons follow the [data contract](isolated-restore-data-contract.md),
+which distinguishes raw archive facts, normalization, native retained facts,
+authentication, audit destinations and all five sequence values.
 
-This is the isolated-recovery step in the
-[current execution plan](../planning/current-execution-plan.md), under the
-[main recovery contract](audited-main-upgrade-plan.md). It does not admit main
-promotion or change the open video-client acceptance gate. Reuse the selected
-product verification; no additional full product suite is required merely to
-prepare these fixtures.
+## Fixed topology
 
-## Two independent proofs from one archive
+Use only `Root=/opt/goby-restore-69f5e597`. Root manages the infrastructure and
+installation; application and PostgreSQL processes have separate identities.
+There is no shared-host PostgreSQL route or inherited deployment environment.
 
-| Fixture | Executable | Required restored schema | Purpose |
-| --- | --- | --- | --- |
-| Source32 | Actual source32 executable, SHA256 `af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`, source commit `b9bb7b1cf11e07e011a6e1726ddb9d53ef8e1fe9` | Source 27, target 27 | Prove that the fresh recovery point can run under the actual old executable and matching old administrator assets |
-| Selected | Selected executable, SHA256 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42` | Source 27, target 28 | Prove authenticated restoration followed by the selected executable's embedded migration28 and normal activation |
-
-Both fixtures consume the identical encrypted archive SHA256 and passphrase.
-Neither consumes the other's restored database or stores. The schema28 result
-must never be presented as a source32-compatible database. There is no supported
-down-migration, and replacing its executable with source32 would not prove
-rollback. Follow the umbrella plan's selected-fixture proof, then its separate
-source32 proof. Serialize the resource-intensive rehearsals and close each
-owned scope before the next admitted phase.
-
-## Evidence required before fixture admission
-
-| Required input | Concrete evidence still to bind |
+| Resource | Fixed selection |
 | --- | --- |
-| New archive | Completed source32 backup operation/catalog publication, full downloaded file path, SHA256, byte length and file identity; archive SourceFacts for schema27 and all 35 tables; matching native key witness and configuration/master provenance from that backup snapshot |
-| Main backup closure | Exact post-snapshot session/activity/sequence and private-file reconciliation; completed download and owned logout; main invocation stopped and drained; temporary policy and protected external state closed. An accepted request or a partial file is insufficient |
-| Private recovery material | Exact private passphrase descriptor and custody, readable archive copy, and verified old installation bundle. No passphrase or master bytes enter arguments, safe reports or public logs. The archive's recovered generation master is established through the native plan, not by copying the live master file |
-| Capacity | Fresh filesystem free bytes/inodes, memory and process budget for the selected isolated PostgreSQL layout; bounds for target rows/indexes, WAL, temporary space, encrypted import and decryption scratch, evidence and retained first-fixture output. Check the configured store admission/reservation limits as well as archive size. The earlier main free-space observation is not fixture admission |
-| Database and role identities | Exact fresh target names, private URI descriptors, cluster/system identity, PostgreSQL/tool versions, port/socket, database/public OIDs and owners, ACLs and ordinary-role flags; empty-target and foreign-session checks. Existing main, candidate, workspace and recovery databases are excluded |
-| Paths and ports | Canonical new scope, PostgreSQL data/socket/log paths, application stores/cache/log/master paths, archive/passphrase copies, unit names and network namespace; owner UID/GID, modes, no symlink/overlap, initial absence, and unused listeners. Assign actual values in the frozen input only after these checks |
-| Executable and assets | Exact consumed binary, source/manifest and administrator asset pins for each fixture, with existing verification receipts. Pin `pg_dump`, `pg_restore`, FFmpeg and FFprobe paths and versions; do not resolve them through inherited deployment defaults |
-| Finite execution | One import and one plan request ID per fixture, phase/total deadlines, request and disk-output bounds, restart policy, exact owned stop/cleanup responsibility and independent closeout. No automatic business retry, restore retry or restart loop |
+| Network anchor | `goby-restore-69f5e597-anchor.service`, root-owned independent `PrivateNetwork=yes` unit |
+| PostgreSQL | PostgreSQL17, unit `goby-restore-69f5e597-postgres.service`, OS user/group `goby-r69pg`, UID/GID55241 |
+| PostgreSQL storage | Root-managed 768 MiB tmpfs mounted at `Root/postgres-volume`; data at `postgres-volume/data`, Unix socket at `postgres-volume/socket` |
+| PostgreSQL endpoint | `127.0.0.1:25441` inside the anchor namespace only |
+| Application identity | OS user/group `goby-r69app`, UID/GID55242, for both serial application phases and their CLI/HTTP probes |
+| Shared installation | `Root/install/goby` and `Root/install/admin`, root-managed and read-only to application processes |
+| Selected application | `Root/app-selected`, unit `goby-restore-69f5e597-selected.service`, listen/public URL `127.0.0.1:18241` / `http://127.0.0.1:18241` |
+| Source32 application | `Root/app-source32`, unit `goby-restore-69f5e597-source32.service`, listen/public URL `127.0.0.1:18242` / `http://127.0.0.1:18242` |
+| Controller and evidence | `Root/controller`, root-owned mode0700, persistent and inaccessible to both application sandboxes |
+| Media | The approved `/opt/goby-fixtures` layout, bound read-only with its archived absolute path identities |
 
-Freeze these inputs and obtain independent review before provisioning or
-executing either fixture. Do not fill unknown hashes, free-space values, ports
-or successful-state fields with placeholders that an executor could accept.
+The four physical slots are separate databases and ordinary owner roles in this
+new cluster. Their names are fixed now; their actual OIDs are recorded after
+creation, never invented as admission inputs.
 
-## Isolation and configuration
+| Slot | Database | Owner role | Application configuration |
+| --- | --- | --- | --- |
+| A | `goby_r69_a` | `goby_r69_a` | Selected `GOBY_DATABASE_URL` |
+| B | `goby_r69_b` | `goby_r69_b` | Selected `GOBY_RECOVERY_DATABASE_URL` |
+| C | `goby_r69_c` | `goby_r69_c` | Source32 `GOBY_DATABASE_URL` |
+| D | `goby_r69_d` | `goby_r69_d` | Source32 `GOBY_RECOVERY_DATABASE_URL` |
 
-Each fixture needs two explicit, different configuration slot identities:
-`GOBY_DATABASE_URL` for primary and `GOBY_RECOVERY_DATABASE_URL` for recovery.
-Database names and role names must differ, even across hosts. The offline CLI
-only parses the configured original identity; it does not connect to it or
-open its original application-key vault. Thus the minimum is one actual fresh
-recovery database and ordinary role per fixture, plus a separately declared
-isolated primary identity. An unreachable primary is valid for this offline
-proof. Creating a second empty database/role is optional when the admitted
-proof explicitly observes both slots; it must not reuse main as the primary.
+Cluster system identifier is `7685171266320400886`. A/B/C/D database OIDs are
+16392/16393/16394/16395 and owner-role OIDs are16388/16389/16390/16391. Each has
+public schema2200 owned through `pg_database_owner`, zero application relations,
+routines and types, and only `plpgsql`. Database ACLs grant access only to the
+respective owner; roles have no administrative flags or memberships. These are
+measured preparation facts, to be rebound before native access.
 
-The target must be PostgreSQL 17 with UTF8, an existing owner-controlled public
-schema, and no non-system relations, routines or types or extensions other
-than `plpgsql`. Its role must not have administrative capabilities or inherit
-the source role or an administrative role. The native target validator and
-lease remain mandatory after external admission.
+The root-managed mount and its UID/GID55241 data/socket directories, mode0700,
+must exist before any PG process. The recorded mount must outlive every PG
+stop/restart. Do not use a unit-local temporary filesystem that recreates the
+database on restart. Keep normal
+PostgreSQL durability settings, including fsync and full-page writes. The
+768 MiB limit bounds only this PostgreSQL volume; it does not prove sufficient
+space, RAM or capacity for four restored databases, indexes, WAL, temporary
+files, archive/decryption scratch or evidence. Measure and budget these before
+admission and at phase boundaries. Stop on insufficient capacity; do not delete
+retained slots or enlarge/reset the fixture to manufacture success.
 
-Use a clean, explicitly constructed environment for every CLI invocation and
-subsequent service start. Preserve the same two slot URLs throughout the
-fixture; do not swap environment values after activation. Freeze at least:
+All PG, initdb, application, CLI and connecting probe processes join the same
+anchor namespace. Root verifies the anchor's live PID/start/invocation and
+namespace inode before every dependent start; `BindsTo` alone is insufficient.
+The anchor stays alive across PG restarts. PG lifetime must not own the namespace.
+Unexpected anchor loss stops the dependent scope without automatic replacement.
 
-- `GOBY_DATABASE_URL`, `GOBY_RECOVERY_DATABASE_URL`, `GOBY_LISTEN` and
-  `GOBY_PUBLIC_URL`, with fixture-only loopback/network boundaries.
-- Separate `GOBY_RECOVERY_STATE_DIR`, `GOBY_RECOVERY_OPERATIONS_DIR`,
-  `GOBY_BACKUP_DIR`, `GOBY_API_KEY_MASTER_KEY_FILE`, `GOBY_TRANSCODE_CACHE`
-  and `GOBY_LOG_DIR`. Use fresh native stores and their own locks/markers;
-  private store paths must not overlap one another or media/cache/log paths.
-- `GOBY_WEB_DIR`, tool paths, backup/cache/log capacity settings, software
-  hardware profile, startup/operation timeouts, cookie/public-origin policy
-  and declared logical defaults. No environment file from main is sourced.
-- Exact `GOBY_MEDIA_ROOTS` approved for this archive and the fixture's read-only
-  media namespace. The archived allowed/full/relative path identities are
-  validated; restoration does not remap them to arbitrary new paths.
+Use the fixed profiles in `.git/isolated-restore-units.py`, with the admitted
+source bytes pinned. They separate the app roots, hide the PG volume and
+controller from apps, and hide both apps, installation and media from PG. They
+deny existing main, candidate, source55 and host PostgreSQL paths; private
+loopback cannot reach host listeners. The root coordinator stays outside the
+application sandbox, but every HTTP/SQL child it launches joins the same pinned
+namespace. No fixture process uses a host PostgreSQL socket or connection URL.
 
-Media files are absent from the archive. Preserve original approved absolute
-path identities through an isolated read-only mount layout, or declare an
-unavailable mount where the restoration contract allows it. Neither option
-permits scans or writes against main's media. New schema28 root fields do not
-constitute storage-binding approval.
+Both app roots, `install/` and `controller/` must exist before dependent units so
+required inaccessible paths exist. App roots and their private input copies are
+owned by UID/GID55242, with app/private directories mode0700. Root-owned manager
+environment files are `controller/selected.env` and `controller/source32.env`; actors cannot read
+the controller directory. Archive/passphrase copies needed by a CLI belong in
+that CLI's `app-*/private`, with exact bytes, owner and mode0600. No secret enters
+arguments, safe reports or public logs.
 
-Do not copy main's lifecycle/control directory into a fresh path and treat it
-as valid ownership. Native store formats also bind device/inode identities.
-Fresh `recovery.Open` creates local ownership; the plan stages a generation
-and atomically stamps its new deployment/generation/slot marker into the
-restored database. The archive's old database marker is not authority for a
-new fixture. `ActiveConfig` later selects the activated recovery slot and
-generation master without falling back to primary.
+Each app has fresh, nonoverlapping lifecycle, operation, backup, default-master,
+cache and diagnostic paths under its own root. Configure these paths explicitly,
+along with `GOBY_WEB_DIR=Root/install/admin`, tool paths, logical defaults and
+backup/cache/log limits. Do not source main's environment or copy its lifecycle
+stores or live master. Native restore creates the local binding and recovered
+generation master. The slot URLs remain fixed throughout each phase;
+`ActiveConfig` selects the active generation without URL swapping or fallback.
 
-## Actual CLI sequence
+## Admission and construction
 
-The following is an invocation template, not an admitted command file. `BIN`
-means the fixture's pinned executable, always run as its recorded deployment
-owner under the frozen fixture environment. The service remains stopped until
-the explicit serve phase.
+Admission has two stages: bind the construction scope first, then admit the
+actual empty targets. Target OIDs do not exist before construction. Each
+execution phase uses this recorded authority and its concrete phase receipts.
 
-```text
-BIN recovery status
-BIN backup import --file ARCHIVE --request-id IMPORT_REQUEST
-BIN backup list
-BIN restore plan --backup-id IMPORTED_BACKUP_ID --sha256 ARCHIVE_SHA256
-    --request-id PLAN_REQUEST --generation-revision GENERATION_REVISION
-    --passphrase-file PRIVATE_PASSPHRASE_FILE
-BIN restore apply --id PLAN_ID --revision PLAN_REVISION
-    --generation-revision GENERATION_REVISION --accept-no-rollback
-BIN serve
-```
+1. **Infrastructure admission — executed:** the recorded scope bound the fixed
+   accounts, directories, mount, anchor, PG17 cluster, namespace/profile fences,
+   source/configuration pins and finite budgets. Root started the independent
+   anchor, ran initdb as UID55241 in that namespace and started its own postmaster.
+   Its empty maintenance-cluster identity and three profile isolation checks
+   are recorded; anchor, PG and mount remain owned infrastructure. This did not
+   admit application database creation or native restore. Later work rechecks
+   their recorded identities and remaining resources without recreating them.
+2. **Target construction and empty-target observation — executed:** the bounded
+   scope created A/B/C/D and their ordinary owner roles under the isolated
+   cluster authority. Unknown target OIDs were not prerequisites for creation.
+   The checkpoint captured the actual
+   cluster system identifier, PG/tool versions, postmaster/namespace identity,
+   database/public OIDs, owners, ACLs, role flags and empty-target observations.
+   Each target is UTF8 with an owner-controlled public schema and no non-system
+   relations, routines, types or extensions other than `plpgsql`; no foreign
+   connection or prepared transaction may exist. Bind the native operation's
+   actual input and fresh continuity before plan access. Keep C/D empty and recheck this
+   boundary when the source32 phase is reached. The native target validator and lease
+   remain mandatory and do not replace these external identity bindings.
+   Application roles use private authentication, have no administrative
+   capabilities or membership in privileged/source roles, and own only their
+   declared database. PG administration uses only this cluster's bootstrap
+   authority. Freeze private input handling, actual capacity and finite
+   operation/disposal bounds in this target scope; there is no inherited
+   permission to run a native mutation merely because PG is available.
 
-1. `recovery status` opens native stores and is part of the admitted write
-   scope, not a read-only preflight. Record the actual generation revision.
-   Initial fresh state is expected to select primary/revision0/default, but
-   derive the next command's revision from the actual accepted output.
-2. Import creates a new local `BackupId`; use that returned ID rather than the
-   embedded archive ID or main's store ID. Require operation `State=completed`
-   and the local ready object's exact SHA256/size. Import alone does not prove
-   decrypted archive validity; `Verified` is established by successful plan
-   validation. Exit code zero alone is insufficient for the operation state.
-3. Plan waits for a ready operation. Require `Kind=restore`, `State=ready`,
-   `Phase=ready`, empty error code and matching input identities. Save the
-   returned `Id`, `Revision` and `GenerationRevision`. The passphrase file is
-   an owner-readable regular file, mode0600, one link, with no final symlink;
-   its exact UTF8 bytes are used and trailing newlines are not stripped.
-4. Before apply, independently close staging: actual target schema, migrations,
-   normalized data, lease release and local database/generation binding must
-   match the declared fixture. Use no `--replace-rollback` on these fresh
-   targets, and do not alter the staged target to make activation pass.
-5. Apply includes lifecycle publication, target application initialization and
-   acceptance. There is no separate `activate` command. It calls the normal
-   application constructor, temporarily binds `GOBY_LISTEN`, starts the task
-   manager and activity retention, then closes that generation before CLI
-   exit. Account for these writers and finite cleanup even without HTTP use.
-6. Require the apply JSON's actual capitalized fields: `Status=completed`,
-   matching `OperationId`, the new `GenerationRevision` and `StartService=true`.
-   The latter is an instruction to start a service, not evidence of a running
-   daemon. Require the CLI process and all children/listeners closed first.
-7. Start exactly the fixture's own finite service with `serve`; verify binary,
-   process/invocation, listener, readiness, retained server/data identity and
-   the matching administrator assets. Authenticate a restored account using
-   a new owned native session for the declared reads, then logout and prove
-   rejection of that same credential. Bound and reconcile its session/audit
-   deltas separately from restoration.
-8. Stop and drain that unit, then perform the one declared restart with the
-   identical environment and stores. Prove the same activated generation,
-   recovery slot, recovered master selection, schema and readable data. Close
-   any separately declared authenticated session and stop/drain the unit again.
+Preparation copied the selected installation's 58 files (30,667,532 bytes) into
+`install`, and staged source32's 416 files (40,869,739 bytes) privately under
+`controller/old-installation`. Every copied file matched the pinned source by
+size and SHA256; source originals were preserved. Both private environments and
+archive/passphrase copies are ready, and both default master paths remain absent.
+Actual installation replacement is still pending. At this checkpoint root free
+space was379,777,024 bytes and the PG tmpfs had739,315,712 bytes free; these are
+observations, not permanent reservations or a claim that every phase will fit.
 
-`recovery jobs` and `recovery status` inspect persisted operation state after
-an uncertain outcome. `recovery resume` exists for an actual pending switch;
-it is not an automatic retry instruction. `restore rollback` requires a
-separately proved retained generation. Offline `--accept-no-rollback` preserves
-the original slot without certifying a rollback image, so these fresh fixtures
-must not claim that native rollback or installation downgrade was exercised.
-Any additional rollback exercise required by the umbrella contract remains a
-separate explicit obligation; it is not waived by this narrower increment.
+Use the template ceilings: anchor150min, PG120min per invocation, app45min,
+offline CLI35min and probes120s, with their stop and memory limits. The
+coordinator freezes a non-resetting overall deadline within the anchor lifetime
+and reserves time for app/PG shutdown and final disposal. Each command receives
+only its remaining phase budget; a process restart creates no new experiment
+budget. CLI/probe profiles clear inherited commands and sinks: add one fixed
+reviewed command and bounded private stdout/stderr capture before publication.
+Bind stop authority to each submitted start before environment/readiness checks.
 
-## Independent preservation and completion
+## Selected proof: B revision1, A revision2, B revision3
 
-The native restore pipeline authenticates the schema27 migration/catalog,
-table fingerprints, sequence bounds and server ID before upgrading or running
-its trusted finalizer. It rebuilds trusted embedded DDL; archive SQL is not
-executed directly. The source32 executable must finish at schema27. The selected
-executable must finish at schema28, including exactly migration28's neutral
-root/audit additions and the expected trusted catalog.
+Install selected binary
+`b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`
+and its exact 57 administrator assets at the shared installation paths. Keep
+source32 stopped. Selected A/B and `app-selected` begin as the admitted fresh
+resources; both slots are real databases.
 
-The CLI operation's `Source.SchemaVersion` describes the archive, so it remains
-27 in both proofs. It is not evidence of the target's current schema. Obtain
-the target migration/catalog and durable-state evidence independently, using
-only the newly owned target and bounded read-only SQL after each writer closes.
+1. **Offline restore into B.** As UID55242 under the selected CLI profile, run
+   native `recovery status`, import the pinned encrypted archive once and use
+   its returned local BackupId. Status opens stores and is an admitted write,
+   not a read-only probe. Require import completion and exact archive bytes.
+   Run `restore plan` with that BackupId/SHA256, one fixed request ID, the actual
+   `GenerationRevision="0"` and the private passphrase file. Preserve exact UTF8
+   passphrase bytes, including any newline. Do not request replacement of a retained copy.
+   Require actual ready state, successful decryption/key recovery, target B
+   schema28 and the data contract's normalization/migration/binding results.
+   Record the returned operation ID/revision and target lease closure.
+2. **Offline apply and serve B.** Apply that operation with the returned
+   revisions and `--accept-no-rollback`; A is still empty and is not being
+   certified as a rollback image by this initial step. Require the native
+   application acceptance and lifecycle revision1 selecting B. Apply itself
+   initializes the app, binds its listener and starts task management before
+   closing; record those effects and close every CLI child/listener. Its
+   `Status=completed`, matching `OperationId`, `GenerationRevision` and
+   `StartService=true` do not prove a daemon is running. Start the selected
+   serve unit separately and prove B's actual generation/master, schema28,
+   readiness, restored server/data identity and selected assets.
+3. **Online plan into A.** Authenticate an owned restored administrator on B.
+   Use `POST /admin/v1/restores/plans` with the already imported archive ID,
+   fixed SHA256, a new fixed RequestId, `RestoreDefaults=false`,
+   `ReplaceRollback=false` and the current `GenerationRevision="1"`. Transfer the
+   passphrase privately through the native request, never through arguments.
+   Keep A empty until its native lease is taken. Require a ready plan that
+   independently restores the same archive into A and produces schema28.
+   Reconcile B's plan audits separately from A's restoration changes.
+4. **Online apply B to A.** Submit `POST /admin/v1/restores/{id}/apply` with the
+   returned operation Revision and `GenerationRevision="1"`. Require completed
+   activation at lifecycle revision2 selecting A and a usable native retained
+   B image. After B ingress and writers drain, capture its complete native
+   retained facts, raw marker, key/generation bindings and all five sequence
+   values. These include B's actual login/plan/apply-request history. Freeze
+   this image until rollback; do not log out into inactive B, run its startup
+   or refresh its baseline to accept drift. Confirm the active service is A
+   and authenticate a new owned A administrator for its reads and rollback.
+5. **Online rollback A to B.** Submit `POST /admin/v1/restores/rollback` with one
+   fixed RequestId and `GenerationRevision="2"` through A's native authentication.
+   Require validation of the retained B image before mutation, the declared
+   normalization/rebinding and actual accepted rollback at revision3 selecting
+   B. This is native rollback, not another restore plan or an offline
+   `--accept-no-rollback` substitute. Preserve retiring A and its captured facts.
+   B's return generation is the native retained BeforeImage generation; it
+   differs from its former active generation. Compare its recorded identity.
+6. **Restart with the same mount.** Finish current-B owned authentication and
+   logout/401 checks, then normally stop/drain the selected app. Shut down only
+   the pinned fixture postmaster with the template's ordinary fast shutdown;
+   confirm PG processes, sockets and listeners are gone. Leave the anchor and
+   the exact postgres-volume mount intact. Restart PG with the same data,
+   configuration and cluster identifier, then restart the selected app with
+   unchanged slot URLs/stores. Prove revision3, returned B generation/master,
+   schema28 and readable restored data persist; close any declared new login
+   and stop/drain the app again. Record A/B before/after rows and sequences.
 
-Separate raw archive equality from the legitimate finalizer changes: validate
-the recovered application-key witness, preserve user/password/policy/key and
-device history, revoke previously unrevoked credentials of every kind, expire
-Prepared/Playing/Paused sessions, interrupt queued/running encoding work, and
-account for scan/task reconciliation. The finalizer stamps the new local
-binding in the same restore transaction. Later task normalization and apply or
-serve startup may add their own declared changes; do not discard those fields
-from comparison or assert whole-database equality with raw archive rows.
+Every mutation uses actual preceding IDs and revisions and has one admitted
+request slot. Revision and GenerationRevision are decimal strings; compare
+returned values to the expected 0→1→2→3 sequence, without substituting expected
+values for missing output. Poll only the recorded operation. An uncertain HTTP
+result does not authorize another plan/apply or rollback. Keep each transition,
+service terminal and state comparison in its own phase receipt.
 
-Each proof needs its own safe closeout binding the common archive, executable,
-fixture input, import/plan/apply outputs, target schema/data, generation/master
-selection, service starts and restart, owned authentication cleanup, process
-and listener closure, and protected external boundaries. Preserve private raw
-evidence and failed receipts. The two completed proofs and usable original
-schema27 bundle are distinct deliverables; neither is main promotion, complete
-core-client acceptance, root-binding approval or full M2-M6 completion.
+## Actual installation rollback and source32 C/D proof
 
-Stop on an unexpected target, hash, schema, write, deadline, exit, uncertain
-commit/publication or incomplete cleanup. Retain the exact scope and determine
-its durable phase before another action. Never reset a failed stage, terminate
-foreign backends, use FORCE/CASCADE disposal or silently refresh its baseline.
-Cleanup may remove only resources explicitly owned and covered by the admitted
-disposal step; retain required evidence and the usable source archive. All
-eventual execution and verification run through `ssh test-env`.
+With selected app/CLI/probes stopped and their ownership sealed, root changes
+the same `install/goby` and `install/admin` paths from the selected installation
+to source32. Use the preserved tar to restore executable
+`af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620`
+and all 415 old administrator files, including retained asset versions. Record
+the exact selected inventory before replacement, old inventory afterward,
+bytes/hash/modes/ownership and final published executable. Do not merely select
+another executable path or combine the old binary with the 57 selected assets.
+Original source archive, passphrase, tar and sealed selected evidence remain
+on persistent storage.
 
-## Source-reviewed entry points
+Recheck C/D and their separately created owner roles against the recorded empty-
+target admission, and use entirely fresh `app-source32` stores/configuration.
+Keep A/B and `app-selected` retained and unchanged until final disposal.
+Source32 must never connect to A/B or any schema28 database.
 
-- [CLI dispatch and activation](../../cmd/goby/recovery_cli.go), with
-  [Linux private-file handling](../../cmd/goby/recovery_cli_linux.go).
-- [Offline manager authority](../../internal/recovery/operator.go),
-  [plan/staging](../../internal/recovery/plans.go),
-  [activation journal](../../internal/recovery/transition.go) and
-  [active slot configuration](../../internal/recovery/runtime.go).
-- [Offline source-identity boundary](../../internal/backuppg/offline.go),
-  [target restore/migration](../../internal/backuppg/restore.go),
-  [trusted finalizer](../../internal/recovery/restore.go) and
-  [pre-migration database binding](../../internal/recovery/binding.go).
+Run source32 offline status/import/plan/apply into D using the same original
+archive SHA256 and passphrase, its returned local BackupId and new operation
+request IDs. C begins as the real empty primary. Initial offline apply uses
+`--accept-no-rollback` and must produce revision1 selecting D. Require source27
+and actual target27, raw archive authentication, the source32 data-contract
+normalization and legal generation/master binding. Close apply's temporary
+app/listener and all CLI children before serving D on port18242.
 
-The inspected source32 versions expose the same CLI and offline ownership
-flow. Its embedded migrations end at27; current migrations include28. Relative
-source links above show current code, not a claim that the old binary contains
-later engine validation, diagnostics or cancellation fixes.
+Start the source32 serve unit from the replaced shared installation, prove its
+old binary and all 415 assets, authenticate a restored administrator for the
+declared reads, then logout and prove same-credential401. Stop/drain the app,
+normally stop/restart PG while retaining the same mount and anchor, and restart
+the source32 app with the same C/D URLs and native stores. Prove target schema27,
+revision1, the same activated D generation/master and readable data again;
+close any new owned authentication and stop/drain source32.
+
+Successful completion proves the actual installation return to source32 plus
+an independently restored compatible database. It is not a down-migration of
+A/B. The selected online rollback proof remains a distinct requirement and is not replaced by
+source32's initial offline apply.
+
+## Data, credentials and phase closure
+
+Use the [data comparison contract](isolated-restore-data-contract.md) for every
+staged, active and retained boundary. Native archive/table fingerprints are not
+equivalent to JSON re-encoding by a helper. Preserve unlisted fields and rows,
+exact marker bytes, key/generation files and separate sequence observations.
+Bind SQL clock windows and every new audit/session to its actual active database
+and committed operation. Archive Source.SchemaVersion27 does not identify the
+current target schema. Startup, retention and activation effects must be
+declared and compared rather than removed from the data.
+
+The A session authorizing rollback can remain unrevoked in inactive retained A.
+Record its exact private row and responsibility; do not issue a SQL update or
+start A merely to revoke it. A 401 for that credential at B or D establishes
+only rejection by the active service, not database revocation in A. Log out
+and prove rejection for all newly owned credentials accessible through the
+currently active B or D service. Preserve A's retained image through the
+source32 phase, with its credential disposal still explicitly pending.
+
+At final closure, stop all app, CLI, probe and fixture PG processes and their
+children; prove exact PID/invocation, cgroup and listener absence. Require PG's
+normal shutdown result. Root then performs ordinary unmount and disposal of
+the exclusively owned postgres-volume cluster, including A/B/C/D and roles.
+This ends the inactive A credential's responsibility by disposal, not by a
+fabricated revoked_at value. Service stop or a cross-slot401 alone is insufficient.
+Seal comparison/phase/disposal receipts on persistent storage before removing
+temporary stores; retain the original archive, passphrase, old tar and both
+proofs afterward. Stop the independent namespace anchor last and restore only
+the explicitly owned fixture infrastructure according to its admitted disposal.
+
+No FORCE/CASCADE database cleanup, foreign-backend termination, lazy/forced
+unmount or fixture reset is part of this route. A target, schema, key, marker,
+write, deadline, exit or cleanup mismatch stops the affected phase and retains
+its evidence and ownership responsibility. Do not auto-retry, create another
+archive, add rollback cycles to manufacture revocation, or reclassify forced
+termination as normal shutdown.
+
+The same-mount PG/app restarts prove process-restart continuity only. They do
+not prove host reboot, power-loss or persistent tmpfs data; the M2 durability
+gate remains open. Separate closeouts must identify the selected native rollback,
+actual installation replacement/source32 recovery, final credential/resource
+disposal and protected main/candidate boundaries. Both proofs are still
+unexecuted. Core video acceptance, main promotion and complete M2–M6 remain
+subject to the [umbrella contract](audited-main-upgrade-plan.md) and
+[current execution plan](../planning/current-execution-plan.md). All eventual
+execution and verification is confined to `ssh test-env`; this document runs none.

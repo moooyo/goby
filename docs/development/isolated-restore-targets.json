@@ -1,0 +1,238 @@
+{
+  "allCommandGroupsClosed": true,
+  "capacityAfter": {
+    "pgTmpfsFreeBytes": 739315712,
+    "rootFreeBytes": 379777024
+  },
+  "commands": 54,
+  "installation": {
+    "selected": {
+      "binary": {
+        "bytes": 29561402,
+        "metadata": {
+          "bytes": 29561402,
+          "ctimeNs": "1789343951404634346",
+          "device": 2049,
+          "gid": 0,
+          "inode": 1897225,
+          "links": 1,
+          "mode": 493,
+          "mtimeNs": "1789343951404634346",
+          "uid": 0
+        },
+        "path": "/opt/goby-restore-69f5e597/install/goby",
+        "sha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42"
+      },
+      "destinationRoot": "/opt/goby-restore-69f5e597/install",
+      "fileCount": 58,
+      "totalBytes": 30667532
+    },
+    "source32": {
+      "binary": {
+        "bytes": 28172723,
+        "metadata": {
+          "bytes": 28172723,
+          "ctimeNs": "1789343951532630135",
+          "device": 2049,
+          "gid": 0,
+          "inode": 1897232,
+          "links": 1,
+          "mode": 493,
+          "mtimeNs": "1789343951532630135",
+          "uid": 0
+        },
+        "path": "/opt/goby-restore-69f5e597/controller/old-installation/goby",
+        "sha256": "af46a82e85fa67b776964a950ec85d12ca1c96ef94ce240f0287a8b8a009a620"
+      },
+      "destinationRoot": "/opt/goby-restore-69f5e597/controller/old-installation",
+      "fileCount": 416,
+      "totalBytes": 40869739
+    }
+  },
+  "limitations": [
+    "All four target application schemas are still empty.",
+    "Old installation bytes are staged privately; actual installation replacement remains pending.",
+    "No Goby CLI, native restore, authentication, activation or rollback has run.",
+    "Actual selected recovery and separate source32 recovery must recheck live identities and phase capacity."
+  ],
+  "lockReleased": true,
+  "materials": {
+    "selected": {
+      "archive": {
+        "bytes": 196310,
+        "path": "/opt/goby-restore-69f5e597/app-selected/private/archive.age",
+        "sha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f"
+      },
+      "defaultMasterAbsent": true,
+      "environmentFile": "/opt/goby-restore-69f5e597/controller/selected.env",
+      "environmentMode": 384,
+      "environmentOwner": 0,
+      "passphraseCopyMode": 384,
+      "passphraseCopyOwner": 55242,
+      "workingDirectory": "/opt/goby-restore-69f5e597/app-selected"
+    },
+    "source32": {
+      "archive": {
+        "bytes": 196310,
+        "path": "/opt/goby-restore-69f5e597/app-source32/private/archive.age",
+        "sha256": "0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f"
+      },
+      "defaultMasterAbsent": true,
+      "environmentFile": "/opt/goby-restore-69f5e597/controller/source32.env",
+      "environmentMode": 384,
+      "environmentOwner": 0,
+      "passphraseCopyMode": 384,
+      "passphraseCopyOwner": 55242,
+      "workingDirectory": "/opt/goby-restore-69f5e597/app-source32"
+    }
+  },
+  "nativeImports": 0,
+  "ownedBackendsClosed": 5,
+  "productInvocations": 0,
+  "protectedHostUnchanged": true,
+  "receipt": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/main-isolated-restore-01/target-preparation/execution.json",
+    "sha256": "38391c8fe5120138dbd9dcdd3801bba2b9300c212e6c3899188d5a13f6bab395"
+  },
+  "restoreRequests": 0,
+  "status": "four_empty_targets_and_materials_ready",
+  "targets": {
+    "goby_r69_a": {
+      "acl": [
+        "goby_r69_a=CTc/goby_r69_a"
+      ],
+      "backendPid": 517492,
+      "bypassRls": false,
+      "canLogin": true,
+      "connectionLimit": 12,
+      "createDatabase": false,
+      "createRole": false,
+      "database": "goby_r69_a",
+      "databaseBytes": 7689907,
+      "databaseOid": "16392",
+      "encoding": "UTF8",
+      "extensions": [
+        "plpgsql"
+      ],
+      "inherit": false,
+      "owner": "goby_r69_a",
+      "ownerOid": "16388",
+      "publicAcl": [
+        "pg_database_owner=UC/pg_database_owner",
+        "=U/pg_database_owner"
+      ],
+      "publicOid": "2200",
+      "publicOwner": "pg_database_owner",
+      "relations": 0,
+      "replication": false,
+      "roleMemberships": 0,
+      "routines": 0,
+      "superuser": false,
+      "systemIdentifier": "7685171266320400886",
+      "types": 0
+    },
+    "goby_r69_b": {
+      "acl": [
+        "goby_r69_b=CTc/goby_r69_b"
+      ],
+      "backendPid": 517544,
+      "bypassRls": false,
+      "canLogin": true,
+      "connectionLimit": 12,
+      "createDatabase": false,
+      "createRole": false,
+      "database": "goby_r69_b",
+      "databaseBytes": 7689907,
+      "databaseOid": "16393",
+      "encoding": "UTF8",
+      "extensions": [
+        "plpgsql"
+      ],
+      "inherit": false,
+      "owner": "goby_r69_b",
+      "ownerOid": "16389",
+      "publicAcl": [
+        "pg_database_owner=UC/pg_database_owner",
+        "=U/pg_database_owner"
+      ],
+      "publicOid": "2200",
+      "publicOwner": "pg_database_owner",
+      "relations": 0,
+      "replication": false,
+      "roleMemberships": 0,
+      "routines": 0,
+      "superuser": false,
+      "systemIdentifier": "7685171266320400886",
+      "types": 0
+    },
+    "goby_r69_c": {
+      "acl": [
+        "goby_r69_c=CTc/goby_r69_c"
+      ],
+      "backendPid": 517593,
+      "bypassRls": false,
+      "canLogin": true,
+      "connectionLimit": 12,
+      "createDatabase": false,
+      "createRole": false,
+      "database": "goby_r69_c",
+      "databaseBytes": 7689907,
+      "databaseOid": "16394",
+      "encoding": "UTF8",
+      "extensions": [
+        "plpgsql"
+      ],
+      "inherit": false,
+      "owner": "goby_r69_c",
+      "ownerOid": "16390",
+      "publicAcl": [
+        "pg_database_owner=UC/pg_database_owner",
+        "=U/pg_database_owner"
+      ],
+      "publicOid": "2200",
+      "publicOwner": "pg_database_owner",
+      "relations": 0,
+      "replication": false,
+      "roleMemberships": 0,
+      "routines": 0,
+      "superuser": false,
+      "systemIdentifier": "7685171266320400886",
+      "types": 0
+    },
+    "goby_r69_d": {
+      "acl": [
+        "goby_r69_d=CTc/goby_r69_d"
+      ],
+      "backendPid": 517642,
+      "bypassRls": false,
+      "canLogin": true,
+      "connectionLimit": 12,
+      "createDatabase": false,
+      "createRole": false,
+      "database": "goby_r69_d",
+      "databaseBytes": 7689907,
+      "databaseOid": "16395",
+      "encoding": "UTF8",
+      "extensions": [
+        "plpgsql"
+      ],
+      "inherit": false,
+      "owner": "goby_r69_d",
+      "ownerOid": "16391",
+      "publicAcl": [
+        "pg_database_owner=UC/pg_database_owner",
+        "=U/pg_database_owner"
+      ],
+      "publicOid": "2200",
+      "publicOwner": "pg_database_owner",
+      "relations": 0,
+      "replication": false,
+      "roleMemberships": 0,
+      "routines": 0,
+      "superuser": false,
+      "systemIdentifier": "7685171266320400886",
+      "types": 0
+    }
+  },
+  "version": 1
+}

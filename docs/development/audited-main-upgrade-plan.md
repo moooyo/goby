@@ -1,19 +1,22 @@
 # Audited main upgrade contract
 
-Status: **DRAFT, updated 2026-09-14; main preparation only**. The TV successor's
+Status: **DRAFT for restoration and main promotion, updated 2026-09-14; native backup completed**. The TV successor's
 affected admission05 has passed and reuses the preceding admission04 contracts.
-Core original-client acceptance and full main safety facts remain open. The
-[read-only preparation review](audited-main-readonly-preparation.md) extends the
+Core original-client acceptance, both isolated restoration proofs and main
+promotion remain open. The [read-only preparation review](audited-main-readonly-preparation.md) extended the
 initial service/file observation with private configured-path selection,
 captured lifecycle/control/backup metadata and actual PostgreSQL/schema27 binding.
 The subsequent [startup/capacity preparation](audited-main-startup-preparation.md)
-validates configuration and bounded startup facts, stages the main capacity
-profile and prepares the missing empty cache directory. The [material review](audited-main-recovery-materials.md)
-preserves the old executable and installed assets and closes a key-observer
-preflight rejection without executing that observer. Its repeated execution is
-retired; native backup creation must authenticate keys in its own snapshot.
-Main remains inactive. These observations do not authorize startup, backup
-creation, migration, restore or promotion.
+validated configuration and bounded startup facts, staged the main capacity
+profile and prepared the then-missing empty cache directory. The [material review](audited-main-recovery-materials.md)
+preserved the old executable and installed assets and closed a key-observer
+preflight rejection without executing that observer. The observer remains retired.
+The later [ownership correction](audited-main-backup-ownership-correction.md) and
+[completed checkpoint](audited-main-native-backup-completed.json) establish the
+fresh schema27 archive, native source-key witness, data/file reconciliation and
+policy cleanup. Main is inactive, capacity remains installed and the temporary
+fence is removed. The backup input is consumed; this contract admits no repeated
+backup, migration, restoration or main promotion.
 
 The [current execution plan](../planning/current-execution-plan.md) controls
 execution. The [source55 main plan](main-schema28-upgrade-plan.md), its prepared
@@ -70,6 +73,7 @@ completion.
 
 | Accepted record | Reusable conclusion | Boundary |
 | --- | --- | --- |
+| [Native source32 backup completion](audited-main-native-backup-completed.json) and [ownership correction](audited-main-backup-ownership-correction.md) | One complete schema27 archive and native source-key witness; 13 HTTP calls, owned logout and exact 402-to408 operational reconciliation; separate policy cleanup completed | Reuse this archive and sealed post-workflow baseline. These results do not establish either isolated restoration, archive-passphrase restore authentication, core-client acceptance or main promotion |
 | [TV successor full verification](tv-parent-metadata-full-verification.json), [transition](tv-parent-candidate-transition-closeout.json) and [admission05](tv-parent-affected-admission-closeout.json) | The currently selected snapshot passed 2,270 tests in 25 packages with race instrumentation and a Linux build; the installed successor passed affected admission | Reuse the selected product proof; core-client acceptance and main safety/admission remain separate |
 | [Cancellation-fix full verification](restore-cancellation-full-verification.json), [source freeze](restore-cancellation-source-freeze.json) and [binary transition](audited-candidate-cancellation-transition.json) | The predecessor snapshot passed 2,264 tests in 25 packages with race instrumentation and a Linux build; that predecessor was installed in the isolated candidate | Historical predecessor verification, not the current successor's final product proof or core/main admission |
 | [Live admission04](audited-candidate-live-admission-closeout.json) and [configuration revision](audited-candidate-backup-limits-revision.json) | Admission passed with 79 complete responses, eleven healthy/ready samples over ten minutes, backup download, ready-plan cancellation and owned-session cleanup under epoch `72e25f9...` | The inactive stage is retained; no restore application, rollback, core-client acceptance or main upgrade was performed |
@@ -88,51 +92,76 @@ cause. Pin each receipt actually consumed by the new input. Preserve old scopes
 through their sealed receipts and manifests; do not recursively reverify all
 198 historical roots or claim that a narrower observation did so.
 
-## Minimum fresh main facts
+## Historical preparation and the current main baseline
 
-The first metadata observation at 2026-09-13T17:54:09Z confirms the loaded main
+The first metadata observation at 2026-09-13T17:54:09Z confirmed the loaded main
 unit, ordered environment-file references, fixed file identities and installed
-source32 bytes. The subsequent private preparation resolves configured paths
+source32 bytes. The subsequent private preparation resolved configured paths
 and the captured lifecycle's primary/revision0/default selection. The control
-store has one completed create, no transition and a declared unclaimed recovery
-slot. Its single retained backup records schema23, not a fresh schema27 recovery
-point. Actual cluster and database/role identities match the recorded main5432
-anchors. Main has the exact 1..27 migration version/name prefix, 35 tables and
-a marker matching the independently selected initial primary. Recovery has no
-observed non-system relations or binding table; this does not admit it as an
-empty native restore target. Full catalog and data preservation remain open.
+store then had one completed create, no transition and a declared unclaimed
+recovery slot. Its only retained backup recorded schema23, not a fresh schema27
+recovery point. Cluster and database/role identities matched the recorded
+main5432 anchors. That observation found the exact 1..27 migration version/name
+prefix, 35 tables and a marker matching the independently selected initial
+primary. Recovery had no observed non-system relations or binding table; this
+did not admit it as an empty native restore target. Full catalog and data
+preservation were still open at that preparation checkpoint.
 The [preparation review](audited-main-readonly-preparation.md) records
-the exact evidence boundaries and remaining checks.
+those historical evidence boundaries.
 
 Neither settled control metadata nor a complete schema27 migration prefix
 would establish a zero-write startup. Source32 still calls `ServerID` with an
 upsert, and subsystem startup may reconcile pending work and retention. Freeze
 those allowed writes from actual data and clock observations before any start.
-The later configuration and startup observations narrow the preparation gap.
-The admitted operational baseline, finite startup policy, native key witness
-and recovery proofs remain separate requirements at their respective phases.
-The fresh capacity observation also falls below source32's backup-store open
-threshold: 520,519,680 bytes available versus 570,490,880 required with current
-defaults and metadata reserve. Resolve this through an explicit capacity
-decision before admitting startup; do not test it by starting main or silently
-inherit the candidate's lower limits. The later preparation stages a separately
+The later configuration and startup observations narrowed the preparation gap.
+The operational baseline, finite startup policy, native key witness and recovery
+proofs have separate evidence boundaries at their respective phases.
+The initial capacity observation was below source32's backup-store open
+threshold: 520,519,680 bytes available versus 570,490,880 required with the
+then-installed defaults and metadata reserve. The later preparation staged a separately
 validated 64 MiB object / 256 MiB total / 128 MiB minimum-free main profile with
-a 302,055,424-byte conservative creation floor. It is not installed. The current
-default scratch reservation requires 9,160,425,472 free bytes, so passing the
-open threshold alone is insufficient.
+a 302,055,424-byte conservative creation floor. It was not installed at that
+checkpoint. The old default scratch reservation required 9,160,425,472 free
+bytes, so passing only the open threshold would not have sufficed. The profile
+was subsequently installed in the native-backup scope and is retained now;
+future fixture and main admissions still require fresh capacity checks.
 
-The later startup query observes no active scan/task/encoding candidates,
-eligible triggers or expired activity at its clock. The existing binding,
-bootstrap, managed singleton and task-definition presentation are consistent.
-Expected startup effects still include the server-ID upsert, closure of one
-complete 413-byte diagnostic file in its registry and creation of a new log.
-The current-boot cache path has been prepared empty with native markers absent.
-Fresh admission must bind this state, the staged capacity transition and a
-bounded policy replacing the current failure-restart loop; these observations
-do not authorize starting main or prove complete data preservation.
+The startup query observed no active scan/task/encoding candidates, eligible
+triggers or expired activity at its clock. Binding, bootstrap, the managed
+singleton and task-definition presentation were consistent. The then-expected
+effects included a server-ID upsert, closure of one complete 413-byte diagnostic
+entry and a new log. The cache path was then empty with native markers absent.
+The consumed startup-only scope subsequently closed that old entry, created the
+two cache markers and retained eleven closed logs. These historical empty-cache
+and earlier log states are not the current admission baseline.
 
-The following fields distinguish inputs from outputs. Reuse the particular
-facts already captured above and acquire the remaining private reads under
+The [native-backup completion](audited-main-native-backup-completed.json), remote
+`checkpoint.json` SHA256
+`3a9ff1ddf45213331aa4f23d66d1beedd44da9f18df8e168e9e56badc6a925cf`,
+supplies the complete schema27 catalog/data and sequence comparison for the
+consumed workflow. Archive `69f5e597c99f65099647cd3322d3174c` is 196,310 bytes,
+SHA256 `0a61cbd6c6ff23543ba873ed1a44dd33ecce2f8702f956e24096862996c7874f`.
+Its native source-key witness passed against four application-key rows in the
+same exported snapshot as the dump and 35-table SourceFacts. The archive has
+405 rows; the sealed operational baseline has 408 rows, preserving all 402 old
+rows and adding one revoked administrator session and five ordered activity
+rows. The activity sequence advanced by five; the other four remained exact.
+All 13 HTTP calls completed, including logout 204 and same-cookie 401.
+
+Control revision advanced from 5 to 9 with one new ready object. Both cache
+markers and eleven old logs remained exact; a twelfth log closed. The original
+execution retains its shared-parent cleanup failure. The separately reviewed
+policy cleanup removed the restored fence and owned empty runtime directory,
+restored the original restart policy and released the unchanged deployment
+lock. Main and source55 are inactive; capacity remains installed. Reuse this
+baseline with 408 rows, twelve closed logs, the removed fence and the preserved failure chain.
+Do not restore the obsolete pre-start baseline or create another backup to
+reproduce already completed evidence. Neither archive-passphrase restoration
+authentication nor either isolated restoration has run.
+
+The following fields distinguish historical backup inputs from completed
+outputs and remaining admission requirements. Reuse the particular receipts
+above and acquire only the necessary fresh or still-missing private facts under
 verified main operation/deployment authority. A fresh archive cannot be a
 precondition of the workflow that creates it. The historical shared deployment lock is
 `/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock`; verify its existing
@@ -143,17 +172,16 @@ identity and ownership before use, and do not recreate an absent lock.
 | Service and installation | Boot, loaded unit and every permanent/runtime drop-in, ordered environment files, effective paths, UID/GID, sandbox, restart/stop policy, binary/asset bytes and file identities. Record current inactive/PID0/cgroup/listener absence or the actual live PID/start/invocation if independently changed |
 | Active recovery identity | Deployment ID, revision, active slot, generation, selected configuration/master, pending operation state and raw `goby.recovery.binding.v1` bytes. Resolve the effective database using the lifecycle state; the primary URL alone is insufficient |
 | Main database and cluster | Independently bound port5432 cluster/system identifier, PostgreSQL/tool versions, postmaster boot/start, configuration/HBA/socket paths; database/role/public OIDs, owners, raw and expanded ACLs, normalized role properties, complete schema27 migration/catalog and server ID. Historical anchors are `goby_test`, database16385, role16384 and system identifier `7683277964552005578`; drift requires review, not automatic target selection |
-| Pre-backup operational inputs | A frozen read-only baseline sufficient to account for the old-binary startup and backup workflow: affected old-column data, root mappings, catalog, sequence/physical observations, database clock, pending scans/tasks/playback/encoding/recovery work, runnable triggers and retention. Bind the exact private paths, master metadata and finite startup/write budget. These are observations before the archive snapshot, not a claimed recovery point |
-| Backup outputs and migration inputs | One native schema27 archive with complete 35-table SourceFacts, dump and native key witness from its exported snapshot; matching configuration/master descriptors; a full old-column operational baseline and all five sequence/physical facts reconciled after the workflow. Distinguish non-MVCC sequence observations and post-snapshot writes from archive snapshot facts. These outputs are required before rehearsal or migration, not before backup creation |
+| Historical pre-backup operational inputs | The consumed scope bound the 402-row old-column baseline, root mappings, catalog, sequence/physical observations, database clock, pending work, triggers, retention, private paths, master metadata and finite startup/write budget. Preserve those receipts as the explanation of the completed workflow; they are not the current 408-row baseline or an instruction to repeat backup creation |
+| Completed backup outputs and remaining migration inputs | The pinned native schema27 archive contains 35-table SourceFacts, dump and native key witness from its exported snapshot, with matching configuration/master provenance. The completed 408-row operational baseline and all five sequence/physical facts account separately for post-snapshot writes. Reuse these outputs for rehearsal; refresh volatile authority and reject unexplained drift before any later main migration |
 | Recovery slot and private materials | Identify `goby_recovery_m5j` independently, including actual catalog/data/marker, OIDs, ACLs, role properties and work/session absence. Resolve and inventory runtime/admin/recovery credentials, default and generation masters, vault, lifecycle files, retained encrypted objects, operation journal, native pairing and diagnostic paths. Bind the fresh archive/passphrase and usable private operational materials as backup outputs; historical passphrase presence is not an authentication result |
 | Operational isolation | Exact new evidence/staging/rehearsal paths and ownership; free resources and bounded controller budget; candidate, source55 control, proxy, workspace15432 and media boundaries that this action could affect. Record fresh witnesses for those resources and permitted concurrent changes |
 
-If main remains inactive, preserve that baseline through read-only preparation.
-The preferred backup scope below may start source32 once after fresh ownership,
-startup and write-scope review; its purpose is the existing native creation
-entrypoint, never the old runner's running-PID template. Return main to inactive
-after that bounded scope. If main is independently live instead, bind that exact
-invocation and review its drain boundary. Before migration, require no unowned
+Main is inactive after the closed native-backup invocation and policy cleanup.
+Preserve that baseline while admitting the isolated fixtures. The completed
+backup input has no remaining start or create slot. If main is independently
+live later, bind that exact invocation and review its drain boundary rather
+than adopting an old running-PID template. Before migration, require no unowned
 database sessions, prepared work or writers. Missing/pending lifecycle state, an
 unexpected active slot, missing master material or uncertain ownership rejects
 admission.
@@ -163,8 +191,8 @@ transition, a separate cryptographic key observer is not a startup prerequisite.
 The vault constructor only records its path, and ordinary administrator login
 does not require application-key decryption. Preserve the existing 32-byte
 master's exact safe metadata before starting; do not create or replace it.
-`Engine.Create` must authenticate the selected master against all sealed key
-history in the same snapshot used for the archive. A changed generation or
+The completed `Engine.Create` authenticated the selected master against the
+sealed key history in the same snapshot used for this archive. A changed generation or
 pending transition requires a new selection review. The retired helper's
 permission failure proves neither a bad master nor a successful witness.
 
@@ -225,10 +253,10 @@ restore/finalizer to establish legal local binding and generations, or rehearse
 the exact identity-preserving restoration method; never edit markers to make a
 copied layout appear accepted.
 
-## Required backup and isolated rehearsal
+## Completed backup and required isolated rehearsal
 
-Use the existing source32 HTTP backup workflow after its fresh main safety
-review and concrete input pass. This old-binary preservation scope and the two
+The existing source32 HTTP backup workflow completed after its own main safety
+review and concrete admission. This old-binary preservation scope and the two
 isolated restoration rehearsals do not wait for new-product core video
 acceptance. Core acceptance still blocks new-binary main promotion. Source32's
 [offline CLI](../../cmd/goby/recovery_cli.go)
@@ -238,15 +266,15 @@ connect to the source database or open its vault and cannot create backups.
 The existing creation entrypoint is `POST /admin/v1/backups` through
 [Manager.Create](../../internal/recovery/backup_jobs.go) and `Engine.Create`.
 
-Freeze one bounded source32 service invocation, restart policy, finite startup
-and operation budgets, one owned administrator session and one backup request
-ID. After reviewing all expected startup writes, start the pinned old binary,
-create one native backup, await its actual terminal, download the complete
-object and verify its size/SHA256. Revoke the owned session and cleanly stop and
-drain that invocation. Preserve the backup/passphrase and operation history;
-do not scan, rebind roots, apply a restore or repeat a failed creation in this
-main backup scope. An unsafe startup or uncertain write outcome stops this
-route for review; this draft does not authorize its execution.
+The consumed admission bound one source32 invocation, restart policy, finite
+startup and operation budgets, one owned administrator session and one backup
+request ID. The actual operation reached its terminal, its complete download
+matched size/SHA256, the session was revoked and the invocation stopped. The
+separate policy cleanup completed the retained failure responsibility. Preserve
+the backup/passphrase, operation history and both failed and successful closure
+receipts. No scan, root rebind, restore or repeated creation was part of that
+scope. The creation and failure semantics below explain the retained evidence;
+they do not authorize another execution or a new recovery point.
 
 `Engine.Create` obtains dump, SourceFacts and the master witness from one
 exported snapshot. Backup completion, download and logout occur later and add
@@ -256,7 +284,8 @@ the archive snapshot as the recovery point and seal a reconciled post-workflow
 operational baseline for migration. Do not assert whole-table equality between
 those two points or repeatedly create backups to chase equality.
 
-Use a cold export only when a recorded need requires main to stay inactive.
+No cold export is needed for the completed recovery point. A future cold-export
+route would require a separately recorded need for main to stay inactive.
 The necessary library calls already exist: `OpenSnapshot`,
 `WitnessBackup(snapshot.Tx)`, `Facts`, `Dump`, `ValidateDump`,
 `EncodeBackupDefaults` and `backupformat.CreateWithLimits`. They can form a small
@@ -277,9 +306,9 @@ Source32 also lacks the later `ValidateDump` call in the current engine. Full
 download verification and both independent native restoration proofs remain
 mandatory; do not transfer current implementation guarantees to the old binary.
 
-1. Freeze one fresh native schema27 archive using the selected route, with its
-   SourceFacts, configuration/master descriptors, archive size/SHA256 and
-   private passphrase. Bind the matching operational observations, declared
+1. Retain the completed, pinned native schema27 archive with its SourceFacts,
+   configuration/master provenance, size/SHA256 and private passphrase. Bind
+   the completed operational observations, declared
    post-snapshot deltas, private materials and old installation bytes. If a
    custom dump is extracted for comparison, verify it against this archive's
    manifest rather than creating another recovery point. Preserve all originals
@@ -320,6 +349,20 @@ mandatory; do not transfer current implementation guarantees to the old binary.
    owned rehearsal resources with ordinary operations, without FORCE, CASCADE,
    foreign-backend termination or existing-slot resets. Restore any declared
    temporary HBA rule and prove affected shared boundaries unchanged.
+
+Distinct targets and proofs do not require both live databases to be retained
+at the same time. After the selected fixture has completed every applicable
+check above, recorded its real terminal states and sealed its evidence, an
+explicitly admitted disposal may release its owned database/role before the
+distinct source32 fixture is created. Retain the common original archive and
+passphrase, usable installation/recovery materials and the sealed selected
+proof; retain the source32 proof when completed. The second fixture keeps its
+own declared names and identities.
+Do not dispose of resources still needed for an unfinished rollback or
+installation-rollback requirement, reuse the selected database as the source32
+target, or treat the narrower `--accept-no-rollback` CLI sequence as completion
+of those additional obligations. This sequencing option changes resource
+scheduling only; both restoration and rollback/installation proofs remain required.
 
 The frozen input must select the real restore/rollback implementation and bind
 its code, targeted guard/build evidence and receipts. This draft neither adds

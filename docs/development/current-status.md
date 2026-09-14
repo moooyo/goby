@@ -12,7 +12,7 @@ their original meanings and are not fresh deployment observations.
 | Product correctness | R01-R21, diagnostics, cancellation fixes and TV parent metadata are verified; the latest full run passed 2,270 tests/25 packages and a Linux build | Reuse this exact product proof during client acceptance |
 | Audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Reuse the selected product and bind the next input to the latest closed state |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
-| Main recovery and deployment | One fresh schema27 native archive and source-key witness are complete; 402 old rows remain exact, with one revoked session and five audits. Main is inactive, capacity retained and the temporary fence removed | Complete separate actual source32/schema27 and selected/schema28 restore/activation/restart proofs. Main promotion still requires core acceptance and complete recovery evidence |
+| Main recovery and deployment | One fresh schema27 native archive and source-key witness are complete; 402 old rows remain exact, with one revoked session and five audits. Main is inactive, capacity retained and the temporary fence removed. The separate empty recovery cluster passed its isolation checks | Complete selected/schema28 restoration and actual online rollback, then installation return to source32 with independent schema27 restoration and restart. Main promotion still requires core acceptance and complete recovery evidence |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
 
 The [material checkpoint](audited-main-recovery-materials.md) preserves the old
@@ -61,9 +61,25 @@ reviewed cleanup then removed only that exact fence and owned empty directory.
 Capacity remains installed and the original restart policy is restored. No
 HTTP, backup create or service start was repeated for cleanup. The final archive
 bytes and candidate/PostgreSQL boundaries were checked again.
-The [two-fixture restoration draft](audited-main-isolated-restore-plan.md) records
-the actual import/plan/apply/serve/restart contract and now binds this common
-archive, but fixture execution is not yet admitted.
+The [revised restoration plan](audited-main-isolated-restore-plan.md) requires
+offline recovery into B, online application into A, actual native rollback to B,
+and same-mount PG/application restart. Two offline applications do not retain a
+usable rollback image. The separate source32 proof also requires replacing the
+same isolated installation with the preserved old binary and 415 assets.
+
+The [isolated infrastructure](isolated-restore-infrastructure.json) is now ready:
+an independent PostgreSQL17 cluster, dedicated PG/application identities, a
+private network namespace and a capped 768 MiB PostgreSQL tmpfs. All 158 checks
+across three sandbox profiles passed; its maintenance identity backend exited
+naturally and protected main/control/candidate state remained exact. Five remote
+transport guards covered process-group closure before provisioning. The subsequent
+[target/material preparation](isolated-restore-targets.json) created four empty
+ordinary-role databases, copied all 474 selected/old installation files and prepared
+separate private configuration/archive/passphrase inputs. All five preparation SQL
+backends closed naturally. No Goby executable, native import, restoration or
+rollback has run. Persistent originals
+remain outside tmpfs; same-mount process restarts will not establish host-reboot
+or power-loss durability, so the M2 durability gate remains open.
 
 [Third-party notices](../../THIRD_PARTY_NOTICES.md) now retain 182 original legal
 texts and one toolchain VERSION file, with exact-version records for all 11
