@@ -26,7 +26,9 @@ gone after infrastructure shutdown; the original failed receipts remain intact.
 The proposed correction casts all five numeric OID outputs to bigint. A new
 shared marker/reader contract will be exercised through one real read-only
 observer before the first APP start in any subsequently admitted fresh scope.
-This candidate is not yet remotely verified or admitted.
+That candidate was subsequently verified and exercised in the separate
+[fourth attempt](systemd-installation-fourth-attempt.json). Its successful runtime
+and later HTTP seal failure do not change this third attempt's failed status.
 
 The first two failed attempts remain consumed, privately preserved and closed.
 The package binary, shipped Type=simple unit and production source are unchanged.

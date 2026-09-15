@@ -1,0 +1,107 @@
+{
+  "additionalFinalSealerObservers": 1,
+  "businessActionsAtDecision": 0,
+  "conditions": [
+    "Run the real read-only OID contract including the shared sealer expression before the first application start.",
+    "Generate phase inputs from actual preceding receipts and frozen sources only.",
+    "Recheck exact tool/source/protected-state, capacity, absence and original-lifetime admission at every phase.",
+    "Retain full two-start nonroot bootstrap/login, assets, real-media catalog/ACL/UserData preservation, normal stop and independent closure.",
+    "Failure ends further business; preserve and close only owned resources without replay.",
+    "Do not reuse old fixtures, change the shipped unit, rebuild unchanged production, or borrow paused resources.",
+    "Reassess any new failure before selecting a subsequent scope; no automatic next installation attempt."
+  ],
+  "entryFailureCloseLimitSeconds": 210,
+  "independentPreflightReview": {
+    "bytes": 11654,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/independent-preflight-review.json",
+    "sha256": "b55110dedcd99a563776d0fc044d55337baea0f6753c904bda5f08997eb9da5c"
+  },
+  "installationAcceptance": false,
+  "kind": "goby-systemd-fourth-installation-execution-decision",
+  "maximumApplicationStarts": 2,
+  "normalPhaseLimitsSeconds": {
+    "anchorOriginalLifetime": 3600,
+    "eachHandoff": 60,
+    "finalStopMargin": 60,
+    "prepare": 660,
+    "runtime": 1020,
+    "seal": 1200,
+    "totalSequence": 3060
+  },
+  "oidCorrectionVerification": {
+    "independentReviewSha256": "7d5f53a7a675dcf170848acff785e8c477af594dba89347247535111925f13ed",
+    "realSqlVerifiedAtDecision": false,
+    "resultSha256": "df4791d25b18567db9f79977725bca0992eeaf27ffcd6465c15c5db9380b44d9",
+    "scope": "/opt/goby-test/m6-systemd-oid-contract-20260915",
+    "syntheticCases": 12
+  },
+  "oldAttemptsRemainConsumedAndClosed": true,
+  "packageArchiveSha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a",
+  "packageBinarySha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1",
+  "preflightCapacity": {
+    "memAvailableBytes": 6608891904,
+    "requiredAvailableMemoryBytes": 6442450944,
+    "requiredRootBytes": 1610612736,
+    "rootFreeBytes": 5252120576,
+    "rootFreeInodes": 3498596
+  },
+  "prepareInput": {
+    "bytes": 2844,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/prepare-input.json",
+    "sha256": "e3f7b37dabe4433df78403c7bf8984a14a1848227a42510c9e594b7d22852e89"
+  },
+  "readOnlyPreflight": {
+    "bytes": 305358,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/preflight.json",
+    "sha256": "97b18371a3ff4a6cc4075beb1d26916fc11356cc8ea64744d03d6a554fe28c04"
+  },
+  "runtimeObservers": 6,
+  "runtimeSnapshots": 3,
+  "scope": "/opt/goby-test/m6-systemd-install-20260915-r04",
+  "sourceCheckpoint": "3ec00cdfd737b90c13b59bec3a58a91e5af8a24b",
+  "sources": {
+    "handoff-close": {
+      "bytes": 24560,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-handoff-close.py",
+      "sha256": "06eac2216ec35e29d2ee82bbe90ea2fa8bca9739aaa54e20561eee3f66de7982"
+    },
+    "journey": {
+      "bytes": 39059,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/native-catalog-journey.py",
+      "sha256": "63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4"
+    },
+    "media": {
+      "bytes": 9486,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-media.py",
+      "sha256": "0065558998c44988dd95bcec1b7e55371484a7597a3d131b310d2997b2ceb27e"
+    },
+    "prepare": {
+      "bytes": 61473,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-prepare.py",
+      "sha256": "8cb9e46efdbfd76a3a2b05ecc5d40c43f74020ff66843cd63a94956a4a72f1c8"
+    },
+    "runtime": {
+      "bytes": 71909,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-runtime.py",
+      "sha256": "e38313b4b93be3518d60382674bdff139d896bd98406f250356c42167a9c5408"
+    },
+    "seal": {
+      "bytes": 92702,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-seal.py",
+      "sha256": "79c320f18031044fb386d85bd7fc29c553bea301ae768a52b6a453101e2ac8cb"
+    },
+    "support": {
+      "bytes": 47122,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-support.py",
+      "sha256": "8796a8ea8dac42004aae9df92fd56c204b543aa964f246a2eae343460f079c37"
+    },
+    "units": {
+      "bytes": 14635,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/m6-systemd-install-units.py",
+      "sha256": "9c2e825503d3f522b2040586ebb15c83924f10bf1a4492ad28cd41e4e2c3e9a0"
+    }
+  },
+  "status": "approved_for_one_bounded_fresh_attempt",
+  "version": 1,
+  "wholeM6Accepted": false
+}

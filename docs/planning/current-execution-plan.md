@@ -8,8 +8,10 @@ amd64 systemd package build is verified and closed; three installation attempts
 failed and have independently verified evidence preservation and resource closure.
 The second attempt exposed a startup observation made before exec completed.
 The third passed the first nonroot start, journey and stop but rejected an OID
-JSON representation in the SQL observer. Further attempts are paused pending
-verification of explicit numeric OID projections and an earlier real SQL check.
+JSON representation in the SQL observer. The fourth runtime passed both nonroot
+starts, 272 HTTP requests, six observers and three snapshots, then its sealer
+rejected a valid Emby 401 plain-text response. The owned services are closed and
+failure preservation and independent archive/resource readback passed.
 The scoped source checkpoint is committed as `beaea34`; core-video
 and complete release gates remain open**. Earlier
 regression and candidate admissions retain their original source and execution
@@ -61,7 +63,8 @@ pending. The focused and browser work has since closed as described above.
 The earlier source archive remains a retained preparation snapshot; it does not
 cover later corrections or this planning amendment.
 
-The immediate queue is:
+The checkpoint and execution conditions below support the single authoritative
+[immediate queue](#immediate-queue):
 
 1. Continue from partial M6 checkpoint `beaea34`, which retains the completed
    M5 source checkpoint `5faf854` and the
@@ -116,13 +119,18 @@ The immediate queue is:
    integer. The failed sealer closed PG/anchor; failure archives, five retained
    trees/copies, unmount and protected state passed independent readback. No
    second application start occurred and the runtime remains failed.
-   Next review and remotely verify the unadmitted explicit-bigint/shared-reader
-   correction. In any next admitted fresh scope, exercise the real read-only
-   observer before the first APP start, including the sealer's actual marker
-   expression. Keep six runtime observers, three snapshots and one final sealer
-   observer in the proposed amended contract. Retain Type=simple, final nonroot
-   configuration, complete two-start journey and all existing cleanup/closure
-   obligations. No installation attempt is now admitted; do not replay r03.
+   The [OID correction](../development/systemd-oid-contract-verification.json)
+   passed twelve remote synthetic cases and independent review. The
+   [actual r04 sequence](../development/systemd-installation-fourth-attempt.json)
+   passed its real prestart OID contract and complete two-start runtime. The
+   sealer completed application/database review, then rejected the valid
+   plain-text response to an Emby revoked-credential check. Independent diagnosis
+   bound that response to the product's exact contract; no product change or
+   HTTP replay occurred. Its final SQL observer did not run, so installation
+   acceptance remains open. Preserve the six runtime observers, three snapshots,
+   eight closed credentials, 272 requests and original seal failure. Failure
+   preservation and independent readback are complete. No fifth attempt
+   is admitted. Continue the next independent deliverable after this closure.
 3. The installation result and its limitations are committed and pushed in
    partial M6 checkpoint `beaea34`. The separately retained
    [source bridge](../development/systemd-package-source-checkpoint.json)
@@ -142,8 +150,10 @@ The immediate queue is:
    preparation-authority failure-close entry with six synthetic routing cases
    and fifteen authority checks. Those checks did not cover the observed
    Type=simple executor transition. The later startup correction and r03 result
-   have their own scopes above. All three attempts are consumed and closed;
-   their passing prechecks do not verify the proposed new SQL behavior.
+   have their own scopes above. All four attempts are consumed and closed.
+   The OID correction and actual r04 runtime have separate verification; the
+   original guards are not credited with that later coverage. Full HTTP/final
+   SQL sealing and installation acceptance remain open.
    Reuse the completed package build and M5 regression while their bound inputs
    remain unchanged; expand verification only for a concrete change or failure.
 4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded
@@ -444,9 +454,11 @@ workspace outside every new resource budget.
 | --- | --- | --- |
 | 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
-| 0b. Internal amd64 embedded systemd package — partial checkpoint committed, installation paused | Retain checkpoint `beaea34`, its source bridge, verified package and independently closed failed installation; review the execution approach and continue independent release evidence | Three builds, seven focused top-level tests (26 including subtests), 26 package guards and build closure passed. The runtime entry and first preservation checker failed; both failures remain preserved and owned resources are now closed. Nonroot application restart, public distribution, upgrade, core-video, native arm64/GPU and OCI remain separate gates |
+| 0b. Internal amd64 systemd installation — r04 runtime passed, seal failed, preservation closed | Retain the actual r04 runtime, independent HTTP diagnosis, two archives and completed preservation/resource readback | Two nonroot starts, 272 requests, six observers and three snapshots passed. The seal reader rejected a valid plain-text Emby 401; its final observer never ran. Overall installation remains open, all inputs are consumed, and no fifth attempt is admitted |
 | 1. Core video and subtitle acceptance | Prioritize this promotion gate when new discriminating evidence or a justified product correction supports a bounded journey on a reviewed current candidate and retained-state input | No new journey is admitted yet. Context291 identifies physical294, not293; the earlier cancellation and original page errors remain unresolved. Preserve the completed identity review. Without new grounds, keep this gate open and continue independent work; do not repeat the review, replay consumed actors or add another observation framework |
-| 2. Independent remaining M2-M6 delivery | Separately address representative capacity and safely isolated blocked I/O; continue host durability, media/transcode, administration, native hardware/architecture, OCI, support-matrix and notice work under their own prerequisites | Require measurable limits and bounded shutdown. This track may progress independently, while heavy work follows the shared-resource limits above; small catalogs, root-profile restarts and cross-builds do not close the release gates |
+| 2. Native scan and concurrent HTTP capacity — next engineering deliverable after r04 closure | Implement the [fixed 1,000-file native measurement](../development/native-scan-http-capacity-plan.md), using two ordinary scans and bounded independent readers; freeze source, real environment facts, response-latency/RSS observations and operational limits | This new native HTTP/resource boundary is not representative large-media throughput. Require exact source-bound measurements, retained failures and complete owned closure. No production SLO is invented. Keep actual blocked storage and host reboot separate and leave the paused M2 mount untouched |
+| 2a. Package component attribution — parallel static work | Complete the actual JavaScript contribution graph and glyph provenance, then assemble the legal payload against included members | Preserve the pending project-license question. Do not infer external distribution clearance from internal package acceptance |
+| 2b. Remaining M2-M6 delivery | Continue separately scoped blocked I/O, host durability, media/transcode, administration, native hardware/architecture, OCI and support-matrix work | Require measurable limits and bounded shutdown under each profile's prerequisites; unavailable hardware and licensing block their own claims, not unrelated software delivery |
 | 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
 
 The completed independent increment is [native scheduled media refresh](../development/task-media-refresh-plan.md):
@@ -472,11 +484,14 @@ Its build-script, environment-template and installation-document changes are
 committed and pushed in `beaea34`; the shipped unit is unchanged. The
 [actual package builds and guards](../development/systemd-package-build-verification.json)
 passed independent review and resource closure. The verified archive is retained
-outside the now-closed build tmpfs. Installation preparation passed, but the
-runtime entry failed before Goby started. That failed scope is now preserved and
-closed; installation remains paused. The staged-source bridge and partial
-checkpoint are complete. Follow the independent release-evidence work and
-execution review in the immediate queue. The M5
+outside the now-closed build tmpfs. The first three installation attempts are
+consumed and independently closed. The third passed its first nonroot start,
+journey and stop before the OID reader rejected PostgreSQL's JSON string.
+The [fourth attempt plan](../development/systemd-installation-fourth-attempt-plan.md)
+records the passed correction and two-start runtime, followed by the HTTP reader
+failure and its preservation. The staged-source
+bridge and partial checkpoint remain complete. Follow the current table above
+for execution review and the next independent deliverable. The M5
 source checkpoint `5faf854` is committed and pushed. Follow the
 [package plan](../development/systemd-package-plan.md), preserve existing
 build compatibility, and keep new installation acceptance separate from

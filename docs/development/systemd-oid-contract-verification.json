@@ -1,0 +1,53 @@
+{
+  "kind": "goby-systemd-oid-contract-verification",
+  "version": 1,
+  "status": "synthetic_checks_and_independent_review_passed",
+  "scope": "/opt/goby-test/m6-systemd-oid-contract-20260915",
+  "sources": {
+    "support": {"bytes": 47136, "sha256": "2c8ee214fd11acced5b343bd42ee21bb1eca31179e59150da4d7bee3094b512a"},
+    "runtime": {"bytes": 71923, "sha256": "69d0eed7427d10dbba055bfa3a568f3cb54731b896bde085243a359ad411105b"},
+    "seal": {"bytes": 92716, "sha256": "432e61784c62a620d00b769bc1ad701310eeafd054c27624fdb6e8445d0df19c"}
+  },
+  "result": {
+    "path": "/opt/goby-test/m6-systemd-oid-contract-20260915/private/checks-01/result.json",
+    "bytes": 3950,
+    "sha256": "df4791d25b18567db9f79977725bca0992eeaf27ffcd6465c15c5db9380b44d9"
+  },
+  "dispatch": {
+    "path": "/opt/goby-test/m6-systemd-oid-contract-20260915/private/checks-dispatch.json",
+    "bytes": 771,
+    "sha256": "e43720e82782428a6b0dd2555318a22ce9b74c25389e8c8a7084068ba99cd57d"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/m6-systemd-oid-contract-20260915/private/independent-review.json",
+    "bytes": 6623,
+    "sha256": "7d5f53a7a675dcf170848acff785e8c477af594dba89347247535111925f13ed"
+  },
+  "caseCount": 12,
+  "cases": [
+    "numeric_contract", "runtime_oid_string", "client_database_oid_string",
+    "client_role_oid_string", "seal_database_oid_string", "seal_role_oid_string",
+    "seal_backend_mismatch", "seal_database_oid_float", "seal_role_oid_boolean",
+    "prestart_scope_rejected", "run_blocks_before_start", "run_reaches_start_after_sql"
+  ],
+  "actualMethodsWithSyntheticDependencies": [
+    "Runtime.sql", "Runtime.run", "final_observer_marker_sql", "check_final_observer_identity"
+  ],
+  "staticReview": {
+    "explicitBigintProjections": 5,
+    "sharedFinalMarkerAndReader": true,
+    "runtimeObservers": 6,
+    "runtimeSnapshots": 3,
+    "additionalFinalSealerObservers": 1
+  },
+  "limits": [
+    "External transport, files, namespace and PID observations were synthetic substitutes.",
+    "The positive run reached a start stub and then stopped at a sentinel; no application started.",
+    "Seal.final_sql and Seal.observer_record were reviewed statically, not invoked by these cases.",
+    "No PostgreSQL query ran; real numeric JSON output requires the fresh installation's prestart check."
+  ],
+  "realSqlConnections": 0,
+  "serviceActions": 0,
+  "installationAccepted": false,
+  "wholeM6Accepted": false
+}

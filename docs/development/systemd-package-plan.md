@@ -12,8 +12,13 @@ services, installation and PG tmpfs are closed, with independent failure-evidenc
 readback passed. The [third attempt](systemd-installation-third-attempt.json)
 passed the first nonroot start and stop, but its runtime failed on a SQL OID
 JSON type mismatch after 147 HTTP requests. Its evidence and resources also
-passed independent preservation/closure readback. Further attempts await numeric
-OID projection and real prestart observer verification. See also
+passed independent preservation/closure readback. The
+[fourth runtime](systemd-installation-fourth-attempt.json) passed the numeric OID
+prestart gate, two nonroot starts/stops, 272 HTTP requests, six observers and
+three snapshots. Its sealer then rejected a valid plain-text Emby 401 response
+because its reader required JSON. Failure preservation and independent archive/
+directory/resource readback passed; the final sealer observer did not run, so full installation
+acceptance remains open. No fifth attempt is admitted. See also
 the [first attempt](systemd-installation-first-attempt.json). Reviewed on
 2026-09-15. The M5 increment completed focused/browser
 acceptance, its 25-package ordinary regression (2,295 passes, zero failures and
@@ -351,12 +356,15 @@ based cleanup authority while preserving Type=simple and all final profile
 checks. New candidate code is not covered by the old guard receipts.
 R03 applied that verified startup correction and reached 147 HTTP requests plus
 a normal APP stop. Its SQL identity comparison rejected databaseOid strings
-emitted by uncast PostgreSQL oid values. The proposed correction uses bigint
+emitted by uncast PostgreSQL oid values. The later correction uses bigint
 projections and exercises both runtime and sealer identity readers through an
-actual read-only observer before the first application start. That new behavior
-has not yet been remotely verified or admitted. Keep the complete two-start
-acceptance scope; the first-stage progress does not accept the failed run.
-Consumed E12, r02 and r03 inputs and evidence must remain unchanged.
+actual read-only observer before the first application start. That behavior
+passed remote synthetic checks and the actual r04 prestart query. Both r04
+starts, 272 HTTP requests and saved SQL state completed, but the sealer's JSON
+assumption rejected a valid plain-text Emby revoked-credential response. Its
+final observer never ran. The preserved runtime success does not complete
+installation acceptance or erase the failed sealer. Consumed E12, r02, r03
+and r04 inputs and evidence remain unchanged; no further attempt is admitted.
 
 Passing would prove one actual Linux amd64 embedded package installed and run
 through the shipped nonroot systemd template, with normal application

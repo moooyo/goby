@@ -1,0 +1,155 @@
+{
+  "kind": "goby-systemd-fourth-installation-attempt",
+  "version": 1,
+  "scope": "/opt/goby-test/m6-systemd-install-20260915-r04",
+  "status": "runtime_passed_seal_failed_evidence_preserved_and_resources_closed",
+  "packageArchiveSha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a",
+  "packageBinarySha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1",
+  "executionDecision": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/execution-decision.json",
+    "sha256": "32fbb721d77d45feb9ff01b6d1e482ca31ffdaf87e619ecc89d158cb8d70b731",
+    "bytes": 4875
+  },
+  "preparation": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/preparation.json",
+    "sha256": "5091317d878e12a835b0f7e238f2fee37af95929819a645f0691d6da355063ca",
+    "bytes": 380475
+  },
+  "execution": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/execution.json",
+    "sha256": "6e7c5bd7cc93dd2471a059b4244e077a717dd7330e84f055f5da932c1c2c3d79",
+    "bytes": 319745
+  },
+  "failedSeal": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/closure-failure.json",
+    "sha256": "562784494c05a33d742e16ad976086bf9494a000dadb34675ba22926fe23da70",
+    "bytes": 165940
+  },
+  "ownedCloseReadback": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/owned-close-readback/result.json",
+    "sha256": "53e5a4699936dc91f02cf53c3ceda3b5fb90195994d4d84eda0cf1cbbeb39f1f",
+    "bytes": 61515
+  },
+  "httpDiagnosis": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/http-review-diagnosis.json",
+    "sha256": "d57f4d8490835ce5e912535a8dbedd04cc06f7b9ab2fd0698be4e5a9e17d1eca",
+    "bytes": 12035
+  },
+  "runtime": {
+    "status": "systemd_installation_and_normal_restart_passed_pending_seal",
+    "applicationStarts": 2,
+    "distinctApplicationProcesses": 2,
+    "uid": 995,
+    "gid": 986,
+    "normalApplicationExits": 2,
+    "shutdownCompletedEvents": 2,
+    "errorEvents": 0,
+    "automaticRestarts": 0,
+    "httpRequests": 272,
+    "firstJourneyCumulativeRequests": 147,
+    "secondJourneyCumulativeRequests": 272,
+    "closedCommands": 60,
+    "realPrestartOidContractPassed": true,
+    "closedRuntimeSqlObservers": 6,
+    "savedSqlSnapshots": 3,
+    "catalogRowsIncludingXminExact": true,
+    "storedRevokedSessions": 8,
+    "credentialCleanupClosed": true,
+    "protectedStateUnchanged": true
+  },
+  "seal": {
+    "status": "failed_owned_resources_and_evidence_retained",
+    "errorCode": "http_json_content_type",
+    "applicationReviewCompleted": true,
+    "databaseReviewCompleted": true,
+    "httpReviewCompleted": false,
+    "additionalFinalSqlObservers": 0,
+    "closedCommands": 18,
+    "failureCleanupErrors": [],
+    "lockReleased": true
+  },
+  "diagnosis": {
+    "firstRejectedRequest": 141,
+    "expectedAndActualStatus": 401,
+    "actualContentType": "text/plain",
+    "bodyBytes": 35,
+    "bodyMatchesProductInvalidTokenMessage": true,
+    "affectedEmbyRevocationChecks": [141, 143, 145, 266, 268, 270],
+    "cause": "The journey explicitly reads these Emby 401 responses without JSON decoding; the seal reader incorrectly required JSON.",
+    "boundary": "Native administrator 401 responses are JSON; a blanket exception for every 401 is not justified.",
+    "requestsReplayed": 0,
+    "sqlConnections": 0,
+    "productionSourceChanged": false
+  },
+  "closureReadback": {
+    "metadataCommands": 17,
+    "allCommandsClosed": true,
+    "lockReleased": true,
+    "originalProcessAndObserverPidsGone": 10,
+    "ownedUnitCgroupsEmpty": true,
+    "ownedNetworkNamespaceAbsent": true,
+    "runtimeDirectoryAbsent": true,
+    "protectedStateUnchanged": true,
+    "serviceActions": 0,
+    "sqlConnections": 0,
+    "httpRequests": 0,
+    "postgresMountRetainedAtThisReadback": true
+  },
+  "failurePreservation": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/failure-preserve-closure.json",
+    "sha256": "92eef8417eaa2819bd2199fe63fb4396c65f79db171a34844c78bcaad84df16a",
+    "bytes": 99776,
+    "status": "failure_preserved_and_resources_closed",
+    "operatorSha256": "490770ccc3867b0c9d1053c21415af17f27e3184de26e2125e4ef5108dac6337",
+    "readOnlyPrecheckSha256": "ee624c1b1fb9613c28f3ff2dc779fe8da4076e666e816bdb34466c1754104e48",
+    "closedCommands": 27,
+    "metadataCommands": 25,
+    "managerReloads": 1,
+    "ordinaryOwnedUnmounts": 1,
+    "movedDirectoryTrees": 5,
+    "movedTreeFiles": 24,
+    "retainedInstallationCopies": 5,
+    "postgresUnmounted": true,
+    "installationPathsAbsent": true,
+    "networkNamespaceAbsent": true,
+    "lockReleased": true,
+    "normalRuntimeAccepted": true,
+    "serviceStarts": 0,
+    "serviceStops": 0,
+    "sqlConnections": 0,
+    "httpRequests": 0
+  },
+  "independentPreservationReadback": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/independent-failure-preserve-readback.json",
+    "sha256": "e9d51b8c88fcb0f7432dfd40e71d2c1b766dc65f8b46a18f8dd1e6781ed447bf",
+    "bytes": 50080,
+    "closedMetadataCommands": 19,
+    "archivesAndRetainedFilesMatched": true,
+    "tenRecordedPidsGone": true,
+    "installationUnitsMountAndNamespaceAbsent": true,
+    "sharedAccountsAndProtectedStateUnchanged": true,
+    "lockReleased": true,
+    "serviceActions": 0,
+    "sqlConnections": 0,
+    "httpRequests": 0
+  },
+  "archives": {
+    "closedPostgres": {
+      "sha256": "cddb636d2651c06466d12eb62c13f9fce9883239513cb9c5b994f25a368beea9",
+      "bytes": 6950651,
+      "files": 1488,
+      "directories": 30,
+      "uncompressedBytes": 50863469
+    },
+    "privateEvidence": {
+      "sha256": "b51c030b6bba842525e5a37abb69f6cacf78ee9dafbf4529700e05da9e809ebb",
+      "bytes": 1343237,
+      "files": 998,
+      "directories": 13,
+      "uncompressedBytes": 6057114
+    }
+  },
+  "installationAccepted": false,
+  "wholeM6Accepted": false,
+  "nextInstallationAttemptAdmitted": false
+}

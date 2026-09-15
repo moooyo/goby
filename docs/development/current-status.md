@@ -81,9 +81,19 @@ independent failure-preservation readback confirmed two archives, five retained
 trees and five copies, absent installation paths and PG mount, and unchanged
 protected state. The original observer failure records are unchanged; a separate
 readback confirms their reported backend PIDs are now gone. No second APP start
-occurred. Further attempts await explicit numeric OID output and a real shared
-observer check before application startup. The shipped unit and product package
-are unchanged; full installation acceptance remains open.
+occurred. The explicit numeric OID/shared-reader correction subsequently passed
+twelve remote synthetic cases and independent review. The
+[actual r04 attempt](systemd-installation-fourth-attempt.json) then passed the
+real prestart SQL contract, two normal nonroot starts/stops, 272 HTTP requests,
+six closed observers and three snapshots. The sealer completed its application
+and database review, then incorrectly required JSON for a valid Emby
+revoked-credential 401 plain-text response. Independent saved-evidence diagnosis
+confirmed the exact product response contract. The final sealer observer did
+not run. Failure preservation and independent readback passed for both archives,
+five directory trees, five installation copies and all process/unit/mount/
+namespace boundaries, with protected state unchanged. The runtime success and original
+seal failure remain separate. No fifth attempt is admitted. The shipped unit
+and product package are unchanged; full installation acceptance remains open.
 The [source checkpoint](systemd-package-source-checkpoint.json) now matches
 864 tracked backend, embed-wrapper, module and package inputs to the verified
 E11 source. A supplement checks `web/admin/embedded.go` from the same Git tree;
@@ -888,7 +898,7 @@ discriminating evidence or a concrete product decision before reopening.
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
-| Catalog and operations | Native restart, SQL catalog/isolation and tiny real-file scan/rescan baselines passed with closure; representative throughput, actual blocked storage, host reboot, native nonroot restart and filesystem measurements remain open |
+| Catalog and operations | Native root-profile restart, r04 nonroot two-start runtime, SQL catalog/isolation and tiny real-file scan/rescan baselines passed with closure; representative throughput, actual blocked storage, host reboot, complete installation sealing and filesystem measurements remain open |
 | Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
 | Administration | Selected policy, executor and provider extensions from the delivery plan |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |
