@@ -39,10 +39,11 @@ remain separate from these execution results.
 ## Implementation boundaries
 
 The first code increment is the fixed sample and command-plan layer with pure
-contract tests. It does not execute FFmpeg, allocate a playback identity or create
-an administrator operation. The subsequent executor, admission/cancellation,
-result retention and Settings UI must still be implemented and verified before
-this feature is complete.
+contract tests. The next source increment adds an internal Linux process session
+and decoded-content validators. Neither is wired to an administrator operation.
+Stage orchestration, preparation/reference records, actual codec/hardware evidence,
+admission/cancellation, result retention and Settings UI remain to be connected
+and verified before this feature is complete.
 
 Reuse the existing process-group and borrowed-file-descriptor primitives. Do not
 create a second Manager against the live transcode repository: its recovery path
@@ -51,7 +52,7 @@ library task children for diagnostics. Existing task UI interactions may inform
 polling and cancellation, but their scan-specific data model is not the result
 contract for media stages.
 
-Execution must use isolated environment/TMP/cache locations, bounded concurrency,
+Execution must use an isolated environment and controlled TMP/cache locations, bounded concurrency,
 input/output and stderr bytes, a total deadline, cancellation and shutdown joins.
 Thread counts alone are not a memory or storage bound. Admission must account
 for other conversion work and use current administrator authority; unknown
@@ -75,6 +76,55 @@ execution ran. The source-preparation record is
 The five-file snapshot precedes this evidence note and is not an execution input.
 Executor, resource/authority enforcement, actual result validation, API and UI
 work remain open; this component does not satisfy those requirements by itself.
+
+The new internal process session places each child directly into one newly owned
+cgroup v2 leaf, using Go's `UseCgroupFD` before exec. The existing process-group
+helper now preserves preconfigured attributes. The leaf has fixed, as-yet
+unmeasured limits of 512 MiB memory, zero swap, group OOM termination and 64 tasks;
+all version/preparation/stage/verification commands share a two-minute context
+and a 24-command ceiling. Each command also retains the 15-second plan deadline.
+These limits cover the descendant cgroup, not the Go server's own bounded
+buffers or GPU VRAM. A shared-host execution window is still required for tests.
+
+The service must supply an already delegated memory/pids parent and an empty
+scratch directory that it cannot make writable: a read-only mount or a non-owned
+directory with no write permission bits. The process session borrows a directory
+descriptor and never creates, chmods or removes that directory. The child inherits
+only the explicit loader/hardware environment and disabled driver-cache settings.
+No deployment delegation, scratch provisioning or public configuration is wired
+yet. Missing prerequisites reject execution; they do not authorize changing the
+service's parent cgroup or running without bounds.
+
+Raw and compressed command inputs use sealed read-only memfds. Raw input hashes
+must also match the fixed generator; a compressed hash still requires a validated
+preparation record from the future stage orchestrator. The ELF descriptor, its
+content and filesystem identity stay bound across execution. Stream byte limits,
+memory/OOM/pids events, child joins and cgroup emptiness are separate observations.
+Failures during initialization retain a partial owner when cleanup fails; a
+pending writer is joined before reading buffers or releasing its resources.
+No command observation is itself a successful diagnostic stage.
+
+Decoded-content checks compare directly with the fixed original YUV420P/PCM
+fixtures. Video checks eight complete frames, frame order, each plane and local
+tiles. Audio searches bounded alignment candidates, compares the complete
+waveform and bounds both padding regions. Its reported offset is an observed
+waveform match, not a codec-header delay claim. The fixed lossy-error thresholds
+still require real software and configured-hardware codec calibration. They do
+not prove sample-exact completeness, actual decoder/encoder selection, or replace
+stage-specific AAC preparation/reference evidence. Small differences within the
+content budget, including low-energy fade changes, are permitted by this policy.
+
+This increment adds ten pure content cases and eight Linux component cases;
+none has run. Seven Go files were formatted remotely without Go tests, builds,
+FFmpeg, SQL, HTTP or service operations. The formatting/source record is
+`/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/media-diagnostic-executor-20260916-01/source-preparation.json`
+(3,416 bytes, SHA-256
+`7f3024c5bebe7e0896f69d7e2e6933979e0d89b045b0b8e55d2e5bd94ff4b862`).
+Its snapshot precedes this evidence note and the final comment-only clarification
+of the audio content policy. Static review identified partial-owner
+loss and a same-UID scratch-permission weakness; both were corrected and reviewed
+again before formatting. No actual cgroup/fork/cancellation/media result or
+supported deployment profile has been verified by this source preparation.
 
 ## Available evidence and remaining work
 
@@ -105,3 +155,8 @@ the official [FFmpeg options](https://ffmpeg.org/ffmpeg-doc.html),
 [raw media formats](https://ffmpeg.org/ffmpeg-formats.html), and
 [protocol restrictions](https://ffmpeg.org/ffmpeg-protocols.html). Documentation
 describes options, not runtime support on a particular device.
+The process layer additionally follows the official
+[Go Linux process implementation](https://go.dev/src/syscall/exec_linux.go) and
+[kernel cgroup v2 documentation](https://docs.kernel.org/admin-guide/cgroup-v2.html).
+Their API descriptions do not prove that the test host or shipped service has
+the required delegation, kernel features or scratch-directory setup.
