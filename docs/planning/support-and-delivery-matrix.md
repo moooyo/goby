@@ -100,9 +100,10 @@ and no requirement is removed from M2-M6.
 The M5 refinement preserves the complete M2-M6 obligations without turning vague
 policy/provider/executor/configuration labels into an unlimited feature list.
 Trace each proposed behavior to the original requirements and give it a bounded
-acceptance journey. Record a later documentation correction for the Tasks API's
-stale media-refresh-pending introduction; this does not reopen its accepted
-implementation or authorize rewriting historical receipts.
+acceptance journey. The [Tasks API](../api/tasks.md) distinguishes the accepted
+normal-scan and media-refresh source/profile evidence from deployment status;
+that documentation correction does not reopen either implementation or rewrite
+historical receipts.
 
 ## Updating a row
 

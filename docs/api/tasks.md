@@ -1,15 +1,19 @@
 # Tasks API
 
-**Historical M5f normal-scan increment accepted; media-refresh increment pending.**
+**Normal-scan and fixed native media-refresh increments are accepted in their
+recorded verification scopes.**
 The [complete Go race run](../development/m5f-full-race-summary.json),
 [isolated browser/restart workflow](../development/m5f-tasks-browser.json),
 [deployment](../development/m5f-deployment-evidence.json) and
 [deployed workflow](../development/m5f-deployed-tasks.json) passed for the
-original `library.scan` contract. They do not accept the new fixed native-only
-executor. Its implementation and verification are pending. See
+original `library.scan` contract. The native-only `library.refresh_media` executor
+has separate [focused and browser acceptance](../development/task-media-refresh-verification.json)
+and [final ordinary regression](../development/m5-final-regression-verification.json)
+evidence. These records retain their source/profile scopes; deployment progress
+is recorded in [current status](../development/current-status.md). See
 [implementation and scheduling](../development/tasks.md) for ownership and
 timing rules, and the [media-refresh plan](../development/task-media-refresh-plan.md)
-for the new acceptance scope.
+for the media-refresh acceptance scope.
 
 The incremental contract has two fixed executors; it adds no public route,
 request field, DTO field or schema migration. The database remains schema 28.
