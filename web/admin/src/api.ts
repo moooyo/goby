@@ -29,6 +29,14 @@ export interface UserMutationResponse extends ManagedUserResponse {
   CurrentSessionRevoked: boolean;
 }
 
+export interface DeleteUserResponse {
+  CurrentSessionRevoked: boolean;
+}
+
+export interface DeleteUserInput {
+  Revision: string;
+}
+
 export interface UpdateUserInput {
   Revision: string;
   Name: string;
@@ -1532,6 +1540,16 @@ export const adminApi = {
 
   resetUserPassword(userId: string, input: ResetUserPasswordInput, options: RequestOptions = {}): Promise<UserMutationResponse> {
     return mutateUser(`/users/${encodeURIComponent(userId)}/password`, "POST", input, options);
+  },
+
+  async deleteUser(userId: string, input: DeleteUserInput, options: RequestOptions = {}): Promise<DeleteUserResponse> {
+    const revision = sessionRevision;
+    const result = await mutate<DeleteUserResponse>(`/users/${encodeURIComponent(userId)}`, "DELETE", { Revision: input.Revision }, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!isRecord(result) || typeof result.CurrentSessionRevoked !== "boolean"
+      || Object.keys(result).some((field) => field !== "CurrentSessionRevoked")) throw invalidResponse();
+    if (result.CurrentSessionRevoked) expireSession(revision);
+    return result;
   },
 
   getLibraries(options: RequestOptions = {}): Promise<LibrariesResponse> {

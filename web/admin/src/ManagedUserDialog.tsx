@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Paper, Skeleton, Stack, Switch, TextField, Typography, useMediaQuery } from '@mui/material';
 import LockResetRounded from '@mui/icons-material/LockResetRounded';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
-import type { Library, ManagedUser, UpdateUserInput, UserPolicy, UserMutationResponse } from './api';
+import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, UserPolicy, UserMutationResponse } from './api';
 import { ErrorNotice } from './components';
 import { fieldError, PasswordField } from './formFields';
 import { colors, theme } from './theme';
@@ -44,8 +45,28 @@ export function UnsavedChangesDialog({ reload, onKeep, onDiscard }: { reload: bo
   );
 }
 
-function MutationNotice({ error, password = false, onReload }: { error: unknown; password?: boolean; onReload: () => void }) {
+function MutationNotice({ error, password = false, deleting = false, onReload }: { error: unknown; password?: boolean; deleting?: boolean; onReload: () => void }) {
   if (error == null) return null;
+  if (deleting) {
+    const message = error instanceof ApiError && error.code === 'last_administrator'
+      ? 'Keep at least one enabled administrator. Give another active user administrator access before deleting this account.'
+      : isRevisionConflict(error)
+        ? 'This user changed after you opened it. Reload the latest user and review the account before deciding whether to delete it.'
+        : error instanceof ApiError && error.status === 404
+          ? 'This user could not be found. Reload the latest user to check whether the account still exists.'
+          : isUnknownOutcome(error) || (error instanceof ApiError && error.status >= 500)
+            ? 'The deletion response could not be confirmed. The account may already have been deleted. Reload the latest user before deciding what to do next.'
+            : undefined;
+    return (
+      <Stack spacing={1}>
+        {message ? <Alert severity={error instanceof ApiError && error.code === 'last_administrator' ? 'error' : 'warning'}>
+          {message}
+          {error instanceof ApiError && error.requestId && <Typography variant="caption" component="div" sx={{ mt: 0.5 }}>Request ID: <span className="mono">{error.requestId}</span></Typography>}
+        </Alert> : <ErrorNotice error={error} />}
+        <Button color="inherit" size="small" startIcon={<RefreshRounded />} onClick={onReload} sx={{ alignSelf: 'flex-start' }}>Reload latest user</Button>
+      </Stack>
+    );
+  }
   if (isRevisionConflict(error) || isUnknownOutcome(error)) {
     return (
       <Alert severity="warning" sx={{ '& .MuiAlert-message': { minWidth: 0 } }}>
@@ -151,7 +172,55 @@ function ResetPasswordDialog({ user, isCurrentUser, onClose, onReset, onReload, 
   );
 }
 
-export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, onNavigationGuardChange }: { userId: string; currentUserId: string; onClose: () => void; onUpdated: (user: ManagedUser, message: string) => void; onNavigationGuardChange: UserNavigationGuardChange }) {
+function DeleteUserDialog({ user, isCurrentUser, onClose, onDeleted, onReload, onReviewRequired, onBusyChange }: { user: ManagedUser; isCurrentUser: boolean; onClose: () => void; onDeleted: (result: DeleteUserResponse) => void; onReload: () => void; onReviewRequired: (error: unknown) => void; onBusyChange: (busy: boolean) => void }) {
+  const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
+  const attempted = useRef(false);
+  const [error, setError] = useState<unknown>(null);
+
+  function close() {
+    if (!inFlight.current) onClose();
+  }
+
+  async function remove() {
+    if (inFlight.current || attempted.current) return;
+    attempted.current = true;
+    inFlight.current = true;
+    setBusy(true);
+    onBusyChange(true);
+    try {
+      const result = await adminApi.deleteUser(user.Id, { Revision: user.Revision });
+      onDeleted(result);
+    } catch (cause) {
+      setError(cause);
+      onReviewRequired(cause);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+      onBusyChange(false);
+    }
+  }
+
+  return (
+    <Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="delete-user-title" aria-describedby="delete-user-description">
+      <DialogTitle id="delete-user-title">Delete user</DialogTitle>
+      <DialogContent aria-busy={busy}>
+        <Stack spacing={2} sx={{ pt: 0.5 }}>
+          <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>Delete <strong>{user.Name}</strong>?</Typography>
+          <Typography id="delete-user-description" variant="body2" color="text.secondary">This permanently deletes the account, ends its sign-ins, and removes its personal playback history. Media files are kept.</Typography>
+          {isCurrentUser && <Alert severity="warning">You are deleting your own account. You will be signed out as soon as it is deleted.</Alert>}
+          <MutationNotice error={error} deleting onReload={onReload} />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 3, flexWrap: 'wrap', gap: 1 }}>
+        <Button onClick={close} disabled={busy} autoFocus color="secondary">Cancel</Button>
+        <Button variant="contained" color="error" onClick={() => void remove()} disabled={busy || error != null} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <DeleteOutlineRounded />}>{busy ? 'Deleting user...' : 'Delete user'}</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, onRemoved, onNavigationGuardChange }: { userId: string; currentUserId: string; onClose: () => void; onUpdated: (user: ManagedUser, message: string) => void; onRemoved: (userId: string, message: string, severity: 'success' | 'info') => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [user, setUser] = useState<ManagedUser>();
   const [draft, setDraft] = useState<UpdateUserInput>();
@@ -162,29 +231,36 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   const [librariesError, setLibrariesError] = useState<unknown>(null);
   const [error, setError] = useState<unknown>(null);
   const [passwordReviewRequired, setPasswordReviewRequired] = useState(false);
+  const [deleteReviewRequired, setDeleteReviewRequired] = useState(false);
   const [reloadRevision, setReloadRevision] = useState(0);
   const [libraryRevision, setLibraryRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [passwordDraftState, setPasswordDraftState] = useState({ dirty: false, busy: false });
   const [pendingAction, setPendingAction] = useState<'close' | 'reload'>();
   const [notice, setNotice] = useState('');
   const dirty = Boolean(user && draft && draftKey(draft) !== draftKey(inputFor(user)));
-  const blocked = isRevisionConflict(error) || isUnknownOutcome(error);
-  const disabled = busy || loading;
-  useUserDraftNavigation(dirty || (resettingPassword && passwordDraftState.dirty), busy || (resettingPassword && passwordDraftState.busy), onNavigationGuardChange);
+  const blocked = deleteReviewRequired || isRevisionConflict(error) || isUnknownOutcome(error);
+  const disabled = busy || loading || deleteBusy || loadError != null;
+  useUserDraftNavigation(dirty || (resettingPassword && passwordDraftState.dirty), busy || deleteBusy || (resettingPassword && passwordDraftState.busy), onNavigationGuardChange);
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setLoadError(null);
     void adminApi.getUser(userId, { signal: controller.signal })
-      .then((result) => { setUser(result.User); setDraft(inputFor(result.User)); setError(null); setPasswordReviewRequired(false); setNotice(''); })
-      .catch((cause: unknown) => { if (!isAbortError(cause)) setLoadError(cause); })
+      .then((result) => { setUser(result.User); setDraft(inputFor(result.User)); setError(null); setPasswordReviewRequired(false); setDeleteReviewRequired(false); setNotice(''); })
+      .catch((cause: unknown) => {
+        if (controller.signal.aborted || isAbortError(cause)) return;
+        if (cause instanceof ApiError && cause.status === 404) onRemoved(userId, 'This user is no longer available.', 'info');
+        else setLoadError(cause);
+      })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [userId, reloadRevision]);
+  }, [userId, reloadRevision, onRemoved]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -200,12 +276,13 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   function reload() {
     setPendingAction(undefined);
     setResettingPassword(false);
+    setDeletingUser(false);
     setReloadRevision((value) => value + 1);
     setLibraryRevision((value) => value + 1);
   }
 
   function requestAction(action: 'close' | 'reload') {
-    if (inFlight.current) return;
+    if (inFlight.current || deleteBusy) return;
     if (dirty) setPendingAction(action);
     else if (action === 'reload') reload();
     else onClose();
@@ -227,6 +304,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
     setDraft(inputFor(result.User));
     setError(null);
     setPasswordReviewRequired(false);
+    setDeleteReviewRequired(false);
     setResettingPassword(false);
     const message = password ? `Password reset for ${result.User.Name}. Existing sign-ins have ended.` : `User ${result.User.Name} updated.`;
     setNotice(message);
@@ -235,7 +313,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlight.current || !draft || !dirty || blocked || loading || !draft.Name.trim()) return;
+    if (inFlight.current || !draft || !dirty || blocked || disabled || deletingUser || resettingPassword || !draft.Name.trim()) return;
     inFlight.current = true;
     setBusy(true);
     setError(null);
@@ -279,7 +357,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                     </Box>
                     {dirty && <Typography variant="caption" color="primary.dark" sx={{ display: 'block', mt: 2 }}>Preview of your unsaved changes</Typography>}
                   </Paper>
-                  <MutationNotice error={error} password={passwordReviewRequired} onReload={() => requestAction('reload')} />
+                  <MutationNotice error={error} password={passwordReviewRequired} deleting={deleteReviewRequired} onReload={() => requestAction('reload')} />
                   {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}
                   <Section title="Account" description="Choose the account name and who can administer the server.">
                     <Stack spacing={2.5}>
@@ -320,6 +398,9 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                       {!user.IsDisabled && draft.IsDisabled && <Alert severity="warning">{user.Id === currentUserId ? 'Saving will end your current sign-in and disable this account.' : 'Saving will end existing sign-ins for this account and prevent it from signing in.'}</Alert>}
                       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, pt: 1 }}><Box><Typography variant="body2" sx={{ fontWeight: 650 }}>Password {user.HasPassword ? 'is set' : 'is not set'}</Typography><Typography variant="body2" color="text.secondary">A reset ends existing sign-ins for this account.</Typography></Box><Button variant="outlined" onClick={() => setResettingPassword(true)} disabled={disabled || dirty || blocked} startIcon={<LockResetRounded />} sx={{ flexShrink: 0 }}>Reset password</Button></Stack>
                       {dirty && <Typography variant="caption" color="text.secondary">Save or discard your account changes before resetting the password.</Typography>}
+                      <Divider />
+                      <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}><Box><Typography variant="body2" sx={{ fontWeight: 650 }}>Delete account</Typography><Typography variant="body2" color="text.secondary">Permanently remove this user and their personal playback history. Media files are kept.</Typography></Box><Button variant="outlined" color="error" onClick={() => setDeletingUser(true)} disabled={disabled || dirty || blocked || resettingPassword} startIcon={<DeleteOutlineRounded />} sx={{ flexShrink: 0 }}>Delete user</Button></Stack>
+                      {dirty && <Typography variant="caption" color="text.secondary">Save or discard your account changes before deleting this user.</Typography>}
                     </Stack>
                   </Section>
                 </>
@@ -328,13 +409,14 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
           </DialogContent>
           <DialogActions sx={{ px: { xs: 2.5, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', gap: 1, flexWrap: 'wrap' }}>
             <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{loading ? 'Loading user...' : dirty ? 'Unsaved changes' : user ? 'All changes saved' : ''}</Typography>
-            <Button onClick={() => requestAction('close')} disabled={busy} color="secondary">Close</Button>
+            <Button onClick={() => requestAction('close')} disabled={busy || deleteBusy} color="secondary">Close</Button>
             <Button type="submit" variant="contained" disabled={disabled || !draft?.Name.trim() || !dirty || blocked} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />}>{busy ? 'Saving changes...' : 'Save changes'}</Button>
           </DialogActions>
         </Box>
       </Dialog>
       {pendingAction && <UnsavedChangesDialog reload={pendingAction === 'reload'} onKeep={() => setPendingAction(undefined)} onDiscard={() => { if (pendingAction === 'reload') reload(); else onClose(); }} />}
       {resettingPassword && user && <ResetPasswordDialog user={user} isCurrentUser={user.Id === currentUserId} onClose={() => setResettingPassword(false)} onReload={reload} onReset={(result) => saved(result, true)} onReviewRequired={(cause) => { setError(cause); setPasswordReviewRequired(true); }} onDraftStateChange={setPasswordDraftState} />}
+      {deletingUser && user && <DeleteUserDialog user={user} isCurrentUser={user.Id === currentUserId} onClose={() => setDeletingUser(false)} onReload={() => requestAction('reload')} onDeleted={(result) => { if (!result.CurrentSessionRevoked) onRemoved(user.Id, `User ${user.Name} deleted.`, 'success'); }} onReviewRequired={(cause) => { setError(cause); setDeleteReviewRequired(true); setNotice(''); }} onBusyChange={setDeleteBusy} />}
     </>
   );
 }

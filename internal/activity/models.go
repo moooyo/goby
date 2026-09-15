@@ -27,6 +27,7 @@ type Action string
 const (
 	ActionUserCreated               Action = "user.created"
 	ActionUserUpdated               Action = "user.updated"
+	ActionUserDeleted               Action = "user.deleted"
 	ActionUserPasswordReset         Action = "user.password_reset"
 	ActionSessionLogin              Action = "session.login"
 	ActionSessionRevoked            Action = "session.revoked"

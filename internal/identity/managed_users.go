@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
@@ -17,7 +18,7 @@ import (
 
 var (
 	ErrRevisionConflict  = errors.New("user revision conflict")
-	ErrLastAdministrator = errors.New("the last enabled administrator cannot be disabled or demoted")
+	ErrLastAdministrator = errors.New("the last enabled administrator cannot be disabled, demoted, or deleted")
 )
 
 const (
@@ -59,6 +60,13 @@ type ManagedUserUpdate struct {
 type ManagedUserMutation struct {
 	User                  ManagedUser
 	CurrentSessionRevoked bool
+}
+
+// ManagedUserDeletion contains only committed deletion facts. Session IDs are
+// internal cleanup handles, never a native response or credential value.
+type ManagedUserDeletion struct {
+	CurrentSessionRevoked bool
+	RevokedSessionIDs     []string
 }
 
 // ManagedUserValidationError carries safe field messages for native forms.
@@ -109,7 +117,7 @@ func (s *Store) CreateManagedUser(ctx context.Context, actor Principal, name, pa
 	if err != nil {
 		return User{}, err
 	}
-	tx, _, err := s.beginManagedUserMutation(ctx, actor, actor.User.ID)
+	tx, _, err := s.beginManagedUserMutation(ctx, actor, actor.User.ID, false)
 	if err != nil {
 		return User{}, err
 	}
@@ -151,7 +159,7 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
-	tx, current, err := s.beginManagedUserMutation(ctx, actor, id)
+	tx, current, err := s.beginManagedUserMutation(ctx, actor, id, false)
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
@@ -235,7 +243,7 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 	if err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("hash managed user password: %w", err)
 	}
-	tx, current, err := s.beginManagedUserMutation(ctx, actor, id)
+	tx, current, err := s.beginManagedUserMutation(ctx, actor, id, false)
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
@@ -275,7 +283,93 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 	return ManagedUserMutation{User: updated, CurrentSessionRevoked: revoked}, nil
 }
 
-func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, id string) (pgx.Tx, ManagedUser, error) {
+// DeleteManagedUser removes an account and its FK-owned state atomically with
+// an audit event. Account management serialization prevents competing requests
+// from deleting or demoting the last enabled administrator.
+func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id string, revision int64) (ManagedUserDeletion, error) {
+	if revision < 1 {
+		return ManagedUserDeletion{}, managedUserFieldError("Revision", "revision must be a positive integer")
+	}
+	tx, current, err := s.beginManagedUserMutation(ctx, actor, id, true)
+	if err != nil {
+		return ManagedUserDeletion{}, err
+	}
+	defer rollback(tx)
+	if err := CheckAdministrator(ctx, tx, actor, AdministratorNative, false); err != nil {
+		return ManagedUserDeletion{}, err
+	}
+	if current.Revision != revision {
+		return ManagedUserDeletion{}, ErrRevisionConflict
+	}
+	if current.User.IsAdministrator && !current.User.IsDisabled {
+		var administrators int64
+		if err := tx.QueryRow(ctx, "SELECT count(*) FROM users WHERE is_administrator AND NOT is_disabled").Scan(&administrators); err != nil {
+			return ManagedUserDeletion{}, fmt.Errorf("count administrators before user deletion: %w", err)
+		}
+		if administrators <= 1 {
+			return ManagedUserDeletion{}, ErrLastAdministrator
+		}
+	}
+	// This value comes from the credential already locked and reauthorized in
+	// this transaction. A Principal expiry snapshot cannot authorize self-deletion.
+	var actorExpiresAt time.Time
+	if err := tx.QueryRow(ctx, "SELECT expires_at FROM sessions WHERE id = $1 AND user_id = $2", actor.SessionID, actor.User.ID).Scan(&actorExpiresAt); err != nil {
+		return ManagedUserDeletion{}, fmt.Errorf("read locked deletion authority expiry: %w", err)
+	}
+	rows, err := tx.Query(ctx, "SELECT id FROM sessions WHERE user_id = $1 ORDER BY id", id)
+	if err != nil {
+		return ManagedUserDeletion{}, fmt.Errorf("read deleted user session handles: %w", err)
+	}
+	result := ManagedUserDeletion{CurrentSessionRevoked: id == actor.User.ID, RevokedSessionIDs: []string{}}
+	for rows.Next() {
+		var sessionID string
+		if err := rows.Scan(&sessionID); err != nil {
+			rows.Close()
+			return ManagedUserDeletion{}, fmt.Errorf("read deleted user session handle: %w", err)
+		}
+		result.RevokedSessionIDs = append(result.RevokedSessionIDs, sessionID)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return ManagedUserDeletion{}, fmt.Errorf("read deleted user sessions: %w", err)
+	}
+	deleted, err := tx.Exec(ctx, "DELETE FROM users WHERE id = $1 AND management_revision = $2", id, revision)
+	if err != nil {
+		return ManagedUserDeletion{}, fmt.Errorf("delete managed user: %w", err)
+	}
+	if deleted.RowsAffected() != 1 {
+		return ManagedUserDeletion{}, ErrRevisionConflict
+	}
+	auditActor, err := identityActivityActor(actor)
+	if err != nil {
+		return ManagedUserDeletion{}, err
+	}
+	if err := activity.Record(ctx, tx, activity.Event{
+		Action: activity.ActionUserDeleted, Source: activity.SourceNative, Actor: auditActor,
+		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: revision, Count: 1,
+	}); err != nil {
+		return ManagedUserDeletion{}, err
+	}
+	if result.CurrentSessionRevoked {
+		// The locked account and session were removed by this exact DELETE. Their
+		// role/revocation cannot change concurrently, but the database clock can.
+		var unexpired bool
+		if err := tx.QueryRow(ctx, "SELECT $1::timestamptz > clock_timestamp()", actorExpiresAt).Scan(&unexpired); err != nil {
+			return ManagedUserDeletion{}, fmt.Errorf("recheck self-deletion authority expiry: %w", err)
+		}
+		if !unexpired {
+			return ManagedUserDeletion{}, ErrUnauthorized
+		}
+	} else if err := CheckAdministrator(ctx, tx, actor, AdministratorNative, false); err != nil {
+		return ManagedUserDeletion{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return ManagedUserDeletion{}, fmt.Errorf("commit managed user deletion: %w", err)
+	}
+	return result, nil
+}
+
+func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, id string, lockTargetSessions bool) (pgx.Tx, ManagedUser, error) {
 	if !validManagedActor(actor) {
 		return nil, ManagedUser{}, ErrUnauthorized
 	}
@@ -316,7 +410,34 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 		return nil, ManagedUser{}, ErrUnauthorized
 	}
 	var sessionID string
-	err = tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id = $2 FOR UPDATE`, actor.SessionID, actor.User.ID).Scan(&sessionID)
+	if lockTargetSessions {
+		// Deletion locks all affected credentials in one deterministic order.
+		// Account locks prevent new target logins while this set is consumed.
+		sessions, err := tx.Query(ctx, `SELECT id FROM sessions
+			WHERE (id = $1 AND user_id = $2) OR user_id = $3 ORDER BY id FOR UPDATE`, actor.SessionID, actor.User.ID, id)
+		if err != nil {
+			return nil, ManagedUser{}, fmt.Errorf("lock deleted user sessions: %w", err)
+		}
+		for sessions.Next() {
+			var lockedID string
+			if err := sessions.Scan(&lockedID); err != nil {
+				sessions.Close()
+				return nil, ManagedUser{}, fmt.Errorf("read locked deletion session: %w", err)
+			}
+			if lockedID == actor.SessionID {
+				sessionID = lockedID
+			}
+		}
+		sessions.Close()
+		if err := sessions.Err(); err != nil {
+			return nil, ManagedUser{}, fmt.Errorf("read locked deletion sessions: %w", err)
+		}
+		if sessionID == "" {
+			return nil, ManagedUser{}, ErrUnauthorized
+		}
+	} else {
+		err = tx.QueryRow(ctx, `SELECT id FROM sessions WHERE id = $1 AND user_id = $2 FOR UPDATE`, actor.SessionID, actor.User.ID).Scan(&sessionID)
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ManagedUser{}, ErrUnauthorized
 	}
