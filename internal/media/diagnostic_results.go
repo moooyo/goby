@@ -70,8 +70,8 @@ type DiagnosticStage struct {
 
 // This report intentionally has no release/support or global hardware flag.
 // Even "passed" stages remain provisional while the enclosing owner has not
-// completed session closure and administrator/conversion admission has not been
-// attached to this internal pipeline.
+// completed session closure. This internal pipeline does not itself supply
+// administrator or conversion admission; those belong to its enclosing owner.
 type DiagnosticReport struct {
 	Version                int
 	Selection              DiagnosticSelection

@@ -209,7 +209,7 @@ func (g *diagnosticStageGraph) command(mode DiagnosticMode, input diagnosticStag
 			fact.Evidence = &evidence
 		}
 	}
-	if errors.Is(err, ErrDiagnosticResources) || errors.Is(err, ErrDiagnosticTool) || errors.Is(err, ErrDiagnosticClosure) {
+	if errors.Is(err, ErrDiagnosticResources) || errors.Is(err, ErrDiagnosticTool) || errors.Is(err, ErrDiagnosticClosure) || errors.Is(err, ErrDiagnosticAuthority) {
 		g.fatal = err
 	}
 	return observation, fact, err
@@ -439,7 +439,7 @@ func diagnosticDigest(data []byte) string {
 }
 
 func diagnosticFailureState(err error) string {
-	if errors.Is(err, context.Canceled) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, ErrDiagnosticAuthority) {
 		return "cancelled"
 	}
 	if errors.Is(err, ErrDiagnosticResources) || errors.Is(err, ErrDiagnosticTool) || errors.Is(err, ErrDiagnosticPlan) {
@@ -453,6 +453,8 @@ func diagnosticFailureState(err error) string {
 
 func diagnosticStageCode(err error) string {
 	switch {
+	case errors.Is(err, ErrDiagnosticAuthority):
+		return "diagnostic_authority_lost"
 	case errors.Is(err, context.Canceled):
 		return "diagnostic_cancelled"
 	case errors.Is(err, context.DeadlineExceeded):

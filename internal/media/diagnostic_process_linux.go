@@ -23,8 +23,8 @@ import (
 )
 
 // A session owns a single resource domain for preparation, stage commands and
-// verification together. It is internal until administrator and conversion-slot
-// admission, result retention, and stage acceptance are connected. A failed
+// verification together. The enclosing owner supplies administrator and
+// conversion-slot admission, result retention, and stage acceptance. A failed
 // close must be retained by that owner; it never permits another run.
 type diagnosticProcessSession struct {
 	mu              sync.Mutex

@@ -45,6 +45,9 @@ func newSocketRuntime() *socketRuntime {
 func (s *Server) closeSockets(ctx context.Context) error {
 	s.originals.stop()
 	if s.sockets == nil {
+		if err := s.mediaDiagnostics.Close(ctx); err != nil {
+			return err
+		}
 		s.taskManager.BeginClose()
 		if err := s.taskManager.Close(ctx); err != nil {
 			return err
@@ -63,12 +66,18 @@ func (s *Server) closeSockets(ctx context.Context) error {
 		runtime.mu.Unlock()
 		_ = s.eventHub.Close()
 		go func() {
+			// Start conversion cancellation immediately. Its manager may wait for
+			// the diagnostic reservation, but an unrelated stuck diagnostic must
+			// not postpone cancellation of active playback jobs.
+			hlsDone := make(chan error, 1)
+			go func() { hlsDone <- s.hls.Close(context.Background()) }()
 			s.notifier.Close()
 			runtime.wg.Wait()
 			s.originals.wait()
 			// Cleanup continues even if an individual Close caller times out.
 			_ = s.waitActivityRetention(context.Background())
-			runtime.shutdownErr = errors.Join(s.hls.Close(context.Background()), s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
+			diagnosticErr := s.mediaDiagnostics.Close(context.Background())
+			runtime.shutdownErr = errors.Join(diagnosticErr, <-hlsDone, s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
 			close(runtime.done)
 		}()
 	})

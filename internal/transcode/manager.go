@@ -90,27 +90,28 @@ type managedJob struct {
 // Authorization belongs to the caller: each lookup additionally requires an
 // exact scope match, and no original authentication token is retained here.
 type Manager struct {
-	options      Options
-	cache        *cacheRoot
-	ctx          context.Context
-	cancel       context.CancelFunc
-	mu           sync.Mutex
-	filesMu      sync.Mutex
-	jobs         map[string]*managedJob
-	bySpec       map[Spec]*managedJob
-	queue        []*managedJob
-	running      int
-	runningUsers map[string]int
-	runningAuth  map[string]int
-	bytes        int64
-	readers      int
-	cacheFailed  bool
-	closing      bool
-	closeErr     error
-	wake         chan struct{}
-	loopDone     chan struct{}
-	closed       chan struct{}
-	workers      sync.WaitGroup
+	options               Options
+	cache                 *cacheRoot
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	mu                    sync.Mutex
+	filesMu               sync.Mutex
+	jobs                  map[string]*managedJob
+	bySpec                map[Spec]*managedJob
+	queue                 []*managedJob
+	running               int
+	diagnosticReservation int
+	runningUsers          map[string]int
+	runningAuth           map[string]int
+	bytes                 int64
+	readers               int
+	cacheFailed           bool
+	closing               bool
+	closeErr              error
+	wake                  chan struct{}
+	loopDone              chan struct{}
+	closed                chan struct{}
+	workers               sync.WaitGroup
 }
 
 // NewManager recovers only an exclusively locked, explicitly owned cache. The
@@ -458,6 +459,43 @@ func (m *Manager) Health() Health {
 		return Health{Code: "manager_closed"}
 	}
 	return Health{Available: true, Code: "ready"}
+}
+
+// ReserveDiagnostic occupies one global execution slot on this live manager.
+// At most one diagnostic can hold a reservation; no encoding or playback
+// record is created. The caller must close every diagnostic process before
+// releasing the slot, including after cancellation or a failed stage. A failed
+// diagnostic close must retain the reservation so Manager.Close cannot report
+// resource closure prematurely. Repeated calls to the returned release are safe.
+func (m *Manager) ReserveDiagnostic() (func(), error) {
+	if m == nil {
+		return nil, ErrManagerClosed
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closing {
+		return nil, ErrManagerClosed
+	}
+	if m.cacheFailed {
+		return nil, ErrOutputUnavailable
+	}
+	if m.diagnosticReservation != 0 || m.running >= m.options.MaxJobs {
+		return nil, ErrBusy
+	}
+	m.diagnosticReservation = 1
+	// Positive additions are serialized with Close, just like admitted job
+	// workers. Shutdown waits without holding mu until the owner releases.
+	m.workers.Add(1)
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			m.mu.Lock()
+			m.diagnosticReservation = 0
+			m.mu.Unlock()
+			m.workers.Done()
+			m.signal()
+		})
+	}, nil
 }
 
 func (m *Manager) touchLocked(j *managedJob) { j.record.LastAccessAt = time.Now().UTC() }
@@ -828,7 +866,7 @@ func (m *Manager) schedule() {
 		if j.finished || j.stopCode != "" {
 			continue
 		}
-		if !j.durable || m.running >= m.options.MaxJobs ||
+		if !j.durable || m.running+m.diagnosticReservation >= m.options.MaxJobs ||
 			(!j.record.Spec.Scope.ApplicationKey && m.runningUsers[j.record.Spec.Scope.UserID] >= m.options.MaxUserJobs) ||
 			m.runningAuth[j.record.Spec.Scope.AuthSessionID] >= m.options.MaxSessionJobs || m.bytes >= m.options.MaxBytes {
 			remaining = append(remaining, j)
@@ -1170,8 +1208,9 @@ func (m *Manager) reclaim(j *managedJob, closing bool) bool {
 }
 
 // Close starts an irreversible background shutdown. Even when ctx expires, the
-// manager continues reaping children and waits for outstanding readers before
-// removing cache files and releasing its filesystem lock. It is safe to retry.
+// manager continues reaping children and waits for outstanding readers and
+// diagnostic reservations before removing cache files and releasing its
+// filesystem lock. It is safe to retry.
 func (m *Manager) Close(ctx context.Context) error {
 	m.mu.Lock()
 	if !m.closing {

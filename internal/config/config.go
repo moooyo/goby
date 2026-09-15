@@ -31,6 +31,7 @@ type Config struct {
 	StartupTimeout        time.Duration
 	APIKeyMasterKeyFile   string
 	Transcoding           TranscodingConfig
+	MediaDiagnostics      MediaDiagnosticsConfig
 	Diagnostics           diagnostics.Config
 	Recovery              RecoveryConfig
 	ActivityRetentionDays int
@@ -70,6 +71,10 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("GOBY_STARTUP_TIMEOUT must be a Go duration between 1s and 30m")
 	}
 	c.Transcoding, err = loadTranscoding()
+	if err != nil {
+		return Config{}, err
+	}
+	c.MediaDiagnostics, err = loadMediaDiagnostics()
 	if err != nil {
 		return Config{}, err
 	}
@@ -118,6 +123,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if err := c.validateRecovery(); err != nil {
+		return err
+	}
+	if err := c.MediaDiagnostics.Validate(); err != nil {
 		return err
 	}
 	return c.Transcoding.Validate()

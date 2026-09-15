@@ -85,7 +85,11 @@ func (s *Server) resetManagedUserPassword(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, actor identity.Principal, action string, result identity.ManagedUserMutation) {
+	if action == "reset_user_password" || !result.User.User.IsAdministrator || result.User.User.IsDisabled {
+		s.mediaDiagnostics.cancelActor(result.User.User.ID, "")
+	}
 	if result.CurrentSessionRevoked {
+		s.mediaDiagnostics.cancelActor("", actor.SessionID)
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", result.User.User.ID, "action", action)

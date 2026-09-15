@@ -41,10 +41,10 @@ remain separate from these execution results.
 The first code increment is the fixed sample and command-plan layer with pure
 contract tests. The subsequent source increments add an internal Linux process
 session, decoded-content validators and a stage pipeline with independent
-preparation/reference records and codec-log evidence. None is wired to an
-administrator operation. Execution ownership/admission, deployment prerequisites,
-result retention and Settings UI remain to be connected and verified before
-this feature is complete.
+preparation/reference records and codec-log evidence. The current source now
+connects these through an execution owner, native administrator run API, existing
+conversion capacity and a Settings panel. Actual deployment, Go/database/browser
+verification and real software/hardware calibration remain incomplete.
 
 Reuse the existing process-group and borrowed-file-descriptor primitives. Do not
 create a second Manager against the live transcode repository: its recovery path
@@ -58,8 +58,8 @@ input/output and stderr bytes, a total deadline, cancellation and shutdown joins
 Thread counts alone are not a memory or storage bound. Admission must account
 for other conversion work and use current administrator authority; unknown
 submission outcomes require lookup before another decision. Public errors expose
-safe codes, not raw child stderr or host environment content. Runtime-result
-retention and request-identity lifetime must be fixed before exposing a run API.
+safe codes, not raw child stderr or host environment content. The run API fixes
+retention and request-identity lifetime as described below.
 
 The fixed raw-sample generator and closed three-stage command plans are now
 implemented in `internal/media/diagnostic_sample.go` and `diagnostic_plan.go`,
@@ -75,8 +75,8 @@ execution ran. The source-preparation record is
 (4,029 bytes, SHA-256
 `dbfa4453f4fe10dcc78000ee4acca307038208819f7a2ea02aa4fafc817b1626`).
 The five-file snapshot precedes this evidence note and is not an execution input.
-Executor, resource/authority enforcement, actual result validation, API and UI
-work remain open; this component does not satisfy those requirements by itself.
+At this first checkpoint, executor, resource/authority enforcement, result
+validation, API and UI remained open; this component alone did not satisfy them.
 
 The new internal process session places each child directly into one newly owned
 cgroup v2 leaf, using Go's `UseCgroupFD` before exec. The existing process-group
@@ -92,13 +92,14 @@ scratch directory that it cannot make writable: a read-only mount or a non-owned
 directory with no write permission bits. The process session borrows a directory
 descriptor and never creates, chmods or removes that directory. The child inherits
 only the explicit loader/hardware environment and disabled driver-cache settings.
-No deployment delegation, scratch provisioning or public configuration is wired
-yet. Missing prerequisites reject execution; they do not authorize changing the
+Configuration now captures these prerequisites explicitly, without activating
+delegation or provisioning scratch on the host. Missing prerequisites reject
+execution; they do not authorize changing the
 service's parent cgroup or running without bounds.
 
 Raw and compressed command inputs use sealed read-only memfds. Raw input hashes
 must also match the fixed generator; a compressed hash still requires a validated
-preparation record from the future stage orchestrator. The ELF descriptor, its
+preparation record from the stage orchestrator. The ELF descriptor, its
 content and filesystem identity stay bound across execution. Stream byte limits,
 memory/OOM/pids events, child joins and cgroup emptiness are separate observations.
 Failures during initialization retain a partial owner when cleanup fails; a
@@ -156,12 +157,12 @@ establishes complete physical packets and the declared fixed AAC-LC/48k/stereo
 header profile. Actual decoding and content/reference checks remain mandatory.
 
 The pipeline returns `SessionClosureRequired=true` for a supplied session,
-including when every stage is complete. The future administrator run owner must
+including when every stage is complete. The administrator run owner must
 retain partial initialization/close failures, account for active conversion work,
 close the session, and publish the final outcome only after those obligations
 are satisfied. Progress snapshots copy their nested facts, so an observer cannot
-mutate private references. There is still no public run API, configured resource
-delegation, retained run manager or Settings action. The new source-derived log
+mutate private references. At this stage checkpoint there was no public run API,
+retained run manager or Settings action. Its source-derived log
 fixtures and simulated-session cases do not establish actual FFmpeg, hardware,
 deadline or administrator behavior on test-env.
 
@@ -176,6 +177,66 @@ the source record is
 The snapshot precedes this evidence note. No Go tests, builds, FFmpeg, ffprobe,
 SQL, HTTP or service operations ran; real log compatibility, software/hardware
 stage results and the enclosing administrator run remain unverified.
+
+## Administrator integration checkpoint
+
+The [native API contract](../api/admin-media-diagnostics.md) and Settings panel
+are now implemented in source. One diagnostic at a time occupies an actual
+global slot on the existing transcode manager when conversion is enabled.
+`ReserveDiagnostic` creates no playback/job records; release is idempotent, and
+manager shutdown waits for the slot. The server retains the same partial or
+pending execution owner until `Close` succeeds, and only then releases capacity
+and finalizes the result. Shutdown starts playback cancellation promptly while
+joining diagnostic and conversion resources.
+
+Every run is owned by its original native administrator. Read-only transaction
+checks occur before admission/resource creation, each command and a successful
+final outcome. The two-second watcher and confirmed logout, session/device
+revocation, password-reset, demotion and disablement hooks cancel affected work.
+Failed authority checks cannot publish a passed overall report, while completed
+stage facts remain retained. The server uses the fixed safe error codes and
+never returns raw owner errors, stderr or credentials.
+
+History is limited to 32 runs retained for 30 minutes in the current generation.
+A signed five-minute request window uses monotonic time and binds instance,
+user and native credential. Identical retained requests reuse their run; after
+expiry/purge the original payload cannot start again. Admission rechecks expiry
+after waiting for conversion capacity. Restart changes the instance identity;
+no history or request authority is silently transferred to a replacement.
+
+Each visible run update increments a decimal `Revision`. The dashboard merges
+index, detail and mutation results by revision, so an older response cannot
+restore a terminal run to running, even when timestamps are identical. Unknown
+POST outcomes, including a client-side session change after POST, retain only
+the original instance/request/mode for GET lookup. Start tokens are not persisted.
+The panel groups software video/audio and configured video stages, uses actual
+codec facts, preserves results after read errors/cancellation, and makes a new
+run an explicit decision after refreshing unresolved state.
+
+Deployment is disabled by default. Both diagnostic resource paths are required
+to enable admission; loader and hardware environment collections are validated
+and copied at startup. The shipped service hardening is unchanged and no host
+configuration was activated. The feature can report unavailable prerequisites;
+source configuration is not runtime hardware or resource acceptance.
+
+This integration adds 40 Go test functions across configuration, ownership,
+capacity, runtime and HTTP cases; 39 apply on Linux. Three browser regression
+cases use exclusively synthetic API responses and do not prove native identity
+or FFmpeg behavior. All remain unexecuted. Actual type checking, builds, Go/DB
+and browser execution, complete resource closure, tool/log compatibility and
+software/hardware stage results are still required for M5 acceptance.
+
+The 34-file administrator integration snapshot and 25-file remote Go formatting
+record are retained at
+`/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/media-diagnostic-admin-20260916-01/source-preparation.json`
+(11,799 bytes, SHA-256
+`fc4e0142487e51bbd8fa479ee13ff1ee222c7ac9cc5fc576c7b8b4c7bf10375c`).
+That snapshot precedes this evidence note. Static reviews addressed late
+authority-result consistency, cancellation ordering, expiry during reservation,
+stale response ordering, and unknown results after a client session change.
+No type check, build, Go/database/browser test, media command or service operation
+was performed by this preparation. The default service configuration remains
+unchanged and none of these sources has been deployed to an existing candidate.
 
 ## Available evidence and remaining work
 

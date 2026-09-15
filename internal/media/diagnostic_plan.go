@@ -44,7 +44,7 @@ type DiagnosticLimits struct {
 	FilterThreads            int
 }
 
-// These are requirements for a future executor, not observations or success
+// These are requirements for the executor, not observations or success
 // claims. A process exit code or codec/device enumeration cannot satisfy them.
 // The executor must supply an isolated, recorded environment and an explicit
 // hardware-variable policy. Neither ambient inheritance by runLimited nor the
@@ -93,7 +93,7 @@ type DiagnosticVerificationRequirements struct {
 
 // DiagnosticPlan has fixed endpoints and bounds. Args are FFmpeg arguments,
 // never a shell command. ValidateDiagnosticPlan must be called after decoding
-// or copying a plan and immediately before a future executor dispatches it.
+// or copying a plan and immediately before the executor dispatches it.
 // Runtime evidence belongs in a separate result and must not mutate this plan.
 type DiagnosticPlan struct {
 	Version             int
@@ -113,7 +113,7 @@ type DiagnosticPlan struct {
 
 // BuildDiagnosticPlan accepts only built-in sample kinds, stages and a closed
 // server profile. It accepts no executable, media path, URL, filter, or argv.
-// Software encode plans over the raw fixtures also serve as the future sample
+// Software encode plans over the raw fixtures also serve as the sample
 // preparation commands. Record their actual compressed input identity before
 // dispatching a decode command. Software decode may then collect the reference;
 // independent reference validation remains required for diagnostic acceptance.
