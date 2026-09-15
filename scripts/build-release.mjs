@@ -12,7 +12,7 @@ const repository = realpathSync(fileURLToPath(new URL('../', import.meta.url)));
 const bundle = join(repository, 'web', 'admin', 'dist');
 const sourceDirectories = ['cmd', 'internal'];
 const embeddedSource = 'web/admin/embedded.go';
-const usage = 'Usage: node scripts/build-release.mjs --arch amd64|arm64 [--output-dir PATH] [--package systemd]';
+const usage = 'Usage: node scripts/build-release.mjs --arch amd64|arm64 [--output-dir PATH] [--package systemd] [--frontend-contributions PATH]';
 const packageName = 'goby-linux-amd64-systemd';
 const packageLimit = 128 * 1024 * 1024;
 const packageSources = [
@@ -153,6 +153,25 @@ function sourceInventory() {
   need(realpathSync(provider) === provider, 'The embedded administrator provider cannot contain symbolic-link components.');
   entries.push({ name: embeddedSource, ...fileRecord(provider) });
   return entries.sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+}
+
+function frontendContributionInput(path, assets) {
+  const input = packageFile(path, 16 * 1024 * 1024);
+  const report = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(input.bytes));
+  need(report !== null && typeof report === 'object' && report.kind === 'goby-frontend-contributions'
+    && report.version === 1 && report.phase === 'bundle_written' && report.buildSuccessClaimed === false
+    && report.requiresSuccessfulBuildReceipt === true && typeof report.buildId === 'string'
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(report.buildId)
+    && Array.isArray(report.assets) && Array.isArray(report.chunks) && report.chunks.length > 0,
+  'Unsupported frontend contribution report.');
+  need(JSON.stringify(report.assets) === JSON.stringify(assets.files),
+    'Frontend contribution report does not match the complete selected administrator asset set.');
+  const chunkNames = report.chunks.map((chunk) => chunk.name);
+  need(chunkNames.length === new Set(chunkNames).size
+    && chunkNames.every((name) => typeof name === 'string' && assets.files.some((asset) => asset.name === name && name.endsWith('.js')))
+    && report.chunks.every((chunk) => Array.isArray(chunk.modules) && Array.isArray(chunk.moduleIds)),
+  'Frontend contribution chunks do not bind selected JavaScript assets.');
+  return { path, bytes: input.bytes, record: input.record, buildId: report.buildId };
 }
 
 function separateOutput(path, withPackage = false) {
@@ -346,7 +365,8 @@ function main() {
   const options = {};
   for (let index = 0; index < args.length; index += 2) {
     const key = args[index];
-    need((key === '--arch' || key === '--output-dir' || key === '--package') && index + 1 < args.length && !Object.hasOwn(options, key), usage);
+    need((key === '--arch' || key === '--output-dir' || key === '--package' || key === '--frontend-contributions')
+      && index + 1 < args.length && !Object.hasOwn(options, key), usage);
     options[key] = args[index + 1];
   }
   const arch = options['--arch'];
@@ -362,6 +382,8 @@ function main() {
   } catch (error) {
     throw new Error(`Administrator bundle is unavailable. Build it first with npm --prefix web/admin run build. ${error.message}`);
   }
+  const contributions = Object.hasOwn(options, '--frontend-contributions')
+    ? frontendContributionInput(resolve(repository, options['--frontend-contributions']), assets) : null;
   const requestedOutput = resolve(repository, options['--output-dir'] ?? `bin/release-linux-${arch}`);
   need(separateOutput(requestedOutput, withPackage),
     'The release output directory must be separate from administrator assets and local source trees.');
@@ -389,6 +411,17 @@ function main() {
   const binary = join(output, 'goby');
   const moduleInputs = Object.fromEntries(['go.mod', 'go.sum'].map((name) => [name, fileRecord(join(repository, name))]));
   const sources = sourceInventory();
+  let contributionCopy = null;
+  function assertContributions() {
+    if (contributions) {
+      need(JSON.stringify(packageFile(contributions.path, 16 * 1024 * 1024).record) === JSON.stringify(contributions.record),
+        'Frontend contribution report changed during the build.');
+    }
+    if (contributionCopy) {
+      need(JSON.stringify(packageFile(contributionCopy.path, 16 * 1024 * 1024).record) === JSON.stringify(contributionCopy.record),
+        'Retained frontend contribution sidecar changed during the build.');
+    }
+  }
   function assertBuildInputs() {
     need(JSON.stringify(assetInventory()) === JSON.stringify(assets),
       'Administrator assets changed during the build; this output is not complete.');
@@ -397,6 +430,7 @@ function main() {
     need(Object.entries(moduleInputs).every(([name, before]) =>
       JSON.stringify(fileRecord(join(repository, name))) === JSON.stringify(before)),
     'Go module inputs changed during the build; this output is not complete.');
+    assertContributions();
   }
   // A failed build leaves its fresh output directory for inspection. Existing
   // bundles, build caches, installation files and earlier artifacts are kept.
@@ -407,6 +441,19 @@ function main() {
   const metadata = execFileSync('go', ['version', '-m', binary], {
     cwd: repository, env: environment, encoding: 'utf8',
   });
+  let contributionRecord = null;
+  if (contributions) {
+    const name = 'frontend-contributions.json';
+    const path = join(output, name);
+    writeFileSync(path, contributions.bytes, { flag: 'wx', mode: 0o600 });
+    const copy = packageFile(path, 16 * 1024 * 1024).record;
+    need(copy.bytes === contributions.record.bytes && copy.sha256 === contributions.record.sha256 && copy.mode === 0o600,
+      'Copied frontend contribution report changed.');
+    contributionCopy = { path, record: copy };
+    contributionRecord = { name, bytes: copy.bytes, sha256: copy.sha256, buildId: contributions.buildId,
+      privateSidecar: true, includedInSystemdPackage: false, requiresSuccessfulFrontendBuildReceipt: true,
+      boundary: 'Binds the selected assets to a bundler observation; frontend success and legal completeness require separate evidence.' };
+  }
   const manifest = {
     version: 1,
     kind: 'goby-linux-embedded-administrator-build',
@@ -426,6 +473,7 @@ function main() {
     administratorAssets: assets.files,
     administratorAssetBytes: assets.files.reduce((sum, entry) => sum + entry.bytes, 0),
     administratorEntryReferences: assets.entryReferences,
+    ...(contributionRecord ? { administratorContributions: contributionRecord } : {}),
     frontendInput: 'Existing web/admin/dist, observed unchanged before and after the Go build.',
     nativeRuntimeExecuted: false,
     ociImageBuilt: false,
@@ -434,6 +482,7 @@ function main() {
   const result = { outputDirectory: output, target: manifest.target, binary: manifest.binary,
     administratorAssets: assets.files.length, nativeRuntimeExecuted: false };
   if (withPackage) result.package = systemdPackage(output, manifest, deploymentInputs, assertBuildInputs);
+  assertContributions();
   console.log(JSON.stringify(result));
 }
 
