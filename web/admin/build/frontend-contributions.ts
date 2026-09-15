@@ -196,6 +196,10 @@ export function frontendContributions(): Plugin {
         for (const [path, before] of files) {
           need(JSON.stringify(readPin(path)) === JSON.stringify(before), `observed input changed: ${path}`);
         }
+        const chunkNames = new Set(chunks.map((chunk) => chunk.name));
+        const javascriptWithoutChunkModules = assets
+          .filter((asset) => /\.(?:c|m)?js$/i.test(asset.name) && !chunkNames.has(asset.name))
+          .map((asset) => asset.name);
         const report = { kind: 'goby-frontend-contributions', version: 1, phase: 'bundle_written', buildId,
           capturedAt: new Date().toISOString(), buildSuccessClaimed: false,
           requiresSuccessfulBuildReceipt: true, outputDirectory,
@@ -204,12 +208,13 @@ export function frontendContributions(): Plugin {
             minify: config.build.minify, target: config.build.target },
           runtime: { node: process.versions.node, v8: process.versions.v8 }, tools,
           observedInputs: [...files.values()].sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0),
-          assets, chunks,
+          assets, chunks, javascriptWithoutChunkModules,
           boundaries: [
             'chunk.modules is the bundler-reported contribution map; module code precedes final rendering and minification.',
             'renderedLengthUtf16 counts JavaScript string units, not final emitted bytes; null code remains unknown.',
             'Associated disk files are snapshots at moduleParsed; parsed-code hashes are separate and do not prove original-byte consumption.',
             'Loaded import edges do not establish that every dependency survives in an output chunk.',
+            'JavaScript files outside output chunks are explicitly listed without inferred module attribution.',
             'Virtual, generated or unobserved modules are not assigned guessed package ownership.',
             'This writeBundle observation requires a successful build-command receipt and a later exact final-asset match.',
             'No source text, environment values, complete legal approval or historical E11 provenance is included.',

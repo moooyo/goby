@@ -162,15 +162,21 @@ function frontendContributionInput(path, assets) {
     && report.version === 1 && report.phase === 'bundle_written' && report.buildSuccessClaimed === false
     && report.requiresSuccessfulBuildReceipt === true && typeof report.buildId === 'string'
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(report.buildId)
-    && Array.isArray(report.assets) && Array.isArray(report.chunks) && report.chunks.length > 0,
+    && Array.isArray(report.assets) && Array.isArray(report.chunks) && report.chunks.length > 0
+    && Array.isArray(report.javascriptWithoutChunkModules),
   'Unsupported frontend contribution report.');
   need(JSON.stringify(report.assets) === JSON.stringify(assets.files),
     'Frontend contribution report does not match the complete selected administrator asset set.');
   const chunkNames = report.chunks.map((chunk) => chunk.name);
   need(chunkNames.length === new Set(chunkNames).size
-    && chunkNames.every((name) => typeof name === 'string' && assets.files.some((asset) => asset.name === name && name.endsWith('.js')))
+    && chunkNames.every((name) => typeof name === 'string' && assets.files.some((asset) => asset.name === name && /\.(?:c|m)?js$/i.test(name)))
     && report.chunks.every((chunk) => Array.isArray(chunk.modules) && Array.isArray(chunk.moduleIds)),
   'Frontend contribution chunks do not bind selected JavaScript assets.');
+  const javascriptNames = assets.files.filter((asset) => /\.(?:c|m)?js$/i.test(asset.name)).map((asset) => asset.name).sort();
+  const partition = [...chunkNames, ...report.javascriptWithoutChunkModules];
+  need(partition.every((name) => typeof name === 'string') && partition.length === new Set(partition).size
+    && JSON.stringify(partition.sort()) === JSON.stringify(javascriptNames),
+  'Frontend contribution report must partition every JavaScript asset into a chunk or an explicit unattributed file.');
   return { path, bytes: input.bytes, record: input.record, buildId: report.buildId };
 }
 
