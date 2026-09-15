@@ -1066,6 +1066,17 @@ contribution, historical Google glyph inputs and final package assembly remain
 open. Capture the actual module graph in the next independently required
 frontend build; no unchanged E11 rebuild or external distribution occurred.
 
+The [separate frontend capture preparation](https://github.com/moooyo/goby/blob/808edc289ab18d132d0d559fbfbb2b327188a3e4/docs/development/frontend-contribution-capture.md)
+is now retained on `codex/m6-frontend-contributions` at `808edc2`, in
+`D:/Code/goby-frontend-provenance`. It adds a Vite build-only private report and
+an explicit release-script input with complete asset equality and final
+source/copy checks. Its six top-level Node tests/eight subcases, type checking,
+actual build and package consumption remain unexecuted. Static review findings
+were corrected in source. The plugin records a bundler observation, requiring a
+separate successful command result; it does not claim final per-module byte
+shares or legal completeness. The branch is not merged and does not add a
+frontend rebuild to the current Programs critical path.
+
 ## Verification policy
 
 All compilation, formatting tools, tests, browser checks, media probes and runtime
