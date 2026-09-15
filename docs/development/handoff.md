@@ -9,11 +9,13 @@ Start with the [incident record](programs-final-regression-incident.json), the [
 
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
 identify `codex/programs-theme-diagnosis` at `3d6b79b` and
-`codex/m5-user-deletion` at `e8cd3d1`. Their worktrees are
+`codex/m5-user-deletion` at `5c25ead`. Their worktrees are
 `D:/Code/goby-theme-diagnosis` and `D:/Code/goby-m5-user-deletion`.
 Both passed static review and remote formatting; no Go, database or browser test
-ran. The user-deletion branch still needs its real schema29 catalog and remaining
-backup/restore version-boundary work. Neither branch is merged into main's
+ran. The user-deletion branch now preserves historical source23-28 assertions
+separately from target29 and includes deletion-audit roundtrip/rejection cases.
+Its real schema29 catalog and all backup/restore execution remain pending.
+Neither branch is merged into main's
 Programs source. The shared heavy-work window remains awaiting the user's reply.
 
 The [Programs focused result](live-tv-programs-focused-verification.json) has
