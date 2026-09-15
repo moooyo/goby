@@ -1,0 +1,73 @@
+{
+  "boundary": "These checks execute controller predicates and method routing with explicit external dependency substitutes. They do not establish real service, signal timing, HTTP, SQL, D-Bus or installed-package acceptance.",
+  "changes": [
+    "Wait up to ten seconds for the final process configuration while preserving Type=simple and all nonroot/profile requirements.",
+    "Separate owned start lifetime from executable, UID and namespace changes during exec.",
+    "Cancel a dispatched owned unit without inventing a missing PID lifetime; never accept unit-only closure as normal.",
+    "Keep automatic restart closure causal, archive stale pending authority, and preserve failed physical closure without inventing normal exit.",
+    "Do not resubmit an APP stop already dispatched by runtime."
+  ],
+  "httpRequests": 0,
+  "independentReview": {
+    "bytes": 24384,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/independent-review.json",
+    "sha256": "cb974762b447b4a697f131326f52030a878bf114349aceb0dc8f7a37e1d4c907"
+  },
+  "installationAcceptance": false,
+  "kind": "goby-systemd-startup-transition-verification",
+  "namedCases": {
+    "failureMarkerReaders": 2,
+    "ownership": 20,
+    "runtime": 8,
+    "sealer": 8
+  },
+  "ownershipChecks": {
+    "bytes": 2938,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-01/ownership-checks-01/ownership-checks.json",
+    "sha256": "a6e5323e9a87e66e667cc95a125b54c906cf419d570fd6ebb666ae6e8266b2d6"
+  },
+  "readerChecks": {
+    "bytes": 953,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/seal-failure-check-dispatch.json",
+    "sha256": "7c39497909e334e785c7ee5c7192d6c03ccf1f55de7d91018cf8885677811fd9"
+  },
+  "runtimeChecks": {
+    "bytes": 2961,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-01/runtime-startup-checks-01/runtime-startup-checks.json",
+    "sha256": "ec7791634c0afb453c6e81fee7583702bb70041a5125da493ae8478bcb37fb36"
+  },
+  "scope": "/opt/goby-test/m6-systemd-startup-transition-20260915",
+  "sealChecks": {
+    "bytes": 185766,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/seal-failure-checks-01/seal-failure-checks.json",
+    "sha256": "9e6c34d5963ee2bcfbafee6f82506d88213dd4462dd0562f2e1f6108c6a6dc80"
+  },
+  "serviceActions": 0,
+  "sourceManifest": {
+    "bytes": 720,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/sources.json",
+    "sha256": "653b1094ef7c9974a13802d9495c1ea64d6d0f57f0c4711131930f81d8da6b8b"
+  },
+  "sources": {
+    "runtime": {
+      "bytes": 70873,
+      "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/m6-systemd-install-runtime.py",
+      "sha256": "20758f95a6e58dae76efcfefdd64ae58ab4b167266a72f20c6a4c8a579d6fc26"
+    },
+    "seal": {
+      "bytes": 92591,
+      "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/m6-systemd-install-seal.py",
+      "sha256": "1ef298fa2a5f1e60ab91cb841c124e0434205bc293f18e4d67e4de79d7e68f22"
+    },
+    "support": {
+      "bytes": 45515,
+      "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/private/candidate-02/m6-systemd-install-support.py",
+      "sha256": "62840df10b3ebd1850e71ba288dd833db45b2ba8944334f405eb1a88ecc75d18"
+    }
+  },
+  "sqlConnections": 0,
+  "status": "controller_corrections_passed_remote_synthetic_checks_and_independent_review",
+  "validActorMains": 0,
+  "version": 1,
+  "wholeM6Accepted": false
+}

@@ -9,7 +9,11 @@ is also retained. Installation acceptance remains
 open. The [second attempt](systemd-installation-second-attempt.json) also failed
 when the controller sampled the transient executor before final exec. Its
 services, installation and PG tmpfs are closed, with independent failure-evidence
-readback passed. Further attempts await the startup/cleanup correction. See also
+readback passed. The [third attempt](systemd-installation-third-attempt.json)
+passed the first nonroot start and stop, but its runtime failed on a SQL OID
+JSON type mismatch after 147 HTTP requests. Its evidence and resources also
+passed independent preservation/closure readback. Further attempts await numeric
+OID projection and real prestart observer verification. See also
 the [first attempt](systemd-installation-first-attempt.json). Reviewed on
 2026-09-15. The M5 increment completed focused/browser
 acceptance, its 25-package ordinary regression (2,295 passes, zero failures and
@@ -111,8 +115,11 @@ Any later production change requires reassessing the affected verification.
 This first scope is consumed and closed. The following profile records its
 intended acceptance and retained boundaries, not another execution instruction.
 The separately reviewed [r02 attempt](systemd-installation-second-attempt-plan.md)
-has also failed and closed. The active queue pauses further installation until
-the observed startup-transition correction is verified.
+has also failed and closed. The subsequent
+[r03 attempt](systemd-installation-third-attempt-plan.md) applied the verified
+startup correction and failed on the SQL observer's OID JSON representation;
+its resources and evidence are independently closed. The active queue pauses
+further installation until the numeric OID/shared-reader correction is verified.
 
 The selected execution scope is
 `/opt/goby-test/m6-systemd-install-20260915`, with private evidence under its
@@ -342,7 +349,14 @@ separate failure closure and preservation passed independent readback. All
 resources are closed. This result requires a bounded startup wait and lifetime
 based cleanup authority while preserving Type=simple and all final profile
 checks. New candidate code is not covered by the old guard receipts.
-Consumed E12 and r02 inputs and evidence must remain unchanged.
+R03 applied that verified startup correction and reached 147 HTTP requests plus
+a normal APP stop. Its SQL identity comparison rejected databaseOid strings
+emitted by uncast PostgreSQL oid values. The proposed correction uses bigint
+projections and exercises both runtime and sealer identity readers through an
+actual read-only observer before the first application start. That new behavior
+has not yet been remotely verified or admitted. Keep the complete two-start
+acceptance scope; the first-stage progress does not accept the failed run.
+Consumed E12, r02 and r03 inputs and evidence must remain unchanged.
 
 Passing would prove one actual Linux amd64 embedded package installed and run
 through the shipped nonroot systemd template, with normal application

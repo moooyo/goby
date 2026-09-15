@@ -1,0 +1,292 @@
+{
+  "actualApplicationStarts": 1,
+  "applicationStopEvidence": {
+    "connectionClosed": true,
+    "execMainCode": 1,
+    "execMainStatus": 0,
+    "exitMonotonicUsec": 163292699354,
+    "invocationId": "3461ddb389834be5b5279a7fda48a54a",
+    "normalExit": true,
+    "pid": 996569,
+    "result": "success",
+    "unit": "goby.service"
+  },
+  "attemptConsumed": true,
+  "credentials": {
+    "allLogout204AndRejected401": true,
+    "count": 4,
+    "status": "closed",
+    "tracePersisted": true
+  },
+  "failedSealClosure": {
+    "allThreePhysicallyClosed": true,
+    "errorCode": "runtime_receipt_binding",
+    "failureCleanup": [],
+    "newSqlObservers": 0
+  },
+  "failedSealer": {
+    "bytes": 58032,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/closure-failure.json",
+    "sha256": "b87d2f5884ce98a4a3a42ff62ec6000e7ee4d9a21ecc53874481a5a920d9e08f"
+  },
+  "failurePreservation": {
+    "bytes": 94990,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-closure.json",
+    "sha256": "84eb77cb779bb7d9abc9a3cae32d143e29dfb8e496411901411bf3fcb765fc27"
+  },
+  "firstApplication": {
+    "closed": true,
+    "configurationAccepted": true,
+    "errorEvents": 0,
+    "executable": "/usr/local/bin/goby",
+    "firstJourneyRecorded": true,
+    "gid": 986,
+    "invocationId": "3461ddb389834be5b5279a7fda48a54a",
+    "normalExitRecorded": true,
+    "pid": 996569,
+    "ready": true,
+    "shutdownCompleted": true,
+    "startupTransitionObservations": 1,
+    "stopDispatched": true,
+    "uid": 995
+  },
+  "independentPreservationReadback": {
+    "bytes": 50006,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/independent-failure-preserve-readback.json",
+    "sha256": "22bc2539ee00895bbce59661839ced783e004471b1eab091c33cd6b854016328"
+  },
+  "independentReadbackMetadataCommands": 19,
+  "installationAcceptance": false,
+  "kind": "goby-systemd-third-installation-attempt",
+  "newInstallationAttemptsAdmitted": false,
+  "nextStep": "Review and remotely verify explicit bigint OID projections and the shared strict marker reader. In the next admitted fresh scope, run the real read-only observer contract before the first APP start; retain all complete installation and restart requirements.",
+  "oidDiagnosis": {
+    "difference": "PostgreSQL oid serialized as a JSON string; the controller expected an integer. All other compared observer identity fields matched.",
+    "markers": [
+      {
+        "backendGoneAfterInfrastructureStop": true,
+        "backendPid": 996621,
+        "differences": {
+          "databaseOid": {
+            "actual": "16385",
+            "actualType": "str",
+            "expected": 16385,
+            "expectedType": "int"
+          }
+        },
+        "label": "after-journey-1"
+      },
+      {
+        "backendGoneAfterInfrastructureStop": true,
+        "backendPid": 996630,
+        "differences": {
+          "databaseOid": {
+            "actual": "16385",
+            "actualType": "str",
+            "expected": 16385,
+            "expectedType": "int"
+          }
+        },
+        "label": "after-stop-1"
+      }
+    ],
+    "originalRuntimeNotReclassified": true,
+    "queryOrActorReplay": false
+  },
+  "originalRuntimeFailure": {
+    "cleanupError": "runtime_cleanup_incomplete",
+    "cleanupFailures": [
+      {
+        "code": "sql_observer_identity",
+        "phase": "application_stop"
+      }
+    ],
+    "errorCode": "sql_observer_identity",
+    "originalObserverRecords": [
+      {
+        "backendGone": false,
+        "backendPid": null,
+        "closeoutError": "sql_observer_identity",
+        "frontendClosed": true,
+        "label": "after-journey-1",
+        "output": {
+          "bytes": 49746,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/runtime-commands/25-sql-after-journey-1.stdout",
+          "sha256": "7356b2ef566ab36e23f7071f17eb8aae99b52e7cec0716eec5b506724511732d"
+        }
+      },
+      {
+        "backendGone": false,
+        "backendPid": null,
+        "closeoutError": "sql_observer_identity",
+        "frontendClosed": true,
+        "label": "after-stop-1",
+        "output": {
+          "bytes": 574,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/runtime-commands/30-sql-after-stop-1.stdout",
+          "sha256": "b72e7136f1f93605c2278760b009c2767a23392671b8b46152612013025a3903"
+        }
+      }
+    ],
+    "originalSqlObserversClosed": false
+  },
+  "ownedClosureReadback": {
+    "bytes": 23759,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/owned-close-readback/result.json",
+    "sha256": "6b60a98cb2e5e01748732e836a8ce64535034812f43ca7f617413e78f0f41d18"
+  },
+  "preparation": {
+    "bytes": 380349,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/preparation.json",
+    "sha256": "00129ea19fea6323f7cb5f25fe0c6a727f673b812d107cf5cf2886cb58024c3c"
+  },
+  "preparationSqlConnections": 3,
+  "preservation": {
+    "allOwnedCommandsClosed": true,
+    "closedPostgres": {
+      "archive": {
+        "bytes": 6980660,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/closed-postgres-private.tar.gz",
+        "sha256": "3147aaa67f3bb561b87ff092c519efd99edd5d7dda8bf50bbec61aa68fed6106"
+      },
+      "directories": 30,
+      "files": 1486,
+      "readbackMatched": true,
+      "uncompressedBytes": 50731157
+    },
+    "commands": 27,
+    "daemonReloads": 1,
+    "emptyFixtureDirectoriesRetained": true,
+    "environmentDecoded": false,
+    "httpRequests": 0,
+    "input": {
+      "bytes": 966,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-input.json",
+      "sha256": "d7e31a85d5b466b4fd2333070a50d1866f0a051312505b2e211b5f414b4fa19e"
+    },
+    "installationPathsAbsent": true,
+    "lockReleased": true,
+    "metadataCommands": 25,
+    "movedTrees": [
+      {
+        "bytes": 1588,
+        "files": 10,
+        "name": "state",
+        "privateInventory": {
+          "bytes": 5577,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-commands/move-state-after.json",
+          "sha256": "ee75f935a7814e0b75d0b0cfe83ab5e1184776574df53cc9f29e4c322041edcd"
+        }
+      },
+      {
+        "bytes": 1431,
+        "files": 1,
+        "name": "config",
+        "privateInventory": {
+          "bytes": 821,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-commands/move-config-after.json",
+          "sha256": "9ec24a60813897ac04397688f1b04d610d84c0879bf5a36a815aa15ad47d1c4d"
+        }
+      },
+      {
+        "bytes": 24,
+        "files": 2,
+        "name": "cache",
+        "privateInventory": {
+          "bytes": 1540,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-commands/move-cache-after.json",
+          "sha256": "f1ebc07943185cebb5410ebb4d79dd31c57cab6622daaa572a841df4d7df312d"
+        }
+      },
+      {
+        "bytes": 42383,
+        "files": 3,
+        "name": "logs",
+        "privateInventory": {
+          "bytes": 1746,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-commands/move-logs-after.json",
+          "sha256": "b1a23f1920612e8f8f99230059a4052fbcc08849a7cdc808ba7ae1ad422380c9"
+        }
+      },
+      {
+        "bytes": 66189,
+        "files": 7,
+        "name": "media",
+        "privateInventory": {
+          "bytes": 4693,
+          "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-commands/move-media-after.json",
+          "sha256": "531271831d0b4753d9607930cb2ddc0342b34e0b6578ad9f5f471909357e9a77"
+        }
+      }
+    ],
+    "networkNamespaceGone": true,
+    "operator": {
+      "bytes": 34825,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/preserve-failed-runtime.py",
+      "sha256": "dfa2f39dc9e76d99c3a9588a56c9aa49c5ca719e5432db8c40acec6786a4f914"
+    },
+    "ordinaryUnmounts": 1,
+    "postgresUnmounted": true,
+    "privateEvidence": {
+      "archive": {
+        "bytes": 801697,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/runtime-evidence-private.tar.gz",
+        "sha256": "00c3f553d356dc6defc17e355652c828da4b906395e0a5072d6496b8b4f8ebc0"
+      },
+      "directories": 12,
+      "files": 641,
+      "readbackMatched": true,
+      "uncompressedBytes": 3755789
+    },
+    "readonlyPrecheck": {
+      "bytes": 65061,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-precheck.json",
+      "sha256": "6c919aba441f4cfe1592e392355a23f6418815f402f68359cf2250a979ae682f"
+    },
+    "retainedInstallationCopies": [
+      {
+        "bytes": 30691123,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/installation-files/binary.bin",
+        "sha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1"
+      },
+      {
+        "bytes": 625,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/installation-files/unit.bin",
+        "sha256": "b475c92134751f7c61407f936a1d3cb65e4d887915ba57ab78468cd551de253c"
+      },
+      {
+        "bytes": 792,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/installation-files/dropin.bin",
+        "sha256": "6416d2ea0e6be8b398724d74dae00703959cd6aa551c47d74453088189556362"
+      },
+      {
+        "bytes": 1769,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/installation-files/goby-m6-install-20260915-r03-postgres.service.bin",
+        "sha256": "08b82f44b32ae5a9678c741a71f71749e0ba0142488da9c6df06b83e639c3ad4"
+      },
+      {
+        "bytes": 948,
+        "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/failure-preserve-retained/installation-files/goby-m6-install-20260915-r03-net.service.bin",
+        "sha256": "6cab9ab82e1fa04db4425f56e71c31972b2971258be045235bb9bc926acb2a3f"
+      }
+    ],
+    "serviceStarts": 0,
+    "serviceStops": 0,
+    "sqlConnections": 0,
+    "stateMasterContentsRead": false,
+    "unitRegistrationAbsent": true
+  },
+  "protectedStateUnchanged": true,
+  "runtime": {
+    "bytes": 185457,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/execution.json",
+    "sha256": "04553b11b7f7faf9a44108eb883b6b593dcd3eaba2a6b3e00628fb38fdeaacd4"
+  },
+  "runtimeHttpRequests": 147,
+  "runtimeSqlObservers": 2,
+  "scope": "/opt/goby-test/m6-systemd-install-20260915-r03",
+  "sharedAccountsUnchanged": true,
+  "status": "sql_oid_representation_rejected_failure_preserved_and_resources_closed",
+  "version": 1,
+  "wholeM6Accepted": false
+}

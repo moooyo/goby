@@ -1,0 +1,100 @@
+{
+  "businessActionsAtDecision": 0,
+  "conditions": [
+    "Generate phase inputs from actual preceding receipts and frozen sources only.",
+    "Use strict source, tool, protected-state, capacity, target-absence and lifetime admission at every phase.",
+    "Keep full bootstrap/login, embedded-assets, real-media catalog/ACL/UserData, normal stop/start and independent sealing requirements.",
+    "A failed phase ends further business; use only owned failure closure, preserve evidence, and never replay its input.",
+    "Do not reuse previous fixture state, alter the shipped Type=simple unit, rebuild the unchanged package or borrow paused resources."
+  ],
+  "entryFailureCloseLimitSeconds": 210,
+  "independentPreflightReview": {
+    "bytes": 20626,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/independent-preflight-review.json",
+    "sha256": "ee3d45300ddc09d6f1f6b482e33531738903f2a88d9d7ce6f991176439296b2d"
+  },
+  "installationAcceptance": false,
+  "kind": "goby-systemd-third-installation-execution-decision",
+  "maximumApplicationStarts": 2,
+  "normalPhaseLimitsSeconds": {
+    "anchorOriginalLifetime": 3600,
+    "eachHandoff": 60,
+    "finalStopMargin": 60,
+    "prepare": 660,
+    "runtime": 1020,
+    "seal": 1200,
+    "totalSequence": 3060
+  },
+  "oldAttemptsRemainConsumedAndClosed": true,
+  "packageArchiveSha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a",
+  "packageBinarySha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1",
+  "preflightCapacity": {
+    "memAvailableBytes": 6706163712,
+    "requiredAvailableMemoryBytes": 6442450944,
+    "requiredRootBytes": 1610612736,
+    "rootFreeBytes": 5457743872,
+    "rootFreeInodes": 3504418
+  },
+  "prepareInput": {
+    "bytes": 2844,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/prepare-input.json",
+    "sha256": "6dc3142db01bdb2dc80a49baf75ce5ddb82a67e825b1896367d670e9bfd34004"
+  },
+  "readOnlyPreflight": {
+    "bytes": 304736,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/preflight.json",
+    "sha256": "393e7fe8b37455faee960ae95ed13266b9df5d7a8848741194fd549fed4e755e"
+  },
+  "scope": "/opt/goby-test/m6-systemd-install-20260915-r03",
+  "sourceCheckpoint": "d7b1b8b181ae30488e677ba6b8cb86ed62213382",
+  "sources": {
+    "handoff-close": {
+      "bytes": 24560,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-handoff-close.py",
+      "sha256": "94a0d36c613db5158e9dbbe8ab3d6fc648b61a1c39bd5dc981c0272a5c304c7c"
+    },
+    "journey": {
+      "bytes": 39059,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/native-catalog-journey.py",
+      "sha256": "63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4"
+    },
+    "media": {
+      "bytes": 9486,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-media.py",
+      "sha256": "9d232ff7794c8a297c0a78373a1d290f4181ad360ad0e557a467e5d5f408c3ed"
+    },
+    "prepare": {
+      "bytes": 61473,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-prepare.py",
+      "sha256": "74941581f41a65ea5f1f64552698c5cdf36bc7e67f79c659acc54bfec6ae6868"
+    },
+    "runtime": {
+      "bytes": 70859,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-runtime.py",
+      "sha256": "a5c54852fc595c49a88dabff2bb3b133c72430f59c78c9f15bb5c439e356408b"
+    },
+    "seal": {
+      "bytes": 92577,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-seal.py",
+      "sha256": "8595b41c1b20cdb41911ded62a764e2e9ad0e1b8f6a6d5279897dcd49ed114b6"
+    },
+    "support": {
+      "bytes": 45501,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-support.py",
+      "sha256": "d3602354d8c7fd37f76a49a578aee9d95ea9e1cbf188b743a978e39fee118461"
+    },
+    "units": {
+      "bytes": 14635,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r03/private/m6-systemd-install-units.py",
+      "sha256": "5bbeaf80bc8773ef72c9c8a748e56f5a76aa546fc304f3f6d7603e95d95bed14"
+    }
+  },
+  "startupCorrectionVerification": {
+    "bytes": 3587,
+    "path": "/opt/goby-test/m6-systemd-startup-transition-20260915/public-verification.json",
+    "sha256": "3709a5e3a80caa7510001fe827c38ed497596609b8b9df6fdd9fee1e0042f5ad"
+  },
+  "status": "approved_for_one_bounded_fresh_attempt",
+  "version": 1,
+  "wholeM6Accepted": false
+}

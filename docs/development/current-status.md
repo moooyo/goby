@@ -68,8 +68,22 @@ There were zero HTTP requests and no second application start. Failure
 preservation retained five directory trees and five installation copies,
 archived PG/evidence and closed the installation, namespace and PG tmpfs.
 Independent readback passed with protected state and shared accounts unchanged.
-New installation attempts are paused while the startup/cleanup correction is
-reviewed and remotely verified. The shipped unit and product package are unchanged.
+The [startup correction](systemd-startup-transition-verification.json) then passed
+its remote controller cases and independent review. The
+[third attempt](systemd-installation-third-attempt.json) recorded one startup
+transition, accepted the final nonroot process, performed 147 HTTP requests and
+closed four credentials with logout 204 / rejection 401. Its first APP stop
+retained a normal exit and shutdown-completed event without ERROR events.
+The runtime still failed: both SQL observer markers returned databaseOid as an
+OID JSON string, while the controller expected an integer. All other compared
+identity fields matched. The sealer closed the remaining infrastructure;
+independent failure-preservation readback confirmed two archives, five retained
+trees and five copies, absent installation paths and PG mount, and unchanged
+protected state. The original observer failure records are unchanged; a separate
+readback confirms their reported backend PIDs are now gone. No second APP start
+occurred. Further attempts await explicit numeric OID output and a real shared
+observer check before application startup. The shipped unit and product package
+are unchanged; full installation acceptance remains open.
 The [source checkpoint](systemd-package-source-checkpoint.json) now matches
 864 tracked backend, embed-wrapper, module and package inputs to the verified
 E11 source. A supplement checks `web/admin/embedded.go` from the same Git tree;
@@ -121,7 +135,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package still needs actual installation acceptance |
-| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards, independent result review and resource closure passed after M5 checkpoint `5faf854`; package/legacy amd64 binaries are byte-identical and arm64 is cross-built. Both installation attempts failed and have independent preservation/resource-closure readback; r02 exposed a transient executor observation before final nonroot exec | Verify the startup/cleanup correction before any new scope. Full nonroot stop/start and catalog/auth preservation acceptance remains open, along with native arm64, upgrade and whole-M6 acceptance |
+| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards, independent result review and resource closure passed after M5 checkpoint `5faf854`; package/legacy amd64 binaries are byte-identical and arm64 is cross-built. Three attempts failed with independent preservation/resource closure; r03 passed its first nonroot start/journey/stop before rejecting SQL OID JSON types | Verify numeric OID output and the proposed real prestart observer check before a new scope. Full two-start catalog/auth preservation, native arm64, upgrade and whole-M6 acceptance remain open |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |

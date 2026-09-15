@@ -4,10 +4,12 @@ Reviewed on 2026-09-15 after candidate recovery and the M5 media-refresh
 increment passed focused/browser acceptance, final ordinary regression and
 independent result/resource closure reviews.
 Status: **the fixed M5 refresh increment is accepted and committed; the internal
-amd64 systemd package build is verified and closed; both installation attempts
+amd64 systemd package build is verified and closed; three installation attempts
 failed and have independently verified evidence preservation and resource closure.
 The second attempt exposed a startup observation made before exec completed.
-Further attempts are paused pending verification of the startup/cleanup correction.
+The third passed the first nonroot start, journey and stop but rejected an OID
+JSON representation in the SQL observer. Further attempts are paused pending
+verification of explicit numeric OID projections and an earlier real SQL check.
 The scoped source checkpoint is committed as `beaea34`; core-video
 and complete release gates remain open**. Earlier
 regression and candidate admissions retain their original source and execution
@@ -105,13 +107,22 @@ The immediate queue is:
    failure; a subsequent attempt needs an explicit reviewed decision based on
    the demonstrated correction. Do not keep a live fixture waiting for more
    operator development.
-   Next review and remotely verify the unadmitted startup-transition candidates.
-   Wait for the final executable/credentials/hardening before freezing accepted
-   process configuration; retain failure-stop authority from the owned unit and
-   stable start lifetime, including bounded automatic-restart closure. Keep the
-   shipped Type=simple and all final nonroot checks. Rebind a new scope only after
-   those changed behaviors pass their own checks. No installation attempt is now
-   admitted. Close every new installation and its resources before acceptance.
+   The [startup correction](../development/systemd-startup-transition-verification.json)
+   passed 20 ownership, eight runtime and eight sealer cases plus two reader
+   marker checks, with independent review. Its [actual r03 attempt](../development/systemd-installation-third-attempt.json)
+   completed the first nonroot start, 147 HTTP requests, four credential closures
+   and a normal APP stop. The SQL observer then rejected databaseOid because the
+   uncast PostgreSQL oid was a JSON string, while the saved expected ID was an
+   integer. The failed sealer closed PG/anchor; failure archives, five retained
+   trees/copies, unmount and protected state passed independent readback. No
+   second application start occurred and the runtime remains failed.
+   Next review and remotely verify the unadmitted explicit-bigint/shared-reader
+   correction. In any next admitted fresh scope, exercise the real read-only
+   observer before the first APP start, including the sealer's actual marker
+   expression. Keep six runtime observers, three snapshots and one final sealer
+   observer in the proposed amended contract. Retain Type=simple, final nonroot
+   configuration, complete two-start journey and all existing cleanup/closure
+   obligations. No installation attempt is now admitted; do not replay r03.
 3. The installation result and its limitations are committed and pushed in
    partial M6 checkpoint `beaea34`. The separately retained
    [source bridge](../development/systemd-package-source-checkpoint.json)
@@ -130,8 +141,9 @@ The immediate queue is:
    contract/fault checks. The r02 copies now have a verified scope bridge and a
    preparation-authority failure-close entry with six synthetic routing cases
    and fifteen authority checks. Those checks did not cover the observed
-   Type=simple executor transition. Both E12 and r02 are consumed and closed;
-   their passing prechecks do not verify the new startup/cleanup behavior.
+   Type=simple executor transition. The later startup correction and r03 result
+   have their own scopes above. All three attempts are consumed and closed;
+   their passing prechecks do not verify the proposed new SQL behavior.
    Reuse the completed package build and M5 regression while their bound inputs
    remain unchanged; expand verification only for a concrete change or failure.
 4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded
