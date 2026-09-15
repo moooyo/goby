@@ -1,10 +1,31 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-15, execution resumed under the reviewed
-plan**. Start with the [current execution plan](../planning/current-execution-plan.md),
+Current session checkpoint: **2026-09-15, Programs successor selected under the
+revised delivery order; no successor binary/package has been built**. Start with the [current execution plan](../planning/current-execution-plan.md),
 [core resolution](core-client-acceptance-resolution.md),
-[r04 evidence resolution](r04-installation-evidence-resolution.md), and
+[successor transition decision](e11-candidate-transition-decision.md), and
 [support matrix](../planning/support-and-delivery-matrix.md).
+
+The [Programs focused result](live-tv-programs-focused-verification.json) has
+14 top-level and 118 subtest passes with independent result/resource review.
+Its [ordinary full run](live-tv-programs-full-interruption.json) was interrupted
+for the user's plan review and safely closed: 10/25 complete packages, 341
+passes, zero failures and zero skips. An additional 109 raw identity-package
+passes are incomplete and excluded. No build ran, full verification is false,
+and no product assertion failure was observed. Preserve this as user-interrupted
+partial evidence, not a product failure; do not relaunch the consumed input.
+
+Next: prepare recovery and all three final journey entry contracts while the
+frozen Go source can independently undergo final verification/build. Both tracks
+must finish before A is actually replaced. Plan one worker for 25 ordinary
+packages plus the ordinary build, then append one embedded amd64 systemd package
+build in the same worker; it has not run. Pure Python/JavaScript tool changes do
+not require Go full-suite repetition or a second build launcher. Then switch A
+directly once, complete movie/episode/subtitle and the audio reuse bridge, and enter G3.
+Episode/subtitle contracts are not complete. Old-binary return would disable
+the new refresh definition and needs an explicit recovery design; no automatic
+candidate-transition rollback is implemented or admitted. E11 remains only the original build/G2
+baseline, with no intermediate deployment queued.
 The response-ID correction and [v4 movie baseline contract](reviewed-movie-baseline-verification.json)
 are independently reviewed. The v4 contract passed Python 47, JavaScript 46 and
 12 log/history checks, including each language's three actual saved states.
@@ -20,13 +41,15 @@ and client acceptance remain open; context completion is not claimed. This input
 is consumed and diagnostic tooling is frozen.
 Use its latest closed snapshot (22 sessions, 14 plays, six UserData rows, two
 foreign audio references) for dependent work. Existing A is the
-[selected E11 transition target](e11-candidate-transition-decision.md), retaining
+[selected successor transition target](e11-candidate-transition-decision.md), retaining
 its proven external administrator asset override. No transition has run.
-Next is the fixed reference response-shape question in the core resolution,
-before choosing any real Programs query capability or changing the 404.
+The [reference response-shape question](reference-programs-verification.json),
+diagnostic and focused Programs scope are complete within their evidence
+boundaries and are not queued again. Their original inputs/results remain unchanged.
 The [capacity decision](native-capacity-measurement-decision.md)
 holds native execution; its [earlier handoff](session-handoff-20260915-native-capacity.md)
-and tracked source snapshot remain intact. Complete M2-M6 remain open; M7 is deferred.
+and tracked source snapshot remain intact. Remaining M2-M6 work follows each
+profile's own prerequisites independently; complete M2-M6 remain open and M7 is deferred.
 
 ## Historical entries
 

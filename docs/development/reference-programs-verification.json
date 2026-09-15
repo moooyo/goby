@@ -1,0 +1,62 @@
+{
+  "kind": "reference-programs-response-observation",
+  "version": 1,
+  "status": "independently_reviewed_observed_and_closed",
+  "date": "2026-09-15",
+  "referenceVersion": "4.9.5.0",
+  "helperChecks": 8,
+  "actualRequests": [
+    {"operation": "login", "method": "POST", "path": "/emby/Users/AuthenticateByName", "status": 200},
+    {"operation": "programs", "method": "GET", "path": "/emby/LiveTv/Programs", "status": 200},
+    {"operation": "logout", "method": "POST", "path": "/emby/Sessions/Logout", "status": 204},
+    {"operation": "same-token rejection", "method": "GET", "path": "/emby/Sessions", "status": 401}
+  ],
+  "programsResponse": {
+    "complete": true,
+    "bytes": 33,
+    "bodySha256": "ce30cbed34daf1e56bab3e26c6c778459ee6caeb4a906a0332167583416e09b3",
+    "contentType": "application/json; charset=utf-8",
+    "keys": ["Items", "TotalRecordCount"],
+    "itemsIsArray": true,
+    "itemCount": 0,
+    "totalRecordCount": 0
+  },
+  "closure": {
+    "helperExitCode": 0,
+    "helperReaped": true,
+    "helperPidAbsent": true,
+    "tokenClosed": true,
+    "hostingIdentityContinuous": true,
+    "httpConnectionsClosed": true
+  },
+  "evidence": {
+    "source": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/reference-programs-contract-20260915T095600Z/r02/read-reference-programs.py",
+      "sha256": "85768ac3f09fd6a6aeb6c913fdb132c48a72ded656cf6d15cf860bc1a7531f0d"
+    },
+    "checks": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/reference-programs-contract-20260915T095600Z/r02/check-result.json",
+      "sha256": "c8741b6aaa40292678520489d824c104cf3ed494f1a26ada52e7cc5122740a96"
+    },
+    "entryReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/reference-programs-contract-20260915T095600Z/r02/entry-review.json",
+      "sha256": "8ca910d3b08b5a0c70c1548c26dab8dddf3411693f09d98bb7809036bd4c485b"
+    },
+    "result": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-programs-01/result.json",
+      "sha256": "6c96cb9d7b4ecaf241c268106ad12a04fde2132a514a7e8c5cfc71e1e6abfeb3"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/client-host-programs-01/independent-review.json",
+      "sha256": "51bd9781de7530519dedb92036378287599a6461559f1300bd9eda548216b723"
+    }
+  },
+  "limits": [
+    "Only this filtered empty response shape is proved; no current complete guide/provider configuration claim is made.",
+    "LibrarySeriesId was omitted because the owned reference host has no corresponding Series. Its filtering and ordinary-user permissions were not calibrated.",
+    "No reference source/database or environment file was read, and no wizard, configuration, library, browser, SQL or service operation was performed.",
+    "The helper used the existing process/listener-bound connection, protected file reader and complete-response primitives. Earlier unexecuted input and checks remain preserved."
+  ],
+  "gobyProductAcceptance": false,
+  "clientAcceptance": false
+}

@@ -1,5 +1,16 @@
 # Current execution plan
 
+Current delivery target: **Programs successor; no binary or package identity
+exists yet**. E11 is the retained build/G2 baseline. The
+[Programs focused verification](../development/live-tv-programs-focused-verification.json)
+has 14 top-level and 118 subtest passes with independent review. Its
+[ordinary full run](../development/live-tv-programs-full-interruption.json) was
+interrupted for the user's plan review and safely closed: 10/25 completed
+packages, 341 passes, zero failures and zero skips. The identity package's 109
+additional raw passes are incomplete and excluded. No build ran, full
+verification is false, and no product assertion failure was observed.
+The retained baseline history below keeps its original evidence scopes.
+
 Reviewed on 2026-09-15 after candidate recovery and the M5 media-refresh
 increment passed focused/browser acceptance, final ordinary regression and
 independent result/resource closure reviews.
@@ -447,10 +458,15 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
-Execution resumed on 2026-09-15 after the user accepted the plan review.
-Prioritize the [core acceptance resolution](../development/core-client-acceptance-resolution.md)
-and [remaining r04 installation evidence](../development/r04-installation-evidence-resolution.md)
-before further capacity infrastructure work. The
+The revised plan has two prerequisite tracks: recovery/all three final journey
+entry contracts, and final verification/build of frozen Go source. Pure-tool
+preparation may proceed in parallel; both tracks must complete before A is
+actually replaced. Then switch A directly once to the Programs successor,
+complete three client journeys and the audio reuse bridge, and enter G3. Follow the
+[core acceptance resolution](../development/core-client-acceptance-resolution.md)
+and [selected A transition](../development/e11-candidate-transition-decision.md).
+G2, the diagnostic, reference response observation and focused Programs scope
+are complete within their recorded boundaries and are not queued again. The
 [measurement decision](../development/native-capacity-measurement-decision.md)
 holds native capacity execution. The [support matrix](support-and-delivery-matrix.md)
 maps the complete obligations to bounded delivery slices. The
@@ -472,11 +488,15 @@ workspace outside every new resource budget.
 | 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
-| 1. Core video and subtitle acceptance — TV Response identified; endpoint contract decision next | The [single TV diagnostic and owned closure](../development/audited-tv-browse02-diagnostic.json) passed independent review and uniquely bind the native Response to GET `/emby/LiveTv/Programs` HTTP 404. Prepare only the fixed four-request reference shape question in the [core resolution](../development/core-client-acceptance-resolution.md). Existing A is the [selected E11 transition target](../development/e11-candidate-transition-decision.md), retaining its explicit external administrator asset override | Preparation and the actual browse completed before the 60-minute ceiling. The input is consumed and no more diagnostic tooling is queued. A reference read establishes only its observed no-program shape; select and verify an actual product contract before changing the 404. Core client acceptance and main promotion remain open |
-| 2. Native scan and concurrent HTTP capacity — implementation held for measurement decision | Preserve the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md); define useful output, overlap coverage, observer overhead and a finite remaining preparation scope before resuming | No native fixture or execution input exists. Reuse the distinct twelve reader, eight transport and six pool groups within their source scopes. Complete the result design and unresolved cleanup risks before execution; insufficient overlap remains an incomplete metric, not capacity acceptance |
-| 2a. Package component attribution — emitted graph and bounded glyph mapping recorded | Retain the [46-chunk graph and 73 exact glyph correspondences](../development/systemd-package-javascript-attribution.md); resolve the remaining source-module and upstream-glyph inputs before assembling the legal payload | This is not a complete npm module graph or proof of historical Google glyph revisions. Preserve the pending project-license question and the external-distribution gate |
-| 2b. Remaining M2-M6 delivery | Continue separately scoped blocked I/O, host durability, media/transcode, administration, native hardware/architecture, OCI and support-matrix work | Require measurable limits and bounded shutdown under each profile's prerequisites; unavailable hardware and licensing block their own claims, not unrelated software delivery |
-| 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+| 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
+| 1. Recovery and final journey entry contracts | Complete the [A-to-successor recovery decision and movie/episode/subtitle entry contracts](../development/e11-candidate-transition-decision.md), using current retained history and the explicit external asset override | Episode/subtitle contracts remain incomplete. Old-binary return would disable the refresh definition; this is an unresolved recovery design, not an implemented automatic rollback. Do not replace A before these contracts are ready |
+| 2. Frozen-source verification/build, parallel with pure-tool preparation | Plan one worker to verify all 25 ordinary packages and build the ordinary binary, then append one embedded amd64 systemd package build in that same worker. Record actual identities after execution | The new worker has not run. The [interrupted run](../development/live-tv-programs-full-interruption.json) remains 10/25 packages and 341 completed passes, excluding 109 identity raw passes. No build/full pass exists; do not relaunch a consumed input or add another build launcher |
+| 3. One direct A transition | Bind the verified successor, current full state, declared task-definition delta, component/runtime sources and recovery/closure plan, then switch A once | No intermediate original-E11 deployment, actor reset, new candidate or assumed rollback. Preserve B and all historical evidence |
+| 4. Final core client acceptance | Run the declared movie, episode and SRT/VTT journeys on the admitted successor and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout; old failures are not relabeled and no E11/ancestor execution is claimed as a successor run |
+| 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
+| Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md); define useful output, overlap coverage, observer overhead and finite remaining preparation before any resumption | No native fixture/input exists. Reuse the distinct reader/transport/pool results within their scopes; incomplete overlap is not capacity acceptance |
+| Independent profile: package attribution | Retain the [46-chunk graph and 73 glyph correspondences](../development/systemd-package-javascript-attribution.md); resolve remaining source-module/glyph inputs for the actual distribution payload | Not a complete npm contribution graph or historical glyph proof. Keep the pending license choice and external-distribution gate |
+| Independent profiles: remaining M2-M6 | Progress blocked I/O, durability, media/transcode, administration, hardware/architecture, OCI and support rows under their own prerequisites | No blanket dependence on main promotion; unavailable hardware/licensing blocks the corresponding claim. M7 remains deferred |
 
 The first revised-plan increment has passed
 [35 focused guards and the saved subtitle response replay](../development/core-response-identity-verification.json)
@@ -491,7 +511,10 @@ now completes the G2 installation evidence; its original missing final SQL
 transaction is not reconstructed. The [TV contract and current-runtime components](../development/reviewed-tv-baseline-verification.json)
 have now passed focused checks, actual saved-state integrations and independent
 review. The admitted browse obtained the selected unique Response identity.
-Continue the named endpoint contract decision; native capacity remains held.
+The subsequent reference shape and Programs focused product checks are complete
+within their scopes. Full regression is user-interrupted partial evidence, with
+safe closure and no product assertion failure. Continue the ordered recovery/
+journey preparation and final-source successor work above; native capacity remains held.
 
 The completed independent increment is [native scheduled media refresh](../development/task-media-refresh-plan.md):
 register `library.refresh_media`, retain ordinary `library.scan` behavior, and
@@ -667,12 +690,16 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    No consumed recovery input is replayed. Continue independent M2-M6 obligations
    under their own prerequisites; retained private files and OS accounts remain
    explicitly inventoried rather than silently treated as removed.
-2. Core acceptance remains open for movie/TV playback and external subtitles.
-   Reuse accepted MP3/FLAC and unchanged controls. Resume a consumed video path
-   only with a reviewed retained-state input and a discriminating question or
-   justified correction; no automatic replay or new generic instrumentation.
-3. Main promotion is the join: require both supported core acceptance and the
-   complete safety/recovery proofs, then admit its bounded upgrade and workflow.
+2. Prepare the recovery route and all final movie/episode/subtitle entry contracts
+   before A changes; episode/subtitle contracts remain incomplete. Pure-tool
+   preparation may run in parallel with the frozen-Go-source worker's 25-package
+   verification, ordinary build and one embedded amd64 package build. Tool-only
+   changes do not require another Go full run. Complete both tracks, then make one direct A transition.
+   E11 remains a historical build/G2 baseline, not the destination identity.
+3. Core acceptance then requires the three declared successor journeys and the
+   explicit MP3/FLAC reuse bridge. Each consumes a reviewed current-state input;
+   no automatic replay or generic instrumentation. Main promotion joins that
+   acceptance with applicable current safety/recovery proofs.
 4. Independent M2-M6 capacity, blocked-storage/reboot, media/transcode,
    administration, actual GPU, arm64/OCI/embedded assets, license/notices and
    feature work may proceed under their own prerequisites. Main promotion is

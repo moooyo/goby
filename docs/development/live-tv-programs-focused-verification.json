@@ -1,0 +1,270 @@
+{
+  "kind": "live-tv-programs-focused-verification",
+  "version": 1,
+  "date": "2026-09-15",
+  "status": "passed_focused_and_independently_closed",
+  "verificationEnvironment": "ssh test-env",
+  "scope": "/opt/goby-test/livetv-programs-focused-20260915",
+  "source": {
+    "archive": {
+      "bytes": 2715997,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/source.tar.gz",
+      "sha256": "3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251"
+    },
+    "files": 924,
+    "gitHead": "9b9decb2cbe425d35d04acb78657c2df5660908b",
+    "manifest": {
+      "bytes": 158512,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/source-manifest.json",
+      "sha256": "47b4f9130558377897228aaddff15dc02e279552b83c40922550264ffbf01845"
+    },
+    "preparation": {
+      "bytes": 1704,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/source-preparation.json",
+      "sha256": "98ef2d54b928d1cdf6c110c5d0fb711ba8d436e4f1edf6f18dcbc51d5712ddf2"
+    },
+    "uncompressedBytes": 13253765,
+    "baseArchive": {
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/source.tar.gz",
+      "sha256": "e9143f909ac2383aefe4aa53209d7806d31ab74388881d0dce124b0fcfaed510"
+    },
+    "currentGitBuildInputsCompared": 860,
+    "gitHeadScope": "Base commit with the four declared working-tree Go overlays, not an unmodified commit archive.",
+    "unchangedAdministratorAssets": 57,
+    "workingTreeOverlays": [
+      {
+        "bytes": 5061,
+        "path": "internal/server/live_tv.go",
+        "sha256": "37221d0d342c419199ff51fbeffcdc84e0a0275e7b656ce24b2eb15e555c6f1f"
+      },
+      {
+        "bytes": 10412,
+        "path": "internal/server/live_tv_integration_test.go",
+        "sha256": "dc8428bd02811b3680812a6eee4a9bf62ccbdbb10a9a8549137869be877e450e"
+      },
+      {
+        "bytes": 15470,
+        "path": "internal/server/live_tv_test.go",
+        "sha256": "d4249e21d12198dfc1f3d32d5a54880866b8f69726420055cdc12b6a9b0067d9"
+      },
+      {
+        "bytes": 10762,
+        "path": "internal/server/server.go",
+        "sha256": "45dacb8270b67f75f203f5de34f9f6ef29d372c3d44f6138a2fb704eb182e078"
+      }
+    ],
+    "inputByteScope": "The frozen archive contains the base Git build inputs plus the four declared Go overlays and the retained generated assets."
+  },
+  "selection": {
+    "package": "github.com/moooyo/goby/internal/server",
+    "pattern": "^(TestLiveTVPrograms|TestHTTPLiveTVPrograms)",
+    "buildTags": [],
+    "expectedTopLevelTests": [
+      "TestHTTPLiveTVProgramsCurrentCredentialsAndPolicies",
+      "TestHTTPLiveTVProgramsInputAndStorageFailuresRemainErrors",
+      "TestHTTPLiveTVProgramsRecordedQueryAndBusinessState",
+      "TestHTTPLiveTVProgramsSubjectsAndLibraryVisibility",
+      "TestLiveTVProgramsAuthorizesTheRequestedSubjectBeforeReturningEmptyGuide",
+      "TestLiveTVProgramsPreservesCatalogFailures",
+      "TestLiveTVProgramsProductionHandlerRequiresTheCatalog",
+      "TestLiveTVProgramsQueryObservedRequest",
+      "TestLiveTVProgramsQueryRejectsInvalidInput",
+      "TestLiveTVProgramsQueryValidBoundaries",
+      "TestLiveTVProgramsRejectsAndRetiresRequestBodies",
+      "TestLiveTVProgramsRejectsCrossUserAndMalformedQueriesBeforeCatalog",
+      "TestLiveTVProgramsRequiresAnAuthorizedSeries",
+      "TestLiveTVProgramsRequiresEmbyAuthentication"
+    ],
+    "compiledInventoryMatched": true,
+    "inventoryListingCountedAsTests": false
+  },
+  "results": {
+    "completePackages": 1,
+    "topLevelPassed": 14,
+    "nestedSubtestsPassed": 118,
+    "failed": 0,
+    "skipped": 0,
+    "exactTopLevelRunAndPassInventoryMatched": true,
+    "oneActualTestCommand": true,
+    "raceEnabled": true,
+    "testParallelism": 1,
+    "packageParallelism": 1,
+    "priorScoresReused": false,
+    "ordinarySuitePassed": false,
+    "singleRunFullSuite": false,
+    "ordinaryLinuxBuildExecuted": false,
+    "browserExecuted": false,
+    "countingBoundary": "The 118 nested subtest passes are reported separately from the 14 top-level tests. These focused counts are not added to any ordinary full-regression total."
+  },
+  "execution": {
+    "input": {
+      "bytes": 3341,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/input.json",
+      "sha256": "07badc06a1782e3090d2cc7cb39e2ce891ad3cb7ef8ac7267b334730c1422ccb"
+    },
+    "adapter": {
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/verify-livetv-programs-focused.py",
+      "sha256": "cea65fd21418c3a27cbe245298c367b8238e96657fcfef7d9b97465b92018b4d"
+    },
+    "entrySourceReview": {
+      "bytes": 2400,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/entry-source-review.json",
+      "sha256": "478dc6af95b612abd180963346d3a8cca8f071e30a702c4cd01cc1943ad2abaf"
+    },
+    "receipt": {
+      "bytes": 55382,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/execution.json",
+      "sha256": "4776810b85c65d166a8ec227cd1c8a998fdc1a96620277d069555d9873db8653"
+    },
+    "dispatch": {
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/dispatch-result.json",
+      "sha256": "c5ea9c892a495be87ea4dbd103b2a1bb4135034f0ab1f004cd2bdcc8a98abe34",
+      "bytes": 1487
+    },
+    "dispatches": 1,
+    "dispatcherExitCode": 0,
+    "dispatcherReaped": true,
+    "dispatcherPidAbsentAsRecorded": true,
+    "elapsedNanoseconds": 64142758830,
+    "stdout": {
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/dispatch.stdout",
+      "sha256": "d32676a9a1b7271760f287effdb35b31ef657fd01639b98784ce18cd5afd3ee8"
+    },
+    "stderr": {
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/dispatch.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "workerUnit": "goby-livetv-programs-focused-20260915-d80f7704b72a.service",
+    "workerScope": "/opt/goby-test/livetv-programs-focused-20260915/ram/livetv-programs-focused-20260915-20260915T103337Z-d80f7704b72a",
+    "rawWorkerStatus": "passed_focused"
+  },
+  "savedEvidence": {
+    "supervisorReport": {
+      "archive": {
+        "path": "/opt/goby-test/livetv-programs-focused-20260915/retained/focused-private.tar.gz",
+        "sha256": "bbde2d8b000305683882a1b6d0714b5024c3c3b910fe461df261e198c240e15e",
+        "bytes": 17835803
+      },
+      "member": "ram/livetv-programs-focused-20260915-20260915T103337Z-d80f7704b72a/report.json",
+      "sha256": "0b97c598dd82600a4d5db6f8537d0e199a536a7c383b164dd6e0b3ae58872067",
+      "bytes": 25612
+    },
+    "workerReport": {
+      "archive": {
+        "path": "/opt/goby-test/livetv-programs-focused-20260915/retained/focused-private.tar.gz",
+        "sha256": "bbde2d8b000305683882a1b6d0714b5024c3c3b910fe461df261e198c240e15e",
+        "bytes": 17835803
+      },
+      "member": "ram/livetv-programs-focused-20260915-20260915T103337Z-d80f7704b72a/worker-report.json",
+      "sha256": "3d689e0245f84a8dece67f58dd418d93dcfdb3110a341a75fcb37bcf5b35c501",
+      "bytes": 23205
+    },
+    "goEvents": [
+      {
+        "archive": {
+          "path": "/opt/goby-test/livetv-programs-focused-20260915/retained/focused-private.tar.gz",
+          "sha256": "bbde2d8b000305683882a1b6d0714b5024c3c3b910fe461df261e198c240e15e",
+          "bytes": 17835803
+        },
+        "member": "ram/livetv-programs-focused-20260915-20260915T103337Z-d80f7704b72a/logs/019-go-test-livetv-programs.stdout",
+        "sha256": "9ed4dcf76181567d58fad52758b9678c447190470e9b6ac405c6709e67660cfb",
+        "bytes": 134421,
+        "package": "github.com/moooyo/goby/internal/server",
+        "packageResult": "pass",
+        "counts": {
+          "failed": 0,
+          "nestedPassed": 118,
+          "skipped": 0,
+          "topLevelPassed": 14
+        }
+      }
+    ]
+  },
+  "independentReview": {
+    "bytes": 27079,
+    "httpCalls": 0,
+    "path": "/opt/goby-test/livetv-programs-focused-20260915/private/independent-review.json",
+    "reviewedAtUtc": "2026-09-15T10:45:34.542685+00:00",
+    "serviceActions": 0,
+    "sha256": "cfb459da8d2533995e22495bc04a315ab57f89c468af22cc63de88f31e315fd9",
+    "sqlCalls": 0,
+    "status": "passed_focused_and_closed",
+    "testsReplayed": false
+  },
+  "closure": {
+    "status": "owned_processes_volumes_and_lock_closed",
+    "receipt": {
+      "bytes": 55382,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/execution.json",
+      "sha256": "4776810b85c65d166a8ec227cd1c8a998fdc1a96620277d069555d9873db8653"
+    },
+    "ownedPostgresStopped": true,
+    "privatePostgresBindRemoved": true,
+    "sourceUnchanged": true,
+    "allOwnedCommandsClosed": true,
+    "cleanupErrors": [],
+    "ext4Unmounted": true,
+    "lockReleased": true,
+    "loopDetached": true,
+    "ownedProcessesClosed": true,
+    "ramUnmounted": true,
+    "resourcesClosed": true,
+    "protectedBeforeAfterEqual": true,
+    "privateArchive": {
+      "bytes": 17835803,
+      "directories": 43,
+      "files": 1932,
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/retained/focused-private.tar.gz",
+      "readbackMatched": true,
+      "sha256": "bbde2d8b000305683882a1b6d0714b5024c3c3b910fe461df261e198c240e15e"
+    },
+    "archiveMemberContentOwnershipAndModeReadbackMatched": true,
+    "privateArchiveRemainsRemoteOnly": true,
+    "independentlyReviewed": true,
+    "independentReviewReceipt": {
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/independent-review.json",
+      "sha256": "cfb459da8d2533995e22495bc04a315ab57f89c468af22cc63de88f31e315fd9",
+      "bytes": 27079
+    }
+  },
+  "tools": {
+    "infrastructure": {
+      "path": "/opt/goby-test/m5-final-regression-20260914/private/infrastructure-tools.json",
+      "sha256": "ad1c9058083f81d2400e80b588b89a96d6c107fa17ff51a1fc9ccab17b761d5c"
+    },
+    "worker": {
+      "path": "/opt/goby-test/m5-final-regression-20260914/private/tool-pins.json",
+      "sha256": "79e91ddd2c1150b9dc30f3889d378e407d1ac9d6899f56bb6b0d53fc2970ee41"
+    }
+  },
+  "limits": {
+    "businessSeconds": 4200,
+    "capacityPollSeconds": 2,
+    "capacityWaitSeconds": 120,
+    "commandSeconds": 1560,
+    "imageBytes": 536870912,
+    "minimumExt4FreeBytes": 268435456,
+    "minimumMemAvailableBytes": 6442450944,
+    "minimumRootFreeInodes": 10000,
+    "outerSeconds": 5340,
+    "preparationSeconds": 600,
+    "ramBytes": 3221225472,
+    "retainedBudgetBytes": 1073741824,
+    "rootReserveBytes": 536870912,
+    "runtimeSeconds": 4800,
+    "stopCommandSeconds": 210,
+    "testSeconds": 1500,
+    "unitStopSeconds": 180,
+    "interpretation": "These are the admitted limits for this consumed execution, not a current capacity reservation."
+  },
+  "inputDisposition": {
+    "consumed": true,
+    "scopeReusable": false,
+    "automaticRerun": false
+  },
+  "limitations": [
+    "This result covers the fixed LiveTV Programs server tests on the frozen source.",
+    "It does not complete ordinary full regression, a new embedded release build, a candidate transition, original-client acceptance or main promotion.",
+    "Raw command logs, credentials and closed PostgreSQL data remain in the private remote archive."
+  ]
+}

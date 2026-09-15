@@ -1,0 +1,65 @@
+{
+  "kind": "programs-transition-activity-retention-provenance",
+  "version": 1,
+  "status": "saved_provenance_reviewed_not_live_admission",
+  "date": "2026-09-15",
+  "expectedActivityRetentionDays": 30,
+  "basis": {
+    "generator": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/provision-tool-verification-01/prepare-audited-candidate.py",
+      "sha256": "9b83f402ce539155dc6d1eafc99786c87b593ca47c7834127aeaacd46335ab6a",
+      "activityRetentionEnvironmentKeyOccurrences": 0,
+      "environmentConstructionLines": [429, 438],
+      "unitEnvironmentSelectionLines": [440, 444]
+    },
+    "configurationLineage": "e11-candidate-transition-decision.md#administrator-asset-selection-from-saved-provenance",
+    "preservedRuntimeEnvironmentSha256": "877ce946814fef63a240171b7a60c4ad6b4505bf2051be815266ed9744627d3d",
+    "configurationAmendment": "The recorded configuration revision appended only the two backup limits; the later binary transition preserved those bytes.",
+    "productArchive": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/live-tv-product-source-20260915T102000Z/source-r01.tar.gz",
+      "sha256": "3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251"
+    },
+    "productMembers": [
+      {
+        "name": "internal/config/observability.go",
+        "bytes": 2424,
+        "sha256": "4f26e6af24160c6d93ffc52a87725ac3bb88cd3148bdd603df5594c5d71acc7f",
+        "meaning": "DefaultActivityRetentionDays is 30 when the environment key is absent."
+      },
+      {
+        "name": "internal/server/activity_retention.go",
+        "bytes": 1087,
+        "sha256": "88a2831005a3013fc4d88162a7e75606d3f6a87ee70d93b5b862c012fbe32180",
+        "meaning": "The running service checks activity retention on a one-minute ticker."
+      },
+      {
+        "name": "internal/activity/store.go",
+        "bytes": 9288,
+        "sha256": "4bbe56850faf3d60d61039a84582004c18a113c09f91b75484afc3de8fc16728",
+        "meaning": "Expiration compares created_at with the PostgreSQL clock minus the configured retention."
+      }
+    ]
+  },
+  "savedActivityProjection": {
+    "snapshot": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/source-after.json",
+      "sha256": "445c35bc17a8716adb036061e16fa29f22d9883727657ebfe1cfc1fdd0db13e4"
+    },
+    "capturedAt": "2026-09-15T09:26:01.657224+00:00",
+    "rows": 72,
+    "oldestCreatedAt": "2026-09-13T07:54:27.108239+00:00",
+    "newestCreatedAt": "2026-09-15T09:26:00.997646+00:00"
+  },
+  "requiredEntryConditions": [
+    "Preserve the reviewed runtime-environment digest, server-unit selection and configuration lineage; an unexpected override invalidates this deduction.",
+    "Bind a fresh complete snapshot and the applicable database time before transition. Every existing activity row must remain inside the proven retention interval through the entire transition and recovery budget.",
+    "Compare the actual before and after activity rows and sequence exactly. This review permits no retention deletion, compensating insert or sequence reset.",
+    "Do not reuse the old one-day age assumption or obtain a passing baseline by deleting old activity."
+  ],
+  "limits": [
+    "This is a saved-source and saved-state review, not a live configuration, database, service or deployment observation.",
+    "No environment body, process environment, master/key content, reference database or vendor source was read.",
+    "The three selected product members were read from the hash-bound archive without extraction; this review does not independently verify every archive member.",
+    "No HTTP, SQL, service action, test, build or browser run was performed."
+  ]
+}

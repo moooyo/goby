@@ -206,6 +206,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /emby/Users/{Id}", s.requireEmby(s.embyUser))
 	mux.HandleFunc("GET /emby/Users", s.requireEmby(s.embyUsersBare))
 	mux.HandleFunc("GET /emby/Users/Query", s.requireEmby(s.embyUsers))
+	mux.HandleFunc("GET /emby/LiveTv/Programs", s.requireEmby(s.embyLiveTVPrograms))
 	mux.HandleFunc("POST /emby/Sessions/Logout", s.requireEmby(s.embyLogout))
 	mux.HandleFunc("/emby/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_implemented", "This operation has not been implemented.")

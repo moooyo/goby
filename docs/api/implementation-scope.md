@@ -26,6 +26,14 @@ Common protocol flows guide implementation now; a user-provided client shortlist
 
 P0 and P1 are implementation order, not a redefinition of the final goal. A direct-play MVP does not constitute a general Emby replacement. Revisit deferred features as compatibility coverage expands. Do not return successful empty results merely to inflate endpoint coverage.
 
+One bounded client-navigation addition is the
+[Programs query for the current zero-EPG-source profile](../development/live-tv-programs.md).
+It is an authenticated, input-validated catalog-subject query with a real empty
+program set; current authorization and storage errors remain errors. Its
+reference shape and product verification are recorded separately. This does
+not schedule or claim tuners, channels, program ingestion, DVR or Live TV
+playback, and it does not by itself pass original-client acceptance.
+
 The catalog uses service-level labels such as `CORE-CANDIDATE`; a service can contain both essential and optional operations. The selections below are the actual starting scope. Unlisted operations remain in the full catalog and default to later evaluation, even if their service is a core candidate.
 
 ## P0: a complete initial media flow

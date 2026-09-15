@@ -1,25 +1,37 @@
-# E11 candidate transition decision
+# Programs successor candidate transition decision
 
-Status: **candidate selected; transition and execution are not admitted**.
+Status: **candidate A selected; Programs successor not built; transition and
+execution are not admitted**.
 Recorded on 2026-09-15 from the retained source comparison and A/B seed/admission
 summaries. This document makes the delivery choice; it does not observe current
-processes, authorize a deployment, or establish E11 client acceptance.
+processes, authorize a deployment, or establish successor client acceptance.
 
 ## Decision and evidence
 
 Use existing **candidate A**, rooted at
-`/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b`, for the final E11
-transition. Its recorded audited binary is
+`/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b`, for one direct
+transition to the Programs successor. Its recorded audited binary is
 `b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42`.
 Preserve candidate B and its independent state; do not provision a third
 candidate, move actors between databases, or reset A's consumed actors.
 
-The selected destination binary remains E11,
+E11 remains the retained build/G2 baseline,
 `7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1`
 (30,691,123 bytes), from package SHA256
 `2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a`.
 The [package/source bridge](systemd-package-source-checkpoint.json) and accepted
-internal installation result keep their original scopes.
+internal installation result keep their original scopes. The destination now
+includes the [Programs product increment](live-tv-programs.md), so it requires
+a newly verified binary and package. Neither identity exists yet. Do not deploy
+the original E11 first or relabel its bytes as containing the Programs route.
+
+The [focused result](live-tv-programs-focused-verification.json) passed 14
+top-level checks and 118 subtests with independent review. The
+[full regression](live-tv-programs-full-interruption.json) was interrupted for
+user review and safely closed after 10 of 25 packages: 341 passes, zero failures
+and zero skips. The identity package's additional 109 raw passes are incomplete
+and excluded from that total. No build ran; full verification remains false,
+without a product assertion failure.
 
 | Recorded fact | Delivery implication |
 | --- | --- |
@@ -28,6 +40,9 @@ internal installation result keep their original scopes.
 | A carries the [accepted MP3](audited-mp3-client01-closeout.json)/[FLAC](audited-flac-client01-closeout.json) results and the recorded movie, episode and subtitle history tracked in the [support matrix](../planning/support-and-delivery-matrix.md). | The final transition can retain the same media/actor identities and directly preserve the evidence the current retained-state contracts address. |
 | B's [seed/admission summary](fresh-embedded-candidate-checkpoint.json) records eight users, three libraries/scans, fourteen independent files and successful native admission, but `clientAcceptance=false` and `browserGatewayEstablished=false`. | B is valid retained work, but switching the final-client path to B would require a separate client origin, actor mapping and input-lineage integration that its summary does not establish. |
 | The [actual source comparison](core-artifact-source-comparison.md) finds A-to-E11 has eleven changed and four added production Go files; B-to-E11 has eight changed files and identical embedded assets. | B has the smaller source delta. A has the stronger existing original-client/state integration. The asset-selection differences in A-to-E11 must remain explicit. |
+
+Those counts describe the historical E11 comparison. Add the actual Programs
+changes to the final successor source bridge rather than relabeling that comparison.
 
 **Engineering judgment:** A minimizes integration uncertainty and repeated
 client preparation using the presently established evidence. The choice is not
@@ -48,10 +63,21 @@ or a consumed input.
 
 ## Transition state contract
 
-Freeze the actual latest complete closed state after the bounded TV branch has
-closed, whether or not it obtained a useful Response binding. Preserve that
-branch's result independently. Do not make complete explanation of every old
-pageerror an indefinite prerequisite for designing this transition.
+The bounded TV diagnostic and reference question are complete and consumed.
+Use browse02's latest closed state as the current saved starting point, then
+bind a fresh permitted entry observation before transition. Preserve the earlier
+results independently; do not repeat their actors or make complete explanation
+of every old pageerror an indefinite prerequisite for this transition.
+
+Complete the recovery decision and all three final journey entry contracts
+before A is replaced. The episode/subtitle contracts are not yet ready; movie
+v4 and TV v5 do not supply them automatically. Their pure-tool preparation may
+run in parallel with final verification/build of frozen Go source. Tool-only
+Python/JavaScript changes are not a reason to repeat the Go full suite.
+One planned worker will run all 25 ordinary packages and the ordinary build,
+then append one embedded amd64 systemd package build. It has not run and has no
+artifact identity yet. After both prerequisite tracks complete, switch A once,
+run the three client journeys and close the audio reuse bridge before G3.
 
 The following is the bounded state allowance to turn into a reviewed execution
 input. Values and current ownership must be observed before dispatch; this
@@ -59,18 +85,34 @@ document does not assert that those observations have occurred.
 
 | Area | Allowed change and required preservation |
 | --- | --- |
-| Executable and process | Select the exact E11 bytes through one reviewed A transition, retaining the old executable and a concrete recovery/closure route. New application PID/start/invocation/listener and database lease identities must be recorded. Main, B and their PostgreSQL instances are outside this change. |
-| Startup task registration | If absent at entry, permit exactly one new `task_definitions` row keyed `library.refresh_media`, with the compiled E11 definition/default fields. If already present, require it to match the reviewed expected state. Preserve the existing `library.scan` identity, administrator settings, rules and history. This allowance does not admit a task run, scan, refresh or trigger creation. |
+| Executable and process | Select the actual verified Programs-successor bytes through one reviewed A transition, retaining the old executable and a concrete recovery/closure route. New application PID/start/invocation/listener and database lease identities must be recorded. Main, B and their PostgreSQL instances are outside this change. |
+| Startup task registration | If absent at entry, permit exactly one new `task_definitions` row keyed `library.refresh_media`, with the final successor's compiled definition/default fields. If already present, require it to match the reviewed expected state. Preserve the existing `library.scan` identity, administrator settings, rules and history. This allowance does not admit a task run, scan, refresh or trigger creation. |
 | Existing database state | Preserve all existing logical rows/fields across all 35 tables and the five sequences, except the precisely admitted task-definition delta and any separately enumerated admission authentication effects. The new definition's identifier is not authority for a sequence change. No schema migration is expected: all 28 migration files and six backup catalogs are identical in the compared sources. |
 | Playback and users | Preserve every old movie/episode/subtitle/audio session, play, UserData row and reference. Keep all closed credentials revoked and both foreign audio references exact. Do not expire, delete or reset history merely to make entry fresh. Each later client journey gets its own explicit Prepared-state exception and declared new state effects. |
-| Administrator assets/configuration | The [saved configuration provenance](#administrator-asset-selection-from-saved-provenance) establishes A's nonempty `GOBY_WEB_DIR` as its existing `install/admin` directory. With that configuration preserved, E11 selects the explicit external override. Keep the directory and its accepted asset inventory; do not remove the override or claim embedded serving merely from the binary tag. No environment/configuration rewrite is authorized here. |
+| Administrator assets/configuration | The [saved configuration provenance](#administrator-asset-selection-from-saved-provenance) establishes A's nonempty `GOBY_WEB_DIR` as its existing `install/admin` directory. Preserve that external override in the successor and confirm the inherited E11 selection rule in its final source bridge. Keep the directory and accepted asset inventory; do not remove the override or claim embedded serving merely from the binary tag. No environment/configuration rewrite is authorized here. |
 | Native state and logs | Record the exact startup/reconciliation and shutdown effects on owned lease, lifecycle and diagnostic state. Do not broaden a logical-row preservation result into physical database integrity or host durability. Any additional row, sequence, task, retention or file change needs an explained, reviewed allowance before it can pass. |
 | Admission requests | Health/authentication or affected task/catalog checks, if needed, must have a fixed request list and declared credential/audit/device effects in the transition input. They are separate from the startup-only allowance; old admission counts and inputs are not replayed. |
 
 Entry must establish that no active/recoverable task or eligible trigger would
 silently broaden this startup. Do not disable schedules or cancel unrelated
-work to force the intended baseline. If normal E11 startup would make another
+work to force the intended baseline. If normal successor startup would make another
 state change, resolve that concrete mismatch before execution.
+
+Recovery is an open preparation item. Restoring the old binary would cause its
+task reconciliation to disable the new refresh definition, so preserving an
+old executable is not by itself a complete recovery plan. Specify the intended
+recovery endpoint, permitted row effects and owned stop/closure behavior before
+transition. No automatic candidate-transition rollback is implemented or accepted by this document;
+do not delete the definition or discard history to manufacture a clean return.
+
+The [saved retention review](programs-transition-retention-review.json) derives
+a 30-day activity-retention window from the pinned generator/source and
+configuration lineage. Its latest saved 72 activity rows were about two days
+old at that checkpoint; an older one-day assumption must not become a permanent
+entry blocker. This is not live admission. Fresh entry still requires the exact
+environment hash and unit selection, complete current state and database time
+showing no row becomes eligible for expiry within the bounded execution window.
+Before/after preservation remains exact; no deletion of old rows is authorized.
 
 ## Administrator asset selection from saved provenance
 
@@ -112,7 +154,7 @@ matching the current hash-only observation supplied for this decision.
 The nonempty dashboard assignment therefore remains part of those unchanged
 configuration bytes.
 
-For the A-to-E11 input, reuse this conclusion only while the exact runtime
+For the A-to-successor input, reuse this conclusion only while the exact runtime
 digest, server-unit configuration/hash and expected environment-file selection
 remain bound to their reviewed records, and the retained `install/admin` asset
 inventory passes its permitted hash/metadata checks. Do not read an environment
@@ -135,15 +177,15 @@ audio, authentication, playback, media and transcode implementation files;
 this is a concrete basis for avoiding an automatic repeat of both consumed
 audio inputs.
 
-The intended reuse bridge still requires a reviewed successful A-to-E11
+The intended reuse bridge still requires a reviewed successful A-to-successor
 transition, preserved relevant configuration/media/actor state, and matching
 client/profile inputs. Record the resulting audio support as **reused A journey
-evidence with an E11 transition/source bridge**, never as an E11 audio execution.
-Until that bridge closes, the E11 audio row remains open. A changed input or
+evidence with a Programs-successor transition/source bridge**, never as a new audio execution.
+Until that bridge closes, the successor audio row remains open. A changed input or
 discovered affected behavior requires only the corresponding focused new audio
 journey; source equality alone does not grant the final support claim.
 
-These three final acceptance rows require new journeys on the admitted E11
+These three final acceptance rows require new journeys on the admitted Programs-successor
 artifact and current A state:
 
 | Final row | Required evidence |
@@ -152,27 +194,33 @@ artifact and current A state:
 | Episode | Full declared TV browse through the exact Episode 2-1 identity, advancing decoded playback, pause/seeks/resume/stop/logout, and matching durable state. A no-playback TV diagnostic cannot replace this row. |
 | External subtitles | SRT and VTT selection, visible opening/seek cues, return to Off, stop/logout, actual authorized subtitle/media delivery, and complete timing/cancellation interpretation and owned-state closure. |
 
-Use each actor's then-current retained-state input and appropriate typed
-contract. The movie v4 and TV v5 contracts are not automatically episode or
-subtitle contracts. No new journey may inherit a zero-history assumption.
+Prepare each actor's typed entry/closure contract before the A transition.
+Episode and subtitle contracts remain incomplete. After each actual journey,
+bind the next journey to the preceding complete closeout; preparing contracts
+early does not freeze stale future snapshot values. The movie v4 and TV v5
+contracts are not automatically episode or subtitle contracts. No new journey
+may inherit a zero-history assumption.
 Recover the exact original-client build, browser/Playwright pins and media
 fixture metadata for the selected journey; do not infer them from another run.
 
 The unchanged pageerror, authorization, media/state and cleanup gates still
 apply. Old failures stay failed or unresolved in their historical records;
-successful E11 journeys establish only the new declared profile. If a product
+successful successor journeys establish only the new declared profile. If a product
 correction is required, bind its successor artifact and relevant verification
 before accepting changed-source results.
 
 ## Next concrete handoff
 
-Produce one A-to-E11 transition input from the selected A root, exact artifact,
-latest full state, permitted configuration facts, explicit task-definition delta,
-current process/lease/protection facts and bounded recovery/cleanup plan. No
-ready input is produced by this document. Complete that admission before the
-three final journeys, and require core acceptance plus the separate G3 safety
-prerequisites before main promotion. The already accepted G2 installation slice
-does not need another installer run for this selection.
+Use two parallel prerequisite tracks: recovery/final journey entry preparation,
+and verification/build of frozen product source. Both must complete before
+one source-bound A transition; then run the three final client journeys and audio
+reuse bridge; then enter G3. The transition input must bind the actual successor,
+latest full state, permitted configuration facts, explicit task-definition
+delta, current process/lease/protection facts and bounded recovery/closure plan.
+No ready input is produced by this document. The original G2 installation slice
+remains accepted; review only assertions invalidated by the successor change,
+without automatically queueing another installer run. Other M2-M6 profiles
+retain their independent prerequisites; M7 remains deferred.
 
 The initial candidate choice used local document/source-summary reading. The
 asset-selection follow-up additionally read only pinned owned source and

@@ -1,16 +1,36 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-15 after candidate recovery and the fixed native
-media-refresh increment completed focused/browser acceptance, final ordinary
-regression, independent review and resource closure. Earlier regression and
-candidate admissions retain their original scopes; client-video acceptance
-remains open.
+Reviewed on 2026-09-15 after the Programs focused result and the user's plan
+review. The current delivery target is the Programs successor; it has no binary
+or package identity and has not been built. E11 remains the accepted build/G2
+baseline. Earlier regression and candidate admissions retain their original
+scopes; final client-video acceptance remains open.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 
-Execution resumed on 2026-09-15 after the user accepted the plan review.
+The [Programs focused verification](live-tv-programs-focused-verification.json)
+has 14 top-level and 118 subtest passes with independent result/resource review.
+The [ordinary full run](live-tv-programs-full-interruption.json) was interrupted
+for the user's plan review and safely closed after 10 of 25 packages: 341
+passes, zero failures and zero skips. The identity package's additional 109 raw
+passes are incomplete package evidence and are excluded from that total.
+No build ran; full verification is false and no product assertion failure was
+observed. The user interruption is not a product failure or passing full suite.
+
+The revised plan allows pure-tool recovery/final journey entry preparation in
+parallel with verification/build of frozen Go source. Both must complete before
+one direct A-to-successor transition, followed by three final client journeys
+with the audio reuse bridge and then G3. Episode/subtitle contracts and the
+recovery decision remain incomplete. Old-binary return would disable the new
+refresh definition; that effect is not an implemented automatic rollback plan.
+
+The planned single worker will verify all 25 ordinary packages, build the ordinary
+binary and then append one embedded amd64 systemd package build. That worker has
+not run. Python/JavaScript tool changes alone do not require another Go full run.
+
+The earlier resumed work on 2026-09-15 completed the following scoped results.
 The [core acceptance resolution](core-client-acceptance-resolution.md) now leads
 the queue. The [internal amd64 systemd installation gate](internal-amd64-installation-acceptance.json)
 is accepted from the original runtime, corrected saved HTTP review and the
@@ -38,11 +58,12 @@ authentication/device/activity effects and uncounted preparation/expiry changed;
 activity and device sequences advanced accordingly. Do not use the prior
 Subtitles01 snapshot as a fresh full-state baseline.
 The [transition decision](e11-candidate-transition-decision.md) selects existing A
-for E11 and establishes its explicit external administrator asset override from
+for one direct Programs-successor transition and establishes its external administrator asset override from
 saved configuration provenance and current hashes. No transition or deployment
-has occurred. The next bounded question is the successful no-program response
-shape on the owned original-client host, under the
-[core contract decision](core-client-acceptance-resolution.md).
+has occurred. The [reference response question](reference-programs-verification.json),
+diagnostic and focused product scope are complete and consumed; they are not
+queued for repetition. The [core resolution](core-client-acceptance-resolution.md)
+now follows the recovery/entry, final-source build and successor acceptance order above.
 Native capacity execution is held under its
 [measurement decision](native-capacity-measurement-decision.md). The
 historical pause, integrated capacity controller and remaining work are preserved
@@ -190,11 +211,12 @@ application identities and all unchanged protected resources explicitly.
 | --- | --- | --- |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
-| Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package has separate accepted internal amd64 installation evidence |
+| Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
+| Programs successor | Source implementation checkpoint; focused 14 top-level/118 subtest passes independently reviewed. User-interrupted full run completed 10/25 packages with 341 passes/0 failures/0 skips; 109 partial identity passes excluded; no build | Complete recovery/journey entry preparation and the planned frozen-source 25-package/ordinary/embedded-package worker before A changes. Pure-tool preparation may run in parallel. Full verification is false; no product assertion failure was observed |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
-| Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
+| Core original client | MP3/FLAC retain their historical acceptance; video/subtitle failures remain unchanged. The consumed TV diagnostic and reference question informed the focused Programs correction | Complete final episode/subtitle contracts before transition; afterward execute movie/episode/subtitle journeys on the successor and close the explicit audio reuse bridge. No repeat diagnostic/reference work or automatic replay |
 | M2 catalog | Real-media rescan/ACL and native amd64 stop/start proofs passed. A separate SQL-seeded 10,000-leaf/442-folder handler test passes ACL/UserData isolation during an owned transaction block; those earlier scopes have independent review and closure | The SQL baseline is not physical scan throughput, native TCP/service performance, RSS/SLO or actual kernel filesystem blocking. Representative real-file capacity, host durability and the paused full-scan mount proof remain open |
 | Real small-media capacity | The new 10,000-leaf scan/rescan test and affected seven-file shared-fixture regression passed independent review and resource closure; production is unchanged | This tiny valid-media and in-process Store-reopen profile does not prove HTTP/service performance, service/PG/host restart, actual filesystem stalls or a throughput SLO |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
@@ -202,8 +224,9 @@ application identities and all unchanged protected resources explicitly.
 
 The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
 maps those obligations to artifact/client/media/deployment slices and concrete
-next actions. The selected next delivery artifact is E11; current-state admission
-and original-client acceptance on it remain open.
+next actions. The current target is the unbuilt Programs successor. A is selected
+for one direct transition after recovery/journey preparation and final-source
+verification/build; current-state admission and successor client acceptance remain open.
 
 The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
 passed one race test with zero failures/skips on base `892c536` plus one new
