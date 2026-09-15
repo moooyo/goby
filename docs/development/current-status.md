@@ -59,6 +59,15 @@ was `MainThread` PID 1208225. Their launching job and causal relationship to the
 Library failure or A/B lease losses are unproved. Concurrent workload requires
 coordination but is not attribution evidence.
 
+The subsequent [retained Library timeline](library-theme-retained-timeline.md)
+records the recovery-scan observer timeout about 19 seconds before the incident
+summary's OOM time. The expected auxiliary rejection is present in the archived
+worker-owned PostgreSQL log. Cleanup reports database finalization and ownership
+loss; it is not a filesystem-root observation. The exact loss time and any
+earlier resource pressure remain unproved. Independent source review found no
+specific transaction or fixture leak. Existing phase/read/ownership diagnostics
+remain the next bounded execution; no new test, root-cause claim or fix follows.
+
 The heavy-execution window awaits the user's asynchronous reply. The next product
 check is the original theme subcase under its existing budgets; no `ownedTx.Query`
 fix is scheduled, and non-reproduction cannot clear the original full failure.

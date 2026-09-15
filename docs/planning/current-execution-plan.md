@@ -507,6 +507,14 @@ live inputs remain pending, and no live journey has run. Artifact work and
 authority/live-input preparation join before A changes. Heavy
 work still awaits the user's window decision.
 
+The [retained Library timeline](../development/library-theme-retained-timeline.md)
+records the recovery-scan observer error about 19 seconds before the incident's
+recorded OOM second. Earlier resource pressure remains unproved. The cleanup
+message maps to database finalization and ownership loss, not a root-filesystem
+probe. Independent source review found no demonstrated transaction/fixture leak.
+Use the already prepared phase/read/ownership diagnostics for the first bounded
+theme rerun; do not invent a Query fix, relax timeouts or repeat archive review.
+
 **Closed compatibility exception:** the bounded current-runtime v2 correction
 represents the second recovery through `previousCurrentRuntime`, preserving v1
 semantics and historical `38b906...`. Reuse its verified four-file scope. The

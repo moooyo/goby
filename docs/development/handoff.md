@@ -73,6 +73,15 @@ hypothesis was withdrawn: both Query call sites already select `owned.ctx`.
 No root cause or product correction is established; preserve the
 [initial hypothesis and its correction](programs-final-regression-incident.json).
 
+The [retained failure timeline](library-theme-retained-timeline.md) now separates
+the recovery-scan observer error at 11:57:55.785 UTC from the incident's recorded
+11:58:15 OOM second. Earlier pressure is still possible. The archived worker PG
+log contains the intended rejection, and source review maps the cleanup failure
+to database finalization/ownership rather than a root-filesystem probe. No
+transaction or fixture leak was demonstrated. Reuse the prepared diagnostic
+branch for the original theme subcase in the coordinated window; do not repeat
+this completed archive lookup or infer a fix from the chronology alone.
+
 The failed scope's owned resources are closed and independently reviewed. Root
 also matched all five saved incident files by bytes/SHA-256. Preserve the
 original `resourcesClosed=false` and `recovered_protected_state_changed` result;

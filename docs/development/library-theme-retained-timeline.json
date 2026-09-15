@@ -1,0 +1,241 @@
+{
+  "archive": {
+    "bytesPreviouslyRecorded": 110315809,
+    "path": "/opt/goby-test/livetv-programs-final-20260915/retained/full-private.tar.gz",
+    "sha256PreviouslyRecorded": "8565032be17e524d17d88d0f3eabd3b9f663c909642e993123e15dc2f3b30ef7",
+    "wholeArchiveRehashedThisRead": false
+  },
+  "boundaries": [
+    "Event Time is the saved go test JSON observation time. The delayed WARN Output includes a separate, earlier logger time; do not interchange them.",
+    "The waiter error was recorded about nineteen seconds before the incident summary OOM second. This does not exclude earlier memory pressure, scheduling delay or database stalls.",
+    "A PostgreSQL backend PID is an archived log identity, not current execution authority or a complete query/wait trace.",
+    "The PostgreSQL error records the intended auxiliary rejection message; the projection does not include a COMMIT statement or reconstruct every subsequent transaction.",
+    "The source trace maps persist final scan status to database finalization, not a filesystem-root probe. The precise ownership-loss time remains unknown.",
+    "No reproduction, product fix, root cause, full regression or client acceptance is established."
+  ],
+  "capturedAt": "2026-09-15T19:53:26.771120+00:00",
+  "incidentReference": {
+    "precision": "The existing incident summary records this event to one second; its raw kernel journal has a separately retained identity.",
+    "recordedOomAtUtc": "2026-09-15T11:58:15Z",
+    "repositoryPath": "docs/development/programs-final-regression-incident.json"
+  },
+  "kind": "library-theme-retained-failure-timeline",
+  "libraryCommand": {
+    "exit_code": 1,
+    "interrupted_or_timed_out": false,
+    "label": "go-test",
+    "seconds": 1125.635,
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout": "logs/033-go-test.stdout",
+    "stdout_sha256": "c9f1ad43f7e9bfe39975c13029196bdbed3311f4d5e1ba680507e8722a5ce888"
+  },
+  "members": [
+    {
+      "bytes": 2325964,
+      "path": "ram/livetv-programs-final-20260915-20260915T114718Z-5f10a01ddf37/logs/033-go-test.stdout",
+      "sha256": "c9f1ad43f7e9bfe39975c13029196bdbed3311f4d5e1ba680507e8722a5ce888"
+    },
+    {
+      "bytes": 170387,
+      "path": "ram/livetv-programs-final-20260915-20260915T114718Z-5f10a01ddf37/pg/postgres.log",
+      "sha256": "9f71ea2ed722da80e8b88d198ac2b08677e0baada7cae634cab3d8224b79eca7"
+    },
+    {
+      "bytes": 215838,
+      "path": "ram/livetv-programs-final-20260915-20260915T114718Z-5f10a01ddf37/report.json",
+      "sha256": "798f1ca29d329a36f572378a3b174e9c9655b8ea363a8c077b42637a9b03e831"
+    }
+  ],
+  "packageEvents": [
+    {
+      "Action": "start",
+      "Time": "2026-09-15T19:55:44.255812773+08:00"
+    },
+    {
+      "Action": "fail",
+      "Elapsed": 1119.13,
+      "Time": "2026-09-15T20:14:23.385664806+08:00"
+    }
+  ],
+  "postgresLogEvents": [
+    {
+      "backendPid": 1208112,
+      "level": "ERROR",
+      "message": "auxiliary catalog commit rejected",
+      "recordedTimeGMT": "2026-09-15 11:57:22.476",
+      "sourceLine": 800
+    },
+    {
+      "backendPid": 1208883,
+      "level": "LOG",
+      "message": "could not receive data from client: Connection reset by peer",
+      "recordedTimeGMT": "2026-09-15 11:57:54.250",
+      "sourceLine": 802
+    },
+    {
+      "backendPid": 1208111,
+      "level": "ERROR",
+      "message": "canceling statement due to user request",
+      "recordedTimeGMT": "2026-09-15 11:58:15.644",
+      "sourceLine": 803
+    },
+    {
+      "backendPid": 1208112,
+      "level": "ERROR",
+      "message": "canceling statement due to user request",
+      "recordedTimeGMT": "2026-09-15 11:58:16.013",
+      "sourceLine": 804
+    },
+    {
+      "backendPid": 1208112,
+      "level": "LOG",
+      "message": "could not send data to client: Broken pipe",
+      "recordedTimeGMT": "2026-09-15 11:58:16.013",
+      "sourceLine": 805
+    },
+    {
+      "backendPid": 1208112,
+      "level": "FATAL",
+      "message": "connection to client lost",
+      "recordedTimeGMT": "2026-09-15 11:58:16.013",
+      "sourceLine": 806
+    },
+    {
+      "backendPid": 1209184,
+      "level": "ERROR",
+      "message": "auxiliary catalog commit rejected",
+      "recordedTimeGMT": "2026-09-15 11:58:26.690",
+      "sourceLine": 807
+    }
+  ],
+  "scope": {
+    "applicationHttpCalls": 0,
+    "buildsRun": 0,
+    "liveSqlCalls": 0,
+    "method": "Read three exact retained archive members; save a bounded test and worker-owned PostgreSQL log projection.",
+    "originalEvidenceModified": false,
+    "serviceActions": 0,
+    "testsRun": 0
+  },
+  "sourceRevision": "74a69abacdd9206e51f4e166df2346b5555b5cd9",
+  "status": "retained_evidence_projection_no_rerun",
+  "testEvents": [
+    {
+      "Action": "run",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+      "Time": "2026-09-15T19:57:08.929666866+08:00",
+      "sourceLine": 142
+    },
+    {
+      "Action": "output",
+      "Output": "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+      "Time": "2026-09-15T19:57:08.929676656+08:00",
+      "sourceLine": 143
+    },
+    {
+      "Action": "run",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:57:08.929681516+08:00",
+      "sourceLine": 144
+    },
+    {
+      "Action": "output",
+      "Output": "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:57:08.929684006+08:00",
+      "sourceLine": 145
+    },
+    {
+      "Action": "output",
+      "Output": "    auxiliary_catalog_changes_integration_test.go:522: read scan job: get scan job: timeout: context deadline exceeded\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:57:55.78556346+08:00",
+      "sourceLine": 146
+    },
+    {
+      "Action": "output",
+      "Output": "2026/09/15 19:57:43 WARN Retrying scan job finalization job_id=7000b5c83ac88a60ee4ae18c63ba6ab1 error_code=scan_finalize_failed\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:58:15.70416776+08:00",
+      "sourceLine": 147
+    },
+    {
+      "Action": "output",
+      "Output": "    store_integration_test.go:97: close library store: persist final scan status: library service or root is unavailable\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:58:15.70421677+08:00",
+      "sourceLine": 148
+    },
+    {
+      "Action": "output",
+      "Output": "        library service or root is unavailable: library ownership session was lost\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:58:15.70422526+08:00",
+      "sourceLine": 149
+    },
+    {
+      "Action": "output",
+      "Output": "    store_integration_test.go:63: remove owned test schema: timeout: context deadline exceeded\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:58:15.704237029+08:00",
+      "sourceLine": 150
+    },
+    {
+      "Action": "output",
+      "Output": "--- FAIL: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme (66.77s)\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:58:15.708665315+08:00",
+      "sourceLine": 151
+    },
+    {
+      "Action": "fail",
+      "Elapsed": 66.77,
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "Time": "2026-09-15T19:58:15.708720144+08:00",
+      "sourceLine": 152
+    },
+    {
+      "Action": "run",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra",
+      "Time": "2026-09-15T19:58:15.710143136+08:00",
+      "sourceLine": 153
+    },
+    {
+      "Action": "output",
+      "Output": "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra",
+      "Time": "2026-09-15T19:58:15.710160686+08:00",
+      "sourceLine": 154
+    },
+    {
+      "Action": "output",
+      "Output": "--- PASS: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra (11.62s)\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra",
+      "Time": "2026-09-15T19:58:27.304533983+08:00",
+      "sourceLine": 155
+    },
+    {
+      "Action": "pass",
+      "Elapsed": 11.62,
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra",
+      "Time": "2026-09-15T19:58:27.304595892+08:00",
+      "sourceLine": 156
+    },
+    {
+      "Action": "output",
+      "Output": "--- FAIL: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable (78.38s)\n",
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+      "Time": "2026-09-15T19:58:27.304606652+08:00",
+      "sourceLine": 157
+    },
+    {
+      "Action": "fail",
+      "Elapsed": 78.38,
+      "Test": "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+      "Time": "2026-09-15T19:58:27.304610822+08:00",
+      "sourceLine": 158
+    }
+  ],
+  "version": 1
+}
