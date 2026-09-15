@@ -63,6 +63,15 @@ TV_CHECKS = ("runtimeIdentity", "tvDefaultParents", "tvDetailParents", "ordinary
              "healthWindow60Seconds", "sourceAndInactivePreserved", "sessionCleanup")
 TV_REUSED_CONTRACTS = ["native_authentication_and_query_carriers", "storage_and_library_access",
                        "backup_create_download", "restore_ready_cancel_retained_stage"]
+PROGRAMS_REUSED = {"path": TV_ROOT + "candidate-live-admission-05/private/report.json",
+                   "sha256": "b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535"}
+PROGRAMS_CHECKS = ("runtimeIdentity", "programsEmptyQuery", "programsSeriesQuery", "ordinaryAuthorization",
+                   "healthWindow60Seconds", "sourceAndInactivePreserved", "sessionCleanup")
+PROGRAMS_REUSED_CONTRACTS = ["tv_parent_projection_and_ordinary_authorization", *TV_REUSED_CONTRACTS]
+PROGRAMS_QUERY = {"HasAired": "false", "SortBy": "StartDate", "ImageTypeLimit": "1",
+                  "EnableImageTypes": "Primary,Thumb,Backdrop", "EnableUserData": "false",
+                  "Fields": "PrimaryImageAspectRatio,ChannelInfo",
+                  "Limit": "12", "X-Emby-Language": "en-us"}
 HEX32 = re.compile(r"[0-9a-f]{32}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 IDENTIFIER = re.compile(r"[a-z][a-z0-9_]{0,62}\Z")
@@ -201,12 +210,13 @@ def validate_input(value):
     versions = {1: common | {"candidateManifest", "seedManifest", "runtimeInspection", "seedHelper", "inspectionHelper", "sourceManifest"},
                 2: common | {"runtimeEpoch", "seedRuntimeBinding"},
                 3: common | {"runtimeEpoch", "seedRuntimeBinding", "admissionKind", "reusedAdmission04", "transitionCloseout"},
-                4: common | {"candidateManifest", "seedManifest", "runtimeInspection", "seedHelper", "inspectionHelper", "sourceManifest", "admissionKind"}}
+                4: common | {"candidateManifest", "seedManifest", "runtimeInspection", "seedHelper", "inspectionHelper", "sourceManifest", "admissionKind"},
+                5: common | {"runtimeEpoch", "seedRuntimeBinding", "admissionKind", "reusedAdmission05", "transitionCloseout"}}
     need(isinstance(value, dict) and type(value.get("version")) is int and value["version"] in versions,
          "admission_input_version")
     fields = versions[value["version"]]
-    limits = FRESH_LIMITS if value["version"] == 4 else TV_LIMITS if value["version"] == 3 else LIMITS
-    same_limits = canonical(value.get("budgets")) == canonical(limits) if value["version"] == 4 else value.get("budgets") == limits
+    limits = FRESH_LIMITS if value["version"] == 4 else TV_LIMITS if value["version"] in (3, 5) else LIMITS
+    same_limits = canonical(value.get("budgets")) == canonical(limits) if value["version"] in (4, 5) else value.get("budgets") == limits
     need(isinstance(value, dict) and set(value) == fields and value["kind"] == "audited-candidate-admission-input"
          and same_limits, "admission_input_contract")
     need(isinstance(value["runId"], str) and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}", value["runId"]),
@@ -218,6 +228,10 @@ def validate_input(value):
         need(value["admissionKind"] == "affected_tv_parent" and value["runtimeEpoch"] == TV_EPOCH and
              value["seedRuntimeBinding"] == TV_BINDING and value["reusedAdmission04"] == TV_REUSED and
              value["transitionCloseout"] == TV_CLOSEOUT, "tv_admission_frozen_authority")
+    if value["version"] == 5:
+        need(value["admissionKind"] == "affected_programs" and value["reusedAdmission05"] == PROGRAMS_REUSED and
+             value["runtimeEpoch"] != TV_EPOCH and value["seedRuntimeBinding"] != TV_BINDING and
+             value["transitionCloseout"] != TV_CLOSEOUT, "programs_admission_successor_authority")
     if value["version"] == 1:
         need(value["sourceManifest"]["sha256"] == SOURCE_MANIFEST_SHA and
              value["inspectionHelper"]["sha256"] == INSPECTION_SHA, "wrong_frozen_source_or_inspector")
@@ -632,6 +646,72 @@ def validate_tv_authority(value, epoch, binding, seed, transition, previous, reu
     return {**epoch["candidateProcess"], "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}
 
 
+def validate_programs_authority(value, epoch, binding, seed, transition, previous, reused, older, closeout):
+    """Keep accepted admission05/04 evidence on its original source and require the new transition."""
+    need(value["version"] == 5 and epoch["version"] == binding["version"] == 4 and
+         value["admissionKind"] == "affected_programs" and epoch["operationKind"] == "programs_successor" and
+         epoch["runtimeHelper"] == value["runtimeHelper"] and binding["runtimeEpoch"] == value["runtimeEpoch"] and
+         binding["originalSeed"] == epoch["seedProvenance"] and binding["seedExecutor"] == seed["helper"] and
+         binding["seedInput"] == seed["input"] and epoch["originalProvision"] == seed["candidateManifest"],
+         "programs_current_epoch_provenance")
+    for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources"):
+        need(canonical(binding[key]) == canonical(seed[key]), "programs_original_seed_mapping_changed")
+    need(binding["seedCleanup"] == seed["cleanup"] and value["compiledCatalog"] == transition["compiledCatalog"] and
+         transition["previousEpoch"] == epoch["previousEpoch"] == TV_EPOCH and
+         transition["previousBinding"] == binding["previousBinding"] == TV_BINDING and
+         transition["currentRuntime"] == epoch["previousCurrentRuntime"] == binding["previousCurrentRuntime"] and
+         previous["version"] == 3 and previous["operationKind"] == "binary_successor",
+         "programs_successor_predecessor_binding")
+    need(value["reusedAdmission05"] == PROGRAMS_REUSED and type(reused["version"]) is int and reused["version"] == 3 and
+         reused["kind"] == "audited-candidate-live-admission" and reused["admissionKind"] == "affected_tv_parent" and
+         reused["status"] == "admitted_for_core_client" and reused["failure"] is None and reused["cleanupFailures"] == [] and
+         reused["candidateAdmissionComplete"] is True and reused["clientAcceptance"] is False and
+         reused["runtimeEpoch"] == epoch["previousEpoch"] and reused["seedRuntimeBinding"] == binding["previousBinding"] and
+         canonical(reused["currentSource"]) == canonical(previous["currentSource"]) and
+         set(reused["freshChecks"]) == set(TV_CHECKS) and all(row is True for row in reused["freshChecks"].values()) and
+         reused["requests"] == {"normal": 20, "cleanup": 4} and reused["inactiveStageRetained"] is True and
+         reused["activeGenerationChanged"] is False and set(reused["controllerSessions"]) == {"P", "Q"} and
+         all(row["sameTokenRejected"] is True for row in reused["controllerSessions"].values()) and
+         all(type(reused[key]) is int and reused[key] == 0 for key in ("playbackRequests", "applyRequests", "rollbackRequests")),
+         "programs_reused_admission05_not_original_success")
+    need(type(older["version"]) is int and older["version"] == 2 and older["kind"] == "audited-candidate-live-admission" and
+         older["status"] == "admitted_for_core_client" and older["failure"] is None and older["cleanupFailures"] == [] and
+         older["candidateAdmissionComplete"] is True and older["clientAcceptance"] is False and
+         older["inactiveStageRetained"] is True and older["activeGenerationChanged"] is False and
+         set(older["controllerSessions"]) == {"admin", "P", "Q"} and
+         all(row["sameTokenRejected"] is True for row in older["controllerSessions"].values()) and
+         all(type(older[key]) is int and older[key] == 0 for key in ("playbackRequests", "applyRequests", "rollbackRequests")),
+         "programs_reused_admission04_not_original_success")
+    expected_reuse = {"report": TV_REUSED, "runtimeEpoch": older["runtimeEpoch"],
+                      "seedRuntimeBinding": older["seedRuntimeBinding"], "currentSource": older["currentSource"],
+                      "contracts": TV_REUSED_CONTRACTS}
+    need(canonical(reused["reusedAdmission04"]) == canonical(expected_reuse) and
+         older["runtimeEpoch"] == previous["previousEpoch"], "programs_reused_admission_chain_changed")
+    need(epoch["currentSource"]["binary"]["sha256"] != previous["currentSource"]["binary"]["sha256"] and
+         epoch["currentSource"]["sourceManifest"]["sha256"] != previous["currentSource"]["sourceManifest"]["sha256"],
+         "programs_successor_cannot_relabel_old_source")
+    need(closeout["kind"] == "audited-candidate-programs-transition-closeout" and type(closeout["version"]) is int and
+         closeout["version"] == 1 and closeout["status"] == "successor_running_awaiting_affected_live_admission" and
+         closeout["runtimeEpoch"] == value["runtimeEpoch"] and closeout["seedRuntimeBinding"] == value["seedRuntimeBinding"] and
+         closeout["candidateAdmissionComplete"] is False and closeout["clientAcceptance"] is False and
+         all(closeout[key] is True for key in ("currentProcessPinned", "oldProcessAbsent", "stagedBinaryAbsent", "installedBinaryVerified")),
+         "programs_transition_independent_closeout")
+    for key in ("currentSource", "previousEpoch", "previousCurrentRuntime", "before", "after", "sourceBefore", "sourceAfter",
+                "preservation", "runtimeHelper", "candidateProcess", "postgresProcess", "calls"):
+        need(canonical(closeout[key]) == canonical(epoch[key]), "programs_transition_closeout_cross_binding")
+    listener = epoch["candidate"]["listener"]
+    return {**epoch["candidateProcess"], "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}
+
+
+def validate_programs_empty(response):
+    value = response["body"]
+    need(isinstance(value, dict) and set(value) == {"Items", "TotalRecordCount"} and
+         isinstance(value["Items"], list) and value["Items"] == [] and
+         type(value["TotalRecordCount"]) is int and value["TotalRecordCount"] == 0 and
+         response_headers(response).get("content-type") == "application/json; charset=utf-8",
+         "programs_empty_query_contract")
+
+
 def same_snapshot(before, after, code):
     need(canonical(before["tables"]) == canonical(after["tables"]) and
          canonical(before["sequences"]) == canonical(after["sequences"]), code)
@@ -643,22 +723,27 @@ def validate_tv_controls(expected, observed):
          "tv_control_configuration_or_hosting_changed")
 
 
-def capture_tv_controls(runtime, transition_module, io, baseline, remaining):
+def capture_tv_controls(runtime, transition_module, io, baseline, remaining, *, programs=False):
     """Borrow only the frozen file/tree/unit readers; never construct or run a transition."""
-    probe = SimpleNamespace(r=runtime, s=io.modules["seed"], g=io.modules["gateway"], pmod=io.modules["provision"],
-                            p=io.provision, reviewed_state=baseline, need=need, remaining=remaining)
-    probe.file = lambda path, prefix=None: transition_module.Transition.file(probe, path, prefix)
+    readers = transition_module.ProgramsSuccessor if programs else transition_module.Transition
+    # ProgramsSuccessor.file uses super(); allocate its type without calling the transition constructor.
+    probe = object.__new__(readers) if programs else SimpleNamespace()
+    probe.__dict__.update(r=runtime, s=io.modules["seed"], g=io.modules["gateway"], pmod=io.modules["provision"],
+                          p=io.provision, reviewed_state=baseline, need=need, remaining=remaining)
+    probe.file = lambda path, prefix=None: readers.file(probe, path, prefix)
     need(set(baseline["trees"]) == set(runtime.TREE_ROOTS), "tv_preserved_tree_inventory")
     hosting_before = transition_module.BinarySuccessor.hosting(probe)
     trees, documents, fixed = {}, {}, {}
     for root in runtime.TREE_ROOTS:
         remaining()
-        trees[root], found = transition_module.Transition.tree(probe, root)
+        trees[root], found = readers.tree(probe, root)
         documents.update(found)
     for name, facts in baseline["fixedFiles"].items():
         remaining()
         path = Path(name)
-        if facts.get("absent") is True:
+        if programs and str(path) in runtime.PROGRAMS_STAT_ONLY:
+            fixed[name] = probe.file(path)[0]
+        elif facts.get("absent") is True:
             need(not os.path.lexists(path), "tv_absent_fixed_file_created")
             fixed[name] = {"absent": True}
         elif facts.get("directory") is True:
@@ -1625,37 +1710,105 @@ class TVParentAdmission(Admission):
                 "controlFilesExact": True, "configurationExact": True, "hostingExact": True}
 
 
-def run_tv_parent_admission(value, input_pin, run_started):
+class ProgramsAdmission(TVParentAdmission):
+    """Admit the fixed empty-program query without playback or administrator mutations."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fresh_checks = dict.fromkeys(PROGRAMS_CHECKS, False)
+        self.stage_caps = {"programs": 10}
+
+    def run(self):
+        self.preflight()
+        self.phase = "programs"
+        public = self.req("public-info", "GET", "/emby/System/Info/Public")["body"]
+        need(public["Id"] == self.server_id and public["StartupWizardCompleted"] is True and
+             public["LocalAddress"] == self.io.candidate["publicUrl"], "programs_public_runtime_identity")
+        for role in ("P", "Q"):
+            self.login(role)
+        p, q = (self.credentials[role]["actorId"] for role in ("P", "Q"))
+        for role, actor in (("P", p), ("Q", q)):
+            items = self.helper.items(self.req("views-" + role.lower(), "GET", "/emby/Users/" + actor + "/Views", role=role)["body"])
+            expected = {row["Id"] for row in self.seed["libraries"].values()} if role == "P" else set()
+            need(len(items) == len(expected) and {row["Id"] for row in items} == expected and
+                 all(row["Type"] == "CollectionFolder" and row["ServerId"] == self.server_id for row in items),
+                 "programs_visible_libraries_changed")
+        series = self.seed["catalog"]["series"]["id"]
+        def route(actor, series_id=None):
+            query = {"UserId": actor, **PROGRAMS_QUERY}
+            if series_id is not None:
+                query["LibrarySeriesId"] = series_id
+            return "/emby/LiveTv/Programs?" + urlencode(query)
+        for label, selected_series, check in (("programs-empty", None, "programsEmptyQuery"),
+                                               ("programs-series", series, "programsSeriesQuery")):
+            response = self.req(label, "GET", route(p, selected_series), role="P")
+            validate_programs_empty(response)
+            self.evidence[label] = response["receipt"]
+            self.fresh_checks[check] = True
+        for label, actor, selected_series, role, status, error_code in (
+                ("programs-hidden-series", q, series, "Q", 404, "not_found"),
+                ("programs-cross-user", p, series, "Q", 403, "access_denied"),
+                ("programs-non-series", p, self.detail_ids[1], "P", 400, "invalid_input")):
+            response = self.req(label, "GET", route(actor, selected_series), role=role, expected=(status,))
+            need(response["body"]["ResponseStatus"]["ErrorCode"] == error_code, "programs_authorization_or_type_error")
+            self.evidence[label] = response["receipt"]
+        self.fresh_checks["ordinaryAuthorization"] = True
+        while len(self.samples) < 3:
+            self.wait(min(1, max(0.01, self.started + len(self.samples) * 30 - time.monotonic())))
+        need(self.samples[-1]["elapsedMilliseconds"] - self.samples[0]["elapsedMilliseconds"] >= 60000 and
+             self.io.requests == {"normal": 16, "cleanup": 0}, "programs_health_window_or_request_count")
+        self.fresh_checks["healthWindow60Seconds"] = True
+
+
+def run_tv_parent_admission(value, input_pin, run_started, *, programs=False):
     runtime_pin = value["runtimeHelper"]
     runtime = import_bytes("frozen_tv_admission_runtime", runtime_pin["path"], initial_read(runtime_pin["path"], runtime_pin["sha256"]))
     read = lambda pin: parse(initial_read(pin["path"], pin["sha256"]))
     epoch = runtime.validate_epoch(read(value["runtimeEpoch"]))
     lineage = runtime.resolve_epoch_lineage(epoch, read)
-    transition = runtime.validate_binary_successor_input(lineage["productInput"])
+    transition = (runtime.validate_programs_successor_input(lineage["productInput"]) if programs else
+                  runtime.validate_binary_successor_input(lineage["productInput"]))
     modules = {key: runtime.load_helper(key, pin) for key, pin in epoch["helpers"].items()}
     helper = modules["seed"]
     helper.read_checked(__file__, value["admissionHelper"]["sha256"])
     seed, binding = read(epoch["seedProvenance"]), read(value["seedRuntimeBinding"])
     runtime.validate_seed_runtime_binding(binding, value["runtimeEpoch"], epoch, seed)
-    full = read(epoch["currentSource"]["fullReport"])
-    runtime.validate_successor_full_report(full, full["worker"], transition)
-    reused, previous, closeout = read(value["reusedAdmission04"]), read(epoch["previousEpoch"]), read(value["transitionCloseout"])
-    expected = validate_tv_authority(value, epoch, binding, seed, transition, previous, reused, closeout)
+    reuse_key = "reusedAdmission05" if programs else "reusedAdmission04"
+    reused, previous, closeout = read(value[reuse_key]), read(epoch["previousEpoch"]), read(value["transitionCloseout"])
+    if programs:
+        # The v4 lineage reader validates the actual artifact and complete transition preservation.
+        older = read(TV_REUSED)
+        expected = validate_programs_authority(value, epoch, binding, seed, transition, previous, reused, older, closeout)
+    else:
+        full = read(epoch["currentSource"]["fullReport"])
+        runtime.validate_successor_full_report(full, full["worker"], transition)
+        expected = validate_tv_authority(value, epoch, binding, seed, transition, previous, reused, closeout)
     catalog = read(value["compiledCatalog"])
     validate_catalog(catalog, read(epoch["currentSource"]["sourceManifest"]), value["compiledCatalog"])
     io = runtime.EpochIO(value, input_pin, value["admissionHelper"], value["runtimeEpoch"], value["seedRuntimeBinding"], modules)
     io.started = run_started
-    job = TVParentAdmission(io, helper, None, seed, catalog, epoch=epoch, binding=binding, expected_process=expected, baseline=read(epoch["after"]))
+    baseline = read(epoch["after"])
+    if programs:
+        source_after = read(epoch["sourceAfter"])
+        need(canonical(source_after) == canonical(baseline["source"]), "programs_transition_source_after_mismatch")
+        baseline = {**baseline, "source": source_after}
+    job_type = ProgramsAdmission if programs else TVParentAdmission
+    job = job_type(io, helper, None, seed, catalog, epoch=epoch, binding=binding, expected_process=expected, baseline=baseline)
     transition_pin = epoch["transitionHelper"]
     transition_reader = import_bytes("frozen_tv_control_readers", transition_pin["path"], initial_read(transition_pin["path"], transition_pin["sha256"]))
+    if programs:
+        need(isinstance(getattr(transition_reader, "ProgramsSuccessor", None), type) and
+             callable(getattr(getattr(transition_reader, "ProgramsSuccessor", None), "file", None)) and
+             callable(getattr(getattr(transition_reader, "ProgramsSuccessor", None), "tree", None)),
+             "programs_metadata_control_readers_required")
     job.control_reader = lambda: capture_tv_controls(runtime, transition_reader, io, job.baseline,
-                                                    lambda: job.remaining(job.cleanup_end is not None))
+                                                    lambda: job.remaining(job.cleanup_end is not None), programs=programs)
     def expired(_number, _frame):
         raise AdmissionError("absolute_tv_admission_deadline")
-    for number in (signal.SIGALRM, signal.SIGTERM, signal.SIGINT):
+    for number in ((signal.SIGALRM, signal.SIGTERM, signal.SIGINT, signal.SIGHUP) if programs else
+                   (signal.SIGALRM, signal.SIGTERM, signal.SIGINT)):
         signal.signal(number, expired)
     signal.setitimer(signal.ITIMER_REAL, max(0.001, 180 - (time.monotonic() - run_started)))
-    failure, proof = None, None
+    failure, proof, cleanup_interrupted = None, None, False
     try:
         io.open()
         job.inspector = io.reader
@@ -1664,28 +1817,44 @@ def run_tv_parent_admission(value, input_pin, run_started):
         failure = safe_failure(error, job.phase)
     finally:
         if io.created:
-            job.close_sessions()
+            if programs:
+                try:
+                    job.close_sessions()
+                except Exception as error:
+                    cleanup_interrupted = True
+                    cleanup_failure = safe_failure(error, "session_cleanup")
+                    job.failures.append(cleanup_failure)
+                    if failure is None:
+                        failure = cleanup_failure
+            else:
+                job.close_sessions()
     if failure is None and not job.failures:
         try:
             proof = job.reconcile()
         except Exception as error:
             failure = safe_failure(error, "reconciliation")
-    elif io.created and job.inspector is not None:
+    elif io.created and job.inspector is not None and not cleanup_interrupted:
         try:
             job.snapshot("source-after-failure")
             job.snapshot("inactive-after-failure", target=True)
         except Exception as error:
             job.failures.append(safe_failure(error, "failure_state_capture"))
     successful = failure is None and not job.failures and proof is not None and all(job.fresh_checks.values())
-    result = {"kind": "audited-candidate-live-admission", "version": 3, "admissionKind": "affected_tv_parent",
+    if programs and successful:
+        successful = io.requests == {"normal": 16, "cleanup": 4}
+        if not successful:
+            failure = {"type": "AdmissionError", "stage": "reconciliation", "code": "programs_final_request_count"}
+    result = {"kind": "audited-candidate-live-admission", "version": 5 if programs else 3,
+              "admissionKind": "affected_programs" if programs else "affected_tv_parent",
               "status": "admitted_for_core_client" if successful else "admission_failed_resources_retained",
               "input": input_pin, "helper": value["admissionHelper"], "runtimeHelper": runtime_pin,
               "runtimeEpoch": value["runtimeEpoch"], "seedRuntimeBinding": value["seedRuntimeBinding"],
               "currentSource": epoch["currentSource"], "originalProvision": epoch["originalProvision"],
               "originalSeed": binding["originalSeed"], "seedExecutor": binding["seedExecutor"],
               "transitionCloseout": value["transitionCloseout"], "freshChecks": job.fresh_checks,
-              "reusedAdmission04": {"report": value["reusedAdmission04"], "runtimeEpoch": reused["runtimeEpoch"],
-                  "seedRuntimeBinding": reused["seedRuntimeBinding"], "currentSource": reused["currentSource"], "contracts": TV_REUSED_CONTRACTS},
+              reuse_key: {"report": value[reuse_key], "runtimeEpoch": reused["runtimeEpoch"],
+                  "seedRuntimeBinding": reused["seedRuntimeBinding"], "currentSource": reused["currentSource"],
+                  "contracts": PROGRAMS_REUSED_CONTRACTS if programs else TV_REUSED_CONTRACTS},
               "failure": failure, "cleanupFailures": job.failures, "budgets": TV_LIMITS, "requests": io.requests,
               "phaseRequests": dict(job.phase_counts), "elapsedMilliseconds": round((time.monotonic() - run_started) * 1000),
               "stabilitySamples": job.samples, "evidence": job.evidence, "preservation": proof, "requestResponsibilities": io.request_states,
@@ -1694,6 +1863,12 @@ def run_tv_parent_admission(value, input_pin, run_started):
               "candidateAdmissionComplete": successful, "clientAcceptance": False, "playbackRequests": 0,
               "applyRequests": 0, "rollbackRequests": 0, "inactiveStageRetained": successful,
               "activeGenerationChanged": False if successful else None}
+    if programs:
+        result["reusedAdmission05"].update(freshChecks=reused["freshChecks"], reusedAdmission04=reused["reusedAdmission04"])
+        for field, label in (("sourceBefore", "source-before"), ("sourceAfter", "source-after"),
+                             ("inactiveBefore", "inactive-before"), ("inactiveAfter", "inactive-after"),
+                             ("controlsBefore", "controls-before"), ("controlsAfter", "controls-after")):
+            result[field] = job.evidence.get(label)
     summary = {"status": result["status"], "scope": str(io.output), "report": None, "candidateAdmissionComplete": successful,
                "clientAcceptance": False, "requests": io.requests, "elapsedMilliseconds": result["elapsedMilliseconds"],
                "failure": failure, "cleanupFailures": job.failures, "reportUnavailable": None}
@@ -1723,6 +1898,8 @@ def main():
     value = validate_input(parse(initial_read(args.input, args.input_sha256)))
     input_pin = {"path": str(Path(args.input)), "sha256": args.input_sha256}
     need(value["admissionHelper"]["path"] == str(Path(__file__).absolute()), "admission_source_path_differs")
+    if value["version"] == 5:
+        return run_tv_parent_admission(value, input_pin, run_started, programs=True)
     if value["version"] == 3:
         return run_tv_parent_admission(value, input_pin, run_started)
     epoch, binding, expected_process = None, None, None

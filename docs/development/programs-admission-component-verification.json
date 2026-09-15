@@ -1,0 +1,127 @@
+{
+  "kind": "programs-admission-component-verification",
+  "version": 1,
+  "status": "passed_component_checks",
+  "recordedOn": "2026-09-15",
+  "admissionVersion": 5,
+  "admissionKind": "affected_programs",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915",
+  "result": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/private/result.json",
+    "bytes": 7102,
+    "sha256": "303df831e3e34c7460a077b74ea75533efbd2728f2d1eef5654ce53f40c96c56"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/private/independent-review.json",
+    "bytes": 1522,
+    "sha256": "5a21e7766c7d0eee172d6aa5c1403a9f0d465bce0e03b1dd6805133acb6edc91"
+  },
+  "sourceManifest": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/private/source-manifest.json",
+    "bytes": 1141,
+    "sha256": "49aa41516f6cdd22fc43bb5b1432b19843a70ea722457f98cdbc8518440b026f"
+  },
+  "sources": [
+    {
+      "repositoryPath": "scripts/test-env/admit-audited-candidate.py",
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/source/admit-audited-candidate.py",
+      "bytes": 139124,
+      "sha256": "a7bd9b51791810251c6e257a141d35bc6cc85fd233ce5dc68c3ad168edd80798"
+    },
+    {
+      "repositoryPath": "scripts/test-env/test-admit-audited-candidate.py",
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/source/test-admit-audited-candidate.py",
+      "bytes": 45394,
+      "sha256": "5d16c6f24d5acc7ddb6b17fe4658cce93954cb57a8f5012586e72a12c5345a3b"
+    },
+    {
+      "repositoryPath": "scripts/test-env/test-admit-tv-parent-successor.py",
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/source/test-admit-tv-parent-successor.py",
+      "bytes": 21955,
+      "sha256": "ed6804f25d39bb020a55d44627ae9e455e528bd480c868bc4f706e43badda0e0"
+    },
+    {
+      "repositoryPath": "scripts/test-env/test-admit-programs-successor.py",
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-admission-guards-20260915/source/test-admit-programs-successor.py",
+      "bytes": 26698,
+      "sha256": "8b7df6097750224459fbb04350b0e6ac4b6aa73c8f2a70c8ae57df2ffca61678"
+    }
+  ],
+  "groups": [
+    {
+      "label": "legacy",
+      "testFile": "test-admit-audited-candidate.py",
+      "arguments": ["-v"],
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Existing admission component guards."
+    },
+    {
+      "label": "tv-saved",
+      "testFile": "test-admit-tv-parent-successor.py",
+      "arguments": ["--saved-contracts", "-v"],
+      "passed": 19,
+      "failed": 0,
+      "skipped": 0,
+      "savedCase": "test_saved_successor_contract_and_entire_preflight_before_health",
+      "scope": "Guards and the actual retained TV contract/preflight readback. SQL, process and health operations were substituted; no runtime helper was imported and no live input was replayed."
+    },
+    {
+      "label": "programs",
+      "testFile": "test-admit-programs-successor.py",
+      "arguments": ["-v"],
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Pure in-memory Programs admission checks using existing fixture factories and finite IO substitutes; no actual successor artifact, epoch or admission was evaluated."
+    }
+  ],
+  "totals": {
+    "groupsExecuted": 3,
+    "passed": 69,
+    "failed": 0,
+    "skipped": 0
+  },
+  "executionBoundary": {
+    "host": "ssh test-env",
+    "networkIsolation": "Each group ran under /usr/bin/unshare --net.",
+    "interpreter": "/usr/bin/python3 -I -B",
+    "maximumSecondsPerGroup": 120,
+    "groupOrder": ["legacy", "tv-saved", "programs"],
+    "executionsPerGroup": 1,
+    "stopOnFirstFailure": true,
+    "automaticReruns": 0,
+    "exclusivePrivateStdoutStderrAndResult": true,
+    "businessHttpCalls": 0,
+    "sqlCalls": 0,
+    "serviceActions": 0,
+    "browserRuns": 0,
+    "builds": 0,
+    "originalLiveInputsReplayed": false
+  },
+  "closure": {
+    "allGroupExitCodesZero": true,
+    "allGroupProcessesReaped": true,
+    "allGroupPidsAbsent": true,
+    "allOwnedProcessGroupsEmpty": true,
+    "timeouts": 0,
+    "sourceBeforeAfterEqual": true
+  },
+  "independentReadback": {
+    "all69RawTestPassLinesChecked": true,
+    "completeStderrChecked": true,
+    "allFourSourcePinsChecked": true,
+    "actualSavedPreflightCaseChecked": true,
+    "closureFlagsChecked": true
+  },
+  "evidenceLimits": [
+    "These are admission component results, not product test counts.",
+    "The result does not establish version-4 Programs runtime or transition acceptance.",
+    "The result does not establish version-6 client, controller or closer acceptance.",
+    "No actual affected admission, successor package, original-client acceptance, candidate transition or main promotion is established.",
+    "Admission05 and admission04 retain their original artifact and execution scopes; saved-record checks do not relabel them as successor executions.",
+    "Keep the tested source frozen. Repeat relevant checks only after an actual component-source change or a concrete cross-component issue.",
+    "Writing this repository record did not execute another check or alter the tested admission and test files."
+  ]
+}
