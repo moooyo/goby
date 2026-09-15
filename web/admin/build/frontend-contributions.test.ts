@@ -38,6 +38,7 @@ type Report = {
   buildSuccessClaimed: boolean; requiresSuccessfulBuildReceipt: boolean;
   tools: Record<string, { name: string; version: string; manifest: Pin }>;
   assets: { name: string; bytes: number; sha256: string }[];
+  javascriptWithoutChunkModules: string[];
   observedInputs: Pin[];
   chunks: { name: string; facadeModuleId: string | null; imports: string[]; dynamicImports: string[];
     moduleIds: string[]; modules: ModuleFact[] }[];
@@ -181,7 +182,24 @@ test('records physical, virtual and unknown contributions separately from final 
   assert.equal(report.observedInputs.some((pin) => pin.path === f.rootRolldown), false);
   assert.equal(report.observedInputs.some((pin) => pin.path === f.source), true);
   assert.equal(report.assets.some((asset) => asset.name.endsWith('frontend-contributions.json')), false);
+  assert.deepEqual(report.javascriptWithoutChunkModules, []);
   assert.throws(() => f.publish(), /exactly one output directory is supported/);
+});
+
+test('lists public and emitted JavaScript assets without inventing chunk modules', (t) => {
+  const f = fixture(t);
+  const publicSource = 'globalThis.publicFixture = true;\n';
+  const emittedSource = 'export const emittedFixture = true;\n';
+  write(join(f.dist, 'public', 'vendor.CJS'), publicSource);
+  f.bundle['assets/generated.mjs'] = { type: 'asset', source: emittedSource };
+  write(join(f.dist, 'assets', 'generated.mjs'), emittedSource);
+  f.observe();
+  f.publish();
+  const report = f.readReport();
+  assert.deepEqual(report.javascriptWithoutChunkModules, ['assets/generated.mjs', 'public/vendor.CJS']);
+  assert.deepEqual(report.chunks.map((chunk) => chunk.name), ['assets/app.js']);
+  assert.equal(report.assets.find((asset) => asset.name === 'public/vendor.CJS')?.sha256, hash(publicSource));
+  assert.equal(report.assets.find((asset) => asset.name === 'assets/generated.mjs')?.sha256, hash(emittedSource));
 });
 
 test('rejects changed or missing written assets without publishing a report', async (t) => {
