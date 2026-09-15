@@ -4,10 +4,11 @@ Reviewed on 2026-09-15 after candidate recovery and the M5 media-refresh
 increment passed focused/browser acceptance, final ordinary regression and
 independent result/resource closure reviews.
 Status: **the fixed M5 refresh increment is accepted and committed; the internal
-amd64 systemd package build is verified and closed; its first installation
-prepared successfully but failed at controller entry before Goby started.
-Owned resources are now preserved and closed; installation attempts are paused
-pending execution review. The scoped source checkpoint is committed as `beaea34`; core-video
+amd64 systemd package build is verified and closed; both installation attempts
+failed and have independently verified evidence preservation and resource closure.
+The second attempt exposed a startup observation made before exec completed.
+Further attempts are paused pending verification of the startup/cleanup correction.
+The scoped source checkpoint is committed as `beaea34`; core-video
 and complete release gates remain open**. Earlier
 regression and candidate admissions retain their original source and execution
 scopes.
@@ -77,8 +78,19 @@ The immediate queue is:
    copies. The first preservation checker also
    rejected the actual stopped-unit receipt because process-exit codes were
    unavailable. It ran ten metadata commands and moved or removed no paths.
-   New installation attempts remain paused. Preserve both failures and reassess
-   the execution approach before any further installation business. The import-only correction passed remote
+   The first attempt's pause led to the reviewed
+   [fresh r02 execution decision](../development/systemd-installation-second-attempt-plan.md).
+   Its eight frozen sources, read-only preflight and entry-failure closure checks
+   admitted one bounded sequence. The [actual r02 result](../development/systemd-installation-second-attempt.json)
+   is failed and consumed: the first process observation captured systemd-executor
+   before it became the final nonroot Goby process. The runtime and normal sealer
+   then refused cleanup because the saved transient configuration had changed.
+   Exact PID/start/invocation and owned-unit continuity supported a separate
+   closure; all three services stopped. Five state/config/cache/log/media trees
+   and five installation copies were retained, PG/evidence archives passed
+   readback, and the PG tmpfs and standard installation closed. Independent
+   verification passed with protected state unchanged. Preserve every original
+   failure. The import-only correction passed remote
    symbol and invalid-input entry checks; no business input was replayed.
    Actual installation acceptance must still use the shipped nonroot systemd
    template for actual installation, bootstrap/login, small real-media catalog
@@ -93,7 +105,13 @@ The immediate queue is:
    failure; a subsequent attempt needs an explicit reviewed decision based on
    the demonstrated correction. Do not keep a live fixture waiting for more
    operator development.
-   Close the new installation and its resources before accepting the increment.
+   Next review and remotely verify the unadmitted startup-transition candidates.
+   Wait for the final executable/credentials/hardening before freezing accepted
+   process configuration; retain failure-stop authority from the owned unit and
+   stable start lifetime, including bounded automatic-restart closure. Keep the
+   shipped Type=simple and all final nonroot checks. Rebind a new scope only after
+   those changed behaviors pass their own checks. No installation attempt is now
+   admitted. Close every new installation and its resources before acceptance.
 3. The installation result and its limitations are committed and pushed in
    partial M6 checkpoint `beaea34`. The separately retained
    [source bridge](../development/systemd-package-source-checkpoint.json)
@@ -109,9 +127,11 @@ The immediate queue is:
    proved retained exit evidence while a private D-Bus reference is held. Its
    [prospective runtime/sealer integration](../development/systemd-stop-integration-verification.json)
    passed remote syntax/global checks, two invalid-input entries and 25 synthetic
-   contract/fault checks. Review a fresh installation scope and the complete
-   rebound helper/input/handoff chain before an execution decision. These copies
-   still carry the old E12 scope and have run no valid installation input.
+   contract/fault checks. The r02 copies now have a verified scope bridge and a
+   preparation-authority failure-close entry with six synthetic routing cases
+   and fifteen authority checks. Those checks did not cover the observed
+   Type=simple executor transition. Both E12 and r02 are consumed and closed;
+   their passing prechecks do not verify the new startup/cleanup behavior.
    Reuse the completed package build and M5 regression while their bound inputs
    remain unchanged; expand verification only for a concrete change or failure.
 4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded

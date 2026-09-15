@@ -57,8 +57,19 @@ and five installation-file copies remain private; the original installation
 paths, units, namespace and PG tmpfs are closed. The import-only correction passed remote
 symbol and invalid-input entry checks. See the
 [first installation attempt](systemd-installation-first-attempt.json).
-Installation acceptance remains open and new attempts are paused pending a
-review of the execution approach. The shipped unit is unchanged.
+Installation acceptance remains open. The separately reviewed
+[r02 attempt](systemd-installation-second-attempt.json) also failed: Type=simple
+returned before the final exec/configuration was complete, and the controller
+froze the transient root systemd-executor observation. Later evidence bound the
+same PID/start/invocation to the exact UID 995 / GID 986 Goby process. Failure
+cleanup originally rejected that transition; a separate exact-owned closure
+stopped all three services and retained the actual APP cleanup exit result.
+There were zero HTTP requests and no second application start. Failure
+preservation retained five directory trees and five installation copies,
+archived PG/evidence and closed the installation, namespace and PG tmpfs.
+Independent readback passed with protected state and shared accounts unchanged.
+New installation attempts are paused while the startup/cleanup correction is
+reviewed and remotely verified. The shipped unit and product package are unchanged.
 The [source checkpoint](systemd-package-source-checkpoint.json) now matches
 864 tracked backend, embed-wrapper, module and package inputs to the verified
 E11 source. A supplement checks `web/admin/embedded.go` from the same Git tree;
@@ -75,9 +86,10 @@ closed with protected state unchanged. The
 passed remote syntax/global checks, two invalid-input entry checks and 25
 synthetic contract/fault checks. These cover retained-record types and causality,
 bounded cleanup after file capture failure, no repeated stop, and preservation
-of failure classification. No new installation or actual Goby stop was run.
-A fresh scope and its complete handoffs still need a reviewed execution decision;
-Goby installation acceptance is paused.
+of failure classification. That integration checkpoint ran no installation or
+actual Goby stop. The later r02 failure above retains its separate real-process
+and closure evidence; installation acceptance still requires the full successful
+nonroot journey and independent sealing.
 Historical candidate admissions retain their original scope.
 
 The saved recovery scope is
@@ -109,7 +121,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package still needs actual installation acceptance |
-| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards, independent result review and resource closure passed after M5 checkpoint `5faf854`; package/legacy amd64 binaries are byte-identical and arm64 is cross-built. The first installation failed before Goby started, and both its original failure and preservation-checker rejection are retained with completed resource closure | Keep installation attempts paused while reviewing the execution approach. Normal nonroot application stop/start and data preservation acceptance remains open, along with native arm64, upgrade and whole-M6 acceptance |
+| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards, independent result review and resource closure passed after M5 checkpoint `5faf854`; package/legacy amd64 binaries are byte-identical and arm64 is cross-built. Both installation attempts failed and have independent preservation/resource-closure readback; r02 exposed a transient executor observation before final nonroot exec | Verify the startup/cleanup correction before any new scope. Full nonroot stop/start and catalog/auth preservation acceptance remains open, along with native arm64, upgrade and whole-M6 acceptance |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |

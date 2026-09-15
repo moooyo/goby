@@ -6,8 +6,12 @@ runtime controller failed before Goby started. Owned services stopped, and the
 failed installation now has independently reviewed evidence preservation,
 archive readback and resource closure. The first preservation-checker rejection
 is also retained. Installation acceptance remains
-open. See the [first attempt](systemd-installation-first-attempt.json). Reviewed
-on 2026-09-15. The M5 increment completed focused/browser
+open. The [second attempt](systemd-installation-second-attempt.json) also failed
+when the controller sampled the transient executor before final exec. Its
+services, installation and PG tmpfs are closed, with independent failure-evidence
+readback passed. Further attempts await the startup/cleanup correction. See also
+the [first attempt](systemd-installation-first-attempt.json). Reviewed on
+2026-09-15. The M5 increment completed focused/browser
 acceptance, its 25-package ordinary regression (2,295 passes, zero failures and
 one declared opt-in skip), independent reviews and resource closure. Its source
 checkpoint is committed and pushed as `5faf854`. The subsequent build-script,
@@ -106,7 +110,9 @@ Any later production change requires reassessing the affected verification.
 
 This first scope is consumed and closed. The following profile records its
 intended acceptance and retained boundaries, not another execution instruction.
-The active queue keeps new installation attempts paused.
+The separately reviewed [r02 attempt](systemd-installation-second-attempt-plan.md)
+has also failed and closed. The active queue pauses further installation until
+the observed startup-transition correction is verified.
 
 The selected execution scope is
 `/opt/goby-test/m6-systemd-install-20260915`, with private evidence under its
@@ -326,8 +332,17 @@ These copies still contain the old E12 scope constants and original helper
 basenames. Before dispatch, review a fresh scope, rebind the complete helper
 and input chain, and recheck capacity, protected state, path absence and all
 handoff budgets. Synthetic checks do not establish a normal Goby or PG stop.
-Installation remains paused until that explicit execution decision; consumed
-E12 inputs and evidence must remain unchanged.
+The [r02 execution decision](systemd-installation-second-execution-decision.json)
+binds that consumed scope, its preflight and entry-failure close checks. Its
+[actual result](systemd-installation-second-attempt.json) failed before HTTP:
+the controller treated an intermediate systemd-executor snapshot as final
+process configuration, then rejected the exec transition during cleanup.
+The same owned PID/start/invocation later matched the exact nonroot Goby image;
+separate failure closure and preservation passed independent readback. All
+resources are closed. This result requires a bounded startup wait and lifetime
+based cleanup authority while preserving Type=simple and all final profile
+checks. New candidate code is not covered by the old guard receipts.
+Consumed E12 and r02 inputs and evidence must remain unchanged.
 
 Passing would prove one actual Linux amd64 embedded package installed and run
 through the shipped nonroot systemd template, with normal application

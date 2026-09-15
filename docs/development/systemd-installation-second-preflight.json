@@ -1,0 +1,155 @@
+{
+  "allOwnedCommandsClosed": true,
+  "businessExecutionAdmitted": false,
+  "capacity": {
+    "memAvailableBytes": 6709420032,
+    "requiredAvailableMemoryBytes": 6442450944,
+    "requiredRootBytes": 1610612736,
+    "rootFreeBytes": 6283747328,
+    "rootFreeInodes": 3554201
+  },
+  "compiledHelpers": 7,
+  "httpRequests": 0,
+  "installationAcceptance": false,
+  "invalidInputEntries": [
+    {
+      "exitCode": 2,
+      "reply": {
+        "applicationStarts": 0,
+        "errorCode": "Rejected",
+        "status": "rejected_before_preparation"
+      },
+      "role": "prepare"
+    },
+    {
+      "exitCode": 2,
+      "reply": {
+        "errorCode": "Rejected",
+        "status": "rejected_before_runtime"
+      },
+      "role": "runtime"
+    },
+    {
+      "exitCode": 1,
+      "reply": {
+        "errorCode": "fixed_remote_seal",
+        "masterFilesRead": false,
+        "status": "seal_admission_failed",
+        "wholeM6Accepted": false
+      },
+      "role": "seal"
+    }
+  ],
+  "kind": "goby-systemd-second-installation-preflight",
+  "lockReleased": true,
+  "metadataCommandCount": 16,
+  "noMatchingAliasesOrEnablement": true,
+  "noMatchingLoadedUnits": true,
+  "noMatchingUnitFiles": true,
+  "oldToolReceiptScope": "/opt/goby-test/m6-systemd-install-20260915",
+  "operator": {
+    "bytes": 10986,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/preflight.py",
+    "sha256": "f31cb624ce6393b2c82b37d1a673ff2d67575f14685d2734830f7168217226b3"
+  },
+  "preflight": {
+    "bytes": 303198,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/preflight.json",
+    "sha256": "c4c6eeb39a69a0b58d2fba51614a4d51cb5249bef69761d8ff29ecc460a3862e"
+  },
+  "prepareInput": {
+    "bytes": 2844,
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/prepare-input.json",
+    "sha256": "53a4c92a459ea9d47695813a95b9f0130c4f3c35b6f2278470bc4abe532f10ea"
+  },
+  "protectedStateUnchanged": true,
+  "referenceDependenciesImportedWithoutBus": true,
+  "remainingWork": "Freeze and review the preparation-authority entry-failure close helper and complete its remote guard checks before the execution decision. Recheck all live admission facts immediately before mutations.",
+  "scope": "/opt/goby-test/m6-systemd-install-20260915-r02",
+  "serviceActions": 0,
+  "sharedAccountsPreserved": true,
+  "sourceBridges": {
+    "media": {
+      "baselineSha256": "9454154dee20e8ecc5afc68245d72a7f72d704242b6bc52f635a0e25ef5fb3c6",
+      "definitions": 10,
+      "functionsAndClassesExact": true,
+      "prepareToolEvidenceRootOnly": false
+    },
+    "prepare": {
+      "baselineSha256": "c411e3b6d1d29e688cce1d7fd56c7b6ab063a7dc1ff21cd21558fd66c903ed71",
+      "definitions": 17,
+      "functionsAndClassesExact": false,
+      "prepareToolEvidenceRootOnly": true
+    },
+    "runtime": {
+      "baselineSha256": "f0b390aaa1c98be43949db5e5b94cf21aa41005a12b7966f89a60f6568dcc9c7",
+      "definitions": 16,
+      "functionsAndClassesExact": true,
+      "prepareToolEvidenceRootOnly": false
+    },
+    "seal": {
+      "baselineSha256": "f2faa1aadbd6e32f8ac4d0b9e53ec878186d3e3f4ab89c79490d2335d0c39832",
+      "definitions": 16,
+      "functionsAndClassesExact": true,
+      "prepareToolEvidenceRootOnly": false
+    },
+    "support": {
+      "baselineSha256": "0aae274cd65e5e8228f929171f0f01d8a76c603bcbe22af96ef057845888016d",
+      "definitions": 23,
+      "functionsAndClassesExact": true,
+      "prepareToolEvidenceRootOnly": false
+    },
+    "units": {
+      "baselineSha256": "73451cb08d7149b1d801e1ad7cf82e434eb660657c21bf5323670109cdad5ac4",
+      "definitions": 11,
+      "functionsAndClassesExact": true,
+      "prepareToolEvidenceRootOnly": false
+    }
+  },
+  "sources": {
+    "journey": {
+      "bytes": 39059,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/native-catalog-journey.py",
+      "sha256": "63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4"
+    },
+    "media": {
+      "bytes": 9486,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/m6-systemd-install-media.py",
+      "sha256": "2ac8533973ebea40d5ebbb709b1be5c15df41452e4d61482acb4a6d1d5906c77"
+    },
+    "prepare": {
+      "bytes": 61473,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/m6-systemd-install-prepare.py",
+      "sha256": "fe6e09bdb15f59de09afee6b045aa4bdf10ce54bcb6079aa4707ef3278a72b18"
+    },
+    "runtime": {
+      "bytes": 64920,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/m6-systemd-install-runtime.py",
+      "sha256": "5e082b7b7df3e52f3721f29c61a3b14978488e64ae6262bd05cdd466c64d9486"
+    },
+    "seal": {
+      "bytes": 81018,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/m6-systemd-install-seal.py",
+      "sha256": "bbcdba468a69a2fbc2f6c3345dc2d6cb22b3dc0eabc0fc17cadd75c9e2b0e478"
+    },
+    "support": {
+      "bytes": 35835,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/m6-systemd-install-support.py",
+      "sha256": "e9f50c011e7c8f27299d78f4fd416af6717e541836095f33670ab18e8cb587c9"
+    },
+    "units": {
+      "bytes": 14635,
+      "path": "/opt/goby-test/m6-systemd-install-20260915-r02/private/m6-systemd-install-units.py",
+      "sha256": "108fb28349f2b51b56848b946701a27721282a31a32cfaf98d2a3703fe15f60d"
+    }
+  },
+  "sqlConnections": 0,
+  "standardInstallationAndFixtureAbsent": true,
+  "status": "prepared_readonly_pending_handoff_close_review",
+  "toolIdentityCount": 16,
+  "toolVersionCommandsRepeated": false,
+  "unresolvedGlobals": [],
+  "validActorMains": 0,
+  "version": 1,
+  "wholeM6Accepted": false
+}
