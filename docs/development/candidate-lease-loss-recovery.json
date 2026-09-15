@@ -1,7 +1,7 @@
 {
   "kind": "candidate-lease-loss-recovery-checkpoint",
   "version": 1,
-  "status": "logical_and_bounded_native_preservation_passed_prestart_checks_pending",
+  "status": "existing_applications_recovered_consumer_runtime_v2_ready",
   "recordedOn": "2026-09-15",
   "scope": "/opt/goby-test/candidate-lease-loss-recovery-20260915",
   "evidence": {
@@ -39,6 +39,56 @@
       "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/native-independent-review.json",
       "bytes": 12410,
       "sha256": "3410a95f3131a2eeb3054006e853fe661e4b9aeda1879b5d445aed46b89a67bc"
+    },
+    "auxiliaryExecution": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/auxiliary-execution.json",
+      "bytes": 40631,
+      "sha256": "a2674ac89e13ddfbdfac2b86cc5c355a5a6297912c3ac98ee08d4cec92860ea5"
+    },
+    "auxiliaryIndependentReview": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/auxiliary-independent-review.json",
+      "bytes": 12295,
+      "sha256": "5964e53a913e0139c4a2b8f1e347281500559ded1dca3896afcdc5b7f54bbfc9"
+    },
+    "restartExecution": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-execution.json",
+      "bytes": 114235,
+      "sha256": "545bef39ba1660d118d881e9ca2de43944a98cfdb89a8946fc5fbdaccf1e8a9e"
+    },
+    "restartIndependentReview": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-independent-review.json",
+      "bytes": 10197,
+      "sha256": "97e8125e97e1ba8b5cd72070249279350e0ac08340c8bdac428c9737cee7fc01"
+    },
+    "diagnosticsRestartReview": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/diagnostics-restart-review.json",
+      "bytes": 36807,
+      "sha256": "42b2fb52e0c7417e1f5394f209d373a49278dfea93b48e522f5f15b3ca64a5cf"
+    },
+    "currentRuntimeObservation": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/observation-01/observation.json",
+      "bytes": 12389,
+      "sha256": "ce2c31154af478bfdd07883dc1d2ae9bc6e05d8c1be9e51480703d1b575799ac"
+    },
+    "currentRuntimeMetadataAndClosure": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/observation-01/metadata-and-closure.json",
+      "bytes": 13518,
+      "sha256": "077f749049fd2dd2ec4e23272548d0fba7f2dcf4e6a4b59193b3366a5ee05208"
+    },
+    "currentRuntimeObservationReview": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/observation-review.json",
+      "bytes": 1185,
+      "sha256": "b3e5eb36573586e74ac8bfd8a306f1deade716f2124bf3c37c963395a3a1e1b9"
+    },
+    "currentRuntimeBinding": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/current-runtime-binding.json",
+      "bytes": 7139,
+      "sha256": "aed2914bc75663b51a9f4d923acc137cfe6a0926a901dd7fa0a7e64f42183de4"
+    },
+    "bindingPublicationVerification": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/binding-publication-verification.json",
+      "bytes": 2462,
+      "sha256": "d2c58237afdbdbf944bb299c53378569dc929a7ebbf7d2d879d034ce1eba19d8"
     }
   },
   "logicalPreservation": {
@@ -92,7 +142,7 @@
     "masterKeyContentReadOrHashed": false,
     "historicalIdentityOfEveryFileEstablished": false,
     "physicalIntegrityEstablished": false,
-    "boundary": "This accepted native scope does not include the remaining diagnostics/log/cache prestart checks or application recovery."
+    "boundary": "The native observe does not itself establish diagnostics/log/cache prestart checks or application recovery; their later evidence is recorded separately below."
   },
   "preparationHistory": {
     "initialFailure": "FileNotFoundError during source/input preparation before any SQL; the original record is retained.",
@@ -106,17 +156,101 @@
       "boundary": "Preparation checks are not credited as SQL or preservation acceptance."
     }
   },
-  "remainingRecovery": {
-    "applications": {"A": "failed", "B": "failed"},
-    "preIncidentCurrentRuntimeSha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c",
-    "preIncidentBindingIsLiveAuthority": false,
-    "boundedNativePreservationChecked": true,
-    "diagnosticsPrestartChecked": false,
-    "completeLogPreservationChecked": false,
-    "cachePrestartChecked": false,
-    "applicationStarts": 0,
-    "recoveryComplete": false,
-    "nextCondition": "Reuse the accepted logical and bounded native results, complete diagnostics/log/cache prestart checks, then admit the bounded existing-binary recovery and new runtime bindings."
+  "auxiliaryPrestartChecks": {
+    "status": "passed_independent_review",
+    "closedLogs": {"A": 6, "B": 3},
+    "trimOperations": 0,
+    "pruneOperations": 0,
+    "cacheJobs": 0,
+    "startupWindow": "Consumed by the recorded application recovery; not a reusable start authorization."
   },
-  "recordingBoundary": "This records read-only logical preservation and a bounded native observe result, not completed application recovery or product/client acceptance. The original programs-final-regression-incident.json and all original failure records remain unchanged. This documentation update performed no SSH, test, SQL, source change or service action."
+  "applicationRecovery": {
+    "status": "passed_independent_review",
+    "applicationsRecovered": true,
+    "installedBinariesAndConfigurationUnchanged": true,
+    "applicationStarts": 2,
+    "applicationStops": 0,
+    "postgresRestarts": 0,
+    "healthAndReadinessResponses": 4,
+    "allHealthAndReadinessStatuses": 200,
+    "readOnlySqlSessions": 8,
+    "allFourDatabasesBeforeAfterExact": true,
+    "tablesPerDatabase": 35,
+    "sequencesPerDatabase": 5,
+    "independentRawDatabasePayloadsMatched": true,
+    "controllerCommands": {"total": 72, "metadata": 70, "applicationStarts": 2},
+    "readerCommands": {"total": 28, "metadata": 20, "readOnlySql": 8},
+    "allCommandsClosed": true,
+    "lockReleased": true,
+    "protectedPostgresProcessesUnchanged": 3,
+    "applicationSocketsAndIdentitiesMatchedAtIndependentReview": true,
+    "applications": {
+      "A": {"pid": 1245063, "startTicks": "20112673", "invocationId": "8dbaa2b46c99404390df1dcd76b10453"},
+      "B": {"pid": 1245124, "startTicks": "20112755", "invocationId": "ddc4d2de28424add820c263a8baf073a"}
+    },
+    "boundary": "Application recovery accepts the existing applications and declared preservation scope. The later consumer envelope has separate evidence below; neither establishes a Programs artifact or client journey."
+  },
+  "diagnosticsAfterRestart": {
+    "status": "passed_independent_review",
+    "oldLogsPreservedByBytesHashAndInode": 9,
+    "newActiveLogs": {"A": 1, "B": 1},
+    "newActiveLogBodiesRead": false,
+    "cacheStillEmpty": true,
+    "additionalSqlCalls": 0,
+    "additionalHttpCalls": 0,
+    "additionalServiceActions": 0
+  },
+  "consumerRuntimeBinding": {
+    "status": "ready_published_and_validated",
+    "demonstratedCompatibilityGap": "The earlier schema represented only the first disk-full recovery. The verified v2 envelope binds this actual second recovery through an explicit predecessor link.",
+    "envelopeVersion": 2,
+    "previousCurrentRuntimeSha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c",
+    "previousBindingIsLiveAuthority": false,
+    "legacyV1MeaningUnchanged": true,
+    "correctionScope": "The already authorized four-file component scope; all other tool versions remain frozen and no general framework is added.",
+    "componentVerificationRecord": "programs-transition-component-verification.json",
+    "remoteComponentVerificationComplete": true,
+    "runtimeSource": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/source-r02/audited-candidate-runtime.py",
+      "bytes": 185776,
+      "sha256": "783f4e07a0f85ce5f810d90111f21e740728bbf60f48595333c0a2da8e039531"
+    },
+    "runtimeVerification": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/runtime-verification-r02.json",
+      "bytes": 2746,
+      "sha256": "b486964eee4880ec5e2a04440c3e13a71cc8247605ea65b03f82e67ae03236a1"
+    },
+    "actualObservationSqlCalls": 2,
+    "clusterIdentityQueries": 1,
+    "leaseQueries": 1,
+    "newObservationComplete": true,
+    "observationIndependentlyReviewed": true,
+    "productionEnvelopeCreated": true,
+    "validatedBeforePublication": true,
+    "publishedFileReadbackValidated": true,
+    "uniqueRecordsBound": 34,
+    "publicationReadBytes": 2590759,
+    "publicationAdditionalCalls": {"sql": 0, "http": 0, "service": 0, "browser": 0},
+    "productEpochSeedAdmissionAndHostingUnchanged": true,
+    "candidate": {"pid": 1245063, "startTicks": "20112673"},
+    "programsInputCreated": false,
+    "futureProgramsAuthority": "The frozen runtime/transition and client components still retain preparatory Programs authority constants pointing to historical 38b906. Preserve their tested bytes until actual authority binding; after final verification, bind the actual successor artifact and this new runtime authority together. No new tool version or currently executable Programs input is implied."
+  },
+  "deliveryBoundary": {
+    "heavyWindowDecision": "awaiting_user_reply",
+    "completeGoRegressionAccepted": false,
+    "ordinaryBuildAccepted": false,
+    "embeddedBuildAccepted": false,
+    "g1Accepted": false,
+    "g3Accepted": false,
+    "workTracks": {
+      "product": ["bounded original-theme diagnosis and resource coordination", "final frozen verification and build"],
+      "client": ["reuse passed frozen client components; bind actual successor authority/artifact and complete admitted live inputs"]
+    },
+    "joinBeforeCandidateTransition": "Bind actual successor runtime/artifact authority and complete the admitted live inputs and entry/recovery contracts; neither independent track replaces the other.",
+    "clientComponentStatus": "Passed within frozen scopes; actual successor authority/artifact and admitted live inputs remain pending. No live journey was executed.",
+    "clientComponentVerificationRecord": "programs-client-component-verification.json",
+    "queryContextFinding": "The initial hypothesis that the failing theme snapshots bypassed the ownership context was withdrawn after call-site review; the frozen source already selects owned.ctx at both Query sites. No root cause or product correction is established."
+  },
+  "recordingBoundary": "Actual actions are limited to the recorded recovery stages above. This documentation update performed no SSH, test, SQL, source change or service action. Original execution and incident-observation receipts remain unchanged; the repository incident summary separately preserves and corrects the initial Query-context hypothesis. Physical database integrity and untested product/client claims are not inferred."
 }

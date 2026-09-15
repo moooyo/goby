@@ -1,7 +1,7 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-15, logical preservation and bounded native
-observe passed; diagnostics/log/cache checks and application recovery remain pending**.
+Current session checkpoint: **2026-09-15, A/B recovery, ready consumer v2 envelope
+and frozen client components passed; bounded Library diagnosis and successor artifact preparation are next**.
 Start with the [incident record](programs-final-regression-incident.json), the [current execution plan](../planning/current-execution-plan.md),
 [core resolution](core-client-acceptance-resolution.md),
 [successor transition decision](e11-candidate-transition-decision.md), and
@@ -9,41 +9,55 @@ Start with the [incident record](programs-final-regression-incident.json), the [
 
 The [Programs focused result](live-tv-programs-focused-verification.json) has
 14 top-level and 118 subtest passes with independent result/resource review.
-Its [ordinary full run](live-tv-programs-full-interruption.json) was interrupted
+The earlier [ordinary full run](live-tv-programs-full-interruption.json) was interrupted
 for the user's plan review and safely closed: 10/25 complete packages, 341
 passes, zero failures and zero skips. An additional 109 raw identity-package
-passes are incomplete and excluded. No build ran, full verification is false,
-and no product assertion failure was observed. Preserve this as user-interrupted
+passes are incomplete and excluded. No build ran or product assertion failed
+in that attempt. Preserve this as user-interrupted
 partial evidence, not a product failure; do not relaunch the consumed input.
 
 The later final worker failed Library. Only 11 complete passing packages/475
 passes are accepted as completed package evidence; all 605 Library raw passes
 are excluded. Raw totals are 1,080 pass events, one parent and one theme-child
-failure event, and the single declared M2 skip. Neither build ran. The source
-remains `74a69ab` / `3c0e7e0d...`; a `Query` path bypassing `tx.ctx` is only a
-static, unfixed gap and has not been established as this failure's cause.
+failure event, and the single declared M2 skip. Neither build ran. That attempt
+used frozen `74a69ab` / `3c0e7e0d...`. The initial ownership-context bypass
+hypothesis was withdrawn: both Query call sites already select `owned.ctx`.
+No root cause or product correction is established; preserve the
+[initial hypothesis and its correction](programs-final-regression-incident.json).
 
 The failed scope's owned resources are closed and independently reviewed. Root
 also matched all five saved incident files by bytes/SHA-256. Preserve the
 original `resourcesClosed=false` and `recovered_protected_state_changed` result;
-the supplemental closure does not restore the candidates or rewrite that guard.
-A/B remain failed after exit 1 with `database_lease_unavailable`; their old
-`38b906...` live binding is invalid. The [four-database read-only checkpoint](candidate-lease-loss-recovery.json)
-passed independent review: each database's 35 tables/five sequences exactly
-match its latest baseline, and all ten read-only sessions closed. Its subsequent
-native observe passed lifecycle/control/staged generation, backup metadata and
-source-quiescence checks with independent review. Backup-object bodies and master
-contents were not read/hashed; diagnostics/log/cache prestart checks and application
-recovery have not run. Physical integrity is not claimed. Global OOM killed `tsc` PID
+the resource-only supplement did not restore the candidates or rewrite that guard.
+The separate [application recovery](candidate-lease-loss-recovery.json) now passed
+independent review: both unchanged applications started once, four health/readiness
+responses returned 200, and eight read-only SQL sessions confirmed all four
+databases' 35 tables/five sequences exact across startup. No application stop or PG
+restart ran. Diagnostics/log/cache review preserved nine old logs by bytes/hash/inode;
+one new active log per application was left unread and the cache remains empty.
+Scoped native evidence still excludes backup-object bodies, master contents and
+physical integrity. Global OOM killed `tsc` PID
 1209025/session 6413 with trigger `MainThread` PID 1208225; launching ownership
 and causality remain unresolved.
 
-Next: reuse the accepted logical and bounded native results and complete
-diagnostics/log/cache prestart checks with existing tools. Only then admit one recovery of the installed
-binaries/configuration and new runtime bindings. Never replay consumed inputs
-or overwrite/bypass the old guard.
-Heavy tests/builds and actual Programs transition/client work are held; coordinate
-cross-task host load before considering them again. Future successor entry and
+The [component checkpoint](programs-transition-component-verification.json)
+accepts 33 runtime and 27 successor checks across two attempts, not one 60-test
+run. The actual observation then completed one cluster query and one lease query.
+Ready envelope `aed2914...` passed publication/file-readback validation against
+34 records, retaining historical `38b906...` as predecessor. V1 meaning and the
+product epoch/seed/admission/hosting bindings are unchanged.
+
+Next: use the original theme subcase for bounded diagnosis in the coordinated
+resource window; no assumed Query fix, expanded budgets or repeated full suite.
+[Client components](programs-client-component-verification.json) passed within
+their frozen scopes; actual successor authority/artifact and admitted live inputs
+remain pending, and no live journey has run. The frozen tools
+still use preparatory Programs authority constants, so bind actual successor
+authority/artifacts together after final verification, without a new tool version.
+Product verification/build and authority/live-input preparation are independent
+tracks that must both close before the actual A transition.
+Do not repeat the recovery, accepted component groups or completed observation.
+The heavy-execution window awaits the user's reply. Future successor entry and
 recovery contracts remain separate obligations. The completed September 14
 recovery, M5 increment and E11/G2 evidence retain their historical scopes; no
 intermediate E11 deployment is queued.

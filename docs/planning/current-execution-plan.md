@@ -1,15 +1,23 @@
 # Current execution plan
 
-Current priority: **preserve and recover the September 15 incident state before
-heavy verification or actual Programs transition/client work**. The
-[incident record](../development/programs-final-regression-incident.json) records
-A/B application exit 1 with `database_lease_unavailable`. The old `38b906...`
-binding is not live authority. The [four-database logical-preservation checkpoint](../development/candidate-lease-loss-recovery.json)
-passed independent review: all 35 tables/five sequences per database match the
-latest baselines, and ten read-only sessions closed. Bounded native observe also
-passed independent review for lifecycle/control/staged generation, backup
-catalog/object metadata and source quiescence. Diagnostics/log/cache prestart
-checks and application recovery remain pending; physical integrity is not established.
+Current priority: **bounded Library diagnosis and successor artifact preparation**.
+Following the [incident](../development/programs-final-regression-incident.json),
+[A/B application recovery and scoped preservation](../development/candidate-lease-loss-recovery.json)
+passed independent review. Both existing binaries/configurations started once;
+four health/readiness responses and eight read-only SQL sessions passed, with all
+four databases exact across startup. Nine old logs were preserved, one new active
+log per application was left unread, and cache remained empty. No application
+stop or PG restart ran. Physical integrity and product/client acceptance are not inferred.
+
+The [component checkpoint](../development/programs-transition-component-verification.json)
+accepts 33 runtime and 27 successor checks across two attempts. The actual
+observation then completed one cluster-identity query and one lease query.
+Ready consumer envelope `aed2914...` passed publication and file-readback
+validation against 34 records, with historical `38b906...` as predecessor and
+the product epoch/seed/admission/hosting bindings unchanged. Frozen Programs
+components still retain preparatory authority constants: after final verification,
+bind the actual successor artifact and new runtime authority together. No actual
+Programs input, artifact admission or client acceptance follows from this envelope.
 
 The failed final worker accepted only 11 complete passing packages/475 passes;
 Library's 605 raw passes are excluded. Raw totals are 1,080 pass events, two
@@ -17,24 +25,28 @@ related parent/theme failure events and the one declared M2 skip. No ordinary
 or embedded build ran. Its owned resources are now closed with root independent
 review, and all five incident files passed independent byte/hash readback.
 Preserve the original `resourcesClosed=false` and
-`recovered_protected_state_changed` rejection. Go source remains
-`74a69ab` / `3c0e7e0d...`; the `Query`/`tx.ctx` gap is static and unfixed, and no
-root cause is established. OOM victim `tsc` PID 1209025/session 6413 and trigger
+`recovered_protected_state_changed` rejection. That failed run used frozen
+`74a69ab` / `3c0e7e0d...`. The initial hypothesis that the failing theme snapshots
+bypassed the ownership context was withdrawn after call-site review; the frozen
+source already selects `owned.ctx` at both Query sites. No root cause or product
+correction is established. OOM victim `tsc` PID 1209025/session 6413 and trigger
 `MainThread` PID 1208225 have unresolved launching ownership. Concurrent workload
 is a coordination risk, not proven attribution or causality.
 
-Reuse the accepted logical and bounded native results; complete the remaining
-diagnostics/log/cache prestart checks with existing tools before one
-admitted recovery of the installed binaries/configuration and new runtime bindings. Old inputs
-and the original guard cannot be replayed or overridden. The delivery target
+Reuse the completed application recovery and consumed startup window; do not
+start either application again to bind an input. The heavy-execution window
+awaits the user's asynchronous reply. Heavy builds/tests and actual Programs/client
+operations remain held. Old inputs and the original guard cannot be replayed or
+overridden. The delivery target
 remains the unbuilt Programs successor. E11 is the historical build/G2 baseline. The
 [Programs focused verification](../development/live-tv-programs-focused-verification.json)
 has 14 top-level and 118 subtest passes with independent review. Its
-[ordinary full run](../development/live-tv-programs-full-interruption.json) was
+[earlier ordinary full run](../development/live-tv-programs-full-interruption.json) was
 interrupted for the user's plan review and safely closed: 10/25 completed
 packages, 341 passes, zero failures and zero skips. The identity package's 109
 additional raw passes are incomplete and excluded. No build ran, full
-verification is false, and no product assertion failure was observed.
+verification was not complete, and no product assertion failure was observed in
+that user-interrupted attempt. The later failed final run is a separate result.
 The retained baseline history below keeps its original evidence scopes.
 
 Historical baseline recorded after the September 14 candidate recovery and the M5 media-refresh
@@ -485,13 +497,22 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
-Current incident recovery comes first. Reuse the independently accepted
-[logical and bounded native results](../development/candidate-lease-loss-recovery.json),
-complete diagnostics/log/cache prestart checks with the retained tools, then admit
-one bounded recovery of the existing applications and new runtime bindings.
-The accepted scopes do not satisfy those remaining checks or establish restart success.
-Heavy builds/tests and actual Programs transition/client operations remain held;
-do not use the old `38b906...` binding or replay a consumed recovery input.
+Reuse the independently accepted [application recovery and preservation](../development/candidate-lease-loss-recovery.json).
+The v2 component scopes, actual two-SQL observation and ready consumer envelope
+are complete; do not queue them or another recovery start again. The product
+track is bounded Library diagnosis plus resource coordination, followed by final
+verification/build. The [client components](../development/programs-client-component-verification.json)
+passed within their frozen scopes; actual successor authority/artifact and admitted
+live inputs remain pending, and no live journey has run. Artifact work and
+authority/live-input preparation join before A changes. Heavy
+work still awaits the user's window decision.
+
+**Closed compatibility exception:** the bounded current-runtime v2 correction
+represents the second recovery through `previousCurrentRuntime`, preserving v1
+semantics and historical `38b906...`. Reuse its verified four-file scope. The
+remaining fixed Programs constants are still preparatory while client checks
+finish; bind new runtime/artifact authority after final verification without a
+new tool version, framework, launcher or general contract redesign.
 
 After incident recovery and resource coordination, the successor still needs
 its final-source verification/build and complete recovery/journey entry
@@ -525,13 +546,13 @@ workspace outside every new resource budget.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 0. Current incident recovery — logical and bounded native scopes accepted | Reuse the accepted results; complete diagnostics/log/cache prestart checks with existing tools, then admit one recovery of installed binaries/configuration and new runtime bindings | A/B remain failed and the old live binding is invalid. Backup bodies/master contents, every file's historical identity and physical integrity are not proved by the native observe. Prestart checks and application recovery remain pending; no consumed-input replay or guard override |
+| 0. Existing applications and consumer runtime binding — complete | Reuse the independently reviewed recovery, accepted component scopes, actual one-cluster/one-lease observation and validated ready v2 envelope | No repeat start, PG restart or consumed observation/input replay. Historical `38b906...` is predecessor evidence. Future Programs authority still needs binding to the actual verified successor; no Programs input is admitted |
 | Historical September 14 disk-full recovery — complete | Retain the independently reviewed four-database/native/log preservation and once-only application restart evidence in its original scope | Its replacement runtime identities have since been invalidated by the new incident. Preserve the result and old inputs; do not repeat that workflow to refresh its label |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
 | 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
-| 1. Successor recovery and final journey entry contracts — live work held | Freeze the existing runtime v4/transition, admission v5 and client v6 file set; finish the pending remote component checks and bind the [successor recovery and movie/episode/subtitle contracts](../development/e11-candidate-transition-decision.md) to admitted current state | Reuse the accepted admission checks while their inputs remain unchanged. Add no general launcher, new contract version or unrelated capability; fix only demonstrated failures in this set. This is separate from incident recovery, and no current transition/client input is admitted |
-| 1a. Library failure diagnosis — after environment recovery | Use the retained failing theme/recovery test and cancellation evidence to select bounded targeted verification on the restored environment; distinguish the static Query-context gap from the unproved incident cause | Do not waive the failed full result, assume OOM attribution, increase timeouts without evidence, or retry the full suite to search for a pass. Resolve the demonstrated failure or identify and correct its environmental prerequisite before final verification |
+| 1. Client components passed; actual authority/live inputs pending | Reuse the [passed frozen client components](../development/programs-client-component-verification.json) and runtime/transition/admission scopes; bind the [journey/recovery contracts](../development/e11-candidate-transition-decision.md) and admitted live inputs to actual successor authority/artifacts | No new framework, version or live-journey acceptance follows from component checks. Bind the new runtime and actual artifact together after final verification. Preparation does not block independent Go diagnosis/build work; both must close before A changes |
+| 1a. Library failure diagnosis — product track, in a coordinated window | Run only the original theme subcase with its existing `90/15/20/5/15s` budgets. Keep bounded evidence inside the test: last Job.Status, ctx.Err/elapsed before GetJob, first scan/finish error, and ownership-loss ordering relative to cleanup | The context-bypass hypothesis is withdrawn; do not preassign an ownedTx.Query fix. Non-reproduction stays non-reproduction, not an original full pass. No timeout inflation, repeated full-suite search or expanded observer |
 | 2. Frozen-source verification/build — held | Preserve the [failed final worker](../development/programs-final-regression-incident.json), its source and all raw results; resolve incident/resource conditions before selecting any further heavy execution | Only 11 complete passing packages/475 passes count; 605 Library raw passes are excluded, and neither build ran. Preserve the separate user-interrupted run. No automatic rerun, consumed-input replay or added build launcher |
 | 3. One direct A transition — held | After incident recovery, bind the verified successor, new runtime authority, current full state, declared task-definition delta and the recovery/closure plan | No intermediate original-E11 deployment, actor reset, new candidate, old live binding or assumed rollback. Preserve B and all historical evidence |
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
@@ -554,9 +575,12 @@ transaction is not reconstructed. The [TV contract and current-runtime component
 have now passed focused checks, actual saved-state integrations and independent
 review. The admitted browse obtained the selected unique Response identity.
 The subsequent reference shape and Programs focused product checks are complete
-within their scopes. Full regression is user-interrupted partial evidence, with
-safe closure and no product assertion failure. Continue the ordered recovery/
-journey preparation and final-source successor work above; native capacity remains held.
+within their scopes. The first ordinary attempt was user-interrupted partial
+evidence with safe closure and no product assertion failure in that attempt.
+The later [final attempt failed Library](../development/programs-final-regression-incident.json);
+only its 11 complete passing packages count. Recovery and ready v2 runtime
+evidence are separately complete. Continue the independent product and client
+tracks above; native capacity remains held.
 
 The completed independent increment is [native scheduled media refresh](../development/task-media-refresh-plan.md):
 register `library.refresh_media`, retain ordinary `library.scan` behavior, and
@@ -732,13 +756,14 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    No consumed recovery input is replayed. Continue independent M2-M6 obligations
    under their own prerequisites; retained private files and OS accounts remain
    explicitly inventoried rather than silently treated as removed.
-2. Reuse the current incident's accepted logical and bounded native checkpoints;
-   complete diagnostics/log/cache prestart checks before a newly admitted recovery of the
-   existing binaries and new runtime bindings.
-   Keep heavy verification/builds and actual Programs/client work held while
-   those prerequisites and host resource coordination are unresolved. The
-   successor's separate recovery route, final journey contracts and final-source
-   verification/build still precede its one direct A transition. Tool-only
+2. Reuse the accepted application recovery, scoped preservation, component
+   checks, actual observation and ready v2 envelope without repeating them.
+   Product diagnosis/resource coordination leads to final verification/build;
+   passed frozen client components are reused while actual authority/live inputs
+   are prepared independently.
+   Heavy-window approval awaits the user's reply. Bind actual successor
+   runtime/artifact authority and complete both tracks before the one direct A
+   transition. Tool-only
    changes do not themselves require another Go full run. E11 and the September
    14 recovery remain historical accepted evidence, not current runtime authority.
 3. Core acceptance then requires the three declared successor journeys and the

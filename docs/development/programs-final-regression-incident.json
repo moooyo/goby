@@ -198,12 +198,23 @@
       "The Programs product change caused the global OOM.",
       "The OOM caused the Library package failure.",
       "The OOM caused the A/B lease losses.",
-      "The identified Query context gap caused this regression failure."
+      "The initial Query-context hypothesis explains this regression failure."
     ],
     "staticQueryContextFinding": {
-      "status": "independent_static_gap",
-      "description": "A Query path bypasses tx.ctx. This is a separate static finding, not an established root cause of the observed failure.",
-      "productFixCompleted": false
+      "status": "withdrawn_after_call_site_review",
+      "initialFinding": {
+        "status": "independent_static_gap",
+        "description": "A Query path bypasses tx.ctx. This is a separate static finding, not an established root cause of the observed failure."
+      },
+      "correction": "The frozen source already selects owned.ctx before both Query calls used by the theme auxiliary snapshots. The embedded Query method alone does not establish an unprotected call in this failing scenario.",
+      "reviewedSourceRevision": "74a69abacdd9206e51f4e166df2346b5555b5cd9",
+      "protectedCallSites": [
+        {"path": "internal/library/auxiliary_catalog_changes.go", "contextSelectionLine": 94, "queryLine": 113},
+        {"path": "internal/library/auxiliary_catalog_changes.go", "contextSelectionLine": 270, "queryLine": 277}
+      ],
+      "reviewMethod": "Independent static call-site review and root source readback; the same context selection is present at the frozen source revision. No test, runtime probe or product edit was performed for this correction.",
+      "productFixCompleted": false,
+      "rootCauseEstablished": false
     }
   },
   "currentRecovery": {
