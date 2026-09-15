@@ -1,5 +1,20 @@
 # Development handoff
 
+Current session checkpoint: **2026-09-15, paused at the user's request before
+native capacity execution admission**. Resume from the
+[native capacity session handoff](session-handoff-20260915-native-capacity.md),
+the tracked candidate source snapshot and the
+[current execution plan](../planning/current-execution-plan.md).
+The reader's twelve groups, transport's eight groups and pool's six groups
+retain distinct remote verification scopes; the controller remains unexecuted.
+The fourth installation runtime passed but its seal failed and closure is
+complete. Core video/subtitle and complete M2-M6 remain open; M7 is deferred.
+
+## Historical entries
+
+Everything below records earlier checkpoints. References to "current" or
+"next" in these entries do not override the session handoff linked above.
+
 Priority 1 is now verified: [exit diagnostics](exit-diagnostics-20260913.md),
 60 targeted tests, a single full 2,262-test/25-package race run and Linux build,
 plus matching frontend assets. Priority 2 preparation is in progress; no new

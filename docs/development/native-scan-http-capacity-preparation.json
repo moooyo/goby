@@ -1,7 +1,7 @@
 {
   "kind": "goby-native-scan-http-capacity-preparation-checkpoint",
   "version": 1,
-  "status": "implementation_in_progress_reader_protocol_checked",
+  "status": "paused_before_native_execution_admission",
   "scope": "/opt/goby-test/native-scan-http-capacity-20260915",
   "verificationScope": "/opt/goby-test/native-scan-http-capacity-checks-20260915",
   "environmentObservation": {
@@ -98,6 +98,72 @@
     "reader-pool": {"sha256": "a88a4064fd0b0896374e09924feda169fd0a4d9efb751719385e17b393b5bd55", "bytes": 64285},
     "observers": {"sha256": "74e3066df8b6dd7b31be5b52c4445c95315016d08a2b95e96998dbaa50550208", "bytes": 52770}
   },
+  "sessionHandoff": "docs/development/session-handoff-20260915-native-capacity.md",
+  "savedSourceManifest": "docs/development/native-scan-http-capacity-source-snapshot.json",
+  "candidateThreeSourceChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/candidate-03/source-checks.json",
+    "sha256": "4c389f6845e15713f4c29a3f0310ffa227ecbc57a60a127a8f3fc60309998177",
+    "bytes": 2789,
+    "compiledModules": 8,
+    "scopeLimit": "Compile/global checks only. The retained transport revision emitted an invalid-escape SyntaxWarning; no controller or native workload ran."
+  },
+  "transportChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/transport-checks-01/result.json",
+    "sha256": "363c0c97e560d4c2aba60829bf9c1b23b404a1d5110bdff4c2e8fdbe2e0eb3e8",
+    "bytes": 31036,
+    "groups": 8,
+    "passedGroups": 8,
+    "sourceSha256": "21c90bff5bdbbcd6f8562e6562c7fbbaf8f67b1f3433db80abd5995d5a5ddf4e",
+    "sourceBytes": 51898,
+    "independentFullReviewCompleted": false,
+    "scopeLimit": "Real transport and Journey methods with AF_UNIX socketpairs and explicit ownership/namespace substitutes; no Goby, native TCP, controller execution or capacity acceptance."
+  },
+  "transportDispatch": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/transport-checks-01-dispatch.json",
+    "sha256": "8f0a2b26c68f4db47d97634bad55cbf907701f3e9603bb97608ddf97f1265465",
+    "bytes": 1773,
+    "returncode": 0
+  },
+  "transportWarningCorrection": {
+    "change": "Add a raw-string prefix to the existing backslash-dot filename regex; no other source change.",
+    "savedSourceSha256": "a87681751f1eea4881fa549be4eb7fa5e6eb06aee030051271eab4f163190928",
+    "savedSourceBytes": 51899,
+    "verified": false,
+    "nextRequiredEvidence": "New revision with remote warning-free compilation and AST/string-value bridge to the tested source; preserve candidate-03 unchanged.",
+    "oldStderr": {
+      "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/transport-checks-01.stderr",
+      "sha256": "03890beb2a068b882c13f53b1e1bee8dd8b644c8ba15cf197efcc1a5f9612b56",
+      "bytes": 1944,
+      "warningCount": 8
+    }
+  },
+  "poolChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/pool-checks-01/receipt.json",
+    "sha256": "940498c38edbd98a3213861a8e79b4bb2d55d5eb0eaf3532bf339b73066ccafd",
+    "bytes": 6083,
+    "groups": 6,
+    "passedGroups": 6,
+    "sourceSha256": "a88a4064fd0b0896374e09924feda169fd0a4d9efb751719385e17b393b5bd55",
+    "independentFullReviewCompleted": false,
+    "scopeLimit": "Real short subprocess, WNOWAIT, waitpid and owned TERM/KILL lifecycle with a fixed zero-request stub. No reader main, real setns, Goby, SQL or HTTP executes; stub timeouts and harness fallback fail the case."
+  },
+  "poolDispatch": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/pool-checks-01-dispatch.json",
+    "sha256": "943612bc7898d61cfdbebe26d7b57af0e6af8236870c6c8c57d491ce5c487f95",
+    "bytes": 1599,
+    "returncode": 0
+  },
+  "pauseReadback": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/handoff-02/readback.json",
+    "sha256": "8f770e6eb88a662d0134ee1047b179a6db86b5dfbbe06ac4712348e55b99e6ad",
+    "bytes": 6126,
+    "recordedPoolChildrenAbsent": 12,
+    "nativeFixtureAndInputPathsAbsent": true,
+    "businessServiceSqlOrHttpActions": 0,
+    "scopeLimit": "Root readback of source/result pins, six nested pool receipts and path/process absence; not independent full component acceptance review.",
+    "preservedFirstReader": "handoff-01 retained an AssertionError before result creation; the correction excludes read-modified access time from immutable metadata comparisons."
+  },
+  "controllerChecksWritten": false,
   "confirmedPlanCorrections": [
     "Three users need four credentials: one native administrator cookie and three Emby tokens. The administrator Emby token supplies the real administrator catalog-count request.",
     "Old transient media templates were not retained. Generate two fresh templates from the existing fixed recipe and bind their actual bytes and hashes before copying.",
@@ -106,8 +172,9 @@
     "Account for base command failure-group closure and backend wait inside the original phase deadline; a ten-second command wait is not a ten-second total failure close."
   ],
   "remainingBeforeExecution": [
-    "Finish and independently review the single controller, global budgets, reader-pool, transport, observer and preservation integration.",
-    "Verify new transport behavior, full raw chunk/trailer framing, reader lifecycle and changed application/preparation/closure failure paths remotely.",
+    "Independently review the new transport and pool results without replay; bridge the one-byte transport warning correction in a fresh source-only revision.",
+    "Write and remotely run bounded controller orchestration/failure-routing checks; finish remaining changed application/preparation/closure and admission/signal/deadline checks.",
+    "Resolve conservative write-before-dispatch resource reservations and finish the post-close metrics/readback design before a fixture is live.",
     "Bind all final sources and a fresh complete execution input, including real template facts, current resource/absence checks and original-lifetime reserves.",
     "Run one admitted native profile and independently review actual HTTP/SQL/catalog/ACL/UserData measurements and owned resource closure."
   ],

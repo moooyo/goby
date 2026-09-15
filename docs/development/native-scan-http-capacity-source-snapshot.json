@@ -1,0 +1,104 @@
+{
+  "kind": "native-capacity-session-source-snapshot",
+  "version": 1,
+  "status": "paused_before_execution_admission",
+  "date": "2026-09-15",
+  "baseCommit": "01e579311ec2283bdf252bb357ceb88635ae0bf7",
+  "bytePreservation": "Python sources are stored with Git text conversion disabled; remote source pins refer to these exact bytes.",
+  "sources": [
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-application.py",
+      "sha256": "b734cfb9eb37aaf215659b336659bdcd2d3f3b6b6794dbe6530e76e233a0adb5",
+      "bytes": 49063
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-closure.py",
+      "sha256": "58fbe80d06f1d6740ea1daa43a6d5e0d7243d9129e6e8ae23259831887aa7de7",
+      "bytes": 75736
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-controller.py",
+      "sha256": "7fda93c6dd3849e78b44b1573c94c7699f547fe34d8c72df306980a54e78bbdd",
+      "bytes": 42282
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-corpus.py",
+      "sha256": "3e6ae631eab7ad9260e48769d2d81a759113ed6ec5e50e6f740fec14af3bd50f",
+      "bytes": 26450
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-environment-preflight.py",
+      "sha256": "2a4dc2c06a15e3784f0e6467178a2c21f8e83c129611000dc9225e5089f03eba",
+      "bytes": 12541
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-observers.py",
+      "sha256": "74e3066df8b6dd7b31be5b52c4445c95315016d08a2b95e96998dbaa50550208",
+      "bytes": 52770
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-pool-checks.py",
+      "sha256": "4f6fad009b754f09e3d452ffdd96307d7e5241118d9e174adb65694d48a2daf2",
+      "bytes": 30064
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-preparation.py",
+      "sha256": "705f3d681fc3b1e992f41f60fee13cdfbeecbc11e02d30a06b9bdd551a4a9d24",
+      "bytes": 33539
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-reader-checks.py",
+      "sha256": "6422eecd15245fe1234a2a3c3e0c61c1f814551a81b7076386f4437aeb13110d",
+      "bytes": 45656
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-reader-pool.py",
+      "sha256": "a88a4064fd0b0896374e09924feda169fd0a4d9efb751719385e17b393b5bd55",
+      "bytes": 64285
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-reader.py",
+      "sha256": "a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20",
+      "bytes": 46356
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-support-adaptation.md",
+      "sha256": "1e7c003ab604d95173ed1511b502646cb27cfbbef095f2229c2100481f0b9e11",
+      "bytes": 5441
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-support.py",
+      "sha256": "4e93fabe713d68b918a44ffd96a4c96c4d153430440480a8f840f8a56efc86d0",
+      "bytes": 43506
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-transport-checks.py",
+      "sha256": "d3b5d412a4293a583c5542ca40c5591e0f11b3bad7c19583e9a1e50cd72ae1af",
+      "bytes": 37982
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-transport.py",
+      "sha256": "a87681751f1eea4881fa549be4eb7fa5e6eb06aee030051271eab4f163190928",
+      "bytes": 51899
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-units.py",
+      "sha256": "6f5b437a1ff5708a3af032c5e56ad5b5dda890a032345602e71c94baf2851c3d",
+      "bytes": 20947
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-workload.py",
+      "sha256": "766445a9305ca50617a3438c5bb66e1df7ac3506a0fb462db7020a349bba16e5",
+      "bytes": 77749
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/native-catalog-journey.py",
+      "sha256": "63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4",
+      "bytes": 39059
+    }
+  ],
+  "controllerChecksWritten": false,
+  "nativeExecutionAdmitted": false,
+  "nativeWorkloadExecuted": false,
+  "capacityAccepted": false
+}

@@ -10,6 +10,16 @@ is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 
+Session pause, 2026-09-15: the user requested a handoff and `main` checkpoint
+before continuing in another session. The
+[saved native capacity handoff](session-handoff-20260915-native-capacity.md)
+and [tracked source manifest](native-scan-http-capacity-source-snapshot.json)
+preserve the integrated controller and remaining work. Eight control-transport
+groups and six child-lifecycle fixture groups passed remotely, separately from
+the earlier twelve reader groups. Independent full review of the two new
+results, the one-byte transport warning correction and controller orchestration
+checks remain pending. No native capacity fixture or execution input exists.
+
 The [M5 preflight resource incident](m5-refresh-preflight-incident.json)
 required candidate recovery before verification continued. Disk exhaustion caused PostgreSQL PANIC/recovery and
 both candidate applications exited after losing their database leases. One
@@ -145,7 +155,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package still needs actual installation acceptance |
-| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards, independent result review and resource closure passed after M5 checkpoint `5faf854`; package/legacy amd64 binaries are byte-identical and arm64 is cross-built. Three attempts failed with independent preservation/resource closure; r03 passed its first nonroot start/journey/stop before rejecting SQL OID JSON types | Verify numeric OID output and the proposed real prestart observer check before a new scope. Full two-start catalog/auth preservation, native arm64, upgrade and whole-M6 acceptance remain open |
+| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The final r04 sealing SQL observer did not run. Full installation acceptance, native arm64, upgrade and whole-M6 remain open; no fifth attempt is admitted |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
