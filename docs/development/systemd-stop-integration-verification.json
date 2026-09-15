@@ -1,0 +1,94 @@
+{
+  "kind": "goby-systemd-stop-integration-verification",
+  "version": 1,
+  "status": "prospective_sources_passed_remote_preflight_and_synthetic_fault_checks",
+  "scope": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02",
+  "sources": {
+    "support": {
+      "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/m6-systemd-install-support-referenced.py",
+      "sha256": "0aae274cd65e5e8228f929171f0f01d8a76c603bcbe22af96ef057845888016d",
+      "bytes": 35823
+    },
+    "runtime": {
+      "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/m6-systemd-install-runtime-referenced.py",
+      "sha256": "f0b390aaa1c98be43949db5e5b94cf21aa41005a12b7966f89a60f6568dcc9c7",
+      "bytes": 64912
+    },
+    "seal": {
+      "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/m6-systemd-install-seal-referenced.py",
+      "sha256": "f2faa1aadbd6e32f8ac4d0b9e53ec878186d3e3f4ab89c79490d2335d0c39832",
+      "bytes": 81002
+    }
+  },
+  "preflight": {
+    "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/preflight.json",
+    "sha256": "c7d61331b3974a05ee964300834eb0dc12e20e41a649edf140f301ffe784d5ea",
+    "bytes": 1962
+  },
+  "compiledSourceFiles": 3,
+  "compiledCheckOperators": 1,
+  "unresolvedGlobals": [],
+  "invalidInputEntryChecks": 2,
+  "validInstallationInputsExecuted": 0,
+  "syntheticChecks": {
+    "operator": {
+      "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/m6-reference-integration-fault-checks.py",
+      "sha256": "be6f488fa23da5d8f1a1ac81f3b37e1a9d313a05e9332c3ebd4b1daed52c1dfc",
+      "bytes": 14958
+    },
+    "dispatch": {
+      "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/fault-check-dispatch.json",
+      "sha256": "44ff1aa3947c4bcb015d53fd189c1ea137ae4a4b2fd994484c7afdd9515f5b4b",
+      "bytes": 654
+    },
+    "result": {
+      "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate-02/fault-checks-01/result.json",
+      "sha256": "679b5c8816ad5cfb637c6930416cacad1e3565f967b2d9d77c4e9ebc5ac43df7",
+      "bytes": 4802
+    },
+    "count": 25,
+    "pureReferenceContracts": 11,
+    "savedTerminalAndClassificationBindings": 9,
+    "stopFaultRoutingCases": 5,
+    "faults": [
+      "reference receipt persistence ENOSPC",
+      "file command failure before dispatch",
+      "file command failure after dispatch",
+      "child show command rejection",
+      "truncated show output"
+    ],
+    "scope": "Real validators and Runtime.stop routing with explicit synthetic filesystem, unit, process, reference and command dependencies. Five cases each require exactly one synthetic stop, one reference release, normalExit false, no repeat after closure and rejection of a foreign invocation."
+  },
+  "earlierReadonlyMemoryCheck": {
+    "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/integration-candidate/memory-readonly-check.json",
+    "sha256": "d5fc2b63b32063acf97560eae4946de3686846a34f66853a4bba1d7d2727a363",
+    "bytes": 1954,
+    "sourceBridge": "Final preflight confirms identical ASTs for memory_control and memory_stop_authority against runtime b027d8db512803dd3fa9464014116fd3a9b4d7aa4fb74fe53ba3d6de5dcf1093.",
+    "scope": "One actual systemctl show for the absent goby.service used bounded PIPE capture and closed its command process group. The context was synthetic; it did not establish ownership or stop a running service."
+  },
+  "corrections": [
+    "Retain one private D-Bus unit reference through typed terminal capture and persistence, then release before physical closure observations.",
+    "Validate saved identity, count and time types strictly; require start, before-observation, stop request, exit, retained observation, persistence and release in causal order.",
+    "Keep owned APP stop available when file capture fails or returns malformed output; bound memory capture and reject normal acceptance after fallback.",
+    "Never repeat a stop after a matching control process was created.",
+    "Bind saved terminal records using canonical JSON and preserve runtime failure classification during sealing.",
+    "Limit the postmaster.opts archive exception to its exact path and verified regular-file ownership, mode and link count."
+  ],
+  "newGobyStarts": 0,
+  "newPostgresStarts": 0,
+  "serviceActions": 0,
+  "dbusConnectionsInSyntheticChecks": 0,
+  "independentReview": {
+    "finalSourceDeltaReviewed": true,
+    "preflightDispatchResultAndOperatorReadBack": true,
+    "hashesBytesAndPrivateMetadataMatched": true,
+    "remainingMustFixFindingsInReviewedDelta": 0,
+    "scope": "Independent static review of the reference integration and corrections, plus read-only verification of the four named remote evidence files. No tests or service actions were repeated."
+  },
+  "httpRequests": 0,
+  "sqlConnections": 0,
+  "installationAcceptance": false,
+  "installationPauseLifted": false,
+  "wholeM6Accepted": false,
+  "remainingWork": "Review a fresh installation scope, rebind all helpers and inputs without overwriting E12, recheck capacity and protected state, and complete bounded prepare/runtime/seal handoffs. These prospective copies retain old E12 scope constants and are not admitted installation operators."
+}

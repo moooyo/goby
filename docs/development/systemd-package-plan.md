@@ -13,8 +13,10 @@ one declared opt-in skip), independent reviews and resource closure. Its source
 checkpoint is committed and pushed as `5faf854`. The subsequent build-script,
 environment-template, installation-document and scoped evidence checkpoint is
 committed and pushed as `beaea34`; the shipped unit remains unchanged. Its staged
-tree matched all 863 backend/module/package inputs in the E11 source manifest;
-the 58 generated asset/provenance files retain their separate build bindings.
+tree now matches all 864 tracked backend/embed-wrapper/module/package inputs
+in the E11 source manifest. The supplemental bridge includes the tracked
+`web/admin/embedded.go` previously grouped with the excluded web inputs;
+57 generated assets retain their separate build bindings.
 The [source checkpoint](systemd-package-source-checkpoint.json) records that
 separately retained bridge. The
 [package build receipt](systemd-package-build-verification.json) records three
@@ -309,10 +311,23 @@ stopping. Reuse the existing invocation journal, `shutdown.completed` event,
 process/cgroup and database-backend checks, and bind the manager's stop outcome.
 An unavailable exit result stays unknown. Runtime and sealer must consume the
 same saved evidence and distinguish physical closure from proved normal exit.
-The future normal sealer also needs the exact, metadata-checked
-`PG/data/postmaster.opts` exception already used in failed-scope preservation;
-other master/key files remain metadata-only. These are prerequisites for a
-reviewed execution decision, not permission to replay or start another scope.
+The [two real control cases](systemd-stop-evidence-verification.json) have now
+demonstrated that a continuously held private D-Bus unit reference preserves
+the PID/start/invocation and actual zero or nonzero exit result on this host.
+The fixtures and connections closed. The
+[prospective integration](systemd-stop-integration-verification.json) now passes
+remote syntax/global checks, two invalid-input entry checks and 25 synthetic
+contract/fault checks. It saves typed exit evidence before release, preserves
+owned-service cleanup after file capture failure, prevents repeated stops and
+keeps failed evidence out of normal-exit classification. The sealer includes
+the exact, metadata-checked `PG/data/postmaster.opts` exception already used in
+failed-scope preservation; other master/key files remain metadata-only.
+These copies still contain the old E12 scope constants and original helper
+basenames. Before dispatch, review a fresh scope, rebind the complete helper
+and input chain, and recheck capacity, protected state, path absence and all
+handoff budgets. Synthetic checks do not establish a normal Goby or PG stop.
+Installation remains paused until that explicit execution decision; consumed
+E12 inputs and evidence must remain unchanged.
 
 Passing would prove one actual Linux amd64 embedded package installed and run
 through the shipped nonroot systemd template, with normal application

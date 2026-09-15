@@ -1,0 +1,94 @@
+{
+  "allBusConnectionsClosed": true,
+  "allOwnedCommandsClosed": true,
+  "apiPreparation": {
+    "bytes": 3666,
+    "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/api-preparation.json",
+    "sha256": "4668e5b4952eb8ee8a8f57d3a69863c309914e757fa85390bf3b5c70bc1a88df"
+  },
+  "cases": [
+    {
+      "activeState": "inactive",
+      "connectionClosed": true,
+      "execMainCode": 1,
+      "execMainPid": 967825,
+      "execMainStatus": 0,
+      "exitMonotonicUsec": 144562623911,
+      "exitWithinStopObservationWindow": true,
+      "expectedExitCode": 0,
+      "invocationId": "45ff76b7ac184f3ea9b71ad7a3cfb696",
+      "invocationIdRetained": true,
+      "pid": 967825,
+      "releaseMode": "explicit-unref",
+      "result": "success",
+      "startMonotonicUsec": 144562489940,
+      "unit": "goby-m6-exit-observer-20260915-ok.service",
+      "unloadedAfterReferenceRelease": true
+    },
+    {
+      "activeState": "failed",
+      "connectionClosed": true,
+      "execMainCode": 1,
+      "execMainPid": 967869,
+      "execMainStatus": 7,
+      "exitMonotonicUsec": 144562961262,
+      "exitWithinStopObservationWindow": true,
+      "expectedExitCode": 7,
+      "invocationId": "e6831cca41634e29a5b8275cdfcd031a",
+      "invocationIdRetained": true,
+      "pid": 967869,
+      "releaseMode": "connection-close",
+      "result": "exit-code",
+      "startMonotonicUsec": 144562855587,
+      "unit": "goby-m6-exit-observer-20260915-error.service",
+      "unloadedAfterReferenceRelease": true
+    }
+  ],
+  "commandCount": 30,
+  "dbusVersion": "1.4.0",
+  "execution": {
+    "bytes": 69276,
+    "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/execution.json",
+    "sha256": "1f3816f6278aacdf583a56957a4a32c8e6bfe5d5c7049d7b08f9fd2d72111ed2"
+  },
+  "expectedNonzeroControlIsNotAProductFailure": true,
+  "httpRequests": 0,
+  "independentReadback": {
+    "bytes": 1735,
+    "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/readback.json",
+    "sha256": "85274668f5c018d6787fbd3e5c354dae2b82218b838b9abb0b372e87d5596079"
+  },
+  "installationAcceptance": false,
+  "installationPauseLifted": false,
+  "installedManuals": {
+    "org.freedesktop.systemd1.5.gz": {
+      "bytes": 38956,
+      "path": "/usr/share/man/man5/org.freedesktop.systemd1.5.gz",
+      "sha256": "5bbafe2eced99f4e7b5af2c1ef171adfa484e6bbbfa2340b0fd80a5632b3f5f3"
+    },
+    "systemd.unit.5.gz": {
+      "bytes": 28287,
+      "path": "/usr/share/man/man5/systemd.unit.5.gz",
+      "sha256": "ab3aef5f51139d362350d8c8934c9e84f5103a17a46497d52fb09ca390e15442"
+    }
+  },
+  "kind": "goby-systemd-stop-evidence-verification",
+  "lockReleased": true,
+  "newGobyStarts": 0,
+  "newPostgresStarts": 0,
+  "operator": {
+    "bytes": 22790,
+    "path": "/opt/goby-test/m6-systemd-stop-evidence-20260915/private/observe.py",
+    "sha256": "3e223da90457e12e73c0cbdc65f85e1116f0a09c6a2c06709d0686346d138495"
+  },
+  "payloadDirectoryRemoved": true,
+  "protectedStateUnchanged": true,
+  "referenceMechanism": "one private system-bus connection retained through typed exit capture",
+  "remainingWork": "Integrate the verified reference lifetime and saved-exit contract in prospective runtime and sealer sources, preserve failure cleanup and complete review before any new installation decision.",
+  "scope": "/opt/goby-test/m6-systemd-stop-evidence-20260915",
+  "sqlConnections": 0,
+  "status": "two_control_cases_passed_and_fixture_closed",
+  "unitFilesRemoved": true,
+  "version": 1,
+  "wholeM6Accepted": false
+}

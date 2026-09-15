@@ -5,14 +5,14 @@
   "buildReceiptBytesUnchanged": true,
   "commit": "beaea34e5ac320f51f5cef7846656e77ae221ac4",
   "fullSourceBridge": {
-    "bytes": 157588,
-    "path": "/opt/goby-test/m6-systemd-install-20260915/staged-source-bridge.json",
-    "sha256": "e422ec3d52d1733b8aadb38464395983a794032f0fea0cd5b7f793bbe6170a61"
+    "bytes": 158623,
+    "path": "/opt/goby-test/m6-systemd-install-20260915/source-bridge-completion.json",
+    "sha256": "fab578732dd0a26503e5e03992f510490344baef49a0302d2f163e5bb0366f56"
   },
   "gitTree": "18f9ee11fff1379ea67c278747a4eb31170ba7f0",
   "installationAcceptance": false,
   "kind": "goby-systemd-package-source-checkpoint",
-  "matchedTrackedInputs": 863,
+  "matchedTrackedInputs": 864,
   "moduleInputs": 2,
   "newApplicationStarts": 0,
   "newBuilds": 0,
@@ -24,19 +24,37 @@
     "path": "/opt/goby-test/m6-systemd-package-20260915/private/source-manifest.json",
     "sha256": "acdda037db9fedbaa388a09b512050e898727b19506b03595d0e53a65705bea8"
   },
+  "priorSourceBridge": {
+    "bytes": 157588,
+    "path": "/opt/goby-test/m6-systemd-install-20260915/staged-source-bridge.json",
+    "sha256": "e422ec3d52d1733b8aadb38464395983a794032f0fea0cd5b7f793bbe6170a61"
+  },
   "publicInstallationReceipt": {
     "bytes": 6966,
     "path": "/opt/goby-test/m6-systemd-install-20260915/public-installation-first-attempt.json",
     "sha256": "cd4dc32f806ac2568ff4694acccf98626396693bcd2c26ce77bb3607746a2fe0"
   },
   "pushedToMain": true,
-  "retainedGeneratedInputsOutsideGitBridge": 58,
+  "retainedGeneratedAssetInputsOutsideGitBridge": 57,
+  "scopeCorrection": "The earlier 58 excluded web inputs comprised 57 generated assets and one tracked Go embed wrapper. The wrapper is now matched from the same Git tree; no product source changed.",
+  "sourceArchivePhases": 2,
   "stagedSourceArchive": {
     "bytes": 12830720,
     "path": "/opt/goby-test/m6-systemd-install-20260915/private/m6-partial-staged-source.tar",
     "sha256": "2ff84f6a636b55ef247f4327df1692b36b7d4ec7a6ec396f413c7aea7a75e30c"
   },
   "status": "verified_partial_checkpoint",
+  "supplementalSourceArchive": {
+    "bytes": 10240,
+    "path": "/opt/goby-test/m6-systemd-install-20260915/private/embed-wrapper-source.tar",
+    "sha256": "ca47ec7a22c6ae6d936e72334d02d1ab8faea9e5b1f3cf1a635b6478a992cd23"
+  },
+  "trackedEmbedWrapper": {
+    "bytes": 717,
+    "mode": 420,
+    "sha256": "a9e37c8bd6d0e1a12d4548a19abfb494ff46174eee7965eeb4c612cc95d14354"
+  },
+  "trackedEmbedWrapperPath": "web/admin/embedded.go",
   "version": 1,
   "wholeM6Accepted": false
 }

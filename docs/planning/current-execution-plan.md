@@ -97,12 +97,21 @@ The immediate queue is:
 3. The installation result and its limitations are committed and pushed in
    partial M6 checkpoint `beaea34`. The separately retained
    [source bridge](../development/systemd-package-source-checkpoint.json)
-   verified that snapshot. All 863 backend,
-   module and package inputs matched the E11 source; the 58 generated inputs
-   retain their separate artifact evidence. Continue the actual distribution
-   component inventory and outstanding third-party notice/source materials.
-   Project-license selection is still pending user input. In parallel, review
-   the stopped-unit evidence contract before admitting more installation work.
+   verified that snapshot. The original 863-input bridge plus a same-tree
+   supplement now match all 864 tracked backend/embed-wrapper/module/package
+   inputs; 57 generated assets retain their separate artifact evidence.
+   The [actual component inventory](../development/systemd-package-component-inventory.md)
+   now covers the five package members, eleven recorded Go dependency modules,
+   57 embedded assets and nine fonts. Continue the JavaScript package-contribution
+   graph, upstream glyph provenance and eventual legal payload. Project-license
+   selection is still pending user input. The
+   [two controlled service exits](../development/systemd-stop-evidence-verification.json)
+   proved retained exit evidence while a private D-Bus reference is held. Its
+   [prospective runtime/sealer integration](../development/systemd-stop-integration-verification.json)
+   passed remote syntax/global checks, two invalid-input entries and 25 synthetic
+   contract/fault checks. Review a fresh installation scope and the complete
+   rebound helper/input/handoff chain before an execution decision. These copies
+   still carry the old E12 scope and have run no valid installation input.
    Reuse the completed package build and M5 regression while their bound inputs
    remain unchanged; expand verification only for a concrete change or failure.
 4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded

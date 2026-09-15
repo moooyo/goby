@@ -59,10 +59,25 @@ symbol and invalid-input entry checks. See the
 [first installation attempt](systemd-installation-first-attempt.json).
 Installation acceptance remains open and new attempts are paused pending a
 review of the execution approach. The shipped unit is unchanged.
-The [source checkpoint](systemd-package-source-checkpoint.json) records the
-staged-source bridge matching 863 backend, module and package inputs to
-the verified E11 source. Its 58 generated asset/provenance inputs retain their
-separate build evidence. This checkpoint does not complete M6.
+The [source checkpoint](systemd-package-source-checkpoint.json) now matches
+864 tracked backend, embed-wrapper, module and package inputs to the verified
+E11 source. A supplement checks `web/admin/embedded.go` from the same Git tree;
+the original bridge had grouped that tracked source with 57 generated assets.
+Those assets retain their separate build evidence. This checkpoint does not
+complete M6.
+
+The [bounded unit-reference experiment](systemd-stop-evidence-verification.json)
+passed both real exit-zero and exit-seven control cases. It retained the
+original execution PID, start timestamp, invocation and actual exit result
+until the private D-Bus reference was released. Both fixtures and connections
+closed with protected state unchanged. The
+[prospective runtime/sealer integration](systemd-stop-integration-verification.json)
+passed remote syntax/global checks, two invalid-input entry checks and 25
+synthetic contract/fault checks. These cover retained-record types and causality,
+bounded cleanup after file capture failure, no repeated stop, and preservation
+of failure classification. No new installation or actual Goby stop was run.
+A fresh scope and its complete handoffs still need a reviewed execution decision;
+Goby installation acceptance is paused.
 Historical candidate admissions retain their original scope.
 
 The saved recovery scope is
@@ -530,8 +545,12 @@ texts and one toolchain VERSION file, with exact-version records for all 11
 current Go requirements, all 87 production npm entries and nine built font
 assets. [Remote source/copy/font checks](third-party-notices-verification.json)
 passed. The inventory remains incomplete:
-historical/optional package gaps, upstream icon scope, the project license and
-actual distribution contents remain open. This does not close the M6 release gate.
+historical/optional package gaps, upstream icon scope and the project license
+remain open. The [actual package inventory](systemd-package-component-inventory.md)
+has since bound the five E11 members, eleven binary build-info module records,
+57 embedded assets and nine fonts to the retained legal collection. The package
+has no notices/legal payload; the exact JavaScript package contribution graph
+and upstream glyph evidence remain open. This does not close the M6 release gate.
 The [staged Git artifact check](third-party-notices-git-verification.json) also
 confirmed that all 183 legal/version files and the inventory retained their
 verified bytes through Git; targeted attributes prevent newline conversion.
