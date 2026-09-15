@@ -104,11 +104,25 @@ def load_reviewed_tv_replay_input(pin):
     return value
 
 
+def load_episode_provenance_replay_input(pin):
+    value = read_reviewed_replay_descriptor(pin)
+    m.need(isinstance(value, dict) and set(value) == {"kind", "version", "scenario", "seed", "provenance"} and
+           value["kind"] == "audited-candidate-episode-provenance-replay-input" and type(value["version"]) is int and value["version"] == 1 and
+           value["scenario"] == "episode" and isinstance(value["provenance"], dict) and set(value["provenance"]) == m.FINAL_PROVENANCE_KEYS,
+           "episode_provenance_replay_input_schema")
+    for selected in (value["seed"], *value["provenance"].values()):
+        m.descriptor(selected)
+    return value
+
+
 REVIEWED_REPLAY_PIN = reviewed_replay_arguments(sys.argv)
 REVIEWED_REPLAY_CASES = load_reviewed_replay_cases(REVIEWED_REPLAY_PIN) if REVIEWED_REPLAY_PIN is not None else None
 REVIEWED_TV_REPLAY_FLAGS = ("--reviewed-tv-baseline", "--reviewed-tv-baseline-sha256")
 REVIEWED_TV_REPLAY_PIN = reviewed_replay_arguments(sys.argv, REVIEWED_TV_REPLAY_FLAGS)
 REVIEWED_TV_REPLAY_INPUT = load_reviewed_tv_replay_input(REVIEWED_TV_REPLAY_PIN) if REVIEWED_TV_REPLAY_PIN is not None else None
+EPISODE_PROVENANCE_REPLAY_FLAGS = ("--episode-provenance", "--episode-provenance-sha256")
+EPISODE_PROVENANCE_REPLAY_PIN = reviewed_replay_arguments(sys.argv, EPISODE_PROVENANCE_REPLAY_FLAGS)
+EPISODE_PROVENANCE_REPLAY_INPUT = load_episode_provenance_replay_input(EPISODE_PROVENANCE_REPLAY_PIN) if EPISODE_PROVENANCE_REPLAY_PIN is not None else None
 
 
 def fixture():
@@ -568,7 +582,165 @@ def startup_fixture(*, successor=False, epoch_version=2):
     return report, initialization, documents, raw_files, check
 
 
+def final_fixture(scenario="movie"):
+    """Synthetic v6 authority; it never supplies a production artifact or input."""
+    value, before, binding, legacy = reviewed_fixture()
+    pin = lambda name: {"path": str(m.R / ("synthetic-final/" + name)), "sha256": hashlib.sha256(name.encode()).hexdigest()}
+    sequences = {name: {"lastValue": "1", "isCalled": True} for name in m.FINAL_SEQUENCES}
+    movie_pins = {**copy.deepcopy(legacy["review"]["movieProvenance"]), "boundary": None}
+    movie_history = {**copy.deepcopy(legacy["movieProvenance"]), "boundary": None}
+    movie_history["snapshot"]["sequences"] = copy.deepcopy(sequences)
+    before["sequences"] = copy.deepcopy(sequences)
+    binding.update(version=4, runtimeEpoch=pin("runtime-epoch.json"))
+    source = {**copy.deepcopy(legacy["sourceEpoch"]["currentSource"]),
+              **{key: pin(key + ".json") for key in ("artifactReceipt", "buildManifest", "sourceBridge", "sourceManifest", "fullReport", "binary")}}
+    epoch = {"kind": "audited-candidate-runtime-epoch", "version": 4, "operationKind": "programs_successor", "currentSource": source}
+    actor_pins, actor_history = movie_pins, movie_history
+    if scenario != "movie":
+        actor = {"id": ("e" if scenario == "episode" else "f") * 32, "username": "synthetic-" + scenario}
+        binding["actors"][scenario] = actor
+        if scenario == "episode":
+            binding["catalog"]["episodes"] = [{"id": "9" * 32, "type": "Episode", "parentIndexNumber": 2, "indexNumber": 1, "runtimeTicks": 6000000000}]
+        item = m.final_item(binding, scenario)
+        old_play = next(row for row in before["tables"]["play_sessions"] if row["state"] == "Prepared" and row["user_id"] == binding["actors"]["movie"]["id"])
+        play = {**copy.deepcopy(old_play), "id": "play_" + scenario + "_retained", "auth_session_id": scenario + "_retained_auth", "user_id": actor["id"],
+                "item_id": item["id"], "media_source_id": item["mediaSourceId"], "duration_ticks": item["runtimeTicks"], "device_id": scenario + "-device"}
+        before["tables"]["users"].append({"id": actor["id"], "name": actor["username"], "is_administrator": False, "is_disabled": False, "policy": {}})
+        before["tables"]["sessions"].append({"id": play["auth_session_id"], "user_id": actor["id"], "kind": "emby", "device_id": play["device_id"], "revoked_at": "2026-09-13T12:20:00Z"})
+        before["tables"]["play_sessions"].append(play)
+        before["tables"]["user_item_data"].append({"user_id": actor["id"], "item_id": item["id"], "play_count": 1, "playback_position_ticks": 123000000,
+                                                  "is_favorite": False, "played": False, "last_played_at": "2026-09-13T12:10:00Z"})
+        actor_pins = {key: pin(scenario + "-" + key + ".json") for key in m.FINAL_PROVENANCE_KEYS}
+        process = {"pid": 100, "startTicks": "1000", "bootId": "synthetic-boot"}
+        historic_epoch = {**copy.deepcopy(legacy["sourceEpoch"]), "version": 3, "candidateProcess": process, "postgresProcess": {"pid": 200}, "lease": {"owned": True}}
+        candidate = {**process, "listener": {"port": 19181, "socketInode": "10"}}
+        manifest = {**copy.deepcopy(legacy["manifest"]), "scenario": scenario, "runId": scenario + "-01", "actor": actor,
+                    "catalog": copy.deepcopy(binding["catalog"]), "processes": {"candidate": candidate}}
+        evidence = {"sourceAfter": actor_pins["snapshot"], "runtimeEpoch": actor_pins["sourceEpoch"], "manifest": actor_pins["manifest"],
+                    "sourceBefore": pin(scenario + "-before.json"), "boundary": actor_pins["boundary"], "gatewayIndex": pin(scenario + "-gateway.json")}
+        boundary = {"kind": "audited-candidate-client-boundary", "version": 1, "runId": manifest["runId"], "runtimeEpoch": actor_pins["sourceEpoch"],
+                    "sourceBefore": evidence["sourceBefore"], "sourceAfter": actor_pins["snapshot"], "candidateBefore": candidate, "candidateAfter": copy.deepcopy(candidate),
+                    "postgresBefore": historic_epoch["postgresProcess"], "postgresAfter": copy.deepcopy(historic_epoch["postgresProcess"]),
+                    "leaseBefore": historic_epoch["lease"], "leaseAfter": copy.deepcopy(historic_epoch["lease"]),
+                    "clientWorker": {"exitCode": 0, "mainPID": 0, "workerPidAbsent": True, "remainingBrowserPids": []},
+                    "gatewayWorker": {"exitCode": 0, "mainPID": 0, "workerPidAbsent": True, "index": evidence["gatewayIndex"]}}
+        actor_history = {"snapshot": copy.deepcopy(before), "sourceEpoch": historic_epoch, "manifest": manifest, "boundary": boundary,
+                         "closeout": {"kind": "audited-candidate-" + scenario + "-owned-state-closeout", "status": "owned_state_closed_client_acceptance_pending",
+                                      "clientAcceptance": False, "sourcePinsUnchanged": True, "inputEvidence": evidence}}
+    actor = binding["actors"][scenario]
+    before["capturedAt"] = "2026-09-13T13:00:00Z"
+    before["tables"]["client_playback_references"].append({"user_id": "b" * 32, "auth_session_id": "foreign-auth", "play_session_id": "play_foreign", "client_nonce": "foreign-reference"})
+    for role in ("P", "Q"):
+        before["tables"]["sessions"].append({"id": "admission-" + role, "user_id": "b" * 32, "kind": "emby", "revoked_at": "2026-09-13T12:59:59Z"})
+    value.update(version=6, runId=scenario + "-final-01", scenario=scenario, runtimeEpoch=binding["runtimeEpoch"], seedBinding=pin("seed-binding.json"),
+                 admission=pin("admission.json"), admissionCloseout=pin("admission-closeout.json"), runtimeHelper=pin("runtime.py"),
+                 avVerification=pin("components.json"), retainedBaseline=pin("baseline.json"))
+    value["output"] = str(m.R / ("candidate-core-client-" + value["runId"]))
+    for role in ("closer", "subtitles"):
+        value["sources"][role]["sha256"] = pin(role)["sha256"]
+    review = {"kind": "audited-candidate-final-client-baseline", "version": 1, "status": "reviewed_closed_state", "scenario": scenario,
+              "actor": {key: actor[key] for key in ("id", "username")}, "item": m.final_item(binding, scenario), "runtimeEpoch": value["runtimeEpoch"],
+              "seedBinding": value["seedBinding"], "currentSnapshot": pin("after-admission.json"),
+              "currentStateEvidence": {"kind": "programs-admission", "receipt": value["admissionCloseout"]},
+              "actorProvenance": actor_pins, "movieProvenance": movie_pins,
+              "preparedExpirations": [{"playSessionId": row["id"], "authSessionId": row["auth_session_id"]} for row in before["tables"]["play_sessions"]
+                                      if row["user_id"] == actor["id"] and row["state"] == "Prepared"]}
+    state = {"kind": "audited-candidate-programs-admission-closeout", "version": 1, "status": "admitted_for_core_client", "admissionKind": "affected_programs",
+             "runtimeEpoch": value["runtimeEpoch"], "seedRuntimeBinding": value["seedBinding"], "sourceAfter": review["currentSnapshot"], "currentSource": source}
+    retained = {"review": review, "snapshot": copy.deepcopy(before), "currentStateEvidence": state, "actorProvenance": actor_history,
+                "movieProvenance": movie_history, "inputBinding": {key: value[key] for key in ("runtimeEpoch", "seedBinding", "admission", "admissionCloseout")}, "epoch": epoch}
+    return value, before, binding, retained, epoch
+
+
 class Guards(unittest.TestCase):
+    def test_final_v6_is_separate_from_legacy_and_does_not_accept_recovery_runtime(self):
+        frozen = copy.deepcopy(m.FROZEN)
+        for scenario in ("movie", "episode", "subtitles"):
+            value, _, _, _, _ = final_fixture(scenario)
+            self.assertEqual(m.validate_input(value), value)
+            for change in ({"scenario": "tv-browse"}, {"version": 5}, {"currentRuntime": copy.deepcopy(m.EPOCH)}, {"admission": copy.deepcopy(m.ADMISSION)}):
+                with self.subTest(scenario=scenario, change=change), self.assertRaises(m.RunError):
+                    m.validate_input({**copy.deepcopy(value), **change})
+        self.assertEqual(m.FROZEN, frozen)
+
+    def test_final_baselines_keep_each_consumed_actor_and_foreign_references(self):
+        for scenario in ("movie", "episode", "subtitles"):
+            _, before, seed, retained, epoch = final_fixture(scenario)
+            original = copy.deepcopy(retained)
+            self.assertEqual(len(m.validate_final_baseline(retained, seed, epoch)), 1)
+            m.verify_actor_before(before, seed, scenario, retained, 6, epoch=epoch)
+            self.assertEqual(retained, original)
+            self.assertEqual(len(before["tables"]["client_playback_references"]), 1)
+
+    def test_final_baseline_requires_independent_admission_after_state(self):
+        for mutate in (
+            lambda r: r["currentStateEvidence"].update(kind="audited-candidate-live-admission", version=5),
+            lambda r: r["review"]["currentStateEvidence"].update(receipt=r["inputBinding"]["admission"]),
+            lambda r: r["currentStateEvidence"].update(sourceAfter={"path": str(m.R / "transition-source-after.json"), "sha256": "0" * 64}),
+            lambda r: r["currentStateEvidence"].update(status="pending_independent_review"),
+        ):
+            _, _, seed, retained, epoch = final_fixture()
+            mutate(retained)
+            with self.assertRaisesRegex(m.RunError, "final_admission_state_binding"):
+                m.validate_final_baseline(retained, seed, epoch)
+
+    def test_final_following_client_binds_same_epoch_admission_and_current_snapshot(self):
+        _, before, seed, retained, epoch = final_fixture("episode")
+        review = retained["review"]
+        review["currentStateEvidence"]["kind"] = "final-client"
+        retained["currentStateEvidence"] = {"kind": "audited-candidate-client-closeout", "status": "core_scenario_closed", "contractVersion": 6, "scenario": "movie",
+            "source": {"binarySha256": epoch["currentSource"]["binary"]["sha256"], "manifestSha256": epoch["currentSource"]["sourceManifest"]["sha256"], "schema": 28},
+            "evidence": {**{key: retained["inputBinding"][key] for key in ("runtimeEpoch", "seedBinding", "admission")}, "sourceAfter": review["currentSnapshot"]}}
+        m.verify_actor_before(before, seed, "episode", retained, 6, epoch=epoch)
+        for key in ("runtimeEpoch", "seedBinding", "admission", "sourceAfter"):
+            changed = copy.deepcopy(retained)
+            changed["currentStateEvidence"]["evidence"][key] = {**changed["currentStateEvidence"]["evidence"][key], "sha256": "0" * 64}
+            with self.subTest(key=key), self.assertRaisesRegex(m.RunError, "final_preceding_client_state_binding"):
+                m.validate_final_baseline(changed, seed, epoch)
+
+    def test_final_current_snapshot_checks_all_35_tables_and_five_sequences(self):
+        _, before, seed, retained, epoch = final_fixture()
+        for table in sorted(m.REVIEWED_BASELINE_TABLES):
+            changed = copy.deepcopy(before)
+            changed["tables"][table].append({"id": "unexpected-row"})
+            with self.subTest(table=table), self.assertRaises(m.RunError):
+                m.verify_actor_before(changed, seed, "movie", retained, 6, epoch=epoch)
+        for name in m.FINAL_SEQUENCES:
+            changed = copy.deepcopy(before); changed["sequences"][name]["lastValue"] = "2"
+            with self.subTest(sequence=name), self.assertRaisesRegex(m.RunError, "final_fresh_state_changed"):
+                m.verify_actor_before(changed, seed, "movie", retained, 6, epoch=epoch)
+
+    def test_final_rejects_wrong_actor_provenance_prepared_scope_and_owned_residue(self):
+        mutations = [lambda r: r["review"].update(actor={"id": "b" * 32, "username": "synthetic-control"}),
+                     lambda r: r["review"].update(preparedExpirations=[]),
+                     lambda r: r["actorProvenance"]["manifest"].update(scenario="tv-browse"),
+                     lambda r: r["snapshot"]["tables"]["sessions"].append({"id": "duplicate", "user_id": r["review"]["actor"]["id"], "revoked_at": None})]
+        for mutation in mutations:
+            _, _, seed, retained, epoch = final_fixture("episode"); mutation(retained)
+            with self.assertRaises(m.RunError):
+                m.validate_final_baseline(retained, seed, epoch)
+        _, _, seed, retained, epoch = final_fixture("subtitles")
+        retained["snapshot"]["tables"]["encoding_jobs"].append({"id": "owned-job", "play_session_id": retained["review"]["preparedExpirations"][0]["playSessionId"]})
+        with self.assertRaisesRegex(m.RunError, "final_current_actor_residue"):
+            m.validate_final_baseline(retained, seed, epoch)
+
+    def test_final_loader_reads_real_state_and_both_provenances_without_mutation(self):
+        value, _, seed, retained, epoch = final_fixture("subtitles")
+        records = {value["retainedBaseline"]["path"]: retained["review"], retained["review"]["currentSnapshot"]["path"]: retained["snapshot"],
+                   retained["review"]["currentStateEvidence"]["receipt"]["path"]: retained["currentStateEvidence"]}
+        for role in ("actorProvenance", "movieProvenance"):
+            for key, pin in retained["review"][role].items():
+                if pin is not None:
+                    records[pin["path"]] = retained[role][key]
+        original = copy.deepcopy(records)
+        loaded = m.load_final_baseline(value["retainedBaseline"], retained["inputBinding"], seed, epoch, lambda pin: copy.deepcopy(records[pin["path"]]))
+        self.assertEqual(loaded, retained)
+        self.assertEqual(records, original)
+
+    def test_final_missing_components_fail_before_runtime_actor_selection(self):
+        value, _, _, _, _ = final_fixture()
+        with self.assertRaisesRegex(m.RunError, "final_component_schema"):
+            m.validate_v6_component_evidence({}, value, {"path": str(m.R / "controller.py"), "sha256": "1" * 64}, lambda pin: b"")
     def test_v5_component_selection_binds_actual_source_bytes_and_input_pins(self):
         f = component_fixture()
         with patch.object(m, "FROZEN", f["frozen"]):
@@ -1466,6 +1638,14 @@ class Guards(unittest.TestCase):
         self.assertEqual(tuple(len(snapshot["tables"][table]) for table in ("sessions", "play_sessions", "client_playback_references")), expected)
         self.assertEqual(len(retained["review"]["preparedExpirations"]), 1)
         self.assertEqual(len(m.validate_reviewed_movie_baseline(retained, seed)), 1)
+        movie_pins = {**retained["review"]["movieProvenance"], "boundary": None}
+        movie_records = {**retained["movieProvenance"], "boundary": None}
+        m.validate_final_provenance(movie_records, movie_pins, "movie", seed)
+        final_roles = ["movie"]
+        if retained["manifest"]["scenario"] == "subtitles":
+            m.validate_final_provenance({key: retained[key] for key in m.FINAL_PROVENANCE_KEYS},
+                {key: retained["review"][key] for key in m.FINAL_PROVENANCE_KEYS}, "subtitles", seed)
+            final_roles.append("subtitles")
         fresh = copy.deepcopy(snapshot)
         fresh_before, references_before = digest(fresh), digest(fresh["tables"]["client_playback_references"])
         m.verify_actor_before(fresh, seed, "movie", retained, 4)
@@ -1489,7 +1669,7 @@ class Guards(unittest.TestCase):
             "reviewSha256": case["review"]["sha256"], "snapshotSha256": retained["review"]["snapshot"]["sha256"],
             "sessions": expected[0], "plays": expected[1], "foreignClientReferences": expected[2], "preparedExpirations": 1,
             "rejectedTableMutations": 35, "rejectedSequenceMutations": 5, "unchangedEvidenceSha256": retained_before,
-            "foreignClientReferencesSha256": references_before}))
+            "foreignClientReferencesSha256": references_before, "finalClientProvenanceRoles": final_roles}))
 
     if REVIEWED_REPLAY_CASES is not None:
         def test_saved_reviewed_01_movie05_baseline(self):
@@ -1500,6 +1680,31 @@ class Guards(unittest.TestCase):
 
         def test_saved_reviewed_03_latest_subtitles_baseline(self):
             self.assert_reviewed_saved_case(2, (21, 13, 2))
+
+    if EPISODE_PROVENANCE_REPLAY_INPUT is not None:
+        def test_saved_episode_provenance(self):
+            value = EPISODE_PROVENANCE_REPLAY_INPUT
+            seed = read_reviewed_replay_descriptor(value["seed"])
+            pins = value["provenance"]
+            bundle = {key: read_reviewed_replay_descriptor(selected) for key, selected in pins.items()}
+            digest = lambda content: hashlib.sha256(m.canonical(content).encode()).hexdigest()
+            original = digest({"seed": seed, "bundle": bundle})
+            self.assertEqual(seed["version"], 3)
+            self.assertEqual(bundle["sourceEpoch"]["version"], 3)
+            self.assertEqual(seed["runtimeEpoch"], pins["sourceEpoch"])
+            rows = m.validate_final_provenance(bundle, pins, "episode", seed)
+            snapshot = bundle["snapshot"]
+            self.assertEqual(len(snapshot["tables"]), 35)
+            self.assertEqual(len(snapshot["sequences"]), 5)
+            self.assertEqual(tuple(len(snapshot["tables"][table]) for table in ("sessions", "play_sessions", "client_playback_references")), (20, 11, 2))
+            self.assertEqual(len(rows["play_sessions"]), 2)
+            self.assertEqual(sum(row["state"] == "Prepared" for row in rows["play_sessions"]), 1)
+            self.assertEqual(digest({"seed": seed, "bundle": bundle}), original)
+            print(json.dumps({"kind": "audited-candidate-episode-provenance-python-replay", "input": EPISODE_PROVENANCE_REPLAY_PIN,
+                "provenance": pins, "seed": value["seed"], "productionValidator": "validate_final_provenance", "sessions": 20, "plays": 11,
+                "foreignClientReferences": 2, "actorPlays": 2, "actorPrepared": 1, "tables": 35, "sequences": 5,
+                "unchangedEvidenceSha256": original, "usedAsCurrentBaseline": False,
+                "browserInputsCreated": 0, "httpCalls": 0, "sqlCalls": 0, "serviceCalls": 0, "clientAcceptance": False}))
 
     if REVIEWED_TV_REPLAY_INPUT is not None:
         def test_saved_reviewed_tv_baseline(self):

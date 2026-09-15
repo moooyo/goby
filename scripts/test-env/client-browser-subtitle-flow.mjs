@@ -8,7 +8,7 @@ const CUES = ['Opening subtitle', 'Backward seek subtitle', 'Forward seek subtit
 
 export async function runSubtitleUI({ page, context, report, snapshot, target, movieId }) {
   const result = report.subtitle_flow = { phase: 'home_movie', outcome: 'in_progress',
-    movie: MOVIE, steps: [], network_subtitles: [], initial_selection: 'Off', restored_selection: false,
+    movie: MOVIE, steps: [], selections: [], network_subtitles: [], initial_selection: 'Off', restored_selection: false,
     scope: 'External SRT and VTT selection, cue visibility, seek alignment, and return to Off through the original UI' };
   let responses = Promise.resolve();
 
@@ -20,9 +20,13 @@ export async function runSubtitleUI({ page, context, report, snapshot, target, m
   }
 
   async function media(label) {
-    const data = await page.evaluate(allowed => [...document.querySelectorAll('video')].map(video => {
+    const data = await page.evaluate(({ allowed, origin, itemId }) => [...document.querySelectorAll('video')].map(video => {
       const quality = typeof video.getVideoPlaybackQuality === 'function' ? video.getVideoPlaybackQuality() : null;
+      let sourceMatches = false;
+      try { const source = new URL(video.currentSrc, document.baseURI); sourceMatches = source.origin === origin &&
+        new RegExp('^/(?:emby/)?Videos/' + itemId + '/', 'i').test(source.pathname); } catch { /* An unavailable source is not identity evidence. */ }
       return { current_time: Number.isFinite(video.currentTime) ? video.currentTime : null,
+        visible: video.getClientRects().length > 0, source_matches_item: sourceMatches,
         duration: Number.isFinite(video.duration) ? video.duration : null, paused: video.paused,
         ready_state: video.readyState, network_state: video.networkState,
         video_width: video.videoWidth, video_height: video.videoHeight,
@@ -30,7 +34,7 @@ export async function runSubtitleUI({ page, context, report, snapshot, target, m
         text_tracks: [...video.textTracks].map(track => ({ kind: track.kind, label: track.label, language: track.language,
           mode: track.mode, active_cues: [...(track.activeCues ?? [])].map(cue => ({ start: cue.startTime, end: cue.endTime,
             text: allowed.includes(cue.text) ? cue.text : '{unexpected cue}' })) })) };
-    }), CUES);
+    }), { allowed: CUES, origin: target.origin, itemId: movieId });
     const visibleCues = [];
     for (const cue of CUES) if (await page.getByText(cue, { exact: true }).filter({ visible: true }).count()) visibleCues.push(cue);
     result.steps.push({ label, at: new Date().toISOString(), media: data, visible_dom_cues: visibleCues });
@@ -69,6 +73,7 @@ export async function runSubtitleUI({ page, context, report, snapshot, target, m
     const action = option.locator('xpath=ancestor-or-self::*[self::button or self::a or @role="option" or @role="menuitem" or @role="radio"][1]');
     if (await action.count() === 1) await action.click({ timeout: 8000 });
     else await option.click({ timeout: 8000 });
+    result.selections.push({ name, label, at: new Date().toISOString() });
     await page.waitForTimeout(400);
     await media(`${label}-selected`);
   }
@@ -152,6 +157,18 @@ export async function runSubtitleUI({ page, context, report, snapshot, target, m
     result.phase = 'select_external_vtt';
     await selectSubtitle('English (VTT)', 'subtitle-vtt');
     await cue('Forward seek subtitle', 'subtitle-vtt-forward-cue');
+    result.phase = 'seek_with_vtt';
+    await showControls();
+    const openingSlider = page.locator('input.videoOsdPositionSlider:visible');
+    if (await openingSlider.count() !== 1) fail('observed_movie_position_slider_missing');
+    const openingBox = await openingSlider.boundingBox();
+    if (!openingBox || openingBox.width < 50) fail('observed_movie_position_slider_missing');
+    await openingSlider.click({ position: { x: openingBox.width * 0.003, y: openingBox.height / 2 }, timeout: 8000 });
+    await page.waitForTimeout(400);
+    const opening = await media('subtitle-vtt-after-opening-seek');
+    if (!opening.video || opening.video.current_time < 0 || opening.video.current_time >= 5)
+      fail('subtitle_seek_missed_synthetic_cue_window');
+    await cue('Opening subtitle', 'subtitle-vtt-opening-cue');
     result.phase = 'restore_off';
     await selectSubtitle('Off', 'subtitle-off');
     const off = await media('subtitle-off-verified');

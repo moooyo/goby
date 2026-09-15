@@ -41,6 +41,15 @@ const AFFECTED_TV_CHECKS = ['runtimeIdentity', 'tvDefaultParents', 'tvDetailPare
 const REUSED_ADMISSION_CONTRACTS = ['native_authentication_and_query_carriers', 'storage_and_library_access', 'backup_create_download', 'restore_ready_cancel_retained_stage'];
 const CLOSEOUT_PINS = ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary'];
 const TABLES = 'activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users'.split(' ').sort();
+const FINAL_SCENARIOS = ['movie', 'episode', 'subtitles'];
+const FINAL_SEQUENCES = 'activity_entries_id_seq application_keys_id_seq catalog_entities_id_seq devices_id_seq theme_owner_ids_id_seq'.split(' ').sort();
+const FINAL_PROVENANCE_KEYS = ['closeout', 'snapshot', 'sourceEpoch', 'manifest', 'boundary'];
+const FINAL_BASELINE_KEYS = ['kind', 'version', 'status', 'scenario', 'actor', 'item', 'runtimeEpoch', 'seedBinding',
+  'currentSnapshot', 'currentStateEvidence', 'actorProvenance', 'movieProvenance', 'preparedExpirations'];
+const FINAL_COMPONENT_SCOPE = 'programs_final_client_v6_components';
+const FINAL_COMPONENT_BINDINGS = ['controller', 'sources', 'runtimeHelper', 'runtimeEpoch', 'seedBinding', 'admission', 'admissionCloseout', 'retainedBaseline'];
+const FINAL_COMPONENT_EVIDENCE = ['dispatch', 'pythonResult', 'javascriptResult', 'subtitleResult', 'runtimeVerification'];
+const PROGRAMS_ADMISSION_CHECKS = ['runtimeIdentity', 'programsEmptyQuery', 'programsSeriesQuery', 'ordinaryAuthorization', 'healthWindow60Seconds', 'sourceAndInactivePreserved', 'sessionCleanup'];
 const SOURCE_FILES = { closer: 'close-audited-candidate-client.mjs', adapter: 'client-browser-audited-candidate.mjs', gateway: 'client-acceptance-gateway.py', proxy: 'client-acceptance-proxy.py',
   sessionProof: 'client-browser-session-proof.mjs', movie: 'client-browser-playback.mjs', audio: 'client-browser-audio-flow.mjs', subtitles: 'client-browser-subtitle-flow.mjs', tv: 'client-browser-tv-flow.mjs' };
 const EPOCH_KEYS = 'kind version status transitionInput transitionHelper runtimeHelper originalProvision seedProvenance currentSource candidate candidateProcess postgresProcess lease before after preservation calls helpers candidateAdmissionComplete'.split(' ');
@@ -51,6 +60,18 @@ const SUCCESSOR_EPOCH_KEYS = ['previousEpoch', 'productInput', 'configurationInp
 const SUCCESSOR_BINDING_KEYS = ['previousBinding', 'reviewedSummary', 'reviewedState', 'priorCloseout', 'priorSource'];
 const SUCCESSOR_INPUT_KEYS = 'kind version output previousEpoch previousBinding reviewedSummary reviewedState priorCloseout priorSource newFullReport newSourceManifest newBinary compiledCatalog frontendReport helpers budgets'.split(' ');
 const SUCCESSOR_LIMITS = { maximumSeconds: 900, stopSeconds: 60, readySeconds: 60, maximumPublicRequests: 10, stopCalls: 1, replaceCalls: 1, startCalls: 1 };
+export const PROGRAMS_LINEAGE = {
+  previousEpoch: { path: RETAINED_ROOT + '/candidate-tv-parent-transition-01/private/runtime-epoch.json', sha256: '76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac' },
+  previousBinding: { path: RETAINED_ROOT + '/candidate-tv-parent-transition-01/private/seed-runtime-binding.json', sha256: '94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43' },
+  previousCurrentRuntime: { path: RETAINED_ROOT + '/core-current-runtime-20260915T085726Z/private/current-runtime-binding.json', sha256: '38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c' },
+  priorSource: { path: RETAINED_ROOT + '/candidate-core-client-tv-browse-02/private/source-after.json', sha256: '445c35bc17a8716adb036061e16fa29f22d9883727657ebfe1cfc1fdd0db13e4' },
+  priorCloseout: { path: RETAINED_ROOT + '/candidate-core-client-tv-browse-02/closeout/closeout.json', sha256: '5d666c204c4aa122414aa385928d6be6a4a153c8ce0390e4c9af2643fc19f9c3' },
+  sourceArchive: { path: RETAINED_ROOT + '/live-tv-product-source-20260915T102000Z/source-r01.tar.gz', sha256: '3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251' },
+};
+const PROGRAMS_SOURCE_KEYS = ['archiveSha256', 'sourceManifest', 'binary', 'fullReport', 'schema', 'artifactReceipt', 'buildManifest', 'sourceBridge'];
+const PROGRAMS_REFRESH_FIELDS = { key: 'library.refresh_media', emby_key: '', name: 'Refresh media details',
+  description: 'Refresh media details in all registered libraries, including unchanged files.', category: 'Library',
+  is_hidden: false, enabled: true, revision: 1, schedule_timezone: 'UTC' };
 const ENV_ADDITIONS = { GOBY_BACKUP_MAX_OBJECT_BYTES: '67108864', GOBY_BACKUP_MAX_TOTAL_BYTES: '268435456' };
 const own = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const need = (value, code) => { if (!value) throw new Error(code); };
@@ -125,6 +146,21 @@ export function previousBinaryEpochJSON(bytes, pin, maximum = MAX_FILE) {
 export function runtimeEpochJSON(bytes, pin, maximum = MAX_FILE) {
   need(descriptor(pin), 'runtime_epoch_reader_authority');
   return equal(pin, PREVIOUS_BINARY_EPOCH) ? previousBinaryEpochJSON(bytes, pin, maximum) : strictJSON(bytes, maximum);
+}
+
+/** Programs transition state contains source rows and explicitly named stat metadata. */
+export function programsStateJSON(bytes, pin, maximum = MAX_FILE) {
+  need(descriptor(pin), 'programs_state_reader_authority');
+  return scanJSON(bytes, maximum, location => {
+    const nested = ['source', 'inactiveStage'].includes(location[0]) ? location.slice(1) : location;
+    if (nested[0] === 'tables' && typeof nested[2] === 'number') {
+      if (nested.length === 4 && nested[1] === 'item_subtitles' && nested[3] === 'change_time_ns') return 0n;
+      if (nested.length === 5 && nested[1] === 'items' && nested[3] === 'media' && nested[4] === 'FileChangeTimeNs') return -9223372036854775808n;
+    }
+    if (['trees', 'fixedFiles', 'diagnostics', 'unitLogs', 'controlDocuments', 'protected', 'databases', 'oldBinaryFacts', 'unitLogsProof', 'diagnosticsProof'].includes(location[0]) &&
+      ['mtimeNs', 'ctimeNs', 'atimeNs', 'mtime_ns', 'ctime_ns', 'atime_ns'].includes(location.at(-1))) return -9223372036854775808n;
+    return null;
+  });
 }
 
 const PLAYBACK_REPORT_ROUTE = /^\/Sessions\/Playing(?:\/(?:Progress|Stopped))?\/?$/i;
@@ -434,7 +470,7 @@ export function validateServerLog(receipt, beforeBytes, afterBytes, { manifest, 
   need(approval?.kind === 'audited-candidate-client-approval' && approval.runId === manifest.runId && approval.scenario === manifest.scenario &&
     approval.sourceManifestSha256 === manifest.source.manifestSha256 && approval.binarySha256 === manifest.source.binarySha256 &&
     approval.serverId === manifest.serverId && approval.isolatedCandidate === true && equal(approval.authorizedRunInput, receipt.input) &&
-    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === ([4, 5].includes(input.version) ? input.version : 3) && authorizedInput.runId === manifest.runId &&
+    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === ([4, 5, 6].includes(input.version) ? input.version : 3) && authorizedInput.runId === manifest.runId &&
     authorizedInput.scenario === manifest.scenario && authorizedInput.output === path.dirname(manifest.output) &&
     equal(authorizedInput.runtimeEpoch, input.runtimeEpoch) && equal(authorizedInput.retainedBaseline, input.retainedBaseline) &&
     (input.version !== 5 || descriptor(input.currentRuntime) && equal(authorizedInput.currentRuntime, input.currentRuntime)) &&
@@ -649,7 +685,34 @@ export function explainMediaPartial(exchange, report, login) {
     completeHTTP: exchange.result.completeHTTP, responseForwardedComplete: exchange.result.responseForwardedComplete, deliveredBodyBytes: exchange.deliveredBodyBytes };
 }
 
-export function verifyUI(report, manifest, physical) {
+export function verifyFinalSubtitleSteps(row) {
+  need(Array.isArray(row?.selections) && equal(row.selections.map(value => value.name), ['English (SRT)', 'English (VTT)', 'Off']) &&
+    equal(row.selections.map(value => value.label), ['subtitle-srt', 'subtitle-vtt', 'subtitle-off']) && Array.isArray(row.steps), 'final_subtitle_selection_sequence');
+  for (const selection of row.selections) timestampNs(selection.at);
+  const video = step => {
+    need(Array.isArray(step?.media), 'final_subtitle_media_missing');
+    const value = one(step.media.filter(media => media.visible === true), 'final_subtitle_visible_video');
+    need(value.source_matches_item === true && value.video_width > 0 && Number.isFinite(value.current_time) &&
+      Array.isArray(value.text_tracks) && Array.isArray(step.visible_dom_cues), 'final_subtitle_media_identity');
+    return value;
+  };
+  for (const [label, cue, lower, upper] of [
+    ['subtitle-srt-opening-cue', 'Opening subtitle', 0, 5], ['subtitle-srt-forward-cue', 'Forward seek subtitle', 118, 128],
+    ['subtitle-vtt-forward-cue', 'Forward seek subtitle', 118, 128], ['subtitle-vtt-opening-cue', 'Opening subtitle', 0, 5],
+  ]) {
+    const observed = row.steps.filter(step => new RegExp('^' + label + '-[0-9]+$').test(step.label));
+    need(observed.some(step => { const value = video(step); return value.current_time >= lower && value.current_time < upper &&
+      (step.visible_dom_cues.includes(cue) || value.text_tracks.some(track => track.mode === 'showing' && Array.isArray(track.active_cues) &&
+        track.active_cues.some(active => active.text === cue && Number.isFinite(active.start) && Number.isFinite(active.end) &&
+          active.start <= value.current_time && value.current_time < active.end))); }), 'final_subtitle_cue_missing');
+  }
+  const off = one(row.steps.filter(step => step.label === 'subtitle-off-verified'), 'final_subtitle_off_missing'), value = video(off);
+  need(!value.text_tracks.some(track => track.mode === 'showing') && off.visible_dom_cues.length === 0 && row.restored_selection === true,
+    'final_subtitle_off_not_restored');
+  return { srtOpening: true, srtSeek: true, vttOpening: true, vttSeek: true, off: true };
+}
+
+export function verifyUI(report, manifest, physical, { finalClient = false } = {}) {
   need(report.outcome === 'scenario_completed' && report.failure === null && report.page_errors.length === 0 &&
     report.cleanup.browser_closed === true && report.cleanup.tokens_rejected === true && report.cleanup.media_stopped === true &&
     report.browser_environment.service_workers === 'allow' && report.browser_environment.proxy_bypass === '<-loopback>' &&
@@ -663,9 +726,12 @@ export function verifyUI(report, manifest, physical) {
     }
     const stop = visibleVideo(report, 'before-stop'), resumed = visibleVideo(report, 'resumed');
     need(Math.abs(stop.current_time - resumed.current_time) <= 15 && visibleVideo(report, 'paused').paused, 'movie_pause_or_resume_mismatch');
+    if (finalClient) need(stop.current_time > 0 && resumed.current_time > 0, 'final_movie_resume_must_be_nonzero');
     for (const label of ['movie-seek-forward', 'movie-seek-backward']) { const a = visibleVideo(report, label + '-before'), b = visibleVideo(report, label + '-after');
       need(label.endsWith('forward') ? b.current_time > a.current_time + 10 : b.current_time < a.current_time - 10, 'movie_seek_not_observed'); }
   } else if (manifest.scenario === 'episode') {
+    if (finalClient) need(['tv_browse_ui_flow_completed', 'tv_browse_ui_flow_completed_with_cross_season_list'].includes(report.tv_browse?.outcome) &&
+      report.tv_browse?.episode_detail?.season_and_episode_metadata_observed === true, 'final_episode_browse_incomplete');
     const row = report.episode_playback;
     need(row?.item_id === selectedCandidateItem(manifest).id && row.stopped && row.first.source_matches_item && row.advanced.source_matches_item &&
       row.advanced.current_time > row.first.current_time + 1 && row.advanced.frames > row.first.frames && row.paused.paused && row.held.paused &&
@@ -678,6 +744,7 @@ export function verifyUI(report, manifest, physical) {
   } else if (manifest.scenario === 'subtitles') {
     const row = report.subtitle_flow;
     need(row?.outcome === 'external_srt_vtt_ui_selection_and_seek_completed' && row.restored_selection === true, 'subtitle_ui_incomplete');
+    if (finalClient) verifyFinalSubtitleSteps(row);
     for (const track of manifest.catalog.subtitles) {
       need(row.network_subtitles.some(value => value.item_matches_owned_movie && value.subtitle_index === track.index && value.request_method === 'GET' &&
         value.status === 200 && value.body_result === 'owned_subtitle_hashed' && value.bytes > 0 && value.starts_with_webvtt === true && SHA.test(value.sha256)), 'subtitle_delivery_unproven');
@@ -1204,6 +1271,177 @@ export function countedStartEvidence(play, reports) {
 }
 
 /** Compare only the current scenario's declared writes; protect every other row. */
+export function validateFinalSnapshot(value) {
+  need(exact(value, ['capturedAt', 'tables', 'sequences']) && own(value.tables) && equal(Object.keys(value.tables).sort(), TABLES) &&
+    own(value.sequences) && equal(Object.keys(value.sequences).sort(), FINAL_SEQUENCES) && TABLES.every(name => Array.isArray(value.tables[name]) && value.tables[name].every(own)),
+    'final_snapshot_inventory');
+  timestampNs(value.capturedAt);
+  for (const row of Object.values(value.sequences)) need(exact(row, ['lastValue', 'isCalled']) && typeof row.lastValue === 'string' && /^[0-9]+$/.test(row.lastValue) && typeof row.isCalled === 'boolean', 'final_sequence_shape');
+  for (const name of ['users', 'sessions', 'play_sessions']) { indexed(value.tables[name]); need(value.tables[name].every(row => typeof row.id === 'string' && row.id.length), 'final_row_identity'); }
+  for (const row of value.tables.sessions) timestampNs(row.revoked_at);
+  return value;
+}
+
+function finalItem(seed, scenario) {
+  need(FINAL_SCENARIOS.includes(scenario), 'final_scenario');
+  const item = scenario === 'episode' ? one(seed.catalog.episodes.filter(row => row.type === 'Episode' && row.parentIndexNumber === 2 && row.indexNumber === 1), 'final_episode_identity') : seed.catalog.movie;
+  need(/^[a-f0-9]{32}$/.test(item?.id) && integer(item.runtimeTicks) && item.runtimeTicks > 0, 'final_item_identity');
+  return { id: item.id, mediaSourceId: 'mediasource_' + item.id, runtimeTicks: item.runtimeTicks };
+}
+
+export function validateFinalBaselineInput(review) {
+  need(exact(review, FINAL_BASELINE_KEYS) && review.kind === 'audited-candidate-final-client-baseline' && review.version === 1 &&
+    review.status === 'reviewed_closed_state' && FINAL_SCENARIOS.includes(review.scenario) && ['runtimeEpoch', 'seedBinding', 'currentSnapshot'].every(key => descriptor(review[key])), 'final_baseline_schema');
+  need(exact(review.currentStateEvidence, ['kind', 'receipt']) && ['programs-admission', 'final-client'].includes(review.currentStateEvidence.kind) && descriptor(review.currentStateEvidence.receipt), 'final_current_state_schema');
+  for (const name of ['actorProvenance', 'movieProvenance']) need(exact(review[name], FINAL_PROVENANCE_KEYS) && FINAL_PROVENANCE_KEYS.every(key =>
+    key === 'boundary' && review[name][key] === null || descriptor(review[name][key])), 'final_provenance_pins');
+  need(exact(review.actor, ['id', 'username']) && /^[a-f0-9]{32}$/.test(review.actor.id) && typeof review.actor.username === 'string' && review.actor.username.length > 0 &&
+    exact(review.item, ['id', 'mediaSourceId', 'runtimeTicks']), 'final_actor_item_schema');
+  need(Array.isArray(review.preparedExpirations) && review.preparedExpirations.length < 256 && review.preparedExpirations.every(row =>
+    exact(row, ['playSessionId', 'authSessionId']) && /^play_[A-Za-z0-9_]+$/.test(row.playSessionId) && /^[A-Za-z0-9_-]+$/.test(row.authSessionId)) &&
+    new Set(review.preparedExpirations.map(row => row.playSessionId)).size === review.preparedExpirations.length, 'final_prepared_allowlist');
+  return review;
+}
+
+function finalActorProjection(snapshot, actor) {
+  return Object.fromEntries(['users', 'sessions', 'play_sessions', 'user_item_data'].map(table =>
+    [table, snapshot.tables[table].filter(row => row[table === 'users' ? 'id' : 'user_id'] === actor)]));
+}
+
+function finalActorResidue(tables, actor) {
+  const sessions = new Set(tables.sessions.filter(row => row.user_id === actor).map(row => row.id)), plays = new Set(tables.play_sessions.filter(row => row.user_id === actor).map(row => row.id));
+  need(['client_playback_references', 'encoding_jobs'].every(table => !tables[table].some(row => row.user_id === actor || sessions.has(row.auth_session_id) || plays.has(row.play_session_id))), 'final_actor_history_residue');
+}
+
+export function validateFinalProvenance(bundle, pins, scenario, seed) {
+  need(exact(bundle, FINAL_PROVENANCE_KEYS), 'final_provenance_records');
+  const { closeout, snapshot, sourceEpoch: epoch, manifest, boundary } = bundle, actor = seed.actors[scenario], item = finalItem(seed, scenario);
+  validateFinalSnapshot(snapshot);
+  need(epoch?.kind === 'audited-candidate-runtime-epoch' && [2, 3, 4].includes(epoch.version) && epoch.currentSource?.schema === 28 &&
+    descriptor(epoch.currentSource.binary) && descriptor(epoch.currentSource.sourceManifest), 'final_history_epoch');
+  const source = epoch.currentSource;
+  need(manifest?.kind === 'audited-candidate-client-input' && manifest.version === 1 && manifest.scenario === scenario && manifest.serverId === seed.serverId &&
+    equal(manifest.actor, { id: actor.id, username: actor.username }) && equal(finalItem({ catalog: manifest.catalog }, scenario), item) &&
+    equal(manifest.source, { binarySha256: source.binary.sha256, manifestSha256: source.sourceManifest.sha256, schema: 28 }), 'final_history_actor_source');
+  need(own(closeout), 'final_history_closeout');
+  let evidence;
+  if (closeout.kind === 'audited-candidate-client-closeout') {
+    need(closeout.status === 'core_scenario_closed' && closeout.contractVersion === 6 && epoch.version === 4 && closeout.scenario === scenario && closeout.runId === manifest.runId, 'final_history_client_closeout');
+    evidence = closeout.evidence;
+    need(descriptor(evidence?.retainedBaseline), 'final_history_baseline_missing');
+  } else {
+    need(closeout.status === 'owned_state_closed_client_acceptance_pending' && closeout.clientAcceptance === false && (closeout.failure ?? null) === null &&
+      [2, 3].includes(epoch.version) && new RegExp('^' + scenario + '-[0-9]{2,}$').test(manifest.runId), 'final_history_legacy_closeout');
+    evidence = closeout.inputEvidence;
+    if (scenario === 'movie') {
+      const checks = closeout.checks, runtime = checks?.savedRuntimeAndWorkers;
+      need(closeout.kind === 'audited-' + manifest.runId.replaceAll('-', '') + '-owned-state-closeout' && pins.boundary === null && boundary === null &&
+        closeout.browserOutcome === 'failed' && closeout.browserExitCode === 1 && closeout.gatewayExitCode === 0 &&
+        runtime?.candidateContinuous === true && runtime.postgresContinuous === true && runtime.leaseExact === true && ['browser', 'gateway'].every(role =>
+          runtime.workers?.[role]?.pidAbsentAsRecorded === true && runtime.workers[role].recursiveCgroupEmptyAsRecorded === true) &&
+        checks.ownedData?.ownedTables === 35 && checks.ownedData.oldRowsDeleted === 0 && checks.authentication?.allSessionsRevoked === snapshot.tables.sessions.length, 'final_movie_history_closed');
+    } else need(closeout.kind === 'audited-candidate-' + scenario + '-owned-state-closeout' && closeout.sourcePinsUnchanged === true, 'final_actor_history_kind');
+  }
+  need(equal(evidence?.sourceAfter ?? evidence?.after, pins.snapshot) && equal(evidence?.runtimeEpoch ?? evidence?.epoch, pins.sourceEpoch) &&
+    equal(evidence?.manifest, pins.manifest), 'final_history_evidence_binding');
+  if (boundary !== null) {
+    need(equal(evidence.boundary, pins.boundary) && boundary.kind === 'audited-candidate-client-boundary' && boundary.version === 1 && boundary.runId === manifest.runId &&
+      equal(boundary.runtimeEpoch, pins.sourceEpoch) && equal(boundary.sourceAfter, pins.snapshot) && equal(boundary.sourceBefore, evidence.sourceBefore), 'final_history_boundary');
+    const candidate = manifest.processes?.candidate;
+    need(own(candidate) && equal(boundary.candidateBefore, candidate) && equal(boundary.candidateAfter, candidate) && equal(without(candidate, ['listener']), epoch.candidateProcess) &&
+      equal(boundary.postgresBefore, epoch.postgresProcess) && equal(boundary.postgresAfter, epoch.postgresProcess) && equal(boundary.leaseBefore, epoch.lease) && equal(boundary.leaseAfter, epoch.lease), 'final_history_runtime_closed');
+    need(equal(boundary.clientWorker, { exitCode: 0, mainPID: 0, workerPidAbsent: true, remainingBrowserPids: [] }) &&
+      equal(boundary.gatewayWorker, { exitCode: 0, mainPID: 0, workerPidAbsent: true, index: evidence.gatewayIndex }), 'final_history_workers_closed');
+  } else need(scenario === 'movie' && closeout.contractVersion !== 6, 'final_history_boundary_missing');
+  const rows = finalActorProjection(snapshot, actor.id), user = one(rows.users, 'final_actor_history_missing');
+  need(user.name === actor.username && user.is_administrator === false && user.is_disabled === false && rows.sessions.length > 0 &&
+    rows.play_sessions.length > 0 && rows.play_sessions.length < 256, 'final_actor_history_missing');
+  finalActorResidue(snapshot.tables, actor.id);
+  const data = one(rows.user_item_data, 'final_actor_history_userdata');
+  need(data.item_id === item.id && integer(data.play_count) && integer(data.playback_position_ticks) && typeof data.is_favorite === 'boolean' &&
+    typeof data.played === 'boolean' && (data.last_played_at === null || typeof data.last_played_at === 'string'), 'final_actor_history_userdata');
+  if (scenario === 'movie' && closeout.contractVersion !== 6) need(equal(data, closeout.checks.ownedData.userData), 'final_movie_history_userdata');
+  const sessions = indexed(rows.sessions);
+  for (const play of rows.play_sessions) {
+    const auth = sessions.get(play.auth_session_id);
+    need(play.item_id === item.id && play.media_source_id === item.mediaSourceId && play.duration_ticks === item.runtimeTicks &&
+      integer(play.position_ticks) && play.position_ticks <= play.duration_ticks && play.application_client_id === null && play.client_correlated === false &&
+      auth?.kind === 'emby' && auth.device_id === play.device_id, 'final_actor_history_play');
+    need(play.state === 'Stopped' && play.counted === true && typeof play.started_at === 'string' && typeof play.stopped_at === 'string' ||
+      ['Prepared', 'Expired'].includes(play.state) && play.counted === false && play.started_at === null &&
+      (play.state === 'Prepared' ? play.stopped_at === null : typeof play.stopped_at === 'string'), 'final_actor_history_state');
+    timestampNs(play.expires_at);
+  }
+  return rows;
+}
+
+export function validateFinalBaseline(retained, seed, epoch) {
+  need(exact(retained, ['review', 'snapshot', 'currentStateEvidence', 'actorProvenance', 'movieProvenance', 'inputBinding', 'epoch']), 'final_baseline_records');
+  const review = validateFinalBaselineInput(retained.review), scenario = review.scenario, actor = seed.actors[scenario];
+  need(equal(retained.epoch, epoch) && epoch.version === 4 && epoch.operationKind === 'programs_successor' && seed.version === 4 &&
+    equal(seed.runtimeEpoch, review.runtimeEpoch) && ['runtimeEpoch', 'seedBinding'].every(key => equal(retained.inputBinding[key], review[key])), 'final_programs_epoch_binding');
+  need(equal(review.actor, { id: actor.id, username: actor.username }) && equal(review.item, finalItem(seed, scenario)), 'final_actor_item_binding');
+  const current = validateFinalSnapshot(retained.snapshot), state = retained.currentStateEvidence;
+  if (review.currentStateEvidence.kind === 'programs-admission') need(equal(review.currentStateEvidence.receipt, retained.inputBinding.admissionCloseout) &&
+    state?.kind === 'audited-candidate-programs-admission-closeout' && state.version === 1 && state.status === 'admitted_for_core_client' && state.admissionKind === 'affected_programs' && equal(state.runtimeEpoch, review.runtimeEpoch) &&
+    equal(state.seedRuntimeBinding, review.seedBinding) && equal(state.sourceAfter, review.currentSnapshot) && equal(state.currentSource, epoch.currentSource), 'final_admission_state_binding');
+  else need(state?.kind === 'audited-candidate-client-closeout' && state.status === 'core_scenario_closed' && state.contractVersion === 6 && FINAL_SCENARIOS.includes(state.scenario) &&
+    equal(state.evidence?.sourceAfter, review.currentSnapshot) && ['runtimeEpoch', 'seedBinding', 'admission'].every(key => equal(state.evidence?.[key], retained.inputBinding[key])) &&
+    equal(state.source, { binarySha256: epoch.currentSource.binary.sha256, manifestSha256: epoch.currentSource.sourceManifest.sha256, schema: 28 }), 'final_preceding_client_state_binding');
+  for (const [key, role] of [['actorProvenance', scenario], ['movieProvenance', 'movie']]) {
+    const historic = validateFinalProvenance(retained[key], review[key], role, seed);
+    need(equal(finalActorProjection(current, seed.actors[role].id), historic) && timestampNs(current.capturedAt) >= timestampNs(retained[key].snapshot.capturedAt), 'final_actor_provenance_changed');
+  }
+  if (scenario === 'movie') need(equal(review.actorProvenance, review.movieProvenance), 'final_movie_provenance_ambiguous');
+  finalActorResidue(current.tables, actor.id);
+  const prepared = current.tables.play_sessions.filter(row => row.user_id === actor.id && row.state === 'Prepared');
+  need(equal(Object.fromEntries(review.preparedExpirations.map(row => [row.playSessionId, row.authSessionId])), Object.fromEntries(prepared.map(row => [row.id, row.auth_session_id]))), 'final_prepared_allowlist');
+  return prepared;
+}
+
+export function verifyFinalBefore(before, manifest, seed, retained) {
+  need(FINAL_SCENARIOS.includes(manifest.scenario) && manifest.scenario === retained?.review?.scenario && equal(manifest.actor, retained.review.actor), 'final_baseline_required');
+  const prepared = validateFinalBaseline(retained, seed, retained.epoch);
+  validateFinalSnapshot(before);
+  need(equal(before.tables, retained.snapshot.tables) && equal(before.sequences, retained.snapshot.sequences), 'final_fresh_state_changed');
+  const captured = timestampNs(before.capturedAt), plays = before.tables.play_sessions.filter(row => row.user_id === manifest.actor.id);
+  need(captured >= timestampNs(retained.snapshot.capturedAt) && plays.length < 256 && plays.every(row =>
+    captured + 1200n * 1000000000n < timestampNs(row.expires_at) + 7n * 86400n * 1000000000n), 'final_pruning_deadline');
+  return prepared;
+}
+
+export function verifyFinalTransition(before, after, manifest, seed, physical, retained) {
+  const prepared = verifyFinalBefore(before, manifest, seed, retained), actor = manifest.actor.id;
+  validateFinalSnapshot(after);
+  const oldPlays = before.tables.play_sessions.filter(row => row.user_id === actor), oldIds = new Set(oldPlays.map(row => row.id)), oldAuth = new Set(before.tables.sessions.map(row => row.id));
+  const creators = physical.exchanges.filter(row => !row.rejected && (row.scope?.kind === 'playback_info' || row.scope?.kind === 'playback_report' && /^\/Sessions\/Playing\/?$/i.test(row.scope.route)));
+  need(oldPlays.length + creators.length <= 256 && after.tables.play_sessions.filter(row => row.user_id === actor).length <= 256 && oldPlays.every(row =>
+    timestampNs(after.capturedAt) < timestampNs(row.expires_at) + 7n * 86400n * 1000000000n), 'final_pruning_capacity');
+  need(physical.logins.every(login => !oldAuth.has(login.sessionId)) && !physical.chains.some(chain => oldIds.has(chain.play.id)), 'final_old_auth_or_play_reused');
+  const expirations = [];
+  for (const old of prepared) {
+    const current = one(after.tables.play_sessions.filter(row => row.id === old.id), 'final_old_play_missing');
+    if (equal(old, current)) continue;
+    need(equal(without(current, ['state', 'stopped_at', 'updated_at']), without(old, ['state', 'stopped_at', 'updated_at'])) && current.state === 'Expired' &&
+      current.stopped_at !== null && current.updated_at !== null, 'final_prepared_expiration_fields');
+    const candidates = physical.logins.flatMap(login => login.infos.map(info => ({ login, info }))).filter(({ login, info }) => {
+      const exchange = info.exchange, auth = after.tables.sessions.filter(row => row.id === login.sessionId), next = after.tables.play_sessions.filter(row => row.id === info.value.PlaySessionId);
+      return info.itemId === old.item_id && (info.body?.UserId === undefined || info.body.UserId === actor) && exchange.scope?.allowed === true &&
+        exchange.scope.kind === 'playback_info' && routeItem(exchange) === old.item_id && exchange.original?.method === 'POST' && exchange.complete === true && exchange.response?.status === 200 &&
+        exchange.tokenHash === login.tokenHash && auth.length === 1 && auth[0].user_id === actor && auth[0].kind === 'emby' && !oldIds.has(info.value.PlaySessionId) &&
+        next.length === 1 && next[0].auth_session_id === login.sessionId && next[0].user_id === actor && next[0].item_id === old.item_id &&
+        next[0].media_source_id === old.media_source_id && next[0].device_id === login.device_id && within(next[0].created_at, exchange.intent.startedAt, exchange.result.completedAt) &&
+        within(current.stopped_at, exchange.intent.startedAt, exchange.result.completedAt) && within(current.updated_at, exchange.intent.startedAt, exchange.result.completedAt);
+    });
+    const { info } = one(candidates, 'final_prepare_window_not_unique');
+    expirations.push({ playSessionId: old.id, previousState: 'Prepared', state: 'Expired', prepareOrdinal: info.exchange.ordinal,
+      changedFields: ['state', 'stopped_at', 'updated_at'], excludedFromNewPlayCounts: true });
+  }
+  const changed = new Set(expirations.map(row => row.playSessionId));
+  additions(before.tables.play_sessions, after.tables.play_sessions, undefined, changed);
+  return { playSessionIds: [...changed], expirations, creationUpperBound: oldPlays.length + creators.length };
+}
+
 export function verifyDurable(before, after, manifest, seed, physical, retained = null) {
   for (const value of [before, after]) need(exact(value, ['capturedAt', 'tables', 'sequences']) && equal(Object.keys(value.tables).sort(), TABLES), 'source_snapshot_inventory');
   need(instant(before.capturedAt) <= instant(after.capturedAt), 'source_snapshot_order');
@@ -1211,6 +1449,7 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
   need(control !== actor, 'scenario_actor_playback_baseline_not_fresh');
   let retainedExpiration = null;
   if (retained === null) need(!before.tables.play_sessions.some(row => row.user_id === actor) && !before.tables.client_playback_references.some(row => row.user_id === actor), 'scenario_actor_playback_baseline_not_fresh');
+  else if (retained.review?.kind === 'audited-candidate-final-client-baseline') retainedExpiration = verifyFinalTransition(before, after, manifest, seed, physical, retained);
   else if (retained.review?.kind === 'audited-candidate-reviewed-tv-baseline') retainedExpiration = verifyReviewedTVTransition(before, after, manifest, seed, physical, retained);
   else retainedExpiration = verifyRetainedMovieTransition(before, after, manifest, seed, physical, retained);
   const retainedTV = retained?.review?.kind === 'audited-candidate-reviewed-tv-baseline';
@@ -1312,6 +1551,7 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
     const [firstLogin, secondLogin] = physical.logins, firstPlays = firstLogin.chains.map(chain => chain.play)
       .sort((left, right) => timestampNs(left.stopped_at) < timestampNs(right.stopped_at) ? -1 : 1);
     const last = firstPlays.at(-1), position = stopPosition(last.position_ticks, last.duration_ticks).position;
+    if (retained?.review?.kind === 'audited-candidate-final-client-baseline') need(position > 0, 'final_movie_stopped_position_must_be_nonzero');
     const expectedCount = Math.min(2147483647, (oldData.get(actor + '/' + selected.id)?.play_count ?? 0) + firstPlays.filter(row => row.counted).length);
     const secondStart = Math.min(...secondLogin.chains.map(chain => chain.started[0].exchange.ordinal));
     const readbacks = physical.exchanges.filter(exchange => exchange.tokenHash === secondLogin.tokenHash && exchange.original?.method === 'GET' &&
@@ -1420,7 +1660,132 @@ function validateBinarySuccessorLineage(epoch, seed, lineage) {
   }), 'binary_successor_session_history');
 }
 
+const artifactPin = value => exact(value, ['path', 'sha256', 'bytes']) && descriptor({ path: value.path, sha256: value.sha256 }) && integer(value.bytes) && value.bytes > 0;
+const artifactMember = value => exact(value, ['archive', 'member', 'sha256', 'bytes']) && artifactPin(value.archive) &&
+  typeof value.member === 'string' && value.member.length > 0 && !path.posix.isAbsolute(value.member) && !value.member.split('/').includes('..') && SHA.test(value.sha256) && integer(value.bytes) && value.bytes > 0;
+const simplePin = value => ({ path: value.path, sha256: value.sha256 });
+
+export function validateProgramsArtifact(receipt, review, bridge, build, closure, source) {
+  const pins = ['sourceArchive', 'sourceManifest', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'execution', 'archive', 'closure', 'independentReview'];
+  need(exact(receipt, ['kind', 'version', 'status', ...pins, 'fullReport', 'worker']) && receipt.kind === 'goby-internal-amd64-artifact-receipt' && receipt.version === 1 &&
+    receipt.status === 'verified_and_closed' && pins.every(key => artifactPin(receipt[key])) && artifactMember(receipt.worker), 'programs_artifact_receipt');
+  need(exact(receipt.fullReport, ['execution', 'worker', 'ordinaryBinary']) && artifactMember(receipt.fullReport.ordinaryBinary) &&
+    equal(receipt.fullReport.execution, receipt.execution) && equal(receipt.fullReport.worker, receipt.worker) && equal(receipt.worker.archive, receipt.archive) &&
+    equal(receipt.fullReport.ordinaryBinary.archive, receipt.archive), 'programs_single_build_worker_binding');
+  need(equal(simplePin(receipt.sourceArchive), PROGRAMS_LINEAGE.sourceArchive) && source.archiveSha256 === receipt.sourceArchive.sha256 &&
+    equal(simplePin(receipt.sourceManifest), source.sourceManifest) && equal(simplePin(receipt.sourceBridge), source.sourceBridge) &&
+    equal(simplePin(receipt.buildManifest), source.buildManifest) && equal(simplePin(receipt.execution), source.fullReport) &&
+    receipt.newBinary.sha256 === source.binary.sha256, 'programs_artifact_source_binding');
+  const reviewPins = ['input', 'adapter', 'execution', 'archive', 'closure', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools'];
+  const checks = ['sourceIdentity', 'ordinaryFullSuite', 'ordinaryBuild', 'embeddedBuild', 'packageMembers', 'artifactMaterialization', 'toolPins', 'budgets', 'resourceClosure', 'protectedState', 'recordsBinding'];
+  need(exact(review, ['kind', 'version', 'status', ...reviewPins, 'worker', 'checks', 'limits']) && review.kind === 'programs-final-product-independent-review' && review.version === 1 &&
+    review.status === 'verified' && reviewPins.every(key => artifactPin(review[key])) && equal(review.worker, receipt.worker) &&
+    exact(review.checks, checks) && checks.every(key => review.checks[key] === true) && Array.isArray(review.limits) && review.limits.every(value => typeof value === 'string') &&
+    reviewPins.filter(key => !['input', 'adapter'].includes(key)).every(key => equal(review[key], receipt[key])), 'programs_artifact_independent_review');
+  const bridgeKeys = ['kind', 'version', 'status', 'input', 'sourceArchive', 'sourceManifest', 'sourceCheckpoint', 'gitCommit', 'frozenFiles', 'trackedBuildInputs',
+    'generatedAssetCount', 'frozenBytes', 'sourceInventory', 'moduleInputs', 'administratorAssets', 'administratorEntryReferences', 'deploymentInputs',
+    'runtimeModeProjection', 'buildManifest', 'packageManifest', 'reader', 'sourceTreeUnchangedBeforeAfter', 'gitAndFrozenModesDeclaredEqual'];
+  need(exact(bridge, bridgeKeys) && bridge.kind === 'goby-frozen-source-build-bridge' && bridge.version === 1 && bridge.status === 'matched' &&
+    ['input', 'sourceArchive', 'sourceManifest', 'sourceCheckpoint', 'buildManifest', 'packageManifest', 'reader'].every(key => artifactPin(bridge[key])) &&
+    equal(bridge.input, review.input) && equal(bridge.sourceArchive, receipt.sourceArchive) && equal(bridge.sourceManifest, receipt.sourceManifest) &&
+    bridge.gitCommit === '74a69abacdd9206e51f4e166df2346b5555b5cd9' && bridge.frozenFiles === 924 && bridge.trackedBuildInputs === 867 &&
+    bridge.generatedAssetCount === 57 && bridge.frozenBytes === 13253765 && bridge.sourceTreeUnchangedBeforeAfter === true && bridge.gitAndFrozenModesDeclaredEqual === false,
+    'programs_source_bridge');
+  for (const key of ['buildManifest', 'packageManifest']) need(bridge[key].sha256 === receipt[key].sha256 && bridge[key].bytes === receipt[key].bytes, 'programs_materialized_manifest_changed');
+  need(own(bridge.sourceInventory) && own(bridge.moduleInputs) && Array.isArray(bridge.administratorAssets) && bridge.administratorAssets.length === 57 &&
+    Array.isArray(bridge.administratorEntryReferences) && Array.isArray(bridge.deploymentInputs) &&
+    equal(bridge.sourceInventory, build.sourceInventory) && equal(bridge.moduleInputs, build.moduleInputs) &&
+    equal(bridge.administratorAssets, build.administratorAssets) && equal(bridge.administratorEntryReferences, build.administratorEntryReferences), 'programs_build_manifest_bridge');
+  const modes = bridge.runtimeModeProjection;
+  need(exact(modes, ['umask', 'rule', 'files', 'allMatched']) && modes.umask === 63 && modes.rule === 'archiveMode & ~0077' && modes.allMatched === true &&
+    Array.isArray(modes.files) && modes.files.length === 924 && new Set(modes.files.map(row => row.name)).size === 924 &&
+    modes.files.every(row => exact(row, ['name', 'archiveMode', 'runtimeMode']) && typeof row.name === 'string' && integer(row.archiveMode) &&
+      integer(row.runtimeMode) && row.runtimeMode === (row.archiveMode & ~63)), 'programs_runtime_mode_projection');
+  need(closure?.kind === 'livetv-programs-final-closure' && closure.version === 1 && closure.status === 'closed' &&
+    ['resourcesClosed', 'ownedProcessesClosed', 'ext4Unmounted', 'loopDetached', 'ramUnmounted', 'lockReleased', 'allOwnedCommandsClosed', 'protectedUnchanged'].every(key => closure[key] === true) &&
+    equal(closure.input, review.input) && equal(closure.adapter, review.adapter) && equal(closure.archive, receipt.archive), 'programs_artifact_resources_not_closed');
+  return { ordinaryAndEmbeddedWorkerBound: true, sourceBridgeMatched: true, independentProductReviewMatched: true };
+}
+
+export function validateProgramsRuntimeLineage(epoch, seed, lineage) {
+  need(exact(epoch, [...EPOCH_KEYS, ...SUCCESSOR_EPOCH_KEYS, 'previousCurrentRuntime', 'sourceBefore', 'sourceAfter']) && epoch.kind === 'audited-candidate-runtime-epoch' &&
+    epoch.version === 4 && epoch.operationKind === 'programs_successor' && epoch.status === 'running_awaiting_live_acceptance' && epoch.candidateAdmissionComplete === false &&
+    exact(seed, [...BINDING_KEYS, ...SUCCESSOR_BINDING_KEYS, 'previousCurrentRuntime']) && seed.kind === 'audited-candidate-seed-runtime-binding' && seed.version === 4 && seed.candidateAdmissionComplete === false,
+    'programs_runtime_schema');
+  const { previousEpoch: previous, previousBinding, previousLineage, previousCurrentRuntime: current, transitionInput: input, before, after, sourceBefore, sourceAfter, preservation } = lineage;
+  need(equal(epoch.previousEpoch, PROGRAMS_LINEAGE.previousEpoch) && equal(seed.previousBinding, PROGRAMS_LINEAGE.previousBinding) &&
+    equal(epoch.previousCurrentRuntime, PROGRAMS_LINEAGE.previousCurrentRuntime) && equal(seed.previousCurrentRuntime, epoch.previousCurrentRuntime) &&
+    equal(seed.priorSource, PROGRAMS_LINEAGE.priorSource) && equal(seed.priorCloseout, PROGRAMS_LINEAGE.priorCloseout) && previous?.version === 3 && previousBinding?.version === 3,
+    'programs_predecessor_binding');
+  validateRuntimeLineage(previous, previousBinding, previousLineage);
+  need(current?.kind === 'audited-candidate-current-runtime-binding' && current.version === 1 && current.status === 'reviewed_current_runtime' &&
+    equal(current.runtimeEpoch, epoch.previousEpoch) && equal(current.seedBinding, seed.previousBinding) &&
+    equal(current.preserved, Object.fromEntries(['binary', 'runtime', 'units'].map(key => [key, previous.candidate[key]]))), 'programs_prior_current_runtime');
+  need(input?.kind === 'audited-candidate-transition-input' && input.version === 3 && input.operationKind === 'programs_successor' &&
+    equal(input.previousEpoch, epoch.previousEpoch) && equal(input.previousBinding, seed.previousBinding) && equal(input.currentRuntime, epoch.previousCurrentRuntime) &&
+    equal(input.priorSource, seed.priorSource) && equal(input.priorCloseout, seed.priorCloseout) && equal(input.newSourceArchive, PROGRAMS_LINEAGE.sourceArchive) &&
+    equal(input.helpers, epoch.helpers) && equal(input.budgets, SUCCESSOR_LIMITS) && equal(epoch.productInput, epoch.transitionInput) &&
+    equal(epoch.calls, { stop: 1, replace: 1, start: 1 }), 'programs_transition_input_binding');
+  for (const key of ['transitionInput', 'transitionHelper', 'runtimeHelper', 'before', 'after', 'sourceBefore', 'sourceAfter', 'preservation', 'reviewedState', 'reviewedSummary']) need(descriptor(epoch[key]), 'programs_epoch_pin');
+  const source = epoch.currentSource;
+  need(exact(source, PROGRAMS_SOURCE_KEYS) && source.schema === 28 && source.archiveSha256 === PROGRAMS_LINEAGE.sourceArchive.sha256 &&
+    PROGRAMS_SOURCE_KEYS.filter(key => !['schema', 'archiveSha256'].includes(key)).every(key => descriptor(source[key])) &&
+    ['sourceManifest', 'binary', 'fullReport', 'artifactReceipt', 'buildManifest', 'sourceBridge'].every(key => {
+      const inputKey = { sourceManifest: 'newSourceManifest', binary: 'newBinary', fullReport: 'newFullReport', artifactReceipt: 'newArtifactReceipt', buildManifest: 'newBuildManifest', sourceBridge: 'sourceBridge' }[key];
+      return key === 'binary' ? source.binary.sha256 === input.newBinary?.sha256 : equal(source[key], input[inputKey]);
+    }) && source.binary.path === previous.currentSource.binary.path && ![previous.currentSource.binary.sha256, '7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1'].includes(source.binary.sha256),
+    'programs_product_source');
+  validateProgramsArtifact(lineage.artifactReceipt, lineage.artifactReview, lineage.sourceBridge, lineage.buildManifest, lineage.artifactClosure, source);
+  need(epoch.candidate.bootstrapExecuted === true && equal(epoch.candidate.sourceState, { users: 8, schema: 28, migrations: 28 }) &&
+    equal(epoch.candidate.binary, source.binary) && equal(epoch.candidate.currentSourceManifest, source.sourceManifest) && equal(epoch.candidate.backendReport, source.fullReport) &&
+    equal(epoch.candidate.runtime, previous.candidate.runtime) && equal(epoch.candidate.units, previous.candidate.units) &&
+    equal(epoch.postgresProcess, previous.postgresProcess) && equal(epoch.originalProvision, previous.originalProvision) && equal(epoch.seedProvenance, previous.seedProvenance), 'programs_candidate_configuration');
+  const previousProcess = current.current.candidateProcess, process = epoch.candidateProcess, binary = after.fixedFiles?.[source.binary.path];
+  need(exact(process, Object.keys(previousProcess)) && equal(without(process, ['pid', 'startTicks', 'exeInode']), without(previousProcess, ['pid', 'startTicks', 'exeInode'])) &&
+    binary?.sha256 === source.binary.sha256 && process.exeDevice === binary.dev && process.exeInode === binary.ino &&
+    epoch.candidate.serverIdentity.pid === process.pid && epoch.candidate.serverIdentity.startTicks === process.startTicks &&
+    epoch.candidate.serverIdentity.executableDevice === process.exeDevice && epoch.candidate.serverIdentity.executableInode === process.exeInode, 'programs_executable_identity');
+  const priorListener = current.current.listener, listener = epoch.candidate.listener, oldProperties = current.current.serverProperties, properties = epoch.candidate.processes.server;
+  need(equal(without(properties, ['MainPID', 'InvocationID']), without(oldProperties, ['MainPID', 'InvocationID'])) && properties.MainPID === String(process.pid) &&
+    /^[0-9a-f]{32}$/.test(properties.InvocationID) && properties.InvocationID !== oldProperties.InvocationID && epoch.candidate.serverIdentity.invocationId === properties.InvocationID &&
+    equal(without(listener, ['pid', 'socketInode']), without(priorListener, ['pid', 'socketInode'])) && listener.pid === process.pid && /^[1-9][0-9]*$/.test(listener.socketInode), 'programs_service_listener_identity');
+  need(equal(before.candidateBefore, before.candidateAfter) && equal(before.candidateAfter, { ...previousProcess, listener: { host: '127.0.0.1', port: priorListener.port, socketInode: priorListener.socketInode } }) &&
+    equal(before.postgresBefore, current.current.postgresProcess) && equal(before.postgresAfter, current.current.postgresProcess) &&
+    equal(before.leaseBefore, current.current.lease) && equal(before.leaseAfter, current.current.lease) &&
+    epoch.candidateProcess.pid !== current.current.candidateProcess.pid && ns(epoch.candidateProcess.startTicks) > ns(current.current.candidateProcess.startTicks) &&
+    equal(after.candidateBefore, after.candidateAfter) && equal(without(after.candidateAfter, ['listener']), epoch.candidateProcess) &&
+    equal(after.candidateAfter.listener, { host: '127.0.0.1', port: listener.port, socketInode: listener.socketInode }) &&
+    equal(after.postgresBefore, epoch.postgresProcess) && equal(after.postgresAfter, epoch.postgresProcess) && equal(after.leaseBefore, epoch.lease) && equal(after.leaseAfter, epoch.lease), 'programs_runtime_identity');
+  const lease = epoch.lease, priorLease = current.current.lease;
+  need(exact(lease, Object.keys(priorLease)) && equal(without(lease, ['backendPid', 'backendStart', 'clientPort', 'candidateConnection']), without(priorLease, ['backendPid', 'backendStart', 'clientPort', 'candidateConnection'])) &&
+    lease.granted === true && lease.mode === 'ExclusiveLock' && integer(lease.backendPid) && lease.backendPid > 1 && integer(lease.clientPort) && lease.clientPort > 0 && lease.clientPort < 65536 &&
+    timestampNs(before.databaseNow) <= timestampNs(lease.backendStart) && timestampNs(lease.backendStart) <= timestampNs(after.databaseNow) &&
+    exact(lease.candidateConnection, ['pid', 'localPort', 'remotePort', 'socketInode']) && lease.candidateConnection.pid === process.pid && lease.candidateConnection.localPort === lease.clientPort &&
+    lease.candidateConnection.remotePort === epoch.candidate.ports.postgres && /^[1-9][0-9]*$/.test(lease.candidateConnection.socketInode), 'programs_lease_identity');
+  validateFinalSnapshot(sourceBefore); validateFinalSnapshot(sourceAfter);
+  need(equal(before.source, sourceBefore) && equal(after.source, sourceAfter) && equal(sourceBefore.sequences, sourceAfter.sequences), 'programs_source_snapshot_binding');
+  for (const table of TABLES.filter(name => name !== 'task_definitions')) need(equal(sourceBefore.tables[table], sourceAfter.tables[table]), 'programs_old_rows_changed_' + table);
+  const old = indexed(sourceBefore.tables.task_definitions), definitions = indexed(sourceAfter.tables.task_definitions), added = [...definitions.values()].filter(row => !old.has(row.id));
+  need(added.length === 1 && [...old].every(([id, row]) => equal(row, definitions.get(id))) &&
+    exact(added[0], [...Object.keys(PROGRAMS_REFRESH_FIELDS), 'id', 'created_at', 'updated_at']) &&
+    Object.entries(PROGRAMS_REFRESH_FIELDS).every(([key, value]) => equal(added[0][key], value)) && /^[a-f0-9]{32}$/.test(added[0].id) &&
+    timestampNs(sourceBefore.capturedAt) <= timestampNs(added[0].created_at) && timestampNs(added[0].created_at) <= timestampNs(sourceAfter.capturedAt) &&
+    added[0].created_at === added[0].updated_at, 'programs_refresh_definition_delta');
+  need(['before', 'after', 'sourceBefore', 'sourceAfter', 'reviewedState'].every(key => equal(preservation?.[key], epoch[key])) &&
+    preservation.existingSourceRowsExact === 35 && preservation.sequencesExact === 5 &&
+    ['inactiveStageExact', 'allPriorPlayAndUserDataExact', 'foreignReferencesExact', 'configurationExact', 'postgresContinuous', 'hostingContinuous'].every(key => preservation[key] === true) &&
+    equal(preservation.refreshDefinition, added[0]) && preservation.installedBinary?.sha256 === source.binary.sha256, 'programs_transition_preservation');
+  need(equal(without(seed, ['version', 'runtimeEpoch', 'currentSessions', ...SUCCESSOR_BINDING_KEYS, 'previousCurrentRuntime']),
+    without(previousBinding, ['version', 'runtimeEpoch', 'currentSessions', ...SUCCESSOR_BINDING_KEYS])) &&
+    equal(seed.reviewedState, epoch.reviewedState) && equal(seed.reviewedSummary, epoch.reviewedSummary), 'programs_actor_catalog_preservation');
+  const sessions = sourceAfter.tables.sessions.map(row => { need(/^[a-f0-9]{32}$/.test(row.id) && /^[a-f0-9]{32}$/.test(row.user_id) &&
+    ['admin', 'emby'].includes(row.kind) && /^\\x[0-9a-f]{64}$/.test(row.token_hash), 'programs_session_identity'); timestampNs(row.revoked_at);
+    return { kind: row.kind, credentialId: row.id, userId: row.user_id, tokenSha256: row.token_hash.slice(2), revokedAt: row.revoked_at }; }).sort((left, right) => left.credentialId.localeCompare(right.credentialId));
+  need(equal(seed.currentSessions, sessions), 'programs_session_history');
+}
+
 export function validateRuntimeLineage(epoch, seed, lineage = {}) {
+  if (epoch.version === 4) return validateProgramsRuntimeLineage(epoch, seed, lineage);
   need([1, 2, 3].includes(epoch.version) && exact(epoch, [...EPOCH_KEYS, ...(epoch.version === 2 ? ENV_EPOCH_KEYS : epoch.version === 3 ? SUCCESSOR_EPOCH_KEYS : [])]) &&
     epoch.kind === 'audited-candidate-runtime-epoch' && epoch.status === 'running_awaiting_live_acceptance' && epoch.candidateAdmissionComplete === false &&
     seed.version === epoch.version && exact(seed, [...BINDING_KEYS, ...(seed.version === 2 ? ENV_BINDING_KEYS : seed.version === 3 ? SUCCESSOR_BINDING_KEYS : [])]) &&
@@ -1466,6 +1831,26 @@ export function validateRuntimeLineage(epoch, seed, lineage = {}) {
 
 /** A historical admission proves its own epoch; successors also need fresh TV checks. */
 export function validateCandidateAdmissionBinding(input, epoch, admission, lineage = {}, reusedAdmission04 = null) {
+  if (epoch.version === 4) {
+    need(input.version === 6 && admission?.kind === 'audited-candidate-live-admission' && admission.version === 5 && admission.admissionKind === 'affected_programs' &&
+      admission.status === 'admitted_for_core_client' && admission.candidateAdmissionComplete === true && admission.clientAcceptance === false && admission.failure === null &&
+      equal(admission.cleanupFailures, []) && equal(admission.runtimeEpoch, input.runtimeEpoch) && equal(admission.seedRuntimeBinding, input.seedBinding) &&
+      equal(admission.currentSource, epoch.currentSource) && exact(admission.freshChecks, PROGRAMS_ADMISSION_CHECKS) &&
+      PROGRAMS_ADMISSION_CHECKS.every(key => admission.freshChecks[key] === true) && ['playbackRequests', 'applyRequests', 'rollbackRequests'].every(key => admission[key] === 0), 'final_programs_admission');
+    need(exact(admission.controllerSessions, ['P', 'Q']) && Object.values(admission.controllerSessions).every(row => row.sameTokenRejected === true &&
+      /^[a-f0-9]{32}$/.test(row.credentialId) && SHA.test(row.tokenSha256)), 'final_programs_admission_credentials');
+    const reused = admission.reusedAdmission05;
+    need(exact(reused, ['report', 'runtimeEpoch', 'seedRuntimeBinding', 'currentSource', 'contracts', 'freshChecks', 'reusedAdmission04']) &&
+      equal(reused.report, TV_POST_BROWSE_ADMISSION) && equal(reused.runtimeEpoch, PROGRAMS_LINEAGE.previousEpoch) &&
+      equal(reused.seedRuntimeBinding, PROGRAMS_LINEAGE.previousBinding) && equal(reused.currentSource, lineage.previousEpoch.currentSource) &&
+      equal(reused.contracts, ['tv_parent_projection_and_ordinary_authorization', ...REUSED_ADMISSION_CONTRACTS]) &&
+      exact(reused.freshChecks, AFFECTED_TV_CHECKS) && AFFECTED_TV_CHECKS.every(key => reused.freshChecks[key] === true) &&
+      equal(reused.reusedAdmission04, lineage.reusedAdmission05?.reusedAdmission04), 'final_programs_admission_history');
+    validateCandidateAdmissionBinding({ runtimeEpoch: reused.runtimeEpoch, seedBinding: reused.seedRuntimeBinding }, lineage.previousEpoch,
+      lineage.reusedAdmission05, lineage.previousLineage, lineage.reusedAdmission04);
+    need(descriptor(admission.transitionCloseout), 'final_programs_transition_closeout');
+    return;
+  }
   need([1, 2, 3].includes(epoch.version) && admission?.kind === 'audited-candidate-live-admission' &&
     admission.version === (epoch.version === 3 ? 3 : 2) && admission.status === 'admitted_for_core_client' &&
     admission.candidateAdmissionComplete === true && admission.failure === null && equal(admission.cleanupFailures, []) &&
@@ -1540,7 +1925,11 @@ export function validateCurrentRuntime(envelope, input, epoch, authorizedInput, 
 export function validateCloseoutBindings(input, evidence) {
   const { manifest, observation, summary, gatewayAttestation: gateway, runtimeEpoch: epoch, admission, seedBinding: seed, boundary } = evidence;
   validateCandidateManifest(manifest);
-  if (input.version === 5) {
+  if (input.version === 6) {
+    need(descriptor(input.retainedBaseline) && equal(evidence.retained?.inputBinding, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding,
+      admission: input.admission, admissionCloseout: evidence.authorizedInput?.admissionCloseout }), 'final_current_binding');
+    verifyFinalBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
+  } else if (input.version === 5) {
     need(descriptor(input.retainedBaseline) && descriptor(input.currentRuntime) && equal(evidence.retained?.inputBinding, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }), 'reviewed_tv_current_binding');
     verifyReviewedTVBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
   } else if (input.version === 4) {
@@ -1555,6 +1944,13 @@ export function validateCloseoutBindings(input, evidence) {
   validateCandidateGateway(gateway, manifest, ns(observation.started_monotonic_ns), { normal: 0, cleanup: 0 });
   validateRuntimeLineage(epoch, seed, evidence.lineage);
   validateCandidateAdmissionBinding(input, epoch, admission, evidence.lineage, evidence.reusedAdmission04);
+  if (input.version === 6) {
+    const closeout = evidence.admissionCloseout;
+    need(closeout?.kind === 'audited-candidate-programs-admission-closeout' && closeout.version === 1 && closeout.status === 'admitted_for_core_client' &&
+      closeout.admissionKind === 'affected_programs' && equal(closeout.admission, input.admission) && equal(closeout.runtimeEpoch, input.runtimeEpoch) &&
+      equal(closeout.seedRuntimeBinding, input.seedBinding) && equal(closeout.currentSource, epoch.currentSource) && equal(closeout.sourceAfter, admission.sourceAfter),
+      'final_admission_closeout_required');
+  }
   const current = input.version === 5 ? validateCurrentRuntime(evidence.currentRuntime, input, epoch, evidence.authorizedInput, evidence.currentRuntimeRecords) :
     { candidateProcess: epoch.candidateProcess, postgresProcess: epoch.postgresProcess, lease: epoch.lease, listener: epoch.candidate.listener };
   if (input.version === 5) need(timestampNs(evidence.currentRuntimeRecords.observation.capturedAt) <= timestampNs(observation.started_at), 'current_runtime_observation_after_client');
@@ -1591,7 +1987,7 @@ export function validateCloseoutBindings(input, evidence) {
     boundary.gatewayWorker.workerPidAbsent === true && equal(boundary.gatewayWorker.index, input.gatewayIndex), 'workers_not_independently_closed');
   need(ns(boundary.beforeMonotonicNs) <= ns(observation.started_monotonic_ns) &&
     ns(boundary.afterMonotonicNs) >= ns(observation.started_monotonic_ns) + BigInt(observation.elapsed_ms) * 1000000n, 'boundary_time_interval');
-  const serverLog = [3, 4, 5].includes(input.version) ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
+  const serverLog = [3, 4, 5, 6].includes(input.version) ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
     { manifest, epoch, input, approval: evidence.approval, observation, authorizedInput: evidence.authorizedInput, currentIdentity: current }) : null;
   if (serverLog) need(timestampNs(serverLog.receipt.before.capturedAt) >= timestampNs(evidence.sourceBefore.capturedAt) &&
     timestampNs(serverLog.receipt.after.capturedAt) >= timestampNs(evidence.sourceAfter.capturedAt), 'server_log_source_capture_order');
@@ -1607,12 +2003,13 @@ export function closeEvidence(input, evidence, ledgerRows) {
   if (input.version === 5) verifyTVNoPlayback(report, exchanges);
   const physical = analyzePhysical(exchanges, manifest, report, evidence.sourceAfter, bindings.serverLog);
   const diagnosticResult = input.version === 5 ? tvDiagnosticUIResult(report, manifest, physical) : null;
-  const partialMedia = input.version === 5 ? [] : verifyUI(report, manifest, physical);
+  const partialMedia = input.version === 5 ? [] : verifyUI(report, manifest, physical, { finalClient: input.version === 6 });
   const partialOrdinals = new Set(partialMedia.map(row => row.ordinal));
   for (const row of exchanges) if (!row.rejected && !row.complete && row.request.kind !== 'websocket')
     need(partialOrdinals.has(row.ordinal) || row.request.kind === 'web' && row.original.method === 'GET' && matchesContext(row, report).some(event => event.failed && event.failure_error_text === 'net::ERR_ABORTED'), 'unexplained_upstream_interruption');
   const durable = verifyDurable(evidence.sourceBefore, evidence.sourceAfter, manifest, evidence.seedBinding, physical, evidence.retained ?? null);
   return { kind: 'audited-candidate-client-closeout', version: 1, status: input.version === 5 ? 'owned_state_closed_diagnostic_result' : 'core_scenario_closed',
+    ...(input.version === 6 ? { contractVersion: 6 } : {}),
     ...(diagnosticResult ?? {}), runId: manifest.runId, scenario: manifest.scenario,
     source: manifest.source, physicalRequests: exchanges.length, logins: physical.logins.length,
     lifecycles: physical.chains.map(chain => ({ playSessionId: chain.play.id, authSessionId: chain.login.sessionId, itemId: chain.play.item_id,
@@ -1658,14 +2055,15 @@ async function saveNew(filename, value) {
 }
 
 export function validateCloseoutInput(input) {
-  need([1, 2, 3, 4, 5].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []),
-    ...([3, 4, 5].includes(input.version) ? ['serverLog'] : []), ...(input.version === 5 ? ['currentRuntime'] : [])]) &&
+  need([1, 2, 3, 4, 5, 6].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []),
+    ...([3, 4, 5, 6].includes(input.version) ? ['serverLog'] : []), ...(input.version === 5 ? ['currentRuntime'] : [])]) &&
     input.kind === 'audited-candidate-client-closeout-input' && CLOSEOUT_PINS.every(key => descriptor(input[key])) &&
     exact(input.sources, Object.keys(SOURCE_FILES)) && typeof input.output === 'string' && input.output.startsWith('/opt/goby-test/'), 'closeout_input_invalid');
   if (input.version === 2) need(equal(input.retainedBaseline, RETAINED_BASELINE), 'retained_movie_input_authority');
   if (input.version === 3) need((input.retainedBaseline === null || equal(input.retainedBaseline, OCCUPIED_BASELINE)) && descriptor(input.serverLog), 'version3_evidence_authority');
   if (input.version === 4) need(descriptor(input.retainedBaseline) && descriptor(input.serverLog), 'version4_evidence_authority');
   if (input.version === 5) need(descriptor(input.retainedBaseline) && descriptor(input.serverLog) && descriptor(input.currentRuntime), 'version5_evidence_authority');
+  if (input.version === 6) need(descriptor(input.retainedBaseline) && descriptor(input.serverLog), 'version6_evidence_authority');
   return input;
 }
 
@@ -1719,6 +2117,72 @@ export async function readReviewedTVBaseline(reviewPin, inputBinding, seed) {
   return retained;
 }
 
+export async function readFinalBaseline(reviewPin, inputBinding, seed, epoch) {
+  const review = validateFinalBaselineInput(strictJSON(await readPin(reviewPin)));
+  const history = async pins => ({ closeout: strictJSON(await readPin(pins.closeout)), snapshot: sourceSnapshotJSON(await readPin(pins.snapshot)),
+    sourceEpoch: runtimeEpochJSON(await readPin(pins.sourceEpoch), pins.sourceEpoch), manifest: strictJSON(await readPin(pins.manifest)),
+    boundary: pins.boundary === null ? null : strictJSON(await readPin(pins.boundary)) });
+  const retained = { review, snapshot: sourceSnapshotJSON(await readPin(review.currentSnapshot)),
+    currentStateEvidence: strictJSON(await readPin(review.currentStateEvidence.receipt)), actorProvenance: await history(review.actorProvenance),
+    movieProvenance: await history(review.movieProvenance), inputBinding, epoch };
+  validateFinalBaseline(retained, seed, epoch);
+  return retained;
+}
+
+export function validateFinalComponentRecords(receipt, value, controller, records) {
+  need(value?.version === 6 && FINAL_SCENARIOS.includes(value.scenario) && !Object.hasOwn(value, 'currentRuntime') &&
+    exact(receipt, ['kind', 'version', 'status', 'scope', 'evidence', 'independentReview', ...FINAL_COMPONENT_BINDINGS]) &&
+    receipt.kind === 'audited-candidate-final-component-admission' && receipt.version === 1 && receipt.status === 'passed' &&
+    receipt.scope === FINAL_COMPONENT_SCOPE && exact(receipt.evidence, FINAL_COMPONENT_EVIDENCE), 'final_component_schema');
+  const selected = Object.fromEntries(FINAL_COMPONENT_BINDINGS.map(key => [key, key === 'controller' ? controller : value[key]]));
+  need(FINAL_COMPONENT_BINDINGS.every(key => equal(receipt[key], selected[key])) && descriptor(receipt.independentReview) &&
+    Object.values(receipt.evidence).every(descriptor), 'final_component_selected_inputs');
+  const { dispatch, review } = records;
+  need(dispatch?.kind === 'audited-candidate-final-component-dispatch' && dispatch.version === 1 && dispatch.scope === FINAL_COMPONENT_SCOPE &&
+    ['browserRuns', 'businessHttpCalls', 'sqlCalls', 'serviceActions'].every(key => dispatch[key] === 0) && Array.isArray(dispatch.sources) &&
+    dispatch.sources.every(descriptor) && new Set(dispatch.sources.map(pin => pin.path)).size === dispatch.sources.length, 'final_component_dispatch');
+  const sourceMap = new Map(dispatch.sources.map(pin => [pin.path, pin.sha256]));
+  need([controller, value.runtimeHelper, ...Object.values(value.sources)].every(pin => descriptor(pin) && sourceMap.get(pin.path) === pin.sha256), 'final_component_tested_source');
+  const expected = { python: 'pythonResult', javascript: 'javascriptResult', subtitles: 'subtitleResult', runtime: 'runtimeVerification' };
+  need(Array.isArray(dispatch.executions) && dispatch.executions.length === 4 && equal(dispatch.executions.map(row => row.name).sort(), Object.keys(expected).sort()) &&
+    dispatch.executions.every(row => row.closed === true && row.exitCode === 0 && row.timedOut === false && equal(row.result, receipt.evidence[expected[row.name]])), 'final_component_execution_failed');
+  need(review?.kind === 'audited-candidate-final-component-review' && review.version === 1 && review.status === 'passed' && review.scope === FINAL_COMPONENT_SCOPE &&
+    equal(review.boundInputs, { ...selected, evidence: receipt.evidence }) && review.testsReplayed === false &&
+    equal(review.checks, Object.fromEntries(['sourceBindings', 'dispatchResults', 'runtimeV4', 'finalBaselines', 'subtitleCues'].map(key => [key, true]))), 'final_component_independent_review');
+  return true;
+}
+
+async function readFinalComponents(pin, value, controller) {
+  const receipt = strictJSON(await readPin(pin));
+  need(exact(receipt.evidence, FINAL_COMPONENT_EVIDENCE), 'final_component_evidence_inventory');
+  for (const selected of [controller, value.runtimeHelper, ...Object.values(value.sources), ...Object.values(receipt.evidence)]) await readPin(selected, MAX_FILE, false);
+  const records = { dispatch: strictJSON(await readPin(receipt.evidence.dispatch)), review: strictJSON(await readPin(receipt.independentReview)) };
+  validateFinalComponentRecords(receipt, value, controller, records);
+  return { receipt, records };
+}
+
+export async function readProgramsRuntimeLineage(epoch, seed) {
+  need(epoch.version === 4 && seed.version === 4, 'programs_lineage_reader');
+  const previousEpoch = runtimeEpochJSON(await readPin(epoch.previousEpoch), epoch.previousEpoch), previousBinding = strictJSON(await readPin(seed.previousBinding));
+  const previousLineage = await readBinarySuccessorLineage(previousEpoch, previousBinding);
+  const transitionInput = strictJSON(await readPin(epoch.transitionInput));
+  const previousCurrentRuntime = strictJSON(await readPin(epoch.previousCurrentRuntime));
+  for (const pin of [epoch.reviewedState, epoch.reviewedSummary, seed.priorCloseout, seed.priorSource, epoch.transitionHelper, epoch.runtimeHelper]) await readPin(pin, MAX_FILE, false);
+  const before = programsStateJSON(await readPin(epoch.before), epoch.before), after = programsStateJSON(await readPin(epoch.after), epoch.after);
+  const sourceBefore = sourceSnapshotJSON(await readPin(epoch.sourceBefore)), sourceAfter = sourceSnapshotJSON(await readPin(epoch.sourceAfter));
+  const preservation = programsStateJSON(await readPin(epoch.preservation), epoch.preservation);
+  const artifactReceipt = strictJSON(await readPin(epoch.currentSource.artifactReceipt));
+  need(artifactPin(artifactReceipt.independentReview) && artifactPin(artifactReceipt.closure), 'programs_artifact_reader');
+  const readArtifact = async pin => { need(artifactPin(pin), 'programs_artifact_pin'); const raw = await readPin(simplePin(pin), 64 * MAX_BODY, false);
+    need(raw.length === pin.bytes, 'programs_artifact_bytes'); return raw; };
+  const artifactReview = strictJSON(await readArtifact(artifactReceipt.independentReview)), artifactClosure = strictJSON(await readArtifact(artifactReceipt.closure));
+  const sourceBridge = strictJSON(await readArtifact(artifactReceipt.sourceBridge)), buildManifest = strictJSON(await readArtifact(artifactReceipt.buildManifest));
+  for (const key of ['sourceArchive', 'sourceManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'execution']) await readArtifact(artifactReceipt[key]);
+  const reusedAdmission05 = strictJSON(await readPin(TV_POST_BROWSE_ADMISSION)), reusedAdmission04 = strictJSON(await readPin(REUSED_ADMISSION04));
+  return { previousEpoch, previousBinding, previousLineage, previousCurrentRuntime, transitionInput, before, after, sourceBefore, sourceAfter, preservation,
+    artifactReceipt, artifactReview, artifactClosure, sourceBridge, buildManifest, reusedAdmission05, reusedAdmission04 };
+}
+
 export async function runCloseout(inputPin) {
   need(process.platform === 'linux' && process.getuid?.() === 0 && process.env.SSH_CONNECTION, 'remote_only_closeout'); process.umask(0o077);
   const input = validateCloseoutInput(strictJSON(await readPin(inputPin)));
@@ -1730,7 +2194,9 @@ export async function runCloseout(inputPin) {
   const evidence = {}; for (const key of names) evidence[key] = ['sourceBefore', 'sourceAfter'].includes(key)
     ? sourceSnapshotJSON(await readPin(input[key])) : key === 'runtimeEpoch' ? runtimeEpochJSON(await readPin(input[key]), input[key]) :
       key === 'observation' ? observationJSON(await readPin(input[key]), evidence.manifest) : strictJSON(await readPin(input[key]));
-  if (input.version === 5) {
+  if (input.version === 6) {
+    // The final baseline also binds the independently closed new admission below.
+  } else if (input.version === 5) {
     evidence.currentRuntime = strictJSON(await readPin(input.currentRuntime));
     const current = evidence.currentRuntime;
     need(exact(current.recovery, ['execution', 'independentReview', 'configuration', 'selectedStartIntent', 'selectedResult']), 'current_runtime_recovery_schema');
@@ -1749,7 +2215,7 @@ export async function runCloseout(inputPin) {
     need(equal(snapshot, input.version === 2 ? RETAINED_SNAPSHOT : OCCUPIED_SNAPSHOT), 'retained_movie_snapshot_changed');
     evidence.retained = { closeout, snapshot: sourceSnapshotJSON(await readPin(snapshot)) };
   }
-  if ([3, 4, 5].includes(input.version)) {
+  if ([3, 4, 5, 6].includes(input.version)) {
     evidence.serverLog = strictJSON(await readPin(input.serverLog));
     evidence.serverLogBefore = await readPin(evidence.serverLog.before.content);
     evidence.serverLogAfter = await readPin(evidence.serverLog.after.content);
@@ -1764,6 +2230,16 @@ export async function runCloseout(inputPin) {
       equal(evidence.admission.transitionCloseout, AFFECTED_TV_TRANSITION_CLOSEOUT), 'candidate_affected_admission_reader_authority');
     evidence.reusedAdmission04 = strictJSON(await readPin(REUSED_ADMISSION04));
     await readPin(AFFECTED_TV_TRANSITION_CLOSEOUT, MAX_FILE, false);
+  }
+  if (input.version === 6) {
+    need(evidence.runtimeEpoch.version === 4 && evidence.seedBinding.version === 4 && evidence.authorizedInput.version === 6 &&
+      FINAL_SCENARIOS.includes(evidence.manifest.scenario), 'final_programs_runtime_required');
+    evidence.lineage = await readProgramsRuntimeLineage(evidence.runtimeEpoch, evidence.seedBinding);
+    evidence.admissionCloseout = strictJSON(await readPin(evidence.authorizedInput.admissionCloseout));
+    await readPin(evidence.admission.transitionCloseout);
+    evidence.finalComponents = await readFinalComponents(evidence.authorizedInput.avVerification, evidence.authorizedInput, evidence.serverLog.controller);
+    evidence.retained = await readFinalBaseline(input.retainedBaseline, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding,
+      admission: input.admission, admissionCloseout: evidence.authorizedInput.admissionCloseout }, evidence.seedBinding, evidence.runtimeEpoch);
   }
   const gateway = evidence.gatewayAttestation, index = evidence.gatewayIndex;
   need(Array.isArray(index.entries) && index.entries.length <= 10000, 'ledger_inventory_limit');

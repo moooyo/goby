@@ -102,3 +102,91 @@ test('subtitle entry requires the declared movie item before considering playbac
   assert.deepEqual(fixture.clicks, ['movie-card']); assert.equal(fixture.events.some(event => event.startsWith('wait:')), false);
   assert.equal(fixture.state().followupCalls, 0); assert.equal(fixture.state().detached, true);
 });
+
+function completeSubtitleFixture({ missingVttOpening = false, visibleAfterOff = false } = {}) {
+  const report = { requests: [] }, snapshots = [], seeks = [], events = [];
+  let location = TARGET.href + '#!/home', time = 1, paused = false, selected = 'Off', listener = null, detached = false;
+  const response = index => {
+    const bytes = Buffer.from('WEBVTT\n\n00:00.000 --> 00:05.000\nOpening subtitle\n\n01:58.000 --> 02:08.000\nForward seek subtitle\n');
+    return { url: () => TARGET.origin + '/emby/Videos/' + MOVIE_ID + '/mediasource_' + MOVIE_ID + '/Subtitles/' + index + '/Stream.vtt',
+      request: () => ({ method: () => 'GET' }), status: () => 200, headers: () => ({ 'content-type': 'text/vtt', 'content-length': String(bytes.length) }),
+      body: async () => bytes };
+  };
+  const choose = name => {
+    selected = name; events.push('select:' + name);
+    if (name === 'English (SRT)') listener(response(1));
+    if (name === 'English (VTT)') listener(response(2));
+  };
+  const page = {
+    url: () => location,
+    mouse: { async move() {} },
+    getByText(name, options) {
+      assert.deepEqual(options, { exact: true });
+      const movie = name === 'M3e Client Movie', option = ['English (SRT)', 'English (VTT)', 'Off'].includes(name);
+      const locator = { filter() { return this; }, first() { return this; }, async waitFor() {},
+        async count() { return movie || option ? 1 : 0; },
+        async click() { if (movie) location = TARGET.href + '#!/item?id=' + MOVIE_ID; else choose(name); },
+        locator() { return this; } };
+      return locator;
+    },
+    getByRole(role, options) {
+      assert.equal(role, 'button');
+      const name = options.name;
+      return { filter() { return this; }, first() { return this; }, async waitFor() {}, async count() { return 1; },
+        async click() {
+          events.push('button:' + name);
+          if (name === 'From Beginning' || name === 'Play') { time = 1; paused = false; }
+          if (name === 'Pause') paused = true;
+          if (name === 'Back') { paused = true; report.requests.push({ method: 'POST', route: '/Sessions/Playing/Stopped', status: 204 }); }
+        } };
+    },
+    locator(selector) {
+      return { first() { return this; }, async count() { return 1; },
+        async boundingBox() { return { x: 0, y: 0, width: 500, height: selector.includes('PositionSlider') ? 10 : 240 }; },
+        async evaluateAll() { return []; },
+        async click(options) { time = options.position.x / 500 * 600; seeks.push({ selected, time }); } };
+    },
+    async waitForURL(predicate) { assert.equal(predicate(new URL(location)), true); },
+    async waitForFunction() {},
+    async waitForTimeout() {},
+    async evaluate(_callback, input) {
+      assert.equal(input.origin, TARGET.origin); assert.equal(input.itemId, MOVIE_ID); assert(input.allowed.includes('Opening subtitle'));
+      const showing = selected !== 'Off' || visibleAfterOff && events.includes('select:Off');
+      const cue = time < 5 ? 'Opening subtitle' : time >= 118 && time < 128 ? 'Forward seek subtitle' : null;
+      const available = showing && cue && !(missingVttOpening && selected === 'English (VTT)' && time < 5);
+      return [{ visible: true, source_matches_item: true, current_time: time, duration: 600, paused, ready_state: 4, network_state: 1,
+        video_width: 640, video_height: 360, total_video_frames: 100, dropped_video_frames: 0,
+        text_tracks: [{ kind: 'subtitles', label: selected, language: 'en', mode: showing ? 'showing' : 'disabled',
+          active_cues: available ? [{ start: time < 5 ? 0 : 118, end: time < 5 ? 5 : 128, text: cue }] : [] }] }];
+    },
+  };
+  const context = { on(name, callback) { assert.equal(name, 'response'); listener = callback; },
+    off(name, callback) { assert.equal(name, 'response'); assert.equal(callback, listener); detached = true; } };
+  return { input: { page, context, report, target: TARGET, movieId: MOVIE_ID, async snapshot(label) { snapshots.push(label); } },
+    report, snapshots, seeks, events, detached: () => detached };
+}
+
+test('subtitle flow observes VTT opening after its seek cue and before returning to Off', async () => {
+  const fixture = completeSubtitleFixture();
+  const result = await runSubtitleUI(fixture.input);
+  assert.equal(result.outcome, 'external_srt_vtt_ui_selection_and_seek_completed');
+  assert.deepEqual(result.selections.map(row => row.name), ['English (SRT)', 'English (VTT)', 'Off']);
+  assert.deepEqual(fixture.seeks.map(row => row.selected), ['English (SRT)', 'English (VTT)']);
+  assert(Math.abs(fixture.seeks[0].time - 123) < 0.000001); assert(Math.abs(fixture.seeks[1].time - 1.8) < 0.000001);
+  for (const label of ['subtitle-srt-opening-cue', 'subtitle-srt-forward-cue', 'subtitle-vtt-forward-cue', 'subtitle-vtt-opening-cue']) assert(fixture.snapshots.includes(label));
+  assert(result.steps.findIndex(row => row.label.startsWith('subtitle-vtt-opening-cue-')) < result.steps.findIndex(row => row.label === 'subtitle-off-verified'));
+  assert.equal(result.network_subtitles.length, 2); assert(result.network_subtitles.every(row => row.body_result === 'owned_subtitle_hashed'));
+  assert.equal(result.restored_selection, true); assert.equal(fixture.detached(), true);
+});
+
+test('subtitle flow cannot substitute the VTT seek cue for opening or accept visible cues after Off', async () => {
+  for (const options of [{ missingVttOpening: true }, { visibleAfterOff: true }]) {
+    const fixture = completeSubtitleFixture(options);
+    await assert.rejects(runSubtitleUI(fixture.input), /subtitle_ui_/);
+    assert.equal(fixture.report.subtitle_flow.outcome, 'blocked_at_observed_ui_step');
+    assert.equal(fixture.report.subtitle_flow.phase, options.missingVttOpening ? 'seek_with_vtt' : 'restore_off');
+    assert.equal(fixture.report.subtitle_flow.failure_reason, options.missingVttOpening ? 'expected_synthetic_subtitle_cue_not_observed' : 'subtitle_off_state_not_restored');
+    assert.equal(fixture.detached(), true);
+    assert.equal(fixture.events.includes('button:Back'), false);
+  }
+});

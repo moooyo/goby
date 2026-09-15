@@ -1,0 +1,308 @@
+{
+  "kind": "programs-client-component-verification",
+  "version": 1,
+  "status": "passed_component_scopes_across_two_attempts",
+  "recordedOn": "2026-09-15",
+  "clientVersion": 6,
+  "scenarios": [
+    "movie",
+    "episode",
+    "subtitles"
+  ],
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915",
+  "evidence": {
+    "resultR01": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r01/result.json",
+      "bytes": 16424,
+      "sha256": "dee17d94f539bfc7456b54e66f420c283d2a8ebeb5e37e956b6515caff88b1bf"
+    },
+    "resultR02": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r02/result.json",
+      "bytes": 18615,
+      "sha256": "207a72764d54a6036245acb2bde87b86cc636d8c7e41c234958687f1184bd9a1"
+    },
+    "sourceManifestR02": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/source-manifest-r02.json",
+      "bytes": 7543,
+      "sha256": "7dee61825f7d08951063256d44c007b888b43bbd3a86fb1733f8c588ece62981"
+    },
+    "sourceManifestR03": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/source-manifest-r03.json",
+      "bytes": 7612,
+      "sha256": "e87e97b1458610d0987e31e6c3d6fd643bd65b38dfd12326fc11236b591c68cc"
+    },
+    "closerReport": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r02/closer-report.json",
+      "bytes": 18333,
+      "sha256": "9e39ada479c9c0775b1a7c2c09be72b588c52b87402f616adbd501d948df434b"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r02/independent-review.json",
+      "bytes": 3015,
+      "sha256": "bd96715853feaf6bccad55e17e59f110033a2b83d3048ad7fbb6c1bce25c7fe6"
+    }
+  },
+  "sourceScope": {
+    "frozenFiles": 13,
+    "modifiedClientAndTestFiles": 6,
+    "unchangedPairedDependencies": 7,
+    "supplementalBrowserTest": {
+      "repositoryPath": "scripts/test-env/test-client-browser-audited-candidate.mjs",
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r01/test-client-browser-audited-candidate.mjs",
+      "bytes": 73297,
+      "sha256": "cc1a7cfa6132af82489a3f143eb9101c3cdee822e2d7134cdebd48184e13769d",
+      "importTarget": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/source-r02/client-browser-audited-candidate.mjs",
+      "importedOnlyReviewedFrozenModules": true,
+      "originalTestLogicUnchanged": true
+    },
+    "revision3Change": {
+      "repositoryPath": "scripts/test-env/test-client-subtitle-readiness.mjs",
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/source-r03/test-client-subtitle-readiness.mjs",
+      "bytes": 12406,
+      "sha256": "639dfc6dd002d07838af36faec82d04f4b4aae65e17684ac436cb9a1d03b25c9",
+      "change": "Add first() { return this; } to the complete subtitle fixture's role locator, matching the existing production locator contract.",
+      "otherTwelveFilesByteIdenticalToRevision2": true,
+      "productionLogicTimeoutsAndAssertionsChanged": false
+    },
+    "originalManifestsAndFailedEvidencePreserved": true
+  },
+  "initialPinAdmission": {
+    "outcome": "rejected_before_tests",
+    "testsExecuted": 0,
+    "reason": "The delegated source-manifest SHA transcription omitted two hexadecimal characters.",
+    "correctedAgainstExistingFrozenRecord": true,
+    "originalManifestChanged": false
+  },
+  "attempts": [
+    {
+      "attempt": "r01",
+      "sourceRevision": 2,
+      "status": "stopped_at_first_failed_group",
+      "groups": [
+        {
+          "label": "python-client",
+          "testsRun": 74,
+          "passed": 74,
+          "failed": 0,
+          "skipped": 0,
+          "exitCode": 0
+        },
+        {
+          "label": "browser-helpers",
+          "testsRun": 55,
+          "passed": 55,
+          "failed": 0,
+          "skipped": 0,
+          "exitCode": 0
+        },
+        {
+          "label": "subtitle-readiness",
+          "testsRun": 5,
+          "passed": 3,
+          "failed": 2,
+          "skipped": 0,
+          "exitCode": 1,
+          "acceptedAsCompletedGroup": false
+        }
+      ],
+      "failedTests": [
+        "subtitle flow observes VTT opening after its seek cue and before returning to Off",
+        "subtitle flow cannot substitute the VTT seek cue for opening or accept visible cues after Off"
+      ],
+      "failureCode": "movie_control_not_ready",
+      "diagnosis": "The complete fixture omitted locator.first(); the unchanged waitMovieControl helper calls locator.first().waitFor(), so the tests failed before reaching the cue assertions.",
+      "notRun": [
+        "client-closer"
+      ],
+      "originalFailureRetained": true
+    },
+    {
+      "attempt": "r02",
+      "sourceRevision": 3,
+      "status": "passed",
+      "groups": [
+        {
+          "label": "subtitle-readiness",
+          "testsRun": 5,
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "exitCode": 0
+        },
+        {
+          "label": "client-closer",
+          "testsRun": 66,
+          "passed": 66,
+          "failed": 0,
+          "skipped": 0,
+          "exitCode": 0
+        }
+      ],
+      "reusedWithoutRerun": [
+        "python-client",
+        "browser-helpers"
+      ],
+      "changeLimitedToPreviouslyFailedFixture": true
+    }
+  ],
+  "acceptedScopes": {
+    "pythonClient": {
+      "tests": 74,
+      "attempt": "r01",
+      "execution": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r01/01-python-client-execution.json",
+        "bytes": 7121,
+        "sha256": "cd93b7c1d5559f09c76cd78a58a09d53d4799c29a10a4073d0693128bd94eae5"
+      }
+    },
+    "browserHelpers": {
+      "tests": 55,
+      "attempt": "r01",
+      "execution": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r01/02-browser-helpers-execution.json",
+        "bytes": 3789,
+        "sha256": "cfee6922209d6f145a7f7d4d4e42ff8934e89f0fda0b678952e74e92c395a384"
+      }
+    },
+    "subtitleReadiness": {
+      "tests": 5,
+      "attempt": "r02",
+      "execution": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r02/01-subtitle-readiness-execution.json",
+        "bytes": 1599,
+        "sha256": "cb059ff77303a27e152fe8803a299f13bfcc78f0a893b4909e155aa11aefc273"
+      }
+    },
+    "clientCloser": {
+      "tests": 66,
+      "attempt": "r02",
+      "execution": {
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/guards-r02/02-client-closer-execution.json",
+        "bytes": 11091,
+        "sha256": "d2a31a9dcbb6253eb094cd17730736a394fa160e880d87d5ae101c2115554f38"
+      }
+    },
+    "singleTwoHundredTestRun": false,
+    "boundary": "Compose the unchanged r01 Python and browser results with r02 readiness and closer results. Do not add the failed r01 readiness group's three passing cases to the accepted scopes."
+  },
+  "savedReplay": {
+    "reviewedBaselines": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/reviewed-baselines.json",
+      "bytes": 3278,
+      "sha256": "a18dabe5edc6cd478c9b3250c49a23561e006bf29d1e14e95c900e8ac004adf5"
+    },
+    "episodeProvenance": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-client-v6-contract-20260915/private/episode-provenance.json",
+      "bytes": 1548,
+      "sha256": "c75e81671798c9be2bf33101ddb07f3d583c0649f49a382cbe0d6933c89c3a9a"
+    },
+    "languages": [
+      "Python",
+      "JavaScript"
+    ],
+    "cases": [
+      {
+        "name": "movie05",
+        "sessions": 13,
+        "plays": 5,
+        "foreignClientReferences": 0,
+        "finalClientProvenanceRoles": [
+          "movie"
+        ]
+      },
+      {
+        "name": "movie06",
+        "sessions": 14,
+        "plays": 6,
+        "foreignClientReferences": 0,
+        "finalClientProvenanceRoles": [
+          "movie"
+        ]
+      },
+      {
+        "name": "latest-subtitles",
+        "sessions": 21,
+        "plays": 13,
+        "foreignClientReferences": 2,
+        "finalClientProvenanceRoles": [
+          "movie",
+          "subtitles"
+        ]
+      },
+      {
+        "name": "episode-provenance",
+        "sessions": 20,
+        "plays": 11,
+        "foreignClientReferences": 2,
+        "actorPlays": 2,
+        "actorPrepared": 1,
+        "usedAsCurrentBaseline": false
+      }
+    ],
+    "snapshotTables": 35,
+    "snapshotSequences": 5,
+    "additionalPythonLegacyCases": [
+      "test_saved_movie04_snapshot_offline_replay",
+      "test_saved_movie05_snapshot_offline_replay"
+    ],
+    "originalSavedBytesUnchanged": true,
+    "boundary": "Both languages executed production saved-state/provenance validators. These are historical closed-state records, not fresh client runs or physical acceptance of their earlier failed UI attempts."
+  },
+  "executionBoundary": {
+    "host": "ssh test-env",
+    "networkIsolation": "Every executed group used /usr/bin/unshare --net with a separately observed network namespace.",
+    "python": "/usr/bin/python3 -I -B",
+    "nodeMaximumOldSpaceMiB": 512,
+    "maximumSecondsPerGroup": 120,
+    "maximumSecondsTotal": 600,
+    "combinedExecutionMilliseconds": 4921,
+    "stopOnFirstFailure": true,
+    "automaticReruns": 0,
+    "exclusivePrivateStdoutStderrAndResult": true,
+    "businessHttpCalls": 0,
+    "sqlCalls": 0,
+    "serviceActions": 0,
+    "browserRuns": 0,
+    "builds": 0,
+    "originalLiveInputsReplayed": false
+  },
+  "closure": {
+    "allExecutedGroupProcessesReaped": true,
+    "allOwnedProcessGroupsEmpty": true,
+    "timeouts": 0,
+    "acceptedGroupFailures": 0,
+    "acceptedGroupSkips": 0,
+    "sourceBeforeAfterEqual": true,
+    "savedInputBeforeAfterEqual": true
+  },
+  "independentReadback": {
+    "status": "passed",
+    "method": "Read and hash the retained source, input, result and raw-log files; compare the six repository source copies with the frozen bytes; inspect closure of the five prior test processes and groups. This review did not execute the tests again.",
+    "pinnedFilesRead": 63,
+    "pinnedBytesRead": 5183471,
+    "rawPython74AndBrowser55Checked": true,
+    "originalReadinessThreePassTwoFailChecked": true,
+    "correctedReadinessFivePassChecked": true,
+    "allSixtySixCloserPassEntriesChecked": true,
+    "bothLanguagesSavedReplaysChecked": true,
+    "onlyFixtureFirstChangedAcrossThirteenFrozenFiles": true,
+    "repositorySourceBridgeFiles": 6,
+    "repositorySourcesByteIdenticalToFrozenRevision3": true,
+    "allFivePriorChildPidsAbsent": true,
+    "allFiveOwnedProcessGroupsEmpty": true,
+    "additionalTests": 0,
+    "sqlCalls": 0,
+    "httpCalls": 0,
+    "serviceActions": 0,
+    "browserRuns": 0
+  },
+  "evidenceLimits": [
+    "These are client component results, not Go product regression counts or original-client acceptance.",
+    "No actual Programs artifact, version-4 product epoch or binding, affected_programs admission, production client input, transition, or main promotion was created or accepted.",
+    "Future fixed authorities must bind the actual successful artifact receipts, reviewed current closed state, Programs epoch and binding, affected admission closeout, and the selected component sources before a live client input can be admitted.",
+    "Historical recovery, movie, subtitle and Episode records retain their original source and execution scopes.",
+    "Keep the tested source frozen. Repeat relevant checks only after an actual source change or a demonstrated cross-component issue.",
+    "Writing this repository record ran no checks and changed no code or original evidence."
+  ],
+  "clientAcceptance": false
+}
