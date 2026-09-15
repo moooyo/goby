@@ -12,16 +12,24 @@ their original meanings and are not fresh deployment observations.
 
 Execution resumed on 2026-09-15 after the user accepted the plan review.
 The [core acceptance resolution](core-client-acceptance-resolution.md) now leads
-the queue, alongside the [remaining r04 evidence decision](r04-installation-evidence-resolution.md).
+the queue. The [internal amd64 systemd installation gate](internal-amd64-installation-acceptance.json)
+is accepted from the original runtime, corrected saved HTTP review and the
+independently reviewed archived final state. The original failed sealer remains
+unchanged; its final SQL transaction was not retroactively recreated.
 The response-ID matcher correction passed
 [35 remote guards and the exact saved subtitle replay](core-response-identity-verification.json)
 with independent review; this closes a tool defect, not client acceptance.
+The [reviewed movie-baseline contract](reviewed-movie-baseline-verification.json)
+has now passed Python 47, JavaScript 46 and 12 log/history checks. Both languages
+read actual movie05, movie06 and latest Subtitles01 states; all 35 tables, five
+sequences and two foreign references remain protected. New live component
+admission is still required. The next discriminating question is the
+[bounded TV Response observation](core-tv-response-observation-decision.md).
 Native capacity execution is held under its
 [measurement decision](native-capacity-measurement-decision.md). The
-historical session pause and `main` checkpoint are preserved in the
-[saved native capacity handoff](session-handoff-20260915-native-capacity.md)
-and [tracked source manifest](native-scan-http-capacity-source-snapshot.json)
-preserve the integrated controller and remaining work. Eight control-transport
+historical pause, integrated capacity controller and remaining work are preserved
+in the [saved handoff](session-handoff-20260915-native-capacity.md) and
+[tracked source manifest](native-scan-http-capacity-source-snapshot.json). Eight control-transport
 groups and six child-lifecycle fixture groups passed remotely, separately from
 the earlier twelve reader groups. Independent full review of the two new
 results, the one-byte transport warning correction and controller orchestration
@@ -74,7 +82,7 @@ and five installation-file copies remain private; the original installation
 paths, units, namespace and PG tmpfs are closed. The import-only correction passed remote
 symbol and invalid-input entry checks. See the
 [first installation attempt](systemd-installation-first-attempt.json).
-Installation acceptance remains open. The separately reviewed
+Installation acceptance remained open at that historical checkpoint. The separately reviewed
 [r02 attempt](systemd-installation-second-attempt.json) also failed: Type=simple
 returned before the final exec/configuration was complete, and the controller
 froze the transient root systemd-executor observation. Later evidence bound the
@@ -110,7 +118,10 @@ not run. Failure preservation and independent readback passed for both archives,
 five directory trees, five installation copies and all process/unit/mount/
 namespace boundaries, with protected state unchanged. The runtime success and original
 seal failure remain separate. No fifth attempt is admitted. The shipped unit
-and product package are unchanged; full installation acceptance remains open.
+and product package are unchanged. The later
+[archived final-state comparison](r04-archived-catalog-verification.md) and
+independent review close the internal amd64 installation gate; the original r04
+receipt still records its failed seal.
 The [source checkpoint](systemd-package-source-checkpoint.json) now matches
 864 tracked backend, embed-wrapper, module and package inputs to the verified
 E11 source. A supplement checks `web/admin/embedded.go` from the same Git tree;
@@ -161,8 +172,8 @@ application identities and all unchanged protected resources explicitly.
 | --- | --- | --- |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
-| Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package still needs actual installation acceptance |
-| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The final r04 sealing SQL observer did not run. Full installation acceptance, native arm64, upgrade and whole-M6 remain open; no fifth attempt is admitted |
+| Current media-refresh source | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Focused/browser acceptance has an exact non-documentation source bridge. No tagged full-suite, privileged mount, core-video or main-promotion claim; the systemd package has separate accepted internal amd64 installation evidence |
+| Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
 | Core original client | MP3/FLAC passed; video/subtitle journeys retain formal failures with closed owned state; native diagnostics confirm two undefined reasons in Subtitles01 | New discriminating evidence or a justified correction before retained-state video acceptance; no automatic replay |
@@ -923,7 +934,7 @@ discriminating evidence or a concrete product decision before reopening.
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
-| Catalog and operations | Native root-profile restart, r04 nonroot two-start runtime, SQL catalog/isolation and tiny real-file scan/rescan baselines passed with closure; representative throughput, actual blocked storage, host reboot, complete installation sealing and filesystem measurements remain open |
+| Catalog and operations | Native root-profile restart, r04 nonroot two-start runtime, SQL catalog/isolation and tiny real-file scan/rescan baselines passed with closure; internal amd64 installation sealing is now accepted through supplemental final-state evidence; representative throughput, actual blocked storage, host reboot and filesystem measurements remain open |
 | Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
 | Administration | Selected policy, executor and provider extensions from the delivery plan |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |

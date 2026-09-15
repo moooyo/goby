@@ -15,6 +15,13 @@ inputs and separate evidence for 57 generated assets. Git inspection at
 administrator source or packaging. Selecting the artifact does not establish
 current runtime admission or transfer old client acceptance.
 
+The [source comparison](core-artifact-source-comparison.md) now binds the actual
+A/B/E11 differences: core audio/playback/authentication files are unchanged,
+while E11 changes asset selection and the shared task/scan lifecycle. Its startup
+can add the media-refresh task definition. Include that explicit state delta in
+the candidate transition instead of assuming that unchanged migrations imply a
+zero-write start.
+
 | Artifact | Retained purpose | Remaining condition |
 | --- | --- | --- |
 | Audited client candidate `b0d6769...` | Reproduce and explain saved movie/episode/subtitle evidence; retain its MP3/FLAC acceptance | Any further diagnostic needs a reviewed current closed-state input and a discriminating question |
@@ -27,13 +34,20 @@ admission lineage permit the smallest justified change; preserve both existing
 instances until that choice and its recovery/cleanup contract are reviewed.
 Existing configurations remain hash-only and master/key files stat-only.
 
+The next movie baseline must use the latest complete closed-state snapshot, not
+only the last movie snapshot. Subtitles01 retained two foreign audio references;
+they must remain exact. The zero-residue requirement applies to the movie actor,
+while every foreign row and sequence remains bound to the reviewed current
+snapshot. Historical movie provenance separately fixes its actor, terminal
+history and UserData; it does not replace the current full-library baseline.
+
 ## Concrete blocker queue
 
 | Order | Known problem | Next action and decisive result | Stop condition |
 | --- | --- | --- | --- |
 | 1 — complete in its tool scope | Saved subtitle context291 identifies physical294, but the matcher also accepted physical293 | [35 remote guards and the exact saved 293/294 replay](core-response-identity-verification.json) passed independent review. Context291 remains associated with 294 and is excluded from 293 | No inference about why 293 ended; the failed subtitle run stays failed |
-| 2 | Movie controller v3 embeds movie05 state and cannot accept the later closed state | Define the reviewed retained-state input in the existing controller/closer, preserving full snapshot equality, actor/epoch binding, revoked credentials, old terminal rows and narrow Prepared-row expiration. Use actual saved states for the changed contract | No new runner, fresh actor, seed reset or browser retry merely to bypass retained history |
-| 3 | Movie/episode/subtitle page errors remain unattributed; Subtitles01 captured primitive undefined without a request association | Separate the hypotheses of a client/network-boundary behavior, a Goby response-contract defect and a cancellation-observation gap. Use the corrected matcher and retained request/log facts to decide which hypothesis can still be distinguished offline; specify exactly one additional public-behavior observation only if its possible outcomes change the next action | Timing proximity to a rejected external request is not causality. No new diagnostic layer, vendor-source/database access, relaxed egress or unexplained-error waiver |
+| 2 — offline contract verified | Movie controller v3 embeds movie05 state and cannot accept the later closed state | [Version-4 contract verification](reviewed-movie-baseline-verification.json) passed Python 47, JavaScript 46 and 12 log/history checks with independent review. Both implementations load actual movie05, movie06 and latest Subtitles01 baselines, preserving 35 tables, five sequences and two foreign references | New component admission remains required. The known old closer is rejected before live work; no browser input is admitted by this tool checkpoint |
+| 3 — question selected, entry contract pending | Movie/episode/subtitle page errors remain unattributed; Subtitles01 captured primitive undefined without a request association | The [TV response observation decision](core-tv-response-observation-decision.md) selects one no-playback browse using the existing native hook to seek a unique Response/request binding. Old reference movie/subtitle already recorded errors and are not queued for blind repetition | TV retained-state and component/current-runtime admission are required before execution. Undefined, no unique binding or no recurrence ends this diagnostic branch; original errors remain unresolved |
 | 4 | Final core acceptance does not yet bind E11 | After the preceding decision, define one candidate transition/admission and the original-client movie/episode/subtitle sequence against the intended artifact. Reuse only unchanged, source-bound proofs | No main promotion before actual core acceptance and current recovery/deployment prerequisites |
 
 Each completed action must reduce a named uncertainty or produce a concrete
@@ -68,3 +82,11 @@ offline matcher needs its focused guards and actual saved-record replay, not a
 new full product regression or business request. Review the resulting source
 diff and receipt independently before integrating it into a future live input.
 The old frozen runtime inputs remain consumed and unchanged.
+
+The v4 input points to an explicitly reviewed baseline document. That document
+separately binds current closeout/snapshot/manifest/source epoch and the four
+movie-provenance pins. Prepared expiration permissions are explicit; they are
+not discovered and authorized from a snapshot automatically. The first saved
+replay exposed an incorrect nested-field path, which was corrected in both
+languages and reverified against the original records. Preserve that failed
+attempt as well as the passing follow-up.

@@ -431,7 +431,7 @@ export function validateServerLog(receipt, beforeBytes, afterBytes, { manifest, 
   need(approval?.kind === 'audited-candidate-client-approval' && approval.runId === manifest.runId && approval.scenario === manifest.scenario &&
     approval.sourceManifestSha256 === manifest.source.manifestSha256 && approval.binarySha256 === manifest.source.binarySha256 &&
     approval.serverId === manifest.serverId && approval.isolatedCandidate === true && equal(approval.authorizedRunInput, receipt.input) &&
-    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === 3 && authorizedInput.runId === manifest.runId &&
+    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === (input.version === 4 ? 4 : 3) && authorizedInput.runId === manifest.runId &&
     authorizedInput.scenario === manifest.scenario && authorizedInput.output === path.dirname(manifest.output) &&
     equal(authorizedInput.runtimeEpoch, input.runtimeEpoch) && equal(authorizedInput.retainedBaseline, input.retainedBaseline) &&
     equal(authorizedInput.sources, input.sources), 'server_log_authorized_input');
@@ -778,7 +778,131 @@ export function validateOccupiedMovieBaseline(closeout, snapshot, seed) {
   return play;
 }
 
+export function validateReviewedMovieBaselineInput(review) {
+  need(exact(review, ['kind', 'version', 'status', 'scenario', 'closeout', 'snapshot', 'sourceEpoch', 'runtimeEpoch', 'seedBinding', 'manifest', 'boundary', 'movieProvenance', 'actor', 'item', 'preparedExpirations']) &&
+    review.kind === 'audited-candidate-reviewed-movie-baseline' && review.version === 1 && review.status === 'reviewed_closed_state' && review.scenario === 'movie' &&
+    ['closeout', 'snapshot', 'sourceEpoch', 'runtimeEpoch', 'seedBinding', 'manifest'].every(key => descriptor(review[key])), 'reviewed_movie_input_invalid');
+  need((review.boundary === null || descriptor(review.boundary)) && exact(review.movieProvenance, ['closeout', 'snapshot', 'sourceEpoch', 'manifest']) &&
+    Object.values(review.movieProvenance).every(descriptor), 'reviewed_movie_provenance_input_invalid');
+  need(exact(review.actor, ['id', 'username']) && /^[a-f0-9]{32}$/.test(review.actor.id) && typeof review.actor.username === 'string' && review.actor.username.length > 0 &&
+    exact(review.item, ['id', 'mediaSourceId', 'runtimeTicks']) && /^[a-f0-9]{32}$/.test(review.item.id) && review.item.mediaSourceId === 'mediasource_' + review.item.id &&
+    integer(review.item.runtimeTicks) && review.item.runtimeTicks > 0, 'reviewed_movie_identity_invalid');
+  need(Array.isArray(review.preparedExpirations) && review.preparedExpirations.length < 256 && review.preparedExpirations.every(row =>
+    exact(row, ['playSessionId', 'authSessionId']) && typeof row.playSessionId === 'string' && /^play_[A-Za-z0-9_]+$/.test(row.playSessionId) &&
+    typeof row.authSessionId === 'string' && /^[A-Za-z0-9_-]+$/.test(row.authSessionId)) &&
+    new Set(review.preparedExpirations.map(row => row.playSessionId)).size === review.preparedExpirations.length, 'reviewed_movie_expiration_allowlist_invalid');
+  return review;
+}
+
+function validateReviewedClosedState(evidence, pins, seed, boundary = null) {
+  const { closeout, snapshot, sourceEpoch, manifest } = evidence, source = sourceEpoch?.currentSource;
+  need(sourceEpoch?.kind === 'audited-candidate-runtime-epoch' && [2, 3].includes(sourceEpoch.version) &&
+    exact(source, ['archiveSha256', 'sourceManifest', 'binary', 'fullReport', 'schema']) && SHA.test(source.archiveSha256) && source.schema === 28 &&
+    ['sourceManifest', 'binary', 'fullReport'].every(key => descriptor(source[key])), 'reviewed_movie_source_epoch');
+  const actor = seed.actors[manifest?.scenario];
+  need(manifest?.kind === 'audited-candidate-client-input' && manifest.version === 1 && ['movie', 'subtitles'].includes(manifest.scenario) &&
+    typeof manifest.runId === 'string' && manifest.serverId === seed.serverId && actor &&
+    equal(manifest.actor, { id: actor.id, username: actor.username }) && equal(manifest.catalog?.movie, seed.catalog.movie) &&
+    equal(manifest.source, { manifestSha256: source.sourceManifest.sha256, binarySha256: source.binary.sha256, schema: source.schema }), 'reviewed_movie_manifest_binding');
+  need(closeout?.status === 'owned_state_closed_client_acceptance_pending' && closeout.clientAcceptance === false && !Object.hasOwn(closeout, 'failure'), 'reviewed_movie_closeout_not_closed');
+  need(exact(snapshot, ['capturedAt', 'tables', 'sequences']) && equal(Object.keys(snapshot.tables).sort(), TABLES) && TABLES.every(table => Array.isArray(snapshot.tables[table]) && snapshot.tables[table].every(own)) &&
+    own(snapshot.sequences), 'reviewed_movie_snapshot_inventory');
+  timestampNs(snapshot.capturedAt);
+  const tables = snapshot.tables;
+  indexed(tables.sessions); indexed(tables.play_sessions);
+  need(tables.sessions.every(row => typeof row.id === 'string' && row.id.length > 0 && typeof row.revoked_at === 'string') &&
+    tables.play_sessions.every(row => typeof row.id === 'string' && row.id.length > 0), 'reviewed_movie_credentials_or_residue');
+  for (const row of tables.sessions) timestampNs(row.revoked_at);
+  if (manifest.scenario === 'movie') {
+    const data = closeout.checks?.ownedData, runtime = closeout.checks?.savedRuntimeAndWorkers;
+    need((pins.boundary ?? null) === null && boundary === null && /^movie-[0-9]{2,}$/.test(manifest.runId) &&
+      closeout.kind === 'audited-' + manifest.runId.replaceAll('-', '') + '-owned-state-closeout' && closeout.browserOutcome === 'failed' && closeout.browserExitCode === 1 && closeout.gatewayExitCode === 0 &&
+      runtime?.candidateContinuous === true && runtime.postgresContinuous === true && runtime.leaseExact === true && ['browser', 'gateway'].every(role =>
+        runtime.workers?.[role]?.pidAbsentAsRecorded === true && runtime.workers[role].recursiveCgroupEmptyAsRecorded === true), 'reviewed_movie_closeout_not_closed');
+    need(equal(closeout.inputEvidence?.after, pins.snapshot) && equal(closeout.inputEvidence?.epoch, pins.sourceEpoch) && equal(closeout.inputEvidence?.manifest, pins.manifest), 'reviewed_movie_closeout_binding');
+    need(data?.ownedTables === 35 && data.oldRowsDeleted === 0 && data.clientPlaybackReferences === tables.client_playback_references.length && data.encodingJobs === tables.encoding_jobs.length &&
+      closeout.checks.authentication?.allSessionsRevoked === tables.sessions.length, 'reviewed_movie_closed_state_counts');
+    need(equal(one(tables.user_item_data.filter(row => row.user_id === actor.id), 'reviewed_movie_userdata_count'), data.userData), 'reviewed_movie_userdata_changed');
+  } else {
+    const input = closeout.inputEvidence, state = closeout.sourceState;
+    need(closeout.kind === 'audited-candidate-subtitles-owned-state-closeout' && !Object.hasOwn(closeout, 'checks') && /^subtitles-[0-9]{2,}$/.test(manifest.runId) &&
+      closeout.sourcePinsUnchanged === true && own(closeout.originalUIRejection) && closeout.originalUIRejection.originalObservationUnchanged === true &&
+      input?.version === 3 && input.retainedBaseline === null, 'reviewed_movie_closed_state_kind');
+    validateCloseoutInput(input);
+    need(descriptor(pins.boundary) && equal(input.sourceAfter, pins.snapshot) && equal(input.runtimeEpoch, pins.sourceEpoch) && equal(input.manifest, pins.manifest) &&
+      equal(input.seedBinding, pins.seedBinding) && equal(input.boundary, pins.boundary), 'reviewed_movie_closeout_binding');
+    need(state?.allSessionsRevoked === true && state.afterSessions === tables.sessions.length && state.afterPlays === tables.play_sessions.length &&
+      state.afterUserData === tables.user_item_data.length && state.afterClientReferences === tables.client_playback_references.length && state.afterEncodingJobs === tables.encoding_jobs.length,
+    'reviewed_movie_closed_state_counts');
+    need(own(sourceEpoch.candidateProcess) && own(sourceEpoch.postgresProcess) && own(sourceEpoch.lease) &&
+      typeof sourceEpoch.candidate?.database === 'string' && sourceEpoch.candidate.database.length > 0 && own(manifest.processes?.candidate?.listener), 'reviewed_movie_closed_state_runtime');
+    need(exact(boundary, ['kind', 'version', 'runId', 'runtimeEpoch', 'sourceBefore', 'sourceAfter', 'candidateBefore', 'candidateAfter', 'postgresBefore', 'postgresAfter',
+      'leaseBefore', 'leaseAfter', 'database', 'beforeMonotonicNs', 'afterMonotonicNs', 'clientWorker', 'gatewayWorker']) &&
+      boundary.kind === 'audited-candidate-client-boundary' && boundary.version === 1 && boundary.runId === manifest.runId &&
+      equal(boundary.runtimeEpoch, pins.sourceEpoch) && equal(boundary.sourceBefore, input.sourceBefore) && equal(boundary.sourceAfter, pins.snapshot) &&
+      equal(boundary.candidateBefore, manifest.processes?.candidate) && equal(boundary.candidateAfter, manifest.processes?.candidate) &&
+      equal(without(boundary.candidateBefore, ['listener']), sourceEpoch.candidateProcess) && equal(boundary.postgresBefore, sourceEpoch.postgresProcess) &&
+      equal(boundary.postgresAfter, sourceEpoch.postgresProcess) && equal(boundary.leaseBefore, sourceEpoch.lease) && equal(boundary.leaseAfter, sourceEpoch.lease) &&
+      equal(boundary.database, sourceEpoch.candidate.database) && typeof boundary.beforeMonotonicNs === 'string' && typeof boundary.afterMonotonicNs === 'string' &&
+      ns(boundary.beforeMonotonicNs) <= ns(boundary.afterMonotonicNs), 'reviewed_movie_closed_state_boundary');
+    need(equal(boundary.clientWorker, { exitCode: 0, mainPID: 0, workerPidAbsent: true, remainingBrowserPids: [] }) &&
+      equal(boundary.gatewayWorker, { exitCode: 0, mainPID: 0, workerPidAbsent: true, index: input.gatewayIndex }), 'reviewed_movie_workers_not_closed');
+  }
+}
+
+/** The pinned movie provenance and review supply authority, not the latest snapshot. */
+export function validateReviewedMovieBaseline(retained, seed) {
+  need(exact(retained, ['review', 'closeout', 'snapshot', 'sourceEpoch', 'manifest', 'boundary', 'movieProvenance', 'inputBinding']), 'reviewed_movie_evidence_invalid');
+  const { review, snapshot, inputBinding, movieProvenance } = retained;
+  validateReviewedMovieBaselineInput(review);
+  need(exact(inputBinding, ['runtimeEpoch', 'seedBinding']) && descriptor(inputBinding.runtimeEpoch) && descriptor(inputBinding.seedBinding) &&
+    equal(review.runtimeEpoch, inputBinding.runtimeEpoch) && equal(review.seedBinding, inputBinding.seedBinding) && equal(seed.runtimeEpoch, inputBinding.runtimeEpoch), 'reviewed_movie_current_binding');
+  need(exact(movieProvenance, ['closeout', 'snapshot', 'sourceEpoch', 'manifest']) && movieProvenance.manifest?.scenario === 'movie', 'reviewed_movie_provenance_invalid');
+  validateReviewedClosedState(movieProvenance, review.movieProvenance, seed);
+  validateReviewedClosedState(retained, review, seed, retained.boundary);
+  need(timestampNs(snapshot.capturedAt) >= timestampNs(movieProvenance.snapshot.capturedAt), 'reviewed_movie_provenance_time_reversed');
+  const actor = seed.actors.movie, movie = seed.catalog.movie, tables = snapshot.tables, sessions = indexed(tables.sessions), plays = indexed(tables.play_sessions);
+  need(equal(movieProvenance.manifest.actor, review.actor) && equal(review.actor, { id: actor.id, username: actor.username }) &&
+    equal(review.item, { id: movie.id, mediaSourceId: 'mediasource_' + movie.id, runtimeTicks: movie.runtimeTicks }), 'reviewed_movie_manifest_binding');
+  for (const table of ['users', 'sessions', 'play_sessions', 'user_item_data']) {
+    const owned = row => (table === 'users' ? row.id : row.user_id) === actor.id;
+    need(equal(tables[table].filter(owned), movieProvenance.snapshot.tables[table].filter(owned)), 'reviewed_movie_provenance_state_changed');
+  }
+  const ownedAuth = new Set(tables.sessions.filter(row => row.user_id === actor.id).map(row => row.id)), ownedPlays = new Set(tables.play_sessions.filter(row => row.user_id === actor.id).map(row => row.id));
+  need(['client_playback_references', 'encoding_jobs'].every(table => tables[table].every(row => row.user_id !== actor.id &&
+    !ownedAuth.has(row.auth_session_id) && !ownedPlays.has(row.play_session_id))), 'reviewed_movie_credentials_or_residue');
+  const user = one(tables.users.filter(row => row.id === actor.id), 'reviewed_movie_actor_missing');
+  need(user.name === actor.username && user.is_administrator === false && user.is_disabled === false && equal(user.policy, {}), 'reviewed_movie_actor_changed');
+  const owned = tables.play_sessions.filter(row => row.user_id === actor.id);
+  need(owned.length < 256 && tables.play_sessions.every(row => typeof row.id === 'string'), 'reviewed_movie_play_inventory');
+  for (const row of owned) {
+    const session = sessions.get(row.auth_session_id);
+    need(row.item_id === movie.id && row.media_source_id === review.item.mediaSourceId && row.duration_ticks === movie.runtimeTicks &&
+      integer(row.position_ticks) && row.position_ticks <= row.duration_ticks && row.application_client_id === null && row.client_correlated === false &&
+      session?.kind === 'emby' && session.user_id === actor.id && session.device_id === row.device_id &&
+      (row.state === 'Stopped' ? row.counted === true && typeof row.started_at === 'string' && typeof row.stopped_at === 'string' :
+        ['Prepared', 'Expired'].includes(row.state) && row.counted === false && row.started_at === null &&
+        (row.state === 'Prepared' ? row.stopped_at === null : typeof row.stopped_at === 'string')), 'reviewed_movie_play_identity');
+    timestampNs(row.expires_at);
+  }
+  const prepared = owned.filter(row => row.state === 'Prepared');
+  need(equal(prepared.map(row => row.id).sort(), review.preparedExpirations.map(row => row.playSessionId).sort()) &&
+    review.preparedExpirations.every(row => plays.get(row.playSessionId)?.auth_session_id === row.authSessionId), 'reviewed_movie_prepared_authority');
+  const userdata = one(tables.user_item_data.filter(row => row.user_id === actor.id), 'reviewed_movie_userdata_count');
+  need(userdata.item_id === movie.id && integer(userdata.play_count) && integer(userdata.playback_position_ticks) &&
+    typeof userdata.is_favorite === 'boolean' && typeof userdata.played === 'boolean', 'reviewed_movie_userdata_changed');
+  return prepared;
+}
+
 export function verifyRetainedMovieBefore(before, manifest, seed, retained) {
+  if (own(retained) && Object.hasOwn(retained, 'review')) {
+    need(manifest.scenario === 'movie' && equal(manifest.actor, retained.review.actor), 'reviewed_movie_scenario_required');
+    const prepared = validateReviewedMovieBaseline(retained, seed), prior = retained.snapshot;
+    need(exact(before, ['capturedAt', 'tables', 'sequences']) && equal(before.tables, prior.tables) && equal(before.sequences, prior.sequences), 'retained_movie_fresh_state_changed');
+    need(timestampNs(before.capturedAt) >= timestampNs(prior.capturedAt) && prior.tables.play_sessions.filter(row => row.user_id === manifest.actor.id).every(row =>
+      timestampNs(before.capturedAt) + 1200n * 1000000000n < timestampNs(row.expires_at) + 7n * 86400n * 1000000000n), 'retained_movie_pruning_deadline');
+    return prepared;
+  }
   need(manifest.scenario === 'movie' && exact(retained, ['closeout', 'snapshot']), 'retained_movie_scenario_required');
   const prior = retained.snapshot, play = validateRetainedMovieBaseline(retained.closeout, prior, seed);
   need(exact(before, ['capturedAt', 'tables', 'sequences']) && equal(before.tables, prior.tables) && equal(before.sequences, prior.sequences), 'retained_movie_fresh_state_changed');
@@ -788,6 +912,7 @@ export function verifyRetainedMovieBefore(before, manifest, seed, retained) {
 }
 
 export function verifyRetainedMovieTransition(before, after, manifest, seed, physical, retained) {
+  if (own(retained) && Object.hasOwn(retained, 'review')) return verifyReviewedMovieTransition(before, after, manifest, seed, physical, retained);
   const old = verifyRetainedMovieBefore(before, manifest, seed, retained), actor = manifest.actor.id;
   need(actor === seed.actors.movie.id, 'retained_movie_actor_changed');
   const current = one(after.tables.play_sessions.filter(row => row.id === old.id), 'retained_movie_row_missing');
@@ -812,6 +937,39 @@ export function verifyRetainedMovieTransition(before, after, manifest, seed, phy
     within(current.updated_at, exchange.intent.startedAt, exchange.result.completedAt), 'retained_movie_expiration_outside_prepare');
   return { playSessionId: old.id, previousState: 'Prepared', state: 'Expired', prepareOrdinal: exchange.ordinal,
     changedFields: ['state', 'stopped_at', 'updated_at'], excludedFromNewPlayCounts: true, creationUpperBound: oldPlays.length + creators.length };
+}
+
+export function verifyReviewedMovieTransition(before, after, manifest, seed, physical, retained) {
+  const prepared = verifyRetainedMovieBefore(before, manifest, seed, retained), actor = manifest.actor.id;
+  const oldPlays = before.tables.play_sessions.filter(row => row.user_id === actor), oldIds = new Set(oldPlays.map(row => row.id)), oldAuth = new Set(before.tables.sessions.map(row => row.id));
+  const creators = physical.exchanges.filter(row => !row.rejected && (row.scope?.kind === 'playback_info' ||
+    row.scope?.kind === 'playback_report' && /^\/Sessions\/Playing\/?$/i.test(row.scope.route)));
+  need(oldPlays.length + creators.length <= 256 && after.tables.play_sessions.filter(row => row.user_id === actor).length <= 256 && oldPlays.every(row =>
+    timestampNs(after.capturedAt) < timestampNs(row.expires_at) + 7n * 86400n * 1000000000n), 'retained_movie_pruning_capacity');
+  need(physical.logins.every(login => !oldAuth.has(login.sessionId)) && !physical.chains.some(chain => oldIds.has(chain.play.id)), 'retained_movie_old_auth_or_play_reused');
+  const expirations = [];
+  for (const old of prepared) {
+    const current = one(after.tables.play_sessions.filter(row => row.id === old.id), 'retained_movie_row_missing');
+    if (equal(old, current)) continue;
+    need(equal(without(current, ['state', 'stopped_at', 'updated_at']), without(old, ['state', 'stopped_at', 'updated_at'])) &&
+      current.state === 'Expired' && current.stopped_at !== null && current.updated_at !== null, 'retained_movie_expiration_fields');
+    const candidates = physical.logins.flatMap(login => login.infos.map(info => ({ login, info }))).filter(({ login, info }) => {
+      const exchange = info.exchange, authentication = after.tables.sessions.filter(row => row.id === login.sessionId), next = after.tables.play_sessions.filter(row => row.id === info.value.PlaySessionId);
+      return info.itemId === old.item_id && (info.body?.UserId === undefined || info.body.UserId === actor) && exchange.scope?.allowed === true &&
+        exchange.scope.kind === 'playback_info' && routeItem(exchange) === old.item_id && exchange.original?.method === 'POST' && exchange.complete === true && exchange.response?.status === 200 &&
+        exchange.tokenHash === login.tokenHash && authentication.length === 1 && authentication[0].user_id === actor && authentication[0].kind === 'emby' &&
+        !oldIds.has(info.value.PlaySessionId) && next.length === 1 && next[0].auth_session_id === login.sessionId && next[0].user_id === actor &&
+        next[0].item_id === old.item_id && next[0].media_source_id === old.media_source_id && next[0].device_id === login.device_id &&
+        within(next[0].created_at, exchange.intent.startedAt, exchange.result.completedAt) &&
+        within(current.stopped_at, exchange.intent.startedAt, exchange.result.completedAt) && within(current.updated_at, exchange.intent.startedAt, exchange.result.completedAt);
+    });
+    const { info } = one(candidates, 'reviewed_movie_prepare_window_not_unique');
+    expirations.push({ playSessionId: old.id, previousState: 'Prepared', state: 'Expired', prepareOrdinal: info.exchange.ordinal,
+      changedFields: ['state', 'stopped_at', 'updated_at'], excludedFromNewPlayCounts: true });
+  }
+  const changed = new Set(expirations.map(row => row.playSessionId));
+  additions(before.tables.play_sessions, after.tables.play_sessions, undefined, changed);
+  return { playSessionIds: [...changed], expirations, creationUpperBound: oldPlays.length + creators.length };
 }
 
 export function effectiveStopEvidence(play, stops) {
@@ -879,7 +1037,7 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
       row.resource_kind === 'session' && row.resource_id === row.actor_credential_id && row.affected_count === 1 &&
       row.request_id === '' && row.observation_fingerprint === '' && row.state === '' && row.revision === 0 && row.previous_revision === 0 &&
       equal(row.changed_fields, []) && within(row.created_at, before.capturedAt, after.capturedAt), 'unexpected_activity_entry'); activityKeys.add(key); }
-  const plays = additions(before.tables.play_sessions, after.tables.play_sessions, undefined, new Set(retainedExpiration ? [retainedExpiration.playSessionId] : [])),
+  const plays = additions(before.tables.play_sessions, after.tables.play_sessions, undefined, new Set(retainedExpiration ? retainedExpiration.playSessionIds ?? [retainedExpiration.playSessionId] : [])),
     references = additions(before.tables.client_playback_references, after.tables.client_playback_references, referenceKey);
   const reported = new Map(physical.chains.map(chain => [chain.play.id, chain]));
   const retainedPreparations = [];
@@ -1122,8 +1280,11 @@ export function validateCandidateAdmissionBinding(input, epoch, admission, linea
 export function validateCloseoutBindings(input, evidence) {
   const { manifest, observation, summary, gatewayAttestation: gateway, runtimeEpoch: epoch, admission, seedBinding: seed, boundary } = evidence;
   validateCandidateManifest(manifest);
-  if (input.version === 2 || input.version === 3 && input.retainedBaseline !== null) {
-    need(equal(input.retainedBaseline, input.version === 2 ? RETAINED_BASELINE : OCCUPIED_BASELINE), 'retained_movie_input_authority');
+  if (input.version === 4) {
+    need(descriptor(input.retainedBaseline) && equal(evidence.retained?.inputBinding, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }), 'reviewed_movie_current_binding');
+    verifyRetainedMovieBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
+  } else if (input.version === 2 || input.version === 3 && input.retainedBaseline !== null) {
+    need(equal(input.retainedBaseline, input.version === 2 ? RETAINED_BASELINE : OCCUPIED_BASELINE) && exact(evidence.retained, ['closeout', 'snapshot']), 'retained_movie_input_authority');
     verifyRetainedMovieBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
   } else need((input.version === 1 && !Object.hasOwn(input, 'retainedBaseline') || input.version === 3 && input.retainedBaseline === null && manifest.scenario !== 'movie') &&
     evidence.retained === undefined, 'retained_movie_input_authority');
@@ -1163,7 +1324,7 @@ export function validateCloseoutBindings(input, evidence) {
     boundary.gatewayWorker.workerPidAbsent === true && equal(boundary.gatewayWorker.index, input.gatewayIndex), 'workers_not_independently_closed');
   need(ns(boundary.beforeMonotonicNs) <= ns(observation.started_monotonic_ns) &&
     ns(boundary.afterMonotonicNs) >= ns(observation.started_monotonic_ns) + BigInt(observation.elapsed_ms) * 1000000n, 'boundary_time_interval');
-  const serverLog = input.version === 3 ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
+  const serverLog = [3, 4].includes(input.version) ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
     { manifest, epoch, input, approval: evidence.approval, observation, authorizedInput: evidence.authorizedInput }) : null;
   if (serverLog) need(timestampNs(serverLog.receipt.before.capturedAt) >= timestampNs(evidence.sourceBefore.capturedAt) &&
     timestampNs(serverLog.receipt.after.capturedAt) >= timestampNs(evidence.sourceAfter.capturedAt), 'server_log_source_capture_order');
@@ -1226,11 +1387,12 @@ async function saveNew(filename, value) {
 }
 
 export function validateCloseoutInput(input) {
-  need([1, 2, 3].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []), ...(input.version === 3 ? ['serverLog'] : [])]) &&
+  need([1, 2, 3, 4].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []), ...([3, 4].includes(input.version) ? ['serverLog'] : [])]) &&
     input.kind === 'audited-candidate-client-closeout-input' && CLOSEOUT_PINS.every(key => descriptor(input[key])) &&
     exact(input.sources, Object.keys(SOURCE_FILES)) && typeof input.output === 'string' && input.output.startsWith('/opt/goby-test/'), 'closeout_input_invalid');
   if (input.version === 2) need(equal(input.retainedBaseline, RETAINED_BASELINE), 'retained_movie_input_authority');
   if (input.version === 3) need((input.retainedBaseline === null || equal(input.retainedBaseline, OCCUPIED_BASELINE)) && descriptor(input.serverLog), 'version3_evidence_authority');
+  if (input.version === 4) need(descriptor(input.retainedBaseline) && descriptor(input.serverLog), 'version4_evidence_authority');
   return input;
 }
 
@@ -1264,6 +1426,16 @@ export async function readBinarySuccessorLineage(epoch, seed) {
     priorSource: sourceSnapshotJSON(await readPin(seed.priorSource)) };
 }
 
+export async function readReviewedMovieBaseline(reviewPin, inputBinding, seed) {
+  const review = validateReviewedMovieBaselineInput(strictJSON(await readPin(reviewPin)));
+  const readState = async pins => ({ closeout: strictJSON(await readPin(pins.closeout)), snapshot: sourceSnapshotJSON(await readPin(pins.snapshot)),
+    sourceEpoch: runtimeEpochJSON(await readPin(pins.sourceEpoch), pins.sourceEpoch), manifest: strictJSON(await readPin(pins.manifest)) });
+  const retained = { review, ...await readState(review), movieProvenance: await readState(review.movieProvenance),
+    boundary: review.boundary === null ? null : strictJSON(await readPin(review.boundary)), inputBinding };
+  validateReviewedMovieBaseline(retained, seed);
+  return retained;
+}
+
 export async function runCloseout(inputPin) {
   need(process.platform === 'linux' && process.getuid?.() === 0 && process.env.SSH_CONNECTION, 'remote_only_closeout'); process.umask(0o077);
   const input = validateCloseoutInput(strictJSON(await readPin(inputPin)));
@@ -1275,13 +1447,15 @@ export async function runCloseout(inputPin) {
   const evidence = {}; for (const key of names) evidence[key] = ['sourceBefore', 'sourceAfter'].includes(key)
     ? sourceSnapshotJSON(await readPin(input[key])) : key === 'runtimeEpoch' ? runtimeEpochJSON(await readPin(input[key]), input[key]) :
       key === 'observation' ? observationJSON(await readPin(input[key]), evidence.manifest) : strictJSON(await readPin(input[key]));
-  if (input.version >= 2 && input.retainedBaseline !== null) {
+  if (input.version === 4) {
+    evidence.retained = await readReviewedMovieBaseline(input.retainedBaseline, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }, evidence.seedBinding);
+  } else if (input.version >= 2 && input.retainedBaseline !== null) {
     const closeout = strictJSON(await readPin(input.retainedBaseline));
     const snapshot = input.version === 2 ? closeout.sourceAfter : closeout.inputEvidence?.after;
     need(equal(snapshot, input.version === 2 ? RETAINED_SNAPSHOT : OCCUPIED_SNAPSHOT), 'retained_movie_snapshot_changed');
     evidence.retained = { closeout, snapshot: sourceSnapshotJSON(await readPin(snapshot)) };
   }
-  if (input.version === 3) {
+  if ([3, 4].includes(input.version)) {
     evidence.serverLog = strictJSON(await readPin(input.serverLog));
     evidence.serverLogBefore = await readPin(evidence.serverLog.before.content);
     evidence.serverLogAfter = await readPin(evidence.serverLog.after.content);

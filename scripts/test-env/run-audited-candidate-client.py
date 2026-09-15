@@ -60,6 +60,9 @@ BUDGETS = {"maximumSeconds": 1200, "cleanupSeconds": 240, "clientSeconds": 600, 
 GATEWAY_BUDGETS = {"maxRequests": 1000, "cleanupRequests": 64, "maxApiBodyBytes": 1 << 20, "maxApiTotalBytes": 32 << 20,
     "maxSeconds": 1800, "idleSeconds": 600, "maxConcurrent": 32}
 INPUT_KEYS = {"kind", "version", "runId", "scenario", "output", "runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting", "hostingInitialization", "avVerification", "runtimeHelper", "node", "compiledCatalog", "sources", "budgets", "gatewayBudgets"}
+REVIEWED_BASELINE_PINS = {"closeout", "snapshot", "sourceEpoch", "runtimeEpoch", "seedBinding", "manifest"}
+REVIEWED_BASELINE_KEYS = {"kind", "version", "status", "scenario", "actor", "item", "preparedExpirations", "movieProvenance", "boundary"} | REVIEWED_BASELINE_PINS
+REVIEWED_BASELINE_TABLES = set("activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users".split())
 HOST_STARTUP_INPUT_KEYS = {"kind", "version", "output", "runtimeEpoch", "seedBinding", "runtimeHelper", "hosting", "gateway", "proxy", "compiledCatalog", "budgets"}
 HOST_STARTUP_BUDGETS = {"maximumSeconds": 300, "cleanupSeconds": 60, "normalRequests": 16, "cleanupRequests": 4}
 HOST_NETWORK_CONFIGURATION = {"HttpServerPortNumber": 28497, "PublicPort": 28497,
@@ -100,12 +103,15 @@ def descriptor(pin):
 
 def validate_input(value):
     version = value.get("version")
-    need(type(version) is int and version in (1, 2, 3) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version in (2, 3) else set()) and value["kind"] == "audited-candidate-client-run-input" and
+    need(type(version) is int and version in (1, 2, 3, 4) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version in (2, 3, 4) else set()) and value["kind"] == "audited-candidate-client-run-input" and
          value["scenario"] in SCENARIOS and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,55}", value["runId"]), "client_run_input_invalid")
     if version == 2:
         need(value["scenario"] == "movie" and value["retainedBaseline"] == RETAINED_BASELINE, "retained_movie_input_authority")
     if version == 3:
         need(value["retainedBaseline"] == MOVIE05_BASELINE if value["scenario"] == "movie" else value["retainedBaseline"] is None, "version3_retained_input_authority")
+    if version == 4:
+        need(value["scenario"] == "movie", "version4_reviewed_movie_required")
+        descriptor(value["retainedBaseline"])
     for key in INPUT_KEYS - {"kind", "version", "runId", "scenario", "output", "sources", "budgets", "gatewayBudgets"}:
         descriptor(value[key])
     need(value["runtimeEpoch"] == EPOCH and value["seedBinding"] == BINDING and value["admission"] == ADMISSION and value["admissionCloseout"] == ADMISSION_CLOSEOUT and
@@ -377,7 +383,277 @@ def validate_movie05_baseline(closeout, snapshot, binding):
     return plays[MOVIE05_PREPARED]
 
 
+def reviewed_timestamp_ns(value):
+    need(isinstance(value, str), "reviewed_movie_timestamp_invalid")
+    match = re.fullmatch(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d{1,9}))?(Z|[+-]\d\d:\d\d)", value)
+    need(match is not None, "reviewed_movie_timestamp_invalid")
+    try:
+        base = datetime.fromisoformat(match[1] + match[3].replace("Z", "+00:00"))
+    except ValueError as error:
+        raise RunError("reviewed_movie_timestamp_invalid") from error
+    delta = base - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return (delta.days * 86400 + delta.seconds) * 1000000000 + int((match[2] or "").ljust(9, "0"))
+
+
+def reviewed_integer(value):
+    return type(value) is int and 0 <= value <= 9007199254740991
+
+
+def validate_reviewed_movie_history(retained, binding):
+    """Validate an explicit reviewed state without granting browser acceptance."""
+    need(isinstance(retained, dict) and set(retained) == {"review", "closeout", "snapshot", "sourceEpoch", "manifest", "inputBinding"},
+         "reviewed_movie_evidence_shape")
+    review, closeout, snapshot, epoch, manifest, input_binding = (retained[key] for key in
+        ("review", "closeout", "snapshot", "sourceEpoch", "manifest", "inputBinding"))
+    need(isinstance(review, dict) and set(review) == REVIEWED_BASELINE_KEYS and review["kind"] == "audited-candidate-reviewed-movie-baseline" and
+         type(review["version"]) is int and review["version"] == 1 and review["status"] == "reviewed_closed_state" and review["scenario"] == "movie",
+         "reviewed_movie_review_schema")
+    for key in REVIEWED_BASELINE_PINS:
+        descriptor(review[key])
+    need(isinstance(input_binding, dict) and set(input_binding) == {"runtimeEpoch", "seedBinding"}, "reviewed_movie_input_binding")
+    for key in ("runtimeEpoch", "seedBinding"):
+        descriptor(input_binding[key])
+    need(canonical(input_binding) == canonical({key: review[key] for key in input_binding}) and
+         canonical(binding.get("runtimeEpoch")) == canonical(review["runtimeEpoch"]), "reviewed_movie_input_binding")
+    actor, movie = binding["actors"]["movie"], binding["catalog"]["movie"]
+    need(isinstance(review["actor"], dict) and set(review["actor"]) == {"id", "username"} and
+         all(isinstance(review["actor"][key], str) and review["actor"][key] for key in ("id", "username")) and
+         re.fullmatch(r"[a-f0-9]{32}", review["actor"]["id"]) and
+         canonical(review["actor"]) == canonical({key: actor[key] for key in ("id", "username")}), "reviewed_movie_actor_binding")
+    need(isinstance(review["item"], dict) and set(review["item"]) == {"id", "mediaSourceId", "runtimeTicks"} and
+         isinstance(review["item"]["id"], str) and re.fullmatch(r"[a-f0-9]{32}", review["item"]["id"]) and reviewed_integer(review["item"]["runtimeTicks"]) and
+         review["item"]["runtimeTicks"] > 0 and canonical(review["item"]) == canonical({"id": movie["id"],
+             "mediaSourceId": "mediasource_" + movie["id"], "runtimeTicks": movie["runtimeTicks"]}), "reviewed_movie_item_binding")
+    need(isinstance(manifest, dict) and manifest.get("kind") == "audited-candidate-client-input" and type(manifest.get("version")) is int and
+         manifest["version"] == 1 and manifest.get("scenario") == "movie" and isinstance(manifest.get("runId"), str) and
+         re.fullmatch(r"movie-[0-9]{2,}", manifest["runId"]) and manifest.get("serverId") == binding.get("serverId") and
+         canonical(manifest.get("actor")) == canonical(review["actor"]) and
+         isinstance(manifest.get("catalog"), dict) and canonical(manifest["catalog"].get("movie")) == canonical(movie), "reviewed_movie_manifest_binding")
+    need(isinstance(epoch, dict) and epoch.get("kind") == "audited-candidate-runtime-epoch" and type(epoch.get("version")) is int and
+         epoch["version"] in (2, 3), "reviewed_movie_source_epoch")
+    source = epoch.get("currentSource")
+    need(isinstance(source, dict) and set(source) == {"archiveSha256", "sourceManifest", "binary", "fullReport", "schema"} and
+         isinstance(source["archiveSha256"], str) and re.fullmatch(r"[0-9a-f]{64}", source["archiveSha256"]) and
+         type(source["schema"]) is int and source["schema"] == 28, "reviewed_movie_source_identity")
+    for key in ("sourceManifest", "binary", "fullReport"):
+        descriptor(source[key])
+    need(canonical(manifest.get("source")) == canonical({"manifestSha256": source["sourceManifest"]["sha256"],
+         "binarySha256": source["binary"]["sha256"], "schema": source["schema"]}), "reviewed_movie_source_identity")
+    need(isinstance(closeout, dict) and closeout.get("kind") == "audited-" + manifest["runId"].replace("-", "") + "-owned-state-closeout" and
+         closeout.get("status") == "owned_state_closed_client_acceptance_pending" and closeout.get("clientAcceptance") is False and
+         "failure" not in closeout and closeout.get("browserOutcome") == "failed" and type(closeout.get("browserExitCode")) is int and
+         closeout["browserExitCode"] == 1 and type(closeout.get("gatewayExitCode")) is int and closeout["gatewayExitCode"] == 0,
+         "reviewed_movie_closeout_invalid")
+    evidence = closeout.get("inputEvidence")
+    need(isinstance(evidence, dict) and all(canonical(evidence.get(key)) == canonical(review[pin]) for key, pin in
+         (("after", "snapshot"), ("epoch", "sourceEpoch"), ("manifest", "manifest"))), "reviewed_movie_closeout_binding")
+    checks = closeout.get("checks")
+    need(isinstance(checks, dict) and all(isinstance(checks.get(key), dict) for key in ("ownedData", "authentication", "savedRuntimeAndWorkers")),
+         "reviewed_movie_closeout_checks")
+    data, authentication, state = (checks[key] for key in ("ownedData", "authentication", "savedRuntimeAndWorkers"))
+    need(all(type(data.get(key)) is int and data[key] == expected for key, expected in
+         (("ownedTables", 35), ("oldRowsDeleted", 0))) and
+         all(state.get(key) is True for key in ("candidateContinuous", "postgresContinuous", "leaseExact")) and isinstance(state.get("workers"), dict) and
+         all(isinstance(state["workers"].get(role), dict) and state["workers"][role].get("pidAbsentAsRecorded") is True and
+             state["workers"][role].get("recursiveCgroupEmptyAsRecorded") is True for role in ("browser", "gateway")), "reviewed_movie_closeout_checks")
+    need(isinstance(snapshot, dict) and set(snapshot) == {"capturedAt", "tables", "sequences"} and isinstance(snapshot["capturedAt"], str) and
+         isinstance(snapshot["tables"], dict) and set(snapshot["tables"]) == REVIEWED_BASELINE_TABLES and isinstance(snapshot["sequences"], dict) and
+         all(isinstance(rows, list) and all(isinstance(row, dict) for row in rows) for rows in snapshot["tables"].values()), "reviewed_movie_snapshot_inventory")
+    tables = snapshot["tables"]
+    need(all(type(data.get(key)) is int and data[key] == len(tables[table]) for key, table in
+         (("clientPlaybackReferences", "client_playback_references"), ("encodingJobs", "encoding_jobs"))), "reviewed_movie_snapshot_inventory")
+    reviewed_timestamp_ns(snapshot["capturedAt"])
+    users = [row for row in tables["users"] if row.get("id") == actor["id"]]
+    need(len(users) == 1 and users[0].get("name") == actor["username"] and users[0].get("is_administrator") is False and
+         users[0].get("is_disabled") is False and canonical(users[0].get("policy")) == canonical({}), "reviewed_movie_actor_changed")
+    need(all(isinstance(row.get("id"), str) and row["id"] and isinstance(row.get("revoked_at"), str) for row in tables["sessions"]) and
+         len({row["id"] for row in tables["sessions"]}) == len(tables["sessions"]) and
+         type(authentication.get("allSessionsRevoked")) is int and authentication["allSessionsRevoked"] == len(tables["sessions"]), "reviewed_movie_session_inventory")
+    for row in tables["sessions"]:
+        reviewed_timestamp_ns(row["revoked_at"])
+    need(all(isinstance(row.get("id"), str) and row["id"] for row in tables["play_sessions"]) and
+         len({row["id"] for row in tables["play_sessions"]}) == len(tables["play_sessions"]), "reviewed_movie_play_inventory")
+    sessions = {row["id"]: row for row in tables["sessions"]}
+    plays = [row for row in tables["play_sessions"] if row.get("user_id") == actor["id"]]
+    need(len(plays) < 256, "reviewed_movie_play_inventory")
+    validate_reviewed_movie_residue(tables, actor["id"])
+    required = {"id", "auth_session_id", "user_id", "item_id", "media_source_id", "duration_ticks", "application_client_id", "client_correlated",
+                "device_id", "state", "counted", "position_ticks", "started_at", "stopped_at", "expires_at"}
+    for row in plays:
+        need(required <= set(row), "reviewed_movie_play_identity")
+        session = sessions.get(row["auth_session_id"], {})
+        need(row["item_id"] == movie["id"] and row["media_source_id"] == review["item"]["mediaSourceId"] and type(row["duration_ticks"]) is int and
+             row["duration_ticks"] == movie["runtimeTicks"] and row["application_client_id"] is None and row["client_correlated"] is False and
+             session.get("kind") == "emby" and session.get("user_id") == actor["id"] and session.get("device_id") == row["device_id"] and
+             reviewed_integer(row["position_ticks"]) and row["position_ticks"] <= row["duration_ticks"], "reviewed_movie_play_identity")
+        need(row["state"] == "Stopped" and row["counted"] is True and isinstance(row["started_at"], str) and isinstance(row["stopped_at"], str) or
+             row["state"] in ("Prepared", "Expired") and row["counted"] is False and row["started_at"] is None and
+             (row["stopped_at"] is None if row["state"] == "Prepared" else isinstance(row["stopped_at"], str)), "reviewed_movie_play_state")
+        reviewed_timestamp_ns(row["expires_at"])
+    expirations = review["preparedExpirations"]
+    need(isinstance(expirations, list) and len(expirations) < 256 and all(isinstance(row, dict) and set(row) == {"playSessionId", "authSessionId"} and
+         all(isinstance(row[key], str) and row[key] for key in ("playSessionId", "authSessionId")) for row in expirations) and
+         len({row["playSessionId"] for row in expirations}) == len(expirations), "reviewed_movie_expiration_allowlist")
+    need(all(re.fullmatch(r"play_[A-Za-z0-9_]+", row["playSessionId"]) and re.fullmatch(r"[A-Za-z0-9_-]+", row["authSessionId"])
+             for row in expirations), "reviewed_movie_expiration_allowlist")
+    prepared = {row["id"]: row["auth_session_id"] for row in plays if row["state"] == "Prepared"}
+    need(canonical({row["playSessionId"]: row["authSessionId"] for row in expirations}) == canonical(prepared), "reviewed_movie_expiration_allowlist")
+    userdata = [row for row in tables["user_item_data"] if row.get("user_id") == actor["id"]]
+    need(len(userdata) == 1 and userdata[0].get("item_id") == movie["id"] and canonical(userdata[0]) == canonical(data.get("userData")) and
+         reviewed_integer(userdata[0].get("play_count")) and reviewed_integer(userdata[0].get("playback_position_ticks")) and
+         type(userdata[0].get("is_favorite")) is bool and type(userdata[0].get("played")) is bool,
+         "reviewed_movie_userdata_changed")
+    return [row for row in plays if row["state"] == "Prepared"]
+
+
+def validate_reviewed_movie_residue(tables, actor):
+    sessions = {row["id"] for row in tables["sessions"] if row.get("user_id") == actor}
+    plays = {row["id"] for row in tables["play_sessions"] if row.get("user_id") == actor}
+    need(not any(row.get("user_id") == actor or row.get("auth_session_id") in sessions or row.get("play_session_id") in plays
+         for table in ("client_playback_references", "encoding_jobs") for row in tables[table]), "reviewed_movie_owned_residue")
+
+
+def validate_reviewed_subtitles_state(retained, binding):
+    review, closeout, snapshot, epoch, manifest, boundary = (retained[key] for key in
+        ("review", "closeout", "snapshot", "sourceEpoch", "manifest", "boundary"))
+    need(isinstance(closeout, dict) and closeout.get("kind") == "audited-candidate-subtitles-owned-state-closeout" and
+         closeout.get("status") == "owned_state_closed_client_acceptance_pending" and closeout.get("clientAcceptance") is False and
+         "checks" not in closeout and "failure" not in closeout and closeout.get("sourcePinsUnchanged") is True and
+         isinstance(closeout.get("originalUIRejection"), dict) and closeout["originalUIRejection"].get("originalObservationUnchanged") is True,
+         "reviewed_movie_current_closeout")
+    evidence = closeout.get("inputEvidence")
+    pins = {"manifest", "observation", "summary", "gatewayAttestation", "gatewayIndex", "runtimeEpoch", "admission", "seedBinding", "sourceBefore", "sourceAfter", "boundary", "serverLog"}
+    need(isinstance(evidence, dict) and set(evidence) == pins | {"kind", "version", "sources", "output", "retainedBaseline"} and
+         evidence["kind"] == "audited-candidate-client-closeout-input" and type(evidence["version"]) is int and evidence["version"] == 3 and
+         evidence["retainedBaseline"] is None and isinstance(evidence["sources"], dict) and set(evidence["sources"]) == set(SOURCE_FILES) and
+         isinstance(evidence["output"], str) and evidence["output"].startswith("/opt/goby-test/"), "reviewed_movie_current_input")
+    for key in pins:
+        descriptor(evidence[key])
+    for pin in evidence["sources"].values():
+        descriptor(pin)
+    need(all(canonical(evidence[key]) == canonical(review[pin]) for key, pin in
+         (("sourceAfter", "snapshot"), ("runtimeEpoch", "sourceEpoch"), ("manifest", "manifest"), ("seedBinding", "seedBinding"), ("boundary", "boundary"))),
+         "reviewed_movie_current_input_binding")
+    need(isinstance(epoch, dict) and epoch.get("kind") == "audited-candidate-runtime-epoch" and type(epoch.get("version")) is int and
+         epoch["version"] in (2, 3), "reviewed_movie_source_epoch")
+    source = epoch.get("currentSource")
+    need(isinstance(source, dict) and set(source) == {"archiveSha256", "sourceManifest", "binary", "fullReport", "schema"} and
+         isinstance(source["archiveSha256"], str) and re.fullmatch(r"[0-9a-f]{64}", source["archiveSha256"]) and
+         type(source["schema"]) is int and source["schema"] == 28, "reviewed_movie_source_identity")
+    for key in ("sourceManifest", "binary", "fullReport"):
+        descriptor(source[key])
+    actor = binding["actors"]["subtitles"]
+    need(isinstance(manifest, dict) and manifest.get("kind") == "audited-candidate-client-input" and type(manifest.get("version")) is int and
+         manifest["version"] == 1 and manifest.get("scenario") == "subtitles" and isinstance(manifest.get("runId"), str) and
+         re.fullmatch(r"subtitles-[0-9]{2,}", manifest["runId"]) and manifest.get("serverId") == binding.get("serverId") and
+         canonical(manifest.get("actor")) == canonical({key: actor[key] for key in ("id", "username")}) and
+         isinstance(manifest.get("catalog"), dict) and canonical(manifest["catalog"].get("movie")) == canonical(binding["catalog"]["movie"]) and
+         canonical(manifest.get("source")) == canonical({"manifestSha256": source["sourceManifest"]["sha256"],
+             "binarySha256": source["binary"]["sha256"], "schema": source["schema"]}), "reviewed_movie_current_manifest")
+    need(isinstance(snapshot, dict) and set(snapshot) == {"capturedAt", "tables", "sequences"} and isinstance(snapshot["tables"], dict) and
+         set(snapshot["tables"]) == REVIEWED_BASELINE_TABLES and isinstance(snapshot["sequences"], dict) and
+         all(isinstance(rows, list) and all(isinstance(row, dict) for row in rows) for rows in snapshot["tables"].values()), "reviewed_movie_snapshot_inventory")
+    reviewed_timestamp_ns(snapshot["capturedAt"])
+    tables, state = snapshot["tables"], closeout.get("sourceState")
+    counts = {"afterSessions": "sessions", "afterPlays": "play_sessions", "afterUserData": "user_item_data",
+              "afterClientReferences": "client_playback_references", "afterEncodingJobs": "encoding_jobs"}
+    need(isinstance(state, dict) and state.get("allSessionsRevoked") is True and
+         all(type(state.get(key)) is int and state[key] == len(tables[table]) for key, table in counts.items()), "reviewed_movie_current_counts")
+    for table in ("sessions", "play_sessions"):
+        need(all(isinstance(row.get("id"), str) and row["id"] for row in tables[table]) and
+             len({row["id"] for row in tables[table]}) == len(tables[table]), "reviewed_movie_current_row_inventory")
+    for session in tables["sessions"]:
+        reviewed_timestamp_ns(session.get("revoked_at"))
+    validate_reviewed_movie_residue(tables, binding["actors"]["movie"]["id"])
+    boundary_keys = {"afterMonotonicNs", "beforeMonotonicNs", "candidateAfter", "candidateBefore", "clientWorker", "database", "gatewayWorker", "kind",
+                     "leaseAfter", "leaseBefore", "postgresAfter", "postgresBefore", "runId", "runtimeEpoch", "sourceAfter", "sourceBefore", "version"}
+    need(isinstance(boundary, dict) and set(boundary) == boundary_keys and boundary["kind"] == "audited-candidate-client-boundary" and
+         type(boundary["version"]) is int and boundary["version"] == 1 and boundary["runId"] == manifest["runId"] and
+         canonical(boundary["runtimeEpoch"]) == canonical(review["sourceEpoch"]) and canonical(boundary["sourceAfter"]) == canonical(review["snapshot"]) and
+         canonical(boundary["sourceBefore"]) == canonical(evidence["sourceBefore"]), "reviewed_movie_current_boundary")
+    candidate = manifest.get("processes", {}).get("candidate")
+    need(isinstance(candidate, dict) and "listener" in candidate and isinstance(epoch.get("candidateProcess"), dict) and
+         isinstance(epoch.get("postgresProcess"), dict) and isinstance(epoch.get("lease"), dict) and
+         isinstance(epoch.get("candidate"), dict) and isinstance(epoch["candidate"].get("database"), str) and epoch["candidate"]["database"] and
+         canonical(boundary["candidateBefore"]) == canonical(boundary["candidateAfter"]) == canonical(candidate) and
+         canonical({key: value for key, value in candidate.items() if key != "listener"}) == canonical(epoch.get("candidateProcess")) and
+         canonical(boundary["postgresBefore"]) == canonical(boundary["postgresAfter"]) == canonical(epoch.get("postgresProcess")) and
+         canonical(boundary["leaseBefore"]) == canonical(boundary["leaseAfter"]) == canonical(epoch.get("lease")) and
+         boundary["database"] == epoch.get("candidate", {}).get("database"), "reviewed_movie_current_runtime")
+    need(canonical(boundary["clientWorker"]) == canonical({"exitCode": 0, "mainPID": 0, "remainingBrowserPids": [], "workerPidAbsent": True}) and
+         canonical(boundary["gatewayWorker"]) == canonical({"exitCode": 0, "mainPID": 0, "workerPidAbsent": True, "index": evidence["gatewayIndex"]}),
+         "reviewed_movie_current_workers")
+    need(all(isinstance(boundary[key], str) and re.fullmatch(r"[0-9]+", boundary[key]) for key in ("beforeMonotonicNs", "afterMonotonicNs")) and
+         int(boundary["beforeMonotonicNs"]) <= int(boundary["afterMonotonicNs"]), "reviewed_movie_current_boundary_time")
+
+
+def validate_reviewed_movie_baseline(retained, binding):
+    """Keep the latest database state separate from the movie actor's history."""
+    need(isinstance(retained, dict) and set(retained) == {"review", "closeout", "snapshot", "sourceEpoch", "manifest", "inputBinding", "movieProvenance", "boundary"},
+         "reviewed_movie_evidence_shape")
+    review, provenance = retained["review"], retained["movieProvenance"]
+    need(isinstance(review, dict) and set(review) == REVIEWED_BASELINE_KEYS and isinstance(review["movieProvenance"], dict) and
+         set(review["movieProvenance"]) == {"closeout", "snapshot", "sourceEpoch", "manifest"} and isinstance(provenance, dict) and
+         set(provenance) == set(review["movieProvenance"]), "reviewed_movie_provenance_shape")
+    for pin in review["movieProvenance"].values():
+        descriptor(pin)
+    if review["boundary"] is not None:
+        descriptor(review["boundary"])
+    movie_history = {**provenance, "review": {**review, **review["movieProvenance"]}, "inputBinding": retained["inputBinding"]}
+    prepared = validate_reviewed_movie_history(movie_history, binding)
+    need(isinstance(retained["manifest"], dict), "reviewed_movie_current_manifest")
+    if retained["manifest"].get("scenario") == "movie":
+        need(review["boundary"] is None and retained["boundary"] is None, "reviewed_movie_boundary_authority")
+        validate_reviewed_movie_history({key: retained[key] for key in ("review", "closeout", "snapshot", "sourceEpoch", "manifest", "inputBinding")}, binding)
+    else:
+        need(review["boundary"] is not None and retained["boundary"] is not None, "reviewed_movie_boundary_authority")
+        for key in REVIEWED_BASELINE_PINS:
+            descriptor(review[key])
+        validate_reviewed_subtitles_state(retained, binding)
+    actor = binding["actors"]["movie"]["id"]
+    for table, key in (("users", "id"), ("sessions", "user_id"), ("play_sessions", "user_id"), ("user_item_data", "user_id")):
+        current = [row for row in retained["snapshot"]["tables"][table] if row.get(key) == actor]
+        historic = [row for row in provenance["snapshot"]["tables"][table] if row.get(key) == actor]
+        need(canonical(current) == canonical(historic), "reviewed_movie_history_changed")
+    need(reviewed_timestamp_ns(retained["snapshot"]["capturedAt"]) >= reviewed_timestamp_ns(provenance["snapshot"]["capturedAt"]),
+         "reviewed_movie_history_time")
+    return prepared
+
+
+def load_reviewed_movie_baseline(review_pin, input_binding, binding, read_descriptor):
+    """Load only the explicitly pinned review and its closed-state evidence."""
+    descriptor(review_pin)
+    review = read_descriptor(review_pin)
+    need(isinstance(review, dict) and set(review) == REVIEWED_BASELINE_KEYS, "reviewed_movie_review_schema")
+    for key in REVIEWED_BASELINE_PINS:
+        descriptor(review[key])
+    need(isinstance(review["movieProvenance"], dict) and set(review["movieProvenance"]) == {"closeout", "snapshot", "sourceEpoch", "manifest"},
+         "reviewed_movie_provenance_shape")
+    for pin in review["movieProvenance"].values():
+        descriptor(pin)
+    if review["boundary"] is not None:
+        descriptor(review["boundary"])
+    retained = {"review": review, **{key: read_descriptor(review[key]) for key in ("closeout", "snapshot", "sourceEpoch", "manifest")},
+                "inputBinding": input_binding,
+                "movieProvenance": {key: read_descriptor(pin) for key, pin in review["movieProvenance"].items()},
+                "boundary": None if review["boundary"] is None else read_descriptor(review["boundary"])}
+    validate_reviewed_movie_baseline(retained, binding)
+    return retained
+
+
 def verify_actor_before(snapshot, binding, scenario, retained=None, version=2):
+    if version == 4:
+        need(type(version) is int and scenario == "movie" and retained is not None, "reviewed_movie_baseline_required")
+        validate_reviewed_movie_baseline(retained, binding)
+        prior = retained["snapshot"]
+        need(isinstance(snapshot, dict) and set(snapshot) == set(prior) and canonical(snapshot["tables"]) == canonical(prior["tables"]) and
+             canonical(snapshot["sequences"]) == canonical(prior["sequences"]), "reviewed_movie_fresh_state_changed")
+        old_plays = [row for row in prior["tables"]["play_sessions"] if row["user_id"] == binding["actors"]["movie"]["id"]]
+        captured = reviewed_timestamp_ns(snapshot["capturedAt"])
+        need(captured >= reviewed_timestamp_ns(prior["capturedAt"]) and len(old_plays) < 256 and all(
+             captured + BUDGETS["maximumSeconds"] * 1000000000 < reviewed_timestamp_ns(row["expires_at"]) + 7 * 86400 * 1000000000
+             for row in old_plays), "reviewed_movie_pruning_deadline")
+        return
     actor = binding["actors"][scenario]["id"]
     rows = [row for row in snapshot["tables"]["users"] if row["id"] == actor]
     need(len(rows) == 1 and rows[0]["is_administrator"] is False and rows[0]["is_disabled"] is False, "scenario_actor_not_ordinary")
@@ -477,6 +753,8 @@ class ClientRun:
 
     def preflight(self):
         need(not os.path.lexists(self.output), "client_output_collision")
+        if self.value["version"] == 4:
+            need(self.value["sources"]["closer"]["sha256"] != REUSED_AV_SOURCES["closer"], "version4_closer_not_admitted")
         epoch = json.loads(self.r.read_bootstrap(self.value["runtimeEpoch"]))
         self.modules = {key: self.r.load_helper(key, pin) for key, pin in epoch["helpers"].items()}
         self.s = self.modules["seed"]
@@ -495,6 +773,9 @@ class ClientRun:
             need(closeout["inputEvidence"]["after"] == MOVIE05_SNAPSHOT, "movie05_snapshot_changed")
             self.retained = {"closeout": closeout, "snapshot": self.s.descriptor(closeout["inputEvidence"]["after"])}
             validate_movie05_baseline(closeout, self.retained["snapshot"], self.binding)
+        elif self.value["version"] == 4:
+            self.retained = load_reviewed_movie_baseline(self.value["retainedBaseline"], {key: self.value[key] for key in ("runtimeEpoch", "seedBinding")},
+                                                        self.binding, self.s.descriptor)
         report = self.s.descriptor(self.value["admission"])
         admitted(report, self.value, epoch,
                  reused_admission04=self.s.descriptor(AFFECTED_TV_PARENT_ADMISSION04) if epoch.get("version") == 3 else None,
@@ -555,7 +836,7 @@ class ClientRun:
         return value, pin, before, postgres, lease
 
     def capture_server_log(self, label):
-        need(self.value["version"] == 3 and label in ("before", "after") and label not in self.server_log_captures, "server_log_capture_scope")
+        need(self.value["version"] in (3, 4) and label in ("before", "after") and label not in self.server_log_captures, "server_log_capture_scope")
         self.remaining(cleanup=label == "after")
         expected = self.epoch["candidateProcess"]
         metadata = self.modules["gateway"].metadata
@@ -742,7 +1023,7 @@ class ClientRun:
         self.stage = "source_before"
         before, self.before_pin, self.candidate_before, self.postgres_before, self.lease_before = self.source_sample("before")
         verify_actor_before(before, self.binding, self.value["scenario"], self.retained, self.value["version"])
-        if self.value["version"] == 3:
+        if self.value["version"] in (3, 4):
             self.stage = "server_log_before"
             self.server_log_before = self.capture_server_log("before")
         self.before_ns = str(time.clock_gettime_ns(time.CLOCK_MONOTONIC))
@@ -783,7 +1064,7 @@ class ClientRun:
                     self.failures.append({"stage": "close_" + role, "code": str(error) if isinstance(error, RunError) else "worker_close_failed", "errorType": type(error).__name__})
         self.stage = "source_after"
         after, after_pin, candidate_after, postgres_after, lease_after = self.source_sample("after")
-        if self.value["version"] == 3:
+        if self.value["version"] in (3, 4):
             self.stage = "server_log_after"
             self.finish_server_log()
         self.verify_hosting()
@@ -806,9 +1087,9 @@ class ClientRun:
             "observation": self.pin_file(self.output / "browser/observation.json"), "summary": self.pin_file(self.output / "browser/summary.json"), "gatewayAttestation": self.gateway_pin,
             "gatewayIndex": index_pin, "runtimeEpoch": self.value["runtimeEpoch"], "admission": self.value["admission"], "seedBinding": self.value["seedBinding"],
             "sourceBefore": self.before_pin, "sourceAfter": after_pin, "boundary": boundary_pin, "sources": self.value["sources"], "output": str(self.output / "closeout")}
-        if self.value["version"] in (2, 3):
+        if self.value["version"] in (2, 3, 4):
             closeout["retainedBaseline"] = self.value["retainedBaseline"]
-        if self.value["version"] == 3:
+        if self.value["version"] in (3, 4):
             closeout["serverLog"] = self.server_log_pin
         closeout_input = self.save("closeout-input.json", closeout)
         self.stage = "offline_closeout"
@@ -859,7 +1140,7 @@ def main():
         result = {"status": "core_client_run_incomplete", "stage": job.stage, "code": str(error) if isinstance(error, RunError) else "outer_client_operation_failed",
             "errorType": type(error).__name__, "runId": value["runId"], "scenario": value["scenario"], "failures": job.failures, "workers": job.workers,
             "automaticBusinessRetry": False, "controllerBusinessHttpRequests": 0, "receipt": None}
-        if value["version"] == 3:
+        if value["version"] in (3, 4):
             result.update(serverLog=job.server_log_pin, serverLogCaptures=job.server_log_captures)
         try:
             if job.created:

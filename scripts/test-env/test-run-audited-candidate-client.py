@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Pure guards for the one-shot core-client controller; no runtime access."""
+"""Pure guards and explicitly pinned saved-state replay; no live work."""
 import copy
 import importlib.util
 import json
 import hashlib
+import math
+import os
 from pathlib import Path
 import stat
 import sys
@@ -20,6 +22,80 @@ if REPLAY_SAVED:
 REPLAY_MOVIE05 = "--replay-movie05-snapshot" in sys.argv
 if REPLAY_MOVIE05:
     sys.argv.remove("--replay-movie05-snapshot")
+
+
+def reviewed_replay_arguments(argv):
+    flags = ("--reviewed-baselines", "--reviewed-baselines-sha256")
+    m.need(not any(argument.startswith(flag + "=") for argument in argv for flag in flags), "reviewed_replay_arguments_invalid")
+    counts = [argv.count(flag) for flag in flags]
+    if counts == [0, 0]:
+        return None
+    m.need(counts == [1, 1], "reviewed_replay_arguments_invalid")
+    positions = [argv.index(flag) for flag in flags]
+    m.need(all(position + 1 < len(argv) and not argv[position + 1].startswith("-") for position in positions), "reviewed_replay_arguments_invalid")
+    pin = {"path": argv[positions[0] + 1], "sha256": argv[positions[1] + 1]}
+    m.descriptor(pin)
+    for position in sorted(positions, reverse=True):
+        del argv[position:position + 2]
+    return pin
+
+
+def reviewed_replay_json(raw):
+    def pairs(rows):
+        result = {}
+        for key, value in rows:
+            m.need(key not in result, "reviewed_replay_duplicate_json_key")
+            result[key] = value
+        return result
+    def finite(token):
+        value = float(token)
+        m.need(math.isfinite(value), "reviewed_replay_nonfinite_json")
+        return value
+    def constant(unused):
+        raise m.RunError("reviewed_replay_nonfinite_json")
+    return json.loads(raw, object_pairs_hook=pairs, parse_float=finite, parse_constant=constant)
+
+
+def read_reviewed_replay_descriptor(pin):
+    m.need(sys.platform == "linux" and os.geteuid() == 0, "reviewed_replay_root_required")
+    m.descriptor(pin)
+    path = Path(pin["path"])
+    m.need(not any(character in str(path) for character in "\r\n\x00"), "reviewed_replay_path_invalid")
+    for node in (path, *path.parents):
+        info = node.lstat()
+        m.need(not stat.S_ISLNK(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022 and
+               (stat.S_ISREG(info.st_mode) if node == path else stat.S_ISDIR(info.st_mode)), "reviewed_replay_path_authority")
+    identity = lambda info: tuple(getattr(info, key) for key in
+        ("st_dev", "st_ino", "st_mode", "st_uid", "st_gid", "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns"))
+    before = path.lstat()
+    limit = 256 << 20
+    m.need(stat.S_ISREG(before.st_mode) and before.st_uid == 0 and stat.S_IMODE(before.st_mode) == 0o600 and
+           before.st_nlink == 1 and 0 <= before.st_size <= limit, "reviewed_replay_file_authority")
+    with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW), "rb") as stream:
+        m.need(identity(os.fstat(stream.fileno())) == identity(before), "reviewed_replay_file_changed_on_open")
+        raw = stream.read(limit + 1)
+        m.need(identity(os.fstat(stream.fileno())) == identity(before), "reviewed_replay_file_changed_on_read")
+    m.need(identity(path.lstat()) == identity(before) and len(raw) == before.st_size and hashlib.sha256(raw).hexdigest() == pin["sha256"],
+           "reviewed_replay_file_bytes_changed")
+    return reviewed_replay_json(raw)
+
+
+def load_reviewed_replay_cases(pin):
+    value = read_reviewed_replay_descriptor(pin)
+    m.need(isinstance(value, dict) and set(value) == {"kind", "version", "cases"} and
+           value["kind"] == "audited-candidate-reviewed-baseline-replay-input" and type(value["version"]) is int and value["version"] == 1 and
+           isinstance(value["cases"], list) and len(value["cases"]) == 3, "reviewed_replay_cases_schema")
+    for row, name in zip(value["cases"], ("movie05", "movie06", "latest-subtitles")):
+        m.need(isinstance(row, dict) and set(row) == {"name", "review", "seed", "inputBinding"} and row["name"] == name and
+               isinstance(row["inputBinding"], dict) and set(row["inputBinding"]) == {"runtimeEpoch", "seedBinding"}, "reviewed_replay_case_schema")
+        for descriptor in (row["review"], row["seed"], *row["inputBinding"].values()):
+            m.descriptor(descriptor)
+        m.need(m.canonical(row["seed"]) == m.canonical(row["inputBinding"]["seedBinding"]), "reviewed_replay_seed_binding")
+    return value["cases"]
+
+
+REVIEWED_REPLAY_PIN = reviewed_replay_arguments(sys.argv)
+REVIEWED_REPLAY_CASES = load_reviewed_replay_cases(REVIEWED_REPLAY_PIN) if REVIEWED_REPLAY_PIN is not None else None
 
 
 def fixture():
@@ -130,6 +206,89 @@ def movie05_fixture():
         "inputEvidence": {"after": copy.deepcopy(m.MOVIE05_SNAPSHOT), "epoch": copy.deepcopy(m.RETAINED_MOVIE_EPOCH)}, "browserOutcome": "failed", "browserExitCode": 1, "gatewayExitCode": 0,
         "checks": {"authentication": {"allSessionsRevoked": 13}, "ownedData": {"ownedTables": 35, "oldRowsDeleted": 0, "userData": copy.deepcopy(before["tables"]["user_item_data"][0])}}}
     return before, binding, {"closeout": closeout, "snapshot": copy.deepcopy(before)}
+
+
+def reviewed_fixture():
+    before, binding, old = movie05_fixture()
+    binding.update(runtimeEpoch=copy.deepcopy(m.EPOCH), serverId="d" * 32)
+    before["tables"]["users"].append({"id": "b" * 32, "name": "synthetic-control", "policy": {"EnableMediaPlayback": False}})
+    before["tables"]["activity_entries"].append({"id": "foreign-activity", "data": {"enabled": True}})
+    before["tables"]["play_sessions"].append({**copy.deepcopy(before["tables"]["play_sessions"][0]),
+        "id": "play_foreign", "user_id": "b" * 32, "auth_session_id": "0"})
+    pin = lambda name, digest: {"path": str(m.R / name), "sha256": digest * 64}
+    review_pin = pin("synthetic-reviewed-movie-baseline.json", "1")
+    value = fixture()
+    value.update(version=4, retainedBaseline=review_pin)
+    actor, movie = binding["actors"]["movie"], binding["catalog"]["movie"]
+    review = {"kind": "audited-candidate-reviewed-movie-baseline", "version": 1, "status": "reviewed_closed_state", "scenario": "movie",
+        "closeout": pin("synthetic-movie06-owned-state-closeout.json", "2"), "snapshot": pin("synthetic-movie06-source-after.json", "3"),
+        "sourceEpoch": copy.deepcopy(m.RETAINED_MOVIE_EPOCH), "runtimeEpoch": copy.deepcopy(value["runtimeEpoch"]),
+        "seedBinding": copy.deepcopy(value["seedBinding"]), "manifest": pin("synthetic-movie06-manifest.json", "4"),
+        "actor": {key: actor[key] for key in ("id", "username")},
+        "item": {"id": movie["id"], "mediaSourceId": "mediasource_" + movie["id"], "runtimeTicks": movie["runtimeTicks"]},
+        "preparedExpirations": [{"playSessionId": m.MOVIE05_PREPARED, "authSessionId": m.MOVIE05_AUTH}], "boundary": None}
+    review["movieProvenance"] = {key: copy.deepcopy(review[key]) for key in ("closeout", "snapshot", "sourceEpoch", "manifest")}
+    source = {"archiveSha256": "5" * 64, "sourceManifest": pin("synthetic-source-manifest.json", "6"),
+        "binary": pin("synthetic-goby", "7"), "fullReport": pin("synthetic-full-report.json", "8"), "schema": 28}
+    epoch = {"kind": "audited-candidate-runtime-epoch", "version": 2, "currentSource": source}
+    manifest = {"kind": "audited-candidate-client-input", "version": 1, "scenario": "movie", "runId": "movie-06", "serverId": binding["serverId"],
+        "actor": copy.deepcopy(review["actor"]), "catalog": {"movie": copy.deepcopy(movie)},
+        "source": {"manifestSha256": source["sourceManifest"]["sha256"], "binarySha256": source["binary"]["sha256"], "schema": source["schema"]}}
+    closeout = old["closeout"]
+    closeout.update(kind="audited-movie06-owned-state-closeout", inputEvidence={"after": copy.deepcopy(review["snapshot"]),
+        "epoch": copy.deepcopy(review["sourceEpoch"]), "manifest": copy.deepcopy(review["manifest"])})
+    closeout["checks"]["ownedData"].update(clientPlaybackReferences=0, encodingJobs=0)
+    closeout["checks"]["savedRuntimeAndWorkers"] = {"candidateContinuous": True, "postgresContinuous": True, "leaseExact": True,
+        "workers": {role: {"pidAbsentAsRecorded": True, "recursiveCgroupEmptyAsRecorded": True} for role in ("browser", "gateway")}}
+    retained = {"review": review, "closeout": closeout, "snapshot": copy.deepcopy(before), "sourceEpoch": epoch, "manifest": manifest,
+        "inputBinding": {key: copy.deepcopy(value[key]) for key in ("runtimeEpoch", "seedBinding")}, "boundary": None}
+    retained["movieProvenance"] = {key: copy.deepcopy(retained[key]) for key in ("closeout", "snapshot", "sourceEpoch", "manifest")}
+    return value, before, binding, retained
+
+
+def reviewed_subtitles_fixture():
+    value, before, binding, retained = reviewed_fixture()
+    pin = lambda name, digest: {"path": str(m.R / name), "sha256": digest * 64}
+    binding["actors"]["subtitles"] = {"id": "e" * 32, "username": "synthetic-subtitles"}
+    before["capturedAt"] = "2026-09-13T12:30:00Z"
+    before["tables"]["users"].append({"id": "e" * 32, "name": "synthetic-subtitles", "is_administrator": False, "is_disabled": False, "policy": {}})
+    before["tables"]["sessions"].append({"id": "subtitle-auth", "user_id": "e" * 32, "revoked_at": "2026-09-13T12:29:00Z"})
+    before["tables"]["play_sessions"].append({"id": "play_subtitles", "user_id": "e" * 32, "auth_session_id": "subtitle-auth"})
+    before["tables"]["user_item_data"].append({"user_id": "e" * 32, "item_id": "subtitle-item", "play_count": 1})
+    before["tables"]["client_playback_references"] = [{"user_id": "b" * 32, "auth_session_id": str(index),
+        "play_session_id": "play_foreign", "device_id": "synthetic-audio", "client_nonce": "nonce-" + str(index)} for index in (0, 1)]
+    review = retained["review"]
+    review.update(closeout=pin("synthetic-subtitles-closeout.json", "9"), snapshot=pin("synthetic-subtitles-after.json", "a"),
+        sourceEpoch=copy.deepcopy(m.EPOCH), manifest=pin("synthetic-subtitles-manifest.json", "b"), boundary=pin("synthetic-subtitles-boundary.json", "c"))
+    process = {"pid": 123, "startTicks": "1234", "bootId": "synthetic-boot", "uid": 1001}
+    candidate = {**process, "listener": {"host": "127.0.0.1", "port": 19181, "socketInode": "4"}}
+    epoch = copy.deepcopy(retained["sourceEpoch"])
+    epoch.update(version=3, candidateProcess=process, postgresProcess={"pid": 456, "startTicks": "5678"},
+        lease={"held": True, "owner": "synthetic-owner"}, candidate={"database": "synthetic-current"})
+    epoch["currentSource"]["binary"] = pin("synthetic-current-goby", "d")
+    manifest = copy.deepcopy(retained["manifest"])
+    manifest.update(scenario="subtitles", runId="subtitles-01", actor=copy.deepcopy(binding["actors"]["subtitles"]), processes={"candidate": candidate})
+    manifest["source"]["binarySha256"] = epoch["currentSource"]["binary"]["sha256"]
+    evidence = {"kind": "audited-candidate-client-closeout-input", "version": 3, "manifest": copy.deepcopy(review["manifest"]),
+        "runtimeEpoch": copy.deepcopy(review["sourceEpoch"]), "seedBinding": copy.deepcopy(review["seedBinding"]), "admission": copy.deepcopy(value["admission"]),
+        "sourceBefore": pin("synthetic-subtitles-before.json", "e"), "sourceAfter": copy.deepcopy(review["snapshot"]), "boundary": copy.deepcopy(review["boundary"]),
+        "sources": copy.deepcopy(value["sources"]), "output": str(m.R / "synthetic-subtitles-closeout"), "retainedBaseline": None}
+    for key in ("observation", "summary", "gatewayAttestation", "gatewayIndex", "serverLog"):
+        evidence[key] = pin("synthetic-subtitles-" + key + ".json", "f")
+    counts = {"afterSessions": "sessions", "afterPlays": "play_sessions", "afterUserData": "user_item_data",
+        "afterClientReferences": "client_playback_references", "afterEncodingJobs": "encoding_jobs"}
+    closeout = {"kind": "audited-candidate-subtitles-owned-state-closeout", "status": "owned_state_closed_client_acceptance_pending", "clientAcceptance": False,
+        "inputEvidence": evidence, "sourcePinsUnchanged": True, "originalUIRejection": {"originalObservationUnchanged": True},
+        "sourceState": {"allSessionsRevoked": True, **{key: len(before["tables"][table]) for key, table in counts.items()}}}
+    boundary = {"kind": "audited-candidate-client-boundary", "version": 1, "runId": "subtitles-01", "runtimeEpoch": copy.deepcopy(review["sourceEpoch"]),
+        "sourceBefore": copy.deepcopy(evidence["sourceBefore"]), "sourceAfter": copy.deepcopy(review["snapshot"]),
+        "candidateBefore": copy.deepcopy(candidate), "candidateAfter": copy.deepcopy(candidate), "postgresBefore": copy.deepcopy(epoch["postgresProcess"]),
+        "postgresAfter": copy.deepcopy(epoch["postgresProcess"]), "leaseBefore": copy.deepcopy(epoch["lease"]), "leaseAfter": copy.deepcopy(epoch["lease"]),
+        "database": epoch["candidate"]["database"], "beforeMonotonicNs": "100", "afterMonotonicNs": "200",
+        "clientWorker": {"exitCode": 0, "mainPID": 0, "remainingBrowserPids": [], "workerPidAbsent": True},
+        "gatewayWorker": {"exitCode": 0, "mainPID": 0, "workerPidAbsent": True, "index": copy.deepcopy(evidence["gatewayIndex"])}}
+    retained.update(closeout=closeout, snapshot=copy.deepcopy(before), sourceEpoch=epoch, manifest=manifest, boundary=boundary)
+    return value, before, binding, retained
 
 
 def log_fixture():
@@ -387,6 +546,238 @@ class Guards(unittest.TestCase):
         with self.assertRaises(m.RunError):
             m.validate_input({**old, "version": 3})
 
+    def test_version4_requires_reviewed_movie_without_widening_legacy_inputs(self):
+        value, unused, unused_binding, unused_retained = reviewed_fixture()
+        self.assertIs(m.validate_input(value), value)
+        for mutate in (lambda row: row.update(version=4.0), lambda row: row.update(version=True),
+                       lambda row: row.update(retainedBaseline=None), lambda row: row.pop("retainedBaseline"),
+                       lambda row: row.update(reviewedBaseline=copy.deepcopy(row["retainedBaseline"]))):
+            changed = copy.deepcopy(value)
+            mutate(changed)
+            with self.assertRaises(m.RunError):
+                m.validate_input(changed)
+        for scenario in m.SCENARIOS - {"movie"}:
+            with self.subTest(scenario=scenario), self.assertRaises(m.RunError):
+                m.validate_input({**value, "scenario": scenario})
+        for version in (1, 2, 3):
+            with self.subTest(version=version), self.assertRaises(m.RunError):
+                m.validate_input({**value, "version": version})
+        replay_path, replay_hash = str(m.R / "synthetic-reviewed-cases.json"), "a" * 64
+        arguments = ["tests.py", "-v", "--reviewed-baselines", replay_path, "--reviewed-baselines-sha256", replay_hash]
+        self.assertEqual(reviewed_replay_arguments(arguments), {"path": replay_path, "sha256": replay_hash})
+        self.assertEqual(arguments, ["tests.py", "-v"])
+        for arguments in (["tests.py", "--reviewed-baselines", replay_path], ["tests.py", "--reviewed-baselines-sha256", replay_hash],
+                          ["tests.py", "--reviewed-baselines", replay_path, "--reviewed-baselines-sha256"],
+                          ["tests.py", "--reviewed-baselines", "--reviewed-baselines-sha256", replay_hash],
+                          ["tests.py", "--reviewed-baselines", replay_path, "--reviewed-baselines", replay_path, "--reviewed-baselines-sha256", replay_hash],
+                          ["tests.py", "--reviewed-baselines", replay_path, "--reviewed-baselines-sha256", replay_hash, "--reviewed-baselines-sha256", replay_hash],
+                          ["tests.py", "--reviewed-baselines=" + replay_path, "--reviewed-baselines-sha256", replay_hash]):
+            with self.assertRaises(m.RunError):
+                reviewed_replay_arguments(arguments)
+        for raw in (b'{"value":0,"value":1}', b'{"value":NaN}', b'{"value":Infinity}', b'{"value":1e999}'):
+            with self.assertRaises(m.RunError):
+                reviewed_replay_json(raw)
+        self.assertEqual(reviewed_replay_json(b'{"value":9223372036854775807}')["value"], 9223372036854775807)
+
+    def test_reviewed_current_state_keeps_movie_provenance_and_foreign_references(self):
+        for factory in (reviewed_fixture, reviewed_subtitles_fixture):
+            unused, before, binding, retained = factory()
+            prepared = m.validate_reviewed_movie_baseline(retained, binding)
+            self.assertEqual([row["id"] for row in prepared], [m.MOVIE05_PREPARED])
+            original = copy.deepcopy(retained)
+            m.verify_actor_before(before, binding, "movie", retained, 4)
+            self.assertEqual(m.canonical(retained), m.canonical(original))
+            with self.assertRaisesRegex(m.RunError, "reviewed_movie_baseline_required"):
+                m.verify_actor_before(before, binding, "movie", None, 4)
+        self.assertEqual(len(before["tables"]["client_playback_references"]), 2)
+        self.assertNotEqual(retained["review"]["sourceEpoch"], retained["review"]["movieProvenance"]["sourceEpoch"])
+        for count in (0, 2):
+            unused, unused_before, binding, retained = reviewed_fixture()
+            if count == 0:
+                for snapshot in (retained["snapshot"], retained["movieProvenance"]["snapshot"]):
+                    row = next(row for row in snapshot["tables"]["play_sessions"] if row["id"] == m.MOVIE05_PREPARED)
+                    row.update(state="Expired", stopped_at="2026-09-13T12:19:00Z")
+                retained["review"]["preparedExpirations"] = []
+            else:
+                for snapshot in (retained["snapshot"], retained["movieProvenance"]["snapshot"]):
+                    row = next(row for row in snapshot["tables"]["play_sessions"] if row["id"] == m.MOVIE05_PREPARED)
+                    snapshot["tables"]["play_sessions"].append({**copy.deepcopy(row), "id": "play_extra"})
+                retained["review"]["preparedExpirations"].append({"playSessionId": "play_extra", "authSessionId": m.MOVIE05_AUTH})
+            self.assertEqual(len(m.validate_reviewed_movie_baseline(retained, binding)), count)
+
+    def test_reviewed_baseline_rejects_wrong_pins_source_actor_and_movie_provenance(self):
+        mutations = [lambda row: row["review"].update(version=True), lambda row: row["review"].update(extra=True),
+            lambda row: row["review"]["runtimeEpoch"].update(sha256="0" * 64),
+            lambda row: row["inputBinding"]["seedBinding"].update(sha256="0" * 64),
+            lambda row: row["review"]["actor"].update(username="other"),
+            lambda row: row["review"]["item"].update(runtimeTicks=True),
+            lambda row: row["movieProvenance"]["manifest"].update(serverId="0" * 32),
+            lambda row: row["movieProvenance"]["manifest"].update(runId="movie-x"),
+            lambda row: row["movieProvenance"]["closeout"]["inputEvidence"]["after"].update(sha256="0" * 64),
+            lambda row: row["movieProvenance"]["sourceEpoch"]["currentSource"]["binary"].update(sha256="0" * 64),
+            lambda row: row["sourceEpoch"]["currentSource"]["sourceManifest"].update(sha256="0" * 64),
+            lambda row: row["manifest"].update(scenario="movie"),
+            lambda row: row["review"]["movieProvenance"].pop("snapshot")]
+        for index, mutate in enumerate(mutations):
+            unused, unused_before, binding, retained = reviewed_subtitles_fixture()
+            mutate(retained)
+            with self.subTest(index=index), self.assertRaises(m.RunError):
+                m.validate_reviewed_movie_baseline(retained, binding)
+
+    def test_reviewed_movie_history_rejects_live_credentials_duplicates_and_unreviewed_prepared_rows(self):
+        mutations = [lambda row: row["snapshot"]["tables"]["sessions"][0].update(revoked_at=None),
+            lambda row: row["snapshot"]["tables"]["sessions"].append(copy.deepcopy(row["snapshot"]["tables"]["sessions"][0])),
+            lambda row: row["snapshot"]["tables"]["play_sessions"].append(copy.deepcopy(row["snapshot"]["tables"]["play_sessions"][0])),
+            lambda row: row["snapshot"]["tables"]["play_sessions"][0].update(counted=True),
+            lambda row: row["snapshot"]["tables"]["play_sessions"][0].update(application_client_id="other"),
+            lambda row: row["snapshot"]["tables"]["play_sessions"][0].update(position_ticks=True),
+            lambda row: row["snapshot"]["tables"]["play_sessions"][0].update(position_ticks=9007199254740992),
+            lambda row: row["snapshot"]["tables"]["play_sessions"][0].update(expires_at="invalid"),
+            lambda row: row["closeout"].update(failure=None),
+            lambda row: row["closeout"]["checks"]["ownedData"].update(oldRowsDeleted=False),
+            lambda row: row["closeout"]["checks"]["savedRuntimeAndWorkers"].update(candidateContinuous=1)]
+        for index, mutate in enumerate(mutations):
+            unused, unused_before, binding, retained = reviewed_subtitles_fixture()
+            mutate(retained["movieProvenance"])
+            with self.subTest(index=index), self.assertRaises(m.RunError):
+                m.validate_reviewed_movie_baseline(retained, binding)
+        for mutate in (lambda row: row.update(preparedExpirations=[]),
+                       lambda row: row["preparedExpirations"].append(copy.deepcopy(row["preparedExpirations"][0])),
+                       lambda row: row["preparedExpirations"][0].update(authSessionId="other"),
+                       lambda row: row["preparedExpirations"][0].update(playSessionId="play_foreign")):
+            unused, unused_before, binding, retained = reviewed_subtitles_fixture()
+            mutate(retained["review"])
+            with self.assertRaises(m.RunError):
+                m.validate_reviewed_movie_baseline(retained, binding)
+
+    def test_reviewed_subtitles_closeout_requires_exact_counts_binding_and_worker_closure(self):
+        mutations = [lambda row: row["closeout"].update(sourcePinsUnchanged=1),
+            lambda row: row["closeout"].update(failure=None),
+            lambda row: (row["closeout"].pop("originalUIRejection"), row["closeout"].update(originalObservationUnchanged=True)),
+            lambda row: row["closeout"].update(originalObservationUnchanged=True, originalUIRejection={}),
+            lambda row: row["closeout"].update(originalObservationUnchanged=True, originalUIRejection={"originalObservationUnchanged": False}),
+            lambda row: row["closeout"].update(originalObservationUnchanged=True, originalUIRejection={"originalObservationUnchanged": None}),
+            lambda row: row["closeout"].update(originalObservationUnchanged=True, originalUIRejection=None),
+            lambda row: row["closeout"].update(originalObservationUnchanged=True, originalUIRejection=True),
+            lambda row: row["closeout"]["originalUIRejection"].update(originalObservationUnchanged=1),
+            lambda row: row["closeout"]["sourceState"].update(afterClientReferences=0),
+            lambda row: row["closeout"]["sourceState"].update(allSessionsRevoked=1),
+            lambda row: row["closeout"]["inputEvidence"].update(version=2),
+            lambda row: row["closeout"]["inputEvidence"]["boundary"].update(sha256="0" * 64),
+            lambda row: row.update(boundary=None), lambda row: row["review"].update(boundary=None),
+            lambda row: row["boundary"]["candidateAfter"].update(startTicks="different"),
+            lambda row: row["boundary"]["postgresAfter"].update(pid=789),
+            lambda row: row["boundary"]["leaseAfter"].update(held=1),
+            lambda row: row["boundary"]["clientWorker"].update(mainPID=False),
+            lambda row: row["boundary"]["clientWorker"].update(remainingBrowserPids=[123]),
+            lambda row: row["boundary"]["gatewayWorker"].update(exitCode=1),
+            lambda row: row["boundary"]["gatewayWorker"]["index"].update(sha256="0" * 64),
+            lambda row: row["boundary"].update(afterMonotonicNs="99")]
+        for index, mutate in enumerate(mutations):
+            unused, unused_before, binding, retained = reviewed_subtitles_fixture()
+            mutate(retained)
+            with self.subTest(index=index), self.assertRaises(m.RunError):
+                m.validate_reviewed_movie_baseline(retained, binding)
+
+    def test_reviewed_latest_snapshot_cannot_rewrite_movie_rows_or_hide_owned_residue(self):
+        for table, field, value in (("users", "name", "renamed"), ("sessions", "device_id", "other-device"),
+                                    ("play_sessions", "player_state", {"changed": True}), ("user_item_data", "play_count", 3)):
+            unused, unused_before, binding, retained = reviewed_subtitles_fixture()
+            actor = binding["actors"]["movie"]["id"]
+            key = "id" if table == "users" else "user_id"
+            row = next(row for row in retained["snapshot"]["tables"][table] if row[key] == actor)
+            row[field] = value
+            with self.subTest(table=table), self.assertRaisesRegex(m.RunError, "reviewed_movie_history_changed"):
+                m.validate_reviewed_movie_baseline(retained, binding)
+        for table in ("client_playback_references", "encoding_jobs"):
+            for field, value in (("user_id", "a" * 32), ("auth_session_id", m.MOVIE05_AUTH), ("play_session_id", m.MOVIE05_PREPARED)):
+                unused, unused_before, binding, retained = reviewed_subtitles_fixture()
+                retained["snapshot"]["tables"][table].append({"user_id": "b" * 32, field: value})
+                count = "afterClientReferences" if table == "client_playback_references" else "afterEncodingJobs"
+                retained["closeout"]["sourceState"][count] += 1
+                with self.subTest(table=table, field=field), self.assertRaisesRegex(m.RunError, "reviewed_movie_owned_residue"):
+                    m.validate_reviewed_movie_baseline(retained, binding)
+
+    def test_reviewed_before_preserves_all_foreign_rows_sequences_and_json_types(self):
+        mutations = [lambda row: row["tables"]["users"][1]["policy"].update(EnableMediaPlayback=0),
+            lambda row: row["tables"]["activity_entries"][0]["data"].update(enabled=1),
+            lambda row: row["tables"]["client_playback_references"].pop(),
+            lambda row: row["tables"]["sessions"][0].update(revoked_at="2026-09-13T12:31:00Z"),
+            lambda row: row["tables"]["play_sessions"].pop(),
+            lambda row: row["tables"].update(extra_table=row["tables"].pop("task_runs")),
+            lambda row: row["sequences"]["synthetic"].update(isCalled=1),
+            lambda row: row["sequences"]["synthetic"].update(lastValue="2")]
+        for index, mutate in enumerate(mutations):
+            unused, before, binding, retained = reviewed_subtitles_fixture()
+            mutate(before)
+            with self.subTest(index=index), self.assertRaisesRegex(m.RunError, "reviewed_movie_fresh_state_changed"):
+                m.verify_actor_before(before, binding, "movie", retained, 4)
+
+    def test_reviewed_pruning_checks_terminal_rows_and_nanosecond_deadline(self):
+        unused, before, binding, retained = reviewed_subtitles_fixture()
+        before["capturedAt"] = "2026-09-13T12:29:59.999999999Z"
+        with self.assertRaisesRegex(m.RunError, "reviewed_movie_pruning_deadline"):
+            m.verify_actor_before(before, binding, "movie", retained, 4)
+        for fraction, passes in (("000000000", False), ("000000001", True)):
+            unused, before, binding, retained = reviewed_subtitles_fixture()
+            for snapshot in (before, retained["snapshot"], retained["movieProvenance"]["snapshot"]):
+                snapshot["tables"]["play_sessions"][0]["expires_at"] = "2026-09-06T12:50:00." + fraction + "Z"
+            if passes:
+                m.verify_actor_before(before, binding, "movie", retained, 4)
+            else:
+                with self.assertRaisesRegex(m.RunError, "reviewed_movie_pruning_deadline"):
+                    m.verify_actor_before(before, binding, "movie", retained, 4)
+
+    def test_reviewed_preflight_reads_all_dependencies_and_fails_before_output_or_workers(self):
+        value, unused_before, binding, retained = reviewed_subtitles_fixture()
+        # Model a future component admission without changing the frozen pins.
+        value["sources"]["closer"]["sha256"] = "0" * 64
+        with patch.object(m, "FROZEN", {**m.FROZEN, "closer": "0" * 64}):
+            job = make_job(value)
+        epoch = {"helpers": {"seed": {}}, "runtimeHelper": m.RUNTIME, "currentSource": {"schema": 28}}
+        report = {"kind": "audited-candidate-live-admission", "version": 2, "status": "admission_failed_resources_retained"}
+        pins = {job.input_pin["path"]: value, m.BINDING["path"]: binding, m.ADMISSION["path"]: report, "original-seed": {},
+            value["retainedBaseline"]["path"]: retained["review"]}
+        for key in ("closeout", "snapshot", "sourceEpoch", "manifest"):
+            pins[retained["review"][key]["path"]] = retained[key]
+            pins[retained["review"]["movieProvenance"][key]["path"]] = retained["movieProvenance"][key]
+        pins[retained["review"]["boundary"]["path"]] = retained["boundary"]
+        read = Mock(side_effect=lambda pin: pins[pin["path"]])
+        seed = types.SimpleNamespace(descriptor=read)
+        job.r = types.SimpleNamespace(read_bootstrap=lambda pin: json.dumps(epoch), load_helper=lambda key, pin: seed,
+            validate_epoch=lambda row: row, validate_seed_runtime_binding=Mock(), SEED={"path": "original-seed"})
+        job.open, job.start_worker = Mock(), Mock()
+        with patch.object(m.os.path, "lexists", return_value=False), self.assertRaisesRegex(m.RunError, "successful_current_admission_required"):
+            job.run()
+        requested = [call.args[0] for call in read.call_args_list]
+        for pin in [value["retainedBaseline"], retained["review"]["boundary"], *retained["review"]["movieProvenance"].values(),
+                    *[retained["review"][key] for key in ("closeout", "snapshot", "sourceEpoch", "manifest")]]:
+            self.assertIn(pin, requested)
+        job.open.assert_not_called()
+        job.start_worker.assert_not_called()
+        read.reset_mock()
+        retained["review"]["actor"]["username"] = "wrong"
+        with patch.object(m.os.path, "lexists", return_value=False), self.assertRaisesRegex(m.RunError, "reviewed_movie_actor_binding"):
+            job.run()
+        self.assertNotIn(m.ADMISSION, [call.args[0] for call in read.call_args_list])
+        job.open.assert_not_called()
+        job.start_worker.assert_not_called()
+
+    def test_version4_old_closer_stops_before_any_dispatch_or_output(self):
+        value, unused_before, unused_binding, unused_retained = reviewed_subtitles_fixture()
+        self.assertIs(m.validate_input(value), value)
+        job = make_job(value)
+        job.r.read_bootstrap = Mock()
+        job.open, job.start_worker, job.save = Mock(), Mock(), Mock()
+        with patch.object(m.os.path, "lexists", return_value=False), self.assertRaisesRegex(m.RunError, "version4_closer_not_admitted"):
+            job.run()
+        job.r.read_bootstrap.assert_not_called()
+        job.open.assert_not_called()
+        job.start_worker.assert_not_called()
+        job.save.assert_not_called()
+        self.assertFalse(job.created)
+        self.assertEqual(job.workers, {})
+
     def test_movie05_baseline_preserves_all_five_plays_and_checks_every_pruning_deadline(self):
         before, binding, retained = movie05_fixture()
         self.assertEqual(m.validate_movie05_baseline(retained["closeout"], before, binding)["id"], m.MOVIE05_PREPARED)
@@ -441,13 +832,23 @@ class Guards(unittest.TestCase):
             m.validate_server_log_read(process, process, process, before["file"], before["file"], raw_before, m.SERVER_LOG_LIMIT+1)
 
     def test_server_log_is_saved_after_source_after_even_when_browser_exit_is_one(self):
-        value = fixture()
-        value.update(version=3, retainedBaseline=copy.deepcopy(m.MOVIE05_BASELINE))
+        self.assert_failed_browser_log_is_saved(3)
+
+    def test_version4_server_log_is_saved_when_browser_exit_is_one(self):
+        self.assert_failed_browser_log_is_saved(4)
+
+    def assert_failed_browser_log_is_saved(self, version):
+        if version == 4:
+            value, source, binding, retained = reviewed_subtitles_fixture()
+        else:
+            value = fixture()
+            value.update(version=3, retainedBaseline=copy.deepcopy(m.MOVIE05_BASELINE))
+            source, binding, retained = movie05_fixture()
         job = make_job(value)
-        source, job.binding, job.retained = movie05_fixture()
+        job.binding, job.retained = binding, retained
         actor = job.binding["actors"]["movie"]
         actor["credentials"] = {"path": str(m.R / "synthetic-credential.json"), "sha256": "a"*64}
-        job.binding["serverId"] = "b"*32
+        job.binding.setdefault("serverId", "b"*32)
         process, unused, before, after, raw_before, raw_after = log_fixture()
         candidate = {**process, "listener": {"host": "127.0.0.1", "port": 19181, "socketInode": "4"}}
         job.epoch = {"candidateProcess": process, "candidate": {"publicUrl": "http://127.0.0.1:19180", "directUrl": "http://127.0.0.1:19181", "database": "synthetic"},
@@ -494,6 +895,53 @@ class Guards(unittest.TestCase):
                 closeout["inputEvidence"]["epoch"] = copy.deepcopy(m.EPOCH)
             with self.subTest(version=version), self.assertRaises(m.RunError):
                 m.verify_actor_before(before, binding, "movie", retained, version)
+
+    def assert_reviewed_saved_case(self, position, expected):
+        case = REVIEWED_REPLAY_CASES[position]
+        seed = read_reviewed_replay_descriptor(case["seed"])
+        retained = m.load_reviewed_movie_baseline(case["review"], case["inputBinding"], seed, read_reviewed_replay_descriptor)
+        snapshot = retained["snapshot"]
+        digest = lambda value: hashlib.sha256(m.canonical(value).encode()).hexdigest()
+        retained_before = digest(retained)
+        self.assertEqual(len(snapshot["tables"]), 35)
+        self.assertEqual(len(snapshot["sequences"]), 5)
+        self.assertEqual(tuple(len(snapshot["tables"][table]) for table in ("sessions", "play_sessions", "client_playback_references")), expected)
+        self.assertEqual(len(retained["review"]["preparedExpirations"]), 1)
+        self.assertEqual(len(m.validate_reviewed_movie_baseline(retained, seed)), 1)
+        fresh = copy.deepcopy(snapshot)
+        fresh_before, references_before = digest(fresh), digest(fresh["tables"]["client_playback_references"])
+        m.verify_actor_before(fresh, seed, "movie", retained, 4)
+        self.assertEqual(digest(fresh), fresh_before)
+        for index, table in enumerate(sorted(m.REVIEWED_BASELINE_TABLES)):
+            changed = copy.deepcopy(snapshot)
+            if changed["tables"][table]:
+                changed["tables"][table][0]["reviewedReplayMutation"] = True
+            else:
+                changed["tables"][table].append({"reviewedReplayMutation": True})
+            with self.subTest(case=case["name"], tableIndex=index), self.assertRaisesRegex(m.RunError, "reviewed_movie_fresh_state_changed"):
+                m.verify_actor_before(changed, seed, "movie", retained, 4)
+        for index, sequence in enumerate(snapshot["sequences"]):
+            changed = copy.deepcopy(snapshot)
+            changed["sequences"][sequence]["lastValue"] = "1" if changed["sequences"][sequence]["lastValue"] == "0" else "0"
+            with self.subTest(case=case["name"], sequenceIndex=index), self.assertRaisesRegex(m.RunError, "reviewed_movie_fresh_state_changed"):
+                m.verify_actor_before(changed, seed, "movie", retained, 4)
+        self.assertEqual(digest(retained), retained_before)
+        self.assertEqual(digest(retained["snapshot"]["tables"]["client_playback_references"]), references_before)
+        print(json.dumps({"kind": "audited-candidate-reviewed-baseline-python-replay", "case": case["name"],
+            "reviewSha256": case["review"]["sha256"], "snapshotSha256": retained["review"]["snapshot"]["sha256"],
+            "sessions": expected[0], "plays": expected[1], "foreignClientReferences": expected[2], "preparedExpirations": 1,
+            "rejectedTableMutations": 35, "rejectedSequenceMutations": 5, "unchangedEvidenceSha256": retained_before,
+            "foreignClientReferencesSha256": references_before}))
+
+    if REVIEWED_REPLAY_CASES is not None:
+        def test_saved_reviewed_01_movie05_baseline(self):
+            self.assert_reviewed_saved_case(0, (13, 5, 0))
+
+        def test_saved_reviewed_02_movie06_baseline(self):
+            self.assert_reviewed_saved_case(1, (14, 6, 0))
+
+        def test_saved_reviewed_03_latest_subtitles_baseline(self):
+            self.assert_reviewed_saved_case(2, (21, 13, 2))
 
     if REPLAY_MOVIE05:
         def test_saved_movie05_snapshot_offline_replay(self):

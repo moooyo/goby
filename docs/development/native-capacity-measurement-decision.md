@@ -31,6 +31,12 @@ empty-catalog check is not a latency baseline for a populated catalog.
 
 The present critical path has more immediate value:
 
+The later [internal amd64 G2 acceptance](internal-amd64-installation-acceptance.json)
+has now closed the installation evidence decision. Capacity remains held while
+the selected [core TV Response question](core-tv-response-observation-decision.md)
+gets its retained-state and component/current-runtime entry contract. The
+installation bullet below records the starting state of this allocation decision.
+
 - Core movie/episode/subtitle acceptance still blocks main promotion. A next
   action must answer a discriminating question from retained evidence or verify
   a justified product correction; it must not replay a consumed journey.

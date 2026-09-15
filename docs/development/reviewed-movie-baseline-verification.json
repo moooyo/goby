@@ -1,0 +1,181 @@
+{
+  "kind": "reviewed-movie-baseline-contract-verification",
+  "version": 1,
+  "date": "2026-09-15",
+  "status": "independently_reviewed_offline_contract",
+  "environment": "ssh test-env",
+  "change": "Version 4 binds the latest complete closed state separately from movie provenance, preserves foreign references, and permits only explicitly reviewed Prepared expiration after a unique owned preparation.",
+  "sources": {
+    "close-audited-candidate-client.mjs": {
+      "bytes": 149600,
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-02/source/scripts/test-env/close-audited-candidate-client.mjs",
+      "sha256": "f0cef0f6d9e6fed27a61729255d251b6d3d064d8f0e7fef7f1e86b5be4e494fd",
+      "repositoryPath": "scripts/test-env/close-audited-candidate-client.mjs"
+    },
+    "run-audited-candidate-client.py": {
+      "bytes": 98855,
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-02/source/scripts/test-env/run-audited-candidate-client.py",
+      "sha256": "2db985305cf4e3d6d2607a6230aae8ad2a39228061c8094460007799dc20e6bf",
+      "repositoryPath": "scripts/test-env/run-audited-candidate-client.py"
+    },
+    "test-client-v3-evidence.mjs": {
+      "bytes": 25205,
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-02/source/scripts/test-env/test-client-v3-evidence.mjs",
+      "sha256": "cbefc2153a7849702a7ecc7efa931fa3e853c928b2050d69deeb40dcb02ee21f",
+      "repositoryPath": "scripts/test-env/test-client-v3-evidence.mjs"
+    },
+    "test-close-audited-candidate-client.mjs": {
+      "bytes": 133214,
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-02/source/scripts/test-env/test-close-audited-candidate-client.mjs",
+      "sha256": "ee8596bdcbabd55df0fbd3679a7def58c0665bd0deb2b97a15a743c5375ded0e",
+      "repositoryPath": "scripts/test-env/test-close-audited-candidate-client.mjs"
+    },
+    "test-run-audited-candidate-client.py": {
+      "bytes": 93090,
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-02/source/scripts/test-env/test-run-audited-candidate-client.py",
+      "sha256": "d962db089015f594b7b7f087cec4024902aa6c855cd33862866d916011c95aa1",
+      "repositoryPath": "scripts/test-env/test-run-audited-candidate-client.py"
+    }
+  },
+  "firstAttempt": {
+    "dispatch": {
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-01/private/dispatch.json",
+      "sha256": "c51c40ee3cbbe874e198d928b203513b94a6004c153fb584aa8e8eb4b7a2879b"
+    },
+    "javascript": {
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-01/private/javascript-result.json",
+      "sha256": "d044d6520b0735d8c0722dcb0a6523f0c0850c0343ec80891a0115fd77448959",
+      "passed": 43,
+      "failed": 1
+    },
+    "cause": "The new subtitle-state validator read originalObservationUnchanged at the wrong top-level path. Its actual path is originalUIRejection.originalObservationUnchanged. The original failure is preserved."
+  },
+  "dispatch": {
+    "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/dispatch.json",
+    "sha256": "262c1a8626c1cd9bacd19325874fc119c6b5c55a68a3211fa8a018c676023056",
+    "bytes": 6323
+  },
+  "checks": {
+    "python": {
+      "passed": 47,
+      "failed": 0,
+      "syntheticGuards": 44,
+      "actualSavedBaselineCases": 3
+    },
+    "javascript": {
+      "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/javascript-result.json",
+      "sha256": "22e148c5e8903fbd76d478012006dd2ae09d59c4e4d6ae00ace75a05d8d82993",
+      "bytes": 13292,
+      "passed": 46,
+      "failed": 0,
+      "syntheticGuards": 43,
+      "actualSavedBaselineCases": 3
+    },
+    "logAndRetainedHistory": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "reviewedCases": {
+    "path": "/opt/goby-test/review-resume-20260915-core-v4-01/private/cases.json",
+    "sha256": "a18dabe5edc6cd478c9b3250c49a23561e006bf29d1e14e95c900e8ac004adf5"
+  },
+  "savedGroups": [
+    {
+      "name": "movie05",
+      "tables": 35,
+      "sequences": 5,
+      "rejectedChanges": 40,
+      "foreignReferences": 0
+    },
+    {
+      "name": "movie06",
+      "tables": 35,
+      "sequences": 5,
+      "rejectedChanges": 40,
+      "foreignReferences": 0
+    },
+    {
+      "name": "latest-subtitles",
+      "tables": 35,
+      "sequences": 5,
+      "rejectedChanges": 41,
+      "foreignReferences": 2
+    }
+  ],
+  "executions": [
+    {
+      "name": "python",
+      "exitCode": 0,
+      "childReaped": true,
+      "stdout": {
+        "bytes": 1789,
+        "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/python.stdout",
+        "sha256": "9a971d15b8381dbdb5a898b102e55d277f248cde88ff23135b380cecb66e5b7c"
+      },
+      "stderr": {
+        "bytes": 146,
+        "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/python.stderr",
+        "sha256": "9ea401ffe02dfa9d297717e1a1915fde2f72bdb43cdf00eafb68779cf66d13f4"
+      }
+    },
+    {
+      "name": "javascript",
+      "exitCode": 0,
+      "childReaped": true,
+      "stdout": {
+        "bytes": 258,
+        "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/javascript.stdout",
+        "sha256": "812523f10faf6219616e6934c91b659a0095e8d526b63d793f29cf68af7e3639"
+      },
+      "stderr": {
+        "bytes": 0,
+        "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/javascript.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "name": "log-binding",
+      "exitCode": 0,
+      "childReaped": true,
+      "stdout": {
+        "bytes": 3125,
+        "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/log-binding.stdout",
+        "sha256": "9f95598e6125643a93cac6a0133dcde2a7fbb5aff6135611759260b5c3d1a06e"
+      },
+      "stderr": {
+        "bytes": 0,
+        "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/log-binding.stderr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "independentReview": {
+    "path": "/opt/goby-test/review-resume-20260915-core-v4-02/private/independent-review.json",
+    "sha256": "7c1d24f91d551059a88b988a2e3bf6fd27c7d179e26338a03e64696e605a9210",
+    "bytes": 18036
+  },
+  "invariants": [
+    "All 35 tables and five sequences are compared before a prospective run.",
+    "Latest state retains both foreign audio references without granting movie residue.",
+    "The movie user, sessions, play history and UserData equal the independently bound historical movie provenance.",
+    "Only explicitly listed Prepared rows can expire, and only three fields within a unique successful new preparation window.",
+    "Versions 1, 2 and 3 retain their prior restrictions.",
+    "A version-4 live preflight rejects the known old closer before bootstrap reads, output creation or workers."
+  ],
+  "remaining": [
+    "Create and independently review new component admission evidence before a version-4 live input.",
+    "Bind a current candidate and the selected E11 transition separately.",
+    "Resolve the named client-error and unmatched media-cancellation observations without replaying consumed actors."
+  ],
+  "businessHttpCalls": 0,
+  "sqlCalls": 0,
+  "browserRuns": 0,
+  "serviceActions": 0,
+  "productionSourceChanged": false,
+  "componentAdmission": false,
+  "candidateAdmission": false,
+  "clientAcceptance": false,
+  "wholeM2M6Accepted": false
+}

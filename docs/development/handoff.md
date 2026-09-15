@@ -5,9 +5,16 @@ plan**. Start with the [current execution plan](../planning/current-execution-pl
 [core resolution](core-client-acceptance-resolution.md),
 [r04 evidence resolution](r04-installation-evidence-resolution.md), and
 [support matrix](../planning/support-and-delivery-matrix.md).
-The response-ID matcher correction has 35 passing remote guards and a passing
-saved subtitle replay with independent review. Remaining client/cancellation
-gaps stay open. The [capacity decision](native-capacity-measurement-decision.md)
+The response-ID correction and [v4 movie baseline contract](reviewed-movie-baseline-verification.json)
+are independently reviewed. The v4 contract passed Python 47, JavaScript 46 and
+12 log/history checks, including each language's three actual saved states.
+The [internal amd64 installation gate](internal-amd64-installation-acceptance.json)
+is accepted using the original runtime, saved HTTP review and the successful
+copy0002 archived-state comparison. Failed copy0001 and the original sealer
+remain unchanged. Next is the retained TV-state and component/current-runtime
+admission for the [bounded Response observation](core-tv-response-observation-decision.md).
+No browser input exists; remaining client/cancellation gaps stay open.
+The [capacity decision](native-capacity-measurement-decision.md)
 holds native execution; its [earlier handoff](session-handoff-20260915-native-capacity.md)
 and tracked source snapshot remain intact. Complete M2-M6 remain open; M7 is deferred.
 

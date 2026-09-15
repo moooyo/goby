@@ -1,12 +1,16 @@
 # R04 installation evidence resolution
 
-Reviewed on 2026-09-15. Status: **the complete saved HTTP review passes with the
-precise Emby response classification; the original final SQL observation remains
-missing**. Overall installation acceptance is still open. This record supplements
+Reviewed on 2026-09-15. Status: **the saved HTTP review and supplemental archived
+final-state proof pass; the internal amd64 installation gate is accepted**.
+The original final SQL observation remains missing. The
+[composite acceptance](internal-amd64-installation-acceptance.json) records the
+actual replacement proof and its limits. This record supplements
 the [original r04 result](systemd-installation-fourth-attempt.json); it does not
 replace its failed seal, change historical receipts, or admit another installation.
 Independent strict readback supports this fixed evidence set, with the helper
-implementation limits recorded below. It does not accept the missing final SQL.
+implementation limits recorded below. The later
+[standalone archive comparison](r04-archived-catalog-verification.md) closes the
+post-stop logical-state gap without claiming the missing final SQL executed.
 
 ## Actual scope and result
 
@@ -145,6 +149,11 @@ This establishes a concrete archived state that can be investigated. It does not
 yet establish its logical catalog contents or physical database integrity.
 
 ## Smallest proposed new proof
+
+The proposal below records the pre-execution assessment. It was subsequently
+replaced by the [completed standalone archive comparison](r04-archived-catalog-verification.md),
+which required no listener, PG service, anchor or application start. Do not
+execute this historical multiuser-copy proposal as another verification run.
 
 Assess one fresh, isolated physical PostgreSQL copy of the closed archive. This
 would use zero Goby starts and zero business HTTP requests. Do not reuse the

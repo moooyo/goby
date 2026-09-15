@@ -23,7 +23,7 @@ has passed three builds, focused checks, 26 guards, independent review and
 build resource closure. The later r04 runtime completed two nonroot starts/stops,
 272 requests, six observers and three snapshots; its seal rejected a valid Emby
 plain-text 401 and the final sealing SQL observer did not run. Full installation
-acceptance remains open. These increments retain their own source and
+acceptance is now established by the separately reviewed archived final-state supplement; the original sealer failure remains unchanged. See [internal amd64 acceptance](../development/internal-amd64-installation-acceptance.json). These increments retain their own source and
 execution scopes and do not close complete M5, M6 or core-video acceptance.
 
 The [fresh source32 backup](../development/audited-main-native-backup-completed.json),

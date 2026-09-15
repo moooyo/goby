@@ -12,6 +12,10 @@ JSON representation in the SQL observer. The fourth runtime passed both nonroot
 starts, 272 HTTP requests, six observers and three snapshots, then its sealer
 rejected a valid Emby 401 plain-text response. The owned services are closed and
 failure preservation and independent archive/resource readback passed.
+The later [archived final-state supplement](../development/r04-archived-catalog-verification.md)
+passed independent review and closes the internal amd64 systemd installation
+gate through [composite acceptance](../development/internal-amd64-installation-acceptance.json).
+The original failed seal and missing final observer remain unchanged.
 The scoped source checkpoint is committed as `beaea34`; core-video
 and complete release gates remain open**. Earlier
 regression and candidate admissions retain their original source and execution
@@ -126,8 +130,9 @@ The checkpoint and execution conditions below support the single authoritative
    sealer completed application/database review, then rejected the valid
    plain-text response to an Emby revoked-credential check. Independent diagnosis
    bound that response to the product's exact contract; no product change or
-   HTTP replay occurred. Its final SQL observer did not run, so installation
-   acceptance remains open. Preserve the six runtime observers, three snapshots,
+   HTTP replay occurred. Its final SQL observer did not run, so that original attempt remained failed.
+   The later [composite acceptance](../development/internal-amd64-installation-acceptance.json)
+   now closes the scoped internal amd64 gate. Preserve the six runtime observers, three snapshots,
    eight closed credentials, 272 requests and original seal failure. Failure
    preservation and independent readback are complete. No fifth attempt
    is admitted. Continue the next independent deliverable after this closure.
@@ -152,8 +157,9 @@ The checkpoint and execution conditions below support the single authoritative
    Type=simple executor transition. The later startup correction and r03 result
    have their own scopes above. All four attempts are consumed and closed.
    The OID correction and actual r04 runtime have separate verification; the
-   original guards are not credited with that later coverage. Full HTTP/final
-   SQL sealing and installation acceptance remain open.
+   original guards are not credited with that later coverage. The historical sealer remains incomplete. The later
+   [composite acceptance](../development/internal-amd64-installation-acceptance.json)
+   separately completes the declared internal amd64 installation gate.
    Reuse the completed package build and M5 regression while their bound inputs
    remain unchanged; expand verification only for a concrete change or failure.
 4. Keep movie, episode and subtitle acceptance open. Prioritize a bounded
@@ -465,8 +471,8 @@ workspace outside every new resource budget.
 | --- | --- | --- |
 | 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
-| 0b. Internal amd64 systemd installation — resolve the remaining evidence | Recheck saved HTTP under the exact Emby/native-admin response contracts; map the final SQL assertions to existing snapshots and closure evidence, then identify any irreplaceable missing proof | Retain the passed two-start runtime and original seal failure. No automatic fifth installation, build or full-suite replay; any new verification must address only the remaining assertions under a fresh bounded decision |
-| 1. Core video and subtitle acceptance — concrete blocker resolution | Follow the [core resolution](../development/core-client-acceptance-resolution.md): correct response-identity matching, define retained movie input, decide the discriminating page-error/cancellation observation, and bind the eventual acceptance to E11 | Saved-record verification is the immediate work. A live journey requires a specific observable and reviewed current state; original failures, consumed actors and the main-promotion gate remain intact |
+| 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
+| 1. Core video and subtitle acceptance — TV response question selected | Reuse the verified response matcher and [v4 movie baseline contract](../development/reviewed-movie-baseline-verification.json); prepare only the retained TV-state and component/current-runtime admission needed for the [bounded Response observation](../development/core-tv-response-observation-decision.md) | No browser input exists yet. The new observation must supply a unique native Response/request binding; undefined or no recurrence ends that branch. Final E11 acceptance and main promotion remain separate |
 | 2. Native scan and concurrent HTTP capacity — implementation held for measurement decision | Preserve the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md); define useful output, overlap coverage, observer overhead and a finite remaining preparation scope before resuming | No native fixture or execution input exists. Reuse the distinct twelve reader, eight transport and six pool groups within their source scopes. Complete the result design and unresolved cleanup risks before execution; insufficient overlap remains an incomplete metric, not capacity acceptance |
 | 2a. Package component attribution — emitted graph and bounded glyph mapping recorded | Retain the [46-chunk graph and 73 exact glyph correspondences](../development/systemd-package-javascript-attribution.md); resolve the remaining source-module and upstream-glyph inputs before assembling the legal payload | This is not a complete npm module graph or proof of historical Google glyph revisions. Preserve the pending project-license question and the external-distribution gate |
 | 2b. Remaining M2-M6 delivery | Continue separately scoped blocked I/O, host durability, media/transcode, administration, native hardware/architecture, OCI and support-matrix work | Require measurable limits and bounded shutdown under each profile's prerequisites; unavailable hardware and licensing block their own claims, not unrelated software delivery |
@@ -478,10 +484,13 @@ with independent review. The matcher defect is closed; do not rerun that work
 without a changed input or concern. The
 [r04 saved HTTP review](../development/r04-installation-evidence-resolution.md)
 also passes for its fixed evidence set after independent strict readback.
-Remaining immediate work is the retained movie-state contract and discriminating
-client-error/cancellation decision, plus the smallest justified proof of r04's
-post-stop catalog/session state. The original missing final SQL transaction
-cannot be reconstructed. Native capacity remains held under its decision.
+The [v4 movie-state contract](../development/reviewed-movie-baseline-verification.json)
+also passed both implementations' actual three-state replays. The
+[standalone archived-state comparison](../development/r04-archived-catalog-verification.md)
+now completes the G2 installation evidence; its original missing final SQL
+transaction is not reconstructed. Remaining immediate work is the TV retained
+state and new component/current-runtime admission for the selected discriminating
+observation. Native capacity remains held under its decision.
 
 The completed independent increment is [native scheduled media refresh](../development/task-media-refresh-plan.md):
 register `library.refresh_media`, retain ordinary `library.scan` behavior, and

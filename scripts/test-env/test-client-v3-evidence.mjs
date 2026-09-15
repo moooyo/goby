@@ -72,6 +72,14 @@ test('v3 log validation binds the approved run and indexes only complete appende
   const proof = validate(fixture);
   assert.equal(proof.events.length, 1); assert.equal(proof.byRequestId.get(REQUEST_ID).outcome, 'cancelled');
   assert.equal(proof.receipt, fixture.receipt); assert.deepEqual(fixture.beforeBytes, before); assert.deepEqual(fixture.afterBytes, after);
+  const reviewed = serverFixture(); reviewed.context.input.version = 4; reviewed.context.authorizedInput.version = 4;
+  reviewed.context.input.retainedBaseline = pin('reviewed-baseline.json');
+  reviewed.context.authorizedInput.retainedBaseline = reviewed.context.input.retainedBaseline;
+  assert.equal(validate(reviewed).events.length, 1);
+  reviewed.context.authorizedInput.version = 3;
+  assert.throws(() => validate(reviewed), /server_log_authorized_input/);
+  reviewed.context.authorizedInput.version = 4; reviewed.context.authorizedInput.retainedBaseline = OCCUPIED_BASELINE;
+  assert.throws(() => validate(reviewed), /server_log_authorized_input/);
   const ignored = serverFixture(); replaceAppend(ignored, line({ time: '2026-09-13T00:00:01Z', msg: 'another structured event' }));
   assert.equal(validate(ignored).events.length, 0);
   const appendedDuringRead = serverFixture(); appendedDuringRead.event.time = '2026-09-12T23:59:59.999Z';

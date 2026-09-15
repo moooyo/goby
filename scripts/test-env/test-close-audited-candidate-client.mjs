@@ -178,6 +178,78 @@ export function retainedFixture(closer) {
   return value;
 }
 
+function reviewedFixture(closer) {
+  const value = retainedFixture(closer), pin = name => ({ path: '/opt/goby-test/synthetic-reviewed/' + name, sha256: sha(name) });
+  const actor = value.seed.actors.movie, movie = value.seed.catalog.movie;
+  const terminal = { ...clone(value.before.tables.play_sessions[0]), id: 'play_preserved_terminal', state: 'Expired', stopped_at: '2025-12-31T23:01:00Z' };
+  for (const state of [value.before, value.after]) state.tables.play_sessions.push(clone(terminal));
+  value.seed.runtimeEpoch = pin('current-epoch.json'); value.seed.serverId = 'd'.repeat(32);
+  const source = { archiveSha256: sha('archive'), sourceManifest: pin('source-manifest.json'), binary: pin('goby'), fullReport: pin('full-report.json'), schema: 28 };
+  const manifest = { ...clone(value.manifest), kind: 'audited-candidate-client-input', version: 1, runId: 'movie-99', serverId: value.seed.serverId,
+    source: { manifestSha256: source.sourceManifest.sha256, binarySha256: source.binary.sha256, schema: 28 } };
+  const review = { kind: 'audited-candidate-reviewed-movie-baseline', version: 1, status: 'reviewed_closed_state', scenario: 'movie',
+    closeout: pin('closed-state.json'), snapshot: pin('source-after.json'), sourceEpoch: pin('historical-epoch.json'), runtimeEpoch: value.seed.runtimeEpoch,
+    seedBinding: pin('current-seed.json'), manifest: pin('adapter-input.json'), actor: { id: actor.id, username: actor.username },
+    item: { id: movie.id, mediaSourceId: 'mediasource_' + movie.id, runtimeTicks: movie.runtimeTicks },
+    preparedExpirations: [{ playSessionId: closer.RETAINED_PLAY, authSessionId: closer.RETAINED_AUTH }] };
+  const closeout = { kind: 'audited-movie99-owned-state-closeout', status: 'owned_state_closed_client_acceptance_pending', clientAcceptance: false,
+    browserOutcome: 'failed', browserExitCode: 1, gatewayExitCode: 0, inputEvidence: { after: review.snapshot, epoch: review.sourceEpoch, manifest: review.manifest },
+    checks: { ownedData: { ownedTables: 35, oldRowsDeleted: 0, clientPlaybackReferences: 0, encodingJobs: 0,
+      userData: clone(value.before.tables.user_item_data.find(row => row.user_id === actor.id)) }, authentication: { allSessionsRevoked: value.before.tables.sessions.length },
+      savedRuntimeAndWorkers: { candidateContinuous: true, postgresContinuous: true, leaseExact: true,
+        workers: Object.fromEntries(['browser', 'gateway'].map(role => [role, { pidAbsentAsRecorded: true, recursiveCgroupEmptyAsRecorded: true }])) } } };
+  review.boundary = null;
+  review.movieProvenance = Object.fromEntries(['closeout', 'snapshot', 'sourceEpoch', 'manifest'].map(key => [key, clone(review[key])]));
+  value.retained = { review, closeout, snapshot: clone(value.before), sourceEpoch: { kind: 'audited-candidate-runtime-epoch', version: 2, currentSource: source },
+    manifest, boundary: null, inputBinding: { runtimeEpoch: review.runtimeEpoch, seedBinding: review.seedBinding } };
+  value.retained.movieProvenance = Object.fromEntries(['closeout', 'snapshot', 'sourceEpoch', 'manifest'].map(key => [key, clone(value.retained[key])]));
+  for (const login of value.physical.logins) for (const info of login.infos) {
+    info.exchange.scope.allowed = true; info.exchange.original = { method: 'POST' }; info.body = { UserId: actor.id };
+  }
+  return value;
+}
+
+function reviewedLatestFixture(closer) {
+  const value = reviewedFixture(closer), pin = name => ({ path: '/opt/goby-test/synthetic-reviewed/latest-' + name, sha256: sha('latest-' + name) });
+  const subtitleActor = { id: 'e'.repeat(32), username: 'synthetic-subtitles' }, review = value.retained.review;
+  value.seed.actors.subtitles = subtitleActor;
+  for (const state of [value.before, value.after]) {
+    state.tables.users.push({ id: subtitleActor.id, name: subtitleActor.username, is_administrator: false, is_disabled: false, policy: {} });
+    state.tables.sessions.push({ id: 'foreign_subtitle_session', user_id: subtitleActor.id, revoked_at: '2025-12-31T23:30:00Z' });
+    for (const suffix of ['a', 'b']) {
+      state.tables.play_sessions.push({ id: 'play_foreign_audio_' + suffix, user_id: CONTROL, state: 'Stopped', counted: true });
+      state.tables.client_playback_references.push({ user_id: CONTROL, auth_session_id: 'old-1', play_session_id: 'play_foreign_audio_' + suffix,
+        device_id: 'foreign-audio-device', application_client_id: null, client_nonce: 'foreign-' + suffix });
+    }
+  }
+  value.retained.snapshot = clone(value.before);
+  review.closeout = pin('closed-state.json'); review.snapshot = pin('source-after.json'); review.sourceEpoch = review.runtimeEpoch;
+  review.manifest = pin('adapter-input.json'); review.boundary = pin('boundary.json');
+  const process = { pid: 100, bootId: 'synthetic-boot', startTicks: '100' };
+  const sourceEpoch = { kind: 'audited-candidate-runtime-epoch', version: 3,
+    currentSource: { archiveSha256: sha('latest-archive'), sourceManifest: pin('source-manifest.json'), binary: pin('goby'), fullReport: pin('full-report.json'), schema: 28 },
+    candidateProcess: process, postgresProcess: { ...process, pid: 200 }, lease: { owned: true }, candidate: { database: 'synthetic' } };
+  const candidate = { ...process, listener: { port: 19181, socketInode: '123' } };
+  const manifest = { ...clone(value.retained.manifest), scenario: 'subtitles', runId: 'subtitles-01', actor: subtitleActor, processes: { candidate },
+    source: { manifestSha256: sourceEpoch.currentSource.sourceManifest.sha256, binarySha256: sourceEpoch.currentSource.binary.sha256, schema: 28 } };
+  const input = { kind: 'audited-candidate-client-closeout-input', version: 3, output: '/opt/goby-test/synthetic-reviewed/closeout', sources: {}, retainedBaseline: null, serverLog: pin('server-log.json') };
+  for (const name of ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary']) input[name] = pin(name + '.json');
+  Object.assign(input, { manifest: review.manifest, runtimeEpoch: review.sourceEpoch, seedBinding: review.seedBinding, sourceAfter: review.snapshot, boundary: review.boundary });
+  for (const name of ['closer', 'adapter', 'gateway', 'proxy', 'sessionProof', 'movie', 'audio', 'subtitles', 'tv']) input.sources[name] = pin(name + '.mjs');
+  const boundary = { kind: 'audited-candidate-client-boundary', version: 1, runId: manifest.runId, runtimeEpoch: review.sourceEpoch,
+    sourceBefore: input.sourceBefore, sourceAfter: review.snapshot, candidateBefore: candidate, candidateAfter: clone(candidate),
+    postgresBefore: sourceEpoch.postgresProcess, postgresAfter: clone(sourceEpoch.postgresProcess), leaseBefore: sourceEpoch.lease, leaseAfter: clone(sourceEpoch.lease),
+    database: sourceEpoch.candidate.database, beforeMonotonicNs: '100', afterMonotonicNs: '200',
+    clientWorker: { exitCode: 0, mainPID: 0, workerPidAbsent: true, remainingBrowserPids: [] },
+    gatewayWorker: { exitCode: 0, mainPID: 0, workerPidAbsent: true, index: input.gatewayIndex } };
+  const tables = value.before.tables, closeout = { kind: 'audited-candidate-subtitles-owned-state-closeout', status: 'owned_state_closed_client_acceptance_pending',
+    clientAcceptance: false, sourcePinsUnchanged: true, originalUIRejection: { originalObservationUnchanged: true }, inputEvidence: input, sourceState: { allSessionsRevoked: true,
+      afterSessions: tables.sessions.length, afterPlays: tables.play_sessions.length, afterUserData: tables.user_item_data.length,
+      afterClientReferences: tables.client_playback_references.length, afterEncodingJobs: tables.encoding_jobs.length } };
+  Object.assign(value.retained, { sourceEpoch, manifest, closeout, boundary });
+  return value;
+}
+
 function universalFixture(closer, scenario = 'mp3') {
   const currentManifest = { ...clone(manifest), scenario, catalog: { [scenario]: {
     id: ITEM, type: 'Audio', container: scenario, runtimeTicks: 6000000000 } } };
@@ -684,6 +756,140 @@ function guardCases(closer) {
       report.requests.push({ ...clone(row), ordinal: 104 });
       assert.deepEqual(closer.mediaContextEvidence(exchange, report), []);
     }],
+    ['reviewed_movie_v4_input_does_not_relax_legacy_authority', () => {
+      const value = reviewedFixture(closer), pin = value.retained.review.closeout;
+      const input = { kind: 'audited-candidate-client-closeout-input', version: 4, output: '/opt/goby-test/synthetic-reviewed/output',
+        sources: {}, retainedBaseline: pin, serverLog: pin };
+      for (const name of ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary']) input[name] = pin;
+      for (const name of ['closer', 'adapter', 'gateway', 'proxy', 'sessionProof', 'movie', 'audio', 'subtitles', 'tv']) input.sources[name] = pin;
+      closer.validateCloseoutInput(input); closer.validateReviewedMovieBaselineInput(value.retained.review);
+      for (const changed of [{ ...input, retainedBaseline: null }, { ...input, serverLog: null }, { ...input, unreviewed: true }, { ...input, version: 3 }])
+        assert.throws(() => closer.validateCloseoutInput(changed));
+      for (const mutate of [row => { row.version = 2; }, row => { row.scenario = 'mp3'; }, row => { row.extra = true; },
+        row => { row.preparedExpirations.push(clone(row.preparedExpirations[0])); }]) {
+        const changed = clone(value.retained.review); mutate(changed); assert.throws(() => closer.validateReviewedMovieBaselineInput(changed));
+      }
+    }],
+    ['reviewed_movie_binds_historical_closeout_source_manifest_and_current_actor', () => {
+      const value = reviewedFixture(closer);
+      assert.deepEqual(closer.validateReviewedMovieBaseline(value.retained, value.seed).map(row => row.id), [closer.RETAINED_PLAY]);
+      for (const mutate of [
+        row => { row.retained.closeout.inputEvidence.after = clone(row.retained.review.closeout); },
+        row => { row.retained.closeout.inputEvidence.epoch = clone(row.retained.review.runtimeEpoch); },
+        row => { row.retained.closeout.inputEvidence.manifest = clone(row.retained.review.snapshot); },
+        row => { row.retained.inputBinding.runtimeEpoch = clone(row.retained.review.sourceEpoch); },
+        row => { row.retained.inputBinding.seedBinding = clone(row.retained.review.snapshot); },
+        row => { row.seed.runtimeEpoch = clone(row.retained.review.sourceEpoch); },
+        row => { row.retained.sourceEpoch.currentSource.binary.sha256 = '0'.repeat(64); },
+        row => { row.retained.manifest.actor.id = 'e'.repeat(32); },
+        row => { row.retained.manifest.catalog.movie.runtimeTicks++; },
+        row => { row.retained.manifest.serverId = 'e'.repeat(32); },
+        row => { row.retained.closeout.failure = null; },
+        row => { row.retained.closeout.checks.savedRuntimeAndWorkers.workers.browser.pidAbsentAsRecorded = false; },
+      ]) { const changed = reviewedFixture(closer); mutate(changed); assert.throws(() => closer.validateReviewedMovieBaseline(changed.retained, changed.seed)); }
+    }],
+    ['reviewed_movie_rejects_unlisted_preparation_credentials_and_snapshot_ambiguity', () => {
+      for (const mutate of [
+        row => { row.retained.review.preparedExpirations = []; },
+        row => { row.retained.review.preparedExpirations[0].authSessionId = 'foreign'; },
+        row => { row.retained.snapshot.tables.sessions.push(clone(row.retained.snapshot.tables.sessions[0])); },
+        row => { row.retained.snapshot.tables.play_sessions.push(clone(row.retained.snapshot.tables.play_sessions[0])); },
+        row => { row.retained.snapshot.tables.sessions[1].revoked_at = null; },
+        row => { row.retained.snapshot.tables.play_sessions[0].user_id = 'e'.repeat(32); },
+        row => { row.retained.snapshot.tables.play_sessions[0].counted = true; },
+        row => { row.retained.snapshot.tables.client_playback_references.push({ user_id: CONTROL }); },
+        row => { row.retained.snapshot.tables.encoding_jobs.push({ user_id: CONTROL }); },
+        row => { row.retained.snapshot.tables.not_a_table = row.retained.snapshot.tables.task_runs; delete row.retained.snapshot.tables.task_runs; },
+        row => { row.retained.snapshot.tables.user_item_data.find(data => data.user_id === ACTOR).updated_at = '2026-01-01T00:00:00Z'; },
+      ]) { const changed = reviewedFixture(closer); mutate(changed); assert.throws(() => closer.validateReviewedMovieBaseline(changed.retained, changed.seed)); }
+    }],
+    ['reviewed_movie_before_preserves_all_tables_sequences_and_pruning_bounds', () => {
+      const value = reviewedFixture(closer);
+      closer.verifyRetainedMovieBefore(value.before, value.manifest, value.seed, value.retained);
+      for (const mutate of [
+        row => { row.before.tables.users.find(user => user.id === CONTROL).name = 'changed'; },
+        row => { row.before.tables.play_sessions.find(play => play.id === 'play_preserved_terminal').player_state.CanSeek = true; },
+        row => { row.before.tables.user_item_data.find(data => data.user_id === ACTOR).play_count++; },
+        row => { row.before.tables.user_item_data.find(data => data.user_id === CONTROL).is_favorite = 0; },
+        row => { row.before.sequences.theme_owner_ids_id_seq.lastValue = '8'; },
+        row => { row.before.capturedAt = '2026-01-09T00:00:00Z'; },
+      ]) { const changed = reviewedFixture(closer); mutate(changed); assert.throws(() => closer.verifyRetainedMovieBefore(changed.before, changed.manifest, changed.seed, changed.retained)); }
+    }],
+    ['reviewed_movie_expiration_is_explicit_and_does_not_reclassify_old_terminal_rows', () => {
+      const value = reviewedFixture(closer), before = jsonBytes(value.retained);
+      const proof = closer.verifyDurable(value.before, value.after, value.manifest, value.seed, value.physical, value.retained);
+      assert.equal(proof.countedPlays, 2);
+      assert.deepEqual(proof.retainedBaselineExpiration.playSessionIds, [closer.RETAINED_PLAY]);
+      assert.equal(proof.retainedBaselineExpiration.expirations[0].prepareOrdinal, 1);
+      assert.deepEqual(jsonBytes(value.retained), before);
+      const unchanged = closer.verifyReviewedMovieTransition(value.before, clone(value.before), value.manifest, value.seed,
+        { logins: [], chains: [], exchanges: [] }, value.retained);
+      assert.deepEqual(unchanged.playSessionIds, []);
+      const terminalOnly = reviewedFixture(closer);
+      for (const state of [terminalOnly.before, terminalOnly.retained.snapshot, terminalOnly.retained.movieProvenance.snapshot]) state.tables.play_sessions = state.tables.play_sessions.filter(row => row.state !== 'Prepared');
+      terminalOnly.retained.review.preparedExpirations = [];
+      assert.deepEqual(closer.verifyRetainedMovieBefore(terminalOnly.before, terminalOnly.manifest, terminalOnly.seed, terminalOnly.retained), []);
+    }],
+    ['reviewed_movie_uses_latest_subtitles_state_and_preserves_foreign_audio_references', () => {
+      const value = reviewedLatestFixture(closer), retainedBytes = jsonBytes(value.retained);
+      assert.notDeepEqual(value.retained.review.sourceEpoch, value.retained.review.movieProvenance.sourceEpoch);
+      assert.equal(value.before.tables.client_playback_references.length, 2);
+      closer.verifyRetainedMovieBefore(value.before, value.manifest, value.seed, value.retained);
+      const proof = closer.verifyDurable(value.before, value.after, value.manifest, value.seed, value.physical, value.retained);
+      assert.equal(proof.countedPlays, 2); assert.deepEqual(jsonBytes(value.retained), retainedBytes);
+      assert.deepEqual(value.before.tables.client_playback_references, value.after.tables.client_playback_references);
+    }],
+    ['reviewed_latest_state_cannot_replace_movie_provenance_or_worker_closure', () => {
+      for (const replacement of [undefined, null, true, {}, { originalObservationUnchanged: false }, { originalObservationUnchanged: 1 }]) {
+        const changed = reviewedLatestFixture(closer);
+        changed.retained.closeout.originalObservationUnchanged = true;
+        if (replacement === undefined) delete changed.retained.closeout.originalUIRejection;
+        else changed.retained.closeout.originalUIRejection = replacement;
+        assert.throws(() => closer.validateReviewedMovieBaseline(changed.retained, changed.seed), /reviewed_movie_closed_state_kind/);
+      }
+      for (const mutate of [
+        row => { row.retained.snapshot.tables.play_sessions.find(play => play.id === 'play_preserved_terminal').updated_at = '2026-01-01T00:00:01Z'; },
+        row => { row.retained.snapshot.tables.user_item_data.find(data => data.user_id === ACTOR).play_count++; },
+        row => { row.retained.boundary.clientWorker.workerPidAbsent = false; },
+        row => { row.retained.boundary.candidateAfter.pid++; },
+        row => { row.retained.boundary.gatewayWorker.index = clone(row.retained.review.snapshot); },
+        row => { row.retained.closeout.inputEvidence.sourceAfter = clone(row.retained.review.movieProvenance.snapshot); },
+        row => { row.retained.closeout.sourceState.afterClientReferences = 0; },
+        row => { row.retained.snapshot.tables.client_playback_references[0].auth_session_id = closer.RETAINED_AUTH; },
+        row => { row.retained.review.movieProvenance.sourceEpoch = clone(row.retained.review.sourceEpoch); },
+      ]) { const changed = reviewedLatestFixture(closer); mutate(changed); assert.throws(() => closer.validateReviewedMovieBaseline(changed.retained, changed.seed)); }
+      for (const [table, key, field] of [['users', 'id', 'name'], ['sessions', 'user_id', 'client_version']]) {
+        const changed = reviewedLatestFixture(closer);
+        changed.retained.snapshot.tables[table].find(row => row[key] === ACTOR)[field] = 'changed-history';
+        assert.throws(() => closer.validateReviewedMovieBaseline(changed.retained, changed.seed), /reviewed_movie_provenance_state_changed/);
+      }
+      for (const table of ['client_playback_references', 'encoding_jobs']) for (const owner of [
+        { user_id: ACTOR }, { user_id: CONTROL, auth_session_id: closer.RETAINED_AUTH }, { user_id: CONTROL, play_session_id: closer.RETAINED_PLAY },
+      ]) {
+        const changed = reviewedLatestFixture(closer);
+        changed.retained.snapshot.tables[table].push(owner);
+        changed.retained.closeout.sourceState[table === 'encoding_jobs' ? 'afterEncodingJobs' : 'afterClientReferences']++;
+        assert.throws(() => closer.validateReviewedMovieBaseline(changed.retained, changed.seed), /reviewed_movie_credentials_or_residue/);
+      }
+      const changed = reviewedLatestFixture(closer);
+      changed.after.tables.client_playback_references[0].client_nonce = 'changed-foreign-nonce';
+      assert.throws(() => closer.verifyDurable(changed.before, changed.after, changed.manifest, changed.seed, changed.physical, changed.retained), /foreign_actor_state_changed_client_playback_references/);
+    }],
+    ['reviewed_movie_expiration_requires_one_successful_new_owned_preparation', () => {
+      for (const mutate of [
+        row => { row.after.tables.play_sessions.find(play => play.id === closer.RETAINED_PLAY).position_ticks++; },
+        row => { row.after.tables.play_sessions.find(play => play.id === closer.RETAINED_PLAY).stopped_at = '2026-01-01T00:00:05Z'; },
+        row => { row.after.tables.play_sessions.find(play => play.id === 'play_preserved_terminal').updated_at = '2026-01-01T00:00:01Z'; },
+        row => { row.physical.logins[0].infos[0].exchange.complete = false; },
+        row => { row.physical.logins[0].infos[0].exchange.response.status = 500; },
+        row => { row.physical.logins[0].infos[0].exchange.tokenHash = '0'.repeat(64); },
+        row => { row.physical.logins[0].infos[0].body.UserId = CONTROL; },
+        row => { row.physical.logins[0].infos[0].itemId = CONTROL; },
+        row => { row.physical.logins[0].sessionId = closer.RETAINED_AUTH; },
+        row => { row.physical.logins[0].infos[0].value.PlaySessionId = closer.RETAINED_PLAY; },
+        row => { row.physical.logins[0].infos.push({ ...row.physical.logins[0].infos[0] }); },
+      ]) { const changed = reviewedFixture(closer); mutate(changed); assert.throws(() => closer.verifyReviewedMovieTransition(changed.before, changed.after, changed.manifest, changed.seed, changed.physical, changed.retained)); }
+    }],
     ['partial_media_rejects_missing_abort_time_wrong_error_duplicates_or_no_action', () => {
       for (const [name, mutate, expected] of [
         ['missing_time', value => { delete value.report.requests[0].failed_elapsed_ms; }, /media_partial_not_browser_abort/],
@@ -1108,10 +1314,62 @@ async function savedCurrentLineageReplay(closer) {
     browserInputsCreated: 0, httpCalls: 0, sqlCalls: 0, serviceCalls: 0, clientAcceptance: false };
 }
 
+async function savedReviewedBaselineReplay(closer, inputPin) {
+  const exactKeys = (value, keys) => value !== null && typeof value === 'object' && !Array.isArray(value) &&
+    JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
+  const read = async pin => {
+    assert(exactKeys(pin, ['path', 'sha256']) && typeof pin.path === 'string' && path.isAbsolute(pin.path) && !pin.path.split(path.sep).includes('..') && /^[a-f0-9]{64}$/.test(pin.sha256));
+    const handle = await fs.open(pin.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const before = await handle.stat({ bigint: true });
+      assert(before.isFile() && before.uid === 0n && before.nlink === 1n && (before.mode & 0o777n) === 0o600n && before.size > 0n && before.size <= 33554432n);
+      const bytes = await handle.readFile(), after = await handle.stat({ bigint: true }), current = await fs.lstat(pin.path, { bigint: true });
+      assert(['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs', 'mode'].every(key => before[key] === after[key] && before[key] === current[key]));
+      assert.equal(sha(bytes), pin.sha256); return closer.strictJSON(bytes);
+    } finally { await handle.close(); }
+  };
+  const input = await read(inputPin);
+  assert(exactKeys(input, ['kind', 'version', 'cases']) && input.kind === 'audited-candidate-reviewed-baseline-replay-input' && input.version === 1);
+  assert.deepEqual(input.cases.map(row => row.name), ['movie05', 'movie06', 'latest-subtitles']);
+  const expected = { movie05: [13, 5, 0], movie06: [14, 6, 0], 'latest-subtitles': [21, 13, 2] }, results = [];
+  for (const entry of input.cases) {
+    assert(exactKeys(entry, ['name', 'review', 'seed', 'inputBinding']) && exactKeys(entry.inputBinding, ['runtimeEpoch', 'seedBinding']));
+    assert.deepEqual(entry.seed, entry.inputBinding.seedBinding);
+    const seed = await read(entry.seed), retained = await closer.readReviewedMovieBaseline(entry.review, entry.inputBinding, seed);
+    const manifest = { scenario: 'movie', actor: retained.review.actor }, snapshot = retained.snapshot, original = sha(jsonBytes(retained));
+    assert.deepEqual([snapshot.tables.sessions.length, snapshot.tables.play_sessions.length, snapshot.tables.client_playback_references.length], expected[entry.name]);
+    assert.equal(retained.review.preparedExpirations.length, 1);
+    closer.verifyRetainedMovieBefore(clone(snapshot), manifest, seed, retained);
+    let rejectedChanges = 0;
+    for (const table of Object.keys(snapshot.tables)) {
+      const changed = clone(snapshot); changed.tables[table].push({ unreviewed: true });
+      assert.throws(() => closer.verifyRetainedMovieBefore(changed, manifest, seed, retained), /retained_movie_fresh_state_changed/); rejectedChanges++;
+    }
+    for (const name of Object.keys(snapshot.sequences)) {
+      const changed = clone(snapshot); changed.sequences[name].lastValue = changed.sequences[name].lastValue === '0' ? '1' : '0';
+      assert.throws(() => closer.verifyRetainedMovieBefore(changed, manifest, seed, retained), /retained_movie_fresh_state_changed/); rejectedChanges++;
+    }
+    if (entry.name === 'latest-subtitles') {
+      assert.equal(retained.manifest.scenario, 'subtitles'); assert.equal(retained.movieProvenance.manifest.scenario, 'movie');
+      assert(snapshot.tables.client_playback_references.every(row => row.user_id !== manifest.actor.id));
+      const changed = clone(snapshot); changed.tables.client_playback_references[0].client_nonce += '-changed';
+      assert.throws(() => closer.verifyRetainedMovieBefore(changed, manifest, seed, retained), /retained_movie_fresh_state_changed/); rejectedChanges++;
+    } else assert.equal(retained.manifest.scenario, 'movie');
+    assert.equal(sha(jsonBytes(retained)), original);
+    results.push({ name: entry.name, review: entry.review, sourceSnapshot: retained.review.snapshot, movieProvenance: retained.review.movieProvenance,
+      tablesCompared: Object.keys(snapshot.tables).length, sequencesCompared: Object.keys(snapshot.sequences).length,
+      rejectedSnapshotChanges: rejectedChanges, foreignClientReferencesPreserved: snapshot.tables.client_playback_references.length,
+      preparedExpirationsExplicitlyReviewed: retained.review.preparedExpirations.length, productionLoader: 'readReviewedMovieBaseline',
+      originalInMemoryEvidenceUnchanged: true, browserInputsCreated: 0, httpCalls: 0, sqlCalls: 0, serviceCalls: 0, clientAcceptance: false });
+  }
+  return results;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const replay = args.length === 5 && args[4] === '--replay-retained-snapshot';
-  assert((args.length === 4 || replay) && args[0] === '--source' && args[2] === '--output', 'arguments_required');
+  const reviewed = args.length === 8 && args[4] === '--reviewed-baselines' && args[6] === '--reviewed-baselines-sha256';
+  assert((args.length === 4 || replay || reviewed) && args[0] === '--source' && args[2] === '--output', 'arguments_required');
   assert(process.platform === 'linux' && process.getuid?.() === 0, 'remote_linux_root_required');
   const source = path.resolve(args[1]), output = args[3], ownPath = fileURLToPath(import.meta.url);
   await protectedOutput(output); process.umask(0o077);
@@ -1124,7 +1382,7 @@ async function main() {
     catch (error) { tests.push({ name, outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'pure_guard_assertion_failed' }); }
   }
-  let replayedPins = [], currentLineageReplay = null;
+  let replayedPins = [], currentLineageReplay = null, reviewedBaselineReplay = [];
   if (replay) {
     try { replayedPins = await savedRetainedReplay(closer); tests.push({ name: 'saved_movie04_complete_durable_comparison_with_synthetic_new_play', outcome: 'passed' }); }
     catch (error) { tests.push({ name: 'saved_movie04_complete_durable_comparison_with_synthetic_new_play', outcome: 'failed', errorType: error.name,
@@ -1133,9 +1391,16 @@ async function main() {
     catch (error) { tests.push({ name: 'saved_current_epoch3_admission05_through_production_loader', outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'current_saved_replay_assertion_failed' }); }
   }
+  if (reviewed) {
+    try {
+      reviewedBaselineReplay = await savedReviewedBaselineReplay(closer, { path: args[5], sha256: args[7] });
+      for (const row of reviewedBaselineReplay) tests.push({ name: 'saved_reviewed_baseline_' + row.name.replaceAll('-', '_'), outcome: 'passed' });
+    } catch (error) { tests.push({ name: 'saved_reviewed_baselines', outcome: 'failed', errorType: error.name,
+      failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'saved_reviewed_baseline_assertion_failed' }); }
+  }
   const unchanged = (await Promise.all(Object.entries(sources).map(async ([filename, digest]) => sha(await fs.readFile(filename)) === digest))).every(Boolean);
   const report = { kind: 'audited-candidate-client-closeout-pure-guards', version: 1,
-    scope: 'Pure synthetic fixtures; optional saved movie04/admission04 and actual epoch3/admission05 through the production lineage loader. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay,
+    scope: 'Pure synthetic fixtures; optional saved movie04/admission04 and actual epoch3/admission05 lineage, or three explicitly reviewed saved baselines through the production loader. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay, reviewedBaselineReplay,
     source: { path: source, sha256: sources[source] }, sources, output, testCount: tests.length,
     passed: tests.filter(row => row.outcome === 'passed').length, failed: tests.filter(row => row.outcome !== 'passed').length,
     sourceUnchanged: unchanged, tests, clientAcceptanceClaim: false, endToEndExecuted: false,
@@ -1147,7 +1412,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (replay ? 37 : 35) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (reviewed ? 46 : replay ? 45 : 43) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

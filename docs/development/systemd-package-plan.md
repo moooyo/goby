@@ -5,7 +5,7 @@ resource closure passed. The first installation prepared successfully but its
 runtime controller failed before Goby started. Owned services stopped, and the
 failed installation now has independently reviewed evidence preservation,
 archive readback and resource closure. The first preservation-checker rejection
-is also retained. Installation acceptance remains
+is also retained. At that first-attempt checkpoint, installation acceptance remained
 open. The [second attempt](systemd-installation-second-attempt.json) also failed
 when the controller sampled the transient executor before final exec. Its
 services, installation and PG tmpfs are closed, with independent failure-evidence
@@ -17,8 +17,10 @@ passed independent preservation/closure readback. The
 prestart gate, two nonroot starts/stops, 272 HTTP requests, six observers and
 three snapshots. Its sealer then rejected a valid plain-text Emby 401 response
 because its reader required JSON. Failure preservation and independent archive/
-directory/resource readback passed; the final sealer observer did not run, so full installation
-acceptance remains open. No fifth attempt is admitted. See also
+directory/resource readback passed; the original final sealer observer did not run.
+The separately reviewed [archived final-state proof](r04-archived-catalog-verification.md)
+now completes [internal amd64 installation acceptance](internal-amd64-installation-acceptance.json).
+The original failures remain unchanged and no further installer run is queued. See also
 the [first attempt](systemd-installation-first-attempt.json). Reviewed on
 2026-09-15. The M5 increment completed focused/browser
 acceptance, its 25-package ordinary regression (2,295 passes, zero failures and

@@ -1,0 +1,186 @@
+{
+  "kind": "internal-amd64-systemd-installation-acceptance",
+  "version": 1,
+  "date": "2026-09-15",
+  "status": "accepted_with_independent_supplemental_final_state_proof",
+  "artifact": {
+    "binarySha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1",
+    "binaryBytes": 30691123,
+    "packageSha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a",
+    "platform": "linux/amd64",
+    "deployment": "nonroot systemd"
+  },
+  "scope": "Internal package installation, bootstrap/catalog behavior, two normal application starts/stops, private final-state preservation and owned resource closure.",
+  "originalRuntime": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/execution.json",
+    "sha256": "6e7c5bd7cc93dd2471a059b4244e077a717dd7330e84f055f5da932c1c2c3d79",
+    "applicationStarts": 2,
+    "normalApplicationExits": 2,
+    "httpRequests": 272,
+    "runtimeSqlObservers": 6,
+    "fullSqlSnapshots": 3,
+    "automaticRestarts": 0,
+    "errorEvents": 0
+  },
+  "httpReview": {
+    "path": "/opt/goby-test/review-resume-20260915-r04/result.json",
+    "sha256": "ef6d84f43e9e9532329f357ef2144bbc60556f9ca12dd513be7b7dc8bb03d4ac",
+    "strictIndependentReview": {
+      "path": "/opt/goby-test/review-resume-20260915-r04-independent/result.json",
+      "sha256": "d92c1f380c3273017435e0ab3f5cb7252551c3a6d53e3b8d6c510d066f08e22c"
+    },
+    "scope": "All 272 saved responses under the precise Emby/native-administrator response contracts; original request authentication headers were not captured from the wire."
+  },
+  "originalPreservation": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/independent-failure-preserve-readback.json",
+    "sha256": "e9d51b8c88fcb0f7432dfd40e71d2c1b766dc65f8b46a18f8dd1e6781ed447bf"
+  },
+  "closedArchive": {
+    "path": "/opt/goby-test/m6-systemd-install-20260915-r04/private/failure-preserve-retained/closed-postgres-private.tar.gz",
+    "sha256": "cddb636d2651c06466d12eb62c13f9fce9883239513cb9c5b994f25a368beea9",
+    "bytes": 6950651
+  },
+  "archivedFinalState": {
+    "result": {
+      "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/result.json",
+      "sha256": "0ecae4928ae0a566c9b7cbf2691acb34874e5511b05959c4c85c4f2a263e13c6",
+      "bytes": 23435
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/independent-review.json",
+      "sha256": "d8f908c4e435452ad4b2fb532a6a759067130d2bfd9ec6c5a50ed4f6dcae97b3",
+      "bytes": 19763
+    },
+    "tables": 9,
+    "rows": 59,
+    "rowXminExact": true,
+    "revokedSessions": 8,
+    "sessionProjection": "id, userId, kind, tokenHash, revokedAt",
+    "schemaAndServerIdExact": true,
+    "controlBefore": {
+      "rawSha256": "ef9ad6e738815d9f15de42cfd6bf3e6f74639952e892520d27705fd5d16dd5b1",
+      "state": "shut down",
+      "systemId": "7685612871724925995"
+    },
+    "controlAfter": {
+      "rawSha256": "b0cf98574803ca25323646edb36ddfa6cb6606d9894968725858516560a6d88e",
+      "state": "shut down",
+      "systemId": "7685612871724925995"
+    },
+    "child": {
+      "childIdentity": {
+        "cgroup": "0::/user.slice/user-0.slice/session-5712.scope",
+        "exe": "/usr/lib/postgresql/17/bin/postgres",
+        "networkNamespace": "net:[4026531840]",
+        "pid": 1171044,
+        "startTicks": "17962388",
+        "uid": 103
+      },
+      "childExit": {
+        "code": 1,
+        "status": 0
+      },
+      "childClosed": true,
+      "postgresStarts": 1,
+      "standaloneSqlInputs": 1
+    },
+    "outputs": {
+      "single.stdout": {
+        "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/single.stdout",
+        "sha256": "c40fe4a5b396079a2326cd0bdba22151f632f39af3a849741235e8fd6fd4c183",
+        "bytes": 99336
+      },
+      "single.stderr": {
+        "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/single.stderr",
+        "sha256": "df2d9f0ccb8883c5125fc94db44bb1fb56d07f927cac802c020fe7cec0f721bf",
+        "bytes": 373
+      },
+      "standalone.sql": {
+        "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/standalone.sql",
+        "sha256": "0d3edbdab57955f2283c9afceb821d35883609db567a1f19b816ee5937f49a3b",
+        "bytes": 4165
+      },
+      "standalone-parsed-private.json": {
+        "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/standalone-parsed-private.json",
+        "sha256": "17811ecbc588107527675bb17123010730051422764171aca65e90b7fc8b4287",
+        "bytes": 45990
+      },
+      "copy-manifest.json": {
+        "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0002/private/copy-manifest.json",
+        "sha256": "62099b7e5387d9af1a3300020ee05301f1f0ac057851a9a900bc8eec4c0e9173",
+        "bytes": 254827
+      }
+    },
+    "comparison": {
+      "allEightRevokedSessionsExact": true,
+      "concurrentIsolationOrOriginalObserverClaimed": false,
+      "naturalSingleUserExitZero": true,
+      "nineTablesAndXminExact": true,
+      "schemaAndServerIdExact": true
+    },
+    "commands": 18,
+    "closure": {
+      "volumeClosed": true,
+      "lockReleased": true,
+      "retainedEmptyDirectories": [
+        "/opt/goby-r04-archive-20260915-copy0002",
+        "/opt/goby-r04-archive-20260915-copy0002/pg"
+      ],
+      "cleanupErrors": []
+    },
+    "protectedMetadataUnchanged": true
+  },
+  "source": {
+    "path": "scripts/test-env/verify-r04-archived-catalog.py",
+    "sha256": "d7e6d972f7af69d50422958a2070dbd7465b4a5552c635a2d5684fde7044dcfc",
+    "bytes": 42409
+  },
+  "verification": {
+    "tests": 15,
+    "passed": 15,
+    "failed": 0,
+    "dispatch": {
+      "path": "/opt/goby-test/review-resume-20260915-r04-archive-checks-03/private/dispatch.json",
+      "sha256": "7e4561913e5b247b387bda76b972812facb1c5a1cb405da462a6fa3c2da0d3d2"
+    },
+    "input": {
+      "path": "/opt/goby-test/review-resume-20260915-r04-archive-checks-03/private/execution-preparation/input.json",
+      "sha256": "1929eb18ce9077524c20d2c85bbdc904c732fdc8031742da40f5ad370b36b459"
+    },
+    "inputReview": {
+      "path": "/opt/goby-test/review-resume-20260915-r04-archive-checks-03/private/input-review.json",
+      "sha256": "5deb7468036517bbf76a4beebecc7aa92ac6c7d822b3f72efff07ed9bf89de56"
+    },
+    "executionDispatch": {
+      "path": "/opt/goby-test/review-resume-20260915-r04-archive-checks-03/private/execution-preparation/execution-dispatch.json",
+      "sha256": "b43bfbf447554eee650bc43f859228e6af6af92fbb81ccfe98d6071959f2ef4b"
+    }
+  },
+  "retainedFailures": {
+    "originalSealerPassed": false,
+    "originalFinalSqlExecuted": false,
+    "originalInstallationReceiptRewritten": false,
+    "firstCopyResult": {
+      "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0001/private/result.json",
+      "sha256": "d1a0f750dbd5299ad714948583d852815b71a094bb5ae73a0424c63f5e572a95"
+    },
+    "firstCopyIndependentClosure": {
+      "path": "/opt/goby-test/r04-archived-catalog-20260915-copy0001/private/independent-failure-review.json",
+      "sha256": "773ca7dff4313a17710db0c3ce6194c180695d875a0102c8ff1ca5789dc6707f"
+    }
+  },
+  "acceptanceReason": "Original nonroot runtime, complete saved HTTP review, original resource preservation and the independent archived post-stop row/session comparison jointly satisfy the internal installation gate. The absent historical final transaction is not claimed to have occurred.",
+  "supplementalGobyStarts": 0,
+  "supplementalBusinessHttpRequests": 0,
+  "originalFinalObserverRecreated": false,
+  "g2InternalInstallationAccepted": true,
+  "g1CoreClientAccepted": false,
+  "g3MainPromotionAccepted": false,
+  "wholeM6Accepted": false,
+  "wholeM2M6Accepted": false,
+  "limitations": [
+    "The standalone archive reader uses an implicit superuser and does not recreate the original final observer's role, PID or timing.",
+    "No native arm64, GPU, OCI, host-reboot/power-loss durability, main upgrade or external-distribution acceptance follows.",
+    "Historical failed installation and copy receipts remain unchanged; no consumed input is reopened."
+  ]
+}
