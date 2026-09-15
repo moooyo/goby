@@ -1,6 +1,12 @@
 # Current implementation and delivery status
 
 Current priority on 2026-09-16: **bounded Library diagnosis and successor artifact preparation**.
+Execution is currently blocked on the unanswered coordinated heavy-work window.
+Independent source preparation is retained in five branches. The remaining-work
+audit found that the next useful steps require held verification or new profile
+facts, rather than another speculative fix or controller. Complete M2-M6
+delivery remains unfinished and in scope. Resume with the existing theme
+diagnostic snapshot when the resource window is explicitly available.
 After the [incident](programs-final-regression-incident.json), the
 [recovery checkpoint](candidate-lease-loss-recovery.json) independently accepts
 both once-only application starts with unchanged binaries/configuration,
@@ -1079,6 +1085,17 @@ were corrected in source. The plugin records a bundler observation, requiring a
 separate successful command result; it does not claim final per-module byte
 shares or legal completeness. The branch is not merged and does not add a
 frontend rebuild to the current Programs critical path.
+
+The [initial OCI source profile](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md)
+is committed and pushed at `18cd4ef` on `codex/m6-oci-package`, in
+`D:/Code/goby-oci-package`. It defines a fixed Linux amd64 software recipe,
+FFmpeg/ffprobe 9.0.1, PostgreSQL 17 clients, a selected-release file checker and
+the nonroot/read-only Compose/storage/signal contract. Twelve checker test
+methods remain unexecuted. Registry/snapshot metadata and the small header-source
+archive were read; that archive was hashed remotely. No image layer was pulled,
+no Docker daemon/builder was inspected or created, and no image, service or test
+ran. Static reviews and corrections do not prove package resolution, runtime
+dependency closure, reproducibility, media/backup/stop behavior or legal completeness.
 
 ## Verification policy
 

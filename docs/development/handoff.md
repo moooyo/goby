@@ -2,6 +2,13 @@
 
 Current session checkpoint: **2026-09-16, A/B recovery, ready consumer v2 envelope
 and frozen client components passed; independent diagnostic and M5 source drafts are retained**.
+Execution is blocked pending the unanswered coordinated `test-env` window.
+The five preparation branches below preserve the available independent work;
+none supplies runtime acceptance for its prepared changes or new successor
+authority. A remaining-work audit found
+no necessary bounded implementation that can replace the held checks or missing
+profile facts. Do not treat an automatic goal continuation as a window response.
+Resume with the existing original theme subcase and retain the full M2-M6 scope.
 Start with the [incident record](programs-final-regression-incident.json), the [current execution plan](../planning/current-execution-plan.md),
 [core resolution](core-client-acceptance-resolution.md),
 [successor transition decision](e11-candidate-transition-decision.md), and
@@ -68,6 +75,16 @@ on invalid inputs. Node tests, type checking, actual Vite/build hooks, capture o
 and release consumption remain unverified. Use it with the next required
 frontend build after the coordinated window is available; no historical E11
 rebuild or merge into the frozen Programs source is implied.
+
+The [OCI software recipe](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md)
+is now `18cd4ef` on `codex/m6-oci-package`, in `D:/Code/goby-oci-package`.
+It retains fixed base/source metadata and a source-only Linux amd64 build/runtime
+profile with an input checker and 12 unexecuted test methods. Source reviews
+corrected stage gating, explicit TLS roots, fixed tool/storage paths and safe
+partial-output retention. No application artifact is selected; no Docker image,
+builder, daemon or container was created. Read the profile's explicit builder,
+storage, UID, database/TLS and verification prerequisites before any execution.
+GPU, native arm64, full dependency/legal material and runtime acceptance remain open.
 
 The [Programs focused result](live-tv-programs-focused-verification.json) has
 14 top-level and 118 subtest passes with independent result/resource review.

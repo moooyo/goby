@@ -1,6 +1,13 @@
 # Current execution plan
 
 Current priority: **bounded Library diagnosis and successor artifact preparation**.
+Execution is blocked pending the existing coordinated `test-env` heavy-work
+window. The currently actionable independent source preparations are retained
+below; none is runtime acceptance. A remaining-work audit found no necessary
+bounded implementation to substitute for the held verification or missing
+profile facts. Resume with the original theme subcase when the window is
+explicitly available, then let its observed result determine the product fix.
+Keep the complete M2-M6 objective; M7 remains deferred.
 Following the [incident](../development/programs-final-regression-incident.json),
 [A/B application recovery and scoped preservation](../development/candidate-lease-loss-recovery.json)
 passed independent review. Both existing binaries/configurations started once;
@@ -554,7 +561,7 @@ workspace outside every new resource budget.
 
 ### Isolated preparation checkpoints
 
-The September 16 preparation is committed on four independent branches. None
+The September 16 preparation is committed on five independent branches. None
 changes main's frozen Programs product source or supplies execution
 authority. The coordinated heavy-work window remains pending.
 
@@ -564,6 +571,7 @@ authority. The coordinated heavy-work window remains pending.
 | `codex/m5-user-deletion`, `5c25ead` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/5c25ead2f780cb7ae3f50c39075468bf42c5d419/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests; static review and remote gofmt complete | Generate the real schema29 catalog and execute the prepared historical-source/current-target, deletion-audit and rejected-old-schema-archive cases, then complete Go/DB/HTTP/browser and final verification. No migration, browser or M5 acceptance is claimed; do not merge it into the frozen Programs increment |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md): sample/process/content/stage layers now connect to native APIs, a Settings panel, one owned execution, actual conversion capacity, current native authority, cancellation and bounded per-instance history. The prior 12/18/27 cases plus 40 new Go functions (39 on Linux) and three synthetic browser cases remain unexecuted; static review and remote formatting complete | In the coordinated window, verify Go/type/build and native HTTP/browser behavior, actual resource/deployment prerequisites, codec-log compatibility and content calibration, then execute software/available hardware profiles. Defaults remain disabled and no service configuration was activated. No runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture draft](https://github.com/moooyo/goby/blob/43a9b76a93615b7f872f48dae4e9b3a73ca050b0/docs/development/frontend-contribution-capture.md): Vite records module/source/package and actual asset hashes outside `dist`; release verifies the full asset set and preserves a private copy. Chunk names and explicitly unattributed `.js/.mjs/.cjs` files must partition the selected JavaScript assets. Seven producer top-level cases/eight subcases and five synthetic CLI cases/nine subcases are authored but unexecuted. Static review covers source/package boundaries, report-parent replacement and final source/copy mutation guards | At the next independently required frontend build, run Node/type checks and actual callback/asset/consumer verification in the coordinated window. Include `web/admin/build/` in the source snapshot and retain the successful command receipt with the sidecar. No unchanged E11 rebuild, Programs artifact change, build success or legal completeness is claimed |
+| `codex/m6-oci-package`, `18cd4ef` | [Linux amd64 OCI software draft](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md): fixed Debian manifest/snapshots, selected-release input checker, FFmpeg 9.0.1 source recipe, PG17 clients and nonroot/read-only Compose profile. Twelve checker methods are authored but unexecuted. Static review corrected stage admission, TLS root paths, fixed runtime paths and partial-output retention | Select an actually verified release and establish the builder/runtime/resource boundary in the coordinated window. Run checker/Compose/image and nonroot media/backup/stop verification; retain exact image, tool, package and source identities. No application artifact is selected, no image is built/pulled/started, and GPU/arm64/reproducibility/legal acceptance remain open |
 
 These are preparation checkpoints, not successful runtime observations. Do not
 restart recovered applications, replay old inputs or rerun completed component
