@@ -55,8 +55,28 @@ the appended migration-manifest digest. The preparation record is
 Formatting is not a Go compile, type check, migration test or browser result.
 The snapshot precedes this evidence note and is not an executable worker input.
 
+Backup/restore test wiring now separates source and target versions. Explicit
+schema23-27 source fixtures retain their original facts and migrate to target29.
+The root-binding cases retain explicit source28 archives, compare every historical
+row and sequence, and expect target29. Current snapshot and extra fixtures use
+schema29 for both ends. The pure historical catalog28 parser and migration boundaries
+remain unchanged.
+
+Two additional regressions are prepared: a schema29 archive roundtrip that
+retains a committed deletion's historical actor/session IDs and exact table and
+sequence facts, and a schema28 decoded stream containing the later user.deleted
+action. The latter preserves the original archive, computes matching modified
+row fingerprints through a rollback-only temporary view, and requires rejection
+before the latest-version upgrade or finalization, with an empty rolled-back target. Its unchanged
+archive control first reaches a deliberately refusing current-schema finalizer.
+These are test definitions, not observed results.
+
+The eleven changed test files were formatted remotely. Their source-preparation
+record is
+`/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/m5-restore-source-20260916-01/source-preparation.json`
+(8,211 bytes, SHA-256
+`796c7bb8a13cdf80fa39760ac865072e0fac30907e13d49b2f1c8fcfa093c5a5`).
+No tests, build, SQL or service operation ran during this preparation.
+
 The actual schema29 catalog, backup/restore version-boundary acceptance and all
-runtime verification remain open. Historical source-schema assertions must stay
-bound to their original archives; assertions about a restore's latest target
-must be reconciled with the real schema29 export before execution. No skip or
-synthetic catalog replaces that work.
+runtime verification remain open. No skip or synthetic catalog replaces that work.
