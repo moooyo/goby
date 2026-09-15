@@ -546,18 +546,26 @@ workspace outside every new resource budget.
 
 ### Isolated preparation checkpoints
 
-The September 16 preparation is committed on two independent branches. Neither
-branch changes main's frozen Programs product source or supplies execution
+The September 16 preparation is committed on three independent branches. None
+changes main's frozen Programs product source or supplies execution
 authority. The coordinated heavy-work window remains pending.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
 | `codex/programs-theme-diagnosis`, `3d6b79b` | [Bounded test diagnostics](https://github.com/moooyo/goby/blob/3d6b79b36b6a5050e174f7a152f214b9356608c8/docs/development/library-theme-diagnostic-preparation.md): original wait/phase/cleanup information, unchanged assertions and budgets; static review and remote gofmt complete | Select the new source/input and existing disposable worker in the coordinated window; run the original theme subcase once. No test or root-cause result exists yet |
 | `codex/m5-user-deletion`, `5c25ead` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/5c25ead2f780cb7ae3f50c39075468bf42c5d419/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests; static review and remote gofmt complete | Generate the real schema29 catalog and execute the prepared historical-source/current-target, deletion-audit and rejected-old-schema-archive cases, then complete Go/DB/HTTP/browser and final verification. No migration, browser or M5 acceptance is claimed; do not merge it into the frozen Programs increment |
+| `codex/m5-media-diagnostics`, `b20df21` | [Fixed diagnostic core](https://github.com/moooyo/goby/blob/b20df21b02a9813e6d505783382b14f79cc7f5e5/docs/development/media-diagnostics.md): fixed YUV420P/PCM sample generators for the H.264/AAC baseline, closed decode/encode/combined plans, and twelve unexecuted pure tests; static review and remote gofmt complete | Implement the executor, actual reference/output verification, resource and administrator admission, cancellation/result retention, API and Settings UI. Then verify software and available hardware profiles. No diagnostic has executed, and no API/UI or M5 acceptance exists |
 
 These are preparation checkpoints, not successful runtime observations. Do not
 restart recovered applications, replay old inputs or rerun completed component
 groups to refresh their labels.
+
+The diagnostic prerequisite inventory found no visible DRM/NVIDIA device or
+loaded i915/xe/nvidia/amdgpu module in the observed test-env host namespace. The
+explicit project FFmpeg/ffprobe files exist, but their execution identity and
+service access were not tested. Hardware execution needs a suitable device and
+driver/service profile; software verification still awaits the coordinated
+window. Keep enumeration, planned arguments and actual execution results distinct.
 
 ### Delivery order
 

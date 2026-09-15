@@ -21,9 +21,11 @@ verification; the ready envelope alone is not an executable Programs input.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
-now retain a reviewed test-diagnostic branch and a separate native user-deletion
-implementation draft. Remote formatting is complete; their tests, migration and
-browser acceptance remain unexecuted. Main's Programs product source is unchanged.
+now retain a reviewed test-diagnostic branch, a native user-deletion draft, and
+the fixed sample/command-plan core for media diagnostics. The media executor,
+administrator API and UI are still absent. Remote formatting is complete; tests,
+migration and browser acceptance remain unexecuted. Main's Programs product
+source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 
