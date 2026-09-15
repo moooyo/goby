@@ -173,7 +173,9 @@ func BuildDiagnosticPlan(mode DiagnosticMode, sample DiagnosticSampleKind, profi
 			HardwareEncodeMustBeObserved: encode != "none" && encode != "software"}}
 	// Thread counts and max_alloc constrain codec work and individual allocator
 	// requests. They are not a total RSS, driver-memory, or process/thread limit.
-	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+verbose", "-xerror",
+	// Actual get_format decisions are debug-level evidence. The bounded stderr
+	// consumer still rejects truncation; argument selection alone is not proof.
+	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+debug", "-xerror",
 		"-max_alloc", strconv.Itoa(DiagnosticAllocationLimit), "-filter_threads", "1", "-filter_complex_threads", "1"}
 	if hardware {
 		args = diagnosticHardwareDevice(args, backend, device)

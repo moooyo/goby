@@ -39,11 +39,12 @@ remain separate from these execution results.
 ## Implementation boundaries
 
 The first code increment is the fixed sample and command-plan layer with pure
-contract tests. The next source increment adds an internal Linux process session
-and decoded-content validators. Neither is wired to an administrator operation.
-Stage orchestration, preparation/reference records, actual codec/hardware evidence,
-admission/cancellation, result retention and Settings UI remain to be connected
-and verified before this feature is complete.
+contract tests. The subsequent source increments add an internal Linux process
+session, decoded-content validators and a stage pipeline with independent
+preparation/reference records and codec-log evidence. None is wired to an
+administrator operation. Execution ownership/admission, deployment prerequisites,
+result retention and Settings UI remain to be connected and verified before
+this feature is complete.
 
 Reuse the existing process-group and borrowed-file-descriptor primitives. Do not
 create a second Manager against the live transcode repository: its recovery path
@@ -125,6 +126,56 @@ of the audio content policy. Static review identified partial-owner
 loss and a same-UID scratch-permission weakness; both were corrected and reviewed
 again before formatting. No actual cgroup/fork/cancellation/media result or
 supported deployment profile has been verified by this source preparation.
+
+The stage pipeline now prepares H.264, first-generation AAC and second-generation
+AAC in separate software commands. The second AAC reference uses the actual
+combined plan over the first compressed input. Every preparation is decoded and
+compared with the original generated sample before dependent stages can use it.
+Formal decode, encode and combined stages use new commands; encode/combined
+outputs receive an additional software decode. Actual decoded bytes, waveform
+alignment and physical ADTS packet counts are compared with the applicable
+independent reference. Video encoding can still be checked against the raw
+fixture when an unrelated preparation or stage fails.
+
+The fixed graph has 17 commands for the software video/audio baseline and 22
+when configured hardware video is included, counting the version command and
+all preparation/verification work. These are graph counts, not observed runs or
+a promise that the total deadline can accommodate every worst-case command.
+Cancellation interrupts the active session even when its parent context differs
+from the graph's parent. Completed stages remain preserved; remaining stages
+are explicitly not run. Resource/identity/closure failures stop further dispatch,
+while independent codec stages may continue after an ordinary codec failure.
+
+The bounded FFmpeg parser follows the n9.0.1 source grammar for actual stream
+mapping, input/output shape and decoder format selection. Plans now request
+debug-level logging, retaining the same 64 KiB stderr limit. Hardware format
+selection must follow mapping, belong to one mapped decoder context and remain
+consistent. Missing/conflicting evidence is unverified; planned arguments,
+probe-only formats or a successful exit cannot replace it. ADTS parsing only
+establishes complete physical packets and the declared fixed AAC-LC/48k/stereo
+header profile. Actual decoding and content/reference checks remain mandatory.
+
+The pipeline returns `SessionClosureRequired=true` for a supplied session,
+including when every stage is complete. The future administrator run owner must
+retain partial initialization/close failures, account for active conversion work,
+close the session, and publish the final outcome only after those obligations
+are satisfied. Progress snapshots copy their nested facts, so an observer cannot
+mutate private references. There is still no public run API, configured resource
+delegation, retained run manager or Settings action. The new source-derived log
+fixtures and simulated-session cases do not establish actual FFmpeg, hardware,
+deadline or administrator behavior on test-env.
+
+This stage increment adds 12 log-evidence, six ADTS and nine orchestration
+test functions, all unexecuted. Static review corrected cancellation forwarding
+to a differently parented session and the codec-tag suffix on a rawvideo
+reference-frame descriptor. The eight Go files were formatted on test-env;
+the source record is
+`/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/media-diagnostic-stages-20260916-01/source-preparation.json`
+(3,775 bytes, SHA-256
+`faa236010eeb66d50c7df01a9257054927eb630c36be5382394ed5720e989614`).
+The snapshot precedes this evidence note. No Go tests, builds, FFmpeg, ffprobe,
+SQL, HTTP or service operations ran; real log compatibility, software/hardware
+stage results and the enclosing administrator run remain unverified.
 
 ## Available evidence and remaining work
 
