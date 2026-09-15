@@ -55,13 +55,16 @@ records received independent static review. No package was modified; final JS
 material, upstream text selection, the pending project-license decision and
 actual assembly remain open.
 
-The subsequent [frontend capture draft](https://github.com/moooyo/goby/blob/808edc289ab18d132d0d559fbfbb2b327188a3e4/docs/development/frontend-contribution-capture.md)
-is committed and pushed as `808edc2` on `codex/m6-frontend-contributions`, in
+The subsequent [frontend capture draft](https://github.com/moooyo/goby/blob/43a9b76a93615b7f872f48dae4e9b3a73ca050b0/docs/development/frontend-contribution-capture.md)
+is committed and pushed as `43a9b76` on `codex/m6-frontend-contributions`, in
 `D:/Code/goby-frontend-provenance`. It writes a private module/source/package
 report outside `dist`; the release script can bind its exact assets and retain
 the report outside the systemd package. Directory replacement, incomplete
 package identity and final source/copy checks received static review and source
-corrections. Node tests, type checking, actual Vite/build hooks, capture overhead
+corrections. Public/emitted JavaScript without a chunk map is now explicit;
+the consumer rejects an incomplete or overlapping filename partition. The new
+synthetic CLI cases require specific mutation guards and no early Go dispatch
+on invalid inputs. Node tests, type checking, actual Vite/build hooks, capture overhead
 and release consumption remain unverified. Use it with the next required
 frontend build after the coordinated window is available; no historical E11
 rebuild or merge into the frozen Programs source is implied.
