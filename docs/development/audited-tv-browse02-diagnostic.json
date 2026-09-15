@@ -1,0 +1,101 @@
+{
+  "kind": "audited-tv-browse02-diagnostic",
+  "version": 1,
+  "status": "independently_reviewed_diagnostic_and_owned_closure",
+  "date": "2026-09-15",
+  "runId": "tv-browse-02",
+  "candidateBinarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42",
+  "controllerExitCode": 0,
+  "controllerElapsedSeconds": 22.348055276990635,
+  "originalBrowserOutcome": "scenario_completed",
+  "originalBrowserFailure": null,
+  "uiAccepted": false,
+  "uiFailure": "client_ui_or_cleanup_incomplete",
+  "pageErrorCount": 1,
+  "diagnostic": {
+    "status": "response_identified",
+    "nativeEventId": "native-rejection-1",
+    "contextOrdinal": 262,
+    "contextCompleted": false,
+    "physicalOrdinal": 264,
+    "requestId": "8270828bc8ff9897010318ee283cd45b",
+    "method": "GET",
+    "path": "/emby/LiveTv/Programs",
+    "responseStatus": 404,
+    "pageErrorAttribution": false
+  },
+  "state": {
+    "physicalRequests": 292,
+    "logins": 1,
+    "mediaRequests": 0,
+    "playingReports": 0,
+    "newCountedPlays": 0,
+    "sessionsBefore": 21,
+    "sessionsAfter": 22,
+    "playsBefore": 13,
+    "playsAfter": 14,
+    "userDataRowsBeforeAndAfter": 6,
+    "foreignClientReferencesBeforeAndAfter": 2,
+    "encodingJobsBeforeAndAfter": 0,
+    "newPreparedPlays": 1,
+    "declaredOldPreparedExpirations": 1,
+    "changedTables": ["activity_entries", "devices", "play_sessions", "sessions"],
+    "sequenceChanges": {
+      "activity_entries_id_seq": {"before": "70", "after": "72"},
+      "devices_id_seq": {"before": "18", "after": "19"}
+    },
+    "remainingSequencesUnchanged": 3
+  },
+  "evidence": {
+    "dispatch": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/tv-dispatch-result.json",
+      "sha256": "bffb32ecb829c193620fcbf9533d2be0842ebae2be0314d1b907cc35ff459597"
+    },
+    "report": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/report.json",
+      "sha256": "8758fd1622aa20cd9c4a5fb05a76df458010aa4910f3a015b20f17e9e230b7e5"
+    },
+    "closeout": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/closeout/closeout.json",
+      "sha256": "5d666c204c4aa122414aa385928d6be6a4a153c8ce0390e4c9af2643fc19f9c3"
+    },
+    "boundary": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/boundary.json",
+      "sha256": "34725d955e0f262a3a2413e8cf6fcf6f5b22e0abb290f2a084fa3b3b6c5aadf3"
+    },
+    "latestClosedSnapshot": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/source-after.json",
+      "sha256": "445c35bc17a8716adb036061e16fa29f22d9883727657ebfe1cfc1fdd0db13e4"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/adapter-input.json",
+      "sha256": "195f15f72eb7bb4838521c191ecc38c9797b6891901c0c571b0ebcdcd267206f"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/independent-review.json",
+      "sha256": "bec05bd524860bad270e3ccfa89f0abc5788738d00ef802f6d9e1d26bf7a5bcd"
+    },
+    "independentStateAndClosure": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-core-client-tv-browse-02/private/independent-state-closure-readback.json",
+      "sha256": "03432313bb63e222bbd1c985a849a1647591f644fcae8f81b336c42a73edee85"
+    }
+  },
+  "closure": {
+    "workers": 2,
+    "workersNaturallyExitedZero": true,
+    "workerPidsAbsent": true,
+    "workerUnitsUnloaded": true,
+    "workerCgroupsEmpty": true,
+    "closedCommandGroups": 19,
+    "candidateAndPostgresIdentityContinuous": true
+  },
+  "reviewLimitations": [
+    "The browser context's completed flag remains false. Physical completion does not prove browser body consumption or pageerror attribution.",
+    "Two readback outputs inadvertently included encoded/raw request fields carrying the already-revoked test token. The original logout, same-token 401 and database revocation were verified. No credential or raw request is included in this metadata.",
+    "The independent reader corrected its extra assumptions about a zero-upstream rejected ledger row and browser context completion; no original result or business request was changed."
+  ],
+  "nextAction": "Review the observed GET Programs contract and the declared zero-EPG profile before changing product behavior. Do not add another diagnostic layer or replay this consumed input.",
+  "clientAcceptance": false,
+  "e11ClientAcceptance": false,
+  "mainPromotion": false
+}

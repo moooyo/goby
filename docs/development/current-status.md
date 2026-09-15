@@ -22,9 +22,27 @@ with independent review; this closes a tool defect, not client acceptance.
 The [reviewed movie-baseline contract](reviewed-movie-baseline-verification.json)
 has now passed Python 47, JavaScript 46 and 12 log/history checks. Both languages
 read actual movie05, movie06 and latest Subtitles01 states; all 35 tables, five
-sequences and two foreign references remain protected. New live component
-admission is still required. The next discriminating question is the
-[bounded TV Response observation](core-tv-response-observation-decision.md).
+sequences and two foreign references remain protected within those saved cases.
+The [TV/current-runtime component increment](reviewed-tv-baseline-verification.json)
+subsequently passed Python 61, JavaScript 53, log/history 12 and runtime 18 checks,
+actual saved-state integrations and independent review. The [single TV browse02
+diagnostic](audited-tv-browse02-diagnostic.json) completed before its investigation
+ceiling and passed independent owned-state/resource review. Its native Response
+uniquely identifies GET `/emby/LiveTv/Programs` HTTP 404; the browser context's
+completed flag is false and the one pageerror remains unaccepted. Client
+acceptance is still false. The input is consumed and diagnostic tooling is frozen.
+
+The latest closed A snapshot is now browse02's 22 sessions, 14 plays and six
+UserData rows, with two retained foreign audio references. Only the declared
+authentication/device/activity effects and uncounted preparation/expiry changed;
+activity and device sequences advanced accordingly. Do not use the prior
+Subtitles01 snapshot as a fresh full-state baseline.
+The [transition decision](e11-candidate-transition-decision.md) selects existing A
+for E11 and establishes its explicit external administrator asset override from
+saved configuration provenance and current hashes. No transition or deployment
+has occurred. The next bounded question is the successful no-program response
+shape on the owned original-client host, under the
+[core contract decision](core-client-acceptance-resolution.md).
 Native capacity execution is held under its
 [measurement decision](native-capacity-measurement-decision.md). The
 historical pause, integrated capacity controller and remaining work are preserved

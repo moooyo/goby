@@ -1,0 +1,72 @@
+{
+  "kind": "reviewed-tv-baseline-verification",
+  "version": 1,
+  "status": "independently_reviewed_components_admitted",
+  "date": "2026-09-15",
+  "scope": "Retained TV state, diagnostic closure, component source selection and recovered runtime binding. This is not client acceptance.",
+  "counts": {
+    "python": 61,
+    "javascript": 53,
+    "logBinding": 12,
+    "runtime": 18
+  },
+  "retainedState": {
+    "tables": 35,
+    "sequences": 5,
+    "sessions": 21,
+    "plays": 13,
+    "foreignClientReferences": 2,
+    "preparedExpirationPermissions": 1,
+    "postBrowseSession": "Exactly the revoked P credential proved by fixed admission05; no associated play is permitted. All original TV rows remain exact."
+  },
+  "evidence": {
+    "dispatch": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/dispatch.json",
+      "sha256": "676597d2bf330acd590603a342730db5dd368b53933036074202ec68440a9688"
+    },
+    "baseline": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/checks-02/reviewed-tv-baseline.json",
+      "sha256": "6f6e0fb0880a8c4d541bc027c7921f334360881b92ccf33c248ed135a07b65d4"
+    },
+    "javascriptResult": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-js-pure-20260915T091100Z/private/javascript-r02-result.json",
+      "sha256": "a69ebed1e52451bc8762c752c0a4564147a0de24e235e975889220b2a78e0934"
+    },
+    "runtimeVerification": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-current-runtime-20260915T085726Z/private/checks-02/verification.json",
+      "sha256": "ec6310baee45980df5701708864723c39d6f6d322bb6506fa6f7a621817c121e"
+    },
+    "currentRuntime": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-current-runtime-20260915T085726Z/private/current-runtime-binding.json",
+      "sha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/independent-review.json",
+      "sha256": "07ea8698dfe9808b539e98908536c1c3eb3da8ba9ca53abb1b5f35fb6ad089ed"
+    },
+    "componentAdmission": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/component-admission.json",
+      "sha256": "14b97e493e7698b1875fa41e0e3cf0660a13c8e3cddd4ab95635336496b86259"
+    },
+    "savedBootstrapIntegration": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/saved-bootstrap-integration.json",
+      "sha256": "bb28b8f23c4ffe707d9ee27f33763c2e979290088fe5bcddb8b46eb406097a70"
+    },
+    "entryPreflight": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/entry-preflight.json",
+      "sha256": "642bfb2a368df71097957304b23884bd3907db31ba6640ecb7ece5ddec3a38ec"
+    },
+    "clientInput": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/core-tv-v5-components-20260915T090300Z/private/tv-browse-02-input.json",
+      "sha256": "0de728d6ddedc1722ab5d4308b20554f750dfd84fd61d41a00088167befa395e"
+    }
+  },
+  "preservedFailures": [
+    "The first Python TV replay rejected the omitted admission05 session. The original baseline and checks-01 result remain unchanged.",
+    "The first component fixture used an incorrect JavaScript stdout shape. The corrected fixture and final Python output binding were checked on final sources.",
+    "The first runtime test set covered a mocked lease leaf. The final 18 checks cover the actual cluster-plus-lease call chain with mocked psql execution."
+  ],
+  "clientAcceptance": false,
+  "e11TransitionExecuted": false,
+  "mainPromotionExecuted": false
+}

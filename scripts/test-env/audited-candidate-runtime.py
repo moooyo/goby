@@ -13,6 +13,7 @@ import subprocess
 import time
 import types
 import tarfile
+from copy import deepcopy
 from datetime import datetime, timezone, timedelta
 
 C = Path("/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b")
@@ -60,6 +61,15 @@ CURRENT_BINARY = "477d26adced672371707fdf9bb2b0b5e54014487dd2c962d145506887420cd
 SUCCESSOR_INPUT_KEYS = {"kind", "version", "output", "previousEpoch", "previousBinding", "reviewedSummary", "reviewedState", "priorCloseout", "priorSource", "newFullReport", "newSourceManifest", "newBinary", "compiledCatalog", "frontendReport", "helpers", "budgets"}
 SUCCESSOR_EPOCH_KEYS = EPOCH_KEYS | {"previousEpoch", "productInput", "configurationInput", "operationKind", "reviewedState", "reviewedSummary"}
 SUCCESSOR_BINDING_KEYS = BINDING_KEYS | {"previousBinding", "reviewedSummary", "reviewedState", "priorCloseout", "priorSource"}
+CURRENT_RUNTIME_KEYS = {"kind", "version", "status", "runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting", "recovery", "current", "preserved", "observation", "observationReview"}
+CURRENT_IDENTITY_KEYS = {"candidateProcess", "serverProperties", "serverIdentity", "listener", "postgresProcess", "postgresProperties", "lease"}
+CURRENT_RECOVERY_KEYS = {"execution", "independentReview", "configuration", "selectedStartIntent", "selectedResult"}
+CURRENT_AUTHORITY_KEYS = ("runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting")
+CURRENT_LEASE_KEYS = {"backendPid", "user", "database", "application", "clientHost", "clientPort", "backendStart", "mode", "granted", "candidateConnection"}
+CURRENT_OBSERVATION_KEYS = {"kind", "version", "runtimeEpoch", "recoveryExecution", "hosting", "source", "verification", "capturedAt", "before", "after", "preserved", "hostingBefore", "hostingAfter", "leaseQueryResult", "calls"}
+CURRENT_OBSERVATION_REVIEW_KEYS = {"kind", "version", "status", "observation", "source", "verification", "checks", "calls"}
+CURRENT_OBSERVATION_REVIEW_CHECKS = {"recordPins", "sourceAndVerification", "currentIdentity", "recoveryBinding", "preservedHashes", "hostingContinuity", "uniqueLease", "privateEvidence"}
+CURRENT_HOST_UNIT_FIELDS = "Id LoadState ActiveState SubState MainPID InvocationID Result ExecMainStatus ControlGroup NRestarts".split()
 
 
 class ContractError(ValueError):
@@ -663,6 +673,238 @@ def verify_environment_epoch_files(epoch, seed_module):
     validate_environment_append(before, after)
 
 
+def receipt_descriptor(value):
+    need(isinstance(value, dict) and set(value) in ({"path", "sha256"}, {"path", "sha256", "bytes"}), "current_runtime_receipt_pin")
+    if "bytes" in value:
+        need(type(value["bytes"]) is int and value["bytes"] >= 0, "current_runtime_receipt_bytes")
+    return descriptor({key: value[key] for key in ("path", "sha256")})
+
+
+def exact_counts(value, expected):
+    return isinstance(value, dict) and all(type(value.get(key)) is int and value[key] == number for key, number in expected.items())
+
+
+def validate_current_identity(current, product_epoch, *, require_lease_start=True):
+    """Accept only a replacement application identity, never a product epoch edit."""
+    need(isinstance(current, dict) and set(current) == CURRENT_IDENTITY_KEYS, "current_runtime_identity_schema")
+    candidate, old = product_epoch["candidate"], product_epoch["candidateProcess"]
+    process = current["candidateProcess"]
+    need(isinstance(process, dict) and set(process) == set(old) and
+         all(canonical(process[key]) == canonical(old[key]) for key in set(old) - {"pid", "startTicks"}), "current_runtime_process_boundary")
+    need(type(process["pid"]) is int and process["pid"] > 1 and process["pid"] != old["pid"] and
+         isinstance(process["startTicks"], str) and re.fullmatch(r"[1-9][0-9]*", process["startTicks"]) and
+         int(process["startTicks"]) > int(old["startTicks"]), "current_runtime_replacement_identity")
+    properties = current["serverProperties"]
+    previous = candidate["processes"]["server"]
+    need(isinstance(properties, dict) and set(properties) == set(previous) and
+         all(canonical(properties[key]) == canonical(previous[key]) for key in set(previous) - {"MainPID", "InvocationID"}) and
+         properties["MainPID"] == str(process["pid"]) and isinstance(properties["InvocationID"], str) and
+         re.fullmatch(r"[0-9a-f]{32}", properties["InvocationID"]) and properties["InvocationID"] != previous["InvocationID"], "current_runtime_server_properties")
+    need(canonical(current["serverIdentity"]) == canonical({**candidate["serverIdentity"], "pid": process["pid"],
+         "startTicks": process["startTicks"], "invocationId": properties["InvocationID"]}), "current_runtime_server_identity")
+    listener = current["listener"]
+    need(isinstance(listener, dict) and set(listener) == set(candidate["listener"]) and
+         all(canonical(listener[key]) == canonical(candidate["listener"][key]) for key in set(listener) - {"pid", "socketInode"}) and
+         listener["pid"] == process["pid"] and isinstance(listener["socketInode"], str) and
+         re.fullmatch(r"[1-9][0-9]*", listener["socketInode"]), "current_runtime_listener")
+    need(canonical(current["postgresProcess"]) == canonical(product_epoch["postgresProcess"]) and
+         canonical(current["postgresProperties"]) == canonical(candidate["processes"]["postgres"]), "current_runtime_postgres_continuity")
+    lease = current["lease"]
+    lease_keys = CURRENT_LEASE_KEYS if require_lease_start else CURRENT_LEASE_KEYS - {"backendStart"}
+    need(isinstance(lease, dict) and set(lease) == lease_keys and
+         all(canonical(lease[key]) == canonical(product_epoch["lease"][key]) for key in CURRENT_LEASE_KEYS -
+             {"backendPid", "backendStart", "clientPort", "candidateConnection"}) and lease["granted"] is True and
+         lease["mode"] == "ExclusiveLock", "current_runtime_lease_schema")
+    need(type(lease["backendPid"]) is int and lease["backendPid"] > 1 and type(lease["clientPort"]) is int and
+         0 < lease["clientPort"] < 65536, "current_runtime_lease_identity")
+    if require_lease_start:
+        try:
+            need(isinstance(lease["backendStart"], str), "current_runtime_lease_start")
+            started = datetime.fromisoformat(lease["backendStart"].replace("Z", "+00:00"))
+            need(started.tzinfo is not None, "current_runtime_lease_start")
+        except (TypeError, ValueError) as error:
+            raise ContractError("current_runtime_lease_start") from error
+    connection = lease["candidateConnection"]
+    need(isinstance(connection, dict) and set(connection) == {"pid", "localPort", "remotePort", "socketInode"} and
+         connection["pid"] == process["pid"] and connection["localPort"] == lease["clientPort"] and
+         connection["remotePort"] == candidate["ports"]["postgres"] and isinstance(connection["socketInode"], str) and
+         re.fullmatch(r"[1-9][0-9]*", connection["socketInode"]), "current_runtime_lease_socket")
+    return current
+
+
+def validate_current_runtime(envelope, value, product_epoch, records):
+    """Validate saved recovery and a separately recorded current observation only."""
+    need(isinstance(envelope, dict) and set(envelope) == CURRENT_RUNTIME_KEYS and
+         envelope["kind"] == "audited-candidate-current-runtime-binding" and type(envelope["version"]) is int and
+         envelope["version"] == 1 and envelope["status"] == "reviewed_current_runtime", "current_runtime_schema")
+    need(type(value.get("version")) is int and value["version"] == 5 and value.get("scenario") == "tv-browse", "current_runtime_tv_input")
+    for key in CURRENT_AUTHORITY_KEYS:
+        descriptor(envelope[key])
+        need(canonical(envelope[key]) == canonical(value[key]), "current_runtime_historical_authority")
+    validate_epoch(product_epoch)
+    need(product_epoch["version"] == 3 and canonical(records["runtimeEpoch"]) == canonical(product_epoch), "current_runtime_product_epoch")
+    need(canonical(records["seedBinding"]["runtimeEpoch"]) == canonical(envelope["runtimeEpoch"]), "current_runtime_seed_epoch")
+    admission = records["admission"]
+    need(admission.get("status") == "admitted_for_core_client" and admission.get("candidateAdmissionComplete") is True and
+         admission.get("failure", "missing") is None and admission.get("cleanupFailures") == [] and
+         canonical(admission.get("runtimeEpoch")) == canonical(envelope["runtimeEpoch"]) and
+         canonical(admission.get("seedRuntimeBinding")) == canonical(envelope["seedBinding"]) and
+         canonical(admission.get("currentSource")) == canonical(product_epoch["currentSource"]), "current_runtime_prior_admission")
+    closeout = records["admissionCloseout"]
+    need(closeout.get("status") == "admitted_for_core_client" and closeout.get("candidateAdmissionComplete") is True and
+         canonical(closeout.get("admission")) == canonical(envelope["admission"]) and
+         canonical(closeout.get("runtimeEpoch")) == canonical(envelope["runtimeEpoch"]) and
+         canonical(closeout.get("seedRuntimeBinding")) == canonical(envelope["seedBinding"]) and
+         canonical(closeout.get("currentSource")) == canonical(product_epoch["currentSource"]), "current_runtime_prior_closeout")
+    candidate = product_epoch["candidate"]
+    need(canonical(envelope["preserved"]) == canonical({key: candidate[key] for key in ("binary", "runtime", "units")}), "current_runtime_preserved_descriptors")
+    current = validate_current_identity(envelope["current"], product_epoch)
+    recovery = envelope["recovery"]
+    need(isinstance(recovery, dict) and set(recovery) == CURRENT_RECOVERY_KEYS, "current_runtime_recovery_schema")
+    for pin in recovery.values():
+        descriptor(pin)
+    execution, review, configuration, intent, result = (records[key] for key in
+        ("execution", "independentReview", "configuration", "selectedStartIntent", "selectedResult"))
+    need(execution.get("kind") == "candidate-disk-full-original-application-restart" and type(execution.get("version")) is int and
+         execution["version"] == 1 and execution.get("status") == "both_original_applications_restored" and
+         exact_counts(execution, {"applicationStartRequests": 2, "postgresRestartRequests": 0, "binaryOrEnvironmentChanges": 0,
+             "businessHttpRequests": 0, "loginRequests": 0}) and
+         execution.get("lockAcquired") is True and execution.get("lockReleased") is True and execution.get("receiptErrors") == [] and
+         execution.get("createdPaths") == [] and execution.get("ownedUnits") == {} and
+         canonical(execution.get("candidates", {}).get("old")) == canonical(result), "current_runtime_recovery_execution")
+    need(isinstance(execution.get("commands"), list) and len(execution["commands"]) > 0 and
+         all(isinstance(command, dict) and command.get("closed") is True and exact_counts(command, {"exitCode": 0})
+             for command in execution["commands"]), "current_runtime_recovery_command_closure")
+    need(review.get("kind") == "candidate-disk-full-restart-independent-review" and type(review.get("version")) is int and
+         review["version"] == 1 and review.get("status") == "passed" and review.get("failure", "missing") is None and
+         receipt_descriptor(review["reviewedReceipt"]) == recovery["execution"] and
+         all(review.get(key) is True for key in ("allReaderClosuresVerified", "originalPostmastersPreserved", "lockAcquired", "lockReleased",
+             "protectedFileMetadataPreserved", "unrequestedUnitsUnchanged", "firstRestoredApplicationPreservedThroughSecond")) and
+         exact_counts(review, {key: 0 for key in ("applicationStopRequests", "postgresRestartRequests", "newHttpRequests", "newSqlSessions", "serviceChanges")}),
+         "current_runtime_recovery_review")
+    need(all(review.get("nativePreservation", {}).get(key) is True for key in
+             ("mandatoryBeforeAndAfterNativeChecksInSuccessfulPinnedControlFlow", "priorNativeChecksPassed")), "current_runtime_native_preservation")
+    reviewed = review["candidates"]["old"]
+    need(receipt_descriptor(reviewed["result"]) == recovery["selectedResult"] and
+         receipt_descriptor(reviewed["startIntent"]) == recovery["selectedStartIntent"] and
+         all(reviewed.get(key) is True for key in ("allQueryIntentResultClosureHashesMatched", "allReaderStreamsCompleteAndGroupsClosed",
+             "allSqlBackendsRecordedGoneAndCommitAcknowledged", "allSqlStdoutAndSavedResultsMatched", "applicationIdentityMatchesFinalUnit",
+             "claimedInvocationMatchesIntent", "healthAndReadinessStatus200", "ownedListenerAndLeaseSocketBound", "uniqueLeaseResponseMatchedOriginalStdout")),
+         "current_runtime_selected_review")
+    need(result.get("label") == "old" and result.get("status") == "restored_and_preserved" and result.get("startRequested") is True and
+         result.get("cleanupErrors") == [] and result.get("readerEvidenceErrors") == [] and
+         all(result.get(key) is True for key in ("frontendGroupsClosed", "readProcessesClosed", "readerEvidenceSaved", "sqlResultsClosed")) and
+         canonical(result["startIntent"]) == canonical(intent), "current_runtime_selected_result")
+    for slot in ("source", "recovery"):
+        snapshot, reviewed_snapshot = result["snapshots"][slot], reviewed["snapshots"][slot]
+        need(snapshot.get("equal") is True and snapshot.get("tables") == 35 and snapshot.get("sequences") == 5 and
+             reviewed_snapshot.get("allLogicalFieldsEqual") is True and reviewed_snapshot.get("excludedFields") == ["capturedAt"] and
+             type(snapshot.get("rows")) is int and snapshot["rows"] > 0 and reviewed_snapshot.get("rows") == snapshot["rows"] and
+             reviewed_snapshot.get("beforeSha256") == snapshot["before"]["sha256"] and
+             reviewed_snapshot.get("afterSha256") == snapshot["after"]["sha256"], "current_runtime_recovery_preservation")
+    config = configuration["candidates"]["old"]
+    need(configuration.get("kind") == "candidate-restart-configuration-observation" and configuration.get("status") == "observed" and
+         configuration.get("configurationContentPublished") is False and canonical(intent["configuration"]) == canonical(config) and
+         intent["binarySha256"] == candidate["binary"]["sha256"] and intent["unit"] == candidate["processes"]["server"]["Id"] and
+         intent["oldUnit"]["InvocationID"] == candidate["processes"]["server"]["InvocationID"] and
+         intent["oldUnit"]["ExecMainPID"] == str(product_epoch["candidateProcess"]["pid"]) and intent["oldUnit"]["MainPID"] == "0" and
+         config.get("sameInstalledArgv") is True and config["environment"].get("matchesHistoricalDigest") is True and
+         config["environment"].get("parsed") is False and config["environment"].get("rawRetained") is False and
+         {key: config["environment"][key] for key in ("path", "sha256")} == candidate["runtime"] and
+         {key: config["unitFile"][key] for key in ("path", "sha256")} == candidate["units"]["server"], "current_runtime_recovery_configuration")
+    process = current["candidateProcess"]
+    recovered_process = result["identity"]["process"]
+    need(all(canonical(recovered_process[key]) == canonical(process[key]) for key in set(recovered_process) - {"cgroup"}) and
+         recovered_process["cgroup"].rstrip("\n") == process["cgroup"].rstrip("\n") and
+         result["identity"]["executableDevice"] == process["exeDevice"] and result["identity"]["executableInode"] == process["exeInode"] and
+         all(result["claimedUnit"][key] == actual for key, actual in current["serverProperties"].items()) and
+         reviewed["applicationPid"] == process["pid"] and reviewed["startTicks"] == process["startTicks"] and
+         reviewed["invocationId"] == current["serverProperties"]["InvocationID"] and
+         result["listener"] == {"localPort": current["listener"]["port"], "remotePort": None, "socketInode": current["listener"]["socketInode"]},
+         "current_runtime_recovery_identity")
+    lease = current["lease"]
+    need(canonical(result["lease"]["facts"]) == canonical({key: lease[key] for key in CURRENT_LEASE_KEYS - {"backendStart", "candidateConnection"}}) and
+         canonical(result["lease"]["applicationSocket"]) == canonical({key: lease["candidateConnection"][key] for key in ("localPort", "remotePort", "socketInode")}) and
+         reviewed["leaseBackendPid"] == lease["backendPid"] and result["cluster"]["systemIdentifier"] == candidate["clusterSystemIdentifier"] and
+         result["cluster"]["port"] == str(candidate["ports"]["postgres"]), "current_runtime_recovery_lease")
+    observation = records["observation"]
+    need(isinstance(observation, dict) and set(observation) == CURRENT_OBSERVATION_KEYS and
+         observation["kind"] == "audited-candidate-current-runtime-observation" and type(observation["version"]) is int and observation["version"] == 1 and
+         canonical(observation["runtimeEpoch"]) == canonical(envelope["runtimeEpoch"]) and
+         canonical(observation["recoveryExecution"]) == canonical(recovery["execution"]) and canonical(observation["hosting"]) == canonical(envelope["hosting"]) and
+         canonical(observation["before"]) == canonical(current) == canonical(observation["after"]) and
+         canonical(observation["preserved"]) == canonical(envelope["preserved"]), "current_runtime_observation_binding")
+    try:
+        captured = datetime.fromisoformat(observation["capturedAt"].replace("Z", "+00:00"))
+        started = datetime.fromisoformat(lease["backendStart"].replace("Z", "+00:00"))
+        need(captured.tzinfo is not None and started <= captured, "current_runtime_observation_time")
+    except (TypeError, ValueError) as error:
+        raise ContractError("current_runtime_observation_time") from error
+    calls = observation["calls"]
+    need(isinstance(calls, dict) and set(calls) == {"sql", "http", "browser", "service", "seed", "admission", "provision"} and
+         all(type(number) is int for number in calls.values()) and calls["sql"] == 2 and
+         all(number == 0 for key, number in calls.items() if key != "sql"), "current_runtime_observation_calls")
+    hosting = records["hosting"]
+    host_identity = {"process": hosting["process"], "listener": hosting["listener"],
+                     "unit": {key: hosting["unitProperties"][key] for key in CURRENT_HOST_UNIT_FIELDS}}
+    need(canonical(observation["hostingBefore"]) == canonical(host_identity) == canonical(observation["hostingAfter"]), "current_runtime_hosting_continuity")
+    need(canonical(records["leaseQueryResult"]) == canonical([{key: lease[key] for key in CURRENT_LEASE_KEYS - {"candidateConnection"}}]),
+         "current_runtime_unique_lease_result")
+    independent = records["observationReview"]
+    need(isinstance(independent, dict) and set(independent) == CURRENT_OBSERVATION_REVIEW_KEYS and
+         independent["kind"] == "audited-candidate-current-runtime-observation-review" and type(independent["version"]) is int and
+         independent["version"] == 1 and independent["status"] == "passed" and
+         canonical(independent["observation"]) == canonical(envelope["observation"]), "current_runtime_observation_review")
+    for key in ("source", "verification"):
+        descriptor(observation[key])
+        need(canonical(independent[key]) == canonical(observation[key]), "current_runtime_observation_review_source")
+    need(isinstance(independent["checks"], dict) and set(independent["checks"]) == CURRENT_OBSERVATION_REVIEW_CHECKS and
+         all(check is True for check in independent["checks"].values()) and
+         isinstance(independent["calls"], dict) and set(independent["calls"]) == set(calls) and
+         all(type(number) is int and number == 0 for number in independent["calls"].values()), "current_runtime_observation_review_incomplete")
+    return envelope
+
+
+def load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes):
+    """Read hash-bound saved records without a live query or configuration decode."""
+    descriptor(pin)
+    need(canonical(value.get("currentRuntime")) == canonical(pin), "current_runtime_input_pin")
+    def checked(selected):
+        descriptor(selected)
+        need(Path(selected["path"]).is_relative_to("/opt/goby-test") and Path(selected["path"]).suffix == ".json", "current_runtime_record_scope")
+        raw = read_bytes(selected)
+        need(isinstance(raw, bytes) and len(raw) <= 4 << 20 and digest(raw) == selected["sha256"], "current_runtime_record_digest")
+        def unique_pairs(pairs):
+            result = dict(pairs)
+            need(len(result) == len(pairs), "current_runtime_duplicate_key")
+            return result
+        parsed = json.loads(raw, object_pairs_hook=unique_pairs)
+        need(canonical(parsed) == canonical(read_descriptor(selected)), "current_runtime_record_readback")
+        return parsed
+    try:
+        envelope = checked(pin)
+        need(isinstance(envelope, dict) and set(envelope) == CURRENT_RUNTIME_KEYS and
+             isinstance(envelope["recovery"], dict) and set(envelope["recovery"]) == CURRENT_RECOVERY_KEYS, "current_runtime_schema")
+        records = {key: checked(envelope[key]) for key in CURRENT_AUTHORITY_KEYS}
+        records.update({key: checked(selected) for key, selected in envelope["recovery"].items()})
+        records["observation"] = checked(envelope["observation"])
+        records["observationReview"] = checked(envelope["observationReview"])
+        records["leaseQueryResult"] = checked(records["observation"]["leaseQueryResult"])
+        observation_source = descriptor(records["observation"]["source"])
+        need(Path(observation_source["path"]).is_relative_to("/opt/goby-test") and Path(observation_source["path"]).suffix == ".py",
+             "current_runtime_observation_source_scope")
+        source_bytes = read_bytes(observation_source)
+        need(isinstance(source_bytes, bytes) and 0 < len(source_bytes) <= 4 << 20 and digest(source_bytes) == observation_source["sha256"],
+             "current_runtime_observation_source_digest")
+        checked(records["observation"]["verification"])
+        validate_current_runtime(envelope, value, product_epoch, records)
+        return deepcopy(envelope)
+    except ContractError:
+        raise
+    except (KeyError, TypeError, ValueError, OverflowError) as error:
+        raise ContractError("current_runtime_record_invalid") from error
+
+
 class EpochReader:
     """Read the explicitly selected epoch; no provisioning or users0 assumptions."""
     def __init__(self, epoch, modules, private):
@@ -675,14 +917,18 @@ class EpochReader:
         p.pg_identity, p.pg_version = self.candidate["postgresIdentity"], self.candidate["postgresVersionNum"]
         self.provision = p
 
+    def runtime_identity(self):
+        return self.epoch
+
     def pin(self):
-        for role, expected in (("server", self.epoch["candidateProcess"]), ("postgres", self.epoch["postgresProcess"])):
+        current = self.runtime_identity()
+        for role, expected in (("server", current["candidateProcess"]), ("postgres", current["postgresProcess"])):
             observed = self.provision.show(self.provision.units[role])
             need(observed == self.candidate["processes"][role] and self.modules["gateway"].metadata(expected["pid"]) == expected and
                  self.provision.process(role, observed) == self.candidate[role + "Identity"], "runtime_epoch_process_changed")
         listener = self.candidate["listener"]
-        self.modules["gateway"].verify_listener(self.epoch["candidateProcess"]["pid"], {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]})
-        return {**self.epoch["candidateProcess"], "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}
+        self.modules["gateway"].verify_listener(current["candidateProcess"]["pid"], {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]})
+        return {**current["candidateProcess"], "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}
 
     def assert_target_cluster(self):
         identity = self.provision.cluster(self.candidate["processes"]["postgres"])
@@ -714,7 +960,7 @@ class EpochReader:
         key, name = 4919415424202458201, self.candidate["database"]
         rows = self.sql_json(name, "SELECT COALESCE(json_agg(json_build_object('backendPid',a.pid,'user',a.usename,'database',a.datname,'application',a.application_name,'clientHost',host(a.client_addr),'clientPort',a.client_port,'backendStart',a.backend_start,'mode',l.mode,'granted',l.granted) ORDER BY a.pid),'[]'::json) FROM pg_locks l JOIN pg_stat_activity a ON a.pid=l.pid WHERE l.locktype='advisory' AND l.classid=" + str(key >> 32) + "::oid AND l.objid=" + str(key & 0xffffffff) + "::oid AND l.objsubid=1 AND l.database=(SELECT oid FROM pg_database WHERE datname='" + name + "')")
         need(len(rows) == 1 and rows[0]["user"] == rows[0]["database"] == name and rows[0]["application"] == "goby" and rows[0]["clientHost"] == "127.0.0.1" and rows[0]["granted"] is True and rows[0]["mode"] == "ExclusiveLock", "epoch_deployment_lease_not_single")
-        row, pid = rows[0], self.epoch["candidateProcess"]["pid"]
+        row, pid = rows[0], self.runtime_identity()["candidateProcess"]["pid"]
         root = Path("/proc") / str(pid)
         matches = [parts for line in (root / "net/tcp").read_text().splitlines()[1:] if len(parts := line.split()) > 9 and parts[1] == "0100007F:%04X" % row["clientPort"] and parts[2] == "0100007F:%04X" % self.candidate["ports"]["postgres"] and parts[3] == "01"]
         links = set()
@@ -729,12 +975,74 @@ class EpochReader:
         return row
 
 
+class RecoveredEpochReader(EpochReader):
+    """Reuse current metadata readers without decoding historical configuration."""
+    def __init__(self, product_epoch, modules, private, current_runtime):
+        self.currentRuntime = deepcopy(current_runtime)
+        need(isinstance(self.currentRuntime, dict) and set(self.currentRuntime) == CURRENT_RUNTIME_KEYS and
+             self.currentRuntime["status"] == "reviewed_current_runtime", "current_runtime_reader_authority")
+        self._initialize(product_epoch, modules, private, self.currentRuntime["current"], self.currentRuntime["preserved"], observation_only=False)
+
+    @classmethod
+    def for_observation(cls, product_epoch, modules, private, current_facts, preserved):
+        """Serve the separately admitted one-lease-call observer; never create a ready envelope."""
+        reader = cls.__new__(cls)
+        reader.currentRuntime = None
+        reader._initialize(product_epoch, modules, private, current_facts, preserved, observation_only=True)
+        return reader
+
+    def _initialize(self, product_epoch, modules, private, current, preserved, *, observation_only):
+        self.productEpoch = self.epoch = validate_epoch(product_epoch)
+        self.modules, self.observationOnly = modules, observation_only
+        self._observationLeaseQueries = 0
+        self.current = deepcopy(validate_current_identity(current, product_epoch, require_lease_start=not observation_only))
+        need(canonical(preserved) == canonical({key: product_epoch["candidate"][key] for key in ("binary", "runtime", "units")}),
+             "current_runtime_preserved_descriptors")
+        # read_checked hashes these bytes. Do not decode the environment or call the old constructor.
+        for pin in (preserved["binary"], preserved["runtime"], *preserved["units"].values()):
+            modules["seed"].read_checked(pin["path"], pin["sha256"])
+        self.manifest = self.candidate = deepcopy(product_epoch["candidate"])
+        self.candidate["processes"]["server"] = deepcopy(self.current["serverProperties"])
+        self.candidate["serverIdentity"] = deepcopy(self.current["serverIdentity"])
+        self.candidate["listener"] = deepcopy(self.current["listener"])
+        p = modules["provision"].Provision({"runId": self.candidate["runId"], "ports": self.candidate["ports"]},
+                                            product_epoch["transitionInput"], product_epoch["helpers"]["provision"])
+        p.private = Path(private)
+        p.argv = {"server": [str(C / "install/goby")], "postgres": ["/usr/lib/postgresql/17/bin/postgres", "-D", str(C / "postgres/data"), "-c", "config_file=" + str(C / "postgres/server.conf")]}
+        p.pg_identity, p.pg_version = self.candidate["postgresIdentity"], self.candidate["postgresVersionNum"]
+        self.provision = p
+
+    def runtime_identity(self):
+        return self.current
+
+    def deployment_lease(self):
+        # The parent performs a fresh single-row SQL check and actual socket ownership check.
+        if self.observationOnly:
+            need(self._observationLeaseQueries == 0, "current_runtime_observation_query_consumed")
+            self._observationLeaseQueries += 1
+        observed = super().deployment_lease()
+        compared = {key: value for key, value in observed.items() if key != "backendStart"} if self.observationOnly else observed
+        need(canonical(compared) == canonical(self.current["lease"]) and set(observed) == CURRENT_LEASE_KEYS,
+             "current_runtime_lease_changed")
+        if self.observationOnly:
+            validate_current_identity({**self.current, "lease": observed}, self.productEpoch)
+        return observed
+
+
 class EpochIO:
     """The bounded recorder reused with explicit current-epoch authority."""
-    def __init__(self, value, input_pin, source_pin, epoch_pin, binding_pin, modules):
+    def __init__(self, value, input_pin, source_pin, epoch_pin, binding_pin, modules, *, current_runtime=None, current_runtime_pin=None):
         self.value, self.input_pin, self.source_pin, self.modules = value, input_pin, source_pin, modules
         self.seed = modules["seed"]
         self.epoch = validate_epoch(self.seed.descriptor(epoch_pin))
+        need((current_runtime is None) == (current_runtime_pin is None), "current_runtime_io_pin_required")
+        self.currentRuntime, self.currentRuntimePin = deepcopy(current_runtime), deepcopy(current_runtime_pin)
+        if current_runtime is not None:
+            descriptor(current_runtime_pin)
+            need(canonical(self.seed.descriptor(current_runtime_pin)) == canonical(current_runtime) and
+                 canonical(current_runtime["runtimeEpoch"]) == canonical(epoch_pin) and canonical(current_runtime["seedBinding"]) == canonical(binding_pin),
+                 "current_runtime_io_authority")
+            validate_current_identity(current_runtime["current"], self.epoch)
         original_seed = self.seed.descriptor(SEED)
         self.binding = validate_seed_runtime_binding(self.seed.descriptor(binding_pin), epoch_pin, self.epoch, original_seed)
         if self.epoch["version"] == 2:
@@ -767,13 +1075,19 @@ class EpochIO:
         need(not os.path.lexists(self.output), "epoch_io_output_collision")
         for pin in [self.candidate["binary"], self.candidate["runtime"], *self.candidate["units"].values()]:
             self.seed.read_checked(pin["path"], pin["sha256"])
-        self.seed.write_json_once(self.output.with_name(self.output.name + "-intent.json"), {"input": self.input_pin, "source": self.source_pin, "runtimeEpoch": self.binding["runtimeEpoch"], "operation": "create-epoch-reader-output"})
+        intent = {"input": self.input_pin, "source": self.source_pin, "runtimeEpoch": self.binding["runtimeEpoch"], "operation": "create-epoch-reader-output"}
+        if self.currentRuntimePin is not None:
+            intent["currentRuntime"] = self.currentRuntimePin
+        self.seed.write_json_once(self.output.with_name(self.output.name + "-intent.json"), intent)
         os.mkdir(self.output, 0o700)
         self.created = True
         os.mkdir(self.private, 0o700)
         self.seed.sync_dir(self.output)
         self.seed.sync_dir(self.output.parent)
-        self.reader = EpochReader(self.epoch, self.modules, self.private)
+        self.reader = (RecoveredEpochReader(self.epoch, self.modules, self.private, self.currentRuntime)
+                       if self.currentRuntime is not None else EpochReader(self.epoch, self.modules, self.private))
+        if self.currentRuntime is not None:
+            self.candidate = self.reader.candidate
         self.provision = self.reader.provision
         self.pin()
         return self

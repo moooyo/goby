@@ -11,9 +11,19 @@ are independently reviewed. The v4 contract passed Python 47, JavaScript 46 and
 The [internal amd64 installation gate](internal-amd64-installation-acceptance.json)
 is accepted using the original runtime, saved HTTP review and the successful
 copy0002 archived-state comparison. Failed copy0001 and the original sealer
-remain unchanged. Next is the retained TV-state and component/current-runtime
-admission for the [bounded Response observation](core-tv-response-observation-decision.md).
-No browser input exists; remaining client/cancellation gaps stay open.
+remain unchanged. The [TV/current-runtime components](reviewed-tv-baseline-verification.json)
+passed focused checks and independent review. The single
+[TV browse02 diagnostic](audited-tv-browse02-diagnostic.json) and its owned-state
+closure are independently reviewed: native-rejection-1/context262 uniquely
+identifies physical264, GET `/emby/LiveTv/Programs`, HTTP 404. The one pageerror
+and client acceptance remain open; context completion is not claimed. This input
+is consumed and diagnostic tooling is frozen.
+Use its latest closed snapshot (22 sessions, 14 plays, six UserData rows, two
+foreign audio references) for dependent work. Existing A is the
+[selected E11 transition target](e11-candidate-transition-decision.md), retaining
+its proven external administrator asset override. No transition has run.
+Next is the fixed reference response-shape question in the core resolution,
+before choosing any real Programs query capability or changing the 404.
 The [capacity decision](native-capacity-measurement-decision.md)
 holds native execution; its [earlier handoff](session-handoff-20260915-native-capacity.md)
 and tracked source snapshot remain intact. Complete M2-M6 remain open; M7 is deferred.

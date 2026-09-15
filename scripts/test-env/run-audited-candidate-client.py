@@ -62,6 +62,8 @@ GATEWAY_BUDGETS = {"maxRequests": 1000, "cleanupRequests": 64, "maxApiBodyBytes"
 INPUT_KEYS = {"kind", "version", "runId", "scenario", "output", "runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting", "hostingInitialization", "avVerification", "runtimeHelper", "node", "compiledCatalog", "sources", "budgets", "gatewayBudgets"}
 REVIEWED_BASELINE_PINS = {"closeout", "snapshot", "sourceEpoch", "runtimeEpoch", "seedBinding", "manifest"}
 REVIEWED_BASELINE_KEYS = {"kind", "version", "status", "scenario", "actor", "item", "preparedExpirations", "movieProvenance", "boundary"} | REVIEWED_BASELINE_PINS
+REVIEWED_TV_BASELINE_KEYS = (REVIEWED_BASELINE_KEYS - {"movieProvenance"}) | {"tvProvenance", "postBrowseAdmission"}
+REVIEWED_TV_CATALOG_KEYS = ("tvLibrary", "series", "seasons", "episodes")
 REVIEWED_BASELINE_TABLES = set("activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users".split())
 HOST_STARTUP_INPUT_KEYS = {"kind", "version", "output", "runtimeEpoch", "seedBinding", "runtimeHelper", "hosting", "gateway", "proxy", "compiledCatalog", "budgets"}
 HOST_STARTUP_BUDGETS = {"maximumSeconds": 300, "cleanupSeconds": 60, "normalRequests": 16, "cleanupRequests": 4}
@@ -101,9 +103,155 @@ def descriptor(pin):
          ".." not in Path(pin["path"]).parts and isinstance(pin["sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]), "descriptor_invalid")
 
 
+COMPONENT_SCOPE = "retained_tv_browse_v5_components"
+COMPONENT_FIELDS = {"kind", "version", "scope", "controller", "sources", "runtimeHelper",
+                    "retainedBaseline", "currentRuntime", "ancestor", "evidence", "independentReview"}
+COMPONENT_EVIDENCE = {"dispatch", "javascriptResult", "cases", "runtimeVerification"}
+
+
+def component_json(raw):
+    need(isinstance(raw, bytes) and len(raw) <= 4 << 20, "component_json_size")
+    def unique(pairs):
+        value = dict(pairs)
+        need(len(value) == len(pairs), "component_json_duplicate_key")
+        return value
+    def invalid(unused):
+        raise RunError("component_json_nonfinite")
+    return json.loads(raw, object_pairs_hook=unique, parse_constant=invalid)
+
+
+def component_read(pin, read_pin):
+    descriptor(pin)
+    raw = read_pin(pin)
+    need(isinstance(raw, bytes) and hashlib.sha256(raw).hexdigest() == pin["sha256"], "component_read_digest")
+    return raw
+
+
+def validate_v5_component_selection(receipt, value, controller_pin, read_pin):
+    """Check the selected source bytes before importing a new runtime helper."""
+    need(value["version"] == 5 and value["scenario"] == "tv-browse" and value["avVerification"] != AV_VERIFICATION and
+         value["sources"]["closer"]["sha256"] != FROZEN["closer"] and value["runtimeHelper"] != RUNTIME,
+         "version5_components_not_admitted")
+    need(isinstance(receipt, dict) and set(receipt) == COMPONENT_FIELDS and
+         receipt["kind"] == "audited-candidate-client-component-admission" and type(receipt["version"]) is int and
+         receipt["version"] == 1 and receipt["scope"] == COMPONENT_SCOPE, "component_receipt_schema")
+    descriptor(controller_pin)
+    need(receipt["controller"] == controller_pin and receipt["sources"] == value["sources"] and
+         all(receipt[key] == value[key] for key in ("runtimeHelper", "retainedBaseline", "currentRuntime")), "component_selected_inputs_changed")
+    need(receipt["ancestor"] == AV_VERIFICATION and isinstance(receipt["sources"], dict) and
+         set(receipt["sources"]) == set(SOURCE_FILES), "component_ancestor_or_roles")
+    need(isinstance(receipt["evidence"], dict) and set(receipt["evidence"]) == COMPONENT_EVIDENCE, "component_evidence_inventory")
+    for pin in [receipt["ancestor"], receipt["independentReview"], receipt["retainedBaseline"], receipt["currentRuntime"],
+                receipt["runtimeHelper"], *receipt["evidence"].values()]:
+        descriptor(pin)
+    for role, pin in receipt["sources"].items():
+        need(role == "closer" or pin["sha256"] == FROZEN[role], "component_reused_source_changed")
+    for pin in [controller_pin, receipt["runtimeHelper"], *receipt["sources"].values()]:
+        component_read(pin, read_pin)
+    return receipt
+
+
+def validate_v5_component_evidence(receipt, value, controller_pin, read_pin):
+    """Read the finite source/check record without authorizing a live action."""
+    validate_v5_component_selection(receipt, value, controller_pin, read_pin)
+    read_json = lambda pin: component_json(component_read(pin, read_pin))
+    validate_native_rejection_verification(read_json(AV_VERIFICATION), read_json(REUSED_AV_VERIFICATION))
+    evidence = {key: read_json(pin) for key, pin in receipt["evidence"].items()}
+    review = read_json(receipt["independentReview"])
+    bound = {key: receipt[key] for key in ("controller", "sources", "runtimeHelper", "retainedBaseline", "currentRuntime", "ancestor", "evidence")}
+    need(isinstance(review, dict) and review.get("kind") == "audited-candidate-tv-component-review" and
+         type(review.get("version")) is int and review["version"] == 1 and review.get("status") == "passed" and
+         review.get("scope") == COMPONENT_SCOPE and canonical(review.get("boundInputs")) == canonical(bound) and
+         review.get("testsReplayed") is False and all(type(review.get(key)) is int and review[key] == 0
+             for key in ("businessHttpCalls", "sqlCalls", "serviceActions")), "component_independent_review")
+    dispatch = evidence["dispatch"]
+    need(dispatch.get("kind") == "tv-client-component-verification-dispatch" and type(dispatch.get("version")) is int and
+         dispatch["version"] == 1 and dispatch.get("scope") == COMPONENT_SCOPE and
+         all(type(dispatch.get(key)) is int and dispatch[key] == 0 for key in ("browserRuns", "businessHttpCalls", "sqlCalls", "serviceActions")),
+         "component_dispatch_scope")
+    sources = dispatch.get("sources")
+    need(isinstance(sources, list) and all(isinstance(row, dict) and {"path", "sha256"} <= set(row) for row in sources) and
+         len({row["path"] for row in sources}) == len(sources), "component_dispatch_sources")
+    source_map = {row["path"]: row["sha256"] for row in sources}
+    for pin in [controller_pin, receipt["runtimeHelper"], *receipt["sources"].values()]:
+        need(source_map.get(pin["path"]) == pin["sha256"], "component_tested_source_changed")
+    executions = dispatch.get("executions")
+    need(isinstance(executions, list) and [row.get("name") for row in executions] == ["python", "javascript", "log-binding"], "component_execution_inventory")
+    outputs = {}
+    for row in executions:
+        need(type(row.get("exitCode")) is int and row["exitCode"] == 0 and row.get("timedOut") is False and row.get("childReaped") is True,
+             "component_checks_not_closed")
+        argv, test_source = row.get("argv"), row.get("testSource")
+        descriptor(test_source)
+        need(isinstance(argv, list) and test_source["path"] in argv and source_map.get(test_source["path"]) == test_source["sha256"], "component_test_command")
+        if row["name"] in ("python", "javascript"):
+            pin = receipt["evidence"]["cases"]
+            need(all(flag in argv and argv.count(flag) == 1 and argv.index(flag) + 1 < len(argv) and argv[argv.index(flag) + 1] == expected
+                     for flag, expected in (("--reviewed-tv-baseline", pin["path"]), ("--reviewed-tv-baseline-sha256", pin["sha256"]))),
+                 "component_saved_replay_command")
+        outputs[row["name"]] = {key: component_read({name: row[key][name] for name in ("path", "sha256")}, read_pin) for key in ("stdout", "stderr")}
+    counts = review.get("counts")
+    need(isinstance(counts, dict) and set(counts) == {"python", "javascript", "log-binding", "runtime"} and
+         all(type(count) is int and count > 0 for count in counts.values()), "component_review_test_inventory")
+    python_output = outputs["python"]["stderr"].decode("utf-8")
+    need(re.findall(r"(?m)^Ran ([0-9]+) tests in [^\n]+$", python_output) == [str(counts["python"])] and
+         python_output.rstrip().endswith("\nOK") and not re.search(r"(?m)^(FAILED|OK \()", python_output), "component_python_results")
+    javascript = evidence["javascriptResult"]
+    need(javascript.get("kind") == "audited-candidate-client-closeout-pure-guards" and javascript.get("source") == receipt["sources"]["closer"] and
+         javascript.get("sourceUnchanged") is True and type(javascript.get("testCount")) is int and
+         javascript["testCount"] == javascript.get("passed") == counts["javascript"] and type(javascript.get("failed")) is int and
+         javascript["failed"] == 0 and javascript.get("clientAcceptanceClaim") is False, "component_javascript_results")
+    need(len(javascript.get("tests", [])) == counts["javascript"] and all(row.get("outcome") == "passed" for row in javascript["tests"]), "component_javascript_test_inventory")
+    js_output = component_json(outputs["javascript"]["stdout"])
+    need({key: js_output.get(key) for key in ("path", "sha256")} == receipt["evidence"]["javascriptResult"], "component_javascript_output_binding")
+    log_output = outputs["log-binding"]["stdout"].decode("utf-8")
+    for label, expected in (("tests", counts["log-binding"]), ("pass", counts["log-binding"]), ("fail", 0), ("skipped", 0), ("cancelled", 0)):
+        need(re.findall(r"(?m)^# " + label + r" ([0-9]+)$", log_output) == [str(expected)], "component_log_results")
+    cases = evidence["cases"]
+    need(cases.get("kind") == "audited-candidate-reviewed-tv-baseline-replay-input" and type(cases.get("version")) is int and
+         cases["version"] == 1 and cases.get("review") == value["retainedBaseline"] and cases.get("seed") == value["seedBinding"] and
+         cases.get("inputBinding") == {key: value[key] for key in ("runtimeEpoch", "seedBinding")}, "component_tv_baseline_not_tested")
+    replay = javascript.get("reviewedTVBaselineReplay")
+    need(isinstance(replay, dict) and replay.get("review") == value["retainedBaseline"] and replay.get("tablesCompared") == 35 and
+         replay.get("sequencesCompared") == 5, "component_tv_saved_js_missing")
+    python_cases = [component_json(line) for line in outputs["python"]["stdout"].splitlines() if line.startswith(b'{')]
+    need(any(row.get("kind") == "audited-candidate-reviewed-tv-baseline-python-replay" and row.get("reviewSha256") == value["retainedBaseline"]["sha256"] and
+             row.get("rejectedTableMutations") == 35 and row.get("rejectedSequenceMutations") == 5 for row in python_cases), "component_tv_saved_python_missing")
+    runtime = evidence["runtimeVerification"]
+    need(runtime.get("kind") == "audited-candidate-current-runtime-verification" and runtime.get("status") == "passed" and
+         runtime.get("source") == receipt["runtimeHelper"] and type(runtime.get("passed")) is int and runtime["passed"] == counts["runtime"] and
+         type(runtime.get("failed")) is int and runtime["failed"] == 0 and runtime.get("environmentDecoded") is False and
+         all(type(runtime.get(key)) is int and runtime[key] == 0 for key in ("sqlCalls", "httpCalls", "serviceActions")), "component_runtime_verification")
+    return receipt
+
+
+def bootstrap_runtime(runtime_pin, source_pin, input_pin):
+    """Use the fixed protected reader to review all v5 sources before import."""
+    import importlib.util
+    def module(pin, raw):
+        spec = importlib.util.spec_from_file_location("core_client_runtime", pin["path"])
+        selected = importlib.util.module_from_spec(spec)
+        exec(compile(raw, pin["path"], "exec"), selected.__dict__)
+        return selected
+    raw = Path(RUNTIME["path"]).read_bytes()
+    need(hashlib.sha256(raw).hexdigest() == RUNTIME["sha256"], "runtime_source_changed")
+    trusted = module(RUNTIME, raw)
+    trusted.read_bootstrap(RUNTIME)
+    trusted.read_bootstrap(source_pin)
+    value = validate_input(component_json(trusted.read_bootstrap(input_pin)))
+    need(value["runtimeHelper"] == runtime_pin, "input_runtime_helper_changed")
+    if value["version"] != 5:
+        need(runtime_pin == RUNTIME, "runtime_source_not_frozen")
+        return trusted, value
+    receipt = component_json(trusted.read_bootstrap(value["avVerification"]))
+    validate_v5_component_evidence(receipt, value, source_pin, trusted.read_bootstrap)
+    return module(runtime_pin, trusted.read_bootstrap(runtime_pin)), value
+
+
 def validate_input(value):
     version = value.get("version")
-    need(type(version) is int and version in (1, 2, 3, 4) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version in (2, 3, 4) else set()) and value["kind"] == "audited-candidate-client-run-input" and
+    need(type(version) is int and version in (1, 2, 3, 4, 5) and set(value) == INPUT_KEYS | ({"retainedBaseline"} if version in (2, 3, 4, 5) else set()) |
+         ({"currentRuntime"} if version == 5 else set()) and value["kind"] == "audited-candidate-client-run-input" and
          value["scenario"] in SCENARIOS and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,55}", value["runId"]), "client_run_input_invalid")
     if version == 2:
         need(value["scenario"] == "movie" and value["retainedBaseline"] == RETAINED_BASELINE, "retained_movie_input_authority")
@@ -112,10 +260,14 @@ def validate_input(value):
     if version == 4:
         need(value["scenario"] == "movie", "version4_reviewed_movie_required")
         descriptor(value["retainedBaseline"])
+    if version == 5:
+        need(value["scenario"] == "tv-browse", "version5_reviewed_tv_required")
+        descriptor(value["retainedBaseline"])
+        descriptor(value["currentRuntime"])
     for key in INPUT_KEYS - {"kind", "version", "runId", "scenario", "output", "sources", "budgets", "gatewayBudgets"}:
         descriptor(value[key])
     need(value["runtimeEpoch"] == EPOCH and value["seedBinding"] == BINDING and value["admission"] == ADMISSION and value["admissionCloseout"] == ADMISSION_CLOSEOUT and
-         value["hosting"] == HOSTING and value["avVerification"] == AV_VERIFICATION and value["runtimeHelper"] == RUNTIME,
+         value["hosting"] == HOSTING and (version == 5 or (value["avVerification"] == AV_VERIFICATION and value["runtimeHelper"] == RUNTIME)),
          "current_admission_authority_changed")
     need(Path(value["output"]) == R / ("candidate-core-client-" + value["runId"]) and value["budgets"] == BUDGETS and value["gatewayBudgets"] == GATEWAY_BUDGETS,
          "client_run_scope_or_budget_invalid")
@@ -127,7 +279,8 @@ def validate_input(value):
         descriptor(value["sources"][key])
         path = Path(value["sources"][key]["path"])
         need(path.name == filename and path.is_relative_to(R) and not path.is_relative_to(value["output"]) and
-             (not filename.endswith(".mjs") or path.parent == directory) and value["sources"][key]["sha256"] == FROZEN[key], "client_source_path_or_revision_changed")
+             (not filename.endswith(".mjs") or path.parent == directory) and
+             ((version == 5 and key == "closer") or value["sources"][key]["sha256"] == FROZEN[key]), "client_source_path_or_revision_changed")
     return value
 
 
@@ -506,14 +659,18 @@ def validate_reviewed_movie_history(retained, binding):
     return [row for row in plays if row["state"] == "Prepared"]
 
 
-def validate_reviewed_movie_residue(tables, actor):
+def validate_reviewed_actor_residue(tables, actor, code):
     sessions = {row["id"] for row in tables["sessions"] if row.get("user_id") == actor}
     plays = {row["id"] for row in tables["play_sessions"] if row.get("user_id") == actor}
     need(not any(row.get("user_id") == actor or row.get("auth_session_id") in sessions or row.get("play_session_id") in plays
-         for table in ("client_playback_references", "encoding_jobs") for row in tables[table]), "reviewed_movie_owned_residue")
+         for table in ("client_playback_references", "encoding_jobs") for row in tables[table]), code)
 
 
-def validate_reviewed_subtitles_state(retained, binding):
+def validate_reviewed_movie_residue(tables, actor):
+    validate_reviewed_actor_residue(tables, actor, "reviewed_movie_owned_residue")
+
+
+def validate_reviewed_subtitles_closed_state(retained, binding):
     review, closeout, snapshot, epoch, manifest, boundary = (retained[key] for key in
         ("review", "closeout", "snapshot", "sourceEpoch", "manifest", "boundary"))
     need(isinstance(closeout, dict) and closeout.get("kind") == "audited-candidate-subtitles-owned-state-closeout" and
@@ -547,7 +704,7 @@ def validate_reviewed_subtitles_state(retained, binding):
          manifest["version"] == 1 and manifest.get("scenario") == "subtitles" and isinstance(manifest.get("runId"), str) and
          re.fullmatch(r"subtitles-[0-9]{2,}", manifest["runId"]) and manifest.get("serverId") == binding.get("serverId") and
          canonical(manifest.get("actor")) == canonical({key: actor[key] for key in ("id", "username")}) and
-         isinstance(manifest.get("catalog"), dict) and canonical(manifest["catalog"].get("movie")) == canonical(binding["catalog"]["movie"]) and
+         isinstance(manifest.get("catalog"), dict) and
          canonical(manifest.get("source")) == canonical({"manifestSha256": source["sourceManifest"]["sha256"],
              "binarySha256": source["binary"]["sha256"], "schema": source["schema"]}), "reviewed_movie_current_manifest")
     need(isinstance(snapshot, dict) and set(snapshot) == {"capturedAt", "tables", "sequences"} and isinstance(snapshot["tables"], dict) and
@@ -564,7 +721,6 @@ def validate_reviewed_subtitles_state(retained, binding):
              len({row["id"] for row in tables[table]}) == len(tables[table]), "reviewed_movie_current_row_inventory")
     for session in tables["sessions"]:
         reviewed_timestamp_ns(session.get("revoked_at"))
-    validate_reviewed_movie_residue(tables, binding["actors"]["movie"]["id"])
     boundary_keys = {"afterMonotonicNs", "beforeMonotonicNs", "candidateAfter", "candidateBefore", "clientWorker", "database", "gatewayWorker", "kind",
                      "leaseAfter", "leaseBefore", "postgresAfter", "postgresBefore", "runId", "runtimeEpoch", "sourceAfter", "sourceBefore", "version"}
     need(isinstance(boundary, dict) and set(boundary) == boundary_keys and boundary["kind"] == "audited-candidate-client-boundary" and
@@ -585,6 +741,12 @@ def validate_reviewed_subtitles_state(retained, binding):
          "reviewed_movie_current_workers")
     need(all(isinstance(boundary[key], str) and re.fullmatch(r"[0-9]+", boundary[key]) for key in ("beforeMonotonicNs", "afterMonotonicNs")) and
          int(boundary["beforeMonotonicNs"]) <= int(boundary["afterMonotonicNs"]), "reviewed_movie_current_boundary_time")
+
+
+def validate_reviewed_subtitles_state(retained, binding):
+    validate_reviewed_subtitles_closed_state(retained, binding)
+    need(canonical(retained["manifest"]["catalog"].get("movie")) == canonical(binding["catalog"]["movie"]), "reviewed_movie_current_manifest")
+    validate_reviewed_movie_residue(retained["snapshot"]["tables"], binding["actors"]["movie"]["id"])
 
 
 def validate_reviewed_movie_baseline(retained, binding):
@@ -641,7 +803,182 @@ def load_reviewed_movie_baseline(review_pin, input_binding, binding, read_descri
     return retained
 
 
+def validate_reviewed_tv_baseline(retained, binding):
+    """Bind one consumed TV browse actor without authorizing playback."""
+    need(isinstance(retained, dict) and set(retained) == {"review", "closeout", "snapshot", "sourceEpoch", "manifest", "inputBinding", "tvProvenance", "boundary", "postBrowseAdmission"},
+         "reviewed_tv_evidence_shape")
+    review, provenance, input_binding = retained["review"], retained["tvProvenance"], retained["inputBinding"]
+    need(isinstance(review, dict) and set(review) == REVIEWED_TV_BASELINE_KEYS and review["kind"] == "audited-candidate-reviewed-tv-baseline" and
+         type(review["version"]) is int and review["version"] == 1 and review["status"] == "reviewed_closed_state" and review["scenario"] == "tv-browse",
+         "reviewed_tv_review_schema")
+    for key in REVIEWED_BASELINE_PINS | {"boundary"}:
+        descriptor(review[key])
+    need(isinstance(provenance, dict) and set(provenance) == {"closeout", "snapshot", "sourceEpoch", "manifest"} and
+         isinstance(review["tvProvenance"], dict) and set(review["tvProvenance"]) == set(provenance), "reviewed_tv_provenance_shape")
+    for pin in review["tvProvenance"].values():
+        descriptor(pin)
+    need(review["postBrowseAdmission"] == ADMISSION, "reviewed_tv_post_browse_authority")
+    need(isinstance(input_binding, dict) and set(input_binding) == {"runtimeEpoch", "seedBinding"}, "reviewed_tv_input_binding")
+    for pin in input_binding.values():
+        descriptor(pin)
+    need(canonical(input_binding) == canonical({key: review[key] for key in input_binding}) and
+         canonical(binding.get("runtimeEpoch")) == canonical(review["runtimeEpoch"]), "reviewed_tv_input_binding")
+    actor = binding["actors"]["tv-browse"]
+    need(isinstance(review["actor"], dict) and set(review["actor"]) == {"id", "username"} and
+         isinstance(review["actor"]["id"], str) and re.fullmatch(r"[a-f0-9]{32}", review["actor"]["id"]) and
+         isinstance(review["actor"]["username"], str) and review["actor"]["username"] and
+         canonical(review["actor"]) == canonical({key: actor[key] for key in ("id", "username")}), "reviewed_tv_actor_binding")
+    episodes = binding["catalog"].get("episodes")
+    need(isinstance(episodes, list) and all(isinstance(row, dict) for row in episodes), "reviewed_tv_catalog_identity")
+    targets = [row for row in episodes if row.get("type") == "Episode" and type(row.get("indexNumber")) is int and row["indexNumber"] == 1 and
+               type(row.get("parentIndexNumber")) is int and row["parentIndexNumber"] == 2]
+    need(len(targets) == 1, "reviewed_tv_detail_target")
+    item = targets[0]
+    need(isinstance(item.get("id"), str) and re.fullmatch(r"[a-f0-9]{32}", item["id"]) and
+         reviewed_integer(item.get("runtimeTicks")) and item["runtimeTicks"] > 0, "reviewed_tv_detail_target")
+    need(isinstance(review["item"], dict) and set(review["item"]) == {"id", "mediaSourceId", "runtimeTicks"} and
+         isinstance(review["item"]["id"], str) and re.fullmatch(r"[a-f0-9]{32}", review["item"]["id"]) and
+         reviewed_integer(review["item"]["runtimeTicks"]) and review["item"]["runtimeTicks"] > 0 and
+         canonical(review["item"]) == canonical({"id": item["id"], "mediaSourceId": "mediasource_" + item["id"], "runtimeTicks": item["runtimeTicks"]}),
+         "reviewed_tv_item_binding")
+    expirations = review["preparedExpirations"]
+    need(isinstance(expirations, list) and len(expirations) == 1 and isinstance(expirations[0], dict) and set(expirations[0]) == {"playSessionId", "authSessionId"} and
+         isinstance(expirations[0]["playSessionId"], str) and re.fullmatch(r"play_[A-Za-z0-9_]+", expirations[0]["playSessionId"]) and
+         isinstance(expirations[0]["authSessionId"], str) and re.fullmatch(r"[A-Za-z0-9_-]+", expirations[0]["authSessionId"]), "reviewed_tv_prepared_authority")
+    validate_reviewed_subtitles_closed_state(retained, binding)
+    need(all(key in binding["catalog"] and canonical(retained["manifest"]["catalog"].get(key)) == canonical(binding["catalog"][key])
+             for key in REVIEWED_TV_CATALOG_KEYS), "reviewed_tv_current_catalog")
+    validate_reviewed_actor_residue(retained["snapshot"]["tables"], actor["id"], "reviewed_tv_owned_residue")
+    closeout, prior, epoch, manifest = (provenance[key] for key in ("closeout", "snapshot", "sourceEpoch", "manifest"))
+    need(isinstance(epoch, dict) and epoch.get("kind") == "audited-candidate-runtime-epoch" and type(epoch.get("version")) is int and
+         epoch["version"] in (2, 3), "reviewed_tv_source_epoch")
+    source = epoch.get("currentSource")
+    need(isinstance(source, dict) and set(source) == {"archiveSha256", "sourceManifest", "binary", "fullReport", "schema"} and
+         isinstance(source["archiveSha256"], str) and re.fullmatch(r"[0-9a-f]{64}", source["archiveSha256"]) and
+         type(source["schema"]) is int and source["schema"] == 28, "reviewed_tv_source_identity")
+    for key in ("sourceManifest", "binary", "fullReport"):
+        descriptor(source[key])
+    need(isinstance(manifest, dict) and manifest.get("kind") == "audited-candidate-client-input" and type(manifest.get("version")) is int and
+         manifest["version"] == 1 and manifest.get("scenario") == "tv-browse" and isinstance(manifest.get("runId"), str) and
+         re.fullmatch(r"tv-browse-[0-9]{2,}", manifest["runId"]) and manifest.get("serverId") == binding.get("serverId") and
+         canonical(manifest.get("actor")) == canonical(review["actor"]) and isinstance(manifest.get("catalog"), dict) and
+         all(canonical(manifest["catalog"].get(key)) == canonical(binding["catalog"][key]) for key in REVIEWED_TV_CATALOG_KEYS) and
+         canonical(manifest.get("source")) == canonical({"manifestSha256": source["sourceManifest"]["sha256"],
+             "binarySha256": source["binary"]["sha256"], "schema": source["schema"]}), "reviewed_tv_manifest_binding")
+    need(isinstance(closeout, dict) and closeout.get("kind") == "audited-tv-browse" + manifest["runId"].removeprefix("tv-browse-") + "-owned-state-closeout" and
+         closeout.get("status") == "owned_state_closed_client_acceptance_pending" and closeout.get("clientAcceptance") is False and "failure" not in closeout and
+         closeout.get("browserOutcome") == "failed" and type(closeout.get("browserExitCode")) is int and closeout["browserExitCode"] == 1 and
+         type(closeout.get("gatewayExitCode")) is int and closeout["gatewayExitCode"] == 0 and
+         all(type(closeout.get(key)) is int and closeout[key] == 0 for key in ("physicalMediaRequests", "playingReports")), "reviewed_tv_closeout_invalid")
+    evidence = closeout.get("inputEvidence")
+    need(isinstance(evidence, dict) and all(canonical(evidence.get(key)) == canonical(review["tvProvenance"][pin]) for key, pin in
+         (("after", "snapshot"), ("epoch", "sourceEpoch"), ("manifest", "manifest"))), "reviewed_tv_closeout_binding")
+    checks = closeout.get("checks")
+    need(isinstance(checks, dict) and all(isinstance(checks.get(key), dict) for key in ("ownedData", "authentication", "savedRuntimeAndWorkers")),
+         "reviewed_tv_closeout_checks")
+    data, authentication, state = (checks[key] for key in ("ownedData", "authentication", "savedRuntimeAndWorkers"))
+    need(all(type(data.get(key)) is int and data[key] == expected for key, expected in (("ownedTables", 35), ("oldRowsDeleted", 0), ("newCountedPlays", 0))) and
+         all(state.get(key) is True for key in ("candidateContinuous", "postgresContinuous", "leaseExact")) and isinstance(state.get("workers"), dict) and
+         all(isinstance(state["workers"].get(role), dict) and state["workers"][role].get("pidAbsentAsRecorded") is True and
+             state["workers"][role].get("recursiveCgroupEmptyAsRecorded") is True for role in ("browser", "gateway")), "reviewed_tv_closeout_checks")
+    need(isinstance(prior, dict) and set(prior) == {"capturedAt", "tables", "sequences"} and isinstance(prior["tables"], dict) and
+         set(prior["tables"]) == REVIEWED_BASELINE_TABLES and isinstance(prior["sequences"], dict) and
+         all(isinstance(rows, list) and all(isinstance(row, dict) for row in rows) for rows in prior["tables"].values()), "reviewed_tv_snapshot_inventory")
+    reviewed_timestamp_ns(prior["capturedAt"])
+    tables = prior["tables"]
+    for table in ("sessions", "play_sessions"):
+        need(all(isinstance(row.get("id"), str) and row["id"] for row in tables[table]) and
+             len({row["id"] for row in tables[table]}) == len(tables[table]), "reviewed_tv_row_inventory")
+    for session in tables["sessions"]:
+        reviewed_timestamp_ns(session.get("revoked_at"))
+    need(type(authentication.get("allSessionsRevoked")) is int and authentication["allSessionsRevoked"] == len(tables["sessions"]) and
+         all(type(data.get(key)) is int and data[key] == len(tables[table]) for key, table in
+             (("clientPlaybackReferences", "client_playback_references"), ("encodingJobs", "encoding_jobs"))), "reviewed_tv_snapshot_counts")
+    validate_reviewed_actor_residue(tables, actor["id"], "reviewed_tv_owned_residue")
+    users = [row for row in tables["users"] if row.get("id") == actor["id"]]
+    need(len(users) == 1 and users[0].get("name") == actor["username"] and users[0].get("is_administrator") is False and
+         users[0].get("is_disabled") is False and canonical(users[0].get("policy")) == canonical({}), "reviewed_tv_actor_changed")
+    plays = [row for row in tables["play_sessions"] if row.get("user_id") == actor["id"]]
+    need(len(plays) == 1, "reviewed_tv_play_inventory")
+    play = plays[0]
+    need({"id", "auth_session_id", "item_id", "media_source_id", "duration_ticks", "device_id", "application_client_id", "client_correlated", "state",
+          "counted", "position_ticks", "started_at", "stopped_at", "expires_at"} <= set(play), "reviewed_tv_play_identity")
+    sessions = [row for row in tables["sessions"] if row["id"] == play["auth_session_id"]]
+    need(play["item_id"] == item["id"] and play["media_source_id"] == review["item"]["mediaSourceId"] and type(play["duration_ticks"]) is int and
+         play["duration_ticks"] == item["runtimeTicks"] and play["application_client_id"] is None and play["client_correlated"] is False and
+         play["state"] == "Prepared" and play["counted"] is False and type(play["position_ticks"]) is int and play["position_ticks"] == 0 and
+         play["started_at"] is None and play["stopped_at"] is None and isinstance(play["device_id"], str) and len(sessions) == 1 and sessions[0].get("kind") == "emby" and
+         sessions[0].get("user_id") == actor["id"] and sessions[0].get("device_id") == play["device_id"], "reviewed_tv_play_identity")
+    reviewed_timestamp_ns(play["expires_at"])
+    preparations = data.get("unstartedPreparations")
+    need(isinstance(preparations, list) and len(preparations) == 1 and isinstance(preparations[0], dict) and
+         set(preparations[0]) == {"id", "authSessionId", "itemId", "state", "counted", "positionTicks", "prepareOrdinals"}, "reviewed_tv_preparation_receipt")
+    preparation = preparations[0]
+    need(isinstance(preparation["prepareOrdinals"], list) and len(preparation["prepareOrdinals"]) == 1 and reviewed_integer(preparation["prepareOrdinals"][0]) and
+         preparation["prepareOrdinals"][0] > 0 and canonical({key: preparation[key] for key in preparation if key != "prepareOrdinals"}) == canonical({"id": play["id"],
+             "authSessionId": play["auth_session_id"], "itemId": item["id"], "state": "Prepared", "counted": False, "positionTicks": 0}) and
+         canonical(expirations[0]) == canonical({"playSessionId": play["id"], "authSessionId": play["auth_session_id"]}), "reviewed_tv_prepared_authority")
+    userdata = [row for row in tables["user_item_data"] if row.get("user_id") == actor["id"]]
+    need(len(userdata) == 1 and {"item_id", "play_count", "playback_position_ticks", "is_favorite", "played", "last_played_at"} <= set(userdata[0]) and
+         userdata[0]["item_id"] == item["id"] and type(userdata[0]["play_count"]) is int and userdata[0]["play_count"] == 0 and
+         type(userdata[0]["playback_position_ticks"]) is int and userdata[0]["playback_position_ticks"] == 0 and userdata[0]["is_favorite"] is False and
+         userdata[0]["played"] is False and userdata[0]["last_played_at"] is None and canonical(userdata[0]) == canonical(data.get("newUserData")),
+         "reviewed_tv_userdata_changed")
+    admission = retained["postBrowseAdmission"]
+    need(isinstance(admission, dict) and admission.get("kind") == "audited-candidate-live-admission" and
+         type(admission.get("version")) is int and admission["version"] == 3 and admission.get("status") == "admitted_for_core_client" and
+         admission.get("candidateAdmissionComplete") is True and admission.get("failure", "missing") is None and admission.get("cleanupFailures") == [] and
+         admission.get("runtimeEpoch") == review["runtimeEpoch"] and admission.get("seedRuntimeBinding") == review["seedBinding"],
+         "reviewed_tv_post_browse_admission")
+    proof = admission.get("controllerSessions", {}).get("P")
+    need(isinstance(proof, dict) and set(proof) == {"credentialId", "tokenSha256", "sameTokenRejected"} and
+         proof["sameTokenRejected"] is True and isinstance(proof["credentialId"], str) and re.fullmatch(r"[0-9a-f]{32}", proof["credentialId"]) and
+         isinstance(proof["tokenSha256"], str) and re.fullmatch(r"[0-9a-f]{64}", proof["tokenSha256"]), "reviewed_tv_post_browse_credential")
+    for table, key in (("users", "id"), ("sessions", "user_id"), ("play_sessions", "user_id"), ("user_item_data", "user_id")):
+        current = [row for row in retained["snapshot"]["tables"][table] if row.get(key) == actor["id"]]
+        historical = [row for row in tables[table] if row.get(key) == actor["id"]]
+        if table == "sessions":
+            extra = [row for row in current if row.get("id") == proof["credentialId"]]
+            need(len(extra) == 1 and not any(row.get("id") == proof["credentialId"] for row in historical) and
+                 extra[0].get("kind") == "emby" and extra[0].get("token_hash") == "\\x" + proof["tokenSha256"] and
+                 not any(row.get("auth_session_id") == proof["credentialId"] for row in retained["snapshot"]["tables"]["play_sessions"]),
+                 "reviewed_tv_post_browse_session")
+            reviewed_timestamp_ns(extra[0].get("revoked_at"))
+            current = [row for row in current if row.get("id") != proof["credentialId"]]
+        need(canonical(current) == canonical(historical), "reviewed_tv_history_changed")
+    need(reviewed_timestamp_ns(retained["snapshot"]["capturedAt"]) >= reviewed_timestamp_ns(prior["capturedAt"]), "reviewed_tv_history_time")
+    return plays
+
+
+def load_reviewed_tv_baseline(review_pin, input_binding, binding, read_descriptor):
+    """Load a TV-specific review without reinterpreting a movie contract."""
+    descriptor(review_pin)
+    review = read_descriptor(review_pin)
+    need(isinstance(review, dict) and set(review) == REVIEWED_TV_BASELINE_KEYS, "reviewed_tv_review_schema")
+    for key in REVIEWED_BASELINE_PINS | {"boundary"}:
+        descriptor(review[key])
+    need(isinstance(review["tvProvenance"], dict) and set(review["tvProvenance"]) == {"closeout", "snapshot", "sourceEpoch", "manifest"}, "reviewed_tv_provenance_shape")
+    for pin in review["tvProvenance"].values():
+        descriptor(pin)
+    retained = {"review": review, **{key: read_descriptor(review[key]) for key in ("closeout", "snapshot", "sourceEpoch", "manifest", "postBrowseAdmission")},
+                 "inputBinding": input_binding, "tvProvenance": {key: read_descriptor(pin) for key, pin in review["tvProvenance"].items()},
+                "boundary": read_descriptor(review["boundary"])}
+    validate_reviewed_tv_baseline(retained, binding)
+    return retained
+
+
 def verify_actor_before(snapshot, binding, scenario, retained=None, version=2):
+    if version == 5:
+        need(type(version) is int and scenario == "tv-browse" and retained is not None, "reviewed_tv_baseline_required")
+        old_plays = validate_reviewed_tv_baseline(retained, binding)
+        prior = retained["snapshot"]
+        need(isinstance(snapshot, dict) and set(snapshot) == set(prior) and canonical(snapshot["tables"]) == canonical(prior["tables"]) and
+             canonical(snapshot["sequences"]) == canonical(prior["sequences"]), "reviewed_tv_fresh_state_changed")
+        captured = reviewed_timestamp_ns(snapshot["capturedAt"])
+        need(captured >= reviewed_timestamp_ns(prior["capturedAt"]) and len(old_plays) < 256 and all(
+             captured + BUDGETS["maximumSeconds"] * 1000000000 < reviewed_timestamp_ns(row["expires_at"]) + 7 * 86400 * 1000000000
+             for row in old_plays), "reviewed_tv_pruning_deadline")
+        return
     if version == 4:
         need(type(version) is int and scenario == "movie" and retained is not None, "reviewed_movie_baseline_required")
         validate_reviewed_movie_baseline(retained, binding)
@@ -729,6 +1066,11 @@ class ClientRun:
         self.units = {role: "goby-core-client-" + value["runId"] + "-" + role + ".service" for role in ("gateway", "browser")}
         self.workers, self.failures = {}, []
         self.server_log_captures, self.server_log_pin = {}, None
+        self.current_runtime = None
+
+    def current_identity(self):
+        """Keep current process facts separate from immutable product history."""
+        return self.current_runtime["current"] if self.current_runtime is not None else self.epoch
 
     def remaining(self, cleanup=False):
         left = BUDGETS["maximumSeconds"] - (0 if cleanup else BUDGETS["cleanupSeconds"]) - (time.monotonic() - self.started)
@@ -755,10 +1097,14 @@ class ClientRun:
         need(not os.path.lexists(self.output), "client_output_collision")
         if self.value["version"] == 4:
             need(self.value["sources"]["closer"]["sha256"] != REUSED_AV_SOURCES["closer"], "version4_closer_not_admitted")
+        if self.value["version"] == 5:
+            need(self.value["sources"]["closer"]["sha256"] != REUSED_AV_SOURCES["closer"], "version5_closer_not_admitted")
+            need(canonical(self.value["avVerification"]) != canonical(AV_VERIFICATION), "version5_components_not_admitted")
         epoch = json.loads(self.r.read_bootstrap(self.value["runtimeEpoch"]))
         self.modules = {key: self.r.load_helper(key, pin) for key, pin in epoch["helpers"].items()}
         self.s = self.modules["seed"]
-        need(self.s.descriptor(self.input_pin) == self.value and self.value["runtimeHelper"] == epoch["runtimeHelper"], "outer_input_or_runtime_helper_changed")
+        need(self.s.descriptor(self.input_pin) == self.value and
+             (self.value["version"] == 5 or self.value["runtimeHelper"] == epoch["runtimeHelper"]), "outer_input_or_runtime_helper_changed")
         self.epoch = self.r.validate_epoch(epoch)
         self.binding = self.s.descriptor(self.value["seedBinding"])
         self.r.validate_seed_runtime_binding(self.binding, self.value["runtimeEpoch"], epoch, self.s.descriptor(self.r.SEED))
@@ -776,20 +1122,31 @@ class ClientRun:
         elif self.value["version"] == 4:
             self.retained = load_reviewed_movie_baseline(self.value["retainedBaseline"], {key: self.value[key] for key in ("runtimeEpoch", "seedBinding")},
                                                         self.binding, self.s.descriptor)
+        elif self.value["version"] == 5:
+            self.retained = load_reviewed_tv_baseline(self.value["retainedBaseline"], {key: self.value[key] for key in ("runtimeEpoch", "seedBinding")},
+                                                     self.binding, self.s.descriptor)
         report = self.s.descriptor(self.value["admission"])
         admitted(report, self.value, epoch,
                  reused_admission04=self.s.descriptor(AFFECTED_TV_PARENT_ADMISSION04) if epoch.get("version") == 3 else None,
                  product_input=self.s.descriptor(epoch["productInput"]) if epoch.get("version") == 3 else None)
         self.s.descriptor(self.value["admissionCloseout"])
         verification = self.s.descriptor(self.value["avVerification"])
-        validate_native_rejection_verification(verification, self.s.descriptor(REUSED_AV_VERIFICATION))
+        if self.value["version"] == 5:
+            validate_v5_component_evidence(verification, self.value, self.source_pin,
+                                           lambda pin: self.s.read_checked(pin["path"], pin["sha256"]))
+            self.current_runtime = self.r.load_current_runtime(self.value["currentRuntime"], self.value, self.epoch,
+                self.s.descriptor, lambda pin: self.s.read_checked(pin["path"], pin["sha256"]))
+        else:
+            validate_native_rejection_verification(verification, self.s.descriptor(REUSED_AV_VERIFICATION))
         for pin in [self.value["node"], *self.value["sources"].values()]:
             self.s.read_checked(pin["path"], pin["sha256"])
         self.gateway = self.r.load_helper("browser_gateway", self.value["sources"]["gateway"])
         self.hosting = self.s.descriptor(self.value["hosting"])
         need(self.hosting["kind"] == "core-av-original-client-hosting" and self.hosting["version"] == "4.9.5.0", "original_client_hosting_not_admitted")
         self.verify_hosting()
-        hosting_initialized(self.s.descriptor(self.value["hostingInitialization"]), self.value, self.hosting, self.epoch,
+        # Hosting initialization belongs to the historical product epoch.
+        hosting_value = {**self.value, "runtimeHelper": epoch["runtimeHelper"]} if self.value["version"] == 5 else self.value
+        hosting_initialized(self.s.descriptor(self.value["hostingInitialization"]), hosting_value, self.hosting, self.epoch,
                             self.s.descriptor, lambda pin: self.s.read_checked(pin["path"], pin["sha256"]), self.r.TABLES,
                             lineage=self.r.resolve_epoch_lineage(self.epoch, self.s.descriptor) if self.epoch.get("version") == 3 else None)
         self.catalog = self.s.descriptor(self.value["compiledCatalog"])
@@ -807,7 +1164,10 @@ class ClientRun:
 
     def open(self):
         budget = {"maximumSeconds": 1200, "cleanupSeconds": 240, "maximumRequests": 2, "cleanupRequests": 1}
-        self.io = self.r.EpochIO({"output": str(self.output), "budgets": budget}, self.input_pin, self.source_pin, self.value["runtimeEpoch"], self.value["seedBinding"], self.modules)
+        runtime_args = ({"current_runtime": self.current_runtime, "current_runtime_pin": self.value["currentRuntime"]}
+                        if self.value["version"] == 5 else {})
+        self.io = self.r.EpochIO({"output": str(self.output), "budgets": budget}, self.input_pin, self.source_pin,
+                               self.value["runtimeEpoch"], self.value["seedBinding"], self.modules, **runtime_args)
         try:
             self.io.open()
         finally:
@@ -824,21 +1184,25 @@ class ClientRun:
     def source_sample(self, label):
         self.remaining(cleanup=label == "after")
         before = self.io.pin()
-        postgres = self.modules["gateway"].metadata(self.epoch["postgresProcess"]["pid"])
+        current = self.current_identity()
+        postgres = self.modules["gateway"].metadata(current["postgresProcess"]["pid"])
         lease = self.reader.deployment_lease()
-        need(postgres == self.epoch["postgresProcess"] and lease == self.epoch["lease"], "source_sample_epoch_changed")
+        need(postgres == current["postgresProcess"] and lease == current["lease"], "source_sample_epoch_changed")
         self.reader.assert_target_cluster()
         value = self.reader.sql_json(self.epoch["candidate"]["database"], self.modules["admission"].snapshot_sql(self.catalog))
         need(set(value) == {"capturedAt", "tables", "sequences"} and set(value["tables"]) == self.r.TABLES, "source_sample_inventory_invalid")
         need(self.io.pin() == before and self.reader.deployment_lease() == lease and self.modules["gateway"].metadata(postgres["pid"]) == postgres, "source_sample_changed_during_capture")
         pin = self.save("source-" + label + ".json", value)
-        self.save("source-" + label + "-runtime.json", {"candidate": before, "postgres": postgres, "lease": lease})
+        runtime_record = {"candidate": before, "postgres": postgres, "lease": lease}
+        if self.value["version"] == 5:
+            runtime_record["currentRuntime"] = self.value["currentRuntime"]
+        self.save("source-" + label + "-runtime.json", runtime_record)
         return value, pin, before, postgres, lease
 
     def capture_server_log(self, label):
-        need(self.value["version"] in (3, 4) and label in ("before", "after") and label not in self.server_log_captures, "server_log_capture_scope")
+        need(self.value["version"] in (3, 4, 5) and label in ("before", "after") and label not in self.server_log_captures, "server_log_capture_scope")
         self.remaining(cleanup=label == "after")
-        expected = self.epoch["candidateProcess"]
+        expected = self.current_identity()["candidateProcess"]
         metadata = self.modules["gateway"].metadata
         candidate_before = metadata(expected["pid"])
         need(canonical(candidate_before) == canonical(expected), "server_log_process_changed")
@@ -870,9 +1234,11 @@ class ClientRun:
                  row["closure"]["recursiveCgroupPids"] == [] for row in self.workers.values()), "server_log_workers_not_closed")
         after, raw = self.capture_server_log("after")
         before, before_raw = self.server_log_before
-        validate_server_log_pair(self.epoch["candidateProcess"], before, after, before_raw, raw)
+        validate_server_log_pair(self.current_identity()["candidateProcess"], before, after, before_raw, raw)
         receipt = {"kind": "audited-candidate-client-server-log", "version": 1, "runId": self.value["runId"], "runtimeEpoch": self.value["runtimeEpoch"],
                    "input": self.input_pin, "controller": self.source_pin, "before": before, "after": after}
+        if self.value["version"] == 5:
+            receipt.update(version=2, currentRuntime=self.value["currentRuntime"])
         self.server_log_pin = self.save("server-log.json", receipt)
 
     def show_worker(self, role):
@@ -907,7 +1273,7 @@ class ClientRun:
         need(state["pid"] > 1, "worker_pid_not_observed")
         if role == "gateway" and row["MainPID"] != "0":
             process = self.gateway.metadata(state["pid"])
-            verify_signal_target(state, row, process, self.epoch["candidateProcess"]["bootId"])
+            verify_signal_target(state, row, process, self.current_identity()["candidateProcess"]["bootId"])
             state["process"] = process
         self.save(role + "-started.json", row)
         return state
@@ -961,7 +1327,7 @@ class ClientRun:
                 fresh = self.show_worker("gateway")
                 self.own_worker("gateway", fresh)
                 process = self.gateway.metadata(state["pid"])
-                verify_signal_target(state, fresh, process, self.epoch["candidateProcess"]["bootId"])
+                verify_signal_target(state, fresh, process, self.current_identity()["candidateProcess"]["bootId"])
                 if hasattr(self, "gateway_attestation"):
                     need(process == self.gateway_attestation["process"], "gateway_shutdown_identity_changed")
                 self.save("gateway-signal-intent.json", {"unit": self.units["gateway"], "invocationId": state["invocationId"], "process": process, "signal": "SIGTERM"})
@@ -1023,7 +1389,7 @@ class ClientRun:
         self.stage = "source_before"
         before, self.before_pin, self.candidate_before, self.postgres_before, self.lease_before = self.source_sample("before")
         verify_actor_before(before, self.binding, self.value["scenario"], self.retained, self.value["version"])
-        if self.value["version"] in (3, 4):
+        if self.value["version"] in (3, 4, 5):
             self.stage = "server_log_before"
             self.server_log_before = self.capture_server_log("before")
         self.before_ns = str(time.clock_gettime_ns(time.CLOCK_MONOTONIC))
@@ -1064,14 +1430,17 @@ class ClientRun:
                     self.failures.append({"stage": "close_" + role, "code": str(error) if isinstance(error, RunError) else "worker_close_failed", "errorType": type(error).__name__})
         self.stage = "source_after"
         after, after_pin, candidate_after, postgres_after, lease_after = self.source_sample("after")
-        if self.value["version"] in (3, 4):
+        if self.value["version"] in (3, 4, 5):
             self.stage = "server_log_after"
             self.finish_server_log()
         self.verify_hosting()
         self.after_ns = str(time.clock_gettime_ns(time.CLOCK_MONOTONIC))
         need(not self.failures, "worker_responsibility_unclosed")
         client = self.workers["browser"]
-        need(client["terminal"]["Result"] == "success" and client["terminal"]["ExecMainStatus"] == "0", "browser_worker_failed")
+        if self.value["version"] == 5:
+            need((client["terminal"]["Result"], client["terminal"]["ExecMainStatus"]) in (("success", "0"), ("exit-code", "1")), "diagnostic_browser_worker_failed")
+        else:
+            need(client["terminal"]["Result"] == "success" and client["terminal"]["ExecMainStatus"] == "0", "browser_worker_failed")
         gateway_exit = self.gateway_exit()
         index_pin = self.pin_file(self.output / "gateway/index.json")
         index = self.s.descriptor(index_pin)
@@ -1082,15 +1451,19 @@ class ClientRun:
             "database": self.epoch["candidate"]["database"], "beforeMonotonicNs": self.before_ns, "afterMonotonicNs": self.after_ns,
             "clientWorker": {"exitCode": int(client["terminal"]["ExecMainStatus"]), "mainPID": int(client["closure"]["unit"]["MainPID"]), "workerPidAbsent": client["closure"]["workerPidAbsent"], "remainingBrowserPids": client["closure"]["recursiveCgroupPids"]},
             "gatewayWorker": {"exitCode": gateway_exit, "mainPID": int(self.workers["gateway"]["closure"]["unit"]["MainPID"]), "workerPidAbsent": self.workers["gateway"]["closure"]["workerPidAbsent"], "index": index_pin}}
+        if self.value["version"] == 5:
+            boundary.update(version=2, currentRuntime=self.value["currentRuntime"])
         boundary_pin = self.save("boundary.json", boundary)
         closeout = {"kind": "audited-candidate-client-closeout-input", "version": self.value["version"], "manifest": self.manifest_pin,
             "observation": self.pin_file(self.output / "browser/observation.json"), "summary": self.pin_file(self.output / "browser/summary.json"), "gatewayAttestation": self.gateway_pin,
             "gatewayIndex": index_pin, "runtimeEpoch": self.value["runtimeEpoch"], "admission": self.value["admission"], "seedBinding": self.value["seedBinding"],
             "sourceBefore": self.before_pin, "sourceAfter": after_pin, "boundary": boundary_pin, "sources": self.value["sources"], "output": str(self.output / "closeout")}
-        if self.value["version"] in (2, 3, 4):
+        if self.value["version"] in (2, 3, 4, 5):
             closeout["retainedBaseline"] = self.value["retainedBaseline"]
-        if self.value["version"] in (3, 4):
+        if self.value["version"] in (3, 4, 5):
             closeout["serverLog"] = self.server_log_pin
+        if self.value["version"] == 5:
+            closeout["currentRuntime"] = self.value["currentRuntime"]
         closeout_input = self.save("closeout-input.json", closeout)
         self.stage = "offline_closeout"
         self.remaining(cleanup=True)
@@ -1098,6 +1471,15 @@ class ClientRun:
             self.value["sources"]["closer"]["path"], "--input", closeout_input["path"], "--input-sha256", closeout_input["sha256"]])
         summary_pin = self.pin_file(self.output / "closeout/summary.json")
         summary = self.s.descriptor(summary_pin)
+        if self.value["version"] == 5:
+            need(isinstance(summary, dict) and summary.get("status") == "owned_state_closed_diagnostic_result" and summary.get("clientAcceptance") is False and
+                 type(summary.get("uiAccepted")) is bool and "originalBrowserOutcome" in summary and "originalBrowserFailure" in summary and
+                 isinstance(summary.get("diagnostic"), dict) and summary["diagnostic"].get("status") in ("response_identified", "inconclusive"),
+                 "offline_diagnostic_closeout_incomplete")
+            return {"status": "owned_state_closed_diagnostic_result", "runId": self.value["runId"], "scenario": self.value["scenario"],
+                    "closeout": summary_pin, "boundary": boundary_pin, "clientAcceptance": False,
+                    **{key: summary[key] for key in ("uiAccepted", "originalBrowserOutcome", "originalBrowserFailure", "diagnostic")},
+                    "controllerBusinessHttpRequests": 0, "candidateRestarted": False, "postgresRestarted": False}
         need(summary["status"] == "core_scenario_closed", "offline_closeout_incomplete")
         return {"status": "core_scenario_closed", "runId": self.value["runId"], "scenario": self.value["scenario"], "closeout": summary_pin, "boundary": boundary_pin,
                 "controllerBusinessHttpRequests": 0, "candidateRestarted": False, "postgresRestarted": False}
@@ -1111,19 +1493,9 @@ def main():
         parser.add_argument("--" + key, required=True)
     args = parser.parse_args()
     runtime_pin = {"path": args.runtime_helper, "sha256": args.runtime_helper_sha256}
-    need(runtime_pin == RUNTIME, "runtime_source_not_frozen")
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("core_client_runtime", args.runtime_helper)
-    runtime = importlib.util.module_from_spec(spec)
-    raw = Path(args.runtime_helper).read_bytes()
-    need(hashlib.sha256(raw).hexdigest() == args.runtime_helper_sha256, "runtime_source_changed")
-    exec(compile(raw, args.runtime_helper, "exec"), runtime.__dict__)
-    runtime.read_bootstrap(runtime_pin)
     source_pin = {"path": str(Path(__file__).absolute()), "sha256": args.source_sha256}
-    runtime.read_bootstrap(source_pin)
     input_pin = {"path": args.input, "sha256": args.input_sha256}
-    value = json.loads(runtime.read_bootstrap(input_pin))
-    need(value["runtimeHelper"] == runtime_pin, "input_runtime_helper_changed")
+    runtime, value = bootstrap_runtime(runtime_pin, source_pin, input_pin)
     job = ClientRun(runtime, value, input_pin, source_pin)
     def expired(unused_signal, unused_frame):
         raise RunError("outer_client_absolute_deadline")
@@ -1140,7 +1512,7 @@ def main():
         result = {"status": "core_client_run_incomplete", "stage": job.stage, "code": str(error) if isinstance(error, RunError) else "outer_client_operation_failed",
             "errorType": type(error).__name__, "runId": value["runId"], "scenario": value["scenario"], "failures": job.failures, "workers": job.workers,
             "automaticBusinessRetry": False, "controllerBusinessHttpRequests": 0, "receipt": None}
-        if value["version"] in (3, 4):
+        if value["version"] in (3, 4, 5):
             result.update(serverLog=job.server_log_pin, serverLogCaptures=job.server_log_captures)
         try:
             if job.created:

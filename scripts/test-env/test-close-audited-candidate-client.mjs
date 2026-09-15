@@ -250,6 +250,116 @@ function reviewedLatestFixture(closer) {
   return value;
 }
 
+function reviewedTVFixture(closer) {
+  const wrapper = reviewedLatestFixture(closer), value = durableFixture(), pin = name => ({ path: '/opt/goby-test/synthetic-tv/' + name, sha256: sha(name) });
+  const episodeId = 'f'.repeat(32), actor = { id: ACTOR, username: 'synthetic-actor' }, seed = clone(wrapper.seed);
+  seed.actors.movie = { id: 'd'.repeat(32), username: 'foreign-movie' }; seed.actors['tv-browse'] = actor;
+  Object.assign(seed.catalog, { tvLibrary: { id: '1'.repeat(32) }, series: { id: '2'.repeat(32) }, seasons: [{ id: '3'.repeat(32) }, { id: '4'.repeat(32) }],
+    episodes: [{ id: episodeId, type: 'Episode', indexNumber: 1, parentIndexNumber: 2, runtimeTicks: 6000000000 }] });
+  for (const state of [value.before, value.after]) {
+    for (const user of state.tables.users) Object.assign(user, { is_administrator: false, is_disabled: false, policy: {} });
+    state.tables.users.push({ id: seed.actors.movie.id, name: seed.actors.movie.username, is_administrator: false, is_disabled: false, policy: {} },
+      { id: seed.actors.subtitles.id, name: seed.actors.subtitles.username, is_administrator: false, is_disabled: false, policy: {} });
+  }
+  const oldSession = { id: 'retained_tv_auth', user_id: ACTOR, kind: 'emby', device_id: 'old-tv-device', revoked_at: '2025-12-31T23:30:00Z' };
+  const old = { ...clone(value.after.tables.play_sessions[0]), id: 'play_retained_tv', auth_session_id: oldSession.id, device_id: oldSession.device_id,
+    item_id: episodeId, media_source_id: 'mediasource_' + episodeId, state: 'Prepared', counted: false, position_ticks: 0, started_at: null, stopped_at: null,
+    created_at: '2025-12-31T23:00:00Z', updated_at: '2025-12-31T23:00:00Z', expires_at: '2025-12-31T23:30:00Z', client_correlated: false };
+  const userdata = { user_id: ACTOR, item_id: episodeId, playback_position_ticks: 0, play_count: 0, is_favorite: false, played: false,
+    last_played_at: null, updated_at: old.created_at };
+  value.before.tables.sessions.push(clone(oldSession)); value.after.tables.sessions.unshift(clone(oldSession));
+  value.before.tables.play_sessions.push(clone(old));
+  value.before.tables.user_item_data.push(clone(userdata));
+  value.after.tables.user_item_data = value.after.tables.user_item_data.filter(row => row.user_id !== ACTOR).concat([clone(userdata)]);
+  Object.assign(value.after.tables.play_sessions[0], { item_id: episodeId, media_source_id: 'mediasource_' + episodeId, state: 'Prepared', counted: false,
+    position_ticks: 0, started_at: null, stopped_at: null, updated_at: '2026-01-01T00:00:02.000000000Z', expires_at: '2026-01-01T00:30:02Z', client_correlated: false });
+  value.after.tables.play_sessions.unshift({ ...clone(old), state: 'Expired', stopped_at: '2026-01-01T00:00:01Z', updated_at: '2026-01-01T00:00:01.000001Z' });
+  const provenance = { snapshot: clone(value.before), sourceEpoch: clone(wrapper.retained.movieProvenance.sourceEpoch),
+    manifest: { ...clone(wrapper.retained.movieProvenance.manifest), scenario: 'tv-browse', runId: 'tv-browse-99', actor, catalog: clone(seed.catalog) } };
+  const review = { ...clone(wrapper.retained.review), kind: 'audited-candidate-reviewed-tv-baseline', scenario: 'tv-browse', actor,
+    item: { id: episodeId, mediaSourceId: old.media_source_id, runtimeTicks: old.duration_ticks },
+    postBrowseAdmission: clone(closer.TV_POST_BROWSE_ADMISSION),
+    preparedExpirations: [{ playSessionId: old.id, authSessionId: oldSession.id }],
+    tvProvenance: Object.fromEntries(['closeout', 'snapshot', 'sourceEpoch', 'manifest'].map(key => [key, pin('tv-' + key + '.json')])) };
+  delete review.movieProvenance;
+  provenance.closeout = { kind: 'audited-tv-browse99-owned-state-closeout', runId: 'tv-browse-99', status: 'owned_state_closed_client_acceptance_pending',
+    clientAcceptance: false, browserOutcome: 'failed', browserExitCode: 1, gatewayExitCode: 0, physicalMediaRequests: 0, playingReports: 0,
+    inputEvidence: { after: review.tvProvenance.snapshot, epoch: review.tvProvenance.sourceEpoch, manifest: review.tvProvenance.manifest },
+    checks: { authentication: { allSessionsRevoked: provenance.snapshot.tables.sessions.length },
+      savedRuntimeAndWorkers: clone(wrapper.retained.movieProvenance.closeout.checks.savedRuntimeAndWorkers), ownedData: { ownedTables: 35, oldRowsDeleted: 0,
+        newCountedPlays: 0, clientPlaybackReferences: 0, encodingJobs: 0, newUserData: clone(userdata),
+        unstartedPreparations: [{ id: old.id, authSessionId: oldSession.id, itemId: episodeId, state: 'Prepared', counted: false, positionTicks: 0, prepareOrdinals: [277] }] } } };
+  for (const state of [value.before, value.after]) {
+    state.tables.sessions.push({ id: '9'.repeat(32), user_id: ACTOR, kind: 'emby', token_hash: '\\x' + sha('post-browse-token'), revoked_at: '2025-12-31T23:45:00Z' });
+    state.tables.play_sessions.push(...clone(wrapper.before.tables.play_sessions.filter(row => row.user_id === CONTROL)));
+    state.tables.client_playback_references = clone(wrapper.before.tables.client_playback_references);
+  }
+  value.retained = { ...clone(wrapper.retained), review, tvProvenance: provenance, snapshot: clone(value.before) }; delete value.retained.movieProvenance;
+  value.retained.postBrowseAdmission = { kind: 'audited-candidate-live-admission', version: 3, status: 'admitted_for_core_client', candidateAdmissionComplete: true,
+    failure: null, cleanupFailures: [], runtimeEpoch: review.runtimeEpoch, seedRuntimeBinding: review.seedBinding,
+    controllerSessions: { P: { credentialId: '9'.repeat(32), tokenSha256: sha('post-browse-token'), sameTokenRejected: true } } };
+  value.retained.manifest.catalog = clone(seed.catalog);
+  Object.assign(value.retained.closeout.sourceState, { afterSessions: value.before.tables.sessions.length, afterPlays: value.before.tables.play_sessions.length,
+    afterUserData: value.before.tables.user_item_data.length, afterClientReferences: 2, afterEncodingJobs: 0 });
+  const login = value.physical.logins[0], info = { itemId: episodeId, body: { UserId: ACTOR }, value: { PlaySessionId: 'play_synthetic' },
+    exchange: { ordinal: 1, tokenHash: login.tokenHash, scope: { allowed: true, kind: 'playback_info', route: '/Items/' + episodeId + '/PlaybackInfo' },
+      original: { method: 'POST' }, complete: true, response: { status: 200 }, intent: { startedAt: '2026-01-01T00:00:01Z' }, result: { completedAt: '2026-01-01T00:00:02Z' } } };
+  Object.assign(login, { infos: [info], chains: [], media: [] }); value.physical.chains = []; value.physical.exchanges = [info.exchange];
+  value.seed = seed; value.manifest = { scenario: 'tv-browse', actor, catalog: clone(seed.catalog) };
+  return value;
+}
+
+function nativeTVFixture(closer) {
+  const value = reviewedTVFixture(closer), id = '1'.repeat(32), url = new URL(ORIGIN + '/emby/LiveTv/Programs');
+  const exchange = { ordinal: 2, original: closer.parseHead(Buffer.from('GET /emby/LiveTv/Programs HTTP/1.1\r\nHost: 127.0.0.1:19180\r\n\r\n')),
+    response: closer.parseHead(responseHead('404 Not Found', [['X-Request-Id', id]]), true), request: { kind: 'api', path: url.pathname }, url,
+    scope: { allowed: true, kind: 'read', route: '/LiveTv/Programs' }, tokenHash: value.physical.logins[0].tokenHash, complete: true,
+    intent: { startedMonotonicNs: '10000000000' }, result: { backend: 'goby' }, requestEntity: null };
+  const row = { ordinal: 101, scope: 'frame', method: 'GET', url: url.href, token_sha256: exchange.tokenHash, elapsed_ms: 1000,
+    allowed: true, origin: 'target', kind: 'read', headers: {}, response_headers: { 'X-Request-Id': id }, status: 404 };
+  value.physical.exchanges.push(exchange);
+  value.report = { outcome: 'scenario_completed', failure: null, requests: [row], page_errors: [{ kind: 'object' }], started_monotonic_ns: '9000000000', elapsed_ms: 3000,
+    cleanup: { browser_closed: true, tokens_rejected: true, media_stopped: true }, observer: { pending: [], drain_timeouts: [] },
+    browser_environment: { service_workers: 'allow', proxy_bypass: '<-loopback>', quic: 'disabled', nonproxied_webrtc_udp: 'disabled' },
+    tv_browse: { outcome: 'tv_browse_ui_flow_completed' }, native_rejection_diagnostics: { diagnostics_complete: true },
+    native_rejections: [{ id: 'native-rejection-1', elapsed_ms: 1200, diagnostic_state: 'captured_redacted', association: { state: 'matched', request_ordinal: 101 },
+      reason: { kind: 'response', request_id: id, status: 404, location: { origin: ORIGIN, path: url.pathname } } }] };
+  return value;
+}
+
+function currentRuntimeFixture() {
+  const pin = name => ({ path: '/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/synthetic-current/' + name, sha256: sha(name) });
+  const old = { pid: 100, startTicks: '1000', bootId: 'synthetic-boot' }, postgres = { ...old, pid: 200 };
+  const epoch = { version: 3, candidateProcess: old, postgresProcess: postgres, candidate: { binary: pin('goby'), runtime: pin('runtime.env'), units: { server: pin('server.service') },
+    processes: { server: { MainPID: '100', InvocationID: '1'.repeat(32), ActiveState: 'active' }, postgres: { MainPID: '200' } },
+    serverIdentity: { pid: 100, startTicks: '1000', invocationId: '1'.repeat(32) }, listener: { pid: 100, port: 19181, socketInode: '1' }, ports: { postgres: 55432 } },
+    lease: { backendPid: 300, backendStart: '2026-01-01T00:00:00Z', user: 'synthetic', database: 'synthetic', application: 'goby', clientHost: '127.0.0.1',
+      clientPort: 50000, mode: 'ExclusiveLock', granted: true, candidateConnection: { pid: 100, localPort: 50000, remotePort: 55432, socketInode: '3' } } };
+  const current = { candidateProcess: { ...old, pid: 101, startTicks: '2000' }, postgresProcess: clone(postgres), postgresProperties: clone(epoch.candidate.processes.postgres),
+    serverProperties: { ...epoch.candidate.processes.server, MainPID: '101', InvocationID: '2'.repeat(32) },
+    serverIdentity: { pid: 101, startTicks: '2000', invocationId: '2'.repeat(32) }, listener: { pid: 101, port: 19181, socketInode: '2' },
+    lease: { ...clone(epoch.lease), backendPid: 301, backendStart: '2026-01-01T00:00:01Z', clientPort: 50001,
+      candidateConnection: { pid: 101, localPort: 50001, remotePort: 55432, socketInode: '4' } } };
+  const envelope = { kind: 'audited-candidate-current-runtime-binding', version: 1, status: 'reviewed_current_runtime',
+    ...Object.fromEntries(['runtimeEpoch', 'seedBinding', 'admission', 'admissionCloseout', 'hosting'].map(key => [key, pin(key + '.json')])),
+    recovery: Object.fromEntries(['execution', 'independentReview', 'configuration', 'selectedStartIntent', 'selectedResult'].map(key => [key, pin(key + '.json')])),
+    current, preserved: Object.fromEntries(['binary', 'runtime', 'units'].map(key => [key, clone(epoch.candidate[key])])),
+    observation: pin('observation.json'), observationReview: pin('observation-review.json') };
+  const input = { version: 5, currentRuntime: pin('current-runtime.json'), runtimeEpoch: envelope.runtimeEpoch, seedBinding: envelope.seedBinding, admission: envelope.admission };
+  const authorizedInput = { ...clone(input), scenario: 'tv-browse', admissionCloseout: envelope.admissionCloseout, hosting: envelope.hosting };
+  const hostFields = 'Id LoadState ActiveState SubState MainPID InvocationID Result ExecMainStatus ControlGroup NRestarts'.split(' ');
+  const hosting = { process: { pid: 400 }, listener: { port: 28497 }, unitProperties: Object.fromEntries(hostFields.map(key => [key, 'synthetic'])) };
+  const hostIdentity = { process: hosting.process, listener: hosting.listener, unit: hosting.unitProperties };
+  const calls = { sql: 0, http: 0, browser: 0, service: 0, seed: 0, admission: 0, provision: 0 };
+  const observation = { kind: 'audited-candidate-current-runtime-observation', version: 1, runtimeEpoch: envelope.runtimeEpoch, recoveryExecution: envelope.recovery.execution,
+    hosting: envelope.hosting, source: pin('observe.py'), verification: pin('verification.json'), capturedAt: '2026-01-01T00:00:02Z', before: clone(current), after: clone(current),
+    preserved: clone(envelope.preserved), hostingBefore: clone(hostIdentity), hostingAfter: clone(hostIdentity), leaseQueryResult: pin('lease.json'), calls: { ...calls, sql: 2 } };
+  const observationReview = { kind: 'audited-candidate-current-runtime-observation-review', version: 1, status: 'passed', observation: envelope.observation,
+    source: observation.source, verification: observation.verification, calls, checks: Object.fromEntries('recordPins sourceAndVerification currentIdentity recoveryBinding preservedHashes hostingContinuity uniqueLease privateEvidence'.split(' ').map(key => [key, true])) };
+  const leaseRow = clone(current.lease); delete leaseRow.candidateConnection;
+  return { envelope, input, epoch, authorizedInput, records: { hosting, observation, observationReview, leaseQueryResult: [leaseRow] } };
+}
+
 function universalFixture(closer, scenario = 'mp3') {
   const currentManifest = { ...clone(manifest), scenario, catalog: { [scenario]: {
     id: ITEM, type: 'Audio', container: scenario, runtimeTicks: 6000000000 } } };
@@ -890,6 +1000,134 @@ function guardCases(closer) {
         row => { row.physical.logins[0].infos.push({ ...row.physical.logins[0].infos[0] }); },
       ]) { const changed = reviewedFixture(closer); mutate(changed); assert.throws(() => closer.verifyReviewedMovieTransition(changed.before, changed.after, changed.manifest, changed.seed, changed.physical, changed.retained)); }
     }],
+    ['reviewed_tv_is_a_distinct_contract_and_retains_the_consumed_actor', () => {
+      const value = reviewedTVFixture(closer), before = sha(jsonBytes(value.retained));
+      assert.equal(closer.validateReviewedTVBaseline(value.retained, value.seed).id, 'play_retained_tv');
+      closer.verifyReviewedTVBefore(value.before, value.manifest, value.seed, value.retained);
+      assert.throws(() => closer.validateReviewedTVBaseline(reviewedLatestFixture(closer).retained, value.seed));
+      assert.throws(() => closer.validateReviewedMovieBaseline(value.retained, value.seed));
+      for (const mutate of [row => { row.review.scenario = 'movie'; }, row => { row.review.preparedExpirations = []; },
+        row => { row.review.preparedExpirations[0].authSessionId = 'foreign'; }, row => { row.tvProvenance.closeout.playingReports = 1; },
+        row => { row.tvProvenance.closeout.inputEvidence.epoch = clone(row.review.sourceEpoch); }]) {
+        const changed = clone(value.retained); mutate(changed); assert.throws(() => closer.validateReviewedTVBaseline(changed, value.seed));
+      }
+      assert.equal(sha(jsonBytes(value.retained)), before);
+    }],
+    ['tv_post_browse_admission_allows_only_the_exact_revoked_probe_session', () => {
+      for (const mutate of [row => { row.review.postBrowseAdmission.sha256 = '0'.repeat(64); },
+        row => { row.postBrowseAdmission.controllerSessions.P.sameTokenRejected = false; },
+        row => { row.snapshot.tables.sessions.find(session => session.id === '9'.repeat(32)).id = '8'.repeat(32); },
+        row => { row.snapshot.tables.sessions.find(session => session.id === '9'.repeat(32)).revoked_at = null; },
+        row => { row.snapshot.tables.sessions.push(clone(row.snapshot.tables.sessions[0])); },
+        row => { row.snapshot.tables.play_sessions[0].auth_session_id = '9'.repeat(32); }]) {
+        const value = reviewedTVFixture(closer); mutate(value.retained);
+        assert.throws(() => closer.validateReviewedTVBaseline(value.retained, value.seed));
+      }
+    }],
+    ['reviewed_tv_preserves_all_history_foreign_references_and_sequences', () => {
+      for (const mutate of [row => { row.before.tables.user_item_data[0].play_count++; },
+        row => { row.before.tables.client_playback_references[0].client_nonce += '-changed'; },
+        row => { row.before.sequences.theme_owner_ids_id_seq.lastValue = '8'; },
+        row => { row.retained.snapshot.tables.sessions[0].revoked_at = null; },
+        row => { row.retained.snapshot.tables.play_sessions[0].position_ticks = 1; }]) {
+        const value = reviewedTVFixture(closer); mutate(value);
+        assert.throws(() => closer.verifyReviewedTVBefore(value.before, value.manifest, value.seed, value.retained));
+      }
+      const value = reviewedTVFixture(closer);
+      const proof = closer.verifyDurable(value.before, value.after, value.manifest, value.seed, value.physical, value.retained);
+      assert.equal(proof.countedPlays, 0); assert.equal(proof.sessionsRevoked, 1); assert.equal(proof.retainedPreparations.length, 1);
+      assert.deepEqual(proof.retainedBaselineExpiration.playSessionIds, ['play_retained_tv']);
+      assert.deepEqual(value.after.tables.user_item_data, value.before.tables.user_item_data);
+      assert.deepEqual(value.after.tables.client_playback_references, value.before.tables.client_playback_references);
+    }],
+    ['reviewed_tv_rejects_playback_userdata_and_unbound_preparation_changes', () => {
+      for (const mutate of [row => { row.after.tables.user_item_data.find(data => data.user_id === ACTOR).updated_at = row.after.capturedAt; },
+        row => { row.after.tables.play_sessions.find(play => play.id === 'play_synthetic').counted = true; },
+        row => { row.after.tables.play_sessions.find(play => play.id === 'play_retained_tv').position_ticks = 1; },
+        row => { row.physical.logins[0].infos[0].exchange.complete = false; },
+        row => { row.physical.logins[0].infos[0].exchange.tokenHash = '0'.repeat(64); },
+        row => { row.physical.logins[0].infos[0].body.UserId = CONTROL; },
+        row => { row.physical.logins[0].infos.push(row.physical.logins[0].infos[0]); },
+        row => { row.physical.exchanges.push({ request: { kind: 'media' } }); },
+        row => { row.physical.exchanges.push({ request: { path: '/emby/Sessions/Playing/Stopped' } }); }]) {
+        const value = reviewedTVFixture(closer); mutate(value);
+        assert.throws(() => closer.verifyDurable(value.before, value.after, value.manifest, value.seed, value.physical, value.retained));
+      }
+      assert.throws(() => closer.verifyTVNoPlayback({ requests: [{ kind: 'media' }] }, []), /reviewed_tv_playback_forbidden/);
+    }],
+    ['tv_diagnostic_preserves_ui_failure_without_waiving_cleanup_or_unknown_exceptions', () => {
+      const value = nativeTVFixture(closer), result = closer.tvDiagnosticUIResult(value.report, value.manifest, value.physical);
+      assert.equal(result.uiAccepted, false); assert.equal(result.clientAcceptance, false); assert.equal(result.diagnostic.status, 'response_identified');
+      assert.equal(result.originalBrowserOutcome, 'scenario_completed'); assert.equal(result.originalBrowserFailure, null);
+      value.report.outcome = 'failed'; value.report.failure = 'candidate_scenario_failed';
+      assert.equal(closer.tvDiagnosticUIResult(value.report, value.manifest, value.physical).originalBrowserFailure, 'candidate_scenario_failed');
+      for (const mutate of [row => { row.cleanup.tokens_rejected = false; }, row => { row.cleanup.browser_closed = false; },
+        row => { row.cleanup.ui_failures = [{ operation: 'logout' }]; }, row => { row.observer.pending = [1]; }, row => { row.observer.drain_timeouts = [1]; }]) {
+        const report = clone(value.report); mutate(report); assert.throws(() => closer.tvDiagnosticUIResult(report, value.manifest, value.physical));
+      }
+      const clean = nativeTVFixture(closer); clean.report.page_errors = [];
+      const broken = { ...clean.physical, exchanges: [{ get scope() { throw new Error('unexpected_guard_fault'); } }] };
+      assert.throws(() => closer.tvDiagnosticUIResult(clean.report, clean.manifest, broken), /unexpected_guard_fault/);
+    }],
+    ['tv_native_response_requires_unique_physical_identity_and_exact_context', () => {
+      const value = nativeTVFixture(closer), result = closer.tvNativeResponseDiagnostic(value.report, value.physical.exchanges);
+      assert.equal(result.responseMatches.length, 1); assert.equal(result.responseMatches[0].physicalOrdinal, 2);
+      assert.equal(result.responseMatches[0].pageErrorAttribution, false);
+      for (const mutate of [row => { row.report.requests[0].status = 403; }, row => { row.report.requests[0].url += '?different=1'; },
+        row => { row.report.requests[0].token_sha256 = '0'.repeat(64); }, row => { row.report.requests[0].elapsed_ms = 9000; },
+        row => { row.report.native_rejections[0].association.state = 'ambiguous'; },
+        row => { row.physical.exchanges.push({ ...row.physical.exchanges[1], ordinal: 3, complete: false }); },
+        row => { row.report.native_rejections[0].reason = { kind: 'primitive', type: 'undefined', value: null }; },
+        row => { row.report.native_rejections = []; }]) {
+        const changed = nativeTVFixture(closer); mutate(changed);
+        assert.equal(closer.tvNativeResponseDiagnostic(changed.report, changed.physical.exchanges).status, 'inconclusive');
+      }
+    }],
+    ['current_runtime_selects_recovered_identity_without_rewriting_historical_epoch', () => {
+      const value = currentRuntimeFixture(), before = sha(jsonBytes(value.epoch));
+      const current = closer.validateCurrentRuntime(value.envelope, value.input, value.epoch, value.authorizedInput, value.records);
+      assert.equal(current.candidateProcess.pid, 101); assert.equal(value.epoch.candidateProcess.pid, 100); assert.equal(sha(jsonBytes(value.epoch)), before);
+      for (const mutate of [row => { row.envelope.current.candidateProcess.pid = 100; }, row => { row.envelope.current.candidateProcess.bootId = 'other'; },
+        row => { row.envelope.current.postgresProcess.pid++; }, row => { row.envelope.current.lease.granted = false; },
+        row => { row.envelope.current.lease.candidateConnection.pid = 100; }, row => { row.envelope.preserved.runtime.sha256 = '0'.repeat(64); },
+        row => { row.authorizedInput.currentRuntime.sha256 = '0'.repeat(64); }, row => { row.records.observation.after.candidateProcess.pid = 100; },
+        row => { row.records.observationReview.checks.uniqueLease = false; }, row => { row.records.leaseQueryResult.push(clone(row.records.leaseQueryResult[0])); }]) {
+        const changed = currentRuntimeFixture(); mutate(changed);
+        assert.throws(() => closer.validateCurrentRuntime(changed.envelope, changed.input, changed.epoch, changed.authorizedInput, changed.records));
+      }
+    }],
+    ['version5_input_requires_current_runtime_without_relaxing_legacy_versions', () => {
+      const value = currentRuntimeFixture(), pin = value.input.currentRuntime;
+      const input = { kind: 'audited-candidate-client-closeout-input', version: 5, output: '/opt/goby-test/synthetic-tv/output', sources: {}, retainedBaseline: pin, serverLog: pin, currentRuntime: pin };
+      for (const name of ['manifest', 'observation', 'summary', 'gatewayAttestation', 'gatewayIndex', 'runtimeEpoch', 'admission', 'seedBinding', 'sourceBefore', 'sourceAfter', 'boundary']) input[name] = pin;
+      for (const name of ['closer', 'adapter', 'gateway', 'proxy', 'sessionProof', 'movie', 'audio', 'subtitles', 'tv']) input.sources[name] = pin;
+      closer.validateCloseoutInput(input);
+      for (const changed of [{ ...input, currentRuntime: null }, { ...input, version: 4 }, { ...input, serverLog: null }]) assert.throws(() => closer.validateCloseoutInput(changed));
+      const missing = { ...input }; delete missing.currentRuntime; assert.throws(() => closer.validateCloseoutInput(missing));
+    }],
+    ['version5_log_binds_current_runtime_pin_and_recovered_process_only', () => {
+      const value = currentRuntimeFixture(), current = closer.validateCurrentRuntime(value.envelope, value.input, value.epoch, value.authorizedInput, value.records);
+      const base = path.dirname(value.input.currentRuntime.path), pin = name => ({ path: base + '/' + name, sha256: sha(name) });
+      const beforeBytes = Buffer.from('{"msg":"before"}\n'), afterBytes = Buffer.concat([beforeBytes, Buffer.from('{"msg":"after"}\n')]);
+      const manifest = { runId: 'tv-browse-02', scenario: 'tv-browse', serverId: 'a'.repeat(32), source: { manifestSha256: sha('manifest'), binarySha256: sha('binary') }, output: base + '/browser' };
+      const input = { ...value.input, retainedBaseline: pin('review.json'), serverLog: pin('server-log.json'), sources: {} };
+      const authorizedInput = { ...value.authorizedInput, kind: 'audited-candidate-client-run-input', runId: manifest.runId, output: base, retainedBaseline: input.retainedBaseline, sources: {} };
+      const authorization = pin('run-input.json'), approval = { kind: 'audited-candidate-client-approval', runId: manifest.runId, scenario: manifest.scenario,
+        sourceManifestSha256: manifest.source.manifestSha256, binarySha256: manifest.source.binarySha256, serverId: manifest.serverId, isolatedCandidate: true, authorizedRunInput: authorization };
+      const snapshot = (name, capturedAt, bytes) => ({ capturedAt, candidateBefore: clone(current.candidateProcess), candidateAfter: clone(current.candidateProcess),
+        file: { path: closer.CANDIDATE_LOG, device: '1', inode: '2', uid: 0, mode: 0o600, links: 1 }, length: bytes.length,
+        content: { path: base + '/' + name, sha256: sha(bytes) } });
+      const receipt = { kind: 'audited-candidate-client-server-log', version: 2, runId: manifest.runId, runtimeEpoch: input.runtimeEpoch, currentRuntime: input.currentRuntime,
+        input: authorization, controller: pin('run-audited-candidate-client.py'), before: snapshot('before.raw', '2026-01-01T00:00:02Z', beforeBytes),
+        after: snapshot('after.raw', '2026-01-01T00:00:05Z', afterBytes) };
+      const context = { manifest, epoch: value.epoch, input, approval, authorizedInput, currentIdentity: current, observation: { started_at: '2026-01-01T00:00:03Z', elapsed_ms: 1000 } };
+      assert.equal(closer.validateServerLog(receipt, beforeBytes, afterBytes, context).events.length, 0);
+      for (const mutate of [row => { row.version = 1; }, row => { row.currentRuntime = pin('other.json'); },
+        row => { row.before.candidateBefore = clone(value.epoch.candidateProcess); }]) {
+        const changed = clone(receipt); mutate(changed); assert.throws(() => closer.validateServerLog(changed, beforeBytes, afterBytes, context));
+      }
+      assert.throws(() => closer.validateServerLog(receipt, beforeBytes, afterBytes, { ...context, authorizedInput: { ...authorizedInput, currentRuntime: pin('other.json') } }));
+    }],
     ['partial_media_rejects_missing_abort_time_wrong_error_duplicates_or_no_action', () => {
       for (const [name, mutate, expected] of [
         ['missing_time', value => { delete value.report.requests[0].failed_elapsed_ms; }, /media_partial_not_browser_abort/],
@@ -1314,11 +1552,10 @@ async function savedCurrentLineageReplay(closer) {
     browserInputsCreated: 0, httpCalls: 0, sqlCalls: 0, serviceCalls: 0, clientAcceptance: false };
 }
 
-async function savedReviewedBaselineReplay(closer, inputPin) {
-  const exactKeys = (value, keys) => value !== null && typeof value === 'object' && !Array.isArray(value) &&
-    JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
-  const read = async pin => {
-    assert(exactKeys(pin, ['path', 'sha256']) && typeof pin.path === 'string' && path.isAbsolute(pin.path) && !pin.path.split(path.sep).includes('..') && /^[a-f0-9]{64}$/.test(pin.sha256));
+const replayExactKeys = (value, keys) => value !== null && typeof value === 'object' && !Array.isArray(value) &&
+  JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
+async function readReplayJSON(closer, pin) {
+    assert(replayExactKeys(pin, ['path', 'sha256']) && typeof pin.path === 'string' && path.isAbsolute(pin.path) && !pin.path.split(path.sep).includes('..') && /^[a-f0-9]{64}$/.test(pin.sha256));
     const handle = await fs.open(pin.path, constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
       const before = await handle.stat({ bigint: true });
@@ -1327,7 +1564,10 @@ async function savedReviewedBaselineReplay(closer, inputPin) {
       assert(['dev', 'ino', 'size', 'mtimeNs', 'ctimeNs', 'mode'].every(key => before[key] === after[key] && before[key] === current[key]));
       assert.equal(sha(bytes), pin.sha256); return closer.strictJSON(bytes);
     } finally { await handle.close(); }
-  };
+}
+
+async function savedReviewedBaselineReplay(closer, inputPin) {
+  const exactKeys = replayExactKeys, read = pin => readReplayJSON(closer, pin);
   const input = await read(inputPin);
   assert(exactKeys(input, ['kind', 'version', 'cases']) && input.kind === 'audited-candidate-reviewed-baseline-replay-input' && input.version === 1);
   assert.deepEqual(input.cases.map(row => row.name), ['movie05', 'movie06', 'latest-subtitles']);
@@ -1365,11 +1605,40 @@ async function savedReviewedBaselineReplay(closer, inputPin) {
   return results;
 }
 
+async function savedReviewedTVBaselineReplay(closer, inputPin) {
+  const input = await readReplayJSON(closer, inputPin);
+  assert(replayExactKeys(input, ['kind', 'version', 'review', 'seed', 'inputBinding']) && input.kind === 'audited-candidate-reviewed-tv-baseline-replay-input' && input.version === 1 &&
+    replayExactKeys(input.inputBinding, ['runtimeEpoch', 'seedBinding']));
+  assert.deepEqual(input.seed, input.inputBinding.seedBinding);
+  const seed = await readReplayJSON(closer, input.seed), retained = await closer.readReviewedTVBaseline(input.review, input.inputBinding, seed);
+  const snapshot = retained.snapshot, manifest = { scenario: 'tv-browse', actor: retained.review.actor }, before = sha(jsonBytes(retained));
+  assert.equal(retained.manifest.scenario, 'subtitles'); assert.equal(retained.tvProvenance.manifest.scenario, 'tv-browse');
+  assert.deepEqual([snapshot.tables.sessions.length, snapshot.tables.play_sessions.length, snapshot.tables.client_playback_references.length], [21, 13, 2]);
+  assert.equal(Object.keys(snapshot.tables).length, 35); assert.equal(Object.keys(snapshot.sequences).length, 5);
+  assert.equal(retained.review.preparedExpirations.length, 1);
+  closer.verifyReviewedTVBefore(clone(snapshot), manifest, seed, retained);
+  for (const table of Object.keys(snapshot.tables)) {
+    const changed = clone(snapshot);
+    if (changed.tables[table].length) changed.tables[table][0].unreviewed = true; else changed.tables[table].push({ unreviewed: true });
+    assert.throws(() => closer.verifyReviewedTVBefore(changed, manifest, seed, retained), /reviewed_tv_fresh_state_changed/);
+  }
+  for (const sequence of Object.keys(snapshot.sequences)) {
+    const changed = clone(snapshot); changed.sequences[sequence].lastValue = changed.sequences[sequence].lastValue === '0' ? '1' : '0';
+    assert.throws(() => closer.verifyReviewedTVBefore(changed, manifest, seed, retained), /reviewed_tv_fresh_state_changed/);
+  }
+  assert.equal(sha(jsonBytes(retained)), before);
+  return { review: input.review, sourceSnapshot: retained.review.snapshot, tvProvenance: retained.review.tvProvenance,
+    tablesCompared: 35, sequencesCompared: 5, rejectedTableMutations: 35, rejectedSequenceMutations: 5, foreignClientReferencesPreserved: 2,
+    preparedExpirationsExplicitlyReviewed: 1, productionLoader: 'readReviewedTVBaseline', originalInMemoryEvidenceUnchanged: true,
+    browserInputsCreated: 0, httpCalls: 0, sqlCalls: 0, serviceCalls: 0, clientAcceptance: false };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const replay = args.length === 5 && args[4] === '--replay-retained-snapshot';
   const reviewed = args.length === 8 && args[4] === '--reviewed-baselines' && args[6] === '--reviewed-baselines-sha256';
-  assert((args.length === 4 || replay || reviewed) && args[0] === '--source' && args[2] === '--output', 'arguments_required');
+  const reviewedTV = args.length === 8 && args[4] === '--reviewed-tv-baseline' && args[6] === '--reviewed-tv-baseline-sha256';
+  assert((args.length === 4 || replay || reviewed || reviewedTV) && args[0] === '--source' && args[2] === '--output', 'arguments_required');
   assert(process.platform === 'linux' && process.getuid?.() === 0, 'remote_linux_root_required');
   const source = path.resolve(args[1]), output = args[3], ownPath = fileURLToPath(import.meta.url);
   await protectedOutput(output); process.umask(0o077);
@@ -1382,7 +1651,7 @@ async function main() {
     catch (error) { tests.push({ name, outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'pure_guard_assertion_failed' }); }
   }
-  let replayedPins = [], currentLineageReplay = null, reviewedBaselineReplay = [];
+  let replayedPins = [], currentLineageReplay = null, reviewedBaselineReplay = [], reviewedTVBaselineReplay = null;
   if (replay) {
     try { replayedPins = await savedRetainedReplay(closer); tests.push({ name: 'saved_movie04_complete_durable_comparison_with_synthetic_new_play', outcome: 'passed' }); }
     catch (error) { tests.push({ name: 'saved_movie04_complete_durable_comparison_with_synthetic_new_play', outcome: 'failed', errorType: error.name,
@@ -1398,9 +1667,15 @@ async function main() {
     } catch (error) { tests.push({ name: 'saved_reviewed_baselines', outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'saved_reviewed_baseline_assertion_failed' }); }
   }
+  if (reviewedTV) {
+    try { reviewedTVBaselineReplay = await savedReviewedTVBaselineReplay(closer, { path: args[5], sha256: args[7] });
+      tests.push({ name: 'saved_reviewed_tv_baseline', outcome: 'passed' }); }
+    catch (error) { tests.push({ name: 'saved_reviewed_tv_baseline', outcome: 'failed', errorType: error.name,
+      failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'saved_reviewed_tv_assertion_failed' }); }
+  }
   const unchanged = (await Promise.all(Object.entries(sources).map(async ([filename, digest]) => sha(await fs.readFile(filename)) === digest))).every(Boolean);
   const report = { kind: 'audited-candidate-client-closeout-pure-guards', version: 1,
-    scope: 'Pure synthetic fixtures; optional saved movie04/admission04 and actual epoch3/admission05 lineage, or three explicitly reviewed saved baselines through the production loader. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay, reviewedBaselineReplay,
+    scope: 'Pure synthetic fixtures and optional explicitly pinned saved-state replay through production loaders. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay, reviewedBaselineReplay, reviewedTVBaselineReplay,
     source: { path: source, sha256: sources[source] }, sources, output, testCount: tests.length,
     passed: tests.filter(row => row.outcome === 'passed').length, failed: tests.filter(row => row.outcome !== 'passed').length,
     sourceUnchanged: unchanged, tests, clientAcceptanceClaim: false, endToEndExecuted: false,
@@ -1412,7 +1687,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (reviewed ? 46 : replay ? 45 : 43) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (reviewedTV ? 53 : reviewed ? 55 : replay ? 54 : 52) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

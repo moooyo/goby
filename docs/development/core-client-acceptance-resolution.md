@@ -15,6 +15,12 @@ inputs and separate evidence for 57 generated assets. Git inspection at
 administrator source or packaging. Selecting the artifact does not establish
 current runtime admission or transfer old client acceptance.
 
+The [candidate transition decision](e11-candidate-transition-decision.md) selects
+the existing audited candidate A as the E11 transition target. Its established
+client/catalog/actor lineage will be retained through diagnosis and final
+acceptance. Candidate B remains preserved as independent embedded-candidate
+evidence; no third candidate or actor reset is selected.
+
 The [source comparison](core-artifact-source-comparison.md) now binds the actual
 A/B/E11 differences: core audio/playback/authentication files are unchanged,
 while E11 changes asset selection and the shared task/scan lifecycle. Its startup
@@ -24,15 +30,15 @@ zero-write start.
 
 | Artifact | Retained purpose | Remaining condition |
 | --- | --- | --- |
-| Audited client candidate `b0d6769...` | Reproduce and explain saved movie/episode/subtitle evidence; retain its MP3/FLAC acceptance | Any further diagnostic needs a reviewed current closed-state input and a discriminating question |
-| Embedded candidate `59096592...` | Retain completed provision, seed and admission | It is not E11; do not run a final acceptance sequence against it and silently transfer the result |
+| Audited client candidate `b0d6769...` | Selected existing target for the E11 transition; retain its diagnostic and MP3/FLAC history | Diagnosis and transition require their own reviewed current-state inputs; final acceptance must bind E11 |
+| Embedded candidate `59096592...` | Preserve completed provision, seed and admission as independent evidence | It is not the selected final-client transition target; do not move/reset actors or transfer its admission to A/E11 |
 | E11 package `7a681218...` | Intended next internal delivery artifact | A bounded candidate transition/admission must bind its actual state before final core-client acceptance |
 
-Do not create another candidate merely to avoid the existing state. Before a
-transition, choose the existing candidate whose retained catalog/actors and
-admission lineage permit the smallest justified change; preserve both existing
-instances until that choice and its recovery/cleanup contract are reviewed.
-Existing configurations remain hash-only and master/key files stat-only.
+Follow the [A-to-E11 state contract](e11-candidate-transition-decision.md#transition-state-contract)
+to prepare one bounded transition, including the possible new media-refresh task
+definition and the actual administrator asset-selection mode. This selection is
+not deployment authorization. Preserve both existing instances and all consumed
+history; existing configurations remain hash-only and master/key files stat-only.
 
 The next movie baseline must use the latest complete closed-state snapshot, not
 only the last movie snapshot. Subtitles01 retained two foreign audio references;
@@ -47,8 +53,8 @@ history and UserData; it does not replace the current full-library baseline.
 | --- | --- | --- | --- |
 | 1 — complete in its tool scope | Saved subtitle context291 identifies physical294, but the matcher also accepted physical293 | [35 remote guards and the exact saved 293/294 replay](core-response-identity-verification.json) passed independent review. Context291 remains associated with 294 and is excluded from 293 | No inference about why 293 ended; the failed subtitle run stays failed |
 | 2 — offline contract verified | Movie controller v3 embeds movie05 state and cannot accept the later closed state | [Version-4 contract verification](reviewed-movie-baseline-verification.json) passed Python 47, JavaScript 46 and 12 log/history checks with independent review. Both implementations load actual movie05, movie06 and latest Subtitles01 baselines, preserving 35 tables, five sequences and two foreign references | New component admission remains required. The known old closer is rejected before live work; no browser input is admitted by this tool checkpoint |
-| 3 — question selected, entry contract pending | Movie/episode/subtitle page errors remain unattributed; Subtitles01 captured primitive undefined without a request association | The [TV response observation decision](core-tv-response-observation-decision.md) selects one no-playback browse using the existing native hook to seek a unique Response/request binding. Old reference movie/subtitle already recorded errors and are not queued for blind repetition | TV retained-state and component/current-runtime admission are required before execution. Undefined, no unique binding or no recurrence ends this diagnostic branch; original errors remain unresolved |
-| 4 | Final core acceptance does not yet bind E11 | After the preceding decision, define one candidate transition/admission and the original-client movie/episode/subtitle sequence against the intended artifact. Reuse only unchanged, source-bound proofs | No main promotion before actual core acceptance and current recovery/deployment prerequisites |
+| 3 — Response identified; diagnostic branch finished | [TV browse02](audited-tv-browse02-diagnostic.json) uniquely binds native-rejection-1/context262 to physical264, GET `/emby/LiveTv/Programs`, HTTP 404. Its one pageerror remains a separate unaccepted UI result | Review this exact unsupported query's product contract. The pinned 4.9.5 API snapshot omits its successful response schema; prepare one bounded authenticated query against the existing empty-library original-client host to establish the no-program response shape before choosing a real zero-EPG capability | No more TV diagnostic tooling or replay of this input. Do not turn the fallback into an unproved empty-success stub, infer full Live TV support, or waive the old errors |
+| 4 | Final core acceptance does not yet bind E11 | Prepare the [selected A-to-E11 transition](e11-candidate-transition-decision.md) and its final movie/episode/subtitle journeys; close the bounded TV branch before the actual transition, without waiting indefinitely for old-error attribution. Reuse audio evidence only through its explicit source/transition bridge | Candidate selection is complete; no transition input is admitted. No main promotion before actual core acceptance and current recovery/deployment prerequisites |
 
 Each completed action must reduce a named uncertainty or produce a concrete
 source correction and its relevant evidence. If saved records cannot distinguish
@@ -56,6 +62,24 @@ a hypothesis, record the missing observable explicitly instead of repeating the
 same identity review. An additional browser run must state its artifact, client
 build, retained actor/state, observable, expected alternatives and original
 request/time/cleanup boundaries before dispatch.
+
+The next reference question is restricted to response shape on the existing
+owned Emby 4.9.5.0 host. Reuse its checked process/listener namespace, the existing
+bounded connection/response primitives, and the startup report's private
+credentials descriptor. A new fixed input may contain only login, one GET
+Programs, logout, and a same-token Sessions request expecting 401. The old
+startup runner, wizard, consumed input and fixed route/token restrictions remain
+unchanged. The empty host has no corresponding Series: omit `LibrarySeriesId`
+and state explicitly that this does not prove its filtering or ordinary-user
+permissions. Do not read reference source/database or environment-file content,
+change egress, or build a general reference harness for this question.
+
+If a supported zero-EPG query is selected after that evidence, specify its actual
+meaning, authentication, subject/Series authorization and strict input rules
+before implementation. Do not return local Episodes as television programs or
+hide authorization/input/internal failures. POST Programs, channels, tuners,
+DVR and Live TV playback remain deferred. Any product fix creates a successor
+to E11 with its own relevant and final-source verification.
 
 ## Current subtitle interpretation
 

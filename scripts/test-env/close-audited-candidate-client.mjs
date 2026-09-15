@@ -34,6 +34,7 @@ export const BINARY_SUCCESSOR = {
   sourceManifest: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json', sha256: 'bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff' },
 };
 export const REUSED_ADMISSION04 = { path: RETAINED_ROOT + '/candidate-live-admission-04/private/report.json', sha256: '05083c7cc5c65c62e30018136b6a7d383c144c9742d96eaecc52e9c2cfc19653' };
+export const TV_POST_BROWSE_ADMISSION = { path: RETAINED_ROOT + '/candidate-live-admission-05/private/report.json', sha256: 'b73a2d30926c68886bd1674a356e6330eab2072afb53fb1fa1f695c5337f8535' };
 const PUBLIC_ADMISSION03_CLOSEOUT = { path: RETAINED_ROOT + '/candidate-admission03-failure-closeout.json', sha256: '090d04421c8fb847822695143483b153f096e2707571c14a01d4860d48233e2a' };
 export const AFFECTED_TV_TRANSITION_CLOSEOUT = { path: RETAINED_ROOT + '/candidate-tv-parent-transition-closeout.json', sha256: 'c9e03c008d0d1dbf0b66b8070692738e50a2ca57c29f89cbd40c1fba38d597ba' };
 const AFFECTED_TV_CHECKS = ['runtimeIdentity', 'tvDefaultParents', 'tvDetailParents', 'ordinaryAuthorization', 'healthWindow60Seconds', 'sourceAndInactivePreserved', 'sessionCleanup'];
@@ -423,21 +424,24 @@ function routeItem(exchange) { return /^\/Items\/([^/]+)\/PlaybackInfo\/?$/i.exe
 function bodyPosition(body, fallback) { if (!Object.hasOwn(body, 'PositionTicks')) return fallback; need(integer(body.PositionTicks), 'position_ticks_invalid'); return body.PositionTicks; }
 function mediaSourceMatches(value, canonical, item, correlated) { return value === canonical || item?.type === 'Audio' && correlated && value === item.id; }
 
-export function validateServerLog(receipt, beforeBytes, afterBytes, { manifest, epoch, input, approval, observation, authorizedInput }) {
-  need(exact(receipt, ['kind', 'version', 'runId', 'runtimeEpoch', 'input', 'controller', 'before', 'after']) &&
-    receipt.kind === 'audited-candidate-client-server-log' && receipt.version === 1 && receipt.runId === manifest.runId &&
+export function validateServerLog(receipt, beforeBytes, afterBytes, { manifest, epoch, input, approval, observation, authorizedInput, currentIdentity = null }) {
+  const currentProcess = input.version === 5 ? currentIdentity?.candidateProcess : epoch.candidateProcess;
+  need(own(currentProcess) && exact(receipt, ['kind', 'version', 'runId', 'runtimeEpoch', 'input', 'controller', 'before', 'after', ...(input.version === 5 ? ['currentRuntime'] : [])]) &&
+    receipt.kind === 'audited-candidate-client-server-log' && receipt.version === (input.version === 5 ? 2 : 1) && receipt.runId === manifest.runId &&
+    (input.version !== 5 || equal(receipt.currentRuntime, input.currentRuntime)) &&
     equal(receipt.runtimeEpoch, input.runtimeEpoch) && descriptor(receipt.input) && descriptor(receipt.controller) &&
     receipt.controller.path.startsWith(RETAINED_ROOT + '/') && path.basename(receipt.controller.path) === 'run-audited-candidate-client.py', 'server_log_receipt_binding');
   need(approval?.kind === 'audited-candidate-client-approval' && approval.runId === manifest.runId && approval.scenario === manifest.scenario &&
     approval.sourceManifestSha256 === manifest.source.manifestSha256 && approval.binarySha256 === manifest.source.binarySha256 &&
     approval.serverId === manifest.serverId && approval.isolatedCandidate === true && equal(approval.authorizedRunInput, receipt.input) &&
-    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === (input.version === 4 ? 4 : 3) && authorizedInput.runId === manifest.runId &&
+    authorizedInput?.kind === 'audited-candidate-client-run-input' && authorizedInput.version === ([4, 5].includes(input.version) ? input.version : 3) && authorizedInput.runId === manifest.runId &&
     authorizedInput.scenario === manifest.scenario && authorizedInput.output === path.dirname(manifest.output) &&
     equal(authorizedInput.runtimeEpoch, input.runtimeEpoch) && equal(authorizedInput.retainedBaseline, input.retainedBaseline) &&
+    (input.version !== 5 || descriptor(input.currentRuntime) && equal(authorizedInput.currentRuntime, input.currentRuntime)) &&
     equal(authorizedInput.sources, input.sources), 'server_log_authorized_input');
   for (const [snapshot, bytes] of [[receipt.before, beforeBytes], [receipt.after, afterBytes]]) {
     need(exact(snapshot, ['capturedAt', 'candidateBefore', 'candidateAfter', 'file', 'length', 'content']) &&
-      equal(snapshot.candidateBefore, epoch.candidateProcess) && equal(snapshot.candidateAfter, epoch.candidateProcess) &&
+      equal(snapshot.candidateBefore, currentProcess) && equal(snapshot.candidateAfter, currentProcess) &&
       exact(snapshot.file, ['path', 'device', 'inode', 'uid', 'mode', 'links']) && snapshot.file.path === CANDIDATE_LOG &&
       typeof snapshot.file.device === 'string' && typeof snapshot.file.inode === 'string' && /^[1-9][0-9]*$/.test(snapshot.file.device) && /^[1-9][0-9]*$/.test(snapshot.file.inode) &&
       snapshot.file.uid === 0 && snapshot.file.mode === 0o600 && snapshot.file.links === 1 &&
@@ -894,6 +898,111 @@ export function validateReviewedMovieBaseline(retained, seed) {
   return prepared;
 }
 
+export function validateReviewedTVBaselineInput(review) {
+  need(exact(review, ['kind', 'version', 'status', 'scenario', 'closeout', 'snapshot', 'sourceEpoch', 'runtimeEpoch', 'seedBinding', 'manifest', 'boundary', 'tvProvenance', 'postBrowseAdmission', 'actor', 'item', 'preparedExpirations']) &&
+    review.kind === 'audited-candidate-reviewed-tv-baseline' && review.version === 1 && review.status === 'reviewed_closed_state' && review.scenario === 'tv-browse' &&
+    ['closeout', 'snapshot', 'sourceEpoch', 'runtimeEpoch', 'seedBinding', 'manifest', 'boundary'].every(key => descriptor(review[key])) &&
+    exact(review.tvProvenance, ['closeout', 'snapshot', 'sourceEpoch', 'manifest']) && Object.values(review.tvProvenance).every(descriptor) &&
+    equal(review.postBrowseAdmission, TV_POST_BROWSE_ADMISSION), 'reviewed_tv_input_invalid');
+  need(exact(review.actor, ['id', 'username']) && /^[a-f0-9]{32}$/.test(review.actor.id) && typeof review.actor.username === 'string' && review.actor.username.length > 0 &&
+    exact(review.item, ['id', 'mediaSourceId', 'runtimeTicks']) && /^[a-f0-9]{32}$/.test(review.item.id) && review.item.mediaSourceId === 'mediasource_' + review.item.id &&
+    integer(review.item.runtimeTicks) && review.item.runtimeTicks > 0, 'reviewed_tv_identity_invalid');
+  need(Array.isArray(review.preparedExpirations) && review.preparedExpirations.length === 1 && review.preparedExpirations.every(row =>
+    exact(row, ['playSessionId', 'authSessionId']) && typeof row.playSessionId === 'string' && /^play_[A-Za-z0-9_]+$/.test(row.playSessionId) &&
+    typeof row.authSessionId === 'string' && /^[A-Za-z0-9_-]+$/.test(row.authSessionId)), 'reviewed_tv_expiration_allowlist_invalid');
+  return review;
+}
+
+function tvDetailItem(seed) {
+  const item = one(seed.catalog.episodes.filter(row => row.type === 'Episode' && row.indexNumber === 1 && row.parentIndexNumber === 2), 'reviewed_tv_detail_item_missing');
+  need(integer(item.runtimeTicks) && item.runtimeTicks > 0 && /^[a-f0-9]{32}$/.test(item.id), 'reviewed_tv_detail_item_invalid');
+  return item;
+}
+
+/** The TV actor keeps its own provenance, independent of the latest run's actor. */
+export function validateReviewedTVBaseline(retained, seed) {
+  need(exact(retained, ['review', 'closeout', 'snapshot', 'sourceEpoch', 'manifest', 'boundary', 'tvProvenance', 'postBrowseAdmission', 'inputBinding']), 'reviewed_tv_evidence_invalid');
+  const { review, snapshot, inputBinding, tvProvenance: prior } = retained;
+  validateReviewedTVBaselineInput(review);
+  need(exact(inputBinding, ['runtimeEpoch', 'seedBinding']) && descriptor(inputBinding.runtimeEpoch) && descriptor(inputBinding.seedBinding) &&
+    equal(review.runtimeEpoch, inputBinding.runtimeEpoch) && equal(review.seedBinding, inputBinding.seedBinding) && equal(seed.runtimeEpoch, inputBinding.runtimeEpoch), 'reviewed_tv_current_binding');
+  need(exact(prior, ['closeout', 'snapshot', 'sourceEpoch', 'manifest']) && retained.manifest?.scenario === 'subtitles', 'reviewed_tv_provenance_invalid');
+  validateReviewedClosedState(retained, review, seed, retained.boundary);
+  const actor = seed.actors['tv-browse'], item = tvDetailItem(seed), source = prior.sourceEpoch?.currentSource, manifest = prior.manifest, closeout = prior.closeout;
+  need(equal(review.actor, { id: actor.id, username: actor.username }) &&
+    equal(review.item, { id: item.id, mediaSourceId: 'mediasource_' + item.id, runtimeTicks: item.runtimeTicks }), 'reviewed_tv_actor_or_item_binding');
+  need(prior.sourceEpoch?.kind === 'audited-candidate-runtime-epoch' && [2, 3].includes(prior.sourceEpoch.version) &&
+    exact(source, ['archiveSha256', 'sourceManifest', 'binary', 'fullReport', 'schema']) && SHA.test(source.archiveSha256) && source.schema === 28 &&
+    ['sourceManifest', 'binary', 'fullReport'].every(key => descriptor(source[key])), 'reviewed_tv_source_epoch');
+  need(manifest?.kind === 'audited-candidate-client-input' && manifest.version === 1 && manifest.scenario === 'tv-browse' &&
+    typeof manifest.runId === 'string' && /^tv-browse-[0-9]{2,}$/.test(manifest.runId) && manifest.serverId === seed.serverId && equal(manifest.actor, review.actor) &&
+    equal(manifest.source, { manifestSha256: source.sourceManifest.sha256, binarySha256: source.binary.sha256, schema: source.schema }) &&
+    ['tvLibrary', 'series', 'seasons', 'episodes'].every(key => equal(manifest.catalog?.[key], seed.catalog[key]) && equal(retained.manifest.catalog?.[key], seed.catalog[key])), 'reviewed_tv_manifest_binding');
+  const data = closeout?.checks?.ownedData, runtime = closeout?.checks?.savedRuntimeAndWorkers;
+  need(closeout?.kind === 'audited-tv-browse' + manifest.runId.slice('tv-browse-'.length) + '-owned-state-closeout' && closeout.runId === manifest.runId &&
+    closeout.status === 'owned_state_closed_client_acceptance_pending' && closeout.clientAcceptance === false && !Object.hasOwn(closeout, 'failure') &&
+    closeout.browserOutcome === 'failed' && closeout.browserExitCode === 1 && closeout.gatewayExitCode === 0 && closeout.physicalMediaRequests === 0 && closeout.playingReports === 0 &&
+    runtime?.candidateContinuous === true && runtime.postgresContinuous === true && runtime.leaseExact === true && ['browser', 'gateway'].every(role =>
+      runtime.workers?.[role]?.pidAbsentAsRecorded === true && runtime.workers[role].recursiveCgroupEmptyAsRecorded === true), 'reviewed_tv_provenance_not_closed');
+  need(equal(closeout.inputEvidence?.after, review.tvProvenance.snapshot) && equal(closeout.inputEvidence?.epoch, review.tvProvenance.sourceEpoch) &&
+    equal(closeout.inputEvidence?.manifest, review.tvProvenance.manifest), 'reviewed_tv_provenance_binding');
+  need(exact(prior.snapshot, ['capturedAt', 'tables', 'sequences']) && equal(Object.keys(prior.snapshot.tables).sort(), TABLES) &&
+    TABLES.every(table => Array.isArray(prior.snapshot.tables[table]) && prior.snapshot.tables[table].every(own)) && own(prior.snapshot.sequences), 'reviewed_tv_snapshot_inventory');
+  const tables = prior.snapshot.tables, sessions = indexed(tables.sessions); indexed(tables.play_sessions);
+  need(tables.sessions.every(row => typeof row.id === 'string' && row.id.length > 0 && typeof row.revoked_at === 'string') &&
+    tables.play_sessions.every(row => typeof row.id === 'string' && row.id.length > 0) && closeout.checks.authentication?.allSessionsRevoked === tables.sessions.length &&
+    data?.ownedTables === 35 && data.oldRowsDeleted === 0 && data.newCountedPlays === 0 &&
+    data.clientPlaybackReferences === tables.client_playback_references.length && data.encodingJobs === tables.encoding_jobs.length, 'reviewed_tv_inventory_or_credentials');
+  for (const row of tables.sessions) timestampNs(row.revoked_at);
+  const user = one(tables.users.filter(row => row.id === actor.id), 'reviewed_tv_actor_missing');
+  need(user.name === actor.username && user.is_administrator === false && user.is_disabled === false && equal(user.policy, {}), 'reviewed_tv_actor_changed');
+  const play = one(tables.play_sessions.filter(row => row.user_id === actor.id), 'reviewed_tv_preparation_count'), session = sessions.get(play.auth_session_id);
+  need(play.item_id === item.id && play.media_source_id === review.item.mediaSourceId && play.duration_ticks === item.runtimeTicks && play.position_ticks === 0 &&
+    play.state === 'Prepared' && play.counted === false && play.started_at === null && play.stopped_at === null && play.application_client_id === null && play.client_correlated === false &&
+    session?.kind === 'emby' && session.user_id === actor.id && session.device_id === play.device_id &&
+    equal(review.preparedExpirations, [{ playSessionId: play.id, authSessionId: play.auth_session_id }]), 'reviewed_tv_preparation_identity');
+  timestampNs(play.expires_at);
+  const declared = one(data.unstartedPreparations, 'reviewed_tv_declared_preparation_missing');
+  need(declared.id === play.id && declared.authSessionId === play.auth_session_id && declared.itemId === item.id && declared.state === 'Prepared' &&
+    declared.counted === false && declared.positionTicks === 0 && Array.isArray(declared.prepareOrdinals) && declared.prepareOrdinals.length === 1 &&
+    integer(declared.prepareOrdinals[0]) && declared.prepareOrdinals[0] > 0, 'reviewed_tv_declared_preparation_changed');
+  const userdata = one(tables.user_item_data.filter(row => row.user_id === actor.id), 'reviewed_tv_userdata_count');
+  need(equal(userdata, data.newUserData) && userdata.item_id === item.id && userdata.play_count === 0 && userdata.playback_position_ticks === 0 &&
+    userdata.is_favorite === false && userdata.played === false && userdata.last_played_at === null, 'reviewed_tv_userdata_not_zero');
+  const admission = retained.postBrowseAdmission, proof = admission?.controllerSessions?.P;
+  need(admission?.kind === 'audited-candidate-live-admission' && admission.version === 3 && admission.status === 'admitted_for_core_client' &&
+    admission.candidateAdmissionComplete === true && admission.failure === null && equal(admission.cleanupFailures, []) &&
+    equal(admission.runtimeEpoch, review.runtimeEpoch) && equal(admission.seedRuntimeBinding, review.seedBinding), 'reviewed_tv_post_browse_admission');
+  need(exact(proof, ['credentialId', 'tokenSha256', 'sameTokenRejected']) && /^[a-f0-9]{32}$/.test(proof.credentialId) && SHA.test(proof.tokenSha256) &&
+    proof.sameTokenRejected === true, 'reviewed_tv_post_browse_credential');
+  for (const table of ['users', 'sessions', 'play_sessions', 'user_item_data']) {
+    const owned = row => (table === 'users' ? row.id : row.user_id) === actor.id;
+    let currentRows = snapshot.tables[table].filter(owned); const historical = tables[table].filter(owned);
+    if (table === 'sessions') {
+      const extra = one(currentRows.filter(row => row.id === proof.credentialId), 'reviewed_tv_post_browse_session');
+      need(!historical.some(row => row.id === proof.credentialId) && extra.kind === 'emby' && extra.token_hash === '\\x' + proof.tokenSha256 &&
+        !snapshot.tables.play_sessions.some(row => row.auth_session_id === proof.credentialId), 'reviewed_tv_post_browse_session');
+      timestampNs(extra.revoked_at);
+      currentRows = currentRows.filter(row => row.id !== proof.credentialId);
+    }
+    need(equal(currentRows, historical), 'reviewed_tv_provenance_state_changed');
+  }
+  const ownedAuth = new Set(snapshot.tables.sessions.filter(row => row.user_id === actor.id).map(row => row.id));
+  for (const state of [snapshot, prior.snapshot]) need(['client_playback_references', 'encoding_jobs'].every(table => state.tables[table].every(row =>
+    row.user_id !== actor.id && !ownedAuth.has(row.auth_session_id) && row.play_session_id !== play.id)), 'reviewed_tv_owned_residue');
+  need(timestampNs(snapshot.capturedAt) >= timestampNs(prior.snapshot.capturedAt), 'reviewed_tv_provenance_time_reversed');
+  return play;
+}
+
+export function verifyReviewedTVBefore(before, manifest, seed, retained) {
+  need(manifest.scenario === 'tv-browse' && equal(manifest.actor, retained?.review?.actor), 'reviewed_tv_scenario_required');
+  const play = validateReviewedTVBaseline(retained, seed), prior = retained.snapshot;
+  need(exact(before, ['capturedAt', 'tables', 'sequences']) && equal(before.tables, prior.tables) && equal(before.sequences, prior.sequences), 'reviewed_tv_fresh_state_changed');
+  need(timestampNs(before.capturedAt) >= timestampNs(prior.capturedAt) &&
+    timestampNs(before.capturedAt) + 1200n * 1000000000n < timestampNs(play.expires_at) + 7n * 86400n * 1000000000n, 'reviewed_tv_pruning_deadline');
+  return play;
+}
+
 export function verifyRetainedMovieBefore(before, manifest, seed, retained) {
   if (own(retained) && Object.hasOwn(retained, 'review')) {
     need(manifest.scenario === 'movie' && equal(manifest.actor, retained.review.actor), 'reviewed_movie_scenario_required');
@@ -972,6 +1081,105 @@ export function verifyReviewedMovieTransition(before, after, manifest, seed, phy
   return { playSessionIds: [...changed], expirations, creationUpperBound: oldPlays.length + creators.length };
 }
 
+export function verifyTVNoPlayback(report, exchanges) {
+  need(Array.isArray(report.requests) && !report.requests.some(row => ['media', 'playback_report'].includes(row.kind)) &&
+    exchanges.every(row => !['media', 'playback_report'].includes(row.scope?.kind) && row.request?.kind !== 'media' &&
+      !/^\/(?:emby\/)?Sessions\/Playing(?:\/|$)/i.test(row.request?.path ?? '')), 'reviewed_tv_playback_forbidden');
+}
+
+export function verifyReviewedTVTransition(before, after, manifest, seed, physical, retained) {
+  const old = verifyReviewedTVBefore(before, manifest, seed, retained), actor = manifest.actor.id;
+  verifyTVNoPlayback({ requests: [] }, physical.exchanges);
+  need(physical.chains.length === 0 && physical.logins.every(login => login.media.length === 0) &&
+    equal(before.tables.user_item_data, after.tables.user_item_data) && equal(before.tables.client_playback_references, after.tables.client_playback_references) &&
+    equal(before.tables.encoding_jobs, after.tables.encoding_jobs), 'reviewed_tv_playback_state_changed');
+  const oldIds = new Set(before.tables.play_sessions.map(row => row.id)), oldAuth = new Set(before.tables.sessions.map(row => row.id));
+  need(physical.logins.every(login => !oldAuth.has(login.sessionId)), 'reviewed_tv_old_credential_reused');
+  const current = one(after.tables.play_sessions.filter(row => row.id === old.id), 'reviewed_tv_old_preparation_missing');
+  const creations = after.tables.play_sessions.filter(row => !oldIds.has(row.id));
+  need(creations.length <= 1 && creations.every(row => row.user_id === actor && row.item_id === old.item_id && row.media_source_id === old.media_source_id &&
+    row.duration_ticks === old.duration_ticks && row.position_ticks === 0 && row.state === 'Prepared' && row.counted === false && row.started_at === null &&
+    row.stopped_at === null && row.application_client_id === null && row.client_correlated === false), 'reviewed_tv_new_preparation_invalid');
+  const infos = physical.logins.flatMap(login => login.infos.map(info => ({ login, info })));
+  need(infos.every(({ info }) => info.itemId === old.item_id), 'reviewed_tv_other_detail_preparation');
+  const preparationWindows = [];
+  for (const row of creations) {
+    const candidates = infos.filter(({ login, info }) => {
+      const exchange = info.exchange, sessions = after.tables.sessions.filter(session => session.id === login.sessionId);
+      return info.value.PlaySessionId === row.id && (info.body?.UserId === undefined || info.body.UserId === actor) &&
+        exchange.scope?.allowed === true && exchange.scope.kind === 'playback_info' && routeItem(exchange) === old.item_id && exchange.original?.method === 'POST' &&
+        exchange.complete === true && exchange.response?.status === 200 && exchange.tokenHash === login.tokenHash && sessions.length === 1 &&
+        sessions[0].user_id === actor && sessions[0].kind === 'emby' && row.auth_session_id === login.sessionId && row.device_id === login.device_id &&
+        within(row.created_at, exchange.intent.startedAt, exchange.result.completedAt) && within(row.updated_at, exchange.intent.startedAt, exchange.result.completedAt);
+    });
+    const { info } = one(candidates, 'reviewed_tv_creation_window_not_unique');
+    need(timestampNs(row.expires_at) > timestampNs(row.created_at), 'reviewed_tv_new_preparation_expiry');
+    preparationWindows.push(info.exchange);
+  }
+  const expirations = [];
+  if (!equal(current, old)) {
+    need(equal(without(current, ['state', 'stopped_at', 'updated_at']), without(old, ['state', 'stopped_at', 'updated_at'])) &&
+      current.state === 'Expired' && current.stopped_at !== null && current.updated_at !== null, 'reviewed_tv_expiration_fields');
+    const exchange = one(preparationWindows.filter(row => within(current.stopped_at, row.intent.startedAt, row.result.completedAt) &&
+      within(current.updated_at, row.intent.startedAt, row.result.completedAt)), 'reviewed_tv_expiration_window_not_unique');
+    expirations.push({ playSessionId: old.id, previousState: 'Prepared', state: 'Expired', prepareOrdinal: exchange.ordinal,
+      changedFields: ['state', 'stopped_at', 'updated_at'], excludedFromNewPlayCounts: true });
+  }
+  const creators = physical.exchanges.filter(row => !row.rejected && row.scope?.kind === 'playback_info');
+  need(before.tables.play_sessions.filter(row => row.user_id === actor).length + creators.length <= 256 &&
+    timestampNs(after.capturedAt) < timestampNs(old.expires_at) + 7n * 86400n * 1000000000n, 'reviewed_tv_pruning_capacity');
+  const changed = new Set(expirations.map(row => row.playSessionId));
+  additions(before.tables.play_sessions, after.tables.play_sessions, undefined, changed);
+  return { playSessionIds: [...changed], expirations, creationUpperBound: creators.length + 1 };
+}
+
+/** Match the existing native hook to retained exchanges without collecting anything. */
+export function tvNativeResponseDiagnostic(report, exchanges) {
+  const events = Array.isArray(report.native_rejections) && report.native_rejections.length <= 16 ? report.native_rejections : [], matches = [];
+  for (const event of events) {
+    if (!own(event)) continue;
+    const reason = event.reason;
+    if (event.diagnostic_state !== 'captured_redacted' || reason?.kind !== 'response' || event.association?.state !== 'matched' ||
+        typeof event.id !== 'string' || !/^native-rejection-[1-9][0-9]*$/.test(event.id) || typeof reason.request_id !== 'string' ||
+        !integer(event.association.request_ordinal) || !integer(event.elapsed_ms) || !integer(report.elapsed_ms) || event.elapsed_ms > report.elapsed_ms || !own(reason.location)) continue;
+    const observed = report.requests.filter(row => row.ordinal === event.association.request_ordinal);
+    if (observed.length !== 1) continue;
+    const row = observed[0]; let url;
+    try { url = new URL(row.url); } catch { continue; }
+    if (responseRequestId(row.response_headers) !== reason.request_id || row.status !== reason.status || !integer(row.elapsed_ms) || row.elapsed_ms > event.elapsed_ms ||
+        url.origin !== reason.location.origin || url.pathname !== reason.location.path || row.allowed !== true || row.origin !== 'target') continue;
+    const physical = exchanges.filter(exchange => responseRequestId(exchange.response?.headers) === reason.request_id);
+    if (physical.length !== 1) continue;
+    const exchange = physical[0];
+    if (exchange.rejected || exchange.result?.backend !== 'goby' || exchange.complete !== true || exchange.response?.status !== reason.status || exchange.scope?.allowed !== true ||
+        !matchesContext(exchange, report).includes(row)) continue;
+    matches.push({ nativeEventId: event.id, contextOrdinal: row.ordinal, physicalOrdinal: exchange.ordinal, requestId: reason.request_id,
+      route: exchange.scope.route, status: reason.status, pageErrorAttribution: false });
+  }
+  return { status: matches.length ? 'response_identified' : 'inconclusive', responseMatches: matches,
+    reason: matches.length ? null : events.length ? 'no_unique_response_association' : 'native_evidence_unavailable_or_no_recurrence',
+    nativeCollectionComplete: report.native_rejection_diagnostics?.diagnostics_complete === true,
+    pageErrorCount: Array.isArray(report.page_errors) ? report.page_errors.length : null, clientAcceptance: false };
+}
+
+export function tvDiagnosticUIResult(report, manifest, physical) {
+  need(manifest.scenario === 'tv-browse' && report.cleanup?.browser_closed === true && report.cleanup.tokens_rejected === true && report.cleanup.media_stopped === true &&
+    Array.isArray(report.cleanup.ui_failures ?? []) && (report.cleanup.ui_failures ?? []).length === 0 &&
+    report.browser_environment?.service_workers === 'allow' && report.browser_environment.proxy_bypass === '<-loopback>' &&
+    report.browser_environment.quic === 'disabled' && report.browser_environment.nonproxied_webrtc_udp === 'disabled', 'reviewed_tv_cleanup_or_environment_incomplete');
+  need((report.outcome === 'scenario_completed' && report.failure === null || report.outcome === 'failed' && typeof report.failure === 'string' && /^[a-z0-9_]+$/i.test(report.failure)) &&
+    Array.isArray(report.page_errors) && Array.isArray(report.observer?.pending) && report.observer.pending.length === 0 && Array.isArray(report.observer.drain_timeouts) && report.observer.drain_timeouts.length === 0,
+  'reviewed_tv_observation_not_closed');
+  let uiAccepted = true, uiFailure = null;
+  try { verifyUI(report, manifest, physical); }
+  catch (error) {
+    if (!['client_ui_or_cleanup_incomplete', 'tv_browse_ui_incomplete'].includes(error.message)) throw error;
+    uiAccepted = false; uiFailure = error.message;
+  }
+  return { uiAccepted, uiFailure, originalBrowserOutcome: report.outcome, originalBrowserFailure: report.failure,
+    diagnostic: tvNativeResponseDiagnostic(report, physical.exchanges), clientAcceptance: false };
+}
+
 export function effectiveStopEvidence(play, stops) {
   const terminal = timestampNs(play.stopped_at), matches = [];
   for (const stop of stops) {
@@ -1003,7 +1211,9 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
   need(control !== actor, 'scenario_actor_playback_baseline_not_fresh');
   let retainedExpiration = null;
   if (retained === null) need(!before.tables.play_sessions.some(row => row.user_id === actor) && !before.tables.client_playback_references.some(row => row.user_id === actor), 'scenario_actor_playback_baseline_not_fresh');
+  else if (retained.review?.kind === 'audited-candidate-reviewed-tv-baseline') retainedExpiration = verifyReviewedTVTransition(before, after, manifest, seed, physical, retained);
   else retainedExpiration = verifyRetainedMovieTransition(before, after, manifest, seed, physical, retained);
+  const retainedTV = retained?.review?.kind === 'audited-candidate-reviewed-tv-baseline';
   const mutable = new Set(['sessions', 'devices', 'activity_entries', 'play_sessions', 'client_playback_references', 'user_item_data', 'encoding_jobs']);
   for (const table of TABLES) if (!mutable.has(table)) need(equal(before.tables[table], after.tables[table]), 'unowned_table_changed_' + table);
   for (const table of ['sessions', 'play_sessions', 'client_playback_references', 'user_item_data', 'encoding_jobs'])
@@ -1072,6 +1282,7 @@ export function verifyDurable(before, after, manifest, seed, physical, retained 
   additions(before.tables.user_item_data, after.tables.user_item_data, userdataKey, affected);
   need([...affected].every(key => currentData.has(key)), 'affected_userdata_missing');
   for (const [key, row] of currentData) {
+    if (retainedTV) { need(oldData.has(key) && equal(oldData.get(key), row), 'reviewed_tv_userdata_changed'); continue; }
     if (!affected.has(key)) { need(oldData.has(key) && equal(oldData.get(key), row), 'unrelated_item_userdata_changed'); continue; }
     const old = oldData.get(key) ?? { user_id: actor, item_id: row.item_id, playback_position_ticks: 0, play_count: 0, is_favorite: false, played: false, last_played_at: null };
     const itemPlays = plays.filter(play => play.item_id === row.item_id), counted = itemPlays.filter(play => play.counted), stopped = counted.filter(play => play.state === 'Stopped');
@@ -1277,10 +1488,62 @@ export function validateCandidateAdmissionBinding(input, epoch, admission, linea
       /^[0-9a-f]{32}$/.test(row.credentialId) && SHA.test(row.tokenSha256) && row.sameTokenRejected === true), 'candidate_reused_admission04_cleanup');
 }
 
+export function validateCurrentRuntime(envelope, input, epoch, authorizedInput, records) {
+  need(input.version === 5 && authorizedInput?.version === 5 && authorizedInput.scenario === 'tv-browse' && descriptor(input.currentRuntime) &&
+    equal(authorizedInput.currentRuntime, input.currentRuntime) && exact(envelope, ['kind', 'version', 'status', 'runtimeEpoch', 'seedBinding', 'admission', 'admissionCloseout', 'hosting',
+      'recovery', 'current', 'preserved', 'observation', 'observationReview']) && envelope.kind === 'audited-candidate-current-runtime-binding' && envelope.version === 1 &&
+    envelope.status === 'reviewed_current_runtime' && epoch.version === 3, 'current_runtime_authority');
+  for (const key of ['runtimeEpoch', 'seedBinding', 'admission', 'admissionCloseout', 'hosting']) need(descriptor(envelope[key]) &&
+    equal(envelope[key], ['admissionCloseout', 'hosting'].includes(key) ? authorizedInput[key] : input[key]), 'current_runtime_historical_binding');
+  need(exact(envelope.recovery, ['execution', 'independentReview', 'configuration', 'selectedStartIntent', 'selectedResult']) && Object.values(envelope.recovery).every(descriptor) &&
+    descriptor(envelope.observation) && descriptor(envelope.observationReview) && equal(envelope.preserved, Object.fromEntries(['binary', 'runtime', 'units'].map(key => [key, epoch.candidate[key]]))), 'current_runtime_preserved_source');
+  const current = envelope.current, candidate = epoch.candidate, previous = epoch.candidateProcess;
+  need(exact(current, ['candidateProcess', 'serverProperties', 'serverIdentity', 'listener', 'postgresProcess', 'postgresProperties', 'lease']), 'current_runtime_identity_schema');
+  const process = current.candidateProcess;
+  need(exact(process, Object.keys(previous)) && equal(without(process, ['pid', 'startTicks']), without(previous, ['pid', 'startTicks'])) &&
+    integer(process.pid) && process.pid > 1 && process.pid !== previous.pid && typeof process.startTicks === 'string' && /^[1-9][0-9]*$/.test(process.startTicks) &&
+    ns(process.startTicks) > ns(previous.startTicks), 'current_runtime_process_boundary');
+  const properties = current.serverProperties, oldProperties = candidate.processes.server;
+  need(exact(properties, Object.keys(oldProperties)) && equal(without(properties, ['MainPID', 'InvocationID']), without(oldProperties, ['MainPID', 'InvocationID'])) &&
+    properties.MainPID === String(process.pid) && /^[a-f0-9]{32}$/.test(properties.InvocationID) && properties.InvocationID !== oldProperties.InvocationID &&
+    equal(current.serverIdentity, { ...candidate.serverIdentity, pid: process.pid, startTicks: process.startTicks, invocationId: properties.InvocationID }), 'current_runtime_server_identity');
+  need(exact(current.listener, Object.keys(candidate.listener)) && equal(without(current.listener, ['pid', 'socketInode']), without(candidate.listener, ['pid', 'socketInode'])) &&
+    current.listener.pid === process.pid && typeof current.listener.socketInode === 'string' && /^[1-9][0-9]*$/.test(current.listener.socketInode) &&
+    equal(current.postgresProcess, epoch.postgresProcess) && equal(current.postgresProperties, candidate.processes.postgres), 'current_runtime_listener_or_postgres');
+  const lease = current.lease;
+  need(exact(lease, ['backendPid', 'user', 'database', 'application', 'clientHost', 'clientPort', 'backendStart', 'mode', 'granted', 'candidateConnection']) &&
+    equal(without(lease, ['backendPid', 'backendStart', 'clientPort', 'candidateConnection']), without(epoch.lease, ['backendPid', 'backendStart', 'clientPort', 'candidateConnection'])) &&
+    integer(lease.backendPid) && lease.backendPid > 1 && integer(lease.clientPort) && lease.clientPort > 0 && lease.clientPort < 65536 &&
+    lease.granted === true && lease.mode === 'ExclusiveLock' && exact(lease.candidateConnection, ['pid', 'localPort', 'remotePort', 'socketInode']) &&
+    lease.candidateConnection.pid === process.pid && lease.candidateConnection.localPort === lease.clientPort && lease.candidateConnection.remotePort === candidate.ports.postgres &&
+    typeof lease.candidateConnection.socketInode === 'string' && /^[1-9][0-9]*$/.test(lease.candidateConnection.socketInode), 'current_runtime_lease_identity');
+  const observation = records?.observation, review = records?.observationReview;
+  need(exact(observation, ['kind', 'version', 'runtimeEpoch', 'recoveryExecution', 'hosting', 'source', 'verification', 'capturedAt', 'before', 'after', 'preserved', 'hostingBefore', 'hostingAfter', 'leaseQueryResult', 'calls']) &&
+    observation.kind === 'audited-candidate-current-runtime-observation' && observation.version === 1 && equal(observation.runtimeEpoch, envelope.runtimeEpoch) &&
+    equal(observation.recoveryExecution, envelope.recovery.execution) && equal(observation.hosting, envelope.hosting) && equal(observation.before, current) && equal(observation.after, current) &&
+    equal(observation.preserved, envelope.preserved) && timestampNs(observation.capturedAt) >= timestampNs(lease.backendStart) &&
+    equal(observation.calls, { sql: 2, http: 0, browser: 0, service: 0, seed: 0, admission: 0, provision: 0 }), 'current_runtime_observation_binding');
+  const host = records.hosting, hostFields = 'Id LoadState ActiveState SubState MainPID InvocationID Result ExecMainStatus ControlGroup NRestarts'.split(' ');
+  need(own(host?.process) && own(host.listener) && own(host.unitProperties), 'current_runtime_hosting_record');
+  const hostIdentity = { process: host.process, listener: host.listener, unit: Object.fromEntries(hostFields.map(key => [key, host.unitProperties[key]])) };
+  need(equal(observation.hostingBefore, hostIdentity) && equal(observation.hostingAfter, hostIdentity) &&
+    equal(records.leaseQueryResult, [without(lease, ['candidateConnection'])]), 'current_runtime_hosting_or_lease_observation');
+  need(exact(review, ['kind', 'version', 'status', 'observation', 'source', 'verification', 'checks', 'calls']) &&
+    review.kind === 'audited-candidate-current-runtime-observation-review' && review.version === 1 && review.status === 'passed' &&
+    equal(review.observation, envelope.observation) && descriptor(observation.source) && descriptor(observation.verification) &&
+    equal(review.source, observation.source) && equal(review.verification, observation.verification) &&
+    exact(review.checks, ['recordPins', 'sourceAndVerification', 'currentIdentity', 'recoveryBinding', 'preservedHashes', 'hostingContinuity', 'uniqueLease', 'privateEvidence']) &&
+    Object.values(review.checks).every(value => value === true) && equal(review.calls, { sql: 0, http: 0, browser: 0, service: 0, seed: 0, admission: 0, provision: 0 }), 'current_runtime_independent_review');
+  return current;
+}
+
 export function validateCloseoutBindings(input, evidence) {
   const { manifest, observation, summary, gatewayAttestation: gateway, runtimeEpoch: epoch, admission, seedBinding: seed, boundary } = evidence;
   validateCandidateManifest(manifest);
-  if (input.version === 4) {
+  if (input.version === 5) {
+    need(descriptor(input.retainedBaseline) && descriptor(input.currentRuntime) && equal(evidence.retained?.inputBinding, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }), 'reviewed_tv_current_binding');
+    verifyReviewedTVBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
+  } else if (input.version === 4) {
     need(descriptor(input.retainedBaseline) && equal(evidence.retained?.inputBinding, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }), 'reviewed_movie_current_binding');
     verifyRetainedMovieBefore(evidence.sourceBefore, manifest, seed, evidence.retained);
   } else if (input.version === 2 || input.version === 3 && input.retainedBaseline !== null) {
@@ -1292,9 +1555,12 @@ export function validateCloseoutBindings(input, evidence) {
   validateCandidateGateway(gateway, manifest, ns(observation.started_monotonic_ns), { normal: 0, cleanup: 0 });
   validateRuntimeLineage(epoch, seed, evidence.lineage);
   validateCandidateAdmissionBinding(input, epoch, admission, evidence.lineage, evidence.reusedAdmission04);
+  const current = input.version === 5 ? validateCurrentRuntime(evidence.currentRuntime, input, epoch, evidence.authorizedInput, evidence.currentRuntimeRecords) :
+    { candidateProcess: epoch.candidateProcess, postgresProcess: epoch.postgresProcess, lease: epoch.lease, listener: epoch.candidate.listener };
+  if (input.version === 5) need(timestampNs(evidence.currentRuntimeRecords.observation.capturedAt) <= timestampNs(observation.started_at), 'current_runtime_observation_after_client');
   const currentSource = { manifestSha256: epoch.currentSource.sourceManifest.sha256, binarySha256: epoch.currentSource.binary.sha256, schema: epoch.currentSource.schema };
-  need(equal(manifest.source, currentSource) && equal(without(manifest.processes.candidate, ['listener']), epoch.candidateProcess) &&
-    manifest.processes.candidate.listener.port === epoch.candidate.listener.port && manifest.processes.candidate.listener.socketInode === epoch.candidate.listener.socketInode,
+  need(equal(manifest.source, currentSource) && equal(without(manifest.processes.candidate, ['listener']), current.candidateProcess) &&
+    manifest.processes.candidate.listener.port === current.listener.port && manifest.processes.candidate.listener.socketInode === current.listener.socketInode,
   'candidate_current_epoch_mismatch');
   need(equal(seed.runtimeEpoch, input.runtimeEpoch) &&
     equal(seed.originalSeed, epoch.seedProvenance) && seed.serverId === manifest.serverId && seed.actors[manifest.scenario].id === manifest.actor.id &&
@@ -1307,25 +1573,26 @@ export function validateCloseoutBindings(input, evidence) {
   need(gateway.kind === 'core-av-client-gateway' && gateway.schemaVersion === 1 && gateway.runId === manifest.runId && gateway.browserOrigin === manifest.browserOrigin &&
     gateway.proxyOrigin === manifest.browserOrigin && gateway.directOrigin === manifest.directOrigin && equal(manifest.gatewayAttestation, input.gatewayAttestation) &&
     equal(gateway.process, without(manifest.processes.gateway, ['listener'])) && equal(gateway.listener, manifest.processes.gateway.listener) &&
-    equal(gateway.upstreams.goby.process, epoch.candidateProcess) && equal(gateway.upstreams.goby.listener, manifest.processes.candidate.listener) &&
+    equal(gateway.upstreams.goby.process, current.candidateProcess) && equal(gateway.upstreams.goby.listener, manifest.processes.candidate.listener) &&
     gateway.upstreams.goby.executableSha256 === currentSource.binarySha256 && equal(gateway.sources.gateway, input.sources.gateway) && equal(gateway.sources.proxy, input.sources.proxy) &&
     gateway.policy.version === 'core-av-transparent-gateway-v1' && equal(gateway.policy.allowedOrigins, [manifest.browserOrigin]) &&
     observation.gateway.attestation_sha256 === input.gatewayAttestation.sha256 && observation.gateway.input_sha256 === gateway.inputSha256, 'gateway_runtime_or_policy_binding');
   need(exact(boundary, ['kind', 'version', 'runId', 'runtimeEpoch', 'sourceBefore', 'sourceAfter', 'candidateBefore', 'candidateAfter', 'postgresBefore', 'postgresAfter',
-    'leaseBefore', 'leaseAfter', 'database', 'beforeMonotonicNs', 'afterMonotonicNs', 'clientWorker', 'gatewayWorker']) &&
-    boundary.kind === 'audited-candidate-client-boundary' && boundary.version === 1 && boundary.runId === manifest.runId &&
+    'leaseBefore', 'leaseAfter', 'database', 'beforeMonotonicNs', 'afterMonotonicNs', 'clientWorker', 'gatewayWorker', ...(input.version === 5 ? ['currentRuntime'] : [])]) &&
+    boundary.kind === 'audited-candidate-client-boundary' && boundary.version === (input.version === 5 ? 2 : 1) && boundary.runId === manifest.runId &&
+    (input.version !== 5 || equal(boundary.currentRuntime, input.currentRuntime)) &&
     equal(boundary.runtimeEpoch, input.runtimeEpoch) && equal(boundary.sourceBefore, input.sourceBefore) && equal(boundary.sourceAfter, input.sourceAfter) &&
     equal(boundary.candidateBefore, manifest.processes.candidate) && equal(boundary.candidateAfter, manifest.processes.candidate) &&
-    equal(boundary.postgresBefore, epoch.postgresProcess) && equal(boundary.postgresAfter, epoch.postgresProcess) &&
-    equal(boundary.leaseBefore, epoch.lease) && equal(boundary.leaseAfter, epoch.lease) && equal(boundary.database, epoch.candidate.database), 'source_capture_epoch_binding');
+    equal(boundary.postgresBefore, current.postgresProcess) && equal(boundary.postgresAfter, current.postgresProcess) &&
+    equal(boundary.leaseBefore, current.lease) && equal(boundary.leaseAfter, current.lease) && equal(boundary.database, epoch.candidate.database), 'source_capture_epoch_binding');
   need(exact(boundary.clientWorker, ['exitCode', 'mainPID', 'workerPidAbsent', 'remainingBrowserPids']) && exact(boundary.gatewayWorker, ['exitCode', 'mainPID', 'workerPidAbsent', 'index']) &&
-    boundary.clientWorker.exitCode === 0 && boundary.clientWorker.mainPID === 0 && boundary.clientWorker.workerPidAbsent === true &&
+    boundary.clientWorker.exitCode === (input.version === 5 && observation.outcome === 'failed' ? 1 : 0) && boundary.clientWorker.mainPID === 0 && boundary.clientWorker.workerPidAbsent === true &&
     equal(boundary.clientWorker.remainingBrowserPids, []) && boundary.gatewayWorker.exitCode === 0 && boundary.gatewayWorker.mainPID === 0 &&
     boundary.gatewayWorker.workerPidAbsent === true && equal(boundary.gatewayWorker.index, input.gatewayIndex), 'workers_not_independently_closed');
   need(ns(boundary.beforeMonotonicNs) <= ns(observation.started_monotonic_ns) &&
     ns(boundary.afterMonotonicNs) >= ns(observation.started_monotonic_ns) + BigInt(observation.elapsed_ms) * 1000000n, 'boundary_time_interval');
-  const serverLog = [3, 4].includes(input.version) ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
-    { manifest, epoch, input, approval: evidence.approval, observation, authorizedInput: evidence.authorizedInput }) : null;
+  const serverLog = [3, 4, 5].includes(input.version) ? validateServerLog(evidence.serverLog, evidence.serverLogBefore, evidence.serverLogAfter,
+    { manifest, epoch, input, approval: evidence.approval, observation, authorizedInput: evidence.authorizedInput, currentIdentity: current }) : null;
   if (serverLog) need(timestampNs(serverLog.receipt.before.capturedAt) >= timestampNs(evidence.sourceBefore.capturedAt) &&
     timestampNs(serverLog.receipt.after.capturedAt) >= timestampNs(evidence.sourceAfter.capturedAt), 'server_log_source_capture_order');
   return { serverLog };
@@ -1337,12 +1604,16 @@ export function closeEvidence(input, evidence, ledgerRows) {
   const exchanges = verifyLedgerRows(evidence.gatewayAttestation, evidence.gatewayIndex, ledgerRows, manifest);
   need(exchanges.length > 0 && exchanges.every(row => ns(row.intent.startedMonotonicNs) >= ns(evidence.boundary.beforeMonotonicNs) &&
     ns(row.result.completedMonotonicNs) <= ns(evidence.boundary.afterMonotonicNs)), 'ledger_outside_capture_interval');
-  const physical = analyzePhysical(exchanges, manifest, report, evidence.sourceAfter, bindings.serverLog), partialMedia = verifyUI(report, manifest, physical);
+  if (input.version === 5) verifyTVNoPlayback(report, exchanges);
+  const physical = analyzePhysical(exchanges, manifest, report, evidence.sourceAfter, bindings.serverLog);
+  const diagnosticResult = input.version === 5 ? tvDiagnosticUIResult(report, manifest, physical) : null;
+  const partialMedia = input.version === 5 ? [] : verifyUI(report, manifest, physical);
   const partialOrdinals = new Set(partialMedia.map(row => row.ordinal));
   for (const row of exchanges) if (!row.rejected && !row.complete && row.request.kind !== 'websocket')
     need(partialOrdinals.has(row.ordinal) || row.request.kind === 'web' && row.original.method === 'GET' && matchesContext(row, report).some(event => event.failed && event.failure_error_text === 'net::ERR_ABORTED'), 'unexplained_upstream_interruption');
   const durable = verifyDurable(evidence.sourceBefore, evidence.sourceAfter, manifest, evidence.seedBinding, physical, evidence.retained ?? null);
-  return { kind: 'audited-candidate-client-closeout', version: 1, status: 'core_scenario_closed', runId: manifest.runId, scenario: manifest.scenario,
+  return { kind: 'audited-candidate-client-closeout', version: 1, status: input.version === 5 ? 'owned_state_closed_diagnostic_result' : 'core_scenario_closed',
+    ...(diagnosticResult ?? {}), runId: manifest.runId, scenario: manifest.scenario,
     source: manifest.source, physicalRequests: exchanges.length, logins: physical.logins.length,
     lifecycles: physical.chains.map(chain => ({ playSessionId: chain.play.id, authSessionId: chain.login.sessionId, itemId: chain.play.item_id,
       mediaSourceId: chain.play.media_source_id, preparation: chain.preparation, startedOrdinals: chain.started.map(row => row.exchange.ordinal), progressOrdinals: chain.progress.map(row => row.exchange.ordinal),
@@ -1387,12 +1658,14 @@ async function saveNew(filename, value) {
 }
 
 export function validateCloseoutInput(input) {
-  need([1, 2, 3, 4].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []), ...([3, 4].includes(input.version) ? ['serverLog'] : [])]) &&
+  need([1, 2, 3, 4, 5].includes(input.version) && exact(input, ['kind', 'version', ...CLOSEOUT_PINS, 'sources', 'output', ...(input.version >= 2 ? ['retainedBaseline'] : []),
+    ...([3, 4, 5].includes(input.version) ? ['serverLog'] : []), ...(input.version === 5 ? ['currentRuntime'] : [])]) &&
     input.kind === 'audited-candidate-client-closeout-input' && CLOSEOUT_PINS.every(key => descriptor(input[key])) &&
     exact(input.sources, Object.keys(SOURCE_FILES)) && typeof input.output === 'string' && input.output.startsWith('/opt/goby-test/'), 'closeout_input_invalid');
   if (input.version === 2) need(equal(input.retainedBaseline, RETAINED_BASELINE), 'retained_movie_input_authority');
   if (input.version === 3) need((input.retainedBaseline === null || equal(input.retainedBaseline, OCCUPIED_BASELINE)) && descriptor(input.serverLog), 'version3_evidence_authority');
   if (input.version === 4) need(descriptor(input.retainedBaseline) && descriptor(input.serverLog), 'version4_evidence_authority');
+  if (input.version === 5) need(descriptor(input.retainedBaseline) && descriptor(input.serverLog) && descriptor(input.currentRuntime), 'version5_evidence_authority');
   return input;
 }
 
@@ -1436,6 +1709,16 @@ export async function readReviewedMovieBaseline(reviewPin, inputBinding, seed) {
   return retained;
 }
 
+export async function readReviewedTVBaseline(reviewPin, inputBinding, seed) {
+  const review = validateReviewedTVBaselineInput(strictJSON(await readPin(reviewPin)));
+  const readState = async pins => ({ closeout: strictJSON(await readPin(pins.closeout)), snapshot: sourceSnapshotJSON(await readPin(pins.snapshot)),
+    sourceEpoch: runtimeEpochJSON(await readPin(pins.sourceEpoch), pins.sourceEpoch), manifest: strictJSON(await readPin(pins.manifest)) });
+  const retained = { review, ...await readState(review), tvProvenance: await readState(review.tvProvenance),
+    boundary: strictJSON(await readPin(review.boundary)), postBrowseAdmission: strictJSON(await readPin(review.postBrowseAdmission)), inputBinding };
+  validateReviewedTVBaseline(retained, seed);
+  return retained;
+}
+
 export async function runCloseout(inputPin) {
   need(process.platform === 'linux' && process.getuid?.() === 0 && process.env.SSH_CONNECTION, 'remote_only_closeout'); process.umask(0o077);
   const input = validateCloseoutInput(strictJSON(await readPin(inputPin)));
@@ -1447,7 +1730,18 @@ export async function runCloseout(inputPin) {
   const evidence = {}; for (const key of names) evidence[key] = ['sourceBefore', 'sourceAfter'].includes(key)
     ? sourceSnapshotJSON(await readPin(input[key])) : key === 'runtimeEpoch' ? runtimeEpochJSON(await readPin(input[key]), input[key]) :
       key === 'observation' ? observationJSON(await readPin(input[key]), evidence.manifest) : strictJSON(await readPin(input[key]));
-  if (input.version === 4) {
+  if (input.version === 5) {
+    evidence.currentRuntime = strictJSON(await readPin(input.currentRuntime));
+    const current = evidence.currentRuntime;
+    need(exact(current.recovery, ['execution', 'independentReview', 'configuration', 'selectedStartIntent', 'selectedResult']), 'current_runtime_recovery_schema');
+    evidence.currentRuntimeRecords = {};
+    for (const key of ['observation', 'observationReview', 'hosting']) evidence.currentRuntimeRecords[key] = strictJSON(await readPin(current[key], MAX_FILE, false));
+    const observed = evidence.currentRuntimeRecords.observation;
+    evidence.currentRuntimeRecords.leaseQueryResult = strictJSON(await readPin(observed.leaseQueryResult, MAX_FILE, false));
+    for (const pin of Object.values(current.recovery)) await readPin(pin, MAX_FILE, false);
+    await readPin(observed.source, MAX_FILE, false); await readPin(observed.verification, MAX_FILE, false);
+    evidence.retained = await readReviewedTVBaseline(input.retainedBaseline, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }, evidence.seedBinding);
+  } else if (input.version === 4) {
     evidence.retained = await readReviewedMovieBaseline(input.retainedBaseline, { runtimeEpoch: input.runtimeEpoch, seedBinding: input.seedBinding }, evidence.seedBinding);
   } else if (input.version >= 2 && input.retainedBaseline !== null) {
     const closeout = strictJSON(await readPin(input.retainedBaseline));
@@ -1455,7 +1749,7 @@ export async function runCloseout(inputPin) {
     need(equal(snapshot, input.version === 2 ? RETAINED_SNAPSHOT : OCCUPIED_SNAPSHOT), 'retained_movie_snapshot_changed');
     evidence.retained = { closeout, snapshot: sourceSnapshotJSON(await readPin(snapshot)) };
   }
-  if ([3, 4].includes(input.version)) {
+  if ([3, 4, 5].includes(input.version)) {
     evidence.serverLog = strictJSON(await readPin(input.serverLog));
     evidence.serverLogBefore = await readPin(evidence.serverLog.before.content);
     evidence.serverLogAfter = await readPin(evidence.serverLog.after.content);
@@ -1489,13 +1783,16 @@ export async function runCloseout(inputPin) {
   result.input = inputPin; result.completedAt = new Date().toISOString();
   const output = await saveNew(path.join(input.output, 'closeout.json'), result);
   const summary = { status: result.status, runId: result.runId, scenario: result.scenario, failedCheck: result.failedCheck ?? null, output,
+    ...(input.version === 5 && result.status === 'owned_state_closed_diagnostic_result' ? { clientAcceptance: false, uiAccepted: result.uiAccepted,
+      originalBrowserOutcome: result.originalBrowserOutcome, originalBrowserFailure: result.originalBrowserFailure, diagnostic: result.diagnostic } : {}),
     physicalRequests: result.physicalRequests ?? null, logins: result.logins ?? null, lifecycles: result.lifecycles?.length ?? null, sqlCalls: 0, httpCalls: 0, serviceCalls: 0 };
   await saveNew(path.join(input.output, 'summary.json'), summary); return summary;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   try { const args = process.argv.slice(2); need(args.length === 4 && args[0] === '--input' && args[2] === '--input-sha256', 'closeout_arguments');
-    const summary = await runCloseout({ path: args[1], sha256: args[3] }); process.stdout.write(JSON.stringify(summary) + '\n'); if (summary.status !== 'core_scenario_closed') process.exitCode = 1;
+    const summary = await runCloseout({ path: args[1], sha256: args[3] }); process.stdout.write(JSON.stringify(summary) + '\n');
+    if (!['core_scenario_closed', 'owned_state_closed_diagnostic_result'].includes(summary.status)) process.exitCode = 1;
   } catch (error) { process.stderr.write(JSON.stringify({ status: 'incomplete', failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'closeout_input_or_receipt_unavailable',
     sqlCalls: 0, httpCalls: 0, serviceCalls: 0 }) + '\n'); process.exitCode = 1; }
 }

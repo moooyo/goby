@@ -1,10 +1,29 @@
 # Bounded TV response observation decision
 
-Status: selected next diagnostic question on 2026-09-15; **no executable input
-or browser run is admitted yet**. This follows the
+Status: **one diagnostic completed on 2026-09-15; input consumed**. The
+[browse02 result](audited-tv-browse02-diagnostic.json) identifies the native
+Response as the complete GET `/emby/LiveTv/Programs` 404 exchange. This follows the
 [core acceptance resolution](core-client-acceptance-resolution.md) and retains
 all original failures, the selected E11 delivery target and the main-promotion
 gate.
+
+Preparation, final-source checks, component review, input freeze, real entry
+preflight and the 22.35-second browse completed before the 09:28:52 UTC ceiling.
+The resulting client acceptance remains false. This diagnostic branch is
+finished; the next action is the endpoint contract decision in the core
+resolution, not another native hook or browser input. The prospective scope
+below records what the consumed observation was allowed to do.
+
+The preparation review on 2026-09-15 includes implementation, integration and
+review in the existing 60-minute investigation ceiling. For this increment,
+the ceiling runs from checkpoint `ddffba4` at 08:28:52 UTC to 09:28:52 UTC.
+The remaining preparation is finite: connect the existing TV/current-runtime
+contract through the controller and closer, check the changed paths plus the
+single saved TV baseline, obtain the bounded current identity record, and
+produce one component receipt and one input. Do not add another observer or
+general runner. At the ceiling, preserve the actual outcome and stop adding
+diagnostic preparation; no business worker may be started from an incomplete
+input. Owned work already started must still be closed under its own limits.
 
 ## Question and existing evidence
 
@@ -40,7 +59,7 @@ unique request ID, URL and status, not another list of nearby timestamps.
 | --- | --- |
 | A native Response uniquely identifies the actual LiveTv Programs exchange | Review that exact public response contract and support boundary; make a product change only if a concrete contract defect is established. Do not infer that full Live TV implementation is required. |
 | A native Response uniquely identifies another Goby exchange | Review only that endpoint's actual request/response and relevant source contract. |
-| Primitive undefined only, missing/nonunique identity, or no recurrence | Record that this branch did not obtain discriminating evidence and stop it. No automatic reference or video replay and no waiver of old errors. |
+| Primitive undefined only, missing/nonunique identity, or no recurrence | Record that this branch did not obtain discriminating evidence and stop it. Continue the selected A-to-E11 transition/input decision; complete attribution of every old error is not a prerequisite for that design. No automatic reference or video replay and no waiver of old errors. |
 | Input, ownership, budget or cleanup failure | Preserve the first failure, close owned state and stop further business work pending resolution. |
 
 A Response binding identifies the response carried by one native rejection. It
@@ -76,3 +95,6 @@ The diagnostic can use the retained audited candidate to explain its own
 history, provided current admission is established. Final E11 client acceptance
 still requires its separately reviewed transition and matching evidence; this
 diagnostic does not transfer an old candidate's acceptance to that artifact.
+The [E11 transition decision](e11-candidate-transition-decision.md) now selects
+the same existing A candidate for the final artifact. Its transition and client
+acceptance have their own state and execution gates.

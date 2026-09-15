@@ -24,8 +24,7 @@ if REPLAY_MOVIE05:
     sys.argv.remove("--replay-movie05-snapshot")
 
 
-def reviewed_replay_arguments(argv):
-    flags = ("--reviewed-baselines", "--reviewed-baselines-sha256")
+def reviewed_replay_arguments(argv, flags=("--reviewed-baselines", "--reviewed-baselines-sha256")):
     m.need(not any(argument.startswith(flag + "=") for argument in argv for flag in flags), "reviewed_replay_arguments_invalid")
     counts = [argv.count(flag) for flag in flags]
     if counts == [0, 0]:
@@ -94,8 +93,22 @@ def load_reviewed_replay_cases(pin):
     return value["cases"]
 
 
+def load_reviewed_tv_replay_input(pin):
+    value = read_reviewed_replay_descriptor(pin)
+    m.need(isinstance(value, dict) and set(value) == {"kind", "version", "review", "seed", "inputBinding"} and
+           value["kind"] == "audited-candidate-reviewed-tv-baseline-replay-input" and type(value["version"]) is int and value["version"] == 1 and
+           isinstance(value["inputBinding"], dict) and set(value["inputBinding"]) == {"runtimeEpoch", "seedBinding"}, "reviewed_tv_replay_input_schema")
+    for pin in (value["review"], value["seed"], *value["inputBinding"].values()):
+        m.descriptor(pin)
+    m.need(m.canonical(value["seed"]) == m.canonical(value["inputBinding"]["seedBinding"]), "reviewed_tv_replay_seed_binding")
+    return value
+
+
 REVIEWED_REPLAY_PIN = reviewed_replay_arguments(sys.argv)
 REVIEWED_REPLAY_CASES = load_reviewed_replay_cases(REVIEWED_REPLAY_PIN) if REVIEWED_REPLAY_PIN is not None else None
+REVIEWED_TV_REPLAY_FLAGS = ("--reviewed-tv-baseline", "--reviewed-tv-baseline-sha256")
+REVIEWED_TV_REPLAY_PIN = reviewed_replay_arguments(sys.argv, REVIEWED_TV_REPLAY_FLAGS)
+REVIEWED_TV_REPLAY_INPUT = load_reviewed_tv_replay_input(REVIEWED_TV_REPLAY_PIN) if REVIEWED_TV_REPLAY_PIN is not None else None
 
 
 def fixture():
@@ -291,6 +304,68 @@ def reviewed_subtitles_fixture():
     return value, before, binding, retained
 
 
+def reviewed_tv_fixture():
+    value, before, binding, movie_retained = reviewed_subtitles_fixture()
+    pin = lambda name, digest: {"path": str(m.R / name), "sha256": digest * 64}
+    actor = {"id": "f" * 32, "username": "synthetic-tv"}
+    binding["actors"]["tv-browse"] = actor
+    catalog = {"tvLibrary": {"id": "5" * 32, "name": "M3e Client Television"},
+        "series": {"id": "6" * 32, "type": "Series", "name": "M3e Client Series"},
+        "seasons": [{"id": str(index + 6) * 32, "type": "Season", "indexNumber": index} for index in (1, 2)],
+        "episodes": [{"id": identity * 32, "type": "Episode", "name": "Episode " + str(season) + "-" + str(index),
+            "indexNumber": index, "parentIndexNumber": season, "runtimeTicks": 6000000000} for identity, season, index in (("9", 1, 1), ("a", 1, 2), ("b", 2, 1))]}
+    binding["catalog"].update(copy.deepcopy(catalog))
+    item = catalog["episodes"][2]
+    prior = copy.deepcopy(movie_retained["movieProvenance"]["snapshot"])
+    play = {"id": "play_synthetic_tv", "auth_session_id": "synthetic-tv-auth", "user_id": actor["id"], "item_id": item["id"],
+        "media_source_id": "mediasource_" + item["id"], "duration_ticks": item["runtimeTicks"], "device_id": "synthetic-tv-device",
+        "application_client_id": None, "client_correlated": False, "state": "Prepared", "counted": False, "position_ticks": 0,
+        "started_at": None, "stopped_at": None, "created_at": "2026-09-13T12:19:00Z", "updated_at": "2026-09-13T12:19:00Z",
+        "expires_at": "2026-09-13T12:49:00Z", "player_state": {}}
+    userdata = {"user_id": actor["id"], "item_id": item["id"], "play_count": 0, "playback_position_ticks": 0,
+        "is_favorite": False, "played": False, "last_played_at": None, "updated_at": "2026-09-13T12:19:00Z"}
+    for snapshot in (prior, before):
+        snapshot["tables"]["users"].append({"id": actor["id"], "name": actor["username"], "is_administrator": False, "is_disabled": False, "policy": {}})
+        snapshot["tables"]["sessions"].append({"id": play["auth_session_id"], "user_id": actor["id"], "kind": "emby", "device_id": play["device_id"],
+            "revoked_at": "2026-09-13T12:19:59Z"})
+        snapshot["tables"]["play_sessions"].append(copy.deepcopy(play))
+        snapshot["tables"]["user_item_data"].append(copy.deepcopy(userdata))
+    admission_auth = {"credentialId": "0f" * 16, "tokenSha256": "9" * 64, "sameTokenRejected": True}
+    before["tables"]["sessions"].append({"id": admission_auth["credentialId"], "user_id": actor["id"], "kind": "emby",
+        "device_id": "synthetic-admission-device", "token_hash": "\\x" + admission_auth["tokenSha256"],
+        "revoked_at": "2026-09-13T12:25:00Z"})
+    provenance_pins = {"closeout": pin("synthetic-tv-owned-closeout.json", "1"), "snapshot": pin("synthetic-tv-after.json", "2"),
+        "sourceEpoch": copy.deepcopy(m.RETAINED_MOVIE_EPOCH), "manifest": pin("synthetic-tv-manifest.json", "3")}
+    epoch = copy.deepcopy(movie_retained["movieProvenance"]["sourceEpoch"])
+    manifest = copy.deepcopy(movie_retained["movieProvenance"]["manifest"])
+    manifest.update(scenario="tv-browse", runId="tv-browse-01", actor=copy.deepcopy(actor), catalog=copy.deepcopy(catalog))
+    closeout = {"kind": "audited-tv-browse01-owned-state-closeout", "status": "owned_state_closed_client_acceptance_pending", "clientAcceptance": False,
+        "browserOutcome": "failed", "browserExitCode": 1, "gatewayExitCode": 0, "physicalMediaRequests": 0, "playingReports": 0,
+        "inputEvidence": {"after": copy.deepcopy(provenance_pins["snapshot"]), "epoch": copy.deepcopy(provenance_pins["sourceEpoch"]),
+            "manifest": copy.deepcopy(provenance_pins["manifest"])}, "checks": {
+            "authentication": {"allSessionsRevoked": len(prior["tables"]["sessions"])},
+            "ownedData": {"ownedTables": 35, "oldRowsDeleted": 0, "clientPlaybackReferences": len(prior["tables"]["client_playback_references"]),
+                "encodingJobs": 0, "newCountedPlays": 0, "newUserData": copy.deepcopy(userdata), "unstartedPreparations": [{"id": play["id"],
+                    "authSessionId": play["auth_session_id"], "itemId": item["id"], "state": "Prepared", "counted": False, "positionTicks": 0, "prepareOrdinals": [277]}]},
+            "savedRuntimeAndWorkers": copy.deepcopy(movie_retained["movieProvenance"]["closeout"]["checks"]["savedRuntimeAndWorkers"])}}
+    review = {key: copy.deepcopy(row) for key, row in movie_retained["review"].items() if key != "movieProvenance"}
+    review.update(kind="audited-candidate-reviewed-tv-baseline", scenario="tv-browse", tvProvenance=provenance_pins,
+        postBrowseAdmission=copy.deepcopy(m.ADMISSION), actor=copy.deepcopy(actor),
+        item={"id": item["id"], "mediaSourceId": play["media_source_id"], "runtimeTicks": item["runtimeTicks"]},
+        preparedExpirations=[{"playSessionId": play["id"], "authSessionId": play["auth_session_id"]}])
+    retained = {key: copy.deepcopy(row) for key, row in movie_retained.items() if key not in ("review", "movieProvenance")}
+    retained.update(review=review, snapshot=copy.deepcopy(before), tvProvenance={"closeout": closeout, "snapshot": prior, "sourceEpoch": epoch, "manifest": manifest},
+        postBrowseAdmission={"kind": "audited-candidate-live-admission", "version": 3, "status": "admitted_for_core_client",
+            "candidateAdmissionComplete": True, "failure": None, "cleanupFailures": [], "runtimeEpoch": copy.deepcopy(review["runtimeEpoch"]),
+            "seedRuntimeBinding": copy.deepcopy(review["seedBinding"]), "controllerSessions": {"P": admission_auth}})
+    retained["manifest"]["catalog"].update(copy.deepcopy(catalog))
+    retained["closeout"]["sourceState"].update(afterSessions=len(before["tables"]["sessions"]), afterPlays=len(before["tables"]["play_sessions"]),
+        afterUserData=len(before["tables"]["user_item_data"]))
+    value.update(version=5, scenario="tv-browse", retainedBaseline=pin("synthetic-reviewed-tv-baseline.json", "4"),
+        currentRuntime=pin("synthetic-current-runtime.json", "5"))
+    return value, before, binding, retained
+
+
 def log_fixture():
     process = {"pid": 123, "startTicks": "1234", "bootId": "synthetic-boot", "uid": 1001, "exe": "/fixed/goby", "exeDevice": 1,
         "exeInode": 3, "cmdline": ["/fixed/goby"], "networkNamespace": "net:[1]", "cgroup": "0::/system.slice/candidate.service\n"}
@@ -302,6 +377,114 @@ def log_fixture():
         return {"capturedAt": at, "candidateBefore": copy.deepcopy(process), "candidateAfter": copy.deepcopy(process), "file": copy.deepcopy(facts),
             "length": len(raw), "content": {"path": str(m.R / ("synthetic-server-" + label + ".raw")), "sha256": hashlib.sha256(raw).hexdigest()}}
     return process, info, snapshot(raw_before, "before", "2026-09-13T12:20:00Z"), snapshot(raw_after, "after", "2026-09-13T12:20:01Z"), raw_before, raw_after
+
+
+def diagnostic_job_fixture(exit_code="1"):
+    value, source, binding, retained = reviewed_tv_fixture()
+    job = make_job(value)
+    job.binding, job.retained = binding, retained
+    binding["actors"]["tv-browse"]["credentials"] = {"path": str(m.R / "synthetic-tv-credentials.json"), "sha256": "a" * 64}
+    process, unused, before, after, raw_before, raw_after = log_fixture()
+    candidate = {**process, "listener": {"host": "127.0.0.1", "port": 19181, "socketInode": "4"}}
+    job.epoch = {"candidateProcess": process, "candidate": {"publicUrl": "http://127.0.0.1:19180", "directUrl": "http://127.0.0.1:19181", "database": "synthetic"},
+        "currentSource": {"sourceManifest": {"sha256": "c" * 64}, "binary": {"sha256": "d" * 64}}}
+    job.gateway = types.SimpleNamespace(PROCESS_FIELDS=set(process))
+    job.hosting = {"process": process, "listener": candidate["listener"], "executableSha256": "e" * 64}
+    job.io = types.SimpleNamespace(pin=lambda: candidate)
+    # The test models the admitted worker boundary without performing live work.
+    job.preflight, job.open, job.verify_hosting, job.wait_client = Mock(), Mock(), Mock(), Mock()
+    events, saved = [], {}
+    def save(name, content):
+        events.append(name)
+        saved[name] = copy.deepcopy(content)
+        return {"path": str(job.private / name), "sha256": "f" * 64}
+    def sample(label):
+        events.append("source_" + label)
+        return source, {"path": str(job.private / ("source-" + label + ".json")), "sha256": "f" * 64}, candidate, {"pid": 456}, {"owned": True}
+    def capture(label):
+        events.append("log_" + label)
+        return (before, raw_before) if label == "before" else (after, raw_after)
+    job.save, job.source_sample, job.capture_server_log = save, sample, capture
+    job.start_worker = lambda role, argv: events.append("start_" + role)
+    job.close_worker = lambda role: events.append("close_" + role)
+    job.wait_gateway = lambda: ({"process": process, "listener": {"host": "127.0.0.1", "port": 19180, "socketInode": "5"}},
+        {"path": str(job.private / "gateway-attestation.json"), "sha256": "f" * 64})
+    closed = {"unit": {"MainPID": "0"}, "workerPidAbsent": True, "recursiveCgroupPids": []}
+    job.workers = {"browser": {"closure": copy.deepcopy(closed), "terminal": {"LoadState": "loaded", "Result": "success" if exit_code == "0" else "exit-code", "ExecMainStatus": exit_code}},
+        "gateway": {"closure": copy.deepcopy(closed), "terminal": {"LoadState": "loaded", "Result": "success", "ExecMainStatus": "0"}}}
+    summary = {"status": "owned_state_closed_diagnostic_result", "clientAcceptance": False, "uiAccepted": exit_code == "0",
+        "originalBrowserOutcome": "completed" if exit_code == "0" else "failed", "originalBrowserFailure": None if exit_code == "0" else "synthetic_ui_rejection",
+        "diagnostic": {"status": "inconclusive" if exit_code == "0" else "response_identified"}}
+    job.pin_file = lambda path: {"path": str(path), "sha256": "f" * 64}
+    def read(pin):
+        if pin["path"] == str(job.output / "gateway/index.json"):
+            return {"complete": True, "webMediaAndWebSocketBodiesRetained": False}
+        if pin["path"] == str(job.output / "closeout/summary.json"):
+            return summary
+        raise m.RunError("synthetic_unexpected_descriptor")
+    job.s = types.SimpleNamespace(descriptor=read)
+    job.p = types.SimpleNamespace(command=Mock())
+    return job, events, saved, summary
+
+
+def component_fixture(*, wrong_seed=False):
+    """Finite v5 receipt fixture; existing tests own the unchanged native ancestor."""
+    value, unused_before, unused_binding, unused_retained = reviewed_tv_fixture()
+    raw = {}
+    def pin(name, content):
+        body = content if isinstance(content, bytes) else (m.canonical(content) + "\n").encode()
+        selected = {"path": str(m.R / "synthetic-v5-components" / name), "sha256": hashlib.sha256(body).hexdigest()}
+        raw[selected["path"]] = body
+        return selected
+    sources = {role: pin("sources/" + name, ("# selected " + role + "\n").encode()) for role, name in m.SOURCE_FILES.items()}
+    frozen = {role: row["sha256"] for role, row in sources.items()}
+    frozen["closer"] = hashlib.sha256(b"old closer").hexdigest()
+    controller = pin("controller.py", b"# selected controller\n")
+    value.update(sources=sources, runtimeHelper=pin("runtime.py", b'raise AssertionError("new_helper_imported")\n'))
+    cases = {"kind": "audited-candidate-reviewed-tv-baseline-replay-input", "version": 1,
+             "review": value["retainedBaseline"], "seed": copy.deepcopy(value["seedBinding"]),
+             "inputBinding": {key: value[key] for key in ("runtimeEpoch", "seedBinding")}}
+    if wrong_seed:
+        cases["seed"]["sha256"] = "0" * 64
+    evidence = {"cases": pin("cases.json", cases)}
+    replay = {"review": value["retainedBaseline"], "tablesCompared": 35, "sequencesCompared": 5}
+    javascript = {"kind": "audited-candidate-client-closeout-pure-guards", "source": sources["closer"],
+                  "sourceUnchanged": True, "testCount": 1, "passed": 1, "failed": 0, "clientAcceptanceClaim": False,
+                  "tests": [{"outcome": "passed"}], "reviewedTVBaselineReplay": replay}
+    evidence["javascriptResult"] = pin("javascript.json", javascript)
+    evidence["runtimeVerification"] = pin("runtime-verification.json", {"kind": "audited-candidate-current-runtime-verification",
+        "status": "passed", "source": value["runtimeHelper"], "passed": 1, "failed": 0, "environmentDecoded": False,
+        "sqlCalls": 0, "httpCalls": 0, "serviceActions": 0})
+    outputs = {"python": ((m.canonical({"kind": "audited-candidate-reviewed-tv-baseline-python-replay",
+        "reviewSha256": value["retainedBaseline"]["sha256"], "rejectedTableMutations": 35, "rejectedSequenceMutations": 5}) + "\n").encode(), b"Ran 1 tests in 0.001s\n\nOK\n"),
+               "javascript": ((m.canonical({**evidence["javascriptResult"], **{key: javascript[key] for key in
+                    ("testCount", "passed", "failed", "sourceUnchanged", "clientAcceptanceClaim")}}) + "\n").encode(), b""),
+               "log-binding": (b"# tests 1\n# pass 1\n# fail 0\n# skipped 0\n# cancelled 0\n", b"")}
+    executions, test_sources = [], []
+    for name in ("python", "javascript", "log-binding"):
+        test_source = pin("test-" + name + ".py", ("# " + name + "\n").encode())
+        test_sources.append(test_source)
+        argv = [test_source["path"]]
+        if name != "log-binding":
+            argv += ["--reviewed-tv-baseline", evidence["cases"]["path"], "--reviewed-tv-baseline-sha256", evidence["cases"]["sha256"]]
+        executions.append({"name": name, "exitCode": 0, "timedOut": False, "childReaped": True, "argv": argv,
+                           "testSource": test_source, "stdout": pin(name + ".stdout", outputs[name][0]),
+                           "stderr": pin(name + ".stderr", outputs[name][1])})
+    evidence["dispatch"] = pin("dispatch.json", {"kind": "tv-client-component-verification-dispatch", "version": 1,
+        "scope": m.COMPONENT_SCOPE, "browserRuns": 0, "businessHttpCalls": 0, "sqlCalls": 0, "serviceActions": 0,
+        "sources": [controller, value["runtimeHelper"], *sources.values(), *test_sources], "executions": executions})
+    receipt = {"kind": "audited-candidate-client-component-admission", "version": 1, "scope": m.COMPONENT_SCOPE,
+               "controller": controller, "sources": sources, "runtimeHelper": value["runtimeHelper"],
+               "retainedBaseline": value["retainedBaseline"], "currentRuntime": value["currentRuntime"],
+               "ancestor": copy.deepcopy(m.AV_VERIFICATION), "evidence": evidence}
+    review = {"kind": "audited-candidate-tv-component-review", "version": 1, "status": "passed", "scope": m.COMPONENT_SCOPE,
+              "boundInputs": {key: copy.deepcopy(receipt[key]) for key in ("controller", "sources", "runtimeHelper", "retainedBaseline", "currentRuntime", "ancestor", "evidence")},
+              "testsReplayed": False, "businessHttpCalls": 0, "sqlCalls": 0, "serviceActions": 0,
+              "counts": dict.fromkeys(("python", "javascript", "log-binding", "runtime"), 1)}
+    receipt["independentReview"] = pin("review.json", review)
+    value["avVerification"] = pin("component.json", receipt)
+    return {"value": value, "receipt": receipt, "controller": controller, "raw": raw, "pin": pin,
+            "frozen": frozen, "read": lambda selected: raw[selected["path"]]}
 
 
 def startup_fixture(*, successor=False, epoch_version=2):
@@ -386,6 +569,135 @@ def startup_fixture(*, successor=False, epoch_version=2):
 
 
 class Guards(unittest.TestCase):
+    def test_v5_component_selection_binds_actual_source_bytes_and_input_pins(self):
+        f = component_fixture()
+        with patch.object(m, "FROZEN", f["frozen"]):
+            m.validate_v5_component_selection(f["receipt"], f["value"], f["controller"], f["read"])
+            for selected in (f["controller"], f["value"]["runtimeHelper"], f["value"]["sources"]["closer"]):
+                original = f["raw"][selected["path"]]
+                f["raw"][selected["path"]] = original + b"changed"
+                with self.subTest(source=selected["path"]), self.assertRaisesRegex(m.RunError, "component_read_digest"):
+                    m.validate_v5_component_selection(f["receipt"], f["value"], f["controller"], f["read"])
+                f["raw"][selected["path"]] = original
+            for name in ("controller", "runtimeHelper", "retainedBaseline", "currentRuntime"):
+                changed = copy.deepcopy(f["receipt"])
+                changed[name]["sha256"] = "0" * 64
+                with self.subTest(binding=name), self.assertRaisesRegex(m.RunError, "component_selected_inputs_changed"):
+                    m.validate_v5_component_selection(changed, f["value"], f["controller"], f["read"])
+
+    def test_v5_component_evidence_rejects_changed_bytes_and_wrong_saved_seed(self):
+        original_read = m.component_read
+        def read_component(pin, read_pin):
+            # Existing native-ancestor tests cover those fixed historical receipts.
+            if pin in (m.AV_VERIFICATION, m.REUSED_AV_VERIFICATION):
+                return b"{}"
+            return original_read(pin, read_pin)
+        for changed in (None, "dispatch", "javascriptResult", "independentReview", "seed"):
+            f = component_fixture(wrong_seed=changed == "seed")
+            if changed not in (None, "seed"):
+                selected = f["receipt"][changed] if changed == "independentReview" else f["receipt"]["evidence"][changed]
+                f["raw"][selected["path"]] += b"changed"
+            with self.subTest(changed=changed), patch.object(m, "FROZEN", f["frozen"]), \
+                    patch.object(m, "component_read", side_effect=read_component), patch.object(m, "validate_native_rejection_verification"):
+                if changed is None:
+                    m.validate_v5_component_evidence(f["receipt"], f["value"], f["controller"], f["read"])
+                else:
+                    reason = "component_tv_baseline_not_tested" if changed == "seed" else "component_read_digest"
+                    with self.assertRaisesRegex(m.RunError, reason):
+                        m.validate_v5_component_evidence(f["receipt"], f["value"], f["controller"], f["read"])
+
+    def test_v5_component_refuses_old_receipt_helper_and_wrong_scenario_before_reads(self):
+        for change in ("receipt", "helper", "scenario"):
+            f = component_fixture()
+            selected = copy.deepcopy(f["value"])
+            if change == "receipt":
+                selected["avVerification"] = copy.deepcopy(m.AV_VERIFICATION)
+            elif change == "helper":
+                selected["runtimeHelper"] = copy.deepcopy(m.RUNTIME)
+            else:
+                selected["scenario"] = "movie"
+            read = Mock(side_effect=AssertionError("unexpected_component_read"))
+            with self.subTest(change=change), patch.object(m, "FROZEN", f["frozen"]), self.assertRaises(m.RunError):
+                m.validate_v5_component_selection(f["receipt"], selected, f["controller"], read)
+            read.assert_not_called()
+            if change == "scenario":
+                with self.assertRaisesRegex(m.RunError, "version5_reviewed_tv_required"):
+                    m.validate_input(selected)
+
+    def test_v5_retained_actor_and_seed_cannot_be_substituted(self):
+        value, unused, binding, retained = reviewed_tv_fixture()
+        changed_binding = copy.deepcopy(binding)
+        changed_binding["actors"]["tv-browse"]["id"] = "0" * 32
+        with self.assertRaises(m.RunError):
+            m.validate_reviewed_tv_baseline(retained, changed_binding)
+        changed_input = copy.deepcopy(value)
+        changed_input["seedBinding"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(m.RunError, "current_admission_authority_changed"):
+            m.validate_input(changed_input)
+
+    def test_v5_bootstrap_rejection_never_imports_new_helper(self):
+        f = component_fixture()
+        receipt = copy.deepcopy(f["receipt"])
+        receipt["controller"]["sha256"] = "0" * 64
+        value = copy.deepcopy(f["value"])
+        value["avVerification"] = f["pin"]("rejected-component.json", receipt)
+        input_pin = f["pin"]("input.json", value)
+        trusted_raw = b"# fixed protected-reader fixture\n"
+        trusted_pin = f["pin"]("old-runtime.py", trusted_raw)
+        imported = []
+        def module(specification):
+            imported.append(specification.origin)
+            result = types.ModuleType(specification.name)
+            result.read_bootstrap = f["read"]
+            return result
+        with patch.object(m, "FROZEN", f["frozen"]), patch.object(m, "RUNTIME", trusted_pin), \
+                patch.object(Path, "read_bytes", return_value=trusted_raw), \
+                patch.object(importlib.util, "module_from_spec", side_effect=module), \
+                self.assertRaisesRegex(m.RunError, "component_selected_inputs_changed"):
+            m.bootstrap_runtime(value["runtimeHelper"], f["controller"], input_pin)
+        self.assertEqual(imported, [trusted_pin["path"]])
+
+    def test_v5_epochio_receives_current_identity_without_rewriting_history(self):
+        value, unused, unused_binding, unused_retained = reviewed_tv_fixture()
+        job = make_job(value)
+        job.epoch = {"candidateProcess": {"pid": 123}, "candidate": {"database": "historical"}}
+        historical = copy.deepcopy(job.epoch)
+        job.current_runtime = {"current": {"candidateProcess": {"pid": 456}}}
+        current = copy.deepcopy(job.current_runtime)
+        io = types.SimpleNamespace(created=False, open=Mock(side_effect=m.RunError("synthetic_open_stop")))
+        job.r.EpochIO, job.modules = Mock(return_value=io), {}
+        with self.assertRaisesRegex(m.RunError, "synthetic_open_stop"):
+            job.open()
+        self.assertEqual(job.r.EpochIO.call_args.kwargs, {"current_runtime": current, "current_runtime_pin": value["currentRuntime"]})
+        self.assertEqual(job.current_identity(), current["current"])
+        self.assertEqual(job.epoch, historical)
+        self.assertFalse(job.created)
+
+    def test_v5_log_and_boundary_bind_current_identity_and_preserve_epoch(self):
+        job, unused_events, saved, unused_summary = diagnostic_job_fixture("0")
+        historical = copy.deepcopy(job.epoch)
+        current = {**copy.deepcopy(job.epoch["candidateProcess"]), "pid": 987, "startTicks": "9876"}
+        job.current_runtime = {"current": {"candidateProcess": current}}
+        original_sample, original_capture = job.source_sample, job.capture_server_log
+        def sample(label):
+            result = list(original_sample(label))
+            result[2] = {**result[2], **current}
+            return tuple(result)
+        def capture(label):
+            result, raw = original_capture(label)
+            return {**result, "candidateBefore": copy.deepcopy(current), "candidateAfter": copy.deepcopy(current)}, raw
+        job.source_sample, job.capture_server_log = sample, capture
+        job.io.pin = lambda: sample("pin")[2]
+        with patch.dict(m.os.environ, {"SSH_CONNECTION": "synthetic-ssh"}):
+            job.run()
+        for name in ("server-log.json", "boundary.json"):
+            self.assertEqual(saved[name]["version"], 2)
+            self.assertEqual(saved[name]["currentRuntime"], job.value["currentRuntime"])
+            self.assertEqual(saved[name]["runtimeEpoch"], job.value["runtimeEpoch"])
+        self.assertEqual(saved["boundary.json"]["candidateBefore"]["pid"], 987)
+        self.assertEqual(saved["adapter-input.json"]["processes"]["candidate"]["pid"], 987)
+        self.assertEqual(job.epoch, historical)
+
     def test_native_verification_separates_fresh_checks_from_reused_results(self):
         current, old, selected = native_verification_fixture()
         old_before = copy.deepcopy(old)
@@ -778,6 +1090,187 @@ class Guards(unittest.TestCase):
         self.assertFalse(job.created)
         self.assertEqual(job.workers, {})
 
+    def test_version5_is_tv_only_and_cannot_relabel_movie_contracts(self):
+        value, before, binding, retained = reviewed_tv_fixture()
+        self.assertIs(m.validate_input(value), value)
+        for mutate in (lambda row: row.pop("currentRuntime"), lambda row: row.update(currentRuntime=None),
+                       lambda row: row["currentRuntime"].update(sha256="invalid")):
+            changed = copy.deepcopy(value)
+            mutate(changed)
+            with self.assertRaises(m.RunError):
+                m.validate_input(changed)
+        for version in (1, 2, 3, 4):
+            legacy = fixture()
+            if version == 2:
+                legacy.update(version=2, retainedBaseline=copy.deepcopy(m.RETAINED_BASELINE))
+            elif version == 3:
+                legacy.update(version=3, retainedBaseline=copy.deepcopy(m.MOVIE05_BASELINE))
+            elif version == 4:
+                legacy = reviewed_fixture()[0]
+            legacy["currentRuntime"] = copy.deepcopy(value["currentRuntime"])
+            with self.subTest(legacy=version), self.assertRaises(m.RunError):
+                m.validate_input(legacy)
+        for scenario in m.SCENARIOS - {"tv-browse"}:
+            with self.subTest(scenario=scenario), self.assertRaises(m.RunError):
+                m.validate_input({**value, "scenario": scenario})
+        for version in (1, 2, 3, 4, 5.0, True):
+            with self.subTest(version=version), self.assertRaises(m.RunError):
+                m.validate_input({**value, "version": version})
+        with self.assertRaisesRegex(m.RunError, "reviewed_tv_baseline_required"):
+            m.verify_actor_before(before, binding, "tv-browse", None, 5)
+        with self.assertRaises(m.RunError):
+            m.validate_reviewed_movie_baseline(retained, binding)
+        unused, unused_before, movie_binding, movie = reviewed_subtitles_fixture()
+        with self.assertRaises(m.RunError):
+            m.validate_reviewed_tv_baseline(movie, movie_binding)
+        for mutate in (lambda row: row["catalog"]["episodes"].append(copy.deepcopy(row["catalog"]["episodes"][2])),
+                       lambda row: row["catalog"]["episodes"][2].update(indexNumber=True)):
+            changed = copy.deepcopy(binding)
+            mutate(changed)
+            with self.assertRaisesRegex(m.RunError, "reviewed_tv_detail_target"):
+                m.validate_reviewed_tv_baseline(retained, changed)
+        replay_path, replay_hash = str(m.R / "synthetic-tv-replay-input.json"), "a" * 64
+        arguments = ["tests.py", REVIEWED_TV_REPLAY_FLAGS[0], replay_path, REVIEWED_TV_REPLAY_FLAGS[1], replay_hash]
+        self.assertEqual(reviewed_replay_arguments(arguments, REVIEWED_TV_REPLAY_FLAGS), {"path": replay_path, "sha256": replay_hash})
+        self.assertEqual(arguments, ["tests.py"])
+        for arguments in (["tests.py", REVIEWED_TV_REPLAY_FLAGS[0], replay_path], ["tests.py", REVIEWED_TV_REPLAY_FLAGS[1], replay_hash],
+                          ["tests.py", REVIEWED_TV_REPLAY_FLAGS[0], replay_path, REVIEWED_TV_REPLAY_FLAGS[1]],
+                          ["tests.py", REVIEWED_TV_REPLAY_FLAGS[0], replay_path, REVIEWED_TV_REPLAY_FLAGS[0], replay_path, REVIEWED_TV_REPLAY_FLAGS[1], replay_hash]):
+            with self.assertRaises(m.RunError):
+                reviewed_replay_arguments(arguments, REVIEWED_TV_REPLAY_FLAGS)
+
+    def test_reviewed_tv_loader_uses_explicit_provenance_and_preserves_foreign_references(self):
+        value, before, binding, retained = reviewed_tv_fixture()
+        documents = {value["retainedBaseline"]["path"]: retained["review"], retained["review"]["boundary"]["path"]: retained["boundary"]}
+        for key in ("closeout", "snapshot", "sourceEpoch", "manifest"):
+            documents[retained["review"][key]["path"]] = retained[key]
+            documents[retained["review"]["tvProvenance"][key]["path"]] = retained["tvProvenance"][key]
+        documents[retained["review"]["postBrowseAdmission"]["path"]] = retained["postBrowseAdmission"]
+        reader = Mock(side_effect=lambda pin: documents[pin["path"]])
+        loaded = m.load_reviewed_tv_baseline(value["retainedBaseline"], retained["inputBinding"], binding, reader)
+        self.assertEqual(m.canonical(loaded), m.canonical(retained))
+        self.assertEqual(len(m.validate_reviewed_tv_baseline(loaded, binding)), 1)
+        original = hashlib.sha256(m.canonical(loaded).encode()).hexdigest()
+        m.verify_actor_before(before, binding, "tv-browse", loaded, 5)
+        self.assertEqual(hashlib.sha256(m.canonical(loaded).encode()).hexdigest(), original)
+        self.assertEqual(len(before["tables"]["client_playback_references"]), 2)
+        requested = [call.args[0] for call in reader.call_args_list]
+        for pin in [value["retainedBaseline"], retained["review"]["boundary"], retained["review"]["postBrowseAdmission"], *retained["review"]["tvProvenance"].values(),
+                    *[retained["review"][key] for key in ("closeout", "snapshot", "sourceEpoch", "manifest")]]:
+            self.assertIn(pin, requested)
+
+    def test_reviewed_tv_post_browse_auth_exception_rejects_unproved_state_changes(self):
+        unused, unused_before, binding, retained = reviewed_tv_fixture()
+        self.assertEqual(len(m.validate_reviewed_tv_baseline(retained, binding)), 1)
+        for change in ("unknown-extra", "unrevoked", "associated-play", "old-row"):
+            unused, unused_before, binding, retained = reviewed_tv_fixture()
+            tables = retained["snapshot"]["tables"]
+            proof = retained["postBrowseAdmission"]["controllerSessions"]["P"]
+            extra = next(row for row in tables["sessions"] if row["id"] == proof["credentialId"])
+            if change == "unknown-extra":
+                tables["sessions"].append({**copy.deepcopy(extra), "id": "ab" * 16})
+                retained["closeout"]["sourceState"]["afterSessions"] += 1
+            elif change == "unrevoked":
+                extra["revoked_at"] = None
+            elif change == "associated-play":
+                play = next(row for row in tables["play_sessions"] if row.get("user_id") == binding["actors"]["tv-browse"]["id"])
+                tables["play_sessions"].append({**copy.deepcopy(play), "id": "play_unproved_admission", "auth_session_id": proof["credentialId"]})
+                retained["closeout"]["sourceState"]["afterPlays"] += 1
+            else:
+                old = next(row for row in tables["sessions"] if row["id"] == "synthetic-tv-auth")
+                old["device_id"] = "changed-old-device"
+            with self.subTest(change=change), self.assertRaises(m.RunError):
+                m.validate_reviewed_tv_baseline(retained, binding)
+
+    def test_reviewed_tv_provenance_rejects_playback_history_or_unreviewed_preparation(self):
+        mutations = [lambda row: row["review"].update(kind="audited-candidate-reviewed-movie-baseline"),
+            lambda row: row["review"].update(boundary=None), lambda row: row["review"].update(preparedExpirations=[]),
+            lambda row: row["review"]["preparedExpirations"].append(copy.deepcopy(row["review"]["preparedExpirations"][0])),
+            lambda row: row["review"]["preparedExpirations"][0].update(authSessionId="foreign"),
+            lambda row: row["review"]["item"].update(id="9" * 32),
+            lambda row: row["tvProvenance"]["closeout"].update(failure=None),
+            lambda row: row["tvProvenance"]["closeout"].update(physicalMediaRequests=1),
+            lambda row: row["tvProvenance"]["closeout"].update(playingReports=False),
+            lambda row: row["tvProvenance"]["closeout"]["inputEvidence"]["after"].update(sha256="0" * 64),
+            lambda row: row["tvProvenance"]["closeout"]["checks"]["ownedData"].update(newCountedPlays=1),
+            lambda row: row["tvProvenance"]["closeout"]["checks"]["ownedData"]["unstartedPreparations"][0].update(prepareOrdinals=[277, 278]),
+            lambda row: row["tvProvenance"]["closeout"]["checks"]["ownedData"]["unstartedPreparations"][0].update(prepareOrdinals=[True]),
+            lambda row: row["tvProvenance"]["snapshot"]["tables"]["play_sessions"][-1].update(counted=True),
+            lambda row: row["tvProvenance"]["snapshot"]["tables"]["play_sessions"][-1].update(started_at="2026-09-13T12:19:01Z"),
+            lambda row: row["tvProvenance"]["snapshot"]["tables"]["play_sessions"][-1].update(position_ticks=1),
+            lambda row: row["tvProvenance"]["snapshot"]["tables"]["user_item_data"][-1].update(play_count=1),
+            lambda row: row["tvProvenance"]["snapshot"]["tables"]["sessions"][-1].update(revoked_at=None),
+            lambda row: row["tvProvenance"]["snapshot"]["tables"]["sessions"].append(copy.deepcopy(row["tvProvenance"]["snapshot"]["tables"]["sessions"][-1])),
+            lambda row: row["tvProvenance"]["sourceEpoch"]["currentSource"]["binary"].update(sha256="0" * 64)]
+        for index, mutate in enumerate(mutations):
+            unused, unused_before, binding, retained = reviewed_tv_fixture()
+            mutate(retained)
+            with self.subTest(index=index), self.assertRaises(m.RunError):
+                m.validate_reviewed_tv_baseline(retained, binding)
+
+    def test_reviewed_tv_latest_state_requires_exact_actor_history_catalog_and_no_owned_residue(self):
+        for table, field, value in (("users", "name", "renamed"), ("sessions", "device_id", "other"),
+                                    ("play_sessions", "player_state", {"changed": True}), ("user_item_data", "updated_at", "2026-09-13T12:30:00Z")):
+            unused, unused_before, binding, retained = reviewed_tv_fixture()
+            key = "id" if table == "users" else "user_id"
+            row = next(row for row in retained["snapshot"]["tables"][table] if row.get(key) == binding["actors"]["tv-browse"]["id"])
+            row[field] = value
+            with self.subTest(table=table), self.assertRaisesRegex(m.RunError, "reviewed_tv_history_changed"):
+                m.validate_reviewed_tv_baseline(retained, binding)
+        for table in ("client_playback_references", "encoding_jobs"):
+            for field, value in (("user_id", "f" * 32), ("auth_session_id", "synthetic-tv-auth"), ("play_session_id", "play_synthetic_tv")):
+                unused, unused_before, binding, retained = reviewed_tv_fixture()
+                retained["snapshot"]["tables"][table].append({"user_id": "b" * 32, field: value})
+                count = "afterClientReferences" if table == "client_playback_references" else "afterEncodingJobs"
+                retained["closeout"]["sourceState"][count] += 1
+                with self.subTest(table=table, field=field), self.assertRaisesRegex(m.RunError, "reviewed_tv_owned_residue"):
+                    m.validate_reviewed_tv_baseline(retained, binding)
+        for mutate in (lambda row: row["manifest"]["catalog"]["episodes"][2].update(indexNumber=2),
+                       lambda row: row["boundary"]["clientWorker"].update(mainPID=False),
+                       lambda row: row["snapshot"].update(capturedAt="2026-09-13T12:19:59Z")):
+            unused, unused_before, binding, retained = reviewed_tv_fixture()
+            mutate(retained)
+            with self.assertRaises(m.RunError):
+                m.validate_reviewed_tv_baseline(retained, binding)
+
+    def test_reviewed_tv_before_preserves_foreign_tables_sequences_and_nanosecond_pruning(self):
+        mutations = [lambda row: row["tables"]["client_playback_references"][0].update(client_nonce="changed"),
+            lambda row: row["tables"]["users"][1]["policy"].update(EnableMediaPlayback=0),
+            lambda row: row["tables"]["play_sessions"][0]["player_state"].update(changed=True),
+            lambda row: row["sequences"]["synthetic"].update(lastValue="2")]
+        for index, mutate in enumerate(mutations):
+            unused, before, binding, retained = reviewed_tv_fixture()
+            mutate(before)
+            with self.subTest(index=index), self.assertRaisesRegex(m.RunError, "reviewed_tv_fresh_state_changed"):
+                m.verify_actor_before(before, binding, "tv-browse", retained, 5)
+        for fraction, passes in (("000000000", False), ("000000001", True)):
+            unused, before, binding, retained = reviewed_tv_fixture()
+            for snapshot in (before, retained["snapshot"], retained["tvProvenance"]["snapshot"]):
+                snapshot["tables"]["play_sessions"][-1]["expires_at"] = "2026-09-06T12:50:00." + fraction + "Z"
+            if passes:
+                m.verify_actor_before(before, binding, "tv-browse", retained, 5)
+            else:
+                with self.assertRaisesRegex(m.RunError, "reviewed_tv_pruning_deadline"):
+                    m.verify_actor_before(before, binding, "tv-browse", retained, 5)
+
+    def test_version5_rejects_old_closer_and_component_receipt_before_output_or_dispatch(self):
+        for newer_closer, reason in ((False, "version5_closer_not_admitted"), (True, "version5_components_not_admitted")):
+            value, unused_before, unused_binding, unused_retained = reviewed_tv_fixture()
+            if newer_closer:
+                value["sources"]["closer"]["sha256"] = "0" * 64
+            with patch.object(m, "FROZEN", {**m.FROZEN, "closer": value["sources"]["closer"]["sha256"]}):
+                job = make_job(value)
+            job.r.read_bootstrap = Mock()
+            job.open, job.start_worker, job.save = Mock(), Mock(), Mock()
+            with patch.object(m.os.path, "lexists", return_value=False), self.subTest(newer_closer=newer_closer), self.assertRaisesRegex(m.RunError, reason):
+                job.run()
+            job.r.read_bootstrap.assert_not_called()
+            job.open.assert_not_called()
+            job.start_worker.assert_not_called()
+            job.save.assert_not_called()
+            self.assertFalse(job.created)
+            self.assertEqual(job.workers, {})
+
     def test_movie05_baseline_preserves_all_five_plays_and_checks_every_pruning_deadline(self):
         before, binding, retained = movie05_fixture()
         self.assertEqual(m.validate_movie05_baseline(retained["closeout"], before, binding)["id"], m.MOVIE05_PREPARED)
@@ -837,6 +1330,71 @@ class Guards(unittest.TestCase):
     def test_version4_server_log_is_saved_when_browser_exit_is_one(self):
         self.assert_failed_browser_log_is_saved(4)
 
+    def test_version5_diagnostic_closes_after_browser_exit_zero_or_one(self):
+        for exit_code in ("0", "1"):
+            job, events, saved, summary = diagnostic_job_fixture(exit_code)
+            with self.subTest(exit_code=exit_code), patch.dict(m.os.environ, {"SSH_CONNECTION": "synthetic-ssh"}):
+                result = job.run()
+            self.assertEqual(result["status"], "owned_state_closed_diagnostic_result")
+            self.assertIs(result["clientAcceptance"], False)
+            for key in ("uiAccepted", "originalBrowserOutcome", "originalBrowserFailure", "diagnostic"):
+                self.assertEqual(result[key], summary[key])
+            self.assertEqual(saved["boundary.json"]["clientWorker"]["exitCode"], int(exit_code))
+            self.assertEqual(saved["closeout-input.json"]["version"], 5)
+            self.assertEqual(saved["closeout-input.json"]["currentRuntime"], job.value["currentRuntime"])
+            self.assertEqual(saved["closeout-input.json"]["serverLog"], job.server_log_pin)
+            self.assertLess(events.index("close_gateway"), events.index("source_after"))
+            self.assertLess(events.index("source_after"), events.index("server-log.json"))
+            self.assertLess(events.index("server-log.json"), events.index("boundary.json"))
+            job.p.command.assert_called_once()
+            self.assertEqual(job.p.command.call_args.args[0], "offline-client-closeout")
+
+    def test_version5_diagnostic_rejects_worker_cleanup_terminal_and_closer_failures(self):
+        cases = [("cleanup", "worker_responsibility_unclosed", False), ("worker", "worker_responsibility_unclosed", False),
+            ("signal", "diagnostic_browser_worker_failed", False), ("timeout", "diagnostic_browser_worker_failed", False),
+            ("exit-two", "diagnostic_browser_worker_failed", False), ("success-one", "diagnostic_browser_worker_failed", False),
+            ("exit-code-zero", "diagnostic_browser_worker_failed", False), ("gateway", "gateway_exit_status_not_observed", False),
+            ("closer-command", "synthetic_closer_failed", True), ("closer-status", "offline_diagnostic_closeout_incomplete", True),
+            ("client-acceptance", "offline_diagnostic_closeout_incomplete", True), ("diagnostic-status", "offline_diagnostic_closeout_incomplete", True),
+            ("missing-original", "offline_diagnostic_closeout_incomplete", True), ("ui-type", "offline_diagnostic_closeout_incomplete", True)]
+        for failure, reason, dispatched in cases:
+            job, events, saved, summary = diagnostic_job_fixture()
+            if failure == "cleanup":
+                def close(role):
+                    events.append("close_" + role)
+                    if role == "browser":
+                        raise m.RunError("synthetic_cleanup_failed")
+                job.close_worker = close
+            elif failure == "worker":
+                job.wait_client.side_effect = TimeoutError("synthetic_worker_timeout")
+            elif failure in ("signal", "timeout", "exit-two", "success-one", "exit-code-zero"):
+                outcome, status = {"signal": ("signal", "9"), "timeout": ("timeout", "1"), "exit-two": ("exit-code", "2"),
+                    "success-one": ("success", "1"), "exit-code-zero": ("exit-code", "0")}[failure]
+                job.workers["browser"]["terminal"].update(Result=outcome, ExecMainStatus=status)
+            elif failure == "gateway":
+                job.workers["gateway"]["terminal"].update(Result="signal", ExecMainStatus="9")
+            elif failure == "closer-command":
+                job.p.command.side_effect = m.RunError("synthetic_closer_failed")
+            elif failure == "closer-status":
+                summary["status"] = "core_scenario_closed"
+            elif failure == "client-acceptance":
+                summary["clientAcceptance"] = True
+            elif failure == "diagnostic-status":
+                summary["diagnostic"]["status"] = "accepted"
+            elif failure == "missing-original":
+                summary.pop("originalBrowserFailure")
+            elif failure == "ui-type":
+                summary["uiAccepted"] = 1
+            with self.subTest(failure=failure), patch.dict(m.os.environ, {"SSH_CONNECTION": "synthetic-ssh"}), self.assertRaisesRegex(m.RunError, reason):
+                job.run()
+            self.assertIn("server-log.json", saved)
+            if dispatched:
+                job.p.command.assert_called_once()
+                self.assertIn("boundary.json", saved)
+            else:
+                job.p.command.assert_not_called()
+                self.assertNotIn("boundary.json", saved)
+
     def assert_failed_browser_log_is_saved(self, version):
         if version == 4:
             value, source, binding, retained = reviewed_subtitles_fixture()
@@ -846,7 +1404,7 @@ class Guards(unittest.TestCase):
             source, binding, retained = movie05_fixture()
         job = make_job(value)
         job.binding, job.retained = binding, retained
-        actor = job.binding["actors"]["movie"]
+        actor = job.binding["actors"][value["scenario"]]
         actor["credentials"] = {"path": str(m.R / "synthetic-credential.json"), "sha256": "a"*64}
         job.binding.setdefault("serverId", "b"*32)
         process, unused, before, after, raw_before, raw_after = log_fixture()
@@ -942,6 +1500,48 @@ class Guards(unittest.TestCase):
 
         def test_saved_reviewed_03_latest_subtitles_baseline(self):
             self.assert_reviewed_saved_case(2, (21, 13, 2))
+
+    if REVIEWED_TV_REPLAY_INPUT is not None:
+        def test_saved_reviewed_tv_baseline(self):
+            value = REVIEWED_TV_REPLAY_INPUT
+            seed = read_reviewed_replay_descriptor(value["seed"])
+            retained = m.load_reviewed_tv_baseline(value["review"], value["inputBinding"], seed, read_reviewed_replay_descriptor)
+            snapshot = retained["snapshot"]
+            digest = lambda value: hashlib.sha256(m.canonical(value).encode()).hexdigest()
+            original = digest(retained)
+            self.assertEqual(retained["manifest"]["scenario"], "subtitles")
+            self.assertEqual(retained["tvProvenance"]["manifest"]["scenario"], "tv-browse")
+            self.assertEqual(len(snapshot["tables"]), 35)
+            self.assertEqual(len(snapshot["sequences"]), 5)
+            self.assertEqual(tuple(len(snapshot["tables"][table]) for table in ("sessions", "play_sessions", "client_playback_references")), (21, 13, 2))
+            self.assertEqual(len(retained["review"]["preparedExpirations"]), 1)
+            self.assertEqual(len(m.validate_reviewed_tv_baseline(retained, seed)), 1)
+            fresh = copy.deepcopy(snapshot)
+            fresh_before, references_before = digest(fresh), digest(fresh["tables"]["client_playback_references"])
+            m.verify_actor_before(fresh, seed, "tv-browse", retained, 5)
+            self.assertEqual(digest(fresh), fresh_before)
+            for index, table in enumerate(sorted(m.REVIEWED_BASELINE_TABLES)):
+                changed = copy.deepcopy(snapshot)
+                if changed["tables"][table]:
+                    changed["tables"][table][0]["reviewedReplayMutation"] = True
+                else:
+                    changed["tables"][table].append({"reviewedReplayMutation": True})
+                with self.subTest(tableIndex=index), self.assertRaisesRegex(m.RunError, "reviewed_tv_fresh_state_changed"):
+                    m.verify_actor_before(changed, seed, "tv-browse", retained, 5)
+            for index, sequence in enumerate(snapshot["sequences"]):
+                changed = copy.deepcopy(snapshot)
+                row = changed["sequences"][sequence]
+                m.need(isinstance(row, dict) and "lastValue" in row, "reviewed_tv_replay_sequence_shape")
+                row["lastValue"] = "1" if row["lastValue"] == "0" else "0"
+                with self.subTest(sequenceIndex=index), self.assertRaisesRegex(m.RunError, "reviewed_tv_fresh_state_changed"):
+                    m.verify_actor_before(changed, seed, "tv-browse", retained, 5)
+            self.assertEqual(digest(retained), original)
+            self.assertEqual(digest(retained["snapshot"]["tables"]["client_playback_references"]), references_before)
+            print(json.dumps({"kind": "audited-candidate-reviewed-tv-baseline-python-replay", "case": "latest-subtitles-tv",
+                "reviewSha256": value["review"]["sha256"], "snapshotSha256": retained["review"]["snapshot"]["sha256"],
+                "sessions": 21, "plays": 13, "foreignClientReferences": 2, "preparedExpirations": 1,
+                "rejectedTableMutations": 35, "rejectedSequenceMutations": 5, "unchangedEvidenceSha256": original,
+                "foreignClientReferencesSha256": references_before}))
 
     if REPLAY_MOVIE05:
         def test_saved_movie05_snapshot_offline_replay(self):
