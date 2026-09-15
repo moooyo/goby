@@ -62,6 +62,8 @@ SUCCESSOR_INPUT_KEYS = {"kind", "version", "output", "previousEpoch", "previousB
 SUCCESSOR_EPOCH_KEYS = EPOCH_KEYS | {"previousEpoch", "productInput", "configurationInput", "operationKind", "reviewedState", "reviewedSummary"}
 SUCCESSOR_BINDING_KEYS = BINDING_KEYS | {"previousBinding", "reviewedSummary", "reviewedState", "priorCloseout", "priorSource"}
 CURRENT_RUNTIME_KEYS = {"kind", "version", "status", "runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting", "recovery", "current", "preserved", "observation", "observationReview"}
+CURRENT_RUNTIME_V2_KEYS = CURRENT_RUNTIME_KEYS | {"previousCurrentRuntime"}
+CURRENT_RUNTIME_V1_PREDECESSOR = {"path": str(R / "core-current-runtime-20260915T085726Z/private/current-runtime-binding.json"), "sha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c"}
 CURRENT_IDENTITY_KEYS = {"candidateProcess", "serverProperties", "serverIdentity", "listener", "postgresProcess", "postgresProperties", "lease"}
 CURRENT_RECOVERY_KEYS = {"execution", "independentReview", "configuration", "selectedStartIntent", "selectedResult"}
 CURRENT_AUTHORITY_KEYS = ("runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting")
@@ -70,6 +72,40 @@ CURRENT_OBSERVATION_KEYS = {"kind", "version", "runtimeEpoch", "recoveryExecutio
 CURRENT_OBSERVATION_REVIEW_KEYS = {"kind", "version", "status", "observation", "source", "verification", "checks", "calls"}
 CURRENT_OBSERVATION_REVIEW_CHECKS = {"recordPins", "sourceAndVerification", "currentIdentity", "recoveryBinding", "preservedHashes", "hostingContinuity", "uniqueLease", "privateEvidence"}
 CURRENT_HOST_UNIT_FIELDS = "Id LoadState ActiveState SubState MainPID InvocationID Result ExecMainStatus ControlGroup NRestarts".split()
+PROGRAMS_PREVIOUS_EPOCH = {"path": str(R / "candidate-tv-parent-transition-01/private/runtime-epoch.json"), "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"}
+PROGRAMS_PREVIOUS_BINDING = {"path": str(R / "candidate-tv-parent-transition-01/private/seed-runtime-binding.json"), "sha256": "94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43"}
+PROGRAMS_CURRENT_RUNTIME = {"path": str(R / "core-current-runtime-20260915T085726Z/private/current-runtime-binding.json"), "sha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c"}
+PROGRAMS_PRIOR_SOURCE = {"path": str(R / "candidate-core-client-tv-browse-02/private/source-after.json"), "sha256": "445c35bc17a8716adb036061e16fa29f22d9883727657ebfe1cfc1fdd0db13e4"}
+PROGRAMS_PRIOR_CLOSEOUT = {"path": str(R / "candidate-core-client-tv-browse-02/closeout/closeout.json"), "sha256": "5d666c204c4aa122414aa385928d6be6a4a153c8ce0390e4c9af2643fc19f9c3"}
+PROGRAMS_SOURCE_ARCHIVE = {"path": str(R / "live-tv-product-source-20260915T102000Z/source-r01.tar.gz"), "sha256": "3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251"}
+PROGRAMS_PRODUCT_ROOT = Path("/opt/goby-test/livetv-programs-final-20260915")
+PROGRAMS_SOURCE_MANIFEST = {"path": "/opt/goby-test/livetv-programs-focused-20260915/private/source-manifest.json", "sha256": "47b4f9130558377897228aaddff15dc02e279552b83c40922550264ffbf01845"}
+PROGRAMS_OLD_BINARY = "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42"
+PROGRAMS_E11_BINARY = "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1"
+PROGRAMS_ENV_SHA = "877ce946814fef63a240171b7a60c4ad6b4505bf2051be815266ed9744627d3d"
+PROGRAMS_INPUT_KEYS = SUCCESSOR_INPUT_KEYS | {"operationKind", "currentRuntime", "newSourceArchive", "newArtifactReceipt", "newBuildManifest", "sourceBridge", "recoveryPolicy"}
+PROGRAMS_EPOCH_KEYS = SUCCESSOR_EPOCH_KEYS | {"previousCurrentRuntime", "sourceBefore", "sourceAfter"}
+PROGRAMS_BINDING_KEYS = SUCCESSOR_BINDING_KEYS | {"previousCurrentRuntime"}
+PROGRAMS_SOURCE_KEYS = {"archiveSha256", "sourceManifest", "binary", "fullReport", "schema", "artifactReceipt", "buildManifest", "sourceBridge"}
+PROGRAMS_RECOVERY_POLICY = {"mode": "explicit_once_restore_predecessor", "automatic": False, "maximumAttempts": 1,
+    "maximumSeconds": 900, "stopSeconds": 60, "readySeconds": 60, "maximumPublicRequests": 10,
+    "refreshDefinitionChange": "disable_only_definition_added_by_this_transition"}
+PROGRAMS_RECOVERY_INPUT_KEYS = {"kind", "version", "output", "transitionInput", "transitionFailure", "recoveryReview", "helpers", "budgets"}
+PROGRAMS_CAPTURE_INPUT_KEYS = {"kind", "version", "operationKind", "output", "previousEpoch", "previousBinding", "currentRuntime", "priorSource", "priorCloseout", "retentionReview", "helpers"}
+PROGRAMS_STAT_ONLY = {str(C / "data/master.key"), "/var/lib/goby-test/application-key-vault/master.key"}
+PROGRAMS_PROTECTED = set(PROTECTED) | {"goby-audited-20260914T083143Z-9b73ad46f2e6-server.service", "goby-audited-20260914T083143Z-9b73ad46f2e6-postgres.service"}
+PROGRAMS_REFRESH_FIELDS = {"key": "library.refresh_media", "emby_key": "", "name": "Refresh media details",
+    "description": "Refresh media details in all registered libraries, including unchanged files.", "category": "Library",
+    "is_hidden": False, "enabled": True, "revision": 1, "schedule_timezone": "UTC"}
+PROGRAMS_REFRESH_KEYS = set(PROGRAMS_REFRESH_FIELDS) | {"id", "created_at", "updated_at"}
+PROGRAMS_SEQUENCES = {"activity_entries_id_seq", "application_keys_id_seq", "catalog_entities_id_seq", "devices_id_seq", "theme_owner_ids_id_seq"}
+PROGRAMS_STATE_KEYS = {"source", "inactiveStage", "databases", "trees", "controlDocuments", "fixedFiles", "diagnostics", "unitLogs", "loadedUnits", "protected",
+    "candidateBefore", "candidateAfter", "postgresBefore", "postgresAfter", "leaseBefore", "leaseAfter", "hostingBefore", "hostingAfter",
+    "previousEpoch", "seedBinding", "priorSource", "currentRuntime", "postgresProcess", "capturedAt", "databaseNow"}
+PROGRAMS_RETENTION_MEMBERS = {
+    "internal/config/observability.go": "4f26e6af24160c6d93ffc52a87725ac3bb88cd3148bdd603df5594c5d71acc7f",
+    "internal/server/activity_retention.go": "88a2831005a3013fc4d88162a7e75606d3f6a87ee70d93b5b862c012fbe32180",
+    "internal/activity/store.go": "4bbe56850faf3d60d61039a84582004c18a113c09f91b75484afc3de8fc16728"}
 
 
 class ContractError(ValueError):
@@ -122,6 +158,8 @@ def load_helper(name, pin):
 
 
 def validate_transition_input(value):
+    if type(value.get("version")) is int and value["version"] == 3:
+        return validate_programs_successor_input(value)
     if type(value.get("version")) is int and value["version"] == 2:
         return validate_binary_successor_input(value)
     need(set(value) == INPUT_KEYS and value["kind"] == "audited-candidate-transition-input" and type(value["version"]) is int and value["version"] == 1, "transition_input_schema")
@@ -136,6 +174,857 @@ def validate_transition_input(value):
     need(value["newFullReport"]["path"] == str(F / "report.json") and value["newSourceManifest"]["path"] == str(F / "source-manifest.json") and
          value["newBinary"]["path"] == str(F / "bin/goby-linux-amd64") and value["compiledCatalog"]["path"] == str(F / "source" / CATALOG_RELATIVE), "transition_product_scope_invalid")
     return value
+
+
+def validate_programs_successor_input(value):
+    need(isinstance(value, dict) and set(value) == PROGRAMS_INPUT_KEYS and
+         value["kind"] == "audited-candidate-transition-input" and type(value["version"]) is int and value["version"] == 3 and
+         value["operationKind"] == "programs_successor", "programs_transition_input_schema")
+    for key in PROGRAMS_INPUT_KEYS - {"kind", "version", "operationKind", "output", "helpers", "budgets", "recoveryPolicy"}:
+        descriptor(value[key])
+    expected = {"previousEpoch": PROGRAMS_PREVIOUS_EPOCH, "previousBinding": PROGRAMS_PREVIOUS_BINDING,
+        "currentRuntime": PROGRAMS_CURRENT_RUNTIME, "priorSource": PROGRAMS_PRIOR_SOURCE,
+        "priorCloseout": PROGRAMS_PRIOR_CLOSEOUT, "newSourceArchive": PROGRAMS_SOURCE_ARCHIVE, "newSourceManifest": PROGRAMS_SOURCE_MANIFEST}
+    need(all(canonical(value[key]) == canonical(pin) for key, pin in expected.items()), "programs_transition_authority")
+    need(set(value["helpers"]) == HELPERS and all(descriptor(pin) for pin in value["helpers"].values()) and
+         value["helpers"]["gateway"]["sha256"] == GATEWAY_SOURCE_SHA, "programs_transition_helpers")
+    need(canonical(value["budgets"]) == canonical(LIMITS) and canonical(value["recoveryPolicy"]) == canonical(PROGRAMS_RECOVERY_POLICY),
+         "programs_transition_budget_or_recovery_policy")
+    output = Path(value["output"])
+    need(output.parent == R and re.fullmatch(r"candidate-programs-transition-[0-9]{2}", output.name), "programs_transition_scope")
+    for key in ("newFullReport", "newBinary", "newArtifactReceipt", "newBuildManifest", "sourceBridge"):
+        need(Path(value[key]["path"]).is_relative_to(PROGRAMS_PRODUCT_ROOT), "programs_product_scope")
+    need(Path(value["compiledCatalog"]["path"]).is_relative_to("/opt/goby-test") and
+         value["compiledCatalog"]["path"].endswith("/" + CATALOG_RELATIVE), "programs_source_resource_scope")
+    need(value["newBinary"]["sha256"] not in {OLD_BINARY, CURRENT_BINARY, PROGRAMS_OLD_BINARY, PROGRAMS_E11_BINARY}, "programs_product_is_historical_binary")
+    return value
+
+
+def validate_programs_capture_input(value):
+    need(isinstance(value, dict) and set(value) == PROGRAMS_CAPTURE_INPUT_KEYS and
+         value["kind"] == "audited-candidate-state-capture-input" and type(value["version"]) is int and value["version"] == 2 and
+         value["operationKind"] == "programs_successor", "programs_capture_input_schema")
+    for key in PROGRAMS_CAPTURE_INPUT_KEYS - {"kind", "version", "operationKind", "output", "helpers"}:
+        descriptor(value[key])
+    for key, pin in (("previousEpoch", PROGRAMS_PREVIOUS_EPOCH), ("previousBinding", PROGRAMS_PREVIOUS_BINDING),
+                     ("currentRuntime", PROGRAMS_CURRENT_RUNTIME), ("priorSource", PROGRAMS_PRIOR_SOURCE), ("priorCloseout", PROGRAMS_PRIOR_CLOSEOUT)):
+        need(value[key] == pin, "programs_capture_authority")
+    output = Path(value["output"])
+    need(output.parent == R and re.fullmatch(r"candidate-programs-state-capture-[0-9]{2}", output.name) and
+         set(value["helpers"]) == HELPERS and all(descriptor(pin) for pin in value["helpers"].values()) and
+         value["helpers"]["gateway"]["sha256"] == GATEWAY_SOURCE_SHA, "programs_capture_scope")
+    return value
+
+
+def programs_instant(value, code="programs_timestamp"):
+    try:
+        need(isinstance(value, str), code)
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        need(parsed.tzinfo is not None, code)
+        return parsed
+    except (TypeError, ValueError) as error:
+        raise ContractError(code) from error
+
+
+def programs_sessions(source):
+    rows = source["tables"]["sessions"]
+    need(isinstance(rows, list) and 0 < len(rows) <= 64, "programs_session_inventory")
+    result = []
+    for row in rows:
+        need(isinstance(row, dict) and row.get("kind") in ("admin", "emby") and
+             all(isinstance(row.get(key), str) and re.fullmatch(r"[0-9a-f]{32}", row[key]) for key in ("id", "user_id")) and
+             isinstance(row.get("token_hash"), str) and re.fullmatch(r"\\x[0-9a-f]{64}", row["token_hash"]), "programs_session_identity")
+        programs_instant(row.get("revoked_at"), "programs_session_not_revoked")
+        result.append({"kind": row["kind"], "credentialId": row["id"], "userId": row["user_id"],
+                       "tokenSha256": row["token_hash"][2:], "revokedAt": row["revoked_at"]})
+    need(len({row["credentialId"] for row in result}) == len({row["tokenSha256"] for row in result}) == len(result), "programs_session_collision")
+    return sorted(result, key=lambda row: row["credentialId"])
+
+
+def validate_programs_snapshot(source):
+    need(isinstance(source, dict) and set(source) == {"capturedAt", "tables", "sequences"} and
+         isinstance(source["tables"], dict) and isinstance(source["sequences"], dict) and
+         set(source["tables"]) == TABLES and set(source["sequences"]) == PROGRAMS_SEQUENCES and
+         all(isinstance(rows, list) for rows in source["tables"].values()), "programs_full_snapshot_inventory")
+    programs_instant(source["capturedAt"])
+    for sequence in source["sequences"].values():
+        need(isinstance(sequence, dict) and set(sequence) == {"lastValue", "isCalled"} and
+             isinstance(sequence["lastValue"], str) and re.fullmatch(r"[0-9]+", sequence["lastValue"]) and
+             type(sequence["isCalled"]) is bool, "programs_sequence_shape")
+    migrations = source["tables"]["schema_migrations"]
+    need(all(isinstance(row, dict) and type(row.get("version")) is int for row in migrations), "programs_migration_row_shape")
+    need([row["version"] for row in migrations] == list(range(1, 29)), "programs_same_schema_required")
+    return source
+
+
+def validate_programs_retention(review, state, *, seconds):
+    need(isinstance(review, dict) and review.get("kind") == "programs-transition-activity-retention-provenance" and
+         type(review.get("version")) is int and review["version"] == 1 and
+         review.get("status") == "saved_provenance_reviewed_not_live_admission" and
+         type(review.get("expectedActivityRetentionDays")) is int and review["expectedActivityRetentionDays"] == 30 and
+         review["basis"]["preservedRuntimeEnvironmentSha256"] == PROGRAMS_ENV_SHA and
+         canonical(review["basis"]["productArchive"]) == canonical(PROGRAMS_SOURCE_ARCHIVE) and
+         canonical(review["savedActivityProjection"]["snapshot"]) == canonical(PROGRAMS_PRIOR_SOURCE), "programs_retention_provenance")
+    generator = review["basis"]["generator"]
+    need(generator.get("sha256") == "9b83f402ce539155dc6d1eafc99786c87b593ca47c7834127aeaacd46335ab6a" and
+         type(generator.get("activityRetentionEnvironmentKeyOccurrences")) is int and generator["activityRetentionEnvironmentKeyOccurrences"] == 0 and
+         len(review["basis"]["productMembers"]) == 3 and
+         {row["name"]: row["sha256"] for row in review["basis"]["productMembers"]} == PROGRAMS_RETENTION_MEMBERS,
+         "programs_retention_source_proof")
+    need(type(seconds) is int and 0 < seconds <= 1800 and state["databaseNow"] == state["source"]["capturedAt"], "programs_retention_database_clock")
+    now = programs_instant(state["databaseNow"])
+    rows = state["source"]["tables"]["activity_entries"]
+    need(all(now + timedelta(seconds=seconds) < programs_instant(row["created_at"]) + timedelta(days=30) for row in rows),
+         "programs_activity_retention_deadline")
+    environment = state["fixedFiles"][str(C / "private/runtime.env")]
+    need(environment.get("sha256") == PROGRAMS_ENV_SHA and environment.get("access") == "hash_only", "programs_retention_environment_changed")
+    return now
+
+
+def compare_programs_logical(before, after, *, phase, window_start=None, window_end=None, added_definition=None, entry_source=None):
+    """Preserve every existing row; the only delta is this transition's definition."""
+    validate_programs_snapshot(before)
+    validate_programs_snapshot(after)
+    need(phase in ("unchanged", "startup", "failed_startup", "recovery"), "programs_comparison_phase")
+    need(canonical(before["sequences"]) == canonical(after["sequences"]), "programs_sequences_changed")
+    for table in TABLES - {"task_definitions"}:
+        need(canonical(before["tables"][table]) == canonical(after["tables"][table]), "programs_old_rows_changed_" + table)
+    old = before["tables"]["task_definitions"]
+    new = after["tables"]["task_definitions"]
+    if phase == "unchanged":
+        need(canonical(old) == canonical(new), "programs_task_definitions_changed")
+        return None
+    need(isinstance(old, list) and isinstance(new, list) and all(isinstance(row, dict) and isinstance(row.get("id"), str) for row in old + new) and
+         len({row["id"] for row in old}) == len(old) and len({row["id"] for row in new}) == len(new), "programs_definition_identity")
+    old_by_id, new_by_id = ({row["id"]: row for row in rows} for rows in (old, new))
+    if phase == "recovery":
+        if added_definition is not None:
+            need(isinstance(added_definition, dict) and set(added_definition) == PROGRAMS_REFRESH_KEYS and
+                 isinstance(added_definition.get("id"), str) and re.fullmatch(r"[0-9a-f]{32}", added_definition["id"]) and
+                 canonical({key: added_definition[key] for key in PROGRAMS_REFRESH_FIELDS}) == canonical(PROGRAMS_REFRESH_FIELDS),
+                 "programs_recovery_requires_exact_refresh_definition")
+            need(entry_source is not None, "programs_recovery_requires_entry_proof")
+            proved = compare_programs_logical(entry_source, before, phase="failed_startup",
+                window_start=entry_source["capturedAt"], window_end=before["capturedAt"])
+            need(canonical(proved) == canonical(added_definition), "programs_recovery_addition_not_owned")
+        else:
+            need(all(row.get("key") != "library.refresh_media" for row in old), "programs_recovery_missing_addition_proof")
+        need(set(old_by_id) == set(new_by_id), "programs_recovery_definition_inventory")
+        for identifier, row in old_by_id.items():
+            recovered = new_by_id[identifier]
+            if added_definition is None or identifier != added_definition["id"]:
+                need(canonical(row) == canonical(recovered), "programs_recovery_old_definition_changed")
+                continue
+            need(canonical(row) == canonical(added_definition) and set(recovered) == PROGRAMS_REFRESH_KEYS and
+                 canonical({key: recovered[key] for key in PROGRAMS_REFRESH_KEYS - {"enabled", "revision", "updated_at"}}) ==
+                 canonical({key: row[key] for key in PROGRAMS_REFRESH_KEYS - {"enabled", "revision", "updated_at"}}) and
+                 recovered["enabled"] is False and type(recovered["revision"]) is int and recovered["revision"] == 2,
+                 "programs_recovery_refresh_delta")
+            need(programs_instant(window_start) <= programs_instant(recovered["updated_at"]) <= programs_instant(window_end), "programs_recovery_refresh_time")
+        need(added_definition is None or added_definition["id"] in old_by_id, "programs_recovery_unowned_definition")
+        return added_definition
+    need(all(row.get("key") != "library.refresh_media" for row in old), "programs_refresh_already_present")
+    need(set(old_by_id) <= set(new_by_id) and all(canonical(row) == canonical(new_by_id[key]) for key, row in old_by_id.items()), "programs_old_definition_changed")
+    added = [row for row in new if row["id"] not in old_by_id]
+    if phase == "failed_startup" and not added:
+        return None
+    need(len(added) == 1, "programs_refresh_addition_count")
+    row = added[0]
+    need(set(row) == PROGRAMS_REFRESH_KEYS and re.fullmatch(r"[0-9a-f]{32}", row["id"]) and
+         canonical({key: row[key] for key in PROGRAMS_REFRESH_FIELDS}) == canonical(PROGRAMS_REFRESH_FIELDS), "programs_refresh_definition")
+    start, end = programs_instant(window_start), programs_instant(window_end)
+    need(start <= programs_instant(row["created_at"]) <= end and start <= programs_instant(row["updated_at"]) <= end,
+         "programs_refresh_startup_time")
+    return deepcopy(row)
+
+
+def validate_programs_recovery_input(value, transition):
+    validate_programs_successor_input(transition)
+    need(isinstance(value, dict) and set(value) == PROGRAMS_RECOVERY_INPUT_KEYS and
+         value["kind"] == "audited-candidate-programs-recovery-input" and type(value["version"]) is int and value["version"] == 1,
+         "programs_recovery_input_schema")
+    for key in ("transitionInput", "transitionFailure", "recoveryReview"):
+        descriptor(value[key])
+    output = Path(value["output"])
+    need(output.parent == R and re.fullmatch(r"candidate-programs-recovery-[0-9]{2}", output.name) and
+         value["transitionFailure"]["path"] == str(Path(transition["output"]) / "private/failure.json") and
+         canonical(value["helpers"]) == canonical(transition["helpers"]) and canonical(value["budgets"]) == canonical(LIMITS), "programs_recovery_scope")
+    return value
+
+
+def validate_programs_state(state):
+    need(isinstance(state, dict) and set(state) == PROGRAMS_STATE_KEYS and
+         state["previousEpoch"] == PROGRAMS_PREVIOUS_EPOCH and state["seedBinding"] == PROGRAMS_PREVIOUS_BINDING and
+         state["priorSource"] == PROGRAMS_PRIOR_SOURCE and state["currentRuntime"] == PROGRAMS_CURRENT_RUNTIME,
+         "programs_state_authority")
+    validate_programs_snapshot(state["source"])
+    validate_programs_snapshot(state["inactiveStage"])
+    need(state["databaseNow"] == state["source"]["capturedAt"], "programs_state_database_clock")
+    programs_instant(state["capturedAt"])
+    tables = state["source"]["tables"]
+    sessions = programs_sessions(state["source"])
+    need(all(not tables[key] for key in ("encoding_jobs", "task_triggers", "task_runs", "task_run_children", "task_run_requests", "task_occurrences")) and
+         all(row.get("status") == "Completed" for row in tables["scan_jobs"]), "programs_pending_startup_work")
+    definitions = tables["task_definitions"]
+    need(len(definitions) in (1, 2) and {row.get("key") for row in definitions} in ({"library.scan"}, {"library.scan", "library.refresh_media"}),
+         "programs_unreviewed_task_definition")
+    need(set(state["trees"]) == set(TREE_ROOTS) and
+         set(state["trees"][str(C / "data/cache")]) == {".", ".goby-transcode-cache", ".goby-transcode-lock"}, "programs_cache_or_tree_scope")
+    need(not any(".next-" in name or ".goby-backup-catalog.pending" in name for tree in state["trees"].values() for name in tree), "programs_pending_control_file")
+    documents = state["controlDocuments"]
+    need("recovery/activation-journal.json" not in documents and "operations/current.json" in documents and
+         "recovery/generation-registry.json" in documents and "backups/.goby-backup-catalog.json" in documents, "programs_control_inventory")
+    payload = documents["operations/current.json"]["payload"]
+    need(not payload.get("transition") and len(payload["operations"]) == 3 and
+         {(row["kind"], row["state"], row["phase"]) for row in payload["operations"]} ==
+         {("create", "failed", "finished"), ("create", "completed", "finished"), ("restore", "cancelled", "finished")} and
+         all(row.get("authorized") is True and row.get("applyAuthorized") is False and
+             row.get("cancelAuthorized") is (row["kind"] == "restore") for row in payload["operations"]), "programs_recovery_work_pending")
+    entries = documents["backups/.goby-backup-catalog.json"]["entries"]
+    need(len(entries) == 2 and {(row["metadata"]["state"], row["phase"], row["metadata"]["size"]) for row in entries} ==
+         {("failed", "empty", 0), ("ready", "ready", 290550)} and all(row["deleting"] is False for row in entries), "programs_backup_work_pending")
+    generations = documents["recovery/generation-registry.json"]["generations"]
+    slots = {row["slot"]: row for row in payload["slots"]}
+    restore = next(row for row in payload["operations"] if row["kind"] == "restore")
+    need(len(generations) == 1 and generations[0]["complete"] is True and set(slots) == {"primary", "recovery"} and
+         slots["primary"]["state"] == "active" and slots["recovery"]["state"] == "staged" and
+         slots["recovery"]["imageId"] == restore["generationId"] == generations[0]["id"] and
+         slots["recovery"]["operation"] == restore["id"], "programs_inactive_generation_changed")
+    need(PROGRAMS_PROTECTED <= set(state["protected"]) and set(state["unitLogs"]) == {"server-unit.log", "postgres-unit.log"}, "programs_protected_scope")
+    for path in PROGRAMS_STAT_ONLY:
+        facts = state["fixedFiles"].get(path)
+        need(isinstance(facts, dict) and facts.get("access") == "stat_only" and
+             (set(facts) == {"access", "absent"} and facts["absent"] is True or
+              set(facts) == {"access", "dev", "ino", "uid", "gid", "mode", "bytes", "mtimeNs", "ctimeNs"}),
+             "programs_secret_must_be_stat_only")
+    environment = state["fixedFiles"][str(C / "private/runtime.env")]
+    need(set(environment) == {"access", "dev", "ino", "uid", "gid", "mode", "bytes", "mtimeNs", "ctimeNs", "sha256"} and
+         environment["access"] == "hash_only" and environment["sha256"] == PROGRAMS_ENV_SHA, "programs_environment_facts")
+    for first, second in (("candidateBefore", "candidateAfter"), ("postgresBefore", "postgresAfter"),
+                          ("leaseBefore", "leaseAfter"), ("hostingBefore", "hostingAfter")):
+        need(canonical(state[first]) == canonical(state[second]), "programs_capture_identity_drift")
+    need(canonical(state["postgresProcess"]) == canonical(state["postgresAfter"]), "programs_postgres_projection")
+    return {"ownedTables": 35, "sequences": 5, "revokedSessions": sessions, "playRows": len(tables["play_sessions"]),
+            "userDataRows": len(tables["user_item_data"]), "retainedReferences": len(tables["client_playback_references"])}
+
+
+def compare_programs_preservation(before, after, *, installed_binary=None, recovery=False, added_definition=None, entry_source=None):
+    validate_programs_state(before)
+    validate_programs_state(after)
+    phase = "recovery" if recovery else "startup" if installed_binary is not None else "unchanged"
+    definition = compare_programs_logical(before["source"], after["source"], phase=phase,
+        window_start=before["databaseNow"], window_end=after["databaseNow"], added_definition=added_definition, entry_source=entry_source)
+    compare_programs_logical(before["inactiveStage"], after["inactiveStage"], phase="unchanged")
+    for section in ("databases", "trees", "controlDocuments", "loadedUnits", "protected", "postgresBefore", "postgresAfter", "hostingBefore", "hostingAfter"):
+        need(canonical(before[section]) == canonical(after[section]), "programs_preservation_changed_" + section)
+    old_files, new_files = before["fixedFiles"], after["fixedFiles"]
+    need(set(old_files) == set(new_files), "programs_fixed_file_inventory")
+    binary = str(C / "install/goby")
+    for name, facts in old_files.items():
+        if installed_binary is not None and name == binary:
+            descriptor(installed_binary)
+            need(installed_binary["path"] == binary and new_files[name]["sha256"] == installed_binary["sha256"] and
+                 all(canonical(facts[key]) == canonical(new_files[name][key]) for key in ("dev", "uid", "gid", "mode")), "programs_installed_binary_authority")
+        else:
+            need(canonical(facts) == canonical(new_files[name]), "programs_fixed_file_changed")
+    for name, facts in before["unitLogs"].items():
+        current = after["unitLogs"][name]
+        need(all(canonical(facts[key]) == canonical(current[key]) for key in ("dev", "ino", "uid", "gid", "mode")) and
+             current["bytes"] >= facts["bytes"] and current["bytes"] - facts["bytes"] <= 1 << 20 and
+             (current.get("prefixSha256") == facts["sha256"] or current["bytes"] == facts["bytes"] and current["sha256"] == facts["sha256"]),
+             "programs_unit_log_prefix_changed")
+    if installed_binary is None:
+        old, new = before["diagnostics"], after["diagnostics"]
+        need(set(old) == set(new) and all(canonical(old[key]) == canonical(new[key]) for key in set(old) - {"files"}) and
+             set(old["files"]) == set(new["files"]), "programs_before_diagnostics_changed")
+        for name, facts in old["files"].items():
+            current = new["files"][name]
+            need(all(canonical(facts[key]) == canonical(current[key]) for key in ("dev", "ino", "uid", "gid", "mode")) and
+                 current["bytes"] >= facts["bytes"] and current["bytes"] - facts["bytes"] <= 1 << 20 and
+                 (current.get("prefixSha256") == facts["sha256"] or current["bytes"] == facts["bytes"] and current["sha256"] == facts["sha256"]),
+                 "programs_diagnostic_prefix_changed")
+        for key in ("candidateBefore", "candidateAfter", "leaseBefore", "leaseAfter"):
+            need(canonical(before[key]) == canonical(after[key]), "programs_before_identity_changed")
+    else:
+        compare_diagnostics(before["diagnostics"], after["diagnostics"])
+    return {"existingSourceRowsExact": 35, "sequencesExact": 5, "inactiveStageExact": True, "allPriorPlayAndUserDataExact": True,
+            "foreignReferencesExact": True, "configurationExact": True, "postgresContinuous": True, "hostingContinuous": True,
+            "refreshDefinition": definition}
+
+
+def compare_programs_failed_diagnostics(before, after):
+    old, new = before["registry"], after["registry"]
+    need(type(old["version"]) is int and old["version"] == 1 and canonical({key: old[key] for key in old if key != "files"}) ==
+         canonical({key: new[key] for key in new if key != "files"}) and before["lock"] == after["lock"] and before["directory"] == after["directory"],
+         "programs_failed_diagnostic_authority")
+    previous, current = ({row["name"]: row for row in registry["files"]} for registry in (old, new))
+    additions = set(current) - set(previous)
+    need(len(previous) == len(old["files"]) and len(current) == len(new["files"]) and set(previous) <= set(current) and len(additions) <= 1 and
+         set(before["files"]) == set(previous) and set(after["files"]) == set(current) and
+         all(before["registryFile"][key] == after["registryFile"][key] for key in ("uid", "gid", "mode")), "programs_failed_diagnostic_inventory")
+    for name, original in previous.items():
+        observed = current[name]
+        need(type(original["closed"]) is bool and type(observed["closed"]) is bool and not original.get("deleting") and not observed.get("deleting") and
+             (not original["closed"] or observed["closed"]) and
+             canonical({key: original[key] for key in original if key not in ("size", "closed")}) ==
+             canonical({key: observed[key] for key in observed if key not in ("size", "closed")}), "programs_failed_old_diagnostic_changed")
+        left, right = before["files"][name], after["files"][name]
+        need(all(left[key] == right[key] for key in ("dev", "ino", "uid", "gid", "mode")) and
+             0 <= right["bytes"] - left["bytes"] <= 1 << 20 and
+             (right.get("prefixSha256") == left["sha256"] or right["bytes"] == left["bytes"] and right["sha256"] == left["sha256"]) and
+             (not original["closed"] or right["sha256"] == left["sha256"]), "programs_failed_diagnostic_prefix")
+        need(observed["size"] == (right["bytes"] if observed["closed"] else original["size"]), "programs_failed_diagnostic_size")
+    for name in additions:
+        entry, facts = current[name], after["files"][name]
+        need(re.fullmatch(r"goby-" + old["token"] + r"-[0-9a-f]{32}\.jsonl", name) and type(entry["closed"]) is bool and
+             not entry.get("deleting") and facts["bytes"] <= 1 << 20 and
+             entry["identity"] == {"device": facts["dev"], "inode": facts["ino"]} and
+             all(facts[key] == next(iter(before["files"].values()))[key] for key in ("uid", "gid", "mode")), "programs_failed_new_diagnostic")
+    need(sum(row["closed"] is False for row in current.values()) <= 1, "programs_failed_diagnostic_writers")
+
+
+def compare_programs_failed_state(before, failed, transition, *, allow_startup=True):
+    validate_programs_state(before)
+    validate_programs_state(failed)
+    definition = compare_programs_logical(before["source"], failed["source"], phase="failed_startup" if allow_startup else "unchanged",
+        window_start=before["databaseNow"], window_end=failed["databaseNow"])
+    compare_programs_logical(before["inactiveStage"], failed["inactiveStage"], phase="unchanged")
+    for key in ("databases", "trees", "controlDocuments", "loadedUnits", "protected", "postgresBefore", "postgresAfter", "hostingBefore", "hostingAfter"):
+        need(canonical(before[key]) == canonical(failed[key]), "programs_failed_native_change_" + key)
+    need(set(before["fixedFiles"]) == set(failed["fixedFiles"]), "programs_failed_file_inventory")
+    for path, old in before["fixedFiles"].items():
+        current = failed["fixedFiles"][path]
+        if path == str(C / "install/goby"):
+            need(current["sha256"] in {PROGRAMS_OLD_BINARY, transition["newBinary"]["sha256"]} and
+                 all(canonical(old[key]) == canonical(current[key]) for key in ("dev", "uid", "gid", "mode")), "programs_failed_binary_unknown")
+        else:
+            need(canonical(old) == canonical(current), "programs_failed_fixed_file_changed")
+    for name, old in before["unitLogs"].items():
+        current = failed["unitLogs"][name]
+        need(all(old[key] == current[key] for key in ("dev", "ino", "uid", "gid", "mode")) and
+             0 <= current["bytes"] - old["bytes"] <= 1 << 20 and
+             (current.get("prefixSha256") == old["sha256"] or current["bytes"] == old["bytes"] and current["sha256"] == old["sha256"]),
+             "programs_failed_unit_log_changed")
+    compare_programs_failed_diagnostics(before["diagnostics"], failed["diagnostics"])
+    return definition
+
+
+def validate_programs_recovery_review(value, transition, review, failure, before, failed, current):
+    validate_programs_recovery_input(value, transition)
+    keys = {"kind", "version", "status", "transitionInput", "transitionFailure", "before", "failedState", "oldBinaryCopy", "mode", "serverProperties", "serverIdentity"}
+    need(isinstance(review, dict) and set(review) == keys and review["kind"] == "audited-programs-transition-failure-review" and
+         type(review["version"]) is int and review["version"] == 1 and review["status"] == "failed_transition_state_reviewed" and
+         review["transitionInput"] == value["transitionInput"] and review["transitionFailure"] == value["transitionFailure"] and
+         review["mode"] in ("start_original_installed", "restore_original"), "programs_recovery_review_schema")
+    for key in ("transitionInput", "transitionFailure", "before", "failedState", "oldBinaryCopy"):
+        descriptor(review[key])
+    need(failure.get("kind") == "audited-programs-transition-failure" and type(failure.get("version")) is int and failure["version"] == 1 and
+         failure.get("status") == "transition_failed_resources_retained" and failure.get("input") == value["transitionInput"] and
+         failure.get("output") == transition["output"] and failure.get("before") == review["before"] and
+         failure.get("oldBinaryCopy") == review["oldBinaryCopy"] and failure.get("automaticRetry") is False and failure.get("automaticRollback") is False,
+         "programs_recovery_failure_binding")
+    captured = failure.get("failureCapture")
+    need(isinstance(captured, dict) and captured.get("status") in ("existing_after_state_retained", "captured_awaiting_independent_review") and
+         captured.get("state") == review["failedState"] and canonical(captured.get("serverProperties")) == canonical(review["serverProperties"]) and
+         canonical(captured.get("serverIdentity")) == canonical(review["serverIdentity"]), "programs_recovery_failed_state_not_original_capture")
+    calls = failure["calls"]
+    need(set(calls) == {"stop", "replace", "start"} and all(type(number) is int and number in (0, 1) for number in calls.values()) and
+         calls["stop"] == 1 and calls["start"] <= calls["replace"] <= calls["stop"], "programs_recovery_failure_phase")
+    responsibilities = failure["commandResponsibilities"]
+    need(isinstance(responsibilities, list) and responsibilities and all(isinstance(row, dict) and row.get("processGroupClosed") is True and
+         row.get("outcome") == "acknowledged" and row.get("timedOut") is False and row.get("descendantsRemained") is False and
+         row.get("sqlOutcome") in (None, "acknowledged") and type(row.get("exitCode")) is int and row["exitCode"] == 0 for row in responsibilities), "programs_recovery_unknown_command_outcome")
+    need(review["before"]["path"] == str(Path(transition["output"]) / "private/before.json") and
+         review["oldBinaryCopy"] == {"path": str(Path(transition["output"]) / "private/goby-before.bin"), "sha256": PROGRAMS_OLD_BINARY},
+         "programs_recovery_old_binary_scope")
+    definition = compare_programs_failed_state(before, failed, transition)
+    properties, prior_properties = review["serverProperties"], current["current"]["serverProperties"]
+    dynamic = {"ActiveState", "SubState", "MainPID", "InvocationID", "Result", "ExecMainStatus"}
+    need(isinstance(properties, dict) and set(properties) == set(prior_properties) and
+         all(canonical(properties[key]) == canonical(prior_properties[key]) for key in set(properties) - dynamic), "programs_recovery_unit_changed")
+    installed = failed["fixedFiles"][str(C / "install/goby")]["sha256"]
+    if review["mode"] == "start_original_installed":
+        need(installed == PROGRAMS_OLD_BINARY and definition is None and calls["start"] == 0, "programs_recovery_original_not_installed")
+    else:
+        need(installed == transition["newBinary"]["sha256"] and calls["replace"] == 1, "programs_recovery_successor_not_installed")
+    if properties["MainPID"] == "0":
+        need(properties["ActiveState"] in ("inactive", "failed") and review["serverIdentity"] is None and
+             failed["candidateAfter"] is None and failed["leaseAfter"] is None and
+             all(row["closed"] is True for row in failed["diagnostics"]["registry"]["files"]), "programs_recovery_stopped_state")
+    else:
+        process = failed["candidateAfter"]
+        prior = current["current"]["candidateProcess"]
+        need(review["mode"] == "restore_original" and properties["ActiveState"] == "active" and properties["SubState"] == "running" and
+             isinstance(process, dict) and set(process) == set(prior) | {"listener"} and
+             type(process["pid"]) is int and process["pid"] != prior["pid"] and properties["MainPID"] == str(process["pid"]) and
+             all(canonical(process[key]) == canonical(prior[key]) for key in set(prior) - {"pid", "startTicks", "exeInode"}) and
+             process["exeInode"] == failed["fixedFiles"][str(C / "install/goby")]["ino"] and failed["leaseAfter"] is not None,
+             "programs_recovery_running_process")
+        identity = review["serverIdentity"]
+        need(isinstance(identity, dict) and identity.get("pid") == process["pid"] and identity.get("startTicks") == process["startTicks"] and
+             identity.get("executableInode") == process["exeInode"] and identity.get("invocationId") == properties["InvocationID"], "programs_recovery_process_projection")
+    return definition
+
+
+def validate_programs_successor_epoch(epoch):
+    need(isinstance(epoch, dict) and set(epoch) == PROGRAMS_EPOCH_KEYS and epoch["kind"] == "audited-candidate-runtime-epoch" and
+         type(epoch["version"]) is int and epoch["version"] == 4 and epoch["operationKind"] == "programs_successor" and
+         epoch["status"] == "running_awaiting_live_acceptance" and epoch["candidateAdmissionComplete"] is False and
+         epoch["previousEpoch"] == PROGRAMS_PREVIOUS_EPOCH and epoch["previousCurrentRuntime"] == PROGRAMS_CURRENT_RUNTIME and
+         epoch["originalProvision"] == PROVISION and epoch["seedProvenance"] == SEED, "programs_epoch_schema")
+    for key in ("transitionInput", "transitionHelper", "runtimeHelper", "before", "after", "sourceBefore", "sourceAfter", "productInput", "configurationInput", "preservation", "reviewedState", "reviewedSummary"):
+        descriptor(epoch[key])
+    need(epoch["productInput"] == epoch["transitionInput"] and canonical(epoch["calls"]) == canonical({"stop": 1, "replace": 1, "start": 1}), "programs_epoch_operation")
+    source = epoch["currentSource"]
+    need(isinstance(source, dict) and set(source) == PROGRAMS_SOURCE_KEYS and source["archiveSha256"] == PROGRAMS_SOURCE_ARCHIVE["sha256"] and
+         type(source["schema"]) is int and source["schema"] == 28, "programs_epoch_source")
+    for key in PROGRAMS_SOURCE_KEYS - {"archiveSha256", "schema"}:
+        descriptor(source[key])
+    need(source["binary"]["path"] == str(C / "install/goby") and
+         source["binary"]["sha256"] not in {OLD_BINARY, CURRENT_BINARY, PROGRAMS_OLD_BINARY, PROGRAMS_E11_BINARY}, "programs_epoch_binary")
+    candidate = epoch["candidate"]
+    need(candidate["bootstrapExecuted"] is True and canonical(candidate["sourceState"]) == canonical({"users": 8, "schema": 28, "migrations": 28}) and
+         candidate["originalProvision"] == PROVISION and candidate["seedProvenance"] == SEED and
+         candidate["input"] == candidate["productInput"] == epoch["productInput"] and candidate["binary"] == source["binary"] and
+         candidate["currentSourceManifest"] == source["sourceManifest"] and candidate["backendReport"] == source["fullReport"], "programs_candidate_binding")
+    return epoch
+
+
+def validate_programs_binding(binding, epoch_pin, epoch, seed):
+    validate_programs_successor_epoch(epoch)
+    need(isinstance(binding, dict) and set(binding) == PROGRAMS_BINDING_KEYS and binding["kind"] == "audited-candidate-seed-runtime-binding" and
+         type(binding["version"]) is int and binding["version"] == 4 and binding["runtimeEpoch"] == epoch_pin and
+         binding["previousBinding"] == PROGRAMS_PREVIOUS_BINDING and binding["previousCurrentRuntime"] == PROGRAMS_CURRENT_RUNTIME and
+         binding["reviewedState"] == epoch["reviewedState"] and binding["reviewedSummary"] == epoch["reviewedSummary"] and
+         binding["priorSource"] == PROGRAMS_PRIOR_SOURCE and binding["priorCloseout"] == PROGRAMS_PRIOR_CLOSEOUT and
+         binding["originalSeed"] == SEED and binding["seedExecutor"] == seed["helper"] and binding["seedExecutor"]["sha256"] == SEED_EXECUTOR and
+         binding["seedInput"] == seed["input"] and binding["seedSessionAddendum"] == SEED_ADDENDUM and binding["admission02"] == ADMISSION02 and
+         binding["candidateAdmissionComplete"] is False, "programs_seed_provenance")
+    for key in ("serverId", "admin", "actors", "controlQ", "catalog", "catalogFile", "actualCatalogDtos", "libraries", "roots", "resources", "seedCleanup"):
+        need(canonical(binding[key]) == canonical(seed["cleanup"] if key == "seedCleanup" else seed[key]), "programs_seed_mapping_changed")
+    rows = binding["currentSessions"]
+    need(isinstance(rows, list) and all(isinstance(row, dict) and set(row) == {"kind", "credentialId", "tokenSha256", "userId", "revokedAt"} for row in rows), "programs_binding_session_shape")
+    projected = {"tables": {"sessions": [{"kind": row["kind"], "id": row["credentialId"], "user_id": row["userId"],
+        "token_hash": "\\x" + row["tokenSha256"], "revoked_at": row["revokedAt"]} for row in rows]}}
+    need(canonical(rows) == canonical(programs_sessions(projected)), "programs_binding_session_order")
+    return binding
+
+
+def validate_programs_startup_review(value, summary, state, closeout, prior_source, current, retention):
+    validate_programs_successor_input(value)
+    expected = {"kind", "version", "status", "state", "previousEpoch", "seedBinding", "currentRuntime", "priorSource", "priorCloseout",
+                "boundary", "independentReview", "retentionReview"}
+    need(isinstance(summary, dict) and set(summary) == expected and summary["kind"] == "audited-programs-transition-startup-state-review" and
+         type(summary["version"]) is int and summary["version"] == 1 and summary["status"] == "captured_state_supports_bounded_transition_contract",
+         "programs_startup_review_schema")
+    for key in expected - {"kind", "version", "status"}:
+        descriptor(summary[key])
+    for target, origin in (("state", "reviewedState"), ("previousEpoch", "previousEpoch"), ("seedBinding", "previousBinding"),
+                           ("currentRuntime", "currentRuntime"), ("priorSource", "priorSource"), ("priorCloseout", "priorCloseout")):
+        need(canonical(summary[target]) == canonical(value[origin]), "programs_startup_review_binding")
+    need(closeout.get("kind") == "audited-candidate-client-closeout" and type(closeout.get("version")) is int and closeout["version"] == 1 and
+         closeout.get("status") == "owned_state_closed_diagnostic_result" and closeout.get("clientAcceptance") is False, "programs_tv_closeout_required")
+    evidence = closeout["evidence"]
+    for key, pin in (("runtimeEpoch", value["previousEpoch"]), ("seedBinding", value["previousBinding"]),
+                     ("currentRuntime", value["currentRuntime"]), ("sourceAfter", value["priorSource"]), ("boundary", summary["boundary"])):
+        need(canonical(evidence[key]) == canonical(pin), "programs_tv_evidence_changed")
+    need(evidence["admission"] == current["admission"], "programs_tv_admission_changed")
+    facts = validate_programs_state(state)
+    compare_programs_logical(prior_source, state["source"], phase="unchanged")
+    validate_programs_retention(retention, state, seconds=LIMITS["maximumSeconds"] + PROGRAMS_RECOVERY_POLICY["maximumSeconds"])
+    need(all(row.get("key") != "library.refresh_media" for row in state["source"]["tables"]["task_definitions"]), "programs_review_requires_absent_refresh")
+    identity = current["current"]
+    candidate = {**identity["candidateProcess"], "listener": {"host": "127.0.0.1", "port": identity["listener"]["port"], "socketInode": identity["listener"]["socketInode"]}}
+    need(canonical(state["candidateBefore"]) == canonical(candidate) and canonical(state["postgresBefore"]) == canonical(identity["postgresProcess"]) and
+         canonical(state["leaseBefore"]) == canonical(identity["lease"]), "programs_review_current_identity")
+    return facts
+
+
+def validate_programs_runtime_change(previous, epoch, before, after):
+    old, new = previous["current"]["candidateProcess"], epoch["candidateProcess"]
+    changed = {"pid", "startTicks", "exeInode"}
+    need(isinstance(new, dict) and set(new) == set(old) and all(canonical(new[key]) == canonical(old[key]) for key in set(old) - changed) and
+         type(new["pid"]) is int and new["pid"] > 1 and new["pid"] != old["pid"] and
+         isinstance(new["startTicks"], str) and re.fullmatch(r"[1-9][0-9]*", new["startTicks"]) and
+         int(new["startTicks"]) > int(old["startTicks"]), "programs_process_transition")
+    candidate = epoch["candidate"]
+    binary = after["fixedFiles"][str(C / "install/goby")]
+    need(new["exeDevice"] == binary["dev"] and new["exeInode"] == binary["ino"] and
+         candidate["serverIdentity"]["pid"] == new["pid"] and candidate["serverIdentity"]["startTicks"] == new["startTicks"] and
+         candidate["serverIdentity"]["executableDevice"] == new["exeDevice"] and candidate["serverIdentity"]["executableInode"] == new["exeInode"],
+         "programs_executable_identity")
+    properties, prior_properties = candidate["processes"]["server"], previous["current"]["serverProperties"]
+    identity, prior_identity = candidate["serverIdentity"], previous["current"]["serverIdentity"]
+    need(set(identity) == set(prior_identity) and all(canonical(identity[key]) == canonical(prior_identity[key]) for key in set(identity) -
+         {"pid", "startTicks", "invocationId", "executableInode"}), "programs_process_identity_projection")
+    need(set(properties) == set(prior_properties) and all(canonical(properties[key]) == canonical(prior_properties[key]) for key in set(properties) - {"MainPID", "InvocationID"}) and
+         properties["MainPID"] == str(new["pid"]) and isinstance(properties["InvocationID"], str) and
+         re.fullmatch(r"[0-9a-f]{32}", properties["InvocationID"]) and properties["InvocationID"] != prior_properties["InvocationID"] and
+         candidate["serverIdentity"]["invocationId"] == properties["InvocationID"], "programs_service_identity")
+    listener = candidate["listener"]
+    prior_listener = previous["current"]["listener"]
+    need(set(listener) == set(prior_listener) and listener["pid"] == new["pid"] and
+         all(canonical(listener[key]) == canonical(prior_listener[key]) for key in set(listener) - {"pid", "socketInode"}) and
+         isinstance(listener["socketInode"], str) and re.fullmatch(r"[1-9][0-9]*", listener["socketInode"]), "programs_listener_transition")
+    need(canonical(after["candidateAfter"]) == canonical({**new, "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}) and
+         canonical(after["postgresAfter"]) == canonical(epoch["postgresProcess"]) == canonical(previous["current"]["postgresProcess"]) and
+         canonical(candidate["processes"]["postgres"]) == canonical(previous["current"]["postgresProperties"]), "programs_runtime_projection")
+    lease, old_lease = epoch["lease"], previous["current"]["lease"]
+    need(set(lease) == CURRENT_LEASE_KEYS and all(canonical(lease[key]) == canonical(old_lease[key]) for key in CURRENT_LEASE_KEYS -
+         {"backendPid", "backendStart", "clientPort", "candidateConnection"}) and type(lease["backendPid"]) is int and lease["backendPid"] > 1 and
+         type(lease["clientPort"]) is int and 0 < lease["clientPort"] < 65536, "programs_lease_transition")
+    need(programs_instant(before["databaseNow"]) <= programs_instant(lease["backendStart"]) <= programs_instant(after["databaseNow"]), "programs_lease_start_window")
+    connection = lease["candidateConnection"]
+    need(set(connection) == {"pid", "localPort", "remotePort", "socketInode"} and connection["pid"] == new["pid"] and
+         connection["localPort"] == lease["clientPort"] and connection["remotePort"] == candidate["ports"]["postgres"] and
+         isinstance(connection["socketInode"], str) and re.fullmatch(r"[1-9][0-9]*", connection["socketInode"]) and
+         canonical(after["leaseAfter"]) == canonical(lease), "programs_lease_socket_binding")
+
+
+def programs_artifact_pin(pin):
+    need(isinstance(pin, dict) and set(pin) == {"path", "sha256", "bytes"} and type(pin["bytes"]) is int and 0 < pin["bytes"] <= 2 << 30,
+         "programs_artifact_pin")
+    return descriptor({key: pin[key] for key in ("path", "sha256")})
+
+
+def programs_archive_member(value):
+    need(isinstance(value, dict) and set(value) == {"archive", "member", "sha256", "bytes"}, "programs_archive_member_schema")
+    programs_artifact_pin(value["archive"])
+    name = value["member"]
+    need(isinstance(name, str) and name and not PurePosixPath(name).is_absolute() and
+         all(part not in ("", ".", "..") for part in name.split("/")) and "\\" not in name and
+         isinstance(value["sha256"], str) and re.fullmatch(r"[0-9a-f]{64}", value["sha256"]) and
+         type(value["bytes"]) is int and 0 < value["bytes"] <= 128 << 20, "programs_archive_member_identity")
+    return value
+
+
+def read_programs_bytes(pin):
+    """Read one selected owned artifact; configuration and database paths are excluded."""
+    descriptor(pin)
+    path = Path(pin["path"])
+    need(path.is_relative_to("/opt/goby-test") and path.suffix.lower() not in (".env", ".key", ".dump", ".sql"), "programs_artifact_read_scope")
+    for node in (path, *path.parents):
+        info = node.lstat()
+        need(info.st_uid == 0 and not info.st_mode & 0o022 and not stat.S_ISLNK(info.st_mode), "programs_artifact_authority")
+    before = path.lstat()
+    signature = lambda row: (row.st_dev, row.st_ino, row.st_mode, row.st_uid, row.st_gid, row.st_nlink, row.st_size, row.st_mtime_ns, row.st_ctime_ns)
+    need(stat.S_ISREG(before.st_mode) and before.st_nlink == 1 and 0 < before.st_size <= 2 << 30, "programs_artifact_bound")
+    with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW), "rb") as stream:
+        need(signature(os.fstat(stream.fileno())) == signature(before), "programs_artifact_open_changed")
+        raw = stream.read(before.st_size + 1)
+        need(signature(os.fstat(stream.fileno())) == signature(before), "programs_artifact_read_changed")
+    need(signature(path.lstat()) == signature(before) and len(raw) == before.st_size and digest(raw) == pin["sha256"], "programs_artifact_digest")
+    return raw
+
+
+def programs_json(raw):
+    def unique(pairs):
+        value = dict(pairs)
+        need(len(value) == len(pairs), "programs_duplicate_json_key")
+        return value
+    need(isinstance(raw, bytes) and len(raw) <= 16 << 20, "programs_json_bound")
+    return json.loads(raw, object_pairs_hook=unique, parse_constant=lambda unused: need(False, "programs_nonfinite_json"))
+
+
+def validate_programs_source_compatibility(sources, previous):
+    selected = {name for name in set(sources) | set(previous) if name.startswith("internal/database/migrations/") or
+                name.startswith("internal/backuppg/catalogs/") and name.endswith(".json")}
+    need(sum(name.startswith("internal/database/migrations/") for name in selected) == 28 and
+         sum(name.startswith("internal/backuppg/catalogs/") for name in selected) == 6 and
+         all(name in sources and name in previous and all(canonical(sources[name][key]) == canonical(previous[name][key]) for key in ("bytes", "sha256"))
+             for name in selected), "programs_same_schema_resources_changed")
+
+
+def load_programs_product(value, read_descriptor, read_bytes=None):
+    """Verify the actual full/build worker and only its declared archived artifacts."""
+    validate_programs_successor_input(value)
+    read_bytes = read_bytes or read_programs_bytes
+    cache = {}
+    def raw(pin):
+        selected = programs_artifact_pin(pin) if "bytes" in pin else descriptor(pin)
+        key = (selected["path"], selected["sha256"])
+        if key not in cache:
+            cache[key] = read_bytes(selected)
+        content = cache[key]
+        need(isinstance(content, bytes) and digest(content) == selected["sha256"] and
+             ("bytes" not in pin or len(content) == pin["bytes"]), "programs_record_bytes")
+        return content
+    def document(pin):
+        parsed = programs_json(raw(pin))
+        selected = programs_artifact_pin(pin) if "bytes" in pin else pin
+        need(canonical(parsed) == canonical(read_descriptor(selected)), "programs_record_readback")
+        return parsed
+    def member(pin, *, metadata_only=False):
+        programs_archive_member(pin)
+        # The archive is hashed once into this cache. All selected member reads
+        # use these same bytes, never a path reopened after verification.
+        content = raw(pin["archive"])
+        with tarfile.open(fileobj=io.BytesIO(content), mode="r:*") as archive:
+            matches = [row for row in archive.getmembers() if str(PurePosixPath(row.name)) == pin["member"]]
+            need(len(matches) == 1 and matches[0].name == pin["member"] and matches[0].isfile() and
+                 not matches[0].sparse and matches[0].size == pin["bytes"], "programs_archive_member_changed")
+            if metadata_only:
+                return None
+            stream = archive.extractfile(matches[0])
+            need(stream is not None, "programs_archive_member_missing")
+            with stream:
+                result = stream.read(pin["bytes"] + 1)
+            need(len(result) == pin["bytes"] and digest(result) == pin["sha256"], "programs_archive_member_digest")
+            return result
+    receipt = document(value["newArtifactReceipt"])
+    keys = {"kind", "version", "status", "sourceArchive", "sourceManifest", "sourceBridge", "fullReport", "buildManifest", "newBinary",
+            "packageManifest", "packageArchive", "buildTools", "worker", "execution", "archive", "closure", "independentReview"}
+    need(isinstance(receipt, dict) and set(receipt) == keys and receipt["kind"] == "goby-internal-amd64-artifact-receipt" and
+         type(receipt["version"]) is int and receipt["version"] == 1 and receipt["status"] == "verified_and_closed", "programs_artifact_receipt_schema")
+    for key in keys - {"kind", "version", "status", "fullReport", "worker"}:
+        programs_artifact_pin(receipt[key])
+    programs_archive_member(receipt["worker"])
+    full = receipt["fullReport"]
+    need(isinstance(full, dict) and set(full) == {"execution", "worker", "ordinaryBinary"} and
+         canonical(full["execution"]) == canonical(receipt["execution"]) and canonical(full["worker"]) == canonical(receipt["worker"]), "programs_single_worker_binding")
+    programs_archive_member(full["ordinaryBinary"])
+    for target, origin in (("sourceArchive", "newSourceArchive"), ("sourceManifest", "newSourceManifest"), ("sourceBridge", "sourceBridge"),
+                           ("buildManifest", "newBuildManifest"), ("newBinary", "newBinary"), ("execution", "newFullReport")):
+        need(programs_artifact_pin(receipt[target]) == value[origin], "programs_artifact_input_binding")
+    for key, filename in (("newBinary", "goby"), ("buildManifest", "manifest.json"), ("packageManifest", "package-manifest.json"),
+                          ("packageArchive", "goby-linux-amd64-systemd.tar.gz")):
+        need(receipt[key]["path"] == str(PROGRAMS_PRODUCT_ROOT / "artifacts/linux-amd64-systemd" / filename), "programs_materialized_product_path")
+    need(receipt["worker"]["archive"] == full["ordinaryBinary"]["archive"] == receipt["archive"], "programs_full_archive_binding")
+    execution, closure, review = (document(receipt[key]) for key in ("execution", "closure", "independentReview"))
+    closure_flags = {"ownedProcessesClosed", "ext4Unmounted", "loopDetached", "ramUnmounted", "resourcesClosed", "lockReleased", "allOwnedCommandsClosed"}
+    need(execution.get("status") == "passed_with_explicit_profile_gap" and exact_counts(execution, {"workerExitCode": 0, "runnerAttempts": 1}) and
+         execution.get("priorResultsReused") is False and execution.get("singleRunFullSuite") is True and execution.get("cleanupErrors") == [] and
+         all(execution.get(key) is True for key in closure_flags), "programs_full_execution_not_closed")
+    need(closure.get("kind") == "livetv-programs-final-closure" and type(closure.get("version")) is int and closure["version"] == 1 and
+         closure.get("status") == "closed" and all(closure.get(key) is True for key in closure_flags | {"protectedUnchanged"}) and
+         canonical(closure["archive"]) == canonical(receipt["archive"]), "programs_artifact_resource_closure")
+    review_keys = {"kind", "version", "status", "input", "adapter", "execution", "archive", "closure", "sourceBridge", "buildManifest", "newBinary",
+                   "packageManifest", "packageArchive", "buildTools", "worker", "checks", "limits"}
+    checks = {"sourceIdentity", "ordinaryFullSuite", "ordinaryBuild", "embeddedBuild", "packageMembers", "artifactMaterialization", "toolPins",
+              "budgets", "resourceClosure", "protectedState", "recordsBinding"}
+    need(isinstance(review, dict) and set(review) == review_keys and review["kind"] == "programs-final-product-independent-review" and
+         type(review["version"]) is int and review["version"] == 1 and review["status"] == "verified" and set(review["checks"]) == checks and
+         all(check is True for check in review["checks"].values()) and isinstance(review["limits"], list) and all(isinstance(row, str) for row in review["limits"]),
+         "programs_artifact_independent_review")
+    for key in review_keys - {"kind", "version", "status", "checks", "limits", "worker"}:
+        programs_artifact_pin(review[key])
+    for key in ("execution", "archive", "closure", "sourceBridge", "buildManifest", "newBinary", "packageManifest", "packageArchive", "buildTools", "worker"):
+        need(canonical(review[key]) == canonical(receipt[key]), "programs_independent_record_binding")
+    need(canonical(review["input"]) == canonical(closure["input"]) and canonical(review["adapter"]) == canonical(closure["adapter"]), "programs_independent_execution_source")
+    worker = programs_json(member(receipt["worker"]))
+    suffixes = "cmd/goby internal/activity internal/artwork internal/backupformat internal/backuppg internal/backupstore internal/config internal/database internal/diagnostics internal/events internal/identity internal/library internal/lifecycle internal/media internal/metadata internal/playback internal/recovery internal/recoverycontrol internal/server internal/settings internal/storagebinding internal/subtitle internal/tasks internal/transcode internal/recoverydb".split()
+    expected = ["github.com/moooyo/goby/" + name for name in suffixes]
+    skip = {"package": "github.com/moooyo/goby/internal/library", "test": "TestRootBindingFullScanMountNamespaceHelper"}
+    need(worker.get("status") == "passed_with_explicit_profile_gap" and worker.get("ordinary_suite_passed") is True and
+         exact_counts(worker, {"complete_package_count": 25}) and worker.get("build_executed") is True and
+         worker.get("singleRunFullSuite") is True and worker.get("priorResultsReused") is False and worker.get("expected_packages") == expected and
+         len(worker["packages"]) == 25 and [row["package"] for row in worker["packages"]] == expected and
+         all(row.get("result") == "pass" and exact_counts(row, {"exit_code": 0, "failed": 0}) for row in worker["packages"]) and
+         worker["tests"]["failed"] == [] and canonical(worker["tests"]["skipped"]) == canonical([skip]) and
+         canonical(worker["declared_profile_skips"]) == canonical([{**skip, "reason": "the full-scan mount scenario requires its explicit reviewed opt-in scope", "profileStatus": "not_executed"}]),
+         "programs_full_suite_contract")
+    cleanup = {"owned_postgres_stopped", "private_bind_removed", "source_unchanged", "only_worker_process_remains"}
+    need(set(worker["cleanup"]) == cleanup and all(worker["cleanup"][key] is True for key in cleanup), "programs_full_worker_cleanup")
+    prefix = "ram/" + Path(worker["scope"]).name + "/"
+    need(receipt["worker"]["member"] == prefix + "worker-report.json" and full["ordinaryBinary"]["member"] == prefix + "bin/goby-linux-amd64" and
+         full["ordinaryBinary"]["sha256"] == worker["binary"]["sha256"] and full["ordinaryBinary"]["bytes"] == worker["binary"]["bytes"], "programs_ordinary_build_binding")
+    member(full["ordinaryBinary"], metadata_only=True)
+    materialized = execution["artifactMaterialization"]
+    need(materialized.get("status") == "read_back_after_resource_closure" and materialized.get("fullComplete") is True and
+         materialized.get("embeddedComplete") is True and materialized.get("independentReviewPending") is True, "programs_artifact_materialization")
+    artifact_names = ("newBinary", "buildManifest", "packageManifest", "packageArchive")
+    need(set(materialized["artifacts"]) == set(artifact_names), "programs_materialized_inventory")
+    for key in artifact_names:
+        need(canonical(materialized["artifacts"][key]) == canonical(receipt[key]) and materialized["members"][key]["archive"] == receipt["archive"], "programs_materialized_pin")
+        need(member(materialized["members"][key]) == raw(receipt[key]), "programs_materialized_bytes")
+    for key in ("worker", "ordinaryBinary"):
+        need(canonical(materialized["members"][key]) == canonical(receipt["worker"] if key == "worker" else full[key]), "programs_archived_full_binding")
+    need(materialized["members"]["supervisor"]["archive"] == receipt["archive"] and materialized["members"]["supervisor"]["member"] == prefix + "report.json", "programs_supervisor_scope")
+    programs_json(member(materialized["members"]["supervisor"]))
+    build, package, bridge = (document(receipt[key]) for key in ("buildManifest", "packageManifest", "sourceBridge"))
+    need(materialized["members"]["sourceBridge"]["archive"] == receipt["archive"] and
+         member(materialized["members"]["sourceBridge"]) == raw(receipt["sourceBridge"]), "programs_archived_source_bridge")
+    embedded = worker["embeddedSystemdPackage"]
+    need(embedded.get("status") == "built_and_read_back" and exact_counts(embedded, {"invocations": 1}) and
+         embedded.get("commandLabel") == "embedded-systemd-build" and
+         canonical(embedded["recipe"]) == canonical({"arch": "amd64", "package": "systemd", "outputDirectory": "package-amd64"}) and
+         embedded.get("toolsBeforeAfterMatched") is True and embedded["build"].get("elfMachine") == 62 and
+         embedded["build"].get("nativeRuntimeExecuted") is False and embedded["package"].get("independentMemberReadback") is True and
+         exact_counts(embedded["package"], {"regularFiles": 5, "directories": 1}), "programs_actual_embedded_build")
+    for group, key, name in (("build", "manifest", "buildManifest"), ("build", "binary", "newBinary"),
+                             ("package", "manifest", "packageManifest"), ("package", "archive", "packageArchive")):
+        programs_artifact_pin(embedded[group][key])
+        original_path = Path(embedded[group][key]["path"])
+        need(original_path.is_relative_to(worker["scope"]) and materialized["members"][name]["member"] == prefix + str(original_path.relative_to(worker["scope"])) and
+             all(embedded[group][key][field] == receipt[name][field] for field in ("sha256", "bytes")), "programs_worker_materialized_product")
+    for key in ("sourceArchive", "sourceManifest", "buildTools"):
+        need(canonical(embedded[key]) == canonical(receipt[key]) and canonical(materialized[key]) == canonical(receipt[key]), "programs_worker_source_binding")
+    programs_artifact_pin(embedded["sourceBridge"])
+    original_bridge = Path(embedded["sourceBridge"]["path"])
+    need(original_bridge.is_relative_to(worker["scope"]) and
+         materialized["members"]["sourceBridge"]["member"] == prefix + str(original_bridge.relative_to(worker["scope"])) and
+         all(embedded["sourceBridge"][key] == receipt["sourceBridge"][key] for key in ("sha256", "bytes")) and
+         canonical(materialized["sourceBridge"]) == canonical(receipt["sourceBridge"]), "programs_source_bridge_materialization")
+    need(receipt["buildTools"]["sha256"] == "fb5ecd65848e63edd03161ef0654a361efd4200a3ee8f2e8e158da21f23c9181" and
+         receipt["buildTools"]["bytes"] == 5175, "programs_build_tool_authority")
+    document(receipt["buildTools"])
+    need(build.get("kind") == "goby-linux-embedded-administrator-build" and type(build.get("version")) is int and build["version"] == 1 and
+         canonical(build["target"]) == canonical({"os": "linux", "arch": "amd64", "cgoEnabled": False}) and
+         build.get("nativeRuntimeExecuted") is False and build.get("ociImageBuilt") is False and build["binary"].get("name") == "goby" and
+         all(build["binary"][key] == receipt["newBinary"][key] for key in ("sha256", "bytes")) and
+         isinstance(build.get("buildMetadata"), str) and re.search(r"(?m)^\s+build\s+-tags=goby_embed_admin\s*$", build["buildMetadata"]), "programs_build_manifest")
+    binary = raw(receipt["newBinary"])
+    need(len(binary) >= 64 and binary[:6] == b"\x7fELF\x02\x01" and int.from_bytes(binary[18:20], "little") == 62, "programs_embedded_amd64_elf")
+    sources = document(receipt["sourceManifest"])
+    need(isinstance(sources, dict) and len(sources) == 924 and all(isinstance(row, dict) and set(row) == {"bytes", "mode", "sha256"} and
+         type(row["bytes"]) is int and row["bytes"] >= 0 and type(row["mode"]) is int and row["mode"] == 0o644 for row in sources.values()), "programs_frozen_source_manifest")
+    prior_epoch = validate_epoch(read_descriptor(value["previousEpoch"]))
+    validate_programs_source_compatibility(sources, read_descriptor(prior_epoch["currentSource"]["sourceManifest"]))
+    with tarfile.open(fileobj=io.BytesIO(raw(receipt["sourceArchive"])), mode="r:*") as archive:
+        observed = {}
+        for entry in archive:
+            name = str(PurePosixPath(entry.name))
+            need(not PurePosixPath(entry.name).is_absolute() and ".." not in PurePosixPath(entry.name).parts, "programs_source_archive_path")
+            if entry.isdir():
+                continue
+            need(entry.isfile() and not entry.sparse and name not in observed and name in sources and entry.size == sources[name]["bytes"] and entry.mode == sources[name]["mode"], "programs_source_archive_member")
+            stream = archive.extractfile(entry)
+            with stream:
+                content = stream.read(entry.size + 1)
+            need(len(content) == entry.size and digest(content) == sources[name]["sha256"], "programs_source_archive_digest")
+            observed[name] = True
+        need(set(observed) == set(sources), "programs_source_archive_membership")
+    files = build["sourceInventory"]["files"]
+    expected_files = {name for name in sources if name.startswith(("cmd/", "internal/")) or name == "web/admin/embedded.go"}
+    need(len(files) == len(expected_files) and {row["name"] for row in files} == expected_files and
+         all(set(row) == {"name", "sha256", "bytes"} and all(row[key] == sources[row["name"]][key] for key in ("sha256", "bytes")) for row in files), "programs_compiled_source_membership")
+    need(build["sourceInventory"]["sha256"] == digest(json.dumps(files, ensure_ascii=False, separators=(",", ":")).encode()) and
+         build["sourceInventory"]["fileCount"] == len(files) and build["sourceInventory"]["totalBytes"] == sum(row["bytes"] for row in files), "programs_source_inventory_digest")
+    need(set(build["moduleInputs"]) == {"go.mod", "go.sum"} and all(all(build["moduleInputs"][name][key] == sources[name][key] for key in ("bytes", "sha256")) for name in build["moduleInputs"]), "programs_module_inputs")
+    assets = build["administratorAssets"]
+    expected_assets = {name.removeprefix("web/admin/dist/") for name in sources if name.startswith("web/admin/dist/")}
+    need(len(assets) == len(expected_assets) == 57 and {row["name"] for row in assets} == expected_assets and
+         all(all(row[key] == sources["web/admin/dist/" + row["name"]][key] for key in ("bytes", "sha256")) for row in assets), "programs_embedded_assets")
+    bridge_keys = {"kind", "version", "status", "input", "sourceArchive", "sourceManifest", "sourceCheckpoint", "gitCommit", "frozenFiles", "trackedBuildInputs",
+                  "generatedAssetCount", "frozenBytes", "sourceInventory", "moduleInputs", "administratorAssets", "administratorEntryReferences", "deploymentInputs",
+                  "runtimeModeProjection", "buildManifest", "packageManifest", "reader", "sourceTreeUnchangedBeforeAfter", "gitAndFrozenModesDeclaredEqual"}
+    need(set(bridge) == bridge_keys and bridge["kind"] == "goby-frozen-source-build-bridge" and type(bridge["version"]) is int and bridge["version"] == 1 and
+         bridge["status"] == "matched" and exact_counts(bridge, {"frozenFiles": 924, "trackedBuildInputs": 867, "generatedAssetCount": 57, "frozenBytes": 13253765}) and
+         bridge["sourceTreeUnchangedBeforeAfter"] is True and bridge["gitAndFrozenModesDeclaredEqual"] is False, "programs_source_bridge_schema")
+    for key in ("sourceArchive", "sourceManifest"):
+        need(canonical(bridge[key]) == canonical(receipt[key]), "programs_bridge_source_identity")
+    need(canonical(bridge["input"]) == canonical(review["input"]) == canonical(materialized["input"]) and
+         canonical(bridge["sourceCheckpoint"]) == canonical(embedded["sourceCheckpoint"]) == canonical(materialized["sourceCheckpoint"]) and
+         canonical(bridge["reader"]) == canonical(embedded["reader"]), "programs_bridge_reader_input")
+    for key in ("sourceInventory", "moduleInputs", "administratorAssets", "administratorEntryReferences"):
+        need(canonical(bridge[key]) == canonical(build[key]), "programs_bridge_build_inputs")
+    for key, group in (("buildManifest", "build"), ("packageManifest", "package")):
+        need(canonical(bridge[key]) == canonical(embedded[group]["manifest"]), "programs_bridge_original_manifest")
+    modes = bridge["runtimeModeProjection"]
+    need(set(modes) == {"umask", "rule", "files", "allMatched"} and type(modes["umask"]) is int and modes["umask"] == 0o077 and
+         modes["rule"] == "archiveMode & ~0077" and modes["allMatched"] is True and len(modes["files"]) == len(sources) and
+         {row["name"] for row in modes["files"]} == set(sources) and all(set(row) == {"name", "archiveMode", "runtimeMode"} and
+         type(row["archiveMode"]) is int and type(row["runtimeMode"]) is int and row["archiveMode"] == sources[row["name"]]["mode"] and
+         row["runtimeMode"] == row["archiveMode"] & ~0o077 for row in modes["files"]), "programs_source_mode_projection")
+    need(package.get("kind") == "goby-linux-systemd-package" and type(package.get("version")) is int and package["version"] == 1 and
+         canonical(package["target"]) == canonical(build["target"]) and package.get("distribution") == "internal_candidate_only" and
+         all(package.get(key) is True for key in ("completeReadback", "buildInputsUnchanged", "deploymentInputsUnchanged")) and
+         all(package.get(key) is False for key in ("nativeRuntimeExecuted", "serviceInstalled", "ociImageBuilt")) and
+         canonical(package["deploymentInputs"]) == canonical(bridge["deploymentInputs"]), "programs_package_manifest")
+    need(all(package["archive"][key] == receipt["packageArchive"][key] for key in ("bytes", "sha256")) and
+         all(package["buildManifest"][key] == receipt["buildManifest"][key] for key in ("bytes", "sha256")), "programs_package_artifact_binding")
+    payload = package["members"]
+    need(len(payload) == 5 and len({row["name"] for row in payload}) == 5, "programs_package_members")
+    with tarfile.open(fileobj=io.BytesIO(raw(receipt["packageArchive"])), mode="r:gz") as archive:
+        records = archive.getmembers()
+        regular = [row for row in records if row.isfile()]
+        need(len(records) == 6 and len(regular) == 5 and sum(row.isdir() for row in records) == 1 and
+             {row.name for row in regular} == {row["name"] for row in payload}, "programs_package_archive_inventory")
+        for row in regular:
+            expected_row = next(item for item in payload if item["name"] == row.name)
+            need(not row.sparse and row.size == expected_row["bytes"] and row.mode == expected_row["mode"], "programs_package_member_metadata")
+            with archive.extractfile(row) as stream:
+                content = stream.read(row.size + 1)
+            need(len(content) == row.size and digest(content) == expected_row["sha256"], "programs_package_member_digest")
+    catalog_raw = raw(value["compiledCatalog"])
+    need(digest(catalog_raw) == sources[CATALOG_RELATIVE]["sha256"] and len(catalog_raw) == sources[CATALOG_RELATIVE]["bytes"], "programs_compiled_catalog_binding")
+    frontend = document(value["frontendReport"])
+    need(frontend.get("status") == "passed" and len(frontend["assets"]) == 57 and frontend.get("sourceFilesMatched") == 64, "programs_retained_frontend_receipt")
+    return {"receipt": receipt, "sourceManifest": sources, "binaryBytes": binary, "catalog": programs_json(catalog_raw), "frontend": frontend}
+
+
+def resolve_programs_successor_lineage(epoch, read_descriptor):
+    validate_programs_successor_epoch(epoch)
+    previous = validate_epoch(read_descriptor(epoch["previousEpoch"]))
+    need(previous["version"] == 3, "programs_requires_tv_product_parent")
+    inherited = resolve_epoch_lineage(previous, read_descriptor)
+    value = validate_programs_successor_input(read_descriptor(epoch["transitionInput"]))
+    need(value["previousEpoch"] == epoch["previousEpoch"] and value["currentRuntime"] == epoch["previousCurrentRuntime"] and
+         canonical(value["helpers"]) == canonical(epoch["helpers"]) == canonical(previous["helpers"]) and
+         epoch["configurationInput"] == previous["configurationInput"], "programs_product_configuration_lineage")
+    for key, filename in (("before", "before.json"), ("after", "after.json"), ("sourceBefore", "source-before.json"),
+                          ("sourceAfter", "source-after.json"), ("preservation", "preservation.json")):
+        need(epoch[key]["path"] == str(Path(value["output"]) / "private" / filename), "programs_proof_scope")
+    source = epoch["currentSource"]
+    for key, input_key in (("sourceManifest", "newSourceManifest"), ("fullReport", "newFullReport"),
+                           ("artifactReceipt", "newArtifactReceipt"), ("buildManifest", "newBuildManifest"), ("sourceBridge", "sourceBridge")):
+        need(source[key] == value[input_key], "programs_epoch_product_binding")
+    need(source["binary"]["sha256"] == value["newBinary"]["sha256"] and
+         epoch["reviewedState"] == value["reviewedState"] and epoch["reviewedSummary"] == value["reviewedSummary"], "programs_epoch_review_binding")
+    old, candidate = previous["candidate"], epoch["candidate"]
+    changed = {"input", "productInput", "binary", "currentSourceManifest", "backendReport", "processes", "serverIdentity", "listener", "databases"}
+    need(set(candidate) == set(old) and all(canonical(candidate[key]) == canonical(old[key]) for key in set(old) - changed) and
+         canonical(candidate["processes"]["postgres"]) == canonical(old["processes"]["postgres"]) and
+         canonical(epoch["postgresProcess"]) == canonical(previous["postgresProcess"]) and value["frontendReport"] == old["frontendReport"], "programs_configuration_changed")
+    load_programs_product(value, read_descriptor)
+    current = load_programs_previous_runtime(value["currentRuntime"], value, previous, read_descriptor, read_programs_bytes)
+    summary, state = read_descriptor(value["reviewedSummary"]), read_descriptor(value["reviewedState"])
+    retention = read_descriptor(summary["retentionReview"])
+    validate_programs_startup_review(value, summary, state, read_descriptor(value["priorCloseout"]),
+                                    read_descriptor(value["priorSource"]), current, retention)
+    read_descriptor(summary["boundary"])
+    read_descriptor(summary["independentReview"])
+    historical_state = read_descriptor(previous["after"])
+    need(canonical(state["loadedUnits"]) == canonical(historical_state["loadedUnits"]) and
+         canonical(state["controlDocuments"]) == canonical(historical_state["controlDocuments"]), "programs_native_control_lineage")
+    compare_programs_logical(historical_state["inactiveStage"], state["inactiveStage"], phase="unchanged")
+    before, after = read_descriptor(epoch["before"]), read_descriptor(epoch["after"])
+    need(canonical(read_descriptor(epoch["sourceBefore"])) == canonical(before["source"]) and
+         canonical(read_descriptor(epoch["sourceAfter"])) == canonical(after["source"]), "programs_source_snapshot_binding")
+    compare_programs_preservation(state, before)
+    compared = compare_programs_preservation(before, after, installed_binary=source["binary"])
+    validate_programs_retention(retention, before, seconds=1800)
+    validate_programs_retention(retention, after, seconds=900)
+    validate_programs_runtime_change(current, epoch, before, after)
+    proof = read_descriptor(epoch["preservation"])
+    expected = {"before", "after", "sourceBefore", "sourceAfter", "reviewedState", "installedBinary", *compared,
+                "diagnostics", "oldBinaryCopy", "oldBinaryFacts", "previousLease", "diagnosticsProof", "unitLogsProof"}
+    need(isinstance(proof, dict) and set(proof) == expected and all(proof[key] == epoch[key] for key in ("before", "after", "sourceBefore", "sourceAfter", "reviewedState")) and
+         proof["installedBinary"] == source["binary"] and all(canonical(proof[key]) == canonical(item) for key, item in compared.items()), "programs_preservation_proof")
+    need(canonical(proof["diagnostics"]) == canonical(compare_diagnostics(before["diagnostics"], after["diagnostics"])) and
+         proof["oldBinaryCopy"]["path"] == str(Path(value["output"]) / "private/goby-before.bin") and
+         proof["oldBinaryCopy"]["sha256"] == PROGRAMS_OLD_BINARY and
+         canonical(proof["oldBinaryFacts"]) == canonical(before["fixedFiles"][str(C / "install/goby")]), "programs_old_binary_and_diagnostics_proof")
+    descriptor(proof["oldBinaryCopy"])
+    need(digest(read_programs_bytes(proof["oldBinaryCopy"])) == PROGRAMS_OLD_BINARY, "programs_old_binary_copy_changed")
+    need(canonical(read_descriptor(proof["previousLease"])) == canonical(before["leaseBefore"]), "programs_previous_lease_proof")
+    for key, section in (("diagnosticsProof", "diagnostics"), ("unitLogsProof", "unitLogs")):
+        need(set(proof[key]) == {"before", "after"}, "programs_appended_evidence_scope")
+        # The ordinary run writes these independently; both descriptions must
+        # retain exactly the same identities and bytes, including log prefixes.
+        for label, captured in (("before", before), ("after", after)):
+            saved = deepcopy(read_descriptor(proof[key][label]))
+            projected = deepcopy(captured[section])
+            if label == "before":
+                for collection in (saved, projected):
+                    for row in (collection if section == "unitLogs" else collection["files"]).values():
+                        row.pop("prefixSha256", None)
+            need(canonical(saved) == canonical(projected), "programs_appended_evidence_binding")
+    for slot in ("source", "recovery"):
+        need(candidate["databases"][slot]["afterStart"] == after["databases"][slot] == before["databases"][slot] == state["databases"][slot] and
+             set(candidate["databases"][slot]) == set(old["databases"][slot]) and
+             all(canonical(candidate["databases"][slot][key]) == canonical(old["databases"][slot][key]) for key in set(old["databases"][slot]) - {"afterStart"}), "programs_database_facts_drift")
+    return {"productEpoch": epoch, "productInput": value, "configurationInput": inherited["configurationInput"]}
 
 
 def validate_binary_successor_input(value):
@@ -439,6 +1328,8 @@ def validate_reviewed_contract(value):
 
 def validate_epoch(epoch):
     version = epoch["version"]
+    if type(version) is int and version == 4:
+        return validate_programs_successor_epoch(epoch)
     if type(version) is int and version == 3:
         return validate_binary_successor_epoch(epoch)
     need(type(version) is int and version in (1, 2) and set(epoch) == (EPOCH_KEYS if version == 1 else ENV_EPOCH_KEYS) and epoch["kind"] == "audited-candidate-runtime-epoch" and epoch["status"] == "running_awaiting_live_acceptance" and
@@ -494,6 +1385,8 @@ def validate_binary_successor_epoch(epoch):
 
 def validate_seed_runtime_binding(binding, epoch_pin, epoch, seed):
     version = binding["version"]
+    if type(version) is int and version == 4:
+        return validate_programs_binding(binding, epoch_pin, epoch, seed)
     if type(version) is int and version == 3:
         need(epoch["version"] == 3 and set(binding) == SUCCESSOR_BINDING_KEYS and binding["kind"] == "audited-candidate-seed-runtime-binding" and
              binding["runtimeEpoch"] == epoch_pin and binding["previousBinding"] == CURRENT_ENV_BINDING and binding["reviewedState"] == SUCCESSOR_STATE and
@@ -562,6 +1455,8 @@ def validate_environment_append(before, after):
 
 
 def resolve_epoch_lineage(epoch, read_descriptor):
+    if epoch["version"] == 4:
+        return resolve_programs_successor_lineage(epoch, read_descriptor)
     """Resolve only the three explicitly frozen generations; never an open graph."""
     validate_epoch(epoch)
     if epoch["version"] == 3:
@@ -658,6 +1553,11 @@ def environment_revision_sessions(previous_binding, report, state):
 
 
 def verify_environment_epoch_files(epoch, seed_module):
+    if epoch["version"] == 4:
+        resolve_programs_successor_lineage(epoch, seed_module.descriptor)
+        need(epoch["candidate"]["runtime"]["sha256"] == PROGRAMS_ENV_SHA, "programs_environment_changed")
+        seed_module.read_checked(epoch["candidate"]["runtime"]["path"], PROGRAMS_ENV_SHA)
+        return
     if epoch["version"] == 1:
         return
     if epoch["version"] == 3:
@@ -682,6 +1582,68 @@ def receipt_descriptor(value):
 
 def exact_counts(value, expected):
     return isinstance(value, dict) and all(type(value.get(key)) is int and value[key] == number for key, number in expected.items())
+
+
+def validate_current_runtime_schema(envelope):
+    """Keep the first recovery intact and admit only its one reviewed successor."""
+    need(isinstance(envelope, dict) and type(envelope.get("version")) is int and
+         envelope["version"] in (1, 2) and envelope.get("kind") == "audited-candidate-current-runtime-binding" and
+         envelope.get("status") == "reviewed_current_runtime" and
+         set(envelope) == (CURRENT_RUNTIME_KEYS if envelope["version"] == 1 else CURRENT_RUNTIME_V2_KEYS), "current_runtime_schema")
+    if envelope["version"] == 2:
+        need(envelope["previousCurrentRuntime"] == CURRENT_RUNTIME_V1_PREDECESSOR, "current_runtime_previous_pin")
+    return envelope["version"]
+
+
+def validate_lease_loss_configuration(configuration, execution, result, intent, candidate):
+    """Use the retained hash projection without inventing configuration parsing facts."""
+    need(isinstance(configuration, dict) and set(configuration) == {"kind", "version", "status", "candidates", "source", "metadata",
+         "independentReview", "environmentDecoded", "masterKeyContentRead", "newFileReads", "requiresFreshHashMatchBeforeStart"} and
+         configuration["kind"] == "candidate-lease-loss-restart-configuration-projection" and type(configuration["version"]) is int and
+         configuration["version"] == 1 and configuration["status"] == "derived_from_reviewed_readonly_metadata" and
+         all(configuration[key] is False for key in ("environmentDecoded", "masterKeyContentRead", "newFileReads")) and
+         configuration["requiresFreshHashMatchBeforeStart"] is True, "current_runtime_lease_loss_configuration")
+    for key in ("source", "metadata", "independentReview"):
+        need(isinstance(configuration[key], dict) and set(configuration[key]) == {"path", "sha256", "bytes"},
+             "current_runtime_configuration_source")
+        receipt_descriptor(configuration[key])
+    pins = execution.get("preservationInputs", {})
+    need(receipt_descriptor(configuration["source"]) == pins.get("readonly-execution.json") and
+         receipt_descriptor(configuration["independentReview"]) == pins.get("readonly-independent-review.json"),
+         "current_runtime_configuration_source")
+    cfg = configuration["candidates"]
+    need(isinstance(cfg, dict) and set(cfg) == {"old", "fresh"}, "current_runtime_configuration_candidates")
+    metadata_keys = {"bytes", "ctimeNs", "device", "gid", "inode", "links", "mode", "mtimeNs", "type", "uid"}
+    roots = {"old": C, "fresh": Path("/opt/goby-audited-candidate-20260914T083143Z-9b73ad46f2e6")}
+    for label, entries in cfg.items():
+        root = roots[label]
+        unit = "goby-audited-" + root.name.removeprefix("goby-audited-candidate-")
+        paths = {"environment": str(root / "private/runtime.env"), "postgresConfiguration": str(root / "postgres/server.conf"),
+                 "unitFile": "/run/systemd/system/" + unit + "-server.service", "postgresUnitFile": "/run/systemd/system/" + unit + "-postgres.service"}
+        need(isinstance(entries, dict) and set(entries) == set(paths), "current_runtime_configuration_files")
+        for key, row in entries.items():
+            need(isinstance(row, dict) and set(row) == {"path", "sha256", "bytes", "metadata"} and row["path"] == paths[key] and
+                 type(row["bytes"]) is int and 0 < row["bytes"] <= 65536 and isinstance(row["metadata"], dict) and
+                 set(row["metadata"]) == metadata_keys and all(type(number) is int and number >= 0 for number in row["metadata"].values()) and
+                 row["metadata"]["bytes"] == row["bytes"] and row["metadata"]["type"] == stat.S_IFREG and
+                 row["metadata"]["links"] == 1, "current_runtime_configuration_file_metadata")
+            receipt_descriptor({key: row[key] for key in ("path", "sha256", "bytes")})
+    before, after = execution["before"], execution["after"]
+    expected_files = {str(root / "install/goby") for root in roots.values()} | {
+        "/opt/goby-dev/goby", "/var/lib/goby-test/application-key-vault/master.key",
+        "/opt/goby-test/exec-work-m3e/main-deployment-schema25.lock"}
+    need(isinstance(before.get("files"), dict) and set(before["files"]) == expected_files and
+         canonical(before["files"]) == canonical(after["files"]) == canonical(result["after"]["files"]) and
+         canonical(before["configurationHashes"]) == canonical(after["configurationHashes"]) ==
+             canonical(result["after"]["configurationHashes"]) == canonical(cfg) and
+         canonical(before["livePostmasters"]) == canonical(after["livePostmasters"]) == canonical(result["after"]["livePostmasters"]),
+         "current_runtime_lease_loss_preservation")
+    need(canonical(intent["configuration"]) == canonical(cfg["old"]) and
+         canonical(before["units"][intent["unit"]]) == canonical(intent["oldUnit"]) and
+         receipt_descriptor({key: cfg["old"]["environment"][key] for key in ("path", "sha256")}) == candidate["runtime"] and
+         receipt_descriptor({key: cfg["old"]["unitFile"][key] for key in ("path", "sha256")}) == candidate["units"]["server"] and
+         receipt_descriptor({key: cfg["old"]["postgresUnitFile"][key] for key in ("path", "sha256")}) == candidate["units"]["postgres"],
+         "current_runtime_recovery_configuration")
 
 
 def validate_current_identity(current, product_epoch, *, require_lease_start=True):
@@ -733,11 +1695,13 @@ def validate_current_identity(current, product_epoch, *, require_lease_start=Tru
 
 
 def validate_current_runtime(envelope, value, product_epoch, records):
-    """Validate saved recovery and a separately recorded current observation only."""
-    need(isinstance(envelope, dict) and set(envelope) == CURRENT_RUNTIME_KEYS and
-         envelope["kind"] == "audited-candidate-current-runtime-binding" and type(envelope["version"]) is int and
-         envelope["version"] == 1 and envelope["status"] == "reviewed_current_runtime", "current_runtime_schema")
     need(type(value.get("version")) is int and value["version"] == 5 and value.get("scenario") == "tv-browse", "current_runtime_tv_input")
+    return _validate_current_runtime_records(envelope, value, product_epoch, records)
+
+
+def _validate_current_runtime_records(envelope, value, product_epoch, records):
+    """Validate saved recovery and a separately recorded current observation only."""
+    version = validate_current_runtime_schema(envelope)
     for key in CURRENT_AUTHORITY_KEYS:
         descriptor(envelope[key])
         need(canonical(envelope[key]) == canonical(value[key]), "current_runtime_historical_authority")
@@ -759,13 +1723,28 @@ def validate_current_runtime(envelope, value, product_epoch, records):
     candidate = product_epoch["candidate"]
     need(canonical(envelope["preserved"]) == canonical({key: candidate[key] for key in ("binary", "runtime", "units")}), "current_runtime_preserved_descriptors")
     current = validate_current_identity(envelope["current"], product_epoch)
+    previous = None
+    if version == 2:
+        previous = records.get("previousCurrentRuntime")
+        need(validate_current_runtime_schema(previous) == 1 and isinstance(records.get("previousRecords"), dict), "current_runtime_previous_version")
+        # This call is bounded to the original v1 record; a second v2 cannot enter it.
+        _validate_current_runtime_records(previous, value, product_epoch, records["previousRecords"])
+        need(all(canonical(previous[key]) == canonical(envelope[key]) for key in (*CURRENT_AUTHORITY_KEYS, "preserved")),
+             "current_runtime_previous_authority")
+        need(current["candidateProcess"]["pid"] != previous["current"]["candidateProcess"]["pid"] and
+             int(current["candidateProcess"]["startTicks"]) > int(previous["current"]["candidateProcess"]["startTicks"]) and
+             current["serverProperties"]["InvocationID"] != previous["current"]["serverProperties"]["InvocationID"],
+             "current_runtime_previous_identity")
     recovery = envelope["recovery"]
     need(isinstance(recovery, dict) and set(recovery) == CURRENT_RECOVERY_KEYS, "current_runtime_recovery_schema")
     for pin in recovery.values():
         descriptor(pin)
+    if version == 2:
+        need(all(isinstance(records.get(key), dict) for key in CURRENT_RECOVERY_KEYS), "current_runtime_recovery_records")
     execution, review, configuration, intent, result = (records[key] for key in
         ("execution", "independentReview", "configuration", "selectedStartIntent", "selectedResult"))
-    need(execution.get("kind") == "candidate-disk-full-original-application-restart" and type(execution.get("version")) is int and
+    execution_kind = "candidate-disk-full-original-application-restart" if version == 1 else "candidate-lease-loss-original-application-restart"
+    need(execution.get("kind") == execution_kind and type(execution.get("version")) is int and
          execution["version"] == 1 and execution.get("status") == "both_original_applications_restored" and
          exact_counts(execution, {"applicationStartRequests": 2, "postgresRestartRequests": 0, "binaryOrEnvironmentChanges": 0,
              "businessHttpRequests": 0, "loginRequests": 0}) and
@@ -775,7 +1754,8 @@ def validate_current_runtime(envelope, value, product_epoch, records):
     need(isinstance(execution.get("commands"), list) and len(execution["commands"]) > 0 and
          all(isinstance(command, dict) and command.get("closed") is True and exact_counts(command, {"exitCode": 0})
              for command in execution["commands"]), "current_runtime_recovery_command_closure")
-    need(review.get("kind") == "candidate-disk-full-restart-independent-review" and type(review.get("version")) is int and
+    review_kind = "candidate-disk-full-restart-independent-review" if version == 1 else "candidate-lease-loss-restart-independent-review"
+    need(review.get("kind") == review_kind and type(review.get("version")) is int and
          review["version"] == 1 and review.get("status") == "passed" and review.get("failure", "missing") is None and
          receipt_descriptor(review["reviewedReceipt"]) == recovery["execution"] and
          all(review.get(key) is True for key in ("allReaderClosuresVerified", "originalPostmastersPreserved", "lockAcquired", "lockReleased",
@@ -803,15 +1783,22 @@ def validate_current_runtime(envelope, value, product_epoch, records):
              reviewed_snapshot.get("beforeSha256") == snapshot["before"]["sha256"] and
              reviewed_snapshot.get("afterSha256") == snapshot["after"]["sha256"], "current_runtime_recovery_preservation")
     config = configuration["candidates"]["old"]
-    need(configuration.get("kind") == "candidate-restart-configuration-observation" and configuration.get("status") == "observed" and
-         configuration.get("configurationContentPublished") is False and canonical(intent["configuration"]) == canonical(config) and
-         intent["binarySha256"] == candidate["binary"]["sha256"] and intent["unit"] == candidate["processes"]["server"]["Id"] and
-         intent["oldUnit"]["InvocationID"] == candidate["processes"]["server"]["InvocationID"] and
-         intent["oldUnit"]["ExecMainPID"] == str(product_epoch["candidateProcess"]["pid"]) and intent["oldUnit"]["MainPID"] == "0" and
-         config.get("sameInstalledArgv") is True and config["environment"].get("matchesHistoricalDigest") is True and
-         config["environment"].get("parsed") is False and config["environment"].get("rawRetained") is False and
-         {key: config["environment"][key] for key in ("path", "sha256")} == candidate["runtime"] and
-         {key: config["unitFile"][key] for key in ("path", "sha256")} == candidate["units"]["server"], "current_runtime_recovery_configuration")
+    if version == 2:
+        validate_lease_loss_configuration(configuration, execution, result, intent, candidate)
+        need(intent["binarySha256"] == candidate["binary"]["sha256"] and intent["unit"] == previous["current"]["serverProperties"]["Id"] and
+             intent["oldUnit"]["InvocationID"] == previous["current"]["serverProperties"]["InvocationID"] and
+             intent["oldUnit"]["ExecMainPID"] == str(previous["current"]["candidateProcess"]["pid"]) and
+             intent["oldUnit"]["MainPID"] == "0" and intent["oldUnit"]["ActiveState"] == "failed", "current_runtime_previous_start_intent")
+    else:
+        need(configuration.get("kind") == "candidate-restart-configuration-observation" and configuration.get("status") == "observed" and
+             configuration.get("configurationContentPublished") is False and canonical(intent["configuration"]) == canonical(config) and
+             intent["binarySha256"] == candidate["binary"]["sha256"] and intent["unit"] == candidate["processes"]["server"]["Id"] and
+             intent["oldUnit"]["InvocationID"] == candidate["processes"]["server"]["InvocationID"] and
+             intent["oldUnit"]["ExecMainPID"] == str(product_epoch["candidateProcess"]["pid"]) and intent["oldUnit"]["MainPID"] == "0" and
+             config.get("sameInstalledArgv") is True and config["environment"].get("matchesHistoricalDigest") is True and
+             config["environment"].get("parsed") is False and config["environment"].get("rawRetained") is False and
+             {key: config["environment"][key] for key in ("path", "sha256")} == candidate["runtime"] and
+             {key: config["unitFile"][key] for key in ("path", "sha256")} == candidate["units"]["server"], "current_runtime_recovery_configuration")
     process = current["candidateProcess"]
     recovered_process = result["identity"]["process"]
     need(all(canonical(recovered_process[key]) == canonical(process[key]) for key in set(recovered_process) - {"cgroup"}) and
@@ -866,14 +1853,33 @@ def validate_current_runtime(envelope, value, product_epoch, records):
 
 
 def load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes):
+    return _load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes, validate_current_runtime)
+
+
+def load_programs_previous_runtime(pin, value, product_epoch, read_descriptor, read_bytes):
+    if value.get("kind") == "audited-candidate-state-capture-input":
+        validate_programs_capture_input(value)
+    else:
+        validate_programs_successor_input(value)
+    def validate(envelope, unused, previous, records):
+        need(envelope["runtimeEpoch"] == value["previousEpoch"] and envelope["seedBinding"] == value["previousBinding"] and
+             previous["currentSource"]["binary"]["sha256"] == PROGRAMS_OLD_BINARY, "programs_previous_runtime_authority")
+        authority = {key: envelope[key] for key in CURRENT_AUTHORITY_KEYS}
+        return _validate_current_runtime_records(envelope, authority, previous, records)
+    return _load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes, validate)
+
+
+def _load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes, validator):
     """Read hash-bound saved records without a live query or configuration decode."""
     descriptor(pin)
     need(canonical(value.get("currentRuntime")) == canonical(pin), "current_runtime_input_pin")
-    def checked(selected):
+    def checked(selected, expected_bytes=None):
         descriptor(selected)
         need(Path(selected["path"]).is_relative_to("/opt/goby-test") and Path(selected["path"]).suffix == ".json", "current_runtime_record_scope")
         raw = read_bytes(selected)
         need(isinstance(raw, bytes) and len(raw) <= 4 << 20 and digest(raw) == selected["sha256"], "current_runtime_record_digest")
+        if expected_bytes is not None:
+            need(type(expected_bytes) is int and len(raw) == expected_bytes, "current_runtime_record_size")
         def unique_pairs(pairs):
             result = dict(pairs)
             need(len(result) == len(pairs), "current_runtime_duplicate_key")
@@ -881,14 +1887,13 @@ def load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes)
         parsed = json.loads(raw, object_pairs_hook=unique_pairs)
         need(canonical(parsed) == canonical(read_descriptor(selected)), "current_runtime_record_readback")
         return parsed
-    try:
-        envelope = checked(pin)
-        need(isinstance(envelope, dict) and set(envelope) == CURRENT_RUNTIME_KEYS and
-             isinstance(envelope["recovery"], dict) and set(envelope["recovery"]) == CURRENT_RECOVERY_KEYS, "current_runtime_schema")
-        records = {key: checked(envelope[key]) for key in CURRENT_AUTHORITY_KEYS}
-        records.update({key: checked(selected) for key, selected in envelope["recovery"].items()})
-        records["observation"] = checked(envelope["observation"])
-        records["observationReview"] = checked(envelope["observationReview"])
+    def read_records(selected_envelope):
+        selected_version = validate_current_runtime_schema(selected_envelope)
+        need(isinstance(selected_envelope["recovery"], dict) and set(selected_envelope["recovery"]) == CURRENT_RECOVERY_KEYS, "current_runtime_schema")
+        records = {key: checked(selected_envelope[key]) for key in CURRENT_AUTHORITY_KEYS}
+        records.update({key: checked(selected) for key, selected in selected_envelope["recovery"].items()})
+        records["observation"] = checked(selected_envelope["observation"])
+        records["observationReview"] = checked(selected_envelope["observationReview"])
         records["leaseQueryResult"] = checked(records["observation"]["leaseQueryResult"])
         observation_source = descriptor(records["observation"]["source"])
         need(Path(observation_source["path"]).is_relative_to("/opt/goby-test") and Path(observation_source["path"]).suffix == ".py",
@@ -897,7 +1902,20 @@ def load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes)
         need(isinstance(source_bytes, bytes) and 0 < len(source_bytes) <= 4 << 20 and digest(source_bytes) == observation_source["sha256"],
              "current_runtime_observation_source_digest")
         checked(records["observation"]["verification"])
-        validate_current_runtime(envelope, value, product_epoch, records)
+        if selected_version == 2:
+            for key in ("source", "metadata", "independentReview"):
+                proof = records["configuration"][key]
+                checked(receipt_descriptor(proof), proof.get("bytes"))
+        return records
+    try:
+        envelope = checked(pin)
+        records = read_records(envelope)
+        if envelope["version"] == 2:
+            previous = checked(envelope["previousCurrentRuntime"])
+            need(validate_current_runtime_schema(previous) == 1, "current_runtime_previous_version")
+            records["previousCurrentRuntime"] = previous
+            records["previousRecords"] = read_records(previous)
+        validator(envelope, value, product_epoch, records)
         return deepcopy(envelope)
     except ContractError:
         raise
@@ -979,8 +1997,7 @@ class RecoveredEpochReader(EpochReader):
     """Reuse current metadata readers without decoding historical configuration."""
     def __init__(self, product_epoch, modules, private, current_runtime):
         self.currentRuntime = deepcopy(current_runtime)
-        need(isinstance(self.currentRuntime, dict) and set(self.currentRuntime) == CURRENT_RUNTIME_KEYS and
-             self.currentRuntime["status"] == "reviewed_current_runtime", "current_runtime_reader_authority")
+        validate_current_runtime_schema(self.currentRuntime)
         self._initialize(product_epoch, modules, private, self.currentRuntime["current"], self.currentRuntime["preserved"], observation_only=False)
 
     @classmethod
@@ -1038,6 +2055,7 @@ class EpochIO:
         need((current_runtime is None) == (current_runtime_pin is None), "current_runtime_io_pin_required")
         self.currentRuntime, self.currentRuntimePin = deepcopy(current_runtime), deepcopy(current_runtime_pin)
         if current_runtime is not None:
+            validate_current_runtime_schema(current_runtime)
             descriptor(current_runtime_pin)
             need(canonical(self.seed.descriptor(current_runtime_pin)) == canonical(current_runtime) and
                  canonical(current_runtime["runtimeEpoch"]) == canonical(epoch_pin) and canonical(current_runtime["seedBinding"]) == canonical(binding_pin),
@@ -1061,6 +2079,14 @@ class EpochIO:
             validate_seed_runtime_binding(prior_binding, self.epoch["previousEpoch"], previous, original_seed)
             need(self.binding["currentSessions"] == successor_sessions(self.seed.descriptor(self.binding["priorSource"])) and
                  self.binding["previousBinding"] == lineage["productInput"]["previousBinding"], "binary_successor_binding_sessions_changed")
+        elif self.epoch["version"] == 4:
+            need(current_runtime is None, "programs_epoch_does_not_use_recovery_envelope")
+            lineage = resolve_programs_successor_lineage(self.epoch, self.seed.descriptor)
+            previous = self.seed.descriptor(self.epoch["previousEpoch"])
+            prior_binding = self.seed.descriptor(self.binding["previousBinding"])
+            validate_seed_runtime_binding(prior_binding, self.epoch["previousEpoch"], previous, original_seed)
+            need(canonical(self.binding["currentSessions"]) == canonical(programs_sessions(self.seed.descriptor(self.epoch["sourceAfter"]))) and
+                 self.binding["previousBinding"] == lineage["productInput"]["previousBinding"], "programs_binding_sessions_changed")
         self.output, self.private = Path(value["output"]), Path(value["output"]) / "private"
         self.budgets = value["budgets"]
         need(self.output.parent == R and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", self.output.name) and set(self.budgets) == set(self.seed.BUDGETS) and

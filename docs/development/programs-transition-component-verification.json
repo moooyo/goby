@@ -1,0 +1,101 @@
+{
+  "kind": "programs-transition-component-verification",
+  "version": 1,
+  "status": "passed_component_scopes_across_two_attempts",
+  "recordedOn": "2026-09-15",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915",
+  "evidence": {
+    "resultR02": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/result-r02.json",
+      "bytes": 2704,
+      "sha256": "2e12cf281695601d30c67f796f9d4e6e83614b1292edc9a9ae1eb56488bb7a34"
+    },
+    "resultR03": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/result-r03.json",
+      "bytes": 1985,
+      "sha256": "b6417c7ce07586e7fdddc460ded61a13971f01b70a181d9fe3e90fd41c2c9bb9"
+    },
+    "sourceManifestR03": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/source-manifest-r03.json",
+      "bytes": 1600,
+      "sha256": "1efee6e3f23f13fa8dac88c15a93ed7fc0083b4906f5c011379cd428357f6376"
+    },
+    "independentReviewR03": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/independent-review-r03.json",
+      "bytes": 1483,
+      "sha256": "f2dc46e1b648348c694cd9547047179397ed41bccbe8c781e3fca4f0c7e6a45b"
+    },
+    "runtimeVerificationR02": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/runtime-verification-r02.json",
+      "bytes": 2746,
+      "sha256": "b486964eee4880ec5e2a04440c3e13a71cc8247605ea65b03f82e67ae03236a1"
+    },
+    "repositorySourceCheckpoint": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/private/repository-source-checkpoint-01.json",
+      "bytes": 2013,
+      "sha256": "03d814423dc91c85a555591bd9d240b3d863421f392a10cf73ad831665813561"
+    }
+  },
+  "runtimeSource": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-contract-20260915/source-r02/audited-candidate-runtime.py",
+    "bytes": 185776,
+    "sha256": "783f4e07a0f85ce5f810d90111f21e740728bbf60f48595333c0a2da8e039531"
+  },
+  "attempts": [
+    {
+      "attempt": "r02",
+      "runtime": {"testsRun": 33, "passed": 33},
+      "successor": {"testsRun": 27, "fixtureErrors": 3, "acceptedAsCompletedGroup": false},
+      "originalFailureRetained": true
+    },
+    {
+      "attempt": "r03",
+      "executedGroup": "successor",
+      "testsRun": 27,
+      "passed": 27,
+      "failed": 0,
+      "errors": 0,
+      "change": "Only test-transition-binary-successor.py changed: the fixture now supplies the production-existing postgresProcess=postgresBefore field and includes missing/drift rejection cases.",
+      "productionSourceBytesUnchangedFromR02": true,
+      "runtimeTestBytesUnchangedFromR02": true,
+      "runtimeGroupRerun": false
+    }
+  ],
+  "acceptedScopes": {
+    "runtimeTests": 33,
+    "runtimeEvidenceAttempt": "r02",
+    "successorTests": 27,
+    "successorEvidenceAttempt": "r03",
+    "singleSixtyTestRun": false,
+    "boundary": "Reuse the unchanged r02 runtime result with the r03 successor result. Do not add the failed r02 successor group's passing cases to these totals."
+  },
+  "independentReview": {
+    "sourceAndResultPinsReadBack": true,
+    "allProcessGroupsClosed": true,
+    "runtimeV2ComponentSupportVerified": true
+  },
+  "repositorySourceBridge": {
+    "files": 4,
+    "bytesLengthsAndHashesMatchTestedR03Manifest": true,
+    "testsRerun": false,
+    "businessCalls": 0,
+    "boundary": "The repository's four runtime/transition files match the tested frozen copies. This does not bind a future Programs artifact or execution input."
+  },
+  "executionBoundary": {
+    "actualRecoveryAndReviewRecordsUsedAsFixtures": true,
+    "historicalPredecessorCurrentRuntimeSha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c",
+    "currentObservationFixture": "explicitly_synthetic",
+    "sqlCalls": 0,
+    "httpCalls": 0,
+    "serviceActions": 0,
+    "goTests": 0,
+    "actualProgramsArtifactEvaluated": false,
+    "productionProgramsInputCreated": false,
+    "clientAcceptance": false
+  },
+  "evidenceLimits": [
+    "This proves the named component scopes, including current-runtime envelope v2 support. A synthetic observation is not a fresh live observation or a ready consumer envelope.",
+    "Actual application recovery, later live observation and envelope publication retain their separate receipts in candidate-lease-loss-recovery.json.",
+    "All earlier failed receipts remain unchanged. This documentation update ran no checks and changed no code or original incident evidence."
+  ]
+}
