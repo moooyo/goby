@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-15: **bounded Library diagnosis and successor artifact preparation**.
+Current priority on 2026-09-16: **bounded Library diagnosis and successor artifact preparation**.
 After the [incident](programs-final-regression-incident.json), the
 [recovery checkpoint](candidate-lease-loss-recovery.json) independently accepts
 both once-only application starts with unchanged binaries/configuration,
@@ -20,6 +20,10 @@ Bind the new runtime authority and actual successor artifact together after fina
 verification; the ready envelope alone is not an executable Programs input.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
+The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
+now retain a reviewed test-diagnostic branch and a separate native user-deletion
+implementation draft. Remote formatting is complete; their tests, migration and
+browser acceptance remain unexecuted. Main's Programs product source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 

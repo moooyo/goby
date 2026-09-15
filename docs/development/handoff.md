@@ -1,11 +1,20 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-15, A/B recovery, ready consumer v2 envelope
-and frozen client components passed; bounded Library diagnosis and successor artifact preparation are next**.
+Current session checkpoint: **2026-09-16, A/B recovery, ready consumer v2 envelope
+and frozen client components passed; independent diagnostic and M5 source drafts are retained**.
 Start with the [incident record](programs-final-regression-incident.json), the [current execution plan](../planning/current-execution-plan.md),
 [core resolution](core-client-acceptance-resolution.md),
 [successor transition decision](e11-candidate-transition-decision.md), and
 [support matrix](../planning/support-and-delivery-matrix.md).
+
+The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
+identify `codex/programs-theme-diagnosis` at `3d6b79b` and
+`codex/m5-user-deletion` at `e8cd3d1`. Their worktrees are
+`D:/Code/goby-theme-diagnosis` and `D:/Code/goby-m5-user-deletion`.
+Both passed static review and remote formatting; no Go, database or browser test
+ran. The user-deletion branch still needs its real schema29 catalog and remaining
+backup/restore version-boundary work. Neither branch is merged into main's
+Programs source. The shared heavy-work window remains awaiting the user's reply.
 
 The [Programs focused result](live-tv-programs-focused-verification.json) has
 14 top-level and 118 subtest passes with independent result/resource review.
