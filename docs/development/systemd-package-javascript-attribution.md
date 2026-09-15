@@ -9,6 +9,11 @@ The [machine-readable readback](systemd-package-javascript-attribution.json)
 contains every chunk hash, import edge, glyph-data hash, matching module path,
 module hash and byte length, including the unsuccessful same-name candidates.
 
+The subsequent [fixed-commit MUI source lookup](systemd-package-mui-source-correspondence.md)
+now matches all 73 recorded path literals and labels. Its 56 public module files
+also match the cached files byte for byte. Raw SVG input candidates remain
+distinct from a demonstrated historical transformation.
+
 This establishes content correspondence for the recorded glyph expressions.
 It does not establish the complete JavaScript package/module contribution graph,
 the historical integrity of the npm installation, or the original Google
@@ -228,18 +233,20 @@ source research does not resolve project licensing or approve distribution.
 
 ## Specific remaining material
 
-1. **Artifact-specific module contribution.** Locate any already saved module
-   graph for the original frontend build and bind it to these exact 57 assets.
+1. **Artifact-specific module contribution.** The bounded lookup of two exact
+   saved build reports found no source-graph reference; see the
+   [lookup result](systemd-package-mui-source-correspondence.md#bounded-historical-build-report-lookup).
+   If a concrete additional saved graph is identified, bind it to these exact 57 assets.
    It must identify source module paths, package versions, input hashes and
    emitted chunk relationships. If that evidence was never retained, keep
    E11's complete graph unproven and capture it during the next independently
    required frontend build. Rebuilding unchanged E11 solely to invent a
    historical graph is not part of this work.
-2. **The recorded glyphs' upstream inputs.** Starting with these 73 concrete
-   module paths and path-data hashes, retain their exact-version MUI source
-   counterparts and distinguish generated, legacy, custom and internal paths.
-   For generated glyphs, bind the actual SVG or its content hash and original
-   download version/metadata where available. A current Google SVG or the
+2. **The recorded glyphs' upstream inputs.** The fixed-commit MUI lookup is
+   complete for the 73 recorded paths. It retains 56 generated SVG candidates
+   and 17 internal sources; none of the 56 raw candidate path literals exactly
+   matches its generated module path. Historical transformation and Google
+   download versions remain unproved. A current Google SVG or the
    current repository license is not a substitute for a missing historical
    content relation.
 3. **Scope beyond the matched form.** Before claiming complete glyph coverage,

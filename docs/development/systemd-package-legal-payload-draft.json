@@ -1,0 +1,668 @@
+{
+  "schemaVersion": 1,
+  "kind": "systemd-package-legal-payload-draft",
+  "status": "draft_incomplete_not_packaged",
+  "preparedOn": "2026-09-16",
+  "distributionApproved": false,
+  "legalCompletenessClaimed": false,
+  "fullSbomClaimed": false,
+  "projectLicense": {
+    "status": "pending_owner_decision",
+    "licenseSelected": false,
+    "licenseFileCreated": false
+  },
+  "scope": "A proposed legal-material member list for the already recorded E11 internal Linux amd64 systemd package. This is not a new package, a Programs-successor binding, or a determination of distribution rights.",
+  "artifactBinding": {
+    "label": "E11",
+    "target": {
+      "arch": "amd64",
+      "cgoEnabled": false,
+      "os": "linux"
+    },
+    "archive": {
+      "bytes": 14072899,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/goby-linux-amd64-systemd.tar.gz",
+      "sha256": "2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a"
+    },
+    "executable": {
+      "bytes": 30691123,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/goby",
+      "sha256": "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1"
+    },
+    "buildManifest": {
+      "bytes": 173346,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/manifest.json",
+      "sha256": "851cf3b02372fb99b42f75f4548556ca3eb693ddf3290055e2363c16fb91f43a"
+    },
+    "packageManifest": {
+      "bytes": 5997,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/artifacts/linux-amd64-systemd/package-manifest.json",
+      "sha256": "54639571120a36988ca7a91d1af45da44ff8c6b663db63c027c0411486fd5d2f"
+    },
+    "originalRegularMemberCount": 5,
+    "originalDistributionLabel": "internal_candidate_only",
+    "originalArchiveContainsLegalPayload": false,
+    "originalArchiveUnchanged": true,
+    "embeddedAdministrator": {
+      "assetCount": 57,
+      "assetBytes": 1106130,
+      "assetTypes": {
+        ".css": 1,
+        ".html": 1,
+        ".js": 46,
+        ".woff2": 9
+      },
+      "sourceArchive": {
+        "bytes": 2708124,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/private/source.tar.gz",
+        "sha256": "e9143f909ac2383aefe4aa53209d7806d31ab74388881d0dce124b0fcfaed510"
+      },
+      "previousEmbeddedManifest": {
+        "bytes": 171283,
+        "path": "/opt/goby-test/m6-embedded-20260914/artifacts/linux-amd64/manifest.json",
+        "sha256": "a732425002323e0e29a4ca7cf9e0fd517d773c1de027d810488173b75957e683"
+      },
+      "fullAssetPinSource": {
+        "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+        "selector": "embeddedAdministrator.assets",
+        "bindingReceipt": {
+          "bytes": 20938,
+          "path": "/opt/goby-test/m6-systemd-package-20260915/private/component-inventory-01/embedded-asset-readback.json",
+          "sha256": "2841b1d172c65d94cb8ccc15809587841118e063e38e7d93d08952480de828a5"
+        }
+      },
+      "boundary": "The existing build manifest and readback bind all 57 asset names, sizes and hashes. No new aggregate asset hash or frontend build is invented."
+    }
+  },
+  "sourceAuthority": {
+    "componentInventory": {
+      "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+      "bindingReceipt": {
+        "bytes": 28082,
+        "path": "/opt/goby-test/m6-systemd-package-20260915/private/component-inventory-01/asset-and-notice-mapping.json",
+        "sha256": "9dc86f635ea01425ef0e9726ec251c2b61ac9a2f75cdeba65d5cbb5f0a5c6d62"
+      }
+    },
+    "noticeInventory": {
+      "repositoryPath": "docs/development/third-party-notices-inventory.json",
+      "retainedCopy": {
+        "bytes": 1035329,
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/docs/development/third-party-notices-inventory.json",
+        "sha256": "fcfd74382b7e8d7bf08fd455ef5816fb6eadd06d34e67d41773dda753f01cfe7"
+      }
+    },
+    "broadNoticeIndex": {
+      "repositoryPath": "THIRD_PARTY_NOTICES.md",
+      "retainedCopy": {
+        "bytes": 24481,
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/third-party-notices-verification-01/THIRD_PARTY_NOTICES.md",
+        "sha256": "dad2747cb0ac3a106fce1f4b48d7ba799703d0cd60f67bd90a1e17facb4934c9"
+      },
+      "role": "Collection reference, not the proposed package-specific included-set notice."
+    },
+    "retainedLegalCopyReadback": {
+      "bytes": 77375,
+      "path": "/opt/goby-test/m6-systemd-package-20260915/private/component-inventory-01/legal-copy-readback.json",
+      "sha256": "72615d73cb87cc407df84992612bb194197defd22237e57d4880d0764e60e883"
+    },
+    "hashMethod": "Legal-file hashes and lengths are copied from existing tracked inventories; no legal file was rehashed for the selection. The subsequently linked MUI source correspondence uses its separately retained remote report identity.",
+    "newLegalCopyEvidenceClaimed": false
+  },
+  "proposedPayload": {
+    "topDirectory": "goby-linux-amd64-systemd",
+    "status": "planned_paths_only",
+    "originalTextHandling": "Copy the selected files without changing their bytes or copyright statements; do not replace their terms with the short labels.",
+    "noticeIndex": {
+      "proposedPackagePath": "goby-linux-amd64-systemd/THIRD_PARTY_NOTICES.md",
+      "proposedMode": "0644",
+      "draftText": "docs/development/systemd-package-legal-payload-draft.md#notice-text-draft",
+      "status": "incomplete_not_materialized",
+      "sha256": null,
+      "bytes": null
+    },
+    "selectedOriginalLegalTextCount": 19,
+    "goModules": [
+      {
+        "module": "filippo.io/age",
+        "version": "v1.3.2",
+        "moduleChecksum": "h1:r6RSZLFSMm6rzKepZ7ZAYkKCu14f3/Me8c7uKYh7C8c=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=filippo.io/age,version=v1.3.2]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "BSD-3-Clause"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/filippo.io/age@v1.3.2/LICENSE",
+              "bytes": 1516,
+              "sha256": "c5d65279d02955c0fc2294ae417c3add650d228f4f5c82bd6d531fc26c89cd96"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/filippo.io/age@v1.3.2/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "filippo.io/hpke",
+        "version": "v0.4.0",
+        "moduleChecksum": "h1:p575VVQ6ted4pL+it6M00V/f2qTZITO0zgmdKCkd5+A=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=filippo.io/hpke,version=v0.4.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "BSD-3-Clause"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/filippo.io/hpke@v0.4.0/LICENSE",
+              "bytes": 1453,
+              "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/filippo.io/hpke@v0.4.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "github.com/coder/websocket",
+        "version": "v1.8.15",
+        "moduleChecksum": "h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=github.com/coder/websocket,version=v1.8.15]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "ISC"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/github.com/coder/websocket@v1.8.15/LICENSE.txt",
+              "bytes": 720,
+              "sha256": "cc0975a5f6305145bdd7b41ce9479632fdac3870e6ac4281f28017f18c767c4e"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/github.com/coder/websocket@v1.8.15/LICENSE.txt",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "github.com/jackc/pgpassfile",
+        "version": "v1.0.0",
+        "moduleChecksum": "h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=github.com/jackc/pgpassfile,version=v1.0.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "MIT"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/github.com/jackc/pgpassfile@v1.0.0/LICENSE",
+              "bytes": 1073,
+              "sha256": "adb1663fda031df8f4344aa68f299fd87d80353e31339406742ded21dae65702"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/github.com/jackc/pgpassfile@v1.0.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "github.com/jackc/pgservicefile",
+        "version": "v0.0.0-20240606120523-5a60cdf6a761",
+        "moduleChecksum": "h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=github.com/jackc/pgservicefile,version=v0.0.0-20240606120523-5a60cdf6a761]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "MIT"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/github.com/jackc/pgservicefile@v0.0.0-20240606120523-5a60cdf6a761/LICENSE",
+              "bytes": 1073,
+              "sha256": "fc505773403fe869ed64cc2235cdd13988a427bb7e3a7e7004a3f4b27420f8fc"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/github.com/jackc/pgservicefile@v0.0.0-20240606120523-5a60cdf6a761/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "github.com/jackc/pgx/v5",
+        "version": "v5.11.0",
+        "moduleChecksum": "h1:IzBBtyK9AHqf98cctWFifYSci2hgQR/cd56wB4p+ogg=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=github.com/jackc/pgx/v5,version=v5.11.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "MIT"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/github.com/jackc/pgx/v5@v5.11.0/LICENSE",
+              "bytes": 1078,
+              "sha256": "467f95e074fe23079a5623ed652619682692041b8551da27e3c2ddb9659a1507"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/github.com/jackc/pgx/v5@v5.11.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "github.com/jackc/puddle/v2",
+        "version": "v2.2.2",
+        "moduleChecksum": "h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=github.com/jackc/puddle/v2,version=v2.2.2]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "MIT"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/github.com/jackc/puddle/v2@v2.2.2/LICENSE",
+              "bytes": 1073,
+              "sha256": "2d50e98a4900b4d6457a38d39c1432fdc156fc2f7b365f2e33ec9344acbb0057"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/github.com/jackc/puddle/v2@v2.2.2/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "golang.org/x/crypto",
+        "version": "v0.57.0",
+        "moduleChecksum": "h1:3ZVCjf8Ggz7zneR/EHRVx68Ctf+2pmIMP2UFhh9cC6M=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=golang.org/x/crypto,version=v0.57.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "BSD-3-Clause"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/crypto@v0.57.0/LICENSE",
+              "bytes": 1453,
+              "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/crypto@v0.57.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          },
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/crypto@v0.57.0/PATENTS",
+              "bytes": 1303,
+              "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/crypto@v0.57.0/PATENTS",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "golang.org/x/sync",
+        "version": "v0.23.0",
+        "moduleChecksum": "h1:KameEIfc1IkluZyXWLn39Wd4tURc6GbCiISGiZm2bQk=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=golang.org/x/sync,version=v0.23.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "BSD-3-Clause"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/sync@v0.23.0/LICENSE",
+              "bytes": 1453,
+              "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/sync@v0.23.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          },
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/sync@v0.23.0/PATENTS",
+              "bytes": 1303,
+              "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/sync@v0.23.0/PATENTS",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "golang.org/x/sys",
+        "version": "v0.48.0",
+        "moduleChecksum": "h1:bbX/i/6MgT9BVLM9RT1thmxL04yeTAhbEz4SyadbXoo=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=golang.org/x/sys,version=v0.48.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "BSD-3-Clause"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/sys@v0.48.0/LICENSE",
+              "bytes": 1453,
+              "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/sys@v0.48.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          },
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/sys@v0.48.0/PATENTS",
+              "bytes": 1303,
+              "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/sys@v0.48.0/PATENTS",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "module": "golang.org/x/text",
+        "version": "v0.42.0",
+        "moduleChecksum": "h1:JbOZXgfeCPU9gacVtYliJqOhD+zhrEqK4LfdpmlUZqI=",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "executable.recordedDependencyModules[module=golang.org/x/text,version=v0.42.0]",
+          "scope": "Recorded executable build-info module; source-file or symbol-level attribution is not claimed."
+        },
+        "textLabelsFromInventory": [
+          "BSD-3-Clause"
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/text@v0.42.0/LICENSE",
+              "bytes": 1453,
+              "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/text@v0.42.0/LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          },
+          {
+            "source": {
+              "path": "third_party/licenses/go/golang.org/x/text@v0.42.0/PATENTS",
+              "bytes": 1303,
+              "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/golang.org/x/text@v0.42.0/PATENTS",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      }
+    ],
+    "goRuntime": {
+      "component": "Go runtime and standard library",
+      "version": "go1.27.1",
+      "inclusionEvidence": {
+        "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+        "selector": "goRuntimeAndToolchain",
+        "scope": "The Go runtime and standard-library component is tied to the recorded toolchain version. The broad existing toolchain legal collection includes tools and test data; those entries are not all claimed as linked application components."
+      },
+      "legalFiles": [
+        {
+          "source": {
+            "path": "third_party/licenses/go/runtime/go1.27.1.linux-amd64/LICENSE",
+            "bytes": 1453,
+            "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
+          },
+          "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/runtime/go1.27.1.linux-amd64/LICENSE",
+          "proposedMode": "0644",
+          "materialized": false
+        },
+        {
+          "source": {
+            "path": "third_party/licenses/go/runtime/go1.27.1.linux-amd64/PATENTS",
+            "bytes": 1303,
+            "sha256": "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
+          },
+          "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/go/runtime/go1.27.1.linux-amd64/PATENTS",
+          "proposedMode": "0644",
+          "materialized": false
+        }
+      ],
+      "versionEvidenceOnly": {
+        "source": {
+          "bytes": 35,
+          "path": "third_party/licenses/go/runtime/go1.27.1.linux-amd64/VERSION",
+          "role": "version_evidence",
+          "sha256": "25eb74b09036e1ad894fb63b86cb0f0ee53342df8d2e2e860da4ff5079607758"
+        },
+        "proposedAsPayload": false
+      },
+      "boundary": "Only the existing root LICENSE and PATENTS are selected here. This does not classify all 38 collected toolchain legal files as linked components or establish source-level notice completeness."
+    },
+    "fontFamilies": [
+      {
+        "family": "Manrope",
+        "packageName": "@fontsource-variable/manrope",
+        "packageVersion": "5.3.0",
+        "textLabelFromInventory": "OFL-1.1",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "embeddedAdministrator.fonts[packageName=@fontsource-variable/manrope]",
+          "scope": "Exact retained WOFF2 bytes and CSS references in E11's embedded asset set."
+        },
+        "assets": [
+          {
+            "assetPath": "assets/manrope-cyrillic-ext-wght-normal-C8S-KRRz.woff2",
+            "bytes": 2552,
+            "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+            "sourcePackageRelativePath": "files/manrope-cyrillic-ext-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/manrope-cyrillic-wght-normal-Dvxsihut.woff2",
+            "bytes": 14500,
+            "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+            "sourcePackageRelativePath": "files/manrope-cyrillic-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/manrope-greek-wght-normal-DL7QRZyv.woff2",
+            "bytes": 9444,
+            "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+            "sourcePackageRelativePath": "files/manrope-greek-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2",
+            "bytes": 15120,
+            "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+            "sourcePackageRelativePath": "files/manrope-latin-ext-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/manrope-latin-wght-normal-DHIcAJRg.woff2",
+            "bytes": 24836,
+            "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+            "sourcePackageRelativePath": "files/manrope-latin-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/manrope-vietnamese-wght-normal-usUDDRr7.woff2",
+            "bytes": 8520,
+            "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+            "sourcePackageRelativePath": "files/manrope-vietnamese-wght-normal.woff2"
+          }
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/npm/font-evidence/manrope-5.3.0-LICENSE",
+              "bytes": 4383,
+              "sha256": "d826ab6583b12c26807d8716a545bdbbb672df04f48608a364ba9efdbe501c30"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/npm/font-evidence/manrope-5.3.0-LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      },
+      {
+        "family": "Public Sans",
+        "packageName": "@fontsource-variable/public-sans",
+        "packageVersion": "5.3.0",
+        "textLabelFromInventory": "OFL-1.1",
+        "inclusionEvidence": {
+          "repositoryPath": "docs/development/systemd-package-component-inventory.json",
+          "selector": "embeddedAdministrator.fonts[packageName=@fontsource-variable/public-sans]",
+          "scope": "Exact retained WOFF2 bytes and CSS references in E11's embedded asset set."
+        },
+        "assets": [
+          {
+            "assetPath": "assets/public-sans-latin-ext-wght-normal-MQgHevqp.woff2",
+            "bytes": 18472,
+            "sha256": "3a00a32f0242b723dcea79935747d6d27dd93675d03ef23f470dfe274e79586a",
+            "sourcePackageRelativePath": "files/public-sans-latin-ext-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/public-sans-latin-wght-normal-DdeTHZLK.woff2",
+            "bytes": 26832,
+            "sha256": "5ed4d31c988e73b258894244f209069ebe77dc7e564861954b21198b6de90d68",
+            "sourcePackageRelativePath": "files/public-sans-latin-wght-normal.woff2"
+          },
+          {
+            "assetPath": "assets/public-sans-vietnamese-wght-normal-CtlIRbEm.woff2",
+            "bytes": 7716,
+            "sha256": "94593e69fad0885b2b0b74cd18d036c7e9cd6051b2256ab281a20f5bc9ccb46f",
+            "sourcePackageRelativePath": "files/public-sans-vietnamese-wght-normal.woff2"
+          }
+        ],
+        "legalFiles": [
+          {
+            "source": {
+              "path": "third_party/licenses/npm/font-evidence/public-sans-5.3.0-LICENSE",
+              "bytes": 4503,
+              "sha256": "705a497c781f6463ff819abb513bb495f3fb05256f1d20321e3275813c0bafa5"
+            },
+            "proposedPackagePath": "goby-linux-amd64-systemd/third_party/licenses/npm/font-evidence/public-sans-5.3.0-LICENSE",
+            "proposedMode": "0644",
+            "materialized": false
+          }
+        ]
+      }
+    ],
+    "javascriptAndGlyphs": {
+      "status": "pending",
+      "sourceCorrespondence": {
+        "repositoryPath": "docs/development/systemd-package-mui-source-correspondence.json",
+        "bytes": 205826,
+        "sha256": "c54085df474981d42d282dbf2a057d3fd2af41c4c3a3e7df5356fc5e074417ae",
+        "matchedRecordedPathLiterals": 73,
+        "matchedWholePublicModules": 56,
+        "historicalTransformationEstablished": false,
+        "completeModuleContributionEstablished": false
+      },
+      "legalFiles": [],
+      "emptyListMeans": "No selection has been made; not an assertion that no JavaScript or glyph material is included.",
+      "boundary": "The 46 known emitted chunks and 87 production-classified lock entries do not establish an exact included npm package/version set. Add only the pending artifact-specific contribution and relevant glyph rows."
+    }
+  },
+  "retainedOutsideThisSelection": {
+    "collectionLegalTexts": 182,
+    "collectionVersionFiles": 1,
+    "boundary": "Collection totals are neither component counts nor a proposed copy-all payload.",
+    "specificUnselectedReferences": [
+      {
+        "source": {
+          "path": "third_party/licenses/go/filippo.io/age@v1.3.2/.github/workflows/LICENSE.suffix.txt",
+          "bytes": 1459,
+          "sha256": "51c0235a1b3e808d8c54a1e29d322751b79565488c6041f3fb3bee1ab2bc29a3"
+        },
+        "reason": "Retained collection material outside the root legal references selected by this draft; no source-code inclusion or legal sufficiency conclusion."
+      }
+    ],
+    "scopes": [
+      "Historical go.sum-only versions without recorded E11 executable inclusion.",
+      "Development or platform-optional npm entries without demonstrated embedded contribution.",
+      "Toolchain command, generator and test-data notices outside the root references selected here.",
+      "The 87 production-classified npm lock entries as a blanket included set."
+    ],
+    "separatelyInstalledExecutablesNotSelected": [
+      "PostgreSQL",
+      "FFmpeg/ffprobe",
+      "Node.js",
+      "browser engines"
+    ]
+  },
+  "remainingWork": [
+    {
+      "id": "javascript-contribution",
+      "status": "pending",
+      "requiredResult": "Bind supported included JavaScript package/version contributions to existing original legal-text pins. Neither of the two inspected saved reports supplies a source graph. Capture it with the next independently required frontend build; do not rebuild unchanged E11 to invent historical provenance or expand all lock entries into an included set."
+    },
+    {
+      "id": "glyph-provenance",
+      "status": "mui_source_correspondence_recorded_upstream_material_pending",
+      "requiredResult": "Reuse the completed fixed-commit lookup for 73 recorded paths and 56 raw SVG candidates. Historical SVG transformation and Google download versions remain unproved; resolve relevant upstream material and final text selection without treating the package MIT notice as that result."
+    },
+    {
+      "id": "project-license",
+      "status": "pending_existing_owner_decision",
+      "requiredResult": "Record the existing pending owner decision separately. This draft neither selects a license nor requests a new decision."
+    },
+    {
+      "id": "notice-and-package-members",
+      "status": "not_implemented",
+      "requiredResult": "After the material selection is resolved, finalize the package-specific notice and connect the explicit legal-member list to the existing packager and installation instructions. Produce separate new member/package pins; do not modify the retained E11 artifact or reuse its archive hash."
+    }
+  ],
+  "preparationBoundary": {
+    "stage": "Initial nineteen-text selection only; the linked MUI source study retains its own remote scope.",
+    "filesWritten": [
+      "docs/development/systemd-package-legal-payload-draft.json",
+      "docs/development/systemd-package-legal-payload-draft.md"
+    ],
+    "legalTextsCopied": 0,
+    "packageCreated": false,
+    "packagerChanged": false,
+    "existingArtifactsModified": false,
+    "validatorsRun": 0,
+    "testsRun": 0,
+    "buildsRun": 0,
+    "sshCalls": 0
+  }
+}

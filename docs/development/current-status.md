@@ -1043,9 +1043,19 @@ integrated native controller, real workload and resource closure remain open.
 
 The [JavaScript/glyph readback](systemd-package-javascript-attribution.md)
 records the 46 emitted chunks' import graph and 73 exact single-path glyph
-correspondences to identified MUI package files. Complete source-module
-contribution, historical Google glyph inputs and the final legal payload remain
-unproved; no unchanged package was rebuilt or externally distributed.
+correspondences to identified MUI package files. The subsequent
+[fixed-commit source lookup](systemd-package-mui-source-correspondence.md)
+matches all 73 recorded path literals and labels; its 56 public modules also
+match the cached modules byte for byte. The 56 raw SVG candidates retain only
+a naming/source-layout association, with no exact path-literal match or claimed
+historical transformation. Two exact saved build reports supplied no source
+graph reference; this does not establish that the entire host lacks one.
+The [initial legal payload draft](systemd-package-legal-payload-draft.md)
+selects 19 existing Go module/runtime and font texts with explicit destinations.
+Both drafts received independent static review. Complete source-module
+contribution, historical Google glyph inputs and final package assembly remain
+open. Capture the actual module graph in the next independently required
+frontend build; no unchanged E11 rebuild or external distribution occurred.
 
 ## Verification policy
 

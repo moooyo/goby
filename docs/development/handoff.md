@@ -42,6 +42,19 @@ project's explicit FFmpeg/ffprobe files exist but were not executed.
 None of these branches is merged into main's
 Programs source. The shared heavy-work window remains awaiting the user's reply.
 
+The independent M6 [fixed-commit MUI source lookup](systemd-package-mui-source-correspondence.md)
+now records matching path literals and labels for all 73 selected E11 glyph
+expressions, including 56 whole public modules matching their cached counterparts.
+The raw SVG files remain candidates, with historical transformation and Google
+download versions unproved. Two exact saved frontend reports supplied no source
+graph reference. Retain this completed lookup; capture the module graph with the
+next required frontend build, without rebuilding unchanged E11 to invent history.
+The [legal payload draft](systemd-package-legal-payload-draft.md) gives explicit
+destinations for 19 existing Go module/runtime and font texts. Both material
+records received independent static review. No package was modified; final JS
+material, upstream text selection, the pending project-license decision and
+actual assembly remain open.
+
 The [Programs focused result](live-tv-programs-focused-verification.json) has
 14 top-level and 118 subtest passes with independent result/resource review.
 The earlier [ordinary full run](live-tv-programs-full-interruption.json) was interrupted
