@@ -9,22 +9,26 @@ Start with the [incident record](programs-final-regression-incident.json), the [
 
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
 identify `codex/programs-theme-diagnosis` at `3d6b79b`,
-`codex/m5-user-deletion` at `5c25ead`, and `codex/m5-media-diagnostics` at `3d53f71`.
+`codex/m5-user-deletion` at `5c25ead`, and `codex/m5-media-diagnostics` at `6881384`.
 Their worktrees are `D:/Code/goby-theme-diagnosis`, `D:/Code/goby-m5-user-deletion`
 and `D:/Code/goby-media-diagnostics`.
 All received static review and remote formatting; no Go, database or browser test
 ran. The user-deletion branch now preserves historical source23-28 assertions
 separately from target29 and includes deletion-audit roundtrip/rejection cases.
 Its real schema29 catalog and all backup/restore execution remain pending.
-The media-diagnostic branch now adds an internal Linux process session and
-fixed-reference decoded-content checks. Its 18 new cases and the prior 12
-sample/plan cases remain unexecuted. The process code requires pre-exec cgroup
+The media-diagnostic branch now includes an internal stage pipeline, separate
+first/second-generation AAC references, physical ADTS checks and bounded codec-log
+facts. The graph contains 17 software commands or 22 including hardware video;
+these are source counts, not observed executions. Its 27 new cases and the prior
+12 sample/plan and 18 process/content cases remain unexecuted.
+The process code requires pre-exec cgroup
 placement and a borrowed scratch directory that the service cannot make writable;
 partial cleanup failures retain their resource owner. Content-error thresholds
-still need actual codec calibration. Stage orchestration/reference records,
-codec/hardware evidence, deployment and authority/conversion admission,
-cancellation/retention, API and Settings UI remain open. No diagnostic process or
-media execution result is claimed.
+still need actual codec calibration. Cancellation now reaches an active session
+even with a different parent context. The pipeline still requires its enclosing
+owner to close the session before finalizing a run. Deployment and authority/
+conversion admission, result retention, API and Settings UI remain open. Actual
+log compatibility, diagnostic process/media results and M5 acceptance are unverified.
 The read-only host inventory found no visible supported GPU device/module; the
 project's explicit FFmpeg/ffprobe files exist but were not executed.
 None of these branches is merged into main's
