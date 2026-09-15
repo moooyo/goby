@@ -22,10 +22,10 @@ The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
 now retain a reviewed test-diagnostic branch, a native user-deletion draft, and
-the media-diagnostic sample/plan, Linux process, content and internal stage
-pipeline layers, including separate AAC references and bounded codec-log facts.
-Run ownership, deployment/admission integration, administrator API and UI remain
-absent. Remote formatting is complete; tests,
+the media-diagnostic implementation draft, now connected through native
+administrator APIs, bounded run ownership, conversion-slot admission and a
+Settings panel. Diagnostics remain disabled by default; no deployment was
+activated. Static review and remote formatting are complete; Go/type/build,
 migration and browser acceptance remain unexecuted. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
