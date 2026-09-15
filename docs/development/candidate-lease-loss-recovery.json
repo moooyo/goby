@@ -1,0 +1,122 @@
+{
+  "kind": "candidate-lease-loss-recovery-checkpoint",
+  "version": 1,
+  "status": "logical_and_bounded_native_preservation_passed_prestart_checks_pending",
+  "recordedOn": "2026-09-15",
+  "scope": "/opt/goby-test/candidate-lease-loss-recovery-20260915",
+  "evidence": {
+    "metadata": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/metadata.json",
+      "bytes": 43985,
+      "sha256": "76f45dba4a7a3d08bfe16901bb061af7905de9808f6b15d6b19dcf47ef1f4654"
+    },
+    "readonlyExecution": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/readonly-execution.json",
+      "bytes": 39531,
+      "sha256": "85e3f3c108005aa42f9d4ce295a9c91659b33a19e0fea8d2ef7f75df3d03f465"
+    },
+    "readonlyResult": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/readonly-01/result.json",
+      "bytes": 18991,
+      "sha256": "b5c1e1c90faa4c5fc038099bc246544b9ca425fe74a684336815e220a6a23bb5"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/readonly-independent-review.json",
+      "bytes": 8194,
+      "sha256": "aaa478ca911471e0239d9ce984f83d605dc9df8a6a5d6102c74d8e063776f451"
+    },
+    "nativeExecution": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/native-execution.json",
+      "bytes": 41284,
+      "sha256": "5f4c364061279028dd5ed906a1582a66b91140b544236fd0017c20172ce0c846"
+    },
+    "nativeResult": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/native-01/result.json",
+      "bytes": 4186,
+      "sha256": "17ed8712281379c5565bcc855e264301919768b17b1ca9094c91b1d318b6b6b8"
+    },
+    "nativeIndependentReview": {
+      "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/native-independent-review.json",
+      "bytes": 12410,
+      "sha256": "3410a95f3131a2eeb3054006e853fe661e4b9aeda1879b5d445aed46b89a67bc"
+    }
+  },
+  "logicalPreservation": {
+    "status": "passed_independent_review",
+    "comparison": "All rows in the 35 selected tables and all five sequences in each database exactly match its latest admitted baseline.",
+    "databases": [
+      {"candidate": "A", "role": "source", "tables": 35, "sequences": 5, "rows": 230},
+      {"candidate": "A", "role": "recovery", "tables": 35, "sequences": 5, "rows": 147},
+      {"candidate": "B", "role": "source", "tables": 35, "sequences": 5, "rows": 141},
+      {"candidate": "B", "role": "recovery", "tables": 35, "sequences": 5, "rows": 131}
+    ],
+    "physicalDatabaseIntegrityEstablished": false
+  },
+  "sqlExecutionAndReview": {
+    "normalSqlSessions": 10,
+    "allSqlSessionsReadOnly": true,
+    "allTenBackendsGone": true,
+    "readerCommands": 36,
+    "outerCommands": 15,
+    "allCommandsClosed": true,
+    "protectedBeforeAfterEqual": true,
+    "lockReleased": true,
+    "independentRawSqlStdoutHeaderAndPayloadChecks": 10,
+    "rawOutputsMatchedSavedCatalogAndSnapshots": true,
+    "independentReviewAdditionalSqlCalls": 0
+  },
+  "nativeObservation": {
+    "status": "passed_independent_review_with_limited_scope",
+    "mode": "observe",
+    "executions": 1,
+    "observeElapsedMilliseconds": 43,
+    "observedAndEvidenceFiles": 51,
+    "readBytes": 2084328,
+    "writtenBytes": 51359,
+    "budget": {"maximumSeconds": 60, "maximumFiles": 64, "maximumBytes": 33554432},
+    "acceptedScope": ["lifecycle", "control state", "staged generation", "backup catalog and object metadata", "source quiescence"],
+    "independentlyHashedSavedEvidenceFiles": 16,
+    "metadataCommands": 14,
+    "protectedUnitsObservedTwice": 7,
+    "rawUnitOutputsMatched": true,
+    "allMetadataCommandsClosed": true,
+    "protectedPostgresStateBeforeAfterEqual": true,
+    "lockReleased": true,
+    "sqlCalls": 0,
+    "httpCalls": 0,
+    "serviceActions": 0,
+    "aRetainedPlayStates": {"total": 14, "Expired": 4, "Prepared": 4, "Stopped": 6},
+    "playExpirationEvaluated": false,
+    "playRowsChanged": false,
+    "backupObjectBodiesReadOrHashed": false,
+    "masterKeyContentReadOrHashed": false,
+    "historicalIdentityOfEveryFileEstablished": false,
+    "physicalIntegrityEstablished": false,
+    "boundary": "This accepted native scope does not include the remaining diagnostics/log/cache prestart checks or application recovery."
+  },
+  "preparationHistory": {
+    "initialFailure": "FileNotFoundError during source/input preparation before any SQL; the original record is retained.",
+    "correctedR02": {
+      "status": "passed_preparation_only",
+      "resultBytes": 1977,
+      "resultSha256": "7e639b99fc2f731cee23f7b985ed11cd6fc91d9dbd167abb48ddee14b9a67804",
+      "compileChecks": 2,
+      "inputValidationChecks": 1,
+      "sqlCalls": 0,
+      "boundary": "Preparation checks are not credited as SQL or preservation acceptance."
+    }
+  },
+  "remainingRecovery": {
+    "applications": {"A": "failed", "B": "failed"},
+    "preIncidentCurrentRuntimeSha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c",
+    "preIncidentBindingIsLiveAuthority": false,
+    "boundedNativePreservationChecked": true,
+    "diagnosticsPrestartChecked": false,
+    "completeLogPreservationChecked": false,
+    "cachePrestartChecked": false,
+    "applicationStarts": 0,
+    "recoveryComplete": false,
+    "nextCondition": "Reuse the accepted logical and bounded native results, complete diagnostics/log/cache prestart checks, then admit the bounded existing-binary recovery and new runtime bindings."
+  },
+  "recordingBoundary": "This records read-only logical preservation and a bounded native observe result, not completed application recovery or product/client acceptance. The original programs-final-regression-incident.json and all original failure records remain unchanged. This documentation update performed no SSH, test, SQL, source change or service action."
+}

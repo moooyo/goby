@@ -1,12 +1,16 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-15: **incident preservation and candidate recovery**.
+Current priority on 2026-09-15: **diagnostics/log/cache checks before application recovery**.
 The [final Programs regression incident](programs-final-regression-incident.json)
 left A and B's applications failed with exit 1 and
 `database_lease_unavailable`. The old `38b906...` current-runtime binding is no
-longer live authority. Three protected PostgreSQL processes survived the recorded
-metadata check; four-database and complete native/log preservation checks have
-not yet run. Data integrity and recovery are not established.
+longer live authority. The independently reviewed
+[four-database read-only checkpoint](candidate-lease-loss-recovery.json) now
+matches every selected table row and all five sequences in each database to its
+latest baseline. The same checkpoint now records an independently reviewed
+native observe pass for lifecycle/control/staged generation, backup catalog and
+object metadata, and source quiescence. Diagnostics/log/cache prestart checks
+and application recovery remain pending; neither result establishes physical integrity.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -38,10 +42,10 @@ Library failure or A/B lease losses are unproved. Concurrent workload requires
 coordination but is not attribution evidence.
 
 Heavy verification/builds and actual Programs transition/client work are held.
-New incident inputs are being prepared using the existing bounded four-database
-read-only and recovery tools: first complete preservation, then admit one bounded
-recovery of the existing installed binaries/configuration and new runtime
-bindings. Do not replay old inputs or bypass the original guard. The Programs
+Reuse the accepted logical and bounded native results. Complete the remaining
+diagnostics/log/cache prestart checks with existing tools, then admit one recovery of
+the existing installed binaries/configuration and new runtime bindings.
+Do not replay old inputs or bypass the original guard. The Programs
 successor remains unbuilt; E11/G2 and the completed September 14 recovery retain
 their historical scopes. Final client acceptance and main promotion remain open.
 
@@ -72,7 +76,8 @@ UserData rows, with two retained foreign audio references. Only the declared
 authentication/device/activity effects and uncounted preparation/expiry changed;
 activity and device sequences advanced accordingly. Do not use the prior
 Subtitles01 snapshot as a fresh full-state baseline. Browse02 is now retained
-preservation evidence, not a substitute for the pending post-incident checks.
+preservation evidence, not fresh runtime authority or a substitute for the
+remaining diagnostics/log/cache checks.
 The [transition decision](e11-candidate-transition-decision.md) selects existing A
 for one direct Programs-successor transition and establishes its external administrator asset override from
 saved configuration provenance and pre-incident hashes. No transition or deployment
@@ -225,7 +230,7 @@ application identities and all unchanged protected resources explicitly.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Current incident recovery | Failed verification-owned resources closed with independent review; five saved incident files independently reread. Three protected PG processes survived a metadata observation | Complete four-database/native/log preservation, then a newly admitted recovery of the existing binaries and new runtime bindings. A/B remain failed; `38b906...` is not live authority. No data-integrity or recovery-completion claim |
+| Current incident recovery | The [four-database logical comparison and bounded native observe](candidate-lease-loss-recovery.json) passed independent review. Native scope covers lifecycle/control/staged generation, backup metadata and source quiescence; it excludes backup-object bodies and master contents | Complete diagnostics/log/cache prestart checks, then a newly admitted recovery of existing binaries and new runtime bindings. A/B remain failed; `38b906...` is invalid. No physical-integrity or recovery-completion claim |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |

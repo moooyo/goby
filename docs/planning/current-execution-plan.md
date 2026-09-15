@@ -4,9 +4,12 @@ Current priority: **preserve and recover the September 15 incident state before
 heavy verification or actual Programs transition/client work**. The
 [incident record](../development/programs-final-regression-incident.json) records
 A/B application exit 1 with `database_lease_unavailable`. The old `38b906...`
-binding is not live authority. Three PG processes survived a metadata observation;
-the four-database and complete native/log preservation checks remain unperformed.
-Neither data integrity nor application recovery is established.
+binding is not live authority. The [four-database logical-preservation checkpoint](../development/candidate-lease-loss-recovery.json)
+passed independent review: all 35 tables/five sequences per database match the
+latest baselines, and ten read-only sessions closed. Bounded native observe also
+passed independent review for lifecycle/control/staged generation, backup
+catalog/object metadata and source quiescence. Diagnostics/log/cache prestart
+checks and application recovery remain pending; physical integrity is not established.
 
 The failed final worker accepted only 11 complete passing packages/475 passes;
 Library's 605 raw passes are excluded. Raw totals are 1,080 pass events, two
@@ -20,9 +23,9 @@ root cause is established. OOM victim `tsc` PID 1209025/session 6413 and trigger
 `MainThread` PID 1208225 have unresolved launching ownership. Concurrent workload
 is a coordination risk, not proven attribution or causality.
 
-New inputs are being prepared with the existing bounded four-database read-only
-and recovery tools: preservation first, then one admitted recovery of the
-existing installed binaries/configuration and new runtime bindings. Old inputs
+Reuse the accepted logical and bounded native results; complete the remaining
+diagnostics/log/cache prestart checks with existing tools before one
+admitted recovery of the installed binaries/configuration and new runtime bindings. Old inputs
 and the original guard cannot be replayed or overridden. The delivery target
 remains the unbuilt Programs successor. E11 is the historical build/G2 baseline. The
 [Programs focused verification](../development/live-tv-programs-focused-verification.json)
@@ -482,10 +485,11 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
-Current incident recovery comes first. Prepare new inputs with the retained
-four-database read-only and recovery tools, complete database/native/log
-preservation, then admit one bounded recovery of the existing applications and
-new runtime bindings. Surviving PG processes do not satisfy those checks.
+Current incident recovery comes first. Reuse the independently accepted
+[logical and bounded native results](../development/candidate-lease-loss-recovery.json),
+complete diagnostics/log/cache prestart checks with the retained tools, then admit
+one bounded recovery of the existing applications and new runtime bindings.
+The accepted scopes do not satisfy those remaining checks or establish restart success.
 Heavy builds/tests and actual Programs transition/client operations remain held;
 do not use the old `38b906...` binding or replay a consumed recovery input.
 
@@ -521,7 +525,7 @@ workspace outside every new resource budget.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 0. Current incident preservation and application recovery — new-input preparation | Reuse the existing bounded four-database/native/log readers with newly reviewed incident inputs; after preservation, admit one bounded recovery of the installed binaries/configuration and new runtime bindings | A/B remain failed. Three surviving PG processes are metadata-only evidence; four-DB/native/log preservation and recovery are not complete. Keep heavy verification and actual Programs/client work held; no consumed-input replay or guard override |
+| 0. Current incident recovery — logical and bounded native scopes accepted | Reuse the accepted results; complete diagnostics/log/cache prestart checks with existing tools, then admit one recovery of installed binaries/configuration and new runtime bindings | A/B remain failed and the old live binding is invalid. Backup bodies/master contents, every file's historical identity and physical integrity are not proved by the native observe. Prestart checks and application recovery remain pending; no consumed-input replay or guard override |
 | Historical September 14 disk-full recovery — complete | Retain the independently reviewed four-database/native/log preservation and once-only application restart evidence in its original scope | Its replacement runtime identities have since been invalidated by the new incident. Preserve the result and old inputs; do not repeat that workflow to refresh its label |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
@@ -728,8 +732,9 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    No consumed recovery input is replayed. Continue independent M2-M6 obligations
    under their own prerequisites; retained private files and OS accounts remain
    explicitly inventoried rather than silently treated as removed.
-2. Complete the current incident's four-database/native/log preservation before
-   a newly admitted recovery of the existing binaries and new runtime bindings.
+2. Reuse the current incident's accepted logical and bounded native checkpoints;
+   complete diagnostics/log/cache prestart checks before a newly admitted recovery of the
+   existing binaries and new runtime bindings.
    Keep heavy verification/builds and actual Programs/client work held while
    those prerequisites and host resource coordination are unresolved. The
    successor's separate recovery route, final journey contracts and final-source

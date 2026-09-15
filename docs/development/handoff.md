@@ -1,7 +1,7 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-15, incident preservation and recovery
-take priority; A/B applications are failed and no Programs successor build exists**.
+Current session checkpoint: **2026-09-15, logical preservation and bounded native
+observe passed; diagnostics/log/cache checks and application recovery remain pending**.
 Start with the [incident record](programs-final-regression-incident.json), the [current execution plan](../planning/current-execution-plan.md),
 [core resolution](core-client-acceptance-resolution.md),
 [successor transition decision](e11-candidate-transition-decision.md), and
@@ -27,17 +27,21 @@ The failed scope's owned resources are closed and independently reviewed. Root
 also matched all five saved incident files by bytes/SHA-256. Preserve the
 original `resourcesClosed=false` and `recovered_protected_state_changed` result;
 the supplemental closure does not restore the candidates or rewrite that guard.
-A/B exited 1 with `database_lease_unavailable`. Their old `38b906...` live binding
-is invalid. Three PG processes survived only a metadata observation: four-DB,
-complete native and log preservation checks remain unperformed, so data
-integrity and recovery completion are unproved. Global OOM killed `tsc` PID
+A/B remain failed after exit 1 with `database_lease_unavailable`; their old
+`38b906...` live binding is invalid. The [four-database read-only checkpoint](candidate-lease-loss-recovery.json)
+passed independent review: each database's 35 tables/five sequences exactly
+match its latest baseline, and all ten read-only sessions closed. Its subsequent
+native observe passed lifecycle/control/staged generation, backup metadata and
+source-quiescence checks with independent review. Backup-object bodies and master
+contents were not read/hashed; diagnostics/log/cache prestart checks and application
+recovery have not run. Physical integrity is not claimed. Global OOM killed `tsc` PID
 1209025/session 6413 with trigger `MainThread` PID 1208225; launching ownership
 and causality remain unresolved.
 
-Next: prepare new incident inputs using the existing bounded four-database
-read-only/recovery tools. Complete preservation first, then admit one bounded
-recovery of the existing installed binaries/configuration and new runtime
-bindings. Never replay consumed inputs or overwrite/bypass the old guard.
+Next: reuse the accepted logical and bounded native results and complete
+diagnostics/log/cache prestart checks with existing tools. Only then admit one recovery of the installed
+binaries/configuration and new runtime bindings. Never replay consumed inputs
+or overwrite/bypass the old guard.
 Heavy tests/builds and actual Programs transition/client work are held; coordinate
 cross-task host load before considering them again. Future successor entry and
 recovery contracts remain separate obligations. The completed September 14
