@@ -1,7 +1,7 @@
 # Native scan and HTTP capacity observation
 
-Status: **implementation in progress; no native input, fixture or execution is
-admitted**. The [preparation checkpoint](native-scan-http-capacity-preparation.json)
+Status: **implementation held under the [measurement-value decision](native-capacity-measurement-decision.md);
+no native input, fixture or execution is admitted**. The [preparation checkpoint](native-scan-http-capacity-preparation.json)
 records the actual read-only environment observation, candidate source checks
 and twelve passing synthetic reader groups after a preserved first failure.
 Native transport, lifecycle and complete controller integration remain unverified.

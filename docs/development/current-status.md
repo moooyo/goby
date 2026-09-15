@@ -10,8 +10,15 @@ is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 
-Session pause, 2026-09-15: the user requested a handoff and `main` checkpoint
-before continuing in another session. The
+Execution resumed on 2026-09-15 after the user accepted the plan review.
+The [core acceptance resolution](core-client-acceptance-resolution.md) now leads
+the queue, alongside the [remaining r04 evidence decision](r04-installation-evidence-resolution.md).
+The response-ID matcher correction passed
+[35 remote guards and the exact saved subtitle replay](core-response-identity-verification.json)
+with independent review; this closes a tool defect, not client acceptance.
+Native capacity execution is held under its
+[measurement decision](native-capacity-measurement-decision.md). The
+historical session pause and `main` checkpoint are preserved in the
 [saved native capacity handoff](session-handoff-20260915-native-capacity.md)
 and [tracked source manifest](native-scan-http-capacity-source-snapshot.json)
 preserve the integrated controller and remaining work. Eight control-transport
@@ -163,6 +170,11 @@ application identities and all unchanged protected resources explicitly.
 | Real small-media capacity | The new 10,000-leaf scan/rescan test and affected seven-file shared-fixture regression passed independent review and resource closure; production is unchanged | This tiny valid-media and in-process Store-reopen profile does not prove HTTP/service performance, service/PG/host restart, actual filesystem stalls or a throughput SLO |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
 | Complete release | Implemented foundations and historical scoped controls | Remaining M2-M6 capacity, operations, media, hardware, packaging, license and feature evidence |
+
+The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
+maps those obligations to artifact/client/media/deployment slices and concrete
+next actions. The selected next delivery artifact is E11; current-state admission
+and original-client acceptance on it remain open.
 
 The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
 passed one race test with zero failures/skips on base `892c536` plus one new
@@ -696,11 +708,14 @@ stop and logout. [Owned closure](audited-subtitles-client01-closeout.json) prese
 all old rows and records twenty-one revoked sessions, thirteen plays, six userdata
 rows, two retained audio references and no encoding jobs. Both workers exited
 and candidate/PostgreSQL continuity remains exact. Formal acceptance stays open:
-two native primitive-undefined errors remain unattributed, and partial media 293
-has a 3507.211510 ms context/physical end-time difference outside the unchanged
-2000 ms limit. State/ownership closure does not waive this media evidence gap.
-Follow the [result decision](audited-subtitles-client01-review.md) into independent
-main read-only preparation, preserving all consumed inputs and original failures.
+two native primitive-undefined errors remain unattributed, and physical media
+exchange 293 lacks matching browser response/cancellation evidence. The later
+[response-identity review](audited-subtitles-client01-review.md#read-only-response-identity-review-2026-09-14)
+binds context291 to physical294, not physical293. The original 3507.211510 ms
+comparison against the 2000 ms limit remains a failed historical checker result,
+not proof of a product cancellation delay. Follow the
+[core acceptance resolution](core-client-acceptance-resolution.md), preserving
+all consumed inputs, original failures and the unchanged acceptance boundary.
 
 ## Movie checkpoints
 

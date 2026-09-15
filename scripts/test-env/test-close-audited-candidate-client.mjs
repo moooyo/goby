@@ -45,37 +45,37 @@ function chunked(bytes) {
   ]).concat([Buffer.from('0\r\nX-Synthetic-Trailer: retained\r\n\r\n')]));
 }
 
-function exchangeFixture({ media = false, method = 'GET', delivered = media ? 128 : 12, target: suppliedTarget,
-  contentRange = 'bytes 0-999/4096' } = {}) {
+function exchangeFixture({ media = false, method = 'GET', complete = !media, delivered = media ? (complete ? 1000 : 128) : 12, target: suppliedTarget,
+  contentRange = 'bytes 0-999/4096', responseHeaders = [] } = {}) {
   const target = suppliedTarget ?? (media ? '/emby/Audio/' + ITEM + '/stream.mp3?PlaySessionId=play_synthetic' : '/emby/System/Info');
   const rawHead = Buffer.from([method + ' ' + target + ' HTTP/1.1', 'Host: 127.0.0.1:19180',
     'X-Emby-Token: ' + TOKEN, ...(media ? ['Range: bytes=0-999'] : ['User-Agent: GobyBrowserPostLogoutVerification/1']),
     'Connection: close', '', ''].join('\r\n'));
   const head = responseHead(media ? '206 Partial Content' : '401 Unauthorized', [
     ['Content-Length', media ? '1000' : '12'], ['Content-Type', media ? 'audio/mpeg' : 'text/plain'],
-    ...(media ? [['Content-Range', contentRange]] : []), ['Connection', 'close'],
+    ...(media ? [['Content-Range', contentRange]] : []), ['Connection', 'close'], ...responseHeaders,
   ]);
   const request = { kind: media ? 'media' : 'api', method, origin: ORIGIN, target, path: target.split('?')[0],
     parentOrdinal: null, budgetClass: media ? 'normal' : 'cleanup', rawRequestHeadBase64: rawHead.toString('base64'),
     forwardedRequestHeadBase64: rawHead.toString('base64') };
   const intent = { ordinal: 7, budgetClass: request.budgetClass, request, startedMonotonicNs: '10000000000' };
   const result = { ordinal: 7, budgetClass: request.budgetClass, request: clone(request), backend: 'goby',
-    outcome: media ? 'rejected_or_interrupted' : 'observed', upstreamConnected: true,
+    outcome: complete ? 'observed' : 'rejected_or_interrupted', upstreamConnected: true,
     responseStatus: media ? 206 : 401, responseHeadBase64: head.toString('base64'),
     responseHeaders: head.subarray(0, -4).toString('latin1').split('\r\n').slice(1).map(line => {
       const offset = line.indexOf(':'); return [line.slice(0, offset), line.slice(offset + 1).trim()];
-    }), interimHeadsBase64: [], completeHTTP: !media, requestBodyComplete: true,
+    }), interimHeadsBase64: [], completeHTTP: complete, requestBodyComplete: true,
     requestBodyWireBytes: 0, responseBodyWireBytes: delivered, upstreamBytesWritten: rawHead.length,
     clientBytesWritten: head.length + delivered, webSocketClientBytes: 0, webSocketUpstreamBytes: 0,
-    requestForwardedComplete: !media, responseForwardedComplete: !media,
+    requestForwardedComplete: complete, responseForwardedComplete: complete,
     requestBodyRetained: false, responseBodyRetained: false, requestBodyBase64: null, responseBodyBase64: null,
     requestBodyTruncated: false, responseBodyTruncated: false, bodyEvidenceComplete: false,
     bodyStorage: 'http-transfer-wire', webMediaAndWebSocketBodiesRetained: false, completedMonotonicNs: '12000000000' };
   return { intent, result, rawHead, head };
 }
 
-function partialFixture(closer) {
-  const fixture = exchangeFixture({ media: true });
+function partialFixture(closer, options = {}) {
+  const fixture = exchangeFixture({ media: true, ...options });
   const exchange = closer.verifyExchange(fixture.intent, fixture.result, manifest);
   const row = { method: 'GET', kind: 'media', origin: 'target', allowed: true, status: 206, url: exchange.url.href, token_sha256: exchange.tokenHash, elapsed_ms: 1000,
     failed_elapsed_ms: 3000, failed: true, failure_error_text: 'net::ERR_ABORTED', headers: { range: 'bytes=0-999' }, payload_base64: '' };
@@ -609,6 +609,81 @@ function guardCases(closer) {
       assert.equal(seek.ordinal, 7); assert.equal(seek.interpretation, 'browser_abort_near_range_seek');
       assert.equal(seek.completeHTTP, false); assert.equal(seek.responseForwardedComplete, false);
     }],
+    ['response_ids_disambiguate_repeated_complete_and_partial_media', () => {
+      for (const complete of [false, true]) {
+        const { exchange, report, login } = partialFixture(closer, { complete, responseHeaders: [['X-Request-Id', 'response-A']] });
+        for (const row of report.requests) row.response_headers = { 'x-request-id': 'response-B' };
+        assert.deepEqual(closer.matchesContext(exchange, report), []);
+        assert.deepEqual(closer.mediaContextEvidence(exchange, report), []);
+        if (!complete) assert.throws(() => closer.explainMediaPartial(exchange, report, login), /media_partial_context_missing/);
+        report.requests.push({ ...clone(report.requests[0]), ordinal: 103, response_headers: { 'X-ReQuEsT-Id': 'response-A' } });
+        const before = jsonBytes(exchange.result);
+        assert.deepEqual(closer.mediaContextEvidence(exchange, report).map(value => [value.row.ordinal, value.association]), [[103, 'exact_range']]);
+        assert.equal(exchange.complete, complete); assert.deepEqual(jsonBytes(exchange.result), before);
+      }
+    }],
+    ['missing_response_ids_preserve_legacy_exact_and_contained_range_evidence', () => {
+      for (const [physicalHeaders, observedHeaders] of [
+        [[], undefined], [[], {}], [[['X-Request-Id', 'response-A']], undefined],
+        [[], { 'x-request-id': 'response-A' }], [[['X-Request-Id', 'response-A']], { 'X-Request-Id': '\tresponse-A ' }],
+      ]) {
+        const { exchange, report } = partialFixture(closer, { responseHeaders: physicalHeaders });
+        for (const row of report.requests) row.response_headers = observedHeaders;
+        assert.equal(closer.mediaContextEvidence(exchange, report).length, 2);
+        for (const row of report.requests) row.headers.range = 'bytes=0-';
+        assert.deepEqual(closer.mediaContextEvidence(exchange, report).map(value => value.association),
+          ['unique_contained_range_with_terminal_time', 'unique_contained_range_with_terminal_time']);
+      }
+    }],
+    ['ambiguous_or_malformed_response_ids_cannot_be_treated_as_missing', () => {
+      const cases = [
+        [[['X-Request-Id', 'response-A'], ['x-request-id', 'response-A']], undefined],
+        [[['X-Request-Id', 'response-A'], ['x-request-id', 'response-B']], undefined],
+        [[], { 'X-Request-Id': 'response-A', 'x-request-id': 'response-A' }],
+        [[], { 'X-Request-Id': 'response-A', 'x-request-id': 'response-B' }],
+        [[['X-Request-Id', 'response-A']], { 'x-request-id': 'response-a' }],
+        ...['', ' ', 'response-A,response-A', 'response-A, response-B', 'response-A response-B'].map(value => [[['X-Request-Id', value]], undefined]),
+        ...['', ' ', 'response-A,response-A', 'response-A\nresponse-B', null, 7, ['response-A']].map(value => [[], { 'x-request-id': value }]),
+      ];
+      for (const [physicalHeaders, observedHeaders] of cases) {
+        const { exchange, report } = partialFixture(closer, { responseHeaders: physicalHeaders });
+        for (const row of report.requests) row.response_headers = observedHeaders;
+        assert.deepEqual(closer.matchesContext(exchange, report), []);
+        for (const row of report.requests) row.headers.range = 'bytes=0-';
+        assert.deepEqual(closer.mediaContextEvidence(exchange, report), []);
+      }
+    }],
+    ['matching_response_ids_preserve_request_and_abort_constraints', () => {
+      for (const mutate of [
+        row => { row.method = 'POST'; }, row => { row.url += '&Other=1'; }, row => { row.token_sha256 = '0'.repeat(64); },
+        row => { row.headers.range = 'bytes=1-1999'; }, row => { row.elapsed_ms = 6001; },
+      ]) {
+        const { exchange, report } = partialFixture(closer, { responseHeaders: [['X-Request-Id', 'response-A']] });
+        for (const row of report.requests) { row.response_headers = { 'x-request-id': 'response-A' }; mutate(row); }
+        assert.deepEqual(closer.mediaContextEvidence(exchange, report), []);
+      }
+      const { exchange, report, login } = partialFixture(closer, { responseHeaders: [['X-Request-Id', 'response-A']] });
+      for (const row of report.requests) row.response_headers = { 'x-request-id': 'response-A' };
+      exchange.requestEntity = Buffer.from('retained-request-body');
+      assert.deepEqual(closer.matchesContext(exchange, report), []);
+      exchange.requestEntity = null;
+      report.requests[0].failed_elapsed_ms = 9000;
+      assert.throws(() => closer.explainMediaPartial(exchange, report, login), /media_partial_time_mismatch/);
+    }],
+    ['contained_range_identity_filter_preserves_terminal_time_and_scope_uniqueness', () => {
+      const { exchange, report } = partialFixture(closer, { responseHeaders: [['X-Request-Id', 'response-A']] });
+      for (const row of report.requests) row.response_headers = { 'x-request-id': 'response-B' };
+      report.requests.push({ ...clone(report.requests[0]), ordinal: 103, headers: { range: 'bytes=0-' },
+        response_headers: { 'x-request-id': 'response-A' } });
+      assert.deepEqual(closer.mediaContextEvidence(exchange, report).map(value => [value.row.ordinal, value.association]),
+        [[103, 'unique_contained_range_with_terminal_time']]);
+      const row = report.requests.at(-1);
+      row.failed_elapsed_ms = 999;
+      assert.deepEqual(closer.mediaContextEvidence(exchange, report), []);
+      row.failed_elapsed_ms = 3000;
+      report.requests.push({ ...clone(row), ordinal: 104 });
+      assert.deepEqual(closer.mediaContextEvidence(exchange, report), []);
+    }],
     ['partial_media_rejects_missing_abort_time_wrong_error_duplicates_or_no_action', () => {
       for (const [name, mutate, expected] of [
         ['missing_time', value => { delete value.report.requests[0].failed_elapsed_ms; }, /media_partial_not_browser_abort/],
@@ -1072,7 +1147,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (replay ? 32 : 30) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== (replay ? 37 : 35) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

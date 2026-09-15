@@ -20,8 +20,10 @@ declared mount-profile skip; focused/browser acceptance, independent reviews
 and resource closure also passed. The next
 [internal systemd package](../development/systemd-package-build-verification.json)
 has passed three builds, focused checks, 26 guards, independent review and
-build resource closure. Actual nonroot installation and normal
-stop/start remain pending. These increments retain their own source and
+build resource closure. The later r04 runtime completed two nonroot starts/stops,
+272 requests, six observers and three snapshots; its seal rejected a valid Emby
+plain-text 401 and the final sealing SQL observer did not run. Full installation
+acceptance remains open. These increments retain their own source and
 execution scopes and do not close complete M5, M6 or core-video acceptance.
 
 The [fresh source32 backup](../development/audited-main-native-backup-completed.json),

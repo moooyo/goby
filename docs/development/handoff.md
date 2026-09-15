@@ -1,14 +1,15 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-15, paused at the user's request before
-native capacity execution admission**. Resume from the
-[native capacity session handoff](session-handoff-20260915-native-capacity.md),
-the tracked candidate source snapshot and the
-[current execution plan](../planning/current-execution-plan.md).
-The reader's twelve groups, transport's eight groups and pool's six groups
-retain distinct remote verification scopes; the controller remains unexecuted.
-The fourth installation runtime passed but its seal failed and closure is
-complete. Core video/subtitle and complete M2-M6 remain open; M7 is deferred.
+Current session checkpoint: **2026-09-15, execution resumed under the reviewed
+plan**. Start with the [current execution plan](../planning/current-execution-plan.md),
+[core resolution](core-client-acceptance-resolution.md),
+[r04 evidence resolution](r04-installation-evidence-resolution.md), and
+[support matrix](../planning/support-and-delivery-matrix.md).
+The response-ID matcher correction has 35 passing remote guards and a passing
+saved subtitle replay with independent review. Remaining client/cancellation
+gaps stay open. The [capacity decision](native-capacity-measurement-decision.md)
+holds native execution; its [earlier handoff](session-handoff-20260915-native-capacity.md)
+and tracked source snapshot remain intact. Complete M2-M6 remain open; M7 is deferred.
 
 ## Historical entries
 

@@ -441,10 +441,16 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
-Execution is paused at the user's request on 2026-09-15 for a `main` checkpoint
-and a later session. The [session handoff](../development/session-handoff-20260915-native-capacity.md)
-records the exact saved sources, remote results and resume prerequisites.
-This pause does not complete or remove any M2-M6 obligation.
+Execution resumed on 2026-09-15 after the user accepted the plan review.
+Prioritize the [core acceptance resolution](../development/core-client-acceptance-resolution.md)
+and [remaining r04 installation evidence](../development/r04-installation-evidence-resolution.md)
+before further capacity infrastructure work. The
+[measurement decision](../development/native-capacity-measurement-decision.md)
+holds native capacity execution. The [support matrix](support-and-delivery-matrix.md)
+maps the complete obligations to bounded delivery slices. The
+[session handoff](../development/session-handoff-20260915-native-capacity.md)
+retains the exact paused sources, remote results and native execution
+prerequisites. No M2-M6 obligation is removed; M7 remains deferred.
 
 The order sets the immediate focus, not a serial dependency across every row.
 Independent reviews and implementation may run in parallel; paused experiments
@@ -459,12 +465,23 @@ workspace outside every new resource budget.
 | --- | --- | --- |
 | 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
-| 0b. Internal amd64 systemd installation — r04 runtime passed, seal failed, preservation closed | Retain the actual r04 runtime, independent HTTP diagnosis, two archives and completed preservation/resource readback | Two nonroot starts, 272 requests, six observers and three snapshots passed. The seal reader rejected a valid plain-text Emby 401; its final observer never ran. Overall installation remains open, all inputs are consumed, and no fifth attempt is admitted |
-| 1. Core video and subtitle acceptance | Prioritize this promotion gate when new discriminating evidence or a justified product correction supports a bounded journey on a reviewed current candidate and retained-state input | No new journey is admitted yet. Context291 identifies physical294, not293; the earlier cancellation and original page errors remain unresolved. Preserve the completed identity review. Without new grounds, keep this gate open and continue independent work; do not repeat the review, replay consumed actors or add another observation framework |
-| 2. Native scan and concurrent HTTP capacity — saved before execution admission | Resume the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md), finish its remaining changed-risk verification and freeze a fresh decision for the [1,000-file measurement](../development/native-scan-http-capacity-plan.md) | [Preparation](../development/native-scan-http-capacity-preparation.json) retains twelve passing reader groups, eight later transport groups and six pool lifecycle groups with distinct scopes. The latest transport warning correction and controller checks remain unverified; new result review is pending. No native fixture or execution input exists. Require actual measurements and independent closure; do not invent an SLO or reuse the paused M2 mount |
+| 0b. Internal amd64 systemd installation — resolve the remaining evidence | Recheck saved HTTP under the exact Emby/native-admin response contracts; map the final SQL assertions to existing snapshots and closure evidence, then identify any irreplaceable missing proof | Retain the passed two-start runtime and original seal failure. No automatic fifth installation, build or full-suite replay; any new verification must address only the remaining assertions under a fresh bounded decision |
+| 1. Core video and subtitle acceptance — concrete blocker resolution | Follow the [core resolution](../development/core-client-acceptance-resolution.md): correct response-identity matching, define retained movie input, decide the discriminating page-error/cancellation observation, and bind the eventual acceptance to E11 | Saved-record verification is the immediate work. A live journey requires a specific observable and reviewed current state; original failures, consumed actors and the main-promotion gate remain intact |
+| 2. Native scan and concurrent HTTP capacity — implementation held for measurement decision | Preserve the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md); define useful output, overlap coverage, observer overhead and a finite remaining preparation scope before resuming | No native fixture or execution input exists. Reuse the distinct twelve reader, eight transport and six pool groups within their source scopes. Complete the result design and unresolved cleanup risks before execution; insufficient overlap remains an incomplete metric, not capacity acceptance |
 | 2a. Package component attribution — emitted graph and bounded glyph mapping recorded | Retain the [46-chunk graph and 73 exact glyph correspondences](../development/systemd-package-javascript-attribution.md); resolve the remaining source-module and upstream-glyph inputs before assembling the legal payload | This is not a complete npm module graph or proof of historical Google glyph revisions. Preserve the pending project-license question and the external-distribution gate |
 | 2b. Remaining M2-M6 delivery | Continue separately scoped blocked I/O, host durability, media/transcode, administration, native hardware/architecture, OCI and support-matrix work | Require measurable limits and bounded shutdown under each profile's prerequisites; unavailable hardware and licensing block their own claims, not unrelated software delivery |
 | 3. Main promotion | Once core acceptance passes, bind the verified/admitted intended artifact to current preservation/recovery prerequisites and a bounded upgrade/post-upgrade workflow | Completed isolated recovery proofs remain accepted history. They neither authorize replay of consumed inputs nor verify later untested code; refresh only prerequisites invalidated by actual changes |
+
+The first revised-plan increment has passed
+[35 focused guards and the saved subtitle response replay](../development/core-response-identity-verification.json)
+with independent review. The matcher defect is closed; do not rerun that work
+without a changed input or concern. The
+[r04 saved HTTP review](../development/r04-installation-evidence-resolution.md)
+also passes for its fixed evidence set after independent strict readback.
+Remaining immediate work is the retained movie-state contract and discriminating
+client-error/cancellation decision, plus the smallest justified proof of r04's
+post-stop catalog/session state. The original missing final SQL transaction
+cannot be reconstructed. Native capacity remains held under its decision.
 
 The completed independent increment is [native scheduled media refresh](../development/task-media-refresh-plan.md):
 register `library.refresh_media`, retain ordinary `library.scan` behavior, and

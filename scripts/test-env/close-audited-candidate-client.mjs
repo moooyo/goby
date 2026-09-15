@@ -354,12 +354,32 @@ export function verifyLedgerRows(attestation, index, rows, manifest) {
   return exchanges;
 }
 
-function matchesContext(exchange, report, requireExactRange = true) {
+/** Missing IDs are legacy-compatible; false denotes an ambiguous or malformed ID. */
+function responseRequestId(headers) {
+  if (headers === undefined || headers === null) return null;
+  const fields = headers instanceof Map ? [...headers] : own(headers) ? Object.entries(headers) : null;
+  if (!fields) return false;
+  const matching = fields.filter(([key]) => typeof key === 'string' && key.toLowerCase() === 'x-request-id');
+  if (!matching.length) return null;
+  if (matching.length !== 1) return false;
+  const values = headers instanceof Map ? matching[0][1] : [matching[0][1]];
+  if (!Array.isArray(values) || values.length !== 1 || typeof values[0] !== 'string') return false;
+  const value = values[0].replace(/^[\t ]+|[\t ]+$/g, '');
+  // Header names are case-insensitive; the opaque ID remains case-sensitive.
+  // Commas and whitespace cannot distinguish one ID from coalesced headers.
+  return /^[\x21-\x7e]+$/.test(value) && !value.includes(',') ? value : false;
+}
+
+export function matchesContext(exchange, report, requireExactRange = true) {
   if (!exchange.url) return [];
+  const physicalId = responseRequestId(exchange.response?.headers);
+  if (physicalId === false) return [];
   const start = ns(report.started_monotonic_ns), observed = ns(exchange.intent.startedMonotonicNs);
   return report.requests.filter(row => {
     if (!['frame', 'service_worker'].includes(row.scope) || row.method !== exchange.original.method || row.token_sha256 !== exchange.tokenHash || !integer(row.elapsed_ms)) return false;
     try { if (new URL(row.url).href !== exchange.url.href || requireExactRange && (row.headers?.range ?? null) !== exchange.original.get('range')) return false; } catch { return false; }
+    const observedId = responseRequestId(row.response_headers);
+    if (observedId === false || physicalId !== null && observedId !== null && physicalId !== observedId) return false;
     const delta = start + BigInt(row.elapsed_ms) * 1000000n - observed;
     if (delta < -5000000000n || delta > 5000000000n) return false;
     if (exchange.requestEntity && !bytes64(row.payload_base64 ?? '').equals(exchange.requestEntity)) return false;

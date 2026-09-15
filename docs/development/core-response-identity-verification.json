@@ -1,0 +1,93 @@
+{
+  "kind": "core-client-response-identity-verification",
+  "version": 1,
+  "date": "2026-09-15",
+  "status": "focused_guards_and_saved_subtitle_replay_independently_reviewed",
+  "environment": "ssh test-env",
+  "source": {
+    "path": "scripts/test-env/close-audited-candidate-client.mjs",
+    "sha256": "a5d49f916d9f20cef5fc8e308014395feace14c17429b92fb11ae53a306f44d3",
+    "bytes": 130481
+  },
+  "change": "Reject contradictory or ambiguous response X-Request-Id evidence while retaining the existing request, range, timing, body and cancellation checks. Missing IDs retain previous candidate-matching behavior.",
+  "guards": {
+    "path": "/opt/goby-test/review-resume-20260915-core/private/response-identity-guards.json",
+    "sha256": "2ccae1f4562af00f6c5eaca95b23747be536400e16646e51ea61004c1616c6e4",
+    "testCount": 35,
+    "passed": 35,
+    "failed": 0,
+    "newGroups": 5,
+    "sourceUnchanged": true
+  },
+  "guardDispatch": {
+    "path": "/opt/goby-test/review-resume-20260915-core/private/guards-dispatch.json",
+    "sha256": "cb16df015ee1962134193e251786330c3cd67218ee4b5d00c45ebd77695d5ac9",
+    "bytes": 3462,
+    "exitCode": 0,
+    "stderrBytes": 0,
+    "childReaped": true
+  },
+  "savedSubtitleReplay": {
+    "path": "/opt/goby-test/review-resume-20260915-core/private/subtitle-response-replay.json",
+    "sha256": "fdd0dc84b5daa1920e80652fd37c223db861c2f8569af54fe547ec937ca3b40b",
+    "bytes": 5564,
+    "original293ContextOrdinals": [
+      291
+    ],
+    "corrected293ContextOrdinals": [],
+    "original294ContextOrdinals": [
+      291
+    ],
+    "corrected294ContextOrdinals": [
+      291
+    ]
+  },
+  "replayDispatch": {
+    "path": "/opt/goby-test/review-resume-20260915-core/private/replay-dispatch.json",
+    "sha256": "8453ea00d5e341fc79891b29d2f7233bd71338ff790a9092faef5ee8d6f69143",
+    "bytes": 756,
+    "exitCode": 0,
+    "stderrBytes": 0,
+    "childReaped": true
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/review-resume-20260915-core-independent/review.json",
+    "sha256": "6a07000f22abf55e11fa50c2c71dc3f04faf83a7ee1320787af7ee7b4a675b6d",
+    "bytes": 4236,
+    "assertions": 15,
+    "savedReplayPins": 16,
+    "sourceArchiveMembers": 8,
+    "testsReplayed": false
+  },
+  "savedBrowserMetadata": {
+    "path": "/opt/goby-test/review-resume-20260915-core/private/browser-metadata.json",
+    "sha256": "c799f4cb0ae9b3d6f2f5755b585202adc99cee303996f9dc640e0fdd7a3a638e",
+    "bytes": 464,
+    "browserVersion": "153.0.8010.12",
+    "playwrightVersion": "1.63.0",
+    "scope": "Subtitles01 saved observation, not a current executable inspection or proof for other runs."
+  },
+  "savedMovieIdentityReadback": {
+    "path": "/opt/goby-test/review-resume-20260915-core/private/movie-response-identity-readback.json",
+    "sha256": "18759f1585957501c5ae6cd44e8e88def76348bd79bd4132dbcf6dbcd0c7b3dc",
+    "bytes": 2137,
+    "scope": "Pinned response-header metadata only; not a replay of movie physical/durable acceptance.",
+    "context286MatchesPhysical289Id": true,
+    "context286ContradictsPhysical288Id": true,
+    "context336ContradictsPhysical342Id": true
+  },
+  "remaining": [
+    "Physical293 lacks matched browser cancellation evidence.",
+    "Both original Subtitles01 primitive-undefined errors remain unattributed.",
+    "Movie05 legacy associations for physical288 and physical342 require separate interpretation; the older replay's physical-acceptance claims do not transfer to this matcher.",
+    "Future live controller inputs must bind the changed source and relevant verification; old frozen inputs remain consumed."
+  ],
+  "businessHttpCalls": 0,
+  "sqlCalls": 0,
+  "serviceActions": 0,
+  "browserRuns": 0,
+  "productionSourceChanged": false,
+  "clientAcceptance": false,
+  "mainPromotion": false,
+  "wholeM2M6Accepted": false
+}
