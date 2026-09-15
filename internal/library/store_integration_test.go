@@ -251,11 +251,18 @@ func libraryIntegrationWaitJobWithTimeout(t *testing.T, ctx context.Context, sto
 	}
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
+	started := time.Now()
+	lastStatus := "not_observed"
 	for {
+		beforeRead := waitCtx.Err()
+		readStarted := time.Now()
 		job, err := store.GetJob(waitCtx, id)
+		readElapsed := time.Since(readStarted)
 		if err != nil {
-			t.Fatalf("read scan job: %v", err)
+			t.Fatalf("read scan job: %v; last_status=%q wait_elapsed=%s read_elapsed=%s context_before=%v context_after=%v parent_context=%v",
+				err, lastStatus, time.Since(started), readElapsed, beforeRead, waitCtx.Err(), ctx.Err())
 		}
+		lastStatus = job.Status
 		switch job.Status {
 		case "Completed", "Failed", "Cancelled", "Interrupted":
 			if job.Status != wantStatus {
@@ -269,7 +276,8 @@ func libraryIntegrationWaitJobWithTimeout(t *testing.T, ctx context.Context, sto
 		select {
 		case <-ticker.C:
 		case <-waitCtx.Done():
-			t.Fatalf("waiting for job %s to reach %s: %v", id, wantStatus, waitCtx.Err())
+			t.Fatalf("waiting for job %s to reach %s: %v; last_status=%q wait_elapsed=%s last_read_elapsed=%s parent_context=%v",
+				id, wantStatus, waitCtx.Err(), lastStatus, time.Since(started), readElapsed, ctx.Err())
 		}
 	}
 }

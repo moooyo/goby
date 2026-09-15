@@ -493,6 +493,15 @@ func TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable(t *testing.
 	for _, role := range []string{"theme", "extra"} {
 		t.Run(role, func(t *testing.T) {
 			f := newAuxiliaryCatalogFixture(t, role, true)
+			started := time.Now()
+			phase := func(name string) {
+				t.Logf("auxiliary recovery phase=%s elapsed=%s closing=%t ownership_lost=%t fixture_context=%v",
+					name, time.Since(started), f.store.closing.Load(), f.store.ownership.lost.Load(), f.ctx.Err())
+			}
+			// This runs before the fixture's existing Store.Close cleanup. Atomic
+			// flags distinguish preexisting ownership loss from cleanup effects.
+			t.Cleanup(func() { phase("before_store_cleanup") })
+			phase("fixture_ready")
 			resource := f.resource(t)
 			userDataSeed(t, f.ctx, f.pool, f.userID, UserData{ItemID: resource.id, IsFavorite: true, PlayCount: 2})
 			userData := forceProbeUserDataSnapshot(t, f.ctx, f.pool, resource.id)
@@ -509,6 +518,8 @@ func TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable(t *testing.
 				t.Fatal(err)
 			}
 			job := libraryIntegrationScan(t, f.ctx, f.store, f.library.ID, "Failed")
+			phase("rejected_scan_finished")
+			t.Logf("auxiliary rejected scan status=%s error=%q", job.Status, job.Error)
 			if job.Error == "" {
 				t.Fatal("the delayed auxiliary commit failure was not observed")
 			}
@@ -519,9 +530,11 @@ func TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable(t *testing.
 			if _, err := f.pool.Exec(f.ctx, "DROP TRIGGER reject_auxiliary_catalog_commit ON items"); err != nil {
 				t.Fatal(err)
 			}
+			phase("recovery_scan_start")
 			if job := libraryIntegrationScan(t, f.ctx, f.store, f.library.ID, "Completed"); job.Error != "" {
 				t.Fatalf("recover the rejected auxiliary update: %+v", job)
 			}
+			phase("recovery_scan_finished")
 			batches := auxiliaryCatalogBatches(t, notifications)
 			assertAuxiliaryCatalogKinds(t, batches, resource.id, CatalogUpdated)
 			requireAuxiliaryCatalogResource(t, batches, CatalogUpdated, resource.id, f.library.ID, f.owner.ID)
