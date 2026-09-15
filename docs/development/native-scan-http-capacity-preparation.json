@@ -1,0 +1,120 @@
+{
+  "kind": "goby-native-scan-http-capacity-preparation-checkpoint",
+  "version": 1,
+  "status": "implementation_in_progress_reader_protocol_checked",
+  "scope": "/opt/goby-test/native-scan-http-capacity-20260915",
+  "verificationScope": "/opt/goby-test/native-scan-http-capacity-checks-20260915",
+  "environmentObservation": {
+    "path": "/opt/goby-test/native-scan-http-capacity-20260915/private/environment-preflight/result.json",
+    "sha256": "bc25fa4fa607c9419c79d9e0f2beb099a1ad9124e7d53d1180bc5d676d8d0b54",
+    "bytes": 41617,
+    "status": "readonly_prerequisites_observed",
+    "closedMetadataCommands": 16,
+    "cpuCount": 12,
+    "allowedCpuCount": 12,
+    "rootFreeBytes": 5073956864,
+    "rootFreeInodes": 3497455,
+    "memAvailableBytes": 6626668544,
+    "protectedStateUnchanged": true,
+    "lockReleased": true,
+    "executionAdmitted": false,
+    "capacityReserved": false
+  },
+  "environmentDispatch": {
+    "path": "/opt/goby-test/native-scan-http-capacity-20260915/private/environment-preflight-dispatch.json",
+    "sha256": "2b34f6373ee806ce828521b3f4520c3bb3492d05ccbb2e0033844410b670aba7",
+    "bytes": 1113
+  },
+  "firstSourceChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/candidate-01/source-checks.json",
+    "sha256": "40398111e0c82efa796c3602359b1ac6337e2ac980bf7026fc5e945d4f7d71c5",
+    "bytes": 1823,
+    "compiledModules": 5,
+    "scopeLimit": "The original reader and units revisions are superseded; unchanged support, corpus and workload keep these source checks."
+  },
+  "failedReaderChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/checks-01/result.json",
+    "sha256": "9776684135376d66a22e75bd3a4176e6dd43b1d594ccbe2067bc6007da2d58fb",
+    "bytes": 13383,
+    "groups": 10,
+    "passedGroups": 6,
+    "failedGroups": 4,
+    "cause": "WireFile lacked flush(); HTTPResponse.close raised AttributeError on incomplete responses and hid the original failure.",
+    "socketpairReaderEndpointsClosed": 8,
+    "peerThreadsJoined": true,
+    "preservedUnchanged": true
+  },
+  "correctedReaderChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/checks-02/result.json",
+    "sha256": "6e87b3f520538bfdff722877930b4b4f84456d16697eb2d323d1d71610f0a2ba",
+    "bytes": 16900,
+    "groups": 12,
+    "passedGroups": 12,
+    "failedGroups": 0,
+    "changes": [
+      "Provide a read-only no-op WireFile.flush implementation.",
+      "Keep the first actual failure and record response/connection close errors separately.",
+      "Do not turn a namespace-context exit failure into a normal pre-dispatch cancellation."
+    ],
+    "boundaries": [
+      "Real Reader.exchange, HTTPResponse/WireFile, control-event and private evidence functions ran.",
+      "Transport used AF_UNIX socketpairs and a module-local virtual AF_INET adapter.",
+      "The namespace context and input identities were explicit synthetic substitutes.",
+      "No reader main/run, native TCP, private namespace entry, parent child-wait proof, Goby, SQL or workload ran.",
+      "The parent's final raw-framing, catalog/ACL/UserData and process-join checks remain separate requirements."
+    ]
+  },
+  "correctedDispatch": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/reader-checks-02-dispatch.json",
+    "sha256": "f2b790e86f228c1711e21af47a2822d12ccd7d6cdc89310ab5794fd09df03d0d",
+    "bytes": 1784,
+    "compiledModules": ["reader", "reader-checks", "units", "preparation"]
+  },
+  "applicationSourceChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/candidate-02/application-source-checks.json",
+    "sha256": "8432f901223b004a9ae14f5390161ffbc62d1612ec74f9d9e7acec388784f56b",
+    "bytes": 411,
+    "scopeLimit": "Compilation and unresolved-global checks only; no application lifecycle executed."
+  },
+  "poolObserverSourceChecks": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/candidate-02/pool-observer-source-checks.json",
+    "sha256": "0d66cd4102d648817fd62143f729d4bb854d4df20cc7caf509bbe87ae7855d2b",
+    "bytes": 872,
+    "scopeLimit": "Compilation and unresolved-global checks only; no child lifecycle, SQL observer or metrics capture executed."
+  },
+  "independentReaderReview": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/independent-reader-review.json",
+    "sha256": "a781390ddb3915888bd4cc5df7877c457f731c77a89468f47142a9895993fec9",
+    "bytes": 14139
+  },
+  "currentCheckedCandidates": {
+    "support": {"sha256": "4e93fabe713d68b918a44ffd96a4c96c4d153430440480a8f840f8a56efc86d0", "bytes": 43506},
+    "corpus": {"sha256": "3e6ae631eab7ad9260e48769d2d81a759113ed6ec5e50e6f740fec14af3bd50f", "bytes": 26450},
+    "workload": {"sha256": "766445a9305ca50617a3438c5bb66e1df7ac3506a0fb462db7020a349bba16e5", "bytes": 77749},
+    "reader": {"sha256": "a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20", "bytes": 46356},
+    "units": {"sha256": "6f5b437a1ff5708a3af032c5e56ad5b5dda890a032345602e71c94baf2851c3d", "bytes": 20947},
+    "preparation": {"sha256": "705f3d681fc3b1e992f41f60fee13cdfbeecbc11e02d30a06b9bdd551a4a9d24", "bytes": 33539},
+    "application": {"sha256": "b734cfb9eb37aaf215659b336659bdcd2d3f3b6b6794dbe6530e76e233a0adb5", "bytes": 49063},
+    "reader-pool": {"sha256": "a88a4064fd0b0896374e09924feda169fd0a4d9efb751719385e17b393b5bd55", "bytes": 64285},
+    "observers": {"sha256": "74e3066df8b6dd7b31be5b52c4445c95315016d08a2b95e96998dbaa50550208", "bytes": 52770}
+  },
+  "confirmedPlanCorrections": [
+    "Three users need four credentials: one native administrator cookie and three Emby tokens. The administrator Emby token supplies the real administrator catalog-count request.",
+    "Old transient media templates were not retained. Generate two fresh templates from the existing fixed recipe and bind their actual bytes and hashes before copying.",
+    "The APP console uses F/log/application.jsonl while GOBY_LOG_DIR points to F/log/diagnostics, keeping the diagnostics registry's initial directory separate.",
+    "Three setup SQL connections are infrastructure preparation; the six workload observer slots remain separate.",
+    "Account for base command failure-group closure and backend wait inside the original phase deadline; a ten-second command wait is not a ten-second total failure close."
+  ],
+  "remainingBeforeExecution": [
+    "Finish and independently review the single controller, global budgets, reader-pool, transport, observer and preservation integration.",
+    "Verify new transport behavior, full raw chunk/trailer framing, reader lifecycle and changed application/preparation/closure failure paths remotely.",
+    "Bind all final sources and a fresh complete execution input, including real template facts, current resource/absence checks and original-lifetime reserves.",
+    "Run one admitted native profile and independently review actual HTTP/SQL/catalog/ACL/UserData measurements and owned resource closure."
+  ],
+  "fixtureCreated": false,
+  "applicationStarts": 0,
+  "postgresStarts": 0,
+  "nativeWorkloadExecuted": false,
+  "capacityAccepted": false,
+  "wholeM2M6Accepted": false
+}

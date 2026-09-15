@@ -111,6 +111,13 @@ Material Icons upstream gap open.
 
 ## Collected legal material and missing payload
 
+The later [JavaScript/glyph readback](systemd-package-javascript-attribution.md)
+adds the emitted import graph for all 46 JavaScript chunks and 73 exact
+single-path glyph correspondences: 56 to identified icons-material modules and
+17 to Material UI internal SVG modules. It binds the exact retained assets and
+current matching package files. Complete source-module contribution, historical
+Google glyph inputs and coverage beyond that expression form remain open.
+
 All **182 existing legal texts plus one VERSION file** were read from the
 already retained notice collection and matched to its original hashes and
 lengths. No new dependency, historical version, optional platform package or

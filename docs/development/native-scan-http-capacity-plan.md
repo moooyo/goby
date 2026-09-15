@@ -1,6 +1,10 @@
 # Native scan and HTTP capacity observation
 
-Status: **static proposal; no input, fixture, worker, or execution is admitted**.
+Status: **implementation in progress; no native input, fixture or execution is
+admitted**. The [preparation checkpoint](native-scan-http-capacity-preparation.json)
+records the actual read-only environment observation, candidate source checks
+and twelve passing synthetic reader groups after a preserved first failure.
+Native transport, lifecycle and complete controller integration remain unverified.
 The [r04 installation scope](systemd-installation-fourth-attempt.json) has closed
 with independent resource readback. Its runtime passed and its sealer failed;
 that result remains unchanged. Any unresolved defect in a reused ownership or
@@ -118,9 +122,12 @@ and reviewed for the new scope. Historical values are not substituted for them.
   receipts, cancellation channel, and cross-process monotonic timestamps. Verify
   this narrow adaptation remotely before any fixture is kept live for it.
 
-No host capacity inspection or template availability check was performed while
-writing this plan. Absence, ownership, inputs, and capacity are execution
-prerequisites, not implied by the numbers below.
+The later recorded environment observation found the fixed targets absent,
+twelve available CPUs, 5,073,956,864 free root bytes and 6,626,668,544 available
+memory bytes, with protected state unchanged. These are observations, not
+reservations. The old corpus did not retain its templates; the new preparation
+must generate and bind the two fixed-recipe files. Absence, ownership, final
+inputs and capacity must still be checked at the actual execution boundary.
 
 ## Bounded sequence
 
@@ -132,7 +139,10 @@ prerequisites, not implied by the numbers below.
    never reset its allowance during handoff.
 2. Bootstrap once, create the two libraries with `Scan: false`, create the two
    restricted users, set each policy to its own library, and log them in once.
-   Retain the administrator cookie/CSRF and both restricted user credentials.
+   Retain the administrator cookie/CSRF, an administrator Emby credential for
+   settled catalog checks, and both restricted user Emby credentials. These are
+   four credentials for three users. The Emby catalog routes do not accept the
+   native administrator cookie; the extra login stays within the setup quota.
    Discover `library.scan` by `Key` using `GET /admin/v1/tasks`; use its returned
    ID. Confirm empty catalog/jobs, no active task/scan and no installed triggers.
    Record empty-state HTTP and the first private SQL baseline.
@@ -161,7 +171,7 @@ prerequisites, not implied by the numbers below.
    exact ffprobe call count.
 6. Join the final readers, record settled HTTP and SQL, compare selected catalog
    identity/hierarchy and all seeded UserData fields/`xmin`, and verify every
-   source file is unchanged. Close the three credentials with logout 204 and
+   source file is unchanged. Close all four credentials with logout 204 and
    same-credential 401 plus stored revocation. Stop APP normally, take the final
    read-only snapshot while the owned PG remains available, then close PG and
    the anchor with retained exit evidence. Preserve and reread the private

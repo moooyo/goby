@@ -910,6 +910,21 @@ A partial internal deployment does not close M2-M6 or claim broad compatibility.
 Missing hardware blocks that profile; it does not block unrelated software work.
 License and notices must be resolved before external distribution.
 
+The [native scan/HTTP preparation](native-scan-http-capacity-preparation.json)
+has recorded the current remote environment and initial source checks. Its
+reader's first synthetic protocol run failed four of ten groups because closing
+an incomplete HTTP response required a missing file-like flush method. The
+corrected reader passed twelve groups, including error preservation and
+cancellation/context-exit boundaries; independent saved-evidence review passed.
+Those checks used socketpairs and explicit namespace/context substitutes. The
+integrated native controller, real workload and resource closure remain open.
+
+The [JavaScript/glyph readback](systemd-package-javascript-attribution.md)
+records the 46 emitted chunks' import graph and 73 exact single-path glyph
+correspondences to identified MUI package files. Complete source-module
+contribution, historical Google glyph inputs and the final legal payload remain
+unproved; no unchanged package was rebuilt or externally distributed.
+
 ## Verification policy
 
 All compilation, formatting tools, tests, browser checks, media probes and runtime
