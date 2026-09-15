@@ -1,0 +1,71 @@
+services:
+  goby:
+    image: ${GOBY_OCI_IMAGE:?Set the verified local image reference}
+    pull_policy: never
+    platform: linux/amd64
+    user: "10001:10001"
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_signal: SIGTERM
+    stop_grace_period: 2m
+    restart: "no"
+    cpus: 2.0
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 128
+    env_file:
+      - path: ${GOBY_CONFIG_FILE:?Set the private application environment file}
+        format: raw
+    environment:
+      GOBY_LISTEN: ":8096"
+      GOBY_WEB_DIR: ""
+      GOBY_FFMPEG: /opt/ffmpeg/9.0.1/bin/ffmpeg
+      GOBY_FFPROBE: /opt/ffmpeg/9.0.1/bin/ffprobe
+      GOBY_PG_DUMP: /usr/lib/postgresql/17/bin/pg_dump
+      GOBY_PG_RESTORE: /usr/lib/postgresql/17/bin/pg_restore
+      GOBY_API_KEY_MASTER_KEY_FILE: /var/lib/goby/application-key-master.key
+      GOBY_RECOVERY_STATE_DIR: /var/lib/goby/recovery
+      GOBY_RECOVERY_OPERATIONS_DIR: /var/lib/goby/recovery-operations
+      GOBY_BACKUP_DIR: /var/lib/goby/backups
+      GOBY_TRANSCODE_CACHE: /var/cache/goby/transcodes
+      GOBY_LOG_DIR: /var/log/goby
+      GOBY_MEDIA_ROOTS: /media
+      GOBY_TRANSCODING_ENABLED: "true"
+      GOBY_HW_DECODER: software
+      GOBY_HW_ENCODER: software
+      GOBY_HW_DEVICE: ""
+    ports:
+      - "127.0.0.1:${GOBY_HOST_PORT:?Set an explicitly reserved host port}:8096/tcp"
+    volumes:
+      - type: bind
+        source: ${GOBY_STATE_DIR:?Set the precreated private state directory}
+        target: /var/lib/goby
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GOBY_CACHE_DIR:?Set the precreated private cache directory}
+        target: /var/cache/goby
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GOBY_LOG_DIR_HOST:?Set the precreated private log directory}
+        target: /var/log/goby
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GOBY_MEDIA_DIR:?Set the approved read-only media directory}
+        target: /media
+        read_only: true
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=67108864,mode=0700,uid=10001,gid=10001
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
