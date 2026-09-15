@@ -1,10 +1,12 @@
 # Current implementation and delivery status
 
-Reviewed on 2026-09-15 after the Programs focused result and the user's plan
-review. The current delivery target is the Programs successor; it has no binary
-or package identity and has not been built. E11 remains the accepted build/G2
-baseline. Earlier regression and candidate admissions retain their original
-scopes; final client-video acceptance remains open.
+Current priority on 2026-09-15: **incident preservation and candidate recovery**.
+The [final Programs regression incident](programs-final-regression-incident.json)
+left A and B's applications failed with exit 1 and
+`database_lease_unavailable`. The old `38b906...` current-runtime binding is no
+longer live authority. Three protected PostgreSQL processes survived the recorded
+metadata check; four-database and complete native/log preservation checks have
+not yet run. Data integrity and recovery are not established.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -19,20 +21,33 @@ passes are incomplete package evidence and are excluded from that total.
 No build ran; full verification is false and no product assertion failure was
 observed. The user interruption is not a product failure or passing full suite.
 
-The revised plan allows pure-tool recovery/final journey entry preparation in
-parallel with verification/build of frozen Go source. Both must complete before
-one direct A-to-successor transition, followed by three final client journeys
-with the audio reuse bridge and then G3. Episode/subtitle contracts and the
-recovery decision remain incomplete. Old-binary return would disable the new
-refresh definition; that effect is not an implemented automatic rollback plan.
+The later final worker failed the Library package. Only its 11 complete passing
+packages and 475 passes count as completed package evidence; Library's 605 raw
+passes are excluded. Raw totals are 1,080 pass events, two related parent/theme
+failure events and the one declared M2 skip. Neither ordinary nor embedded build
+ran. Go source remains `74a69ab` / `3c0e7e0d...`; the separate `Query` path that
+bypasses `tx.ctx` is a static gap, not a completed fix or established cause.
 
-The planned single worker will verify all 25 ordinary packages, build the ordinary
-binary and then append one embedded amd64 systemd package build. That worker has
-not run. Python/JavaScript tool changes alone do not require another Go full run.
+All resources owned by this failed verification scope are now closed through
+the supplemental RAM closure and root's independent review. Root also reread all
+five incident files and matched their sizes/hashes. The original
+`resourcesClosed=false` and `recovered_protected_state_changed` guard remain
+unchanged. The global OOM killed `tsc` PID 1209025 in session 6413; its trigger
+was `MainThread` PID 1208225. Their launching job and causal relationship to the
+Library failure or A/B lease losses are unproved. Concurrent workload requires
+coordination but is not attribution evidence.
+
+Heavy verification/builds and actual Programs transition/client work are held.
+New incident inputs are being prepared using the existing bounded four-database
+read-only and recovery tools: first complete preservation, then admit one bounded
+recovery of the existing installed binaries/configuration and new runtime
+bindings. Do not replay old inputs or bypass the original guard. The Programs
+successor remains unbuilt; E11/G2 and the completed September 14 recovery retain
+their historical scopes. Final client acceptance and main promotion remain open.
 
 The earlier resumed work on 2026-09-15 completed the following scoped results.
-The [core acceptance resolution](core-client-acceptance-resolution.md) now leads
-the queue. The [internal amd64 systemd installation gate](internal-amd64-installation-acceptance.json)
+The [core acceptance resolution](core-client-acceptance-resolution.md) remains
+the delivery path after current incident recovery. The [internal amd64 systemd installation gate](internal-amd64-installation-acceptance.json)
 is accepted from the original runtime, corrected saved HTTP review and the
 independently reviewed archived final state. The original failed sealer remains
 unchanged; its final SQL transaction was not retroactively recreated.
@@ -52,18 +67,19 @@ uniquely identifies GET `/emby/LiveTv/Programs` HTTP 404; the browser context's
 completed flag is false and the one pageerror remains unaccepted. Client
 acceptance is still false. The input is consumed and diagnostic tooling is frozen.
 
-The latest closed A snapshot is now browse02's 22 sessions, 14 plays and six
+The latest accepted pre-incident A client snapshot is browse02's 22 sessions, 14 plays and six
 UserData rows, with two retained foreign audio references. Only the declared
 authentication/device/activity effects and uncounted preparation/expiry changed;
 activity and device sequences advanced accordingly. Do not use the prior
-Subtitles01 snapshot as a fresh full-state baseline.
+Subtitles01 snapshot as a fresh full-state baseline. Browse02 is now retained
+preservation evidence, not a substitute for the pending post-incident checks.
 The [transition decision](e11-candidate-transition-decision.md) selects existing A
 for one direct Programs-successor transition and establishes its external administrator asset override from
-saved configuration provenance and current hashes. No transition or deployment
+saved configuration provenance and pre-incident hashes. No transition or deployment
 has occurred. The [reference response question](reference-programs-verification.json),
 diagnostic and focused product scope are complete and consumed; they are not
 queued for repetition. The [core resolution](core-client-acceptance-resolution.md)
-now follows the recovery/entry, final-source build and successor acceptance order above.
+remains subject to the incident-preservation and recovery hold above.
 Native capacity execution is held under its
 [measurement decision](native-capacity-measurement-decision.md). The
 historical pause, integrated capacity controller and remaining work are preserved
@@ -74,7 +90,7 @@ the earlier twelve reader groups. Independent full review of the two new
 results, the one-byte transport warning correction and controller orchestration
 checks remain pending. No native capacity fixture or execution input exists.
 
-The [M5 preflight resource incident](m5-refresh-preflight-incident.json)
+The historical September 14 [M5 preflight resource incident](m5-refresh-preflight-incident.json)
 required candidate recovery before verification continued. Disk exhaustion caused PostgreSQL PANIC/recovery and
 both candidate applications exited after losing their database leases. One
 audited build-cache clean restored 7,582,253,056 available root bytes. A later
@@ -209,13 +225,14 @@ application identities and all unchanged protected resources explicitly.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
+| Current incident recovery | Failed verification-owned resources closed with independent review; five saved incident files independently reread. Three protected PG processes survived a metadata observation | Complete four-database/native/log preservation, then a newly admitted recovery of the existing binaries and new runtime bindings. A/B remain failed; `38b906...` is not live authority. No data-integrity or recovery-completion claim |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | Source implementation checkpoint; focused 14 top-level/118 subtest passes independently reviewed. User-interrupted full run completed 10/25 packages with 341 passes/0 failures/0 skips; 109 partial identity passes excluded; no build | Complete recovery/journey entry preparation and the planned frozen-source 25-package/ordinary/embedded-package worker before A changes. Pure-tool preparation may run in parallel. Full verification is false; no product assertion failure was observed |
+| Programs successor | Focused 14 top-level/118 subtest passes independently reviewed. The later final full worker failed Library: 11 complete passing packages/475 passes; 605 Library raw passes excluded; no ordinary or embedded build | Heavy execution is held behind incident preservation/recovery and coordinated capacity. Full verification remains false. Preserve the distinct earlier user-interrupted run and every original failure |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
-| Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Current operator guards passed 213 checks | Its inactive cancelled stage is retained and client acceptance remains false. Preserve consumed inputs, failures and evidence limits; no repeat inspection/seed/admission |
-| Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | Preserve this separate historical instance and consumed client state; its admissions do not transfer to the fresh candidate |
+| Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B's application is now failed in the current incident. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
+| Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | A's application is now failed. Preserve this historical instance and consumed client state; current recovery is separate and its admissions do not transfer to another artifact |
 | Core original client | MP3/FLAC retain their historical acceptance; video/subtitle failures remain unchanged. The consumed TV diagnostic and reference question informed the focused Programs correction | Complete final episode/subtitle contracts before transition; afterward execute movie/episode/subtitle journeys on the successor and close the explicit audio reuse bridge. No repeat diagnostic/reference work or automatic replay |
 | M2 catalog | Real-media rescan/ACL and native amd64 stop/start proofs passed. A separate SQL-seeded 10,000-leaf/442-folder handler test passes ACL/UserData isolation during an owned transaction block; those earlier scopes have independent review and closure | The SQL baseline is not physical scan throughput, native TCP/service performance, RSS/SLO or actual kernel filesystem blocking. Representative real-file capacity, host durability and the paused full-scan mount proof remain open |
 | Real small-media capacity | The new 10,000-leaf scan/rescan test and affected seven-file shared-fixture regression passed independent review and resource closure; production is unchanged | This tiny valid-media and in-process Store-reopen profile does not prove HTTP/service performance, service/PG/host restart, actual filesystem stalls or a throughput SLO |
@@ -224,9 +241,9 @@ application identities and all unchanged protected resources explicitly.
 
 The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
 maps those obligations to artifact/client/media/deployment slices and concrete
-next actions. The current target is the unbuilt Programs successor. A is selected
-for one direct transition after recovery/journey preparation and final-source
-verification/build; current-state admission and successor client acceptance remain open.
+next actions. The current target remains the unbuilt Programs successor. Its
+selected A transition is held until incident recovery, fresh runtime authority,
+journey/recovery contracts and final-source verification/build are complete.
 
 The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
 passed one race test with zero failures/skips on base `892c536` plus one new

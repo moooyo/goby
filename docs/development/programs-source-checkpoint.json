@@ -1,0 +1,28 @@
+{
+  "kind": "programs-committed-source-bridge",
+  "version": 1,
+  "status": "all_tracked_build_input_bytes_match",
+  "gitCommit": "74a69abacdd9206e51f4e166df2346b5555b5cd9",
+  "committedBuildInputs": 867,
+  "retainedGeneratedAssets": 57,
+  "frozenSourceFiles": 924,
+  "frozenSourceArchiveSha256": "3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251",
+  "frozenSourceManifestSha256": "47b4f9130558377897228aaddff15dc02e279552b83c40922550264ffbf01845",
+  "evidence": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-source-checkpoint-74a69ab/source-checkpoint.json",
+    "sha256": "533edf31c324d10823fcaf375b0b62a9f89d27400204bad426de2ed796fbea02",
+    "bytes": 271351
+  },
+  "gitSourceArchive": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-source-checkpoint-74a69ab/git-source.tar",
+    "sha256": "0085b8926e248d85aaa755ea2b7fe913293fdec62da0f86b2228ba85936692c9",
+    "bytes": 12840960
+  },
+  "method": "Read every regular member from both hash-bound archives without extraction; require the Git archive commit marker, the exact tracked path set and equal content length and SHA-256. Independently match every frozen archive member to its retained manifest.",
+  "limits": [
+    "Content equality does not imply permission equality. The Git archive and normalized frozen archive record their different modes explicitly in the private comparison.",
+    "Generated administrator assets were retained, not rebuilt. In-progress execution helpers and documentation are outside this product build-input comparison.",
+    "The comparison ran through ssh test-env and performed no product build, test, HTTP, SQL, browser or service operation.",
+    "This is a source checkpoint, not completed full regression, a new binary/package, candidate admission or client acceptance."
+  ]
+}

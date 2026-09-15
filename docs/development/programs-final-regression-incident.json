@@ -1,0 +1,239 @@
+{
+  "kind": "programs-final-regression-incident",
+  "version": 1,
+  "status": "failed_regression_incident_recorded",
+  "currentPriority": "preservation_before_candidate_recovery",
+  "recordedOn": "2026-09-15",
+  "scope": "/opt/goby-test/livetv-programs-final-20260915",
+  "source": {
+    "gitHead": "74a69abacdd9206e51f4e166df2346b5555b5cd9",
+    "archive": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/live-tv-product-source-20260915T102000Z/source-r01.tar.gz",
+      "bytes": 2715997,
+      "sha256": "3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/livetv-programs-focused-20260915/private/source-manifest.json",
+      "bytes": 158512,
+      "sha256": "47b4f9130558377897228aaddff15dc02e279552b83c40922550264ffbf01845"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/livetv-programs-final-20260915/source-preparation.json",
+      "bytes": 1120,
+      "sha256": "674319f6d6e93cebd5d7059067f54fd66990377908c5244540e0ab0081f6ee39"
+    },
+    "files": 924,
+    "uncompressedBytes": 13253765
+  },
+  "originalExecution": {
+    "receipt": {
+      "path": "/opt/goby-test/livetv-programs-final-20260915/execution.json",
+      "bytes": 38201,
+      "sha256": "e0b83bcdb27c2e97098aeb738426957134817c0ac1a95bf64acff23def8ff44f"
+    },
+    "status": "failed",
+    "workerExitCode": 1,
+    "failure": {"type": "ValueError", "code": "full_worker_failed"},
+    "resourcesClosed": false,
+    "cleanupErrors": [{"type": "Rejected", "code": "recovered_protected_state_changed"}],
+    "ext4Unmounted": true,
+    "loopDetached": true,
+    "ownedProcessesClosed": true,
+    "allOwnedCommandsClosed": true,
+    "lockReleased": true,
+    "singleRunFullSuite": false,
+    "preservationBoundary": "The original failed receipt is unchanged. Its resourcesClosed=false and recovered_protected_state_changed rejection are not rewritten by the later owned-RAM closure."
+  },
+  "retainedEvidence": {
+    "archive": {
+      "path": "/opt/goby-test/livetv-programs-final-20260915/retained/full-private.tar.gz",
+      "bytes": 110315809,
+      "sha256": "8565032be17e524d17d88d0f3eabd3b9f663c909642e993123e15dc2f3b30ef7"
+    },
+    "files": 2271,
+    "directories": 44,
+    "archiveReadbackMatchedInExecution": true,
+    "supervisorReport": {
+      "archiveMember": "ram/livetv-programs-final-20260915-20260915T114718Z-5f10a01ddf37/report.json",
+      "sha256": "798f1ca29d329a36f572378a3b174e9c9655b8ea363a8c077b42637a9b03e831"
+    }
+  },
+  "regressionResults": {
+    "completedPassingPackages": 11,
+    "acceptedCompletedPackagePasses": 475,
+    "libraryPackage": {
+      "package": "github.com/moooyo/goby/internal/library",
+      "terminalResult": "fail",
+      "rawPassEvents": 605,
+      "acceptedPassesFromThisPackage": 0,
+      "failedParentEvents": 1,
+      "failedThemeChildEvents": 1,
+      "boundary": "All 605 partial pass events remain diagnostic evidence. The failed package is not a completed passing package; its parent and child failure events are not two independent test failures."
+    },
+    "rawFullGoEventCounts": {"passed": 1080, "failed": 2, "skipped": 1},
+    "declaredSkip": {
+      "name": "TestRootBindingFullScanMountNamespaceHelper",
+      "count": 1,
+      "profile": "The separately gated M2 privileged mount profile was not enabled."
+    },
+    "ordinarySuitePassed": false,
+    "singleRunFullSuite": false,
+    "ordinaryBuildExecuted": false,
+    "embeddedBuildExecuted": false
+  },
+  "ownedResourceClosureSupplement": {
+    "receipt": {
+      "path": "/opt/goby-test/livetv-programs-final-20260915/private/ram-close-r01/result.json",
+      "bytes": 32738,
+      "sha256": "dccb7dde54061284bb8a250e56bf9620e6aeda2f9b80c1a7375c3a8fd16cda91"
+    },
+    "status": "owned_ram_closed_incident_unchanged",
+    "independentReviewStatus": "passed_owned_resource_closure",
+    "independentReview": {
+      "path": "/opt/goby-test/livetv-programs-final-20260915/private/ram-close-r01/independent-review.json",
+      "bytes": 10263,
+      "sha256": "89708db20058167f52b78d4af7c9bc2a12b9d48aca3adc644c594987e1581cff"
+    },
+    "independentReviewScope": {
+      "savedCommands": 19,
+      "rawCommandContentsMatchedRecordedSnapshots": true,
+      "originalCommandLogDescriptors": "Path and byte count only.",
+      "hashBoundary": "Hashes computed by the independent readback are new evidence bindings, not hashes recorded by the original command dispatch."
+    },
+    "ownedResourcesClosed": true,
+    "normalUnmountRequests": 1,
+    "workerPidAbsent": true,
+    "ownedPostgresPidAbsent": true,
+    "ownedCgroupEmpty": true,
+    "ext4Unmounted": true,
+    "ownedLoopBackingDetached": true,
+    "ramMountAbsent": true,
+    "underlyingRamDirectoryEmpty": true,
+    "metadataAndUnmountCommandsClosed": true,
+    "lockReleased": true,
+    "archiveRetainedAndVerifiedInSupplement": true,
+    "originalPinsUnchanged": true,
+    "originalExecutionOverwritten": false,
+    "originalFullGuardReplayed": false,
+    "originalSuitePassed": false,
+    "incidentProtectedStateUnchanged": true,
+    "httpCalls": 0,
+    "sqlCalls": 0,
+    "existingServiceChanges": 0,
+    "environmentDecoded": false,
+    "masterKeyContentRead": false,
+    "boundary": "Independent review accepts only the regression-owned resource closure against the already changed incident state. It does not restore A/B, establish equality with the original pre-run protected baseline, or pass the suite."
+  },
+  "systemIncident": {
+    "journalWindowUtc": {"from": "2026-09-15T11:57:00Z", "through": "2026-09-15T11:59:00Z"},
+    "hostOom": {
+      "recordedAtUtc": "2026-09-15T11:58:15Z",
+      "classification": "global_oom",
+      "victim": {"pid": 1209025, "name": "tsc", "slice": "user.slice", "session": 6413},
+      "reportedVictimMemory": "Approximately 1.5 GB",
+      "trigger": {"pid": 1208225, "name": "MainThread"},
+      "launchingJobAttribution": "unresolved"
+    },
+    "candidateApplications": {
+      "A": {
+        "serverStoppedAtUtc": "2026-09-15T11:58:15.735612298Z",
+        "state": "failed",
+        "exitCode": 1,
+        "event": "server.stopped",
+        "errorClass": "database_lease_unavailable"
+      },
+      "B": {
+        "serverStoppedAtUtc": "2026-09-15T11:58:15.757442046Z",
+        "state": "failed",
+        "exitCode": 1,
+        "event": "server.stopped",
+        "errorClass": "database_lease_unavailable"
+      },
+      "boundary": "The application records show exits with unavailable database leases. They do not identify either application as the kernel OOM victim."
+    },
+    "protectedPostgresProcessesAliveAtIncidentReadback": 3,
+    "postgresObservationBoundary": "Process survival is a metadata observation only; no four-database or complete native/log preservation result follows.",
+    "serviceRecoveryPerformed": false,
+    "collection": {
+      "scope": "/opt/goby-test/livetv-programs-final-20260915/private/system-incident-r01",
+      "directoryMode": "0700",
+      "fileMode": "0600",
+      "writerReportedStoredAndFsynced": true,
+      "independentDiskReadbackStatus": "passed",
+      "independentlyReadBackFiles": 5,
+      "allSavedBytesAndSha256Matched": true,
+      "historicalReadbackFailure": "The collection agent's first follow-up stopped at SSH authentication. That failed attempt remains historical; root subsequently completed independent byte-count and SHA-256 readback of all five saved files.",
+      "rootIndependentReviewStatus": "passed_five_saved_file_readback",
+      "summary": {
+        "path": "/opt/goby-test/livetv-programs-final-20260915/private/system-incident-r01/summary.json",
+        "bytes": 7829,
+        "sha256": "e0ea359f7e85725dc20a7b2778ee54519af3649d911ccd2c72326c289953a608"
+      },
+      "kernelJournal": {
+        "path": "/opt/goby-test/livetv-programs-final-20260915/private/system-incident-r01/kernel.journal.jsonl",
+        "bytes": 89579,
+        "sha256": "06e4ef7ce2e8662ade2cccbd89c2fd80f6272aab3cd00ef64d3b3142df80dab3"
+      },
+      "serversJournal": {
+        "path": "/opt/goby-test/livetv-programs-final-20260915/private/system-incident-r01/servers.journal.jsonl",
+        "bytes": 3794,
+        "sha256": "453ce3c1e6a351349b978f0b04140dddf1994231e2ea5f5322a1aa1c94cd5705"
+      },
+      "aServerLog": {
+        "path": "/opt/goby-test/livetv-programs-final-20260915/private/system-incident-r01/A-server-unit.log",
+        "bytes": 213892,
+        "sha256": "20370b0b6493b7ede101c3b371f5d754e90aa2f56dad685129262b9172a39403"
+      },
+      "bServerLog": {
+        "path": "/opt/goby-test/livetv-programs-final-20260915/private/system-incident-r01/B-server-unit.log",
+        "bytes": 60076,
+        "sha256": "8ab414fdf95c1aa75ef8c001810c5ed2d2dff0c6e6ff172d304b26308f75298f"
+      }
+    }
+  },
+  "causality": {
+    "rootCauseEstablished": false,
+    "crossTaskLoadBoundary": "Concurrent host workload is a coordination risk to resolve, not established ownership of the OOM victim or a proven cause of the regression failure.",
+    "unprovedLinks": [
+      "The Programs product change caused the global OOM.",
+      "The OOM caused the Library package failure.",
+      "The OOM caused the A/B lease losses.",
+      "The identified Query context gap caused this regression failure."
+    ],
+    "staticQueryContextFinding": {
+      "status": "independent_static_gap",
+      "description": "A Query path bypasses tx.ctx. This is a separate static finding, not an established root cause of the observed failure.",
+      "productFixCompleted": false
+    }
+  },
+  "currentRecovery": {
+    "status": "new_input_preparation",
+    "invalidatedPreIncidentCurrentRuntimeSha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c",
+    "preIncidentBindingIsLiveAuthority": false,
+    "fourDatabasePreservationChecked": false,
+    "completeNativePreservationChecked": false,
+    "completeLogPreservationChecked": false,
+    "dataIntegrityEstablished": false,
+    "recoveryComplete": false,
+    "preparationMethod": "Reuse the existing bounded four-database read-only and recovery tools with newly reviewed incident inputs.",
+    "order": [
+      "First compare all four retained databases and the complete native/log preservation scope against their admitted saved evidence.",
+      "Only after preservation passes, admit one bounded recovery of the existing installed application binaries/configuration and publish new runtime bindings."
+    ],
+    "consumedInputsMayBeReplayed": false,
+    "originalGuardMayBeOverwrittenOrBypassed": false,
+    "postIncidentGoSourceChanged": false,
+    "heavyVerificationAndBuildsHeld": true,
+    "actualProgramsTransitionHeld": true,
+    "actualClientJourneysHeld": true
+  },
+  "remainingConditions": [
+    "Preserve the independently reviewed owned-resource closure and five-file incident readback without rewriting the original failure or its protected-state guard.",
+    "Complete the new four-database/native/log preservation review before any application restart. Surviving PostgreSQL processes do not establish preservation or recovery.",
+    "Prepare one bounded recovery of the existing binaries and new runtime bindings using fresh inputs; do not replay the September 14 recovery inputs or treat their completed result as current recovery.",
+    "Keep heavy verification/builds and actual Programs transition/client work on hold while the incident and cross-task resource coordination are unresolved.",
+    "The complete ordinary regression and both intended build results remain unaccepted. Any new execution requires its own reviewed source, inputs and resource boundary.",
+    "No Programs successor package, actual transition, affected live admission, final original-client acceptance or main promotion is established."
+  ],
+  "recordingBoundary": "This record and the status/plan entry points were updated from saved evidence and root's independent-review results. The status update performed no new remote read, validation, test, runtime probe, service recovery, source correction or commit. Raw journals and application logs remain private."
+}

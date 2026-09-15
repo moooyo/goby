@@ -1,7 +1,30 @@
 # Current execution plan
 
-Current delivery target: **Programs successor; no binary or package identity
-exists yet**. E11 is the retained build/G2 baseline. The
+Current priority: **preserve and recover the September 15 incident state before
+heavy verification or actual Programs transition/client work**. The
+[incident record](../development/programs-final-regression-incident.json) records
+A/B application exit 1 with `database_lease_unavailable`. The old `38b906...`
+binding is not live authority. Three PG processes survived a metadata observation;
+the four-database and complete native/log preservation checks remain unperformed.
+Neither data integrity nor application recovery is established.
+
+The failed final worker accepted only 11 complete passing packages/475 passes;
+Library's 605 raw passes are excluded. Raw totals are 1,080 pass events, two
+related parent/theme failure events and the one declared M2 skip. No ordinary
+or embedded build ran. Its owned resources are now closed with root independent
+review, and all five incident files passed independent byte/hash readback.
+Preserve the original `resourcesClosed=false` and
+`recovered_protected_state_changed` rejection. Go source remains
+`74a69ab` / `3c0e7e0d...`; the `Query`/`tx.ctx` gap is static and unfixed, and no
+root cause is established. OOM victim `tsc` PID 1209025/session 6413 and trigger
+`MainThread` PID 1208225 have unresolved launching ownership. Concurrent workload
+is a coordination risk, not proven attribution or causality.
+
+New inputs are being prepared with the existing bounded four-database read-only
+and recovery tools: preservation first, then one admitted recovery of the
+existing installed binaries/configuration and new runtime bindings. Old inputs
+and the original guard cannot be replayed or overridden. The delivery target
+remains the unbuilt Programs successor. E11 is the historical build/G2 baseline. The
 [Programs focused verification](../development/live-tv-programs-focused-verification.json)
 has 14 top-level and 118 subtest passes with independent review. Its
 [ordinary full run](../development/live-tv-programs-full-interruption.json) was
@@ -11,7 +34,7 @@ additional raw passes are incomplete and excluded. No build ran, full
 verification is false, and no product assertion failure was observed.
 The retained baseline history below keeps its original evidence scopes.
 
-Reviewed on 2026-09-15 after candidate recovery and the M5 media-refresh
+Historical baseline recorded after the September 14 candidate recovery and the M5 media-refresh
 increment passed focused/browser acceptance, final ordinary regression and
 independent result/resource closure reviews.
 Status: **the fixed M5 refresh increment is accepted and committed; the internal
@@ -36,7 +59,7 @@ records accepted facts. [Delivery and verification](delivery-and-verification.md
 retains all M2-M6 obligations; M7 remains deferred. Historical plans and consumed
 inputs are evidence, not alternative execution instructions.
 
-The [M5 preflight resource incident](../development/m5-refresh-preflight-incident.json)
+The historical September 14 [M5 preflight resource incident](../development/m5-refresh-preflight-incident.json)
 required candidate recovery before M5 verification. The root filesystem filled before M5 testing
 started. Both candidate PostgreSQL instances recorded ENOSPC/PANIC and recovery;
 both applications lost their database lease and exited. One audited Go cache
@@ -78,8 +101,9 @@ pending. The focused and browser work has since closed as described above.
 The earlier source archive remains a retained preparation snapshot; it does not
 cover later corrections or this planning amendment.
 
-The checkpoint and execution conditions below support the single authoritative
-[immediate queue](#immediate-queue):
+The historical checkpoint notes below retain their original evidence scopes.
+The current incident recovery in the [immediate queue](#immediate-queue) takes
+precedence; old recovery results and process bindings are not current authority:
 
 1. Continue from partial M6 checkpoint `beaea34`, which retains the completed
    M5 source checkpoint `5faf854` and the
@@ -458,11 +482,17 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
-The revised plan has two prerequisite tracks: recovery/all three final journey
-entry contracts, and final verification/build of frozen Go source. Pure-tool
-preparation may proceed in parallel; both tracks must complete before A is
-actually replaced. Then switch A directly once to the Programs successor,
-complete three client journeys and the audio reuse bridge, and enter G3. Follow the
+Current incident recovery comes first. Prepare new inputs with the retained
+four-database read-only and recovery tools, complete database/native/log
+preservation, then admit one bounded recovery of the existing applications and
+new runtime bindings. Surviving PG processes do not satisfy those checks.
+Heavy builds/tests and actual Programs transition/client operations remain held;
+do not use the old `38b906...` binding or replay a consumed recovery input.
+
+After incident recovery and resource coordination, the successor still needs
+its final-source verification/build and complete recovery/journey entry
+contracts before one direct A transition, three client journeys, the audio
+reuse bridge and G3. Follow the
 [core acceptance resolution](../development/core-client-acceptance-resolution.md)
 and [selected A transition](../development/e11-candidate-transition-decision.md).
 G2, the diagnostic, reference response observation and focused Programs scope
@@ -475,24 +505,32 @@ retains the exact paused sources, remote results and native execution
 prerequisites. No M2-M6 obligation is removed; M7 remains deferred.
 
 The order sets the immediate focus, not a serial dependency across every row.
-Independent reviews and implementation may run in parallel; paused experiments
-retain their own stop conditions. Prefer bounded product changes and existing
+Read-only review and bounded input preparation may proceed without lifting the
+current heavy-work or live-operation holds. Paused experiments retain their own
+stop conditions. Prefer bounded product changes and existing
 verification tools over extending launcher or observation infrastructure.
 On the shared test environment, serialize heavy builds/tests and shared-fixture
-writes. Recheck current disk, RAM and execution limits before each such phase;
+writes across projects, using a coordinated execution window. A project cgroup
+limit or one available-memory observation is not a host resource reservation.
+Keep all newly launched build/test/package descendants inside the admitted
+resource boundary. Budget caches, temporary trees, images, logs, archives and
+failure preservation together on their actual filesystems; do not move an
+unbounded disk requirement into RAM. Recheck current disk, RAM and execution limits before each such phase;
 historical capacity readings are not reservations. Keep the paused M2 RAM
 workspace outside every new resource budget.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
-| 0. Recover from the observed disk-full incident — complete | Preserve the independently reviewed restart and diagnostic evidence; use the recorded replacement runtime identities for dependent work | Both unchanged applications started once and passed health/readiness, unique-lease ownership and four-database/native preservation checks. Independent review passed; readers and the deployment lock are closed. Do not start either service again for observation or input rebinding; preserve the original incident and admissions |
+| 0. Current incident preservation and application recovery — new-input preparation | Reuse the existing bounded four-database/native/log readers with newly reviewed incident inputs; after preservation, admit one bounded recovery of the installed binaries/configuration and new runtime bindings | A/B remain failed. Three surviving PG processes are metadata-only evidence; four-DB/native/log preservation and recovery are not complete. Keep heavy verification and actual Programs/client work held; no consumed-input replay or guard override |
+| Historical September 14 disk-full recovery — complete | Retain the independently reviewed four-database/native/log preservation and once-only application restart evidence in its original scope | Its replacement runtime identities have since been invalidated by the new incident. Preserve the result and old inputs; do not repeat that workflow to refresh its label |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
 | 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
-| 1. Recovery and final journey entry contracts | Complete the [A-to-successor recovery decision and movie/episode/subtitle entry contracts](../development/e11-candidate-transition-decision.md), using current retained history and the explicit external asset override | Episode/subtitle contracts remain incomplete. Old-binary return would disable the refresh definition; this is an unresolved recovery design, not an implemented automatic rollback. Do not replace A before these contracts are ready |
-| 2. Frozen-source verification/build, parallel with pure-tool preparation | Plan one worker to verify all 25 ordinary packages and build the ordinary binary, then append one embedded amd64 systemd package build in that same worker. Record actual identities after execution | The new worker has not run. The [interrupted run](../development/live-tv-programs-full-interruption.json) remains 10/25 packages and 341 completed passes, excluding 109 identity raw passes. No build/full pass exists; do not relaunch a consumed input or add another build launcher |
-| 3. One direct A transition | Bind the verified successor, current full state, declared task-definition delta, component/runtime sources and recovery/closure plan, then switch A once | No intermediate original-E11 deployment, actor reset, new candidate or assumed rollback. Preserve B and all historical evidence |
-| 4. Final core client acceptance | Run the declared movie, episode and SRT/VTT journeys on the admitted successor and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout; old failures are not relabeled and no E11/ancestor execution is claimed as a successor run |
+| 1. Successor recovery and final journey entry contracts — live work held | Freeze the existing runtime v4/transition, admission v5 and client v6 file set; finish the pending remote component checks and bind the [successor recovery and movie/episode/subtitle contracts](../development/e11-candidate-transition-decision.md) to admitted current state | Reuse the accepted admission checks while their inputs remain unchanged. Add no general launcher, new contract version or unrelated capability; fix only demonstrated failures in this set. This is separate from incident recovery, and no current transition/client input is admitted |
+| 1a. Library failure diagnosis — after environment recovery | Use the retained failing theme/recovery test and cancellation evidence to select bounded targeted verification on the restored environment; distinguish the static Query-context gap from the unproved incident cause | Do not waive the failed full result, assume OOM attribution, increase timeouts without evidence, or retry the full suite to search for a pass. Resolve the demonstrated failure or identify and correct its environmental prerequisite before final verification |
+| 2. Frozen-source verification/build — held | Preserve the [failed final worker](../development/programs-final-regression-incident.json), its source and all raw results; resolve incident/resource conditions before selecting any further heavy execution | Only 11 complete passing packages/475 passes count; 605 Library raw passes are excluded, and neither build ran. Preserve the separate user-interrupted run. No automatic rerun, consumed-input replay or added build launcher |
+| 3. One direct A transition — held | After incident recovery, bind the verified successor, new runtime authority, current full state, declared task-definition delta and the recovery/closure plan | No intermediate original-E11 deployment, actor reset, new candidate, old live binding or assumed rollback. Preserve B and all historical evidence |
+| 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
 | Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md); define useful output, overlap coverage, observer overhead and finite remaining preparation before any resumption | No native fixture/input exists. Reuse the distinct reader/transport/pool results within their scopes; incomplete overlap is not capacity acceptance |
 | Independent profile: package attribution | Retain the [46-chunk graph and 73 glyph correspondences](../development/systemd-package-javascript-attribution.md); resolve remaining source-module/glyph inputs for the actual distribution payload | Not a complete npm contribution graph or historical glyph proof. Keep the pending license choice and external-distribution gate |
@@ -690,12 +728,14 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    No consumed recovery input is replayed. Continue independent M2-M6 obligations
    under their own prerequisites; retained private files and OS accounts remain
    explicitly inventoried rather than silently treated as removed.
-2. Prepare the recovery route and all final movie/episode/subtitle entry contracts
-   before A changes; episode/subtitle contracts remain incomplete. Pure-tool
-   preparation may run in parallel with the frozen-Go-source worker's 25-package
-   verification, ordinary build and one embedded amd64 package build. Tool-only
-   changes do not require another Go full run. Complete both tracks, then make one direct A transition.
-   E11 remains a historical build/G2 baseline, not the destination identity.
+2. Complete the current incident's four-database/native/log preservation before
+   a newly admitted recovery of the existing binaries and new runtime bindings.
+   Keep heavy verification/builds and actual Programs/client work held while
+   those prerequisites and host resource coordination are unresolved. The
+   successor's separate recovery route, final journey contracts and final-source
+   verification/build still precede its one direct A transition. Tool-only
+   changes do not themselves require another Go full run. E11 and the September
+   14 recovery remain historical accepted evidence, not current runtime authority.
 3. Core acceptance then requires the three declared successor journeys and the
    explicit MP3/FLAC reuse bridge. Each consumes a reviewed current-state input;
    no automatic replay or generic instrumentation. Main promotion joins that

@@ -1,7 +1,8 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-15, Programs successor selected under the
-revised delivery order; no successor binary/package has been built**. Start with the [current execution plan](../planning/current-execution-plan.md),
+Current session checkpoint: **2026-09-15, incident preservation and recovery
+take priority; A/B applications are failed and no Programs successor build exists**.
+Start with the [incident record](programs-final-regression-incident.json), the [current execution plan](../planning/current-execution-plan.md),
 [core resolution](core-client-acceptance-resolution.md),
 [successor transition decision](e11-candidate-transition-decision.md), and
 [support matrix](../planning/support-and-delivery-matrix.md).
@@ -15,17 +16,33 @@ passes are incomplete and excluded. No build ran, full verification is false,
 and no product assertion failure was observed. Preserve this as user-interrupted
 partial evidence, not a product failure; do not relaunch the consumed input.
 
-Next: prepare recovery and all three final journey entry contracts while the
-frozen Go source can independently undergo final verification/build. Both tracks
-must finish before A is actually replaced. Plan one worker for 25 ordinary
-packages plus the ordinary build, then append one embedded amd64 systemd package
-build in the same worker; it has not run. Pure Python/JavaScript tool changes do
-not require Go full-suite repetition or a second build launcher. Then switch A
-directly once, complete movie/episode/subtitle and the audio reuse bridge, and enter G3.
-Episode/subtitle contracts are not complete. Old-binary return would disable
-the new refresh definition and needs an explicit recovery design; no automatic
-candidate-transition rollback is implemented or admitted. E11 remains only the original build/G2
-baseline, with no intermediate deployment queued.
+The later final worker failed Library. Only 11 complete passing packages/475
+passes are accepted as completed package evidence; all 605 Library raw passes
+are excluded. Raw totals are 1,080 pass events, one parent and one theme-child
+failure event, and the single declared M2 skip. Neither build ran. The source
+remains `74a69ab` / `3c0e7e0d...`; a `Query` path bypassing `tx.ctx` is only a
+static, unfixed gap and has not been established as this failure's cause.
+
+The failed scope's owned resources are closed and independently reviewed. Root
+also matched all five saved incident files by bytes/SHA-256. Preserve the
+original `resourcesClosed=false` and `recovered_protected_state_changed` result;
+the supplemental closure does not restore the candidates or rewrite that guard.
+A/B exited 1 with `database_lease_unavailable`. Their old `38b906...` live binding
+is invalid. Three PG processes survived only a metadata observation: four-DB,
+complete native and log preservation checks remain unperformed, so data
+integrity and recovery completion are unproved. Global OOM killed `tsc` PID
+1209025/session 6413 with trigger `MainThread` PID 1208225; launching ownership
+and causality remain unresolved.
+
+Next: prepare new incident inputs using the existing bounded four-database
+read-only/recovery tools. Complete preservation first, then admit one bounded
+recovery of the existing installed binaries/configuration and new runtime
+bindings. Never replay consumed inputs or overwrite/bypass the old guard.
+Heavy tests/builds and actual Programs transition/client work are held; coordinate
+cross-task host load before considering them again. Future successor entry and
+recovery contracts remain separate obligations. The completed September 14
+recovery, M5 increment and E11/G2 evidence retain their historical scopes; no
+intermediate E11 deployment is queued.
 The response-ID correction and [v4 movie baseline contract](reviewed-movie-baseline-verification.json)
 are independently reviewed. The v4 contract passed Python 47, JavaScript 46 and
 12 log/history checks, including each language's three actual saved states.
@@ -39,8 +56,9 @@ closure are independently reviewed: native-rejection-1/context262 uniquely
 identifies physical264, GET `/emby/LiveTv/Programs`, HTTP 404. The one pageerror
 and client acceptance remain open; context completion is not claimed. This input
 is consumed and diagnostic tooling is frozen.
-Use its latest closed snapshot (22 sessions, 14 plays, six UserData rows, two
-foreign audio references) for dependent work. Existing A is the
+Retain its pre-incident closed snapshot (22 sessions, 14 plays, six UserData rows,
+two foreign audio references) as preservation evidence, not a fresh runtime or
+post-incident database observation. Existing A remains the
 [selected successor transition target](e11-candidate-transition-decision.md), retaining
 its proven external administrator asset override. No transition has run.
 The [reference response-shape question](reference-programs-verification.json),
@@ -49,7 +67,8 @@ boundaries and are not queued again. Their original inputs/results remain unchan
 The [capacity decision](native-capacity-measurement-decision.md)
 holds native execution; its [earlier handoff](session-handoff-20260915-native-capacity.md)
 and tracked source snapshot remain intact. Remaining M2-M6 work follows each
-profile's own prerequisites independently; complete M2-M6 remain open and M7 is deferred.
+profile's own prerequisites independently, subject to the present host incident
+and heavy-work hold; complete M2-M6 remain open and M7 is deferred.
 
 ## Historical entries
 
