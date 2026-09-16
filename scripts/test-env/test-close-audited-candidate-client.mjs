@@ -12,7 +12,7 @@ const ORIGIN = 'http://127.0.0.1:19180';
 const RETAINED_ROOT = '/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14';
 const ACTOR = 'a'.repeat(32), CONTROL = 'b'.repeat(32), ITEM = 'c'.repeat(32);
 const TOKEN = 'synthetic-owned-token-with-no-live-authority';
-const PURE_GUARD_COUNT = 70;
+const PURE_GUARD_COUNT = 71;
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const jsonBytes = value => Buffer.from(JSON.stringify(value));
 const clone = value => structuredClone(value);
@@ -685,6 +685,19 @@ async function savedProgramsArtifactAdapterFixture(closer) {
 
 function guardCases(closer) {
   return [
+    ['programs_state_stat_only_key_metadata_keeps_exact_times_without_a_content_hash', () => {
+      const root = '/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/recovery';
+      const relative = 'generation-60a5025ee4b70e9ac1f43ec611c227e3/master.key';
+      const facts = '{"access":"stat_only","dev":2049,"ino":1661210,"uid":995,"gid":986,"mode":384,"bytes":32,"mtimeNs":1789293109997279581,"ctimeNs":1789293109997279581}';
+      const raw = Buffer.from('{"trees":{' + JSON.stringify(root) + ':{' + JSON.stringify(relative) + ':' + facts +
+        '}},"fixedFiles":{' + JSON.stringify(root + '/' + relative) + ':' + facts + '}}');
+      const decoded = closer.programsStateJSON(raw, { path: '/opt/goby-test/synthetic-stat-only-state.json', sha256: sha(raw) });
+      const leaf = decoded.trees[root][relative];
+      assert.deepEqual(leaf, decoded.fixedFiles[root + '/' + relative]);
+      assert.equal(leaf.access, 'stat_only'); assert.equal(leaf.bytes, 32);
+      assert.equal(leaf.mtimeNs, '1789293109997279581'); assert.equal(leaf.ctimeNs, '1789293109997279581');
+      assert.equal(Object.hasOwn(leaf, 'sha256'), false); assert.equal(Object.hasOwn(leaf, 'prefixSha256'), false);
+    }],
     ['final_v6_schema_keeps_legacy_and_recovery_contracts_separate', () => {
       const value = finalFixture(closer), pin = value.retained.review.currentSnapshot;
       const input = { kind: 'audited-candidate-client-closeout-input', version: 6, output: '/opt/goby-test/synthetic-final/closeout', sources: {}, retainedBaseline: pin, serverLog: pin };

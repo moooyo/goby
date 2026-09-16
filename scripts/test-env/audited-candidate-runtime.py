@@ -121,6 +121,11 @@ PROGRAMS_RECOVERY_POLICY = {"mode": "explicit_once_restore_predecessor", "automa
 PROGRAMS_RECOVERY_INPUT_KEYS = {"kind", "version", "output", "transitionInput", "transitionFailure", "recoveryReview", "helpers", "budgets"}
 PROGRAMS_CAPTURE_INPUT_KEYS = {"kind", "version", "operationKind", "output", "previousEpoch", "previousBinding", "currentRuntime", "priorSource", "priorCloseout", "retentionReview", "helpers"}
 PROGRAMS_STAT_ONLY = {str(C / "data/master.key"), "/var/lib/goby-test/application-key-vault/master.key"}
+PROGRAMS_RECOVERY_REFERENCE = {"path": str(R / "candidate-tv-parent-transition-01/private/after.json"), "sha256": "047e68ffc9fc932146b365430b9ae00720ab6b7708cd52fce623f5c1f0388496"}
+PROGRAMS_RECOVERY_GENERATION = "60a5025ee4b70e9ac1f43ec611c227e3"
+PROGRAMS_RECOVERY_OPERATION = "a126e7a5a76ce347a54901b931968e03"
+PROGRAMS_RECOVERY_DEPLOYMENT = "bfffe39d2b3bd035a092d07610da0413"
+PROGRAMS_STAT_FIELDS = ("dev", "ino", "uid", "gid", "mode", "bytes", "mtimeNs", "ctimeNs")
 PROGRAMS_PROTECTED = set(PROTECTED) | {"goby-audited-20260914T083143Z-9b73ad46f2e6-server.service", "goby-audited-20260914T083143Z-9b73ad46f2e6-postgres.service"}
 PROGRAMS_REFRESH_FIELDS = {"key": "library.refresh_media", "emby_key": "", "name": "Refresh media details",
     "description": "Refresh media details in all registered libraries, including unchanged files.", "category": "Library",
@@ -393,6 +398,68 @@ def validate_programs_recovery_input(value, transition):
     return value
 
 
+def programs_recovery_master_selection(documents, inactive):
+    """Derive one metadata-only key path from the retained cancelled generation."""
+    registry = documents["recovery/generation-registry.json"]
+    payload = documents["operations/current.json"]["payload"]
+    generations, slot_rows = registry.get("generations"), payload.get("slots")
+    need(type(registry.get("version")) is int and registry["version"] == 1 and
+         registry.get("deploymentId") == PROGRAMS_RECOVERY_DEPLOYMENT and isinstance(generations, list) and
+         len(generations) == 1 and isinstance(slot_rows, list) and len(slot_rows) == 2, "programs_inactive_generation_changed")
+    generation = generations[0]
+    slots = {row["slot"]: row for row in slot_rows}
+    restores = [row for row in payload["operations"] if row.get("kind") == "restore"]
+    need(isinstance(generation, dict) and generation.get("id") == PROGRAMS_RECOVERY_GENERATION and
+         re.fullmatch(r"[0-9a-f]{32}", generation["id"]) and generation.get("complete") is True and len(restores) == 1 and
+         set(slots) == {"primary", "recovery"} and slots["primary"]["state"] == "active" and slots["recovery"]["state"] == "staged",
+         "programs_inactive_generation_changed")
+    restore = restores[0]
+    need(restore.get("id") == PROGRAMS_RECOVERY_OPERATION and restore.get("generationId") == generation["id"] and
+         restore.get("state") == "cancelled" and restore.get("phase") == "finished" and restore.get("authorized") is True and
+         restore.get("applyAuthorized") is False and restore.get("cancelAuthorized") is True and
+         slots["recovery"].get("imageId") == generation["id"] and slots["recovery"].get("operation") == restore["id"],
+         "programs_inactive_generation_changed")
+    marker = {"version": 1, "deploymentId": PROGRAMS_RECOVERY_DEPLOYMENT, "generationId": generation["id"], "slot": "recovery"}
+    rows = [row for row in inactive["tables"]["server_settings"] if row.get("key") == "goby.recovery.binding.v1"]
+    need(len(rows) == 1 and canonical(json.loads(rows[0]["value"])) == canonical(marker) and
+         canonical(slots["recovery"]["retained"]["marker"]) == canonical(marker) and
+         restore["sourceState"]["deploymentId"] == PROGRAMS_RECOVERY_DEPLOYMENT and
+         restore["sourceState"]["databaseSlot"] == "primary" and restore["sourceState"]["master"] == "default",
+         "programs_recovery_master_marker")
+    master, directory = generation.get("master"), generation.get("directory")
+    need(isinstance(master, dict) and master.get("name") == "master.key" and type(master.get("size")) is int and master["size"] == 32 and
+         isinstance(master.get("identity"), dict) and set(master["identity"]) == {"device", "inode"} and
+         isinstance(directory, dict) and set(directory) == {"device", "inode"} and
+         all(type(v) is int and v > 0 for row in (master["identity"], directory) for v in row.values()), "programs_recovery_master_identity")
+    relative = "generation-" + generation["id"] + "/" + master["name"]
+    need(not PurePosixPath(relative).is_absolute() and ".." not in PurePosixPath(relative).parts, "programs_recovery_master_path")
+    return {"path": str(C / "data/recovery" / relative), "relative": relative,
+            "directory": str(C / "data/recovery" / PurePosixPath(relative).parent),
+            "directoryRelative": str(PurePosixPath(relative).parent),
+            "masterIdentity": {"dev": master["identity"]["device"], "ino": master["identity"]["inode"]},
+            "directoryIdentity": {"dev": directory["device"], "ino": directory["inode"]}}
+
+
+def programs_recovery_master_authority(reference, reference_pin):
+    """Project stat facts from the hash-checked historical reference, never key bytes."""
+    need(reference_pin == PROGRAMS_RECOVERY_REFERENCE, "programs_recovery_reference_authority")
+    selected = programs_recovery_master_selection(reference["controlDocuments"], reference["inactiveStage"])
+    tree = reference["trees"][str(C / "data/recovery")]
+    master, directory = tree.get(selected["relative"]), tree.get(selected["directoryRelative"])
+    need(isinstance(master, dict) and all(key in master for key in PROGRAMS_STAT_FIELDS) and
+         all(type(master[key]) is int and master[key] >= 0 for key in PROGRAMS_STAT_FIELDS) and
+         master["uid"] == 995 and master["mode"] == 0o600 and master["bytes"] == 32 and
+         all(master[key] == value for key, value in selected["masterIdentity"].items()) and
+         isinstance(directory, dict) and directory.get("directory") is True and directory.get("uid") == 995 and
+         directory.get("mode") == 0o700 and all(directory[key] == value for key, value in selected["directoryIdentity"].items()),
+         "programs_recovery_reference_metadata")
+    # The historical tree/registry may contain a hash. It is deliberately not
+    # projected into the current stat-only fact or used as a content assertion.
+    return {**selected, "reference": deepcopy(reference_pin),
+            "identity": {key: master[key] for key in ("dev", "ino", "uid", "gid", "mode", "bytes")},
+            "facts": {"access": "stat_only", **{key: master[key] for key in PROGRAMS_STAT_FIELDS}}}
+
+
 def validate_programs_state(state):
     need(isinstance(state, dict) and set(state) == PROGRAMS_STATE_KEYS and
          state["previousEpoch"] == PROGRAMS_PREVIOUS_EPOCH and state["seedBinding"] == PROGRAMS_PREVIOUS_BINDING and
@@ -424,13 +491,7 @@ def validate_programs_state(state):
     entries = documents["backups/.goby-backup-catalog.json"]["entries"]
     need(len(entries) == 2 and {(row["metadata"]["state"], row["phase"], row["metadata"]["size"]) for row in entries} ==
          {("failed", "empty", 0), ("ready", "ready", 290550)} and all(row["deleting"] is False for row in entries), "programs_backup_work_pending")
-    generations = documents["recovery/generation-registry.json"]["generations"]
-    slots = {row["slot"]: row for row in payload["slots"]}
-    restore = next(row for row in payload["operations"] if row["kind"] == "restore")
-    need(len(generations) == 1 and generations[0]["complete"] is True and set(slots) == {"primary", "recovery"} and
-         slots["primary"]["state"] == "active" and slots["recovery"]["state"] == "staged" and
-         slots["recovery"]["imageId"] == restore["generationId"] == generations[0]["id"] and
-         slots["recovery"]["operation"] == restore["id"], "programs_inactive_generation_changed")
+    master = programs_recovery_master_selection(documents, state["inactiveStage"])
     need(PROGRAMS_PROTECTED <= set(state["protected"]) and set(state["unitLogs"]) == {"server-unit.log", "postgres-unit.log"}, "programs_protected_scope")
     for path in PROGRAMS_STAT_ONLY:
         facts = state["fixedFiles"].get(path)
@@ -438,6 +499,18 @@ def validate_programs_state(state):
              (set(facts) == {"access", "absent"} and facts["absent"] is True or
               set(facts) == {"access", "dev", "ino", "uid", "gid", "mode", "bytes", "mtimeNs", "ctimeNs"}),
              "programs_secret_must_be_stat_only")
+    facts = state["fixedFiles"].get(master["path"])
+    tree = state["trees"][str(C / "data/recovery")]
+    need(isinstance(facts, dict) and set(facts) == {"access", *PROGRAMS_STAT_FIELDS} and facts["access"] == "stat_only" and
+         all(type(facts[key]) is int and facts[key] >= 0 for key in PROGRAMS_STAT_FIELDS) and
+         facts["uid"] == 995 and facts["mode"] == 0o600 and facts["bytes"] == 32 and
+         all(facts[key] == value for key, value in master["masterIdentity"].items()) and
+         tree.get(master["relative"]) == facts and tree.get(master["directoryRelative"], {}).get("directory") is True and
+         all(tree[master["directoryRelative"]][key] == value for key, value in master["directoryIdentity"].items()),
+         "programs_recovery_master_stat_binding")
+    tree_keys = {str(Path(root) / name) for root, rows in state["trees"].items() for name in rows if Path(name).suffix.lower() == ".key"}
+    fixed_keys = {path for path in state["fixedFiles"] if Path(path).suffix.lower() == ".key"}
+    need(tree_keys == {master["path"]} and fixed_keys == PROGRAMS_STAT_ONLY | {master["path"]}, "programs_unreviewed_key_inventory")
     environment = state["fixedFiles"][str(C / "private/runtime.env")]
     need(set(environment) == {"access", "dev", "ino", "uid", "gid", "mode", "bytes", "mtimeNs", "ctimeNs", "sha256"} and
          environment["access"] == "hash_only" and environment["sha256"] == PROGRAMS_ENV_SHA, "programs_environment_facts")
