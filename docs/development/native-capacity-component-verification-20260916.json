@@ -1,0 +1,251 @@
+{
+  "kind": "native-capacity-component-verification-checkpoint",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "component_checks_passed_m2_held",
+  "sourceWorktree": "D:/Code/goby-native-capacity",
+  "firstAttempt": {
+    "scope": "/opt/goby-test/native-capacity-component-checks-20260916-99c282f0943e",
+    "status": "failed_original_result_retained",
+    "result": {
+      "path": "/opt/goby-test/native-capacity-component-checks-20260916-99c282f0943e/private/result.json",
+      "bytes": 4476,
+      "sha256": "6547d26aabe4a7a1f44ddcc45be53f9f23a3fcaf04ce897d7941d7cf77de7583"
+    },
+    "closure": {
+      "path": "/opt/goby-test/native-capacity-component-checks-20260916-99c282f0943e/private/closure.json",
+      "bytes": 1870,
+      "sha256": "e66081251062a03fb1440e8187c6aebd56af6c6f97313ebbf67c589d33518fb0"
+    },
+    "checks": [
+      {
+        "file": "test-capacity-measurement.py",
+        "ran": 14,
+        "status": "passed"
+      },
+      {
+        "file": "capacity-closure-checks.py",
+        "ran": 5,
+        "status": "passed"
+      },
+      {
+        "file": "test-capacity-controller-failure-routing.py",
+        "ran": 8,
+        "status": "failed",
+        "failures": 1
+      },
+      {
+        "file": "test_capacity_result_reader.py",
+        "ran": 0,
+        "status": "not_run_after_failure"
+      }
+    ],
+    "routingFailure": {
+      "case": "test_final_publication_failure_keeps_closed_routes_and_uses_only_fallback (fallback_fails=True)",
+      "actualStatus": "failed_pending_owned_closure",
+      "expectedStatus": "native_capacity_attempt_failed",
+      "stderr": {
+        "bytes": 2892,
+        "path": "/opt/goby-test/native-capacity-component-checks-20260916-99c282f0943e/private/test-capacity-controller-failure-routing.py.stderr",
+        "sha256": "9208420a43b6268c05403a82ef4f68a07b5f30b43b02c086a7f8ea0bf6f5a2be"
+      }
+    },
+    "closureStatus": "owned_unit_closed_original_failure_retained",
+    "cgroupEmpty": true,
+    "recordedTestPidsAbsent": true,
+    "scratchEmpty": true
+  },
+  "successfulAttempt": {
+    "scope": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad",
+    "status": "passed_component_checks",
+    "sourceManifest": {
+      "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/source-manifest.json",
+      "bytes": 3051,
+      "sha256": "9b76382885a187bce5c8ba0353672013a2d5130503d9d8ddff6d625a3485cd78"
+    },
+    "result": {
+      "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/result.json",
+      "bytes": 5227,
+      "sha256": "ca97456a7c954b093a706a85c80ff234ebf9844cab037de02517fac57a98966d"
+    },
+    "closure": {
+      "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/closure.json",
+      "bytes": 1795,
+      "sha256": "72d0f59275be225c85cdee823774d152532dc946c72b5920414a5670fd04ed8d"
+    },
+    "checks": [
+      {
+        "file": "test-capacity-measurement.py",
+        "ran": 14,
+        "exitCode": 0,
+        "waited": true,
+        "status": "passed",
+        "skipped": 0,
+        "stderr": {
+          "bytes": 2117,
+          "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/test-capacity-measurement.py.stderr",
+          "sha256": "00ef7e3a12f9cf8786c95f777a7bc9c7f3191ab42d0127bbafa5adbad40c4439"
+        }
+      },
+      {
+        "file": "capacity-closure-checks.py",
+        "ran": 5,
+        "exitCode": 0,
+        "waited": true,
+        "status": "passed",
+        "skipped": 0,
+        "stderr": {
+          "bytes": 841,
+          "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/capacity-closure-checks.py.stderr",
+          "sha256": "7527d1ac246b5062453865788687cd28a10bef549634981e09a4740199dd3ecc"
+        }
+      },
+      {
+        "file": "test-capacity-controller-failure-routing.py",
+        "ran": 8,
+        "exitCode": 0,
+        "waited": true,
+        "status": "passed",
+        "skipped": 0,
+        "stderr": {
+          "bytes": 1542,
+          "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/test-capacity-controller-failure-routing.py.stderr",
+          "sha256": "61a57f36dab7e265a7f69380685a9207a55f4886d652136764a7e44e4d69a98b"
+        }
+      },
+      {
+        "file": "test_capacity_result_reader.py",
+        "ran": 20,
+        "exitCode": 0,
+        "waited": true,
+        "status": "passed",
+        "skipped": 0,
+        "stderr": {
+          "bytes": 3239,
+          "path": "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad/private/test_capacity_result_reader.py.stderr",
+          "sha256": "7b615e37295b0fd68677f16577280247c403f5506790eed938a78aeb20562cdb"
+        }
+      }
+    ],
+    "totalMethods": 47,
+    "failures": 0,
+    "skipped": 0,
+    "allStdoutEmpty": true,
+    "closureStatus": "owned_unit_closed",
+    "finalUnitState": "inactive/dead",
+    "finalMainPid": 0,
+    "cgroupEmpty": true,
+    "recordedTestPidsAbsent": true,
+    "scratchEmpty": true
+  },
+  "correction": {
+    "file": "scripts/test-env/native-scan-http-capacity/capacity-controller.py",
+    "line": 819,
+    "change": "After both result publications fail, restore native_capacity_attempt_failed after the fallback error is recorded.",
+    "addedStatement": "self.record['status'] = 'native_capacity_attempt_failed'",
+    "changedSourceFiles": 1,
+    "otherSourceFilesUnchanged": 7,
+    "testSourceFilesUnchanged": 4,
+    "priorControllerSha256": "1102e839b7fe23fabe9e9ffcdd2a6ea2091f0feadd60d62c54f0f945dc74a4e5",
+    "currentControllerSha256": "f917c5ef3e33dbb3f7308732b15e9abb448aed0494e2630cefaee54937de06b8"
+  },
+  "sourceInventory": {
+    "relativeDirectory": "scripts/test-env/native-scan-http-capacity",
+    "allEightLocalFilesMatchSuccessfulSavedManifest": true,
+    "files": [
+      {
+        "name": "capacity-controller.py",
+        "bytes": 47369,
+        "sha256": "f917c5ef3e33dbb3f7308732b15e9abb448aed0494e2630cefaee54937de06b8"
+      },
+      {
+        "name": "capacity-observers.py",
+        "bytes": 53550,
+        "sha256": "4bde413472bd41f5fadad65e66dba0e0af01f87e41266bc9e609054f0b66086b"
+      },
+      {
+        "name": "capacity-closure.py",
+        "bytes": 77787,
+        "sha256": "20f702cd24ad80247a404d81211d236aab58b9bb0f9eb4fab954731ea66010d6"
+      },
+      {
+        "name": "capacity-result-reader.py",
+        "bytes": 45809,
+        "sha256": "3a0ea2943e0183e10057f7e62fe218eb8a49455314eac683960e9a7c0937a61c"
+      },
+      {
+        "name": "test-capacity-measurement.py",
+        "bytes": 12927,
+        "sha256": "0ef62443d2c77aad7d531ecef12a31ded01ecf08720ced96770a039ea515b9c2"
+      },
+      {
+        "name": "capacity-closure-checks.py",
+        "bytes": 8034,
+        "sha256": "e6399683afbc117b8262d7742b7c7a334ee18e976cb26cabc569eb02ed143374"
+      },
+      {
+        "name": "test-capacity-controller-failure-routing.py",
+        "bytes": 18318,
+        "sha256": "3fec3c9b456501d90c206553330fa0f3a6285beae9b8de1a448806b37fdeca19"
+      },
+      {
+        "name": "test_capacity_result_reader.py",
+        "bytes": 24784,
+        "sha256": "8399b9de6711ba03f2487b71cadeed9c9c8771b92fca950a8a10ea94aee1916a"
+      }
+    ]
+  },
+  "unitBoundary": {
+    "unit": "goby-native-capacity-components-20260916-4926398841ad.service",
+    "memoryMaxBytes": 134217728,
+    "memorySwapMaxBytes": 0,
+    "cpuQuotaPercent": 25,
+    "declaredRuntimeMaxSeconds": 240,
+    "limitFsizeBytes": 8388608,
+    "privateMounts": true,
+    "privateNetwork": true,
+    "protectSystem": "strict",
+    "readWritePaths": [
+      "/opt/goby-test/native-capacity-component-checks-20260916-4926398841ad"
+    ],
+    "observedMemoryPeakBytes": 31723520,
+    "observationBoundary": "Resource properties and MemoryPeak were captured before stopping the successful unit; closure records its later inactive/dead state."
+  },
+  "independentSavedEvidenceReview": {
+    "status": "passed",
+    "reviewer": "recover_repo_progress",
+    "scope": "Saved result/closure/source-manifest pins, seven pairs of raw test streams, both saved source sets, the one-line controller diff, and the current eight worktree file hashes.",
+    "rawStderrFilesRead": 7,
+    "rawStdoutFilesRead": 7,
+    "savedSourceFilesHashed": 16,
+    "localSourceFilesMatched": 8,
+    "allRawStreamPinsMatched": true,
+    "rawUnittestCountsAndResultsMatched": true,
+    "newTestsRun": 0,
+    "newRuntimeProbes": 0,
+    "newSqlRequests": 0,
+    "newHttpRequests": 0,
+    "newServiceActions": 0,
+    "freshProcessInspectionPerformed": false
+  },
+  "acceptanceBoundary": {
+    "componentChecksOnly": true,
+    "pureAndMockRoutingChecks": true,
+    "smallPythonSubprocessRlimitChecks": true,
+    "gobyWorkloadExecuted": false,
+    "productTestsExecuted": false,
+    "nativeWorkloadExecuted": false,
+    "applicationDatabaseConnections": 0,
+    "httpRequests": 0,
+    "serviceMutationsByTests": 0,
+    "actualScanOverlapProven": false,
+    "m2Status": "held",
+    "wholeM2M6Accepted": false,
+    "limits": [
+      "The retained first failure was not overwritten and the successful attempt used a new scope.",
+      "These checks validate component behavior and bounded Python subprocess handling; they do not exercise a Goby/native scan workload.",
+      "Saved closure records are reviewed evidence, not a new live inspection.",
+      "Actual scan overlap and native-capacity acceptance remain unproven; M2 stays held."
+    ]
+  }
+}

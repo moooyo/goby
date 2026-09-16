@@ -55,6 +55,7 @@ PROFILE = {'mediaLeaves': 1000, 'albumNfoFiles': 20, 'users': 3, 'credentials': 
            'anchorSequenceSeconds': 2700, 'anchorMaximumSeconds': 3600}
 RAW_LIMIT, ROOT_LIMIT, ROOT_RESERVE = 384 << 20, 2560 << 20, 1 << 30
 READER_PAIR_BYTES, FUTURE_NONREADER_BYTES = 144 << 20, 128 << 20
+COST_NAMES = ('ownership', 'metrics', 'pool', 'storageWalk', 'evidenceWrite', 'commandWait')
 
 
 class Rejected(RuntimeError):
@@ -233,6 +234,13 @@ class Controller:
         self.workload_result = self.workload_cleanup = self.final_validation = None
         self.started = time.monotonic()
         self.phase = 'admission'
+        self._sample_observation = None
+        self._cost_phase = self.phase
+        self._cost_started_ns = time.monotonic_ns()
+        self._cost_operations = self.new_cost_operations()
+        self.record['measurementCosts'] = {'version': 1, 'clock': 'time.monotonic_ns',
+                                          'accounting': 'inclusive_non_additive', 'stages': []}
+        self.record['measurementCostReceipts'] = []
         self.phase_deadline = self.started + 120
         self.business_deadline = self.closure_ceiling = self.closure_deadline = None
         self.host = {}
@@ -265,13 +273,67 @@ class Controller:
 
     def set_deadline(self, phase, deadline):
         need(type(deadline) in (int, float) and math.isfinite(deadline) and deadline > time.monotonic(), 'controller_phase_deadline')
+        self._sample_observation = None
         self.phase, self.phase_deadline = phase, deadline
         signal.setitimer(signal.ITIMER_REAL, max(0.001, deadline - time.monotonic()))
+        self.checkpoint_costs(phase)
+
+    @staticmethod
+    def new_cost_operations():
+        return {name: {'calls': 0, 'elapsedNs': 0, 'failures': 0} for name in COST_NAMES}
+
+    def measure(self, name, operation, *args, **kwargs):
+        """Measure wrapped controller work, including nested work and failures.
+
+        These elapsed times overlap. They are neither CPU time nor deductions
+        from HTTP latency. Unwrapped helper work is outside this accounting.
+        """
+        row = self._cost_operations[name]
+        started = time.monotonic_ns()
+        row['calls'] += 1
+        try:
+            return operation(*args, **kwargs)
+        except BaseException:
+            row['failures'] += 1
+            raise
+        finally:
+            row['elapsedNs'] += time.monotonic_ns() - started
+
+    def checkpoint_costs(self, next_phase=None):
+        """Persist a small phase boundary without adding any storage walk.
+
+        A snapshot ends before its own publication. Publication is charged to
+        the following stage; final cost/result publication is outside the last
+        snapshot. Existing full storage checks still account for these files.
+        """
+        self._sample_observation = None
+        finished = time.monotonic_ns()
+        stages = self.record['measurementCosts']['stages']
+        need(len(stages) < 8, 'controller_cost_stage_bound')
+        stages.append({'phase': self._cost_phase, 'startedMonotonicNs': self._cost_started_ns,
+                       'finishedMonotonicNs': finished, 'operations': copy.deepcopy(self._cost_operations)})
+        self._cost_phase = self.phase if next_phase is None else next_phase
+        self._cost_started_ns = finished
+        self._cost_operations = self.new_cost_operations()
+        try:
+            snapshot = copy.deepcopy(self.record['measurementCosts'])
+            need(len(encoded(snapshot)) <= 32 << 10, 'controller_cost_receipt_bound')
+            receipt = self.write(P / ('controller-costs-%02d.json' % len(stages)), snapshot)
+            self.record['measurementCostReceipts'].append(receipt)
+        except BaseException as error:
+            self.fail('measurement_cost_receipt', error)
+
+    def write(self, path, value):
+        return self.measure('evidenceWrite', save, path, value)
+
+    def storage_usage(self, path, exclusions=()):
+        return self.measure('storageWalk', usage, path, exclusions)
 
     def command(self, label, argv, timeout=30):
+        self._sample_observation = None
         remaining = self.phase_deadline - time.monotonic()
         need(remaining > 11, 'command_failure_closeout_reserve')
-        return self.original_run(label, argv, min(float(timeout), remaining - 11))
+        return self.measure('commandWait', self.original_run, label, argv, min(float(timeout), remaining - 11))
 
     def restore_host(self):
         need(Path('/proc/sys/kernel/random/boot_id').read_text().strip() == self.boot, 'controller_boot_changed')
@@ -285,14 +347,14 @@ class Controller:
             need(os.readlink('/proc/self/ns/' + name) == saved['link'], 'host_namespace_not_restored')
 
     def raw_bytes(self):
-        total = usage(P, (RESERVE_FILE, P / 'retained'))['bytes']
-        total += usage(F / 'log')['bytes']
+        total = self.storage_usage(P, (RESERVE_FILE, P / 'retained'))['bytes']
+        total += self.storage_usage(F / 'log')['bytes']
         return total
 
     def check_storage(self, additional=0, future=0):
         raw = self.raw_bytes()
         need(raw + additional + future <= RAW_LIMIT, 'controller_raw_evidence_reserve')
-        allocated = usage(E)['allocatedBytes'] + usage(F, (F / 'pg',))['allocatedBytes']
+        allocated = self.storage_usage(E)['allocatedBytes'] + self.storage_usage(F, (F / 'pg',))['allocatedBytes']
         need(allocated + additional <= ROOT_LIMIT, 'controller_root_allocation_limit')
         fs = os.statvfs(E)
         need(fs.f_bavail * fs.f_frsize >= ROOT_RESERVE + additional, 'controller_root_free_reserve')
@@ -300,6 +362,8 @@ class Controller:
                 'rootFreeBytes': fs.f_bavail * fs.f_frsize}
 
     def reserve(self, event):
+        # Every control HTTP dispatch and reader allocation passes this guard.
+        self._sample_observation = None
         need(type(event) is dict, 'reservation_event_shape')
         if event.get('kind') == 'native-capacity-reader-reservation':
             phase = event['phase']
@@ -324,11 +388,12 @@ class Controller:
         self.check_storage(event['maximumAdditionalBytes'], future)
 
     def event(self, value):
+        self._sample_observation = None
         self.event_serial += 1
         need(self.event_serial <= 4096, 'controller_event_count')
         raw = encoded(value)
         self.check_storage(len(raw), 0 if self.phase == 'closure' else 64 << 20)
-        save(P / 'controller-events' / ('%04d.json' % self.event_serial), value)
+        self.write(P / 'controller-events' / ('%04d.json' % self.event_serial), value)
 
     def acquire(self):
         self.set_commands(P / 'admission-commands', self.runtime)
@@ -366,7 +431,7 @@ class Controller:
             finally:
                 os.close(fd)
         self.record['cleanupCaptureReserve'] = {'path': str(RESERVE_FILE), 'metadata': self.reserve_identity}
-        save(INTENT, {'input': self.input_pin, 'sources': self.value['helpers'], 'profile': PROFILE,
+        self.write(INTENT, {'input': self.input_pin, 'sources': self.value['helpers'], 'profile': PROFILE,
                       'entryMonotonicNs': time.monotonic_ns(), 'lockMetadata': lock_metadata})
         self.mutation_admitted = True
 
@@ -386,7 +451,7 @@ class Controller:
             self.support.anchor_lifetime(self.base, self.ctx, 'prepare_handoff')
             self.prepared['protectedAfter'] = self.support.protected(self.base, self.ctx)
             need(self.prepared['protectedAfter'] == self.record['protectedBefore'], 'preparation_protected_changed')
-            self.prepared['context'] = save(P / 'runtime-context.json', self.ctx)
+            self.prepared['context'] = self.write(P / 'runtime-context.json', self.ctx)
             self.prepared['status'] = 'prepared_for_native_capacity'
         except BaseException as error:
             self.prepared.update(status='failed', errorCode=code(error))
@@ -396,41 +461,63 @@ class Controller:
             self.base.run = self.command
             self.prepared['allOwnedCommandsClosed'] = all(row.get('closed') is True for row in self.prepared['commands'])
             try:
-                self.record['componentReceipts']['preparation'] = save(E / 'preparation.json', self.prepared)
+                self.record['componentReceipts']['preparation'] = self.write(E / 'preparation.json', self.prepared)
             except BaseException as error:
                 self.fail('preparation_receipt', error)
             self.payloads = None
 
     def assert_owned(self):
+        self._sample_observation = None
         need(self.phase != 'business' or not self.record['failures'], 'controller_business_already_failed')
+        observation = self.measure('ownership', self.owned_observation)
+        polled = self.pool is not None and self.phase == 'business'
+        if polled:
+            self.measure('pool', self.pool.poll)
+        # Only the immediately following sampling callback may consume this.
+        # Dispatch, phase changes, other callbacks and sampling itself clear it.
+        self._sample_observation = {'phase': self.phase, 'app': self.app, 'pool': self.pool,
+                                    'application': observation, 'poolPolled': polled}
+
+    def owned_observation(self):
         self.support.check_infrastructure(self.base, self.ctx)
-        self.app.check_owned()
-        if self.pool is not None and self.phase == 'business':
-            self.pool.poll()
+        return self.app.check_owned()
 
     def sample(self):
+        pending, self._sample_observation = self._sample_observation, None
         if self.metric_samples_stopped:
             return
-        observation = self.app.check_owned()
-        self.observers.capture_metrics(observation)
-        if self.pool is not None:
-            self.pool.poll()
+        # The due decision performs no ownership, process, storage or file IO.
+        due = self.observers.metrics_due()
+        same_round = (pending is not None and pending['phase'] == self.phase and
+                      pending['app'] is self.app and pending['pool'] is self.pool and
+                      0 <= time.monotonic_ns() - pending['application']['observedMonotonicNs'] <= 5_000_000_000)
+        if due:
+            observation = pending['application'] if same_round else None
+            if (observation is None or not 0 <= time.monotonic_ns() -
+                    observation['observedMonotonicNs'] <= 5_000_000_000):
+                observation = self.measure('ownership', self.app.check_owned)
+            self.measure('metrics', self.observers.capture_metrics, observation)
+        if self.pool is not None and not (same_round and pending['poolPolled']):
+            self.measure('pool', self.pool.poll)
         self.check_storage(0, 64 << 20)
 
     def snapshot(self, slot):
+        self._sample_observation = None
         need(self.phase == 'business' and not self.record['failures'], 'workload_sql_outside_business')
-        return self.observers.observe(slot, application=self.app.check_owned(), deadline=self.business_deadline)
+        observation = self.measure('ownership', self.app.check_owned)
+        return self.observers.observe(slot, application=observation, deadline=self.business_deadline)
 
     def start_readers(self, phase, run, mappings):
+        self._sample_observation = None
         need(phase not in self.reader_starts, 'controller_reader_start_repeated')
         attempt = {'phase': phase, 'runId': run['Id'], 'poolInvoked': False, 'failed': False,
                    'childrenBefore': self.pool.record['childrenCreated'],
                    'registeredPhasesBefore': sorted(self.pool.record['phases'])}
         self.reader_starts[phase] = attempt
         try:
-            self.app.check_owned()
+            self.measure('ownership', self.app.check_owned)
             attempt['poolInvoked'] = True
-            result = self.pool.start(phase, run, mappings)
+            result = self.measure('pool', self.pool.start, phase, run, mappings)
             attempt['returned'] = True
             return result
         except BaseException as error:
@@ -444,6 +531,7 @@ class Controller:
             raise
 
     def finish_readers(self, phase, deadline):
+        self._sample_observation = None
         if phase not in self.pool.record['phases']:
             attempt = self.reader_starts.get(phase)
             need(self.phase == 'closure' and attempt is not None and attempt.get('failed') and
@@ -454,7 +542,7 @@ class Controller:
             return {'phase': phase, 'runId': attempt['runId'], 'joined': True, 'workers': [],
                     'status': 'not_started', 'noChildrenCreated': True, 'parentStartEvidence': copy.deepcopy(attempt)}
         try:
-            result = self.pool.finish(phase, min(deadline, self.phase_deadline))
+            result = self.measure('pool', self.pool.finish, phase, min(deadline, self.phase_deadline))
         except BaseException as error:
             self.fail('reader_finish_' + phase, error)
             state = self.pool.record['phases'].get(phase, {})
@@ -480,7 +568,7 @@ class Controller:
                                     'closureCeiling': self.closure_ceiling, 'originalSequenceCeiling': start + 2700}
         self.support.anchor_lifetime(self.base, self.ctx, 'runtime_entry')
         self.observers = self.m['observers'].Observers(self.base, self.support, self.m['workload'], self.ctx,
-                                                     deadline=self.closure_ceiling)
+                                                     deadline=self.closure_ceiling, measure=self.measure)
         self.observers.observe('prestart-identity', deadline=self.business_deadline)
         self.app = self.m['application'].Application(self.base, self.support, self.m['units'], self.ctx,
                                                    deadline=self.closure_ceiling)
@@ -494,6 +582,7 @@ class Controller:
         ready = False
         self.phase = 'readiness'
         signal.setitimer(signal.ITIMER_REAL, max(0.001, ready_end - time.monotonic()))
+        self.checkpoint_costs('readiness')
         try:
             while time.monotonic() < ready_end:
                 need(self.transport.counts['setup'] <= 42, 'readiness_setup_quota')
@@ -548,7 +637,7 @@ class Controller:
             try:
                 value = build()
                 self.check_storage(len(encoded(value)))
-                self.record['componentReceipts'][key + '-' + suffix] = save(P / (key + '-' + suffix + '.json'), value)
+                self.record['componentReceipts'][key + '-' + suffix] = self.write(P / (key + '-' + suffix + '.json'), value)
             except BaseException as error:
                 self.fail('save_' + key, error)
 
@@ -698,12 +787,13 @@ class Controller:
             try:
                 for report in (self.prepared, self.runtime, self.close_commands):
                     report['allOwnedCommandsClosed'] = all(row.get('closed') is True for row in report['commands'])
-                self.record['componentReceipts']['final-command-reports'] = save(P / 'final-command-reports.json',
+                self.record['componentReceipts']['final-command-reports'] = self.write(P / 'final-command-reports.json',
                     {'admissionAndRuntime': self.runtime, 'preparation': self.prepared, 'closure': self.close_commands})
             except BaseException as error:
                 self.fail('final_command_receipt', error)
             self.record['allOwnedCommandsClosed'] = all(row.get('closed') is True for report in
                 (self.prepared, self.runtime, self.close_commands) for row in report['commands'])
+            self.checkpoint_costs()
             expected = (self.workload_result is not None and self.workload_result.get('status') == 'workload-passed-pending-closure' and
                 self.workload_cleanup is not None and self.workload_cleanup.get('status') == 'closed' and
                 self.final_validation is not None and self.final_validation.get('status') == 'normal-workload-and-credential-closure-checked' and
@@ -716,16 +806,17 @@ class Controller:
             self.record['finishedMonotonicNs'] = time.monotonic_ns()
             receipt = None
             try:
-                receipt = save(RESULT, self.record)
+                receipt = self.write(RESULT, self.record)
             except BaseException as error:
                 self.fail('final_execution_receipt', error)
                 self.record['status'] = 'native_capacity_attempt_failed'
                 expected = False
                 try:
-                    receipt = save(P / 'controller-result-fallback.json', self.record)
+                    receipt = self.write(P / 'controller-result-fallback.json', self.record)
                     self.record['fallbackReceiptUsed'] = True
                 except BaseException as fallback_error:
                     self.fail('fallback_execution_receipt', fallback_error)
+                    self.record['status'] = 'native_capacity_attempt_failed'
             print(json.dumps({'status': self.record['status'], 'receipt': receipt,
                 'firstFailure': self.record.get('firstFailure'), 'lockReleased': self.record['lockReleased'],
                 'receiptPersisted': receipt is not None,

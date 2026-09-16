@@ -14,6 +14,9 @@ including time already spent by the parent. It is never refreshed. base.P must
 be the parent's new E/private/closure-commands directory; the parent must restore
 the normal bounded base.run transport after leaving preparation. A base.run
 timeout can use eleven further seconds to close its own command process group.
+Its child receives a file-size limit before exec, so neither command stream can
+grow beyond the reserved bound. The parent's limits and the inherited capture's
+process creation, waiting, group closure and failure handling remain unchanged.
 
 budget must contain rawEvidenceBytes, rawLimitBytes=384 MiB,
 rootAllocationLimitBytes=2560 MiB, and rootReserveBytes=1024 MiB. The parent owns
@@ -50,6 +53,7 @@ import math
 import os
 from pathlib import Path, PurePosixPath
 import re
+import resource
 import stat
 import tarfile
 import time
@@ -83,6 +87,46 @@ class ClosureError(RuntimeError):
 def _need(value, code):
     if not value:
         raise ClosureError(code)
+
+
+class _OutputLimitedSubprocess:
+    """Add a child-only write boundary to the inherited file capture."""
+
+    def __init__(self, original, stream_limit):
+        self._original = original
+        self._stream_limit = stream_limit
+
+    def __getattr__(self, name):
+        return getattr(self._original, name)
+
+    def Popen(self, *args, **kwargs):
+        _need(kwargs.get('preexec_fn') is None, 'closure_capture_preexec_changed')
+        stream_limit = self._stream_limit
+
+        def limit_child_files():
+            inherited = resource.getrlimit(resource.RLIMIT_FSIZE)
+            limit = min([stream_limit] + [value for value in inherited if value != resource.RLIM_INFINITY])
+            resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit))
+
+        return self._original.Popen(*args, **dict(kwargs, preexec_fn=limit_child_files))
+
+
+def _capture_with_output_limit(base, capture, label, argv, timeout, stream_limit):
+    """Keep the pinned capture while bounding writes to each inherited stream.
+
+    Closure starts only after the parent's readers are joined. Replace this
+    isolated base module's subprocess reference for one synchronous capture;
+    never patch the shared subprocess module or change the parent's rlimits.
+    The kernel enforces RLIMIT_FSIZE on the child's regular output files before
+    a write can cross the bound, including writes by inherited descendants.
+    """
+    _need(type(stream_limit) is int and stream_limit > 0, 'closure_capture_stream_limit')
+    original = base.subprocess
+    base.subprocess = _OutputLimitedSubprocess(original, stream_limit)
+    try:
+        return capture(label, argv, timeout)
+    finally:
+        base.subprocess = original
 
 
 def _error(error):
@@ -324,7 +368,8 @@ class Closure:
             self._remember('mandatory_control_budget', error)
         first = len(self.base.report['commands'])
         try:
-            return self._original_run(label, argv, self._remaining(timeout, GROUP_CLOSE_SECONDS))
+            return _capture_with_output_limit(self.base, self._original_run, label, argv,
+                                              self._remaining(timeout, GROUP_CLOSE_SECONDS), stream_bound)
         finally:
             rows = self.base.report['commands'][first:]
             indexes = [first + index for index, row in enumerate(rows) if row.get('label') == label]

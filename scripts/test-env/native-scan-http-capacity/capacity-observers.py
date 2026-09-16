@@ -1,8 +1,11 @@
 """Six fixed SQL observers and bounded cgroup samples; import performs no work.
 
-API: Observers(base, support, workload_module, context, *, deadline, record=None).
+API: Observers(base, support, workload_module, context, *, deadline, record=None,
+               measure=None).
 record is an optional new empty dict retained by reference. The caller owns the
 global deployment lock, protected-state checks, APP, PG, anchor, and all closure.
+measure optionally wraps measure(category, operation, *args) for private writes;
+the callback keeps inclusive elapsed-time counters in caller memory.
 No main, thread, process launcher, HTTP exchange or service action exists here.
 Only observe calls the caller's frozen base.run, once per consumed SQL slot.
 
@@ -54,6 +57,8 @@ schema, raw SQL, original command streams and identity remain in private records
 UserData includes the full row plus rowVersion=xmin::text. Sessions select only
 id/user_id/kind/revoked_at/token_hash, with encode(token_hash,'hex').
 
+metrics_due() checks only the monotonic clock and the last sample time. A false
+result does not retain or authorize reuse of an application observation.
 capture_metrics(app_observation) is opportunistic, single-threaded metadata
 reading. It performs no SQL or systemctl call. At most 600 new samples, at least
 two seconds apart, and at most 32 MiB of serialized raw sample evidence are
@@ -310,10 +315,12 @@ def build_statement(slot, support, workload_module):
 
 
 class Observers:
-    def __init__(self, base, support, workload_module, context, *, deadline, record=None):
+    def __init__(self, base, support, workload_module, context, *, deadline, record=None, measure=None):
         need(sys.platform == 'linux' and os.geteuid() == os.getegid() == 0 and
              sys.flags.isolated and sys.flags.dont_write_bytecode, 'observer_remote_root_isolated_python_required')
         need(record is None or (type(record) is dict and not record), 'observer_record_not_new')
+        need(measure is None or callable(measure), 'observer_cost_callback')
+        self._measure = measure
         need(support.E == E and support.F == F and support.APP == APP and support.PGUNIT == PGUNIT and
              support.RUNTIME == RUNTIME and context['database'] == context['role'] == 'goby_native_capacity' and
              type(context['databaseOid']) is int and context['databaseOid'] > 0 and
@@ -364,6 +371,11 @@ class Observers:
         return float(value)
 
     def _save(self, path, value):
+        if self._measure is not None:
+            return self._measure('evidenceWrite', self._write, path, value)
+        return self._write(path, value)
+
+    def _write(self, path, value):
         raw = value if isinstance(value, bytes) else encoded(value)
         before = self.base.metadata(path.parent)
         need(before['type'] == stat.S_IFDIR and before['uid'] == before['gid'] == 0 and
@@ -789,6 +801,9 @@ class Observers:
                         cgroupFile=dict(cgroup_pin, text=cgroup_raw.decode('ascii', 'strict')))
         except (FileNotFoundError, ProcessLookupError):
             return dict(result, status='not-sampled', reason='owned-process-disappeared')
+
+    def metrics_due(self):
+        return self._last_sample_ns is None or time.monotonic_ns() - self._last_sample_ns >= 2_000_000_000
 
     def capture_metrics(self, app_observation):
         now = time.monotonic_ns()
