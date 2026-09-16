@@ -1,0 +1,210 @@
+{
+  "kind": "programs-disk-full-result",
+  "version": 1,
+  "status": "failed_with_owned_resources_closed",
+  "recordedOn": "2026-09-16",
+  "host": "test-env",
+  "scope": "/opt/goby-test/livetv-programs-disk-final-20260916",
+  "evidence": {
+    "execution": {
+      "path": "/opt/goby-test/livetv-programs-disk-final-20260916/execution.json",
+      "bytes": 71506,
+      "sha256": "7e635b53d09afaeabe972666227a8326008273b197f3aaeb38077cd88df81dc0"
+    },
+    "closure": {
+      "path": "/opt/goby-test/livetv-programs-disk-final-20260916/closure.json",
+      "bytes": 6941,
+      "sha256": "0908bebd818fa1f92dd73e87476ed5aa7f9aa9b3de59b0361e1692dbd82d574f"
+    },
+    "archive": {
+      "path": "/opt/goby-test/livetv-programs-disk-final-20260916/retained/full-private.tar.gz",
+      "bytes": 116502807,
+      "sha256": "c7c6abf43b9505fdf26008eb3c50cd74a247a818eac76232b5705cd30c52c956"
+    },
+    "input": {
+      "path": "/opt/goby-test/livetv-programs-disk-final-20260916/private/input.json",
+      "bytes": 5014,
+      "sha256": "baa01f6fd35abdacec0384b194fcd7d9232c3a33e4de30deed060404478bcbf4"
+    },
+    "adapter": {
+      "path": "/opt/goby-test/livetv-programs-disk-final-20260916/private/verify-livetv-programs-final-r03.py",
+      "bytes": 57717,
+      "sha256": "c87ae09be2858ca29af5062edde5241b9a5d4f76f3ac50124848ff1e7f5a2560"
+    },
+    "archivedMembers": {
+      "workerReport": {
+        "archiveMember": "ram/livetv-programs-disk-final-20260916-20260916T064917Z-351759db059a/worker-report.json",
+        "bytes": 363239,
+        "sha256": "705bcef7d82de5964edffd5df65cead66326760b01cf6abc74454a76991363ae"
+      },
+      "supervisorReport": {
+        "archiveMember": "ram/livetv-programs-disk-final-20260916-20260916T064917Z-351759db059a/report.json",
+        "bytes": 383352,
+        "sha256": "4deaf9f591567648fae93b72a32af3abf16abfce54797af6c4f4f9ee40e9c7b1"
+      },
+      "serverStdout": {
+        "archiveMember": "ram/livetv-programs-disk-final-20260916-20260916T064917Z-351759db059a/logs/044-go-test.stdout",
+        "bytes": 2389925,
+        "sha256": "8cbb7aeaca59050ccee534cc16236260b4b41f75257b294aa7e8a103d6fe12a3"
+      }
+    }
+  },
+  "source": {
+    "gitHead": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+    "archive": {
+      "path": "/opt/goby-test/livetv-programs-successor-final-20260916/private/source.tar.gz",
+      "bytes": 2716437,
+      "sha256": "3232a968559fb237f706175b7a652fb13478f8190a520fbaaa287048e254886a"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/livetv-programs-successor-final-20260916/private/source-manifest.json",
+      "bytes": 158512,
+      "sha256": "967cf0a98a571bd6effe31419e9459bcf0d130566da7225f1bf434725f0079bd"
+    },
+    "checkpoint": {
+      "path": "/opt/goby-test/livetv-programs-successor-final-20260916/private/source-checkpoint.json",
+      "bytes": 170007,
+      "sha256": "473f90a046d23b17e33cf2fd7a07d4818ea133f61a126fa4e697c7404aa7c1d8"
+    },
+    "frozenFiles": 924,
+    "retainedAdministratorAssetFiles": 57,
+    "referencedInputPinsMatched": true,
+    "workerConfigMatchesInput": true,
+    "workerSourceManifestContentMatches": true,
+    "comparedFileFields": [
+      "bytes",
+      "sha256"
+    ],
+    "workerSourceUnchangedAtCleanup": true,
+    "requiredTestInputsComplete": false
+  },
+  "results": {
+    "expectedPackages": 25,
+    "executedPackages": 19,
+    "completePassingPackages": 18,
+    "acceptedTopLevelPasses": 1447,
+    "workerTopLevelPassesIncludingFailedPackage": 2014,
+    "server": {
+      "status": "failed",
+      "exitCode": 1,
+      "elapsedSeconds": 1014.076,
+      "rawJSONEvents": 9144,
+      "rawTopLevelPasses": 567,
+      "rawChildPasses": 1704,
+      "rawPassTestEvents": 2271,
+      "acceptedCompletePackagePasses": 0,
+      "failedTopLevelTests": [
+        "TestEmbyScheduledTaskTriggersPreserveObservedArrayShapes",
+        "TestEmbyScheduledTaskDTOUsesDefinitionIdentityAndRetainsTerminalResult"
+      ],
+      "failedChildTestCount": 8,
+      "failedTestEventCount": 10,
+      "failedPackageTerminalCount": 1,
+      "cause": "Nine ENOENT fixture reads; the array-shape parent also failed because its eight children failed.",
+      "missingFixtureDirectory": "tests/compatibility/fixtures/reference/emby-4.9.5.0",
+      "missingFixtureNames": [
+        "scheduled-tasks-fresh-m5f-trigger-clear.json",
+        "scheduled-tasks-fresh-m5f-trigger-original.json",
+        "scheduled-tasks-fresh-m5f-trigger-duplicate-interval.json",
+        "scheduled-tasks-fresh-m5f-trigger-daily.json",
+        "scheduled-tasks-fresh-m5f-trigger-startup.json",
+        "scheduled-tasks-fresh-m5f-trigger-unknown.json",
+        "scheduled-tasks-fresh-m5f-trigger-mixed.json",
+        "scheduled-tasks-fresh-m5f-trigger-system-event.json",
+        "scheduled-tasks-fresh-m5f-batch-a-stop-result-0.json"
+      ],
+      "allNineFixturesAbsentFromFrozenManifest": true
+    },
+    "recovery": {
+      "status": "passed",
+      "topLevelPasses": 26,
+      "elapsedSeconds": 260.718
+    },
+    "declaredSkip": {
+      "package": "github.com/moooyo/goby/internal/library",
+      "test": "TestRootBindingFullScanMountNamespaceHelper",
+      "count": 1,
+      "profileExecuted": false
+    },
+    "workerErrorCode": "test_failure",
+    "unitResult": "exit-code",
+    "unitExitCode": 1,
+    "oomTermination": false,
+    "goTimeoutMarkersObserved": false,
+    "raceMarkersObserved": false,
+    "singleRunFullSuite": false,
+    "ordinarySuitePassed": false,
+    "ordinaryBuildExecuted": false,
+    "embeddedBuildExecuted": false,
+    "priorResultsReused": false
+  },
+  "executionProfile": {
+    "goTestFlags": [
+      "-race",
+      "-p=1",
+      "-parallel=1",
+      "-count=1",
+      "-timeout=1500s",
+      "-json"
+    ],
+    "originalBusinessAndTestBudgetsUnchanged": true,
+    "workerBudgetsSeconds": {
+      "test": 1500,
+      "command": 1560,
+      "business": 4200,
+      "runtime": 4800,
+      "unitStop": 180,
+      "stopCommand": 210,
+      "supervisorWait": 5070,
+      "requiredOuter": 5340
+    },
+    "testTemporaryFilesystem": "Original owned ext4 fixture; not the compiler volume.",
+    "ramVolumeBytes": 2147483648,
+    "compilerImageBytes": 2147483648,
+    "workerMemoryMaxBytes": 3221225472,
+    "unitMemoryPeakBytes": 2281836544,
+    "memoryPeakEvidence": "Terminal unit readback by the coordinating agent; not independently re-observed by the saved-record reviewer."
+  },
+  "closure": {
+    "outerCommands": 55,
+    "allOuterCommandsClosed": true,
+    "ownedPostgresStopped": true,
+    "privateBindRemoved": true,
+    "workerSourceUnchanged": true,
+    "recursiveWorkerCgroupEmpty": true,
+    "ownedProcessesClosed": true,
+    "fixtureExt4Unmounted": true,
+    "fixtureLoopDetached": true,
+    "ramUnmounted": true,
+    "compilerExt4Unmounted": true,
+    "compilerLoopDetached": true,
+    "compilerBackingDeleted": true,
+    "compilerScratchExcludedFromArchive": true,
+    "protectedBeforeAfterExact": true,
+    "lockReleased": true,
+    "cleanupErrors": [],
+    "resourcesClosed": true,
+    "closureReferencesMatchExecution": true
+  },
+  "review": {
+    "wholeArchiveSHA256VerifiedByCoordinatingAgent": true,
+    "wholeArchiveSHA256RecomputedByIndependentReviewer": false,
+    "independentScope": "Pinned execution/closure and archive members, referenced source inputs, all 19 Go stdout/stderr pairs, and saved closure bindings.",
+    "goStdoutFilesParsed": 19,
+    "malformedGoJSONLines": 0,
+    "goStderrFilesEmpty": 19,
+    "archivedCodeImportedOrExecuted": false,
+    "newTestOrServiceOperations": 0,
+    "separateRemoteIndependentReviewReceiptWritten": false
+  },
+  "nextStep": {
+    "direction": "Prepare a complete snapshot of the same Git commit with the unchanged 57 administrator dist files and the required compatibility fixtures.",
+    "preparationInProgress": true,
+    "replacementInputPinsRecorded": false,
+    "newFullRunStarted": false,
+    "preserveAssertions": true,
+    "preserveOriginalDeclaredSkip": true,
+    "preserveTimeouts": true,
+    "combinePartialRunsForFullAcceptance": false
+  }
+}

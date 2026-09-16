@@ -110,5 +110,7 @@ file. Root free space was 5474127872 bytes before allocation and 3326570496 byte
 after allocation. The full adapter now points compiler `GOCACHE`, `TMPDIR` and
 `GOTMPDIR` at its own root-backed compiler volume; actual test temporary
 directories retain their existing fixture behavior. This corrects the prior
-full worker's RAM-backed compiler storage. A [fresh full run](programs-disk-full-preparation.json)
-has started; its final result and closure remain pending.
+full worker's RAM-backed compiler storage. The subsequent
+[disk-backed full run](programs-disk-full-result.md) passed recovery but failed
+on omitted test fixtures and closed. The [complete-source replacement](programs-complete-source-preparation.json)
+passed source checks but created no worker because its memory admission failed.

@@ -1,0 +1,88 @@
+{
+  "kind": "programs-complete-source-verification-preparation",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "source_verified_capacity_admission_rejected_before_worker",
+  "scope": "/opt/goby-test/livetv-programs-complete-source-final-20260916",
+  "sourceCommit": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+  "sourceArchive": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/private/source.tar.gz",
+    "bytes": 33333070,
+    "sha256": "f211b15d5e9675448f5de4d582e3d3898ad645937291edeeab0e658cbb91752b"
+  },
+  "sourceManifest": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/private/source-manifest.json",
+    "bytes": 1093188,
+    "sha256": "fa0b3bf9642fa1a1a3face0bb580e94c901f3a8d6bfc378891d4233ae5dca4cc"
+  },
+  "sourceCheckpoint": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/private/source-checkpoint.json",
+    "bytes": 1170751,
+    "sha256": "f1fc7010c6f3581a2199215866b60ceee4b9304dd249770767293ce7b1d4e76c"
+  },
+  "sourcePreparation": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/source-preparation.json",
+    "bytes": 3844,
+    "sha256": "60d50bed2da98a0a35e14d10c99370a3307fb286c444e400c8ace5f11e137cce"
+  },
+  "adapter": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/private/verify-livetv-programs-final.py",
+    "bytes": 58110,
+    "sha256": "47561d28ea704a33f62214ed631cf24d2d3455c91d34a0030e75cbfdcea35919"
+  },
+  "input": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/private/input.json",
+    "bytes": 5076,
+    "sha256": "32e4f7ed93c4bad9f84438978a5027f8d5adb1ee03d518fb0c067ac1c7e2b06b"
+  },
+  "inputPreparation": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/input-preparation.json",
+    "bytes": 5745,
+    "sha256": "0ed938d7ae0d53fa112d387ba9202e3ee429c4acab831c5d0040fc0ab8ce9d15"
+  },
+  "execution": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/execution.json",
+    "bytes": 78927,
+    "sha256": "94e0a34e90b369aacdfa32f4e1339b06821339f603647cdab09765ec4ba748b2"
+  },
+  "closure": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916/closure.json",
+    "bytes": 1199,
+    "sha256": "d02a5bd67fe08ad511cd346301cb3a325c4b8dba9dfbf733e072c1f6fe653e03"
+  },
+  "sourceCoverage": {
+    "trackedProjectFiles": 5348,
+    "unchangedGeneratedAssets": 57,
+    "files": 5405,
+    "uncompressedBytes": 120705443,
+    "oldCompactFilesPreserved": 924,
+    "previouslyMissingFixturesIncluded": 9,
+    "completeScheduledTaskFixtureGroupFiles": 154,
+    "archiveReadbackPassedIndependentReview": true,
+    "actualPreflightEveryMemberMatched": true,
+    "countBoundary": "The complete tracked inventory includes documentation and fixtures; it is not a compiled-contribution count."
+  },
+  "capacityRejection": {
+    "code": "insufficient_capacity",
+    "checks": 60,
+    "waits": 59,
+    "elapsedMilliseconds": 118035,
+    "maximumWaitSeconds": 120,
+    "minimumMemoryRequiredBytes": 5368709120,
+    "minimumMemoryObservedBytes": 1195139072,
+    "maximumMemoryObservedBytes": 5145530368,
+    "minimumRootRequiredBytes": 3758096384,
+    "minimumRootObservedBytes": 4728602624,
+    "maximumRootObservedBytes": 5248745472,
+    "workerInvocations": 0,
+    "compilerVolumeStatus": "not_created"
+  },
+  "ownedCommandCount": 17,
+  "allOwnedCommandsClosed": true,
+  "protectedStateUnchanged": true,
+  "resourcesClosed": true,
+  "lockReleased": true,
+  "testsOrBuildsExecuted": false,
+  "fullVerificationClaimed": false,
+  "continuation": "This input and execution scope are consumed. Reuse the immutable complete-source archive and checkpoints in a fresh scope after current capacity meets the original limits. Do not lower the limits or combine partial runs; require all 25 packages and both builds."
+}

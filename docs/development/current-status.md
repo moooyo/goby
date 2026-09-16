@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **complete regression and builds with disk-backed compiler storage**.
+Current priority on 2026-09-16: **complete regression and builds from the complete tracked source when remote capacity permits**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -20,13 +20,27 @@ now passes real mount execution, cache/temporary writes and owned closure on the
 expanded root filesystem. Its first attempt exposed overlapping systemd mounts;
 the corrected reader selects the visible mount by the opened directory's mount
 ID. The full adapter uses a 2 GiB disk compiler volume, 2 GiB RAM scratch and the
-original 3 GiB worker limit, with unchanged test scope and timeouts. One fresh
-[25-package/two-build run](programs-disk-full-preparation.json) has now started;
-its actual full result and resource closure remain pending. Observe that same
-worker instead of replaying the input or combining results from prior attempts.
+original 3 GiB worker limit, with unchanged test scope and timeouts. The subsequent
+[full run](programs-disk-full-result.md) passed 18 complete packages and 1447
+top-level tests, including recovery, then failed server tests because its compact
+source omitted nine versioned compatibility fixtures. All resources closed;
+both builds remain unexecuted. A [complete-source replacement](programs-complete-source-preparation.json)
+now contains all 5348 tracked files plus the original 57 assets. Independent
+archive review and actual source preflight passed, but the fixed 5 GiB memory
+floor was unavailable throughout its 120-second admission window. No worker or
+volume was created, and protection/closure passed. Both execution scopes are
+consumed. Wait for current capacity, then use a fresh scope with the complete
+source and unchanged test/build requirements.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
+
+The [native-capacity operator correction](native-capacity-component-verification-20260916.md)
+is integrated after 47 synthetic/subprocess methods passed. It fixes duplicate
+observations, records inclusive measurement costs, enforces cleanup child-output
+limits and preserves a terminal failure status. The post-close result reader
+keeps actual scan overlap incomplete because the required monotonic scan-job
+binding is missing. Native-capacity execution remains held.
 
 The same fresh host observation found both candidate applications failed at
 10:22:08 CST on September 16, alongside a global OOM event in the same second.
@@ -36,8 +50,10 @@ record. The [new read-only preservation checkpoint](candidate-oom-exit-preservat
 subsequently matched all 35 tables and five sequences in each of four databases
 against the latest September 15 after-restart baselines. Ten read-only SQL
 sessions closed, protected state matched, and independent saved-record review
-passed. Both applications remain failed; native/log checks and restart are
-pending. Cause, physical integrity and application health are unproved. The new diagnostic
+passed. The subsequent [native preservation checkpoint](candidate-oom-exit-native-preservation-20260916.md)
+and independent review passed with zero new SQL or native-store writes. Both
+applications remain failed; diagnostics/log/cache checks and restart are pending.
+Cause, physical integrity and application health are unproved. The new diagnostic
 used an explicitly stopped-candidate protection descriptor with no existing
 service action or application database connection. The prior ready envelope is
 historical and cannot authorize a live transition in the current stopped state.

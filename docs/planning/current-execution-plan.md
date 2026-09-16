@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **complete regression and builds with disk-backed compiler storage**.
+Current priority: **complete regression and builds from the complete tracked source when remote capacity permits**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the expanded root disk is already in use. The unanswered-window
@@ -14,12 +14,18 @@ packages; neither build ran. The [bounded disk compiler-volume check](../develop
 has now passed actual execution, writes and closure after correcting the visible
 mount reader. The full adapter uses this 2 GiB root-backed compiler volume,
 2 GiB RAM scratch and the original 3 GiB worker cap, without changing test scope
-or timeouts. One [fresh full run](../development/programs-disk-full-preparation.json)
-has now started on the validated input; its final result and closure are pending. No production
-correction is established. The other prepared
+or timeouts. The [disk-backed full run](../development/programs-disk-full-result.md)
+passed 18 complete packages, including recovery, but its compact source omitted
+nine versioned server-test fixtures. The failed run is fully closed; neither
+build ran. The [complete-source replacement](../development/programs-complete-source-preparation.json)
+contains all 5348 tracked files and the original 57 assets. Its source checks
+passed, but all 60 capacity samples were below the unchanged 5 GiB memory floor.
+It created no worker or volume and closed all metadata commands and the lock.
+Use a fresh execution scope when capacity permits; both previous scopes are
+consumed. No production correction is established. The other prepared
 increments retain their separate, incomplete acceptance scopes.
 Keep the complete M2-M6 objective; M7 remains deferred.
-Following the [incident](../development/programs-final-regression-incident.json),
+Historically, following the [September 15 incident](../development/programs-final-regression-incident.json),
 [A/B application recovery and scoped preservation](../development/candidate-lease-loss-recovery.json)
 passed independent review. Both existing binaries/configurations started once;
 four health/readiness responses and eight read-only SQL sessions passed, with all
@@ -516,24 +522,38 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
-Reuse the independently accepted [application recovery and preservation](../development/candidate-lease-loss-recovery.json).
-The v2 component scopes, actual two-SQL observation and ready consumer envelope
-are complete; do not queue them or another recovery start again. The product
-track is bounded Library diagnosis plus resource coordination, followed by final
-verification/build. The [client components](../development/programs-client-component-verification.json)
-passed within their frozen scopes; actual successor authority/artifact and admitted
-live inputs remain pending, and no live journey has run. Artifact work and
-authority/live-input preparation join before A changes. The user confirmed
-environment availability; root maintenance and current resource/state checks
-precede heavy work.
+The September 15 [application recovery and preservation](../development/candidate-lease-loss-recovery.json),
+v2 component scopes, two-SQL observation and ready consumer envelope retain
+their historical acceptance. Both candidate applications failed again on
+September 16, so that envelope is not current live authority. The new
+[four-database preservation checkpoint](../development/candidate-oom-exit-preservation-20260916.md)
+has passed. The [native preservation checkpoint](../development/candidate-oom-exit-native-preservation-20260916.md)
+and its independent review also passed. Diagnostics/log/cache observation and
+actual recovery are still pending; keep the log window fresh for restart.
+Keep the old starts and consumed inputs unchanged.
+
+The [disk-backed full run](../development/programs-disk-full-result.md) is terminal,
+with missing test fixtures identified and resources closed. The
+[complete-source input](../development/programs-complete-source-preparation.json)
+passed source verification but was rejected before worker creation because of
+memory availability. Reuse its immutable source artifacts in a fresh scope after
+current admission passes, then require all 25 packages, both builds and closure.
+The [client components](../development/programs-client-component-verification.json)
+passed within their frozen scopes; actual successor authority/artifact and
+admitted live inputs remain pending, and no new live journey has run. Artifact
+work and authority/live-input preparation join before A changes. Heavy work
+remains serialized on the available test environment.
 
 The [retained Library timeline](../development/library-theme-retained-timeline.md)
 records the recovery-scan observer error about 19 seconds before the incident's
 recorded OOM second. Earlier resource pressure remains unproved. The cleanup
 message maps to database finalization and ownership loss, not a root-filesystem
 probe. Independent source review found no demonstrated transaction/fixture leak.
-Use the already prepared phase/read/ownership diagnostics for the first bounded
-theme rerun; do not invent a Query fix, relax timeouts or repeat archive review.
+The [original theme diagnostic](../development/library-theme-diagnostic-result.md)
+and [complete Library package](../development/library-package-diagnostic-result.md)
+have since passed once without reproducing that failure. They are complete,
+not queued for another focused rerun. Do not invent a Query fix, relax timeouts
+or repeat archive review without new evidence.
 
 **Closed compatibility exception:** the bounded current-runtime v2 correction
 represents the second recovery through `previousCurrentRuntime`, preserving v1
@@ -574,15 +594,16 @@ workspace outside every new resource budget.
 
 ### Isolated preparation checkpoints
 
-The September 16 preparation is committed on five independent branches. None
+The September 16 preparation is committed on six independent branches. None
 changes main's frozen Programs product source or supplies execution
 authority. The user has since confirmed environment availability; the current
 maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| `codex/programs-theme-diagnosis`, `3d6b79b` | [Bounded test diagnostics](https://github.com/moooyo/goby/blob/3d6b79b36b6a5050e174f7a152f214b9356608c8/docs/development/library-theme-diagnostic-preparation.md): original theme and complete Library package each passed once, with unchanged assertions/budgets and closed resources | Non-reproduction only. The subsequent full attempt reached its memory cap; resource correction precedes another complete verification. No product fix is established |
-| `codex/m5-user-deletion`, `5c25ead` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/5c25ead2f780cb7ae3f50c39075468bf42c5d419/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests; static review and remote gofmt complete | Generate the real schema29 catalog and execute the prepared historical-source/current-target, deletion-audit and rejected-old-schema-archive cases, then complete Go/DB/HTTP/browser and final verification. No migration, browser or M5 acceptance is claimed; do not merge it into the frozen Programs increment |
+| `codex/programs-theme-diagnosis`, `3d6b79b` | [Bounded test diagnostics](https://github.com/moooyo/goby/blob/3d6b79b36b6a5050e174f7a152f214b9356608c8/docs/development/library-theme-diagnostic-preparation.md): original theme and complete Library package each passed once; the disk-backed full run also passed Library and recovery | Non-reproduction only. The full source archive is now complete, but its new execution still needs the original resource admission and all 25 packages/two builds. No product fix is established |
+| `codex/m5-user-deletion`, `26e8554` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/26e8554/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests. A real FFmpeg/pidfd/WebSocket deletion regression is now added; static review and remote gofmt passed | Generate the real schema29 catalog, execute the prepared restore/version cases and real consumer-retirement test, then complete Go/DB/HTTP/browser and final verification. The new runtime test remains unexecuted; no M5 acceptance or merge into frozen Programs is claimed |
+| `codex/native-capacity-measurement`, `4f092e3` | [47-method component verification](https://github.com/moooyo/goby/blob/4f092e3/docs/development/native-capacity-component-verification-20260916.md): one-shot observations, inclusive measurement costs, enforced child output limits, final failure status, and a bounded result reader passed synthetic/subprocess checks | Actual scan-job activity still lacks a monotonic overlap binding. Close that collection gap, bridge the existing transport correction and bind current runtime/artifact prerequisites before native admission. No native capacity or M2 acceptance is claimed |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md): sample/process/content/stage layers now connect to native APIs, a Settings panel, one owned execution, actual conversion capacity, current native authority, cancellation and bounded per-instance history. The prior 12/18/27 cases plus 40 new Go functions (39 on Linux) and three synthetic browser cases remain unexecuted; static review and remote formatting complete | In the coordinated window, verify Go/type/build and native HTTP/browser behavior, actual resource/deployment prerequisites, codec-log compatibility and content calibration, then execute software/available hardware profiles. Defaults remain disabled and no service configuration was activated. No runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture draft](https://github.com/moooyo/goby/blob/43a9b76a93615b7f872f48dae4e9b3a73ca050b0/docs/development/frontend-contribution-capture.md): Vite records module/source/package and actual asset hashes outside `dist`; release verifies the full asset set and preserves a private copy. The [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md) passed once per group with source/runtime identity and resource closure | At the next independently required frontend build, run type checks and actual callback/asset/consumer verification. Include `web/admin/build/` in the source snapshot and retain the successful command receipt with the sidecar. No unchanged E11 rebuild, Programs artifact change, actual build success or legal completeness is claimed |
 | `codex/m6-oci-package`, `18cd4ef` | [Linux amd64 OCI software draft](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md): fixed Debian manifest/snapshots, selected-release input checker, FFmpeg 9.0.1 source recipe, PG17 clients and nonroot/read-only Compose profile. All [12 checker methods](../development/oci-artifact-checker-verification.md) passed once with bounded remote execution and resource closure | Select an actually verified release and establish the builder/runtime/resource boundary. Check the real artifact, Compose/image and nonroot media/backup/stop behavior; retain exact image, tool, package and source identities. No application artifact is selected, no image is built/pulled/started, and GPU/arm64/reproducibility/legal acceptance remain open |
@@ -604,7 +625,7 @@ and actual execution results distinct.
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
 | 0. Historical application recovery and consumer runtime binding — complete in its original scope | Retain the independently reviewed September 15 recovery, component scopes, actual one-cluster/one-lease observation and validated ready v2 envelope | Both applications were subsequently observed failed after a new September 16 host event. Reuse unaffected evidence, but the old ready envelope is no longer fresh live authority. Do not replay consumed inputs or restart applications merely to refresh a binding |
-| Current September 16 preservation — logical comparison complete | The [new four-database checkpoint](../development/candidate-oom-exit-preservation-20260916.md) matches every selected field in 35 tables and five sequences per database against the latest September 15 baselines; all 10 SQL sessions and owned commands closed with protected state unchanged | Independent saved-record review passed. Both applications remain failed; native/log preservation and actual recovery are still pending. No physical integrity, application health or new live authority is claimed |
+| Current September 16 preservation — SQL and native checks complete | The [four-database checkpoint](../development/candidate-oom-exit-preservation-20260916.md) and [native checkpoint](../development/candidate-oom-exit-native-preservation-20260916.md) passed independent review with exact protected state and closed resources | Both applications remain failed. Observe diagnostics/log/cache close to restart, then complete actual recovery. No physical integrity, application health or new live authority is claimed |
 | Historical September 14 disk-full recovery — complete | Retain the independently reviewed four-database/native/log preservation and once-only application restart evidence in its original scope | Its replacement runtime identities have since been invalidated by the new incident. Preserve the result and old inputs; do not repeat that workflow to refresh its label |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
@@ -612,11 +633,11 @@ and actual execution results distinct.
 | 1. Client components passed; actual authority/live inputs pending | Reuse the [passed frozen client components](../development/programs-client-component-verification.json) and runtime/transition/admission scopes; bind the [journey/recovery contracts](../development/e11-candidate-transition-decision.md) and admitted live inputs to actual successor authority/artifacts | No new framework, version or live-journey acceptance follows from component checks. Bind the new runtime and actual artifact together after final verification. Preparation does not block independent Go diagnosis/build work; both must close before A changes |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
-| 2. Frozen-source verification/build — one disk-backed full run active | The [new full run](../development/programs-disk-full-preparation.json) passed preparation and started on the reviewed r03 adapter, current guard and unchanged compact source. Require all 25 packages and both builds, then review actual result and closure | Observe the same unit/scope until authoritative completion; observation timeout is not permission to relaunch. Preserve the failed probe, interrupted recovery events, failed unit and prior attempts. No score merging, consumed-input replay, timeout inflation or product-failure inference from resource interruption |
+| 2. Frozen-source verification/build — complete source ready, memory admission pending | The [disk-backed run](../development/programs-disk-full-result.md) exposed nine omitted fixtures. The [complete-source replacement](../development/programs-complete-source-preparation.json) has verified all 5405 members but dispatched no worker because memory stayed below 5 GiB | Check current capacity and use a fresh scope with the preserved complete source. Require all 25 packages and both builds. Preserve both failures and closures; no score merging, consumed-input replay, timeout inflation or reduced memory admission |
 | 3. One direct A transition — held | After incident recovery, bind the verified successor, new runtime authority, current full state, declared task-definition delta and the recovery/closure plan | No intermediate original-E11 deployment, actor reset, new candidate, old live binding or assumed rollback. Preserve B and all historical evidence |
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
-| Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [saved controller/source checkpoint](../development/session-handoff-20260915-native-capacity.md); define useful output, overlap coverage, observer overhead and finite remaining preparation before any resumption | No native fixture/input exists. Reuse the distinct reader/transport/pool results within their scopes; incomplete overlap is not capacity acceptance |
+| Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [original source checkpoint](../development/session-handoff-20260915-native-capacity.md) and the [verified 47-method operator correction](https://github.com/moooyo/goby/blob/4f092e3/docs/development/native-capacity-component-verification-20260916.md) | No native fixture/input exists. Add the missing actual scan-job/monotonic overlap binding, bridge the transport source correction and refresh runtime/artifact admission. Reuse unchanged historical groups; incomplete overlap is not capacity acceptance |
 | Independent profile: package attribution | Retain the [46-chunk graph](../development/systemd-package-javascript-attribution.md), completed [73-row fixed-commit MUI lookup](../development/systemd-package-mui-source-correspondence.md) and [19-text payload draft](../development/systemd-package-legal-payload-draft.md). Capture the actual module graph with the next independently required frontend build | Two inspected saved reports supplied no source-graph reference. Keep historical E11 contribution and Google input gaps explicit; no unchanged E11 rebuild or repeated source lookup without concrete new evidence. Final payload, pending license choice and external-distribution gate remain open |
 | Independent profiles: remaining M2-M6 | Progress blocked I/O, durability, media/transcode, administration, hardware/architecture, OCI and support rows under their own prerequisites | No blanket dependence on main promotion; unavailable hardware/licensing blocks the corresponding claim. M7 remains deferred |
 

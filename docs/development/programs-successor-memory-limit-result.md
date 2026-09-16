@@ -39,8 +39,11 @@ The [disk compiler-volume functional check](compiler-disk-volume-verification-20
 has passed with real execution and cache/temporary writes in the isolated unit,
 followed by complete owned closure. The first check exposed overlapping systemd
 mounts; r03 now selects the visible mount through an opened directory FD and its
-mount ID. A [fresh full run](programs-disk-full-preparation.json) has started;
-its final suite/build result and closure remain pending.
+mount ID. The [disk-backed full run](programs-disk-full-result.md) subsequently
+passed recovery and closed, but failed server tests on omitted fixtures. The
+[complete-source replacement](programs-complete-source-preparation.json) passed
+source checks; its worker was not admitted because memory remained below the
+unchanged minimum. Full regression and builds remain incomplete.
 
 The full adapter restores the original 3 GiB worker cap, moves `GOCACHE` and
 compiler temporary files to a separately bounded 2 GiB root-backed ext4 volume,

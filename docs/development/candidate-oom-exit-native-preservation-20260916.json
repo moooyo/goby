@@ -1,0 +1,113 @@
+{
+  "kind": "candidate-oom-exit-native-preservation-checkpoint",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "native_relations_reviewed_applications_still_failed",
+  "scope": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01",
+  "evidence": {
+    "admission": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/native-admission.json",
+      "bytes": 1734,
+      "sha256": "ad5e25a7149501f6e72bb0abe817986f4b20c2596973efded53fae277aa0598b"
+    },
+    "execution": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/native-execution.json",
+      "bytes": 46094,
+      "sha256": "a216d886e805f31ff96ddfe90edd40f4e5dfce992c2e26d118f5cad2ad2b0943"
+    },
+    "result": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/native-01/result.json",
+      "bytes": 4186,
+      "sha256": "3bc1fbb83471199972c40c6d95754d5010d8679fa15e91f9a11192f23e0a7464"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/native-independent-review.json",
+      "bytes": 4562,
+      "sha256": "925670d9cb3f918b3c12004eaefa51899eb4abea2494bb940ad2c775e4910848"
+    },
+    "nativeObserver": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/private/candidate-disk-full-native.py",
+      "bytes": 39947,
+      "sha256": "1b43857ae7b74b07e0227d88d8f8c666079bd20084d61ef6c0c413a7fcb9f2a0"
+    },
+    "executor": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/private/candidate-disk-full-native-execute.py",
+      "bytes": 8072,
+      "sha256": "a79e22fd009553cb2405cffea46bd56b8876448a31519c062fd18ccea99130d5"
+    },
+    "reusedReadonlyCheckpoint": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-two-preparation-r01/private/readonly-checkpoint.json",
+      "bytes": 9130,
+      "sha256": "f769db9645c19b21d1fef47f528cf5ba1c174e17858a483920c41940d9ccbc72"
+    }
+  },
+  "observation": {
+    "status": "observed",
+    "allNativeChecksPassed": true,
+    "observerInvocations": 1,
+    "observedAndEvidenceFiles": 51,
+    "readBytes": 2089292,
+    "evidenceBytesWritten": 51637,
+    "evidenceFilesWritten": 16,
+    "elapsedMilliseconds": 51,
+    "budgets": {"maximumSeconds": 60, "maximumFiles": 64, "maximumBytes": 33554432},
+    "controllerAlarmSeconds": 90,
+    "externalDispatchEnvelopeSeconds": 120,
+    "checksForBothCandidates": {
+      "lifecycleAndControlRelationsMatched": true,
+      "stagedGenerationComplete": true,
+      "configurationHashesMatched": true,
+      "masterMetadataMatched": true,
+      "operationsTerminalAndAuthorized": true,
+      "transitionAbsent": true,
+      "backupCatalogAndObjectMetadataMatched": true,
+      "savedSqlBindingsAndRecoveryRowCountsMatched": true,
+      "sourceWorkProjectionMatched": true
+    },
+    "sqlObservationReused": true,
+    "expiryEvaluated": false,
+    "newSqlSessions": 0,
+    "nativeStoreWrites": 0,
+    "storeOpenCalled": false,
+    "applicationStarts": 0,
+    "httpRequests": 0,
+    "serviceChanges": 0,
+    "receiptErrors": []
+  },
+  "closureAndReview": {
+    "executionStatus": "native_observation_complete",
+    "independentReviewStatus": "native_observation_and_evidence_reviewed",
+    "reviewer": "review_gates_and_evidence",
+    "reviewMethod": "Read-only review of admitted sources and saved evidence; no observer replay or live native reads.",
+    "fullWorkerClosedBeforeAdmission": true,
+    "savedEvidenceFilesRead": 16,
+    "savedRawPinsMatched": 14,
+    "commandStreamsRead": 32,
+    "metadataCommandsClosed": 16,
+    "rawUnitOutputsMatched": 16,
+    "protectedBeforeAfterExact": true,
+    "protectedPostmasters": 3,
+    "protectedFiles": 5,
+    "configurationHashes": 8,
+    "lockReleased": true
+  },
+  "applicationStateAtObservation": {
+    "A": {"activeState": "failed", "subState": "failed", "mainPid": 0},
+    "B": {"activeState": "failed", "subState": "failed", "mainPid": 0},
+    "applicationRecoveryProven": false,
+    "newRuntimeAuthorityEstablished": false
+  },
+  "auxiliaryPhase": {
+    "diagnosticsLogCacheObservationPerformed": false,
+    "restartPerformed": false,
+    "historicalStartWindowReused": false,
+    "reason": "Defer the bounded diagnostics/log/cache observation until actual restart readiness so its new one-hour start window remains fresh."
+  },
+  "limits": [
+    "Native metadata, logical relations, and their saved SQL bindings passed; complete historical identity of every native file is not established.",
+    "Encrypted backup bodies and master/key contents were not read or content-hashed. Environment and configuration contents were not decoded.",
+    "No physical database/native-store integrity, durability, application health, recovery completion, or client acceptance is established.",
+    "The pinned readonly checkpoint is reused unchanged; this phase issues no new SQL and does not evaluate or modify play-session expiry.",
+    "Diagnostics, logs, and caches require the separate fresh observation before a separately admitted restart. This native result does not admit an application start."
+  ]
+}

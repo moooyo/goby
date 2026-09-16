@@ -2,7 +2,7 @@
   "kind": "programs-disk-full-verification-preparation",
   "version": 1,
   "recordedOn": "2026-09-16",
-  "status": "single_full_run_started_results_pending",
+  "status": "full_run_failed_missing_fixtures_owned_resources_closed",
   "scope": "/opt/goby-test/livetv-programs-disk-final-20260916",
   "adapter": {
     "path": "/opt/goby-test/livetv-programs-disk-final-20260916/private/verify-livetv-programs-final-r03.py",
@@ -45,5 +45,6 @@
   "existingApplicationServiceActions": 0,
   "applicationRecoveryClaimed": false,
   "fullVerificationClaimed": false,
-  "continuation": "Observe this same worker and execution scope until authoritative completion. Do not relaunch after an observation timeout. Inspect execution.json and retained worker/archive records for the actual result and closure."
+  "resultRecord": "programs-disk-full-result.json",
+  "continuation": "The worker and this execution are terminal. Preserve the failed compact-source input and use the complete-source successor checkpoint; do not replay this scope or combine partial runs."
 }
