@@ -110,8 +110,8 @@ F = Path('/opt/goby-native-scan-http-capacity-20260915')
 SOURCE = E / 'private/capacity-transport.py'
 READER = E / 'private/capacity-reader.py'
 JOURNEY = E / 'private/native-catalog-journey.py'
-READER_SHA = 'a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20'
-READER_BYTES = 46356
+READER_SHA = '609d6ea7d3bcffcddce724007f7c12ad68940dcdbe818e15117a2bcc6d7792bb'
+READER_BYTES = 49598
 JOURNEY_SHA = '63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4'
 ORIGIN = 'http://127.0.0.1:18099'
 COUNTER_LIMITS = {'setup': 112, 'task-poll': 184, 'cleanup': 64}
@@ -123,6 +123,8 @@ RECEIPT_CAP = 32 << 10
 EVIDENCE_CAP = 32 << 20
 HTTP_SECONDS = 10
 ID = r'[0-9a-f]{32}'
+SCAN_OBSERVATION_LABELS = frozenset('scan-state-' + phase + '-' + position
+    for phase in ('cold', 'cached') for position in ('first', 'second'))
 
 
 class Rejected(Exception):
@@ -345,6 +347,7 @@ class ControlTransport:
         self.admitted_attempts = {key: 0 for key in COUNTER_LIMITS}
         self.intent_counts = {key: 0 for key in COUNTER_LIMITS}
         self.receipts = []
+        self.scan_observation_receipts = {}
         self.sequence = 0
         self.active = None
         self.journey_module = self.journey_class = self.workload = None
@@ -459,6 +462,12 @@ class ControlTransport:
                 'intentCounts': dict(self.intent_counts), 'priorSetupRequests': self.readiness_requests,
                 'limits': dict(COUNTER_LIMITS, evidenceBytes=EVIDENCE_CAP),
                 'evidenceBytes': self.evidence_bytes, 'receipts': list(self.receipts)}
+
+    def scan_observation_receipt(self, label):
+        """Return only a completed receipt for one of four fixed observations."""
+        need(label in SCAN_OBSERVATION_LABELS and self.active is None and
+             label in self.scan_observation_receipts, 'transport_scan_observation_receipt_missing')
+        return dict(self.scan_observation_receipts[label])
 
     def _owned(self):
         self.support.check_infrastructure(self.base, self.context)
@@ -602,6 +611,12 @@ class ControlTransport:
             'rawFraming': {'checked': False, 'passed': False},
             'partialReadError': False, 'traceErrors': [], 'persistenceErrors': [], 'postOwnershipErrors': [],
             'ownershipBefore': True, 'ownershipAfter': False, 'error': None, 'unknownMutationOutcome': False}
+        scan_observation = label in SCAN_OBSERVATION_LABELS
+        if scan_observation:
+            need(admission['name'] == 'jobs' and bucket == 'task-poll' and
+                 label.startswith('scan-state-' + phase + '-') and
+                 label not in self.scan_observation_receipts, 'transport_scan_observation_scope')
+            capture['clockDomainBefore'] = self.reader.clock_domain()
         self.active = capture
         write_started = self.evidence_write_ns
         raw_body, chunks, parsed, returned = b'', [], None, None
@@ -844,6 +859,8 @@ class ControlTransport:
             capture['error'] = None if first_error is None else self._error(first_error)
             capture['journeyTracePersisted'] = None if journey is None else journey.trace_persisted
             capture['evidenceWriteNsBeforeReceipt'] = self.evidence_write_ns - write_started
+            if scan_observation:
+                capture['clockDomainAfter'] = self.reader.clock_domain()
             capture['finishedAnchor'] = self.reader.clock_anchor()
             pin = None
             try:
@@ -866,6 +883,8 @@ class ControlTransport:
              capture['connectionClosed'] and not capture['responseCloseErrors'] and
              not capture['connectionCloseErrors'] and not capture['persistenceErrors'],
              'transport_capture_incomplete')
+        if scan_observation:
+            self.scan_observation_receipts[label] = dict(pin)
         if readiness:
             return returned, capture['status'], pin
         return returned

@@ -1,0 +1,192 @@
+{
+  "kind": "native-capacity-running-observation-component-verification",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "component_results_reviewed_with_prior_failure_preserved",
+  "sourceParentCommit": "4f092e3",
+  "implementation": {
+    "observationDetailSlots": [
+      2,
+      3
+    ],
+    "omittedDetailSlots": [
+      30,
+      60
+    ],
+    "detailSlotCeilingPerPhase": 91,
+    "detailRequestCeilingPerPhase": 89,
+    "jobObservationsPerPhase": 2,
+    "terminalJobsPerPhase": 1,
+    "taskPollRequestCeiling": 184,
+    "totalHttpRequestCeiling": 600,
+    "phaseDeadlineSeconds": 450,
+    "readerStartOrScanDelayedForCoverage": false,
+    "overlap": "Same reader-library job remains in persisted Running state between first response body completion and second dispatch, with exact source/run/child/job/library and clock-domain binding.",
+    "filesystemOrFfprobeOverlapClaimed": false,
+    "fullAndPartialIntersectionsSeparated": true,
+    "shortScansMayRemainIncomplete": true
+  },
+  "runtimeSources": [
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-controller.py",
+      "bytes": 48165,
+      "sha256": "dc461f6f73a2406236ed0501d4d4d115330175907ad75adfcd20bc2ca1197c8d"
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-reader.py",
+      "bytes": 49598,
+      "sha256": "609d6ea7d3bcffcddce724007f7c12ad68940dcdbe818e15117a2bcc6d7792bb"
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-reader-pool.py",
+      "bytes": 64749,
+      "sha256": "64b62da394c5f2f619f45e41e8c26acd0c5dc5aac0107d33a4b80928d25e6b07"
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-transport.py",
+      "bytes": 53050,
+      "sha256": "a2a9599869ea47bdd2f40e3b520317e3e225348d050aea0b111896faa119696a"
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-workload.py",
+      "bytes": 84665,
+      "sha256": "f1de9b3fd0797b7a8040aae3f977ed7e4c7453279eeb42cefe0e002172b7d352"
+    },
+    {
+      "path": "scripts/test-env/native-scan-http-capacity/capacity-result-reader.py",
+      "bytes": 67604,
+      "sha256": "26c4c9463788ad426e69d721a69e4421c105c8ebf4147af1c13c7b8f21caf160"
+    }
+  ],
+  "unitMethods": {
+    "counts": {
+      "measurement": 14,
+      "scanObservations": 11,
+      "resultReader": 28,
+      "failureRouting": 8
+    },
+    "passed": 61,
+    "failed": 0,
+    "skipped": 0,
+    "executionsPerGroup": 1,
+    "manifest": {
+      "path": "/opt/goby-test/native-capacity-running-components-20260916-3b50296b9fa1/private/source-manifest.json",
+      "bytes": 5891,
+      "sha256": "af052d0404e0eb6fb7e322cd5a50d65c2628125d7d72166a3a84981abc0e5495"
+    },
+    "result": {
+      "path": "/opt/goby-test/native-capacity-running-components-20260916-3b50296b9fa1/private/result.json",
+      "bytes": 9647,
+      "sha256": "ccd37a819d6f0d2520cdc3d28bd84c3be89d2f30dc1ac7c8a121c0894379b8be"
+    },
+    "closure": {
+      "path": "/opt/goby-test/native-capacity-running-components-20260916-3b50296b9fa1/private/closure.json",
+      "bytes": 1514,
+      "sha256": "485feff3b3d8b3f634f49ca464a0df18b65ae4166c07c3b054503dab00187f21"
+    },
+    "memoryPeakBytesAtFinalRead": 32165888
+  },
+  "readerAndTransport": {
+    "readerGroupsPassed": 12,
+    "transportGroupsPassed": 8,
+    "executionsPerGroup": 1,
+    "manifest": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/source-manifest.json",
+      "bytes": 8313,
+      "sha256": "e41a1617a058b5e24a9097632a180c92360c62dd18138acb6267951d067c6d86"
+    },
+    "result": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/result.json",
+      "bytes": 9345,
+      "sha256": "a41a357623a4862c664436379d05b21cd62d5a9a4b1dc376ccaad494d1d9a1c5"
+    },
+    "closure": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/closure.json",
+      "bytes": 1488,
+      "sha256": "63b9840b13a358efc288359bffe0f34bbeccb3e32ed1c8fa973d38fa32cb8a86"
+    },
+    "readerResult": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/reader-checks/result.json",
+      "bytes": 16960,
+      "sha256": "e554b9ede0f0b1118a990ed42317177863e1e0d16a8411ca7c5d7ff01d277e3a"
+    },
+    "transportResult": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/transport-checks/result.json",
+      "bytes": 31280,
+      "sha256": "178bf57e01bf237b047ad4057087df013e026137c64305f35cf4eb5dce0c2406"
+    },
+    "originalPoolFailure": {
+      "groups": 6,
+      "reason": "reader_pool_controller_not_host_root",
+      "poolChildrenCreated": 0,
+      "signalsOrWaits": 0,
+      "harnessFallbacks": 0,
+      "outerCheckerProcessesClosed": true,
+      "wholeDispatchExitCode": 1,
+      "preserved": true
+    }
+  },
+  "poolOnly": {
+    "groupsPassed": 6,
+    "stubLifetimes": 12,
+    "harnessFallbacks": 0,
+    "executionsPerGroup": 1,
+    "readerOrTransportGroupsRerun": false,
+    "manifest": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02/private/source-manifest.json",
+      "bytes": 6891,
+      "sha256": "2be615d0727d4177831f7e025c6f3005a4cc15c52de8cce7a6e139e4c4310c79"
+    },
+    "result": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02/private/result.json",
+      "bytes": 7953,
+      "sha256": "ad79ae81aaced30ee6e67c52f4f0711836718357e987d914fdfc113b43fcf0f1"
+    },
+    "closure": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02/private/closure.json",
+      "bytes": 1476,
+      "sha256": "6d130d371eade411a99c6990a00d9608b95d2cc788264f0b150bf0389c68502a"
+    },
+    "poolResult": {
+      "path": "/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02/private/pool-checks/receipt.json",
+      "bytes": 6226,
+      "sha256": "56d8eb1fb9ad195d6493f9ea74a4482939439452e513a181030631dad1a72c77"
+    },
+    "checker": {
+      "bytes": 30854,
+      "sha256": "77dc3d16a34cf489cbeab2c385b0caebb191be642a9da677e7183a6073f470e0",
+      "changeFromFirstPoolAttempt": "Only the exact CHECK scope string changed."
+    },
+    "privateNetwork": false,
+    "restrictAddressFamilies": [
+      "AF_UNIX"
+    ],
+    "controllerNetworkNamespaceEqualsPid1": true,
+    "memoryPeakBytesAtFinalRead": 40161280
+  },
+  "resourceProfile": {
+    "memoryMaxBytes": 134217728,
+    "memorySwapMaxBytes": 0,
+    "cpuQuotaPercent": 25,
+    "tasksMax": 32,
+    "runtimeMaxSeconds": 240,
+    "fileSizeLimitBytes": 8388608,
+    "privateMounts": true,
+    "privateTmp": true,
+    "protectSystem": "strict",
+    "actualPropertiesChecked": true,
+    "allScopesClosed": true
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02/private/independent-reviewed-summary.json",
+    "bytes": 21487,
+    "sha256": "d87a25144255a6fdd96937497d36d27b4e4bbba6de71d3a1a3859c3a8e3bc18b"
+  },
+  "limits": [
+    "61 unittest methods and the 12/8/6 component groups are different evidence scopes, not a combined product-test count.",
+    "The first pool attempt failed before pool child creation because PrivateNetwork=yes conflicted with the unchanged host-network controller guard.",
+    "The new pool-only unit retained the host network namespace and restricted newly created sockets to AF_UNIX. Product guards and six runtime source files were unchanged.",
+    "Subsequent checker-only source/path changes do not require replaying the unchanged 61 methods or passed reader/transport groups.",
+    "Synthetic protocol fixtures and stub lifetimes do not establish Goby TCP, native scanning, actual scan overlap, performance capacity or complete M2-M6 acceptance."
+  ]
+}

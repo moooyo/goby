@@ -41,14 +41,14 @@ import time
 import types
 
 
-ROOT = Path('/opt/goby-test/native-scan-http-capacity-checks-20260915')
-CANDIDATE = ROOT / 'private/candidate-03'
-OUTPUT = ROOT / 'private/transport-checks-01'
+ROOT = Path('/opt/goby-test/native-scan-http-capacity-running-checks-20260916')
+CANDIDATE = ROOT / 'private/source'
+OUTPUT = ROOT / 'private/transport-checks'
 PINS = {
     'transport': {'path': str(CANDIDATE / 'capacity-transport.py'),
-                  'sha256': '21c90bff5bdbbcd6f8562e6562c7fbbaf8f67b1f3433db80abd5995d5a5ddf4e', 'bytes': 51898},
+                  'sha256': 'a2a9599869ea47bdd2f40e3b520317e3e225348d050aea0b111896faa119696a', 'bytes': 53050},
     'reader': {'path': str(CANDIDATE / 'capacity-reader.py'),
-               'sha256': 'a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20', 'bytes': 46356},
+               'sha256': '609d6ea7d3bcffcddce724007f7c12ad68940dcdbe818e15117a2bcc6d7792bb', 'bytes': 49598},
     'journey': {'path': str(CANDIDATE / 'native-catalog-journey.py'),
                 'sha256': '63125715ad415349f3ae95a008f56783800c7334d90efcbcb394a14215e695d4', 'bytes': 39059}}
 REQUEST_ID = 'c' * 32

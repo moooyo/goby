@@ -109,6 +109,10 @@ TERMINAL = {'completed', 'failed', 'cancelled', 'interrupted'}
 ACTIVE = {'pending', 'running', 'stopping'}
 CHILD_STATES = {'waiting', 'queued', 'running', 'completed', 'failed',
                 'cancelled', 'unavailable', 'interrupted'}
+DETAIL_POLL_SLOTS = 91
+SKIPPED_DETAIL_SLOTS = frozenset((30, 60))
+JOB_FIELDS = {'Id', 'LibraryId', 'ForceProbe', 'Status', 'Error', 'Scanned', 'Added',
+              'Updated', 'CreatedAt', 'StartedAt', 'FinishedAt'}
 
 
 class WorkloadError(RuntimeError):
@@ -135,6 +139,68 @@ def timestamp(value):
     need(parsed.tzinfo is not None and parsed.utcoffset().total_seconds() == 0,
          'workload_timestamp_not_utc')
     return parsed.timestamp()
+
+
+def detail_poll_requested(slot):
+    """Keep the original observation slots while reallocating two HTTP calls."""
+    need(type(slot) is int and 1 <= slot <= DETAIL_POLL_SLOTS, 'workload_poll_slot_contract')
+    return slot not in SKIPPED_DETAIL_SLOTS
+
+
+def scan_observation_positions(slot, state, recorded):
+    """Use existing detail slots, never wait merely to fill measurement gaps."""
+    need(type(slot) is int and 1 <= slot <= DETAIL_POLL_SLOTS and
+         type(recorded) is int and 0 <= recorded <= 2 and state in ACTIVE | TERMINAL,
+         'workload_scan_observation_slot')
+    if state not in ('pending', 'running', 'completed') or recorded == 2:
+        return ()
+    if state == 'completed':
+        return ('first', 'second')[recorded:]
+    if slot == 2 and recorded == 0:
+        return ('first',)
+    if slot == 3 and recorded == 1:
+        return ('second',)
+    need(slot < 3 or recorded == 2, 'workload_scan_observation_slot_missing')
+    return ()
+
+
+def scan_observation_jobs(value, phase, libraries, retained):
+    """Allow not-yet-created current jobs, without accepting foreign history."""
+    need(phase in ('cold', 'cached') and type(value) is dict and
+         set(value) == {'Items', 'TotalRecordCount'} and type(value['Items']) is list and
+         type(value['TotalRecordCount']) is int and value['TotalRecordCount'] == len(value['Items']) and
+         len(value['Items']) <= (2 if phase == 'cold' else 4) and
+         type(libraries) is set and len(libraries) == 2 and type(retained) is dict and
+         len(retained) == (0 if phase == 'cold' else 2), 'workload_scan_observation_inventory')
+    jobs = {}
+    for job in value['Items']:
+        need(type(job) is dict and set(job) == JOB_FIELDS, 'workload_scan_observation_job_shape')
+        job_id = identifier(job['Id'])
+        need(job_id not in jobs and job['LibraryId'] in libraries and job['ForceProbe'] is False and
+             job['Status'] in TERMINAL | {'pending', 'running'} and type(job['Error']) is str and
+             len(job['Error']) <= 8192 and all(type(job[key]) is int and 0 <= job[key] <= 500
+                                            for key in ('Scanned', 'Added', 'Updated')),
+             'workload_scan_observation_job_scope')
+        created = timestamp(job['CreatedAt'])
+        started = None if job['StartedAt'] is None else timestamp(job['StartedAt'])
+        finished = None if job['FinishedAt'] is None else timestamp(job['FinishedAt'])
+        need((started is None or created <= started) and
+             (finished is None or max(created, started if started is not None else created) <= finished),
+             'workload_scan_observation_job_times')
+        if job['Status'] == 'pending':
+            need(started is None and finished is None, 'workload_scan_observation_pending_times')
+        elif job['Status'] == 'running':
+            need(started is not None and finished is None and job['Error'] == '',
+                 'workload_scan_observation_running_times')
+        else:
+            need(finished is not None, 'workload_scan_observation_terminal_time')
+        jobs[job_id] = copy.deepcopy(job)
+    need(all(jobs.get(job_id) == job for job_id, job in retained.items()),
+         'workload_scan_observation_retained_changed')
+    current = [job for job_id, job in jobs.items() if job_id not in retained]
+    need(len(current) <= 2 and len({job['LibraryId'] for job in current}) == len(current),
+         'workload_scan_observation_current_libraries')
+    return jobs
 
 
 def rows(snapshot, table, maximum):
@@ -410,6 +476,7 @@ def make_workload(journey_module, *, origin, media_root, setup_token, passwords,
             self.bucket = 'setup'
             self.capacity_libraries = {}
             self.runs, self.admissions, self.observations = {}, {}, {}
+            self.scan_observations = []
             self.child_bindings, self.run_bindings = {}, {}
             self.reader_births, self.reader_joins = {}, {}
             self.active_reader_phase = None
@@ -438,9 +505,9 @@ def make_workload(journey_module, *, origin, media_root, setup_token, passwords,
             super()._record(value)
 
         def _private(self, event, **values):
-            self.callbacks['record'](dict(values, event=event, scope=E,
-                                          observedMonotonic=time.monotonic(),
-                                          observedWall=datetime.now(timezone.utc).isoformat()))
+            return self.callbacks['record'](dict(values, event=event, scope=E,
+                                                 observedMonotonic=time.monotonic(),
+                                                 observedWall=datetime.now(timezone.utc).isoformat()))
 
         def _remaining(self):
             value = self.callbacks['remaining']()
@@ -544,6 +611,39 @@ def make_workload(journey_module, *, origin, media_root, setup_token, passwords,
                      (TERMINAL | {'pending', 'running'}), 'workload_scan_job_scope')
                 by_id[job_id] = job
             return by_id
+
+        def _observe_scan_jobs(self, phase, position, detail, slot, *, deadline):
+            expected = [(name, place) for name in ('cold', 'cached')
+                        for place in ('first', 'second')]
+            need(len(self.scan_observations) < 4 and
+                 (phase, position) == expected[len(self.scan_observations)] and self.bucket == 'task-poll',
+                 'workload_scan_observation_order')
+            label = 'scan-state-' + phase + '-' + position
+            before = time.monotonic_ns()
+            value = self._admin_json('GET', '/admin/v1/jobs', label=label, deadline=deadline)
+            after = time.monotonic_ns()
+            jobs = scan_observation_jobs(value, phase,
+                {row['Id'] for row in self.capacity_libraries.values()},
+                {} if phase == 'cold' else self.jobs['cold'])
+            observation = {'phase': phase, 'position': position, 'label': label,
+                'detailPollSlot': slot, 'detailState': detail['Run']['State'],
+                'collectionPoint': 'terminal-detail' if detail['Run']['State'] == 'completed' else 'periodic-detail',
+                'taskId': self.task_id, 'requestId': request_ids[phase],
+                'runId': self.admissions[phase]['runId'],
+                'children': copy.deepcopy(detail['Children']['Items']),
+                'jobs': jobs, 'beforeMonotonicNs': before, 'afterMonotonicNs': after}
+            saved = self._private('scan-job-state-observation', phase=phase, observation=observation)
+            need(type(saved) is dict and set(saved) == {'observation', 'record'} and
+                 type(saved['observation']) is dict and
+                 {key: value for key, value in saved['observation'].items() if key != 'controlReceipt'} == observation and
+                 type(saved['observation'].get('controlReceipt')) is dict and type(saved['record']) is dict,
+                 'workload_scan_observation_receipt_binding')
+            self.scan_observations.append(dict(saved['observation'], record=saved['record']))
+
+        def _scheduled_scan_observations(self, phase, slot, detail, *, deadline):
+            recorded = sum(row['phase'] == phase for row in self.scan_observations)
+            for position in scan_observation_positions(slot, detail['Run']['State'], recorded):
+                self._observe_scan_jobs(phase, position, detail, slot, deadline=deadline)
 
         def _setup(self):
             status = self._request('GET', '/admin/v1/bootstrap', 200, label='bootstrap-status')
@@ -761,9 +861,11 @@ def make_workload(journey_module, *, origin, media_root, setup_token, passwords,
                                                     self._reader_mappings(phase))
             self.reader_births[phase] = copy.deepcopy(birth)
             self._private('reader-phase-started', phase=phase, receipt=birth)
-            poll_count, last_poll = 1, time.monotonic()
+            poll_count, poll_slot_count, last_poll = 1, 1, time.monotonic()
+            self._scheduled_scan_observations(phase, poll_slot_count, detail, deadline=deadline)
+            skipped_slots = []
             while detail['Run']['State'] not in TERMINAL:
-                need(detail['Run']['State'] in ('pending', 'running') and poll_count < 91,
+                need(detail['Run']['State'] in ('pending', 'running') and poll_slot_count < DETAIL_POLL_SLOTS,
                      'workload_task_unexpected_active_state')
                 due = last_poll + 5.0
                 while time.monotonic() < due:
@@ -774,9 +876,17 @@ def make_workload(journey_module, *, origin, media_root, setup_token, passwords,
                     if delay > 0:
                         time.sleep(delay)
                 need(time.monotonic() < deadline, 'workload_task_deadline')
-                detail = self._run_detail(phase, deadline=deadline)
-                poll_count += 1
-                last_poll = time.monotonic()
+                poll_slot_count += 1
+                if detail_poll_requested(poll_slot_count):
+                    detail = self._run_detail(phase, deadline=deadline)
+                    poll_count += 1
+                    last_poll = time.monotonic()
+                    self._scheduled_scan_observations(phase, poll_slot_count, detail, deadline=deadline)
+                else:
+                    self.callbacks['assert_owned']()
+                    self.callbacks['sample_resources']()
+                    skipped_slots.append(poll_slot_count)
+                    last_poll = time.monotonic()
             self._join_readers(phase, min(time.monotonic() + 15.0,
                                          time.monotonic() + self._remaining()))
             self._check_run(detail, phase, terminal=True)
@@ -801,7 +911,8 @@ def make_workload(journey_module, *, origin, media_root, setup_token, passwords,
                  'workload_task_still_current_after_completion')
             self.callbacks['sample_resources']()
             self._private('task-phase-complete', phase=phase, detail=detail, jobs=jobs,
-                          pollCount=poll_count,
+                          pollCount=poll_count, pollSlotCount=poll_slot_count,
+                          skippedDetailSlots=skipped_slots, scanJobObservationCount=2,
                           durationSeconds=timestamp(detail['Run']['FinishedAt']) -
                                           timestamp(detail['Run']['StartedAt']))
 

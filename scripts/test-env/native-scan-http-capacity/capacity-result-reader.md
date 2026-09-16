@@ -3,7 +3,11 @@
 `capacity-result-reader.py` analyzes the existing fixed profile's saved records.
 It does not import the controller, launch a process, open a connection, query a
 database, inspect a live service, change a corpus, or write evidence. Its current
-state is **synthetic contracts verified; no native profile result available**.
+state is **paired Running-state contracts and affected component checks verified;
+native profile still pending**. The separate 61-method and reader/transport/pool
+scopes retain identical runtime source hashes and independent review. Their
+checker-only adjustments do not change the runtime code or turn fixture results
+into a native profile result.
 
 The only production entry is the exact scope
 `/opt/goby-test/native-scan-http-capacity-20260915`. The CLI accepts a pinned
@@ -32,9 +36,12 @@ limit. Duplicate JSON keys, nonfinite numbers, replaced files, wrong pins, and
 cross-run bindings are rejected with fixed error codes.
 
 Only the execution, small component records, SQL parsed payloads and receipts,
-reader final/request/raw evidence, resource samples, and optional measurement
-cost snapshots are opened. It does not follow configuration, credential input,
-database, archive-member, source, or tool paths mentioned inside those records.
+reader final/request/raw evidence, four scan-observation event/control receipts,
+the reader context, resource samples, and optional measurement cost snapshots are
+opened. The exact `private/capacity-reader.py` and `private/capacity-transport.py`
+files are read only to bind source bytes; neither is imported or executed. It
+does not follow configuration, credential input, database, archive-member,
+arbitrary source, or tool paths mentioned inside those records.
 Raw HTTP bytes are hash checked and discarded; they are not included in output.
 Private payload values and credentials are not printed. Archive preservation
 and process closure are reported as recorded facts, not newly observed facts.
@@ -76,14 +83,48 @@ anchors. It also shows a conditional mapping of recorded scan-job wall intervals
 through the observed offset envelope. These are descriptions of observations,
 not proof of clock continuity between them.
 
+Old records without a clock domain or paired job observations retain the gap:
 **Missing a record that binds actual scan-job active state to a client monotonic
-interval.** Existing records therefore cannot produce demonstrated overlap. A
-hash-bound `task_terminal` cancellation for the same phase, run, and input digests
-can prove that a later request was outside that run's scan activity. Other
-requests remain indeterminate. `window_end`, worker liveness, HTTP interval
-intersection, or a plausible wall-clock mapping cannot establish active scan
-overlap. Simultaneous closed HTTP intervals are reported separately; actual
-uncovered scan time remains unavailable.
+interval.** Bare monotonic values alone no longer grant either demonstrated
+overlap or terminal exclusion under this new measurement contract.
+
+New observations use two existing natural observation points. Readers start
+immediately through the original ready/start protocol. The first jobs GET follows
+the slot 2 task detail; the second follows the slot 3 task detail. The existing
+five-second periodic wait supplies these points. `last_poll` is captured at detail
+completion, before the additional GET, so that GET time does not add another five
+seconds. Initial completion or completion at slot 2 fills remaining observations
+immediately without another wait and grants no Running interval. Failed,
+cancelled, interrupted or stopping tasks get no extra business observations.
+
+Each observation binds the actual control HTTP receipt, its raw body, task/run
+request identity, child/job/library relation, collection point and detail slot.
+Early lists may contain zero or one new job; cached lists must still retain both
+old cold jobs exactly. Terminal jobs cannot return to Running, disappear, change
+identity, or regress counters. The final SQL lifecycle independently binds each
+observed job. Unknown or foreign jobs are rejected.
+
+Controller, pool, each observed GET, and each reader record their actual
+`CLOCK_MONOTONIC` implementation, boot ID, and time-namespace device/inode at both
+ends of the relevant work. All must be available, unchanged, and equal. Reader
+source, input, context and start pins must also match the pool. No clock metadata
+is backfilled into old records. Context, ready, start and cancel schemas are
+unchanged; the start anchor must precede both observations.
+
+Two `running` responses for the same job establish only the conservative interval
+from the **first response body completion to the second request dispatch**. A
+reader is matched to the job for its own library. Complete connection intervals
+wholly inside that interval and intervals with only a positive intersection are
+counted separately. Missing clocks or source bindings, a short scan, a late-started
+child, or missing observations cannot be promoted to demonstrated overlap.
+Clock-bound `task_terminal` cancellation can still establish a later exclusion.
+`window_end` and worker liveness provide no such proof.
+
+The guarantee concerns **persisted scan-job Running state**, which may include
+waiting for database finalization. It does not establish continuous filesystem or
+ffprobe work. Simultaneous HTTP within proven Running intervals is reported
+separately from ordinary simultaneous HTTP. Actual uncovered filesystem-scan
+time remains unavailable.
 
 Resource output reports sample spacing, gaps beyond the existing two-second
 target, sampled main-process RSS, available cgroup memory observations, and CPU
@@ -98,11 +139,23 @@ accounts only for wrapped paths, excludes unwrapped helper work, and excludes
 the final cost/result publication. Older records without these fields explicitly
 report unavailable cost data.
 
+The two extra GETs per phase replace detail HTTP at slots 30 and 60, both beyond
+the 120-second reader window. Those slots still advance and retain ownership and
+resource observation. There are at most 91 observation slots, 89 actual detail
+GETs, two jobs observations and one terminal jobs GET: 92 task-poll requests per
+phase, 184 overall. Setup 112, cleanup 64 and reader 240 ceilings remain distinct;
+their total remains 600. The original 450-second scan deadline, 1200-second business
+deadline, reader deadlines, corpus and task/reader start/cancel protocols do not
+change. Actual `pollCount` remains the count of detail HTTP calls;
+`pollSlotCount` and `skippedDetailSlots` describe scheduling separately.
+
 There is no idle control, slowdown estimate, SLO, saturation claim, representative
 throughput result, or operating-system cold-cache claim. `capacityAccepted` and
 `wholeM2Accepted` remain false. A permanently indeterminate overlap result does
-not satisfy the complete M2 capacity objective; collection changes require a
-separate reviewed adjustment before the original profile resumes.
+not satisfy the complete M2 capacity objective. New native input and dispatch
+still require separate review. `recorded_with_scope_limits`, when all required
+records and per-reader/shape Running coverage exist, is a measurement description,
+not capacity or delivery acceptance.
 
 ## Component verification
 
@@ -114,8 +167,42 @@ non-additive repeated-phase costs, resource gaps, pin/path/size limits, hardlink
 symlinks, replacement during reads, and malformed JSON. The fixture intentionally
 does not pretend to be a real catalog or native scan acceptance run.
 
-The 20 new test methods passed on `test-env` as part of the corrected
+The earlier 20 test methods passed on `test-env` as part of the corrected
 [47-method component check](../../../docs/development/native-capacity-component-verification-20260916.md).
 That check ran no Goby workload, application SQL, HTTP, or native scan. Actual
-closed profile records remain unavailable. Do not rerun the historical reader,
-transport, or pool checks merely to exercise this analyzer.
+closed profile records remain unavailable.
+
+This revision adds paired-running, partial/full intersection, foreign/rebound
+identity, state/counter regression, missing/changed clock, natural-slot scheduling,
+terminal fallback and bounded clock-read contracts. The separate isolated
+test-env run passed 61 pure methods: result-reader 28, measurement 14,
+failure-routing 8 and scan-observations 11. The pool checker was present as source
+but was neither executed nor imported by that run. No test or syntax check was
+run while preparing the subsequent pool-checker-only correction; that correction
+does not change the six runtime sources or those four unittest sources.
+The [subsequent component verification](../../../docs/development/native-capacity-running-observation-verification-20260916.md)
+passed the affected reader, transport and pool groups with independent result
+and closure review. Historical inputs, snapshots, component receipts and the
+paused mount experiment are unchanged.
+
+The reader and transport checks used
+`/opt/goby-test/native-scan-http-capacity-running-checks-20260916`, with sources in
+`private/source` and separate `private/reader-checks`, `private/transport-checks`
+and `private/pool-checks` outputs. Reader 12 and transport eight groups passed.
+All six pool cases rejected the private network namespace before creating any
+pool child. That failed scope is consumed and preserved. The new pool-only scope
+`/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02`
+passed all six groups using the real host network namespace with
+`RestrictAddressFamilies=AF_UNIX`, while retaining the other resource and file
+isolation limits. Its checker changed only the strict scope string; the six
+runtime sources stayed identical. Neither successful group was replayed, and
+neither execution scope is reusable.
+
+The zero-request pool stub explicitly emits unavailable `clockDomainBefore` and
+`clockDomainAfter` values (`version=1`, `available=false`,
+`code=clock_domain_unavailable`). These are lifecycle fixtures, not real clock
+observations or overlap evidence. The pool check accepts only the exact pool,
+reader and checker filenames beneath the new `private/source` directory; hashes
+remain supplied and checked by its existing CLI. The new-source 12 reader,
+eight transport and six pool groups are verified only within those fixture
+boundaries. They do not establish actual scan overlap or native capacity.

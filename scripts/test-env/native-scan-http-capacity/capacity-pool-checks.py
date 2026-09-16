@@ -1,8 +1,10 @@
 """Check the frozen reader pool using real, bounded, zero-request stub children.
 
 Future execution only: ssh test-env, root, python3 -I -B. Pass --pool PATH,
---pool-sha256 SHA, --reader PATH and --reader-sha256 SHA. Sources must be below
-the fixed check private root. The exclusive output is pool-checks-01 there.
+--pool-sha256 SHA, --reader PATH and --reader-sha256 SHA. Sources are the three
+fixed filenames in private/source under
+/opt/goby-test/native-scan-http-capacity-running-checks-20260916. The exclusive
+output is the separate private/pool-checks directory in that same new check scope.
 
 The pool's process creation, birth checks, ready/receipt reads, WNOWAIT, pipe
 draining, group checks, signals and waitpid are real. Only the application and
@@ -28,8 +30,11 @@ import time
 import types
 
 
-CHECK = Path('/opt/goby-test/native-scan-http-capacity-checks-20260915/private')
-OUTPUT = CHECK / 'pool-checks-01'
+CHECK = Path('/opt/goby-test/native-scan-http-capacity-running-pool-checks-20260916-r02/private')
+SOURCES = CHECK / 'source'
+SOURCE_PATHS = frozenset(SOURCES / name for name in
+                         ('capacity-pool-checks.py', 'capacity-reader-pool.py', 'capacity-reader.py'))
+OUTPUT = CHECK / 'pool-checks'
 CASE_NAMES = ('zero_dispatch_pair', 'one_side_missing_receipt', 'worker_observes_cancel_first',
               'pool_forces_blocked_child', 'controller_namespace_description_drift', 'source_and_ready_rejection')
 APP_PID, ANCHOR_PID = 2147483001, 2147483002
@@ -148,6 +153,7 @@ def main():
     if cancel is None:
         return 124
     status = 'cancelled_before_start' if start is None else 'stopped_by_controller'
+    # This lifecycle stub performs no clock-domain measurement.
     final = {'kind': 'native-scan-http-capacity-reader-receipt', 'version': 1,
         **{key: value[key] for key in ('scope', 'phase', 'reader', 'taskId', 'requestId', 'runId', 'userId', 'libraryId')},
         'source': value['self'], 'context': value['context'], 'librarySide': 'A' if value['reader'] == 'left' else 'B',
@@ -157,6 +163,8 @@ def main():
         'namespaceAtFinish': os.readlink('/proc/self/ns/net'), 'workerFunctionReturned': True,
         'workerRequestedExitCode': 0, 'allOwnedConnectionsClosed': True,
         'actualProcessExitRequiresParentWait': True, 'createdAnchor': created, 'finishedAnchor': anchor(),
+        'clockDomainBefore': {'version': 1, 'available': False, 'code': 'clock_domain_unavailable'},
+        'clockDomainAfter': {'version': 1, 'available': False, 'code': 'clock_domain_unavailable'},
         'evidenceBytesBeforeReceipt': ready_pin['bytes'], 'evidenceWriteNsBeforeReceipt': write_ns,
         'requests': [], 'dispatchedRequests': 0,
         'limits': {'requests': 60, 'windowSeconds': 120, 'absoluteHttpSeconds': 10,
@@ -185,7 +193,7 @@ def encoded(value):
 
 
 def read_frozen(path, expected=None):
-    require(path.is_absolute() and path.is_relative_to(CHECK) and path.resolve() == path, 'source_scope')
+    require(path.is_absolute() and path in SOURCE_PATHS and path.resolve() == path, 'source_scope')
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
     try:
         before = os.fstat(fd)
@@ -490,6 +498,8 @@ def main():
             sys.flags.dont_write_bytecode and 'SSH_CONNECTION' in os.environ and
             all(re.fullmatch('[0-9a-f]{64}', value) for value in (args.pool_sha256, args.reader_sha256)),
             'fixed_remote_root_actor')
+    require(args.pool == SOURCES / 'capacity-reader-pool.py' and args.reader == SOURCES / 'capacity-reader.py' and
+            Path(__file__) == SOURCES / 'capacity-pool-checks.py', 'fixed_source_selection')
     os.umask(0o077)
     info = CHECK.lstat()
     require(CHECK.resolve() == CHECK and stat.S_ISDIR(info.st_mode) and info.st_uid == info.st_gid == 0 and

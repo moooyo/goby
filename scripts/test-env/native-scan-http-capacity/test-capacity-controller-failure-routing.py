@@ -83,7 +83,7 @@ class ControllerFailureRoutingTests(unittest.TestCase):
             return {'status': 'closed', 'fixtureOnly': True}
 
         c.workload = SimpleNamespace(cleanup=Mock(side_effect=cleanup_credentials), observations={},
-                                    reader_joins={}, budget={}, trace_persisted=False)
+                                    reader_joins={}, budget={}, trace_persisted=False, scan_observations=[])
         c.transport = SimpleNamespace(
             set_phase_deadline=Mock(side_effect=lambda *args, **kwargs: f.events.append('cleanup-transport-deadline')),
             summary=Mock(return_value={'fixtureOnly': True}))
@@ -131,7 +131,9 @@ class ControllerFailureRoutingTests(unittest.TestCase):
             return f.closer
 
         f.construct = Mock(side_effect=construct)
-        c.m = {'closure': SimpleNamespace(Closure=f.construct), 'units': object(), 'corpus': object()}
+        c.m = {'closure': SimpleNamespace(Closure=f.construct), 'units': object(), 'corpus': object(),
+               'reader': SimpleNamespace(clock_domain=Mock(return_value={
+                   'version': 1, 'available': False, 'code': 'clock_domain_unavailable'}))}
         return f
 
     def run_fixture(self, f):
