@@ -1,0 +1,176 @@
+{
+  "kind": "m5-combined-full-capacity-failure",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "failed_capacity_admission_closed_reviewed",
+  "scope": "/opt/goby-test/m5-combined-full-195824c47450",
+  "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+  "inputConsumed": true,
+  "scopeReplayAllowed": false,
+  "input": {
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/private/input.json",
+    "bytes": 6883,
+    "sha256": "719f399755453c1829ec78096497487e362a096c202773dcdbe1e7fed3464c54"
+  },
+  "adapter": {
+    "bytes": 61744,
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/private/m5-full-disk-workspace.py",
+    "sha256": "80da73b1d8de74653cd75275f355d1809a66c33d8d47e4ecd329c7a1d73e301e"
+  },
+  "execution": {
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/execution.json",
+    "bytes": 116731,
+    "sha256": "71e50b4d22f659e8304c3ffd54be2fc697f9c1ba10a9c590b1e7ff62191ab853"
+  },
+  "closure": {
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/closure.json",
+    "bytes": 1557,
+    "sha256": "ad70f451c4f82c18f8e16df1a414dd8d67b221bacae2bf863820e516f1f923a7"
+  },
+  "outerDispatch": {
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/private/outer-dispatch-result.json",
+    "bytes": 1698,
+    "sha256": "cfc4cb1a9b189b120b8eee7d92a6d1ee793bb5a16f685461ccdf04901e262813"
+  },
+  "savedClosureReadback": {
+    "bytes": 17500,
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/private/failure-closure-readback.json",
+    "sha256": "8382bd7390b8c2d27f5fcd9597d7428233480892b9fc5b8de2145620fd1e9269"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/m5-combined-full-195824c47450/private/independent-failure-review.json",
+    "bytes": 5043,
+    "sha256": "12dd5808b33106dce08c26fb2a1e422390b5f90a6fdbbb4554203bb4f77ecb9b"
+  },
+  "source": {
+    "archive": {
+      "bytes": 33310516,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source.tar.gz",
+      "sha256": "772518c4c05a7d6912a660bdebed56495bc5422f6912af33029fb6e9fea41441"
+    },
+    "files": 5459,
+    "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+    "manifest": {
+      "bytes": 1102643,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-manifest.json",
+      "sha256": "656aff1f6d16d07cf59674602388d71749ac2e069cf5af001a3d452ec557c7c3"
+    },
+    "preparation": {
+      "bytes": 1254,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-preparation.json",
+      "sha256": "8bfb87f0628c7834083ea031ecedf73405014cf6c6764b31e4e13d727718c63d"
+    },
+    "uncompressedBytes": 121846736
+  },
+  "sourceReview": {
+    "everyMemberMatched": true,
+    "files": 5459,
+    "historicalScoresReused": false
+  },
+  "frontendEvidence": {
+    "receipt": {
+      "bytes": 15249,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/frontend-receipt.json",
+      "sha256": "b76c11c5e1401271b3908c17abcbab53b311a8afc5b4c7c49b0194313cbf585e"
+    },
+    "contributions": {
+      "bytes": 1918049,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/workspace/project/web/admin/.artifacts/frontend-contributions.json",
+      "sha256": "8eac277cd53d37537ef6a61e6ae88ea65f13d85726d16467b0aa38610fa82671"
+    },
+    "frontendExecutedHere": false
+  },
+  "priorPreflight": {
+    "record": {
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/preflight-capacity-rejection-01.json",
+      "bytes": 1788,
+      "sha256": "bb0c8023624a758030fecafc769d8a02572899636d8cd4cf4a777a59b667c470"
+    },
+    "status": "not_dispatched",
+    "inputConsumed": false,
+    "fullAdapterStarts": 0,
+    "volumesCreated": 0,
+    "originalRecordPreserved": true,
+    "meaning": "The earlier preflight rejected before intent/child creation. Its not_dispatched result is retained; the later actual adapter execution consumed this scope."
+  },
+  "actualOutcome": {
+    "adapterInvocations": 1,
+    "adapterExitedNaturally": true,
+    "adapterExitCode": 1,
+    "failure": {
+      "code": "insufficient_capacity",
+      "type": "Rejected"
+    },
+    "forcedSignals": [],
+    "outerDispatchRecordedChildExitCode": 1,
+    "outerToolCompletionIsNotAdapterSuccess": true,
+    "workerAttempts": 0,
+    "goPackagesExecuted": 0,
+    "ordinaryBuildExecuted": false,
+    "embeddedBuildExecuted": false,
+    "volumesCreated": 0,
+    "archiveCreated": false,
+    "browserExecuted": false
+  },
+  "capacity": {
+    "requiredMemoryAvailableBytes": 4294967296,
+    "floorMeaning": "4 GiB is a new budget choice (3 GiB worker plus 1 GiB allowance), not a measured minimum or continuous host reserve.",
+    "internalSamples": 60,
+    "internalWaits": 59,
+    "intervalSeconds": 2,
+    "maximumWaitSeconds": 120,
+    "elapsedMilliseconds": 118022,
+    "firstMemoryAvailableBytes": 4140498944,
+    "minimumMemoryAvailableBytes": 2190258176,
+    "maximumMemoryAvailableBytes": 4247388160,
+    "lastMemoryAvailableBytes": 2917715968,
+    "allInternalSamplesBelowFloor": true,
+    "requiredRootFreeBytes": 8053063680,
+    "rootSpaceAdequateInAllInternalSamples": true,
+    "outerCapacityWindow": {
+      "bytes": 5714,
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/outer-capacity-window-01.json",
+      "sha256": "a0fadfec78d0638f093173bb85d458fb3fe26ea403323760206c9d1fef9b98bc"
+    },
+    "outerGateEventuallyMet": true,
+    "outerLastMemoryAvailableBytes": 4296818688,
+    "memoryThresholdChanged": false,
+    "adapterRSSOrPeakRecorded": false,
+    "causeIdentified": false,
+    "interpretation": "Outer and internal gates are separate point-in-time observations. Their difference does not identify the memory consumer or measure adapter RSS/peak."
+  },
+  "resourceClosure": {
+    "resourcesClosed": true,
+    "commandsClosed": 27,
+    "rawStreams": 54,
+    "rawStreamBytes": 11670,
+    "originalStreamDescriptorFields": [
+      "path",
+      "bytes"
+    ],
+    "supplementalStreamHashesIndependentlyMatched": 54,
+    "recordedPidsAbsent": 29,
+    "outerChildWaitGroupPidfdSelectorAndStreamsClosed": true,
+    "lockUnlockAndCloseSucceeded": true,
+    "protectedBeforeAfterExact": true,
+    "sourceInputGuardPinsMatched": true,
+    "workerUnitNeverStarted": true,
+    "ownedMountRows": 0,
+    "ownedLoopReferences": 0,
+    "cleanupErrors": []
+  },
+  "acceptedPrerequisitesRetained": {
+    "frontendRecord": "m5-final-frontend-verification-20260916.json",
+    "storageRecord": "m5-full-storage-verification-20260916.json",
+    "storageAcceptanceUnchanged": true
+  },
+  "fullRegressionPassed": false,
+  "buildAcceptance": false,
+  "completeM5Acceptance": false,
+  "reviewMethod": "The independent review matched the saved execution, original command stream descriptors, supplemental stream hashes and outer absence/closure readback. This documentation update read saved files only; neither action reran the full input or added SQL, service operations or live probes.",
+  "remaining": [
+    "Retain this failed, consumed scope and the earlier not-dispatched preflight unchanged. Do not replay its input or lower the 4 GiB threshold.",
+    "When sufficient capacity is available, prepare a fresh owned scope/input with the existing complete S1/frontend bindings and applicable current guard. Its outer and internal gates must both meet the unchanged limits.",
+    "Execute the still-pending combined Go/DB/HTTP/browser and final build work only after fresh admission. Reuse accepted storage/frontend evidence without treating it as product execution."
+  ]
+}

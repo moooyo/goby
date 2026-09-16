@@ -42,8 +42,10 @@ has now passed one typecheck/Vite build with independent execution and artifact
 reviews. Its full S1 source preserves 5400 original rows and adds 59 actual dist
 files, with the original sidecar retained separately. The [storage prerequisite](../development/m5-full-storage-verification-20260916.md)
 has now passed in its third scope with independent review and closure, preserving
-the first two failures. The combined full source/input is being prepared;
-Go/HTTP/browser/final builds have not executed for that combined source.
+the first two failures. The [actual combined full attempt](../development/m5-combined-full-capacity-failure-20260916.md)
+then failed its unchanged 4 GiB memory gate and independently closed: 60 internal
+samples were insufficient, with no worker, Go package, build or volume started.
+Keep that scope consumed and prepare a fresh one when capacity is sufficient.
 No product root-cause correction is established. The other prepared
 increments retain their separate, incomplete acceptance scopes.
 Keep the complete M2-M6 objective; M7 remains deferred.
@@ -595,8 +597,13 @@ preserves the zero-volume missing-directory failure and the later payload
 source corrections retain the budgets and capability-free payload. The third
 scope passed 73 controller/three payload commands, 152 streams, four sentinels,
 three filesystems and complete archive readback. All 79 recorded PIDs, two cgroups,
-mounts and backing resources closed. Prepare the actual full source/input and
-fresh admission next; the small storage success does not prove full 3 GiB capacity.
+mounts and backing resources closed. The later [actual full attempt](../development/m5-combined-full-capacity-failure-20260916.json)
+failed before worker creation: 60 samples/59 waits over 118,022 milliseconds all
+remained below 4 GiB, while disk space was adequate. Adapter exit 1 and the
+independently reviewed 27-command/54-stream closure remain the outcome; successful
+outer-tool completion is not a passing full result. Do not replay the consumed
+scope or relax its gate. A fresh capacity-admitted scope is still needed for Go
+and both builds; the storage acceptance remains unchanged.
 The consumed catalog input
 must not be replayed; it does not supply product acceptance.
 Keep all historical inputs and their original outcomes unchanged.
@@ -676,7 +683,7 @@ maintenance record supersedes the earlier unanswered-window blocker.
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
 | `codex/programs-theme-diagnosis`, `3d6b79b` | [Complete-source regression/build](../development/programs-complete-source-full-result-20260916.md): all 25 packages, 2309 top-level tests and both builds passed with independent review and closure; the original mount-profile gap is retained. The actual product receipt and subsequent `db22e3d...` current runtime envelope are published | Verify the final consumer pins and separately prepared 142 checks before transition admission. The frozen 138 results remain unchanged; no product root-cause correction or client acceptance is established |
-| `codex/m5-deletion-diagnostics`, `138522b` | [Combined M5 source](../development/m5-combined-source-preparation-20260916.json) includes the real schema-29 export, post-DELETE cancellation hook and reservation/peer-isolation regression. The [real frontend build](../development/m5-final-frontend-verification-20260916.md) passed once: S1 preserves 5400 committed rows and adds 59 actual dist files. The [storage prerequisite](../development/m5-full-storage-verification-20260916.md) passed in its third scope with independent review and closure | Prepare/admit the actual full source/input, then run Go/DB/HTTP/browser and final builds against complete S1. Require `--frontend-contributions` for release consumption. Both failed storage scopes and the consumed catalog input retain their outcomes; no full-worker execution, M5 acceptance or merge into frozen Programs is claimed |
+| `codex/m5-deletion-diagnostics`, `138522b` | [Combined M5 source](../development/m5-combined-source-preparation-20260916.json) includes the real schema-29 export, post-DELETE cancellation hook and reservation/peer-isolation regression. The real frontend and storage prerequisite passed. The [actual full attempt](../development/m5-combined-full-capacity-failure-20260916.md) failed its internal capacity gate and independently closed before worker creation | Use a fresh scope/input when the unchanged 4 GiB gate is met, then run Go/DB/HTTP/browser and final builds against complete S1. Require `--frontend-contributions`. Preserve the capacity failure, both failed storage scopes and consumed catalog input. No Go/build result, M5 acceptance or merge into frozen Programs is claimed |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md): sample/process/content/stage layers connect to native APIs, a Settings panel, one owned execution, actual conversion capacity, current native authority, cancellation and bounded per-instance history. The prior 12/18/27 cases plus 40 new Go functions (39 on Linux) and three synthetic browser cases remain unexecuted; static review and remote formatting complete. The later combined `138522b` frontend typecheck/build passed in its own scope | Verify combined Go/build and native HTTP/browser behavior, actual resource/deployment prerequisites, codec-log compatibility and content calibration, then execute software/available hardware profiles. Defaults remain disabled and no service configuration was activated. No runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |

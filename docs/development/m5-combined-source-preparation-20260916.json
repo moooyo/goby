@@ -2,7 +2,7 @@
   "kind": "m5-combined-source-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "frontend_source_and_storage_prerequisites_reviewed_full_input_preparing",
+  "status": "full_capacity_admission_failed_closed_fresh_scope_pending",
   "branch": "codex/m5-deletion-diagnostics",
   "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
   "mergeCommit": "96e6d750ecd0d634e19f0bf94a701665bd51f2ba",
@@ -81,9 +81,9 @@
   "browserAcceptance": false,
   "finalVerificationPassed": false,
   "remaining": [
-    "Prepare the new full-run source and input using the independently accepted r05 storage prerequisite. Preserve all three consumed storage attempts and their original outcomes.",
-    "Bind the complete S1 archive, actual successful frontend command receipt and original contribution sidecar into the full profile. The later release build must use --frontend-contributions.",
-    "Verify the complete combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds under fresh resource admission. No full worker has executed for this combined source."
+    "Preserve the actual failed full scope and its original input. A later attempt requires a fresh owned scope/input and sufficient capacity for both unchanged 4 GiB memory gates.",
+    "Reuse the independently accepted complete S1, successful frontend receipt/sidecar and storage prerequisite. Bind applicable current guard and tools without repeating consumed scopes; require --frontend-contributions for the later release build.",
+    "Execute the pending combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds only after fresh admission. The failed capacity attempt started no worker, Go package or build."
   ],
   "frontendVerification": {
     "record": "m5-final-frontend-verification-20260916.json",
@@ -264,7 +264,67 @@
     "workspaceBackingDeletedOnlyAfterArchiveReadback": true,
     "fullStoragePrerequisiteAccepted": true,
     "fullAdmissionClaimed": false,
-    "fullSourceAndInputPreparing": true,
+    "fullSourceAndInputPreparingAtStorageCheckpoint": true,
     "fullWorkerExecuted": false
+  },
+  "fullAttempt": {
+    "record": "m5-combined-full-capacity-failure-20260916.json",
+    "status": "failed_attempt_closed_reviewed",
+    "scope": "/opt/goby-test/m5-combined-full-195824c47450",
+    "input": {
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/input.json",
+      "bytes": 6883,
+      "sha256": "719f399755453c1829ec78096497487e362a096c202773dcdbe1e7fed3464c54"
+    },
+    "adapter": {
+      "bytes": 61744,
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/m5-full-disk-workspace.py",
+      "sha256": "80da73b1d8de74653cd75275f355d1809a66c33d8d47e4ecd329c7a1d73e301e"
+    },
+    "execution": {
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/execution.json",
+      "bytes": 116731,
+      "sha256": "71e50b4d22f659e8304c3ffd54be2fc697f9c1ba10a9c590b1e7ff62191ab853"
+    },
+    "closure": {
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/closure.json",
+      "bytes": 1557,
+      "sha256": "ad70f451c4f82c18f8e16df1a414dd8d67b221bacae2bf863820e516f1f923a7"
+    },
+    "outerDispatch": {
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/outer-dispatch-result.json",
+      "bytes": 1698,
+      "sha256": "cfc4cb1a9b189b120b8eee7d92a6d1ee793bb5a16f685461ccdf04901e262813"
+    },
+    "savedClosureReadback": {
+      "bytes": 17500,
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/failure-closure-readback.json",
+      "sha256": "8382bd7390b8c2d27f5fcd9597d7428233480892b9fc5b8de2145620fd1e9269"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m5-combined-full-195824c47450/private/independent-failure-review.json",
+      "bytes": 5043,
+      "sha256": "12dd5808b33106dce08c26fb2a1e422390b5f90a6fdbbb4554203bb4f77ecb9b"
+    },
+    "inputConsumed": true,
+    "adapterInvocations": 1,
+    "adapterExitCode": 1,
+    "failureCode": "insufficient_capacity",
+    "internalCapacitySamples": 60,
+    "internalCapacityWaits": 59,
+    "internalElapsedMilliseconds": 118022,
+    "requiredMemoryAvailableBytes": 4294967296,
+    "allInternalSamplesBelowFloor": true,
+    "rootSpaceAdequate": true,
+    "workerAttempts": 0,
+    "goPackagesExecuted": 0,
+    "ordinaryBuildExecuted": false,
+    "embeddedBuildExecuted": false,
+    "volumesCreated": 0,
+    "archiveCreated": false,
+    "resourcesClosed": true,
+    "protectedBeforeAfterExact": true,
+    "priorPreflightRemainsNotDispatched": true,
+    "freshScopeRequired": true
   }
 }

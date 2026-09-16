@@ -28,8 +28,13 @@ filesystems, complete archive readback and owned-resource closure. The original
 missing-directory and payload `PermissionError` failures are preserved; neither
 has been relabeled, and the exact permission-failing syscall was not recorded.
 The two source corrections did not widen budgets or permissions. The successful
-small probe does not prove full 3 GiB capacity; the actual combined full source
-and input are still being prepared, with no full worker executed.
+small probe does not prove full 3 GiB capacity. The subsequent [actual combined
+full attempt](../development/m5-combined-full-capacity-failure-20260916.md) failed
+its unchanged 4 GiB memory gate: all 60 internal samples were insufficient,
+although root disk space was adequate. Adapter exit 1, zero worker/Go/build/
+volume/archive and independent resource closure are retained. The consumed scope
+cannot be replayed; a fresh scope with sufficient capacity remains required.
+No specific memory consumer or adapter RSS/peak was established.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
 now includes the completed unique observer: two acknowledged read-only SQL

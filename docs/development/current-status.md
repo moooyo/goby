@@ -67,8 +67,14 @@ budgets or permissions. The final run closed 73 controller/three payload command
 and 152 streams, verified four sentinels on three filesystems, and read back all
 11 archived files/six directories. The recorded 79 PIDs, two cgroups, mounts and
 backing resources closed. Its 256 MiB controller peak alone is not an OOM finding
-or full 3 GiB workload proof. The combined backend full source/input is being
-prepared; that worker has not run.
+or full 3 GiB workload proof. The subsequent [actual combined full attempt](m5-combined-full-capacity-failure-20260916.md)
+failed capacity admission and is independently closed. All 60 internal samples
+over 118,022 milliseconds were below the unchanged 4 GiB memory floor; disk space
+was sufficient. The adapter exited naturally with `insufficient_capacity`/exit 1,
+before any worker, Go package, build, volume or archive. Its 27 commands, 54 streams
+and 29 recorded PIDs closed with protected state exact and the lock released.
+Adapter RSS/peak and the cause of changing host availability were not recorded.
+The scope is consumed; a fresh scope with sufficient capacity is required.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
