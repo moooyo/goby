@@ -1,0 +1,362 @@
+{
+  "kind": "m5-combined-full-reconciliation-failure",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "failed_attempt_evidence_and_owned_closure_reviewed",
+  "scope": "/opt/goby-test/m5-combined-full-fcf3c8f4a474",
+  "inputConsumed": true,
+  "scopeReplayAllowed": false,
+  "input": {
+    "bytes": 6883,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/input.json",
+    "sha256": "2ded3d437d37dc69d6b745852b0a928b1a13edbc494631db9f8f5efe622c87a9"
+  },
+  "adapter": {
+    "bytes": 61744,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/m5-full-disk-workspace.py",
+    "sha256": "a2cc3f8e65f34b84f3b3a8d1b895d7bf83f3bdaa26ef1adc7f1aa0d3e165f151"
+  },
+  "source": {
+    "archive": {
+      "bytes": 33310516,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source.tar.gz",
+      "sha256": "772518c4c05a7d6912a660bdebed56495bc5422f6912af33029fb6e9fea41441"
+    },
+    "files": 5459,
+    "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+    "manifest": {
+      "bytes": 1102643,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-manifest.json",
+      "sha256": "656aff1f6d16d07cf59674602388d71749ac2e069cf5af001a3d452ec557c7c3"
+    },
+    "preparation": {
+      "bytes": 1254,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-preparation.json",
+      "sha256": "8bfb87f0628c7834083ea031ecedf73405014cf6c6764b31e4e13d727718c63d"
+    },
+    "uncompressedBytes": 121846736
+  },
+  "execution": {
+    "bytes": 107632,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/execution.json",
+    "sha256": "830ccfa7d4c4d55669c30f4a26df1756f717245ba4804cc616a88cc40772e334"
+  },
+  "closure": {
+    "bytes": 12784,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/closure.json",
+    "sha256": "fc30dd05b7bce7379effd24ce15992ffc2bc34bbb959cfe4cb4d95ef830786fa"
+  },
+  "outerDispatch": {
+    "bytes": 1697,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/outer-dispatch-result.json",
+    "sha256": "3d9d50c85e86452e88a307a659d3a541a3ffefa0f2e7b30049fbd8c2e7a8d7e2"
+  },
+  "outerClosureReadback": {
+    "bytes": 7022,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/outer-closure-readback.json",
+    "sha256": "4e31c150c66a844da4266b8c9597e86a23b452fa4f57a17d2a41ceeffc5fc1ec"
+  },
+  "failureExtract": {
+    "bytes": 39392,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/failure-extract.json",
+    "sha256": "5d9e48ec659997b15244e6f419aa83db3e8ba5132fb50e53fdb3bf048bef1900"
+  },
+  "retainedArchive": {
+    "bytes": 110306066,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/retained/full-private.tar.gz",
+    "sha256": "34e520a48d4521fff2d360e85a63a18e1e4fdebaba2dd17fc2d7dbadff74c449"
+  },
+  "retainedEvidenceIndex": {
+    "bytes": 19019,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/retained-review/index.json",
+    "sha256": "4d2c015a3d5bfdb74f586481e87138f81c508ab3c1e8aa2fcd473083ae9469ca"
+  },
+  "workerReport": {
+    "bytes": 209375,
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/retained-review/worker-detail.json",
+    "sha256": "0526d170e3b8d55d43419f28b8f428317e18fd3753440d631e09131053d1edb3"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/failed-independent-review.json",
+    "bytes": 7655,
+    "sha256": "6e322a8f4a0d5e90675131edbb28bd768b07b23dd23d0ba717a1b07704bc14b7"
+  },
+  "actualOutcome": {
+    "adapterExitCode": 1,
+    "workerExitCode": 1,
+    "workerErrorCode": "test_failure",
+    "adapterExitedNaturally": true,
+    "outerElapsedSeconds": 1804.125719616015,
+    "signals": [],
+    "fullSuitePassed": false,
+    "ordinaryBuildExecuted": false,
+    "embeddedBuildExecuted": false
+  },
+  "completedPackageEvidence": {
+    "passingPackages": 11,
+    "topLevelPasses": 492,
+    "subtestPasses": 1993,
+    "packages": [
+      {
+        "package": "github.com/moooyo/goby/cmd/goby",
+        "topLevelPasses": 21,
+        "subtestPasses": 33
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/activity",
+        "topLevelPasses": 25,
+        "subtestPasses": 277
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/artwork",
+        "topLevelPasses": 20,
+        "subtestPasses": 39
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backupformat",
+        "topLevelPasses": 14,
+        "subtestPasses": 99
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backuppg",
+        "topLevelPasses": 87,
+        "subtestPasses": 407
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backupstore",
+        "topLevelPasses": 32,
+        "subtestPasses": 62
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "topLevelPasses": 33,
+        "subtestPasses": 458
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/database",
+        "topLevelPasses": 55,
+        "subtestPasses": 249
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/diagnostics",
+        "topLevelPasses": 41,
+        "subtestPasses": 60
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/events",
+        "topLevelPasses": 23,
+        "subtestPasses": 21
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "topLevelPasses": 141,
+        "subtestPasses": 288
+      }
+    ],
+    "libraryPartialPassesIncluded": false
+  },
+  "failedPackageEvidence": {
+    "package": "github.com/moooyo/goby/internal/library",
+    "elapsedSeconds": 1225.047,
+    "rawTopLevelPasses": 604,
+    "rawSubtestPasses": 1583,
+    "topLevelFailures": 2,
+    "subtestFailures": 1,
+    "declaredExistingSkip": "TestRootBindingFullScanMountNamespaceHelper",
+    "publicError": "Missing catalog records could not be reconciled safely",
+    "failures": [
+      {
+        "test": "TestScanReconciliationMusicMissingInvalidMemberAllowsAlbumRecovery/OldVersionOneMember",
+        "file": "internal/library/scan_reconciliation_music_integration_test.go",
+        "line": 154,
+        "elapsedSeconds": 6.23,
+        "parentAlsoFailed": true
+      },
+      {
+        "test": "TestScanReconciliationScanReplacementRetainsThenOriginalResumesWithoutRebind",
+        "file": "internal/library/scan_reconciliation_scan_integration_test.go",
+        "line": 228,
+        "elapsedSeconds": 6.45
+      }
+    ],
+    "countedAsCompletedPackage": false,
+    "raceMarkersObserved": false,
+    "goTimeoutMarkersObserved": false,
+    "markerScope": "Only the retained Go JSON streams. Absence of these markers is not a general OOM or resource-cause conclusion."
+  },
+  "selectedNewCoverage": {
+    "record": {
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/key-coverage-readback.json",
+      "bytes": 42800,
+      "sha256": "3693bd1766a35e4a08d6d84690212988092b0c3211ffbe9e273895edc0501a7a"
+    },
+    "passedTopLevelSubset": 17,
+    "includedInCompletedPackageCounts": true,
+    "addedToTotalsAgain": false,
+    "groups": {
+      "userDeletionStore": 7,
+      "activity": 2,
+      "schema29AndSchema28Archive": 2,
+      "diagnosticsConfiguration": 6
+    },
+    "tests": [
+      {
+        "package": "github.com/moooyo/goby/internal/activity",
+        "test": "TestUserDeletedActivityHasItsOwnActionAndNoUpdateFields"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/activity",
+        "test": "TestUserDeletionMigrationPreservesEveryPublishedActionAndHistory"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserCascadesOwnedStateAndRetainsServerResources"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserRejectsRevisionMissingTargetAndLastAdministrator"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserConcurrentSelfDeletionPreservesOneAdministrator"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserAuditFailureRollsBackSelfAndTarget"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserDatabaseCommitRejectionRollsBackSelfDeletion"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserRechecksAuthorityAfterManagementWait"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "test": "TestStoreDeleteManagedUserFinalClockCheckAfterAuditWait"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backuppg",
+        "test": "TestPostgreSQLSchema29ArchivePreservesCommittedUserDeletion"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backuppg",
+        "test": "TestPostgreSQLSchema28ArchiveRejectsLaterUserDeletedAction"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "test": "TestMediaDiagnosticsDefaultsDisabledAndIgnoresUnselectedEnvironment"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "test": "TestMediaDiagnosticsLoadsOnlyPairedResourcePaths"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "test": "TestMediaDiagnosticsRejectsUnsafeAndInconsistentPaths"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "test": "TestMediaDiagnosticsCapturesClosedStartupEnvironmentAndCopiesOptions"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "test": "TestMediaDiagnosticsRejectsMalformedLoaderEnvironment"
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "test": "TestMediaDiagnosticsRejectsInvalidHardwareEnvironmentWithoutValueDisclosure"
+      }
+    ],
+    "laterPackagesNotExecuted": 13,
+    "selectedServerTestsNotExecuted": 10,
+    "otherPreparedGroupsNotExecuted": [
+      {
+        "expectedCaseCountFromPreparation": 10,
+        "source": "internal/server/media_diagnostic_runtime_test.go",
+        "status": "package_not_executed"
+      },
+      {
+        "expectedCaseCountFromPreparation": 5,
+        "source": "internal/transcode/manager_diagnostic_test.go",
+        "status": "package_not_executed"
+      },
+      {
+        "expectedCaseCountFromPreparation": 69,
+        "source": "internal/media/diagnostic*_test.go on Linux",
+        "status": "package_not_executed"
+      }
+    ],
+    "missingGroupsAreNotSummedTogether": true,
+    "releaseFrontendContributionsCommandExecuted": false,
+    "builtPackage59AssetEqualityProved": false,
+    "originalFrontendAndS1BindingsRetained": true
+  },
+  "causality": {
+    "rootCauseEstablished": false,
+    "productFixEstablished": false,
+    "libraryProductionUnchangedFromPriorPassedSource": "3d6b79b",
+    "postgresWindowEventsFollowSecondFailure": true,
+    "postgresChronology": "The retained adjacent PostgreSQL ERROR/FATAL events occur after the second test failure; their proximity does not establish the original failure cause.",
+    "workerMemoryPeakBytes": 2471272448,
+    "workerMemoryMaxBytes": 3221225472,
+    "peakEstablishesOOMOrFailureCause": false
+  },
+  "resourceClosure": {
+    "cleanupErrors": [],
+    "compilerImageBytes": 2147483648,
+    "compilerScratchDeletedBeforeArchive": true,
+    "emptyMountTargets": 3,
+    "fixtureImageBytes": 536870912,
+    "fixtureImageRetainedInsideArchive": true,
+    "lockReleased": true,
+    "outerChildWaitedAndGroupClosed": true,
+    "outerPipesOutputsSelectorPidfdClosed": true,
+    "ownedPostgresStopped": true,
+    "privatePostgresBindRemoved": true,
+    "protectedBeforeAfterExact": true,
+    "recordedPIDsAbsent": 68,
+    "resourceAbsenceEvidence": "Pinned saved outer-closure-readback; no new live-state probes in this review.",
+    "scopeMountAndLoopReferencesAbsent": true,
+    "twoBackingsAndOriginalFixturePathAbsent": true,
+    "workerCgroupAbsent": true,
+    "workerMemoryMaxBytes": 3221225472,
+    "workerMemorySwapMaxBytes": 0,
+    "workerObservedMemoryPeakBytes": 2471272448,
+    "workerTerminalResult": "exit-code",
+    "workerUnitFailureRetained": true,
+    "workspaceEvidenceReadBackBeforeBackingDeletion": true,
+    "workspaceImageBytes": 4294967296
+  },
+  "independentReviewMethod": {
+    "allGoStderrEmpty": true,
+    "archiveRescannedByThisReviewer": false,
+    "archiveWholeStreamHashAndMemberExtraction": "Reused the pinned evidence extraction; this review independently hashed and parsed its selected copies and matched their member hashes to the saved worker.",
+    "goStreamBytes": 4936977,
+    "goStreams": 24,
+    "originalOuterStreamsHadPathAndByteDescriptorsOnly": true,
+    "outerCommands": 64,
+    "outerStderrEmpty": true,
+    "outerStreamBytes": 21662,
+    "outerStreams": 128,
+    "rawGoCommandHashesMatchSavedWorker": true,
+    "rawJSONEventsIndependentlyParsed": true,
+    "savedProtectedUnitPropertyStreamsMatched": 32,
+    "workerInlineSupervisorExact": true
+  },
+  "limits": [
+    "This accepts failed-run evidence and owned-resource closure only. Library raw passes are excluded from completed-package counts; the 17 selected new passes are a subset, not an additional total.",
+    "The actual user-deletion store, activity, schema-29/schema-28 archive and diagnostic-configuration passes do not establish unexecuted server HTTP, real FFmpeg, diagnostic-owner, media/transcode or browser behavior.",
+    "Neither build ran. The existing frontend/S1 bindings remain accepted, but this scope supplies no release --frontend-contributions execution or built-package 59-asset equality proof.",
+    "The earlier 195824 capacity failure, frontend/storage acceptance and Programs verified artifact retain their original scopes.",
+    "This documentation update read saved records only. No test, validator, SQL, service action or diagnosis was executed."
+  ],
+  "nextStep": {
+    "focusedDiagnosticStatus": "preparing_not_executed",
+    "scope": "The two observed reconciliation failures and their existing safe error path.",
+    "automaticFullRerun": false,
+    "rootCauseOrFixClaimed": false,
+    "programsCapture02": "Programs has its own passed artifact and prepared capture02 source, input and r02 dispatcher. It needs a coordinated resource window, not a passing M5 full result."
+  }
+}

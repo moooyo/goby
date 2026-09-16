@@ -79,8 +79,18 @@ removed only the approved PowerToys agentic review-related directories, with no
 Goby ownership claim. Observed tmpfs use fell by 1,436,913,664 bytes; the after-sample
 reported 5,829,570,560 available memory bytes. Concurrent workload effects prevent
 exact attribution of the memory increase. The new full scope
-`/opt/goby-test/m5-combined-full-fcf3c8f4a474` is now running and actual Go verification
-has begun. Its final outcome is pending; no package totals or success are claimed.
+`/opt/goby-test/m5-combined-full-fcf3c8f4a474` has now [failed Library reconciliation
+and closed](m5-combined-full-reconciliation-failure-20260917.md), with independent
+failure-evidence/resource review. Eleven complete packages passed: 492 top-level
+and 1993 subtests. Library's raw 604/1583 passes remain separate from that total;
+two top-level tests and one child failed, with the original M2 skip retained.
+Seventeen selected new passes (deletion store/activity/archive/config) are a subset
+of the completed counts. Later media/server groups and both builds did not run.
+The 68 recorded PIDs, PG, cgroup, three volumes and lock are closed with protected
+state exact. The saved logs have no race or Go-timeout marker; later PG errors
+and the recorded memory peak establish no cause. A focused diagnostic is being
+prepared and has not run. Programs capture02 can proceed under shared-resource
+coordination; it does not require M5 full to pass.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -171,8 +181,9 @@ scope must not be retried. The [generation-key metadata correction](programs-gen
 has now passed a separate 151-check run (44/36/71), independent review and closure,
 and is integrated on main at `a5af0b6`. It permits only the reviewed stat-only key
 metadata; no real key body/hash or new capture was exercised by those components.
-Next, publish the source revision covered by the 151 checks into a fresh execution scope and prepare
-capture02. Actual product loading, post-transition v4 records and client acceptance
+The fresh source and capture02 input and r02 dispatcher are prepared. Programs retains its own
+passed artifact; capture needs a coordinated resource window, not a passing M5
+full result. Actual product loading, post-transition v4 records and client acceptance
 remain pending. The original 138/142 evidence, consumed capture01 and transition
 hold are unchanged.
 The [execution plan](../planning/current-execution-plan.md)
@@ -184,8 +195,10 @@ administrator APIs, bounded run ownership, conversion-slot admission and a
 Settings panel. Diagnostics remain disabled by default; no deployment was
 activated. Static review and remote formatting are complete. The combined-source
 frontend typecheck/build and real schema-29 catalog export have since passed in
-their separate scopes. Combined Go verification is running in the fresh M5 full
-scope; final build and browser acceptance remain pending. Main's Programs product
+their separate scopes. The combined full has failed and closed, retaining the
+completed deletion/activity/archive/config coverage; focused reconciliation
+diagnosis is only being prepared. Final builds, later media/server and browser
+acceptance remain pending. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.

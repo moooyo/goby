@@ -37,9 +37,14 @@ cannot be replayed. The later [four-directory temporary cleanup](../development/
 removed only the user-approved PowerToys agentic review-related paths. Observed
 tmpfs use fell about 1.34 GiB; the after-sample reported 5,829,570,560 available
 memory bytes, without exact attribution of its increase. The new full scope
-`/opt/goby-test/m5-combined-full-fcf3c8f4a474` is running with actual Go started.
-No final outcome is claimed. The old failed attempt retains its unknown memory
-consumer and unrecorded adapter RSS/peak boundary.
+`/opt/goby-test/m5-combined-full-fcf3c8f4a474` has now [failed Library reconciliation
+and independently closed](../development/m5-combined-full-reconciliation-failure-20260917.md).
+Eleven completed packages passed 492 top-level/1993 subtests; Library's 604/1583
+raw passes and two top-level/one child failures are separate partial evidence.
+Seventeen selected new passing tests are already within the completed total.
+Neither build or later media/server packages ran. Focused diagnosis is being
+prepared; no root cause or fix is established. The older capacity failure and
+accepted frontend/storage scopes remain unchanged.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
 now includes the completed unique observer: two acknowledged read-only SQL
@@ -59,8 +64,10 @@ not form reviewed state or successful capture. The guard rejected before key
 content was opened/hashed; no specific filename was recorded and the outer SSH
 numeric exit remains unknown. The [generation-key metadata correction](../development/programs-generation-key-metadata-verification-20260916.md)
 has now passed 44/36/71 components, independent review and closure, and is integrated
-at `a5af0b6`. Fresh publication of the source revision covered by those 151 checks and capture02 preparation are
-next; the component run read no real key body/hash and performed no new capture.
+at `a5af0b6`. Fresh source and capture02 input and r02 dispatcher are now prepared; the component
+run read no real key body/hash and performed no new capture. Programs retains its
+independently passed artifact, so capture needs shared-window resource closure
+and coordination, not a passing M5 full result.
 Capture01 remains failed and consumed. Actual product/runtime loader verification
 and post-transition v4 records remain pending. The original 138/142 results and
 transition hold remain unchanged;

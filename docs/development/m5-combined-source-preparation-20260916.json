@@ -2,7 +2,7 @@
   "kind": "m5-combined-source-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "fresh_combined_full_running_go_started_final_result_pending",
+  "status": "combined_full_reconciliation_failed_closed_focused_diagnostic_preparing",
   "branch": "codex/m5-deletion-diagnostics",
   "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
   "mergeCommit": "96e6d750ecd0d634e19f0bf94a701665bd51f2ba",
@@ -81,9 +81,10 @@
   "browserAcceptance": false,
   "finalVerificationPassed": false,
   "remaining": [
-    "Allow the active fresh full scope to finish within its admitted limits and preserve its actual result and resource closure. It has begun Go verification but has no final acceptance result yet.",
-    "Retain the consumed 195824 capacity failure, earlier storage attempts and accepted frontend/storage prerequisites without replay.",
-    "Review the actual combined backend and final build outcomes when available, then complete the remaining deletion/diagnostic HTTP/browser and media acceptance under their own prerequisites."
+    "Prepare a bounded focused diagnostic for the two observed Library reconciliation failures. It has not run; do not invent a root cause or product fix.",
+    "Retain the failed full input/archive, completed-package evidence and separate partial Library counts. The 17 selected new passing tests are already included in the completed counts.",
+    "After diagnosis, determine the necessary changed-source and remaining media/server/build verification. Neither build or release sidecar/package-asset validation ran in this scope.",
+    "Keep Programs capture02 independent of M5 product success. Its passed artifact and prepared source, input and r02 dispatcher may proceed within a coordinated shared-resource window after closure."
   ],
   "frontendVerification": {
     "record": "m5-final-frontend-verification-20260916.json",
@@ -328,17 +329,76 @@
     "freshScopeRequired": true
   },
   "goVerificationStarted": true,
-  "productTestCountFinalized": false,
-  "activeFullAttempt": {
+  "productTestCountFinalized": true,
+  "activeFullAttempt": null,
+  "productTestCounting": "Completed-package counts and partial Library counts are recorded separately; no single passing-full-suite total is claimed.",
+  "latestFullAttempt": {
+    "record": "m5-combined-full-reconciliation-failure-20260917.json",
     "scope": "/opt/goby-test/m5-combined-full-fcf3c8f4a474",
-    "status": "running",
-    "actualGoStarted": true,
-    "finalResult": null,
+    "status": "failed_attempt_evidence_and_owned_closure_reviewed",
+    "inputConsumed": true,
+    "input": {
+      "bytes": 6883,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/input.json",
+      "sha256": "2ded3d437d37dc69d6b745852b0a928b1a13edbc494631db9f8f5efe622c87a9"
+    },
+    "adapter": {
+      "bytes": 61744,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/m5-full-disk-workspace.py",
+      "sha256": "a2cc3f8e65f34b84f3b3a8d1b895d7bf83f3bdaa26ef1adc7f1aa0d3e165f151"
+    },
+    "execution": {
+      "bytes": 107632,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/execution.json",
+      "sha256": "830ccfa7d4c4d55669c30f4a26df1756f717245ba4804cc616a88cc40772e334"
+    },
+    "closure": {
+      "bytes": 12784,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/closure.json",
+      "sha256": "fc30dd05b7bce7379effd24ce15992ffc2bc34bbb959cfe4cb4d95ef830786fa"
+    },
+    "outerDispatch": {
+      "bytes": 1697,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/outer-dispatch-result.json",
+      "sha256": "3d9d50c85e86452e88a307a659d3a541a3ffefa0f2e7b30049fbd8c2e7a8d7e2"
+    },
+    "outerClosureReadback": {
+      "bytes": 7022,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/outer-closure-readback.json",
+      "sha256": "4e31c150c66a844da4266b8c9597e86a23b452fa4f57a17d2a41ceeffc5fc1ec"
+    },
+    "retainedArchive": {
+      "bytes": 110306066,
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/retained/full-private.tar.gz",
+      "sha256": "34e520a48d4521fff2d360e85a63a18e1e4fdebaba2dd17fc2d7dbadff74c449"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/failed-independent-review.json",
+      "bytes": 7655,
+      "sha256": "6e322a8f4a0d5e90675131edbb28bd768b07b23dd23d0ba717a1b07704bc14b7"
+    },
+    "keyCoverage": {
+      "path": "/opt/goby-test/m5-combined-full-fcf3c8f4a474/private/key-coverage-readback.json",
+      "bytes": 42800,
+      "sha256": "3693bd1766a35e4a08d6d84690212988092b0c3211ffbe9e273895edc0501a7a"
+    },
+    "completedPassingPackages": 11,
+    "completedTopLevelPasses": 492,
+    "completedSubtestPasses": 1993,
+    "partialLibraryTopLevelPasses": 604,
+    "partialLibrarySubtestPasses": 1583,
+    "libraryTopLevelFailures": 2,
+    "librarySubtestFailures": 1,
+    "selectedNewTopLevelPassesWithinCompletedCounts": 17,
+    "ordinaryBuildExecuted": false,
+    "embeddedBuildExecuted": false,
+    "resourcesClosed": true,
+    "resourceClosurePending": false,
+    "exclusiveValidationWindow": false,
     "finalSuccessClaimed": false,
-    "resourceClosurePending": true,
-    "exclusiveValidationWindow": true,
+    "rootCauseEstablished": false,
+    "focusedDiagnosticStatus": "preparing_not_executed",
     "previousFailedScope": "/opt/goby-test/m5-combined-full-195824c47450",
-    "previousFailureAndConsumedInputUnchanged": true,
-    "statusBasis": "Current task handoff on 2026-09-16; this documentation update performed no new live observation. Package counts and final outcomes are intentionally not recorded while the run is active."
+    "previousFailureAndConsumedInputUnchanged": true
   }
 }
