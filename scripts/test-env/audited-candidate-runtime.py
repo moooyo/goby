@@ -64,6 +64,15 @@ SUCCESSOR_BINDING_KEYS = BINDING_KEYS | {"previousBinding", "reviewedSummary", "
 CURRENT_RUNTIME_KEYS = {"kind", "version", "status", "runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting", "recovery", "current", "preserved", "observation", "observationReview"}
 CURRENT_RUNTIME_V2_KEYS = CURRENT_RUNTIME_KEYS | {"previousCurrentRuntime"}
 CURRENT_RUNTIME_V1_PREDECESSOR = {"path": str(R / "core-current-runtime-20260915T085726Z/private/current-runtime-binding.json"), "sha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c"}
+CURRENT_RUNTIME_V2_PREDECESSOR = {"path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/current-runtime-binding.json", "sha256": "aed2914bc75663b51a9f4d923acc137cfe6a0926a901dd7fa0a7e64f42183de4"}
+CURRENT_RUNTIME_SECOND_ROOT = Path("/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01")
+CURRENT_RUNTIME_SECOND_RECOVERY = {
+    "execution": {"path": str(CURRENT_RUNTIME_SECOND_ROOT / "restart-execution.json"), "sha256": "cccb62597eb67dc5f54685e2f72ce1b1a0e48bd1632e5f85972d071838fce0dd"},
+    "independentReview": {"path": str(CURRENT_RUNTIME_SECOND_ROOT / "restart-independent-review.json"), "sha256": "a2036bace081fbe10a78ae1d507710b25cc2b2ddd55a5ee37f66c0e84a5a701a"},
+    "configuration": {"path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-configuration-observation.json", "sha256": "c86600904fe119838fa67d2543ad2fd41356b712ac81b80a78d4f158463d0cef"},
+    "selectedStartIntent": {"path": str(CURRENT_RUNTIME_SECOND_ROOT / "restart-01/old/start-intent.json"), "sha256": "19de19dabd8307c446955a19f9fa15705419acf52559b25b086316974a0a4672"},
+    "selectedResult": {"path": str(CURRENT_RUNTIME_SECOND_ROOT / "restart-01/old/result.json"), "sha256": "40575e5c875583129afd41dbf8f0bd376389b8c742cad6dfaf1a083c2e8e6677"},
+}
 CURRENT_IDENTITY_KEYS = {"candidateProcess", "serverProperties", "serverIdentity", "listener", "postgresProcess", "postgresProperties", "lease"}
 CURRENT_RECOVERY_KEYS = {"execution", "independentReview", "configuration", "selectedStartIntent", "selectedResult"}
 CURRENT_AUTHORITY_KEYS = ("runtimeEpoch", "seedBinding", "admission", "admissionCloseout", "hosting")
@@ -74,12 +83,31 @@ CURRENT_OBSERVATION_REVIEW_CHECKS = {"recordPins", "sourceAndVerification", "cur
 CURRENT_HOST_UNIT_FIELDS = "Id LoadState ActiveState SubState MainPID InvocationID Result ExecMainStatus ControlGroup NRestarts".split()
 PROGRAMS_PREVIOUS_EPOCH = {"path": str(R / "candidate-tv-parent-transition-01/private/runtime-epoch.json"), "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"}
 PROGRAMS_PREVIOUS_BINDING = {"path": str(R / "candidate-tv-parent-transition-01/private/seed-runtime-binding.json"), "sha256": "94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43"}
-PROGRAMS_CURRENT_RUNTIME = {"path": str(R / "core-current-runtime-20260915T085726Z/private/current-runtime-binding.json"), "sha256": "38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c"}
+PROGRAMS_CURRENT_RUNTIME = {"path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/current-runtime-binding.json", "sha256": "db22e3d954febd07c422d143027876a94782d3937e0ab374f80d566ba283c4ef"}
 PROGRAMS_PRIOR_SOURCE = {"path": str(R / "candidate-core-client-tv-browse-02/private/source-after.json"), "sha256": "445c35bc17a8716adb036061e16fa29f22d9883727657ebfe1cfc1fdd0db13e4"}
 PROGRAMS_PRIOR_CLOSEOUT = {"path": str(R / "candidate-core-client-tv-browse-02/closeout/closeout.json"), "sha256": "5d666c204c4aa122414aa385928d6be6a4a153c8ce0390e4c9af2643fc19f9c3"}
 PROGRAMS_SOURCE_ARCHIVE = {"path": str(R / "live-tv-product-source-20260915T102000Z/source-r01.tar.gz"), "sha256": "3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251"}
 PROGRAMS_PRODUCT_ROOT = Path("/opt/goby-test/livetv-programs-final-20260915")
 PROGRAMS_SOURCE_MANIFEST = {"path": "/opt/goby-test/livetv-programs-focused-20260915/private/source-manifest.json", "sha256": "47b4f9130558377897228aaddff15dc02e279552b83c40922550264ffbf01845"}
+PROGRAMS_COMPLETE_SOURCE_ROOT = Path("/opt/goby-test/livetv-programs-complete-source-final-20260916")
+PROGRAMS_COMPLETE_PRODUCT_ROOT = Path("/opt/goby-test/livetv-programs-complete-source-final-20260916-r02")
+PROGRAMS_COMPLETE_ARTIFACT_PINS = {
+    "sourceArchive": {"path": str(PROGRAMS_COMPLETE_SOURCE_ROOT / "private/source.tar.gz"), "sha256": "f211b15d5e9675448f5de4d582e3d3898ad645937291edeeab0e658cbb91752b", "bytes": 33333070},
+    "sourceManifest": {"path": str(PROGRAMS_COMPLETE_SOURCE_ROOT / "private/source-manifest.json"), "sha256": "fa0b3bf9642fa1a1a3face0bb580e94c901f3a8d6bfc378891d4233ae5dca4cc", "bytes": 1093188},
+    "sourceBridge": {"path": str(PROGRAMS_COMPLETE_PRODUCT_ROOT / "private/build-source-bridge.json"), "sha256": "3a263670569054115ef0d6be1247059cfba54357ea3c7dcec8acbddd1200993d", "bytes": 1062677},
+    "buildManifest": {"path": str(PROGRAMS_COMPLETE_PRODUCT_ROOT / "artifacts/linux-amd64-systemd/manifest.json"), "sha256": "54868306dce5a5a04348e2606bd047cf13af9d52c8db2a4ad23c5ffdb9ef6ed5", "bytes": 173965},
+    "newBinary": {"path": str(PROGRAMS_COMPLETE_PRODUCT_ROOT / "artifacts/linux-amd64-systemd/goby"), "sha256": "ead67c8faaf4cde88f7fe1bf57ffed43705259aba7b29f59c3473747afd732fb", "bytes": 30701500},
+    "packageManifest": {"path": str(PROGRAMS_COMPLETE_PRODUCT_ROOT / "artifacts/linux-amd64-systemd/package-manifest.json"), "sha256": "39566a074e499a714ca4190cea3a776458d7a4300396484627f9c69afdab415c", "bytes": 5998},
+    "packageArchive": {"path": str(PROGRAMS_COMPLETE_PRODUCT_ROOT / "artifacts/linux-amd64-systemd/goby-linux-amd64-systemd.tar.gz"), "sha256": "c7e5d30bccf105003d9908ff18f18faf898bf83217c5ff2a6c4eda305c504a86", "bytes": 14078580},
+}
+PROGRAMS_COMPLETE_COUNTS = {"frozenFiles": 5405, "trackedBuildInputs": 5348, "generatedAssetCount": 57, "frozenBytes": 120705443}
+PROGRAMS_COMPLETE_TRACKED_SCOPE = "All tracked project inputs, including documentation and fixtures; not a claim of compiled or emitted contribution."
+PROGRAMS_COMPLETE_INVENTORY = {
+    "boundary": "Snapshot of all regular files in the stated local scope, not a compiled dependency graph.",
+    "digestEncoding": "UTF-8 JSON.stringify(files), sorted by repository-relative name.",
+    "scope": ["cmd/", "internal/", "web/admin/embedded.go"], "fileCount": 861, "totalBytes": 12109709,
+    "sha256": "9065d9e95d850c17e9d496c56a3af57a46f83879e2c23a3eb234867496b91a2a",
+}
 PROGRAMS_OLD_BINARY = "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42"
 PROGRAMS_E11_BINARY = "7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1"
 PROGRAMS_ENV_SHA = "877ce946814fef63a240171b7a60c4ad6b4505bf2051be815266ed9744627d3d"
@@ -176,15 +204,25 @@ def validate_transition_input(value):
     return value
 
 
+def programs_complete_source(archive):
+    """Select only the two explicitly retained source archives."""
+    descriptor(archive)
+    complete = archive == receipt_descriptor(PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceArchive"])
+    need(complete or archive == PROGRAMS_SOURCE_ARCHIVE, "programs_source_archive_authority")
+    return complete
+
+
 def validate_programs_successor_input(value):
     need(isinstance(value, dict) and set(value) == PROGRAMS_INPUT_KEYS and
          value["kind"] == "audited-candidate-transition-input" and type(value["version"]) is int and value["version"] == 3 and
          value["operationKind"] == "programs_successor", "programs_transition_input_schema")
     for key in PROGRAMS_INPUT_KEYS - {"kind", "version", "operationKind", "output", "helpers", "budgets", "recoveryPolicy"}:
         descriptor(value[key])
+    complete = programs_complete_source(value["newSourceArchive"])
+    source_manifest = receipt_descriptor(PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceManifest"]) if complete else PROGRAMS_SOURCE_MANIFEST
     expected = {"previousEpoch": PROGRAMS_PREVIOUS_EPOCH, "previousBinding": PROGRAMS_PREVIOUS_BINDING,
         "currentRuntime": PROGRAMS_CURRENT_RUNTIME, "priorSource": PROGRAMS_PRIOR_SOURCE,
-        "priorCloseout": PROGRAMS_PRIOR_CLOSEOUT, "newSourceArchive": PROGRAMS_SOURCE_ARCHIVE, "newSourceManifest": PROGRAMS_SOURCE_MANIFEST}
+        "priorCloseout": PROGRAMS_PRIOR_CLOSEOUT, "newSourceManifest": source_manifest}
     need(all(canonical(value[key]) == canonical(pin) for key, pin in expected.items()), "programs_transition_authority")
     need(set(value["helpers"]) == HELPERS and all(descriptor(pin) for pin in value["helpers"].values()) and
          value["helpers"]["gateway"]["sha256"] == GATEWAY_SOURCE_SHA, "programs_transition_helpers")
@@ -193,7 +231,10 @@ def validate_programs_successor_input(value):
     output = Path(value["output"])
     need(output.parent == R and re.fullmatch(r"candidate-programs-transition-[0-9]{2}", output.name), "programs_transition_scope")
     for key in ("newFullReport", "newBinary", "newArtifactReceipt", "newBuildManifest", "sourceBridge"):
-        need(Path(value[key]["path"]).is_relative_to(PROGRAMS_PRODUCT_ROOT), "programs_product_scope")
+        need(Path(value[key]["path"]).is_relative_to(PROGRAMS_COMPLETE_PRODUCT_ROOT if complete else PROGRAMS_PRODUCT_ROOT), "programs_product_scope")
+    if complete:
+        for key, target in (("newBinary", "newBinary"), ("newBuildManifest", "buildManifest"), ("sourceBridge", "sourceBridge")):
+            need(value[key] == receipt_descriptor(PROGRAMS_COMPLETE_ARTIFACT_PINS[target]), "programs_complete_artifact_input")
     need(Path(value["compiledCatalog"]["path"]).is_relative_to("/opt/goby-test") and
          value["compiledCatalog"]["path"].endswith("/" + CATALOG_RELATIVE), "programs_source_resource_scope")
     need(value["newBinary"]["sha256"] not in {OLD_BINARY, CURRENT_BINARY, PROGRAMS_OLD_BINARY, PROGRAMS_E11_BINARY}, "programs_product_is_historical_binary")
@@ -263,7 +304,7 @@ def validate_programs_retention(review, state, *, seconds):
          review.get("status") == "saved_provenance_reviewed_not_live_admission" and
          type(review.get("expectedActivityRetentionDays")) is int and review["expectedActivityRetentionDays"] == 30 and
          review["basis"]["preservedRuntimeEnvironmentSha256"] == PROGRAMS_ENV_SHA and
-         canonical(review["basis"]["productArchive"]) == canonical(PROGRAMS_SOURCE_ARCHIVE) and
+         review["basis"]["productArchive"] in (PROGRAMS_SOURCE_ARCHIVE, receipt_descriptor(PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceArchive"])) and
          canonical(review["savedActivityProjection"]["snapshot"]) == canonical(PROGRAMS_PRIOR_SOURCE), "programs_retention_provenance")
     generator = review["basis"]["generator"]
     need(generator.get("sha256") == "9b83f402ce539155dc6d1eafc99786c87b593ca47c7834127aeaacd46335ab6a" and
@@ -576,12 +617,17 @@ def validate_programs_successor_epoch(epoch):
         descriptor(epoch[key])
     need(epoch["productInput"] == epoch["transitionInput"] and canonical(epoch["calls"]) == canonical({"stop": 1, "replace": 1, "start": 1}), "programs_epoch_operation")
     source = epoch["currentSource"]
-    need(isinstance(source, dict) and set(source) == PROGRAMS_SOURCE_KEYS and source["archiveSha256"] == PROGRAMS_SOURCE_ARCHIVE["sha256"] and
+    need(isinstance(source, dict) and set(source) == PROGRAMS_SOURCE_KEYS and source["archiveSha256"] in
+         (PROGRAMS_SOURCE_ARCHIVE["sha256"], PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceArchive"]["sha256"]) and
          type(source["schema"]) is int and source["schema"] == 28, "programs_epoch_source")
     for key in PROGRAMS_SOURCE_KEYS - {"archiveSha256", "schema"}:
         descriptor(source[key])
     need(source["binary"]["path"] == str(C / "install/goby") and
          source["binary"]["sha256"] not in {OLD_BINARY, CURRENT_BINARY, PROGRAMS_OLD_BINARY, PROGRAMS_E11_BINARY}, "programs_epoch_binary")
+    if source["archiveSha256"] == PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceArchive"]["sha256"]:
+        need(source["binary"]["sha256"] == PROGRAMS_COMPLETE_ARTIFACT_PINS["newBinary"]["sha256"] and
+             all(source[key] == receipt_descriptor(PROGRAMS_COMPLETE_ARTIFACT_PINS[key]) for key in
+                 ("sourceManifest", "buildManifest", "sourceBridge")), "programs_complete_epoch_source")
     candidate = epoch["candidate"]
     need(candidate["bootstrapExecuted"] is True and canonical(candidate["sourceState"]) == canonical({"users": 8, "schema": 28, "migrations": 28}) and
          candidate["originalProvision"] == PROVISION and candidate["seedProvenance"] == SEED and
@@ -610,6 +656,18 @@ def validate_programs_binding(binding, epoch_pin, epoch, seed):
     return binding
 
 
+def validate_programs_closeout_runtime(value, current, closeout_runtime):
+    """Relate the old TV closeout to the envelope already checked by the loader."""
+    if programs_complete_source(value["newSourceArchive"]):
+        need(validate_current_runtime_schema(current) == 2 and
+             current["previousCurrentRuntime"] == CURRENT_RUNTIME_V2_PREDECESSOR and
+             current["recovery"] == CURRENT_RUNTIME_SECOND_RECOVERY and
+             current["runtimeEpoch"] == value["previousEpoch"] and current["seedBinding"] == value["previousBinding"] and
+             closeout_runtime == CURRENT_RUNTIME_V1_PREDECESSOR, "programs_tv_runtime_ancestor")
+    else:
+        need(canonical(closeout_runtime) == canonical(value["currentRuntime"]), "programs_tv_evidence_changed")
+
+
 def validate_programs_startup_review(value, summary, state, closeout, prior_source, current, retention):
     validate_programs_successor_input(value)
     expected = {"kind", "version", "status", "state", "previousEpoch", "seedBinding", "currentRuntime", "priorSource", "priorCloseout",
@@ -626,12 +684,14 @@ def validate_programs_startup_review(value, summary, state, closeout, prior_sour
          closeout.get("status") == "owned_state_closed_diagnostic_result" and closeout.get("clientAcceptance") is False, "programs_tv_closeout_required")
     evidence = closeout["evidence"]
     for key, pin in (("runtimeEpoch", value["previousEpoch"]), ("seedBinding", value["previousBinding"]),
-                     ("currentRuntime", value["currentRuntime"]), ("sourceAfter", value["priorSource"]), ("boundary", summary["boundary"])):
+                     ("sourceAfter", value["priorSource"]), ("boundary", summary["boundary"])):
         need(canonical(evidence[key]) == canonical(pin), "programs_tv_evidence_changed")
+    validate_programs_closeout_runtime(value, current, evidence["currentRuntime"])
     need(evidence["admission"] == current["admission"], "programs_tv_admission_changed")
     facts = validate_programs_state(state)
     compare_programs_logical(prior_source, state["source"], phase="unchanged")
     validate_programs_retention(retention, state, seconds=LIMITS["maximumSeconds"] + PROGRAMS_RECOVERY_POLICY["maximumSeconds"])
+    need(retention["basis"]["productArchive"] == value["newSourceArchive"], "programs_retention_product_binding")
     need(all(row.get("key") != "library.refresh_media" for row in state["source"]["tables"]["task_definitions"]), "programs_review_requires_absent_refresh")
     identity = current["current"]
     candidate = {**identity["candidateProcess"], "listener": {"host": "127.0.0.1", "port": identity["listener"]["port"], "socketInode": identity["listener"]["socketInode"]}}
@@ -735,9 +795,35 @@ def validate_programs_source_compatibility(sources, previous):
              for name in selected), "programs_same_schema_resources_changed")
 
 
+def validate_programs_source_bridge_profile(bridge, *, complete):
+    """Keep the old bridge shape exact and select one complete-source record."""
+    keys = {"kind", "version", "status", "input", "sourceArchive", "sourceManifest", "sourceCheckpoint", "gitCommit", "frozenFiles", "trackedBuildInputs",
+            "generatedAssetCount", "frozenBytes", "sourceInventory", "moduleInputs", "administratorAssets", "administratorEntryReferences", "deploymentInputs",
+            "runtimeModeProjection", "buildManifest", "packageManifest", "reader", "sourceTreeUnchangedBeforeAfter", "gitAndFrozenModesDeclaredEqual"}
+    if complete:
+        keys.add("trackedInputCountScope")
+    counts = PROGRAMS_COMPLETE_COUNTS if complete else {"frozenFiles": 924, "trackedBuildInputs": 867, "generatedAssetCount": 57, "frozenBytes": 13253765}
+    need(isinstance(bridge, dict) and set(bridge) == keys and bridge["kind"] == "goby-frozen-source-build-bridge" and
+         type(bridge["version"]) is int and bridge["version"] == 1 and bridge["status"] == "matched" and exact_counts(bridge, counts) and
+         (not complete or bridge["gitCommit"] == "3d6b79b36b6a5050e174f7a152f214b9356608c8" and
+          bridge["trackedInputCountScope"] == PROGRAMS_COMPLETE_TRACKED_SCOPE) and
+         bridge["sourceTreeUnchangedBeforeAfter"] is True and bridge["gitAndFrozenModesDeclaredEqual"] is False, "programs_source_bridge_schema")
+
+
+def validate_programs_adapter_source(review_adapter, closure_adapter, read_bytes):
+    """Bind the complete profile's retained Pin2 to a separately read Pin3 source."""
+    selected = programs_artifact_pin(review_adapter)
+    descriptor(closure_adapter)
+    need(selected == closure_adapter, "programs_adapter_source_pin")
+    content = read_bytes(review_adapter)
+    need(isinstance(content, bytes) and len(content) == review_adapter["bytes"] and
+         digest(content) == review_adapter["sha256"], "programs_adapter_source_bytes")
+
+
 def load_programs_product(value, read_descriptor, read_bytes=None):
     """Verify the actual full/build worker and only its declared archived artifacts."""
     validate_programs_successor_input(value)
+    complete = programs_complete_source(value["newSourceArchive"])
     read_bytes = read_bytes or read_programs_bytes
     cache = {}
     def raw(pin):
@@ -778,6 +864,8 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
          type(receipt["version"]) is int and receipt["version"] == 1 and receipt["status"] == "verified_and_closed", "programs_artifact_receipt_schema")
     for key in keys - {"kind", "version", "status", "fullReport", "worker"}:
         programs_artifact_pin(receipt[key])
+    if complete:
+        need(all(receipt[key] == pin for key, pin in PROGRAMS_COMPLETE_ARTIFACT_PINS.items()), "programs_complete_artifact_pins")
     programs_archive_member(receipt["worker"])
     full = receipt["fullReport"]
     need(isinstance(full, dict) and set(full) == {"execution", "worker", "ordinaryBinary"} and
@@ -788,7 +876,8 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
         need(programs_artifact_pin(receipt[target]) == value[origin], "programs_artifact_input_binding")
     for key, filename in (("newBinary", "goby"), ("buildManifest", "manifest.json"), ("packageManifest", "package-manifest.json"),
                           ("packageArchive", "goby-linux-amd64-systemd.tar.gz")):
-        need(receipt[key]["path"] == str(PROGRAMS_PRODUCT_ROOT / "artifacts/linux-amd64-systemd" / filename), "programs_materialized_product_path")
+        product_root = PROGRAMS_COMPLETE_PRODUCT_ROOT if complete else PROGRAMS_PRODUCT_ROOT
+        need(receipt[key]["path"] == str(product_root / "artifacts/linux-amd64-systemd" / filename), "programs_materialized_product_path")
     need(receipt["worker"]["archive"] == full["ordinaryBinary"]["archive"] == receipt["archive"], "programs_full_archive_binding")
     execution, closure, review = (document(receipt[key]) for key in ("execution", "closure", "independentReview"))
     closure_flags = {"ownedProcessesClosed", "ext4Unmounted", "loopDetached", "ramUnmounted", "resourcesClosed", "lockReleased", "allOwnedCommandsClosed"}
@@ -810,7 +899,11 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
         programs_artifact_pin(review[key])
     for key in ("execution", "archive", "closure", "sourceBridge", "buildManifest", "newBinary", "packageManifest", "packageArchive", "buildTools", "worker"):
         need(canonical(review[key]) == canonical(receipt[key]), "programs_independent_record_binding")
-    need(canonical(review["input"]) == canonical(closure["input"]) and canonical(review["adapter"]) == canonical(closure["adapter"]), "programs_independent_execution_source")
+    need(canonical(review["input"]) == canonical(closure["input"]), "programs_independent_execution_source")
+    if complete:
+        validate_programs_adapter_source(review["adapter"], closure["adapter"], raw)
+    else:
+        need(canonical(review["adapter"]) == canonical(closure["adapter"]), "programs_independent_execution_source")
     worker = programs_json(member(receipt["worker"]))
     suffixes = "cmd/goby internal/activity internal/artwork internal/backupformat internal/backuppg internal/backupstore internal/config internal/database internal/diagnostics internal/events internal/identity internal/library internal/lifecycle internal/media internal/metadata internal/playback internal/recovery internal/recoverycontrol internal/server internal/settings internal/storagebinding internal/subtitle internal/tasks internal/transcode internal/recoverydb".split()
     expected = ["github.com/moooyo/goby/" + name for name in suffixes]
@@ -876,7 +969,7 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
     binary = raw(receipt["newBinary"])
     need(len(binary) >= 64 and binary[:6] == b"\x7fELF\x02\x01" and int.from_bytes(binary[18:20], "little") == 62, "programs_embedded_amd64_elf")
     sources = document(receipt["sourceManifest"])
-    need(isinstance(sources, dict) and len(sources) == 924 and all(isinstance(row, dict) and set(row) == {"bytes", "mode", "sha256"} and
+    need(isinstance(sources, dict) and len(sources) == (5405 if complete else 924) and all(isinstance(row, dict) and set(row) == {"bytes", "mode", "sha256"} and
          type(row["bytes"]) is int and row["bytes"] >= 0 and type(row["mode"]) is int and row["mode"] == 0o644 for row in sources.values()), "programs_frozen_source_manifest")
     prior_epoch = validate_epoch(read_descriptor(value["previousEpoch"]))
     validate_programs_source_compatibility(sources, read_descriptor(prior_epoch["currentSource"]["sourceManifest"]))
@@ -900,17 +993,16 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
          all(set(row) == {"name", "sha256", "bytes"} and all(row[key] == sources[row["name"]][key] for key in ("sha256", "bytes")) for row in files), "programs_compiled_source_membership")
     need(build["sourceInventory"]["sha256"] == digest(json.dumps(files, ensure_ascii=False, separators=(",", ":")).encode()) and
          build["sourceInventory"]["fileCount"] == len(files) and build["sourceInventory"]["totalBytes"] == sum(row["bytes"] for row in files), "programs_source_inventory_digest")
+    if complete:
+        need(set(build["sourceInventory"]) == set(PROGRAMS_COMPLETE_INVENTORY) | {"files"} and
+             all(build["sourceInventory"][key] == expected for key, expected in PROGRAMS_COMPLETE_INVENTORY.items()),
+             "programs_complete_source_inventory")
     need(set(build["moduleInputs"]) == {"go.mod", "go.sum"} and all(all(build["moduleInputs"][name][key] == sources[name][key] for key in ("bytes", "sha256")) for name in build["moduleInputs"]), "programs_module_inputs")
     assets = build["administratorAssets"]
     expected_assets = {name.removeprefix("web/admin/dist/") for name in sources if name.startswith("web/admin/dist/")}
     need(len(assets) == len(expected_assets) == 57 and {row["name"] for row in assets} == expected_assets and
          all(all(row[key] == sources["web/admin/dist/" + row["name"]][key] for key in ("bytes", "sha256")) for row in assets), "programs_embedded_assets")
-    bridge_keys = {"kind", "version", "status", "input", "sourceArchive", "sourceManifest", "sourceCheckpoint", "gitCommit", "frozenFiles", "trackedBuildInputs",
-                  "generatedAssetCount", "frozenBytes", "sourceInventory", "moduleInputs", "administratorAssets", "administratorEntryReferences", "deploymentInputs",
-                  "runtimeModeProjection", "buildManifest", "packageManifest", "reader", "sourceTreeUnchangedBeforeAfter", "gitAndFrozenModesDeclaredEqual"}
-    need(set(bridge) == bridge_keys and bridge["kind"] == "goby-frozen-source-build-bridge" and type(bridge["version"]) is int and bridge["version"] == 1 and
-         bridge["status"] == "matched" and exact_counts(bridge, {"frozenFiles": 924, "trackedBuildInputs": 867, "generatedAssetCount": 57, "frozenBytes": 13253765}) and
-         bridge["sourceTreeUnchangedBeforeAfter"] is True and bridge["gitAndFrozenModesDeclaredEqual"] is False, "programs_source_bridge_schema")
+    validate_programs_source_bridge_profile(bridge, complete=complete)
     for key in ("sourceArchive", "sourceManifest"):
         need(canonical(bridge[key]) == canonical(receipt[key]), "programs_bridge_source_identity")
     need(canonical(bridge["input"]) == canonical(review["input"]) == canonical(materialized["input"]) and
@@ -1585,17 +1677,18 @@ def exact_counts(value, expected):
 
 
 def validate_current_runtime_schema(envelope):
-    """Keep the first recovery intact and admit only its one reviewed successor."""
+    """Keep both accepted records intact; allow only two fixed recovery edges."""
     need(isinstance(envelope, dict) and type(envelope.get("version")) is int and
          envelope["version"] in (1, 2) and envelope.get("kind") == "audited-candidate-current-runtime-binding" and
          envelope.get("status") == "reviewed_current_runtime" and
          set(envelope) == (CURRENT_RUNTIME_KEYS if envelope["version"] == 1 else CURRENT_RUNTIME_V2_KEYS), "current_runtime_schema")
     if envelope["version"] == 2:
-        need(envelope["previousCurrentRuntime"] == CURRENT_RUNTIME_V1_PREDECESSOR, "current_runtime_previous_pin")
+        need(envelope["previousCurrentRuntime"] in (CURRENT_RUNTIME_V1_PREDECESSOR, CURRENT_RUNTIME_V2_PREDECESSOR),
+             "current_runtime_previous_pin")
     return envelope["version"]
 
 
-def validate_lease_loss_configuration(configuration, execution, result, intent, candidate):
+def validate_lease_loss_configuration(configuration, execution, result, intent, candidate, *, previous_configuration=None):
     """Use the retained hash projection without inventing configuration parsing facts."""
     need(isinstance(configuration, dict) and set(configuration) == {"kind", "version", "status", "candidates", "source", "metadata",
          "independentReview", "environmentDecoded", "masterKeyContentRead", "newFileReads", "requiresFreshHashMatchBeforeStart"} and
@@ -1608,9 +1701,16 @@ def validate_lease_loss_configuration(configuration, execution, result, intent, 
              "current_runtime_configuration_source")
         receipt_descriptor(configuration[key])
     pins = execution.get("preservationInputs", {})
-    need(receipt_descriptor(configuration["source"]) == pins.get("readonly-execution.json") and
-         receipt_descriptor(configuration["independentReview"]) == pins.get("readonly-independent-review.json"),
-         "current_runtime_configuration_source")
+    if previous_configuration is None:
+        need(receipt_descriptor(configuration["source"]) == pins.get("readonly-execution.json") and
+             receipt_descriptor(configuration["independentReview"]) == pins.get("readonly-independent-review.json"),
+             "current_runtime_configuration_source")
+    else:
+        # The accepted predecessor already validates this projection's original
+        # provenance. Its bytes are reused, not relabeled as a new SQL product.
+        need(canonical(configuration) == canonical(previous_configuration) and
+             pins.get("restart-configuration-observation.json") == CURRENT_RUNTIME_SECOND_RECOVERY["configuration"],
+             "current_runtime_configuration_lineage")
     cfg = configuration["candidates"]
     need(isinstance(cfg, dict) and set(cfg) == {"old", "fresh"}, "current_runtime_configuration_candidates")
     metadata_keys = {"bytes", "ctimeNs", "device", "gid", "inode", "links", "mode", "mtimeNs", "type", "uid"}
@@ -1699,9 +1799,74 @@ def validate_current_runtime(envelope, value, product_epoch, records):
     return _validate_current_runtime_records(envelope, value, product_epoch, records)
 
 
+def validate_second_recovery_review(review, execution, recovery):
+    """Read the Sep16 review in its actual shape, without inventing old flags."""
+    need(recovery == CURRENT_RUNTIME_SECOND_RECOVERY, "current_runtime_second_recovery_pins")
+    keys = {"kind", "version", "status", "applications", "boundedStartup", "candidateEvidence", "closure", "counts", "createdAtUtc",
+            "dispatch", "evidenceLimits", "execution", "outerStreamReadback", "postStartReview", "preflight", "preservationInputs",
+            "protected", "rawSqlPins", "readbackPinBytes", "readbackPinCount", "reviewMethod", "rows", "scope", "scopeExclusions", "source"}
+    need(isinstance(review, dict) and set(review) == keys and
+         review["kind"] == "candidate-original-application-restart-independent-review" and type(review["version"]) is int and
+         review["version"] == 1 and review["status"] == "passed" and
+         receipt_descriptor(review["execution"]) == recovery["execution"] and
+         review["source"] == {"path": str(CURRENT_RUNTIME_SECOND_ROOT / "private/candidate-disk-full-restart.py"),
+             "sha256": "c5cd36eb66d19f94adb3205929b7164e14e53a8fba2c84e2a73e3dc536f0b60a", "bytes": 39779},
+         "current_runtime_second_recovery_review")
+    closure_flags = {"allEightSqlBackendsGoneAsCaptured", "allOuterCommandsClosed", "allReaderFrontendGroupsClosed",
+                     "allSqlCommitsAcknowledged", "dispatchExitedZero", "dispatchPidAbsentAsCaptured", "dispatchWaited",
+                     "lockFdCloseSucceeded", "lockReleased", "lockUnlockSucceeded"}
+    need(set(review["closure"]) == closure_flags | {"receiptErrors", "unneededStops"} and
+         all(review["closure"][key] is True for key in closure_flags) and review["closure"]["receiptErrors"] == [] and
+         exact_counts(review["closure"], {"unneededStops": 0}) and
+         canonical(review["reviewMethod"]) == canonical({"savedFileReadsOnly": True, "testsReplayed": False,
+             "httpCalls": 0, "nativeBodyReads": 0, "serviceActions": 0, "sqlCalls": 0, "targetModulesExecuted": 0}),
+         "current_runtime_second_recovery_closure")
+    counts = {"applicationStarts": 2, "databases": 4, "healthResponses": 4, "outerCommands": 78, "outerRawStreamsRead": 156,
+              "outerUnitShowCommands": 76, "postgresRestarts": 0, "rawSqlStreamsRead": 8, "readOnlySqlSessions": 8,
+              "readerCommands": 28, "readerMetadataCommands": 20, "sequencesPerDatabase": 5, "tablesPerDatabase": 35,
+              "uniqueDeploymentLeases": 2}
+    protected_flags = {"historicalMainAndDeploymentLockHashesExact", "oldFailedInvocationsPreservedInBefore",
+                       "onlyTwoApplicationInvocationsChanged", "referenceUnitAndProcessExact"}
+    protected_counts = {"unchangedConfigurationHashes": 8, "unchangedNonApplicationUnits": 5,
+                        "unchangedPostmasters": 3, "unchangedProtectedFiles": 5}
+    need(set(review["counts"]) == set(counts) and exact_counts(review["counts"], counts) and
+         len(execution["commands"]) == counts["outerCommands"] and
+         set(review["protected"]) == protected_flags | set(protected_counts) and
+         all(review["protected"][key] is True for key in protected_flags) and exact_counts(review["protected"], protected_counts),
+         "current_runtime_second_recovery_preservation")
+    # This pinned source/review establishes the successful native control path.
+    # No new native-body or post-start diagnostics observation is implied here.
+    need(set(review["preservationInputs"]) == set(execution["preservationInputs"]) and
+         all(receipt_descriptor(pin) == execution["preservationInputs"][name] for name, pin in review["preservationInputs"].items()) and
+         {"native-execution.json", "native-independent-review.json", "readonly-execution.json", "readonly-checkpoint.json",
+          "auxiliary-execution.json", "auxiliary-independent-review.json", "restart-configuration-observation.json"} <= set(review["preservationInputs"]) and
+         review["postStartReview"].get("included") is False and execution["postStartLogReadbackExecuted"] is False,
+         "current_runtime_second_preservation_inputs")
+    need(set(review["applications"]) == set(review["candidateEvidence"]) == set(execution["candidates"]) == {"old", "fresh"} and
+         review["rows"] == {"old_source": 230, "old_recovery": 147, "fresh_source": 141, "fresh_recovery": 131},
+         "current_runtime_second_candidate_scope")
+    for label, restored in execution["candidates"].items():
+        application, evidence = review["applications"][label], review["candidateEvidence"][label]
+        process = restored["identity"]["process"]
+        need(application == {"pid": process["pid"], "startTicks": process["startTicks"],
+             "invocationId": restored["claimedUnit"]["InvocationID"], "binarySha256": restored["startIntent"]["binarySha256"]} and
+             restored["label"] == label and restored["status"] == "restored_and_preserved" and restored["startRequested"] is True and
+             restored["cleanupErrors"] == restored["readerEvidenceErrors"] == [] and exact_counts(restored, {"sqlSessions": 4}) and
+             all(restored[key] is True for key in ("frontendGroupsClosed", "readProcessesClosed", "readerEvidenceSaved", "sqlResultsClosed")) and
+             len(restored["health"]) == 2 and all(row["status"] == 200 and row["complete"] is True for row in restored["health"]) and
+             set(evidence) == {"commands", "sqlClosure", "snapshots"} and
+             all(evidence[key] == restored[key] for key in ("commands", "sqlClosure")), "current_runtime_second_candidate_review")
+        need(set(evidence["snapshots"]) == set(restored["snapshots"]) == {"source", "recovery"}, "current_runtime_second_snapshot_scope")
+        for slot in ("source", "recovery"):
+            snapshot = restored["snapshots"][slot]
+            need(snapshot["equal"] is True and exact_counts(snapshot, {"tables": 35, "sequences": 5, "rows": review["rows"][label + "_" + slot]}) and
+                 evidence["snapshots"][slot] == {key: snapshot[key] for key in ("before", "after")}, "current_runtime_second_snapshot_review")
+
+
 def _validate_current_runtime_records(envelope, value, product_epoch, records):
     """Validate saved recovery and a separately recorded current observation only."""
     version = validate_current_runtime_schema(envelope)
+    second_recovery = version == 2 and envelope["previousCurrentRuntime"] == CURRENT_RUNTIME_V2_PREDECESSOR
     for key in CURRENT_AUTHORITY_KEYS:
         descriptor(envelope[key])
         need(canonical(envelope[key]) == canonical(value[key]), "current_runtime_historical_authority")
@@ -1726,8 +1891,10 @@ def _validate_current_runtime_records(envelope, value, product_epoch, records):
     previous = None
     if version == 2:
         previous = records.get("previousCurrentRuntime")
-        need(validate_current_runtime_schema(previous) == 1 and isinstance(records.get("previousRecords"), dict), "current_runtime_previous_version")
-        # This call is bounded to the original v1 record; a second v2 cannot enter it.
+        need(validate_current_runtime_schema(previous) == (2 if second_recovery else 1) and
+             isinstance(records.get("previousRecords"), dict) and
+             (not second_recovery or previous["previousCurrentRuntime"] == CURRENT_RUNTIME_V1_PREDECESSOR), "current_runtime_previous_version")
+        # The only extra edge is the fixed Sep15 v2, whose parent must be v1.
         _validate_current_runtime_records(previous, value, product_epoch, records["previousRecords"])
         need(all(canonical(previous[key]) == canonical(envelope[key]) for key in (*CURRENT_AUTHORITY_KEYS, "preserved")),
              "current_runtime_previous_authority")
@@ -1743,7 +1910,8 @@ def _validate_current_runtime_records(envelope, value, product_epoch, records):
         need(all(isinstance(records.get(key), dict) for key in CURRENT_RECOVERY_KEYS), "current_runtime_recovery_records")
     execution, review, configuration, intent, result = (records[key] for key in
         ("execution", "independentReview", "configuration", "selectedStartIntent", "selectedResult"))
-    execution_kind = "candidate-disk-full-original-application-restart" if version == 1 else "candidate-lease-loss-original-application-restart"
+    execution_kind = ("candidate-oom-exit-original-application-restart" if second_recovery else
+                      "candidate-disk-full-original-application-restart" if version == 1 else "candidate-lease-loss-original-application-restart")
     need(execution.get("kind") == execution_kind and type(execution.get("version")) is int and
          execution["version"] == 1 and execution.get("status") == "both_original_applications_restored" and
          exact_counts(execution, {"applicationStartRequests": 2, "postgresRestartRequests": 0, "binaryOrEnvironmentChanges": 0,
@@ -1754,28 +1922,32 @@ def _validate_current_runtime_records(envelope, value, product_epoch, records):
     need(isinstance(execution.get("commands"), list) and len(execution["commands"]) > 0 and
          all(isinstance(command, dict) and command.get("closed") is True and exact_counts(command, {"exitCode": 0})
              for command in execution["commands"]), "current_runtime_recovery_command_closure")
-    review_kind = "candidate-disk-full-restart-independent-review" if version == 1 else "candidate-lease-loss-restart-independent-review"
-    need(review.get("kind") == review_kind and type(review.get("version")) is int and
-         review["version"] == 1 and review.get("status") == "passed" and review.get("failure", "missing") is None and
-         receipt_descriptor(review["reviewedReceipt"]) == recovery["execution"] and
-         all(review.get(key) is True for key in ("allReaderClosuresVerified", "originalPostmastersPreserved", "lockAcquired", "lockReleased",
-             "protectedFileMetadataPreserved", "unrequestedUnitsUnchanged", "firstRestoredApplicationPreservedThroughSecond")) and
-         exact_counts(review, {key: 0 for key in ("applicationStopRequests", "postgresRestartRequests", "newHttpRequests", "newSqlSessions", "serviceChanges")}),
-         "current_runtime_recovery_review")
-    need(all(review.get("nativePreservation", {}).get(key) is True for key in
-             ("mandatoryBeforeAndAfterNativeChecksInSuccessfulPinnedControlFlow", "priorNativeChecksPassed")), "current_runtime_native_preservation")
-    reviewed = review["candidates"]["old"]
-    need(receipt_descriptor(reviewed["result"]) == recovery["selectedResult"] and
-         receipt_descriptor(reviewed["startIntent"]) == recovery["selectedStartIntent"] and
-         all(reviewed.get(key) is True for key in ("allQueryIntentResultClosureHashesMatched", "allReaderStreamsCompleteAndGroupsClosed",
-             "allSqlBackendsRecordedGoneAndCommitAcknowledged", "allSqlStdoutAndSavedResultsMatched", "applicationIdentityMatchesFinalUnit",
-             "claimedInvocationMatchesIntent", "healthAndReadinessStatus200", "ownedListenerAndLeaseSocketBound", "uniqueLeaseResponseMatchedOriginalStdout")),
-         "current_runtime_selected_review")
+    if second_recovery:
+        validate_second_recovery_review(review, execution, recovery)
+        reviewed = review["applications"]["old"]
+    else:
+        review_kind = "candidate-disk-full-restart-independent-review" if version == 1 else "candidate-lease-loss-restart-independent-review"
+        need(review.get("kind") == review_kind and type(review.get("version")) is int and
+             review["version"] == 1 and review.get("status") == "passed" and review.get("failure", "missing") is None and
+             receipt_descriptor(review["reviewedReceipt"]) == recovery["execution"] and
+             all(review.get(key) is True for key in ("allReaderClosuresVerified", "originalPostmastersPreserved", "lockAcquired", "lockReleased",
+                 "protectedFileMetadataPreserved", "unrequestedUnitsUnchanged", "firstRestoredApplicationPreservedThroughSecond")) and
+             exact_counts(review, {key: 0 for key in ("applicationStopRequests", "postgresRestartRequests", "newHttpRequests", "newSqlSessions", "serviceChanges")}),
+             "current_runtime_recovery_review")
+        need(all(review.get("nativePreservation", {}).get(key) is True for key in
+                 ("mandatoryBeforeAndAfterNativeChecksInSuccessfulPinnedControlFlow", "priorNativeChecksPassed")), "current_runtime_native_preservation")
+        reviewed = review["candidates"]["old"]
+        need(receipt_descriptor(reviewed["result"]) == recovery["selectedResult"] and
+             receipt_descriptor(reviewed["startIntent"]) == recovery["selectedStartIntent"] and
+             all(reviewed.get(key) is True for key in ("allQueryIntentResultClosureHashesMatched", "allReaderStreamsCompleteAndGroupsClosed",
+                 "allSqlBackendsRecordedGoneAndCommitAcknowledged", "allSqlStdoutAndSavedResultsMatched", "applicationIdentityMatchesFinalUnit",
+                 "claimedInvocationMatchesIntent", "healthAndReadinessStatus200", "ownedListenerAndLeaseSocketBound", "uniqueLeaseResponseMatchedOriginalStdout")),
+             "current_runtime_selected_review")
     need(result.get("label") == "old" and result.get("status") == "restored_and_preserved" and result.get("startRequested") is True and
          result.get("cleanupErrors") == [] and result.get("readerEvidenceErrors") == [] and
          all(result.get(key) is True for key in ("frontendGroupsClosed", "readProcessesClosed", "readerEvidenceSaved", "sqlResultsClosed")) and
          canonical(result["startIntent"]) == canonical(intent), "current_runtime_selected_result")
-    for slot in ("source", "recovery"):
+    for slot in (() if second_recovery else ("source", "recovery")):
         snapshot, reviewed_snapshot = result["snapshots"][slot], reviewed["snapshots"][slot]
         need(snapshot.get("equal") is True and snapshot.get("tables") == 35 and snapshot.get("sequences") == 5 and
              reviewed_snapshot.get("allLogicalFieldsEqual") is True and reviewed_snapshot.get("excludedFields") == ["capturedAt"] and
@@ -1784,7 +1956,10 @@ def _validate_current_runtime_records(envelope, value, product_epoch, records):
              reviewed_snapshot.get("afterSha256") == snapshot["after"]["sha256"], "current_runtime_recovery_preservation")
     config = configuration["candidates"]["old"]
     if version == 2:
-        validate_lease_loss_configuration(configuration, execution, result, intent, candidate)
+        validate_lease_loss_configuration(configuration, execution, result, intent, candidate,
+            previous_configuration=records["previousRecords"]["configuration"] if second_recovery else None)
+        if second_recovery:
+            need(recovery["configuration"] == previous["recovery"]["configuration"], "current_runtime_configuration_lineage")
         need(intent["binarySha256"] == candidate["binary"]["sha256"] and intent["unit"] == previous["current"]["serverProperties"]["Id"] and
              intent["oldUnit"]["InvocationID"] == previous["current"]["serverProperties"]["InvocationID"] and
              intent["oldUnit"]["ExecMainPID"] == str(previous["current"]["candidateProcess"]["pid"]) and
@@ -1805,14 +1980,14 @@ def _validate_current_runtime_records(envelope, value, product_epoch, records):
          recovered_process["cgroup"].rstrip("\n") == process["cgroup"].rstrip("\n") and
          result["identity"]["executableDevice"] == process["exeDevice"] and result["identity"]["executableInode"] == process["exeInode"] and
          all(result["claimedUnit"][key] == actual for key, actual in current["serverProperties"].items()) and
-         reviewed["applicationPid"] == process["pid"] and reviewed["startTicks"] == process["startTicks"] and
+         reviewed["pid" if second_recovery else "applicationPid"] == process["pid"] and reviewed["startTicks"] == process["startTicks"] and
          reviewed["invocationId"] == current["serverProperties"]["InvocationID"] and
          result["listener"] == {"localPort": current["listener"]["port"], "remotePort": None, "socketInode": current["listener"]["socketInode"]},
          "current_runtime_recovery_identity")
     lease = current["lease"]
     need(canonical(result["lease"]["facts"]) == canonical({key: lease[key] for key in CURRENT_LEASE_KEYS - {"backendStart", "candidateConnection"}}) and
          canonical(result["lease"]["applicationSocket"]) == canonical({key: lease["candidateConnection"][key] for key in ("localPort", "remotePort", "socketInode")}) and
-         reviewed["leaseBackendPid"] == lease["backendPid"] and result["cluster"]["systemIdentifier"] == candidate["clusterSystemIdentifier"] and
+         (second_recovery or reviewed["leaseBackendPid"] == lease["backendPid"]) and result["cluster"]["systemIdentifier"] == candidate["clusterSystemIdentifier"] and
          result["cluster"]["port"] == str(candidate["ports"]["postgres"]), "current_runtime_recovery_lease")
     observation = records["observation"]
     need(isinstance(observation, dict) and set(observation) == CURRENT_OBSERVATION_KEYS and
@@ -1865,7 +2040,10 @@ def load_programs_previous_runtime(pin, value, product_epoch, read_descriptor, r
         need(envelope["runtimeEpoch"] == value["previousEpoch"] and envelope["seedBinding"] == value["previousBinding"] and
              previous["currentSource"]["binary"]["sha256"] == PROGRAMS_OLD_BINARY, "programs_previous_runtime_authority")
         authority = {key: envelope[key] for key in CURRENT_AUTHORITY_KEYS}
-        return _validate_current_runtime_records(envelope, authority, previous, records)
+        result = _validate_current_runtime_records(envelope, authority, previous, records)
+        if value.get("newSourceArchive") is not None and programs_complete_source(value["newSourceArchive"]):
+            validate_programs_closeout_runtime(value, envelope, CURRENT_RUNTIME_V1_PREDECESSOR)
+        return result
     return _load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes, validate)
 
 
@@ -1912,9 +2090,16 @@ def _load_current_runtime(pin, value, product_epoch, read_descriptor, read_bytes
         records = read_records(envelope)
         if envelope["version"] == 2:
             previous = checked(envelope["previousCurrentRuntime"])
-            need(validate_current_runtime_schema(previous) == 1, "current_runtime_previous_version")
+            second_recovery = envelope["previousCurrentRuntime"] == CURRENT_RUNTIME_V2_PREDECESSOR
+            need(validate_current_runtime_schema(previous) == (2 if second_recovery else 1), "current_runtime_previous_version")
             records["previousCurrentRuntime"] = previous
             records["previousRecords"] = read_records(previous)
+            if second_recovery:
+                need(previous["previousCurrentRuntime"] == CURRENT_RUNTIME_V1_PREDECESSOR, "current_runtime_previous_pin")
+                original = checked(CURRENT_RUNTIME_V1_PREDECESSOR)
+                need(validate_current_runtime_schema(original) == 1, "current_runtime_previous_version")
+                records["previousRecords"]["previousCurrentRuntime"] = original
+                records["previousRecords"]["previousRecords"] = read_records(original)
         validator(envelope, value, product_epoch, records)
         return deepcopy(envelope)
     except ContractError:

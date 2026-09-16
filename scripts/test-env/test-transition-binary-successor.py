@@ -112,6 +112,26 @@ class SuccessorGuards(unittest.TestCase):
                 M.validate_transition_input(changed)
         self.assertEqual(M.validate_transition_input(self.input_fixture())["version"], 2)
 
+    def test_complete_programs_input_cannot_mix_profiles_or_use_the_ordinary_binary(self):
+        value = self.programs_input_fixture()
+        for key, target in (("newSourceArchive", "sourceArchive"), ("newSourceManifest", "sourceManifest"),
+                            ("newBinary", "newBinary"), ("newBuildManifest", "buildManifest"), ("sourceBridge", "sourceBridge")):
+            value[key] = M.receipt_descriptor(M.PROGRAMS_COMPLETE_ARTIFACT_PINS[target])
+        for key, name in (("newFullReport", "execution.json"), ("newArtifactReceipt", "artifact-receipt.json")):
+            value[key] = {"path": str(M.PROGRAMS_COMPLETE_PRODUCT_ROOT / name), "sha256": M.digest(("synthetic-" + name).encode())}
+        self.assertIs(M.validate_transition_input(value), value)
+        mutations = [lambda row: row.update(newSourceManifest=copy.deepcopy(M.PROGRAMS_SOURCE_MANIFEST)),
+            lambda row: row.update(newSourceArchive=copy.deepcopy(M.PROGRAMS_SOURCE_ARCHIVE)),
+            lambda row: row["newBinary"].update(sha256="c4f46ee9a9127df502eac3145f64202aed503c2289cf50ef79fab16e6ba84c5d"),
+            lambda row: row["sourceBridge"].update(path=str(M.PROGRAMS_PRODUCT_ROOT / "private/build-source-bridge.json")),
+            lambda row: row["newBuildManifest"].update(sha256="f" * 64)]
+        for mutation in mutations:
+            changed = copy.deepcopy(value)
+            mutation(changed)
+            with self.assertRaises(M.ContractError):
+                M.validate_transition_input(changed)
+        self.assertEqual(M.validate_transition_input(self.programs_input_fixture())["currentRuntime"], M.PROGRAMS_CURRENT_RUNTIME)
+
     def test_programs_v4_epoch_and_binding_use_the_existing_public_validators(self):
         epoch, unused, unused_records = self.epoch_fixture()
         value = self.programs_input_fixture()

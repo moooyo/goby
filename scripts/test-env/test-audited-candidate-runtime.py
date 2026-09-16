@@ -555,6 +555,215 @@ class LeaseLossRuntimeGuards(unittest.TestCase):
         self.assertEqual(modules["seed"].read_checked.call_count, 4)
 
 
+class OomExitRuntimeGuards(unittest.TestCase):
+    """Saved Sep16 recovery plus synthetic observations; no current authority is issued."""
+    @classmethod
+    def setUpClass(cls):
+        LeaseLossRuntimeGuards.setUpClass.__func__(cls)
+        def remember(pin):
+            raw = Path(pin["path"]).read_bytes()
+            if M.digest(raw) != pin["sha256"] or ("bytes" in pin and len(raw) != pin["bytes"]):
+                raise AssertionError("A retained second-recovery fixture pin changed")
+            cls.raws[pin["path"]] = raw
+            return json.loads(raw) if pin["path"].endswith(".json") else raw
+        original, original_records = cls.previous, cls.previous_records
+        cls.previous = remember(M.CURRENT_RUNTIME_V2_PREDECESSOR)
+        cls.previous_records = {key: remember(cls.previous[key]) for key in M.CURRENT_AUTHORITY_KEYS}
+        cls.previous_records.update({key: remember(pin) for key, pin in cls.previous["recovery"].items()})
+        for key in ("observation", "observationReview"):
+            cls.previous_records[key] = remember(cls.previous[key])
+        observation = cls.previous_records["observation"]
+        cls.previous_records["leaseQueryResult"] = remember(observation["leaseQueryResult"])
+        remember(observation["source"])
+        remember(observation["verification"])
+        cls.previous_records.update(previousCurrentRuntime=original, previousRecords=original_records)
+        for key, pin in M.CURRENT_RUNTIME_SECOND_RECOVERY.items():
+            cls.pins[key] = copy.deepcopy(pin)
+            cls.saved[key] = remember(pin)
+
+    def fixture(self):
+        epoch, envelope, value, records, raws = RecoveredRuntimeGuards.fixture(self)
+        def add(name, row):
+            path = str(M.R / "synthetic-second-recovery-runtime-checks" / (name + ".json"))
+            raw = M.canonical(row)
+            raws[path] = raw
+            return {"path": path, "sha256": M.digest(raw)}
+        # These times are test data, not reconstructed deployment-lease facts.
+        envelope["current"]["lease"]["backendStart"] = "2026-09-16T10:00:00+00:00"
+        records["leaseQueryResult"][0]["backendStart"] = envelope["current"]["lease"]["backendStart"]
+        records["observation"].update(before=copy.deepcopy(envelope["current"]), after=copy.deepcopy(envelope["current"]),
+            capturedAt="2026-09-16T10:01:00+00:00", leaseQueryResult=add("lease-result", records["leaseQueryResult"]))
+        envelope["observation"] = add("observation", records["observation"])
+        records["observationReview"]["observation"] = envelope["observation"]
+        envelope["observationReview"] = add("observation-review", records["observationReview"])
+        envelope.update(version=2, previousCurrentRuntime=copy.deepcopy(M.CURRENT_RUNTIME_V2_PREDECESSOR))
+        value["currentRuntime"] = add("envelope", envelope)
+        records.update(previousCurrentRuntime=copy.deepcopy(self.previous), previousRecords=copy.deepcopy(self.previous_records))
+        return epoch, envelope, value, records, raws
+
+    def test_actual_second_review_and_projection_load_without_rewriting_history(self):
+        epoch, envelope, value, records, raws = self.fixture()
+        before = M.canonical({"epoch": epoch, "previous": records["previousCurrentRuntime"], "records": records["previousRecords"]})
+        actual = M.load_current_runtime(value["currentRuntime"], value, epoch,
+            lambda pin: json.loads(raws[pin["path"]]), lambda pin: raws[pin["path"]])
+        self.assertEqual(actual, envelope)
+        self.assertEqual(before, M.canonical({"epoch": epoch, "previous": records["previousCurrentRuntime"], "records": records["previousRecords"]}))
+        self.assertNotIn("nativePreservation", records["independentReview"])
+        self.assertNotEqual(records["configuration"]["source"]["sha256"], records["execution"]["preservationInputs"]["readonly-execution.json"]["sha256"])
+
+    def test_second_edge_cannot_select_unknown_ancestor_or_repeat_itself(self):
+        epoch, envelope, value, records, unused = self.fixture()
+        envelope["previousCurrentRuntime"]["sha256"] = "f" * 64
+        with self.assertRaisesRegex(M.ContractError, "current_runtime_previous_pin"):
+            M.validate_current_runtime(envelope, value, epoch, records)
+        epoch, envelope, value, records, unused = self.fixture()
+        records["previousCurrentRuntime"] = copy.deepcopy(envelope)
+        with self.assertRaisesRegex(M.ContractError, "current_runtime_previous_version"):
+            M.validate_current_runtime(envelope, value, epoch, records)
+        epoch, envelope, value, records, unused = self.fixture()
+        records["previousRecords"]["previousRecords"]["observationReview"]["checks"]["uniqueLease"] = False
+        with self.assertRaises(M.ContractError):
+            M.validate_current_runtime(envelope, value, epoch, records)
+
+    def test_second_review_rejects_unclosed_or_mixed_candidate_evidence(self):
+        mutations = [lambda row: row["closure"].update(lockFdCloseSucceeded=False),
+            lambda row: row["counts"].update(uniqueDeploymentLeases=1),
+            lambda row: row["protected"].update(unchangedConfigurationHashes=7),
+            lambda row: row["candidateEvidence"]["old"]["snapshots"].update(source=copy.deepcopy(row["candidateEvidence"]["fresh"]["snapshots"]["source"])),
+            lambda row: row["preservationInputs"]["native-independent-review.json"].update(sha256="f" * 64),
+            lambda row: row.update(nativePreservation={"priorNativeChecksPassed": True})]
+        for mutation in mutations:
+            epoch, envelope, value, records, unused = self.fixture()
+            mutation(records["independentReview"])
+            with self.assertRaises(M.ContractError):
+                M.validate_current_runtime(envelope, value, epoch, records)
+
+    def test_second_configuration_cannot_be_relabeled_as_new_sql_or_drift(self):
+        epoch, envelope, value, records, unused = self.fixture()
+        records["configuration"]["source"] = {**records["execution"]["preservationInputs"]["readonly-execution.json"], "bytes": 44312}
+        with self.assertRaisesRegex(M.ContractError, "current_runtime_configuration_lineage"):
+            M.validate_current_runtime(envelope, value, epoch, records)
+        for label in ("old", "fresh"):
+            epoch, envelope, value, records, unused = self.fixture()
+            records["execution"]["after"]["configurationHashes"][label]["environment"]["sha256"] = "f" * 64
+            with self.assertRaisesRegex(M.ContractError, "current_runtime_lease_loss_preservation"):
+                M.validate_current_runtime(envelope, value, epoch, records)
+
+    def test_second_start_must_reference_the_accepted_v2_process(self):
+        epoch, envelope, value, records, unused = self.fixture()
+        intent = records["selectedStartIntent"]
+        intent["oldUnit"]["ExecMainPID"] = str(records["previousRecords"]["previousCurrentRuntime"]["current"]["candidateProcess"]["pid"])
+        records["selectedResult"]["startIntent"] = copy.deepcopy(intent)
+        records["execution"]["candidates"]["old"] = copy.deepcopy(records["selectedResult"])
+        records["execution"]["before"]["units"][intent["unit"]] = copy.deepcopy(intent["oldUnit"])
+        with self.assertRaisesRegex(M.ContractError, "current_runtime_previous_start_intent"):
+            M.validate_current_runtime(envelope, value, epoch, records)
+
+    def test_second_recovery_still_requires_a_distinct_two_query_observation(self):
+        for mutate in (lambda row: row["observation"]["calls"].update(sql=0),
+                       lambda row: row["observationReview"]["checks"].update(uniqueLease=False),
+                       lambda row: row["leaseQueryResult"].append(copy.deepcopy(row["leaseQueryResult"][0]))):
+            epoch, envelope, value, records, unused = self.fixture()
+            mutate(records)
+            with self.assertRaises(M.ContractError):
+                M.validate_current_runtime(envelope, value, epoch, records)
+        epoch, envelope, value, records, unused = self.fixture()
+        del envelope["current"]["lease"]["backendStart"]
+        with self.assertRaisesRegex(M.ContractError, "current_runtime_lease_schema"):
+            M.validate_current_runtime(envelope, value, epoch, records)
+
+    def test_second_reader_keeps_hash_only_access_and_the_product_epoch(self):
+        epoch, envelope, unused, unused_records, unused_raws = self.fixture()
+        historical = M.canonical(epoch)
+        reader, modules = RecoveredRuntimeGuards.reader(self, epoch, envelope)
+        self.assertEqual(reader.pin()["pid"], 1648477)
+        self.assertEqual(M.canonical(epoch), historical)
+        self.assertEqual(modules["seed"].read_checked.call_count, 4)
+
+    def test_verified_second_runtime_keeps_the_original_tv_closeout_ancestor(self):
+        epoch, envelope, value, records, raws = self.fixture()
+        current = M.load_current_runtime(value["currentRuntime"], value, epoch,
+            lambda pin: json.loads(raws[pin["path"]]), lambda pin: raws[pin["path"]])
+        transition = {"newSourceArchive": M.receipt_descriptor(M.PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceArchive"]),
+            "previousEpoch": envelope["runtimeEpoch"], "previousBinding": envelope["seedBinding"], "currentRuntime": value["currentRuntime"]}
+        original = copy.deepcopy(M.CURRENT_RUNTIME_V1_PREDECESSOR)
+        M.validate_programs_closeout_runtime(transition, current, original)
+        self.assertEqual(original, M.CURRENT_RUNTIME_V1_PREDECESSOR)
+        for wrong in (value["currentRuntime"], M.CURRENT_RUNTIME_V2_PREDECESSOR, {**original, "sha256": "f" * 64}):
+            with self.assertRaisesRegex(M.ContractError, "programs_tv_runtime_ancestor"):
+                M.validate_programs_closeout_runtime(transition, current, wrong)
+        for mutate in (lambda row: row.update(previousCurrentRuntime=copy.deepcopy(M.CURRENT_RUNTIME_V1_PREDECESSOR)),
+                       lambda row: row["recovery"]["execution"].update(sha256="f" * 64),
+                       lambda row: row["runtimeEpoch"].update(sha256="f" * 64)):
+            changed = copy.deepcopy(current)
+            mutate(changed)
+            with self.assertRaisesRegex(M.ContractError, "programs_tv_runtime_ancestor"):
+                M.validate_programs_closeout_runtime(transition, changed, original)
+        legacy = {**transition, "newSourceArchive": M.PROGRAMS_SOURCE_ARCHIVE, "currentRuntime": original}
+        M.validate_programs_closeout_runtime(legacy, records["previousRecords"]["previousCurrentRuntime"], original)
+        with self.assertRaisesRegex(M.ContractError, "programs_tv_evidence_changed"):
+            M.validate_programs_closeout_runtime(legacy, current, value["currentRuntime"])
+
+
+class ProgramsCompleteSourceGuards(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        pin = M.PROGRAMS_COMPLETE_ARTIFACT_PINS["sourceBridge"]
+        raw = Path(pin["path"]).read_bytes()
+        if M.digest(raw) != pin["sha256"] or len(raw) != pin["bytes"]:
+            raise AssertionError("The retained complete-source bridge changed")
+        cls.bridge = json.loads(raw)
+        closure_raw = (M.PROGRAMS_COMPLETE_PRODUCT_ROOT / "closure.json").read_bytes()
+        if len(closure_raw) != 7152 or M.digest(closure_raw) != "7bf2db69fbc55755ae08120971af8345cee98775d7435c8834ef08b5fe924390":
+            raise AssertionError("The retained complete-source closure changed")
+        cls.closure_adapter = json.loads(closure_raw)["adapter"]
+        cls.review_adapter = {"path": str(M.PROGRAMS_COMPLETE_PRODUCT_ROOT / "private/verify-livetv-programs-final.py"),
+            "bytes": 58152, "sha256": "7e061ff3db40681f8c28e86ae625bb8cac54b4ddeccade776d51048278a82ac9"}
+        cls.adapter_bytes = Path(cls.review_adapter["path"]).read_bytes()
+        if len(cls.adapter_bytes) != cls.review_adapter["bytes"] or M.digest(cls.adapter_bytes) != cls.review_adapter["sha256"]:
+            raise AssertionError("The retained complete-source adapter changed")
+
+    def test_saved_complete_bridge_preserves_the_real_count_scope(self):
+        M.validate_programs_source_bridge_profile(self.bridge, complete=True)
+        for mutate in (lambda row: row.update(frozenFiles=924, trackedBuildInputs=867),
+                       lambda row: row.update(trackedInputCountScope="compiled dependencies"),
+                       lambda row: row.pop("trackedInputCountScope"),
+                       lambda row: row.update(gitCommit="74a69abacdd9206e51f4e166df2346b5555b5cd9"),
+                       lambda row: row.update(unreviewedExtra=True)):
+            changed = copy.deepcopy(self.bridge)
+            mutate(changed)
+            with self.assertRaisesRegex(M.ContractError, "programs_source_bridge_schema"):
+                M.validate_programs_source_bridge_profile(changed, complete=True)
+        with self.assertRaisesRegex(M.ContractError, "programs_source_bridge_schema"):
+            M.validate_programs_source_bridge_profile(self.bridge, complete=False)
+
+    def test_retained_pin2_adapter_uses_separately_read_source_bytes(self):
+        original = M.canonical(self.closure_adapter)
+        read = Mock(return_value=self.adapter_bytes)
+        M.validate_programs_adapter_source(self.review_adapter, self.closure_adapter, read)
+        read.assert_called_once_with(self.review_adapter)
+        self.assertEqual(set(self.closure_adapter), {"path", "sha256"})
+        self.assertEqual(original, M.canonical(self.closure_adapter))
+
+    def test_adapter_projection_rejects_changed_descriptors_and_source_bytes(self):
+        for target, key, value in (("review", "path", self.review_adapter["path"] + ".other"),
+                                  ("closure", "path", self.review_adapter["path"] + ".other"),
+                                  ("review", "sha256", "f" * 64), ("closure", "sha256", "f" * 64),
+                                  ("review", "extra", True), ("closure", "bytes", self.review_adapter["bytes"])):
+            review, closure = copy.deepcopy(self.review_adapter), copy.deepcopy(self.closure_adapter)
+            (review if target == "review" else closure)[key] = value
+            read = Mock(return_value=self.adapter_bytes)
+            with self.subTest(target=target, key=key), self.assertRaises(M.ContractError):
+                M.validate_programs_adapter_source(review, closure, read)
+            read.assert_not_called()
+        for review, content in (({**self.review_adapter, "bytes": self.review_adapter["bytes"] + 1}, self.adapter_bytes),
+                                (self.review_adapter, self.adapter_bytes[:-1] + bytes([self.adapter_bytes[-1] ^ 1]))):
+            read = Mock(return_value=content)
+            with self.assertRaisesRegex(M.ContractError, "programs_adapter_source_bytes"):
+                M.validate_programs_adapter_source(review, self.closure_adapter, read)
+            read.assert_called_once_with(review)
+
+
 class ProgramsLogicalGuards(unittest.TestCase):
     def snapshot(self):
         tables = {name: [] for name in M.TABLES}
