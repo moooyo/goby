@@ -2,7 +2,7 @@
   "kind": "programs-current-runtime-and-product-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "current_runtime_observed_closed_and_published_final_consumer_verification_pending",
+  "status": "final_binding_components_passed_capture_prepared_actual_loaders_and_transition_pending",
   "observer": {
     "bytes": 15787,
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observe-current-runtime.py",
@@ -62,9 +62,9 @@
     "The prepared observer changed only DRAFT_ONLY and was remotely compiled before execution. The original pending input retains its null deadline/output; the later independently bound input was consumed exactly once."
   ],
   "remaining": [
-    "Freeze the final consumer source and bind the published db22e3d... runtime envelope together with the original-bytes artifact receipt under the actual full scope.",
-    "Execute and review the separately prepared 142 consumer/component checks. The previous frozen 42 + 28 + 68 results remain unchanged and do not cover these later source or input changes.",
-    "After consumer verification, bind the complete current-state, recovery and journey contracts before transition admission. The hold remains in force; no transition, deployment or client journey is admitted by this observation."
+    "Complete the separately authorized read-only capture and review its actual saved result; the prepared input/retention derivation are not capture success or live retention admission.",
+    "Run the actual Python product/runtime consumers with the real reviewed state and strict transition input in their bounded scope. The passed 142 component checks do not establish these actual loader outcomes.",
+    "Retain the transition hold until state, actual loaders and recovery admission are complete. The complete JavaScript loader still requires real post-transition version 4 epoch/binding records; transition and client journeys remain pending."
   ],
   "limits": [
     "The original pending/draft inputs, observer/artifact/product-review drafts and preparation files retain their original bytes and outcomes. The actual observation input is consumed and must not be replayed.",
@@ -73,7 +73,8 @@
     "The binding was validated in memory and from its published file against 40 unique saved records with the frozen producer. This publication performed zero new SQL, HTTP or service actions and did not validate the final consumer source.",
     "Observer/frontend process closure, the surviving application lease backend, unmeasured observer/outer numeric PGIDs and the lack of a separate post-close lock-inode measurement retain the exact limits in observationExecution.closureLimits.",
     "The actual Programs product review and artifact receipt were separately published from saved complete-source regression/build and closure evidence. The consumer-scope copy preserves all receipt bytes and internal references; the original files and execution.artifactMaterialization.independentReviewPending remain unchanged.",
-    "The new current-runtime envelope is published, but final consumer verification, transition admission, deployment and client acceptance remain pending. The original 138 results are not overwritten or expanded to the planned 142 checks."
+    "The new current-runtime envelope is published and the separate 44 + 28 + 70 component scope passed once. The earlier 42 + 28 + 68 source/results retain their own scope; they are not rewritten or combined into one run.",
+    "The tested tooling is integrated on main at f45d73c and the two CLI files were published with identical bytes. Source publication and prepared capture/retention inputs do not execute the actual product loader, produce a version 4 successor epoch, remove the transition hold or establish client acceptance."
   ],
   "observerDraft": {
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
@@ -121,7 +122,6 @@
   },
   "artifactReceiptStatus": "verified_and_closed",
   "productIndependentReviewStatus": "passed",
-  "consumerValidationExecuted": false,
   "transitionAdmission": false,
   "clientAcceptance": false,
   "retainedPendingObserverInput": {
@@ -239,10 +239,153 @@
   "consumerArtifactReceiptOriginalBytesPreserved": true,
   "consumerArtifactInternalReferencesChanged": false,
   "consumerVerification": {
-    "status": "final_source_and_142_checks_preparing_not_executed",
+    "record": "programs-final-binding-components-20260916.json",
+    "status": "passed_components_and_independent_review",
+    "sourceManifest": {
+      "path": "/opt/goby-test/programs-binding-final-component-checks-20260916-c365ddb98652/private/source-manifest.json",
+      "bytes": 8483,
+      "sha256": "6fad6f3ea64e0cf601e1599bd85668d017408901e33e286c96c14165aee3f763"
+    },
+    "result": {
+      "path": "/opt/goby-test/programs-binding-final-component-checks-20260916-c365ddb98652/private/result.json",
+      "bytes": 7723,
+      "sha256": "38f620d6c44b91cf2aee08f130dd9f265f0989dd97d0408517510cf80d237d26"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/programs-binding-final-component-checks-20260916-c365ddb98652/private/independent-review.json",
+      "bytes": 9288,
+      "sha256": "32c552f31de96e3cdbc132368fc74bab191c1124010eb717e400814c1627fa85"
+    },
+    "closure": {
+      "path": "/opt/goby-test/programs-binding-final-component-checks-20260916-c365ddb98652/private/closure.json",
+      "bytes": 32770,
+      "sha256": "2b78822c0cdcc0d97f1b3f1dce2015fad60c1ec46a62dba5c3832acaf11bb9b7"
+    },
+    "sessionClosure": {
+      "path": "/opt/goby-test/programs-binding-final-component-checks-20260916-c365ddb98652/private/dispatch-session-closure.json",
+      "bytes": 2669,
+      "sha256": "8a0a25ee763831489db0904133c0adb0be89e5d93602ff82eae3dbefb5bdd630"
+    },
+    "groups": [
+      {
+        "name": "runtime",
+        "testFile": "test-audited-candidate-runtime.py",
+        "tests": 44,
+        "passed": 44,
+        "failed": 0,
+        "skipped": 0,
+        "exitCode": 0
+      },
+      {
+        "name": "successor",
+        "testFile": "test-transition-binary-successor.py",
+        "tests": 28,
+        "passed": 28,
+        "failed": 0,
+        "skipped": 0,
+        "exitCode": 0
+      },
+      {
+        "name": "closer",
+        "testFile": "test-close-audited-candidate-client.mjs",
+        "tests": 70,
+        "passed": 70,
+        "failed": 0,
+        "skipped": 0,
+        "exitCode": 0
+      }
+    ],
     "expectedChecks": 142,
-    "actualChecks": 0,
+    "actualChecks": 142,
+    "passed": 142,
+    "failed": 0,
+    "skipped": 0,
+    "runs": 1,
+    "automaticReruns": 0,
+    "unitMemoryMaxBytes": 268435456,
+    "memoryPeakBytes": 65093632,
+    "sourceBeforeAfterEqual": true,
+    "ownedUnitAndTestProcessGroupsClosed": true,
+    "currentRuntimeConstant": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/current-runtime-binding.json",
+      "bytes": 7192,
+      "sha256": "db22e3d954febd07c422d143027876a94782d3937e0ab374f80d566ba283c4ef"
+    },
     "original138ResultsUnchanged": true,
+    "combinedWith138AsOneRun": false,
     "transitionHoldRemoved": false
+  },
+  "consumerComponentVerificationExecuted": true,
+  "actualProductLoaderExecuted": false,
+  "actualRuntimeLoaderOnStrictTransitionInputExecuted": false,
+  "actualPostTransitionV4JavaScriptLoaderExecuted": false,
+  "consumerSourceIntegration": {
+    "mainCommit": "f45d73c967b2dd782aaceb12ff7ee41195221219",
+    "sourceCommit": "46b591422d304e6e6ae707dfb602f75ec55e3c5e",
+    "toolingIntegratedOnMain": true,
+    "pushed": true,
+    "productPromotion": false
+  },
+  "cliSourcePublication": {
+    "record": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/source-publication.json",
+      "bytes": 2032,
+      "sha256": "9d9f9821d251a3f7c11e8cdb7de09901dbfd5ad9a6d04257ca32ae01798f9b14"
+    },
+    "status": "copied_and_read_back",
+    "sources": [
+      {
+        "bytes": 202077,
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/code/audited-candidate-runtime.py",
+        "sha256": "d64f4b6c3b819955fdb99537a57ff21ca4b33bc7c0e50c0e14a62b6da0e468cc"
+      },
+      {
+        "bytes": 90493,
+        "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/code/transition-audited-candidate.py",
+        "sha256": "2e76037443447346dafb91db97267d6e875b8434f8ea33df5fff35eb9d2f0cc5"
+      }
+    ],
+    "byteIdenticalPublication": true,
+    "publicationImportedOrExecutedSources": false,
+    "bootstrapPathGuardRelaxed": false
+  },
+  "capturePreparation": {
+    "status": "prepared_awaiting_recorded_capture_result",
+    "input": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-input.json",
+      "bytes": 2882,
+      "sha256": "65b5a6144421701fce3abc8b6777048eefb69a328286092a888ca3c160b41da2"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-input-preparation.json",
+      "bytes": 5781,
+      "sha256": "1c1a21e8a8bc9ae2f855206738e9dbe207efcd1ec2197692c03723cfeb1899ae"
+    },
+    "retentionReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/retention-review-complete-source.json",
+      "bytes": 4755,
+      "sha256": "9b5f7c8589c22f7208887f7e1db7e782718ae49aed5212000ecadc35c3b8dfe5"
+    },
+    "retentionDerivation": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/retention-review-complete-source-derivation.json",
+      "bytes": 5300,
+      "sha256": "712030dae94a98dcc7bcfd48d6da0998547646b822a57156d4c148dfbaeeac8c"
+    },
+    "currentRuntime": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/current-runtime-binding.json",
+      "sha256": "db22e3d954febd07c422d143027876a94782d3937e0ab374f80d566ba283c4ef"
+    },
+    "output": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-01",
+    "inputVersion": 2,
+    "operationKind": "programs_successor",
+    "savedPreparationStatus": "assembled_from_saved_records_not_executed",
+    "preparationUsedSavedReadsOnly": true,
+    "captureResult": null,
+    "reviewedState": null,
+    "reviewedSummary": null,
+    "successorEpoch": null,
+    "captureExecutionEstablished": false,
+    "liveRetentionAdmissionEstablished": false,
+    "boundary": "The input and retention derivation are prepared. No actual capture dispatch/result is recorded at this documentation checkpoint; no successful capture or future state is inferred from preparation."
   }
 }

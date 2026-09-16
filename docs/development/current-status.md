@@ -150,9 +150,15 @@ The new `db22e3d...` envelope passed frozen-producer validation in memory and fr
 the published file against 40 unique saved records, with no new SQL/HTTP/service
 actions during publication. Its predecessor `aed2914...` and historical `38b906...`
 remain unchanged. The canonical artifact receipt is also copied byte-for-byte
-into the actual full scope. Final consumer pins and 142 checks are being prepared
-and have not executed; the original 138 results, transition hold and lack of
-Programs client acceptance remain unchanged.
+into the actual full scope. The [final binding components](programs-final-binding-components-20260916.json)
+have now passed runtime 44, successor 28 and closer 70 checks once, with independent
+source/result/closure review. The 256 MiB unit recorded a 65,093,632-byte peak.
+Tested tooling is integrated on main at `f45d73c`; its constants bind `db22e3d...`,
+and both CLI sources were published with identical bytes. The fresh capture input
+and retention derivation are prepared, but no actual capture result is recorded
+at this checkpoint. Actual product/runtime loading with a strict transition input,
+post-transition v4 records and client acceptance remain pending. The original
+138 results and transition hold are unchanged.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)

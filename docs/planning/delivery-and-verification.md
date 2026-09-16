@@ -44,8 +44,13 @@ against 40 unique saved records with no additional SQL/HTTP/service calls.
 The actual product receipt is preserved and copied byte-for-byte into the full
 scope. Query backend disappearance, observer/outer numeric PGIDs and a post-close
 lock-inode check were not separately measured; the application lease backend is
-expected to persist. Final consumer pins and 142 checks remain in preparation,
-unexecuted. The original 42/28/68 results and transition hold remain unchanged;
+expected to persist. The [final binding component scope](../development/programs-final-binding-components-20260916.json)
+passed 44/28/70 checks once with independent closure review. Its 256 MiB unit
+recorded a 65,093,632-byte peak; tested tooling is integrated as `f45d73c` and
+both CLI sources are published with unchanged bytes. The fresh capture input and
+retention derivation are prepared, with no actual capture result recorded here.
+Actual product/runtime loader verification and post-transition v4 records remain
+pending. The original 42/28/68 results and transition hold remain unchanged;
 no transition or client acceptance is claimed.
 
 The latest fixed M5 media-refresh increment is committed and pushed as
