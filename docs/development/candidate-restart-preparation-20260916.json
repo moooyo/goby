@@ -1,0 +1,78 @@
+{
+  "kind": "candidate-incident-restart-preparation",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "source_and_scoped_mock_checks_prepared_actual_recovery_pending",
+  "restartSource": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/restart-preparation-r01/private/candidate-disk-full-restart.draft-r01.py",
+    "bytes": 38016,
+    "sha256": "102629a184b28f589a78a5d7d4f93793e8c939f0ce7bb621d56d8d334652a299"
+  },
+  "preflightSource": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/restart-preparation-r01/private/candidate-disk-full-restart-preflight.draft-r01.py",
+    "bytes": 6468,
+    "sha256": "f0111d255d561543da4a81355e710b1d84a5fd5c28d61dcc2d95b580cf1e076f"
+  },
+  "restartPreparation": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/restart-preparation-r01/private/source-preparation-r01.json",
+    "bytes": 3597,
+    "sha256": "3bc7f183c4169b8c285b50fd7edd74019fe38368df92f4b3a5faf52303a03ba9"
+  },
+  "postStartSource": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/restart-preparation-r01/private/candidate-post-start-diagnostics.draft-r02.py",
+    "bytes": 20663,
+    "sha256": "5a059da5e940d643d1674ca341e50f5e88ba3d6ebda4845902afc733087315ad"
+  },
+  "postStartPreparation": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/restart-preparation-r01/private/post-start-source-preparation-r02.json",
+    "bytes": 6825,
+    "sha256": "add8e03f853be9232e325aaae8739f46b83b1ca0b804cff92290606cc28824d5"
+  },
+  "postStartMock": {
+    "methodsPassed": 12,
+    "failures": 0,
+    "skips": 0,
+    "executions": 1,
+    "result": {
+      "path": "/opt/goby-test/post-start-diagnostics-mock-checks-20260916-75916e83c809/private/result.json",
+      "bytes": 2521,
+      "sha256": "a30f63cc2af6ebc3aa9ac250fb49a929aed3b74787c3c91bae0a0a892ab1c1b6"
+    },
+    "closure": {
+      "path": "/opt/goby-test/post-start-diagnostics-mock-checks-20260916-75916e83c809/private/closure.json",
+      "bytes": 14142,
+      "sha256": "d83e106eb4c93e21aa768d3e97092a98e146f9b98c66b62c51ec6b806bccb670"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/post-start-diagnostics-mock-checks-20260916-75916e83c809/private/source-manifest.json",
+      "bytes": 4258,
+      "sha256": "d6b611a0a88afbf89ff628b2103fdad34980758f5d50874924949bc2677ce9fa"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/post-start-diagnostics-mock-checks-20260916-75916e83c809/private/independent-review.json",
+      "bytes": 8322,
+      "sha256": "18b6569630024fc46a1d89c928325ab9171148db845964a3686c195d45a287ab"
+    },
+    "memoryPeakBytes": 29818880,
+    "resourcesClosed": true,
+    "targetMainOrLiveGlobalCheckExecuted": false
+  },
+  "fullVerificationRecord": "programs-complete-source-full-result-20260916.json",
+  "actualAuxiliaryObservationExecuted": false,
+  "actualRestartInputCreated": false,
+  "actualApplicationStarts": 0,
+  "draftsDisabled": true,
+  "remaining": [
+    "Bind the admitted native source and its actual execution/review in a new auxiliary source copy. The auxiliary draft still points to the earlier native draft.",
+    "Apply the independent unlock/close error handling to the auxiliary draft before admission; its current combined unlock/close statement can skip receipt publication on an unlock error.",
+    "Observe actual diagnostics/log/cache under the original 60-second/64-file/32-MiB phase limits and 90/120-second controller/outer limits; establish a fresh startup window.",
+    "Do not fill allLogsClosed from expectation or loosen the existing closed-log startup requirement without reviewing the actual observed state.",
+    "Bind the actual full closure, auxiliary results and enabled post-start source into new reviewed restart/preflight inputs without a source-hash cycle.",
+    "Perform the already planned one start of each original application with the original binary/configuration and unchanged PGs, then complete health/lease/four-database/native/post-start log preservation."
+  ],
+  "limits": [
+    "The 12 methods exercise selected actual source functions/AST blocks with mocks; they do not prove the full admitted dispatcher or live preservation.",
+    "Static review checked the adapted restart/preflight paths, current five-file guard layout, legacy hash/reference protection, fixed startup count and failure ownership; no actual restart or preflight ran.",
+    "The post-start phase's 32 MiB accounting covers NativePhase-tracked data/source I/O; inherited global protection hashing has its separate fixed bounds."
+  ]
+}

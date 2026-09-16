@@ -1,0 +1,41 @@
+{
+  "kind": "m5-user-deletion-catalog-source-preparation",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "complete_tracked_archive_prepared_generator_not_run",
+  "source": {
+    "gitHead": "83cf0a895d5b0206e129090a16126ed09139a734",
+    "archive": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-source-20260916-dd2b9b10c858/private/source.tar.gz",
+      "bytes": 32929307,
+      "sha256": "69d3967483ebc4748063dbacd8991e0fc22c05fe7cd5b2c4cae8abab63197c98"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-source-20260916-dd2b9b10c858/private/source-manifest.json",
+      "bytes": 1085669,
+      "sha256": "b5bfe6aca636ef87bbef7eab4820c71fd53925afaaa4c0794900a391dab67451"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-source-20260916-dd2b9b10c858/source-preparation.json",
+      "bytes": 3338,
+      "sha256": "2e0095b5b56c31af3c0d437ce52352ac27b7d5aeace18125272a8c7ac5899080"
+    },
+    "files": 5363,
+    "uncompressedBytes": 119812317
+  },
+  "tarMembers": 5639,
+  "allTrackedPathsMatched": true,
+  "sourceBytes": "5362 entries equal their Git blob bytes directly; scripts/docs/export-emby-reference.ps1 is exported with the repository's CRLF attribute, adds 719 bytes, and equals its Git blob after CRLF-to-LF normalization. Archive bytes are retained unchanged.",
+  "modeProjection": "Raw regular tar modes such as 0664 are recorded as 0644; executable files are recorded as 0755.",
+  "administratorDistFiles": 0,
+  "schema29CatalogPresent": false,
+  "generatorExecuted": false,
+  "executionInputCreated": false,
+  "unitOrVolumeCreated": false,
+  "correctedSupport": {
+    "path": "/opt/goby-test/m5-final-regression-20260914/private/m5-final-regression-prepare.py",
+    "bytes": 29086,
+    "sha256": "86e1e16de130c441dd16861d3ae7635eddaf18e352c7d87a0db87dcb98d35945"
+  },
+  "next": "Bind a fresh runtime guard and a separately pinned enabled executor copied from the committed inert template. Generate schema29 only in a new owned disposable PG17 instance; review the real artifact/closure before adding it and freezing the later M5 test source."
+}

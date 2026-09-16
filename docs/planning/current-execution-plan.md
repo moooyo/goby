@@ -536,7 +536,12 @@ September 16, so that envelope is not current live authority. The new
 [four-database preservation checkpoint](../development/candidate-oom-exit-preservation-20260916.md)
 has passed. The [native preservation checkpoint](../development/candidate-oom-exit-native-preservation-20260916.md)
 and its independent review also passed. Diagnostics/log/cache observation and
-actual recovery are still pending; keep the log window fresh for restart.
+actual recovery are still pending; keep the log window fresh for restart. The
+[restart preparation checkpoint](../development/candidate-restart-preparation-20260916.json)
+retains the adapted restart/preflight and the independently reviewed 12-method
+post-start mock result. Its sources remain disabled until actual auxiliary and
+current full-closure dependencies are bound. The [complete M5 catalog source](../development/m5-user-deletion-catalog-source-preparation-20260916.json)
+is separately prepared; no catalog generator has run.
 Keep the old starts and consumed inputs unchanged.
 
 The [disk-backed full run](../development/programs-disk-full-result.md) is terminal,
