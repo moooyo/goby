@@ -43,9 +43,15 @@ blocker no longer applies.
 The [native-capacity operator correction](native-capacity-component-verification-20260916.md)
 is integrated after 47 synthetic/subprocess methods passed. It fixes duplicate
 observations, records inclusive measurement costs, enforces cleanup child-output
-limits and preserves a terminal failure status. The post-close result reader
-keeps actual scan overlap incomplete because the required monotonic scan-job
-binding is missing. Native-capacity execution remains held.
+limits and preserves a terminal failure status. The subsequent
+[Running-job observation increment](native-capacity-running-observation-verification-20260916.md)
+is also integrated: 61 unittest methods and the affected reader 12, transport
+eight and pool six groups passed with independent source/result/closure review.
+The first pool attempt's namespace rejection remains preserved. The result
+reader now binds request intervals to same-library persisted Running jobs and
+reports full, partial or unproven overlap without changing the 600-request cap.
+Actual native workload evidence and current runtime/artifact admission remain
+pending; these component scopes do not close capacity acceptance.
 
 The same fresh host observation found both candidate applications failed at
 10:22:08 CST on September 16, alongside a global OOM event in the same second.
