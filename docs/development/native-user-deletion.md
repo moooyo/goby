@@ -80,3 +80,20 @@ No tests, build, SQL or service operation ran during this preparation.
 
 The actual schema29 catalog, backup/restore version-boundary acceptance and all
 runtime verification remain open. No skip or synthetic catalog replaces that work.
+
+A real consumer-retirement regression is now prepared in
+`internal/server/admin_user_deletion_runtime_integration_test.go`. It invokes
+the native DELETE route while two real FFmpeg producers are running, binds each
+process through a pidfd, executable and producer cache directory, and requires
+the target's process, streams and WebSockets to close before client cancellation.
+The other user's original producer/socket must survive, finish a decodable MP3
+and retain its cached output without a replacement producer. The existing audio
+fixture gains login-selecting wrappers without changing its original behavior.
+
+Independent static review found no definite fixture or implementation issue.
+The two changed Go files passed remote `gofmt` without byte changes at
+`/opt/goby-test/m5-user-deletion-runtime-source-20260916-8b4a52b3f7ba/source-preparation.json`
+(1442 bytes, SHA-256
+`5af83e51084f928c5b98b3e51e3b72b9952cb45b19ddc192dc7a7747b542e890`).
+This is source preparation only; the new test has not run, and the schema29
+catalog and remaining increment acceptance are still pending.
