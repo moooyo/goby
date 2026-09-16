@@ -2,7 +2,7 @@
   "kind": "m5-combined-source-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "full_capacity_admission_failed_closed_fresh_scope_pending",
+  "status": "fresh_combined_full_running_go_started_final_result_pending",
   "branch": "codex/m5-deletion-diagnostics",
   "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
   "mergeCommit": "96e6d750ecd0d634e19f0bf94a701665bd51f2ba",
@@ -76,14 +76,14 @@
     "sha256": "7653857ea4448cc36bb0d077d6e61c89b382b24bea15b6693a7a78f2a14d8e58",
     "record": "m5-user-deletion-catalog-generation-20260916.json"
   },
-  "productTestsExecuted": 0,
+  "productTestsExecuted": null,
   "frontendBuildExecuted": true,
   "browserAcceptance": false,
   "finalVerificationPassed": false,
   "remaining": [
-    "Preserve the actual failed full scope and its original input. A later attempt requires a fresh owned scope/input and sufficient capacity for both unchanged 4 GiB memory gates.",
-    "Reuse the independently accepted complete S1, successful frontend receipt/sidecar and storage prerequisite. Bind applicable current guard and tools without repeating consumed scopes; require --frontend-contributions for the later release build.",
-    "Execute the pending combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds only after fresh admission. The failed capacity attempt started no worker, Go package or build."
+    "Allow the active fresh full scope to finish within its admitted limits and preserve its actual result and resource closure. It has begun Go verification but has no final acceptance result yet.",
+    "Retain the consumed 195824 capacity failure, earlier storage attempts and accepted frontend/storage prerequisites without replay.",
+    "Review the actual combined backend and final build outcomes when available, then complete the remaining deletion/diagnostic HTTP/browser and media acceptance under their own prerequisites."
   ],
   "frontendVerification": {
     "record": "m5-final-frontend-verification-20260916.json",
@@ -326,5 +326,19 @@
     "protectedBeforeAfterExact": true,
     "priorPreflightRemainsNotDispatched": true,
     "freshScopeRequired": true
+  },
+  "goVerificationStarted": true,
+  "productTestCountFinalized": false,
+  "activeFullAttempt": {
+    "scope": "/opt/goby-test/m5-combined-full-fcf3c8f4a474",
+    "status": "running",
+    "actualGoStarted": true,
+    "finalResult": null,
+    "finalSuccessClaimed": false,
+    "resourceClosurePending": true,
+    "exclusiveValidationWindow": true,
+    "previousFailedScope": "/opt/goby-test/m5-combined-full-195824c47450",
+    "previousFailureAndConsumedInputUnchanged": true,
+    "statusBasis": "Current task handoff on 2026-09-16; this documentation update performed no new live observation. Package counts and final outcomes are intentionally not recorded while the run is active."
   }
 }

@@ -2,7 +2,7 @@
   "kind": "programs-current-runtime-and-product-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "first_capture_failed_closed_key_metadata_correction_and_fresh_scope_pending",
+  "status": "generation_key_metadata_components_passed_fresh_source_publication_and_capture02_preparing",
   "observer": {
     "bytes": 15787,
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observe-current-runtime.py",
@@ -62,9 +62,9 @@
     "The prepared observer changed only DRAFT_ONLY and was remotely compiled before execution. The original pending input retains its null deadline/output; the later independently bound input was consumed exactly once."
   ],
   "remaining": [
-    "Complete and verify the bounded key metadata-rule correction in its separate worktree. Keep the failed input/source and the frozen 142 component results unchanged.",
-    "After that verification, prepare a new reviewed scope/input for a later read-only capture. The first capture and its 71 partial files are consumed failed evidence and must not be replayed.",
-    "After successful capture and state review, run the actual product/runtime consumers and complete recovery/transition admission. The hold remains; post-transition version 4 records and client acceptance are still pending."
+    "Publish the independently verified 151-check consumer sources in a fresh execution scope and prepare a new reviewed capture02 input. Preserve capture01's source/input/failure and partial files unchanged.",
+    "Coordinate the later capture with the active M5 full verification window. No new live capture is established by the 151 component run.",
+    "After successful capture and state review, complete the actual product/runtime consumers, retention/recovery and transition admission. The hold remains; post-transition version 4 records and client acceptance are still pending."
   ],
   "limits": [
     "The original pending/draft inputs, observer/artifact/product-review drafts and preparation files retain their original bytes and outcomes. The actual observation input is consumed and must not be replayed.",
@@ -75,7 +75,8 @@
     "The actual Programs product review and artifact receipt were separately published from saved complete-source regression/build and closure evidence. The consumer-scope copy preserves all receipt bytes and internal references; the original files and execution.artifactMaterialization.independentReviewPending remain unchanged.",
     "The new current-runtime envelope is published and the separate 44 + 28 + 70 component scope passed once. The earlier 42 + 28 + 68 source/results retain their own scope; they are not rewritten or combined into one run.",
     "The tested tooling is integrated on main at f45d73c and the two CLI files were published with identical bytes. Source publication and prepared capture/retention inputs do not execute the actual product loader, produce a version 4 successor epoch, remove the transition hold or establish client acceptance.",
-    "The first actual capture failed with programs_unreviewed_key_path after 14 acknowledged read-only SQL frontends. Its CLI exit 2, unknown original outer SSH numeric exit and partial evidence retain the boundaries in programs-state-capture-first-attempt-20260916.json. The guard rejected before key-content opening/hashing, with no filename in the failure record."
+    "The first actual capture failed with programs_unreviewed_key_path after 14 acknowledged read-only SQL frontends. Its CLI exit 2, unknown original outer SSH numeric exit and partial evidence retain the boundaries in programs-state-capture-first-attempt-20260916.json. The guard rejected before key-content opening/hashing, with no filename in the failure record.",
+    "The later stat-only generation-key correction passed a separate 44 + 36 + 71 component run and is integrated on main. Its real-key operations were mocked: no live key metadata, key body/hash, capture, product loader or transition was executed. Fresh source publication and capture02 preparation remain the next step."
   ],
   "observerDraft": {
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
@@ -448,8 +449,101 @@
     "checkCapturedInvocations": 0,
     "actualProductLoaderInvocations": 0,
     "transitionInvocations": 0,
-    "keyMetadataCorrectionVerified": false,
     "frozen142SourceUnchanged": true,
-    "freshScopeRequired": true
+    "freshScopeRequired": true,
+    "keyMetadataCorrectionVerifiedAtCapture01Checkpoint": false
+  },
+  "generationKeyMetadataVerification": {
+    "record": "programs-generation-key-metadata-verification-20260916.json",
+    "status": "passed_components_and_independent_review",
+    "scope": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928",
+    "sourceManifest": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/source-manifest.json",
+      "bytes": 8931,
+      "sha256": "a1da737fa8b9ad1998398374dd425a252198ab20033a6bcf43d46eb62bf9a30a"
+    },
+    "result": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/result.json",
+      "bytes": 7723,
+      "sha256": "bb8a0fbda51fe1355f2f74e7099316fdbf6d753b5e54022323580b8c51c7574a"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/independent-review.json",
+      "bytes": 10942,
+      "sha256": "07d9808a88f6a8290b3fc4d30faff1b96b3ca1c230f0209642eabc7422c04465"
+    },
+    "closure": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/closure.json",
+      "bytes": 37500,
+      "sha256": "c38283e7eaf4f93c8186906f06ebab32244c3f0f3c9e66484069db4692f3073d"
+    },
+    "sessionClosure": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/dispatch-session-closure.json",
+      "bytes": 3249,
+      "sha256": "97915c4dd7e13c32713791d65d698507e1b9ce058bfce0882ff12d875780c08f"
+    },
+    "groups": [
+      {
+        "name": "runtime",
+        "tests": 44,
+        "passed": 44,
+        "failed": 0,
+        "skipped": 0,
+        "exitCode": 0
+      },
+      {
+        "name": "successor",
+        "tests": 36,
+        "passed": 36,
+        "failed": 0,
+        "skipped": 0,
+        "exitCode": 0
+      },
+      {
+        "name": "closer",
+        "tests": 71,
+        "passed": 71,
+        "failed": 0,
+        "skipped": 0,
+        "exitCode": 0
+      }
+    ],
+    "total": {
+      "tests": 151,
+      "passed": 151,
+      "failed": 0,
+      "skipped": 0,
+      "runs": 1,
+      "automaticReruns": 0,
+      "priorScoresReused": false
+    },
+    "unitMemoryMaxBytes": 268435456,
+    "memoryPeakBytes": 61018112,
+    "sourceAndToolBeforeAfterEqual": true,
+    "recordedPidsAbsent": 26,
+    "ownedUnitAndCgroupClosed": true,
+    "metadataOnlyAuthority": true,
+    "realKeyBodyReads": 0,
+    "realKeyHashes": 0,
+    "liveKeyMetadataReads": 0,
+    "newCaptureExecuted": false,
+    "actualProductLoaderExecuted": false,
+    "transitionExecuted": false,
+    "toolingIntegratedOnMain": true,
+    "mainCheckpoint": "a5af0b6",
+    "original138And142ScopesUnchanged": true,
+    "capture01FailureAndConsumedInputUnchanged": true
+  },
+  "nextCapturePreparation": {
+    "identifier": "capture02",
+    "status": "fresh_151_source_publication_and_input_preparation_pending",
+    "verifiedSourceRecord": "programs-generation-key-metadata-verification-20260916.json",
+    "newScopeRequired": true,
+    "publishedExecutionSourceRecord": null,
+    "input": null,
+    "dispatch": null,
+    "result": null,
+    "liveCaptureAcceptance": false,
+    "transitionHoldRemoved": false
   }
 }

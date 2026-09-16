@@ -74,7 +74,13 @@ was sufficient. The adapter exited naturally with `insufficient_capacity`/exit 1
 before any worker, Go package, build, volume or archive. Its 27 commands, 54 streams
 and 29 recorded PIDs closed with protected state exact and the lock released.
 Adapter RSS/peak and the cause of changing host availability were not recorded.
-The scope is consumed; a fresh scope with sufficient capacity is required.
+The scope is consumed and unchanged. The later [four-directory `/tmp` cleanup](test-env-tmp-memory-cleanup-20260916.md)
+removed only the approved PowerToys agentic review-related directories, with no
+Goby ownership claim. Observed tmpfs use fell by 1,436,913,664 bytes; the after-sample
+reported 5,829,570,560 available memory bytes. Concurrent workload effects prevent
+exact attribution of the memory increase. The new full scope
+`/opt/goby-test/m5-combined-full-fcf3c8f4a474` is now running and actual Go verification
+has begun. Its final outcome is pending; no package totals or success are claimed.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -161,10 +167,14 @@ Fourteen read-only SQL frontends were acknowledged and closed, leaving 71 partia
 files but no reviewed/source-reviewed state or successful capture. The guard
 rejected before key-content opening/hashing; the failure recorded no specific
 filename. The original numeric outer SSH exit remains unknown/null. The consumed
-scope must not be retried. A key metadata-rule correction is being prepared
-separately and has not been verified; later capture needs a new scope. Actual
-product loading, post-transition v4 records and client acceptance remain pending.
-The original 138/142 results and transition hold are unchanged.
+scope must not be retried. The [generation-key metadata correction](programs-generation-key-metadata-verification-20260916.md)
+has now passed a separate 151-check run (44/36/71), independent review and closure,
+and is integrated on main at `a5af0b6`. It permits only the reviewed stat-only key
+metadata; no real key body/hash or new capture was exercised by those components.
+Next, publish the verified 151 sources into a fresh execution scope and prepare
+capture02. Actual product loading, post-transition v4 records and client acceptance
+remain pending. The original 138/142 evidence, consumed capture01 and transition
+hold are unchanged.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
@@ -174,8 +184,9 @@ administrator APIs, bounded run ownership, conversion-slot admission and a
 Settings panel. Diagnostics remain disabled by default; no deployment was
 activated. Static review and remote formatting are complete. The combined-source
 frontend typecheck/build and real schema-29 catalog export have since passed in
-their separate scopes; combined Go/migration behavior, final builds and browser
-acceptance remain unexecuted. Main's Programs product source is unchanged.
+their separate scopes. Combined Go verification is running in the fresh M5 full
+scope; final build and browser acceptance remain pending. Main's Programs product
+source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 

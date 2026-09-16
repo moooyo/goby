@@ -33,8 +33,13 @@ full attempt](../development/m5-combined-full-capacity-failure-20260916.md) fail
 its unchanged 4 GiB memory gate: all 60 internal samples were insufficient,
 although root disk space was adequate. Adapter exit 1, zero worker/Go/build/
 volume/archive and independent resource closure are retained. The consumed scope
-cannot be replayed; a fresh scope with sufficient capacity remains required.
-No specific memory consumer or adapter RSS/peak was established.
+cannot be replayed. The later [four-directory temporary cleanup](../development/test-env-tmp-memory-cleanup-20260916.md)
+removed only the user-approved PowerToys agentic review-related paths. Observed
+tmpfs use fell about 1.34 GiB; the after-sample reported 5,829,570,560 available
+memory bytes, without exact attribution of its increase. The new full scope
+`/opt/goby-test/m5-combined-full-fcf3c8f4a474` is running with actual Go started.
+No final outcome is claimed. The old failed attempt retains its unknown memory
+consumer and unrecorded adapter RSS/peak boundary.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
 now includes the completed unique observer: two acknowledged read-only SQL
@@ -52,10 +57,13 @@ failed with `programs_unreviewed_key_path`/CLI exit 2 and independently closed.
 Its 14 SQL frontends were acknowledged and closed, but the 71 partial files do
 not form reviewed state or successful capture. The guard rejected before key
 content was opened/hashed; no specific filename was recorded and the outer SSH
-numeric exit remains unknown. Verify the separately prepared correction before
-using a new capture scope; this failed input is consumed. Actual product/runtime
-loader verification and post-transition v4 records remain pending. The original
-138/142 results and transition hold remain unchanged;
+numeric exit remains unknown. The [generation-key metadata correction](../development/programs-generation-key-metadata-verification-20260916.md)
+has now passed 44/36/71 components, independent review and closure, and is integrated
+at `a5af0b6`. Fresh publication of those 151 sources and capture02 preparation are
+next; the component run read no real key body/hash and performed no new capture.
+Capture01 remains failed and consumed. Actual product/runtime loader verification
+and post-transition v4 records remain pending. The original 138/142 results and
+transition hold remain unchanged;
 no transition or client acceptance is claimed.
 
 The latest fixed M5 media-refresh increment is committed and pushed as

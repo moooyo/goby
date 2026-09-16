@@ -1,0 +1,70 @@
+{
+  "kind": "test-env-authorized-tmp-memory-cleanup",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "four_authorized_directories_deleted",
+  "successfulResult": {
+    "path": "/opt/goby-test/tmp-memory-cleanup-20260916-768f40ea3912/cleanup-result.json",
+    "bytes": 2437,
+    "sha256": "6336928a03b73b02ad781f739ef1ead669cfdac0dc4a0aaf9d05662abbee0c97"
+  },
+  "priorAbortedResult": {
+    "path": "/opt/goby-test/tmp-memory-cleanup-20260916-3bc637d382b4/cleanup-result.json",
+    "bytes": 3504,
+    "sha256": "9bc434c9519206dfa45428e894bc29fb79b73b7794bddb9acfbc9456cd77c91b"
+  },
+  "authorization": "The user approved deleting exactly the four listed directories.",
+  "directoryAssociation": "PowerToys agentic review-related temporary directories; no Goby ownership is claimed.",
+  "authorizedPaths": [
+    "/tmp/agentic-compact-workspace-20260914-s8zABi",
+    "/tmp/command-exit-observations-20260914",
+    "/tmp/triage-evidence-20260914-fix",
+    "/tmp/summary-budget-20260914-fix"
+  ],
+  "priorAttempt": {
+    "status": "failed_before_deletion",
+    "failureCode": "active_or_unknown_target_reference",
+    "directoriesDeleted": 0,
+    "observedTmpfsUsedDecreaseBytes": 0,
+    "explanation": "The reference scan counted its own four O_PATH directory handles. Those handles were closed; no deletion was attempted. The original failure receipt remains unchanged."
+  },
+  "actualCleanup": {
+    "directoriesDeleted": 4,
+    "allAuthorizedPathsAbsentAfter": true,
+    "commandExitCode": 0,
+    "stdoutBytes": 0,
+    "stderrBytes": 0,
+    "ownControllerExcludedFromReferenceScan": true,
+    "externalReferenceMatches": 0,
+    "permissionDeniedPids": [],
+    "otherDirectoriesDeleted": 0,
+    "processesStopped": 0
+  },
+  "capacityBefore": {
+    "memAvailableBytes": 4292988928,
+    "shmemBytes": 6436749312,
+    "rootAvailableBytes": 45252259840,
+    "tmpfsUsedBytes": 5835403264
+  },
+  "capacityAfter": {
+    "memAvailableBytes": 5829570560,
+    "shmemBytes": 5000024064,
+    "rootAvailableBytes": 45252255744,
+    "tmpfsUsedBytes": 4398489600
+  },
+  "observedTmpfsUsedDecreaseBytes": 1436913664,
+  "approximateTmpfsUsedDecreaseGiB": 1.34,
+  "observedMemAvailableIncreaseBytes": 1536581632,
+  "exactMemAvailableIncreaseAttributedToCleanup": false,
+  "measurementBoundary": "Before/after host samples can include concurrent workload effects. The observed MemAvailable increase is not an exact allocation of reclaimed memory to these directories and is not a future reservation.",
+  "preservation": {
+    "onlyAuthorizedPathsPassedToRemoval": true,
+    "otherDirectoriesDeleted": 0,
+    "unrelatedCachesChanged": false,
+    "processesStopped": 0,
+    "mountsChanged": false,
+    "originalAbortedReceiptPreserved": true
+  },
+  "reviewMethod": "This documentation update read only the two existing cleanup-result.json files. No new reference scan, capacity probe, removal, test, SQL or service operation was performed.",
+  "relatedMaintenance": "test-env-root-maintenance-20260916.json"
+}

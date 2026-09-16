@@ -35,3 +35,11 @@ The earlier [capacity review and cache cleanup](test-env-root-cleanup-20260916.m
 remain historical. Directory totals with hard links are not additive release
 guarantees, and current free space is not a reservation. Resume the existing
 serialized verification queue with its normal runtime and capacity admission.
+
+The later [four-directory temporary cleanup](test-env-tmp-memory-cleanup-20260916.md)
+has also completed under a separate user selection. It concerns PowerToys agentic
+review-related paths on `/tmp`, with no Goby ownership claim. The observed tmpfs
+reduction was 1,436,913,664 bytes (about 1.34 GiB); the after-sample reported
+5,829,570,560 available memory bytes. Concurrent workload effects prevent exact
+attribution of the memory-availability increase. The original self-`O_PATH`
+false-positive abort and all unselected directories remain preserved.
