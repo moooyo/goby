@@ -1,0 +1,111 @@
+{
+  "kind": "candidate-oom-exit-auxiliary-preservation",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "auxiliary_preservation_reviewed_restart_preflight_passed",
+  "failedAttempt": {
+    "execution": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/auxiliary-execution.json",
+      "bytes": 44477,
+      "sha256": "716208186072114a3b3f4726eb6c325e3912668c0af9f4e01881efa0b14c4ed6"
+    },
+    "status": "failed",
+    "reason": "historical_log_inventory_changed",
+    "exitCode": 1,
+    "timedOut": false,
+    "readBytes": 303654,
+    "evidenceBytesWritten": 0,
+    "observedFiles": 19,
+    "metadataCommandsClosed": true,
+    "lockReleased": true,
+    "candidateResultsPublished": 0,
+    "preserved": true
+  },
+  "inventoryDiagnostic": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/auxiliary-inventory-diagnostic-r01/result.json",
+    "bytes": 6167,
+    "sha256": "ad4be446783ad4cc4828c3dd4969d2152a4f421ac3e4203f2ffe8b337822243a"
+  },
+  "scopeReview": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r01/private/auxiliary-r01-failure-and-r02-scope-independent-review.json",
+    "bytes": 7405,
+    "sha256": "7227130b1a6176146897e9223b4d67c28e087a81ccbd7c000f62683b8692d5c0"
+  },
+  "execution": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r02/auxiliary-execution.json",
+    "bytes": 46580,
+    "sha256": "a0302e858f93fd01aec3220912c7a033b79e5d068332f480998c65239e376b7a"
+  },
+  "dispatch": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r02/private/auxiliary-root-dispatch-result.json",
+    "bytes": 1480,
+    "sha256": "a493306f5e52aac8353c9ba62893a9f75012a20726761e9be5600a9b1acd855e"
+  },
+  "source": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r02/private/candidate-lease-loss-auxiliary.admitted-r02.py",
+    "bytes": 22780,
+    "sha256": "9f89da9ccbe02555306b4fde924ca3c3f1ec5e1f53c64dbf47a1aadb2482595a"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/native-log-r02/auxiliary-independent-review.json",
+    "bytes": 6681,
+    "sha256": "0a80702d2a16bc87968c6f2a79a92b06496dc4df07e5a792aef931c7521c27f0"
+  },
+  "facts": {
+    "oldLogs": 8,
+    "freshLogs": 5,
+    "allLogsClosed": true,
+    "historicalClosedLogsMatched": 9,
+    "historicalActiveIdentitiesRetained": 2,
+    "additionalClosedLogsFirstObserved": 2,
+    "unexpectedEntries": 0,
+    "missingHistoricalNames": 0,
+    "ownershipTokensUnchanged": true,
+    "cacheEmptyOfJobs": true,
+    "startupTrimBytes": 0,
+    "retentionPruneCandidates": 0,
+    "countPruneCandidates": 0,
+    "readBytes": 589301,
+    "evidenceBytesWritten": 20160,
+    "observedAndEvidenceFiles": 46,
+    "observationMilliseconds": 142,
+    "metadataCommandsClosed": 16,
+    "lockReleased": true,
+    "protectedStateUnchanged": true,
+    "sqlRequests": 0,
+    "httpRequests": 0,
+    "serviceChanges": 0,
+    "nativeStoreWrites": 0
+  },
+  "startDeadlineUnix": 1789558060.47081,
+  "preservationThroughUnix": 1789558420.47081,
+  "preflight": {
+    "result": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/restart-preflight.json",
+      "bytes": 40209,
+      "sha256": "3a9d76c78e2a74c430e07340fcbe1c374935d7ee9d961333c29a69b9bd02270f"
+    },
+    "dispatch": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/private/restart-preflight-root-dispatch-result.json",
+      "bytes": 1458,
+      "sha256": "f09f3d958a4676418809da54dd92cb87ddfc0b302e810eb13e6f2216d5b9fe5f"
+    },
+    "status": "restart_preflight_passed",
+    "rootAvailableBytes": 3876007936,
+    "memoryAvailableBytes": 5354004480,
+    "lockReleased": true,
+    "allCommandsClosedAndSuccessful": true,
+    "sqlRequests": 0,
+    "httpRequests": 0,
+    "serviceActions": 0
+  },
+  "actualApplicationStarts": 0,
+  "limits": [
+    "The first attempt did not save its failing live registry bytes; the subsequent inventory diagnostic is a separate observation.",
+    "Two additional closed logs have timestamps in the applications' exit second. The timestamp match does not establish causality.",
+    "The nine historically closed logs match full metadata, bytes and hashes. The two historically active logs have no historical body hashes; their identities and current bodies are separate facts.",
+    "The strict fixed current registry includes only the two specifically observed additional closed logs; arbitrary additions, omissions and mutations are not allowed.",
+    "The original 60-second/64-file/32-MiB phase and 90/120-second controller/outer limits remain unchanged.",
+    "No application recovery, physical integrity or client acceptance follows from this pre-start preservation and preflight."
+  ]
+}

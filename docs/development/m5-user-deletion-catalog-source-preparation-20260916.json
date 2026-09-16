@@ -25,6 +25,11 @@
   },
   "tarMembers": 5639,
   "allTrackedPathsMatched": true,
+  "independentReview": {
+    "path": "/opt/goby-test/m5-user-deletion-catalog-source-20260916-dd2b9b10c858/private/source-independent-review-r01.json",
+    "bytes": 5592,
+    "sha256": "94cad98041645d7214dc49f35e07e33b97681d839cbb73c7884cef61a513957c"
+  },
   "sourceBytes": "5362 entries equal their Git blob bytes directly; scripts/docs/export-emby-reference.ps1 is exported with the repository's CRLF attribute, adds 719 bytes, and equals its Git blob after CRLF-to-LF normalization. Archive bytes are retained unchanged.",
   "modeProjection": "Raw regular tar modes such as 0664 are recorded as 0644; executable files are recorded as 0755.",
   "administratorDistFiles": 0,
