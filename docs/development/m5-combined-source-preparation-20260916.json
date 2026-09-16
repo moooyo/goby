@@ -1,0 +1,88 @@
+{
+  "kind": "m5-combined-source-preparation",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "complete_source_independently_reviewed_product_verification_pending",
+  "branch": "codex/m5-deletion-diagnostics",
+  "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+  "mergeCommit": "96e6d750ecd0d634e19f0bf94a701665bd51f2ba",
+  "parents": {
+    "deletion": "83cf0a895d5b0206e129090a16126ed09139a734",
+    "diagnostics": "1fcdedee572d97cf10719da12c29413568dea8cd",
+    "catalogOriginCommit": "88d917b"
+  },
+  "source": {
+    "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+    "archive": {
+      "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/private/source.tar.gz",
+      "bytes": 33056853,
+      "sha256": "94ced328bcbc429b040baaff03a3d296e74524bcc49bfa1b5df650299e425aa7"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/private/source-manifest.json",
+      "bytes": 994868,
+      "sha256": "f11599f9819932877a6132cf7e6215cceccd07d5ccde7e603adb8d19ff478c67"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/source-preparation.json",
+      "bytes": 1336,
+      "sha256": "41815817ecf00ba907e2a905f4353516b667842f404be4ab2d85026268cc2749"
+    },
+    "files": 5400,
+    "uncompressedBytes": 120705051
+  },
+  "descriptor": {
+    "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/source-descriptor.json",
+    "bytes": 708,
+    "sha256": "7ac337c7103cae013824dce7ab00292e06abe9bcf1621c0310c4ba95aa4d4461"
+  },
+  "gitTree": {
+    "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/private/git-tree.json",
+    "bytes": 1048870,
+    "sha256": "ba762ed0383eb13d8942affff379dd7923853dde74380bae195fb57ee59f5dbf"
+  },
+  "sourceIndependentReview": {
+    "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/source-independent-review.json",
+    "bytes": 3738,
+    "sha256": "af2e745593429656c664ada8d4af2dc42c0a2c6e73c02e9f9944fd8c99d80e3f"
+  },
+  "archiveReview": {
+    "members": 5676,
+    "files": 5400,
+    "allCommittedPathsCovered": true,
+    "allFileBytesModesAndHashesMatched": true,
+    "gitBlobMappingMatched": true,
+    "normalizations": [
+      {
+        "path": "scripts/docs/export-emby-reference.ps1",
+        "exportedBytes": 43964,
+        "gitBlobBytes": 43245,
+        "rule": "Git eol=crlf export; archive bytes are preserved."
+      }
+    ],
+    "generatedAssetsIncluded": false,
+    "frontendContributionsIncluded": false
+  },
+  "interaction": {
+    "postCommitUserCancellationHook": "internal/server/admin_users.go",
+    "test": "TestHTTPDeleteDiagnosticOwnerRetainsPeerJobsCachesAndSockets",
+    "testFile": "internal/server/admin_user_deletion_diagnostic_integration_test.go",
+    "scopedIndependentStaticReview": "No definite defect found; watcher authorization is structurally blocked, and failed/unrelated deletion, closure failure, reservation lifetime and peer resources remain covered.",
+    "diagnosticsDefaultEnabled": false,
+    "actualBehaviorVerified": false
+  },
+  "catalog": {
+    "bytes": 484107,
+    "sha256": "7653857ea4448cc36bb0d077d6e61c89b382b24bea15b6693a7a78f2a14d8e58",
+    "record": "m5-user-deletion-catalog-generation-20260916.json"
+  },
+  "productTestsExecuted": 0,
+  "frontendBuildExecuted": false,
+  "browserAcceptance": false,
+  "finalVerificationPassed": false,
+  "remaining": [
+    "Build the frontend once from this source and retain the actual successful command, original contribution sidecar and complete dist assets.",
+    "Create a subsequent complete source snapshot containing these unchanged committed files plus the actual frontend assets; bind the original sidecar independently.",
+    "Verify the complete combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds under the reviewed resource profile."
+  ]
+}

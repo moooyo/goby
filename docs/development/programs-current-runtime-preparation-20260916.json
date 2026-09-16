@@ -1,0 +1,63 @@
+{
+  "kind": "programs-current-runtime-and-product-preparation",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "observer_statically_reviewed_product_mapping_prepared_not_executed",
+  "observer": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
+    "bytes": 15786,
+    "sha256": "d60dee9d93df27732ced4a15402daeade2704951775885e064fd89964edd6601"
+  },
+  "observerInput": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observer-input.draft-r02.json",
+    "bytes": 2981,
+    "sha256": "6ee420df0ac813759cca5aad6c0d42903efb37e1a1f2c407f7fad87fe9b19a4b"
+  },
+  "observerPreparation": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observer-preparation-r02.json",
+    "bytes": 2380,
+    "sha256": "7d98f2c6b5f48cc96b368d6e5b9f378ac2bdc7fead1cddbf24c97e50ad33158b"
+  },
+  "artifactDraft": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/artifact-receipt.draft.json",
+    "bytes": 4503,
+    "sha256": "fa7ddda74d863f21e381b2866df61e13a305b58e81ae2aa073cf45c7bce82721"
+  },
+  "productReviewDraft": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/product-independent-review.draft.json",
+    "bytes": 6406,
+    "sha256": "9a0da0f0284b322febec837a985984fe2799a1cb58c7b0c99c4631b12cf6a371"
+  },
+  "observerProducer": {
+    "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/code/audited-candidate-runtime.py",
+    "bytes": 201353,
+    "sha256": "5d66cb04c5b48d8a0faea38fde05aceac67f7dcd2ba04096330d345c182e1d0e"
+  },
+  "componentRecord": "programs-binding-components-20260916.json",
+  "draftDisabled": true,
+  "observerOutput": null,
+  "observerDeadline": null,
+  "runtimeVerification": null,
+  "observerSourceVerification": null,
+  "artifactDraftStatus": "draft_unreviewed",
+  "productReviewChecksCompleted": 0,
+  "actualObservationExecuted": false,
+  "currentRuntimeEnvelopeProduced": false,
+  "transitionHoldRemoved": false,
+  "staticReview": [
+    "The observer uses the already verified producer helper and the fixed aed2914-to-38b ancestry without requiring the future consumer runtime pin.",
+    "The original metadata, hosting, protected state and file comparisons still surround one deployment_lease call with two SQL queries; backendStart comes from pg_stat_activity.",
+    "The original failure remains primary if failure-receipt publication, unlock, descriptor close or lock-receipt publication also fail."
+  ],
+  "remaining": [
+    "Create the existing runtime-verification wrapper from the actual 42-test runtime group and its bound source, not the 138-group aggregate or the old 33-test record.",
+    "Bind the final observer source/output/deadline, perform its required real source verification remotely, and create the corresponding existing source-verification wrapper before observation.",
+    "Independently reconcile the actual product material and budgets into the existing version-1 artifact and product-review contracts; do not rename historical reviews or fill unchecked flags.",
+    "After the real observation and runtime envelope exist, bind the final consumer source and verify its changed adapter projection and actual runtime pin before capture/transition admission."
+  ],
+  "limits": [
+    "All five draft/preparation files retain their original bytes. They are preparation, not application/runtime authority.",
+    "The observation producer is the frozen source already covered by 138 component checks; later consumer-only source changes have separate provenance and pending verification.",
+    "No new SQL, HTTP, application start, test run or current-runtime observation was performed while preparing these drafts."
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "kind": "programs-recovered-runtime-and-complete-source-components",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "passed_frozen_component_scope_independent_review",
+  "scope": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a",
+  "sourceManifest": {
+    "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/source-manifest.json",
+    "bytes": 7627,
+    "sha256": "b473fcb2358a346525f3d36f294a4e3055bcd4e2322736226ae78745af9d4ca5"
+  },
+  "runner": {
+    "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/run-checks.py",
+    "bytes": 6265,
+    "sha256": "c1fd508f25cf9beaeeb878e3233babb186a2e1a87d11e94b1bf72853d3a283ff"
+  },
+  "evidence": {
+    "result": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/result.json",
+      "bytes": 7580,
+      "sha256": "9d8451b1be1f71703e8a0b74cdaf49090fde84382e23c5c60c4c58ddb330d99c"
+    },
+    "closure": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/closure.json",
+      "bytes": 28646,
+      "sha256": "4aafc32aaff81504f4478a26c562a6766c0eac2f9774de245b8f89f4608a4e20"
+    },
+    "dispatch": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/dispatch-result.json",
+      "bytes": 1821,
+      "sha256": "01fcfd34cb622796f83c50960cb40f493a22b595be1e609b20b3f65effddbe2b"
+    },
+    "outerClosure": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/dispatch-session-closure.json",
+      "bytes": 2140,
+      "sha256": "909a77ab6d0ba6db0f06ec295c0c8db6ce0949186f598bfa7c41a78e38e5260d"
+    },
+    "closerReport": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/closer-report.json",
+      "bytes": 10261,
+      "sha256": "79dbc78c9ecc9b6107a9599aff52635b621dd61406a2c74e88703d799e26dfb3"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/private/independent-review.json",
+      "bytes": 7884,
+      "sha256": "200a5f2634ce1cec1c6db6190f3389a7796f75f1d4c1c004a98edc494882164f"
+    }
+  },
+  "verifiedProductionToolSources": {
+    "runtime": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/code/audited-candidate-runtime.py",
+      "bytes": 201353,
+      "sha256": "5d66cb04c5b48d8a0faea38fde05aceac67f7dcd2ba04096330d345c182e1d0e"
+    },
+    "closer": {
+      "path": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a/code/close-audited-candidate-client.mjs",
+      "bytes": 239678,
+      "sha256": "2b07312772f794cea61e0b646c58d60acbcbe35c0ca47dcb40cdafdf8bf29db4"
+    }
+  },
+  "groups": [
+    {
+      "name": "runtime",
+      "passed": 42,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "successor",
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "closer",
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "totalPassed": 138,
+  "executionsPerGroup": 1,
+  "sourceFiles": 12,
+  "sourceBytes": 1073476,
+  "sourcesUnchanged": true,
+  "resources": {
+    "memoryMaxBytes": 268435456,
+    "memoryPeakBytes": 63496192,
+    "swapMaxBytes": 0,
+    "cpuQuotaPercent": 25,
+    "tasksMax": 32,
+    "runtimeMaxSeconds": 240,
+    "fileSizeLimitBytes": 8388608,
+    "privateNetwork": true,
+    "privateMounts": true,
+    "privateTmp": true,
+    "protectSystem": "strict",
+    "controlCommands": 19,
+    "rawStreams": 46,
+    "rawStreamBytes": 34459,
+    "unitStopped": true,
+    "allRecordedProcessesAndGroupsClosed": true,
+    "cgroupEmpty": true,
+    "scratchEmpty": true
+  },
+  "coverage": [
+    "Fixed second recovery edge from the September 16 restart through the accepted aed2914 predecessor to the fixed 38b version-1 ancestor.",
+    "Actual nested restart review and unchanged c866 configuration provenance; the old TV closeout retains its historical ancestor pin.",
+    "Strict complete-source artifact profile with the actual seven pins and 5405/5348/57/861 inventories, while preserving the older profile."
+  ],
+  "newCurrentRuntimeProduced": false,
+  "productionProgramsInputAdmitted": false,
+  "transitionHoldRemoved": false,
+  "productGoTestsExecuted": false,
+  "browserRuns": 0,
+  "followUp": "Later actual-product record reconciliation found that the complete-source closure stores adapter as Pin2 while the canonical review requires Pin3. The worktree now has a scoped path/hash projection plus actual byte/hash readback and four additional cases; those later bytes are not covered by these 138 results. Validate the final consumer bindings after the real runtime envelope is produced.",
+  "limits": [
+    "This record covers only the fixed source hashes listed here. It cannot be relabeled for a later helper, closer or runtime pin.",
+    "The runtime group's 42 passes may support its existing verification wrapper; 138 is the total across three different groups.",
+    "The separate two-query runtime observation, actual artifact aggregation/product review, state capture and transition admission remain required.",
+    "No SQL, HTTP, browser, product Go test or new runtime observation was executed by this component scope."
+  ]
+}

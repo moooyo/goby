@@ -45,9 +45,12 @@ has now generated its real artifact once and passed independent content and
 resource-closure reviews. Only the two expected activity CHECK objects changed;
 all 29 migration hashes, 35 tables and five sequences were checked. Its exact
 bytes were transferred to the M5 branch. The owned PG, worker, disk volume and
-lock are closed; no product tests ran in that generator scope. Combine the
-prepared deletion and diagnostics changes with the required interaction test,
-then freeze and verify the complete M5 source.
+lock are closed; no product tests ran in that generator scope. The
+[combined source](m5-combined-source-preparation-20260916.json) is now frozen at
+`138522b`, including the immediate cancellation hook and deterministic
+reservation/peer-isolation regression. Focused static review and independent
+5400-file archive reconciliation passed. Its actual frontend build, combined
+Go/HTTP/browser behavior and final verification remain pending.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -107,6 +110,13 @@ remains its predecessor; product epoch, seed, admission and hosting are unchange
 The frozen Programs components still retain preparatory authority constants.
 Bind the new runtime authority and actual successor artifact together after final
 verification; the ready envelope alone is not an executable Programs input.
+The later [binding component scope](programs-binding-components-20260916.json)
+passed runtime 42, successor 28 and closer 68 checks once with independent
+review and full closure. It covers the fixed producer source, second recovery
+ancestry and complete-source profile. The [new observer and product drafts](programs-current-runtime-preparation-20260916.json)
+remain unexecuted. Subsequent consumer adapter projection changes and the final
+runtime pin still need their own verification; the 138 results do not admit a
+new runtime envelope or Programs input.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
@@ -1185,10 +1195,11 @@ Static review of the separate deletion and media-diagnostic branches identified
 one required integration hook: after a successful user deletion commits, notify
 the diagnostic owner with the deleted user's ID. Its existing authority watcher
 eventually detects deletion, but does not replace immediate cancellation at the
-committed DELETE boundary. Add a combined regression that observes cancellation
-before releasing the test owner or relying on its authority poll, and preserves
-other users' work. The two increments remain separate; no combined behavior has
-been implemented or verified yet.
+committed DELETE boundary. The [combined source](m5-combined-source-preparation-20260916.json)
+at `138522b` now implements that hook and a regression that freezes watcher
+authorization, observes immediate cancellation, retains the reservation through
+failed closure and preserves peer jobs, processes, caches and sockets. Focused
+independent static review passed; actual combined behavior remains unverified.
 
 The [initial OCI source profile](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md)
 is committed and pushed at `18cd4ef` on `codex/m6-oci-package`, in
