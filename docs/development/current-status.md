@@ -1138,8 +1138,21 @@ package consumption remain unverified. The CLI cases use fake Go
 and deterministic source/copy mutations, not product builds. Static review findings
 were corrected in source. The plugin records a bundler observation, requiring a
 separate successful command result; it does not claim final per-module byte
-shares or legal completeness. The branch is not merged and does not add a
-frontend rebuild to the current Programs critical path.
+shares or legal completeness. The implementation and test sources are now
+cherry-picked into `codex/m5-user-deletion` at `4796aa1`; its documentation
+references the actual synthetic results. The next required M5 frontend build
+will capture the real graph, and its separately required release build must
+consume the matching report explicitly. No new test or build ran for this
+integration, and it adds no frontend rebuild to the frozen Programs increment.
+
+Static review of the separate deletion and media-diagnostic branches identified
+one required integration hook: after a successful user deletion commits, notify
+the diagnostic owner with the deleted user's ID. Its existing authority watcher
+eventually detects deletion, but does not replace immediate cancellation at the
+committed DELETE boundary. Add a combined regression that observes cancellation
+before releasing the test owner or relying on its authority poll, and preserves
+other users' work. The two increments remain separate; no combined behavior has
+been implemented or verified yet.
 
 The [initial OCI source profile](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md)
 is committed and pushed at `18cd4ef` on `codex/m6-oci-package`, in
