@@ -47,10 +47,15 @@ lock-inode check were not separately measured; the application lease backend is
 expected to persist. The [final binding component scope](../development/programs-final-binding-components-20260916.json)
 passed 44/28/70 checks once with independent closure review. Its 256 MiB unit
 recorded a 65,093,632-byte peak; tested tooling is integrated as `f45d73c` and
-both CLI sources are published with unchanged bytes. The fresh capture input and
-retention derivation are prepared, with no actual capture result recorded here.
-Actual product/runtime loader verification and post-transition v4 records remain
-pending. The original 42/28/68 results and transition hold remain unchanged;
+both CLI sources are published with unchanged bytes. The [first actual capture](../development/programs-state-capture-first-attempt-20260916.md)
+failed with `programs_unreviewed_key_path`/CLI exit 2 and independently closed.
+Its 14 SQL frontends were acknowledged and closed, but the 71 partial files do
+not form reviewed state or successful capture. The guard rejected before key
+content was opened/hashed; no specific filename was recorded and the outer SSH
+numeric exit remains unknown. Verify the separately prepared correction before
+using a new capture scope; this failed input is consumed. Actual product/runtime
+loader verification and post-transition v4 records remain pending. The original
+138/142 results and transition hold remain unchanged;
 no transition or client acceptance is claimed.
 
 The latest fixed M5 media-refresh increment is committed and pushed as

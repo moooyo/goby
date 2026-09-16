@@ -1,0 +1,148 @@
+{
+  "kind": "programs-state-capture-first-attempt",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "failed_capture_closed_reviewed",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-01",
+  "inputConsumed": true,
+  "scopeReplayAllowed": false,
+  "input": {
+    "bytes": 2882,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-input.json",
+    "sha256": "65b5a6144421701fce3abc8b6777048eefb69a328286092a888ca3c160b41da2"
+  },
+  "captureSource": {
+    "bytes": 90493,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/code/transition-audited-candidate.py",
+    "sha256": "2e76037443447346dafb91db97267d6e875b8434f8ea33df5fff35eb9d2f0cc5"
+  },
+  "runtimeHelper": {
+    "bytes": 202077,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/code/audited-candidate-runtime.py",
+    "sha256": "d64f4b6c3b819955fdb99537a57ff21ca4b33bc7c0e50c0e14a62b6da0e468cc"
+  },
+  "failure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-01/private/capture-failure.json",
+    "bytes": 282,
+    "sha256": "38236871af2877f8ab42e0214e68776d98d85f4ff4a0ed8c59c02aba74397c33"
+  },
+  "dispatch": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-dispatch-result.json",
+    "bytes": 1471,
+    "sha256": "d84a7205abd459172b3cdad6a928e823b14cfb93dc11bd88a8ec26bc11fa0c5c"
+  },
+  "outerClosure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-outer-closure.json",
+    "bytes": 38140,
+    "sha256": "b6f10d5d6291edd5077d73c4310a0a9d62fa16b730761a397a58b02a341e5a7d"
+  },
+  "lockClosure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-lock-closure.json",
+    "bytes": 1151,
+    "sha256": "88f087f3e45055e4bf536f7facdbfbbe0c5730aebf0c419571407da91c325f4e"
+  },
+  "sessionClosure": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-dispatch-session-closure.json",
+    "bytes": 14815,
+    "sha256": "e6b47bff0ef094a54cc3abf0242abedff810cd5146f5bf600ee7dda1c0c68df4"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-failed-independent-review.json",
+    "bytes": 5942,
+    "sha256": "9ebad539b46e3ed415ee83d538ffd9aab2e654275d08b61b3f270de4fe5a2895"
+  },
+  "actualOutcome": {
+    "captureInvocations": 1,
+    "captureLaunchAttempts": 1,
+    "automaticRetries": 0,
+    "cliExitCode": 2,
+    "cliPid": 1741512,
+    "cliInvocationId": "1964cc43b2a640508adeb0673d4ff125",
+    "outerPid": 1741509,
+    "outerProcessGroup": 1741509,
+    "callerToolReportedExitCode": 1,
+    "outerSshNumericExitCode": null,
+    "exitBoundary": "The caller reported a nonzero tool completion. The original numeric SSH exit was not independently captured and is not reconstructed.",
+    "elapsedSeconds": 2.218966726970393,
+    "failureCode": "programs_unreviewed_key_path",
+    "failureStage": "read_only_programs_state_capture",
+    "successfulCapture": false,
+    "businessWrites": 0,
+    "httpRequests": 0,
+    "applicationServiceActions": 0
+  },
+  "guardEvidence": {
+    "function": "ProgramsSuccessor.file",
+    "sourceLine": 583,
+    "basis": "The pinned ProgramsSuccessor.file rejects an unlisted .key suffix before any content-opening or hashing branch. The failure record carries the code and broad stage but no filename; no particular generation master is identified by this review.",
+    "specificPathRecorded": false,
+    "specificPathInferred": false,
+    "rejectedKeyContentOpenedOrHashedBeforeRejection": false,
+    "keyBodiesReadOrHashedByReview": 0
+  },
+  "partialEvidence": {
+    "sqlFrontends": 14,
+    "clusterIdentityFrontends": 7,
+    "leaseSelects": 1,
+    "allFrontendResultsAcknowledgedExitZero": true,
+    "allFrontendProcessGroupsClosed": true,
+    "sqlBackendDisappearanceIndependentlyObserved": false,
+    "savedFiles": 71,
+    "savedFileBytes": 718244,
+    "reviewedStatePresent": false,
+    "sourceReviewedStatePresent": false,
+    "successfulCaptureResultPresent": false,
+    "successorEpochPresent": false,
+    "completeCaptureAccepted": false
+  },
+  "closureFacts": {
+    "cliAndOuterPidsAndRecordedGroupsAbsentInSavedReadback": true,
+    "recordedPidAbsenceCount": 23,
+    "ownedCgroupAbsent": true,
+    "failedUnitRecordRetained": true,
+    "ownedControlCommands": 7,
+    "allOwnedControlCommandsAcknowledgedExitZero": true,
+    "resourcesClosedBeforeLockRelease": true,
+    "lockMetadataAndSavedHashUnchanged": true,
+    "unlockSucceeded": true,
+    "fdCloseSucceeded": true,
+    "memoryPeakBytes": 101261312,
+    "cleanupErrors": []
+  },
+  "unexecutedStages": {
+    "checkCapturedInvocations": 0,
+    "actualProductLoaderInvocations": 0,
+    "transitionInvocations": 0,
+    "clientJourneys": 0
+  },
+  "pendingCorrection": {
+    "status": "key_metadata_rule_correction_preparing_in_separate_worktree",
+    "verified": false,
+    "frozen142SourceUnchanged": true,
+    "requiredNextScope": "A new reviewed capture scope and input after the bounded correction is verified; the failed scope is consumed."
+  },
+  "previousEvidence": {
+    "runtimeObservationAndEnvelope": "programs-current-runtime-preparation-20260916.json",
+    "componentRecord": "programs-final-binding-components-20260916.json",
+    "componentGroups": [
+      44,
+      28,
+      70
+    ],
+    "resultsUnchanged": true,
+    "earlierTwoSqlObservationRemainsSeparate": true
+  },
+  "reviewMethod": "This documentation update read saved failure, dispatch and review/closure JSON only. The independent review used saved resource absence evidence, without new SQL, live metadata, actor observation, service actions or key-body reads/hashes.",
+  "limits": [
+    "Fourteen acknowledged SQL frontends do not constitute a complete capture or new database acceptance. Their PostgreSQL backends are outside the capture cgroup; disappearance was not independently observed.",
+    "The CLI exit code is known to be 2. The original numeric outer SSH exit remains null and is not reconstructed from caller-tool status or closure.",
+    "The failure records code and broad stage only. No particular key filename or generation master is established.",
+    "No reviewed state, source-reviewed state, successful capture, successor epoch, actual product-loader acceptance or transition admission was produced.",
+    "All partial files and original failures remain preserved. The frozen 142 component results do not cover the subsequent unverified key-rule correction."
+  ],
+  "remaining": [
+    "Complete and verify the bounded key metadata-rule correction without modifying the failed source/input or claiming a key-body read.",
+    "Use a new reviewed scope/input for a later capture; retain the first attempt as consumed failed evidence.",
+    "After successful capture and review, complete the actual product/runtime loaders and recovery/transition admission. Preserve the transition hold and open client-acceptance boundary."
+  ]
+}

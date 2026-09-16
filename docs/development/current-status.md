@@ -154,11 +154,17 @@ into the actual full scope. The [final binding components](programs-final-bindin
 have now passed runtime 44, successor 28 and closer 70 checks once, with independent
 source/result/closure review. The 256 MiB unit recorded a 65,093,632-byte peak.
 Tested tooling is integrated on main at `f45d73c`; its constants bind `db22e3d...`,
-and both CLI sources were published with identical bytes. The fresh capture input
-and retention derivation are prepared, but no actual capture result is recorded
-at this checkpoint. Actual product/runtime loading with a strict transition input,
-post-transition v4 records and client acceptance remain pending. The original
-138 results and transition hold are unchanged.
+and both CLI sources were published with identical bytes. The [first actual fresh
+capture](programs-state-capture-first-attempt-20260916.md) has now failed with
+`programs_unreviewed_key_path`/CLI exit 2 and passed independent closure review.
+Fourteen read-only SQL frontends were acknowledged and closed, leaving 71 partial
+files but no reviewed/source-reviewed state or successful capture. The guard
+rejected before key-content opening/hashing; the failure recorded no specific
+filename. The original numeric outer SSH exit remains unknown/null. The consumed
+scope must not be retried. A key metadata-rule correction is being prepared
+separately and has not been verified; later capture needs a new scope. Actual
+product loading, post-transition v4 records and client acceptance remain pending.
+The original 138/142 results and transition hold are unchanged.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
