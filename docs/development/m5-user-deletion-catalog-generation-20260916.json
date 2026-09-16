@@ -1,0 +1,109 @@
+{
+  "kind": "m5-user-deletion-catalog-generation",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "catalog_generated_and_closed_independently_reviewed",
+  "scope": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab",
+  "sourceGitHead": "83cf0a895d5b0206e129090a16126ed09139a734",
+  "sourceArchive": {
+    "path": "/opt/goby-test/m5-user-deletion-catalog-source-20260916-dd2b9b10c858/private/source.tar.gz",
+    "bytes": 32929307,
+    "sha256": "69d3967483ebc4748063dbacd8991e0fc22c05fe7cd5b2c4cae8abab63197c98"
+  },
+  "evidence": {
+    "input": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/private/input.json",
+      "bytes": 1740,
+      "sha256": "8c3ba9721f4f7461085f5ba3d4420062e61bd5e0d77c768169a66422cb9b9bab"
+    },
+    "bindingReview": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/final-binding-independent-review.json",
+      "bytes": 6416,
+      "sha256": "270339713efddcb1024de618119f28da37424b43b9652712b9f9e7e3cc7d9a2b"
+    },
+    "execution": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/execution.json",
+      "bytes": 78441,
+      "sha256": "4d552fb0d985a0bff6b5a778da8010921e27843a6d7e2034a9bca31a245253c1"
+    },
+    "dispatch": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/private/catalog-root-dispatch-result.json",
+      "bytes": 1498,
+      "sha256": "e3b53576802cd1452b9f3593d4b094610c73f566ab8dfb7dbba7a965bbf403b2"
+    },
+    "executionReview": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/execution-independent-review.json",
+      "bytes": 6274,
+      "sha256": "c2120bb23b233597cbcbf524d48af1ac879053a7e5145ebb50d416e2ea7b4833"
+    },
+    "catalogReview": {
+      "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/catalog-independent-review.json",
+      "bytes": 15070,
+      "sha256": "e9072463c36aaa12f2103d8876e8f78ef2a3f9a4b9741a74c3ef1f5ab160c8af"
+    }
+  },
+  "artifact": {
+    "path": "/opt/goby-test/m5-user-deletion-catalog-20260916-6de23dec0bab/retained/000-schema-29-postgresql-17.json",
+    "bytes": 484107,
+    "sha256": "7653857ea4448cc36bb0d077d6e61c89b382b24bea15b6693a7a78f2a14d8e58"
+  },
+  "destination": {
+    "branch": "codex/m5-user-deletion",
+    "repositoryPath": "internal/backuppg/catalogs/schema-29-postgresql-17.json",
+    "transferredBytesAndHashMatched": true,
+    "contentReformatted": false
+  },
+  "catalog": {
+    "version": 29,
+    "postgresqlMajor": 17,
+    "migrations": 29,
+    "tables": 35,
+    "sequences": 5,
+    "objects": 1118,
+    "unchangedObjects": 1116,
+    "objectsSHA256": "860abd80a745f2eaf63f847c07c8276e621c994311e98fc55f266eb2b03a260e",
+    "changedObjects": [
+      "activity_entries.activity_entries_action_check",
+      "activity_entries.activity_entries_action_resource_check"
+    ],
+    "change": "Each changed CHECK adds one user.deleted action; other schema-28 catalog fields and the first 28 migration records are unchanged.",
+    "migration29SHA256": "cc2bc10bdd78866854559485b05c34018b4d6ea2ec9e25c880ff234609388564",
+    "allMigrationNamesAndHashesMatchSource": true
+  },
+  "execution": {
+    "generatorAttempts": 1,
+    "generatorExitCode": 0,
+    "driverExitCode": 0,
+    "driverTimedOut": false,
+    "driverElapsedSeconds": 48.02027180994628,
+    "workerMemoryBytes": 1610612736,
+    "workerSwapBytes": 0,
+    "workspaceBytes": 2147483648,
+    "outerCommandsClosed": 35,
+    "workerCommandsClosed": 17,
+    "ownedPostgresClosed": true,
+    "workerUnitAndCgroupClosed": true,
+    "workspaceUnmounted": true,
+    "loopDetached": true,
+    "backingFileDeleted": true,
+    "lockReleased": true,
+    "protectedBeforeAfterAndAdmissionStateExact": true,
+    "retainedFiles": 45,
+    "retainedBytes": 1882127
+  },
+  "testsExecuted": 0,
+  "productBuildExecuted": false,
+  "m5Acceptance": false,
+  "clientAcceptance": false,
+  "remaining": [
+    "Add this exact artifact to the final combined M5 source and freeze a complete new source snapshot.",
+    "Run the required deletion/backup/diagnostic Go, HTTP, browser and frontend contribution checks against that final source.",
+    "Complete final verification and delivery acceptance; no earlier Programs result substitutes for the changed M5 source."
+  ],
+  "limits": [
+    "The artifact was generated once by the existing Go exporter against an owned disposable PostgreSQL cluster, then independently recalculated from its saved bytes. It was not synthesized from schema 28.",
+    "Catalog-content review and execution/resource-closure review are separate. Saved driver closure evidence does not claim independently reviewed unpinned driver implementation.",
+    "The original generator source archive and consumed execution input remain unchanged. The later source containing the generated catalog is a different snapshot.",
+    "No local tests, builds or validators ran. The local transfer check was limited to byte length and SHA-256 provenance."
+  ]
+}
