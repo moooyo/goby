@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **Library package diagnosis and successor artifact preparation**.
+Current priority on 2026-09-16: **fresh full regression and successor artifact construction**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -9,8 +9,10 @@ during that maintenance. The subsequent [original theme diagnostic](library-them
 passed once with one parent and one subtest, unchanged business budgets and full
 owned-resource closure. Its recovery scan finished in about 0.832 seconds with
 no observed ownership loss. This is non-reproduction, not resolution of the
-retained full failure. The next diagnostic is the complete Library package once;
-the other four prepared source branches remain unverified. Complete M2-M6
+retained full failure. The subsequent [complete Library package](library-package-diagnostic-result.md)
+passed 606 top-level tests and 1584 subtests, with only the existing M2 skip.
+The [fresh complete verification and both builds](programs-successor-final-preparation.md)
+are now active. The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
 
@@ -90,8 +92,8 @@ specific transaction or fixture leak. Existing phase/read/ownership diagnostics
 remain the next bounded execution; no new test, root-cause claim or fix follows.
 
 The user has supplied the previously requested `test-env` availability. The
-original theme subcase has passed once; the next check covers the complete
-Library package with its existing budgets. No `ownedTx.Query`
+original theme subcase and complete Library package have each passed once.
+The fresh 25-package run and ordinary/embedded builds are active. No `ownedTx.Query`
 fix is scheduled, and non-reproduction cannot clear the original full failure.
 [Client components](programs-client-component-verification.json) passed within
 their frozen scopes. Actual successor authority/artifact and admitted live inputs
@@ -1093,9 +1095,10 @@ is now retained on `codex/m6-frontend-contributions` at `43a9b76`, in
 `D:/Code/goby-frontend-provenance`. It adds a Vite build-only private report and
 an explicit release-script input with complete asset equality and final
 source/copy checks. JavaScript assets must partition into recorded chunk names
-or an explicit unattributed list. Its seven producer top-level tests/eight
-subcases and five synthetic CLI tests/nine subcases remain unexecuted, as do
-type checking, actual build and package consumption. The CLI cases use fake Go
+or an explicit unattributed list. Its [seven producer top-level tests/eight
+subcases and five synthetic CLI tests/nine subcases](frontend-contribution-verification.md)
+passed once per group in bounded remote units. Type checking, actual build and
+package consumption remain unverified. The CLI cases use fake Go
 and deterministic source/copy mutations, not product builds. Static review findings
 were corrected in source. The plugin records a bundler observation, requiring a
 separate successful command result; it does not claim final per-module byte
@@ -1106,11 +1109,11 @@ The [initial OCI source profile](https://github.com/moooyo/goby/blob/18cd4efd117
 is committed and pushed at `18cd4ef` on `codex/m6-oci-package`, in
 `D:/Code/goby-oci-package`. It defines a fixed Linux amd64 software recipe,
 FFmpeg/ffprobe 9.0.1, PostgreSQL 17 clients, a selected-release file checker and
-the nonroot/read-only Compose/storage/signal contract. Twelve checker test
-methods remain unexecuted. Registry/snapshot metadata and the small header-source
-archive were read; that archive was hashed remotely. No image layer was pulled,
-no Docker daemon/builder was inspected or created, and no image, service or test
-ran. Static reviews and corrections do not prove package resolution, runtime
+the nonroot/read-only Compose/storage/signal contract. The [12 checker methods](oci-artifact-checker-verification.md)
+passed once in a bounded remote unit, with unchanged source and closed resources.
+Registry/snapshot metadata and the small header-source archive were read; that
+archive was hashed remotely. No OCI image was built, pulled or started, and no
+Compose or deployed profile was verified. The synthetic checker result does not prove package resolution, runtime
 dependency closure, reproducibility, media/backup/stop behavior or legal completeness.
 
 ## Verification policy

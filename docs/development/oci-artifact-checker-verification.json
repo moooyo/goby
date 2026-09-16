@@ -1,0 +1,100 @@
+{
+  "actualUnitProperties": {
+    "cgroup": {
+      "exists": false,
+      "path": null,
+      "pids": []
+    },
+    "unit": {
+      "ActiveState": "active",
+      "CPUQuotaPerSecUSec": "250ms",
+      "CPUUsageNSec": "303531000",
+      "CapabilityBoundingSet": "",
+      "ControlGroup": "",
+      "ControlPID": "0",
+      "ExecMainCode": "1",
+      "ExecMainPID": "1334384",
+      "ExecMainStatus": "0",
+      "Group": "root",
+      "Id": "goby-oci-artifact-checker-20260916-2cc5dc68ee3f.service",
+      "InvocationID": "1f069e91a3b2458180d7655dab56aca5",
+      "KillMode": "control-group",
+      "LoadState": "loaded",
+      "MainPID": "0",
+      "MemoryMax": "67108864",
+      "MemoryPeak": "25743360",
+      "MemorySwapMax": "0",
+      "NRestarts": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateNetwork": "yes",
+      "ProtectSystem": "strict",
+      "ReadOnlyPaths": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f/source",
+      "ReadWritePaths": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f",
+      "Result": "success",
+      "RuntimeMaxUSec": "1min 30s",
+      "SubState": "exited",
+      "TasksMax": "16",
+      "UMask": "0077",
+      "User": "root",
+      "showExitCode": 0
+    }
+  },
+  "attempts": 1,
+  "boundary": "Only the twelve saved checker unittest methods; no Docker, image, Compose, application runtime or M6 acceptance.",
+  "closureSupplement": {
+    "bytes": 671,
+    "path": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f/private/cgroup-after-unload.json",
+    "sha256": "2c74aa7038a7a4307285b43bcf4cfabbae233d5b62616e4e39a04b919ce4040d"
+  },
+  "composeVerified": false,
+  "executionExitCode": 0,
+  "failures": 0,
+  "imageBuilt": false,
+  "kind": "oci-artifact-checker-verification",
+  "m6Accepted": false,
+  "resourcesClosed": true,
+  "result": {
+    "bytes": 1862,
+    "path": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f/private/result.json",
+    "sha256": "4af4fa2d19d0972696d8c136a068c1d2482525aae719e4b0ab2c10962d4849a7"
+  },
+  "runtimeVerified": false,
+  "skips": 0,
+  "sourceCommit": "18cd4efd117f3314cf5cb46b4736f65795bbdf59",
+  "sourceFiles": [
+    {
+      "bytes": 10252,
+      "path": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f/source/check-artifact.py",
+      "sha256": "5f6c3cf4e9baf7b4f876893a43f54ae934d96772d270748ea8af80375cde90ae"
+    },
+    {
+      "bytes": 14074,
+      "path": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f/source/test_check_artifact.py",
+      "sha256": "f4226a1d28e1c3d004fe3558b4ed873347ccde7d2212d6b32065e65cf7e4549f"
+    }
+  ],
+  "sourceUnchanged": true,
+  "status": "passed",
+  "testMethods": [
+    "test_cli_argument_and_error_output_are_bounded",
+    "test_elf_header_must_actually_be_little_endian_amd64",
+    "test_existing_binding_is_never_overwritten_or_followed",
+    "test_expected_pins_require_exact_lowercase_sha256",
+    "test_failed_output_write_retains_partial_without_unlinking_names",
+    "test_input_mutation_during_fd_read_cannot_publish",
+    "test_manifest_rejects_malformed_duplicate_and_non_json_values",
+    "test_manifest_target_and_required_fields_use_strict_types",
+    "test_mixed_external_pins_and_manifest_binary_binding_are_rejected",
+    "test_single_link_regular_files_and_size_limits_are_enforced",
+    "test_symlink_roots_ancestors_and_inputs_are_not_followed",
+    "test_valid_exec_and_pie_bind_only_observed_inputs"
+  ],
+  "testsRun": 12,
+  "unitBeforeStop": {
+    "bytes": 1129,
+    "path": "/opt/goby-test/oci-artifact-checker-tests-20260916-2cc5dc68ee3f/private/unit-before-stop.json",
+    "sha256": "40bf0d5f5f6f857d7bfb840896f14f8ab5364110c7c9d93f8ad9e4c4bcbb5513"
+  },
+  "unittestSeconds": "0.014",
+  "version": 1
+}

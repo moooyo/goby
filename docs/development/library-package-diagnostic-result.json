@@ -1,0 +1,149 @@
+{
+  "actualMemoryProperties": {
+    "MemoryMax": "2147483648",
+    "MemorySwapMax": "0"
+  },
+  "archive": {
+    "bytes": 104266653,
+    "directories": 44,
+    "files": 1978,
+    "path": "/opt/goby-test/library-package-diagnosis-20260916/retained/focused-private.tar.gz",
+    "readbackMatched": true,
+    "sha256": "26b311a1c21b16d31c675f33e8bec4ac403238ebdcf193a4ba7f17f6444042db"
+  },
+  "budgets": {
+    "business_seconds": 4200,
+    "command_timeout": 1560,
+    "required_outer_seconds": 5340,
+    "runtime": 4800,
+    "stop_command_seconds": 210,
+    "supervisor_wait_seconds": 5070,
+    "test_seconds": 1500,
+    "unit_stop_seconds": 180,
+    "workerMemoryMaxBytes": 2147483648
+  },
+  "closure": {
+    "allOwnedCommandsClosed": true,
+    "cleanupErrors": [],
+    "ext4Unmounted": true,
+    "lockReleased": true,
+    "loopDetached": true,
+    "protectedBeforeAfterEqual": true,
+    "ramUnmounted": true,
+    "resourcesClosed": true,
+    "supervisorCgroupEmpty": true,
+    "worker": {
+      "only_worker_process_remains": true,
+      "owned_postgres_stopped": true,
+      "private_bind_removed": true,
+      "source_unchanged": true
+    }
+  },
+  "execution": {
+    "bytes": 57640,
+    "path": "/opt/goby-test/library-package-diagnosis-20260916/execution.json",
+    "sha256": "db7f595374ae8431851560d398b048a0ca1170c5f2113e3ec30e3cb0d6d5ba05"
+  },
+  "kind": "library-package-diagnostic-result",
+  "limits": {
+    "applicationBuildRun": false,
+    "clientAcceptance": false,
+    "existingCandidateRestarted": false,
+    "existingDatabaseHealthProved": false,
+    "fullSuitePassed": false,
+    "nextAction": "Run a fresh complete 25-package verification and ordinary/embedded builds using the validated diagnostic source and retained frontend assets.",
+    "priorFullFailureResolved": false,
+    "productFixEstablished": false
+  },
+  "scope": "/opt/goby-test/library-package-diagnosis-20260916",
+  "selection": {
+    "actualTopLevelTestsCompleted": 607,
+    "allCompiledTopLevelTestsMatched": true,
+    "compiledTopLevelTests": 607,
+    "declaredSkippedTests": [
+      {
+        "package": "github.com/moooyo/goby/internal/library",
+        "test": "TestRootBindingFullScanMountNamespaceHelper"
+      }
+    ],
+    "fail": 0,
+    "package": "github.com/moooyo/goby/internal/library",
+    "runFilter": null,
+    "runnerAttempts": 1,
+    "skip": 1,
+    "subtestPass": 1584,
+    "topLevelPass": 606
+  },
+  "source": {
+    "archive": {
+      "bytes": 32873587,
+      "path": "/opt/goby-test/library-theme-source-20260916-saq98t20/git-source.tar.gz",
+      "sha256": "b3027ae39ed497bdea1fca674697899fab08538f16746c298260c59f323d49a6"
+    },
+    "everyMemberMatched": true,
+    "files": 5348,
+    "gitHead": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+    "historicalScoresReused": false,
+    "manifest": {
+      "bytes": 1082974,
+      "path": "/opt/goby-test/library-theme-source-20260916-saq98t20/source-manifest.json",
+      "sha256": "dc019845fbd07818528511e1ac559ba597c5de515810a4153658ff94c09b8125"
+    },
+    "preparation": {
+      "bytes": 767,
+      "path": "/opt/goby-test/library-theme-source-20260916-saq98t20/source-preparation.json",
+      "sha256": "a9ddc5d21a330098fca53b5a9137c3eb1cc06b5aff29d0fa4d838fbf3a741299"
+    },
+    "uncompressedBytes": 119599313
+  },
+  "status": "passed_not_reproduced",
+  "testCommand": {
+    "argv": [
+      "/opt/goby-toolchains/go1.27.1/bin/go",
+      "test",
+      "-race",
+      "-p=1",
+      "-parallel=1",
+      "-count=1",
+      "-timeout=1500s",
+      "-exec",
+      "/usr/bin/env TMPDIR=/opt/goby-test/library-package-diagnosis-20260916/ext4/fixtures GOTMPDIR=/opt/goby-test/library-package-diagnosis-20260916/ext4/fixtures",
+      "-json",
+      "github.com/moooyo/goby/internal/library"
+    ],
+    "exitCode": 0,
+    "interruptedOrTimedOut": false,
+    "seconds": 1076.783
+  },
+  "testStdout": {
+    "archiveMember": "ram/library-package-diagnosis-20260916-20260916T044257Z-366e592d4e7e/logs/019-go-test-library-package.stdout",
+    "auxiliaryOutput": [
+      "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+      "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=fixture_ready elapsed=6.58\u00b5s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=rejected_scan_finished elapsed=2.524999431s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:522: auxiliary rejected scan status=Failed error=\"1 media directories could not be scanned; existing catalog records were retained\"",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=recovery_scan_start elapsed=2.526198605s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=recovery_scan_finished elapsed=3.367869909s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=before_store_cleanup elapsed=3.368874001s closing=false ownership_lost=false fixture_context=<nil>",
+      "--- PASS: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme (10.55s)",
+      "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=fixture_ready elapsed=6.05\u00b5s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=rejected_scan_finished elapsed=6.415982484s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:522: auxiliary rejected scan status=Failed error=\"1 media directories could not be scanned; existing catalog records were retained\"",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=recovery_scan_start elapsed=6.41714168s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=recovery_scan_finished elapsed=6.999314684s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=before_store_cleanup elapsed=7.00021142s closing=false ownership_lost=false fixture_context=<nil>",
+      "--- PASS: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/extra (10.78s)",
+      "--- PASS: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable (21.33s)"
+    ],
+    "bytes": 2328987,
+    "sha256": "3e455987d43662468a10261d29ae2c6d97af654ca712a811dc6d3ec34271e39c"
+  },
+  "version": 1,
+  "workerReport": {
+    "archiveMember": "ram/library-package-diagnosis-20260916-20260916T044257Z-366e592d4e7e/worker-report.json",
+    "bytes": 245720,
+    "sha256": "b534b9fc706b40b6ecd6b0330019988a0bfab548db0b740477fc87f7619af3e6"
+  }
+}

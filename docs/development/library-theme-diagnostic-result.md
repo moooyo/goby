@@ -79,9 +79,10 @@ The host observation is `host-failure-observation.json` in that same scope,
 
 ## Next action
 
-Run the complete Library package once with the same diagnostic source, original
-test behavior and bounded isolation. This includes package test ordering and
-accumulated state missing from the successful single-case observation. Do not
-guess a production correction, repeat the single case, or use this result to
-clear the original full failure. Complete repository verification, both builds,
-current candidate recovery and successor client acceptance remain open.
+The subsequent [complete Library package](library-package-diagnostic-result.md)
+also passed once with the same diagnostic source and original test behavior.
+This adds package ordering and accumulated state to the observation. The
+[fresh complete repository verification and both builds](programs-successor-final-preparation.md)
+are now active. Do not guess a production correction, repeat either diagnostic
+scope, or use these results to clear the original full failure. Current candidate
+recovery and successor client acceptance remain open.

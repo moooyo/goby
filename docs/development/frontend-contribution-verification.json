@@ -1,0 +1,307 @@
+{
+  "kind": "frontend-contribution-verification",
+  "version": 1,
+  "status": "passed_synthetic_contract_tests",
+  "recordedOn": "2026-09-16",
+  "sourceCommit": "43a9b76a93615b7f872f48dae4e9b3a73ca050b0",
+  "scope": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61",
+  "evidence": {
+    "summary": {
+      "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/summary.json",
+      "bytes": 1848,
+      "sha256": "7293b53dd5d6d032b4e11d2fe3e88cc04ca33e56f8b6fc3c4f6ee1d344fa8bdc"
+    },
+    "sourceManifest": {
+      "bytes": 1783,
+      "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/source-manifest.json",
+      "sha256": "a90ea31dc359971b3a06e276a6454290851490e3c99b74b9e76c56b84abe5ef5"
+    },
+    "nodeIdentity": {
+      "bytes": 3081,
+      "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/node-identity-exact.json",
+      "sha256": "63f3aaf6e2ea6e2d9d6bcf2a8aaf9d4c01d96a14042cd908a88a9b6e8a48efaa"
+    },
+    "zeroTestPreflightRejection": {
+      "bytes": 1893,
+      "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/preflight-rejection.json",
+      "sha256": "a40839482e237172eb44046c36fcd956c6e40ca9585a51f5f78111ce26e62d1d"
+    },
+    "originalRejectedNodeIdentity": {
+      "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/node-identity.json",
+      "bytes": 2921,
+      "sha256": "7a3e0d432795b2fd5da20850822b8deb78dd63e38425b756232ec5a61d2429f1"
+    }
+  },
+  "sourceScope": {
+    "fileCount": 5,
+    "totalBytes": 71207,
+    "files": [
+      {
+        "repositoryPath": "web/admin/build/frontend-contributions.ts",
+        "bytes": 12599,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/web/admin/build/frontend-contributions.ts",
+        "sha256": "2db72e8db39465832db84a3c91f7dbe50f928c802d29e51c6a32a181f41191a8"
+      },
+      {
+        "repositoryPath": "web/admin/build/frontend-contributions.test.ts",
+        "bytes": 16146,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/web/admin/build/frontend-contributions.test.ts",
+        "sha256": "adc0ad22be56525dcb25b6860cca023e12a23afd19b501f7afaa4be2325f4965"
+      },
+      {
+        "repositoryPath": "scripts/build-release.mjs",
+        "bytes": 27734,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/scripts/build-release.mjs",
+        "sha256": "be717410827831239b4c29177059e4afac92e00a6b928e8eb88eb3e309a5aa7f"
+      },
+      {
+        "repositoryPath": "scripts/build-release-contributions.test.mjs",
+        "bytes": 13876,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/scripts/build-release-contributions.test.mjs",
+        "sha256": "19f624c9ad731dac6762c39c19e04e175f14de72400645dae934672032eed794"
+      },
+      {
+        "repositoryPath": "web/admin/package.json",
+        "bytes": 852,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/web/admin/package.json",
+        "sha256": "0ed54d13744257efb8ecdba0004b9daa510e5005fc1e90657e5734456e034a7b"
+      }
+    ],
+    "testsAndProductionSourcesChangedForExecution": false
+  },
+  "runtime": {
+    "nodeVersion": "v24.20.0",
+    "executable": {
+      "path": "/root/.cache/agentic-review-toolchain/node-v24.20.0-linux-x64/bin/node",
+      "bytes": 126458664,
+      "sha256": "89af8424dd53e560b1933f87ba650d8bf57c83ca5a04600eefb31f416aabbae7"
+    },
+    "identityEvidence": {
+      "bytes": 3081,
+      "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/node-identity-exact.json",
+      "sha256": "63f3aaf6e2ea6e2d9d6bcf2a8aaf9d4c01d96a14042cd908a88a9b6e8a48efaa"
+    },
+    "loadedSharedLibraryFiles": 7,
+    "nonFileSharedObjects": [
+      "linux-vdso.so.1"
+    ],
+    "nanosecondIdentityEncoding": "Exact decimal strings in node-identity-exact.json.",
+    "sourceAndRuntimeCheckedBeforeAndAfterEachSuite": true
+  },
+  "executionBoundary": {
+    "sequential": true,
+    "unitType": "exec",
+    "testIsolation": "none",
+    "memoryMaxBytes": 134217728,
+    "memorySwapMaxBytes": 0,
+    "cpuQuotaPercent": 25,
+    "runtimeMaxSecondsPerSuite": 120,
+    "privateNetwork": true,
+    "protectSystem": "strict",
+    "protectHome": "read-only",
+    "readWriteScope": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61",
+    "sourceAndSelectedRuntimeReadOnly": true,
+    "unitLimitsCheckedAgainstSavedSystemdProperties": true,
+    "testRunnerMaximumOldSpaceMiB": 32,
+    "consumerChildHeapPolicy": "Child Node helpers use the original test argv/environment and remain within the unit aggregate cgroup limit."
+  },
+  "groups": [
+    {
+      "name": "producer",
+      "testSource": {
+        "bytes": 16146,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/web/admin/build/frontend-contributions.test.ts",
+        "sha256": "adc0ad22be56525dcb25b6860cca023e12a23afd19b501f7afaa4be2325f4965"
+      },
+      "topLevelTests": 7,
+      "subtests": 8,
+      "tapCounts": {
+        "cancelled": 0,
+        "fail": 0,
+        "pass": 15,
+        "skipped": 0,
+        "suites": 0,
+        "tests": 15,
+        "todo": 0
+      },
+      "attempts": 1,
+      "exitCode": 0,
+      "command": [
+        "/root/.cache/agentic-review-toolchain/node-v24.20.0-linux-x64/bin/node",
+        "--max-old-space-size=32",
+        "--test",
+        "--test-isolation=none",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        "--experimental-strip-types",
+        "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/web/admin/build/frontend-contributions.test.ts"
+      ],
+      "evidence": {
+        "result": {
+          "bytes": 2650,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.result.json",
+          "sha256": "dd6abbb53c6343a7fb8e06d34c17c01d4677b266013d76eace82c0b185456715"
+        },
+        "tap": {
+          "bytes": 2912,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.tap",
+          "sha256": "6b485e849fb32e3950dd7e2c4a0194486c4bd4184e3081794fa6aa8127250384"
+        },
+        "stderr": {
+          "bytes": 0,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "dispatch": {
+          "bytes": 4292,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.dispatch.json",
+          "sha256": "57c35511560fc159ab4a481707192b365b95c707191897ff772bbd378129ac2e"
+        },
+        "unitBeforeStop": {
+          "bytes": 1715,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.unit-before-stop.json",
+          "sha256": "b2b125048d1d161839cb9bc8f5c962b5f90af2cb2130babd0e03303231fa6c9e"
+        },
+        "processObservations": {
+          "bytes": 880,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.process-observations.json",
+          "sha256": "9b786a1693be74a12d95eecad4a8a9e03d4abf332e214694506f7b067ebe896d"
+        },
+        "closure": {
+          "bytes": 1813,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/producer.closure.json",
+          "sha256": "f8f5526cea403bf4523aac3c56a06706665661b83c5b1b262e73715baba0a227"
+        }
+      },
+      "observedResources": {
+        "memoryPeakBytes": 38203392,
+        "cpuUsageNanoseconds": "190061000",
+        "restarts": 0
+      },
+      "closed": {
+        "unit": "goby-contribution-producer-9d8e9b6baa61.service",
+        "unitUnloaded": true,
+        "cgroupPath": "/sys/fs/cgroup/system.slice/goby-contribution-producer-9d8e9b6baa61.service",
+        "cgroupPathAbsent": true,
+        "recordedProcessCount": 1,
+        "recordedPIDsAbsent": true,
+        "temporaryDirectoryEmpty": true
+      },
+      "sourceUnchanged": true,
+      "runtimeIdentityUnchanged": true,
+      "observedFakeGoProcesses": 0,
+      "observedExecutablesAllPinnedNode": true
+    },
+    {
+      "name": "consumer",
+      "testSource": {
+        "bytes": 13876,
+        "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/scripts/build-release-contributions.test.mjs",
+        "sha256": "19f624c9ad731dac6762c39c19e04e175f14de72400645dae934672032eed794"
+      },
+      "topLevelTests": 5,
+      "subtests": 9,
+      "tapCounts": {
+        "cancelled": 0,
+        "fail": 0,
+        "pass": 14,
+        "skipped": 0,
+        "suites": 0,
+        "tests": 14,
+        "todo": 0
+      },
+      "attempts": 1,
+      "exitCode": 0,
+      "command": [
+        "/root/.cache/agentic-review-toolchain/node-v24.20.0-linux-x64/bin/node",
+        "--max-old-space-size=32",
+        "--test",
+        "--test-isolation=none",
+        "--test-concurrency=1",
+        "--test-reporter=tap",
+        "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/source/scripts/build-release-contributions.test.mjs"
+      ],
+      "evidence": {
+        "result": {
+          "bytes": 2652,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.result.json",
+          "sha256": "4e3174efd228fa56b3fa9f707999c31cffcf8b8c16ba25e6c4b6a9cd39bca559"
+        },
+        "tap": {
+          "bytes": 2592,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.tap",
+          "sha256": "e17a7e6e5c5262ac32f617f8a01ac9f38639b60babe4c17fcf784a54c001c000"
+        },
+        "stderr": {
+          "bytes": 0,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.stderr",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "dispatch": {
+          "bytes": 4218,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.dispatch.json",
+          "sha256": "5b8a194edad9dea2e1585fdb113a177cbe6553ed58eab59c4882f864f5c3fb2b"
+        },
+        "unitBeforeStop": {
+          "bytes": 1715,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.unit-before-stop.json",
+          "sha256": "140da2314eca53a92b3b477a6fdabf6fbe16f95d42b5450d30537dcacd5802c8"
+        },
+        "processObservations": {
+          "bytes": 18057,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.process-observations.json",
+          "sha256": "9bb537a1b810dcd2c92ee780a1ed530a385d5fd8dd4af3480e88e2e4650f271c"
+        },
+        "closure": {
+          "bytes": 2073,
+          "path": "/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/consumer.closure.json",
+          "sha256": "ea9f1886f255984f7bca8bfcaf5cfca589d8b7fd98a47dafb040f48bde2a092a"
+        }
+      },
+      "observedResources": {
+        "memoryPeakBytes": 42721280,
+        "cpuUsageNanoseconds": "704716000",
+        "restarts": 0
+      },
+      "closed": {
+        "unit": "goby-contribution-consumer-9d8e9b6baa61.service",
+        "unitUnloaded": true,
+        "cgroupPath": "/sys/fs/cgroup/system.slice/goby-contribution-consumer-9d8e9b6baa61.service",
+        "cgroupPathAbsent": true,
+        "recordedProcessCount": 21,
+        "recordedPIDsAbsent": true,
+        "temporaryDirectoryEmpty": true
+      },
+      "sourceUnchanged": true,
+      "runtimeIdentityUnchanged": true,
+      "observedFakeGoProcesses": 7,
+      "observedExecutablesAllPinnedNode": true
+    }
+  ],
+  "preflightCorrection": {
+    "outcome": "rejected_before_any_test_or_unit_dispatch",
+    "suiteRunsAtRejection": {
+      "consumer": 0,
+      "producer": 0
+    },
+    "unitsCreatedAtRejection": 0,
+    "reason": "Nanosecond integers lost precision in JSON-number transport through the orchestration runtime.",
+    "affectedNanosecondFields": 8,
+    "contentHashesAndDeviceInodesUnchanged": true,
+    "correction": "Preserve the rejected JSON-number identity and record exact nanoseconds as decimal strings in a new pinned identity file.",
+    "originalRecordsPreserved": true,
+    "testRetries": 0
+  },
+  "method": {
+    "execution": "Each original test file was executed once on test-env in its own bounded transient systemd unit; the consumer invokes the copied CLI and a Node-interpreted synthetic Go helper.",
+    "documentation": "This summary was assembled by reading and hash-checking the saved source manifest, runtime identity, raw TAP, result, dispatch, and closure records. No tests were rerun to prepare these documents.",
+    "processObservation": "The consumer observer captured seven fake-Go helper processes whose executable path and device/inode matched the pinned Node. This is bounded process sampling, not a complete syscall trace."
+  },
+  "limits": [
+    "Producer tests invoke fake plugin hooks and resolve empty fixture package entries; they do not execute Vite, Rolldown, npm, or an actual application frontend build.",
+    "Consumer tests use synthetic distribution files and a Node-based fake Go program; they do not compile or execute Goby and do not create a systemd package or container image.",
+    "No browser, Docker, Compose, database, or application-runtime verification was performed.",
+    "No actual frontend contribution graph, complete source inventory, legal completeness, notice payload, or distribution approval is established.",
+    "These two successful test executions are tooling contract evidence only; successful real build receipts and exact product-asset binding remain separate requirements."
+  ]
+}
