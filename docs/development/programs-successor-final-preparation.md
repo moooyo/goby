@@ -3,9 +3,10 @@
 A fresh full verification was started on September 16 after the
 [original theme](library-theme-diagnostic-result.md) and
 [complete Library package](library-package-diagnostic-result.md) each passed
-once with resource closure. This checkpoint records an active attempt, not a
-terminal result. Read its actual execution and worker state before continuing;
-do not replay its input.
+once with resource closure. It has since [stopped at the worker memory limit](programs-successor-memory-limit-result.md),
+with 16 complete passing packages, neither build executed and all owned resources
+closed. The preparation and active-state observations below are historical.
+Do not replay its input.
 
 The new scope is `/opt/goby-test/livetv-programs-successor-final-20260916`.
 At 05:14:42 UTC, its unit

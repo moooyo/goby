@@ -83,6 +83,7 @@ The subsequent [complete Library package](library-package-diagnostic-result.md)
 also passed once with the same diagnostic source and original test behavior.
 This adds package ordering and accumulated state to the observation. The
 [fresh complete repository verification and both builds](programs-successor-final-preparation.md)
-are now active. Do not guess a production correction, repeat either diagnostic
+subsequently stopped at the worker memory cap; the [resource correction](programs-successor-memory-limit-result.md)
+is being prepared. Do not guess a production correction or repeat either diagnostic
 scope, or use these results to clear the original full failure. Current candidate
 recovery and successor client acceptance remain open.

@@ -1,0 +1,355 @@
+{
+  "archive": {
+    "bytes": 108591467,
+    "directories": 44,
+    "files": 2499,
+    "path": "/opt/goby-test/livetv-programs-successor-final-20260916/retained/full-private.tar.gz",
+    "readbackMatched": true,
+    "sha256": "3e9af3aaf35f5b78a8c4ae80150e28ad470860143bc46dd1eb76ef42e7884186"
+  },
+  "boundaries": {
+    "existingDatabaseHealthProved": false,
+    "existingServiceActions": 0,
+    "fullSuitePassed": false,
+    "nextResourceChange": "Restore the 3 GiB worker limit and move compiler cache and temporary files to a separately bounded root-backed ext4 volume, with a smaller RAM scratch allocation and unchanged test budgets.",
+    "priorResultsCombined": false,
+    "productRootCauseEstablished": false
+  },
+  "builds": {
+    "embeddedSystemd": false,
+    "ordinary": false
+  },
+  "closure": {
+    "allOwnedCommandsClosed": true,
+    "cleanupErrors": [],
+    "lockReleased": true,
+    "protectedBeforeAfterEqual": true,
+    "recursiveCgroupEmpty": true,
+    "resourcesClosed": true,
+    "worker": {
+      "only_worker_process_remains": true,
+      "owned_postgres_stopped": true,
+      "private_bind_removed": true,
+      "source_unchanged": true
+    }
+  },
+  "completedPackageCount": 16,
+  "completedPackages": [
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 21
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/activity",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 23
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 20
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/backupformat",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 14
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 85
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/backupstore",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 32
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/config",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 27
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/database",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 55
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/diagnostics",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 41
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/events",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 23
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/identity",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 134
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/library",
+      "result": "pass",
+      "skipped": 1,
+      "top_level_passes": 606
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/lifecycle",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 17
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/media",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 117
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 20
+    },
+    {
+      "exit_code": 0,
+      "failed": 0,
+      "package": "github.com/moooyo/goby/internal/playback",
+      "result": "pass",
+      "skipped": 0,
+      "top_level_passes": 170
+    }
+  ],
+  "completedTopLevelPasses": 1405,
+  "declaredSkips": [
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "test": "TestRootBindingFullScanMountNamespaceHelper"
+    }
+  ],
+  "execution": {
+    "bytes": 58657,
+    "path": "/opt/goby-test/livetv-programs-successor-final-20260916/execution.json",
+    "sha256": "4c1a6ce91afd94fa00a317dc15a2efd0855fd58eab842d98c53681dab2417e04"
+  },
+  "interruptedRecovery": {
+    "allTestPassEvents": 24,
+    "commandSeconds": 147.062,
+    "countedAsCompletePackage": false,
+    "exitCode": -15,
+    "interruptedOrTimedOutFlag": true,
+    "packageTerminalEvents": [],
+    "stdoutSha256": "b372706f1f67c83d52ab0855e21efced4107c65c26d0e24276ce51e5cd27b999",
+    "topLevelPass": 12
+  },
+  "kernelEvidence": [
+    {
+      "MESSAGE": "memory: usage 2097140kB, limit 2097152kB, failcnt 16331",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033058044",
+      "__REALTIME_TIMESTAMP": "1789537358683288"
+    },
+    {
+      "MESSAGE": "Memory cgroup stats for /system.slice/goby-livetv-programs-successor-final-20260916-e3fa16b52963.service:",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033080149",
+      "__REALTIME_TIMESTAMP": "1789537358705392"
+    },
+    {
+      "MESSAGE": "anon 1187790848",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033080166",
+      "__REALTIME_TIMESTAMP": "1789537358705409"
+    },
+    {
+      "MESSAGE": "file 928931840",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033080249",
+      "__REALTIME_TIMESTAMP": "1789537358705493"
+    },
+    {
+      "MESSAGE": "shmem 928874496",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033084081",
+      "__REALTIME_TIMESTAMP": "1789537358709324"
+    },
+    {
+      "MESSAGE": "inactive_anon 1515638784",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033084433",
+      "__REALTIME_TIMESTAMP": "1789537358709677"
+    },
+    {
+      "MESSAGE": "active_anon 600846336",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033084464",
+      "__REALTIME_TIMESTAMP": "1789537358709708"
+    },
+    {
+      "MESSAGE": "inactive_file 57344",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033084478",
+      "__REALTIME_TIMESTAMP": "1789537358709721"
+    },
+    {
+      "MESSAGE": "active_file 0",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033084494",
+      "__REALTIME_TIMESTAMP": "1789537358709738"
+    },
+    {
+      "MESSAGE": "workingset_refault_anon 0",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033088328",
+      "__REALTIME_TIMESTAMP": "1789537358713572"
+    },
+    {
+      "MESSAGE": "workingset_refault_file 11193",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033088345",
+      "__REALTIME_TIMESTAMP": "1789537358713589"
+    },
+    {
+      "MESSAGE": "workingset_activate_anon 0",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033088389",
+      "__REALTIME_TIMESTAMP": "1789537358713633"
+    },
+    {
+      "MESSAGE": "workingset_activate_file 9364",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033088484",
+      "__REALTIME_TIMESTAMP": "1789537358713728"
+    },
+    {
+      "MESSAGE": "workingset_restore_anon 0",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033088514",
+      "__REALTIME_TIMESTAMP": "1789537358713758"
+    },
+    {
+      "MESSAGE": "workingset_restore_file 2171",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033088560",
+      "__REALTIME_TIMESTAMP": "1789537358713803"
+    },
+    {
+      "MESSAGE": "[  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033101295",
+      "__REALTIME_TIMESTAMP": "1789537358726539"
+    },
+    {
+      "MESSAGE": "oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=goby-livetv-programs-successor-final-20260916-e3fa16b52963.service,mems_allowed=0,oom_memcg=/system.slice/goby-livetv-programs-successor-final-20260916-e3fa16b52963.service,task_memcg=/system.slice/goby-livetv-programs-successor-final-20260916-e3fa16b52963.service,task=recovery.test,pid=1361777,uid=0",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033113494",
+      "__REALTIME_TIMESTAMP": "1789537358738738"
+    },
+    {
+      "MESSAGE": "Memory cgroup out of memory: Killed process 1361777 (recovery.test) total-vm:3215432kB, anon-rss:1061836kB, file-rss:1620kB, shmem-rss:17592kB, UID:0 pgtables:2696kB oom_score_adj:0",
+      "_BOOT_ID": "4de839997586471683d10d81c9343126",
+      "__MONOTONIC_TIMESTAMP": "257033117336",
+      "__REALTIME_TIMESTAMP": "1789537358742579"
+    }
+  ],
+  "kind": "programs-successor-final-memory-limit-result",
+  "memoryAtOom": {
+    "anonBytes": 1187790848,
+    "fileBytes": 928931840,
+    "scope": "entire worker memory cgroup, not victim RSS",
+    "shmemBytes": 928874496
+  },
+  "observedAt": "2026-09-16T05:56:48.065595+00:00",
+  "ownedUnitProperties": {
+    "ActiveState": "failed",
+    "ControlGroup": "",
+    "ExecMainExitTimestamp": "Wed 2026-09-16 13:42:38 CST",
+    "MainPID": "0",
+    "MemoryMax": "2147483648",
+    "MemoryPeak": "2147557376",
+    "MemorySwapMax": "0",
+    "OOMPolicy": "stop",
+    "Result": "oom-kill"
+  },
+  "recordedAssertionFailures": [],
+  "source": {
+    "archive": {
+      "bytes": 2716437,
+      "path": "/opt/goby-test/livetv-programs-successor-final-20260916/private/source.tar.gz",
+      "sha256": "3232a968559fb237f706175b7a652fb13478f8190a520fbaaa287048e254886a"
+    },
+    "everyMemberMatched": true,
+    "files": 924,
+    "gitHead": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+    "historicalScoresReused": false,
+    "manifest": {
+      "bytes": 158512,
+      "path": "/opt/goby-test/livetv-programs-successor-final-20260916/private/source-manifest.json",
+      "sha256": "967cf0a98a571bd6effe31419e9459bcf0d130566da7225f1bf434725f0079bd"
+    },
+    "preparation": {
+      "bytes": 995,
+      "path": "/opt/goby-test/livetv-programs-successor-final-20260916/private/source-preparation.json",
+      "sha256": "9d4ecc5c7924feea045bf0387b89a1e495eb5523f68b4ea11a288a4e7b569e71"
+    },
+    "uncompressedBytes": 13254936
+  },
+  "status": "failed_worker_cgroup_memory_limit",
+  "version": 1,
+  "victim": {
+    "anonRssBytes": 1087320064,
+    "fileRssBytes": 1658880,
+    "pid": 1361777,
+    "process": "recovery.test",
+    "shmemRssBytes": 18014208
+  },
+  "workerReport": {
+    "archiveMember": "ram/livetv-programs-successor-final-20260916-20260916T051331Z-e3fa16b52963/worker-report.json",
+    "bytes": 260505,
+    "sha256": "88ca72df5c01d2263204246ceb76ac46750e75426a1943c2cbfdfe219fcd5d8c"
+  }
+}

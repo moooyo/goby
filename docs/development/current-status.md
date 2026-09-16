@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **fresh full regression and successor artifact construction**.
+Current priority on 2026-09-16: **correct full-worker storage allocation, then complete regression and builds**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -11,8 +11,13 @@ owned-resource closure. Its recovery scan finished in about 0.832 seconds with
 no observed ownership loss. This is non-reproduction, not resolution of the
 retained full failure. The subsequent [complete Library package](library-package-diagnostic-result.md)
 passed 606 top-level tests and 1584 subtests, with only the existing M2 skip.
-The [fresh complete verification and both builds](programs-successor-final-preparation.md)
-are now active. The other prepared increments remain short of full acceptance. Complete M2-M6
+The [fresh full attempt](programs-successor-memory-limit-result.md) subsequently
+reached its worker memory limit during recovery. Sixteen complete packages and
+1405 top-level passes are retained; the interrupted package is excluded and
+neither build ran. Owned resources closed and protected state stayed unchanged.
+A bounded disk compiler-cache/temporary volume and the original 3 GiB worker
+limit are being prepared, with unchanged test scope and timeouts.
+The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
 
@@ -93,7 +98,8 @@ remain the next bounded execution; no new test, root-cause claim or fix follows.
 
 The user has supplied the previously requested `test-env` availability. The
 original theme subcase and complete Library package have each passed once.
-The fresh 25-package run and ordinary/embedded builds are active. No `ownedTx.Query`
+The subsequent full attempt stopped at its worker memory cap; a bounded disk
+compiler profile is being prepared before complete verification. No `ownedTx.Query`
 fix is scheduled, and non-reproduction cannot clear the original full failure.
 [Client components](programs-client-component-verification.json) passed within
 their frozen scopes. Actual successor authority/artifact and admitted live inputs
