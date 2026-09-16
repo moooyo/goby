@@ -1,0 +1,149 @@
+{
+  "kind": "programs-complete-source-full-result",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "passed_with_explicit_profile_gap",
+  "scope": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02",
+  "sourceCommit": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+  "singleWorkerRun": true,
+  "runnerAttempts": 1,
+  "priorPartialScoresCombined": false,
+  "source": {
+    "trackedFiles": 5348,
+    "retainedAdministratorAssets": 57,
+    "totalFiles": 5405,
+    "uncompressedBytes": 120705443,
+    "allMembersMatched": true,
+    "sourcePreparationRecord": "programs-complete-source-preparation.json",
+    "retryRecord": "programs-complete-source-retry.json"
+  },
+  "verification": {
+    "packages": 25,
+    "topLevelPasses": 2309,
+    "subtestPasses": 7577,
+    "failed": 0,
+    "skipped": 1,
+    "rawJsonEvents": 39739,
+    "raceInstrumentation": true,
+    "goCount": 1,
+    "runFilterUsed": false,
+    "raceOrTimeoutMarkers": 0,
+    "declaredSkip": "github.com/moooyo/goby/internal/library.TestRootBindingFullScanMountNamespaceHelper",
+    "declaredSkipReason": "Requires its separate reviewed opt-in mount scope.",
+    "inertHelperReturnsCountAsMountCoverage": false,
+    "previouslyMissingFixtureFilesPresent": 9,
+    "previouslyFailingServerFixtureTestsPassed": true
+  },
+  "builds": {
+    "ordinary": {
+      "goos": "linux",
+      "goarch": "amd64",
+      "cgoEnabled": "0",
+      "embeddedAdministrator": false,
+      "exitCode": 0,
+      "elapsedSeconds": 27.203,
+      "archiveMember": "ram/livetv-programs-complete-source-final-20260916-r02-20260916T083520Z-29404e024426/bin/goby-linux-amd64",
+      "bytes": 29586248,
+      "sha256": "c4f46ee9a9127df502eac3145f64202aed503c2289cf50ef79fab16e6ba84c5d"
+    },
+    "embeddedSystemd": {
+      "goos": "linux",
+      "goarch": "amd64",
+      "exitCode": 0,
+      "elapsedSeconds": 1.818,
+      "status": "built_and_read_back",
+      "packageRegularMembers": 5,
+      "frontendRebuilt": false,
+      "administratorAssets": 57
+    }
+  },
+  "evidence": {
+    "execution": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/execution.json",
+      "bytes": 93790,
+      "sha256": "2fb04cf03b3ece5763e53193b884e255e8e2d93e43a950315ea41bca0fb56449"
+    },
+    "closure": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/closure.json",
+      "bytes": 7152,
+      "sha256": "7bf2db69fbc55755ae08120971af8345cee98775d7435c8834ef08b5fe924390"
+    },
+    "privateArchive": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/retained/full-private.tar.gz",
+      "bytes": 184060921,
+      "sha256": "73ebf9e33097e06efc00e40ff3fca636b23401c02bef27ac41d955b54946a2d7"
+    },
+    "testAndBuildReview": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/private/test-and-build-independent-review.json",
+      "bytes": 12089,
+      "sha256": "22d001daec3e7379304d6904be8cd823ad86059a1f24d0c49256da203f8cb77b"
+    },
+    "closureAndMaterializationReview": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/private/closure-materialization-independent-review-r01.json",
+      "bytes": 13973,
+      "sha256": "b0ec7a848dea4dd6230c59231aa782542a9a64f017da94db1b49f0854a5fab2d"
+    },
+    "sourceBridge": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/private/build-source-bridge.json",
+      "bytes": 1062677,
+      "sha256": "3a263670569054115ef0d6be1247059cfba54357ea3c7dcec8acbddd1200993d"
+    }
+  },
+  "archivedReports": {
+    "worker": {
+      "member": "ram/livetv-programs-complete-source-final-20260916-r02-20260916T083520Z-29404e024426/worker-report.json",
+      "bytes": 423857,
+      "sha256": "6615940f5ac6d30718c9f8879af7a983ee4f0340fec66d9f9c823f0e2039d3f1"
+    },
+    "supervisor": {
+      "member": "ram/livetv-programs-complete-source-final-20260916-r02-20260916T083520Z-29404e024426/report.json",
+      "bytes": 447163,
+      "sha256": "93f5d85ed2cdec836f7a8263babb304e98e702e3fd7855f487968eda80455034"
+    }
+  },
+  "artifacts": {
+    "binary": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/artifacts/linux-amd64-systemd/goby",
+      "bytes": 30701500,
+      "sha256": "ead67c8faaf4cde88f7fe1bf57ffed43705259aba7b29f59c3473747afd732fb"
+    },
+    "buildManifest": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/artifacts/linux-amd64-systemd/manifest.json",
+      "bytes": 173965,
+      "sha256": "54868306dce5a5a04348e2606bd047cf13af9d52c8db2a4ad23c5ffdb9ef6ed5"
+    },
+    "package": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/artifacts/linux-amd64-systemd/goby-linux-amd64-systemd.tar.gz",
+      "bytes": 14078580,
+      "sha256": "c7e5d30bccf105003d9908ff18f18faf898bf83217c5ff2a6c4eda305c504a86"
+    },
+    "packageManifest": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/artifacts/linux-amd64-systemd/package-manifest.json",
+      "bytes": 5998,
+      "sha256": "39566a074e499a714ca4190cea3a776458d7a4300396484627f9c69afdab415c"
+    }
+  },
+  "closure": {
+    "outerCommandsClosed": 55,
+    "workerCommandsClosed": 55,
+    "postgresStopped": true,
+    "workerUnitClosed": true,
+    "ext4Unmounted": true,
+    "fixtureLoopDetached": true,
+    "ramUnmounted": true,
+    "compilerUnmounted": true,
+    "compilerLoopDetached": true,
+    "compilerBackingDeleted": true,
+    "lockReleased": true,
+    "protectedBeforeAfterExact": true,
+    "resourcesClosed": true,
+    "materializedBytesReadBack": 46022720
+  },
+  "limits": [
+    "The original declared mount-profile gap and inert mount-helper boundaries remain open.",
+    "This run uses the complete frozen source and original test/build budgets. Earlier failed or incomplete attempts remain separate.",
+    "The Library/theme failure did not recur; no product root-cause correction is established.",
+    "The unchanged 57 administrator assets were reused. No npm build, original-client journey, artifact deployment, hardware or complete M2-M6 acceptance occurred.",
+    "Application recovery, new runtime/artifact authority, the direct A transition, client journeys and main promotion remain separate pending work."
+  ]
+}

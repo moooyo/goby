@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **observe the active complete-source regression and build run**.
+Current priority: **complete candidate recovery and bind the verified Programs artifact to current runtime authority**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the expanded root disk is already in use. The unanswered-window
@@ -23,9 +23,13 @@ passed, but all 60 capacity samples were below the unchanged 5 GiB memory floor.
 It created no worker or volume and closed all metadata commands and the lock.
 Both previous scopes are consumed. Capacity recovered, and a
 [fresh complete-source run](../development/programs-complete-source-retry.json)
-has passed admission and started its worker with the same 25 packages, two
-builds and original budgets. Observe its actual result and closure. No
-production correction is established. The other prepared
+has now [passed all 25 packages and both builds](../development/programs-complete-source-full-result-20260916.md):
+2309 top-level passes, zero failures and the one original mount-profile skip.
+Independent result, source, artifact and resource-closure reviews passed. Its
+scope is terminal and closed; no further worker observation or replay is needed.
+Complete the September 16 application recovery, then bind this actual successor
+and the new runtime authority before the direct A transition. No product
+root-cause correction is established. The other prepared
 increments retain their separate, incomplete acceptance scopes.
 Keep the complete M2-M6 objective; M7 remains deferred.
 Historically, following the [September 15 incident](../development/programs-final-regression-incident.json),
@@ -66,7 +70,7 @@ previously requested environment availability. Root maintenance precedes the
 next admitted verification; current resource and runtime checks still apply.
 Old inputs and the original guard cannot be replayed or
 overridden. The delivery target
-remains the unbuilt Programs successor. E11 is the historical build/G2 baseline. The
+is the verified Programs successor. E11 is the historical build/G2 baseline. The
 [Programs focused verification](../development/live-tv-programs-focused-verification.json)
 has 14 top-level and 118 subtest passes with independent review. Its
 [earlier ordinary full run](../development/live-tv-programs-full-interruption.json) was
@@ -540,8 +544,10 @@ with missing test fixtures identified and resources closed. The
 [complete-source input](../development/programs-complete-source-preparation.json)
 passed source verification but was rejected before worker creation because of
 memory availability. The [fresh retry](../development/programs-complete-source-retry.json)
-now runs in its own scope after capacity recovered. It reuses the complete source
-artifacts without changing them. Require all 25 packages, both builds and closure.
+has completed all 25 packages, both builds and closure with independent review.
+Its [actual artifacts](../development/programs-complete-source-full-result-20260916.json)
+are available for the planned transition after incident recovery and new runtime
+binding. Preserve all consumed scopes and their original outcomes.
 The [client components](../development/programs-client-component-verification.json)
 passed within their frozen scopes; actual successor authority/artifact and
 admitted live inputs remain pending, and no new live journey has run. Artifact
@@ -605,8 +611,8 @@ maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| `codex/programs-theme-diagnosis`, `3d6b79b` | [Bounded test diagnostics](https://github.com/moooyo/goby/blob/3d6b79b36b6a5050e174f7a152f214b9356608c8/docs/development/library-theme-diagnostic-preparation.md): original theme and complete Library package each passed once; the disk-backed full run also passed Library and recovery | Non-reproduction only. The full source archive is now complete, but its new execution still needs the original resource admission and all 25 packages/two builds. No product fix is established |
-| `codex/m5-user-deletion`, `4796aa1` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/4796aa1/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests. A real FFmpeg/pidfd/WebSocket deletion regression is prepared; static review and remote gofmt passed. The previously verified frontend capture tooling is now integrated for the next required M5 build | Generate the real schema29 catalog, freeze the resulting source, then execute the prepared Go/DB/HTTP/browser and final verification. Preserve the actual frontend graph and successful build result together. The new runtime test remains unexecuted; no M5 acceptance or merge into frozen Programs is claimed |
+| `codex/programs-theme-diagnosis`, `3d6b79b` | [Complete-source regression/build](../development/programs-complete-source-full-result-20260916.md): all 25 packages, 2309 top-level tests and both builds passed with independent review and closure; the original mount-profile gap is retained | Bind the verified artifact after candidate recovery and current runtime observation. No product root-cause correction or client acceptance is established |
+| `codex/m5-user-deletion`, `83cf0a8` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/83cf0a8/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests. The real FFmpeg/pidfd/WebSocket regression and frontend capture tooling are prepared. The [owned catalog adapter](https://github.com/moooyo/goby/blob/83cf0a8/scripts/test-env/m5-user-deletion-catalog-preparation.md) passed static correction review, and its complete 5363-file Git source archive is prepared | Bind and execute real schema29 catalog generation, freeze the resulting source, then run the prepared Go/DB/HTTP/browser and final verification. Preserve the actual frontend graph and successful build result together. The catalog adapter remains disabled pending admission; no M5 acceptance or merge into frozen Programs is claimed |
 | `codex/native-capacity-measurement`, `4f092e3` | [47-method component verification](https://github.com/moooyo/goby/blob/4f092e3/docs/development/native-capacity-component-verification-20260916.md): one-shot observations, inclusive measurement costs, enforced child output limits, final failure status, and a bounded result reader passed synthetic/subprocess checks. The [raw-prefix bridge and historical transport/pool review](../development/native-capacity-transport-source-bridge-20260916.md) are also complete | Actual scan-job activity still lacks a verified monotonic overlap binding. Complete that collection change and its affected checks, then bind current runtime/artifact prerequisites before native admission. The source bridge covers only its exact one-byte revision. No native capacity or M2 acceptance is claimed |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md): sample/process/content/stage layers now connect to native APIs, a Settings panel, one owned execution, actual conversion capacity, current native authority, cancellation and bounded per-instance history. The prior 12/18/27 cases plus 40 new Go functions (39 on Linux) and three synthetic browser cases remain unexecuted; static review and remote formatting complete | In the coordinated window, verify Go/type/build and native HTTP/browser behavior, actual resource/deployment prerequisites, codec-log compatibility and content calibration, then execute software/available hardware profiles. Defaults remain disabled and no service configuration was activated. No runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md): Vite records module/source/package and actual asset hashes outside `dist`; release verifies the full asset set and preserves a private copy. The [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md) passed once per group. The unchanged implementation/test sources are integrated into M5 at `4796aa1` | Use the next required M5 frontend build for type checks and actual callback/asset/consumer verification. Include `web/admin/build/` in its complete source snapshot and retain the successful command receipt with the sidecar. No unchanged E11 rebuild, Programs artifact change, actual build success or legal completeness is claimed |
@@ -637,7 +643,7 @@ and actual execution results distinct.
 | 1. Client components passed; actual authority/live inputs pending | Reuse the [passed frozen client components](../development/programs-client-component-verification.json) and runtime/transition/admission scopes; bind the [journey/recovery contracts](../development/e11-candidate-transition-decision.md) and admitted live inputs to actual successor authority/artifacts | No new framework, version or live-journey acceptance follows from component checks. Bind the new runtime and actual artifact together after final verification. Preparation does not block independent Go diagnosis/build work; both must close before A changes |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
-| 2. Frozen-source verification/build — complete-source worker active | The [fresh retry](../development/programs-complete-source-retry.json) started after current capacity admission passed. It uses the verified 5405-file complete source and unchanged tests/builds/budgets | Observe this same worker and scope until authoritative completion, then review all 25 packages, both builds and closure. Preserve the missing-fixture failure and zero-worker capacity rejection; no score merging, consumed-input replay, timeout inflation or reduced memory admission |
+| 2. Frozen-source verification/build — complete with the declared profile gap | The [full result](../development/programs-complete-source-full-result-20260916.md) covers 25 packages, 2309 top-level passes, zero failures, one declared skip and both builds. Independent source/result/artifact/closure review passed | Reuse the actual materialized successor after candidate recovery and current runtime binding. Preserve the missing-fixture failure, zero-worker rejection and mount-profile gap; do not replay consumed inputs or combine partial scores |
 | 3. One direct A transition — held | After incident recovery, bind the verified successor, new runtime authority, current full state, declared task-definition delta and the recovery/closure plan | No intermediate original-E11 deployment, actor reset, new candidate, old live binding or assumed rollback. Preserve B and all historical evidence |
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |

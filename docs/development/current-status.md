@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **observe the active complete-source regression and build run**.
+Current priority on 2026-09-16: **complete candidate recovery and bind the verified Programs artifact to current runtime authority**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -30,9 +30,12 @@ archive review and actual source preflight passed, but the fixed 5 GiB memory
 floor was unavailable throughout its 120-second admission window. No worker or
 volume was created, and protection/closure passed. Both execution scopes are
 consumed. Capacity subsequently recovered and a
-[fresh complete-source run](programs-complete-source-retry.json) passed admission
-and started its worker. Observe that same scope through all 25 packages, both
-builds and closure; its final result remains pending.
+[fresh complete-source run](programs-complete-source-full-result-20260916.md) passed
+all 25 packages with race instrumentation: 2309 top-level and 7577 subtest passes,
+zero failures, and the one original mount-profile skip. Both ordinary and embedded
+systemd builds succeeded. Independent result/source/build and resource/materialization
+reviews passed; all owned resources closed and protected state matched exactly.
+The actual embedded successor is now retained outside the closed workspace.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -338,9 +341,10 @@ application identities and all unchanged protected resources explicitly.
 
 The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
 maps those obligations to artifact/client/media/deployment slices and concrete
-next actions. The current target remains the unbuilt Programs successor. Its
-selected A transition still requires complete journey/recovery contracts,
-final-source verification/build and binding of the actual successor authority/artifact.
+next actions. The current target is the verified Programs successor. Its
+selected A transition still requires the completed journey/recovery contracts,
+September 16 application recovery and binding of the actual successor artifact
+to new runtime authority. The final-source regression and both builds have passed.
 
 The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
 passed one race test with zero failures/skips on base `892c536` plus one new

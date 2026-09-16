@@ -2,7 +2,8 @@
   "kind": "programs-complete-source-full-retry",
   "version": 1,
   "recordedOn": "2026-09-16",
-  "status": "fresh_full_worker_started_results_pending",
+  "status": "full_passed_with_explicit_profile_gap_and_closed",
+  "resultRecord": "programs-complete-source-full-result-20260916.json",
   "scope": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02",
   "input": {
     "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/private/input.json",
@@ -40,7 +41,8 @@
   },
   "requiredPackageCount": 25,
   "requiredBuilds": ["ordinary-linux-amd64", "embedded-linux-amd64-systemd"],
-  "fullVerificationClaimed": false,
+  "fullVerificationClaimed": true,
+  "fullVerificationScope": "25 ordinary packages with race instrumentation, both required builds, independent result and closure review; the declared mount profile remains outside this acceptance.",
   "previousCapacityRejectionPreserved": true,
-  "continuation": "Observe this same worker and scope through authoritative completion and closure. Do not relaunch after an observation timeout or combine partial results."
+  "continuation": "This scope is terminal and closed. Reuse its verified artifacts after completing candidate recovery and binding new runtime authority; do not relaunch or combine earlier partial scores."
 }
