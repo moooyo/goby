@@ -123,14 +123,15 @@ main, setns, Goby, SQL or HTTP executes. Stub timeouts or harness fallback canno
 count as passing cleanup. These results are separate from the earlier twelve
 reader protocol groups; do not add them to product regression totals.
 
-The root performed the pause readback, but independent full result review of
-the new transport/pool evidence is still pending. The first handoff reader
+The root performed the pause readback. Independent full result review was
+pending at handoff and has since passed in the [September 16 scoped review](native-capacity-transport-source-bridge-20260916.md),
+without replaying the eight transport or six pool groups. The first handoff reader
 failed an overstrict metadata comparison that included access time. Its source
 is retained under `handoff-01`; the corrected reader excludes access time and
 produced the `handoff-02` receipt. Neither reader reran component tests or made
 business/service calls.
 
-### Unverified one-byte transport change
+### One-byte transport change, subsequently bridged
 
 The tested transport at `EC/private/candidate-03/capacity-transport.py` is
 51,898 bytes, SHA256
@@ -142,10 +143,11 @@ literal during the eight fixture imports. Its stderr is 1,944 bytes, SHA256
 The saved repository source only adds `r` to that regex literal. It is 51,899
 bytes, SHA256
 `a87681751f1eea4881fa549be4eb7fa5e6eb06aee030051271eab4f163190928`.
-This correction has not been compiled or run. Keep candidate-03 unchanged;
-next session can make a new source-only revision and verify AST/string-value
-equivalence and warning-free compilation remotely. Do not transfer the earlier
-eight passing groups to the changed source without that bridge.
+The [September 16 source bridge](native-capacity-transport-source-bridge-20260916.json)
+has now verified AST/string-value equivalence and warning-free compilation for
+this exact correction on test-env, with independent review. Candidate-03 remains
+unchanged. This bridge does not cover the subsequent scan-overlap or clock-domain
+changes; their affected checks remain separate.
 
 ## Integrated controller and remaining work
 
@@ -227,9 +229,9 @@ media throughput, playback, browser, main promotion or host durability.
    Inspect Git state and preserve unrelated work. Use the tracked snapshot as
    the next working source; old `.git` copies are historical duplicates.
 2. Use `ssh test-env`; no local tests, syntax checks, builds or runtime probes.
-   Read retained evidence and independently review the eight transport and six
-   pool results without replaying them. Bridge the one-byte warning correction
-   in a fresh source-only verification revision.
+   Reuse the completed independent review of the eight transport and six pool
+   results, and the exact one-byte source bridge. Verify subsequent changed
+   behavior in its own scope rather than transferring these results to it.
 3. Complete the bounded controller checks and the remaining concrete changed-risk
    checks/reviews. Preserve failures; avoid another generic operator framework.
    Reuse verified unchanged code and product tests. Finish the post-close

@@ -1,0 +1,102 @@
+{
+  "kind": "native-capacity-transport-source-bridge",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "source_bridge_and_independent_review_passed",
+  "scope": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058",
+  "sourceCommit": "4f092e3",
+  "sourceBefore": {
+    "bytes": 51898,
+    "sha256": "21c90bff5bdbbcd6f8562e6562c7fbbaf8f67b1f3433db80abd5995d5a5ddf4e"
+  },
+  "sourceAfter": {
+    "bytes": 51899,
+    "sha256": "a87681751f1eea4881fa549be4eb7fa5e6eb06aee030051271eab4f163190928"
+  },
+  "evidence": {
+    "result": {
+      "path": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058/private/result.json",
+      "bytes": 1819,
+      "sha256": "fae89afd592c38838955a7a02c50443786ffc53c4f6a3c53f86b0280e656135f"
+    },
+    "closure": {
+      "path": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058/private/closure.json",
+      "bytes": 1603,
+      "sha256": "6d9b60d57ce3227e3034f4370cc85b6028ed8e9ca11122d287fdfc984e22b56f"
+    },
+    "sourceManifest": {
+      "path": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058/private/source-manifest.json",
+      "bytes": 1256,
+      "sha256": "4ffc708f00c3ca2c52fcffcd499ad8e76689b2a2e3ec7354507d927eacabfb8e"
+    },
+    "checkSource": {
+      "path": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058/code/check_transport_source_bridge.py",
+      "bytes": 1739,
+      "sha256": "fe65e35ebaf158469d545a5bd9aae512ff27cb8f5570f753f19d2f8a6f4476b0"
+    },
+    "stdout": {
+      "path": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058/private/check_transport_source_bridge.py.stdout",
+      "bytes": 271,
+      "sha256": "a83d34161104a7871f5eafd956785af75f20ebbc597e1fc69791e1891fd6d378"
+    },
+    "stderr": {
+      "path": "/opt/goby-test/native-capacity-transport-bridge-20260916-de0c2c2ed058/private/check_transport_source_bridge.py.stderr",
+      "bytes": 214,
+      "sha256": "e2f5ef2d1fbec1020f092c5cf261efcbb6ac2f13381aef16cebc50220860c705"
+    }
+  },
+  "checks": {
+    "executions": 1,
+    "methodsPassed": 1,
+    "failures": 0,
+    "skips": 0,
+    "singleAddedByte": "r",
+    "zeroBasedByteOffset": 21343,
+    "astEqualExcludingLocations": true,
+    "stringConstantsCompared": 631,
+    "oldSyntaxWarnings": 1,
+    "newWarnings": 0,
+    "newCompilationPassed": true,
+    "targetModuleImportedOrExecuted": false,
+    "historicalTransportOrPoolGroupsRerun": false
+  },
+  "unitConfigurationSubmitted": {
+    "memoryMaxBytes": 134217728,
+    "memorySwapMaxBytes": 0,
+    "cpuQuotaPercent": 25,
+    "tasksMax": 32,
+    "runtimeMaxSeconds": 60,
+    "limitFileSizeBytes": 1048576,
+    "privateNetwork": true,
+    "privateMounts": true,
+    "privateTmp": true,
+    "protectSystem": "strict",
+    "livePropertyReadbackRetained": false,
+    "observedMemoryPeakBytes": null
+  },
+  "closure": {
+    "launcherWaited": true,
+    "launcherExitCode": 0,
+    "observedUnitLoadState": "not-found",
+    "observedMainPid": 0,
+    "testPidAbsent": true,
+    "cgroupAbsentOrEmpty": true,
+    "scratchEmpty": true,
+    "resourcesClosed": true
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/native-scan-http-capacity-checks-20260915/private/transport-pool-independent-review-20260916-r01.json",
+    "bytes": 10303,
+    "sha256": "da73a606c51e96064d493705dd215a5ff62cbb116e84be564e78058170bcd4a1",
+    "status": "passed_scoped_saved_evidence_review",
+    "historicalTransportGroupsReviewed": 8,
+    "historicalPoolGroupsReviewed": 6,
+    "newClockChangesCovered": false
+  },
+  "limits": [
+    "One source bridge to the exact raw-prefix-only revision; it does not cover the subsequent scan-overlap and clock-domain edits.",
+    "AST equality excludes source location metadata, which changes after inserting a byte. All 631 string constant values are separately equal.",
+    "The transient unit had already been collected when properties were read. Submitted limits are not a retained live-property or peak-memory observation.",
+    "No target module import/execution, Goby, SQL, HTTP, native workload or product acceptance occurred."
+  ]
+}
