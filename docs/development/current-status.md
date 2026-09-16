@@ -1,10 +1,14 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **complete candidate recovery and bind the verified Programs artifact to current runtime authority**.
+Current priority on 2026-09-16: **verify the combined M5 increment and bind the verified Programs artifact to recovered runtime authority**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
-unallocated extension or separate unused data disk. No product verification ran
+unallocated extension or separate unused data disk at that observation. The
+subsequent [user-selected cleanup and additional 25 GiB expansion](test-env-root-maintenance-20260916.md)
+are complete and independently reviewed: 138 selected directories were removed,
+the root filesystem grew online, and approximately 44G is available. The user
+requested resuming the task after maintenance. No product verification ran
 during that maintenance. The subsequent [original theme diagnostic](library-theme-diagnostic-result.md)
 passed once with one parent and one subtest, unchanged business budgets and full
 owned-resource closure. Its recovery scan finished in about 0.832 seconds with
@@ -36,6 +40,14 @@ zero failures, and the one original mount-profile skip. Both ordinary and embedd
 systemd builds succeeded. Independent result/source/build and resource/materialization
 reviews passed; all owned resources closed and protected state matched exactly.
 The actual embedded successor is now retained outside the closed workspace.
+The separate [schema-29 catalog bootstrap](m5-user-deletion-catalog-generation-20260916.json)
+has now generated its real artifact once and passed independent content and
+resource-closure reviews. Only the two expected activity CHECK objects changed;
+all 29 migration hashes, 35 tables and five sequences were checked. Its exact
+bytes were transferred to the M5 branch. The owned PG, worker, disk volume and
+lock are closed; no product tests ran in that generator scope. Combine the
+prepared deletion and diagnostics changes with the required interaction test,
+then freeze and verify the complete M5 source.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -63,11 +75,21 @@ against the latest September 15 after-restart baselines. Ten read-only SQL
 sessions closed, protected state matched, and independent saved-record review
 passed. The subsequent [native preservation checkpoint](candidate-oom-exit-native-preservation-20260916.md)
 and independent review passed with zero new SQL or native-store writes. Both
-applications remain failed; diagnostics/log/cache checks and restart are pending.
-Cause, physical integrity and application health are unproved. The new diagnostic
+applications were still failed at that preservation checkpoint. The subsequent
+[actual application recovery](candidate-oom-exit-recovery-completed-20260916.md)
+and separate post-start diagnostics observation have now passed independent
+review. Both original applications started once, with four health/readiness
+responses, two owned leases and eight closed read-only SQL sessions. All four
+databases remained exact; PostgreSQL, configuration and protected resources were
+preserved. Thirteen old logs remained exact, and each candidate added one active
+log whose body was not read. The observers and locks are closed; these startup
+scopes must not be replayed. Cause and physical integrity remain unproved.
+The new diagnostic
 used an explicitly stopped-candidate protection descriptor with no existing
 service action or application database connection. The prior ready envelope is
-historical and cannot authorize a live transition in the current stopped state.
+historical and cannot authorize a live transition after the application
+invocations changed. A new consumer runtime binding is still required; recovery
+alone does not admit the Programs successor.
 Historically, after the [September 15 incident](programs-final-regression-incident.json), the
 [recovery checkpoint](candidate-lease-loss-recovery.json) independently accepts
 both once-only application starts with unchanged binaries/configuration,
@@ -132,13 +154,16 @@ summary's OOM time. The expected auxiliary rejection is present in the archived
 worker-owned PostgreSQL log. Cleanup reports database finalization and ownership
 loss; it is not a filesystem-root observation. The exact loss time and any
 earlier resource pressure remain unproved. Independent source review found no
-specific transaction or fixture leak. Existing phase/read/ownership diagnostics
-remain the next bounded execution; no new test, root-cause claim or fix follows.
+specific transaction or fixture leak. The existing phase/read/ownership
+diagnostics were the next bounded step at that checkpoint and have since run
+in the recorded diagnostic and full-verification scopes. No root-cause claim
+or product fix follows from their non-reproduction.
 
 The user has supplied the previously requested `test-env` availability. The
 original theme subcase and complete Library package have each passed once.
-The subsequent full attempt stopped at its worker memory cap; a bounded disk
-compiler profile is being prepared before complete verification. No `ownedTx.Query`
+The subsequent full attempt stopped at its worker memory cap. The bounded disk
+compiler profile and later complete-source verification have since passed,
+including both builds and independent closure review. No `ownedTx.Query`
 fix is scheduled, and non-reproduction cannot clear the original full failure.
 [Client components](programs-client-component-verification.json) passed within
 their frozen scopes. Actual successor authority/artifact and admitted live inputs
@@ -147,8 +172,9 @@ recovery, component and observation evidence without repeating starts or consume
 inputs. Keep other tool versions frozen; bind actual successor authority/artifacts
 after final verification, with no framework expansion.
 Do not replay old inputs or bypass the original guard. The Programs
-successor remains unbuilt; E11/G2 and the completed September 14 recovery retain
-their historical scopes. Final client acceptance and main promotion remain open.
+successor is built and retained; its transition still awaits current runtime and
+artifact binding. E11/G2 and the completed September 14 recovery retain their
+historical scopes. Final client acceptance and main promotion remain open.
 
 The earlier resumed work on 2026-09-15 completed the following scoped results.
 The [core acceptance resolution](core-client-acceptance-resolution.md) remains

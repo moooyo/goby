@@ -1,0 +1,75 @@
+{
+  "kind": "test-environment-selected-cleanup-and-disk-growth",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "completed_and_independently_reviewed",
+  "scope": "/opt/goby-test/root-maintenance-20260916-eu2jqc7_",
+  "evidence": {
+    "cleanupManifest": {
+      "path": "/opt/goby-test/root-maintenance-20260916-eu2jqc7_/cleanup-manifest.json",
+      "bytes": 75800,
+      "sha256": "b0bb022f5b617ef00308226794a835c4a0463db142057b5c67f63191c8038f7c"
+    },
+    "cleanupResult": {
+      "path": "/opt/goby-test/root-maintenance-20260916-eu2jqc7_/cleanup-result.json",
+      "bytes": 9286,
+      "sha256": "5225cbd0f98f45498f5593cb4d988bc4323889d62e89e72da9282fb19afdab1c"
+    },
+    "growthBefore": {
+      "path": "/opt/goby-test/root-maintenance-20260916-eu2jqc7_/disk-growth-before.json",
+      "bytes": 5604,
+      "sha256": "d9d1dec44ae661b81e243cbd5a53820eec13dfef0d987d683438ff274b37a7c7"
+    },
+    "growthResult": {
+      "path": "/opt/goby-test/root-maintenance-20260916-eu2jqc7_/disk-growth-result.json",
+      "bytes": 10577,
+      "sha256": "f1e2dd5db4e3190434a68509547e0999e36e5766234fe36a7337b2a721752c46"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/root-maintenance-20260916-eu2jqc7_/maintenance-independent-review.json",
+      "bytes": 8231,
+      "sha256": "9b54c82fe65e7049e9edffab9d61af4c0ecd532e168299f5be206a4c2c6a56c9"
+    }
+  },
+  "cleanup": {
+    "explicitUserSelection": true,
+    "kissDirectChildDirectoriesRemoved": 134,
+    "selectedBiliDirectoriesRemoved": 4,
+    "totalDirectoriesRemoved": 138,
+    "selectedPathsRemaining": 0,
+    "unselectedTopLevelEntriesPreserved": 319,
+    "unselectedNonKissProjectDirectoriesPreserved": 51,
+    "androidNdkPreserved": true,
+    "looseKissFilesSelected": false,
+    "availableBytesIncreaseObserved": 17949364224,
+    "rootAvailableBytesAfterCleanup": 21820792832
+  },
+  "growth": {
+    "explicitUserExpansionBytes": 26843545600,
+    "diskBytes": 130996502528,
+    "rootPartitionBytesBefore": 104018722304,
+    "rootPartitionBytesAfter": 130862267904,
+    "filesystemBytesBefore": 102297296896,
+    "filesystemBytesAfter": 128719773696,
+    "rootAvailableBytesAfterGrowth": 47169531904,
+    "rootAvailableBytesAtIndependentObservation": 47169355776,
+    "rootUsagePercentAtIndependentObservation": 62,
+    "unpartitionedBytesAfterGrowth": 0,
+    "onlineGrowth": true,
+    "partitionStartSector": 262144,
+    "partitionStartAndUuidPreserved": true,
+    "gptIdentityPreserved": true,
+    "bootPartitionsPreserved": true,
+    "filesystemUuidAndRootIdentityPreserved": true,
+    "bootIdentityPreserved": true,
+    "protectedProcessIdentitiesPreserved": 6,
+    "serviceActions": 0
+  },
+  "productTestsExecuted": 0,
+  "limits": [
+    "The private manifest contains the exact authorized deletion set and retained top-level identities. It does not authorize deleting other project directories or shared caches.",
+    "Free-space changes are observations and may include concurrent filesystem activity. Directory sizes with shared hard links are not additive release guarantees.",
+    "The September 10 expansion and earlier September 16 cache cleanup retain their original historical capacities and outcomes.",
+    "Future workers still require current capacity and protected-runtime admission. This maintenance is not product verification or client acceptance."
+  ]
+}

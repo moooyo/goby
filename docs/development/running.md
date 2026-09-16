@@ -43,6 +43,13 @@ confirm the same expanded capacity, subsequently occupied by accumulated task
 data and caches. Historical free space is not a current reservation. The current
 candidate/primary checkpoint is listed in [current status](current-status.md).
 
+Later on September 16, the user selected historical temporary directories for
+removal and added another 25 GiB to the virtual disk. The
+[reviewed maintenance](test-env-root-maintenance-20260916.md) removed all 138
+selected directories and grew the root partition/ext4 filesystem online. The
+disk is now 122 GiB; `df` reported approximately 120G total and 44G available
+after that operation. Recheck capacity before each new worker.
+
 Subsequent [Go cache](m5h-go-cache-relocation.json) and
 [inactive dependency](m5h-dependency-relocation.json) relocations moved verified
 contents from tmpfs to persistent storage while retaining the original paths as

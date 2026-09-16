@@ -1,0 +1,130 @@
+{
+  "kind": "candidate-oom-exit-recovery-checkpoint",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "original_applications_restored_and_preservation_independently_reviewed",
+  "scope": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01",
+  "preStartRecord": "candidate-oom-exit-auxiliary-preservation-20260916.json",
+  "evidence": {
+    "restartExecution": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/restart-execution.json",
+      "bytes": 130069,
+      "sha256": "cccb62597eb67dc5f54685e2f72ce1b1a0e48bd1632e5f85972d071838fce0dd"
+    },
+    "restartDispatch": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/private/restart-root-dispatch-result.json",
+      "bytes": 1429,
+      "sha256": "f5f2f6ad37ed665b5b13b6a74002a568c3c8c0af76a0a0fbd9a1217a961372cc"
+    },
+    "restartIndependentReview": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/restart-independent-review.json",
+      "bytes": 14082,
+      "sha256": "a2036bace081fbe10a78ae1d507710b25cc2b2ddd55a5ee37f66c0e84a5a701a"
+    },
+    "postStartExecution": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/post-start-diagnostics-execution.json",
+      "bytes": 44930,
+      "sha256": "24714dc04f80d40cd36ba78ae25381fbb8d068fc1f0a142f999ee0931382b94a"
+    },
+    "postStartDispatch": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/private/post-start-root-dispatch-result.json",
+      "bytes": 1698,
+      "sha256": "6cc620825c46bb7f4927acc4b1ef8f52e27c00049978d314f6b6e1d5e08aae0c"
+    },
+    "postStartIndependentReview": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/original-restart-r01/post-start-independent-review.json",
+      "bytes": 11092,
+      "sha256": "d9e4c42722616bb5798109d55be969ec6c8d2e60e7727f1335d1459d495d9c0f"
+    }
+  },
+  "applications": {
+    "old": {
+      "candidate": "A",
+      "unit": "goby-audited-20260913T073217Z-ef77f9ffcf0b-server.service",
+      "pid": 1648477,
+      "startTicks": "27509409",
+      "invocationId": "77c3831899be4bba9e2620c430593d60",
+      "binarySha256": "b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42"
+    },
+    "fresh": {
+      "candidate": "B",
+      "unit": "goby-audited-20260914T083143Z-9b73ad46f2e6-server.service",
+      "pid": 1648540,
+      "startTicks": "27509490",
+      "invocationId": "72472b81fa2f43aea6fe48e6920fa37c",
+      "binarySha256": "59096592c1f145004e4f664a833227bb7ce019acee746cf345379349b2784312"
+    }
+  },
+  "startup": {
+    "applicationStarts": 2,
+    "postgresRestarts": 0,
+    "binaryOrEnvironmentChanges": 0,
+    "loginRequests": 0,
+    "businessHttpRequests": 0,
+    "healthResponses": 4,
+    "uniqueDeploymentLeases": 2,
+    "readOnlySqlSessions": 8,
+    "databases": [
+      {"candidate": "A", "role": "source", "tables": 35, "sequences": 5, "rows": 230},
+      {"candidate": "A", "role": "recovery", "tables": 35, "sequences": 5, "rows": 147},
+      {"candidate": "B", "role": "source", "tables": 35, "sequences": 5, "rows": 141},
+      {"candidate": "B", "role": "recovery", "tables": 35, "sequences": 5, "rows": 131}
+    ],
+    "allSelectedRowsAndSequencesExactAcrossStartup": true,
+    "outerCommandsClosed": 78,
+    "readerCommandsClosed": 28,
+    "readOnlySqlBackendsClosed": 8,
+    "lockUnlockSucceeded": true,
+    "lockFdCloseSucceeded": true,
+    "dispatchExitCode": 0,
+    "dispatchTimedOut": false
+  },
+  "preserved": {
+    "postmasters": 3,
+    "nonApplicationUnits": 5,
+    "protectedFiles": 5,
+    "configurationHashes": 8,
+    "referenceUnitAndProcess": true,
+    "historicalMainAndDeploymentLockHashes": true,
+    "originalFailedApplicationInvocationsInBefore": true
+  },
+  "postStartDiagnostics": {
+    "status": "passed_independent_review",
+    "retainedLogs": {"old": 8, "fresh": 5},
+    "retainedLogBytes": {"old": 214710, "fresh": 60929},
+    "oldLogBytesHashesMetadataAndRegistryEntriesExact": true,
+    "ownershipTokensUnchanged": true,
+    "newActiveLogs": {"old": 1, "fresh": 1},
+    "newActiveLogIdentityObserved": true,
+    "newActiveLogBodiesRead": false,
+    "newActiveLogAppendSensitiveMetadataStabilityClaimed": false,
+    "cacheEmptyOfJobs": true,
+    "protectedBeforeAndAfterEqualRestartAfter": true,
+    "phaseFilesObservedOrWritten": 44,
+    "phaseReadBytes": 722520,
+    "phaseEvidenceBytesWritten": 12782,
+    "phaseEvidenceFilesWritten": 4,
+    "phaseElapsedMilliseconds": 291,
+    "phaseBudgetIncludesGlobalProtectionHashIO": false,
+    "metadataCommandsClosed": 20,
+    "sqlRequests": 0,
+    "httpRequests": 0,
+    "serviceActions": 0,
+    "lockUnlockSucceeded": true,
+    "lockFdCloseSucceeded": true,
+    "dispatchExitCode": 0,
+    "dispatchTimedOut": false
+  },
+  "currentRuntimeConsumerEnvelopeProduced": false,
+  "programsSuccessorDeployed": false,
+  "clientAcceptance": false,
+  "limits": [
+    "This checkpoint records completed observations. It is not a fresh liveness observation or permission to replay the consumed startup scope.",
+    "Preparation and pre-start records retain their original zero-start values. The restart record retains postStartLogReadbackExecuted=false; the subsequent independent observation establishes that separate result.",
+    "The restart review and post-start review cover separate evidence scopes. Neither independently establishes the cause of the original exits, backup physical integrity, or product/client acceptance.",
+    "Reader metadata and health responses retain complete byte counts and hashes; no additional raw-body readback is claimed for those outputs.",
+    "Post-start review did not independently inspect the unpinned outer driver's implementation. It reviewed its saved result, intent, streams and closure evidence.",
+    "Post-start phase accounting excludes inherited global protection hash I/O, base-helper reads, metadata streams and outer receipt I/O.",
+    "The applications intentionally remain running after the recorded recovery. Observer processes, SQL sessions and lock ownership are closed."
+  ]
+}
