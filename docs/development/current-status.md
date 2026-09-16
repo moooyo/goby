@@ -1,12 +1,27 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **bounded Library diagnosis and successor artifact preparation**.
-Execution is currently blocked on the unanswered coordinated heavy-work window.
-Independent source preparation is retained in five branches. The remaining-work
-audit found that the next useful steps require held verification or new profile
-facts, rather than another speculative fix or controller. Complete M2-M6
-delivery remains unfinished and in scope. Resume with the existing theme
-diagnostic snapshot when the resource window is explicitly available.
+Current priority on 2026-09-16: **Library package diagnosis and successor artifact preparation**.
+The user confirmed that `test-env` is available on September 16 and then requested
+root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
+confirm that the September 10 disk expansion is already in use; there is no
+unallocated extension or separate unused data disk. No product verification ran
+during that maintenance. The subsequent [original theme diagnostic](library-theme-diagnostic-result.md)
+passed once with one parent and one subtest, unchanged business budgets and full
+owned-resource closure. Its recovery scan finished in about 0.832 seconds with
+no observed ownership loss. This is non-reproduction, not resolution of the
+retained full failure. The next diagnostic is the complete Library package once;
+the other four prepared source branches remain unverified. Complete M2-M6
+delivery remains unfinished and in scope. The previous unanswered-window
+blocker no longer applies.
+
+The same fresh host observation found both candidate applications failed at
+10:22:08 CST on September 16, alongside a global OOM event in the same second.
+Their original invocations are retained; the three postmaster identities,
+protected files and configuration hashes still match the September 15 recovery
+record. Cause and post-incident database health are unproved. The new diagnostic
+used an explicitly stopped-candidate protection descriptor with no existing
+service action or application database connection. The prior ready envelope is
+historical and cannot authorize a live transition in the current stopped state.
 After the [incident](programs-final-regression-incident.json), the
 [recovery checkpoint](candidate-lease-loss-recovery.json) independently accepts
 both once-only application starts with unchanged binaries/configuration,
@@ -74,8 +89,9 @@ earlier resource pressure remain unproved. Independent source review found no
 specific transaction or fixture leak. Existing phase/read/ownership diagnostics
 remain the next bounded execution; no new test, root-cause claim or fix follows.
 
-The heavy-execution window awaits the user's asynchronous reply. The next product
-check is the original theme subcase under its existing budgets; no `ownedTx.Query`
+The user has supplied the previously requested `test-env` availability. The
+original theme subcase has passed once; the next check covers the complete
+Library package with its existing budgets. No `ownedTx.Query`
 fix is scheduled, and non-reproduction cannot clear the original full failure.
 [Client components](programs-client-component-verification.json) passed within
 their frozen scopes. Actual successor authority/artifact and admitted live inputs

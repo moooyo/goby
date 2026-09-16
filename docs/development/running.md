@@ -37,8 +37,11 @@ The `test-env` virtual disk was expanded to 97 GiB on 2026-09-10, and the root
 partition/ext4 filesystem grew online with `growpart` and `resize2fs`. It then
 reported roughly 96G total and 60G available; existing service PIDs, root
 identity, and boot partitions were preserved. See the
-[capacity evidence](test-env-disk-growth.json). This resolves the earlier root
-capacity shortage. The current candidate/primary checkpoint is listed in [current status](current-status.md).
+[capacity evidence](test-env-disk-growth.json). This resolved the earlier root
+capacity shortage at that observation. The [September 16 capacity review and cleanup](test-env-root-cleanup-20260916.md)
+confirm the same expanded capacity, subsequently occupied by accumulated task
+data and caches. Historical free space is not a current reservation. The current
+candidate/primary checkpoint is listed in [current status](current-status.md).
 
 Subsequent [Go cache](m5h-go-cache-relocation.json) and
 [inactive dependency](m5h-dependency-relocation.json) relocations moved verified
@@ -347,7 +350,15 @@ Do not put this override in the Goby service environment. Stop the scratch insta
 
 Root filesystem free space was restored during M4c test-host maintenance. The host's persistent PostgreSQL instance was observed with `max_wal_size=128MB` and `min_wal_size=32MB`; these are test-host settings, not new Goby production defaults. `max_wal_size` is a checkpoint target, not a hard WAL ceiling. The scratch cluster separately uses the same WAL targets and a 1 GiB aggregate filesystem limit, which can still fill during oversized tests.
 
-The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests. A run reporting skipped PostgreSQL tests is not sufficient verification. The existing `/dev/shm/goby-go-cache` and `/dev/shm/goby-go-mod` paths are now symlinks to persistent build/module caches under `/opt/goby-test/go-caches-m5h`, following the recorded relocation after disk expansion. Their path spelling no longer means that these caches consume tmpfs. Preserve the links and normally reused contents; do not rerun the historical relocation operators.
+The presence of `GOBY_TEST_DATABASE_URL` is required to execute integration tests.
+A run reporting skipped PostgreSQL tests is not sufficient verification. The
+historical relocation made `/dev/shm/goby-go-cache` and `/dev/shm/goby-go-mod`
+symlinks to persistent caches under `/opt/goby-test/go-caches-m5h`. On September 16,
+those old symlink paths were absent, while the persistent `build` and `modules`
+directories still existed on the root filesystem. Do not infer the actual
+filesystem from an old path spelling or replay the historical relocation
+operators. Bind explicit current cache paths and include their actual disk usage
+in the selected worker's capacity budget.
 
 The current host also has an owned 768 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. It retains private verification evidence and isolated browser artifacts. M5i Go verification uses the separate root-owned directory `/opt/goby-test/exec-work-m5i` on the persistent filesystem for `GOTMPDIR` and `TMPDIR`; older increment directories retain their historical artifacts. This avoids exhausting the evidence tmpfs without changing the shared `/dev/shm` mount's execution policy. Both current directories are dedicated to verification and are not application media or persistent business-data locations.
 

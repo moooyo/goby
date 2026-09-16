@@ -1,0 +1,177 @@
+{
+  "archive": {
+    "bytes": 15705863,
+    "directories": 43,
+    "files": 1931,
+    "path": "/opt/goby-test/library-theme-diagnosis-20260916/retained/focused-private.tar.gz",
+    "readbackMatched": true,
+    "sha256": "5a5f63ca2b67070e2654361bdc7ca0600c5a398779c5bbf14fd71323d823fb45"
+  },
+  "closure": {
+    "allOwnedCommandsClosed": true,
+    "cleanupErrors": [],
+    "ext4Unmounted": true,
+    "lockReleased": true,
+    "loopDetached": true,
+    "protectedBeforeAfterEqual": true,
+    "ramUnmounted": true,
+    "resourcesClosed": true,
+    "supervisorCgroupEmpty": true,
+    "worker": {
+      "only_worker_process_remains": true,
+      "owned_postgres_stopped": true,
+      "private_bind_removed": true,
+      "source_unchanged": true
+    }
+  },
+  "execution": {
+    "bytes": 57433,
+    "path": "/opt/goby-test/library-theme-diagnosis-20260916/execution.json",
+    "sha256": "b4a08a2d74b0653e82b56f33ef0d38ffd6a02d9db993a1856915858b59f71d59"
+  },
+  "kind": "library-theme-diagnostic-result",
+  "limits": {
+    "applicationBuildRun": false,
+    "clientAcceptance": false,
+    "existingCandidateRestarted": false,
+    "existingDatabaseHealthProved": false,
+    "fullSuitePassed": false,
+    "nextDiagnostic": "Run the complete Library package once to include its test ordering and accumulated state.",
+    "priorFullFailureResolved": false,
+    "productFixEstablished": false
+  },
+  "resourceProfile": {
+    "actualMemoryProperties": {
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0"
+    },
+    "capacityAdmissions": {
+      "execution": {
+        "checks": 1,
+        "elapsedMilliseconds": 0,
+        "firstRunAdmission": true,
+        "intervalSeconds": 2,
+        "maximumWaitSeconds": 120,
+        "passed": true,
+        "samples": [
+          {
+            "check": 1,
+            "checkPassed": true,
+            "elapsedMilliseconds": 0,
+            "resources": {
+              "ext4FreeBytes": 499978240,
+              "imageBytes": 536870912,
+              "memAvailableBytes": 5554819072,
+              "ramLimitBytes": 3221225472,
+              "ramLimitIsNotWholeProcessMemoryBudget": true,
+              "retainedBudgetBytes": 1073741824,
+              "rootFreeBytes": 5522513920,
+              "rootFreeInodes": 3319445,
+              "rootReserveBytes": 536870912
+            },
+            "sampleRelation": "actual_capacity_gate_values"
+          }
+        ],
+        "waits": 0
+      },
+      "preparation": {
+        "checks": 1,
+        "elapsedMilliseconds": 0,
+        "firstRunAdmission": true,
+        "intervalSeconds": 2,
+        "maximumWaitSeconds": 120,
+        "passed": true,
+        "samples": [
+          {
+            "check": 1,
+            "checkPassed": true,
+            "elapsedMilliseconds": 0,
+            "resources": {
+              "imageBytes": 536870912,
+              "memAvailableBytes": 5587902464,
+              "ramLimitBytes": 3221225472,
+              "ramLimitIsNotWholeProcessMemoryBudget": true,
+              "retainedBudgetBytes": 1073741824,
+              "rootFreeBytes": 5522538496,
+              "rootFreeInodes": 3319460,
+              "rootReserveBytes": 536870912
+            },
+            "sampleRelation": "actual_capacity_gate_values"
+          }
+        ],
+        "waits": 0
+      }
+    },
+    "minimumMemAvailableBytes": 5368709120,
+    "tmpfsBytes": 3221225472,
+    "workerMemoryMaxBytes": 2147483648
+  },
+  "scope": "/opt/goby-test/library-theme-diagnosis-20260916",
+  "selection": {
+    "events": {
+      "pass": [
+        "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+        "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable"
+      ],
+      "run": [
+        "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+        "TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme"
+      ]
+    },
+    "failures": 0,
+    "package": "github.com/moooyo/goby/internal/library",
+    "run": "^TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable$/^theme$",
+    "runnerAttempts": 1,
+    "skips": 0,
+    "subtestPasses": 1,
+    "topLevelPasses": 1
+  },
+  "source": {
+    "archive": {
+      "bytes": 32873587,
+      "path": "/opt/goby-test/library-theme-source-20260916-saq98t20/git-source.tar.gz",
+      "sha256": "b3027ae39ed497bdea1fca674697899fab08538f16746c298260c59f323d49a6"
+    },
+    "everyMemberMatched": true,
+    "files": 5348,
+    "gitHead": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+    "historicalScoresReused": false,
+    "manifest": {
+      "bytes": 1082974,
+      "path": "/opt/goby-test/library-theme-source-20260916-saq98t20/source-manifest.json",
+      "sha256": "dc019845fbd07818528511e1ac559ba597c5de515810a4153658ff94c09b8125"
+    },
+    "preparation": {
+      "bytes": 767,
+      "path": "/opt/goby-test/library-theme-source-20260916-saq98t20/source-preparation.json",
+      "sha256": "a9ddc5d21a330098fca53b5a9137c3eb1cc06b5aff29d0fa4d838fbf3a741299"
+    },
+    "uncompressedBytes": 119599313
+  },
+  "status": "passed_not_reproduced",
+  "testStdout": {
+    "archiveMember": "ram/library-theme-diagnosis-20260916-20260916T043156Z-8f6d6f635a65/logs/019-go-test-library-theme.stdout",
+    "bytes": 4990,
+    "output": [
+      "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable",
+      "=== RUN   TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=fixture_ready elapsed=10.91\u00b5s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=rejected_scan_finished elapsed=2.495327152s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:522: auxiliary rejected scan status=Failed error=\"1 media directories could not be scanned; existing catalog records were retained\"",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=recovery_scan_start elapsed=2.496571728s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=recovery_scan_finished elapsed=3.328808541s closing=false ownership_lost=false fixture_context=<nil>",
+      "    auxiliary_catalog_changes_integration_test.go:498: auxiliary recovery phase=before_store_cleanup elapsed=3.330161145s closing=false ownership_lost=false fixture_context=<nil>",
+      "--- PASS: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable/theme (10.82s)",
+      "--- PASS: TestAuxiliaryCatalogChangesDeferredFailureIsQuietAndRecoverable (10.82s)",
+      "PASS",
+      "ok  \tgithub.com/moooyo/goby/internal/library\t11.832s"
+    ],
+    "sha256": "fe1fb0f3bd79a8f881e89a45f3d81f64baaec1b863577af8160a597d7ab171d6"
+  },
+  "version": 1,
+  "workerReport": {
+    "archiveMember": "ram/library-theme-diagnosis-20260916-20260916T043156Z-8f6d6f635a65/worker-report.json",
+    "bytes": 21381,
+    "sha256": "c33d8a2ed9adcfde489c727747c6ddb5ef6308345e28c3620d2534ef78c15a9f"
+  }
+}
