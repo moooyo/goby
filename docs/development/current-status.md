@@ -57,12 +57,18 @@ command are retained. The build processes/unit/cgroup closed, while source,
 dependencies and artifacts remain in the workspace. A 345-byte future Vite
 config-loader warning remains recorded. Combined Go/HTTP/browser behavior and
 final builds are still pending and must consume S1 with `--frontend-contributions`.
-The [first M5 storage preparation attempt](m5-combined-source-preparation-20260916.json)
-failed before any volume or payload. Saved command order and pinned source locate
-the missing-directory check; no raw traceback was retained. Its 30 commands and
-60 streams closed with independent review, no format/attach/mount/payload ran,
-and the failed unit record remains without a PID or cgroup. A corrected fresh-scope
-storage verification is still pending.
+The [M5 storage prerequisite](m5-full-storage-verification-20260916.md) has now
+passed in the third scope, with independent review. The first missing-directory
+failure created no volume/payload; the second payload `PermissionError` has no
+retained errno/syscall proof. Both failures remain preserved. Creating the owned
+directories before validation and binding host namespace identities for the
+capability-free payload resolved the identified source conflicts without widening
+budgets or permissions. The final run closed 73 controller/three payload commands
+and 152 streams, verified four sentinels on three filesystems, and read back all
+11 archived files/six directories. The recorded 79 PIDs, two cgroups, mounts and
+backing resources closed. Its 256 MiB controller peak alone is not an OOM finding
+or full 3 GiB workload proof. The combined backend full source/input is being
+prepared; that worker has not run.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.

@@ -2,7 +2,7 @@
   "kind": "m5-combined-source-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "frontend_and_complete_source_independently_reviewed_product_verification_pending",
+  "status": "frontend_source_and_storage_prerequisites_reviewed_full_input_preparing",
   "branch": "codex/m5-deletion-diagnostics",
   "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
   "mergeCommit": "96e6d750ecd0d634e19f0bf94a701665bd51f2ba",
@@ -81,9 +81,9 @@
   "browserAcceptance": false,
   "finalVerificationPassed": false,
   "remaining": [
-    "Verify the corrected storage preparation in a fresh owned scope; the consumed first attempt established zero-volume, zero-payload failure closure only.",
+    "Prepare the new full-run source and input using the independently accepted r05 storage prerequisite. Preserve all three consumed storage attempts and their original outcomes.",
     "Bind the complete S1 archive, actual successful frontend command receipt and original contribution sidecar into the full profile. The later release build must use --frontend-contributions.",
-    "Verify the complete combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds under the reviewed resource profile."
+    "Verify the complete combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds under fresh resource admission. No full worker has executed for this combined source."
   ],
   "frontendVerification": {
     "record": "m5-final-frontend-verification-20260916.json",
@@ -214,5 +214,57 @@
     "storageGatesPassed": false,
     "fullAdmission": false,
     "nextStep": "Freeze and review the correction, then verify storage behavior in a new owned scope. Preserve this failed attempt and its original outcome."
+  },
+  "storageVerification": {
+    "record": "m5-full-storage-verification-20260916.json",
+    "status": "storage_prerequisite_passed",
+    "finalScope": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6",
+    "execution": {
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/probe-result.json",
+      "bytes": 176349,
+      "sha256": "47a332a1e1b133e3b88d386fc822f97b2248c599ee35c54c147765d0faae93ff"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/independent-review.json",
+      "bytes": 15937,
+      "sha256": "cf56bfd40e1b2e73cc2170cf398ad16ceac178a52f98e1da21d1ae48243dd30b"
+    },
+    "closureReadback": {
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/closure-readback.json",
+      "bytes": 8681,
+      "sha256": "a1f517a8f4954384122bed7eb99956df5da5a36d57ce19d569b01375137b3292"
+    },
+    "archive": {
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/retained/full-private.tar.gz",
+      "bytes": 2352849,
+      "sha256": "4fffee3cabd03245fa8738b668cec190876177140498eda31210ddfe02d7bfcb"
+    },
+    "probe": {
+      "bytes": 48249,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/storage-probe.py",
+      "sha256": "3b018fa739610ce3c2afc161016c345e8ed4707add0ae2eea5a1ccb93fbc08a5"
+    },
+    "profile": {
+      "bytes": 59110,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/draft-r05.py",
+      "sha256": "e1755c8807f110b9d9e355df0d6af81af15af1e0e2d42beaaccc2fad939d3c80"
+    },
+    "attempts": 3,
+    "priorFailuresPreserved": 2,
+    "controllerCommands": 73,
+    "payloadCommands": 3,
+    "rawStreams": 152,
+    "sentinelFiles": 4,
+    "separateFilesystems": 3,
+    "archiveFiles": 11,
+    "archiveDirectories": 6,
+    "recordedPidsAbsent": 79,
+    "cgroupsAbsent": 2,
+    "compilerScratchDeletedBeforeArchive": true,
+    "workspaceBackingDeletedOnlyAfterArchiveReadback": true,
+    "fullStoragePrerequisiteAccepted": true,
+    "fullAdmissionClaimed": false,
+    "fullSourceAndInputPreparing": true,
+    "fullWorkerExecuted": false
   }
 }

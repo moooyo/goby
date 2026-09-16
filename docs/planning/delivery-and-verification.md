@@ -22,12 +22,14 @@ unit and cgroup closed while the build workspace was retained. The future Vite
 config-loader warning remains recorded. The later release build must use
 `--frontend-contributions` and exact final asset matching after relocation.
 Combined Go/DB/HTTP/browser and final build acceptance remain pending. The
-[first M5 storage attempt](../development/m5-combined-source-preparation-20260916.json)
-failed at a not-created directory check before any volume or payload; its failure
-classification is inferred from the saved sequence and source, with no retained
-raw traceback. Thirty commands and 60 streams closed with independent review;
-the failed unit record remains without PID/cgroup. A corrected fresh-scope check
-is still required and no storage pass is claimed.
+[storage prerequisite](../development/m5-full-storage-verification-20260916.md)
+has now passed in its third scope with independent review, four sentinels on three
+filesystems, complete archive readback and owned-resource closure. The original
+missing-directory and payload `PermissionError` failures are preserved; neither
+has been relabeled, and the exact permission-failing syscall was not recorded.
+The two source corrections did not widen budgets or permissions. The successful
+small probe does not prove full 3 GiB capacity; the actual combined full source
+and input are still being prepared, with no full worker executed.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
 now includes the completed unique observer: two acknowledged read-only SQL

@@ -1,0 +1,301 @@
+{
+  "kind": "m5-full-storage-verification",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "storage_prerequisite_passed_full_verification_pending",
+  "fullStoragePrerequisiteAccepted": true,
+  "fullAdmissionClaimed": false,
+  "attempts": [
+    {
+      "scope": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3",
+      "status": "failed_attempt_closed_reviewed",
+      "execution": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/probe-result.json",
+        "bytes": 92364,
+        "sha256": "b609aef118d97ef3cd70cad61e2cbf34a17766adb2476859bd3e1817a8eed502"
+      },
+      "independentReview": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/failed-attempt-independent-review.json",
+        "bytes": 5288,
+        "sha256": "6f33e60f7ff01f6e7a7fa18bfacfc4aba85a6a87e43a1ce5a7e241c72a345b5f"
+      },
+      "closureReadback": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/failed-closure-readback.json",
+        "bytes": 6451,
+        "sha256": "ac17c78d2ddbd4ad635905dda716174358274c826c465c5eaa3ef57533184842"
+      },
+      "input": {
+        "bytes": 2222,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/input.json",
+        "sha256": "494bb6a43bb49a277086bc5f0af59028066ebe42b4893d364b84f6c3636862b2"
+      },
+      "probe": {
+        "bytes": 47308,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/storage-probe.py",
+        "sha256": "bb625e5ba7147149311e6fa6f24681fa8f9747351663f7b953c01fdf2f5a122b"
+      },
+      "profile": {
+        "bytes": 59020,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/draft-r04.py",
+        "sha256": "54d68246ca499a53cd57ba21ac837c4cd4f86b3a8675fc6c756e12a9b71e0fe0"
+      },
+      "failure": {
+        "recorded": {
+          "code": "probe_failed",
+          "type": "FileNotFoundError"
+        },
+        "classification": "workspace_owner_missing_before_volume_preparation",
+        "evidenceBasis": "The successful normal sequence ends with the absent payload-unit query; the exclusive intent was retained. The next statement calls private_directory on workspace-owner, and that pinned helper begins with lstat without creating the directory. The saved closure readback reports workspace-owner absent. The classification is derived from the saved sequence and source, not a retained raw Python traceback."
+      },
+      "controllerCommands": 30,
+      "rawStreams": 60,
+      "rawStreamBytes": 12413,
+      "volumesCreated": 0,
+      "payloadDispatches": 0,
+      "sentinelExecutions": 0,
+      "allRecordedCommandsAndStreamsClosed": true,
+      "failedControllerRecordRetained": true,
+      "failedUnitReset": false
+    },
+    {
+      "scope": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434",
+      "status": "failed_attempt_closed_reviewed",
+      "execution": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/probe-result.json",
+        "bytes": 174708,
+        "sha256": "4e45b4e5682319c523ca8473e11f7dc8b4c078eabb92ba3a11cf13ce45e57ac1"
+      },
+      "independentReview": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/private/failed-attempt-independent-review.json",
+        "bytes": 8227,
+        "sha256": "80c872c800d1c865ccc18921fd2df445e4b545bf49c043b2b2e4ae21be7d91a9"
+      },
+      "closureReadback": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/private/failed-closure-readback.json",
+        "bytes": 8306,
+        "sha256": "4e233a1606fa3b81f5ac50efbbdd428024f2c4ffc338d780832055f9db0748ac"
+      },
+      "input": {
+        "bytes": 2222,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/private/input.json",
+        "sha256": "60b792c1b66036ed217a7e1321c18b8f19c426542c9391b762704fb4f1d74f1e"
+      },
+      "probe": {
+        "bytes": 47398,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/private/storage-probe.py",
+        "sha256": "6057917753e9fce019b5aefe05e715b123db373e7783e3a1fb2ac60e8d80640d"
+      },
+      "profile": {
+        "bytes": 59110,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/private/draft-r05.py",
+        "sha256": "e1755c8807f110b9d9e355df0d6af81af15af1e0e2d42beaaccc2fad939d3c80"
+      },
+      "archive": {
+        "bytes": 2348635,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-d45b028d1434/retained/full-private.tar.gz",
+        "sha256": "38c0b971a94c7ccf41cddc1014c92143e72930177e177daa73db5c04be4f8330"
+      },
+      "failure": {
+        "controller": {
+          "code": "payload_terminal_not_successful",
+          "type": "Rejected"
+        },
+        "payload": {
+          "code": "payload_failed",
+          "type": "PermissionError"
+        },
+        "namespaceAssessment": "The pinned cap-zero payload begins its try block by comparing its namespaces with /proc/1 namespace links. The saved PermissionError occurred before any command record. No errno, filename or raw traceback was retained, so this review does not identify a particular readlink or other syscall as the proven failing operation.",
+        "exactErrnoOrSyscallEstablished": false,
+        "oomAttributionEstablished": false
+      },
+      "controllerCommands": 72,
+      "payloadDispatches": 1,
+      "payloadCommandRecords": 0,
+      "rawStreams": 144,
+      "rawStreamBytes": 23326,
+      "sentinelExecutions": 0,
+      "allRecordedCommandsAndStreamsClosed": true,
+      "compilerScratchDeletedBeforeArchive": true,
+      "workspaceArchivedBeforeBackingDeletion": true,
+      "failedControllerRecordRetained": true
+    },
+    {
+      "scope": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6",
+      "status": "storage_probe_passed",
+      "execution": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/probe-result.json",
+        "bytes": 176349,
+        "sha256": "47a332a1e1b133e3b88d386fc822f97b2248c599ee35c54c147765d0faae93ff"
+      },
+      "independentReview": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/independent-review.json",
+        "bytes": 15937,
+        "sha256": "cf56bfd40e1b2e73cc2170cf398ad16ceac178a52f98e1da21d1ae48243dd30b"
+      },
+      "closureReadback": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/closure-readback.json",
+        "bytes": 8681,
+        "sha256": "a1f517a8f4954384122bed7eb99956df5da5a36d57ce19d569b01375137b3292"
+      },
+      "input": {
+        "bytes": 2222,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/input.json",
+        "sha256": "57713347bbbd07835ecb2486e8f1926b8592b62dd37ad2929855e837a738141f"
+      },
+      "probe": {
+        "bytes": 48249,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/storage-probe.py",
+        "sha256": "3b018fa739610ce3c2afc161016c345e8ed4707add0ae2eea5a1ccb93fbc08a5"
+      },
+      "profile": {
+        "bytes": 59110,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/draft-r05.py",
+        "sha256": "e1755c8807f110b9d9e355df0d6af81af15af1e0e2d42beaaccc2fad939d3c80"
+      },
+      "sourcePreparation": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/source-preparation.json",
+        "bytes": 2696,
+        "sha256": "e5c83069274aa52f453b2ce8c1596f22a184d547250298f3d401b5cb70f63973"
+      },
+      "archive": {
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/retained/full-private.tar.gz",
+        "bytes": 2352849,
+        "sha256": "4fffee3cabd03245fa8738b668cec190876177140498eda31210ddfe02d7bfcb"
+      },
+      "payloadResult": {
+        "archive": {
+          "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/retained/full-private.tar.gz",
+          "bytes": 2352849,
+          "sha256": "4fffee3cabd03245fa8738b668cec190876177140498eda31210ddfe02d7bfcb"
+        },
+        "member": "workspace/m5-full-storage-probe-20260916-7cb8cc30cba6-job/payload-result.json",
+        "bytes": 13587,
+        "sha256": "5ad7b23c3baa14d4dfbe30c2fea25afa80a9c2dfa2e3a39864b3c005be4e482b"
+      },
+      "controllerCommands": 73,
+      "payloadCommands": 3,
+      "controllerRawStreams": 146,
+      "payloadRawStreams": 6,
+      "controllerElapsedSeconds": 10.507367587008048,
+      "payloadElapsedSeconds": 0.20863558998098597,
+      "payloadDispatches": 1,
+      "payloadStops": 1,
+      "payloadExitCode": 0,
+      "allCommandsAndFDsClosed": true
+    }
+  ],
+  "corrections": [
+    {
+      "problem": "The owned workspace-owner directory and its private child were validated before creation.",
+      "change": "Create each exact owned directory with the existing base.mkdir(..., 0o700), then retain the existing private_directory validation. The full r05 profile and probe both use this ordering.",
+      "oldProfile": {
+        "bytes": 59020,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/draft-r04.py",
+        "sha256": "54d68246ca499a53cd57ba21ac837c4cd4f86b3a8675fc6c756e12a9b71e0fe0"
+      },
+      "newProfile": {
+        "bytes": 59110,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/draft-r05.py",
+        "sha256": "e1755c8807f110b9d9e355df0d6af81af15af1e0e2d42beaaccc2fad939d3c80"
+      },
+      "budgetOrPermissionExpansion": false
+    },
+    {
+      "problem": "The capability-free payload attempted to read PID 1 namespace links. This is a static access conflict; the saved PermissionError lacks errno, filename and traceback evidence identifying the exact failing syscall.",
+      "change": "The host controller captures and validates its host namespace identities, then hash-binds them in payload admission. The capability-free payload reads only /proc/self/ns/{net,mnt} and requires both actual identities to differ from the bound host identities.",
+      "sourceDiff": {
+        "bytes": 4808,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/r03-to-r04.diff",
+        "sha256": "88beeb525736c2a739f0c8283337f7d602c098bef60a681088944c738bdc4b5c"
+      },
+      "budgetsUnchanged": true,
+      "payloadCapabilitiesUnchanged": true,
+      "actualNamespaceSeparationVerified": true
+    }
+  ],
+  "finalEvidence": {
+    "acceptedScope": "The reviewed r05 disk workspace, compiler and fixture preparation, visible-mount gates, four bounded sentinel writes/readbacks, evidence archive and exact owned-resource closure.",
+    "namespaceIdentity": {
+      "host": {
+        "mnt": "mnt:[4026531841]",
+        "net": "net:[4026531840]"
+      },
+      "payload": {
+        "mnt": "mnt:[4026532753]",
+        "net": "net:[4026532638]"
+      }
+    },
+    "payloadProperties": {
+      "CPUQuotaPerSecUSec": "250ms",
+      "Id": "goby-m5-storage-probe-7cb8cc30cba6.service",
+      "LimitFSIZE": "8388608",
+      "MainPID": "1680587",
+      "MemoryMax": "67108864",
+      "MemorySwapMax": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateMounts": "yes",
+      "PrivateNetwork": "yes",
+      "PrivateTmp": "yes",
+      "ProtectSystem": "strict",
+      "ReadWritePaths": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/workspace/m5-full-storage-probe-20260916-7cb8cc30cba6-job /opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/ext4/fixtures /opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/compiler",
+      "RuntimeMaxUSec": "1min 30s",
+      "TasksMax": "16"
+    },
+    "sentinelFiles": 4,
+    "separateFilesystems": 3,
+    "sentinelLocations": [
+      "workspace job directory",
+      "compiler GOCACHE",
+      "compiler TMPDIR",
+      "fixture filesystem"
+    ],
+    "archiveFiles": 11,
+    "archiveDirectories": 6,
+    "allArchiveFileBodiesStreamHashed": true,
+    "archiveExtractedToDisk": false,
+    "payloadStreamsReadBack": 6,
+    "compilerScratchDeletedBeforeArchive": true,
+    "workspaceBackingDeletedOnlyAfterArchiveReadback": true,
+    "allRecordedPidsAbsent": 79,
+    "bothCgroupsAbsent": true,
+    "controllerAndPayloadUnitsCollected": true,
+    "originalMountpointIdentitiesAndEmptyDirectoriesMatched": 3,
+    "ownedMountRows": 0,
+    "ownedLoopReferences": 0,
+    "ownedBackingAndFixturePathsAbsent": true,
+    "lockReleased": true,
+    "cleanupErrors": [],
+    "protectedBeforeAfterExact": true,
+    "sourceInputGuardPinsMatched": true,
+    "toolsBeforeAfterExact": true,
+    "controllerMemoryPeakBytes": 268435456,
+    "controllerMemoryEvidence": {
+      "bytes": 2841,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-7cb8cc30cba6/private/controller-journal.jsonl",
+      "sha256": "5d6e8c288ee691381441480faf05b4b1d81edbfeb2dac9aa2c76d7a0d95c1e54"
+    },
+    "memoryInterpretation": "The journal's 256 MiB peak is not by itself evidence of OOM. The controller exited successfully; no continuous memory series or full 3 GiB workload capacity was established."
+  },
+  "preservedBoundaries": {
+    "previousFailedResultsUnchanged": true,
+    "fullProfileRemainsDraftAndUnbound": true,
+    "sourcePreparationRetainsStagedNotDispatchedStatus": true,
+    "sourcePreparationMeaning": "The saved preparation predates this execution and is not rewritten; the final result and independent review supply the later outcome.",
+    "fullSourceAndInputPreparing": true,
+    "fullWorkerExecuted": false,
+    "postgresStarted": false,
+    "goExecuted": false,
+    "npmExecuted": false,
+    "productTestsExecuted": false,
+    "browserAcceptance": false,
+    "sqlRequests": 0,
+    "httpRequests": 0,
+    "fullThreeGiBWorkerCapacityEstablished": false
+  },
+  "reviewMethod": "The independent review read saved controller/payload streams, all archive bodies and the pinned outer closure. Its OS absence facts came from the saved readback, with no repeated probe or live query. This documentation update also only read saved records and source differences.",
+  "remaining": [
+    "Freeze and admit the actual combined S1 source, frontend command receipt/sidecar, tools, runtime guard and full input in a new owned full-run scope.",
+    "Apply the unchanged full workload budgets and fresh capacity admission; the small storage success does not establish full regression or build capacity.",
+    "Run the prepared combined backend, interaction, HTTP/browser and final build verification. Both failed probe scopes and the passed scope are consumed."
+  ]
+}
