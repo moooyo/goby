@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Pure closeout guards over synthetic receipts; never perform client work. */
+/** Pure closeout guards over synthetic receipts and fixed saved source; never perform client work. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { constants } from 'node:fs';
@@ -12,6 +12,7 @@ const ORIGIN = 'http://127.0.0.1:19180';
 const RETAINED_ROOT = '/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14';
 const ACTOR = 'a'.repeat(32), CONTROL = 'b'.repeat(32), ITEM = 'c'.repeat(32);
 const TOKEN = 'synthetic-owned-token-with-no-live-authority';
+const PURE_GUARD_COUNT = 70;
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const jsonBytes = value => Buffer.from(JSON.stringify(value));
 const clone = value => structuredClone(value);
@@ -608,11 +609,13 @@ function finalSubtitleFixture() {
       { label: 'subtitle-off-verified', media: [video(null, 2)], visible_dom_cues: [] }] };
 }
 
-function programsArtifactFixture(closer) {
+function programsArtifactFixture(closer, { complete = false } = {}) {
   const pin = name => ({ path: '/opt/goby-test/synthetic-programs-artifact/' + name, sha256: sha(name), bytes: 100 });
+  const profile = complete ? closer.PROGRAMS_COMPLETE_ARTIFACT_PROFILE : null;
   const receipt = { kind: 'goby-internal-amd64-artifact-receipt', version: 1, status: 'verified_and_closed',
     ...Object.fromEntries(['sourceArchive', 'sourceManifest', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'execution', 'archive', 'closure', 'independentReview'].map(key => [key, pin(key + '.json')])) };
   receipt.sourceArchive = { ...clone(closer.PROGRAMS_LINEAGE.sourceArchive), bytes: 2715997 };
+  if (complete) for (const key of ['sourceArchive', 'sourceManifest', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive']) receipt[key] = clone(profile[key]);
   receipt.worker = { archive: clone(receipt.archive), member: 'worker/report.json', sha256: sha('worker'), bytes: 100 };
   receipt.fullReport = { execution: clone(receipt.execution), worker: clone(receipt.worker),
     ordinaryBinary: { archive: clone(receipt.archive), member: 'worker/goby-ordinary', sha256: sha('different ordinary binary'), bytes: 200 } };
@@ -624,7 +627,12 @@ function programsArtifactFixture(closer) {
     ...Object.fromEntries(['execution', 'archive', 'closure', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'worker'].map(key => [key, clone(receipt[key])])),
     checks: Object.fromEntries('sourceIdentity ordinaryFullSuite ordinaryBuild embeddedBuild packageMembers artifactMaterialization toolPins budgets resourceClosure protectedState recordsBinding'.split(' ').map(key => [key, true])),
     limits: ['Synthetic fixture only; no product execution is asserted.'] };
+  const adapterBytes = complete ? Buffer.from('# Synthetic adapter source; never executed.\n') : null;
+  if (complete) review.adapter = { ...review.adapter, sha256: sha(adapterBytes), bytes: adapterBytes.length };
   const build = { sourceInventory: { files: 924 }, moduleInputs: { go: sha('go.mod') }, administratorAssets: Array.from({ length: 57 }, (_, index) => ({ name: 'asset-' + index })), administratorEntryReferences: [] };
+  if (complete) build.sourceInventory = { ...clone(profile.sourceInventory),
+    files: Array.from({ length: 861 }, (_, index) => ({ name: 'internal/synthetic-' + String(index).padStart(4, '0') + '.go',
+      sha256: sha('synthetic-source-' + index), bytes: index === 0 ? 12109709 - 860 : 1 })) };
   const bridge = { kind: 'goby-frozen-source-build-bridge', version: 1, status: 'matched', input: clone(review.input), sourceArchive: clone(receipt.sourceArchive),
     sourceManifest: clone(receipt.sourceManifest), sourceCheckpoint: pin('checkpoint.json'), gitCommit: '74a69abacdd9206e51f4e166df2346b5555b5cd9',
     frozenFiles: 924, trackedBuildInputs: 867, generatedAssetCount: 57, frozenBytes: 13253765, ...clone(build), deploymentInputs: [],
@@ -633,9 +641,46 @@ function programsArtifactFixture(closer) {
     buildManifest: { ...clone(receipt.buildManifest), path: '/synthetic-old-ram/build-manifest.json' },
     packageManifest: { ...clone(receipt.packageManifest), path: '/synthetic-old-ram/package-manifest.json' }, reader: pin('reader.py'),
     sourceTreeUnchangedBeforeAfter: true, gitAndFrozenModesDeclaredEqual: false };
+  if (complete) {
+    for (const key of ['gitCommit', 'frozenFiles', 'trackedBuildInputs', 'generatedAssetCount', 'frozenBytes', 'trackedInputCountScope']) bridge[key] = clone(profile[key]);
+    bridge.runtimeModeProjection.files = Array.from({ length: 5405 }, (_, index) => ({
+      name: index < 861 ? build.sourceInventory.files[index].name : 'docs/synthetic-' + index + '.md', archiveMode: 0o644, runtimeMode: 0o600 }));
+  }
   const closure = { kind: 'livetv-programs-final-closure', version: 1, status: 'closed', input: clone(review.input), adapter: clone(review.adapter), archive: clone(receipt.archive),
     ...Object.fromEntries('resourcesClosed ownedProcessesClosed ext4Unmounted loopDetached ramUnmounted lockReleased allOwnedCommandsClosed protectedUnchanged'.split(' ').map(key => [key, true])) };
-  return { receipt, review, bridge, build, closure, source };
+  if (complete) delete closure.adapter.bytes;
+  return { receipt, review, bridge, build, closure, source, adapterBytes };
+}
+
+async function savedProgramsArtifactAdapterFixture(closer) {
+  const root = '/opt/goby-test/livetv-programs-complete-source-final-20260916-r02';
+  const adapter = { path: root + '/private/verify-livetv-programs-final.py',
+    sha256: '7e061ff3db40681f8c28e86ae625bb8cac54b4ddeccade776d51048278a82ac9', bytes: 58152 };
+  const closure = { path: root + '/closure.json',
+    sha256: '7bf2db69fbc55755ae08120971af8345cee98775d7435c8834ef08b5fe924390', bytes: 7152 };
+  const read = async pin => {
+    const handle = await fs.open(pin.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const stat = await handle.stat();
+      assert(stat.isFile() && stat.size === pin.bytes && stat.size <= 65536, 'saved_programs_adapter_fixture_size');
+      const buffer = Buffer.alloc(pin.bytes + 1);
+      let length = 0;
+      while (length < buffer.length) {
+        const { bytesRead } = await handle.read(buffer, length, buffer.length - length, length);
+        if (bytesRead === 0) break;
+        length += bytesRead;
+      }
+      const bytes = buffer.subarray(0, length);
+      assert(bytes.length === pin.bytes && sha(bytes) === pin.sha256, 'saved_programs_adapter_fixture_digest');
+      return bytes;
+    } finally { await handle.close(); }
+  };
+  const [adapterBytes, closureBytes] = await Promise.all([read(adapter), read(closure)]);
+  const value = programsArtifactFixture(closer, { complete: true });
+  value.review.adapter = adapter;
+  value.adapterBytes = adapterBytes;
+  value.closure.adapter = JSON.parse(closureBytes.toString('utf8')).adapter;
+  return value;
 }
 
 function guardCases(closer) {
@@ -734,7 +779,7 @@ function guardCases(closer) {
       closer.verifyUI(episode, episodeManifest, { exchanges: [] });
     }],
     ['programs_artifact_binds_one_worker_and_distinct_ordinary_embedded_binaries', () => {
-      const value = programsArtifactFixture(closer), verify = row => closer.validateProgramsArtifact(row.receipt, row.review, row.bridge, row.build, row.closure, row.source);
+      const value = programsArtifactFixture(closer), verify = row => closer.validateProgramsArtifact(row.receipt, row.review, row.bridge, row.build, row.closure, row.source, row.adapterBytes);
       assert.equal(verify(value).ordinaryAndEmbeddedWorkerBound, true);
       assert.notEqual(value.receipt.fullReport.ordinaryBinary.sha256, value.receipt.newBinary.sha256);
       for (const mutate of [row => { row.receipt.fullReport.worker.sha256 = sha('second worker'); }, row => { row.review.checks.ordinaryFullSuite = false; },
@@ -742,6 +787,111 @@ function guardCases(closer) {
         row => { row.bridge.buildManifest.sha256 = sha('different manifest'); }, row => { row.closure.lockReleased = false; }]) {
         const changed = programsArtifactFixture(closer); mutate(changed); assert.throws(() => verify(changed));
       }
+    }],
+    ['programs_complete_artifact_keeps_canonical_v1_and_distinct_build_outputs', () => {
+      const value = programsArtifactFixture(closer, { complete: true });
+      assert.equal(closer.validateProgramsArtifact(value.receipt, value.review, value.bridge, value.build, value.closure, value.source, value.adapterBytes).sourceBridgeMatched, true);
+      assert.equal(value.receipt.version, 1); assert.equal(value.review.version, 1);
+      assert.notEqual(value.receipt.fullReport.ordinaryBinary.sha256, value.receipt.newBinary.sha256);
+      for (const kind of ['livetv-programs-complete-source-test-build-independent-review', 'programs-closure-materialization-independent-review']) {
+        const changed = clone(value); changed.review.kind = kind;
+        assert.throws(() => closer.validateProgramsArtifact(changed.receipt, changed.review, changed.bridge, changed.build, changed.closure, changed.source, value.adapterBytes), /programs_artifact_independent_review/);
+      }
+    }],
+    ['programs_complete_artifact_rejects_every_changed_materialized_pin', () => {
+      for (const key of ['sourceArchive', 'sourceManifest', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive']) {
+        for (const field of ['path', 'sha256', 'bytes']) {
+          const value = programsArtifactFixture(closer, { complete: true });
+          value.receipt[key][field] = field === 'path' ? value.receipt[key].path + '.different' : field === 'sha256' ? sha('different-' + key) : value.receipt[key].bytes + 1;
+          assert.throws(() => closer.validateProgramsArtifact(value.receipt, value.review, value.bridge, value.build, value.closure, value.source, value.adapterBytes),
+            key === 'sourceArchive' && field !== 'bytes' ? /programs_source_profile/ : /programs_complete_artifact_pins/);
+        }
+      }
+    }],
+    ['programs_complete_bridge_rejects_mixed_profiles_and_undeclared_scope', () => {
+      const verify = row => closer.validateProgramsArtifact(row.receipt, row.review, row.bridge, row.build, row.closure, row.source, row.adapterBytes);
+      for (const mutate of [row => { delete row.bridge.trackedInputCountScope; },
+        row => { row.bridge.trackedInputCountScope = 'Compiled project inputs.'; }, row => { row.bridge.extraScope = true; },
+        row => { row.bridge.gitCommit = '74a69abacdd9206e51f4e166df2346b5555b5cd9'; }, row => { row.bridge.frozenFiles = 924; },
+        row => { row.bridge.trackedBuildInputs = 867; }, row => { row.bridge.generatedAssetCount = 56; }, row => { row.bridge.frozenBytes = 13253765; }]) {
+        const value = programsArtifactFixture(closer, { complete: true }); mutate(value);
+        assert.throws(() => verify(value), /programs_source_bridge/);
+      }
+      const old = programsArtifactFixture(closer); old.bridge.trackedInputCountScope = closer.PROGRAMS_COMPLETE_ARTIFACT_PROFILE.trackedInputCountScope;
+      assert.throws(() => verify(old), /programs_source_bridge/);
+    }],
+    ['programs_complete_inventory_rejects_changed_scope_shape_counts_and_rows', () => {
+      for (const mutate of [inventory => { inventory.files = 861; }, inventory => { inventory.files.pop(); },
+        inventory => { inventory.fileCount = 924; }, inventory => { inventory.totalBytes++; }, inventory => { inventory.sha256 = sha('different-inventory'); },
+        inventory => { inventory.boundary = 'Compiled dependency graph.'; }, inventory => { inventory.digestEncoding = 'Unspecified JSON'; },
+        inventory => { inventory.scope.push('web/'); }, inventory => { inventory.extra = true; }, inventory => { delete inventory.boundary; },
+        inventory => { inventory.files[0].extra = true; }, inventory => { inventory.files[0].bytes++; },
+        inventory => { inventory.files[0].sha256 = 'invalid'; }, inventory => { inventory.files[0].name = 'docs/uncompiled.md'; },
+        inventory => { inventory.files[0].name = 'internal/../outside.go'; }, inventory => { inventory.files[0].name = inventory.files[1].name; }]) {
+        const value = programsArtifactFixture(closer, { complete: true }); mutate(value.bridge.sourceInventory);
+        value.build.sourceInventory = clone(value.bridge.sourceInventory);
+        assert.throws(() => closer.validateProgramsArtifact(value.receipt, value.review, value.bridge, value.build, value.closure, value.source, value.adapterBytes), /programs_complete_source_inventory/);
+      }
+    }],
+    ['programs_complete_modes_require_every_saved_0644_to_0600_projection', () => {
+      for (const mutate of [files => { files.pop(); }, files => { files[0].name = files[1].name; },
+        files => { files[0].archiveMode = 0o755; files[0].runtimeMode = 0o700; }, files => { files[0].runtimeMode = 0o644; }]) {
+        const value = programsArtifactFixture(closer, { complete: true }); mutate(value.bridge.runtimeModeProjection.files);
+        assert.throws(() => closer.validateProgramsArtifact(value.receipt, value.review, value.bridge, value.build, value.closure, value.source, value.adapterBytes), /programs_runtime_mode_projection/);
+      }
+    }],
+    ['programs_complete_saved_adapter_bytes_bind_the_original_pin2_closure', async () => {
+      const value = await savedProgramsArtifactAdapterFixture(closer);
+      assert.equal(closer.validateProgramsArtifact(value.receipt, value.review, value.bridge, value.build, value.closure, value.source, value.adapterBytes).independentProductReviewMatched, true);
+      assert.deepEqual(Object.keys(value.closure.adapter).sort(), ['path', 'sha256']);
+      assert.equal(value.adapterBytes.length, 58152);
+      const legacy = programsArtifactFixture(closer); delete legacy.closure.adapter.bytes;
+      assert.throws(() => closer.validateProgramsArtifact(legacy.receipt, legacy.review, legacy.bridge, legacy.build, legacy.closure, legacy.source), /programs_artifact_resources_not_closed/);
+    }],
+    ['programs_complete_adapter_rejects_missing_bytes_changed_identity_and_extra_fields', async () => {
+      const value = await savedProgramsArtifactAdapterFixture(closer);
+      const changes = [
+        [row => { row.adapterBytes = null; }, /programs_artifact_adapter_bytes/],
+        [row => { row.adapterBytes = { verified: true }; }, /programs_artifact_adapter_bytes/],
+        [row => { row.adapterBytes = new Uint8Array(row.adapterBytes); }, /programs_artifact_adapter_bytes/],
+        [row => { row.adapterBytes = row.adapterBytes.subarray(1); }, /programs_artifact_adapter_bytes/],
+        [row => { row.adapterBytes[0] ^= 1; }, /programs_artifact_adapter_bytes/],
+        [row => { row.review.adapter.bytes++; }, /programs_artifact_adapter_bytes/],
+        [row => { row.review.adapter.sha256 = sha('other source'); }, /programs_artifact_adapter_bytes/],
+        [row => { row.review.adapter.path += '.other'; }, /programs_artifact_adapter_binding/],
+        [row => { row.closure.adapter.path += '.other'; }, /programs_artifact_adapter_binding/],
+        [row => { row.closure.adapter.sha256 = sha('other source'); }, /programs_artifact_adapter_binding/],
+        [row => { row.closure.adapter.bytes = row.review.adapter.bytes; }, /programs_artifact_adapter_binding/],
+        [row => { row.closure.adapter.extra = true; }, /programs_artifact_adapter_binding/],
+        [row => { delete row.closure.adapter.sha256; }, /programs_artifact_adapter_binding/],
+        [row => { row.review.adapter.extra = true; }, /programs_artifact_independent_review/],
+        [row => { delete row.review.adapter.bytes; }, /programs_artifact_independent_review/],
+        [row => { row.adapterBytes[0] ^= 1; row.review.adapter.sha256 = sha(row.adapterBytes); }, /programs_artifact_adapter_binding/],
+      ];
+      for (const [mutate, failure] of changes) {
+        const changed = clone(value); changed.adapterBytes = Buffer.from(value.adapterBytes); mutate(changed);
+        assert.throws(() => closer.validateProgramsArtifact(changed.receipt, changed.review, changed.bridge, changed.build, changed.closure, changed.source, changed.adapterBytes), failure);
+      }
+    }],
+    ['programs_complete_current_runtime_requires_the_bounded_second_recovery_edge', () => {
+      const epoch = { previousEpoch: clone(closer.PROGRAMS_LINEAGE.previousEpoch) }, seed = { previousBinding: clone(closer.PROGRAMS_LINEAGE.previousBinding) };
+      const previous = { candidate: { binary: { path: '/synthetic/goby', sha256: sha('previous-binary') }, runtime: { root: '/synthetic/runtime' }, units: { server: 'synthetic.service' } } };
+      const archive = { path: closer.PROGRAMS_COMPLETE_ARTIFACT_PROFILE.sourceArchive.path, sha256: closer.PROGRAMS_COMPLETE_ARTIFACT_PROFILE.sourceArchive.sha256 };
+      const current = { kind: 'audited-candidate-current-runtime-binding', version: 2, status: 'reviewed_current_runtime',
+        runtimeEpoch: clone(epoch.previousEpoch), seedBinding: clone(seed.previousBinding), preserved: clone(previous.candidate),
+        previousCurrentRuntime: { path: '/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/current-runtime-binding.json',
+          sha256: 'aed2914bc75663b51a9f4d923acc137cfe6a0926a901dd7fa0a7e64f42183de4' } };
+      assert.equal(closer.validateProgramsPreviousCurrentRuntime(current, epoch, seed, previous, archive), current);
+      for (const mutate of [row => { row.version = 1; }, row => { row.version = 3; }, row => { delete row.previousCurrentRuntime; },
+        row => { row.previousCurrentRuntime = clone(closer.PROGRAMS_LINEAGE.previousCurrentRuntime); },
+        row => { row.previousCurrentRuntime.path += '.other'; }, row => { row.previousCurrentRuntime.sha256 = sha('unknown-recovery'); },
+        row => { row.previousCurrentRuntime.extra = true; }, row => { row.preserved.binary.sha256 = sha('replaced-binary'); }]) {
+        const changed = clone(current); mutate(changed);
+        assert.throws(() => closer.validateProgramsPreviousCurrentRuntime(changed, epoch, seed, previous, archive), /programs_prior_current_runtime/);
+      }
+      assert.throws(() => closer.validateProgramsPreviousCurrentRuntime(current, epoch, seed, previous, closer.PROGRAMS_LINEAGE.sourceArchive), /programs_prior_current_runtime/);
+      const legacy = clone(current); legacy.version = 1; delete legacy.previousCurrentRuntime;
+      assert.equal(closer.validateProgramsPreviousCurrentRuntime(legacy, epoch, seed, previous, closer.PROGRAMS_LINEAGE.sourceArchive), legacy);
     }],
     ['login_request_decoder_dispatches_json_and_utf8_body_form_without_query_merge', () => {
       const options = { route: '/Users/AuthenticateByName', kind: 'login', type: 'application/x-www-form-urlencoded; charset=UTF-8' };
@@ -1882,7 +2032,7 @@ async function main() {
   const closer = await import(pathToFileURL(source).href);
   const tests = [];
   for (const [name, run] of guardCases(closer)) {
-    try { run(); tests.push({ name, outcome: 'passed' }); }
+    try { await run(); tests.push({ name, outcome: 'passed' }); }
     catch (error) { tests.push({ name, outcome: 'failed', errorType: error.name,
       failedCheck: /^[a-z0-9_]+$/.test(error.message ?? '') ? error.message : 'pure_guard_assertion_failed' }); }
   }
@@ -1916,7 +2066,7 @@ async function main() {
   }
   const unchanged = (await Promise.all(Object.entries(sources).map(async ([filename, digest]) => sha(await fs.readFile(filename)) === digest))).every(Boolean);
   const report = { kind: 'audited-candidate-client-closeout-pure-guards', version: 1,
-    scope: 'Pure synthetic fixtures and optional explicitly pinned saved-state replay through production loaders. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay, reviewedBaselineReplay, reviewedTVBaselineReplay, episodeProvenanceReplay,
+    scope: 'Pure synthetic fixtures, fixed saved adapter/closure bytes, and optional explicitly pinned saved-state replay through production loaders. No browser input, HTTP, SQL, service operation, or client acceptance claim.', replayedPins, currentLineageReplay, reviewedBaselineReplay, reviewedTVBaselineReplay, episodeProvenanceReplay,
     source: { path: source, sha256: sources[source] }, sources, output, testCount: tests.length,
     passed: tests.filter(row => row.outcome === 'passed').length, failed: tests.filter(row => row.outcome !== 'passed').length,
     sourceUnchanged: unchanged, tests, clientAcceptanceClaim: false, endToEndExecuted: false,
@@ -1928,7 +2078,7 @@ async function main() {
   try { await directory.sync(); } finally { await directory.close(); }
   process.stdout.write(JSON.stringify({ path: output, sha256: sha(bytes), testCount: report.testCount,
     passed: report.passed, failed: report.failed, sourceUnchanged: unchanged, clientAcceptanceClaim: false }) + '\n');
-  if (tests.length !== (reviewedTV ? 63 : reviewed ? 65 : replay ? 64 : 62) + Number(episode) || report.failed || !unchanged) process.exitCode = 1;
+  if (tests.length !== PURE_GUARD_COUNT + (reviewedTV ? 1 : reviewed ? 3 : replay ? 2 : 0) + Number(episode) || report.failed || !unchanged) process.exitCode = 1;
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

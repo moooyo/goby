@@ -63,10 +63,37 @@ const SUCCESSOR_LIMITS = { maximumSeconds: 900, stopSeconds: 60, readySeconds: 6
 export const PROGRAMS_LINEAGE = {
   previousEpoch: { path: RETAINED_ROOT + '/candidate-tv-parent-transition-01/private/runtime-epoch.json', sha256: '76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac' },
   previousBinding: { path: RETAINED_ROOT + '/candidate-tv-parent-transition-01/private/seed-runtime-binding.json', sha256: '94bd35e5523a56c60a9b712684d02785b05d6924820bb25f60c48ec8d3496c43' },
-  previousCurrentRuntime: { path: RETAINED_ROOT + '/core-current-runtime-20260915T085726Z/private/current-runtime-binding.json', sha256: '38b906d090cf1ae6cf1e6679d68e92772e60e4e5f396ef085b232983a35de60c' },
+  previousCurrentRuntime: { path: '/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/current-runtime-binding.json', sha256: 'db22e3d954febd07c422d143027876a94782d3937e0ab374f80d566ba283c4ef' },
   priorSource: { path: RETAINED_ROOT + '/candidate-core-client-tv-browse-02/private/source-after.json', sha256: '445c35bc17a8716adb036061e16fa29f22d9883727657ebfe1cfc1fdd0db13e4' },
   priorCloseout: { path: RETAINED_ROOT + '/candidate-core-client-tv-browse-02/closeout/closeout.json', sha256: '5d666c204c4aa122414aa385928d6be6a4a153c8ce0390e4c9af2643fc19f9c3' },
   sourceArchive: { path: RETAINED_ROOT + '/live-tv-product-source-20260915T102000Z/source-r01.tar.gz', sha256: '3c0e7e0de4e769f3bb2667d8b30cae1b62794c58e4d2b219b707cceb917ed251' },
+};
+const PROGRAMS_COMPLETE_SOURCE_ROOT = '/opt/goby-test/livetv-programs-complete-source-final-20260916';
+const PROGRAMS_COMPLETE_PRODUCT_ROOT = '/opt/goby-test/livetv-programs-complete-source-final-20260916-r02';
+const PROGRAMS_COMPLETE_RUNTIME_PREDECESSOR = {
+  path: '/opt/goby-test/candidate-lease-loss-recovery-20260915/current-runtime-01/private/current-runtime-binding.json',
+  sha256: 'aed2914bc75663b51a9f4d923acc137cfe6a0926a901dd7fa0a7e64f42183de4',
+};
+const PROGRAMS_LEGACY_ARTIFACT_PROFILE = {
+  sourceArchive: PROGRAMS_LINEAGE.sourceArchive,
+  gitCommit: '74a69abacdd9206e51f4e166df2346b5555b5cd9', frozenFiles: 924, trackedBuildInputs: 867,
+  generatedAssetCount: 57, frozenBytes: 13253765,
+};
+export const PROGRAMS_COMPLETE_ARTIFACT_PROFILE = {
+  sourceArchive: { path: PROGRAMS_COMPLETE_SOURCE_ROOT + '/private/source.tar.gz', sha256: 'f211b15d5e9675448f5de4d582e3d3898ad645937291edeeab0e658cbb91752b', bytes: 33333070 },
+  sourceManifest: { path: PROGRAMS_COMPLETE_SOURCE_ROOT + '/private/source-manifest.json', sha256: 'fa0b3bf9642fa1a1a3face0bb580e94c901f3a8d6bfc378891d4233ae5dca4cc', bytes: 1093188 },
+  sourceBridge: { path: PROGRAMS_COMPLETE_PRODUCT_ROOT + '/private/build-source-bridge.json', sha256: '3a263670569054115ef0d6be1247059cfba54357ea3c7dcec8acbddd1200993d', bytes: 1062677 },
+  buildManifest: { path: PROGRAMS_COMPLETE_PRODUCT_ROOT + '/artifacts/linux-amd64-systemd/manifest.json', sha256: '54868306dce5a5a04348e2606bd047cf13af9d52c8db2a4ad23c5ffdb9ef6ed5', bytes: 173965 },
+  newBinary: { path: PROGRAMS_COMPLETE_PRODUCT_ROOT + '/artifacts/linux-amd64-systemd/goby', sha256: 'ead67c8faaf4cde88f7fe1bf57ffed43705259aba7b29f59c3473747afd732fb', bytes: 30701500 },
+  packageManifest: { path: PROGRAMS_COMPLETE_PRODUCT_ROOT + '/artifacts/linux-amd64-systemd/package-manifest.json', sha256: '39566a074e499a714ca4190cea3a776458d7a4300396484627f9c69afdab415c', bytes: 5998 },
+  packageArchive: { path: PROGRAMS_COMPLETE_PRODUCT_ROOT + '/artifacts/linux-amd64-systemd/goby-linux-amd64-systemd.tar.gz', sha256: 'c7e5d30bccf105003d9908ff18f18faf898bf83217c5ff2a6c4eda305c504a86', bytes: 14078580 },
+  gitCommit: '3d6b79b36b6a5050e174f7a152f214b9356608c8', frozenFiles: 5405, trackedBuildInputs: 5348,
+  generatedAssetCount: 57, frozenBytes: 120705443,
+  trackedInputCountScope: 'All tracked project inputs, including documentation and fixtures; not a claim of compiled or emitted contribution.',
+  sourceInventory: { fileCount: 861, totalBytes: 12109709, sha256: '9065d9e95d850c17e9d496c56a3af57a46f83879e2c23a3eb234867496b91a2a',
+    boundary: 'Snapshot of all regular files in the stated local scope, not a compiled dependency graph.',
+    digestEncoding: 'UTF-8 JSON.stringify(files), sorted by repository-relative name.',
+    scope: ['cmd/', 'internal/', 'web/admin/embedded.go'] },
 };
 const PROGRAMS_SOURCE_KEYS = ['archiveSha256', 'sourceManifest', 'binary', 'fullReport', 'schema', 'artifactReceipt', 'buildManifest', 'sourceBridge'];
 const PROGRAMS_REFRESH_FIELDS = { key: 'library.refresh_media', emby_key: '', name: 'Refresh media details',
@@ -1665,14 +1692,25 @@ const artifactMember = value => exact(value, ['archive', 'member', 'sha256', 'by
   typeof value.member === 'string' && value.member.length > 0 && !path.posix.isAbsolute(value.member) && !value.member.split('/').includes('..') && SHA.test(value.sha256) && integer(value.bytes) && value.bytes > 0;
 const simplePin = value => ({ path: value.path, sha256: value.sha256 });
 
-export function validateProgramsArtifact(receipt, review, bridge, build, closure, source) {
+function programsArtifactProfile(sourceArchive) {
+  need(descriptor(sourceArchive), 'programs_source_profile');
+  const profile = [PROGRAMS_LEGACY_ARTIFACT_PROFILE, PROGRAMS_COMPLETE_ARTIFACT_PROFILE]
+    .find(value => equal(sourceArchive, simplePin(value.sourceArchive)));
+  need(profile !== undefined, 'programs_source_profile');
+  return profile;
+}
+
+export function validateProgramsArtifact(receipt, review, bridge, build, closure, source, adapterBytes = null) {
   const pins = ['sourceArchive', 'sourceManifest', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'execution', 'archive', 'closure', 'independentReview'];
   need(exact(receipt, ['kind', 'version', 'status', ...pins, 'fullReport', 'worker']) && receipt.kind === 'goby-internal-amd64-artifact-receipt' && receipt.version === 1 &&
     receipt.status === 'verified_and_closed' && pins.every(key => artifactPin(receipt[key])) && artifactMember(receipt.worker), 'programs_artifact_receipt');
   need(exact(receipt.fullReport, ['execution', 'worker', 'ordinaryBinary']) && artifactMember(receipt.fullReport.ordinaryBinary) &&
     equal(receipt.fullReport.execution, receipt.execution) && equal(receipt.fullReport.worker, receipt.worker) && equal(receipt.worker.archive, receipt.archive) &&
     equal(receipt.fullReport.ordinaryBinary.archive, receipt.archive), 'programs_single_build_worker_binding');
-  need(equal(simplePin(receipt.sourceArchive), PROGRAMS_LINEAGE.sourceArchive) && source.archiveSha256 === receipt.sourceArchive.sha256 &&
+  const profile = programsArtifactProfile(simplePin(receipt.sourceArchive)), complete = profile === PROGRAMS_COMPLETE_ARTIFACT_PROFILE;
+  if (complete) need(['sourceArchive', 'sourceManifest', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive']
+    .every(key => equal(receipt[key], profile[key])), 'programs_complete_artifact_pins');
+  need(source.archiveSha256 === receipt.sourceArchive.sha256 &&
     equal(simplePin(receipt.sourceManifest), source.sourceManifest) && equal(simplePin(receipt.sourceBridge), source.sourceBridge) &&
     equal(simplePin(receipt.buildManifest), source.buildManifest) && equal(simplePin(receipt.execution), source.fullReport) &&
     receipt.newBinary.sha256 === source.binary.sha256, 'programs_artifact_source_binding');
@@ -1682,29 +1720,57 @@ export function validateProgramsArtifact(receipt, review, bridge, build, closure
     review.status === 'verified' && reviewPins.every(key => artifactPin(review[key])) && equal(review.worker, receipt.worker) &&
     exact(review.checks, checks) && checks.every(key => review.checks[key] === true) && Array.isArray(review.limits) && review.limits.every(value => typeof value === 'string') &&
     reviewPins.filter(key => !['input', 'adapter'].includes(key)).every(key => equal(review[key], receipt[key])), 'programs_artifact_independent_review');
+  if (complete) {
+    need(Buffer.isBuffer(adapterBytes) && adapterBytes.length === review.adapter.bytes && sha(adapterBytes) === review.adapter.sha256,
+      'programs_artifact_adapter_bytes');
+    need(descriptor(closure?.adapter) && equal(closure.adapter, simplePin(review.adapter)), 'programs_artifact_adapter_binding');
+  }
   const bridgeKeys = ['kind', 'version', 'status', 'input', 'sourceArchive', 'sourceManifest', 'sourceCheckpoint', 'gitCommit', 'frozenFiles', 'trackedBuildInputs',
     'generatedAssetCount', 'frozenBytes', 'sourceInventory', 'moduleInputs', 'administratorAssets', 'administratorEntryReferences', 'deploymentInputs',
-    'runtimeModeProjection', 'buildManifest', 'packageManifest', 'reader', 'sourceTreeUnchangedBeforeAfter', 'gitAndFrozenModesDeclaredEqual'];
+    'runtimeModeProjection', 'buildManifest', 'packageManifest', 'reader', 'sourceTreeUnchangedBeforeAfter', 'gitAndFrozenModesDeclaredEqual',
+    ...(complete ? ['trackedInputCountScope'] : [])];
   need(exact(bridge, bridgeKeys) && bridge.kind === 'goby-frozen-source-build-bridge' && bridge.version === 1 && bridge.status === 'matched' &&
     ['input', 'sourceArchive', 'sourceManifest', 'sourceCheckpoint', 'buildManifest', 'packageManifest', 'reader'].every(key => artifactPin(bridge[key])) &&
     equal(bridge.input, review.input) && equal(bridge.sourceArchive, receipt.sourceArchive) && equal(bridge.sourceManifest, receipt.sourceManifest) &&
-    bridge.gitCommit === '74a69abacdd9206e51f4e166df2346b5555b5cd9' && bridge.frozenFiles === 924 && bridge.trackedBuildInputs === 867 &&
-    bridge.generatedAssetCount === 57 && bridge.frozenBytes === 13253765 && bridge.sourceTreeUnchangedBeforeAfter === true && bridge.gitAndFrozenModesDeclaredEqual === false,
+    ['gitCommit', 'frozenFiles', 'trackedBuildInputs', 'generatedAssetCount', 'frozenBytes'].every(key => bridge[key] === profile[key]) &&
+    (!complete || bridge.trackedInputCountScope === profile.trackedInputCountScope) &&
+    bridge.sourceTreeUnchangedBeforeAfter === true && bridge.gitAndFrozenModesDeclaredEqual === false,
     'programs_source_bridge');
   for (const key of ['buildManifest', 'packageManifest']) need(bridge[key].sha256 === receipt[key].sha256 && bridge[key].bytes === receipt[key].bytes, 'programs_materialized_manifest_changed');
-  need(own(bridge.sourceInventory) && own(bridge.moduleInputs) && Array.isArray(bridge.administratorAssets) && bridge.administratorAssets.length === 57 &&
+  need(own(bridge.sourceInventory) && own(bridge.moduleInputs) && Array.isArray(bridge.administratorAssets) && bridge.administratorAssets.length === profile.generatedAssetCount &&
     Array.isArray(bridge.administratorEntryReferences) && Array.isArray(bridge.deploymentInputs) &&
     equal(bridge.sourceInventory, build.sourceInventory) && equal(bridge.moduleInputs, build.moduleInputs) &&
     equal(bridge.administratorAssets, build.administratorAssets) && equal(bridge.administratorEntryReferences, build.administratorEntryReferences), 'programs_build_manifest_bridge');
+  if (complete) {
+    const inventory = bridge.sourceInventory, files = inventory.files;
+    need(exact(inventory, ['boundary', 'digestEncoding', 'fileCount', 'files', 'scope', 'sha256', 'totalBytes']) &&
+      Object.keys(profile.sourceInventory).every(key => equal(inventory[key], profile.sourceInventory[key])) &&
+      Array.isArray(files) && files.length === profile.sourceInventory.fileCount &&
+      files.every(row => exact(row, ['name', 'sha256', 'bytes']) && typeof row.name === 'string' &&
+        !path.posix.isAbsolute(row.name) && !row.name.split('/').includes('..') &&
+        (row.name.startsWith('cmd/') || row.name.startsWith('internal/') || row.name === 'web/admin/embedded.go') && SHA.test(row.sha256) && integer(row.bytes)) &&
+      new Set(files.map(row => row.name)).size === profile.sourceInventory.fileCount &&
+      files.reduce((total, row) => total + row.bytes, 0) === profile.sourceInventory.totalBytes, 'programs_complete_source_inventory');
+  }
   const modes = bridge.runtimeModeProjection;
   need(exact(modes, ['umask', 'rule', 'files', 'allMatched']) && modes.umask === 63 && modes.rule === 'archiveMode & ~0077' && modes.allMatched === true &&
-    Array.isArray(modes.files) && modes.files.length === 924 && new Set(modes.files.map(row => row.name)).size === 924 &&
+    Array.isArray(modes.files) && modes.files.length === profile.frozenFiles && new Set(modes.files.map(row => row.name)).size === profile.frozenFiles &&
     modes.files.every(row => exact(row, ['name', 'archiveMode', 'runtimeMode']) && typeof row.name === 'string' && integer(row.archiveMode) &&
-      integer(row.runtimeMode) && row.runtimeMode === (row.archiveMode & ~63)), 'programs_runtime_mode_projection');
+      integer(row.runtimeMode) && row.runtimeMode === (row.archiveMode & ~63) &&
+      (!complete || row.archiveMode === 0o644 && row.runtimeMode === 0o600)), 'programs_runtime_mode_projection');
   need(closure?.kind === 'livetv-programs-final-closure' && closure.version === 1 && closure.status === 'closed' &&
     ['resourcesClosed', 'ownedProcessesClosed', 'ext4Unmounted', 'loopDetached', 'ramUnmounted', 'lockReleased', 'allOwnedCommandsClosed', 'protectedUnchanged'].every(key => closure[key] === true) &&
-    equal(closure.input, review.input) && equal(closure.adapter, review.adapter) && equal(closure.archive, receipt.archive), 'programs_artifact_resources_not_closed');
+    equal(closure.input, review.input) && (complete || equal(closure.adapter, review.adapter)) && equal(closure.archive, receipt.archive), 'programs_artifact_resources_not_closed');
   return { ordinaryAndEmbeddedWorkerBound: true, sourceBridgeMatched: true, independentProductReviewMatched: true };
+}
+
+export function validateProgramsPreviousCurrentRuntime(current, epoch, seed, previous, sourceArchive) {
+  const complete = programsArtifactProfile(sourceArchive) === PROGRAMS_COMPLETE_ARTIFACT_PROFILE;
+  need(current?.kind === 'audited-candidate-current-runtime-binding' && current.version === (complete ? 2 : 1) && current.status === 'reviewed_current_runtime' &&
+    (!complete || equal(current.previousCurrentRuntime, PROGRAMS_COMPLETE_RUNTIME_PREDECESSOR)) &&
+    equal(current.runtimeEpoch, epoch.previousEpoch) && equal(current.seedBinding, seed.previousBinding) &&
+    equal(current.preserved, Object.fromEntries(['binary', 'runtime', 'units'].map(key => [key, previous.candidate[key]]))), 'programs_prior_current_runtime');
+  return current;
 }
 
 export function validateProgramsRuntimeLineage(epoch, seed, lineage) {
@@ -1718,24 +1784,23 @@ export function validateProgramsRuntimeLineage(epoch, seed, lineage) {
     equal(seed.priorSource, PROGRAMS_LINEAGE.priorSource) && equal(seed.priorCloseout, PROGRAMS_LINEAGE.priorCloseout) && previous?.version === 3 && previousBinding?.version === 3,
     'programs_predecessor_binding');
   validateRuntimeLineage(previous, previousBinding, previousLineage);
-  need(current?.kind === 'audited-candidate-current-runtime-binding' && current.version === 1 && current.status === 'reviewed_current_runtime' &&
-    equal(current.runtimeEpoch, epoch.previousEpoch) && equal(current.seedBinding, seed.previousBinding) &&
-    equal(current.preserved, Object.fromEntries(['binary', 'runtime', 'units'].map(key => [key, previous.candidate[key]]))), 'programs_prior_current_runtime');
+  const profile = programsArtifactProfile(input?.newSourceArchive);
+  validateProgramsPreviousCurrentRuntime(current, epoch, seed, previous, input.newSourceArchive);
   need(input?.kind === 'audited-candidate-transition-input' && input.version === 3 && input.operationKind === 'programs_successor' &&
     equal(input.previousEpoch, epoch.previousEpoch) && equal(input.previousBinding, seed.previousBinding) && equal(input.currentRuntime, epoch.previousCurrentRuntime) &&
-    equal(input.priorSource, seed.priorSource) && equal(input.priorCloseout, seed.priorCloseout) && equal(input.newSourceArchive, PROGRAMS_LINEAGE.sourceArchive) &&
+    equal(input.priorSource, seed.priorSource) && equal(input.priorCloseout, seed.priorCloseout) && equal(input.newSourceArchive, simplePin(profile.sourceArchive)) &&
     equal(input.helpers, epoch.helpers) && equal(input.budgets, SUCCESSOR_LIMITS) && equal(epoch.productInput, epoch.transitionInput) &&
     equal(epoch.calls, { stop: 1, replace: 1, start: 1 }), 'programs_transition_input_binding');
   for (const key of ['transitionInput', 'transitionHelper', 'runtimeHelper', 'before', 'after', 'sourceBefore', 'sourceAfter', 'preservation', 'reviewedState', 'reviewedSummary']) need(descriptor(epoch[key]), 'programs_epoch_pin');
   const source = epoch.currentSource;
-  need(exact(source, PROGRAMS_SOURCE_KEYS) && source.schema === 28 && source.archiveSha256 === PROGRAMS_LINEAGE.sourceArchive.sha256 &&
+  need(exact(source, PROGRAMS_SOURCE_KEYS) && source.schema === 28 && source.archiveSha256 === profile.sourceArchive.sha256 &&
     PROGRAMS_SOURCE_KEYS.filter(key => !['schema', 'archiveSha256'].includes(key)).every(key => descriptor(source[key])) &&
     ['sourceManifest', 'binary', 'fullReport', 'artifactReceipt', 'buildManifest', 'sourceBridge'].every(key => {
       const inputKey = { sourceManifest: 'newSourceManifest', binary: 'newBinary', fullReport: 'newFullReport', artifactReceipt: 'newArtifactReceipt', buildManifest: 'newBuildManifest', sourceBridge: 'sourceBridge' }[key];
       return key === 'binary' ? source.binary.sha256 === input.newBinary?.sha256 : equal(source[key], input[inputKey]);
     }) && source.binary.path === previous.currentSource.binary.path && ![previous.currentSource.binary.sha256, '7a681218b74b16f60043c02c268f634282b9f94c8be252ecd0739f3a7995a2f1'].includes(source.binary.sha256),
     'programs_product_source');
-  validateProgramsArtifact(lineage.artifactReceipt, lineage.artifactReview, lineage.sourceBridge, lineage.buildManifest, lineage.artifactClosure, source);
+  validateProgramsArtifact(lineage.artifactReceipt, lineage.artifactReview, lineage.sourceBridge, lineage.buildManifest, lineage.artifactClosure, source, lineage.artifactAdapterBytes);
   need(epoch.candidate.bootstrapExecuted === true && equal(epoch.candidate.sourceState, { users: 8, schema: 28, migrations: 28 }) &&
     equal(epoch.candidate.binary, source.binary) && equal(epoch.candidate.currentSourceManifest, source.sourceManifest) && equal(epoch.candidate.backendReport, source.fullReport) &&
     equal(epoch.candidate.runtime, previous.candidate.runtime) && equal(epoch.candidate.units, previous.candidate.units) &&
@@ -2176,11 +2241,13 @@ export async function readProgramsRuntimeLineage(epoch, seed) {
   const readArtifact = async pin => { need(artifactPin(pin), 'programs_artifact_pin'); const raw = await readPin(simplePin(pin), 64 * MAX_BODY, false);
     need(raw.length === pin.bytes, 'programs_artifact_bytes'); return raw; };
   const artifactReview = strictJSON(await readArtifact(artifactReceipt.independentReview)), artifactClosure = strictJSON(await readArtifact(artifactReceipt.closure));
+  const artifactAdapterBytes = programsArtifactProfile(simplePin(artifactReceipt.sourceArchive)) === PROGRAMS_COMPLETE_ARTIFACT_PROFILE
+    ? await readArtifact(artifactReview.adapter) : null;
   const sourceBridge = strictJSON(await readArtifact(artifactReceipt.sourceBridge)), buildManifest = strictJSON(await readArtifact(artifactReceipt.buildManifest));
   for (const key of ['sourceArchive', 'sourceManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'execution']) await readArtifact(artifactReceipt[key]);
   const reusedAdmission05 = strictJSON(await readPin(TV_POST_BROWSE_ADMISSION)), reusedAdmission04 = strictJSON(await readPin(REUSED_ADMISSION04));
   return { previousEpoch, previousBinding, previousLineage, previousCurrentRuntime, transitionInput, before, after, sourceBefore, sourceAfter, preservation,
-    artifactReceipt, artifactReview, artifactClosure, sourceBridge, buildManifest, reusedAdmission05, reusedAdmission04 };
+    artifactReceipt, artifactReview, artifactClosure, artifactAdapterBytes, sourceBridge, buildManifest, reusedAdmission05, reusedAdmission04 };
 }
 
 export async function runCloseout(inputPin) {
