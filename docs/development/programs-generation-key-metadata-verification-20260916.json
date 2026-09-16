@@ -1,0 +1,279 @@
+{
+  "kind": "programs-generation-key-metadata-verification",
+  "version": 1,
+  "status": "passed_components_and_independent_review",
+  "recordedOn": "2026-09-16",
+  "branch": "codex/programs-artifact-runtime-binding",
+  "baseCommit": "46b591422d304e6e6ae707dfb602f75ec55e3c5e",
+  "scope": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928",
+  "authority": {
+    "historicalEpoch": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/runtime-epoch.json",
+      "bytes": 27074,
+      "sha256": "76d7cc71be87851271272537795255f9ad7a5f5c3920dd6546e573f42d06bfac"
+    },
+    "historicalReference": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-tv-parent-transition-01/private/after.json",
+      "bytes": 1138949,
+      "sha256": "047e68ffc9fc932146b365430b9ae00720ab6b7708cd52fce623f5c1f0388496"
+    },
+    "generation": "60a5025ee4b70e9ac1f43ec611c227e3",
+    "restoreOperation": "a126e7a5a76ce347a54901b931968e03",
+    "deployment": "bfffe39d2b3bd035a092d07610da0413",
+    "keyPath": "/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/data/recovery/generation-60a5025ee4b70e9ac1f43ec611c227e3/master.key",
+    "binding": "The fixed saved registry, cancelled restore, recovery slot, inactive server_settings marker and historical tree must agree before the one path is derived.",
+    "historicalStableIdentity": {
+      "dev": 2049,
+      "ino": 1661210,
+      "uid": 995,
+      "gid": 986,
+      "mode": 384,
+      "bytes": 32
+    },
+    "historicalStableIdentityFields": [
+      "dev",
+      "ino",
+      "uid",
+      "gid",
+      "mode",
+      "bytes"
+    ],
+    "currentTimestampFields": [
+      "mtimeNs",
+      "ctimeNs"
+    ],
+    "timestampRule": "A future capture records current stat values and requires equality during capture and before/after preservation; historical timestamps are not substituted.",
+    "historicalKeyHashProjected": false,
+    "currentKeyContentHashClaimed": false,
+    "liveKeyMetadataObservedByComponentRun": false
+  },
+  "implementation": {
+    "scope": "Existing Programs runtime and transition paths only",
+    "requiredKeyMissingBeforeSqlRejected": true,
+    "keyInventoryBeforeTreeContentReads": true,
+    "unknownOrRenamedKeyRejected": true,
+    "statOnlyLeafHasNoContentHash": true,
+    "statBytesCharged": 32,
+    "treeEntryLimit": 2048,
+    "treeByteLimit": 536870912,
+    "fixedAndTreeFactsMustMatch": true,
+    "metadataPreservationRequired": true,
+    "legacyTreeAndProfilesUnchanged": true,
+    "productionJavaScriptCloserUnchanged": true,
+    "newPythonTestMethods": 8,
+    "newJavaScriptGuardCases": 1
+  },
+  "evidence": {
+    "manifest": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/source-manifest.json",
+      "bytes": 8931,
+      "sha256": "a1da737fa8b9ad1998398374dd425a252198ab20033a6bcf43d46eb62bf9a30a"
+    },
+    "runner": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/run-checks.py",
+      "bytes": 6265,
+      "sha256": "716d75db510bc859e01309c7a0f5f9146c67c299a565a433f580d63ddc9d9cc6"
+    },
+    "dispatchPlan": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/dispatch-plan.json",
+      "bytes": 7559,
+      "sha256": "8add346e54a4f3b4f2d5121a21b2a26e7985e024aa57b6eee8dbc3b7039e698a"
+    },
+    "sourcePreparation": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/source-preparation.json",
+      "bytes": 3355,
+      "sha256": "4706bc0ea23c4ce59361c8bc28b1d7f34163dbd2f8f373b714ed4b9cec159e0e"
+    },
+    "sourcePublication": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/source-publication.json",
+      "bytes": 5066,
+      "sha256": "96042fbda1e585875478dfa723c92cd6994a80d885ca1d73035df24620ddeeff"
+    },
+    "freshAdmission": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/fresh-admission.json",
+      "bytes": 5475,
+      "sha256": "049fc252384bb6b21062fa13ca0471baa33a34015192629746c0b153e79c43a5"
+    },
+    "dispatcher": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/dispatch-once.py",
+      "bytes": 12205,
+      "sha256": "ba15444fe852ffdbe85d926d555c511d4a727222ec7bd38899c92ed6f22b4669"
+    },
+    "dispatchIntent": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/dispatch-intent.json",
+      "bytes": 3247,
+      "sha256": "7a45b11ed09cb77faee7a3c96a219d4ae8cf29b1462396abf8850497bf4f1c96"
+    },
+    "result": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/result.json",
+      "bytes": 7723,
+      "sha256": "bb8a0fbda51fe1355f2f74e7099316fdbf6d753b5e54022323580b8c51c7574a"
+    },
+    "closerReport": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/closer-report.json",
+      "bytes": 10725,
+      "sha256": "79b0b4e66d8a3bda30b8cba2890c431f597636e9b2645227e8bb33b7c3e66359"
+    },
+    "closure": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/closure.json",
+      "bytes": 37500,
+      "sha256": "c38283e7eaf4f93c8186906f06ebab32244c3f0f3c9e66484069db4692f3073d"
+    },
+    "dispatch": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/dispatch-result.json",
+      "bytes": 2283,
+      "sha256": "694a4bff99b7be0f62a4bcd00221229192d6904bd061b906b528782b09d76a6e"
+    },
+    "sessionClosure": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/dispatch-session-closure.json",
+      "bytes": 3249,
+      "sha256": "97915c4dd7e13c32713791d65d698507e1b9ce058bfce0882ff12d875780c08f"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/private/independent-review.json",
+      "bytes": 10942,
+      "sha256": "07d9808a88f6a8290b3fc4d30faff1b96b3ca1c230f0209642eabc7422c04465"
+    }
+  },
+  "testedRepositoryFiles": [
+    {
+      "repositoryPath": "scripts/test-env/audited-candidate-runtime.py",
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/code/audited-candidate-runtime.py",
+      "bytes": 208358,
+      "sha256": "4d014e155d54f6602cd29dc141956af8268fdd79e2ba071bab6a3a92a0d9da52"
+    },
+    {
+      "repositoryPath": "scripts/test-env/transition-audited-candidate.py",
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/code/transition-audited-candidate.py",
+      "bytes": 95233,
+      "sha256": "9b8d5e8ac8d07fef52d07dff1b7c14bfae25fb00c67b3abfd054f92cb3b28e24"
+    },
+    {
+      "repositoryPath": "scripts/test-env/test-transition-binary-successor.py",
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/code/test-transition-binary-successor.py",
+      "bytes": 67323,
+      "sha256": "89e712ff5ee4a1f30e2412a490903e4c2c1c89f1e9347a28cf815a3e069b8f79"
+    },
+    {
+      "repositoryPath": "scripts/test-env/test-close-audited-candidate-client.mjs",
+      "path": "/opt/goby-test/programs-stat-only-key-component-checks-20260916-ebf5c219b928/code/test-close-audited-candidate-client.mjs",
+      "bytes": 202573,
+      "sha256": "7c5f3814d553f3c99c5f96726517f0b58a3cb1947be8e16fd323f0663177dbdb"
+    }
+  ],
+  "sourceScope": {
+    "frozenFiles": 12,
+    "frozenBytes": 1107201,
+    "changedRepositoryCodeAndTests": 4,
+    "unchangedPairedDependencies": 8,
+    "sourceAndToolBeforeAfterEqual": true
+  },
+  "groups": [
+    {
+      "name": "runtime",
+      "tests": 44,
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "name": "successor",
+      "tests": 36,
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    {
+      "name": "closer",
+      "tests": 71,
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  ],
+  "total": {
+    "tests": 151,
+    "passed": 151,
+    "failed": 0,
+    "skipped": 0,
+    "runs": 1,
+    "automaticReruns": 0,
+    "priorScoresReused": false
+  },
+  "capacity": {
+    "admissionMinimumMemAvailableBytes": 1073741824,
+    "admissionMinimumRootAvailableBytes": 2147483648,
+    "admissionIsBudgetChoiceNotMeasuredMinimum": true,
+    "actualMemAvailableBytes": 5844369408,
+    "actualRootAvailableBytes": 45251817472,
+    "unitMemoryMaxBytes": 268435456,
+    "unitMemorySwapMaxBytes": 0,
+    "unitCpuQuotaPercent": 25,
+    "unitTasksMax": 32,
+    "maximumSecondsPerGroup": 60,
+    "unitRuntimeMaxSeconds": 240,
+    "outerMaximumSeconds": 300,
+    "rawOutputFileLimitBytes": 8388608,
+    "memoryPeakBytes": 61018112,
+    "runnerElapsedSeconds": 13.711449289985467,
+    "dispatchElapsedSeconds": 14.469944343029056,
+    "m5FullRequirementsUnchanged": true
+  },
+  "closure": {
+    "ownedUnitClosed": true,
+    "sshExecSession": 25840,
+    "sshExecExitCode": 0,
+    "outerPid": 1744113,
+    "runnerPid": 1744116,
+    "recordedPids": 26,
+    "allRecordedPidsAbsent": true,
+    "recordedProcessGroupsAbsent": true,
+    "ownedCgroupEmpty": true,
+    "scratchEmpty": true,
+    "outerCommandsClosed": 21,
+    "rawStreamsReadBack": 52,
+    "rawStreamBytesReadBack": 40180,
+    "cleanupErrors": []
+  },
+  "preservedEvidence": {
+    "prior138Scope": "/opt/goby-test/programs-binding-component-checks-20260916-d3b9600aa31a",
+    "prior142Scope": "/opt/goby-test/programs-binding-final-component-checks-20260916-c365ddb98652",
+    "prior142Checkpoint": "docs/development/programs-final-binding-components-20260916.json",
+    "priorScopesSourcesAndInputsUnchanged": true,
+    "capture01FailureCode": "programs_unreviewed_key_path",
+    "capture01FailureReview": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-final-consumer-20260916-c365ddb98652/private/capture-failed-independent-review.json",
+      "bytes": 5942,
+      "sha256": "9ebad539b46e3ed415ee83d538ffd9aab2e654275d08b61b3f270de4fe5a2895"
+    },
+    "capture01SourceInputFailureAndClosurePreserved": true,
+    "capture01Replayed": false,
+    "failureFilenameRecorded": false,
+    "filenameAttribution": "Inferred from source order and later read-only directory metadata; not a field in the original failed capture trace."
+  },
+  "executionBoundary": {
+    "realKeyBodyReads": 0,
+    "realKeyHashes": 0,
+    "liveKeyMetadataReads": 0,
+    "applicationSqlCalls": 0,
+    "httpCalls": 0,
+    "applicationServiceActions": 0,
+    "goTestsOrBuilds": 0,
+    "newCaptureExecuted": false,
+    "actualProductLoaderExecuted": false,
+    "transitionExecuted": false,
+    "clientJourneyExecuted": false,
+    "componentUnitInfrastructureStartStopOnly": true
+  },
+  "remaining": [
+    "Publish reviewed successor consumer sources in a new scope without modifying the consumed capture-01 sources or input.",
+    "Prepare and independently review a new real capture input; no successful live capture is established by this checkpoint.",
+    "Keep product/runtime loader, retention/recovery admission and transition acceptance separate; the transition hold remains unchanged."
+  ],
+  "productRelease": false,
+  "clientAcceptance": false,
+  "transitionHoldRemoved": false
+}

@@ -571,6 +571,19 @@ class ProgramsSuccessor(BinarySuccessor):
     """The reviewed Programs build on the existing, occupied candidate A."""
     def file(self, path, prefix=None):
         path = Path(path)
+        master = getattr(self, "recovery_master", None)
+        if master is not None and str(path) == master["path"]:
+            self.need(prefix is None, "programs_secret_prefix_forbidden")
+            self.need(os.path.lexists(path), "programs_recovery_master_missing")
+            info = self.s.safe_path(path, (0, self.s.pwd.getpwnam("goby").pw_uid))
+            def facts(observed):
+                self.need(stat.S_ISREG(observed.st_mode) and observed.st_nlink == 1, "programs_recovery_master_stat_authority")
+                return {"access": "stat_only", "dev": observed.st_dev, "ino": observed.st_ino, "uid": observed.st_uid, "gid": observed.st_gid,
+                        "mode": stat.S_IMODE(observed.st_mode), "bytes": observed.st_size, "mtimeNs": observed.st_mtime_ns, "ctimeNs": observed.st_ctime_ns}
+            before, after = facts(info), facts(path.lstat())
+            self.need(before == after and all(before[key] == value for key, value in master["identity"].items()),
+                      "programs_recovery_master_metadata_changed")
+            return before, None
         if str(path) in self.r.PROGRAMS_STAT_ONLY:
             self.need(prefix is None, "programs_secret_prefix_forbidden")
             if not os.path.lexists(path):
@@ -601,6 +614,51 @@ class ProgramsSuccessor(BinarySuccessor):
         self.need(path.suffix.lower() != ".env", "programs_unreviewed_environment_path")
         return super().file(path, prefix)
 
+    def tree(self, root):
+        """Keep the legacy walker unchanged; charge the one secret by its stat size."""
+        path = Path(root)
+        self.need(str(path) in self.r.TREE_ROOTS, "programs_tree_scope")
+        entries = [path, *path.rglob("*")]
+        self.need(len(entries) <= 2048 and all(not node.is_symlink() for node in entries), "owned_tree_inventory_bound")
+        master = getattr(self, "recovery_master", None)
+        keys = {str(node) for node in entries if node.suffix.lower() == ".key"}
+        if path == self.r.C / "data/recovery":
+            self.need(master is not None and keys == {master["path"]}, "programs_recovery_master_inventory")
+            self.file(master["path"])
+            directory = self.s.safe_path(Path(master["directory"]), (0, self.s.pwd.getpwnam("goby").pw_uid), True)
+            self.need(directory.st_dev == master["directoryIdentity"]["dev"] and directory.st_ino == master["directoryIdentity"]["ino"] and
+                      directory.st_uid == 995 and directory.st_gid == master["identity"]["gid"] and stat.S_IMODE(directory.st_mode) == 0o700,
+                      "programs_recovery_directory_changed")
+        else:
+            self.need(not keys, "programs_unreviewed_key_path")
+        result, documents, total = {}, {}, 0
+        for node in entries:
+            self.remaining()
+            relative = str(node.relative_to(path))
+            if node.is_dir():
+                info = self.s.safe_path(node, (0, self.s.pwd.getpwnam("goby").pw_uid), True)
+                result[relative] = {"directory": True, "dev": info.st_dev, "ino": info.st_ino, "uid": info.st_uid, "gid": info.st_gid,
+                                    "mode": stat.S_IMODE(info.st_mode), "mtimeNs": info.st_mtime_ns, "ctimeNs": info.st_ctime_ns}
+            else:
+                facts, raw = self.file(node)
+                if raw is None:
+                    self.need(master is not None and str(node) == master["path"] and
+                              set(facts) == {"access", *self.r.PROGRAMS_STAT_FIELDS} and facts["access"] == "stat_only" and
+                              all(type(facts[key]) is int and facts[key] >= 0 for key in self.r.PROGRAMS_STAT_FIELDS) and
+                              facts["bytes"] == 32 and all(facts[key] == value for key, value in master["identity"].items()),
+                              "programs_tree_stat_only_scope")
+                    size = facts["bytes"]
+                else:
+                    self.need(isinstance(raw, bytes) and len(raw) == facts["bytes"], "programs_tree_file_bytes")
+                    size = len(raw)
+                result[relative] = facts
+                total += size
+                self.need(total <= 512 << 20, "owned_tree_byte_limit")
+                if str(path) in self.r.TREE_ROOTS[:3] and node.suffix == ".json":
+                    self.need(raw is not None, "programs_tree_document_bytes")
+                    documents[str(node.relative_to(self.r.C / "data"))] = self.s.parse(raw)
+        return result, documents
+
     def reviewed(self, historical=False):
         value = self.value
         self.previous_epoch = self.r.validate_epoch(self.s.descriptor(value["previousEpoch"]))
@@ -611,6 +669,8 @@ class ProgramsSuccessor(BinarySuccessor):
             value["previousEpoch"], self.previous_epoch, self.seed)
         self.current_runtime = self.r.load_programs_previous_runtime(value["currentRuntime"], value, self.previous_epoch,
             self.s.descriptor, lambda pin: self.s.read_checked(pin["path"], pin["sha256"]))
+        prior_state = self.s.descriptor(self.previous_epoch["after"])
+        self.recovery_master = self.r.programs_recovery_master_authority(prior_state, self.previous_epoch["after"])
         self.old = deepcopy(self.previous_epoch["candidate"])
         self.old_binary_sha = self.r.PROGRAMS_OLD_BINARY
         self.reviewed_state = self.s.descriptor(value["reviewedState"])
@@ -620,7 +680,6 @@ class ProgramsSuccessor(BinarySuccessor):
             self.s.descriptor(value["priorCloseout"]), self.s.descriptor(value["priorSource"]), self.current_runtime, self.retention_review)
         self.s.descriptor(self.reviewed_summary["boundary"])
         self.s.descriptor(self.reviewed_summary["independentReview"])
-        prior_state = self.s.descriptor(self.previous_epoch["after"])
         self.need(self.r.canonical(self.reviewed_state["loadedUnits"]) == self.r.canonical(prior_state["loadedUnits"]) and
                   self.r.canonical(self.reviewed_state["controlDocuments"]) == self.r.canonical(prior_state["controlDocuments"]), "programs_configuration_or_control_lineage")
         self.r.compare_programs_logical(prior_state["inactiveStage"], self.reviewed_state["inactiveStage"], phase="unchanged")
@@ -692,6 +751,8 @@ class ProgramsSuccessor(BinarySuccessor):
 
     def capture(self, label, *, stopped=False):
         reference = self.before if hasattr(self, "before") else self.reviewed_state
+        self.need(getattr(self, "recovery_master", None) is not None, "programs_recovery_reference_required")
+        master_before = self.file(self.recovery_master["path"])[0]
         if stopped:
             self.assert_stopped()
         candidate_before = None if stopped else self.pin()
@@ -719,6 +780,8 @@ class ProgramsSuccessor(BinarySuccessor):
                 fixed[str(path)] = self.file(path)[0]
         for path in self.r.PROGRAMS_STAT_ONLY:
             fixed[path] = self.file(path)[0]
+        fixed[self.recovery_master["path"]] = self.file(self.recovery_master["path"])[0]
+        self.need(fixed[self.recovery_master["path"]] == master_before, "programs_recovery_master_capture_drift")
         diagnostics = self.diagnostics(reference["diagnostics"])
         logs = {name: self.file(self.r.C / "private" / name, facts["bytes"])[0] for name, facts in reference["unitLogs"].items()}
         result = {"source": source, "inactiveStage": inactive, "databases": databases, "trees": trees, "controlDocuments": documents,
@@ -1014,6 +1077,7 @@ def capture_programs_state(runtime, value, input_pin, source_pin, runtime_pin):
     job.catalog = job.s.descriptor(lineage["productInput"]["compiledCatalog"])
     job.retention_review = job.s.descriptor(value["retentionReview"])
     historical = job.s.descriptor(job.previous_epoch["after"])
+    job.recovery_master = runtime.programs_recovery_master_authority(historical, job.previous_epoch["after"])
     hosting = job.s.descriptor(job.current_runtime["hosting"])
     job.reviewed_state = {"diagnostics": historical["diagnostics"], "unitLogs": historical["unitLogs"],
         "protected": {unit: None for unit in runtime.PROGRAMS_PROTECTED},

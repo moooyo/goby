@@ -64,6 +64,7 @@ class SuccessorGuards(unittest.TestCase):
         cls.seed = frozen(M.SEED)
         cls.admission = frozen(M.ADMISSION04)
         cls.inactive = frozen(M.INACTIVE_STAGE)
+        cls.programs_reference = frozen(M.PROGRAMS_RECOVERY_REFERENCE)
         cls.full = frozen(FULL)
         cls.worker = frozen(WORKER)
         cls.sources = frozen(M.NEW_SOURCE_MANIFEST)
@@ -212,6 +213,164 @@ class SuccessorGuards(unittest.TestCase):
         self.assertEqual(facts, {"access": "stat_only", "absent": True})
         self.assertIsNone(content)
 
+    def recovery_master_job(self):
+        authority = M.programs_recovery_master_authority(self.programs_reference, M.PROGRAMS_RECOVERY_REFERENCE)
+        root = M.C / "data/recovery"
+        tree = self.programs_reference["trees"][str(root)]
+        def info(row):
+            return SimpleNamespace(st_mode=(0o040000 if row.get("directory") else 0o100000) | row["mode"], st_nlink=1,
+                st_dev=row["dev"], st_ino=row["ino"], st_uid=row["uid"], st_gid=row["gid"], st_size=row.get("bytes", 0),
+                st_mtime_ns=row["mtimeNs"], st_ctime_ns=row["ctimeNs"])
+        metadata = {str(root): info(tree["."]), authority["directory"]: info(tree[authority["directoryRelative"]]),
+                    authority["path"]: info(authority["facts"])}
+        job = OP.ProgramsSuccessor.__new__(OP.ProgramsSuccessor)
+        job.r, job.recovery_master, job.remaining = M, authority, Mock()
+        job.s = SimpleNamespace(safe_path=Mock(side_effect=lambda path, *unused: metadata[str(path)]),
+            pwd=SimpleNamespace(getpwnam=lambda unused: SimpleNamespace(pw_uid=995)), parse=Mock(return_value={}))
+        return job, authority, metadata
+
+    def test_recovery_master_authority_uses_the_saved_reference_and_metadata(self):
+        original = M.canonical(self.programs_reference)
+        authority = M.programs_recovery_master_authority(self.programs_reference, M.PROGRAMS_RECOVERY_REFERENCE)
+        self.assertEqual(authority["path"], str(M.C / "data/recovery/generation-60a5025ee4b70e9ac1f43ec611c227e3/master.key"))
+        self.assertEqual(authority["masterIdentity"], {"dev": 2049, "ino": 1661210})
+        self.assertEqual(authority["directoryIdentity"], {"dev": 2049, "ino": 1652757})
+        self.assertEqual(authority["facts"]["bytes"], 32)
+        self.assertNotIn("sha256", authority["facts"])
+        self.assertNotIn("prefixSha256", authority["facts"])
+        self.assertEqual(M.canonical(self.programs_reference), original)
+        with self.assertRaisesRegex(M.ContractError, "programs_recovery_reference_authority"):
+            M.programs_recovery_master_authority(self.programs_reference, {**M.PROGRAMS_RECOVERY_REFERENCE, "sha256": "f" * 64})
+
+    def test_recovery_master_authority_rejects_other_generations_and_path_substitution(self):
+        mutations = [lambda state: state["controlDocuments"]["recovery/generation-registry.json"]["generations"][0]["master"].update(name="../master.key"),
+            lambda state: state["controlDocuments"]["recovery/generation-registry.json"]["generations"][0]["master"].update(size=33),
+            lambda state: state["controlDocuments"]["recovery/generation-registry.json"]["generations"][0]["master"]["identity"].update(inode=1),
+            lambda state: state["controlDocuments"]["recovery/generation-registry.json"]["generations"][0]["directory"].update(inode=1),
+            lambda state: state["controlDocuments"]["recovery/generation-registry.json"]["generations"].append(copy.deepcopy(state["controlDocuments"]["recovery/generation-registry.json"]["generations"][0]))]
+        for mutation in mutations:
+            changed = copy.deepcopy(self.programs_reference)
+            mutation(changed)
+            with self.assertRaises(M.ContractError):
+                M.programs_recovery_master_authority(changed, M.PROGRAMS_RECOVERY_REFERENCE)
+        changed = copy.deepcopy(self.programs_reference)
+        documents = changed["controlDocuments"]
+        documents["recovery/generation-registry.json"]["generations"][0]["id"] = "a" * 32
+        payload = documents["operations/current.json"]["payload"]
+        next(row for row in payload["operations"] if row["kind"] == "restore")["generationId"] = "a" * 32
+        slot = next(row for row in payload["slots"] if row["slot"] == "recovery")
+        slot["imageId"] = slot["retained"]["marker"]["generationId"] = "a" * 32
+        marker = next(row for row in changed["inactiveStage"]["tables"]["server_settings"] if row["key"] == "goby.recovery.binding.v1")
+        value = json.loads(marker["value"]); value["generationId"] = "a" * 32; marker["value"] = json.dumps(value)
+        with self.assertRaisesRegex(M.ContractError, "programs_inactive_generation_changed"):
+            M.programs_recovery_master_authority(changed, M.PROGRAMS_RECOVERY_REFERENCE)
+
+    def test_authorized_generation_key_reads_only_current_stat_metadata(self):
+        job, authority, metadata = self.recovery_master_job()
+        actual = metadata[authority["path"]]
+        actual.st_mtime_ns += 1; actual.st_ctime_ns += 1
+        with patch.object(OP.os.path, "lexists", return_value=True), patch.object(OP.Path, "lstat", return_value=actual), \
+             patch.object(OP.os, "open", side_effect=AssertionError("key_body_open_forbidden")), \
+             patch.object(OP.hashlib, "sha256", side_effect=AssertionError("key_hash_forbidden")), \
+             patch.object(OP.hashlib, "file_digest", side_effect=AssertionError("key_hash_forbidden")):
+            facts, raw = job.file(authority["path"])
+        self.assertIsNone(raw)
+        self.assertEqual(facts["access"], "stat_only")
+        self.assertEqual(facts["mtimeNs"], actual.st_mtime_ns)
+        self.assertNotEqual(facts["mtimeNs"], authority["facts"]["mtimeNs"])
+        self.assertNotIn("sha256", facts)
+        job.s.parse.assert_not_called()
+
+    def test_generation_key_missing_unknown_or_metadata_drift_is_rejected_without_open(self):
+        job, authority, metadata = self.recovery_master_job()
+        with patch.object(OP.os, "open", side_effect=AssertionError("key_body_open_forbidden")) as opened:
+            with patch.object(OP.os.path, "lexists", return_value=False), self.assertRaisesRegex(M.ContractError, "programs_recovery_master_missing"):
+                job.file(authority["path"])
+            job.reviewed_state, job.sql_json = {}, Mock(side_effect=AssertionError("sql_before_required_key_admission"))
+            with patch.object(OP.os.path, "lexists", return_value=False), self.assertRaisesRegex(M.ContractError, "programs_recovery_master_missing"):
+                job.capture("synthetic-missing-key")
+            job.sql_json.assert_not_called()
+            with self.assertRaisesRegex(M.ContractError, "programs_unreviewed_key_path"):
+                job.file(M.C / "data/recovery/generation-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/master.key")
+            with self.assertRaisesRegex(M.ContractError, "programs_secret_prefix_forbidden"):
+                job.file(authority["path"], 0)
+            for field, value in (("st_ino", 1), ("st_size", 33), ("st_uid", 0), ("st_gid", 0),
+                                 ("st_mode", 0o100644), ("st_mode", 0o120777), ("st_nlink", 2)):
+                changed = copy.deepcopy(metadata[authority["path"]]); setattr(changed, field, value)
+                with patch.object(OP.os.path, "lexists", return_value=True), patch.object(OP.Path, "lstat", return_value=changed), self.assertRaises(M.ContractError):
+                    job.file(authority["path"])
+            opened.assert_not_called()
+
+    def run_recovery_tree(self, *, entries=None, payload=b"{}", other_none=False):
+        job, authority, metadata = self.recovery_master_job()
+        root, directory, key = M.C / "data/recovery", Path(authority["directory"]), Path(authority["path"])
+        other = root / "synthetic.bin"
+        entries = entries if entries is not None else [directory, other, key]
+        original_file = job.file
+        def file(path, prefix=None):
+            if str(path) == authority["path"]:
+                return original_file(path, prefix)
+            if other_none:
+                return copy.deepcopy(authority["facts"]), None
+            return {"bytes": len(payload), "sha256": "a" * 64}, payload
+        job.file = Mock(side_effect=file)
+        with patch.object(OP.Path, "rglob", return_value=entries), patch.object(OP.Path, "is_symlink", return_value=False), \
+             patch.object(OP.Path, "is_dir", autospec=True, side_effect=lambda node: node in (root, directory)), \
+             patch.object(OP.Path, "lstat", return_value=metadata[authority["path"]]), patch.object(OP.os.path, "lexists", return_value=True), \
+             patch.object(OP.os, "open", side_effect=AssertionError("key_body_open_forbidden")):
+            result = job.tree(str(root))
+        return result, job, authority
+
+    def test_programs_tree_keeps_authorized_stat_only_leaf_without_content_or_hash(self):
+        (tree, documents), job, authority = self.run_recovery_tree()
+        self.assertEqual(tree[authority["relative"]], authority["facts"])
+        self.assertNotIn("sha256", tree[authority["relative"]])
+        self.assertEqual(documents, {})
+        job.s.parse.assert_not_called()
+
+    def test_programs_tree_rejects_missing_or_renamed_key_before_content_read(self):
+        job, authority, metadata = self.recovery_master_job()
+        root, directory, key = M.C / "data/recovery", Path(authority["directory"]), Path(authority["path"])
+        for entries in ([directory], [directory, key.with_name("renamed.key")], [directory, key.with_name("master.key.old")],
+                        [directory, key, root / "another.key"]):
+            job.file = Mock(side_effect=AssertionError("content_read_before_inventory_admission"))
+            with patch.object(OP.Path, "rglob", return_value=entries), patch.object(OP.Path, "is_symlink", return_value=False), \
+                 self.assertRaisesRegex(M.ContractError, "programs_recovery_master_inventory"):
+                job.tree(str(root))
+            job.file.assert_not_called()
+
+    def test_programs_tree_charges_stat_bytes_and_retains_entry_and_none_boundaries(self):
+        class VirtualBytes(bytes):
+            def __new__(cls, size):
+                value = super().__new__(cls, b"synthetic bounded-size fixture"); value.declared_size = size; return value
+            def __len__(self):
+                return self.declared_size
+        self.run_recovery_tree(payload=VirtualBytes((512 << 20) - 32))
+        with self.assertRaisesRegex(M.ContractError, "owned_tree_byte_limit"):
+            self.run_recovery_tree(payload=VirtualBytes((512 << 20) - 31))
+        with self.assertRaisesRegex(M.ContractError, "programs_tree_stat_only_scope"):
+            self.run_recovery_tree(other_none=True)
+        with self.assertRaisesRegex(M.ContractError, "owned_tree_inventory_bound"):
+            self.run_recovery_tree(entries=[M.C / "data/recovery/synthetic.bin"] * 2048)
+
+    def test_programs_state_requires_matching_key_views_and_preserves_metadata(self):
+        before = self.programs_state_fixture()
+        selected = M.programs_recovery_master_selection(before["controlDocuments"], before["inactiveStage"])
+        M.validate_programs_state(before)
+        root, name, key = str(M.C / "data/recovery"), selected["relative"], selected["path"]
+        for mutation in (lambda state: state["fixedFiles"].pop(key), lambda state: state["trees"][root].pop(name),
+                         lambda state: state["fixedFiles"][key].update(sha256="f" * 64),
+                         lambda state: state["fixedFiles"][key].update(mtimeNs=1),
+                         lambda state: state["fixedFiles"].update({str(M.C / "data/unknown.key"): copy.deepcopy(state["fixedFiles"][key])})):
+            changed = copy.deepcopy(before); mutation(changed)
+            with self.assertRaises(M.ContractError): M.validate_programs_state(changed)
+        changed = copy.deepcopy(before)
+        changed["fixedFiles"][key]["ctimeNs"] += 1
+        changed["trees"][root][name] = copy.deepcopy(changed["fixedFiles"][key])
+        M.validate_programs_state(changed)
+        with self.assertRaisesRegex(M.ContractError, "programs_preservation_changed_trees"):
+            M.compare_programs_preservation(before, changed)
+
     def test_programs_recovery_input_is_explicit_and_bound_to_one_failed_attempt(self):
         transition = self.programs_input_fixture()
         value = {"kind": "audited-candidate-programs-recovery-input", "version": 1, "output": str(M.R / "candidate-programs-recovery-99"),
@@ -241,6 +400,11 @@ class SuccessorGuards(unittest.TestCase):
             facts.pop("sha256", None)
             facts.pop("prefixSha256", None)
             facts["access"] = "stat_only"
+        master = M.programs_recovery_master_selection(state["controlDocuments"], state["inactiveStage"])
+        facts = state["trees"][str(M.C / "data/recovery")][master["relative"]]
+        facts = {"access": "stat_only", **{key: facts[key] for key in M.PROGRAMS_STAT_FIELDS}}
+        state["trees"][str(M.C / "data/recovery")][master["relative"]] = copy.deepcopy(facts)
+        state["fixedFiles"][master["path"]] = copy.deepcopy(facts)
         for unit in M.PROGRAMS_PROTECTED:
             state["protected"].setdefault(unit, {"Id": unit, "MainPID": "123", "InvocationID": "f" * 32})
         state["fixedFiles"][str(M.C / "install/goby")]["sha256"] = self.programs_input_fixture()["newBinary"]["sha256"] if restarted else M.PROGRAMS_OLD_BINARY
