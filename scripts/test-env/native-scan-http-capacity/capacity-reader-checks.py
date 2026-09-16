@@ -2,9 +2,9 @@
 
 Example remote invocation (never execute this on the local workstation):
   /usr/bin/python3 -I -B capacity-reader-checks.py \
-    --source /opt/goby-test/native-scan-http-capacity-checks-20260915/private/candidate-02/capacity-reader.py \
-    --source-sha256 a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20 \
-    --output /opt/goby-test/native-scan-http-capacity-checks-20260915/private/checks-02
+    --source /opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/source/capacity-reader.py \
+    --source-sha256 609d6ea7d3bcffcddce724007f7c12ad68940dcdbe818e15117a2bcc6d7792bb \
+    --output /opt/goby-test/native-scan-http-capacity-running-checks-20260916/private/reader-checks
 
 Only definitions are imported, under a name different from __main__. These
 checks call Reader.exchange, event, checkpoint, wait_start, finish, and the
@@ -44,11 +44,11 @@ import time
 from types import SimpleNamespace
 
 
-ROOT = Path('/opt/goby-test/native-scan-http-capacity-checks-20260915')
-SOURCE = ROOT / 'private/candidate-02/capacity-reader.py'
-SOURCE_SHA256 = 'a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20'
-SOURCE_BYTES = 46356
-OUTPUT = ROOT / 'private/checks-02'
+ROOT = Path('/opt/goby-test/native-scan-http-capacity-running-checks-20260916')
+SOURCE = ROOT / 'private/source/capacity-reader.py'
+SOURCE_SHA256 = '609d6ea7d3bcffcddce724007f7c12ad68940dcdbe818e15117a2bcc6d7792bb'
+SOURCE_BYTES = 49598
+OUTPUT = ROOT / 'private/reader-checks'
 REQUEST_ID = 'a' * 32
 INPUT_SHA = '1' * 64
 OTHER_INPUT_SHA = '2' * 64
@@ -787,7 +787,7 @@ def main():
             'remote_linux_root_isolated_no_bytecode_required')
     require(Path(args.source) == SOURCE and args.source_sha256 == SOURCE_SHA256 and
             Path(args.output) == OUTPUT, 'fixed_test_cli_scope')
-    require(Path(__file__) == ROOT / 'private/candidate-02/capacity-reader-checks.py',
+    require(Path(__file__) == ROOT / 'private/source/capacity-reader-checks.py',
             'test_script_path')
     os.umask(0o077)
     private_directory(SOURCE.parent)

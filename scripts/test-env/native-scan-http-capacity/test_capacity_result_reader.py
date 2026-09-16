@@ -32,6 +32,12 @@ def request(sequence=1, start=1000):
             'bodyCompleteAnchor': anchor(start + 30)}
 
 
+def clock_domain():
+    return {'version': 1, 'available': True, 'clock': 'CLOCK_MONOTONIC',
+            'implementation': 'clock_gettime(CLOCK_MONOTONIC)', 'monotonic': True, 'adjustable': False,
+            'bootId': '11111111-2222-3333-4444-555555555555', 'timeNamespace': {'device': 4, 'inode': 123}}
+
+
 def costs(phases=('business', 'readiness', 'business')):
     return {'version': 1, 'clock': 'time.monotonic_ns', 'accounting': 'inclusive_non_additive',
             'stages': [{'phase': phase, 'startedMonotonicNs': 100 + index * 100,
@@ -82,8 +88,11 @@ class SavedFixture:
             phase_row = {'runId': run_id, 'passed': True, 'inputs': inputs,
                          'result': {'cancel': cancel}, 'workers': []}
             self.pool['phases'][phase] = phase_row
-            self.tables['task_runs'].append({'id': run_id, 'task_key': 'library.scan', 'state': 'completed'})
-            detail = {'Run': {'Id': run_id, 'State': 'completed'}, 'Children': {'Items': []}}
+            task_id, request_id = '9' * 32, '%032x' % (5000 + phase_index)
+            self.tables['task_runs'].append({'id': run_id, 'task_key': 'library.scan', 'state': 'completed',
+                                             'task_id': task_id, 'request_id': request_id})
+            detail = {'Run': {'Id': run_id, 'State': 'completed', 'TaskId': task_id, 'RequestId': request_id},
+                      'Children': {'Items': []}}
             self.workload['result']['runs'][phase] = detail
             for side_index, side in enumerate(READER.READERS, 1):
                 child_id = '%032x' % (phase_index * 10 + side_index)
@@ -91,10 +100,12 @@ class SavedFixture:
                 library_id = '%032x' % (1000 + side_index)
                 user_id = '%032x' % (2000 + side_index)
                 self.tables['task_run_children'].append({'id': child_id, 'run_id': run_id,
-                    'scan_job_id': job_id, 'library_id': library_id, 'state': 'completed'})
-                detail['Children']['Items'].append({'Id': child_id, 'ScanJobId': job_id, 'LibraryId': library_id})
+                    'scan_job_id': job_id, 'library_id': library_id, 'state': 'completed', 'ordinal': side_index - 1})
+                detail['Children']['Items'].append({'Id': child_id, 'RunId': run_id, 'ScanJobId': job_id,
+                                                    'LibraryId': library_id, 'Ordinal': side_index - 1})
                 self.tables['scan_jobs'].append({'id': job_id, 'task_child_id': child_id, 'library_id': library_id,
-                    'status': 'Completed', 'scanned': 500, 'added': 500 if phase == 'cold' else 0, 'updated': 0,
+                    'status': 'Completed', 'error': '', 'scanned': 500,
+                    'added': 500 if phase == 'cold' else 0, 'updated': 0,
                     'created_at': '2026-09-15T00:00:00+00:00', 'started_at': '2026-09-15T00:00:01+00:00',
                     'finished_at': '2026-09-15T00:00:02+00:00'})
                 prefix = 'private/readers/' + phase + '/' + side + '/'
@@ -142,6 +153,97 @@ class SavedFixture:
         self.component('final-command-reports', {name: {'allOwnedCommandsClosed': True, 'commands': [{'closed': True}]}
                                                 for name in ('admissionAndRuntime', 'preparation', 'closure')})
 
+    def enable_running_observations(self):
+        """Declare synthetic clock and HTTP facts, never actual native evidence."""
+        domain = clock_domain()
+        self.execution.update(clockDomainBefore=domain, clockDomainAfter=copy.deepcopy(domain))
+        self.pool.update(clockDomainBefore=copy.deepcopy(domain), clockDomainAfter=copy.deepcopy(domain))
+        self.execution['sourceProcess'] = 100
+        self.pool['controller'] = {'pid': 100, 'startTicks': '1'}
+        self.pool['context'] = self.save('private/reader-context.json', {
+            'kind': 'native-scan-http-capacity-reader-context', 'version': 1, 'scope': str(self.root),
+            'bootId': domain['bootId'], 'controller': self.pool['controller']})
+        reader_source = self.save('private/capacity-reader.py', b'# Synthetic source identity fixture.\n')
+        transport_source = self.save('private/capacity-transport.py', b'# Synthetic transport identity fixture.\n')
+        self.pool['source'] = reader_source
+        self.transport = {'kind': 'native-scan-http-capacity-control-http-summary', 'version': 1,
+                          'readerSource': reader_source, 'source': transport_source, 'receipts': []}
+        self.workload['scanObservations'] = []
+        for phase_index, phase in enumerate(READER.PHASES, 1):
+            phase_row = self.pool['phases'][phase]
+            base = phase_index * 10000
+            event = {'kind': 'native-scan-http-capacity-reader-start', 'version': 1, 'scope': str(self.root),
+                     'phase': phase, 'runId': phase_row['runId'], 'anchor': anchor(base + 100),
+                     'inputs': {side: value['sha256'] for side, value in phase_row['inputs'].items()}}
+            phase_row['start'] = {'event': event, 'source': self.save('private/readers/' + phase + '/start.json', event)}
+            for worker in phase_row['workers']:
+                report = worker['readerReport']
+                run_wire = self.workload['result']['runs'][phase]['Run']
+                report.update(source=reader_source, context=self.pool['context'], input=phase_row['inputs'][worker['reader']],
+                    start=phase_row['start'], taskId=run_wire['TaskId'], requestId=run_wire['RequestId'], parentPid=100,
+                    clockDomainBefore=copy.deepcopy(domain), clockDomainAfter=copy.deepcopy(domain))
+                for row in report['requests']:
+                    if row['sequence'] == 2:
+                        row.update(request(2, base + 1390), phase=phase, reader=worker['reader'], runId=phase_row['runId'])
+                    prefix = 'private/readers/' + phase + '/' + worker['reader'] + '/'
+                    row.pop('receipt', None)
+                    row['intent'] = self.save(prefix + '%03d-intent.json' % row['sequence'], copy.deepcopy(row))
+                    row['receipt'] = self.save(prefix + '%03d-response.json' % row['sequence'], copy.deepcopy(row))
+                worker['readerReceipt'] = self.save('private/readers/' + phase + '/' + worker['reader'] + '/receipt.json', report)
+            run = self.workload['result']['runs'][phase]
+            for position_index, position in enumerate(('first', 'second')):
+                jobs = {}
+                for final in self.tables['scan_jobs']:
+                    job_phase = 1 if int(final['id'], 16) < 200 else 2
+                    if job_phase > phase_index:
+                        continue
+                    active = job_phase == phase_index
+                    jobs[final['id']] = {'Id': final['id'], 'LibraryId': final['library_id'], 'ForceProbe': False,
+                        'Status': 'running' if active else 'completed', 'Error': '',
+                        'Scanned': 10 + position_index if active else final['scanned'],
+                        'Added': (10 + position_index if active else final['added']) if job_phase == 1 else 0,
+                        'Updated': 0, 'CreatedAt': final['created_at'], 'StartedAt': final['started_at'],
+                        'FinishedAt': None if active else final['finished_at']}
+                observation = {'phase': phase, 'position': position, 'label': 'scan-state-' + phase + '-' + position,
+                    'detailPollSlot': position_index + 2, 'detailState': 'running', 'collectionPoint': 'periodic-detail',
+                    'taskId': run['Run']['TaskId'], 'requestId': run['Run']['RequestId'], 'runId': phase_row['runId'],
+                    'children': copy.deepcopy(run['Children']['Items']), 'jobs': jobs,
+                    'beforeMonotonicNs': base + (600 if position_index == 0 else 960),
+                    'afterMonotonicNs': base + (900 if position_index == 0 else 1500)}
+                self.workload['scanObservations'].append(observation)
+        self.refresh_running_records()
+
+    def refresh_running_records(self):
+        self.transport['receipts'] = []
+        for sequence, observation in enumerate(self.workload['scanObservations'], 1):
+            phase = observation['phase']
+            base = (1 if phase == 'cold' else 2) * 10000
+            first = observation['position'] == 'first'
+            prefix = 'private/control-http/%03d' % sequence
+            body = json.dumps({'Items': list(observation['jobs'].values()),
+                               'TotalRecordCount': len(observation['jobs'])}).encode('utf-8')
+            control = {'kind': 'native-scan-http-capacity-control-http', 'version': 1, 'scope': str(self.root),
+                'sequence': sequence, 'label': observation['label'], 'phase': phase, 'bucket': 'task-poll',
+                'method': 'GET', 'path': '/admin/v1/jobs', 'route': 'jobs',
+                'source': self.transport['source'], 'readerSource': self.transport['readerSource'],
+                'clockDomainBefore': copy.deepcopy(clock_domain()), 'clockDomainAfter': copy.deepcopy(clock_domain()),
+                'dispatchMonotonicNs': base + (650 if first else 1400),
+                'bodyCompleteMonotonicNs': base + (800 if first else 1450),
+                'connectionCloseMonotonicNs': base + (850 if first else 1460),
+                'error': None, 'status': 200, 'rawFraming': {'checked': True, 'passed': True},
+                **{key: True for key in ('dispatched', 'requestFullySent', 'bodyComplete', 'connectionClosed',
+                                         'responseClosed', 'ownershipBefore', 'ownershipAfter')},
+                **{key: [] for key in ('postOwnershipErrors', 'persistenceErrors', 'connectionCloseErrors', 'responseCloseErrors')}}
+            for field, suffix, raw in (('rawHeader', '-response-header.raw', b'HTTP/1.1 200 OK\r\n\r\n'),
+                                      ('rawWireBody', '-response-wire-body.raw', body), ('body', '-response-body.raw', body)):
+                control[field] = self.save(prefix + suffix, raw)
+            observation['controlReceipt'] = self.save(prefix + '-receipt.json', control)
+            self.transport['receipts'].append(observation['controlReceipt'])
+            event = {'event': 'scan-job-state-observation', 'scope': str(self.root), 'phase': phase,
+                     'observation': {key: value for key, value in observation.items() if key != 'record'}}
+            observation['record'] = self.save('private/controller-events/%04d.json' % sequence, event)
+        self.component('transport-before-preservation', self.transport)
+
     def save(self, relative, value):
         path = self.root / relative
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -184,7 +286,7 @@ class ResultReaderContracts(unittest.TestCase):
         self.assertEqual(len(measurement['groups']), 12)
         totals = {name: sum(row['intentRecords'] for row in measurement['groups'] if row['overlap'] == name)
                   for name in READER.OVERLAPS}
-        self.assertEqual(totals, {'demonstrated': 0, 'none': 4, 'indeterminate': 4})
+        self.assertEqual(totals, {'demonstrated': 0, 'none': 0, 'indeterminate': 8})
         self.assertEqual(measurement['readerCoverage'][0]['simultaneousClosedHttpIntervalPairs'], 2)
         self.assertIsNone(measurement['readerCoverage'][0]['simultaneousHttpDuringProvenScan'])
         self.assertTrue(measurement['scanLifecycles'][0]['conditionalMappingUsingObservedOffsetEnvelopeNs'])
@@ -277,6 +379,123 @@ class ResultReaderContracts(unittest.TestCase):
         self.assertEqual(READER.classify_overlap((10, 20), possible=[(15, 25)]), 'indeterminate')
         self.assertEqual(READER.classify_overlap((10, 20), guaranteed=[(20, 30)]), 'indeterminate')
         self.assertEqual(READER.classify_overlap(None, possible=[]), 'indeterminate')
+
+    def test_paired_running_jobs_prove_full_and_partial_intersections_separately(self):
+        fixture = SavedFixture(self.root)
+        fixture.enable_running_observations()
+        result = fixture.analyze()['measurement']
+        self.assertEqual(result['runningJobOverlap']['observationCount'], 4)
+        self.assertEqual(result['runningJobOverlap']['pairedPhases'], 2)
+        self.assertEqual(len(result['runningJobOverlap']['intervals']), 4)
+        self.assertEqual(sum(row['intentRecords'] for row in result['groups'] if row['overlap'] == 'demonstrated'), 8)
+        self.assertEqual(sum(row['runningJobIntersection']['full'] for row in result['groups']), 4)
+        self.assertEqual(sum(row['runningJobIntersection']['partial'] for row in result['groups']), 4)
+        self.assertFalse(result['filesystemOrFfprobeOverlapProven'])
+
+    def test_missing_or_changed_reader_clock_or_source_cannot_demonstrate_overlap(self):
+        for field in ('clockDomainBefore', 'clockDomainAfter', 'source', 'context', 'input', 'start'):
+            with self.subTest(field=field):
+                fixture = SavedFixture(self.root)
+                fixture.enable_running_observations()
+                worker = fixture.pool['phases']['cold']['workers'][0]
+                worker['readerReport'].pop(field)
+                worker['readerReceipt'] = fixture.save('private/readers/cold/left/receipt.json', worker['readerReport'])
+                result = fixture.analyze()['measurement']
+                self.assertEqual(sum(row['byReader']['left'] for row in result['groups']
+                                     if row['phase'] == 'cold' and row['overlap'] == 'demonstrated'), 0)
+        fixture = SavedFixture(self.root)
+        fixture.enable_running_observations()
+        fixture.execution['clockDomainAfter']['timeNamespace']['inode'] += 1
+        result = fixture.analyze()['measurement']
+        self.assertEqual(sum(row['intentRecords'] for row in result['groups'] if row['overlap'] == 'demonstrated'), 0)
+
+    def test_zero_and_short_current_scans_produce_coverage_gaps_without_product_failure(self):
+        for scenario in ('absent', 'already_completed'):
+            with self.subTest(scenario=scenario):
+                fixture = SavedFixture(self.root)
+                fixture.enable_running_observations()
+                for observation in fixture.workload['scanObservations']:
+                    phase_index = 1 if observation['phase'] == 'cold' else 2
+                    if scenario == 'absent':
+                        observation['jobs'] = {key: row for key, row in observation['jobs'].items()
+                                               if int(key, 16) // 100 < phase_index}
+                    else:
+                        for key, row in observation['jobs'].items():
+                            final = next(job for job in fixture.tables['scan_jobs'] if job['id'] == key)
+                            row.update(Status='completed', FinishedAt=final['finished_at'],
+                                       Scanned=final['scanned'], Added=final['added'], Updated=final['updated'])
+                fixture.refresh_running_records()
+                result = fixture.analyze()
+                self.assertEqual(result['productChecks']['status'], 'recorded_pass')
+                self.assertEqual(result['measurement']['runningJobOverlap']['intervals'], [])
+                self.assertIn('no_paired_running_job:cold', result['measurement']['coverageGaps'])
+
+    def test_foreign_job_and_wrong_child_bindings_are_rejected(self):
+        for change in ('foreign_job', 'child', 'library', 'request'):
+            with self.subTest(change=change):
+                fixture = SavedFixture(self.root)
+                fixture.enable_running_observations()
+                observation = fixture.workload['scanObservations'][0]
+                if change == 'foreign_job':
+                    key, value = observation['jobs'].popitem()
+                    value['Id'] = 'f' * 32
+                    observation['jobs']['f' * 32] = value
+                elif change == 'child':
+                    observation['children'][0]['RunId'] = 'f' * 32
+                elif change == 'library':
+                    next(iter(observation['jobs'].values()))['LibraryId'] = 'f' * 32
+                else:
+                    observation['requestId'] = 'f' * 32
+                fixture.refresh_running_records()
+                with self.assertRaises(READER.EvidenceError):
+                    fixture.analyze()
+
+    def test_terminal_to_running_and_progress_regressions_are_rejected(self):
+        for change in ('terminal_to_running', 'running_to_pending', 'progress'):
+            with self.subTest(change=change):
+                fixture = SavedFixture(self.root)
+                fixture.enable_running_observations()
+                earlier = fixture.workload['scanObservations'][0]['jobs']
+                later = fixture.workload['scanObservations'][1]['jobs']
+                key = next(iter(earlier))
+                if change == 'terminal_to_running':
+                    final = next(job for job in fixture.tables['scan_jobs'] if job['id'] == key)
+                    earlier[key].update(Status='completed', FinishedAt=final['finished_at'],
+                                        Scanned=final['scanned'], Added=final['added'])
+                elif change == 'running_to_pending':
+                    later[key].update(Status='pending', StartedAt=None)
+                else:
+                    earlier[key]['Scanned'] = 100
+                fixture.refresh_running_records()
+                with self.assertRaisesRegex(READER.EvidenceError, '^running_job_(state|progress)_regression$'):
+                    fixture.analyze()
+
+    def test_both_observations_must_follow_actual_reader_start(self):
+        fixture = SavedFixture(self.root)
+        fixture.enable_running_observations()
+        start = fixture.pool['phases']['cold']['start']
+        start['event']['anchor'] = anchor(10900)
+        start['source'] = fixture.save('private/readers/cold/start.json', start['event'])
+        with self.assertRaisesRegex(READER.EvidenceError, '^running_job_observation_after_start$'):
+            fixture.analyze()
+
+    def test_terminal_detail_fallback_never_promotes_running_metadata(self):
+        fixture = SavedFixture(self.root)
+        fixture.enable_running_observations()
+        for observation in fixture.workload['scanObservations']:
+            observation.update(detailPollSlot=1, detailState='completed', collectionPoint='terminal-detail')
+        fixture.refresh_running_records()
+        result = fixture.analyze()['measurement']
+        self.assertEqual(result['runningJobOverlap']['intervals'], [])
+        self.assertIn('terminal_scan_observation_without_running_proof:cold', result['coverageGaps'])
+
+    def test_guaranteed_interval_never_extends_to_observer_request_start_or_response_end(self):
+        fixture = SavedFixture(self.root)
+        fixture.enable_running_observations()
+        intervals = fixture.analyze()['measurement']['runningJobOverlap']['intervals']
+        self.assertEqual(intervals[0]['guaranteedMonotonicIntervalNs'], [10800, 11400])
+        self.assertEqual(READER.running_intersection((10700, 10800), [(10800, 11400)]), 'unproven')
+        self.assertEqual(READER.running_intersection((11400, 11450), [(10800, 11400)]), 'unproven')
 
     def test_wall_jump_and_constant_offset_both_remain_unproven(self):
         for anchors in ([anchor(100), anchor(200)], [anchor(100), anchor(200, wall=100)]):

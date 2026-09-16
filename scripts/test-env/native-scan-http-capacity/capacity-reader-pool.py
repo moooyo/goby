@@ -71,8 +71,8 @@ E = Path('/opt/goby-test/native-scan-http-capacity-20260915')
 F = Path('/opt/goby-native-scan-http-capacity-20260915')
 SOURCE = E / 'private/capacity-reader.py'
 CONTEXT = E / 'private/reader-context.json'
-READER_SHA256 = 'a652245cd5c93e21959d3c328e68ee67211f8bb92fc4c19aef960162275cfb20'
-READER_BYTES = 46356
+READER_SHA256 = '609d6ea7d3bcffcddce724007f7c12ad68940dcdbe818e15117a2bcc6d7792bb'
+READER_BYTES = 49598
 SIDES = (('visible', 'left', 'A'), ('hidden', 'right', 'B'))
 PHASES = ('cold', 'cached')
 STREAM_CAP = 32768
@@ -278,6 +278,7 @@ class ReaderPool:
             source=dict(reader_pin), phases={}, childrenCreated=0, errors=[], firstError=None,
             controllerFailure=None, allChildrenJoined=False, externalHttpRequests=0,
             serviceCommands=0, sqlConnections=0)
+        self.record['clockDomainBefore'] = self.reader.clock_domain()
         self._first_error, self._reported_error = None, False
         self._phases, self._active = {}, None
         self._controller_pid = os.getpid()
@@ -923,6 +924,10 @@ class ReaderPool:
               final.get('workerFunctionReturned') is True and final.get('workerRequestedExitCode') == 0 and
               final.get('allOwnedConnectionsClosed') is True and
               final.get('actualProcessExitRequiresParentWait') is True, 'reader_pool_final_not_passed')
+        for key in ('clockDomainBefore', 'clockDomainAfter'):
+            self.reader.check_clock_domain(final.get(key))
+        row['clockDomainMatched'] = (self.record['clockDomainBefore'].get('available') is True and
+            final['clockDomainBefore'] == final['clockDomainAfter'] == self.record['clockDomainBefore'])
         for name in ('createdAnchor', 'finishedAnchor'):
             self.reader.check_anchor(final[name])
         _need(row['dispatchAnchor']['monotonicBeforeNs'] <= final['createdAnchor']['monotonicBeforeNs'] <=
@@ -1068,6 +1073,7 @@ class ReaderPool:
                   'metricCompleteness': 'requires_task_interval_reconciliation',
                   'cancel': copy.deepcopy(phase.get('cancel'))}
         phase['record'].update(passed=passed, result=result)
+        self.record['clockDomainAfter'] = self.reader.clock_domain()
         if phase['joined']:
             self._active = None
         self.record['allChildrenJoined'] = all(row.get('joined') for row in self._phases.values())

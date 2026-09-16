@@ -58,6 +58,11 @@ be reconciled by the controller against its authoritative terminal SQL map.
 Raw headers and transfer-encoded body are preserved separately from decoded
 JSON body. All are private. No token is stored in any output or request header
 list. Intent fsync precedes dispatch; HTTP latency excludes evidence writes.
+
+clockDomainBefore is captured before createdAnchor; clockDomainAfter is captured
+after the final exchange. These additive receipt fields identify the boot and
+time namespace of CLOCK_MONOTONIC. Missing metadata provides no cross-process
+timing proof. Context, ready, start and cancel schemas remain unchanged.
 """
 
 import argparse
@@ -155,6 +160,60 @@ def clock_anchor():
     after = time.monotonic_ns()
     return {'monotonicBeforeNs': before, 'wallTimeNs': wall,
             'monotonicAfterNs': after}
+
+
+def check_clock_domain(value):
+    """Validate metadata, without treating an unavailable clock as evidence."""
+    need(type(value) is dict and type(value.get('version')) is int and value['version'] == 1,
+         'clock_domain_contract')
+    if value.get('available') is False:
+        keys(value, ('version', 'available', 'code'), 'clock_domain_contract')
+        need(value['code'] == 'clock_domain_unavailable', 'clock_domain_contract')
+        return value
+    keys(value, ('version', 'available', 'clock', 'implementation', 'monotonic', 'adjustable',
+                 'bootId', 'timeNamespace'), 'clock_domain_contract')
+    namespace = value['timeNamespace']
+    keys(namespace, ('device', 'inode'), 'clock_domain_namespace_contract')
+    need(value['available'] is True and value['clock'] == 'CLOCK_MONOTONIC' and
+         value['implementation'] == 'clock_gettime(CLOCK_MONOTONIC)' and
+         value['monotonic'] is True and value['adjustable'] is False and
+         type(value['bootId']) is str and
+         re.fullmatch('[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', value['bootId']) and
+         integer(namespace['device']) and integer(namespace['inode'], 1), 'clock_domain_contract')
+    return value
+
+
+def clock_domain():
+    """Read only fixed kernel clock identity; missing metadata grants no proof.
+
+    Opening /proc/self/ns/time deliberately follows this fixed kernel namespace
+    descriptor, not a user-selected filesystem link. No namespace is entered.
+    """
+    descriptor = None
+    try:
+        need(sys.platform == 'linux', 'clock_domain_unavailable')
+        boot_path = Path('/proc/sys/kernel/random/boot_id')
+        with boot_path.open('rb') as stream:
+            boot = stream.read(65).decode('ascii', 'strict').strip()
+        descriptor = os.open('/proc/self/ns/time', os.O_RDONLY | os.O_CLOEXEC)
+        namespace = os.fstat(descriptor)
+        info = time.get_clock_info('monotonic')
+        value = {'version': 1, 'available': True, 'clock': 'CLOCK_MONOTONIC',
+                 'implementation': info.implementation, 'monotonic': info.monotonic,
+                 'adjustable': info.adjustable, 'bootId': boot,
+                 'timeNamespace': {'device': namespace.st_dev, 'inode': namespace.st_ino}}
+        check_clock_domain(value)
+        after = os.stat('/proc/self/ns/time')
+        with boot_path.open('rb') as stream:
+            after_boot = stream.read(65).decode('ascii', 'strict').strip()
+        need((namespace.st_dev, namespace.st_ino) == (after.st_dev, after.st_ino) and
+             boot == after_boot, 'clock_domain_unavailable')
+        return value
+    except (OSError, ValueError, UnicodeError, Rejected):
+        return {'version': 1, 'available': False, 'code': 'clock_domain_unavailable'}
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def check_anchor(value):
@@ -510,13 +569,14 @@ class Reader:
         self.cancel_pin = None
         self.output.mkdir(mode=0o700)
         private_directory(self.output)
+        domain = clock_domain()
         self.report = {'kind': 'native-scan-http-capacity-reader-receipt', 'version': 1,
             'scope': str(E), 'phase': value['phase'], 'reader': value['reader'],
             'librarySide': 'A' if value['reader'] == 'left' else 'B',
             'taskId': value['taskId'], 'requestId': value['requestId'], 'runId': value['runId'],
             'userId': value['userId'], 'libraryId': value['libraryId'],
             'input': input_pin, 'source': value['self'], 'context': value['context'],
-            'createdAnchor': clock_anchor(), 'worker': process_identity(os.getpid()),
+            'clockDomainBefore': domain, 'createdAnchor': clock_anchor(), 'worker': process_identity(os.getpid()),
             'parentPid': os.getppid(), 'processGroup': os.getpgrp(), 'sessionId': os.getsid(0),
             'limits': {'requests': REQUEST_CAP, 'windowSeconds': PHASE_SECONDS,
                 'absoluteHttpSeconds': HTTP_SECONDS, 'minimumSpacingNs': SPACING_NS,
@@ -851,7 +911,7 @@ class Reader:
         if error is not None:
             self.report['error'] = error_code(error)
             self.report['status'] = 'failed'
-        self.report.update(signalNumber=SIGNAL_NUMBER, finishedAnchor=clock_anchor(),
+        self.report.update(signalNumber=SIGNAL_NUMBER, clockDomainAfter=clock_domain(), finishedAnchor=clock_anchor(),
                            evidenceBytesBeforeReceipt=self.bytes_written,
                            evidenceWriteNsBeforeReceipt=self.evidence_write_ns,
                            namespaceAtFinish=namespace,

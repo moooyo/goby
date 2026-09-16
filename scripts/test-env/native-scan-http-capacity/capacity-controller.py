@@ -230,6 +230,7 @@ class Controller:
                        'input': input_pin, 'profile': PROFILE, 'status': 'admitted_not_started',
                        'failures': [], 'componentReceipts': {}, 'lockReleased': False,
                        'capacityAccepted': False, 'wholeM2M6Accepted': False, 'sourceProcess': os.getpid()}
+        self.record['clockDomainBefore'] = self.m['reader'].clock_domain()
         self.actor = self.app = self.observers = self.pool = self.transport = self.workload = self.closer = None
         self.workload_result = self.workload_cleanup = self.final_validation = None
         self.started = time.monotonic()
@@ -391,9 +392,18 @@ class Controller:
         self._sample_observation = None
         self.event_serial += 1
         need(self.event_serial <= 4096, 'controller_event_count')
+        observation = None
+        if value.get('event') == 'scan-job-state-observation':
+            need(self.transport is not None and type(value.get('observation')) is dict,
+                 'controller_scan_observation_transport')
+            observation = copy.deepcopy(value['observation'])
+            observation['controlReceipt'] = self.transport.scan_observation_receipt(observation['label'])
+            value = dict(value, observation=observation)
         raw = encoded(value)
         self.check_storage(len(raw), 0 if self.phase == 'closure' else 64 << 20)
-        self.write(P / 'controller-events' / ('%04d.json' % self.event_serial), value)
+        receipt = self.write(P / 'controller-events' / ('%04d.json' % self.event_serial), value)
+        if observation is not None:
+            return {'observation': observation, 'record': receipt}
 
     def acquire(self):
         self.set_commands(P / 'admission-commands', self.runtime)
@@ -631,6 +641,7 @@ class Controller:
         if self.workload is not None:
             builders['workload'] = lambda: {'result': self.workload_result, 'cleanup': self.workload_cleanup,
                 'finalValidation': self.final_validation, 'observations': self.workload.observations,
+                'scanObservations': self.workload.scan_observations,
                 'readerJoins': self.workload.reader_joins, 'budgets': self.workload.budget,
                 'tracePersisted': self.workload.trace_persisted}
         for key, build in builders.items():
@@ -804,6 +815,7 @@ class Controller:
             self.record['status'] = ('native_workload_and_closure_passed_pending_independent_review' if expected
                                      else 'native_capacity_attempt_failed')
             self.record['finishedMonotonicNs'] = time.monotonic_ns()
+            self.record['clockDomainAfter'] = self.m['reader'].clock_domain()
             receipt = None
             try:
                 receipt = self.write(RESULT, self.record)

@@ -28,6 +28,7 @@ UNITS = ('goby-native-capacity-20260915-postgres.service',
          'goby-native-capacity-20260915-net.service')
 COST_OPERATIONS = ('ownership', 'metrics', 'pool', 'storageWalk', 'evidenceWrite', 'commandWait')
 OVERLAP_GAP = 'Missing a record that binds actual scan-job active state to a client monotonic interval.'
+RUNNING_JOB_SCOPE = 'Persisted scan-job Running state only; continuous filesystem or ffprobe work is not established.'
 MAX_INPUT_BYTES = 384 << 20
 
 
@@ -228,11 +229,42 @@ def timestamp_ns(value):
         raise EvidenceError('scan_timestamp_contract') from None
 
 
+def same_clock_domains(*values):
+    """Absent or different time namespaces cannot authorize clock comparisons."""
+    if not values:
+        return False
+    for value in values:
+        if value is None or object_value(value).get('available') is False:
+            return False
+        need(type(value) is dict and set(value) == {'version', 'available', 'clock', 'implementation',
+             'monotonic', 'adjustable', 'bootId', 'timeNamespace'} and
+             type(value['version']) is int and value['version'] == 1 and value['available'] is True and
+             value['clock'] == 'CLOCK_MONOTONIC' and value['implementation'] == 'clock_gettime(CLOCK_MONOTONIC)' and
+             value['monotonic'] is True and value['adjustable'] is False and
+             type(value['bootId']) is str and
+             re.fullmatch('[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', value['bootId']) and
+             type(value['timeNamespace']) is dict and set(value['timeNamespace']) == {'device', 'inode'} and
+             integer(value['timeNamespace']['device']) and integer(value['timeNamespace']['inode'], 1),
+             'running_job_clock_domain_contract')
+    return all(value == values[0] for value in values)
+
+
+def running_intersection(interval, guaranteed):
+    if interval is None or interval[0] >= interval[1]:
+        return 'unproven'
+    start, end = interval
+    if any(lower <= start and end <= upper for lower, upper in guaranteed):
+        return 'full'
+    if any(max(start, lower) < min(end, upper) for lower, upper in guaranteed):
+        return 'partial'
+    return 'unproven'
+
+
 def classify_overlap(interval, guaranteed=(), possible=None):
     """Classify intervals only from supplied bounds, not sampled clock guesses.
 
-    The current saved profile supplies no guaranteed active interval. Its only
-    exclusion bound is a same-run task-terminal cancellation publication.
+    Only paired, clock-bound Running observations may supply guaranteed active
+    intervals. Sampled wall-clock offsets never supply these bounds.
     """
     if interval is None:
         return 'indeterminate'
@@ -300,6 +332,8 @@ def summarize_groups(samples):
                     'bodyAndConnectionComplete': sum(row['complete'] for row in selected),
                     'outcomes': {name: sum(row['outcome'] == name for row in selected) for name in outcomes},
                     'byReader': {side: sum(row['reader'] == side for row in selected) for side in READERS},
+                    'runningJobIntersection': {kind: sum(row.get('runningIntersection') == kind for row in selected)
+                                               for kind in ('full', 'partial', 'unproven')},
                     'validSuccessLatencyNs': {key: quantiles([row[field] for row in selected
                         if row[field] is not None]) for key, field in
                         (('dispatchToHeaders', 'headerNs'), ('dispatchToBody', 'bodyNs'),
@@ -324,9 +358,18 @@ def coverage(samples):
         intersections = [(max(left[0], right[0]), min(left[1], right[1]))
                          for left in intervals['left'] for right in intervals['right']
                          if max(left[0], right[0]) < min(left[1], right[1])]
+        proven_pairs = 0
+        for left in [row for row in samples if row['phase'] == phase and row['reader'] == 'left' and row['interval'] is not None]:
+            for right in [row for row in samples if row['phase'] == phase and row['reader'] == 'right' and row['interval'] is not None]:
+                if any(max(left['interval'][0], right['interval'][0], first[0], second[0]) <
+                       min(left['interval'][1], right['interval'][1], first[1], second[1])
+                       for first in left.get('provenRunningIntervals', [])
+                       for second in right.get('provenRunningIntervals', [])):
+                    proven_pairs += 1
         result.append({'phase': phase, 'readers': per_reader,
             'simultaneousClosedHttpIntervalPairs': len(intersections),
             'simultaneousHttpDuringProvenScan': None,
+            'simultaneousHttpDuringProvenRunningJobIntervalPairs': proven_pairs,
             'uncoveredActualScanTimeNs': None,
             'interpretation': 'Reader lifetimes and simultaneous HTTP intervals do not prove overlap with active scan jobs.'})
     return result
@@ -531,13 +574,230 @@ class ResultReader:
                                               ('created_at', 'started_at', 'finished_at')]
                 need(created <= started <= finished, 'scan_job_timestamp_order')
                 jobs.append((started, finished))
-            phases[phase] = {'runId': run_id, 'jobs': jobs}
+            phases[phase] = {'runId': run_id, 'jobs': jobs, 'run': run,
+                             'children': {child['id']: child for child in children},
+                             'scanJobs': {child['scan_job_id']: indexed['scan_jobs'][child['scan_job_id']]
+                                          for child in children}}
             summaries.append({'phase': phase, 'jobs': len(jobs), 'recordedJobWallIntervalsNs': [list(row) for row in jobs],
                               'recordedJobDurationNs': [end - start for start, end in jobs],
                               'clockDomain': 'database_wall_clock', 'provenMonotonicActiveIntervals': []})
         if len(phases) != 2 or len(indexed['scan_jobs']) != 4:
             self.gaps.add('two_scan_phases_not_reconciled')
         return phases, summaries
+
+    def numbered_record(self, pin, directory, width, maximum, suffix):
+        path = object_value(pin).get('path')
+        prefix = str(self.saved.root / directory) + '/'
+        need(type(path) is str and path.startswith(prefix), 'running_job_record_path')
+        match = re.fullmatch(r'([0-9]{%d})%s' % (width, re.escape(suffix)), path[len(prefix):])
+        need(match is not None and 1 <= int(match[1]) <= maximum, 'running_job_record_path')
+        return directory + '/' + ('%0*d' % (width, int(match[1]))) + suffix, int(match[1])
+
+    def running_observations(self, execution, workload, pool, lifecycle):
+        observations = workload.get('scanObservations')
+        domains = [execution.get('clockDomainBefore'), execution.get('clockDomainAfter'),
+                   pool.get('clockDomainBefore'), pool.get('clockDomainAfter')]
+        shared = same_clock_domains(*domains)
+        result = {'scope': RUNNING_JOB_SCOPE, 'clockDomainEstablished': False,
+                  'controllerPoolClockDomainEstablished': shared, 'status': 'incomplete',
+                  'observationCount': 0, 'intervals': [], 'pairedPhases': 0}
+        if observations is None:
+            self.gaps.add(OVERLAP_GAP)
+            return {}, result, domains
+        need(type(observations) is list and len(observations) <= 4, 'running_job_observation_bound')
+        order = [(phase, position) for phase in PHASES for position in ('first', 'second')]
+        need([(object_value(row).get('phase'), object_value(row).get('position')) for row in observations] ==
+             order[:len(observations)], 'running_job_observation_order')
+        transport = self.component(execution, 'transport-before-preservation')
+        receipts = transport.get('receipts', [])
+        need(type(receipts) is list and len(receipts) <= 360, 'running_job_transport_receipt_bound')
+        reader_source = transport.get('readerSource')
+        context = self.load(pool.get('context'), 'private/reader-context.json', 32 << 10)
+        context_bound = (type(context) is dict and context.get('kind') == 'native-scan-http-capacity-reader-context' and
+                         context.get('version') == 1 and context.get('scope') == str(self.saved.root) and
+                         context.get('controller') == pool.get('controller') and
+                         object_value(context.get('controller')).get('pid') == execution.get('sourceProcess') and
+                         shared and context.get('bootId') == domains[0]['bootId'])
+        source_pins_bound = (reader_source is not None and reader_source == pool.get('source') and
+                            context_bound and
+                            self.load(reader_source, 'private/capacity-reader.py', 256 << 10, raw=True) is not None and
+                            self.load(transport.get('source'), 'private/capacity-transport.py', 256 << 10, raw=True) is not None)
+        decoded, previous_sequence = {}, 0
+        for observation in observations:
+            phase, position = observation['phase'], observation['position']
+            label = 'scan-state-' + phase + '-' + position
+            need(observation.get('label') == label, 'running_job_observation_label')
+            detail_state = observation.get('detailState')
+            need(type(observation.get('detailPollSlot')) is int and
+                 observation['detailPollSlot'] in (1, 2, 3) and detail_state in ('pending', 'running', 'completed') and
+                 observation.get('collectionPoint') == ('terminal-detail' if detail_state == 'completed' else 'periodic-detail'),
+                 'running_job_collection_point')
+            event_path, _ = self.numbered_record(observation.get('record'), 'private/controller-events', 4, 4096, '.json')
+            event = self.load(observation.get('record'), event_path, 64 << 10)
+            control_pin = observation.get('controlReceipt')
+            need(control_pin in receipts, 'running_job_transport_pin_not_registered')
+            control_path, sequence = self.numbered_record(control_pin, 'private/control-http', 3, 360, '-receipt.json')
+            need(sequence > previous_sequence, 'running_job_transport_sequence')
+            previous_sequence = sequence
+            control = self.load(control_pin, control_path, 32 << 10)
+            if event is None or control is None:
+                continue
+            need(event.get('event') == 'scan-job-state-observation' and event.get('scope') == str(self.saved.root) and
+                 event.get('phase') == phase and event.get('observation') ==
+                 {key: value for key, value in observation.items() if key != 'record'}, 'running_job_event_binding')
+            need(control.get('kind') == 'native-scan-http-capacity-control-http' and control.get('version') == 1 and
+                 control.get('scope') == str(self.saved.root) and control.get('sequence') == sequence and
+                 control.get('label') == label and control.get('phase') == phase and control.get('bucket') == 'task-poll' and
+                 control.get('method') == 'GET' and control.get('path') == '/admin/v1/jobs' and control.get('route') == 'jobs' and
+                 control.get('source') == transport.get('source') and control.get('readerSource') == reader_source,
+                 'running_job_http_binding')
+            completed = (control.get('error') is None and control.get('status') == 200 and
+                         all(control.get(key) is True for key in ('dispatched', 'requestFullySent', 'bodyComplete',
+                             'connectionClosed', 'responseClosed', 'ownershipBefore', 'ownershipAfter')) and
+                         all(control.get(key) == [] for key in ('postOwnershipErrors', 'persistenceErrors',
+                             'connectionCloseErrors', 'responseCloseErrors')) and
+                         object_value(control.get('rawFraming')).get('passed') is True)
+            need(completed, 'running_job_http_not_complete')
+            before, after = observation.get('beforeMonotonicNs'), observation.get('afterMonotonicNs')
+            start, body, closed = (control.get(key) for key in
+                                  ('dispatchMonotonicNs', 'bodyCompleteMonotonicNs', 'connectionCloseMonotonicNs'))
+            need(all(integer(number, 1) for number in (before, after, start, body, closed)) and
+                 before <= start <= body <= closed <= after, 'running_job_observation_times')
+            raw_complete = True
+            payload = None
+            for field, suffix, bound in (('rawHeader', '-response-header.raw', 65536),
+                                        ('rawWireBody', '-response-wire-body.raw', (1 << 20) + 65536),
+                                        ('body', '-response-body.raw', 1 << 20)):
+                raw = self.load(control.get(field), 'private/control-http/%03d' % sequence + suffix, bound, raw=True)
+                raw_complete = raw_complete and raw is not None
+                if field == 'body' and raw is not None:
+                    payload = parse_json(raw)
+            if not raw_complete:
+                continue
+            jobs = observation.get('jobs')
+            need(type(jobs) is dict and len(jobs) <= (2 if phase == 'cold' else 4) and
+                 type(payload) is dict and set(payload) == {'Items', 'TotalRecordCount'} and
+                 type(payload['Items']) is list and type(payload['TotalRecordCount']) is int and
+                 payload['TotalRecordCount'] == len(payload['Items']) == len(jobs) and
+                 all(type(row) is dict and row.get('Id') in jobs and jobs[row['Id']] == row for row in payload['Items']) and
+                 len({row['Id'] for row in payload['Items']}) == len(jobs), 'running_job_body_binding')
+            current = lifecycle.get(phase)
+            if current is None:
+                self.gaps.add('running_job_final_lifecycle_missing:' + phase)
+                continue
+            need(observation.get('runId') == current['runId'] and
+                 observation.get('taskId') == current['run'].get('task_id') and
+                 observation.get('requestId') == current['run'].get('request_id'), 'running_job_run_binding')
+            children = observation.get('children')
+            need(type(children) is list and len(children) == 2 and
+                 {object_value(row).get('Id') for row in children} == set(current['children']),
+                 'running_job_child_inventory')
+            for child in children:
+                final = current['children'][child['Id']]
+                need(child.get('RunId') == current['runId'] and child.get('LibraryId') == final.get('library_id') and
+                     child.get('Ordinal') == final.get('ordinal') and
+                     (child.get('ScanJobId') is None or child['ScanJobId'] == final.get('scan_job_id')),
+                     'running_job_child_binding')
+            allowed = dict(current['scanJobs'])
+            if phase == 'cached' and 'cold' in lifecycle:
+                allowed.update(lifecycle['cold']['scanJobs'])
+                need(set(lifecycle['cold']['scanJobs']) <= set(jobs), 'running_job_retained_history_missing')
+            need(set(jobs) <= set(allowed), 'running_job_foreign_job')
+            for job_id, job in jobs.items():
+                final = allowed[job_id]
+                need(type(job) is dict and set(job) == {'Id', 'LibraryId', 'ForceProbe', 'Status', 'Error',
+                     'Scanned', 'Added', 'Updated', 'CreatedAt', 'StartedAt', 'FinishedAt'} and job.get('Id') == job_id and
+                     job.get('LibraryId') == final.get('library_id') and job.get('ForceProbe') is False and
+                     timestamp_ns(job.get('CreatedAt')) == timestamp_ns(final.get('created_at')) and
+                     job.get('Status') in ('pending', 'running', 'completed', 'failed', 'cancelled', 'interrupted') and
+                     all(integer(job.get(key)) and job[key] <= final.get(column, -1) for key, column in
+                         (('Scanned', 'scanned'), ('Added', 'added'), ('Updated', 'updated'))),
+                     'running_job_identity_or_progress')
+                status = job['Status']
+                if status == 'pending':
+                    need(job.get('StartedAt') is None and job.get('FinishedAt') is None, 'running_job_pending_times')
+                else:
+                    need(timestamp_ns(job.get('StartedAt')) == timestamp_ns(final.get('started_at')),
+                         'running_job_started_identity')
+                    if status == 'running':
+                        need(job.get('FinishedAt') is None and job.get('Error') == '', 'running_job_active_shape')
+                    else:
+                        need(status == final.get('status', '').lower() and
+                             timestamp_ns(job.get('FinishedAt')) == timestamp_ns(final.get('finished_at')) and
+                             job.get('Error') == final.get('error') and
+                             all(job[key] == final[column] for key, column in
+                                 (('Scanned', 'scanned'), ('Added', 'added'), ('Updated', 'updated'))),
+                             'running_job_terminal_changed')
+            domain_bound = (shared and source_pins_bound and
+                            same_clock_domains(domains[0], control.get('clockDomainBefore'), control.get('clockDomainAfter')))
+            decoded[(phase, position)] = {'observation': observation, 'control': control,
+                                         'domainBound': domain_bound, 'jobs': jobs}
+            result['observationCount'] += 1
+        intervals = {}
+        for phase in PHASES:
+            first, second = (decoded.get((phase, position)) for position in ('first', 'second'))
+            if first is None or second is None:
+                self.gaps.add('running_job_observation_pair_missing:' + phase)
+                continue
+            start_record = object_value(object_value(pool.get('phases')).get(phase)).get('start')
+            start_record = object_value(start_record)
+            event = self.load(start_record.get('source'), 'private/readers/' + phase + '/start.json', 4096)
+            if event is None:
+                continue
+            need(event == start_record.get('event') and event.get('kind') == 'native-scan-http-capacity-reader-start' and
+                 event.get('version') == 1 and event.get('scope') == str(self.saved.root) and
+                 event.get('phase') == phase and event.get('runId') == lifecycle[phase]['runId'] and
+                 event.get('inputs') == {side: object_value(object_value(pool['phases'][phase].get('inputs')).get(side)).get('sha256')
+                                        for side in READERS}, 'running_job_start_binding')
+            start_before, _, start_after = anchor_interval(event.get('anchor'))
+            need(start_before <= start_after <= first['observation']['beforeMonotonicNs'] and
+                 first['observation']['afterMonotonicNs'] <= second['observation']['beforeMonotonicNs'],
+                 'running_job_observation_after_start')
+            first_observation, second_observation = first['observation'], second['observation']
+            if first_observation['detailState'] == 'completed':
+                need(first_observation['detailPollSlot'] in (1, 2) and
+                     second_observation['detailState'] == 'completed' and
+                     second_observation['detailPollSlot'] == first_observation['detailPollSlot'],
+                     'running_job_terminal_collection_slots')
+            else:
+                need(first_observation['detailPollSlot'] == 2 and second_observation['detailPollSlot'] == 3,
+                     'running_job_periodic_collection_slots')
+            need(set(first['jobs']) <= set(second['jobs']), 'running_job_disappeared')
+            for job_id, earlier in first['jobs'].items():
+                later = second['jobs'][job_id]
+                status = earlier['Status']
+                need(status == 'pending' or status == 'running' and later['Status'] != 'pending' or
+                     status not in ('pending', 'running') and earlier == later, 'running_job_state_regression')
+                need(all(earlier[key] <= later[key] for key in ('Scanned', 'Added', 'Updated')),
+                     'running_job_progress_regression')
+            result['pairedPhases'] += 1
+            if not first['domainBound'] or not second['domainBound']:
+                self.gaps.add('running_job_clock_or_source_binding_missing:' + phase)
+                continue
+            if first_observation['detailState'] == 'completed' or second_observation['detailState'] == 'completed':
+                self.gaps.add('terminal_scan_observation_without_running_proof:' + phase)
+                continue
+            lower = first['control']['bodyCompleteMonotonicNs']
+            upper = second['control']['dispatchMonotonicNs']
+            need(lower <= upper, 'running_job_interval_order')
+            for job_id, job in first['jobs'].items():
+                if job_id not in lifecycle[phase]['scanJobs']:
+                    continue
+                later = second['jobs'][job_id]
+                if job['Status'] == later['Status'] == 'running' and lower < upper:
+                    intervals[(phase, job['LibraryId'])] = [(lower, upper)]
+                    result['intervals'].append({'phase': phase, 'jobId': job_id, 'libraryId': job['LibraryId'],
+                                               'guaranteedMonotonicIntervalNs': [lower, upper]})
+            if not any(key[0] == phase for key in intervals):
+                self.gaps.add('no_paired_running_job:' + phase)
+        if len(observations) != 4:
+            self.gaps.add('four_scan_job_observations_not_available')
+        if not intervals:
+            self.gaps.add(OVERLAP_GAP)
+        result['clockDomainEstablished'] = (shared and result['observationCount'] == 4 and
+                                             all(value['domainBound'] for value in decoded.values()))
+        result['status'] = ('recorded_running_intervals' if intervals else 'incomplete')
+        return intervals, result, domains
 
     def terminal_bound(self, phase, record, lifecycle):
         cancel = object_value(object_value(record.get('result')).get('cancel'))
@@ -559,7 +819,8 @@ class ResultReader:
             return after
         return None
 
-    def readers(self, pool, lifecycle):
+    def readers(self, pool, lifecycle, running=None, domains=()):
+        running = {} if running is None else running
         phases = object_value(pool.get('phases'))
         need(set(phases) <= set(PHASES), 'reader_phase_contract')
         samples, receipts = [], 0
@@ -592,6 +853,18 @@ class ResultReader:
                      'reader_request_sequence')
                 receipts += 1
                 self.anchors_from(report)
+                current_run = object_value(lifecycle.get(phase)).get('run', {})
+                provenance_bound = (report.get('source') is not None and report.get('source') == pool.get('source') and
+                    report.get('context') is not None and report.get('context') == pool.get('context') and
+                    report.get('input') == object_value(record.get('inputs')).get(side) and
+                    report.get('start') is not None and report.get('start') == record.get('start') and
+                    report.get('taskId') == current_run.get('task_id') and
+                    report.get('requestId') == current_run.get('request_id') and
+                    report.get('parentPid') == object_value(pool.get('controller')).get('pid'))
+                domain_bound = (provenance_bound and
+                    same_clock_domains(*domains, report.get('clockDomainBefore'), report.get('clockDomainAfter')))
+                if not domain_bound:
+                    self.gaps.add('reader_clock_domain_not_established:' + phase + ':' + side)
                 if not requests:
                     self.gaps.add('empty_reader:' + phase + ':' + side)
                 for row in requests:
@@ -612,8 +885,12 @@ class ResultReader:
                         complete = complete and raw is not None
                     self.anchors_from(row)
                     metrics = request_metrics(row, complete)
+                    guaranteed = running.get((phase, report['libraryId']), []) if domain_bound and complete else []
                     metrics.update(phase=phase, reader=side, shape='page64' if row['shape'] == 'page' else 'count',
-                        overlap=classify_overlap(metrics['interval'], possible=[(None, terminal)] if terminal else None))
+                        overlap=classify_overlap(metrics['interval'], guaranteed=guaranteed,
+                            possible=[(None, terminal)] if terminal and domain_bound and complete else None),
+                        runningIntersection=running_intersection(metrics['interval'], guaranteed),
+                        provenRunningIntervals=guaranteed)
                     samples.append(metrics)
                 need(report.get('dispatchedRequests') == sum(row.get('dispatched') is True for row in requests),
                      'reader_dispatch_count_mismatch')
@@ -640,7 +917,14 @@ class ResultReader:
             samples.append(sample)
         if not samples:
             self.gaps.add('resource_samples_not_available')
-        return resource_summary(samples)
+        result = resource_summary(samples)
+        if samples and result['completeSamples'] != len(samples):
+            self.gaps.add('resource_samples_partial')
+        for role, values in result['roles'].items():
+            if (not values['mainProcessRssSamples'] or not values['memoryCurrentSamples'] or
+                    not values['memoryPeakSamples'] or not values['cgroupCpuUsageObservations']):
+                self.gaps.add('resource_fields_unavailable:' + role)
+        return result
 
     def costs(self, execution):
         result = cost_summary(execution.get('measurementCosts'))
@@ -695,7 +979,8 @@ class ResultReader:
                      'observer_record_binding')
             payloads, sql_pass = self.sql(observers)
             lifecycle, scans = self.scan_lifecycle(workload, payloads)
-            samples, receipt_count = self.readers(pool, lifecycle)
+            running, running_summary, domains = self.running_observations(execution, workload, pool, lifecycle)
+            samples, receipt_count = self.readers(pool, lifecycle, running, domains)
             clocks = clock_summary(self.anchors)
             offset = clocks['observedOffsetEnvelopeNs']
             for scan in scans:
@@ -727,22 +1012,28 @@ class ResultReader:
                       'controllerRecordedNoFailures': execution.get('failures') == []}
             report['productChecks'] = {'status': 'recorded_pass' if all(checks.values()) else 'incomplete_or_recorded_failure',
                                        'checks': checks, 'fullProductContractIndependentlyReexecuted': False}
-            self.gaps.add(OVERLAP_GAP)
             for phase in PHASES:
                 for side in READERS:
                     for shape in SHAPES:
                         if not any(row['phase'] == phase and row['reader'] == side and row['shape'] == shape and
                                    row['dispatched'] for row in samples):
                             self.gaps.add('missing_reader_shape:' + phase + ':' + side + ':' + shape)
+                        if not any(row['phase'] == phase and row['reader'] == side and row['shape'] == shape and
+                                   row['overlap'] == 'demonstrated' for row in samples):
+                            self.gaps.add('no_demonstrated_running_overlap:' + phase + ':' + side + ':' + shape)
             report['measurement'] = {'status': 'incomplete', 'readerReceipts': receipt_count,
                 'fixedReaderRequestCeiling': 240, 'unusedAllowanceCountedAsRequests': False,
                 'intentRecords': len(samples), 'dispatchedRequests': sum(row['dispatched'] for row in samples),
                 'groups': summarize_groups(samples), 'readerCoverage': coverage(samples), 'scanLifecycles': scans,
+                'runningJobOverlap': running_summary,
                 'clockAnchors': clocks, 'resources': self.resources(observers), 'observerCosts': self.costs(execution),
                 'latencyDefinition': 'Reader dispatch begins before connect; quantiles require complete, successful, correctly recorded responses.',
                 'quantileMethod': 'Median of ordered observations; p95 uses nearest rank ceil(0.95*n).',
-                'controlHttpIncludedInReaderLatency': False, 'guaranteedScanActiveIntervalsAvailable': False}
+                'controlHttpIncludedInReaderLatency': False, 'guaranteedScanActiveIntervalsAvailable': bool(running),
+                'overlapBasis': 'same_reader_library_persisted_running_job', 'filesystemOrFfprobeOverlapProven': False}
         report['measurement']['coverageGaps'] = sorted(self.gaps)
+        if report['productChecks']['status'] != 'not_analyzed' and not self.gaps:
+            report['measurement']['status'] = 'recorded_with_scope_limits'
         report['evidenceReadback'] = {'files': self.saved.pins, 'bytesRead': self.saved.total_bytes,
                                       'maximumBytes': MAX_INPUT_BYTES}
         return report
