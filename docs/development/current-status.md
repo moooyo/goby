@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **complete regression and builds from the complete tracked source when remote capacity permits**.
+Current priority on 2026-09-16: **observe the active complete-source regression and build run**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -29,8 +29,10 @@ now contains all 5348 tracked files plus the original 57 assets. Independent
 archive review and actual source preflight passed, but the fixed 5 GiB memory
 floor was unavailable throughout its 120-second admission window. No worker or
 volume was created, and protection/closure passed. Both execution scopes are
-consumed. Wait for current capacity, then use a fresh scope with the complete
-source and unchanged test/build requirements.
+consumed. Capacity subsequently recovered and a
+[fresh complete-source run](programs-complete-source-retry.json) passed admission
+and started its worker. Observe that same scope through all 25 packages, both
+builds and closure; its final result remains pending.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.

@@ -1,0 +1,46 @@
+{
+  "kind": "programs-complete-source-full-retry",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "fresh_full_worker_started_results_pending",
+  "scope": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02",
+  "input": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/private/input.json",
+    "bytes": 5092,
+    "sha256": "8a7dbc587c9bec07663c5dd2bcce17ccbf760404f12d5c2127ac34feaa0f5f59"
+  },
+  "adapter": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/private/verify-livetv-programs-final.py",
+    "bytes": 58152,
+    "sha256": "7e061ff3db40681f8c28e86ae625bb8cac54b4ddeccade776d51048278a82ac9"
+  },
+  "preparation": {
+    "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/input-preparation.json",
+    "bytes": 2465,
+    "sha256": "c81211f51f4350235ab0b656538cde5f1410965702c5faaeb28ef60596dadd08"
+  },
+  "sourceCheckpointRecord": "programs-complete-source-preparation.json",
+  "sourceFiles": 5405,
+  "sourceCommit": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+  "sourceArtifactsCopiedOrChanged": false,
+  "changes": "Fresh execution scope, copied unchanged guard components, and matching adapter/input identities only. The complete source artifacts, expected packages, tests, builds and all budgets remain unchanged.",
+  "preparationCapacity": {
+    "memoryAvailableBytes": 5450514432,
+    "rootAvailableBytes": 4152770560,
+    "scope": "Point-in-time preparation observation; the actual runner repeated its admission checks."
+  },
+  "workerStartupObservation": {
+    "unit": "goby-livetv-programs-complete-source-final-20260916-r02-29404e024426.service",
+    "scope": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/ram/livetv-programs-complete-source-final-20260916-r02-20260916T083520Z-29404e024426",
+    "mainPid": 1592422,
+    "activeState": "active",
+    "subState": "running",
+    "memoryMaxBytes": 3221225472,
+    "scopeLimit": "Startup evidence, not a permanent liveness guarantee or successful full result."
+  },
+  "requiredPackageCount": 25,
+  "requiredBuilds": ["ordinary-linux-amd64", "embedded-linux-amd64-systemd"],
+  "fullVerificationClaimed": false,
+  "previousCapacityRejectionPreserved": true,
+  "continuation": "Observe this same worker and scope through authoritative completion and closure. Do not relaunch after an observation timeout or combine partial results."
+}

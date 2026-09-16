@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **complete regression and builds from the complete tracked source when remote capacity permits**.
+Current priority: **observe the active complete-source regression and build run**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the expanded root disk is already in use. The unanswered-window
@@ -21,8 +21,11 @@ build ran. The [complete-source replacement](../development/programs-complete-so
 contains all 5348 tracked files and the original 57 assets. Its source checks
 passed, but all 60 capacity samples were below the unchanged 5 GiB memory floor.
 It created no worker or volume and closed all metadata commands and the lock.
-Use a fresh execution scope when capacity permits; both previous scopes are
-consumed. No production correction is established. The other prepared
+Both previous scopes are consumed. Capacity recovered, and a
+[fresh complete-source run](../development/programs-complete-source-retry.json)
+has passed admission and started its worker with the same 25 packages, two
+builds and original budgets. Observe its actual result and closure. No
+production correction is established. The other prepared
 increments retain their separate, incomplete acceptance scopes.
 Keep the complete M2-M6 objective; M7 remains deferred.
 Historically, following the [September 15 incident](../development/programs-final-regression-incident.json),
@@ -536,8 +539,9 @@ The [disk-backed full run](../development/programs-disk-full-result.md) is termi
 with missing test fixtures identified and resources closed. The
 [complete-source input](../development/programs-complete-source-preparation.json)
 passed source verification but was rejected before worker creation because of
-memory availability. Reuse its immutable source artifacts in a fresh scope after
-current admission passes, then require all 25 packages, both builds and closure.
+memory availability. The [fresh retry](../development/programs-complete-source-retry.json)
+now runs in its own scope after capacity recovered. It reuses the complete source
+artifacts without changing them. Require all 25 packages, both builds and closure.
 The [client components](../development/programs-client-component-verification.json)
 passed within their frozen scopes; actual successor authority/artifact and
 admitted live inputs remain pending, and no new live journey has run. Artifact
@@ -633,7 +637,7 @@ and actual execution results distinct.
 | 1. Client components passed; actual authority/live inputs pending | Reuse the [passed frozen client components](../development/programs-client-component-verification.json) and runtime/transition/admission scopes; bind the [journey/recovery contracts](../development/e11-candidate-transition-decision.md) and admitted live inputs to actual successor authority/artifacts | No new framework, version or live-journey acceptance follows from component checks. Bind the new runtime and actual artifact together after final verification. Preparation does not block independent Go diagnosis/build work; both must close before A changes |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
-| 2. Frozen-source verification/build — complete source ready, memory admission pending | The [disk-backed run](../development/programs-disk-full-result.md) exposed nine omitted fixtures. The [complete-source replacement](../development/programs-complete-source-preparation.json) has verified all 5405 members but dispatched no worker because memory stayed below 5 GiB | Check current capacity and use a fresh scope with the preserved complete source. Require all 25 packages and both builds. Preserve both failures and closures; no score merging, consumed-input replay, timeout inflation or reduced memory admission |
+| 2. Frozen-source verification/build — complete-source worker active | The [fresh retry](../development/programs-complete-source-retry.json) started after current capacity admission passed. It uses the verified 5405-file complete source and unchanged tests/builds/budgets | Observe this same worker and scope until authoritative completion, then review all 25 packages, both builds and closure. Preserve the missing-fixture failure and zero-worker capacity rejection; no score merging, consumed-input replay, timeout inflation or reduced memory admission |
 | 3. One direct A transition — held | After incident recovery, bind the verified successor, new runtime authority, current full state, declared task-definition delta and the recovery/closure plan | No intermediate original-E11 deployment, actor reset, new candidate, old live binding or assumed rollback. Preserve B and all historical evidence |
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
