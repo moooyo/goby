@@ -13,6 +13,30 @@ without blocking every unrelated internal increment. The project requires
 PostgreSQL, stable Go/FFmpeg releases and Linux hardware decoding. Documentation
 updates alone do not close any milestone or reference evidence gap.
 
+The September 16 [combined M5 frontend build](../development/m5-final-frontend-verification-20260916.md)
+passed one actual `tsc --noEmit && vite build` invocation, with separate independent
+execution/resource and artifact/source reviews. Complete S1 preserves the 5400
+frozen source rows at `138522b` and adds 59 actual dist files; the original
+contribution sidecar and command receipt remain separately pinned. Processes,
+unit and cgroup closed while the build workspace was retained. The future Vite
+config-loader warning remains recorded. The later release build must use
+`--frontend-contributions` and exact final asset matching after relocation.
+Combined Go/DB/HTTP/browser and final build acceptance remain pending. The
+[first M5 storage attempt](../development/m5-combined-source-preparation-20260916.json)
+failed at a not-created directory check before any volume or payload; its failure
+classification is inferred from the saved sequence and source, with no retained
+raw traceback. Thirty commands and 60 streams closed with independent review;
+the failed unit record remains without PID/cgroup. A corrected fresh-scope check
+is still required and no storage pass is claimed.
+
+The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
+now retains the actual published product review and artifact receipt plus a
+remotely compiled observer source. The pending observer input is unexecuted and
+has no deadline/output. Consumer projection fixes still need verification;
+the original 42/28/68 component results are unchanged. No new current-runtime
+envelope, transition admission or client acceptance follows from publication
+or compilation.
+
 The latest fixed M5 media-refresh increment is committed and pushed as
 `5faf854`. Its [final ordinary regression](../development/m5-final-regression-verification.json)
 passed one complete 25-package run with 2,295 passes, zero failures and one

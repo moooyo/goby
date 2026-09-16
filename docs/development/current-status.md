@@ -49,8 +49,20 @@ lock are closed; no product tests ran in that generator scope. The
 [combined source](m5-combined-source-preparation-20260916.json) is now frozen at
 `138522b`, including the immediate cancellation hook and deterministic
 reservation/peer-isolation regression. Focused static review and independent
-5400-file archive reconciliation passed. Its actual frontend build, combined
-Go/HTTP/browser behavior and final verification remain pending.
+5400-file archive reconciliation passed. The [actual frontend build](m5-final-frontend-verification-20260916.md)
+then passed one `tsc --noEmit && vite build` invocation with separate execution
+and artifact reviews. Its complete S1 archive preserves all 5400 source rows
+and adds only 59 real dist files; the original contribution sidecar and successful
+command are retained. The build processes/unit/cgroup closed, while source,
+dependencies and artifacts remain in the workspace. A 345-byte future Vite
+config-loader warning remains recorded. Combined Go/HTTP/browser behavior and
+final builds are still pending and must consume S1 with `--frontend-contributions`.
+The [first M5 storage preparation attempt](m5-combined-source-preparation-20260916.json)
+failed before any volume or payload. Saved command order and pinned source locate
+the missing-directory check; no raw traceback was retained. Its 30 commands and
+60 streams closed with independent review, no format/attach/mount/payload ran,
+and the failed unit record remains without a PID or cgroup. A corrected fresh-scope
+storage verification is still pending.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -113,10 +125,13 @@ verification; the ready envelope alone is not an executable Programs input.
 The later [binding component scope](programs-binding-components-20260916.json)
 passed runtime 42, successor 28 and closer 68 checks once with independent
 review and full closure. It covers the fixed producer source, second recovery
-ancestry and complete-source profile. The [new observer and product drafts](programs-current-runtime-preparation-20260916.json)
-remain unexecuted. Subsequent consumer adapter projection changes and the final
-runtime pin still need their own verification; the 138 results do not admit a
-new runtime envelope or Programs input.
+ancestry and complete-source profile. The [current preparation](programs-current-runtime-preparation-20260916.json)
+now includes a remotely compiled observer source, the wrapper for the actual
+42-test runtime group, and separately published product review and artifact
+receipt. The pending observer input still has no deadline or output and has not
+executed. Consumer adapter projection fixes and the final runtime pin still need
+their own verification; the original 138 results remain unchanged. No new runtime
+envelope, transition admission or Programs client acceptance exists.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
@@ -124,9 +139,10 @@ now retain a reviewed test-diagnostic branch, a native user-deletion draft, and
 the media-diagnostic implementation draft, now connected through native
 administrator APIs, bounded run ownership, conversion-slot admission and a
 Settings panel. Diagnostics remain disabled by default; no deployment was
-activated. Static review and remote formatting are complete; Go/type/build,
-migration and browser acceptance remain unexecuted. Main's Programs product
-source is unchanged.
+activated. Static review and remote formatting are complete. The combined-source
+frontend typecheck/build and real schema-29 catalog export have since passed in
+their separate scopes; combined Go/migration behavior, final builds and browser
+acceptance remain unexecuted. Main's Programs product source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
 their original meanings and are not fresh deployment observations.
 
@@ -1169,8 +1185,9 @@ The [initial legal payload draft](systemd-package-legal-payload-draft.md)
 selects 19 existing Go module/runtime and font texts with explicit destinations.
 Both drafts received independent static review. Complete source-module
 contribution, historical Google glyph inputs and final package assembly remain
-open. Capture the actual module graph in the next independently required
-frontend build; no unchanged E11 rebuild or external distribution occurred.
+open. The subsequent required M5 frontend build captured its own bundler
+observations; no unchanged E11 rebuild or external distribution occurred, and
+the new sidecar does not supply historical E11 contribution evidence.
 
 The [separate frontend capture preparation](https://github.com/moooyo/goby/blob/43a9b76a93615b7f872f48dae4e9b3a73ca050b0/docs/development/frontend-contribution-capture.md)
 is now retained on `codex/m6-frontend-contributions` at `43a9b76`, in
@@ -1179,17 +1196,20 @@ an explicit release-script input with complete asset equality and final
 source/copy checks. JavaScript assets must partition into recorded chunk names
 or an explicit unattributed list. Its [seven producer top-level tests/eight
 subcases and five synthetic CLI tests/nine subcases](frontend-contribution-verification.md)
-passed once per group in bounded remote units. Type checking, actual build and
-package consumption remain unverified. The CLI cases use fake Go
+passed once per group in bounded remote units. Those synthetic scopes did not
+typecheck or build the application. The CLI cases use fake Go
 and deterministic source/copy mutations, not product builds. Static review findings
 were corrected in source. The plugin records a bundler observation, requiring a
 separate successful command result; it does not claim final per-module byte
 shares or legal completeness. The implementation and test sources are now
 cherry-picked into `codex/m5-user-deletion` at `4796aa1`; its documentation
-references the actual synthetic results. The next required M5 frontend build
-will capture the real graph, and its separately required release build must
-consume the matching report explicitly. No new test or build ran for this
-integration, and it adds no frontend rebuild to the frozen Programs increment.
+references the actual synthetic results. The [later real M5 frontend build](m5-final-frontend-verification-20260916.md)
+has now passed typechecking and Vite execution once, with 59 assets and an original
+sidecar covering 48 chunks/48 JavaScript assets. Its source and artifact mapping
+passed independent review. Actual release-script consumption remains pending and
+must use `--frontend-contributions`; static saved-data compatibility does not
+execute that consumer. The integration itself ran no build, and the later M5
+build does not rebuild or change the frozen Programs increment.
 
 Static review of the separate deletion and media-diagnostic branches identified
 one required integration hook: after a successful user deletion commits, notify

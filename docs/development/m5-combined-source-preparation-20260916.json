@@ -2,7 +2,7 @@
   "kind": "m5-combined-source-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "complete_source_independently_reviewed_product_verification_pending",
+  "status": "frontend_and_complete_source_independently_reviewed_product_verification_pending",
   "branch": "codex/m5-deletion-diagnostics",
   "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
   "mergeCommit": "96e6d750ecd0d634e19f0bf94a701665bd51f2ba",
@@ -77,12 +77,142 @@
     "record": "m5-user-deletion-catalog-generation-20260916.json"
   },
   "productTestsExecuted": 0,
-  "frontendBuildExecuted": false,
+  "frontendBuildExecuted": true,
   "browserAcceptance": false,
   "finalVerificationPassed": false,
   "remaining": [
-    "Build the frontend once from this source and retain the actual successful command, original contribution sidecar and complete dist assets.",
-    "Create a subsequent complete source snapshot containing these unchanged committed files plus the actual frontend assets; bind the original sidecar independently.",
+    "Verify the corrected storage preparation in a fresh owned scope; the consumed first attempt established zero-volume, zero-payload failure closure only.",
+    "Bind the complete S1 archive, actual successful frontend command receipt and original contribution sidecar into the full profile. The later release build must use --frontend-contributions.",
     "Verify the complete combined backend, deletion/diagnostic interaction, HTTP/browser behavior and final builds under the reviewed resource profile."
-  ]
+  ],
+  "frontendVerification": {
+    "record": "m5-final-frontend-verification-20260916.json",
+    "receipt": {
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/frontend-receipt.json",
+      "bytes": 15249,
+      "sha256": "b76c11c5e1401271b3908c17abcbab53b311a8afc5b4c7c49b0194313cbf585e"
+    },
+    "executionIndependentReview": {
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/execution-independent-review.json",
+      "bytes": 7432,
+      "sha256": "b6e718463f3628d1de78b015527b62e10bc9cd5021ab4fce476ac5c74338e1df"
+    },
+    "artifactIndependentReview": {
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/artifact-independent-review.json",
+      "bytes": 9031,
+      "sha256": "d897427f6e0d854d7f642029af210b6057a94de6f3f96c479ad4920221549544"
+    },
+    "attempts": 1,
+    "tscNoEmitAndViteBuildCompleted": true,
+    "frontendContributions": {
+      "bytes": 1918049,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/workspace/project/web/admin/.artifacts/frontend-contributions.json",
+      "sha256": "8eac277cd53d37537ef6a61e6ae88ea65f13d85726d16467b0aa38610fa82671"
+    },
+    "source1": {
+      "archive": {
+        "bytes": 33310516,
+        "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source.tar.gz",
+        "sha256": "772518c4c05a7d6912a660bdebed56495bc5422f6912af33029fb6e9fea41441"
+      },
+      "files": 5459,
+      "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+      "manifest": {
+        "bytes": 1102643,
+        "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-manifest.json",
+        "sha256": "656aff1f6d16d07cf59674602388d71749ac2e069cf5af001a3d452ec557c7c3"
+      },
+      "preparation": {
+        "bytes": 1254,
+        "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-preparation.json",
+        "sha256": "8bfb87f0628c7834083ea031ecedf73405014cf6c6764b31e4e13d727718c63d"
+      },
+      "uncompressedBytes": 121846736
+    },
+    "source1Descriptor": {
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-descriptor.json",
+      "bytes": 815,
+      "sha256": "86f2b398a87a4416c637355e34995d839e93b6f3a2d0dab94d7b09bfed62ffd0"
+    },
+    "sourceBinding": {
+      "bytes": 12882,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-binding.json",
+      "sha256": "9baee417747cb1d926f03633592c713fb7f867b521f52d10a8fccea97197e73c"
+    },
+    "unchangedCanonicalSourceRows": 5400,
+    "addedDistFiles": 59,
+    "resourcesClosed": true,
+    "workspaceRetained": true,
+    "source0ArchiveAndPreparationUnchanged": true
+  },
+  "storagePreparationFirstAttempt": {
+    "status": "failed_attempt_closed_reviewed",
+    "scope": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3",
+    "execution": {
+      "bytes": 92364,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/probe-result.json",
+      "sha256": "b609aef118d97ef3cd70cad61e2cbf34a17766adb2476859bd3e1817a8eed502"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/failed-attempt-independent-review.json",
+      "bytes": 5288,
+      "sha256": "6f33e60f7ff01f6e7a7fa18bfacfc4aba85a6a87e43a1ce5a7e241c72a345b5f"
+    },
+    "savedClosureReadback": {
+      "bytes": 6451,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/failed-closure-readback.json",
+      "sha256": "ac17c78d2ddbd4ad635905dda716174358274c826c465c5eaa3ef57533184842"
+    },
+    "input": {
+      "bytes": 2222,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/input.json",
+      "sha256": "494bb6a43bb49a277086bc5f0af59028066ebe42b4893d364b84f6c3636862b2"
+    },
+    "probe": {
+      "bytes": 47308,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/storage-probe.py",
+      "sha256": "bb625e5ba7147149311e6fa6f24681fa8f9747351663f7b953c01fdf2f5a122b"
+    },
+    "profile": {
+      "bytes": 59020,
+      "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/draft-r04.py",
+      "sha256": "54d68246ca499a53cd57ba21ac837c4cd4f86b3a8675fc6c756e12a9b71e0fe0"
+    },
+    "failure": {
+      "callSite": {
+        "line": 591,
+        "path": "/opt/goby-test/m5-full-storage-probe-20260916-376dbde4b1b3/private/storage-probe.py"
+      },
+      "classification": "workspace_owner_missing_before_volume_preparation",
+      "evidenceBasis": "The successful normal sequence ends with the absent payload-unit query; the exclusive intent was retained. The next statement calls private_directory on workspace-owner, and that pinned helper begins with lstat without creating the directory. The saved closure readback reports workspace-owner absent. The classification is derived from the saved sequence and source, not a retained raw Python traceback.",
+      "primitive": {
+        "line": 44,
+        "path": "/opt/goby-test/full-regression-20260914/private/full-regression-prepare.py",
+        "sha256": "3169b9f48bfbdc111d9e61810d5b03b4ec50845599b377254216be355d4ac922"
+      },
+      "recorded": {
+        "code": "probe_failed",
+        "type": "FileNotFoundError"
+      }
+    },
+    "commands": 30,
+    "rawStreams": 60,
+    "rawStreamBytes": 12413,
+    "workspaceState": "not_created",
+    "compilerState": "not_created",
+    "formatCommands": 0,
+    "loopAttachCommands": 0,
+    "mountCommands": 0,
+    "payloadDispatches": 0,
+    "sentinelExecutions": 0,
+    "allRecordedCommandsAndStreamsClosed": true,
+    "lockReleased": true,
+    "failedControllerUnitRetained": true,
+    "controllerPidAndCgroupAbsent": true,
+    "failedUnitReset": false,
+    "protectedBeforeAfterExact": true,
+    "storageGatesPassed": false,
+    "fullAdmission": false,
+    "nextStep": "Freeze and review the correction, then verify storage behavior in a new owned scope. Preserve this failed attempt and its original outcome."
+  }
 }

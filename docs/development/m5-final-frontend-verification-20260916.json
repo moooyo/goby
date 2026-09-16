@@ -1,0 +1,310 @@
+{
+  "kind": "m5-final-frontend-verification",
+  "version": 1,
+  "date": "2026-09-16",
+  "status": "frontend_build_and_artifacts_independently_reviewed",
+  "scope": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb",
+  "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+  "receipt": {
+    "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/frontend-receipt.json",
+    "bytes": 15249,
+    "sha256": "b76c11c5e1401271b3908c17abcbab53b311a8afc5b4c7c49b0194313cbf585e"
+  },
+  "executionIndependentReview": {
+    "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/execution-independent-review.json",
+    "bytes": 7432,
+    "sha256": "b6e718463f3628d1de78b015527b62e10bc9cd5021ab4fce476ac5c74338e1df"
+  },
+  "artifactIndependentReview": {
+    "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/artifact-independent-review.json",
+    "bytes": 9031,
+    "sha256": "d897427f6e0d854d7f642029af210b6057a94de6f3f96c479ad4920221549544"
+  },
+  "input": {
+    "bytes": 2822,
+    "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/input.json",
+    "sha256": "6a5b23a17ebbecb79f9086b98044cd20c5d65a9ee6756850c1d30b6f966b9d90"
+  },
+  "runner": {
+    "bytes": 45172,
+    "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/build-frontend.py",
+    "sha256": "3c124a712227b3235ae08f2223d404ffe809508aa27b940bbc5e0ab744a741ef"
+  },
+  "command": {
+    "argv": [
+      "/opt/node22/bin/node",
+      "/opt/node22/lib/node_modules/npm/bin/npm-cli.js",
+      "--prefix",
+      "web/admin",
+      "run",
+      "build"
+    ],
+    "cwd": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/workspace/project",
+    "node": {
+      "bytes": 124836408,
+      "path": "/opt/node22/bin/node",
+      "sha256": "3517c2df0b2f8cd7f422b4b8450ef81c6889f08eb03e281d6de9079b15e6a327"
+    },
+    "npmCli": {
+      "bytes": 54,
+      "path": "/opt/node22/lib/node_modules/npm/bin/npm-cli.js",
+      "sha256": "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7"
+    },
+    "attempts": 1,
+    "exitCode": 0,
+    "systemdStartExitCode": 0,
+    "tscNoEmitAndViteBuildCompleted": true,
+    "stdout": {
+      "bytes": 5481,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/build.stdout",
+      "sha256": "f77928c540b78fa384e0ccfc8886dbabdea4008436f8b91820320e60df0563c0"
+    },
+    "stderr": {
+      "bytes": 345,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/build.stderr",
+      "sha256": "b76431ce4ef3794e7cc7500fe779c4e5580a1080fc21dc59146598e3c3b87f47"
+    }
+  },
+  "tools": {
+    "identity": {
+      "bytes": 2121,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/tool-identity.json",
+      "sha256": "8efafd3064461caf4ab1da913bccca75a8972b8731dd6e2f62183e729fa63cd0"
+    },
+    "reportedNodeVersion": "22.23.2",
+    "viteVersion": "8.2.2",
+    "rolldownVersion": "1.2.7",
+    "reactPluginVersion": "6.1.1",
+    "dependenciesManifest": {
+      "bytes": 10159156,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/dependencies-manifest.json",
+      "sha256": "58906913e463b588314e7beb4192d8f1ba7a9ffb98d0b2f245b3ef66ea045d5c"
+    },
+    "npmTreeManifest": {
+      "bytes": 444862,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/npm-tree-manifest.json",
+      "sha256": "3f04070562f651abe4be0f2ce06d7b9fcbcaebaead5edcbd5b38e98a8879d703"
+    },
+    "beforeAfterMatched": true
+  },
+  "source0": {
+    "archive": {
+      "bytes": 33056853,
+      "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/private/source.tar.gz",
+      "sha256": "94ced328bcbc429b040baaff03a3d296e74524bcc49bfa1b5df650299e425aa7"
+    },
+    "files": 5400,
+    "independentReadback": {
+      "bytes": 3738,
+      "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/source-independent-review.json",
+      "sha256": "af2e745593429656c664ada8d4af2dc42c0a2c6e73c02e9f9944fd8c99d80e3f"
+    },
+    "manifest": {
+      "bytes": 994868,
+      "path": "/opt/goby-test/m5-combined-source-20260916-c30d29f4eddb/private/source-manifest.json",
+      "sha256": "f11599f9819932877a6132cf7e6215cceccd07d5ccde7e603adb8d19ff478c67"
+    },
+    "record": "m5-combined-source-preparation-20260916.json"
+  },
+  "source1": {
+    "descriptor": {
+      "bytes": 815,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-descriptor.json",
+      "sha256": "86f2b398a87a4416c637355e34995d839e93b6f3a2d0dab94d7b09bfed62ffd0"
+    },
+    "archive": {
+      "bytes": 33310516,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source.tar.gz",
+      "sha256": "772518c4c05a7d6912a660bdebed56495bc5422f6912af33029fb6e9fea41441"
+    },
+    "files": 5459,
+    "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+    "manifest": {
+      "bytes": 1102643,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-manifest.json",
+      "sha256": "656aff1f6d16d07cf59674602388d71749ac2e069cf5af001a3d452ec557c7c3"
+    },
+    "preparation": {
+      "bytes": 1254,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-preparation.json",
+      "sha256": "8bfb87f0628c7834083ea031ecedf73405014cf6c6764b31e4e13d727718c63d"
+    },
+    "uncompressedBytes": 121846736,
+    "binding": {
+      "bytes": 12882,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/source-with-frontend/source-binding.json",
+      "sha256": "9baee417747cb1d926f03633592c713fb7f867b521f52d10a8fccea97197e73c"
+    },
+    "oldCanonicalRowsUnchanged": 5400,
+    "addedDistFiles": 59,
+    "addedDistBytes": 1141685,
+    "onlyDistAdded": true,
+    "canonicalArchiveMode": 420,
+    "privateFileMode": 384,
+    "gitHeadMeaning": "The Git HEAD identifies the S0 tracked source. S1 additionally includes the generated dist assets and is not a pure Git archive."
+  },
+  "frontendContributions": {
+    "pin": {
+      "bytes": 1918049,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/workspace/project/web/admin/.artifacts/frontend-contributions.json",
+      "sha256": "8eac277cd53d37537ef6a61e6ae88ea65f13d85726d16467b0aa38610fa82671"
+    },
+    "kind": "goby-frontend-contributions",
+    "version": 1,
+    "phase": "bundle_written",
+    "buildSuccessClaimed": false,
+    "requiresSuccessfulBuildReceipt": true,
+    "buildId": "95baf9ea-2ee5-412c-80b5-24f09451863a",
+    "originalBuildRoot": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/workspace/project",
+    "originalPathsAndBytesPreserved": true,
+    "chunks": 48,
+    "javascriptAssets": 48,
+    "javascriptWithoutChunkModules": [],
+    "moduleOccurrences": 553,
+    "uniqueModuleIds": 553,
+    "observedInputs": 1039,
+    "observedSourceInputs": 44,
+    "observedDependencyInputs": 995,
+    "fullCompiledDependencyGraphClaimed": false,
+    "originalByteConsumptionProved": false,
+    "legalCompletenessAsserted": false
+  },
+  "assets": {
+    "files": 59,
+    "bytes": 1141685,
+    "inventorySHA256": "4979a364a45281dc602e9dcc5d5b792fd8b82924dfe60d799ba55209f7263e94",
+    "actualDistCompleteAndEqual": true,
+    "entryReferences": [
+      {
+        "bytes": 265700,
+        "kind": "module-script",
+        "name": "assets/index-DZagucgH.js",
+        "sha256": "ffa3de5133389bcdd3659b9b73546609d48cb7c6db2193903198f8d623ad1ea2",
+        "url": "/admin/assets/index-DZagucgH.js"
+      },
+      {
+        "bytes": 589,
+        "kind": "modulepreload",
+        "name": "assets/rolldown-runtime-CbXtAM7H.js",
+        "sha256": "bbf7c5086ae414dc3f33777e3eebf16ea8631325b8bb4690d25091c03567f31a",
+        "url": "/admin/assets/rolldown-runtime-CbXtAM7H.js"
+      },
+      {
+        "bytes": 186198,
+        "kind": "modulepreload",
+        "name": "assets/components-DSN6N_-b.js",
+        "sha256": "dd020a909efefb89bb11c94c5659050fb2071d6ebabeb6cf2cb183ad80e0f560",
+        "url": "/admin/assets/components-DSN6N_-b.js"
+      },
+      {
+        "bytes": 26102,
+        "kind": "modulepreload",
+        "name": "assets/List-DNU8g-Ef.js",
+        "sha256": "d762947dfb7214189c39373dd7f4a4edbf68414236721213087a12f0511df253",
+        "url": "/admin/assets/List-DNU8g-Ef.js"
+      },
+      {
+        "bytes": 3675,
+        "kind": "stylesheet",
+        "name": "assets/index-Di0tN6tC.css",
+        "sha256": "06be1093dcfdef5a82e591bc85112bbd6870376cdd30c40545420d1499c90b52",
+        "url": "/admin/assets/index-Di0tN6tC.css"
+      }
+    ]
+  },
+  "closure": {
+    "receipt": {
+      "bytes": 1325,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/closure.json",
+      "sha256": "f17e08a267f9f78d99618a1fb9662476e939b8ed26e0252653e38d04f86f23a4"
+    },
+    "unitBeforeStop": {
+      "bytes": 2361,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/unit-before-stop.json",
+      "sha256": "ee2ec6e036ed0ce848d01e087ab7e767fb59eed9af7b95b0e55b15ee57cce0d4"
+    },
+    "processObservations": {
+      "bytes": 872,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/process-observations.json",
+      "sha256": "0ab3a91540cfaf14b3205f788344d85b620ef0f25b059f639341a2939a794889"
+    },
+    "controllerCommands": {
+      "bytes": 51064,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/controller-commands.json",
+      "sha256": "034dae932c2ce1f97e3a06a833c4323e77b9c766fbeff2c931f18706489ddd62"
+    },
+    "rootDispatch": {
+      "bytes": 4499,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/root-dispatch-result.json",
+      "sha256": "0c29faf0334ae08eaf46b2162517bad2937dcc575d275d6ceda42eb35358532a"
+    },
+    "resourcesClosed": true,
+    "recordedBuildPidsAbsent": true,
+    "cgroupAbsent": true,
+    "unitCollected": true,
+    "temporaryDirectoryEmpty": true,
+    "workspaceRetained": true,
+    "sourceAndDependencyCopiesRetained": true,
+    "controllerCommandsReaped": 35,
+    "controllerRawStreamsRead": 70,
+    "cleanupFailures": []
+  },
+  "resourceEvidence": {
+    "limits": {
+      "CPUQuotaPerSecUSec": "1s",
+      "KillMode": "control-group",
+      "MemoryHigh": "1610612736",
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0",
+      "NoNewPrivileges": "yes",
+      "PrivateNetwork": "yes",
+      "ProtectSystem": "strict",
+      "RuntimeMaxUSec": "4min",
+      "TasksMax": "192"
+    },
+    "actualMemoryPeakBytes": 721768448,
+    "recordedOomEventsZero": true,
+    "driverElapsedSeconds": 35.69587281398708,
+    "driverTimedOut": false,
+    "sixExistingProcessIdentitiesBeforeAfterExact": true,
+    "businessDatabaseObserved": false,
+    "globalConfigurationObserved": false
+  },
+  "warning": {
+    "stderr": {
+      "bytes": 345,
+      "path": "/opt/goby-test/m5-final-frontend-20260916-c30d29f4eddb/private/build.stderr",
+      "sha256": "b76431ce4ef3794e7cc7500fe779c4e5580a1080fc21dc59146598e3c3b87f47"
+    },
+    "classification": "Vite warns that a config import without an extension is unsupported by its planned future native config loader. This remains retained; it is not an error from this successful build.",
+    "suppressed": false
+  },
+  "laterConsumer": {
+    "requiredFlag": "--frontend-contributions",
+    "completeSourceArchiveRequired": true,
+    "originalSidecarMustNotBeRewritten": true,
+    "completeAssetsAndJavaScriptPartitionMustMatch": true,
+    "consumerImportedOrExecuted": false,
+    "fixedConsumerSource": {
+      "bytes": 59020,
+      "path": "D:/Code/goby/.git/m5-full-disk-workspace-preparation-20260916/draft-r04.py",
+      "sha256": "54d68246ca499a53cd57ba21ac837c4cd4f86b3a8675fc6c756e12a9b71e0fe0"
+    },
+    "sidecarMustRemainOutsideSystemdPackage": true
+  },
+  "reviewMethod": "This documentation update read the saved build receipt, command output, source binding, source descriptor and independent reviews. It did not rerun the helper, tests, npm, probes, SQL or services. Execution/resource review and artifact/source review retain their separate methods and limitations.",
+  "acceptance": {
+    "frontendTypecheckAndBuild": true,
+    "combinedGoRegression": false,
+    "goAndEmbeddedBuilds": false,
+    "nativeHttpOrBrowserAcceptance": false,
+    "codecOrHardwareAcceptance": false,
+    "completeM5Acceptance": false,
+    "programsTransition": false
+  },
+  "remaining": [
+    "Verify the corrected storage profile in a fresh owned scope; the first zero-volume, zero-payload failure remains consumed and is recorded in m5-combined-source-preparation-20260916.json.",
+    "Admit the complete S1 source and actual frontend receipt/sidecar into the bounded M5 backend, interaction, HTTP/browser and final build work.",
+    "Use --frontend-contributions for the later release build; this successful frontend build does not itself execute or verify that consumer."
+  ]
+}

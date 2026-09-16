@@ -37,8 +37,13 @@ actual successor and the recovered runtime authority before the direct A
 transition. The separately owned [schema-29 catalog job](../development/m5-user-deletion-catalog-generation-20260916.json)
 has generated its artifact and closed with independent content and resource
 reviews. Its exact bytes are now in the M5 source; no M5 product test ran in
-that generator scope. No product
-root-cause correction is established. The other prepared
+that generator scope. The [combined M5 frontend](../development/m5-final-frontend-verification-20260916.md)
+has now passed one typecheck/Vite build with independent execution and artifact
+reviews. Its full S1 source preserves 5400 original rows and adds 59 actual dist
+files, with the original sidecar retained separately. The first storage check
+failed before volume or payload creation and is independently closed; a corrected
+fresh-scope check and the combined Go/HTTP/browser/final builds remain pending.
+No product root-cause correction is established. The other prepared
 increments retain their separate, incomplete acceptance scopes.
 Keep the complete M2-M6 objective; M7 remains deferred.
 Historically, following the [September 15 incident](../development/programs-final-regression-incident.json),
@@ -62,10 +67,13 @@ The later [recovery-aware component scope](../development/programs-binding-compo
 passed runtime 42, successor 28 and closer 68 checks once, with independent
 result/source/closure review. Its frozen producer now supports the separately
 [prepared two-query observer](../development/programs-current-runtime-preparation-20260916.json).
-That observer remains disabled until its real verification and input bindings
-exist. Later consumer-only adapter Pin3-to-Pin2 projection changes and the final
-runtime pin are not covered by those 138 results. Actual product review, runtime
-publication and transition admission remain open.
+Its final prepared source has been remotely compiled, using a verification
+wrapper derived from the actual 42-test runtime group. The pending input still
+has no deadline/output and has not executed. Actual product review and the
+artifact aggregation receipt are now published. Later consumer-only adapter
+Pin3-to-Pin2 projection fixes and the final runtime pin are not covered by the
+unchanged 138 results; their verification, runtime publication and transition
+admission remain open.
 
 The failed final worker accepted only 11 complete passing packages/475 passes;
 Library's 605 raw passes are excluded. Raw totals are 1,080 pass events, two
@@ -569,9 +577,20 @@ were transferred to the M5 branch. The isolated PG, worker, mount, loop, backing
 file and lock are closed. The [combined M5 source](../development/m5-combined-source-preparation-20260916.json)
 is now frozen at `138522b`: its deletion/diagnostic interaction passed focused
 static review, and the complete 5400-file archive passed independent provenance
-review. It includes the real catalog but no generated frontend assets or
-contribution sidecar yet. Build the frontend once, preserve its actual outputs
-and successful command, then verify the resulting complete source. The consumed catalog input
+review. That original archive remains unchanged. The [real frontend result](../development/m5-final-frontend-verification-20260916.md)
+now binds one successful `tsc --noEmit && vite build` invocation, the original
+contribution sidecar, and a complete S1 archive with exactly 59 added dist files.
+Execution and artifact reviews passed; the unit/processes/cgroup are closed and
+the workspace is retained. Preserve the 345-byte future Vite config-loader
+warning. The later release build must explicitly consume the sidecar through
+`--frontend-contributions` and retain complete asset equality after relocation.
+The [first storage attempt](../development/m5-combined-source-preparation-20260916.json)
+failed at a check of the not-created workspace-owner directory, as inferred
+from saved command order and pinned source rather than a retained traceback.
+No format, attach, mount or payload ran. Thirty commands/60 streams closed;
+the failed unit record is retained with no live PID/cgroup. Review the correction
+and execute a new-scope storage check before admitting the combined full work.
+The consumed catalog input
 must not be replayed; it does not supply product acceptance.
 Keep all historical inputs and their original outcomes unchanged.
 
@@ -608,9 +627,10 @@ remaining fixed Programs constants are still preparatory. Bind new runtime and
 artifact authority after final verification without a new tool version,
 framework, launcher or general contract redesign.
 
-After incident recovery and resource coordination, the successor still needs
-its final-source verification/build and complete recovery/journey entry
-contracts before one direct A transition, three client journeys, the audio
+After incident recovery and resource coordination, the successor's complete-source
+verification/build is retained. It still needs the current runtime envelope,
+verified consumer bindings and complete recovery/journey entry contracts before
+one direct A transition, three client journeys, the audio
 reuse bridge and G3. Follow the
 [core acceptance resolution](../development/core-client-acceptance-resolution.md)
 and [selected A transition](../development/e11-candidate-transition-decision.md).
@@ -648,10 +668,10 @@ maintenance record supersedes the earlier unanswered-window blocker.
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
 | `codex/programs-theme-diagnosis`, `3d6b79b` | [Complete-source regression/build](../development/programs-complete-source-full-result-20260916.md): all 25 packages, 2309 top-level tests and both builds passed with independent review and closure; the original mount-profile gap is retained | Bind the verified artifact after candidate recovery and current runtime observation. No product root-cause correction or client acceptance is established |
-| `codex/m5-deletion-diagnostics`, `138522b` | [Combined M5 source](../development/m5-combined-source-preparation-20260916.json) merges deletion source `83cf0a8`, diagnostics source `1fcdede`, the committed post-DELETE cancellation hook and deterministic reservation/peer-isolation regression. It includes the independently reviewed real schema-29 export; all 5400 committed files are frozen and independently reconciled | Run the actual frontend build with its contribution sidecar and successful command evidence, then the prepared Go/DB/HTTP/browser and final verification against the complete combined source. The generator input is consumed; source review does not establish M5 acceptance or a merge into frozen Programs |
+| `codex/m5-deletion-diagnostics`, `138522b` | [Combined M5 source](../development/m5-combined-source-preparation-20260916.json) includes the real schema-29 export, post-DELETE cancellation hook and reservation/peer-isolation regression. The [real frontend build](../development/m5-final-frontend-verification-20260916.md) passed once: S1 preserves all 5400 committed rows and adds 59 actual dist files, with original sidecar and independent execution/artifact reviews | Verify the corrected storage profile in a fresh scope, then the prepared Go/DB/HTTP/browser and final builds against complete S1. Require `--frontend-contributions` for release consumption. The first zero-volume/payload storage failure and consumed catalog input retain their outcomes; no M5 acceptance or merge into frozen Programs is claimed |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
-| `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md): sample/process/content/stage layers now connect to native APIs, a Settings panel, one owned execution, actual conversion capacity, current native authority, cancellation and bounded per-instance history. The prior 12/18/27 cases plus 40 new Go functions (39 on Linux) and three synthetic browser cases remain unexecuted; static review and remote formatting complete | In the coordinated window, verify Go/type/build and native HTTP/browser behavior, actual resource/deployment prerequisites, codec-log compatibility and content calibration, then execute software/available hardware profiles. Defaults remain disabled and no service configuration was activated. No runtime or M5 acceptance is claimed |
-| `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md): Vite records module/source/package and actual asset hashes outside `dist`; release verifies the full asset set and preserves a private copy. The [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md) passed once per group. The unchanged implementation/test sources are integrated into M5 at `4796aa1` | Use the next required M5 frontend build for type checks and actual callback/asset/consumer verification. Include `web/admin/build/` in its complete source snapshot and retain the successful command receipt with the sidecar. No unchanged E11 rebuild, Programs artifact change, actual build success or legal completeness is claimed |
+| `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md): sample/process/content/stage layers connect to native APIs, a Settings panel, one owned execution, actual conversion capacity, current native authority, cancellation and bounded per-instance history. The prior 12/18/27 cases plus 40 new Go functions (39 on Linux) and three synthetic browser cases remain unexecuted; static review and remote formatting complete. The later combined `138522b` frontend typecheck/build passed in its own scope | Verify combined Go/build and native HTTP/browser behavior, actual resource/deployment prerequisites, codec-log compatibility and content calibration, then execute software/available hardware profiles. Defaults remain disabled and no service configuration was activated. No runtime or M5 acceptance is claimed |
+| `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |
 | `codex/m6-oci-package`, `18cd4ef` | [Linux amd64 OCI software draft](https://github.com/moooyo/goby/blob/18cd4efd117f3314cf5cb46b4736f65795bbdf59/deploy/oci/README.md): fixed Debian manifest/snapshots, selected-release input checker, FFmpeg 9.0.1 source recipe, PG17 clients and nonroot/read-only Compose profile. All [12 checker methods](../development/oci-artifact-checker-verification.md) passed once with bounded remote execution and resource closure | Select an actually verified release and establish the builder/runtime/resource boundary. Check the real artifact, Compose/image and nonroot media/backup/stop behavior; retain exact image, tool, package and source identities. No application artifact is selected, no image is built/pulled/started, and GPU/arm64/reproducibility/legal acceptance remain open |
 
 These are preparation checkpoints, not successful runtime observations. Do not
@@ -684,7 +704,7 @@ and actual execution results distinct.
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
 | Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [original source checkpoint](../development/session-handoff-20260915-native-capacity.md), earlier operator/source-bridge results, and the [verified Running-job collection](../development/native-capacity-running-observation-verification-20260916.md) | No native fixture/input exists. Bind the selected verified artifact and current runtime before native admission. Reuse completed component groups; actual overlap and capacity still require native workload evidence |
-| Independent profile: package attribution | Retain the [46-chunk graph](../development/systemd-package-javascript-attribution.md), completed [73-row fixed-commit MUI lookup](../development/systemd-package-mui-source-correspondence.md) and [19-text payload draft](../development/systemd-package-legal-payload-draft.md). Capture the actual module graph with the next independently required frontend build | Two inspected saved reports supplied no source-graph reference. Keep historical E11 contribution and Google input gaps explicit; no unchanged E11 rebuild or repeated source lookup without concrete new evidence. Final payload, pending license choice and external-distribution gate remain open |
+| Independent profile: package attribution | Retain the [46-chunk graph](../development/systemd-package-javascript-attribution.md), completed [73-row fixed-commit MUI lookup](../development/systemd-package-mui-source-correspondence.md) and [19-text payload draft](../development/systemd-package-legal-payload-draft.md). The [real M5 frontend build](../development/m5-final-frontend-verification-20260916.md) now has its own original contribution sidecar and exact asset/source bindings | The new sidecar does not supply historical E11 provenance or a complete compiled graph. Keep historical Google/input gaps explicit; no unchanged E11 rebuild or repeated source lookup without concrete new evidence. Actual consumer execution, final payload, pending license choice and external-distribution gate remain open |
 | Independent profiles: remaining M2-M6 | Progress blocked I/O, durability, media/transcode, administration, hardware/architecture, OCI and support rows under their own prerequisites | No blanket dependence on main promotion; unavailable hardware/licensing blocks the corresponding claim. M7 remains deferred |
 
 The first revised-plan increment has passed

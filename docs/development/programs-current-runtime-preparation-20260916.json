@@ -2,21 +2,21 @@
   "kind": "programs-current-runtime-and-product-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "observer_statically_reviewed_product_mapping_prepared_not_executed",
+  "status": "observer_source_compiled_product_receipt_published_runtime_and_consumer_verification_pending",
   "observer": {
-    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
-    "bytes": 15786,
-    "sha256": "d60dee9d93df27732ced4a15402daeade2704951775885e064fd89964edd6601"
+    "bytes": 15787,
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observe-current-runtime.py",
+    "sha256": "960a3d60aa16806749ced9fa10113cfe30bb3c2c053c4a07b1217481d3b65b37"
   },
   "observerInput": {
-    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observer-input.draft-r02.json",
-    "bytes": 2981,
-    "sha256": "6ee420df0ac813759cca5aad6c0d42903efb37e1a1f2c407f7fad87fe9b19a4b"
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observer-input.pending.json",
+    "bytes": 3386,
+    "sha256": "ee6fbd79cda1c55692da2e8a365228523c3646639a4c05f76b3a9ff756e152ab"
   },
   "observerPreparation": {
-    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observer-preparation-r02.json",
-    "bytes": 2380,
-    "sha256": "7d98f2c6b5f48cc96b368d6e5b9f378ac2bdc7fead1cddbf24c97e50ad33158b"
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/source-preparation.json",
+    "bytes": 2134,
+    "sha256": "df7d2df2a1be246513d670c82941f374cae1d63982a7b9ebe4000d8925130cc3"
   },
   "artifactDraft": {
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/artifact-receipt.draft.json",
@@ -34,30 +34,89 @@
     "sha256": "5d66cb04c5b48d8a0faea38fde05aceac67f7dcd2ba04096330d345c182e1d0e"
   },
   "componentRecord": "programs-binding-components-20260916.json",
-  "draftDisabled": true,
   "observerOutput": null,
   "observerDeadline": null,
-  "runtimeVerification": null,
-  "observerSourceVerification": null,
+  "runtimeVerification": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/runtime-verification-42.json",
+    "bytes": 352,
+    "sha256": "6bce4ba587ffd08293022b83d702183bd94c70fc2c1163f88c46007594b6afbe"
+  },
+  "observerSourceVerification": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observer-source-verification.json",
+    "bytes": 778,
+    "sha256": "d6337f58b13bf2ce6d11b8b575efaeaf7435dc4b0e25759d07117085ffa07f25"
+  },
   "artifactDraftStatus": "draft_unreviewed",
-  "productReviewChecksCompleted": 0,
+  "productReviewChecksCompleted": 11,
   "actualObservationExecuted": false,
   "currentRuntimeEnvelopeProduced": false,
   "transitionHoldRemoved": false,
   "staticReview": [
     "The observer uses the already verified producer helper and the fixed aed2914-to-38b ancestry without requiring the future consumer runtime pin.",
     "The original metadata, hosting, protected state and file comparisons still surround one deployment_lease call with two SQL queries; backendStart comes from pg_stat_activity.",
-    "The original failure remains primary if failure-receipt publication, unlock, descriptor close or lock-receipt publication also fail."
+    "The original failure remains primary if failure-receipt publication, unlock, descriptor close or lock-receipt publication also fail.",
+    "The prepared observer changed only DRAFT_ONLY and was remotely compiled without importing or executing the module. Its pending input still has no deadline or output."
   ],
   "remaining": [
-    "Create the existing runtime-verification wrapper from the actual 42-test runtime group and its bound source, not the 138-group aggregate or the old 33-test record.",
-    "Bind the final observer source/output/deadline, perform its required real source verification remotely, and create the corresponding existing source-verification wrapper before observation.",
-    "Independently reconcile the actual product material and budgets into the existing version-1 artifact and product-review contracts; do not rename historical reviews or fill unchecked flags.",
-    "After the real observation and runtime envelope exist, bind the final consumer source and verify its changed adapter projection and actual runtime pin before capture/transition admission."
+    "Bind a fresh output and deadline into a separate admitted observation input; the pending input is not executable authority.",
+    "Run the existing two-query observation and independently review it before producing the new current-runtime envelope. No observation, envelope or transition admission exists at this checkpoint.",
+    "Bind the published actual product receipt and final runtime authority into the consumer's required paths and inputs; publication alone does not satisfy transition guards.",
+    "Verify the changed consumer adapter Pin3-to-Pin2 projection and final runtime binding. Later consumer changes are not covered by the frozen 42 + 28 + 68 results."
   ],
   "limits": [
-    "All five draft/preparation files retain their original bytes. They are preparation, not application/runtime authority.",
-    "The observation producer is the frozen source already covered by 138 component checks; later consumer-only source changes have separate provenance and pending verification.",
-    "No new SQL, HTTP, application start, test run or current-runtime observation was performed while preparing these drafts."
-  ]
+    "The original observer/artifact/product-review drafts and their preparation files retain their original bytes and outcomes.",
+    "The observation producer remains the frozen helper covered by the 42 runtime checks within the 138-check component scope. The verification wrapper selects only those actual 42 results and is not a new test execution.",
+    "The prepared observer source was compiled remotely only. Its input still has deadlineUtc=null and output=null; no new observation, SQL, HTTP or service action was executed.",
+    "The actual Programs product review and artifact receipt are separately published from saved complete-source regression/build and closure evidence. Historical execution.artifactMaterialization.independentReviewPending and the draft records are unchanged.",
+    "Later consumer-only source changes have separate provenance and pending verification. No runtime envelope, transition admission, deployment or client acceptance follows from source compilation or artifact publication."
+  ],
+  "observerDraft": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
+    "bytes": 15786,
+    "sha256": "d60dee9d93df27732ced4a15402daeade2704951775885e064fd89964edd6601"
+  },
+  "observerInputDraft": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observer-input.draft-r02.json",
+    "bytes": 2981,
+    "sha256": "6ee420df0ac813759cca5aad6c0d42903efb37e1a1f2c407f7fad87fe9b19a4b"
+  },
+  "observerPreparationDraft": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observer-preparation-r02.json",
+    "bytes": 2380,
+    "sha256": "7d98f2c6b5f48cc96b368d6e5b9f378ac2bdc7fead1cddbf24c97e50ad33158b"
+  },
+  "originalDraftDisabled": true,
+  "preparedObserverDraftOnly": false,
+  "observerInputDispatchable": false,
+  "runtimeVerificationProvenance": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/runtime-verification-42-provenance.json",
+    "bytes": 2603,
+    "sha256": "bdab65a2008f4616a8002c8c027c162086567673ca0e766d0426e2bccacdcec4"
+  },
+  "observerSourceCompiledRemotely": true,
+  "observerModuleImportedOrExecuted": false,
+  "observerQueryAndSamplingCodeChanged": false,
+  "observerChangedAssignments": [
+    "DRAFT_ONLY"
+  ],
+  "artifactReceipt": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/artifact-receipt.json",
+    "bytes": 4746,
+    "sha256": "4575d073e3c670bb17db61e90d4825856a181b7f02e2c7e3eeccd5c68f5db1e3"
+  },
+  "productIndependentReview": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/product-independent-review.json",
+    "bytes": 7409,
+    "sha256": "da454f9b7b9be4d67847c0ae579c7be4d2aaee49ac1c2db4ad5e46707120854b"
+  },
+  "artifactPublication": {
+    "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/artifact-publication.json",
+    "bytes": 1700,
+    "sha256": "748e7bc6a8fe7bf5f410944d89f5858e576b694d1450a873310013b5fdf2c1dc"
+  },
+  "artifactReceiptStatus": "verified_and_closed",
+  "productIndependentReviewStatus": "passed",
+  "consumerValidationExecuted": false,
+  "transitionAdmission": false,
+  "clientAcceptance": false
 }
