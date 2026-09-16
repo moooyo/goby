@@ -203,7 +203,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'settings' && <SettingsPage onNavigationGuardChange={setNavigationGuard} />}
+            {page === 'settings' && <SettingsPage currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'observability' && <ObservabilityPage />}
             {page === 'backups' && <BackupsPage key={user.Id} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>

@@ -23,31 +23,32 @@ import (
 )
 
 type Server struct {
-	cfg             config.Config
-	db              *pgxpool.Pool
-	identity        *identity.Store
-	log             *slog.Logger
-	version         string
-	serverID        string
-	limiter         *loginLimiter
-	library         *library.Store
-	images          *imageCache
-	streamSlots     chan struct{}
-	originals       *originalStreamRuntime
-	subtitleSlots   chan struct{}
-	eventHub        *events.Hub
-	sockets         *socketRuntime
-	notifier        *userDataNotifier
-	catalogNotifier *libraryNotifier
-	hls             *hlsRuntime
-	taskStore       *tasks.Store
-	taskManager     *tasks.Manager
-	settings        *settings.Store
-	diagnostics     *diagnostics.Store
-	dashboardFiles  fs.FS
-	recovery        adminRecoveryManager
-	activityCancel  context.CancelFunc
-	activityDone    chan struct{}
+	cfg              config.Config
+	db               *pgxpool.Pool
+	identity         *identity.Store
+	log              *slog.Logger
+	version          string
+	serverID         string
+	limiter          *loginLimiter
+	library          *library.Store
+	images           *imageCache
+	streamSlots      chan struct{}
+	originals        *originalStreamRuntime
+	subtitleSlots    chan struct{}
+	eventHub         *events.Hub
+	sockets          *socketRuntime
+	notifier         *userDataNotifier
+	catalogNotifier  *libraryNotifier
+	hls              *hlsRuntime
+	taskStore        *tasks.Store
+	taskManager      *tasks.Manager
+	settings         *settings.Store
+	diagnostics      *diagnostics.Store
+	mediaDiagnostics *mediaDiagnosticRuntime
+	dashboardFiles   fs.FS
+	recovery         adminRecoveryManager
+	activityCancel   context.CancelFunc
+	activityDone     chan struct{}
 }
 
 // Option attaches dependencies whose lifetime is owned by the process entry
@@ -101,6 +102,11 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		_ = app.Close(context.Background())
 		return nil, err
 	}
+	app.mediaDiagnostics, err = newMediaDiagnosticRuntime(app)
+	if err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
 	app.startActivityRetention()
 	return app, nil
 }
@@ -151,6 +157,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	s.mediaDiagnostics.BeginClose()
 	s.catalogNotifier.Close()
 	s.cancelActivityRetention()
 	return s.closeSockets(ctx)
@@ -173,6 +180,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminSessionRoutes(mux)
 	s.registerAdminDeviceRoutes(mux)
 	s.registerAdminTaskRoutes(mux)
+	s.registerAdminMediaDiagnosticRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
 	s.registerAdminBackupRoutes(mux)
 	s.registerConfigurationRoutes(mux)

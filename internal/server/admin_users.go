@@ -102,6 +102,7 @@ func (s *Server) deleteManagedUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// Database deletion has committed. Retire local consumers without holding
 	// account/session locks or waiting for a conversion process to terminate.
+	s.mediaDiagnostics.cancelActor(id, "")
 	for _, sessionID := range result.RevokedSessionIDs {
 		if s.eventHub != nil {
 			s.eventHub.DisconnectCredential(sessionID)
@@ -116,7 +117,11 @@ func (s *Server) deleteManagedUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, actor identity.Principal, action string, result identity.ManagedUserMutation) {
+	if action == "reset_user_password" || !result.User.User.IsAdministrator || result.User.User.IsDisabled {
+		s.mediaDiagnostics.cancelActor(result.User.User.ID, "")
+	}
 	if result.CurrentSessionRevoked {
+		s.mediaDiagnostics.cancelActor("", actor.SessionID)
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", result.User.User.ID, "action", action)

@@ -132,7 +132,9 @@ history remain. Device last-user, application-key creator, and metadata-editor
 references become null where their existing foreign keys require it.
 
 After confirmed commit success, the server disconnects the removed credentials' event connections
-and retires their HLS and conversion work. Conversion process shutdown happens
+and retires their HLS and conversion work. It also immediately cancels any media
+diagnostic owned by the deleted user; its capacity reservation remains held until
+the diagnostic owner has closed its resources. Conversion process shutdown happens
 asynchronously, outside the database transaction. Existing original-file
 responses retain their bounded authorization watchers. Deleting an account
 does not revoke independent userless application-key credentials or remove

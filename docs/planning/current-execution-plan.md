@@ -510,9 +510,9 @@ work still awaits the user's window decision.
 **Closed compatibility exception:** the bounded current-runtime v2 correction
 represents the second recovery through `previousCurrentRuntime`, preserving v1
 semantics and historical `38b906...`. Reuse its verified four-file scope. The
-remaining fixed Programs constants are still preparatory while client checks
-finish; bind new runtime/artifact authority after final verification without a
-new tool version, framework, launcher or general contract redesign.
+remaining fixed Programs constants are still preparatory. Bind new runtime and
+artifact authority after final verification without a new tool version,
+framework, launcher or general contract redesign.
 
 After incident recovery and resource coordination, the successor still needs
 its final-source verification/build and complete recovery/journey entry
@@ -543,6 +543,23 @@ failure preservation together on their actual filesystems; do not move an
 unbounded disk requirement into RAM. Recheck current disk, RAM and execution limits before each such phase;
 historical capacity readings are not reservations. Keep the paused M2 RAM
 workspace outside every new resource budget.
+
+### Isolated preparation checkpoints
+
+The September 16 preparation is committed on two independent branches. Neither
+branch changes main's frozen Programs product source or supplies execution
+authority. The coordinated heavy-work window remains pending.
+
+| Branch and source | Prepared work | Remaining requirements |
+| --- | --- | --- |
+| `codex/programs-theme-diagnosis`, `3d6b79b` | [Bounded test diagnostics](https://github.com/moooyo/goby/blob/3d6b79b36b6a5050e174f7a152f214b9356608c8/docs/development/library-theme-diagnostic-preparation.md): original wait/phase/cleanup information, unchanged assertions and budgets; static review and remote gofmt complete | Select the new source/input and existing disposable worker in the coordinated window; run the original theme subcase once. No test or root-cause result exists yet |
+| `codex/m5-user-deletion`, `5c25ead` | [Independent M5 implementation draft](https://github.com/moooyo/goby/blob/5c25ead2f780cb7ae3f50c39075468bf42c5d419/docs/development/native-user-deletion.md): native DELETE, atomic audit and authorization, consumer retirement, administrator UI, migration0029 and version-specific backup/restore tests; static review and remote gofmt complete | Generate the real schema29 catalog and execute the prepared historical-source/current-target, deletion-audit and rejected-old-schema-archive cases, then complete Go/DB/HTTP/browser and final verification. No migration, browser or M5 acceptance is claimed; do not merge it into the frozen Programs increment |
+
+These are preparation checkpoints, not successful runtime observations. Do not
+restart recovered applications, replay old inputs or rerun completed component
+groups to refresh their labels.
+
+### Delivery order
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |

@@ -91,6 +91,39 @@ Media outside the service directories must be readable by `goby` and remains
 read-only under the unit's filesystem policy. Do not broaden writable paths
 or run as root to bypass a failed startup or scan.
 
+### Optional media diagnostic configuration
+
+Media diagnostics are disabled by default. `GOBY_MEDIA_DIAGNOSTICS_CGROUP` and
+`GOBY_MEDIA_DIAGNOSTICS_SCRATCH` must either both be unset/empty or both name
+bounded canonical absolute Linux directories. Supplying only one is a startup
+configuration error. Configuration loading checks syntax without opening paths
+or executing FFmpeg; enabling configuration does not prove runtime availability
+or a successful diagnostic.
+
+An enabled installation needs an independently prepared cgroup v2 parent with
+the memory and pids controllers already delegated for service-owned children.
+The executor does not change ancestor limits, enable controllers, or move
+existing processes. Scratch must already be empty and unmodifiable by the
+unprivileged service: either a read-only mount or a directory owned by another
+account with no write permission. An ordinary service-owned directory with mode
+0500 is insufficient because its owner can change that mode. The executor
+borrows scratch; it does not create, chmod, or remove it.
+
+At startup, enabled diagnostics capture `LD_LIBRARY_PATH` as at most 16 explicit
+directories and only these optional hardware variables: `LIBVA_DRIVER_NAME`,
+`LIBVA_DRIVERS_PATH`, `MESA_LOADER_DRIVER_OVERRIDE`, and `CUDA_VISIBLE_DEVICES`.
+Leave unused hardware variables unset; explicit empty values are rejected.
+Loader lists reject empty elements, and CUDA mappings require unique canonical
+numeric device IDs from 0 through 31. No other ambient environment is inherited
+by diagnostic children, and captured values are not public diagnostic output.
+
+This package does not provision the delegation or assume a systemd/kernel/device
+profile supplies it. Keep the shipped service hardening unchanged. If the
+required controllers, pre-exec placement, scratch ownership, tool or device
+access are unavailable, the run must report unavailable rather than execute
+without those boundaries. Actual deployment and diagnostic acceptance require
+their separate verification; these optional settings establish neither.
+
 ## First setup and normal stop/start
 
 ```sh

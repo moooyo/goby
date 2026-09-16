@@ -580,6 +580,77 @@ export interface SettingsUpdateInput {
 }
 export interface SettingsResetInput { Revision: string; Fields: SettingsResetField[] }
 
+export type MediaDiagnosticMode = "software" | "configured";
+export type MediaDiagnosticRunState = "queued" | "running" | "cancelling" | "cleanup_pending" | "passed" | "failed" | "cancelled" | "unavailable";
+export type MediaDiagnosticStageState = "not_run" | "running" | "passed" | "failed" | "cancelled" | "unavailable" | "unverified";
+export type MediaDiagnosticStageMode = "decode" | "encode" | "combined";
+export interface MediaDiagnosticProfile { Decode: string; Encode: string; Device: string }
+export interface MediaDiagnosticEvidence {
+  Decoder: string; Encoder: string; Width: number; Height: number; PixelFormat: string;
+  SampleRate: number; Channels: number; SampleFormat: string;
+  HardwarePixelFormat: string; HardwareFormatSelections: number;
+}
+export interface MediaDiagnosticCommand {
+  Started: boolean; ExitCode: number; Elapsed: number;
+  ToolSHA256: string; EnvironmentSHA256: string; InputSHA256: string; OutputSHA256: string;
+  OutputBytes: number; ProcessesClosed: boolean; OutputLimitReached: boolean;
+  MemoryLimitEvents: number; MemoryOOMEvents: number; MemoryOOMKills: number; TaskLimitEvents: number;
+  Evidence?: MediaDiagnosticEvidence;
+}
+export interface MediaDiagnosticVideoContent {
+  PolicyVersion: number; Width: number; Height: number; Frames: number; PixelFormat: string; ReferenceSHA256: string;
+  FrameMetrics: { Frame: number; BestReferenceFrame: number; Planes: {
+    MeanAbsoluteError: number; RootMeanSquareError: number; WorstTileMeanAbsError: number;
+  }[] }[];
+}
+export interface MediaDiagnosticAudioContent {
+  PolicyVersion: number; SampleRate: number; Channels: number; SampleFrames: number; ReferenceFrames: number;
+  ReferenceSHA256: string; CandidateOffsets: number; OffsetFrames: number; TrailingFrames: number;
+  NormalizedRMSE: number[]; WorstBlockNRMSE: number[]; SignalRMS: number[];
+  LeadingPaddingRMS: number[]; TrailingPaddingRMS: number[]; WorstPaddingBlockRMS: number[]; PaddingPeak: number[];
+}
+export interface MediaDiagnosticADTS {
+  PacketCount: number; Bytes: number; Codec: string; Profile: string; SampleRate: number; Channels: number; SHA256: string;
+}
+export interface MediaDiagnosticPreparation {
+  ID: string; Media: "video" | "audio"; Generation: number;
+  State: "not_run" | "running" | "ready" | "failed" | "cancelled" | "unavailable" | "unverified"; Code: string;
+  ParentSHA256: string; EncodedSHA256: string; EncodedBytes: number; DecodedSHA256: string; DecodedBytes: number;
+  ADTS?: MediaDiagnosticADTS; Encode?: MediaDiagnosticCommand; Decode?: MediaDiagnosticCommand;
+  Video?: MediaDiagnosticVideoContent; Audio?: MediaDiagnosticAudioContent;
+}
+export interface MediaDiagnosticStage {
+  ID: string; Media: "video" | "audio"; Path: MediaDiagnosticMode; Mode: MediaDiagnosticStageMode;
+  Profile: MediaDiagnosticProfile; State: MediaDiagnosticStageState; Code: string;
+  StartedAt: string; FinishedAt: string; ReferenceGeneration: number; ReferenceSHA256: string;
+  Command?: MediaDiagnosticCommand; Verification?: MediaDiagnosticCommand;
+  DecodedSHA256: string; DecodedBytes: number; ADTS?: MediaDiagnosticADTS;
+  Video?: MediaDiagnosticVideoContent; Audio?: MediaDiagnosticAudioContent;
+}
+export interface MediaDiagnosticReport {
+  Version: number;
+  Selection: { IncludeConfiguredHardware: boolean; ConfiguredProfile: MediaDiagnosticProfile };
+  StartedAt: string; FinishedAt: string;
+  State: "preparing" | "running" | "stages_complete" | "incomplete" | "passed" | "failed" | "cancelled" | "unavailable" | "unverified";
+  Code: string; ToolVersion: string; ToolSHA256: string; EnvironmentSHA256: string;
+  VersionCommand?: MediaDiagnosticCommand; CommandsAttempted: number; CommandsStarted: number;
+  SessionClosureRequired: boolean; Preparations: MediaDiagnosticPreparation[]; Stages: MediaDiagnosticStage[];
+}
+export interface MediaDiagnosticRunSummary {
+  Id: string; InstanceId: string; Revision: string; Mode: MediaDiagnosticMode; State: MediaDiagnosticRunState; Code: string;
+  CreatedAt: string; UpdatedAt: string; FinishedAt: string | null;
+}
+export interface MediaDiagnosticRunDetail extends MediaDiagnosticRunSummary { Report: MediaDiagnosticReport | null }
+export interface MediaDiagnosticRunResponse { Run: MediaDiagnosticRunDetail }
+export interface MediaDiagnosticsResponse {
+  InstanceId: string; StartToken: string; StartTokenExpiresAt: string;
+  Available: boolean; UnavailableReason: string; HardwareConfigured: boolean;
+  RetentionSeconds: 1800; MaxRetainedRuns: 32; Items: MediaDiagnosticRunSummary[];
+}
+export interface StartMediaDiagnosticInput {
+  InstanceId: string; RequestId: string; StartToken: string; Mode: MediaDiagnosticMode;
+}
+
 export interface LoginInput {
   Name: string;
   Password: string;
@@ -1171,6 +1242,182 @@ function taskPageParameters(query: TaskPageQuery): URLSearchParams {
   return new URLSearchParams({ StartIndex: String(query.StartIndex ?? 0), Limit: String(query.Limit ?? 50) });
 }
 
+function diagnosticRecord(value: unknown, required: string, optional = ""): value is Record<string, unknown> {
+  if (!isRecord(value)) return false;
+  const fields = required.split(" ");
+  const allowed = [...fields, ...optional.split(" ").filter(Boolean)];
+  const keys = Object.keys(value);
+  return keys.length <= allowed.length && fields.every((field) => Object.hasOwn(value, field))
+    && keys.every((field) => allowed.includes(field));
+}
+
+function diagnosticText(value: unknown, maximum = 256): value is string {
+  return typeof value === "string" && value.length <= maximum && !/[\u0000-\u001f\u007f]/.test(value);
+}
+
+function diagnosticID(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{32}$/.test(value);
+}
+
+function diagnosticHash(value: unknown): boolean {
+  return value === "" || (typeof value === "string" && /^[0-9a-f]{64}$/.test(value));
+}
+
+function diagnosticRevision(value: unknown): value is string {
+  return typeof value === "string" && /^[1-9]\d{0,19}$/.test(value) && BigInt(value) <= 18446744073709551615n;
+}
+
+function diagnosticCode(value: unknown): boolean {
+  return typeof value === "string" && /^(?:[a-z][a-z0-9_]{0,127})?$/.test(value);
+}
+
+function diagnosticNumber(value: unknown, maximum = Number.MAX_SAFE_INTEGER): value is number {
+  return validTaskCount(value) && (value as number) <= maximum;
+}
+
+function diagnosticTimestamp(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 40
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    && Number.isFinite(Date.parse(value));
+}
+
+function diagnosticProfile(value: unknown): boolean {
+  return diagnosticRecord(value, "Decode Encode Device")
+    && diagnosticText(value.Decode, 32) && diagnosticText(value.Encode, 32) && diagnosticText(value.Device, 4096);
+}
+
+function diagnosticEvidence(value: unknown): boolean {
+  return diagnosticRecord(value, "Decoder Encoder Width Height PixelFormat SampleRate Channels SampleFormat HardwarePixelFormat HardwareFormatSelections")
+    && ["rawvideo", "h264", "h264_qsv", "h264_cuvid", "aac", "pcm_s16le"].includes(value.Decoder as string)
+    && ["rawvideo", "libx264", "h264_vaapi", "h264_qsv", "h264_nvenc", "aac", "pcm_s16le"].includes(value.Encoder as string)
+    && ["", "yuv420p", "nv12", "vaapi", "qsv", "cuda"].includes(value.PixelFormat as string)
+    && ["", "s16", "fltp"].includes(value.SampleFormat as string)
+    && ["", "vaapi", "qsv", "cuda"].includes(value.HardwarePixelFormat as string)
+    && diagnosticNumber(value.Width, 320) && diagnosticNumber(value.Height, 192)
+    && diagnosticNumber(value.SampleRate, 48000) && diagnosticNumber(value.Channels, 2)
+    && diagnosticNumber(value.HardwareFormatSelections, 16);
+}
+
+function diagnosticCommand(value: unknown): boolean {
+  return diagnosticRecord(value, "Started ExitCode Elapsed ToolSHA256 EnvironmentSHA256 InputSHA256 OutputSHA256 OutputBytes ProcessesClosed OutputLimitReached MemoryLimitEvents MemoryOOMEvents MemoryOOMKills TaskLimitEvents", "Evidence")
+    && [value.Started, value.ProcessesClosed, value.OutputLimitReached].every((field) => typeof field === "boolean")
+    && typeof value.ExitCode === "number" && Number.isInteger(value.ExitCode) && value.ExitCode >= -1 && value.ExitCode <= 255
+    && diagnosticNumber(value.Elapsed, 600_000_000_000) && diagnosticNumber(value.OutputBytes, 16 << 20)
+    && [value.ToolSHA256, value.EnvironmentSHA256, value.InputSHA256, value.OutputSHA256].every(diagnosticHash)
+    && [value.MemoryLimitEvents, value.MemoryOOMEvents, value.MemoryOOMKills, value.TaskLimitEvents].every((field) => diagnosticNumber(field))
+    && (value.Evidence === undefined || diagnosticEvidence(value.Evidence));
+}
+
+function diagnosticVideo(value: unknown): boolean {
+  if (!diagnosticRecord(value, "PolicyVersion Width Height Frames PixelFormat ReferenceSHA256 FrameMetrics") || value.PolicyVersion !== 1
+    || !diagnosticNumber(value.Width, 320) || !diagnosticNumber(value.Height, 192) || !diagnosticNumber(value.Frames, 8)
+    || !["", "yuv420p"].includes(value.PixelFormat as string) || !diagnosticHash(value.ReferenceSHA256)
+    || !Array.isArray(value.FrameMetrics) || value.FrameMetrics.length !== 8) return false;
+  return value.FrameMetrics.every((frame: unknown) => diagnosticRecord(frame, "Frame BestReferenceFrame Planes")
+    && diagnosticNumber(frame.Frame, 7) && diagnosticNumber(frame.BestReferenceFrame, 7)
+    && Array.isArray(frame.Planes) && frame.Planes.length === 3 && frame.Planes.every((plane: unknown) =>
+      diagnosticRecord(plane, "MeanAbsoluteError RootMeanSquareError WorstTileMeanAbsError")
+      && Object.values(plane).every((metric) => typeof metric === "number" && Number.isFinite(metric) && metric >= 0 && metric <= 255)));
+}
+
+function diagnosticAudio(value: unknown): boolean {
+  const metrics = ["NormalizedRMSE", "WorstBlockNRMSE", "SignalRMS", "LeadingPaddingRMS", "TrailingPaddingRMS", "WorstPaddingBlockRMS", "PaddingPeak"];
+  return diagnosticRecord(value, `PolicyVersion SampleRate Channels SampleFrames ReferenceFrames ReferenceSHA256 CandidateOffsets OffsetFrames TrailingFrames ${metrics.join(" ")}`)
+    && value.PolicyVersion === 1 && diagnosticNumber(value.SampleRate, 48000) && diagnosticNumber(value.Channels, 2)
+    && diagnosticNumber(value.SampleFrames, 16384) && diagnosticNumber(value.ReferenceFrames, 8192)
+    && diagnosticNumber(value.CandidateOffsets, 4097) && diagnosticNumber(value.OffsetFrames, 16384)
+    && diagnosticNumber(value.TrailingFrames, 16384) && diagnosticHash(value.ReferenceSHA256)
+    && metrics.every((field) => {
+      const pair = value[field];
+      return Array.isArray(pair) && pair.length === 2
+        && pair.every((metric: unknown) => typeof metric === "number" && Number.isFinite(metric) && metric >= 0 && metric <= 65536);
+    });
+}
+
+function diagnosticADTS(value: unknown): boolean {
+  return diagnosticRecord(value, "PacketCount Bytes Codec Profile SampleRate Channels SHA256")
+    && diagnosticNumber(value.PacketCount, 32) && diagnosticNumber(value.Bytes, 1 << 20)
+    && diagnosticText(value.Codec, 32) && diagnosticText(value.Profile, 32)
+    && diagnosticNumber(value.SampleRate, 48000) && diagnosticNumber(value.Channels, 2) && diagnosticHash(value.SHA256);
+}
+
+function diagnosticContentFields(value: Record<string, unknown>): boolean {
+  return (value.ADTS === undefined || diagnosticADTS(value.ADTS))
+    && (value.Video === undefined || diagnosticVideo(value.Video))
+    && (value.Audio === undefined || diagnosticAudio(value.Audio));
+}
+
+function diagnosticPreparation(value: unknown): boolean {
+  return diagnosticRecord(value, "ID Media Generation State Code ParentSHA256 EncodedSHA256 EncodedBytes DecodedSHA256 DecodedBytes", "ADTS Encode Decode Video Audio")
+    && ["video-generation-1", "audio-generation-1", "audio-generation-2"].includes(value.ID as string)
+    && ["video", "audio"].includes(value.Media as string) && diagnosticNumber(value.Generation, 2)
+    && value.ID === `${value.Media}-generation-${value.Generation}`
+    && ["not_run", "running", "ready", "failed", "cancelled", "unavailable", "unverified"].includes(value.State as string)
+    && diagnosticCode(value.Code) && [value.ParentSHA256, value.EncodedSHA256, value.DecodedSHA256].every(diagnosticHash)
+    && diagnosticNumber(value.EncodedBytes, 1 << 20) && diagnosticNumber(value.DecodedBytes, 16 << 20)
+    && (value.Encode === undefined || diagnosticCommand(value.Encode)) && (value.Decode === undefined || diagnosticCommand(value.Decode))
+    && diagnosticContentFields(value);
+}
+
+function diagnosticStage(value: unknown): value is MediaDiagnosticStage {
+  if (!diagnosticRecord(value, "ID Media Path Mode Profile State Code StartedAt FinishedAt ReferenceGeneration ReferenceSHA256 DecodedSHA256 DecodedBytes", "Command Verification ADTS Video Audio")
+    || !["video", "audio"].includes(value.Media as string) || !["software", "configured"].includes(value.Path as string)
+    || (value.Path === "configured" && value.Media !== "video") || !["decode", "encode", "combined"].includes(value.Mode as string)
+    || value.ID !== `${value.Path}-${value.Media}-${value.Mode}` || !diagnosticProfile(value.Profile)
+    || !["not_run", "running", "passed", "failed", "cancelled", "unavailable", "unverified"].includes(value.State as string)
+    || !diagnosticCode(value.Code) || !diagnosticTimestamp(value.StartedAt) || !diagnosticTimestamp(value.FinishedAt)
+    || !diagnosticNumber(value.ReferenceGeneration, 2) || !diagnosticHash(value.ReferenceSHA256) || !diagnosticHash(value.DecodedSHA256)
+    || !diagnosticNumber(value.DecodedBytes, 16 << 20) || (value.Command !== undefined && !diagnosticCommand(value.Command))
+    || (value.Verification !== undefined && !diagnosticCommand(value.Verification)) || !diagnosticContentFields(value)) return false;
+  if (value.State === "passed") {
+    const command = value.Command as MediaDiagnosticCommand | undefined;
+    const verification = value.Verification as MediaDiagnosticCommand | undefined;
+    if (!command?.Started || command.ExitCode !== 0 || !command.ProcessesClosed || !command.Evidence
+      || (value.Mode !== "decode" && (!verification?.Started || verification.ExitCode !== 0 || !verification.ProcessesClosed || !verification.Evidence))
+      || (value.Media === "video" ? value.Video === undefined : value.Audio === undefined)) return false;
+  }
+  return true;
+}
+
+function diagnosticReport(value: unknown): value is MediaDiagnosticReport {
+  if (!diagnosticRecord(value, "Version Selection StartedAt FinishedAt State Code ToolVersion ToolSHA256 EnvironmentSHA256 CommandsAttempted CommandsStarted SessionClosureRequired Preparations Stages", "VersionCommand")
+    || value.Version !== 1 || !diagnosticRecord(value.Selection, "IncludeConfiguredHardware ConfiguredProfile")
+    || typeof value.Selection.IncludeConfiguredHardware !== "boolean" || !diagnosticProfile(value.Selection.ConfiguredProfile)
+    || !diagnosticTimestamp(value.StartedAt) || !diagnosticTimestamp(value.FinishedAt)
+    || !["preparing", "running", "stages_complete", "incomplete", "passed", "failed", "cancelled", "unavailable", "unverified"].includes(value.State as string)
+    || !diagnosticCode(value.Code) || !diagnosticText(value.ToolVersion, 80) || !diagnosticHash(value.ToolSHA256) || !diagnosticHash(value.EnvironmentSHA256)
+    || !diagnosticNumber(value.CommandsAttempted, 24) || !diagnosticNumber(value.CommandsStarted, 24) || value.CommandsStarted > value.CommandsAttempted
+    || typeof value.SessionClosureRequired !== "boolean" || (value.VersionCommand !== undefined && !diagnosticCommand(value.VersionCommand))
+    || !Array.isArray(value.Preparations) || value.Preparations.length !== 3 || !value.Preparations.every(diagnosticPreparation)
+    || new Set(value.Preparations.map((item) => item.ID)).size !== 3
+    || !Array.isArray(value.Stages) || value.Stages.length !== (value.Selection.IncludeConfiguredHardware ? 9 : 6)
+    || !value.Stages.every(diagnosticStage) || new Set(value.Stages.map((stage) => stage.ID)).size !== value.Stages.length) return false;
+  const groups = ["software-video", "software-audio", ...(value.Selection.IncludeConfiguredHardware ? ["configured-video"] : [])];
+  const stages = value.Stages;
+  if (!groups.every((group) => ["decode", "encode", "combined"].every((mode) => stages.some((stage) => stage.ID === `${group}-${mode}`)))) return false;
+  return value.State !== "passed" || (!value.SessionClosureRequired && stages.every((stage) => stage.State === "passed")
+    && value.Preparations.every((preparation) => preparation.State === "ready"));
+}
+
+function diagnosticRun(value: unknown, detail: true): value is MediaDiagnosticRunDetail;
+function diagnosticRun(value: unknown, detail: false): value is MediaDiagnosticRunSummary;
+function diagnosticRun(value: unknown, detail: boolean): value is MediaDiagnosticRunSummary {
+  if (!diagnosticRecord(value, `Id InstanceId Revision Mode State Code CreatedAt UpdatedAt FinishedAt${detail ? " Report" : ""}`)
+    || !diagnosticID(value.Id) || !diagnosticID(value.InstanceId) || !diagnosticRevision(value.Revision) || !["software", "configured"].includes(value.Mode as string)
+    || !["queued", "running", "cancelling", "cleanup_pending", "passed", "failed", "cancelled", "unavailable"].includes(value.State as string)
+    || !diagnosticCode(value.Code) || !diagnosticTimestamp(value.CreatedAt) || !diagnosticTimestamp(value.UpdatedAt)
+    || (value.FinishedAt !== null && !diagnosticTimestamp(value.FinishedAt))) return false;
+  if (!detail) return true;
+  if (value.Report !== null && (!diagnosticReport(value.Report)
+    || value.Report.Selection.IncludeConfiguredHardware !== (value.Mode === "configured"))) return false;
+  return value.State !== "passed" || (value.Report !== null && (value.Report as MediaDiagnosticReport).State === "passed");
+}
+
+function validateDiagnosticResponse(value: unknown, instanceId: string, runId: string): asserts value is MediaDiagnosticRunResponse {
+  if (!diagnosticRecord(value, "Run") || !diagnosticRun(value.Run, true)
+    || value.Run.InstanceId !== instanceId || value.Run.Id !== runId) throw invalidResponse();
+}
+
 const managedSettingFields: SettingsField[] = ["ServerName", "MaxBitrate", "MaxWidth", "MaxHeight", "MaxAudioChannels"];
 
 function validSettingsRecord(value: unknown, fields: readonly string[]): value is Record<string, unknown> {
@@ -1384,6 +1631,56 @@ export const adminApi = {
     const result = await request<ServerSettings>("/settings", options);
     if (revision !== sessionRevision) throw sessionChanged();
     validateSettings(result);
+    return result;
+  },
+
+  async getMediaDiagnostics(options: RequestOptions = {}): Promise<MediaDiagnosticsResponse> {
+    const revision = sessionRevision;
+    const result = await request<MediaDiagnosticsResponse>("/media-diagnostics", options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    if (!diagnosticRecord(result, "InstanceId StartToken StartTokenExpiresAt Available UnavailableReason HardwareConfigured RetentionSeconds MaxRetainedRuns Items")
+      || !diagnosticID(result.InstanceId) || !diagnosticText(result.StartToken, 4096) || !diagnosticTimestamp(result.StartTokenExpiresAt)
+      || typeof result.Available !== "boolean" || typeof result.HardwareConfigured !== "boolean"
+      || !diagnosticText(result.UnavailableReason, 512) || result.RetentionSeconds !== 1800 || result.MaxRetainedRuns !== 32
+      || !Array.isArray(result.Items) || result.Items.length > 32
+      || !result.Items.every((run: unknown) => diagnosticRun(run, false) && run.InstanceId === result.InstanceId)
+      || new Set(result.Items.map((run) => run.Id)).size !== result.Items.length) throw invalidResponse();
+    return result;
+  },
+
+  async startMediaDiagnostic(input: StartMediaDiagnosticInput, options: RequestOptions = {}): Promise<MediaDiagnosticRunResponse> {
+    const revision = sessionRevision;
+    if (!diagnosticID(input.InstanceId) || !diagnosticID(input.RequestId) || !diagnosticText(input.StartToken, 4096)
+      || !input.StartToken || !["software", "configured"].includes(input.Mode)) {
+      throw new ApiError("Refresh diagnostics before starting a run.", { code: "invalid_diagnostic_request" });
+    }
+    const body = { InstanceId: input.InstanceId, RequestId: input.RequestId, StartToken: input.StartToken, Mode: input.Mode };
+    const result = await mutate<MediaDiagnosticRunResponse>("/media-diagnostics/runs", "POST", body, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateDiagnosticResponse(result, input.InstanceId, input.RequestId);
+    if (result.Run.Mode !== input.Mode) throw invalidResponse();
+    return result;
+  },
+
+  async getMediaDiagnosticRun(instanceId: string, runId: string, options: RequestOptions = {}): Promise<MediaDiagnosticRunResponse> {
+    if (!diagnosticID(instanceId) || !diagnosticID(runId)) {
+      throw new ApiError("Refresh diagnostics to select a retained run.", { code: "invalid_diagnostic_request" });
+    }
+    const revision = sessionRevision;
+    const result = await request<MediaDiagnosticRunResponse>(`/media-diagnostics/runs/${instanceId}/${runId}`, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateDiagnosticResponse(result, instanceId, runId);
+    return result;
+  },
+
+  async cancelMediaDiagnosticRun(instanceId: string, runId: string, options: RequestOptions = {}): Promise<MediaDiagnosticRunResponse> {
+    if (!diagnosticID(instanceId) || !diagnosticID(runId)) {
+      throw new ApiError("Refresh diagnostics to select the active run.", { code: "invalid_diagnostic_request" });
+    }
+    const revision = sessionRevision;
+    const result = await mutate<MediaDiagnosticRunResponse>(`/media-diagnostics/runs/${instanceId}/${runId}/cancel`, "POST", {}, options);
+    if (revision !== sessionRevision) throw sessionChanged();
+    validateDiagnosticResponse(result, instanceId, runId);
     return result;
   },
 

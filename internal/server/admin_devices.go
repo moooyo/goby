@@ -202,6 +202,7 @@ func (s *Server) retireDeviceLogins(result identity.DeviceDeletion) {
 			s.eventHub.DisconnectCredential(sessionID)
 		}
 		s.hls.cancelMatching(sessionID, "")
+		s.mediaDiagnostics.cancelActor("", sessionID)
 	}
 }
 
