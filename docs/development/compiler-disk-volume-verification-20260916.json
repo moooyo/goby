@@ -1,0 +1,143 @@
+{
+  "kind": "compiler-disk-volume-verification-checkpoint",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "r03_synthetic_execution_verified_and_owned_resources_closed",
+  "scopeLimit": "Compiler disk-volume functionality and owned closure only.",
+  "attempts": {
+    "r02": {
+      "scope": "/opt/goby-test/compiler-volume-check-20260916-8feb54270744",
+      "status": "failed",
+      "dispatchExitCode": 1,
+      "controllerFailureCode": "payload_failed",
+      "payloadFailureCode": "compiler_worker_mount_missing_or_ambiguous",
+      "resourcesClosed": true,
+      "probeResult": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-8feb54270744/workspace/private/probe-result.json",
+        "bytes": 122417,
+        "sha256": "94c29e779c27d838e1a6d80a1e2082f1a37fa2fb6140213e672a3ac116c169c1"
+      },
+      "payloadResult": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-8feb54270744/workspace/private/payload-result.json",
+        "bytes": 1041,
+        "sha256": "41f8b8e4dbc9c24b2e065df677e4612548476b2ebfa8a8c649cde14cd935b23a"
+      },
+      "dispatchResult": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-8feb54270744/dispatch-result.json",
+        "bytes": 407,
+        "sha256": "8877718ad90aa5fe684a60b622cbf97f2ade73a92ee89fb6dce5f3fe560c7e73"
+      }
+    },
+    "r03": {
+      "scope": "/opt/goby-test/compiler-volume-check-20260916-07dec6bdc80a",
+      "status": "synthetic_execution_verified",
+      "dispatchExitCode": 0,
+      "successfulProbeInvocations": 1,
+      "resourcesClosed": true,
+      "probeResult": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-07dec6bdc80a/workspace/private/probe-result.json",
+        "bytes": 122596,
+        "sha256": "85225cc470939f63d82b22a6d5827977573996fd9739a63b8565bf85bd6b219a"
+      },
+      "payloadResult": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-07dec6bdc80a/workspace/private/payload-result.json",
+        "bytes": 5681,
+        "sha256": "75b082127814b066f3491a2bd832b2f0133f90bd13c8134eef7cb26218b7e72f"
+      },
+      "dispatchResult": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-07dec6bdc80a/dispatch-result.json",
+        "bytes": 429,
+        "sha256": "625c1302f7016c9368f86e6ac193521a209cad0484a98ce301a7a00debbc5cbd"
+      },
+      "probeSource": {
+        "path": "/opt/goby-test/compiler-volume-check-20260916-07dec6bdc80a/workspace/private/compiler-volume-check.admitted.py",
+        "bytes": 25908,
+        "sha256": "b5516471bfc4af4ac3baddaf910647f5705a5c87d16a8862b628ee687fdedfc6"
+      },
+      "finalProfileSource": {
+        "path": "/opt/goby-test/livetv-programs-disk-final-20260916/private/verify-livetv-programs-final-r03.py",
+        "bytes": 57717,
+        "sha256": "c87ae09be2858ca29af5062edde5241b9a5d4f76f3ac50124848ff1e7f5a2560"
+      }
+    }
+  },
+  "verifiedFunctionality": {
+    "samePathMountIds": [616, 583],
+    "selectedMountIdFromDirectoryDescriptor": 583,
+    "filesystem": "ext4",
+    "compilerImageBytes": 2147483648,
+    "allocatedBytesBeforeFormat": 2147487744,
+    "allocatedBytesAfterFormat": 2147487744,
+    "cacheAndTemporaryFilesWrittenAndReadBack": true,
+    "programDirectlyExecutedFromCompilerVolume": true,
+    "compilerVariables": ["GOCACHE", "GOTMPDIR", "TMPDIR"],
+    "testTemporaryDirectoryRemainsSeparate": true
+  },
+  "probeResourceBoundary": {
+    "rootFreeAdmissionBytes": 3758096384,
+    "r03ObservedRootFreeBytesBeforeAllocation": 5474127872,
+    "r03ObservedRootFreeBytesAfterAllocation": 3326570496,
+    "requiredRootFreeBytesAfterAllocation": 1610612736,
+    "compilerImageBytes": 2147483648,
+    "retainedBudgetBytes": 1073741824,
+    "rootReserveBytes": 536870912,
+    "payloadMemoryMaxBytes": 67108864,
+    "payloadMemorySwapMaxBytes": 0,
+    "payloadCpuQuotaPercent": 25,
+    "payloadRuntimeMaxSeconds": 120,
+    "privateMounts": true,
+    "privateNetwork": true,
+    "protectSystem": "strict",
+    "fullSuiteMemoryAdmissionClaimed": false,
+    "continuousFreeSpaceOrPeakUsageClaimed": false
+  },
+  "failureBoundaries": [
+    {
+      "case": "open-failure",
+      "failureCode": "injected_open_failure",
+      "result": "not_created",
+      "closed": true
+    },
+    {
+      "case": "replaced-name",
+      "prepareFailureCode": "compiler_create_descriptor_binding",
+      "closeFailureCode": "compiler_backing_identity_changed",
+      "result": "Replacement and originally opened inode retained; the unowned replacement was not deleted.",
+      "replacementPreserved": true,
+      "openedInodeRetained": true,
+      "syntheticCaseClosedFlag": false
+    }
+  ],
+  "ownedClosure": {
+    "appliesTo": "The actual allocated compiler volume in each attempt; the deliberate replacement fixture remains preserved.",
+    "outerCommandsClosedPerAttempt": 38,
+    "payloadProcessesClosed": true,
+    "volumeUnmounted": true,
+    "loopDetached": true,
+    "exactOwnedBackingDeleted": true,
+    "cleanupErrors": [],
+    "protectedStateBeforeEqualsAfter": true,
+    "toolPinsBeforeEqualsAfter": true,
+    "locksReleased": true
+  },
+  "independentReview": {
+    "status": "passed_scoped_saved_record_review",
+    "reviewer": "review_capacity_cost",
+    "receipt": null,
+    "receiptAvailability": "Read-only review reported to the parent task; no new review receipt was written.",
+    "scope": "The r03 saved reports, raw execution output, mount identity, two failure boundaries, budgets, protected state, and owned closure.",
+    "rawOutputReadback": "Payload stdout JSON exactly equals programResult; stderr is empty. Twenty volume/closure controller streams match their recorded byte counts.",
+    "rawStreamHashBoundary": "Hashes computed during this review are review-time bindings, not hashes recorded by the original commands."
+  },
+  "limits": {
+    "goExecuted": false,
+    "nodeWorkloadVerified": false,
+    "fullInputValidated": false,
+    "fullSuiteExecuted": false,
+    "productTestsExecuted": false,
+    "httpRequests": 0,
+    "sqlRequests": 0,
+    "remaining": "The complete 25-package suite, ordinary build, and embedded package build have not been rerun under this compiler-disk profile.",
+    "history": "The original r02 failure remains failed and closed; r03 used a new scope and did not overwrite it."
+  }
+}

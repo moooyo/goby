@@ -1,0 +1,49 @@
+{
+  "kind": "programs-disk-full-verification-preparation",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "single_full_run_started_results_pending",
+  "scope": "/opt/goby-test/livetv-programs-disk-final-20260916",
+  "adapter": {
+    "path": "/opt/goby-test/livetv-programs-disk-final-20260916/private/verify-livetv-programs-final-r03.py",
+    "bytes": 57717,
+    "sha256": "c87ae09be2858ca29af5062edde5241b9a5d4f76f3ac50124848ff1e7f5a2560"
+  },
+  "input": {
+    "path": "/opt/goby-test/livetv-programs-disk-final-20260916/private/input.json",
+    "bytes": 5014,
+    "sha256": "baa01f6fd35abdacec0384b194fcd7d9232c3a33e4de30deed060404478bcbf4"
+  },
+  "preparation": {
+    "path": "/opt/goby-test/livetv-programs-disk-final-20260916/input-preparation.json",
+    "bytes": 3211,
+    "sha256": "be7cc4ae4d25d58b8d25a93b5ac95a2945c8aeba85355c77ba647bddd35732cd"
+  },
+  "sourceCommit": "3d6b79b36b6a5050e174f7a152f214b9356608c8",
+  "sourceFileCount": 924,
+  "expectedPackageCount": 25,
+  "requiredBuilds": ["ordinary-linux-amd64", "embedded-linux-amd64-systemd"],
+  "resources": {
+    "compilerRootDiskVolumeBytes": 2147483648,
+    "ramScratchBytes": 2147483648,
+    "workerMemoryMaxBytes": 3221225472,
+    "workerMemorySwapMaxBytes": 0,
+    "minimumMemoryAvailableBytes": 5368709120,
+    "rootReserveBytes": 536870912,
+    "retainedArchiveAndArtifactBudgetBytes": 1073741824
+  },
+  "workerStartupObservation": {
+    "unit": "goby-livetv-programs-disk-final-20260916-351759db059a.service",
+    "scope": "/opt/goby-test/livetv-programs-disk-final-20260916/ram/livetv-programs-disk-final-20260916-20260916T064917Z-351759db059a",
+    "mainPid": 1366657,
+    "activeState": "active",
+    "subState": "running",
+    "scopeLimit": "A startup observation, not a current liveness guarantee or passing result."
+  },
+  "priorResultsReused": false,
+  "freshWorkerInvocations": 1,
+  "existingApplicationServiceActions": 0,
+  "applicationRecoveryClaimed": false,
+  "fullVerificationClaimed": false,
+  "continuation": "Observe this same worker and execution scope until authoritative completion. Do not relaunch after an observation timeout. Inspect execution.json and retained worker/archive records for the actual result and closure."
+}

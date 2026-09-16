@@ -101,3 +101,14 @@ files, retained failure evidence and final archives in the disk budget. Reuse
 compatible dependency caches and retire disposable compiler caches after their
 owning task is closed. Preserve the selected worker's isolation and resource
 limits; a successful disk cleanup does not justify an unbounded RAM allocation.
+
+The subsequent [disk compiler-volume check](compiler-disk-volume-verification-20260916.md)
+uses the expanded root filesystem explicitly. It preallocated and formatted a
+2 GiB image, executed a small program and verified cache/temporary writes inside
+the isolated service, then unmounted, detached and removed its owned backing
+file. Root free space was 5474127872 bytes before allocation and 3326570496 bytes
+after allocation. The full adapter now points compiler `GOCACHE`, `TMPDIR` and
+`GOTMPDIR` at its own root-backed compiler volume; actual test temporary
+directories retain their existing fixture behavior. This corrects the prior
+full worker's RAM-backed compiler storage. A [fresh full run](programs-disk-full-preparation.json)
+has started; its final result and closure remain pending.

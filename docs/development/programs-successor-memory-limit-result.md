@@ -33,11 +33,18 @@ The execution receipt is
 Its 108591467-byte archive has SHA-256
 `3e9af3aaf35f5b78a8c4ae80150e28ad470860143bc46dd1eb76ef42e7884186`.
 
-## Resource correction being prepared
+## Resource correction checkpoint
 
-Restore the original 3 GiB worker cap. Move `GOCACHE` and compiler temporary files
-to a separately bounded 2 GiB root-backed ext4 volume, reduce RAM scratch to
-2 GiB and retain the combined 5 GiB memory floor. Actual test `TMPDIR/GOTMPDIR`
+The [disk compiler-volume functional check](compiler-disk-volume-verification-20260916.md)
+has passed with real execution and cache/temporary writes in the isolated unit,
+followed by complete owned closure. The first check exposed overlapping systemd
+mounts; r03 now selects the visible mount through an opened directory FD and its
+mount ID. A [fresh full run](programs-disk-full-preparation.json) has started;
+its final suite/build result and closure remain pending.
+
+The full adapter restores the original 3 GiB worker cap, moves `GOCACHE` and
+compiler temporary files to a separately bounded 2 GiB root-backed ext4 volume,
+reduces RAM scratch to 2 GiB and retains the combined 5 GiB memory floor. Actual test `TMPDIR/GOTMPDIR`
 and PostgreSQL keep their existing fixture/RAM behavior. Preserve assertions,
 timeouts, all 25 packages, both builds and the 832 MiB package RAM gate.
 
@@ -48,6 +55,6 @@ retention budget. Compiler paths, write permissions, independent loop identities
 and every failure/closure path need matching changes. Compiler cache is excluded
 from archives; its owned backing file can be retired only after verified closure.
 
-This is preparation, not a passing rerun or a guarantee of capacity. Do not
-modify or replay the consumed input, combine scores from different attempts,
+This is infrastructure verification, not a passing full rerun or a guarantee
+of capacity. Do not modify or replay the consumed input, combine scores from different attempts,
 relax test budgets or infer a production defect from this resource interruption.

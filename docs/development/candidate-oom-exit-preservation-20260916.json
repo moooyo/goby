@@ -1,0 +1,191 @@
+{
+  "kind": "candidate-oom-exit-preservation-checkpoint",
+  "version": 1,
+  "recordedOn": "2026-09-16",
+  "status": "four_databases_preserved_applications_still_failed",
+  "scope": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02",
+  "evidence": {
+    "metadata": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/metadata.json",
+      "bytes": 49148,
+      "sha256": "9929176366473c87b55f9b6db79cc1d91e9c7a77ad03c13d60acb0eed836826b"
+    },
+    "readonlyExecution": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-execution.json",
+      "bytes": 44312,
+      "sha256": "d4b7e889b776f2c78c54fae150b7d175d9a376a122ec9cf8a9aa1bc40a9e2a30"
+    },
+    "readonlyResult": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-01/result.json",
+      "bytes": 19175,
+      "sha256": "f3de518e7cc27c7afb7dd81fc97c4d3a44223c3655a03e6bc3a31d88f474937c"
+    },
+    "dispatchResult": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/private/readonly-dispatch-result.json",
+      "bytes": 642,
+      "sha256": "113ccad2713f960d3ddc263a822bde6d99776b04d5a67137169faa1dd3e272a9"
+    },
+    "input": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/private/readonly-input.json",
+      "bytes": 5880,
+      "sha256": "43089bc0c8515c04047886e4211006616af0ca17abf50e2e50abd9e67593f5f7"
+    },
+    "inputPreparation": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-input-preparation.json",
+      "bytes": 1513,
+      "sha256": "c7dc635b634e3e7700a8bac73f7358fd7dd0bd51f9bd48481c2162b93f3d0af3"
+    },
+    "metadataSource": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/private/candidate-disk-full-metadata.admitted.py",
+      "bytes": 13913,
+      "sha256": "e3de66d5e3e52e01bee0a16dc9c4684deca2650da0e619ee2b2c1fce0a1a3135"
+    },
+    "readerSource": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/private/candidate-disk-full-readonly.admitted-r02.py",
+      "bytes": 32466,
+      "sha256": "72df8d195e176e004628dacb70bd172e954b2a1de70feeec4958041fff2fe60e"
+    },
+    "executorSource": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/private/candidate-disk-full-readonly-execute.admitted.py",
+      "bytes": 8191,
+      "sha256": "4af068727cd52039e8b19678c8789c19feea631ddc2ea069fc44aacfc10bc0c3"
+    }
+  },
+  "logicalPreservation": {
+    "allBaselinesEqual": true,
+    "tablesPerDatabase": 35,
+    "sequencesPerDatabase": 5,
+    "diffTables": [],
+    "diffSequences": [],
+    "baselineSelection": "The latest accepted September 15 restart-01 after-restart snapshots; no earlier incident snapshot was substituted.",
+    "comparison": "All JSON row fields and five sequence facts match exactly. Only capturedAt is excluded; differences are not normalized.",
+    "databases": [
+      {
+        "candidate": "A",
+        "role": "source",
+        "rowsBefore": 230,
+        "rowsAfter": 230,
+        "baseline": {
+          "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-01/old/private/source-after-restart.json",
+          "sha256": "9e6ddd9184b48cc2998841675a4cf30899b5d0a411ddd0f7157555c85399f101"
+        },
+        "snapshot": {
+          "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-01/old/private/source-snapshot.json",
+          "bytes": 553557,
+          "sha256": "9924045b151320d2ebac5bb0b4f0c1d7d6756e7d77f89c05a1fc88398d80b066"
+        }
+      },
+      {
+        "candidate": "A",
+        "role": "recovery",
+        "rowsBefore": 147,
+        "rowsAfter": 147,
+        "baseline": {
+          "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-01/old/private/recovery-after-restart.json",
+          "sha256": "0e1d060c384e53d1e1bf3612b4d48e7c10033097cb0b4e334046642aa06de25f"
+        },
+        "snapshot": {
+          "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-01/old/private/recovery-snapshot.json",
+          "bytes": 483376,
+          "sha256": "b1ed2f83793e1ad785f21e08d649551a839c0e16f83551e4be64454f254bdf4f"
+        }
+      },
+      {
+        "candidate": "B",
+        "role": "source",
+        "rowsBefore": 141,
+        "rowsAfter": 141,
+        "baseline": {
+          "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-01/fresh/private/source-after-restart.json",
+          "sha256": "76ea709374406ca1786ddd637d2b51c072769b464209b22dcc14ed395c6ddba6"
+        },
+        "snapshot": {
+          "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-01/fresh/private/source-snapshot.json",
+          "bytes": 479425,
+          "sha256": "c23a02fe238473e1bf2828b4c0edc6db0822a35522f7cd0bd67270b9436dde7b"
+        }
+      },
+      {
+        "candidate": "B",
+        "role": "recovery",
+        "rowsBefore": 131,
+        "rowsAfter": 131,
+        "baseline": {
+          "path": "/opt/goby-test/candidate-lease-loss-recovery-20260915/restart-01/fresh/private/recovery-after-restart.json",
+          "sha256": "3f8f7650db19edb124ca98fe7ebcfaf20421187c30fce64b8c4915b07697ea36"
+        },
+        "snapshot": {
+          "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/readonly-01/fresh/private/recovery-snapshot.json",
+          "bytes": 473236,
+          "sha256": "79762e5d7a8b0fdfdc37b29535699d4d683876fadc8e50fbaa9def54fe48ed19"
+        }
+      }
+    ]
+  },
+  "execution": {
+    "status": "readonly_observation_complete",
+    "dispatchExitCode": 0,
+    "readerInvocations": 1,
+    "sqlSessions": 10,
+    "maximumSqlSessions": 12,
+    "readerObservationBudgetSeconds": 180,
+    "readerCommandBudgetSeconds": 240,
+    "dispatchBusinessBudgetSeconds": 360,
+    "dispatchCleanupBudgetSeconds": 180,
+    "readerElapsedMilliseconds": 661,
+    "httpRequests": 0,
+    "businessSqlWrites": 0,
+    "applicationStarts": 0,
+    "serviceChanges": 0,
+    "readProcessesClosed": true,
+    "readerCommandsClosed": 36,
+    "outerCommandsClosed": 17,
+    "sqlBackendsGone": 10,
+    "sqlCommitAcknowledgements": 10,
+    "frontendGroupsClosed": true,
+    "metadataGuardBeforeEqualsAfter": true,
+    "readonlyGuardBeforeEqualsAfter": true,
+    "locksReleased": true,
+    "receiptErrors": []
+  },
+  "retainedPreflightRejection": {
+    "phase": "source_input_preflight",
+    "reason": "The admitted reader filename did not match the fixed expected self path.",
+    "sqlSessions": 0,
+    "correction": "Change the fixed admitted filename once in admitted-r02; keep the query and closure bodies unchanged.",
+    "retainedSource": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/stage-one-r02/private/candidate-disk-full-readonly.admitted.py",
+      "bytes": 32453,
+      "sha256": "925a25f75f70675cb37684a9e17544ed03255d07bf03e3663c2a9b637c7523a7"
+    },
+    "separateFailureReceipt": null,
+    "receiptAvailability": "No separate failure receipt is available; the unused source variant and preparation record are retained.",
+    "includedInIndependentReview": false
+  },
+  "independentReview": {
+    "status": "passed_scoped_saved_record_review",
+    "reviewer": "review_gates_and_evidence",
+    "method": "Independent read-only review reported to the parent task.",
+    "receipt": null,
+    "receiptAvailability": "The reviewer was authorized to read and report, and did not create an independent-review.json file.",
+    "scope": "Saved SQL intent, raw stdout header/payload, snapshots, exact baseline comparison, protected metadata, and command/backend/lock closure.",
+    "excluded": "The zero-SQL self-path preflight rejection was not independently re-reviewed in this scope."
+  },
+  "currentApplications": {
+    "A": {"activeState": "failed", "subState": "failed", "mainPid": 0},
+    "B": {"activeState": "failed", "subState": "failed", "mainPid": 0},
+    "applicationRecoveryProven": false,
+    "newRuntimeAuthorityEstablished": false,
+    "nativeObservationPerformed": false,
+    "diagnosticsLogPreservationChecked": false,
+    "restartPerformed": false
+  },
+  "limits": [
+    "This September 16 preservation checkpoint does not repeat or extend the completed September 15 application recovery.",
+    "The current application exit cause is not established by this checkpoint; correlation with an OOM event is not causal proof.",
+    "Catalog and row captures use separate read-only transactions. Non-cooperating DDL or writes are not excluded, and sequence facts are non-MVCC.",
+    "Logical equality does not prove physical database integrity, native-store integrity, log retention, application health, or client acceptance.",
+    "The guard retains the same three postmasters, five protected files, eight configuration hashes and metadata, and reference metadata. Environment files are hash-only; the master key is metadata-only.",
+    "This consumed input and output scope must not be replayed. Further recovery needs its own reviewed current-state inputs."
+  ]
+}

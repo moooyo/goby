@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **correct full-worker storage allocation, then complete regression and builds**.
+Current priority on 2026-09-16: **complete regression and builds with disk-backed compiler storage**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -15,8 +15,15 @@ The [fresh full attempt](programs-successor-memory-limit-result.md) subsequently
 reached its worker memory limit during recovery. Sixteen complete packages and
 1405 top-level passes are retained; the interrupted package is excluded and
 neither build ran. Owned resources closed and protected state stayed unchanged.
-A bounded disk compiler-cache/temporary volume and the original 3 GiB worker
-limit are being prepared, with unchanged test scope and timeouts.
+The [disk compiler-volume check](compiler-disk-volume-verification-20260916.md)
+now passes real mount execution, cache/temporary writes and owned closure on the
+expanded root filesystem. Its first attempt exposed overlapping systemd mounts;
+the corrected reader selects the visible mount by the opened directory's mount
+ID. The full adapter uses a 2 GiB disk compiler volume, 2 GiB RAM scratch and the
+original 3 GiB worker limit, with unchanged test scope and timeouts. One fresh
+[25-package/two-build run](programs-disk-full-preparation.json) has now started;
+its actual full result and resource closure remain pending. Observe that same
+worker instead of replaying the input or combining results from prior attempts.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -25,17 +32,22 @@ The same fresh host observation found both candidate applications failed at
 10:22:08 CST on September 16, alongside a global OOM event in the same second.
 Their original invocations are retained; the three postmaster identities,
 protected files and configuration hashes still match the September 15 recovery
-record. Cause and post-incident database health are unproved. The new diagnostic
+record. The [new read-only preservation checkpoint](candidate-oom-exit-preservation-20260916.md)
+subsequently matched all 35 tables and five sequences in each of four databases
+against the latest September 15 after-restart baselines. Ten read-only SQL
+sessions closed, protected state matched, and independent saved-record review
+passed. Both applications remain failed; native/log checks and restart are
+pending. Cause, physical integrity and application health are unproved. The new diagnostic
 used an explicitly stopped-candidate protection descriptor with no existing
 service action or application database connection. The prior ready envelope is
 historical and cannot authorize a live transition in the current stopped state.
-After the [incident](programs-final-regression-incident.json), the
+Historically, after the [September 15 incident](programs-final-regression-incident.json), the
 [recovery checkpoint](candidate-lease-loss-recovery.json) independently accepts
 both once-only application starts with unchanged binaries/configuration,
 health/readiness and exact four-database preservation across startup. Scoped
 native and diagnostics/log/cache checks also passed: nine old logs retain their
 bytes/hashes/inodes, each application has one new active log whose body was not
-read, and the cache remains empty. A/B recovery is complete within that scope;
+read, and the cache remained empty. A/B recovery completed within that historical scope;
 physical integrity and Programs/client acceptance are not inferred.
 
 The [v2 component scopes](programs-transition-component-verification.json) passed,
