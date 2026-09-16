@@ -171,7 +171,7 @@ scope must not be retried. The [generation-key metadata correction](programs-gen
 has now passed a separate 151-check run (44/36/71), independent review and closure,
 and is integrated on main at `a5af0b6`. It permits only the reviewed stat-only key
 metadata; no real key body/hash or new capture was exercised by those components.
-Next, publish the verified 151 sources into a fresh execution scope and prepare
+Next, publish the source revision covered by the 151 checks into a fresh execution scope and prepare
 capture02. Actual product loading, post-transition v4 records and client acceptance
 remain pending. The original 138/142 evidence, consumed capture01 and transition
 hold are unchanged.

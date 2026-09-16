@@ -59,7 +59,7 @@ not form reviewed state or successful capture. The guard rejected before key
 content was opened/hashed; no specific filename was recorded and the outer SSH
 numeric exit remains unknown. The [generation-key metadata correction](../development/programs-generation-key-metadata-verification-20260916.md)
 has now passed 44/36/71 components, independent review and closure, and is integrated
-at `a5af0b6`. Fresh publication of those 151 sources and capture02 preparation are
+at `a5af0b6`. Fresh publication of the source revision covered by those 151 checks and capture02 preparation are
 next; the component run read no real key body/hash and performed no new capture.
 Capture01 remains failed and consumed. Actual product/runtime loader verification
 and post-transition v4 records remain pending. The original 138/142 results and
