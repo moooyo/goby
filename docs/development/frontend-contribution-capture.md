@@ -1,6 +1,9 @@
 # Frontend contribution capture preparation
 
-Status: **implemented source draft; type checking, tests and builds have not run**.
+Status: **synthetic producer and consumer contract tests passed; type checking
+and real frontend builds remain pending**. The
+[saved verification](https://github.com/moooyo/goby/blob/a83644d6aa289fa8a587bf8831bf3df21a4f27ac/docs/development/frontend-contribution-verification.md)
+binds the unchanged tooling at `43a9b76a93615b7f872f48dae4e9b3a73ca050b0`.
 This branch prepares evidence capture for the next independently required
 frontend build. It does not schedule a rebuild of unchanged E11 or change the
 held Programs verification and candidate-transition order.
@@ -116,14 +119,25 @@ systemd packaging or application runtime:
 node --test scripts/build-release-contributions.test.mjs
 ```
 
-All producer and consumer test cases remain unexecuted. Static review of the
-JavaScript partition confirmed its exact filename-set boundary; it supplies no
-test, type-check or build result. Independent review of the CLI fixtures found
-no demonstrated static error or false-positive path: the failure cases bind
-specific guard messages, dispatch records and retained intermediate bytes.
+The saved `test-env` producer run passed 15 TAP tests (7 top-level tests and
+8 subtests); the consumer run passed 14 (5 top-level tests and 9 subtests).
+Each suite ran once with exit 0, no failures, cancellations, skips or TODOs,
+and unchanged source/runtime identities. Both units and their recorded process
+lifetimes were closed. The
+[machine-readable verification](https://github.com/moooyo/goby/blob/a83644d6aa289fa8a587bf8831bf3df21a4f27ac/docs/development/frontend-contribution-verification.json)
+records the source, runtime, TAP, result and closure pins. Its saved summary is
+`/opt/goby-test/frontend-contribution-tests-20260916-9d8e9b6baa61/private/summary.json`
+(1848 bytes, SHA256
+`7293b53dd5d6d032b4e11d2fe3e88cc04ca33e56f8b6fc3c4f6ee1d344fa8bdc`).
+The earlier nanosecond-encoding preflight rejection created no test unit and is
+retained separately; neither suite was retried.
 
-Run the prepared Node tests, administrator type check and a required real
-frontend build only in the coordinated `test-env` window. Verify the actual
+These checks used synthetic plugin hooks and a Node-based fake Go executable.
+They did not run Vite, Rolldown, a real Go compiler, type checking, systemd
+packaging, a browser or an application. Reuse these results while the tested
+sources remain unchanged. Run the administrator type check and the next
+independently required frontend build only in the coordinated `test-env` window.
+Verify the actual
 Rolldown callback data, complete asset equality, absent sidecar from `dist` and
 the systemd package, and successful explicit consumption by the release script.
 Measure capture overhead within that build's existing resource budget.
