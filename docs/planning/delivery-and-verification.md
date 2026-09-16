@@ -30,12 +30,16 @@ the failed unit record remains without PID/cgroup. A corrected fresh-scope check
 is still required and no storage pass is claimed.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
-now retains the actual published product review and artifact receipt plus a
-remotely compiled observer source. The pending observer input is unexecuted and
-has no deadline/output. Consumer projection fixes still need verification;
-the original 42/28/68 component results are unchanged. No new current-runtime
-envelope, transition admission or client acceptance follows from publication
-or compilation.
+now includes the completed unique observer: two acknowledged read-only SQL
+commands, one lease-method call, unchanged A identity and scoped resource closure.
+The published `db22e3d...` envelope passed frozen-producer in-memory/file validation
+against 40 unique saved records with no additional SQL/HTTP/service calls.
+The actual product receipt is preserved and copied byte-for-byte into the full
+scope. Query backend disappearance, observer/outer numeric PGIDs and a post-close
+lock-inode check were not separately measured; the application lease backend is
+expected to persist. Final consumer pins and 142 checks remain in preparation,
+unexecuted. The original 42/28/68 results and transition hold remain unchanged;
+no transition or client acceptance is claimed.
 
 The latest fixed M5 media-refresh increment is committed and pushed as
 `5faf854`. Its [final ordinary regression](../development/m5-final-regression-verification.json)

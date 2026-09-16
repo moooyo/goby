@@ -103,8 +103,9 @@ The new diagnostic
 used an explicitly stopped-candidate protection descriptor with no existing
 service action or application database connection. The prior ready envelope is
 historical and cannot authorize a live transition after the application
-invocations changed. A new consumer runtime binding is still required; recovery
-alone does not admit the Programs successor.
+invocations changed. A subsequent real observation has now published the new
+`db22e3d...` binding described below; recovery alone did not admit the Programs
+successor.
 Historically, after the [September 15 incident](programs-final-regression-incident.json), the
 [recovery checkpoint](candidate-lease-loss-recovery.json) independently accepts
 both once-only application starts with unchanged binaries/configuration,
@@ -125,13 +126,21 @@ verification; the ready envelope alone is not an executable Programs input.
 The later [binding component scope](programs-binding-components-20260916.json)
 passed runtime 42, successor 28 and closer 68 checks once with independent
 review and full closure. It covers the fixed producer source, second recovery
-ancestry and complete-source profile. The [current preparation](programs-current-runtime-preparation-20260916.json)
-now includes a remotely compiled observer source, the wrapper for the actual
-42-test runtime group, and separately published product review and artifact
-receipt. The pending observer input still has no deadline or output and has not
-executed. Consumer adapter projection fixes and the final runtime pin still need
-their own verification; the original 138 results remain unchanged. No new runtime
-envelope, transition admission or Programs client acceptance exists.
+ancestry and complete-source profile. The [current runtime checkpoint](programs-current-runtime-preparation-20260916.json)
+has now completed its unique observer invocation: two acknowledged read-only SQL
+commands, one lease-method call, about 1.129 seconds and a 56,352,768-byte memory
+peak. A's identity and metadata/hosting projections remained unchanged. Observer
+and query frontend processes closed, their recorded frontend groups were absent,
+the owned unit cgroup was empty, and unlock/FD close succeeded. Query backend
+disappearance, observer/outer numeric PGIDs and a post-close lock-inode check were
+not separately measured; the application-owned lease backend is expected to persist.
+The new `db22e3d...` envelope passed frozen-producer validation in memory and from
+the published file against 40 unique saved records, with no new SQL/HTTP/service
+actions during publication. Its predecessor `aed2914...` and historical `38b906...`
+remain unchanged. The canonical artifact receipt is also copied byte-for-byte
+into the actual full scope. Final consumer pins and 142 checks are being prepared
+and have not executed; the original 138 results, transition hold and lack of
+Programs client acceptance remain unchanged.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
