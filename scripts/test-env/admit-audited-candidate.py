@@ -730,6 +730,10 @@ def capture_tv_controls(runtime, transition_module, io, baseline, remaining, *, 
     probe = object.__new__(readers) if programs else SimpleNamespace()
     probe.__dict__.update(r=runtime, s=io.modules["seed"], g=io.modules["gateway"], pmod=io.modules["provision"],
                           p=io.provision, reviewed_state=baseline, need=need, remaining=remaining)
+    if programs:
+        reference_pin = runtime.PROGRAMS_RECOVERY_REFERENCE
+        reference = probe.s.descriptor(reference_pin)
+        probe.recovery_master = runtime.programs_recovery_master_authority(reference, reference_pin)
     probe.file = lambda path, prefix=None: readers.file(probe, path, prefix)
     need(set(baseline["trees"]) == set(runtime.TREE_ROOTS), "tv_preserved_tree_inventory")
     hosting_before = transition_module.BinarySuccessor.hosting(probe)

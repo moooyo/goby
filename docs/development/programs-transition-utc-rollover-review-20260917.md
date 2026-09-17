@@ -26,10 +26,11 @@ remains CLI/caller/SSH exit 2, PowerShell tool exit 1 and closer
 `evidenceAccepted=false`. A remains running as PID `1907978`; no V4 or client
 admission was produced, and no transition or service action was repeated.
 
-Eight finalization files, including Python/JavaScript sources and the contract,
-are frozen in isolated commit
-`24ad7c1dfd49455f2dd723fca4c9940edca78121`. The revision is not merged into main
-and has not been tested; the finalization program has not run. A dedicated 21-method group and one separate saved-only
-check are being prepared; neither has run. Preserve new A and all original
-records while that work proceeds. M5 full/build and overall M2-M6 remain open.
+At this review checkpoint, eight finalization files, including Python/JavaScript
+sources and the contract, were frozen in isolated commit
+`24ad7c1dfd49455f2dd723fca4c9940edca78121`. The revision had not been merged or
+tested, and actual finalization had not run. The subsequent
+[21-method and saved-evidence verification](programs-finalization-component-result-20260917.md)
+has its own result and closure records. Preserve new A and all original records.
+M5 full/build and overall M2-M6 remain open.
 This documentation update only read the local evidence mirror and ran no checks.

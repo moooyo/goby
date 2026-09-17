@@ -11,11 +11,11 @@ byte correspondence are retained; writer attribution is inferred from pinned
 source, timing and action order, without write-syscall proof. Original CLI/
 caller/SSH exit 2 and closer evidence false remain; no V4 or client admission exists.
 
-Eight finalization files, including the Python/JavaScript sources and contract,
-are frozen at isolated commit
-`24ad7c1dfd49455f2dd723fca4c9940edca78121`, not merged into main, tested or executed
-as finalization. The 21-method group and one separate saved-only check are being
-prepared. Follow [current status](current-status.md) and the
+The finalization changes from `24ad7c1dfd49455f2dd723fca4c9940edca78121` now
+[passed 21 component methods and one separate saved-only check](programs-finalization-component-result-20260917.md).
+Independent physical-closure review is in progress; actual finalization has not
+run. Its exact source and input are published in a new scope. Follow
+[current status](current-status.md) and the
 [current execution plan](../planning/current-execution-plan.md) for current work;
 complete M5 full/build and M2-M6 delivery remain unfinished.
 

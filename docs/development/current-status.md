@@ -11,9 +11,11 @@ The original closer remains resources true/evidence false; independent failure/
 closure supplementation is complete without upgrading that original result.
 The [UTC rollover review and reader closure](programs-transition-utc-rollover-review-20260917.md)
 are now complete; writer-PID attribution remains a source/time/order inference,
-without a captured write syscall. Eight finalization source files are frozen at
-isolated commit `24ad7c1dfd49455f2dd723fca4c9940edca78121`, not merged into main or
-tested. Preparation of 21 methods and one separate saved-only check is underway.
+without a captured write syscall. The finalization changes from
+`24ad7c1dfd49455f2dd723fca4c9940edca78121` now passed
+[21 component methods and one separate saved-only check](programs-finalization-component-result-20260917.md).
+The executor reported closure; independent physical-closure review is in progress.
+The exact finalizer source and input are published in a new scope.
 Actual finalization calls remain zero and no V4 or client admission exists.
 The [M5 header correction](m5-http-header-targeted-result-20260917.md)
 has separately passed two targeted tests and independent closure; complete M5
