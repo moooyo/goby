@@ -49,7 +49,7 @@ func TestPublishedMigrationManifestMatchesEmbeddedRelease(t *testing.T) {
 }
 
 func TestPublishedMigrationManifestRejectsSameNameSQLDrift(t *testing.T) {
-	for _, name := range []string{"0001_identity.sql", "0014_item_metadata.sql", "0028_storage_root_bindings.sql"} {
+	for _, name := range []string{"0001_identity.sql", "0014_item_metadata.sql", "0028_storage_root_bindings.sql", "0029_user_deletion_activity.sql"} {
 		t.Run(name, func(t *testing.T) {
 			source := publishedMigrationTestFiles(t)
 			path := "migrations/" + name
@@ -86,12 +86,12 @@ func TestPublishedMigrationManifestRejectsChangedInventory(t *testing.T) {
 			case "missing middle":
 				delete(source, "migrations/0014_item_metadata.sql")
 			case "missing last":
-				delete(source, "migrations/0028_storage_root_bindings.sql")
+				delete(source, "migrations/0029_user_deletion_activity.sql")
 			case "renamed SQL":
 				source["migrations/0001_renamed.sql"] = source["migrations/0001_identity.sql"]
 				delete(source, "migrations/0001_identity.sql")
 			case "unpublished addition":
-				source["migrations/0029_unpublished.sql"] = &fstest.MapFile{Data: []byte("SELECT 1;\n")}
+				source["migrations/0030_unpublished.sql"] = &fstest.MapFile{Data: []byte("SELECT 1;\n")}
 			case "duplicate version":
 				source["migrations/0001_duplicate.sql"] = &fstest.MapFile{Data: []byte("SELECT 1;\n")}
 			case "invalid filename":

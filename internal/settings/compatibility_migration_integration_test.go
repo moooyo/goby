@@ -58,8 +58,8 @@ func compatibilityMigrationHistory(t *testing.T, ctx context.Context, pool *pgxp
 	var count int
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 28 {
-		t.Fatalf("compatibility full migration history count = %d, want 28: %v", count, err)
+		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 29 {
+		t.Fatalf("compatibility full migration history count = %d, want 29: %v", count, err)
 	}
 	return snapshot
 }
@@ -122,8 +122,8 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
-					t.Fatalf("compatibility full migration schema version = %d, want 28: %v", version, err)
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
+					t.Fatalf("compatibility full migration schema version = %d, want 29: %v", version, err)
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				var name string

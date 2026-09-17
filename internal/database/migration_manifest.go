@@ -17,9 +17,10 @@ type publishedMigration struct {
 	sha256  string
 }
 
-// These fixed digests come from the published schema-28 PostgreSQL-17 catalog.
-// They are never regenerated from the SQL being checked. Published entries are
-// immutable; a new migration requires an explicitly reviewed manifest append.
+// Entries 1-28 come from the published schema-28 PostgreSQL-17 catalog. Entry 29
+// appends the reviewed user-deletion SQL; its live catalog export is separate.
+// Digests are never regenerated from the SQL being checked. Published entries
+// are immutable; a new migration requires a reviewed manifest append.
 // Existing schema_migrations rows contain no execution digest, so this manifest
 // checks this release's SQL bytes without inventing historical evidence.
 var publishedMigrations = [...]publishedMigration{
@@ -51,6 +52,7 @@ var publishedMigrations = [...]publishedMigration{
 	{26, "0026_theme_owners.sql", "c4b7485174fe655524fe5de6973f9d75a6ce7917f4ebd82476ac1c13be5817e8"},
 	{27, "0027_movie_extras.sql", "b62d0422dddb9e258f46589898f672b08fc6e4c12fea7456059f855a6600353c"},
 	{28, "0028_storage_root_bindings.sql", "85eab266e6c7f13c34370e562a45e53ad4bdce148ff8d24c428f8ebd1505ddb0"},
+	{29, "0029_user_deletion_activity.sql", "cc2bc10bdd78866854559485b05c34018b4d6ea2ec9e25c880ff234609388564"},
 }
 
 func validatePublishedMigrations(available []migration) error {

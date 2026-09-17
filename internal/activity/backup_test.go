@@ -120,8 +120,8 @@ func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t
 		WHERE previous_revision IS DISTINCT FROM 0 OR observation_fingerprint IS DISTINCT FROM ''`).Scan(&nondefault); err != nil || nondefault != 0 {
 		t.Fatalf("historical activity received invented root binding facts: count=%d error=%v", nondefault, err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
-		t.Fatalf("upgraded activity schema version = %d, want 28: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
+		t.Fatalf("upgraded activity schema version = %d, want 29: %v", version, err)
 	}
 	insertActivityEvent(t, ctx, pool, activity.Event{Action: activity.ActionBackupFinished,
 		Source: activity.SourceSystem, Actor: activity.Actor{Kind: activity.ActorSystem},

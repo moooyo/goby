@@ -8,6 +8,7 @@ import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { ServerSettings, SettingsResetField } from './api';
 import { ErrorNotice, PageHeading } from './components';
+import { MediaDiagnosticsPanel } from './MediaDiagnosticsPanel';
 import { fieldError } from './formFields';
 import { draftFromSettings, formatMbps, formatSettingValue, outputSettingsFields, parseSettingsDraft, settingLabels, settingsDraftKey, settingsResetFields } from './settingsDraft';
 import type { OutputSettingField, ServerNameDraft, SettingDraft, SettingsDraft } from './settingsDraft';
@@ -175,7 +176,7 @@ function DeploymentSettings({ settings }: { settings: ServerSettings }) {
   </Paper>;
 }
 
-export function SettingsPage({ onNavigationGuardChange }: { onNavigationGuardChange: UserNavigationGuardChange }) {
+export function SettingsPage({ currentUserId, onNavigationGuardChange }: { currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [settings, setSettings] = useState<ServerSettings>();
   const [draft, setDraft] = useState<SettingsDraft>();
   const [loading, setLoading] = useState(true);
@@ -183,6 +184,7 @@ export function SettingsPage({ onNavigationGuardChange }: { onNavigationGuardCha
   const [mutationError, setMutationError] = useState<unknown>();
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState<'save' | 'reset'>();
+  const [diagnosticBusy, setDiagnosticBusy] = useState(false);
   const [resetFields, setResetFields] = useState<SettingsResetField[]>();
   const [pendingAction, setPendingAction] = useState<'reload' | 'discard'>();
   const [notice, setNotice] = useState('');
@@ -190,13 +192,13 @@ export function SettingsPage({ onNavigationGuardChange }: { onNavigationGuardCha
   const parsed = draft ? parseSettingsDraft(draft) : undefined;
   const dirty = Boolean(settings && draft && settingsDraftKey(draft) !== settingsDraftKey(draftFromSettings(settings)));
   const blocked = requiresReload(mutationError);
-  const disabled = loading || Boolean(busy) || blocked;
+  const disabled = loading || Boolean(busy) || blocked || diagnosticBusy;
   const savedOverrides = settings ? settingsResetFields.filter((field) => hasSavedOverride(settings, field)) : [];
   const plannedServerWidth = settings && parsed?.input ? parsed.input.Overrides.MaxWidth ?? settings.Defaults.MaxWidth : undefined;
   const plannedAdditionalWidth = parsed?.input?.Encoding.TranscodingMaxWidth;
   const plannedWidth = plannedServerWidth === undefined || plannedAdditionalWidth === undefined ? undefined
     : plannedAdditionalWidth > 0 ? Math.min(plannedServerWidth, plannedAdditionalWidth) : plannedServerWidth;
-  useUserDraftNavigation(dirty, Boolean(busy), onNavigationGuardChange, 'Discard unsaved settings changes and leave this page?');
+  useUserDraftNavigation(dirty, Boolean(busy) || diagnosticBusy, onNavigationGuardChange, 'Discard unsaved settings changes and leave this page?');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -225,13 +227,13 @@ export function SettingsPage({ onNavigationGuardChange }: { onNavigationGuardCha
   }
 
   function requestReload() {
-    if (mutation.current) return;
+    if (mutation.current || diagnosticBusy) return;
     if (dirty) setPendingAction('reload');
     else reload();
   }
 
   function discardDraft() {
-    if (!settings || mutation.current) return;
+    if (!settings || mutation.current || diagnosticBusy) return;
     setDraft(draftFromSettings(settings));
     setPendingAction(undefined);
     setNotice('Unsaved changes discarded.');
@@ -310,8 +312,8 @@ export function SettingsPage({ onNavigationGuardChange }: { onNavigationGuardCha
       error={parsed?.errors[field] ?? fieldError(mutationError, field) ?? fieldError(mutationError, `Overrides.${field}`)} onChange={(value) => change(field, value)} />;
   }
 
-  return <Box aria-busy={loading || Boolean(busy)}>
-    <PageHeading title="Settings" description="Manage server identity and output limits. Database overrides take precedence over deployment defaults." action={<Button variant="outlined" startIcon={<RefreshRounded />} onClick={requestReload} disabled={loading || Boolean(busy)}>Reload settings</Button>} />
+  return <Box aria-busy={loading || Boolean(busy) || diagnosticBusy}>
+    <PageHeading title="Settings" description="Manage server identity and output limits. Database overrides take precedence over deployment defaults." action={<Button variant="outlined" startIcon={<RefreshRounded />} onClick={requestReload} disabled={loading || Boolean(busy) || diagnosticBusy}>Reload settings</Button>} />
     {loadError != null && <ErrorNotice error={loadError} retry={reload} />}
     {loading && <Stack spacing={2.5} role="status" aria-label="Loading settings"><Skeleton variant="rounded" height={250} /><Skeleton variant="rounded" height={420} /></Stack>}
     {settings && draft && <Stack spacing={3}>
@@ -340,13 +342,14 @@ export function SettingsPage({ onNavigationGuardChange }: { onNavigationGuardCha
           <Paper variant="outlined" sx={{ p: 2.5 }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 2 }}>
               <Box><Typography variant="body2" sx={{ fontWeight: 650 }}>{dirty ? 'Unsaved changes' : 'No unsaved changes'}</Typography><Typography variant="caption" color="text.secondary">{blocked ? 'Reload the latest settings to continue.' : 'Save applies the complete set of override choices.'}</Typography></Box>
-              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button type="submit" variant="contained" startIcon={busy === 'save' ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />} disabled={disabled || !dirty || !parsed?.input}>{busy === 'save' ? 'Saving settings...' : 'Save settings'}</Button><Button color="secondary" onClick={() => setPendingAction('discard')} disabled={loading || Boolean(busy) || !dirty}>Discard changes</Button></Stack>
+              <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button type="submit" variant="contained" startIcon={busy === 'save' ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />} disabled={disabled || !dirty || !parsed?.input}>{busy === 'save' ? 'Saving settings...' : 'Save settings'}</Button><Button color="secondary" onClick={() => setPendingAction('discard')} disabled={loading || Boolean(busy) || diagnosticBusy || !dirty}>Discard changes</Button></Stack>
             </Stack>
             <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}><Button color="secondary" startIcon={<RestartAltRounded />} onClick={openReset} disabled={disabled || savedOverrides.length === 0}>Reset saved overrides</Button><Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 0, mt: 0.5 }}>Restore selected deployment defaults or remove the additional width limit.</Typography></Box>
           </Paper>
         </Stack>
       </Box>
       <DeploymentSettings settings={settings} />
+      <MediaDiagnosticsPanel key={currentUserId} currentUserId={currentUserId} startBlocked={dirty || loading || Boolean(busy) || blocked || loadError != null} onBusyChange={setDiagnosticBusy} />
     </Stack>}
     {settings && resetFields !== undefined && <Dialog open onClose={busy ? undefined : () => setResetFields(undefined)} fullWidth maxWidth="sm" aria-labelledby="reset-settings-title" aria-describedby="reset-settings-description">
       <DialogTitle id="reset-settings-title" sx={{ pt: 3 }}>Reset saved overrides</DialogTitle>

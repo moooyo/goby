@@ -122,6 +122,8 @@ func description(action Action, state State) (string, string) {
 		return "User created", "A user account was created."
 	case ActionUserUpdated:
 		return "User updated", "A user account or its access policy was updated."
+	case ActionUserDeleted:
+		return "User deleted", "A user account and its associated user state were deleted."
 	case ActionUserPasswordReset:
 		return "User password reset", "A user password was reset and affected credentials were revoked."
 	case ActionSessionLogin:

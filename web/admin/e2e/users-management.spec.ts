@@ -235,7 +235,7 @@ async function memberViews(request: APIRequestContext, userId: string, token: st
 // Also set GOBY_SMOKE_BASE_URL and GOBY_SMOKE_MEDIA_PATH to the dedicated server and
 // an allowed media fixture directory. Both libraries use that directory with Scan=false.
 // Run this file separately from other login-heavy specs to respect the login limiter.
-// There is no user deletion API. Dispose of the entire test database after this run,
+// This journey does not exercise user deletion. Dispose of the entire test database after this run,
 // including on failure. This journey never deletes data or edits pre-existing users.
 test('isolated user management, library access, conflict recovery, and temporary administrator reset', async ({ page, context }, testInfo) => {
   test.skip(process.env.GOBY_SMOKE_USERS_DISPOSABLE_DATABASE !== '1'

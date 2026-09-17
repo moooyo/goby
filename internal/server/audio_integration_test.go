@@ -711,13 +711,18 @@ type audioHTTPLive struct {
 
 func (a *audioHTTPFixture) openLive(t *testing.T, reference string) audioHTTPLive {
 	t.Helper()
+	return a.openLiveFor(t, a.accounts.viewer, reference)
+}
+
+func (a *audioHTTPFixture) openLiveFor(t *testing.T, login clientSessionHTTPLogin, reference string) audioHTTPLive {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(a.f.ctx, 45*time.Second)
 	t.Cleanup(cancel)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, a.server.URL+a.universal("flac", audioHTTPMP3Query(reference, 0)), nil)
 	if err != nil {
 		t.Fatalf("create live audio request (%T)", err)
 	}
-	request.Header = a.accounts.viewer.headers.Clone()
+	request.Header = login.headers.Clone()
 	response, err := a.server.Client().Do(request)
 	if err != nil {
 		t.Fatalf("open live audio response (%T)", err)
@@ -736,10 +741,15 @@ func (a *audioHTTPFixture) openLive(t *testing.T, reference string) audioHTTPLiv
 
 func (a *audioHTTPFixture) liveSession(t *testing.T, playID string, readers int) (*hlsSession, transcode.Record) {
 	t.Helper()
+	return a.liveSessionFor(t, a.accounts.viewer, playID, readers)
+}
+
+func (a *audioHTTPFixture) liveSessionFor(t *testing.T, login clientSessionHTTPLogin, playID string, readers int) (*hlsSession, transcode.Record) {
+	t.Helper()
 	a.f.app.hls.mu.Lock()
 	var selected *hlsSession
 	for _, session := range a.f.app.hls.sessions {
-		if session.key.scope.AuthSessionID == a.accounts.viewer.id && session.key.scope.PlaySessionID == playID {
+		if session.key.scope.AuthSessionID == login.id && session.key.scope.PlaySessionID == playID {
 			if selected != nil {
 				a.f.app.hls.mu.Unlock()
 				t.Fatal("one live audio plan acquired multiple runtime revisions")
@@ -759,7 +769,7 @@ func (a *audioHTTPFixture) liveSession(t *testing.T, playID string, readers int)
 		t.Fatalf("live audio consumer count = %d, want %d", count, readers)
 	}
 	record, err := a.f.app.hls.manager.Snapshot(selected.key.scope, producers[0].id)
-	if err != nil || record.State != "running" || a.jobs(t, a.accounts.viewer, playID, true) != 1 {
+	if err != nil || record.State != "running" || a.jobs(t, login, playID, true) != 1 {
 		t.Fatalf("interruption window did not contain a running real encoder (%T)", err)
 	}
 	return selected, record

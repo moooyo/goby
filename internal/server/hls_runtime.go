@@ -256,6 +256,21 @@ func (h *hlsRuntime) cancelMatching(authID, playID string) {
 	}
 }
 
+// cancelCredential also invalidates a producer whose HLS registration has
+// already retired. The manager closes its process asynchronously.
+func (h *hlsRuntime) cancelCredential(authID string) {
+	if h == nil || authID == "" {
+		return
+	}
+	h.cancelMatching(authID, "")
+	h.mu.Lock()
+	manager := h.manager
+	h.mu.Unlock()
+	if scoped, ok := manager.(interface{ CancelSession(string) }); ok {
+		scoped.CancelSession(authID)
+	}
+}
+
 func (h *hlsRuntime) touchMatching(authID, playID string) {
 	if h == nil || playID == "" {
 		return
