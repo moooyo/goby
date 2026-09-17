@@ -1717,7 +1717,7 @@ export function validateProgramsArtifact(receipt, review, bridge, build, closure
   const reviewPins = ['input', 'adapter', 'execution', 'archive', 'closure', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools'];
   const checks = ['sourceIdentity', 'ordinaryFullSuite', 'ordinaryBuild', 'embeddedBuild', 'packageMembers', 'artifactMaterialization', 'toolPins', 'budgets', 'resourceClosure', 'protectedState', 'recordsBinding'];
   need(exact(review, ['kind', 'version', 'status', ...reviewPins, 'worker', 'checks', 'limits']) && review.kind === 'programs-final-product-independent-review' && review.version === 1 &&
-    review.status === 'verified' && reviewPins.every(key => artifactPin(review[key])) && equal(review.worker, receipt.worker) &&
+    review.status === (complete ? 'passed' : 'verified') && reviewPins.every(key => artifactPin(review[key])) && equal(review.worker, receipt.worker) &&
     exact(review.checks, checks) && checks.every(key => review.checks[key] === true) && Array.isArray(review.limits) && review.limits.every(value => typeof value === 'string') &&
     reviewPins.filter(key => !['input', 'adapter'].includes(key)).every(key => equal(review[key], receipt[key])), 'programs_artifact_independent_review');
   if (complete) {

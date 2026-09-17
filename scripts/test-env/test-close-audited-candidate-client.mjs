@@ -623,7 +623,7 @@ function programsArtifactFixture(closer, { complete = false } = {}) {
     ...Object.fromEntries(['sourceManifest', 'sourceBridge', 'buildManifest'].map(key => [key, { path: receipt[key].path, sha256: receipt[key].sha256 }])),
     binary: { path: '/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby', sha256: receipt.newBinary.sha256 },
     fullReport: { path: receipt.execution.path, sha256: receipt.execution.sha256 } };
-  const review = { kind: 'programs-final-product-independent-review', version: 1, status: 'verified', input: pin('input.json'), adapter: pin('adapter.py'),
+  const review = { kind: 'programs-final-product-independent-review', version: 1, status: complete ? 'passed' : 'verified', input: pin('input.json'), adapter: pin('adapter.py'),
     ...Object.fromEntries(['execution', 'archive', 'closure', 'sourceBridge', 'buildManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'worker'].map(key => [key, clone(receipt[key])])),
     checks: Object.fromEntries('sourceIdentity ordinaryFullSuite ordinaryBuild embeddedBuild packageMembers artifactMaterialization toolPins budgets resourceClosure protectedState recordsBinding'.split(' ').map(key => [key, true])),
     limits: ['Synthetic fixture only; no product execution is asserted.'] };
@@ -794,7 +794,10 @@ function guardCases(closer) {
     ['programs_artifact_binds_one_worker_and_distinct_ordinary_embedded_binaries', () => {
       const value = programsArtifactFixture(closer), verify = row => closer.validateProgramsArtifact(row.receipt, row.review, row.bridge, row.build, row.closure, row.source, row.adapterBytes);
       assert.equal(verify(value).ordinaryAndEmbeddedWorkerBound, true);
+      assert.equal(value.review.status, 'verified');
       assert.notEqual(value.receipt.fullReport.ordinaryBinary.sha256, value.receipt.newBinary.sha256);
+      const wrongStatus = clone(value); wrongStatus.review.status = 'passed';
+      assert.throws(() => verify(wrongStatus), /programs_artifact_independent_review/);
       for (const mutate of [row => { row.receipt.fullReport.worker.sha256 = sha('second worker'); }, row => { row.review.checks.ordinaryFullSuite = false; },
         row => { row.source.binary.sha256 = row.receipt.fullReport.ordinaryBinary.sha256; }, row => { row.bridge.runtimeModeProjection.files[0].runtimeMode = 0o644; },
         row => { row.bridge.buildManifest.sha256 = sha('different manifest'); }, row => { row.closure.lockReleased = false; }]) {
@@ -805,7 +808,10 @@ function guardCases(closer) {
       const value = programsArtifactFixture(closer, { complete: true });
       assert.equal(closer.validateProgramsArtifact(value.receipt, value.review, value.bridge, value.build, value.closure, value.source, value.adapterBytes).sourceBridgeMatched, true);
       assert.equal(value.receipt.version, 1); assert.equal(value.review.version, 1);
+      assert.equal(value.review.status, 'passed');
       assert.notEqual(value.receipt.fullReport.ordinaryBinary.sha256, value.receipt.newBinary.sha256);
+      const wrongStatus = clone(value); wrongStatus.review.status = 'verified';
+      assert.throws(() => closer.validateProgramsArtifact(wrongStatus.receipt, wrongStatus.review, wrongStatus.bridge, wrongStatus.build, wrongStatus.closure, wrongStatus.source, value.adapterBytes), /programs_artifact_independent_review/);
       for (const kind of ['livetv-programs-complete-source-test-build-independent-review', 'programs-closure-materialization-independent-review']) {
         const changed = clone(value); changed.review.kind = kind;
         assert.throws(() => closer.validateProgramsArtifact(changed.receipt, changed.review, changed.bridge, changed.build, changed.closure, changed.source, value.adapterBytes), /programs_artifact_independent_review/);

@@ -893,6 +893,19 @@ def validate_programs_adapter_source(review_adapter, closure_adapter, read_bytes
          digest(content) == review_adapter["sha256"], "programs_adapter_source_bytes")
 
 
+def validate_programs_product_review(review, *, complete):
+    """Validate the retained independent review for the selected source profile."""
+    review_keys = {"kind", "version", "status", "input", "adapter", "execution", "archive", "closure", "sourceBridge", "buildManifest", "newBinary",
+                   "packageManifest", "packageArchive", "buildTools", "worker", "checks", "limits"}
+    checks = {"sourceIdentity", "ordinaryFullSuite", "ordinaryBuild", "embeddedBuild", "packageMembers", "artifactMaterialization", "toolPins",
+              "budgets", "resourceClosure", "protectedState", "recordsBinding"}
+    need(isinstance(review, dict) and set(review) == review_keys and review["kind"] == "programs-final-product-independent-review" and
+         type(review["version"]) is int and review["version"] == 1 and review["status"] == ("passed" if complete else "verified") and set(review["checks"]) == checks and
+         all(check is True for check in review["checks"].values()) and isinstance(review["limits"], list) and all(isinstance(row, str) for row in review["limits"]),
+         "programs_artifact_independent_review")
+    return review_keys
+
+
 def load_programs_product(value, read_descriptor, read_bytes=None):
     """Verify the actual full/build worker and only its declared archived artifacts."""
     validate_programs_successor_input(value)
@@ -960,14 +973,7 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
     need(closure.get("kind") == "livetv-programs-final-closure" and type(closure.get("version")) is int and closure["version"] == 1 and
          closure.get("status") == "closed" and all(closure.get(key) is True for key in closure_flags | {"protectedUnchanged"}) and
          canonical(closure["archive"]) == canonical(receipt["archive"]), "programs_artifact_resource_closure")
-    review_keys = {"kind", "version", "status", "input", "adapter", "execution", "archive", "closure", "sourceBridge", "buildManifest", "newBinary",
-                   "packageManifest", "packageArchive", "buildTools", "worker", "checks", "limits"}
-    checks = {"sourceIdentity", "ordinaryFullSuite", "ordinaryBuild", "embeddedBuild", "packageMembers", "artifactMaterialization", "toolPins",
-              "budgets", "resourceClosure", "protectedState", "recordsBinding"}
-    need(isinstance(review, dict) and set(review) == review_keys and review["kind"] == "programs-final-product-independent-review" and
-         type(review["version"]) is int and review["version"] == 1 and review["status"] == "verified" and set(review["checks"]) == checks and
-         all(check is True for check in review["checks"].values()) and isinstance(review["limits"], list) and all(isinstance(row, str) for row in review["limits"]),
-         "programs_artifact_independent_review")
+    review_keys = validate_programs_product_review(review, complete=complete)
     for key in review_keys - {"kind", "version", "status", "checks", "limits", "worker"}:
         programs_artifact_pin(review[key])
     for key in ("execution", "archive", "closure", "sourceBridge", "buildManifest", "newBinary", "packageManifest", "packageArchive", "buildTools", "worker"):

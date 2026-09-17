@@ -30,6 +30,37 @@ class RuntimeGuards(unittest.TestCase):
         replace.assert_not_called()
         self.assertEqual(job.calls, {"stop": 0, "replace": 0, "start": 0})
 
+    def test_programs_product_review_keeps_profile_status_and_exact_schema(self):
+        pin = {"path": "/opt/goby-test/synthetic-programs-review/record.json", "sha256": "a" * 64, "bytes": 100}
+        review = {"kind": "programs-final-product-independent-review", "version": 1, "status": "verified",
+            **{key: copy.deepcopy(pin) for key in ("input", "adapter", "execution", "archive", "closure", "sourceBridge",
+                "buildManifest", "newBinary", "packageManifest", "packageArchive", "buildTools")},
+            "worker": {"archive": copy.deepcopy(pin), "member": "ram/synthetic/worker-report.json", "sha256": "b" * 64, "bytes": 100},
+            "checks": {key: True for key in ("sourceIdentity", "ordinaryFullSuite", "ordinaryBuild", "embeddedBuild", "packageMembers",
+                "artifactMaterialization", "toolPins", "budgets", "resourceClosure", "protectedState", "recordsBinding")},
+            "limits": ["Synthetic review schema fixture only; no product execution is asserted."]}
+        for complete, accepted, rejected in ((False, "verified", "passed"), (True, "passed", "verified")):
+            selected = copy.deepcopy(review)
+            selected["status"] = accepted
+            with self.subTest(complete=complete, status=accepted):
+                self.assertEqual(M.validate_programs_product_review(selected, complete=complete), set(selected))
+            mutations = (
+                ("status", lambda row: row.update(status=rejected)),
+                ("kind", lambda row: row.update(kind="livetv-programs-complete-source-test-build-independent-review")),
+                ("version", lambda row: row.update(version=True)),
+                ("extra_field", lambda row: row.update(unreviewedExtra=True)),
+                ("missing_check", lambda row: row["checks"].pop("recordsBinding")),
+                ("extra_check", lambda row: row["checks"].update(unreviewedExtra=True)),
+                ("non_boolean_check", lambda row: row["checks"].update(ordinaryFullSuite=1)),
+                ("limits_type", lambda row: row.update(limits="Synthetic limit")),
+                ("limit_item_type", lambda row: row.update(limits=[True])),
+            )
+            for name, mutate in mutations:
+                changed = copy.deepcopy(selected)
+                mutate(changed)
+                with self.subTest(complete=complete, mutation=name), self.assertRaisesRegex(M.ContractError, "^programs_artifact_independent_review$"):
+                    M.validate_programs_product_review(changed, complete=complete)
+
     def test_existing_real_full_envelope_shape_and_failed_gate_rejection(self):
         path = Path("/opt/goby-test/audit-fixes-20260913-20260913T063334Z-935b86b650b6/report.json")
         raw = path.read_bytes()
