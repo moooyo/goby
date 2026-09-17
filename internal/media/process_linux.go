@@ -10,7 +10,10 @@ import (
 )
 
 func configureMediaProcess(command *exec.Cmd) func() error {
-	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if command.SysProcAttr == nil {
+		command.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	command.SysProcAttr.Setpgid = true
 	var groupMu sync.Mutex
 	retired := false
 	command.Cancel = func() error {

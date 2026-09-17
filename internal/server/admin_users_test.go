@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -320,6 +321,10 @@ func managedUserDecodersForTest() []struct {
 			_, _, ok := decodeManagedUserPassword(w, r)
 			return ok
 		}},
+		{name: "delete", body: `{"Revision":"1"}`, decode: func(w http.ResponseWriter, r *http.Request) bool {
+			_, ok := decodeManagedUserDelete(w, r)
+			return ok
+		}},
 	}
 }
 
@@ -328,6 +333,8 @@ func TestManagedUserDecodersRejectInvalidUTF8BeforeJSONReplacement(t *testing.T)
 		original := `"new-password"`
 		if decoder.name == "update" {
 			original = `"Managed User"`
+		} else if decoder.name == "delete" {
+			original = `"1"`
 		}
 		for _, test := range []struct {
 			name, invalid string
@@ -345,6 +352,29 @@ func TestManagedUserDecodersRejectInvalidUTF8BeforeJSONReplacement(t *testing.T)
 				assertManagedUserDecodeError(t, response, http.StatusBadRequest, "invalid_input", "Body")
 			})
 		}
+	}
+}
+
+func TestDecodeManagedUserDeleteRequiresOnlyAnExactRevisionBody(t *testing.T) {
+	for _, body := range []string{`{}`, `{"Revision":null}`, `{"Revision":1}`, `{"Revision":true}`, `{"Revision":[]}`} {
+		response := httptest.NewRecorder()
+		if _, ok := decodeManagedUserDelete(response, managedUserRequestForTest(body, "application/json")); ok {
+			t.Fatal("deletion accepted a missing or incorrectly typed revision")
+		}
+		assertManagedUserDecodeError(t, response, http.StatusBadRequest, "invalid_input", "Revision")
+	}
+	for _, value := range []string{"1", "9007199254740993", "9223372036854775807"} {
+		response := httptest.NewRecorder()
+		revision, ok := decodeManagedUserDelete(response, managedUserRequestForTest(`{"Revision":"`+value+`"}`, "application/json"))
+		if !ok || strconv.FormatInt(revision, 10) != value {
+			t.Fatal("deletion rounded or rejected a valid revision")
+		}
+	}
+	request := managedUserRequestForTest(`{"Revision":"1"}`, "application/json")
+	request.URL.RawQuery = "Revision=2"
+	response := httptest.NewRecorder()
+	if _, ok := decodeManagedUserDelete(response, request); ok {
+		t.Fatal("deletion accepted a second revision carrier")
 	}
 }
 

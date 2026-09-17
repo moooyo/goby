@@ -282,7 +282,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 			}
 			wantVersion := 27
 			if runner == "normal" {
-				wantVersion = 28
+				wantVersion = 29
 			}
 			var tables, resources, version int
 			if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM pg_tables WHERE schemaname=current_schema()),

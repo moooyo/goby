@@ -162,7 +162,7 @@ func validAction(value Action) bool { return actionResource(value) != "" }
 
 func actionResource(action Action) ResourceKind {
 	switch action {
-	case ActionUserCreated, ActionUserUpdated, ActionUserPasswordReset:
+	case ActionUserCreated, ActionUserUpdated, ActionUserDeleted, ActionUserPasswordReset:
 		return ResourceUser
 	case ActionSessionLogin, ActionSessionRevoked:
 		return ResourceSession

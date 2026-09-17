@@ -18,6 +18,7 @@ import (
 func (s *Server) registerAdminUserRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /admin/v1/users/{id}", s.requireAdmin(s.managedUser))
 	mux.HandleFunc("PUT /admin/v1/users/{id}", s.requireAdmin(s.updateManagedUser))
+	mux.HandleFunc("DELETE /admin/v1/users/{id}", s.requireAdmin(s.deleteManagedUser))
 	mux.HandleFunc("POST /admin/v1/users/{id}/password", s.requireAdmin(s.resetManagedUserPassword))
 }
 
@@ -84,8 +85,43 @@ func (s *Server) resetManagedUserPassword(w http.ResponseWriter, r *http.Request
 	s.managedUserMutation(w, r, actor, "reset_user_password", result)
 }
 
-func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, actor identity.Principal, action string, result identity.ManagedUserMutation) {
+func (s *Server) deleteManagedUser(w http.ResponseWriter, r *http.Request) {
+	id, ok := managedUserID(w, r)
+	if !ok {
+		return
+	}
+	revision, ok := decodeManagedUserDelete(w, r)
+	if !ok {
+		return
+	}
+	actor := r.Context().Value(principalKey).(identity.Principal)
+	result, err := s.identity.DeleteManagedUser(r.Context(), actor, id, revision)
+	if err != nil {
+		s.managedUserError(w, r, err)
+		return
+	}
+	// Database deletion has committed. Retire local consumers without holding
+	// account/session locks or waiting for a conversion process to terminate.
+	s.mediaDiagnostics.cancelActor(id, "")
+	for _, sessionID := range result.RevokedSessionIDs {
+		if s.eventHub != nil {
+			s.eventHub.DisconnectCredential(sessionID)
+		}
+		s.hls.cancelCredential(sessionID)
+	}
 	if result.CurrentSessionRevoked {
+		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
+	}
+	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", id, "action", "delete_user")
+	jsonResponse(w, http.StatusOK, map[string]any{"CurrentSessionRevoked": result.CurrentSessionRevoked})
+}
+
+func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, actor identity.Principal, action string, result identity.ManagedUserMutation) {
+	if action == "reset_user_password" || !result.User.User.IsAdministrator || result.User.User.IsDisabled {
+		s.mediaDiagnostics.cancelActor(result.User.User.ID, "")
+	}
+	if result.CurrentSessionRevoked {
+		s.mediaDiagnostics.cancelActor("", actor.SessionID)
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", result.User.User.ID, "action", action)
@@ -284,4 +320,22 @@ func decodeManagedUserPassword(w http.ResponseWriter, r *http.Request) (int64, s
 		return 0, "", false
 	}
 	return revision, password, true
+}
+
+func decodeManagedUserDelete(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	if r.URL.RawQuery != "" || r.URL.ForceQuery {
+		managedUserInputError(w, r, map[string]string{"Body": "Supply the revision in the JSON body without query parameters."})
+		return 0, false
+	}
+	values, ok := managedUserBody(w, r, []string{"Revision"})
+	if !ok {
+		return 0, false
+	}
+	invalid := make(map[string]string)
+	revision := managedUserRevision(values["Revision"], invalid)
+	if len(invalid) != 0 {
+		managedUserInputError(w, r, invalid)
+		return 0, false
+	}
+	return revision, true
 }

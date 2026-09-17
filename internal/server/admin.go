@@ -75,6 +75,7 @@ func (s *Server) adminLogout(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
+	s.mediaDiagnostics.cancelActor("", r.Context().Value(principalKey).(identity.Principal).SessionID)
 	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -23,7 +23,7 @@ import (
 	"github.com/moooyo/goby/internal/lifecycle"
 )
 
-// The current primary retains schema28 music, preferences, and theme owners.
+// The current primary retains current-schema music, preferences, and theme owners.
 // A historical encrypted archive replaces the other slot. Reopening and rollback
 // must continue to distinguish the imported and original identities and keys.
 func TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback(t *testing.T) {
@@ -55,8 +55,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	if err := f.runtime.BindDatabase(ctx, f.seed.configuration, f.seed.source, f.lease); err != nil {
 		t.Fatal("bind the current primary before importing a historical archive")
 	}
-	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 28 {
-		t.Fatalf("original primary schema = %d, want 28: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 29 {
+		t.Fatalf("original primary schema = %d, want 29: %v", version, err)
 	}
 	var preferenceOwners int
 	if err := f.seed.source.QueryRow(ctx, "SELECT count(*) FROM user_settings WHERE settings<>'{}'::jsonb").Scan(&preferenceOwners); err != nil || preferenceOwners != 2 {
@@ -125,8 +125,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	operation, err := f.manager.operationCopy(plan.Id)
 	if err != nil || operation.Manifest == nil || operation.Manifest.Source.SchemaVersion != sourceVersion ||
-		operation.Target == nil || operation.Target.Facts.SchemaVersion != 28 || len(operation.Target.Facts.Tables) != 35 {
-		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema28 target")
+		operation.Target == nil || operation.Target.Facts.SchemaVersion != 29 || len(operation.Target.Facts.Tables) != 35 {
+		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema29 target")
 	}
 	assertHistoricalManagerTarget(t, ctx, f.seed.target, legacyState)
 	assertHistoricalManagerGeneration(t, ctx, f.runtime, operation.GenerationID, f.seed.target, legacy, legacyMaster, originalMaster)
@@ -206,7 +206,7 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	status, err := f.manager.Status(ctx, actor)
 	if err != nil || !status.Rollback.Available || status.GenerationRevision != "1" {
-		t.Fatal("the historical target did not retain the original schema28 rollback image")
+		t.Fatal("the historical target did not retain the original schema29 rollback image")
 	}
 	rollback, err := f.manager.Rollback(ctx, actor, RollbackRequest{RequestId: recoveryEngineTestID(t), GenerationRevision: "1"})
 	if err != nil {
@@ -233,8 +233,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 		t.Fatalf("accept rollback after the historical encrypted archive transition: %v", err)
 	}
 	assertTransitionAppliedReceipt(t, ctx, returned.Pool, rollback.Id)
-	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 28 {
-		t.Fatalf("rollback schema = %d, want original schema28: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 29 {
+		t.Fatalf("rollback schema = %d, want original schema29: %v", version, err)
 	}
 	if actual := recoveryEngineRetainedState(t, ctx, returned.Pool); actual != originalHistory ||
 		recoveryEnginePreferenceState(t, ctx, returned.Pool) != originalPreferences ||
@@ -553,8 +553,14 @@ func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxp
 
 func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool, state historicalManagerArchiveState) {
 	t.Helper()
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
-		t.Fatalf("the historical archive target schema = %d, want 28: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
+		t.Fatalf("the historical archive target schema = %d, want 29: %v", version, err)
+	}
+	var migrationCount int
+	var deletionMigration string
+	if err := pool.QueryRow(ctx, `SELECT count(*),max(name) FILTER (WHERE version=29)
+		FROM schema_migrations`).Scan(&migrationCount, &deletionMigration); err != nil || migrationCount != 29 || deletionMigration != "0029_user_deletion_activity.sql" {
+		t.Fatalf("historical restoration missed the exact current migration suffix: %v", err)
 	}
 	var actualUsers string
 	if err := pool.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u").Scan(&actualUsers); err != nil || actualUsers != state.users ||

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Paper, Skeleton, Snackbar, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import PersonAddAltRounded from '@mui/icons-material/PersonAddAltRounded';
@@ -97,19 +97,34 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
   const [creating, setCreating] = useState(false);
   const [managing, setManaging] = useState<User>();
   const [notice, setNotice] = useState('');
+  const [noticeSeverity, setNoticeSeverity] = useState<'success' | 'info'>('success');
+  const listRequest = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    const requestId = ++listRequest.current;
     setLoading(true);
     setError(null);
     adminApi.getUsers({ signal: controller.signal })
-      .then(setData)
-      .catch((cause: unknown) => { if (!isAbortError(cause)) setError(cause); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .then((result) => { if (!controller.signal.aborted && requestId === listRequest.current) setData(result); })
+      .catch((cause: unknown) => { if (!isAbortError(cause) && requestId === listRequest.current) setError(cause); })
+      .finally(() => { if (!controller.signal.aborted && requestId === listRequest.current) setLoading(false); });
     return () => controller.abort();
   }, [revision]);
 
   const refresh = () => setRevision((value) => value + 1);
+  const removeUser = useCallback((userId: string, message: string, severity: 'success' | 'info') => {
+    listRequest.current += 1;
+    setData((current) => current ? {
+      ...current,
+      Items: current.Items.filter((user) => user.Id !== userId),
+      TotalRecordCount: Math.max(0, current.TotalRecordCount - (current.Items.some((user) => user.Id === userId) ? 1 : 0)),
+    } : current);
+    setManaging(undefined);
+    setNotice(message);
+    setNoticeSeverity(severity);
+    setRevision((value) => value + 1);
+  }, []);
 
   return (
     <Box aria-busy={loading}>
@@ -177,9 +192,9 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
         {!data && !loading && error != null && <Typography variant="body2" color="text.secondary" sx={{ px: 3, pb: 3 }}>The user list could not be loaded. Retry the request to see your users.</Typography>}
       </Paper>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Members use compatible media clients. Administrator accounts can also sign in to this dashboard.</Typography>
-      {creating && <CreateUserDialog open onClose={() => { setCreating(false); refresh(); }} onCreated={(user) => { setCreating(false); setNotice(`User ${user.Name} created.`); refresh(); }} onNavigationGuardChange={onNavigationGuardChange} />}
-      {managing && <ManagedUserDialog key={managing.Id} userId={managing.Id} currentUserId={currentUser.Id} onClose={() => { setManaging(undefined); refresh(); }} onUpdated={(user, message) => { setData((current) => current ? { ...current, Items: current.Items.map((item) => item.Id === user.Id ? user : item) } : current); if (user.Id === currentUser.Id) onCurrentUserUpdated(user); setNotice(message); }} onNavigationGuardChange={onNavigationGuardChange} />}
-      <Snackbar open={Boolean(notice) && !managing && !creating} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" onClose={() => setNotice('')}>{notice}</Alert></Snackbar>
+      {creating && <CreateUserDialog open onClose={() => { setCreating(false); refresh(); }} onCreated={(user) => { setCreating(false); setNotice(`User ${user.Name} created.`); setNoticeSeverity('success'); refresh(); }} onNavigationGuardChange={onNavigationGuardChange} />}
+      {managing && <ManagedUserDialog key={managing.Id} userId={managing.Id} currentUserId={currentUser.Id} onClose={() => { setManaging(undefined); refresh(); }} onUpdated={(user, message) => { setData((current) => current ? { ...current, Items: current.Items.map((item) => item.Id === user.Id ? user : item) } : current); if (user.Id === currentUser.Id) onCurrentUserUpdated(user); setNotice(message); setNoticeSeverity('success'); }} onRemoved={removeUser} onNavigationGuardChange={onNavigationGuardChange} />}
+      <Snackbar open={Boolean(notice) && !managing && !creating} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity={noticeSeverity} variant="filled" onClose={() => setNotice('')}>{notice}</Alert></Snackbar>
     </Box>
   );
 }

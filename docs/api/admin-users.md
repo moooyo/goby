@@ -5,6 +5,9 @@ mutation routes. The M5a increment has passed its complete Linux and browser
 acceptance, recorded in [the verification report](../development/verification-m4e-video-and-users.md).
 The complete administrator milestone remains in progress.
 
+Native deletion is a separate M5 increment. Its implementation and tests are
+prepared, but Go, database, HTTP, and browser verification have not been run.
+
 All routes require the existing administrator cookie. Writes also require
 `X-CSRF-Token`, an accepted same-origin request, and `application/json`. Request
 bodies are bounded to 1 MiB. The detail and mutation contracts reject unknown
@@ -18,6 +21,7 @@ write fields, duplicate JSON keys, null values, and missing required fields.
 | `POST /admin/v1/users` | Existing `{Name, Password, IsAdministrator}` | Existing `201 {User}` |
 | `GET /admin/v1/users/{id}` | Target user ID | `200 {User: ManagedUser}` |
 | `PUT /admin/v1/users/{id}` | Complete `ManagedUserUpdate` | `200 {User: ManagedUser, CurrentSessionRevoked: boolean}` |
+| `DELETE /admin/v1/users/{id}` | `{Revision: string}` | `200 {CurrentSessionRevoked: boolean}` |
 | `POST /admin/v1/users/{id}/password` | `{Revision: string, Password: string}` | `200 {User: ManagedUser, CurrentSessionRevoked: boolean}` |
 
 The existing `User` shape stays `{Id, Name, IsAdministrator, IsDisabled,
@@ -97,7 +101,7 @@ target sessions, so enabling the account later requires a new login. Demotion
 revokes target administrator cookie sessions; ordinary Emby sessions retain
 only the permissions of the account's current role and policy.
 
-`CurrentSessionRevoked:true` means this successful mutation revoked its own
+`CurrentSessionRevoked:true` means this successful mutation revoked or removed its own
 caller. The response clears the administrator cookie and the dashboard returns
 to sign-in. It must not retry the mutation or make a second authenticated logout
 request using the already revoked session.
@@ -113,11 +117,42 @@ Shutdown cancels original responses and joins their watchers before closing the
 catalog. Advisory client remote-control messages are not a replacement for
 credential revocation.
 
+## Account deletion
+
+Deletion requires the current positive decimal revision string in one strict
+JSON object. It rejects query parameters and every additional body field. A
+successful response contains only `CurrentSessionRevoked`; it does not return a
+deleted user projection or internal session handles.
+
+The transaction deletes the actual `users` row. Existing foreign keys remove
+the target's authentication sessions, preferences, user-item data, playback
+sessions, client playback references, and encoding records. Shared devices,
+server-owned application keys, libraries, catalog items, media files, and audit
+history remain. Device last-user, application-key creator, and metadata-editor
+references become null where their existing foreign keys require it.
+
+After confirmed commit success, the server disconnects the removed credentials' event connections
+and retires their HLS and conversion work. It also immediately cancels any media
+diagnostic owned by the deleted user; its capacity reservation remains held until
+the diagnostic owner has closed its resources. Conversion process shutdown happens
+asynchronously, outside the database transaction. Existing original-file
+responses retain their bounded authorization watchers. Deleting an account
+does not revoke independent userless application-key credentials or remove
+media files.
+
+An administrator may delete their own account only while another enabled
+administrator remains. Successful self-deletion clears the administrator cookie
+and uses the same client session-expiry flow as other self-revoking mutations.
+The client must not send a second logout request or retry deletion automatically.
+After an unknown network outcome, read the target again before making another
+decision; an absent target returns `404 not_found`.
+
 ## Concurrency and errors
 
 Migration `0013_managed_users.sql` adds `users.management_revision`. Each
 successful profile/policy update or password reset increments the revision and
-updates `updated_at`. A request with an older revision returns `409` and makes
+updates `updated_at`. Deletion compares the same revision and records that final
+revision in its audit event; the removed row is not incremented. A request with an older revision returns `409` and makes
 no account, policy, password, or revocation changes. Re-read the user before
 deliberately reapplying a draft. Network failure after sending a mutation has an
 unknown outcome; refresh the detail instead of replaying automatically.
@@ -130,9 +165,38 @@ authorize a write after its session or role has changed. Client session
 operations follow the same account-before-authentication lock order. Password
 hashing runs before acquiring database locks.
 
-The last enabled administrator cannot be disabled or demoted, including through
+The last enabled administrator cannot be disabled, demoted, or deleted, including through
 competing requests. Native account creation also revalidates administrator
 authority inside its insertion transaction.
+
+Deletion locks the actor and target accounts in ID order, then locks the actor's
+credential and all target credentials together in session-ID order. It rechecks
+the stored native administrator authority after acquiring these locks. Its last
+database operation after deletion and audit is another fresh authorization
+check. For self-deletion only, that final check compares the database clock with
+the expiration read from the already locked, authorized credential before this
+transaction removed it. It never uses the middleware principal's expiry or
+grants a general exception to administrator authorization.
+
+The `user.deleted` audit event commits in the same transaction as deletion. It
+retains the real actor ID, credential ID, target ID, deleted revision, and an
+affected count of one, with no update-field values. Audit insertion or final
+authorization rejection rolls the deletion back, as does a database-confirmed
+commit rejection. A lost commit acknowledgement or a transport/context error
+while committing leaves an unknown outcome: read the target again instead of
+automatically replaying the deletion. Immediate consumer retirement is triggered
+only after confirmed commit success; an unconfirmed result retains the existing
+authorization revalidation and consumer lifecycle safeguards. Activity queries may
+filter `Action=user.deleted`; the fixed public label is `User deleted`. Deleted
+actor names are not invented or copied into immutable audit history.
+
+Migration `0029_user_deletion_activity.sql` extends only the action and
+action/resource CHECK constraints and appends its reviewed SQL digest to the
+migration manifest. Published migrations and compiled catalogs through schema
+28 remain unchanged. The real schema-29 PostgreSQL catalog must still be
+exported using the existing `scripts/test-env/generate-backuppg-catalog.go` path
+and verified during an allocated test-environment window. No schema-29 compiled
+catalog or successful backup/restore roundtrip is asserted by this implementation.
 
 Errors use `{Error: {Code, Message, Fields?}, RequestId}`. Field paths retain API
 casing, for example `Name`, `Password`, and `Policy.EnabledFolders`.
@@ -149,7 +213,7 @@ casing, for example `Name`, `Password`, and `Policy.EnabledFolders`.
 
 ## Remaining administrator scope
 
-This increment does not implement user deletion, unsupported user policies,
+This increment does not implement unsupported user policies,
 Emby user mutation adapters, device/application-key management, metadata editing,
 general task scheduling, settings/diagnostic pages, audit/log browsing, or
 backup/restore. They remain part of the full administrator delivery plan. The

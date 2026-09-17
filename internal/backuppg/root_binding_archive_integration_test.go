@@ -90,14 +90,20 @@ func rootBindingArchiveAssertBinding(t *testing.T, ctx context.Context, pool *pg
 	}
 }
 
-func rootBindingArchiveAssertRoundTrip(t *testing.T, ctx context.Context, target *pgxpool.Pool,
+func rootBindingArchiveAssertRoundTrip(t *testing.T, ctx context.Context, source, target *pgxpool.Pool,
 	options Options, expected backupformat.SourceFacts, sequences map[string]sequenceState) {
 	t.Helper()
 	targetOptions := options
 	targetOptions.SourceURL = target.Config().ConnString()
 	actual, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
-	if !equalJSON(actual, expected) || len(targetSequences) != len(sequences) {
-		t.Fatal("root binding restoration changed full table facts or the sequence inventory")
+	if expected.SchemaVersion != 28 || actual.SchemaVersion != 29 || len(actual.MigrationChecksums) != 29 ||
+		len(actual.Tables) != len(expected.Tables) || actual.SchemaSHA256 == expected.SchemaSHA256 || len(targetSequences) != len(sequences) {
+		t.Fatal("root binding restoration did not distinguish the historical source and current target inventories")
+	}
+	for _, table := range expected.Tables {
+		if historicalArchiveRows(t, ctx, source, table.Name, 28) != historicalArchiveRows(t, ctx, target, table.Name, 28) {
+			t.Fatalf("root binding restoration changed historical schema28 rows in %s", table.Name)
+		}
 	}
 	for name, expected := range sequences {
 		if actual, exists := targetSequences[name]; !exists || actual != expected {
@@ -107,7 +113,7 @@ func rootBindingArchiveAssertRoundTrip(t *testing.T, ctx context.Context, target
 }
 
 func TestPostgreSQLRootBindingArchiveRoundTripsCompleteOfflineState(t *testing.T) {
-	ctx, source, target, options := recoveryFixture(t)
+	ctx, source, target, options := recoveryFixtureAtVersion(t, 28)
 	_, document := rootBindingArchiveSeed(t, ctx, source)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
@@ -117,16 +123,16 @@ func TestPostgreSQLRootBindingArchiveRoundTripsCompleteOfflineState(t *testing.T
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the complete root binding archive with an unavailable source: %v", err)
 	}
 	rootBindingArchiveAssertBinding(t, ctx, target, document)
-	rootBindingArchiveAssertRoundTrip(t, ctx, target, options, before, sequences)
+	rootBindingArchiveAssertRoundTrip(t, ctx, source, target, options, before, sequences)
 	assertSourceWitness(t, ctx, source, options, before, sequences)
 }
 
 func TestPostgreSQLRootBindingArchiveRejectsInvalidFinalizersAndRetries(t *testing.T) {
-	ctx, source, target, options := recoveryFixture(t)
+	ctx, source, target, options := recoveryFixtureAtVersion(t, 28)
 	snapshot, document := rootBindingArchiveSeed(t, ctx, source)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
@@ -153,7 +159,7 @@ func TestPostgreSQLRootBindingArchiveRejectsInvalidFinalizersAndRetries(t *testi
 			failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 				func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 					called = true
-					if result.SourceVersion != 28 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
+					if result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
 						return errors.New("root binding finalizer received changed source facts")
 					}
 					tag, err := tx.Exec(ctx, `UPDATE library_roots SET storage_binding=$1::jsonb WHERE id='theme-root'`, test.document)
@@ -173,11 +179,11 @@ func TestPostgreSQLRootBindingArchiveRejectsInvalidFinalizersAndRetries(t *testi
 		}
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("retry the unchanged root binding archive after all semantic rollbacks: %v", err)
 	}
 	rootBindingArchiveAssertBinding(t, ctx, target, document)
-	rootBindingArchiveAssertRoundTrip(t, ctx, target, options, before, sequences)
+	rootBindingArchiveAssertRoundTrip(t, ctx, source, target, options, before, sequences)
 	assertSourceWitness(t, ctx, source, options, before, sequences)
 }
 
@@ -211,7 +217,7 @@ func TestPostgreSQLRootBindingArchiveMigratesSchema27WithoutInferringApproval(t 
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 27 || result.CurrentVersion != 28 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 27 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore schema27 without replacing its authenticated source table facts: %v", err)
 	}
 	for table, expected := range rowsBefore {
@@ -223,9 +229,9 @@ func TestPostgreSQLRootBindingArchiveMigratesSchema27WithoutInferringApproval(t 
 	targetOptions := options
 	targetOptions.SourceURL = target.Config().ConnString()
 	actual, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
-	if actual.SchemaVersion != 28 || len(actual.Tables) != 35 || len(actual.MigrationChecksums) != 28 ||
+	if actual.SchemaVersion != 29 || len(actual.Tables) != 35 || len(actual.MigrationChecksums) != 29 ||
 		actual.SchemaSHA256 == facts.SchemaSHA256 || equalJSON(actual.Tables, facts.Tables) {
-		t.Fatal("the migrated target was not independently fingerprinted as schema28")
+		t.Fatal("the migrated target was not independently fingerprinted as schema29")
 	}
 	if len(targetSequences) != len(sequences) {
 		t.Fatal("root binding migration changed the historical sequence inventory")

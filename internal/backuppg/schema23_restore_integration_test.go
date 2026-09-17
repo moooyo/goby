@@ -217,6 +217,9 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 	if err := target.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version=24").Scan(&migrationName); err != nil || migrationName != "0024_user_settings.sql" {
 		t.Fatalf("restored schema 24 migration name = %q: %v", migrationName, err)
 	}
+	if err := target.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version=29").Scan(&migrationName); err != nil || migrationName != "0029_user_deletion_activity.sql" {
+		t.Fatalf("restored schema 29 migration name = %q: %v", migrationName, err)
+	}
 	if err := target.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != len(migrations) {
 		t.Fatalf("restored current migration history count = %d, want %d: %v", count, len(migrations), err)
 	}

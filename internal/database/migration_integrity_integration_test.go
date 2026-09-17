@@ -81,7 +81,7 @@ func TestMigratePublishedPrefixPreservesHistoricalRowsWithoutInventingChecksums(
 		FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'schema_migrations'`).Scan(&columns); err != nil || columns != "version,name,applied_at" {
 		t.Fatalf("published history shape changed or invented execution checksums: columns=%s error=%v", columns, err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 28 {
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
 		t.Fatalf("integrity enforcement must preserve the published schema-28 endpoint: version=%d error=%v", version, err)
 	}
 	completeHistory := migrationHistory(t, ctx, pool)
