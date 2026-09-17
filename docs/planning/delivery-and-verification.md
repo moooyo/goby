@@ -89,13 +89,15 @@ returned once and has independent composite product/closure acceptance, while
 its original caller failure/SSH exit 2 remains unchanged. The accepted main exit
 and resource properties were saved before stopping the owned unit; the caller
 later rejected garbage-collected properties. No loader or captured check was replayed.
-Prepare an isolated transition-admission worktree for entry/recovery execution
-review and concrete admission/client inputs. The artifact and typed episode/
-subtitle framework already exist. `run()` checks fresh before-state before
-stopping A; a capture03 label refresh is unnecessary, and actual recovery input
-requires actual failure. This next preparation is unverified and unexecuted.
-The technical hold remains, with no transition/v4/client acceptance; M5 full
-success is not a prerequisite for the direct Programs A transition.
+The [transition/recovery entry components](../development/programs-transition-admission-verification-20260917.md)
+passed 46 methods once with independent review. Integration at `8477421` removed
+main's three-line unconditional Programs dispatch hold. The earlier published
+operator `9b8d5e8a...` is unchanged; formal revised-CLI publication, actual fresh
+entry/admission and one transition remain pending. The artifact and typed client
+framework are available. Strict fresh-before checks, explicit predecessor
+recovery, helper pins and budgets remain; actual recovery input requires actual
+failure. No transition/v4/client acceptance is established, and M5 full success
+is not a prerequisite for the direct Programs A transition.
 
 The latest fixed M5 media-refresh increment is committed and pushed as
 `5faf854`. Its [final ordinary regression](../development/m5-final-regression-verification.json)
