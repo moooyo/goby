@@ -27,11 +27,19 @@ it neither captured current state nor produced a new epoch.
 | `dispatch-result.json` | 2453 | `7756b47e3f9f9fbea923efbc026097396dd6605d6040248bb05df1f92efb2b57` |
 | `original-ssh-terminal.json` | 593 | `6de2db0264d115869f4375165cfc91c58933ed717f68472476dff10fbce7d010` |
 | `saved-evidence.stdout` | 18032 | `a8d7e9e095dc08a1acd1a49aeca3e60f5007d8d6d8df0653cc22d60e9ad2cd4c` |
+| `independent-review.json` | 42934 | `707c5b926faf68ae4a28fe262b9c051d1e0f490979fa4e18e223f9fb70e3971b` |
+| `independent-review-reader-closure.json` | 1984 | `3ce0c82f0ca4f25d27607b8c89beca10225b2819a0c3e71b4643faeef3335b34` |
 
 The executor reported owned closure and a unit memory peak of 50,692,096 bytes
 under the configured 256 MiB limit, zero swap and 25% CPU quota. Independent
-saved-output and current physical-closure review is in progress. The original
-Windows SSH PID was not recorded; the terminal receipt does not invent it.
+review is complete and accepted exactly 21 component methods, the separate
+saved-evidence check and owned closure, with no issues. It confirmed 20 original
+owned PIDs and both original cgroups absent, matched 36 saved streams, and closed
+all 329 review read descriptors; the independent reader also closed. The review
+(`8156f2`) and reader-closure (`4d0f75`) commands each exited 0. Tests and
+the saved loader were not rerun. This accepts only the component scope, not
+actual finalization or client admission. The original Windows SSH PID was not
+recorded; the terminal receipt does not invent it.
 
 Separately, the finalization source and 2916-byte input were published and read
 back under `/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-finalization-dispatch-20260917-r01`.
@@ -40,6 +48,8 @@ Publication `122cc0` exited 0 without dispatching the finalizer. Its manifest is
 the publication receipt is 6184 bytes /
 `2508564c5e12425c6ae229d650685c5b7a1bf2d6d75bc304b4fa8173e1fbe9a5`.
 
-Actual finalization and live client admission remain pending. A stays on the
-already running Programs successor; the original failed transition and its
-nonzero exits remain unchanged. Complete M5 full/build and M2-M6 delivery are open.
+At this component checkpoint, actual finalization and live client admission
+were pending; subsequent execution and its independent review are recorded
+separately in the [finalization result](programs-finalization-result-20260917.md).
+The original failed transition and its nonzero exits remain unchanged. Complete
+M5 full/build and M2-M6 delivery are open.

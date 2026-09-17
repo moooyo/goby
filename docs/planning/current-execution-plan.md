@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **preserve the running Programs successor, prepare strict finalization, and complete the remaining M5 full/build requirements**.
+Current priority: **prepare Programs affected live admission and the M5 full-run guard from the independently reviewed V4 finalization**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the earlier expanded root disk was already in use. The user's
@@ -156,10 +156,14 @@ further stop/replace/start. Old A/runtime/guard are historical authority only.
 The original closer remains resources true/evidence false; current metadata
 matches new A and protection but does not re-establish a SQL lease grant.
 Independent failure/closure supplementation is complete and retains the original
-failed CLI/caller/SSH and closer results. Prepare strict UTC log
-authorization, an optional V4 finalization descriptor and a continuation/publication
-program in the isolated worktree; actual finalizer calls are zero. No V4/client
-admission exists. For the earlier two-query observer, query
+failed CLI/caller/SSH and closer results. Strict UTC log authorization and the
+finalization descriptor were consumed by the completed
+[actual finalization](../development/programs-finalization-result-20260917.md).
+It ran once with zero stop/replace/start/HTTP and generated V4 epoch `ae728a2a...`
+and binding `5d687e18...`; PowerShell/SSH/caller/CLI and original closer exited 0.
+The closer accepted evidence/resources; independent actual review, reader closure
+and the admission-facing closeout are complete. Prepare Programs affected live admission and the M5 full-run guard for
+the retained A; no client admission/acceptance exists. For the earlier two-query observer, query
 backend disappearance, observer/outer numeric PGIDs and post-close lock-inode
 identity were not additionally measured; the application lease backend is expected to persist.
 
@@ -671,7 +675,8 @@ passed and was integrated at `8477421`, removing main's unconditional dispatch
 hold. The later S2 publication and actual stop/replace/start are complete, but
 transition acceptance failed on the two added diagnostic logs. Preserve the new
 running A, original operator, D000 and before/after/failure records. Prepare
-strict finalization using the completed independent supplement; do not dispatch again. M5 success
+admission using the generated finalization/V4 and completed independent review/closeout;
+do not dispatch the transition again. M5 success
 is not a prerequisite for this work.
 The [complete M5 catalog source](../development/m5-user-deletion-catalog-source-preparation-20260916.json)
 has now produced the [real schema-29 catalog](../development/m5-user-deletion-catalog-generation-20260916.json)
@@ -734,13 +739,15 @@ memory availability. The [fresh retry](../development/programs-complete-source-r
 has completed all 25 packages, both builds and closure with independent review.
 Its [actual artifacts](../development/programs-complete-source-full-result-20260916.json)
 are retained and the actual saved product gate is accepted. S2 executed and
-failed preservation acceptance; strict finalization/V4 remains required. The separate 142/151/152 components retain
+failed preservation acceptance; the later finalizer generated V4 and its original
+closer accepted evidence/resources. Independent actual review is complete and
+affected live admission remains pending. The separate 142/151/152 components retain
 their own scopes. The catalog
 job is already closed. Preserve all consumed scopes and their original outcomes.
 The [client components](../development/programs-client-component-verification.json)
 passed within their frozen scopes, including typed episode/subtitle contracts.
 Concrete admitted inputs remain pending, and no new live journey has run.
-Preserve the new A while preparing finalization and client admission; do not change it again. Heavy work
+Preserve the new A while preparing client admission and the M5 full-run guard; do not change it again. Heavy work
 remains serialized on the available test environment.
 
 The [retained Library timeline](../development/library-theme-retained-timeline.md)
@@ -759,16 +766,16 @@ represents the second recovery through `previousCurrentRuntime`, preserving v1
 semantics and historical `38b906...`. Reuse its verified four-file scope. The
 later runtime envelope and saved product gate retain their accepted historical
 bindings. S2 changed A, so old runtime/guard pins no longer authorize live work.
-The new isolated finalization contract must bind the original operation and
-failure to the retained successor without another transition.
+The finalization descriptor now binds the original operation and failure to the
+retained successor without another transition; its independent actual review and closeout are complete.
 
 After incident recovery and resource coordination, the successor's complete-source
 verification/build and saved product gate are retained. The 46-method entry scope,
 three-method hosting correction and actual S2 operation retain distinct results.
-S2's new A remains running after failed preservation acceptance. Prepare and
-verify strict UTC log authorization and optional V4 finalization, preserving all
-original records. The finalizer has not run and must not repeat stop/replace/start. After validated
-V4/client admission, complete three client journeys, the audio
+S2's new A remains running after the original failed preservation acceptance.
+The actual finalizer generated V4 with zero stop/replace/start/HTTP and original
+closer acceptance; independent actual review/reader closure and the admission-facing
+closeout are complete. Prepare affected live admission and the M5 full-run guard, then complete three client journeys, the audio
 reuse bridge and G3. Follow the
 [core acceptance resolution](../development/core-client-acceptance-resolution.md)
 and [selected A transition](../development/e11-candidate-transition-decision.md).
@@ -805,7 +812,7 @@ maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| Programs finalization worktree, based on `f1a53e2` | [S2](../development/programs-transition-first-execution-failure-20260917.md) executed stop/replace/start once and three GETs, then failed diagnostic-file membership. New A `1907978`/`ead67c8f...` remains active. Independent failure/closure review is complete; original caller/CLI/SSH failures and closer evidence false remain | Implement strict UTC log authorization, optional V4 finalization descriptor and continuation/publication with actual finalizer calls still zero. Preserve new A and all original records; no D000 replay, further stop/replace/start or handwritten V4. No V4/client admission exists |
+| Programs finalization, merged as `3f609b6` | [Actual finalization](../development/programs-finalization-result-20260917.md), original closer, independent review/reader closure and admission-facing closeout are complete. V4 epoch/binding exist; A/backend remain `1907978`/`1907986` and original S2 failures are unchanged | Prepare affected live admission and the M5 full-run guard from reviewed V4/closeout. Candidate admission/client acceptance remain false; preserve new A and original records with no transition replay |
 | `codex/m5-auxiliary-jit-fix`, `9e70e4b`; header fix `137b41b` / source publication `33f9f1cf1deb` | The original full remains failed and independently closed. The [header targeted scope](../development/m5-http-header-targeted-result-20260917.md) passed two top-level tests once, no children, with independent closure; its fake executor owner is explicit | Complete full/build requirements and retain `--frontend-contributions`, 59-asset equality and browser obligations. Targeted HTTP coverage does not prove real FFmpeg or clear the original full failure; complete M5/M2-M6 acceptance remains open |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md) connects the fixed media stages to native APIs, run ownership, conversion capacity and a Settings panel. The combined frontend and six diagnostic-configuration top-level tests passed in their recorded scopes. The failed full never reached media/server/transcode packages | Prepared Linux media, server-runtime, conversion-reservation, HTTP/real-FFmpeg and browser behavior remain unexecuted. Establish codec/content and available-hardware evidence under their own prerequisites. Defaults remain disabled; no runtime or M5 acceptance is claimed |
@@ -834,12 +841,12 @@ and actual execution results distinct.
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
 | 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
-| 1. S2 executed; strict finalization pending | Preserve running A `1907978`/`ead67c8f...`, the original stop/replace/start evidence, consumed D000 and before/after/failure records. S1 zero-launch preflight remains historical; independent failure/closure supplementation is complete | Prepare validated UTC log authorization plus optional V4 finalization. Actual finalizer calls are zero; do not use old runtime/guard as current authority or replay the transition |
+| 1. Finalization/V4 independently reviewed; affected live admission pending | Preserve running A `1907978`/`ead67c8f...`, generated epoch `ae728a2a...`/binding `5d687e18...`, successful finalizer/closer and separate admission-facing closeout, with original S2 failures unchanged | Prepare affected live admission and the M5 full-run guard. No stop/replace/start/HTTP was added by finalization; do not use old runtime/guard as current authority or replay D000 |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
 | 2. Frozen-source verification/build — complete with the declared profile gap | The [full result](../development/programs-complete-source-full-result-20260916.md) covers 25 packages, 2309 top-level passes, zero failures, one declared skip and both builds. Independent source/result/artifact/closure review passed | Reuse the actual materialized successor after candidate recovery and current runtime binding. Preserve the missing-fixture failure, zero-worker rejection and mount-profile gap; do not replay consumed inputs or combine partial scores |
 | 2a. Actual saved product gate — accepted | The [second actual readback](../development/programs-saved-product-second-attempt-20260917.md) returned once with real byte reads; composite review accepts the product result and owned closure | Preserve both original caller failures. Acceptance does not establish startup, transition, v4 or client execution; do not replay the loader or the retained captured-state check merely for review |
-| 3. One direct A transition — executed; acceptance failed | The original operation performed one stop/replace/start and left the Programs successor running. Continue only through the separate strict finalization/publication plan | Original failures remain failed. Preserve B, new A and historical evidence; no additional stop/replace/start, D000 replay or handwritten V4 |
+| 3. One direct A transition — executed; separate finalization/V4 reviewed | The original operation remains failed. Later read-only finalization generated V4 and has original closer plus independent review/closeout support | Preserve B, new A, generated records and original failures. No additional stop/replace/start, D000 replay or handwritten V4; affected live admission remains pending |
 | 4. Final core client acceptance — held | After validated finalization/V4 and client admission, run the declared movie, episode and SRT/VTT journeys and close the audio reuse bridge | Bind each journey to the retained successor and preceding closeout. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
 | Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [original source checkpoint](../development/session-handoff-20260915-native-capacity.md), earlier operator/source-bridge results, and the [verified Running-job collection](../development/native-capacity-running-observation-verification-20260916.md) | No native fixture/input exists. Bind the selected verified artifact and current runtime before native admission. Reuse completed component groups; actual overlap and capacity still require native workload evidence |
@@ -1060,9 +1067,11 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    operator's bytes are preserved. S1's zero-launch failure is historical. The
    hosting correction passed three mocked methods, and S2 executed stop/replace/
    start once plus three GETs before failing diagnostic-file preservation.
-   Preserve the running new A and all original records while preparing strict UTC
-   log authorization, optional V4 finalization and a continuation/publication
-   program in the isolated worktree. Actual finalizer calls are zero. No repeat
+   The separate finalizer has now generated V4 after 16 read-only SQL and 32
+   metadata commands, with zero additional service changes/HTTP and original
+   closer acceptance. Independent actual review/reader closure and the admission-facing
+   closeout are complete; prepare affected live admission and the M5 full-run guard.
+   Preserve new A and all original records. No repeat
    transition, D000 replay or handwritten V4 is permitted. Preserve original caller failures,
    consumed capture01 and separate component scopes; M5 full passing is not a
    prerequisite for this Programs work. The separate schema-29 catalog job has already closed; its real

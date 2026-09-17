@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-17: **preserve the running Programs successor, prepare strict finalization, and complete the remaining M5 full/build requirements**.
+Current priority on 2026-09-17: **prepare Programs affected live admission and the M5 full-run guard from the independently reviewed V4 finalization**.
 [S2 actually stopped, replaced and started A once](programs-transition-first-execution-failure-20260917.md),
 with three successful GETs, then failed at `after_preservation` with
 `diagnostic_file_membership_changed`. A is now PID `1907978`, start `34901535`,
@@ -14,9 +14,14 @@ are now complete; writer-PID attribution remains a source/time/order inference,
 without a captured write syscall. The finalization changes from
 `24ad7c1dfd49455f2dd723fca4c9940edca78121` now passed
 [21 component methods and one separate saved-only check](programs-finalization-component-result-20260917.md).
-The executor reported closure; independent physical-closure review is in progress.
-The exact finalizer source and input are published in a new scope.
-Actual finalization calls remain zero and no V4 or client admission exists.
+Independent component/reader closure review is complete, and the source changes
+are merged at `3f609b6`. The [actual finalizer](programs-finalization-result-20260917.md)
+then completed once with PowerShell/SSH/caller/CLI exit 0 and an accepting original
+closer. It generated V4 epoch `ae728a2a...` and binding `5d687e18...`, using 16
+read-only SQL/32 metadata commands with zero stop/replace/start/HTTP. A/backend
+remain `1907978`/`1907986`. Independent actual-finalization/reader-closure review
+and the admission-facing closeout are complete; affected live admission and
+client acceptance remain false. Preserve all original S2 failures.
 The [M5 header correction](m5-http-header-targeted-result-20260917.md)
 has separately passed two targeted tests and independent closure; complete M5
 full/build and overall M2-M6 delivery remain unfinished.
@@ -541,7 +546,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | [S2](programs-transition-first-execution-failure-20260917.md) executed stop/replace/start once and three GETs, then failed `after_preservation` on two added diagnostic logs. New A remains active; S1's zero-launch failure is historical. Independent failure/closure review is complete; original CLI/caller/SSH 2, PowerShell 1 and closer evidence false remain | Prepare strict UTC log authorization, optional V4 finalization descriptor and continuation/publication in the isolated worktree. Finalizer calls are zero. No D000 replay, further stop/replace/start or handwritten V4; no V4/client admission or complete M2-M6 acceptance |
+| Programs successor | [Actual finalization](programs-finalization-result-20260917.md), its original closer, independent review/reader closure and admission-facing closeout are complete. V4 epoch/binding exist; A/backend remain `1907978`/`1907986`. Original S2 failures stay unchanged | Prepare affected live admission and the M5 full-run guard using the reviewed V4/closeout. Candidate admission/client acceptance remain false. No D000 replay or further transition; complete M5/M2-M6 delivery remains open |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B recovered once with its existing binary/configuration. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor, admission05 and September 16 recovery retain their original accepted scopes | S2 has replaced A with the Programs binary. Earlier process/runtime/guard bindings are historical; finalization and client admission must bind the retained new A |

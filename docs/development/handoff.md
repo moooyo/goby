@@ -1,7 +1,7 @@
 # Development handoff
 
-Current checkpoint: **2026-09-17, preserve the running Programs successor and
-prepare verification of the frozen finalization sources**. S2 stopped, replaced
+Current checkpoint: **2026-09-17, prepare Programs affected live admission and
+the M5 full-run guard from independently reviewed V4 finalization**. S2 stopped, replaced
 and started A once, then failed preservation acceptance. A remains PID `1907978`
 on `ead67c8f...`; do not replay D000 or repeat stop/replace/start.
 
@@ -9,12 +9,19 @@ The [UTC rollover evidence review](programs-transition-utc-rollover-review-20260
 and reader closure are complete. The nine old logs and exact 143 + 1101 = 1244
 byte correspondence are retained; writer attribution is inferred from pinned
 source, timing and action order, without write-syscall proof. Original CLI/
-caller/SSH exit 2 and closer evidence false remain; no V4 or client admission exists.
+caller/SSH exit 2 and closer evidence false remain unchanged.
 
 The finalization changes from `24ad7c1dfd49455f2dd723fca4c9940edca78121` now
 [passed 21 component methods and one separate saved-only check](programs-finalization-component-result-20260917.md).
-Independent physical-closure review is in progress; actual finalization has not
-run. Its exact source and input are published in a new scope. Follow
+Independent component/reader closure review is complete and the changes are
+merged into main at `3f609b6`. The [actual finalization](programs-finalization-result-20260917.md)
+completed once, with PowerShell/SSH/caller/CLI exit 0 and original closer evidence/
+resources accepted. V4 epoch `ae728a2a...` and binding `5d687e18...` are generated;
+client admission and acceptance remain false. It used 16 read-only SQL and 32
+metadata commands with no stop/replace/start/HTTP, retaining A/backend
+`1907978`/`1907986`. Independent actual review, reader closure and the separate
+admission-facing closeout are complete; affected live admission has not run.
+Next are admission and M5 guard preparation. Follow
 [current status](current-status.md) and the
 [current execution plan](../planning/current-execution-plan.md) for current work;
 complete M5 full/build and M2-M6 delivery remain unfinished.
