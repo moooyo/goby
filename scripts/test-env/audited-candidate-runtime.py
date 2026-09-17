@@ -140,6 +140,48 @@ PROGRAMS_RETENTION_MEMBERS = {
     "internal/server/activity_retention.go": "88a2831005a3013fc4d88162a7e75606d3f6a87ee70d93b5b862c012fbe32180",
     "internal/activity/store.go": "4bbe56850faf3d60d61039a84582004c18a113c09f91b75484afc3de8fc16728"}
 
+# This authority covers one retained failed transition, never arbitrary extra logs.
+PROGRAMS_FINALIZATION_ROOT = R / "candidate-programs-finalization-01"
+PROGRAMS_FINALIZATION_ORIGINAL = R / "candidate-programs-transition-01"
+PROGRAMS_FINALIZATION_CALLER = R / "programs-transition-dispatch-20260917-hosting-namespace-r02"
+PROGRAMS_FINALIZATION_LIMITS = {"maximumSeconds": 300, "maximumSqlCommands": 16,
+    "maximumPublicRequests": 0, "stopCalls": 0, "replaceCalls": 0, "startCalls": 0}
+PROGRAMS_FINALIZATION_PINS = {
+    "transitionInput": {"path": str(R / "programs-stat-only-consumer-20260916-ebf5c219b928/private/transition-input.json"), "sha256": "d000614532a0647c7c0f1c3df4bd4a81de76eb637acd6546c66c3f664d690168"},
+    "transitionHelper": {"path": str(R / "programs-transition-dispatch-20260917-72c177d47421/code/transition-audited-candidate.py"), "sha256": "72c177d474214871c1403b0227b47cb343507f530e5ac68783949514744ed0d7"},
+    "transitionRuntime": {"path": str(R / "programs-stat-only-consumer-20260916-ebf5c219b928/code/audited-candidate-runtime-review-status.py"), "sha256": "2bbf5e4c9364fcc67b4261b9dceb145d2cf3f66fad86d6baadc2ee16a62893c3"},
+    "failure": {"path": str(PROGRAMS_FINALIZATION_ORIGINAL / "private/failure.json"), "sha256": "096ff73e322baffd016baa74eafe292981d6239f88f721a79a435a691b2a869a"},
+    "before": {"path": str(PROGRAMS_FINALIZATION_ORIGINAL / "private/before.json"), "sha256": "beefe4737b681a65f969cc0a97903795fb8e700bbb7a7e094f1fee7aab1a78ed"},
+    "after": {"path": str(PROGRAMS_FINALIZATION_ORIGINAL / "private/after.json"), "sha256": "a3e1b3e88920a85efcbf6e843e7aa892f1f07999c8e3a591222faabfeab5f913"},
+    "callerResult": {"path": str(PROGRAMS_FINALIZATION_CALLER / "private/dispatch-result.json"), "sha256": "6c001b6a31ae7bff165b7e07424dadd589658287fdc65f5dcb19a91710f74f35"},
+    "closureReview": {"path": str(PROGRAMS_FINALIZATION_CALLER / "private/independent-transition-failure-review-r02.json"), "sha256": "84ed56b8fdaa4531a81fd1d7b1fe548c066a46dfb51a35fa558ef83198f46e85"},
+    "currentMetadata": {"path": str(PROGRAMS_FINALIZATION_CALLER / "private/independent-transition-current-metadata.json"), "sha256": "f8a2f932a4a1232fd33242bf48ebde1fecb1b992c3b66de1440f8c2ed5d4313f"},
+    "readerClosure": {"path": str(PROGRAMS_FINALIZATION_CALLER / "private/independent-transition-reader-closure.json"), "sha256": "fdb3be31bdccc89185b78d1b28f73cb5527e9b8aa911ac33afd5b8ddd28e4f01"},
+    "rolloverReview": {"path": str(PROGRAMS_FINALIZATION_CALLER / "private/diagnostic-utc-rollover-review.json"), "sha256": "67057f9bb30bf15185bf21bf8c0222eeec186d158be518ce32d1a6821fc82f42"},
+    "oldSourceManifest": {"path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json", "sha256": "bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff"},
+    "oldMainSource": {"path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source/cmd/goby/main.go", "sha256": "9ee34659b6b8db2be1c9964e3313e5f9062c8c81f96459d784544eeaa9ce8bf6"},
+    "oldStoreSource": {"path": "/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source/internal/diagnostics/store_linux.go", "sha256": "b3556c3af648faf67324401fc3f4667b7f43d5acd75828e595259144d8a2bcfa"},
+}
+PROGRAMS_FINALIZATION_INPUT_KEYS = {"kind", "version", "output", "transitionInput", "transitionHelper", "transitionRuntime",
+    "failure", "before", "after", "sourceBefore", "sourceAfter", "rolloverReview", "closureReview", "budgets"}
+PROGRAMS_FINALIZATION_KEYS = {"kind", "version", "status", "publicationRoot", "input", "producer", "validator",
+    "transitionInput", "transitionHelper", "transitionRuntime", "failure", "before", "after", "sourceBefore", "sourceAfter",
+    "rolloverReview", "closureReview", "publicEvidence", "freshState", "freshSource", "calls", "originalCalls",
+    "publicRequests", "originalPublicRequests", "commandResponsibilities"}
+PROGRAMS_ROLLOVER_REVIEW_KEYS = {"kind", "version", "status", "transitionInput", "failure", "before", "after",
+    "shutdownLog", "startupLog", "oldSourceManifest", "oldMainSource", "oldStoreSource"}
+PROGRAMS_FINALIZATION_CLOSURE_KEYS = {"acceptanceBoundary", "actionsByThisReview", "actualCompletedActions",
+    "admissionArtifactsAbsentAtReadback", "criticalPins", "currentMetadata", "currentMetadataConclusion", "independentReaderClosure",
+    "issues", "kind", "observedAt", "originalFailureRetained", "originalOutputReadbackSummary", "originalStreamReadbackSummary",
+    "ownedClosure", "preservation", "priorIndependentReviewPreserved", "savedOnlyCorrection", "scope", "sourceInputReadbackSummary",
+    "status", "version"}
+PROGRAMS_ROLLOVER_LOGS = {
+    "shutdownLog": {"name": "goby-3618ed602bb9a56c12a2c7b0c34cc443-71ed4314955d8b34929d19168c6c1bd1.jsonl",
+        "bytes": 143, "sha256": "bc8aa29ea232e564eb19bd26ec0ee4dfc586aa2a73c28140e9cda7556e1ffc16", "ino": 1580900},
+    "startupLog": {"name": "goby-3618ed602bb9a56c12a2c7b0c34cc443-5743c1febc8732ea439b8c72ed04d115.jsonl",
+        "bytes": 1101, "sha256": "b3fd233785847fcc3c116c48e8bc602038137454ca1bf84eabc98dd0967cc45d", "ino": 1580901},
+}
+
 
 class ContractError(ValueError):
     def __init__(self, code):
@@ -522,7 +564,9 @@ def validate_programs_state(state):
             "userDataRows": len(tables["user_item_data"]), "retainedReferences": len(tables["client_playback_references"])}
 
 
-def compare_programs_preservation(before, after, *, installed_binary=None, recovery=False, added_definition=None, entry_source=None):
+def compare_programs_preservation(before, after, *, installed_binary=None, recovery=False, added_definition=None, entry_source=None,
+                                  diagnostic_authority=None):
+    need(diagnostic_authority is None or installed_binary is not None, "programs_rollover_requires_transition_comparison")
     validate_programs_state(before)
     validate_programs_state(after)
     phase = "recovery" if recovery else "startup" if installed_binary is not None else "unchanged"
@@ -560,13 +604,15 @@ def compare_programs_preservation(before, after, *, installed_binary=None, recov
         for key in ("candidateBefore", "candidateAfter", "leaseBefore", "leaseAfter"):
             need(canonical(before[key]) == canonical(after[key]), "programs_before_identity_changed")
     else:
-        compare_diagnostics(before["diagnostics"], after["diagnostics"])
+        compare_diagnostics(before["diagnostics"], after["diagnostics"], diagnostic_authority=diagnostic_authority)
     return {"existingSourceRowsExact": 35, "sequencesExact": 5, "inactiveStageExact": True, "allPriorPlayAndUserDataExact": True,
             "foreignReferencesExact": True, "configurationExact": True, "postgresContinuous": True, "hostingContinuous": True,
             "refreshDefinition": definition}
 
 
-def compare_programs_failed_diagnostics(before, after):
+def compare_programs_failed_diagnostics(before, after, *, diagnostic_authority=None):
+    if diagnostic_authority is not None:
+        return compare_diagnostics(before, after, diagnostic_authority=diagnostic_authority)
     old, new = before["registry"], after["registry"]
     need(type(old["version"]) is int and old["version"] == 1 and canonical({key: old[key] for key in old if key != "files"}) ==
          canonical({key: new[key] for key in new if key != "files"}) and before["lock"] == after["lock"] and before["directory"] == after["directory"],
@@ -597,7 +643,7 @@ def compare_programs_failed_diagnostics(before, after):
     need(sum(row["closed"] is False for row in current.values()) <= 1, "programs_failed_diagnostic_writers")
 
 
-def compare_programs_failed_state(before, failed, transition, *, allow_startup=True):
+def compare_programs_failed_state(before, failed, transition, *, allow_startup=True, diagnostic_authority=None):
     validate_programs_state(before)
     validate_programs_state(failed)
     definition = compare_programs_logical(before["source"], failed["source"], phase="failed_startup" if allow_startup else "unchanged",
@@ -619,8 +665,359 @@ def compare_programs_failed_state(before, failed, transition, *, allow_startup=T
              0 <= current["bytes"] - old["bytes"] <= 1 << 20 and
              (current.get("prefixSha256") == old["sha256"] or current["bytes"] == old["bytes"] and current["sha256"] == old["sha256"]),
              "programs_failed_unit_log_changed")
-    compare_programs_failed_diagnostics(before["diagnostics"], failed["diagnostics"])
+    compare_programs_failed_diagnostics(before["diagnostics"], failed["diagnostics"], diagnostic_authority=diagnostic_authority)
     return definition
+
+
+
+class _ProgramsRolloverAuthorization:
+    __slots__ = ("before", "after")
+
+    def __init__(self, before, after, seal):
+        need(seal is _PROGRAMS_ROLLOVER_SEAL, "programs_rollover_authority_constructor")
+        self.before, self.after = canonical(before), canonical(after)
+
+
+_PROGRAMS_ROLLOVER_SEAL = object()
+
+
+def _finalization_pin3(value):
+    need(isinstance(value, dict) and set(value) == {"path", "bytes", "sha256"} and
+         type(value["bytes"]) is int and 0 <= value["bytes"] <= 256 << 20, "programs_finalization_pin3")
+    return descriptor({key: value[key] for key in ("path", "sha256")})
+
+
+def _finalization_record(pin, read_descriptor, read_bytes):
+    descriptor(pin)
+    raw = read_bytes(pin)
+    need(isinstance(raw, bytes) and 0 < len(raw) <= 4 << 20 and digest(raw) == pin["sha256"],
+         "programs_finalization_record_digest")
+    value = programs_json(raw)
+    need(canonical(value) == canonical(read_descriptor(pin)), "programs_finalization_record_readback")
+    return value
+
+
+def _finalization_index(rows):
+    need(isinstance(rows, list) and 0 < len(rows) <= 2048, "programs_finalization_pin_index")
+    result = {}
+    for row in rows:
+        selected = _finalization_pin3(row)
+        need(selected["path"] not in result, "programs_finalization_duplicate_pin")
+        result[selected["path"]] = selected
+    return result
+
+
+def validate_programs_finalization_input(value):
+    need(isinstance(value, dict) and set(value) == PROGRAMS_FINALIZATION_INPUT_KEYS and
+         value["kind"] == "audited-programs-transition-finalization-input" and type(value["version"]) is int and
+         value["version"] == 1 and value["output"] == str(PROGRAMS_FINALIZATION_ROOT) and
+         canonical(value["budgets"]) == canonical(PROGRAMS_FINALIZATION_LIMITS), "programs_finalization_input")
+    for key in PROGRAMS_FINALIZATION_INPUT_KEYS - {"kind", "version", "output", "budgets"}:
+        descriptor(value[key])
+    for key in ("transitionInput", "transitionHelper", "transitionRuntime", "failure", "before", "after", "closureReview", "rolloverReview"):
+        need(value[key] == PROGRAMS_FINALIZATION_PINS[key], "programs_finalization_original_authority")
+    for key, filename in (("sourceBefore", "source-before.json"), ("sourceAfter", "source-after.json")):
+        need(value[key]["path"] == str(PROGRAMS_FINALIZATION_ORIGINAL / "private" / filename),
+             "programs_finalization_original_snapshot_scope")
+    selected = Path(value["rolloverReview"]["path"])
+    need(selected.is_relative_to(R) and not selected.is_relative_to(PROGRAMS_FINALIZATION_ROOT) and
+         selected.suffix == ".json", "programs_finalization_review_scope")
+    return value
+
+
+def validate_programs_rollover_review(pin, review, before, after, read_descriptor, read_bytes):
+    descriptor(pin)
+    need(isinstance(review, dict) and set(review) == PROGRAMS_ROLLOVER_REVIEW_KEYS and
+         review["kind"] == "audited-programs-shutdown-rollover-review" and type(review["version"]) is int and
+         review["version"] == 1 and review["status"] == "exact_saved_rollover_reviewed",
+         "programs_rollover_review_schema")
+    for key in ("transitionInput", "failure", "before", "after", "oldSourceManifest", "oldMainSource", "oldStoreSource"):
+        need(review[key] == PROGRAMS_FINALIZATION_PINS[key], "programs_rollover_review_binding")
+    old_source = _finalization_record(review["oldSourceManifest"], read_descriptor, read_bytes)
+    for key, member in (("oldMainSource", "cmd/goby/main.go"), ("oldStoreSource", "internal/diagnostics/store_linux.go")):
+        raw = read_bytes(review[key])
+        need(isinstance(raw, bytes) and digest(raw) == review[key]["sha256"] and
+             old_source[member]["sha256"] == review[key]["sha256"] and old_source[member]["bytes"] == len(raw),
+             "programs_rollover_old_source_binding")
+    documents = {}
+    for key, expected in PROGRAMS_ROLLOVER_LOGS.items():
+        content_pin = _finalization_pin3(review[key])
+        path = Path(content_pin["path"])
+        need(path.is_relative_to(R) and not path.is_relative_to(PROGRAMS_FINALIZATION_ROOT) and path.suffix == ".jsonl" and
+             review[key]["bytes"] == expected["bytes"] and content_pin["sha256"] == expected["sha256"],
+             "programs_rollover_log_content_pin")
+        raw = read_bytes(content_pin)
+        need(isinstance(raw, bytes) and len(raw) == expected["bytes"] and digest(raw) == expected["sha256"] and
+             raw.endswith(b"\n"), "programs_rollover_log_content")
+        documents[key] = [programs_json(row) for row in raw.splitlines()]
+    shutdown = documents["shutdownLog"]
+    need(len(shutdown) == 1 and set(shutdown[0]) == {"time", "level", "msg", "event", "duration_ms"} and
+         shutdown[0]["time"] == "2026-09-17T07:15:40.810585954Z" and shutdown[0]["level"] == "INFO" and
+         shutdown[0]["msg"] == "server shutdown completed" and shutdown[0]["event"] == "server.shutdown.completed" and
+         type(shutdown[0]["duration_ms"]) is int and shutdown[0]["duration_ms"] == 2, "programs_rollover_shutdown_event")
+    startup = documents["startupLog"]
+    need(len(startup) == 5 and [row.get("event") for row in startup] ==
+         ["server.starting", "server.listening", "request.completed", "request.completed", "request.completed"] and
+         [row.get("route") for row in startup[2:]] == ["GET /readyz", "GET /healthz", "GET /emby/System/Info/Public"] and
+         all(row.get("level") == "INFO" for row in startup) and
+         all(row.get("method") == "GET" and type(row.get("status")) is int and row["status"] == 200 for row in startup[2:]),
+         "programs_rollover_startup_events")
+    begin, end = programs_instant(before["databaseNow"]), programs_instant(after["databaseNow"])
+    times = [programs_instant(row["time"]) for row in shutdown + startup]
+    need(times == sorted(times) and begin <= times[0] < times[1] <= times[-1] <= end, "programs_rollover_event_window")
+    old_active = [row for row in before["diagnostics"]["registry"]["files"] if row["closed"] is False]
+    need(len(old_active) == 1 and old_active[0]["name"] ==
+         "goby-3618ed602bb9a56c12a2c7b0c34cc443-b25e8ca719092ba041930eb7cfa5004a.jsonl" and
+         programs_instant(old_active[0]["created"]).date().isoformat() == "2026-09-16" and
+         times[0].date().isoformat() == "2026-09-17", "programs_rollover_utc_boundary")
+    authority = _ProgramsRolloverAuthorization(before["diagnostics"], after["diagnostics"], _PROGRAMS_ROLLOVER_SEAL)
+    _compare_programs_rollover_diagnostics(before["diagnostics"], after["diagnostics"], authority)
+    return authority
+
+
+def _compare_programs_rollover_diagnostics(before, after, authority):
+    need(isinstance(authority, _ProgramsRolloverAuthorization) and authority.before == canonical(before) and
+         authority.after == canonical(after), "programs_rollover_authority_required")
+    old, new = before["registry"], after["registry"]
+    need(type(old["version"]) is int and old["version"] == new["version"] == 1 and
+         old["token"] == new["token"] == "3618ed602bb9a56c12a2c7b0c34cc443" and
+         canonical({key: item for key, item in old.items() if key != "files"}) == canonical({key: item for key, item in new.items() if key != "files"}) and
+         before["lock"] == after["lock"] and before["directory"] == after["directory"] and
+         all(before["registryFile"][key] == after["registryFile"][key] for key in ("dev", "uid", "gid", "mode")),
+         "programs_rollover_registry_authority")
+    previous, current = ({row["name"]: row for row in record["files"]} for record in (old, new))
+    additions = {row["name"] for row in PROGRAMS_ROLLOVER_LOGS.values()}
+    need(len(previous) == len(old["files"]) == 9 and len(current) == len(new["files"]) == 11 and
+         set(current) - set(previous) == additions and set(previous) <= set(current) and
+         set(before["files"]) == set(previous) and set(after["files"]) == set(current),
+         "programs_rollover_exact_inventory")
+    for name, entry in previous.items():
+        observed = current[name]
+        need(not entry.get("deleting") and not observed.get("deleting") and observed["closed"] is True and
+             canonical({key: val for key, val in entry.items() if key not in ("closed", "size")}) ==
+             canonical({key: val for key, val in observed.items() if key not in ("closed", "size")}) and
+             canonical(before["files"][name]) == canonical(after["files"][name]) and
+             observed["size"] == after["files"][name]["bytes"], "programs_rollover_old_log_changed")
+    for key, expected in PROGRAMS_ROLLOVER_LOGS.items():
+        row, facts = current[expected["name"]], after["files"][expected["name"]]
+        closed = key == "shutdownLog"
+        need(row["closed"] is closed and not row.get("deleting") and row["size"] == (expected["bytes"] if closed else 0) and
+             row["identity"] == {"device": 2049, "inode": expected["ino"]} and
+             all(facts[field] == expected[field] for field in ("bytes", "sha256", "ino")) and
+             (facts["dev"], facts["uid"], facts["gid"], facts["mode"]) == (2049, 995, 986, 0o600),
+             "programs_rollover_exact_new_log")
+    need(programs_instant(current[PROGRAMS_ROLLOVER_LOGS["shutdownLog"]["name"]]["created"]) <
+         programs_instant(current[PROGRAMS_ROLLOVER_LOGS["startupLog"]["name"]]["created"]),
+         "programs_rollover_creation_order")
+    return {"oldLogPrefixesPreserved": 9, "newActiveLogs": 1, "shutdownRolloverLogs": 1, "prunedLogs": 0}
+
+
+def compare_programs_finalization_fresh(after, fresh):
+    result = compare_programs_preservation(after, fresh)
+    need(programs_instant(fresh["databaseNow"]) >= programs_instant(after["databaseNow"]) and
+         fresh["candidateAfter"]["pid"] == 1907978 and fresh["candidateAfter"]["startTicks"] == "34901535" and
+         fresh["candidateAfter"]["exeInode"] == 1580898 and fresh["leaseAfter"] == after["leaseAfter"],
+         "programs_finalization_fresh_identity")
+    for entry in after["diagnostics"]["registry"]["files"]:
+        if entry["closed"]:
+            name = entry["name"]
+            need(canonical({key: item for key, item in after["diagnostics"]["files"][name].items() if key != "prefixSha256"}) ==
+                 canonical({key: item for key, item in fresh["diagnostics"]["files"][name].items() if key != "prefixSha256"}),
+                 "programs_finalization_closed_log_changed")
+    return result
+
+
+def _programs_finalization_commands(rows, expected, *, fresh=False):
+    need(isinstance(rows, list) and len(rows) == expected and all(isinstance(row, dict) and
+         row.get("processGroupClosed") is True and row.get("outcome") == "acknowledged" and
+         row.get("timedOut") is False and row.get("descendantsRemained") is False and
+         type(row.get("exitCode")) is int and row["exitCode"] == 0 and
+         row.get("sqlOutcome") in (None, "acknowledged") for row in rows),
+         "programs_finalization_command_outcome")
+    if fresh:
+        labels = ["cluster-identity", "epoch-read-only", "cluster-identity", "transition-read-only", "cluster-identity", "transition-read-only",
+                  "cluster-identity", "database-identity-goby_candidate_ef77f9ffcf0b", "cluster-identity", "database-objects-goby_candidate_ef77f9ffcf0b",
+                  "cluster-identity", "database-identity-goby_recovery_ef77f9ffcf0b", "cluster-identity", "database-objects-goby_recovery_ef77f9ffcf0b",
+                  "cluster-identity", "epoch-read-only"]
+        need([row.get("label") for row in rows] == labels and all(row.get("sqlOutcome") == "acknowledged" and
+             row.get("stdinComplete") is True and row.get("outputLimitExceeded") is False for row in rows), "programs_finalization_readonly_commands")
+
+
+def _load_programs_finalization_closure(value, failure, before, after, read_descriptor, read_bytes):
+    review = _finalization_record(value["closureReview"], read_descriptor, read_bytes)
+    need(isinstance(review, dict) and set(review) == PROGRAMS_FINALIZATION_CLOSURE_KEYS and
+         review["kind"] == "programs-transition-independent-failure-review" and type(review["version"]) is int and
+         review["version"] == 2 and review["status"] == "failed_transition_reviewed_owned_closed_current_candidate_retained" and
+         review["scope"] == str(PROGRAMS_FINALIZATION_CALLER) and review["issues"] == [] and
+         all(type(number) is int and number == 0 for number in review["actionsByThisReview"].values()),
+         "programs_finalization_independent_closure")
+    index = _finalization_index(review["criticalPins"])
+    filenames = {"callerResult": "dispatch-result.json", "outerClosure": "outer-closure.json", "lockClosure": "lock-closure.json",
+                 "sessionClosure": "session-closure.json", "sshExit": "original-ssh-exit.json", "currentMetadata": "independent-transition-current-metadata.json",
+                 "readerClosure": "independent-transition-reader-closure.json"}
+    pins = {key: index[str(PROGRAMS_FINALIZATION_CALLER / "private" / name)] for key, name in filenames.items()}
+    for key in ("callerResult", "currentMetadata", "readerClosure"):
+        need(pins[key] == PROGRAMS_FINALIZATION_PINS[key], "programs_finalization_closure_pin")
+    for key in ("before", "after", "failure"):
+        need(index[value[key]["path"]] == value[key], "programs_finalization_review_original_pin")
+    records = {key: _finalization_record(pin, read_descriptor, read_bytes) for key, pin in pins.items()}
+    caller, outer, lock, session, ssh = (records[key] for key in ("callerResult", "outerClosure", "lockClosure", "sessionClosure", "sshExit"))
+    retained = review["originalFailureRetained"]
+    cli = {"execMainCode": "1", "execMainStatus": "2", "normalExitCode": 2, "result": "exit-code"}
+    primary = {"code": "transition_cli_failed", "stage": "operation", "type": "Fault"}
+    need(caller["kind"] == "programs-transition-dispatch-result" and caller["scope"] == str(PROGRAMS_FINALIZATION_CALLER) and
+         caller["status"] == retained["dispatchStatus"] == "failed_retained_for_review" and caller["callerExitCode"] == 2 and
+         caller["launchAttempts"] == caller["invocations"] == 1 and caller["innerResult"] is None and
+         caller["cliExit"] == outer["cliExit"] == retained["cliExit"] == cli and caller["primaryFailure"] == outer["primaryFailure"] == primary and
+         caller["cleanupErrors"] == outer["cleanupErrors"] == [primary] and
+         all(caller[key] is True and outer[key] is True for key in ("resourcesClosed", "sourceInputUnchanged", "protectedStateUnchanged")) and
+         all(caller[key] is False for key in ("automaticRetry", "automaticRecovery", "automaticRollback", "candidateAdmissionComplete")),
+         "programs_finalization_original_caller_failure")
+    need(_finalization_pin3(caller["outerClosure"]) == pins["outerClosure"] and
+         _finalization_pin3(caller["lockClosure"]) == pins["lockClosure"] and
+         outer["kind"] == "programs-transition-outer-closure" and outer["scope"] == caller["scope"] and
+         lock == review["ownedClosure"]["originalLockReceipt"] and lock["kind"] == "programs-transition-lock-closure" and
+         all(lock[key] is True for key in ("acquired", "released", "fdClosed", "metadataPreserved", "resourcesClosedBeforeRelease", "unlockAttempted", "unlockSucceeded")) and
+         lock["errors"] == [] and _finalization_pin3(lock["outerClosure"]) == pins["outerClosure"], "programs_finalization_lock_closure")
+    need(session["resourcesObservedClosed"] is True and session["evidenceAccepted"] is False and
+         session["status"] == retained["originalCloserStatus"] == "incomplete_session_closure_retained_for_review" and
+         session["errors"] == retained["originalCloserErrors"] == [{"code": "saved_resource_closure_incomplete", "label": "resource_receipt_quality"}] and
+         ssh["kind"] == "programs-transition-original-ssh-exit" and ssh["scope"] == caller["scope"] and
+         ssh["waitedToCompletion"] is True and ssh["remoteCallerExitCode"] == ssh["sshExitCode"] == 2 and
+         ssh["originalToolEvidence"]["nativeSshWaitedToCompletion"] is True and ssh["originalToolEvidence"]["nativeSshExitCode"] == 2 and
+         ssh["originalToolEvidence"]["supervisorTimedOut"] is False and ssh["originalToolEvidence"]["issues"] == [] and
+         retained["nativeSshExitCode"] == retained["remoteCallerExitCode"] == 2 and retained["originalPowerShellExitCode"] == 1 and
+         retained["originalCloserEvidenceAccepted"] is False and retained["originalCloserResourcesObservedClosed"] is True and
+         retained["failureCode"] == failure["code"] and retained["failureStage"] == failure["stage"] and
+         retained["candidateAdmissionComplete"] is False, "programs_finalization_original_exit_boundary")
+    owned = review["ownedClosure"]
+    need(owned["allCommandsAcknowledgedAndClosed"] is True and owned["cliCommandResponsibilities"] == 40 and
+         owned["currentOriginalOwnedPidAndGroupMatches"] == [] and owned["currentOriginalOwnedPidCount"] == 78 and
+         len(owned["currentOwnedCgroups"]) == 3 and all(row["absent"] is True for row in owned["currentOwnedCgroups"]) and
+         all(owned[key]["opened"] == owned[key]["closed"] and owned[key]["errors"] == 0 for key in ("outerMetadataDescriptors", "closerMetadataDescriptors")),
+         "programs_finalization_owned_closure")
+    reader = records["readerClosure"]
+    need(_finalization_pin3(review["currentMetadata"]) == pins["currentMetadata"] == _finalization_pin3(reader["metadata"]) and
+         _finalization_pin3(review["independentReaderClosure"]) == pins["readerClosure"] and
+         reader["kind"] == "programs-transition-independent-metadata-reader-closure" and reader["status"] == "independent_metadata_reader_closed" and
+         reader["scope"] == caller["scope"] and all(reader[key] is True for key in
+         ("allNineMetadataCommandsWaitedAndPipesClosed", "allReadDescriptorsClosedBeforePublication", "metadataCommandsPidsGroupsGone", "publicationDescriptorClosedInTerminal", "originalCliFailurePreserved")) and
+         reader["cgroup"]["absent"] is True and all(row["absent"] is True for row in reader["pidObservations"]) and
+         reader["readDescriptorSummary"]["opened"] == reader["readDescriptorSummary"]["closed"] and reader["readDescriptorSummary"]["errors"] == 0 and
+         reader["currentLeaseGrantRequeried"] is False and reader["originalCloserEvidenceAccepted"] is False and
+         reader["currentCandidateIntentionallyRetained"] == [1907978, 1907986], "programs_finalization_independent_reader_closure")
+    actual = review["actualCompletedActions"]
+    need(actual["calls"] == failure["calls"] == {"stop": 1, "replace": 1, "start": 1} and actual["originalCandidatePid"] == before["candidateAfter"]["pid"] == 1648477 and
+         canonical(actual["newBinary"]) == canonical(after["fixedFiles"][str(C / "install/goby")]) and
+         actual["newCandidate"] == failure["failureCapture"]["serverIdentity"] and actual["newCandidatePropertiesAtFailure"] == failure["failureCapture"]["serverProperties"] and
+         actual["savedAfterLease"] == after["leaseAfter"], "programs_finalization_actual_actions")
+    output_index = _finalization_index(outer["outputInventory"]["files"])
+    for key in ("before", "after", "failure", "sourceBefore", "sourceAfter"):
+        need(output_index[value[key]["path"]] == value[key], "programs_finalization_original_output_pin")
+    action_pins = {name: output_index[str(PROGRAMS_FINALIZATION_ORIGINAL / "private" / (name + ".json"))]
+                   for name in ("stop-intent", "stopped", "replace-intent", "replace-result", "start-intent")}
+    actions = {name: _finalization_record(selected, read_descriptor, read_bytes) for name, selected in action_pins.items()}
+    old_process = {key: item for key, item in before["candidateAfter"].items() if key != "listener"}
+    unit = failure["failureCapture"]["serverProperties"]["Id"]
+    installed = {"path": str(C / "install/goby"), "sha256": after["fixedFiles"][str(C / "install/goby")]["sha256"]}
+    stopped = actions["stopped"]
+    need(actions["stop-intent"] == {"unit": unit, "process": old_process} and set(stopped) == {"unit", "oldProcess", "leaseCount"} and
+         stopped["oldProcess"] == old_process and type(stopped["leaseCount"]) is int and stopped["leaseCount"] == 0 and
+         stopped["unit"]["Id"] == unit and stopped["unit"]["ActiveState"] == "inactive" and stopped["unit"]["MainPID"] == "0" and
+         stopped["unit"]["Result"] == "success" and stopped["unit"]["ExecMainStatus"] == "0" and
+         actions["replace-intent"] == {"destination": installed["path"], "staged": str(C / "install/.goby-next-candidate-programs-transition-01"), "oldCopy": failure["oldBinaryCopy"]} and
+         actions["replace-result"] == installed and actions["start-intent"] == {"unit": unit, "binary": installed} and
+         failure["oldBinaryCopy"] == {"path": str(PROGRAMS_FINALIZATION_ORIGINAL / "private/goby-before.bin"), "sha256": PROGRAMS_OLD_BINARY} and
+         _finalization_pin3(actual["oldBinaryCopy"]) == failure["oldBinaryCopy"], "programs_finalization_original_action_evidence")
+    records["actionEvidence"] = {"pins": action_pins, "records": actions}
+    evidence = []
+    summaries = actual["publicRequests"]
+    need(isinstance(summaries, list) and len(summaries) == 3, "programs_finalization_public_count")
+    process = {key: item for key, item in after["candidateAfter"].items() if key != "listener"}
+    for number, route in enumerate(("/readyz", "/healthz", "/emby/System/Info/Public"), 1):
+        pair = {key: output_index[str(PROGRAMS_FINALIZATION_ORIGINAL / "private" / ("public-%02d-%s.json" % (number, key)))] for key in ("intent", "response")}
+        intent, response = (_finalization_record(pair[key], read_descriptor, read_bytes) for key in ("intent", "response"))
+        summary = summaries[number - 1]
+        need(intent == {"method": "GET", "route": route, "process": process} and set(response) == {"status", "headers", "bodySha256", "complete"} and
+             response["status"] == 200 and response["complete"] is True and isinstance(response["headers"], list) and
+             all(isinstance(row, list) and len(row) == 2 and all(isinstance(item, str) for item in row) and row[0].lower() != "set-cookie" for row in response["headers"]) and
+             summary == {"index": number, "method": "GET", "route": route, "status": 200, "complete": True, "bodySha256": response["bodySha256"]},
+             "programs_finalization_original_public_evidence")
+        evidence.append(pair)
+    return review, evidence, records
+
+
+def load_programs_finalization_inputs(value, read_descriptor, read_bytes):
+    validate_programs_finalization_input(value)
+    transition = validate_programs_successor_input(_finalization_record(value["transitionInput"], read_descriptor, read_bytes))
+    for key in ("transitionHelper", "transitionRuntime"):
+        raw = read_bytes(value[key])
+        need(isinstance(raw, bytes) and 0 < len(raw) <= 4 << 20 and digest(raw) == value[key]["sha256"], "programs_finalization_original_source_digest")
+    records = {key: _finalization_record(value[key], read_descriptor, read_bytes) for key in ("failure", "before", "after", "sourceBefore", "sourceAfter", "rolloverReview")}
+    failure, before, after = (records[key] for key in ("failure", "before", "after"))
+    need(failure["kind"] == "audited-programs-transition-failure" and type(failure["version"]) is int and failure["version"] == 1 and
+         failure["status"] == "transition_failed_resources_retained" and failure["stage"] == "after_preservation" and failure["code"] == "diagnostic_file_membership_changed" and
+         failure["input"] == value["transitionInput"] and failure["source"] == value["transitionHelper"] and failure["runtimeHelper"] == value["transitionRuntime"] and
+         failure["output"] == transition["output"] == str(PROGRAMS_FINALIZATION_ORIGINAL) and failure["before"] == value["before"] and
+         failure["calls"] == {"stop": 1, "replace": 1, "start": 1} and failure["candidateAdmissionComplete"] is False and
+         failure["automaticRetry"] is False and failure["automaticRollback"] is False and
+         failure["failureCapture"]["status"] == "existing_after_state_retained" and failure["failureCapture"]["state"] == value["after"],
+         "programs_finalization_retained_failure")
+    _programs_finalization_commands(failure["commandResponsibilities"], 40)
+    responsibilities = failure["commandResponsibilities"]
+    need([row.get("label") for row in responsibilities].count("candidate-stop") == 1 and
+         [row.get("label") for row in responsibilities].count("server-start") == 1 and
+         sum(row.get("sqlOutcome") == "acknowledged" for row in responsibilities) == 38,
+         "programs_finalization_original_command_actions")
+    need(canonical(records["sourceBefore"]) == canonical(before["source"]) and canonical(records["sourceAfter"]) == canonical(after["source"]),
+         "programs_finalization_source_snapshots")
+    authority = validate_programs_rollover_review(value["rolloverReview"], records["rolloverReview"], before, after, read_descriptor, read_bytes)
+    compare_programs_failed_state(before, after, transition, diagnostic_authority=authority)
+    compare_programs_preservation(before, after, installed_binary={"path": str(C / "install/goby"), "sha256": transition["newBinary"]["sha256"]}, diagnostic_authority=authority)
+    review, public, closure_records = _load_programs_finalization_closure(value, failure, before, after, read_descriptor, read_bytes)
+    return {"transition": transition, **records, "closureReview": review, "publicEvidence": public,
+            "diagnosticAuthorization": authority, "closureRecords": closure_records}
+
+
+def validate_programs_finalization_antecedent(record, pin, epoch, read_descriptor, read_bytes=None):
+    read_bytes = read_bytes or read_programs_bytes
+    descriptor(pin)
+    need(pin["path"] == str(PROGRAMS_FINALIZATION_ROOT / "private/antecedent.json") and isinstance(record, dict) and
+         set(record) == PROGRAMS_FINALIZATION_KEYS and record["kind"] == "audited-programs-transition-finalization" and
+         type(record["version"]) is int and record["version"] == 1 and record["status"] == "fresh_checked_awaiting_live_acceptance" and
+         record["publicationRoot"] == str(PROGRAMS_FINALIZATION_ROOT), "programs_finalization_antecedent_schema")
+    for key, suffix in (("input", ".json"), ("producer", ".py"), ("validator", ".py")):
+        path = Path(descriptor(record[key])["path"])
+        need(path.is_relative_to(R) and path.suffix == suffix and not path.is_relative_to(PROGRAMS_FINALIZATION_ROOT) and
+             record[key] not in (PROGRAMS_FINALIZATION_PINS["transitionHelper"], PROGRAMS_FINALIZATION_PINS["transitionRuntime"]),
+             "programs_finalization_new_source_scope")
+    need(record["producer"] != record["validator"], "programs_finalization_distinct_source")
+    need(canonical(_finalization_record(pin, read_descriptor, read_bytes)) == canonical(record), "programs_finalization_antecedent_readback")
+    value = validate_programs_finalization_input(_finalization_record(record["input"], read_descriptor, read_bytes))
+    for key in PROGRAMS_FINALIZATION_INPUT_KEYS - {"kind", "version", "output", "budgets"}:
+        need(record[key] == value[key], "programs_finalization_antecedent_input_binding")
+    for key in ("producer", "validator"):
+        raw = read_bytes(record[key])
+        need(isinstance(raw, bytes) and 0 < len(raw) <= 4 << 20 and digest(raw) == record[key]["sha256"], "programs_finalization_new_source_digest")
+    evidence = load_programs_finalization_inputs(value, read_descriptor, read_bytes)
+    need(record["publicEvidence"] == evidence["publicEvidence"] and canonical(record["calls"]) == canonical({"stop": 0, "replace": 0, "start": 0}) and
+         canonical(record["originalCalls"]) == canonical(evidence["failure"]["calls"]) and type(record["publicRequests"]) is int and record["publicRequests"] == 0 and
+         type(record["originalPublicRequests"]) is int and record["originalPublicRequests"] == 3, "programs_finalization_action_boundary")
+    _programs_finalization_commands(record["commandResponsibilities"], 16, fresh=True)
+    for key, filename in (("freshState", "fresh.json"), ("freshSource", "source-fresh.json")):
+        need(descriptor(record[key])["path"] == str(PROGRAMS_FINALIZATION_ROOT / "private" / filename), "programs_finalization_fresh_scope")
+    fresh = _finalization_record(record["freshState"], read_descriptor, read_bytes)
+    fresh_source = _finalization_record(record["freshSource"], read_descriptor, read_bytes)
+    need(canonical(fresh["source"]) == canonical(fresh_source), "programs_finalization_fresh_source")
+    compare_programs_finalization_fresh(evidence["after"], fresh)
+    if epoch is not None:
+        need(epoch.get("finalization") == pin and epoch["transitionHelper"] == record["transitionHelper"] and epoch["runtimeHelper"] == record["validator"] and
+             epoch["calls"] == record["originalCalls"] and all(epoch[key] == record[key] for key in ("transitionInput", "before", "after", "sourceBefore", "sourceAfter")) and
+             epoch["preservation"]["path"] == str(PROGRAMS_FINALIZATION_ROOT / "private/preservation.json") and
+             epoch["candidateProcess"] == {key: item for key, item in evidence["after"]["candidateAfter"].items() if key != "listener"} and
+             epoch["lease"] == evidence["after"]["leaseAfter"], "programs_finalization_epoch_binding")
+    evidence.update(input=value, freshState=fresh, freshSource=fresh_source)
+    return {"pin": pin, "record": record, "diagnosticAuthorization": evidence["diagnosticAuthorization"], "evidence": evidence}
 
 
 def validate_programs_recovery_review(value, transition, review, failure, before, failed, current):
@@ -681,13 +1078,16 @@ def validate_programs_recovery_review(value, transition, review, failure, before
 
 
 def validate_programs_successor_epoch(epoch):
-    need(isinstance(epoch, dict) and set(epoch) == PROGRAMS_EPOCH_KEYS and epoch["kind"] == "audited-candidate-runtime-epoch" and
+    need(isinstance(epoch, dict) and set(epoch) in (PROGRAMS_EPOCH_KEYS, PROGRAMS_EPOCH_KEYS | {"finalization"}) and epoch["kind"] == "audited-candidate-runtime-epoch" and
          type(epoch["version"]) is int and epoch["version"] == 4 and epoch["operationKind"] == "programs_successor" and
          epoch["status"] == "running_awaiting_live_acceptance" and epoch["candidateAdmissionComplete"] is False and
          epoch["previousEpoch"] == PROGRAMS_PREVIOUS_EPOCH and epoch["previousCurrentRuntime"] == PROGRAMS_CURRENT_RUNTIME and
          epoch["originalProvision"] == PROVISION and epoch["seedProvenance"] == SEED, "programs_epoch_schema")
     for key in ("transitionInput", "transitionHelper", "runtimeHelper", "before", "after", "sourceBefore", "sourceAfter", "productInput", "configurationInput", "preservation", "reviewedState", "reviewedSummary"):
         descriptor(epoch[key])
+    if "finalization" in epoch:
+        need(descriptor(epoch["finalization"])["path"] == str(PROGRAMS_FINALIZATION_ROOT / "private/antecedent.json"),
+             "programs_finalization_epoch_scope")
     need(epoch["productInput"] == epoch["transitionInput"] and canonical(epoch["calls"]) == canonical({"stop": 1, "replace": 1, "start": 1}), "programs_epoch_operation")
     source = epoch["currentSource"]
     need(isinstance(source, dict) and set(source) == PROGRAMS_SOURCE_KEYS and source["archiveSha256"] in
@@ -1126,6 +1526,11 @@ def load_programs_product(value, read_descriptor, read_bytes=None):
 
 def resolve_programs_successor_lineage(epoch, read_descriptor):
     validate_programs_successor_epoch(epoch)
+    finalization = None
+    if "finalization" in epoch:
+        record = _finalization_record(epoch["finalization"], read_descriptor, read_programs_bytes)
+        finalization = validate_programs_finalization_antecedent(record, epoch["finalization"], epoch, read_descriptor)
+    diagnostic_authority = finalization["diagnosticAuthorization"] if finalization else None
     previous = validate_epoch(read_descriptor(epoch["previousEpoch"]))
     need(previous["version"] == 3, "programs_requires_tv_product_parent")
     inherited = resolve_epoch_lineage(previous, read_descriptor)
@@ -1135,7 +1540,8 @@ def resolve_programs_successor_lineage(epoch, read_descriptor):
          epoch["configurationInput"] == previous["configurationInput"], "programs_product_configuration_lineage")
     for key, filename in (("before", "before.json"), ("after", "after.json"), ("sourceBefore", "source-before.json"),
                           ("sourceAfter", "source-after.json"), ("preservation", "preservation.json")):
-        need(epoch[key]["path"] == str(Path(value["output"]) / "private" / filename), "programs_proof_scope")
+        root = PROGRAMS_FINALIZATION_ROOT if finalization and key == "preservation" else Path(value["output"])
+        need(epoch[key]["path"] == str(root / "private" / filename), "programs_proof_scope")
     source = epoch["currentSource"]
     for key, input_key in (("sourceManifest", "newSourceManifest"), ("fullReport", "newFullReport"),
                            ("artifactReceipt", "newArtifactReceipt"), ("buildManifest", "newBuildManifest"), ("sourceBridge", "sourceBridge")):
@@ -1163,7 +1569,7 @@ def resolve_programs_successor_lineage(epoch, read_descriptor):
     need(canonical(read_descriptor(epoch["sourceBefore"])) == canonical(before["source"]) and
          canonical(read_descriptor(epoch["sourceAfter"])) == canonical(after["source"]), "programs_source_snapshot_binding")
     compare_programs_preservation(state, before)
-    compared = compare_programs_preservation(before, after, installed_binary=source["binary"])
+    compared = compare_programs_preservation(before, after, installed_binary=source["binary"], diagnostic_authority=diagnostic_authority)
     validate_programs_retention(retention, before, seconds=1800)
     validate_programs_retention(retention, after, seconds=900)
     validate_programs_runtime_change(current, epoch, before, after)
@@ -1172,7 +1578,7 @@ def resolve_programs_successor_lineage(epoch, read_descriptor):
                 "diagnostics", "oldBinaryCopy", "oldBinaryFacts", "previousLease", "diagnosticsProof", "unitLogsProof"}
     need(isinstance(proof, dict) and set(proof) == expected and all(proof[key] == epoch[key] for key in ("before", "after", "sourceBefore", "sourceAfter", "reviewedState")) and
          proof["installedBinary"] == source["binary"] and all(canonical(proof[key]) == canonical(item) for key, item in compared.items()), "programs_preservation_proof")
-    need(canonical(proof["diagnostics"]) == canonical(compare_diagnostics(before["diagnostics"], after["diagnostics"])) and
+    need(canonical(proof["diagnostics"]) == canonical(compare_diagnostics(before["diagnostics"], after["diagnostics"], diagnostic_authority=diagnostic_authority)) and
          proof["oldBinaryCopy"]["path"] == str(Path(value["output"]) / "private/goby-before.bin") and
          proof["oldBinaryCopy"]["sha256"] == PROGRAMS_OLD_BINARY and
          canonical(proof["oldBinaryFacts"]) == canonical(before["fixedFiles"][str(C / "install/goby")]), "programs_old_binary_and_diagnostics_proof")
@@ -1195,7 +1601,10 @@ def resolve_programs_successor_lineage(epoch, read_descriptor):
         need(candidate["databases"][slot]["afterStart"] == after["databases"][slot] == before["databases"][slot] == state["databases"][slot] and
              set(candidate["databases"][slot]) == set(old["databases"][slot]) and
              all(canonical(candidate["databases"][slot][key]) == canonical(old["databases"][slot][key]) for key in set(old["databases"][slot]) - {"afterStart"}), "programs_database_facts_drift")
-    return {"productEpoch": epoch, "productInput": value, "configurationInput": inherited["configurationInput"]}
+    result = {"productEpoch": epoch, "productInput": value, "configurationInput": inherited["configurationInput"]}
+    if finalization is not None:
+        result["finalization"] = finalization
+    return result
 
 
 def validate_binary_successor_input(value):
@@ -1464,7 +1873,9 @@ def validate_control_documents(documents):
     return {"deploymentId": marker["deploymentId"], "controlRevision": record["revision"]}
 
 
-def compare_diagnostics(before, after):
+def compare_diagnostics(before, after, *, diagnostic_authority=None):
+    if diagnostic_authority is not None:
+        return _compare_programs_rollover_diagnostics(before, after, diagnostic_authority)
     old, new = before["registry"], after["registry"]
     need(old["version"] == new["version"] == 1 and old["token"] == new["token"] and re.fullmatch(r"[0-9a-f]{32}", old["token"]), "diagnostic_registry_authority_changed")
     need(all(before["registryFile"][key] == after["registryFile"][key] for key in ("uid", "gid", "mode")), "diagnostic_registry_owner_or_mode_changed")

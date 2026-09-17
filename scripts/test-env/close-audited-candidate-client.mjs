@@ -96,6 +96,50 @@ export const PROGRAMS_COMPLETE_ARTIFACT_PROFILE = {
     scope: ['cmd/', 'internal/', 'web/admin/embedded.go'] },
 };
 const PROGRAMS_SOURCE_KEYS = ['archiveSha256', 'sourceManifest', 'binary', 'fullReport', 'schema', 'artifactReceipt', 'buildManifest', 'sourceBridge'];
+export const PROGRAMS_FINALIZATION_ROOT = RETAINED_ROOT + '/candidate-programs-finalization-01';
+const PROGRAMS_FINALIZATION_KEYS = ['kind', 'version', 'status', 'publicationRoot', 'input', 'producer', 'validator',
+  'transitionInput', 'transitionHelper', 'transitionRuntime', 'failure', 'before', 'after', 'sourceBefore', 'sourceAfter',
+  'rolloverReview', 'closureReview', 'publicEvidence', 'freshState', 'freshSource', 'calls', 'originalCalls',
+  'publicRequests', 'originalPublicRequests', 'commandResponsibilities'];
+const PROGRAMS_FINALIZATION_INPUT_KEYS = ['kind', 'version', 'output', 'transitionInput', 'transitionHelper', 'transitionRuntime',
+  'failure', 'before', 'after', 'sourceBefore', 'sourceAfter', 'rolloverReview', 'closureReview', 'budgets'];
+const PROGRAMS_FINALIZATION_BUDGETS = { maximumSeconds: 300, maximumSqlCommands: 16, maximumPublicRequests: 0,
+  stopCalls: 0, replaceCalls: 0, startCalls: 0 };
+const PROGRAMS_FINALIZATION_SQL_LABELS = ['cluster-identity', 'epoch-read-only', 'cluster-identity', 'transition-read-only',
+  'cluster-identity', 'transition-read-only', 'cluster-identity', 'database-identity-goby_candidate_ef77f9ffcf0b',
+  'cluster-identity', 'database-objects-goby_candidate_ef77f9ffcf0b', 'cluster-identity', 'database-identity-goby_recovery_ef77f9ffcf0b',
+  'cluster-identity', 'database-objects-goby_recovery_ef77f9ffcf0b', 'cluster-identity', 'epoch-read-only'];
+const PROGRAMS_FINALIZATION_ORIGINAL_ROOT = RETAINED_ROOT + '/candidate-programs-transition-01';
+const PROGRAMS_FINALIZATION_DISPATCH_ROOT = RETAINED_ROOT + '/programs-transition-dispatch-20260917-hosting-namespace-r02';
+export const PROGRAMS_FINALIZATION_PINS = {
+  transitionInput: { path: RETAINED_ROOT + '/programs-stat-only-consumer-20260916-ebf5c219b928/private/transition-input.json', sha256: 'd000614532a0647c7c0f1c3df4bd4a81de76eb637acd6546c66c3f664d690168' },
+  transitionHelper: { path: RETAINED_ROOT + '/programs-transition-dispatch-20260917-72c177d47421/code/transition-audited-candidate.py', sha256: '72c177d474214871c1403b0227b47cb343507f530e5ac68783949514744ed0d7' },
+  transitionRuntime: { path: RETAINED_ROOT + '/programs-stat-only-consumer-20260916-ebf5c219b928/code/audited-candidate-runtime-review-status.py', sha256: '2bbf5e4c9364fcc67b4261b9dceb145d2cf3f66fad86d6baadc2ee16a62893c3' },
+  failure: { path: PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private/failure.json', sha256: '096ff73e322baffd016baa74eafe292981d6239f88f721a79a435a691b2a869a' },
+  before: { path: PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private/before.json', sha256: 'beefe4737b681a65f969cc0a97903795fb8e700bbb7a7e094f1fee7aab1a78ed' },
+  after: { path: PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private/after.json', sha256: 'a3e1b3e88920a85efcbf6e843e7aa892f1f07999c8e3a591222faabfeab5f913' },
+  callerResult: { path: PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/dispatch-result.json', sha256: '6c001b6a31ae7bff165b7e07424dadd589658287fdc65f5dcb19a91710f74f35' },
+  closureReview: { path: PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/independent-transition-failure-review-r02.json', sha256: '84ed56b8fdaa4531a81fd1d7b1fe548c066a46dfb51a35fa558ef83198f46e85' },
+  rolloverReview: { path: PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/diagnostic-utc-rollover-review.json', sha256: '67057f9bb30bf15185bf21bf8c0222eeec186d158be518ce32d1a6821fc82f42' },
+  readerClosure: { path: PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/independent-transition-reader-closure.json', sha256: 'fdb3be31bdccc89185b78d1b28f73cb5527e9b8aa911ac33afd5b8ddd28e4f01' },
+  currentMetadata: { path: PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/independent-transition-current-metadata.json', sha256: 'f8a2f932a4a1232fd33242bf48ebde1fecb1b992c3b66de1440f8c2ed5d4313f' },
+  oldSourceManifest: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source-manifest.json', sha256: 'bce4d22a4c51dacca4660a6c8e8e3fac816141cd612a7b32b87367799e495cff' },
+  oldMainSource: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source/cmd/goby/main.go', sha256: '9ee34659b6b8db2be1c9964e3313e5f9062c8c81f96459d784544eeaa9ce8bf6' },
+  oldStoreSource: { path: '/opt/goby-test/audit-fixes-20260913-20260913T141732Z-a393812c3356/source/internal/diagnostics/store_linux.go', sha256: 'b3556c3af648faf67324401fc3f4667b7f43d5acd75828e595259144d8a2bcfa' },
+};
+export const PROGRAMS_ROLLOVER_LOGS = {
+  shutdownLog: { name: 'goby-3618ed602bb9a56c12a2c7b0c34cc443-71ed4314955d8b34929d19168c6c1bd1.jsonl',
+    bytes: 143, sha256: 'bc8aa29ea232e564eb19bd26ec0ee4dfc586aa2a73c28140e9cda7556e1ffc16', ino: 1580900 },
+  startupLog: { name: 'goby-3618ed602bb9a56c12a2c7b0c34cc443-5743c1febc8732ea439b8c72ed04d115.jsonl',
+    bytes: 1101, sha256: 'b3fd233785847fcc3c116c48e8bc602038137454ca1bf84eabc98dd0967cc45d', ino: 1580901 },
+};
+const PROGRAMS_ROLLOVER_REVIEW_KEYS = ['kind', 'version', 'status', 'transitionInput', 'failure', 'before', 'after',
+  'shutdownLog', 'startupLog', 'oldSourceManifest', 'oldMainSource', 'oldStoreSource'];
+const PROGRAMS_FINALIZATION_CLOSURE_KEYS = ['acceptanceBoundary', 'actionsByThisReview', 'actualCompletedActions',
+  'admissionArtifactsAbsentAtReadback', 'criticalPins', 'currentMetadata', 'currentMetadataConclusion', 'independentReaderClosure',
+  'issues', 'kind', 'observedAt', 'originalFailureRetained', 'originalOutputReadbackSummary', 'originalStreamReadbackSummary',
+  'ownedClosure', 'preservation', 'priorIndependentReviewPreserved', 'savedOnlyCorrection', 'scope', 'sourceInputReadbackSummary', 'status', 'version'];
+const programsFinalizationAuthorizations = new WeakMap();
 const PROGRAMS_REFRESH_FIELDS = { key: 'library.refresh_media', emby_key: '', name: 'Refresh media details',
   description: 'Refresh media details in all registered libraries, including unchanged files.', category: 'Library',
   is_hidden: false, enabled: true, revision: 1, schedule_timezone: 'UTC' };
@@ -1773,12 +1817,427 @@ export function validateProgramsPreviousCurrentRuntime(current, epoch, seed, pre
   return current;
 }
 
+function programsFinalizationPin(epoch) {
+  if (!own(epoch) || !Object.hasOwn(epoch, 'finalization')) {
+    need(!epoch?.preservation?.path?.startsWith(PROGRAMS_FINALIZATION_ROOT + '/'), 'programs_finalization_missing_authority');
+    return null;
+  }
+  need(descriptor(epoch.finalization) && epoch.finalization.path === PROGRAMS_FINALIZATION_ROOT + '/private/antecedent.json',
+    'programs_finalization_pin');
+  return epoch.finalization;
+}
+
+function validateProgramsFinalizationRecord(epoch, record) {
+  const pin = programsFinalizationPin(epoch);
+  need(pin !== null && exact(record, PROGRAMS_FINALIZATION_KEYS) && record.kind === 'audited-programs-transition-finalization' &&
+    record.version === 1 && record.status === 'fresh_checked_awaiting_live_acceptance' && record.publicationRoot === PROGRAMS_FINALIZATION_ROOT,
+    'programs_finalization_record');
+  const pinKeys = ['input', 'producer', 'validator', 'transitionInput', 'transitionHelper', 'transitionRuntime', 'failure',
+    'before', 'after', 'sourceBefore', 'sourceAfter', 'rolloverReview', 'closureReview', 'freshState', 'freshSource'];
+  need(pinKeys.every(key => descriptor(record[key]) && record[key].path !== pin.path) &&
+    ['transitionInput', 'transitionHelper', 'before', 'after', 'sourceBefore', 'sourceAfter'].every(key => equal(record[key], epoch[key])) &&
+    equal(record.validator, epoch.runtimeHelper) && equal(record.originalCalls, epoch.calls) &&
+    equal(record.originalCalls, { stop: 1, replace: 1, start: 1 }) && equal(record.calls, { stop: 0, replace: 0, start: 0 }) &&
+    record.publicRequests === 0 && record.originalPublicRequests === 3,
+    'programs_finalization_source_or_calls');
+  need(record.producer.path !== record.validator.path && record.producer.path !== record.transitionHelper.path &&
+    record.producer.sha256 !== record.transitionHelper.sha256 && record.validator.sha256 !== record.transitionRuntime.sha256,
+    'programs_finalization_distinct_producer_validator');
+  need(['transitionInput', 'transitionHelper', 'transitionRuntime', 'failure', 'before', 'after', 'closureReview', 'rolloverReview'].every(key =>
+    equal(record[key], PROGRAMS_FINALIZATION_PINS[key])), 'programs_finalization_original_authority');
+  need(record.freshState.path === PROGRAMS_FINALIZATION_ROOT + '/private/fresh.json' &&
+    record.freshSource.path === PROGRAMS_FINALIZATION_ROOT + '/private/source-fresh.json' &&
+    epoch.preservation?.path === PROGRAMS_FINALIZATION_ROOT + '/private/preservation.json', 'programs_finalization_publication_scope');
+  const originalPrivate = PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private';
+  need(epoch.before.path === originalPrivate + '/before.json' &&
+    [['before', 'before.json'], ['after', 'after.json'], ['sourceBefore', 'source-before.json'], ['sourceAfter', 'source-after.json'],
+      ['failure', 'failure.json']].every(([key, name]) => record[key].path === originalPrivate + '/' + name) &&
+    Array.isArray(record.publicEvidence) && record.publicEvidence.length === 3 && record.publicEvidence.every((row, index) =>
+      exact(row, ['intent', 'response']) && ['intent', 'response'].every(role => descriptor(row[role]) &&
+        row[role].path === originalPrivate + '/public-' + String(index + 1).padStart(2, '0') + '-' + role + '.json')),
+    'programs_finalization_original_proof_scope');
+  return record;
+}
+
+function programsFinalizationPrefix(previous, current, code) {
+  need(own(previous) && own(current) && ['dev', 'ino', 'uid', 'gid', 'mode'].every(key => equal(previous[key], current[key])) &&
+    integer(previous.bytes) && integer(current.bytes) && current.bytes >= previous.bytes && current.bytes - previous.bytes <= MAX_BODY &&
+    (current.prefixSha256 === previous.sha256 || current.bytes === previous.bytes && current.sha256 === previous.sha256), code);
+}
+
+function validateProgramsFinalizationFresh(after, fresh, source) {
+  need(own(fresh) && equal(Object.keys(fresh).sort(), Object.keys(after).sort()) && equal(fresh.source, source) &&
+    timestampNs(fresh.databaseNow) >= timestampNs(after.databaseNow) && fresh.databaseNow === source.capturedAt &&
+    timestampNs(fresh.capturedAt) >= timestampNs(after.capturedAt), 'programs_finalization_fresh_capture');
+  need(fresh.candidateAfter?.pid === 1907978 && fresh.candidateAfter.startTicks === '34901535' &&
+    fresh.candidateAfter.exeInode === 1580898, 'programs_finalization_fresh_identity');
+  validateFinalSnapshot(source);
+  for (const section of ['source', 'inactiveStage']) need(equal(fresh[section]?.tables, after[section]?.tables) &&
+    equal(fresh[section]?.sequences, after[section]?.sequences), 'programs_finalization_fresh_logical_state');
+  for (const section of ['databases', 'trees', 'controlDocuments', 'fixedFiles', 'loadedUnits', 'protected', 'postgresBefore',
+    'postgresAfter', 'postgresProcess', 'hostingBefore', 'hostingAfter', 'candidateBefore', 'candidateAfter', 'leaseBefore', 'leaseAfter',
+    'previousEpoch', 'seedBinding', 'priorSource', 'currentRuntime']) need(equal(fresh[section], after[section]),
+    'programs_finalization_fresh_identity_or_preservation');
+  need(exact(fresh.unitLogs, Object.keys(after.unitLogs)), 'programs_finalization_fresh_unit_log_inventory');
+  for (const name of Object.keys(after.unitLogs)) programsFinalizationPrefix(after.unitLogs[name], fresh.unitLogs[name],
+    'programs_finalization_fresh_unit_log_prefix');
+  const beforeLogs = after.diagnostics, afterLogs = fresh.diagnostics;
+  need(own(beforeLogs) && own(afterLogs) && exact(afterLogs, Object.keys(beforeLogs)) &&
+    equal(without(beforeLogs, ['files']), without(afterLogs, ['files'])) && exact(afterLogs.files, Object.keys(beforeLogs.files)),
+    'programs_finalization_fresh_diagnostic_inventory');
+  for (const row of beforeLogs.registry.files) {
+    programsFinalizationPrefix(beforeLogs.files[row.name], afterLogs.files[row.name], 'programs_finalization_fresh_diagnostic_prefix');
+    if (row.closed) need(equal(without(beforeLogs.files[row.name], ['prefixSha256']), without(afterLogs.files[row.name], ['prefixSha256'])),
+      'programs_finalization_fresh_closed_log_changed');
+  }
+}
+
+function finalizationPin3(value, maximum = MAX_FILE) {
+  need(exact(value, ['path', 'bytes', 'sha256']) && descriptor(simplePin(value)) && integer(value.bytes) && value.bytes <= maximum,
+    'programs_finalization_pin3');
+  return simplePin(value);
+}
+
+function finalizationJSON(bytes, pin) {
+  need(descriptor(pin), 'programs_finalization_json_authority');
+  // The fixed failure review nests real int64 stat facts below its own roles.
+  return scanJSON(bytes, 4 * MAX_BODY, location => {
+    if (['mtimeNs', 'ctimeNs', 'atimeNs', 'mtime_ns', 'ctime_ns', 'atime_ns'].includes(location.at(-1))) return -9223372036854775808n;
+    const nested = ['source', 'inactiveStage'].includes(location[0]) ? location.slice(1) : location;
+    if (nested[0] === 'tables' && typeof nested[2] === 'number') {
+      if (nested.length === 4 && nested[1] === 'item_subtitles' && nested[3] === 'change_time_ns') return 0n;
+      if (nested.length === 5 && nested[1] === 'items' && nested[3] === 'media' && nested[4] === 'FileChangeTimeNs') return -9223372036854775808n;
+    }
+    return null;
+  });
+}
+
+function finalizationCommands(rows, maximum) {
+  need(Array.isArray(rows) && rows.length > 0 && rows.length <= maximum && rows.every(row => own(row) &&
+    row.processGroupClosed === true && row.outcome === 'acknowledged' && row.timedOut === false &&
+    row.descendantsRemained === false && [null, 'acknowledged'].includes(row.sqlOutcome) && row.exitCode === 0),
+    'programs_finalization_command_closure');
+}
+
+function validateProgramsFinalizationClosure(record, evidence) {
+  const review = evidence.closureReview, failure = evidence.failure, reader = evidence.readerClosure;
+  need(exact(review, PROGRAMS_FINALIZATION_CLOSURE_KEYS) && review.kind === 'programs-transition-independent-failure-review' && review.version === 2 &&
+    review.status === 'failed_transition_reviewed_owned_closed_current_candidate_retained' && review.scope === PROGRAMS_FINALIZATION_DISPATCH_ROOT &&
+    equal(review.issues, []) && Object.values(review.actionsByThisReview ?? {}).length === 8 &&
+    Object.values(review.actionsByThisReview).every(value => value === 0) &&
+    Object.values(review.savedOnlyCorrection ?? {}).length === 8 && Object.values(review.savedOnlyCorrection).every(value => value === 0),
+    'programs_finalization_original_review');
+  const retained = review.originalFailureRetained;
+  need(retained?.failureStage === 'after_preservation' && retained.failureCode === 'diagnostic_file_membership_changed' &&
+    retained.dispatchStatus === 'failed_retained_for_review' && retained.remoteCallerExitCode === 2 && retained.nativeSshExitCode === 2 &&
+    retained.originalPowerShellExitCode === 1 && retained.cliExit?.normalExitCode === 2 && retained.cliExit.execMainStatus === '2' &&
+    retained.cliExit.result === 'exit-code' && retained.originalCloserEvidenceAccepted === false &&
+    retained.originalCloserResourcesObservedClosed === true && retained.candidateAdmissionComplete === false,
+    'programs_finalization_original_failure_preserved');
+  need(failure?.kind === 'audited-programs-transition-failure' && failure.version === 1 &&
+    failure.status === 'transition_failed_resources_retained' && failure.stage === retained.failureStage && failure.code === retained.failureCode &&
+    failure.output === PROGRAMS_FINALIZATION_ORIGINAL_ROOT && equal(failure.input, record.transitionInput) &&
+    equal(failure.source, record.transitionHelper) && equal(failure.runtimeHelper, record.transitionRuntime) &&
+    equal(failure.before, record.before) && equal(failure.calls, record.originalCalls) &&
+    failure.automaticRetry === false && failure.automaticRollback === false && failure.candidateAdmissionComplete === false &&
+    failure.failureCapture?.status === 'existing_after_state_retained' && equal(failure.failureCapture.state, record.after),
+    'programs_finalization_failed_attempt_binding');
+  const completed = review.actualCompletedActions, owned = review.ownedClosure;
+  need(equal(completed?.calls, record.originalCalls) && equal(completed.newCandidate, failure.failureCapture.serverIdentity) &&
+    equal(completed.newCandidatePropertiesAtFailure, failure.failureCapture.serverProperties) &&
+    equal(simplePin(completed.oldBinaryCopy), failure.oldBinaryCopy) &&
+    equal(failure.oldBinaryCopy, { path: PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private/goby-before.bin',
+      sha256: 'b0d6769cadc525b12d2970a206d8e141a39431ee72bb4f7be77bbeecf873ea42' }) &&
+    equal(completed.savedAfterLease, evidence.after.leaseAfter) &&
+    equal(completed.newBinary, evidence.after.fixedFiles[epochBinaryPath(evidence.after)]) &&
+    completed.originalCandidatePid === 1648477 && evidence.before.candidateAfter.pid === completed.originalCandidatePid &&
+    completed.newCandidate.pid === evidence.after.candidateAfter.pid && completed.newCandidate.startTicks === evidence.after.candidateAfter.startTicks,
+    'programs_finalization_actual_actions');
+  finalizationCommands(failure.commandResponsibilities, 40);
+  need(failure.commandResponsibilities.filter(row => row.label === 'candidate-stop').length === 1 &&
+    failure.commandResponsibilities.filter(row => row.label === 'server-start').length === 1 &&
+    failure.commandResponsibilities.filter(row => row.sqlOutcome === 'acknowledged').length === 38,
+    'programs_finalization_original_action_commands');
+  need(owned?.allCommandsAcknowledgedAndClosed === true && owned.cliCommandResponsibilities === failure.commandResponsibilities.length &&
+    owned.cliCommandResponsibilities === 40 &&
+    owned.currentOriginalOwnedPidCount === 78 && equal(owned.currentOriginalOwnedPidAndGroupMatches, []) &&
+    Array.isArray(owned.currentOwnedCgroups) && owned.currentOwnedCgroups.length === 3 && owned.currentOwnedCgroups.every(row => row.absent === true) &&
+    owned.originalLockReceipt?.released === true && owned.originalLockReceipt.fdClosed === true &&
+    owned.originalLockReceipt.resourcesClosedBeforeRelease === true && owned.originalLockReceipt.unlockSucceeded === true &&
+    equal(owned.originalLockReceipt.errors, []) && ['outerMetadataDescriptors', 'closerMetadataDescriptors'].every(key =>
+      integer(owned[key]?.opened) && owned[key].opened === owned[key].closed && owned[key].errors === 0), 'programs_finalization_owned_closure');
+  need(reader?.kind === 'programs-transition-independent-metadata-reader-closure' && reader.version === 1 &&
+    reader.status === 'independent_metadata_reader_closed' && reader.scope === PROGRAMS_FINALIZATION_DISPATCH_ROOT &&
+    reader.metadataCommandsPidsGroupsGone === true && reader.allNineMetadataCommandsWaitedAndPipesClosed === true &&
+    reader.allReadDescriptorsClosedBeforePublication === true && reader.publicationDescriptorClosedInTerminal === true && reader.cgroup?.absent === true &&
+    reader.readDescriptorSummary?.opened === reader.readDescriptorSummary?.closed && reader.readDescriptorSummary?.errors === 0 &&
+    reader.originalCliFailurePreserved === true && reader.originalCloserEvidenceAccepted === false && reader.currentLeaseGrantRequeried === false &&
+    Array.isArray(reader.pidObservations) && reader.pidObservations.every(row => row.absent === true) &&
+    equal(reader.currentCandidateIntentionallyRetained, [1907978, 1907986]) &&
+    review.currentMetadataConclusion?.currentLeaseGrantRequeried === false &&
+    equal(finalizationPin3(review.independentReaderClosure), PROGRAMS_FINALIZATION_PINS.readerClosure) &&
+    equal(finalizationPin3(review.currentMetadata), PROGRAMS_FINALIZATION_PINS.currentMetadata) &&
+    equal(reader.metadata, review.currentMetadata), 'programs_finalization_independent_reader_closure');
+  const critical = indexed(review.criticalPins, row => row.path);
+  const closureRecord = name => evidence.criticalRecords[PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/' + name + '.json'];
+  const closurePin = name => finalizationPin3(critical.get(PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/' + name + '.json'));
+  const caller = closureRecord('dispatch-result'), outer = closureRecord('outer-closure'), lock = closureRecord('lock-closure'),
+    session = closureRecord('session-closure'), ssh = closureRecord('original-ssh-exit');
+  const cli = { execMainCode: '1', execMainStatus: '2', normalExitCode: 2, result: 'exit-code' };
+  const primary = { code: 'transition_cli_failed', stage: 'operation', type: 'Fault' };
+  need(caller?.kind === 'programs-transition-dispatch-result' && caller.scope === PROGRAMS_FINALIZATION_DISPATCH_ROOT &&
+    caller.status === retained.dispatchStatus && caller.callerExitCode === 2 && caller.launchAttempts === 1 && caller.invocations === 1 &&
+    caller.innerResult === null && equal(caller.cliExit, cli) && equal(outer?.cliExit, cli) && equal(retained.cliExit, cli) &&
+    equal(caller.primaryFailure, primary) && equal(outer.primaryFailure, primary) && equal(caller.cleanupErrors, [primary]) &&
+    equal(outer.cleanupErrors, [primary]) && ['resourcesClosed', 'sourceInputUnchanged', 'protectedStateUnchanged'].every(key =>
+      caller[key] === true && outer[key] === true) && ['automaticRetry', 'automaticRecovery', 'automaticRollback', 'candidateAdmissionComplete'].every(key =>
+      caller[key] === false), 'programs_finalization_original_caller_failure');
+  need(equal(finalizationPin3(caller.outerClosure), closurePin('outer-closure')) && equal(finalizationPin3(caller.lockClosure), closurePin('lock-closure')) &&
+    outer.kind === 'programs-transition-outer-closure' && outer.scope === caller.scope && equal(lock, owned.originalLockReceipt) &&
+    lock.kind === 'programs-transition-lock-closure' && ['acquired', 'released', 'fdClosed', 'metadataPreserved', 'resourcesClosedBeforeRelease',
+      'unlockAttempted', 'unlockSucceeded'].every(key => lock[key] === true) &&
+    equal(finalizationPin3(lock.outerClosure), closurePin('outer-closure')), 'programs_finalization_lock_closure');
+  const sessionErrors = [{ code: 'saved_resource_closure_incomplete', label: 'resource_receipt_quality' }];
+  need(session?.resourcesObservedClosed === true && session.evidenceAccepted === false &&
+    session.status === 'incomplete_session_closure_retained_for_review' && session.status === retained.originalCloserStatus &&
+    equal(session.errors, sessionErrors) && equal(retained.originalCloserErrors, sessionErrors) &&
+    ssh?.kind === 'programs-transition-original-ssh-exit' && ssh.scope === caller.scope && ssh.waitedToCompletion === true &&
+    ssh.remoteCallerExitCode === 2 && ssh.sshExitCode === 2 && ssh.originalToolEvidence?.nativeSshWaitedToCompletion === true &&
+    ssh.originalToolEvidence.nativeSshExitCode === 2 && ssh.originalToolEvidence.supervisorTimedOut === false && equal(ssh.originalToolEvidence.issues, []),
+    'programs_finalization_original_exit_boundary');
+  const events = completed.publicRequests;
+  need(Array.isArray(events) && events.length === 3 && evidence.publicEvidence.length === 3, 'programs_finalization_public_count');
+  for (const [index, route] of ['/readyz', '/healthz', '/emby/System/Info/Public'].entries()) {
+    const { intent, response } = evidence.publicEvidence[index], event = events[index];
+    need(exact(intent, ['method', 'route', 'process']) && intent.method === 'GET' && intent.route === route &&
+      equal(intent.process, without(evidence.after.candidateAfter, ['listener'])) && exact(response, ['status', 'headers', 'bodySha256', 'complete']) &&
+      response.status === 200 && response.complete === true && Array.isArray(response.headers) &&
+      response.headers.every(row => Array.isArray(row) && row.length === 2 && row.every(value => typeof value === 'string') && row[0].toLowerCase() !== 'set-cookie') &&
+      equal(event, { index: index + 1, method: 'GET', route, status: 200, complete: true, bodySha256: response.bodySha256 }),
+      'programs_finalization_public_receipt');
+  }
+  const actions = evidence.actionEvidence, oldProcess = without(evidence.before.candidateAfter, ['listener']);
+  const unit = completed.newCandidatePropertiesAtFailure.Id, installed = { path: epochBinaryPath(evidence.after),
+    sha256: evidence.after.fixedFiles[epochBinaryPath(evidence.after)].sha256 };
+  need(own(actions) && equal(actions['stop-intent'], { unit, process: oldProcess }) &&
+    exact(actions.stopped, ['unit', 'oldProcess', 'leaseCount']) && equal(actions.stopped.oldProcess, oldProcess) &&
+    actions.stopped.leaseCount === 0 && actions.stopped.unit?.Id === unit && actions.stopped.unit.ActiveState === 'inactive' &&
+    actions.stopped.unit.MainPID === '0' && actions.stopped.unit.Result === 'success' && actions.stopped.unit.ExecMainStatus === '0',
+    'programs_finalization_original_stop_evidence');
+  need(equal(actions['replace-intent'], { destination: installed.path,
+    staged: path.posix.dirname(installed.path) + '/.goby-next-candidate-programs-transition-01', oldCopy: failure.oldBinaryCopy }) &&
+    equal(actions['replace-result'], installed) && equal(actions['start-intent'], { unit, binary: installed }),
+    'programs_finalization_original_replace_start_evidence');
+}
+
+function epochBinaryPath(after) {
+  const binary = '/opt/goby-audited-candidate-20260913T073217Z-ef77f9ffcf0b/install/goby';
+  need(own(after?.fixedFiles) && own(after.fixedFiles[binary]), 'programs_finalization_installed_binary');
+  return binary;
+}
+
+function validateProgramsFinalizationRollover(record, evidence) {
+  const review = evidence.rolloverReview, before = evidence.before, after = evidence.after;
+  need(exact(review, PROGRAMS_ROLLOVER_REVIEW_KEYS) && review.kind === 'audited-programs-shutdown-rollover-review' &&
+    review.version === 1 && review.status === 'exact_saved_rollover_reviewed' &&
+    ['transitionInput', 'failure', 'before', 'after', 'oldSourceManifest', 'oldMainSource', 'oldStoreSource'].every(key =>
+      equal(review[key], PROGRAMS_FINALIZATION_PINS[key])), 'programs_finalization_rollover_review');
+  for (const [key, member] of [['oldMainSource', 'cmd/goby/main.go'], ['oldStoreSource', 'internal/diagnostics/store_linux.go']]) {
+    const raw = evidence.oldSources[key];
+    need(Buffer.isBuffer(raw) && sha(raw) === review[key].sha256 && evidence.oldSourceManifest[member]?.sha256 === review[key].sha256 &&
+      evidence.oldSourceManifest[member]?.bytes === raw.length, 'programs_finalization_rollover_source');
+  }
+  const documents = {};
+  for (const [key, expected] of Object.entries(PROGRAMS_ROLLOVER_LOGS)) {
+    const pin = review[key], raw = evidence[key];
+    finalizationPin3(pin);
+    need(pin.path.startsWith(RETAINED_ROOT + '/') && !pin.path.startsWith(PROGRAMS_FINALIZATION_ROOT + '/') && pin.path.endsWith('.jsonl') &&
+      pin.bytes === expected.bytes && pin.sha256 === expected.sha256 && Buffer.isBuffer(raw) && raw.length === expected.bytes &&
+      sha(raw) === expected.sha256 && raw.at(-1) === 10, 'programs_finalization_rollover_content');
+    documents[key] = raw.toString('utf8').slice(0, -1).split('\n').map(line => strictJSON(Buffer.from(line), MAX_BODY));
+  }
+  const shutdown = documents.shutdownLog, startup = documents.startupLog;
+  need(shutdown.length === 1 && equal(shutdown[0], { time: '2026-09-17T07:15:40.810585954Z', level: 'INFO',
+    msg: 'server shutdown completed', event: 'server.shutdown.completed', duration_ms: 2 }), 'programs_finalization_shutdown_event');
+  need(startup.length === 5 && equal(startup.map(row => row.event), ['server.starting', 'server.listening', 'request.completed', 'request.completed', 'request.completed']) &&
+    equal(startup.slice(2).map(row => row.route), ['GET /readyz', 'GET /healthz', 'GET /emby/System/Info/Public']) &&
+    startup.every(row => row.level === 'INFO') && startup.slice(2).every(row => row.method === 'GET' && row.status === 200),
+    'programs_finalization_startup_events');
+  const times = [...shutdown, ...startup].map(row => timestampNs(row.time));
+  need(times.every((stamp, index) => index === 0 || stamp >= times[index - 1]) && timestampNs(before.databaseNow) <= times[0] &&
+    times[0] < times[1] && times.at(-1) <= timestampNs(after.databaseNow), 'programs_finalization_event_window');
+  const old = before.diagnostics, current = after.diagnostics, previous = indexed(old.registry.files, row => row.name), next = indexed(current.registry.files, row => row.name);
+  need(old.registry.version === 1 && current.registry.version === 1 && old.registry.token === '3618ed602bb9a56c12a2c7b0c34cc443' &&
+    old.registry.token === current.registry.token && equal(old.lock, current.lock) && equal(old.directory, current.directory) &&
+    equal(without(old.registry, ['files']), without(current.registry, ['files'])) &&
+    ['dev', 'uid', 'gid', 'mode'].every(key => old.registryFile[key] === current.registryFile[key]), 'programs_finalization_registry_authority');
+  const active = old.registry.files.filter(row => row.closed === false);
+  need(active.length === 1 && active[0].name === 'goby-3618ed602bb9a56c12a2c7b0c34cc443-b25e8ca719092ba041930eb7cfa5004a.jsonl' &&
+    new Date(instant(active[0].created)).toISOString().slice(0, 10) === '2026-09-16', 'programs_finalization_utc_boundary');
+  const additions = [...next.keys()].filter(name => !previous.has(name));
+  need(previous.size === 9 && next.size === 11 && exact(old.files, [...previous.keys()]) && exact(current.files, [...next.keys()]) &&
+    equal(additions.sort(), Object.values(PROGRAMS_ROLLOVER_LOGS).map(row => row.name).sort()), 'programs_finalization_rollover_inventory');
+  for (const [name, entry] of previous) {
+    const observed = next.get(name);
+    need(own(observed) && !entry.deleting && !observed.deleting && observed.closed === true &&
+      equal(without(entry, ['size', 'closed']), without(observed, ['size', 'closed'])) && equal(old.files[name], current.files[name]) &&
+      observed.size === current.files[name].bytes, 'programs_finalization_old_log_changed');
+  }
+  for (const [key, expected] of Object.entries(PROGRAMS_ROLLOVER_LOGS)) {
+    const row = next.get(expected.name), facts = current.files[expected.name], closed = key === 'shutdownLog';
+    need(row.closed === closed && !row.deleting && row.size === (closed ? expected.bytes : 0) &&
+      equal(row.identity, { device: 2049, inode: expected.ino }) && ['bytes', 'sha256', 'ino'].every(field => facts[field] === expected[field]) &&
+      equal([facts.dev, facts.uid, facts.gid, facts.mode], [2049, 995, 986, 0o600]), 'programs_finalization_new_log_identity');
+  }
+  need(timestampNs(next.get(PROGRAMS_ROLLOVER_LOGS.shutdownLog.name).created) < timestampNs(next.get(PROGRAMS_ROLLOVER_LOGS.startupLog.name).created),
+    'programs_finalization_rollover_order');
+  return { oldLogPrefixesPreserved: 9, newActiveLogs: 1, shutdownRolloverLogs: 1, prunedLogs: 0 };
+}
+
+function validateProgramsFinalizationInput(record, value) {
+  need(exact(value, PROGRAMS_FINALIZATION_INPUT_KEYS) && value.kind === 'audited-programs-transition-finalization-input' &&
+    value.version === 1 && value.output === PROGRAMS_FINALIZATION_ROOT && equal(value.budgets, PROGRAMS_FINALIZATION_BUDGETS) &&
+    PROGRAMS_FINALIZATION_INPUT_KEYS.filter(key => !['kind', 'version', 'output', 'budgets'].includes(key)).every(key =>
+      descriptor(value[key]) && equal(value[key], record[key])), 'programs_finalization_input');
+  need(value.rolloverReview.path.startsWith(RETAINED_ROOT + '/') && !value.rolloverReview.path.startsWith(PROGRAMS_FINALIZATION_ROOT + '/') &&
+    value.rolloverReview.path.endsWith('.json'), 'programs_finalization_review_scope');
+}
+
+function finalizationEvidenceDigest(record, evidence) {
+  return sha(Buffer.from(JSON.stringify(ordered({ record, evidence }))));
+}
+
+function checkProgramsFinalizationEvidence(epoch, record, evidence) {
+  validateProgramsFinalizationRecord(epoch, record);
+  validateProgramsFinalizationInput(record, evidence.input);
+  need(evidence.transitionInput?.output === PROGRAMS_FINALIZATION_ORIGINAL_ROOT &&
+    evidence.transitionInput.kind === 'audited-candidate-transition-input' && evidence.transitionInput.version === 3 &&
+    evidence.transitionInput.operationKind === 'programs_successor' &&
+    equal(evidence.before.source, evidence.sourceBefore) && equal(evidence.after.source, evidence.sourceAfter),
+    'programs_finalization_original_snapshots');
+  need(equal(epoch.candidateProcess, without(evidence.after.candidateAfter, ['listener'])) && equal(epoch.lease, evidence.after.leaseAfter),
+    'programs_finalization_epoch_runtime');
+  validateProgramsFinalizationClosure(record, evidence);
+  const summary = validateProgramsFinalizationRollover(record, evidence);
+  validateProgramsFinalizationFresh(evidence.after, evidence.freshState, evidence.freshSource);
+  finalizationCommands(record.commandResponsibilities, PROGRAMS_FINALIZATION_BUDGETS.maximumSqlCommands);
+  need(equal(record.commandResponsibilities.map(row => row.label), PROGRAMS_FINALIZATION_SQL_LABELS) &&
+    record.commandResponsibilities.every(row => row.sqlOutcome === 'acknowledged' && row.stdinComplete === true && row.outputLimitExceeded === false),
+    'programs_finalization_read_only_commands');
+  return summary;
+}
+
+export function validateProgramsFinalization(epoch, bundle, before, after) {
+  const pin = programsFinalizationPin(epoch);
+  if (pin === null) {
+    need(bundle === undefined || bundle === null, 'programs_finalization_unbound_evidence');
+    return null;
+  }
+  need(exact(bundle, ['pin', 'record', 'diagnosticAuthorization', 'evidence']) && equal(bundle.pin, pin) &&
+    programsFinalizationAuthorizations.has(bundle.diagnosticAuthorization), 'programs_finalization_checked_authority_required');
+  const retained = programsFinalizationAuthorizations.get(bundle.diagnosticAuthorization);
+  need(equal(retained.pin, pin) && retained.digest === finalizationEvidenceDigest(bundle.record, bundle.evidence) &&
+    equal(before, bundle.evidence.before) && equal(after, bundle.evidence.after), 'programs_finalization_evidence_changed');
+  return checkProgramsFinalizationEvidence(epoch, bundle.record, bundle.evidence);
+}
+
+export async function readProgramsFinalization(epoch, readPinned = readPin) {
+  const pin = programsFinalizationPin(epoch);
+  if (pin === null) return null;
+  const cache = new Map();
+  async function bytes(selected, maximum = 4 * MAX_BODY, privateMode = false) {
+    need(descriptor(selected) && selected.path !== PROGRAMS_FINALIZATION_ROOT + '/private/runtime-epoch.json' &&
+      selected.path !== PROGRAMS_FINALIZATION_ROOT + '/private/seed-runtime-binding.json' &&
+      selected.path !== PROGRAMS_FINALIZATION_ROOT + '/private/preservation.json', 'programs_finalization_acyclic_read');
+    const previous = cache.get(selected.path);
+    if (previous) {
+      need(previous.sha256 === selected.sha256 && previous.raw.length <= maximum, 'programs_finalization_pin_alias_changed');
+      return previous.raw;
+    }
+    const raw = await readPinned(selected, maximum, privateMode);
+    need(Buffer.isBuffer(raw) && raw.length > 0 && raw.length <= maximum && sha(raw) === selected.sha256, 'programs_finalization_readback_pin');
+    cache.set(selected.path, { sha256: selected.sha256, raw });
+    return raw;
+  }
+  async function document(selected) { return finalizationJSON(await bytes(selected), selected); }
+  const record = await document(pin);
+  validateProgramsFinalizationRecord(epoch, record);
+  for (const key of ['input', 'producer', 'validator']) need(record[key].path.startsWith(RETAINED_ROOT + '/') &&
+    !record[key].path.startsWith(PROGRAMS_FINALIZATION_ROOT + '/') && record[key].path.endsWith(key === 'input' ? '.json' : '.py'),
+    'programs_finalization_new_source_scope');
+  const evidence = {};
+  evidence.input = await document(record.input);
+  validateProgramsFinalizationInput(record, evidence.input);
+  for (const key of ['producer', 'validator', 'transitionHelper', 'transitionRuntime']) await bytes(record[key], 4 * MAX_BODY, false);
+  for (const key of ['transitionInput', 'failure', 'before', 'after', 'sourceBefore', 'sourceAfter', 'closureReview', 'freshState', 'freshSource'])
+    evidence[key] = await document(record[key]);
+  const critical = indexed(evidence.closureReview.criticalPins, row => row.path);
+  const expectedCritical = ['source-manifest.json', 'dispatch-result.json', 'outer-closure.json', 'lock-closure.json', 'session-closure.json',
+    'original-ssh-exit.json', 'original-powershell-terminal.json', 'original-ssh-intent.json', 'independent-transition-current-metadata.json',
+    'independent-transition-reader-closure.json'].map(name => PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/' + name)
+    .concat(['before.json', 'after.json', 'failure.json'].map(name => PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private/' + name));
+  need(equal([...critical.keys()].sort(), expectedCritical.sort()), 'programs_finalization_critical_inventory');
+  evidence.criticalRecords = {};
+  for (const [name, selected] of critical) {
+    finalizationPin3(selected, 4 * MAX_BODY);
+    const raw = await bytes(simplePin(selected));
+    need(raw.length === selected.bytes, 'programs_finalization_critical_bytes');
+    evidence.criticalRecords[name] = finalizationJSON(raw, simplePin(selected));
+  }
+  for (const key of ['callerResult', 'readerClosure', 'currentMetadata', 'before', 'after', 'failure']) need(
+    equal(finalizationPin3(critical.get(PROGRAMS_FINALIZATION_PINS[key].path)), PROGRAMS_FINALIZATION_PINS[key]),
+    'programs_finalization_critical_authority');
+  evidence.readerClosure = evidence.criticalRecords[PROGRAMS_FINALIZATION_PINS.readerClosure.path];
+  const outer = evidence.criticalRecords[PROGRAMS_FINALIZATION_DISPATCH_ROOT + '/private/outer-closure.json'];
+  need(Array.isArray(outer?.outputInventory?.files) && outer.outputInventory.files.length > 0 && outer.outputInventory.files.length <= 2048,
+    'programs_finalization_output_index');
+  const output = indexed(outer?.outputInventory?.files, row => row.path);
+  const originalPins = [record.before, record.after, record.failure, record.sourceBefore, record.sourceAfter,
+    ...record.publicEvidence.flatMap(row => [row.intent, row.response])];
+  for (const selected of originalPins) {
+    const original = output.get(selected.path);
+    need(equal(finalizationPin3(original), selected), 'programs_finalization_original_output_pin');
+  }
+  evidence.publicEvidence = [];
+  for (const selected of record.publicEvidence) evidence.publicEvidence.push({ intent: await document(selected.intent), response: await document(selected.response) });
+  need(originalPins.every(selected => cache.get(selected.path).raw.length === output.get(selected.path).bytes),
+    'programs_finalization_original_output_bytes');
+  evidence.actionEvidence = {};
+  for (const name of ['stop-intent', 'stopped', 'replace-intent', 'replace-result', 'start-intent']) {
+    const original = output.get(PROGRAMS_FINALIZATION_ORIGINAL_ROOT + '/private/' + name + '.json');
+    const selected = finalizationPin3(original);
+    evidence.actionEvidence[name] = await document(selected);
+    need(cache.get(selected.path).raw.length === original.bytes, 'programs_finalization_original_action_bytes');
+  }
+  evidence.rolloverReview = await document(record.rolloverReview);
+  need(exact(evidence.rolloverReview, PROGRAMS_ROLLOVER_REVIEW_KEYS), 'programs_finalization_rollover_review');
+  for (const key of ['oldSourceManifest', 'oldMainSource', 'oldStoreSource']) need(equal(evidence.rolloverReview[key], PROGRAMS_FINALIZATION_PINS[key]),
+    'programs_finalization_rollover_source_authority');
+  evidence.oldSourceManifest = await document(evidence.rolloverReview.oldSourceManifest);
+  evidence.oldSources = {};
+  for (const key of ['oldMainSource', 'oldStoreSource']) evidence.oldSources[key] = await bytes(evidence.rolloverReview[key], 4 * MAX_BODY, false);
+  for (const key of ['shutdownLog', 'startupLog']) {
+    const selected = evidence.rolloverReview[key];
+    finalizationPin3(selected, MAX_BODY);
+    need(selected.path.startsWith(RETAINED_ROOT + '/') && !selected.path.startsWith(PROGRAMS_FINALIZATION_ROOT + '/') && selected.path.endsWith('.jsonl'),
+      'programs_finalization_rollover_log_scope');
+    evidence[key] = await bytes(simplePin(selected), MAX_BODY);
+    need(evidence[key].length === selected.bytes, 'programs_finalization_rollover_log_bytes');
+  }
+  checkProgramsFinalizationEvidence(epoch, record, evidence);
+  const diagnosticAuthorization = Object.freeze({});
+  programsFinalizationAuthorizations.set(diagnosticAuthorization, { pin: { ...pin }, digest: finalizationEvidenceDigest(record, evidence) });
+  return { pin, record, diagnosticAuthorization, evidence };
+}
+
 export function validateProgramsRuntimeLineage(epoch, seed, lineage) {
-  need(exact(epoch, [...EPOCH_KEYS, ...SUCCESSOR_EPOCH_KEYS, 'previousCurrentRuntime', 'sourceBefore', 'sourceAfter']) && epoch.kind === 'audited-candidate-runtime-epoch' &&
+  const finalization = programsFinalizationPin(epoch);
+  need(exact(epoch, [...EPOCH_KEYS, ...SUCCESSOR_EPOCH_KEYS, 'previousCurrentRuntime', 'sourceBefore', 'sourceAfter', ...(finalization ? ['finalization'] : [])]) && epoch.kind === 'audited-candidate-runtime-epoch' &&
     epoch.version === 4 && epoch.operationKind === 'programs_successor' && epoch.status === 'running_awaiting_live_acceptance' && epoch.candidateAdmissionComplete === false &&
     exact(seed, [...BINDING_KEYS, ...SUCCESSOR_BINDING_KEYS, 'previousCurrentRuntime']) && seed.kind === 'audited-candidate-seed-runtime-binding' && seed.version === 4 && seed.candidateAdmissionComplete === false,
     'programs_runtime_schema');
   const { previousEpoch: previous, previousBinding, previousLineage, previousCurrentRuntime: current, transitionInput: input, before, after, sourceBefore, sourceAfter, preservation } = lineage;
+  const diagnosticSummary = validateProgramsFinalization(epoch, lineage.finalization, before, after);
   need(equal(epoch.previousEpoch, PROGRAMS_LINEAGE.previousEpoch) && equal(seed.previousBinding, PROGRAMS_LINEAGE.previousBinding) &&
     equal(epoch.previousCurrentRuntime, PROGRAMS_LINEAGE.previousCurrentRuntime) && equal(seed.previousCurrentRuntime, epoch.previousCurrentRuntime) &&
     equal(seed.priorSource, PROGRAMS_LINEAGE.priorSource) && equal(seed.priorCloseout, PROGRAMS_LINEAGE.priorCloseout) && previous?.version === 3 && previousBinding?.version === 3,
@@ -1840,6 +2299,7 @@ export function validateProgramsRuntimeLineage(epoch, seed, lineage) {
     preservation.existingSourceRowsExact === 35 && preservation.sequencesExact === 5 &&
     ['inactiveStageExact', 'allPriorPlayAndUserDataExact', 'foreignReferencesExact', 'configurationExact', 'postgresContinuous', 'hostingContinuous'].every(key => preservation[key] === true) &&
     equal(preservation.refreshDefinition, added[0]) && preservation.installedBinary?.sha256 === source.binary.sha256, 'programs_transition_preservation');
+  if (finalization) need(equal(preservation.diagnostics, diagnosticSummary), 'programs_finalization_preservation_diagnostics');
   need(equal(without(seed, ['version', 'runtimeEpoch', 'currentSessions', ...SUCCESSOR_BINDING_KEYS, 'previousCurrentRuntime']),
     without(previousBinding, ['version', 'runtimeEpoch', 'currentSessions', ...SUCCESSOR_BINDING_KEYS])) &&
     equal(seed.reviewedState, epoch.reviewedState) && equal(seed.reviewedSummary, epoch.reviewedSummary), 'programs_actor_catalog_preservation');
@@ -2234,6 +2694,7 @@ export async function readProgramsRuntimeLineage(epoch, seed) {
   const previousCurrentRuntime = strictJSON(await readPin(epoch.previousCurrentRuntime));
   for (const pin of [epoch.reviewedState, epoch.reviewedSummary, seed.priorCloseout, seed.priorSource, epoch.transitionHelper, epoch.runtimeHelper]) await readPin(pin, MAX_FILE, false);
   const before = programsStateJSON(await readPin(epoch.before), epoch.before), after = programsStateJSON(await readPin(epoch.after), epoch.after);
+  const finalization = await readProgramsFinalization(epoch);
   const sourceBefore = sourceSnapshotJSON(await readPin(epoch.sourceBefore)), sourceAfter = sourceSnapshotJSON(await readPin(epoch.sourceAfter));
   const preservation = programsStateJSON(await readPin(epoch.preservation), epoch.preservation);
   const artifactReceipt = strictJSON(await readPin(epoch.currentSource.artifactReceipt));
@@ -2247,7 +2708,8 @@ export async function readProgramsRuntimeLineage(epoch, seed) {
   for (const key of ['sourceArchive', 'sourceManifest', 'newBinary', 'packageManifest', 'packageArchive', 'buildTools', 'execution']) await readArtifact(artifactReceipt[key]);
   const reusedAdmission05 = strictJSON(await readPin(TV_POST_BROWSE_ADMISSION)), reusedAdmission04 = strictJSON(await readPin(REUSED_ADMISSION04));
   return { previousEpoch, previousBinding, previousLineage, previousCurrentRuntime, transitionInput, before, after, sourceBefore, sourceAfter, preservation,
-    artifactReceipt, artifactReview, artifactClosure, artifactAdapterBytes, sourceBridge, buildManifest, reusedAdmission05, reusedAdmission04 };
+    artifactReceipt, artifactReview, artifactClosure, artifactAdapterBytes, sourceBridge, buildManifest, reusedAdmission05, reusedAdmission04,
+    ...(finalization === null ? {} : { finalization }) };
 }
 
 export async function runCloseout(inputPin) {

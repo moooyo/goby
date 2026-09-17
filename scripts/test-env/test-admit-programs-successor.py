@@ -123,6 +123,99 @@ def runner_fixture():
                            helper=helper, Job=Job, captured=captured, opened=opened, latest=latest)
 
 
+def reader_module(name, filename):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
+    result = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(result)
+    return result
+
+
+@contextlib.contextmanager
+def recovery_controls_fixture(*, missing_reference=False, changed_reference=False):
+    """Use the source readers with in-memory historical JSON and filesystem metadata."""
+    runtime = reader_module("admission_recovery_runtime", "audited-candidate-runtime.py")
+    transition = reader_module("admission_recovery_transition", "transition-audited-candidate.py")
+    seed = reader_module("admission_recovery_seed", "seed-audited-candidate.py")
+    root = runtime.C / "data/recovery"
+    relative = "generation-" + runtime.PROGRAMS_RECOVERY_GENERATION
+    directory, key = root / relative, root / relative / "master.key"
+    directory_facts = {"directory": True, "dev": 1, "ino": 2, "uid": 995, "gid": 995,
+                       "mode": 0o700, "mtimeNs": 3, "ctimeNs": 4}
+    root_facts = {**directory_facts, "ino": 1}
+    key_facts = {"access": "stat_only", "dev": 1, "ino": 5, "uid": 995, "gid": 995,
+                 "mode": 0o600, "bytes": 32, "mtimeNs": 6, "ctimeNs": 7}
+    marker = {"version": 1, "deploymentId": runtime.PROGRAMS_RECOVERY_DEPLOYMENT,
+              "generationId": runtime.PROGRAMS_RECOVERY_GENERATION, "slot": "recovery"}
+    generation = {"id": runtime.PROGRAMS_RECOVERY_GENERATION, "complete": True,
+                  "master": {"name": "master.key", "size": 32, "identity": {"device": 1, "inode": 5}},
+                  "directory": {"device": 1, "inode": 2}}
+    restore = {"id": runtime.PROGRAMS_RECOVERY_OPERATION, "generationId": runtime.PROGRAMS_RECOVERY_GENERATION,
+               "kind": "restore", "state": "cancelled", "phase": "finished", "authorized": True,
+               "applyAuthorized": False, "cancelAuthorized": True,
+               "sourceState": {"deploymentId": runtime.PROGRAMS_RECOVERY_DEPLOYMENT, "databaseSlot": "primary", "master": "default"}}
+    reference = {"controlDocuments": {
+        "recovery/generation-registry.json": {"version": 1, "deploymentId": runtime.PROGRAMS_RECOVERY_DEPLOYMENT,
+                                               "generations": [generation]},
+        "operations/current.json": {"payload": {"operations": [restore], "slots": [
+            {"slot": "primary", "state": "active"},
+            {"slot": "recovery", "state": "staged", "imageId": runtime.PROGRAMS_RECOVERY_GENERATION,
+             "operation": runtime.PROGRAMS_RECOVERY_OPERATION, "retained": {"marker": marker}}]}}},
+        "inactiveStage": {"tables": {"server_settings": [{"key": "goby.recovery.binding.v1", "value": m.canonical(marker).decode()}]}},
+        "trees": {str(root): {".": root_facts, relative: directory_facts,
+                              relative + "/master.key": {**key_facts, "mtimeNs": 2, "ctimeNs": 3, "sha256": "e" * 64}}}}
+    reference_raw = m.canonical(reference)
+    reference_pin = {**runtime.PROGRAMS_RECOVERY_REFERENCE, "sha256": m.sha(reference_raw)}
+    raw = reference_raw + b"\n" if changed_reference else reference_raw
+    tree = {".": root_facts, relative: directory_facts, relative + "/master.key": key_facts}
+    baseline = {"trees": {str(root): tree}, "controlDocuments": {}, "fixedFiles": {str(key): key_facts},
+                "loadedUnits": {}, "protected": {}, "hostingBefore": {}, "hostingAfter": {}}
+    def metadata(facts):
+        return SimpleNamespace(st_mode=(0o040000 if facts.get("directory") else 0o100000) | facts["mode"],
+                               st_nlink=1, st_dev=facts["dev"], st_ino=facts["ino"], st_uid=facts["uid"], st_gid=facts["gid"],
+                               st_size=facts.get("bytes", 0), st_mtime_ns=facts["mtimeNs"], st_ctime_ns=facts["ctimeNs"])
+    reference_info = metadata({**key_facts, "uid": 0, "gid": 0, "mode": 0o600, "bytes": len(raw)})
+    observed = {str(root): metadata(root_facts), str(directory): metadata(directory_facts),
+                str(key): metadata(key_facts), reference_pin["path"]: reference_info}
+    reads, stats = [], []
+    def safe_path(path, *args):
+        name = str(path)
+        if name == reference_pin["path"] and missing_reference:
+            raise FileNotFoundError("fixture_reference_missing")
+        stats.append(name)
+        return observed[name]
+    def open_reference(path, flags):
+        if str(path) != reference_pin["path"]:
+            raise AssertionError("key_body_open_forbidden")
+        reads.append(str(path))
+        return 42
+    class ReferenceStream(text_io.BytesIO):
+        def fileno(self):
+            return 42
+    runtime_io = SimpleNamespace(modules={"seed": seed, "gateway": object(), "provision": object()}, provision=object())
+    with contextlib.ExitStack() as stack:
+        for target, name, value in ((runtime, "TREE_ROOTS", (str(root),)), (runtime, "PROTECTED", ()),
+                                    (runtime, "PROGRAMS_RECOVERY_REFERENCE", reference_pin)):
+            stack.enter_context(patch.object(target, name, value))
+        descriptor = stack.enter_context(patch.object(seed, "descriptor", wraps=seed.descriptor))
+        project = stack.enter_context(patch.object(runtime, "programs_recovery_master_authority", wraps=runtime.programs_recovery_master_authority))
+        hosting = stack.enter_context(patch.object(transition.BinarySuccessor, "hosting", return_value={}))
+        stack.enter_context(patch.object(transition.Transition, "loaded_units", return_value={}))
+        stack.enter_context(patch.object(transition.Transition, "file", side_effect=AssertionError("legacy_body_reader_forbidden")))
+        stack.enter_context(patch.object(seed, "safe_path", side_effect=safe_path))
+        stack.enter_context(patch.object(seed.pwd, "getpwnam", return_value=SimpleNamespace(pw_uid=995)))
+        stack.enter_context(patch.object(seed.os, "open", side_effect=open_reference))
+        stack.enter_context(patch.object(seed.os, "fdopen", side_effect=lambda *args: ReferenceStream(raw)))
+        stack.enter_context(patch.object(seed.os, "fstat", return_value=reference_info))
+        stack.enter_context(patch.object(transition.os.path, "lexists", side_effect=lambda path: str(path) in observed))
+        scan = stack.enter_context(patch.object(transition.Path, "rglob", return_value=[directory, key]))
+        stack.enter_context(patch.object(transition.Path, "is_symlink", return_value=False))
+        stack.enter_context(patch.object(transition.Path, "is_dir", autospec=True, side_effect=lambda path: path in (root, directory)))
+        stack.enter_context(patch.object(transition.Path, "lstat", autospec=True, side_effect=lambda path: observed[str(path)]))
+        yield SimpleNamespace(runtime=runtime, transition=transition, io=runtime_io, baseline=baseline, reference=reference,
+                              pin=reference_pin, descriptor=descriptor, project=project, hosting=hosting, scan=scan,
+                              reads=reads, stats=stats, key=str(key), relative=relative + "/master.key", root=str(root))
+
+
 class ProgramsAdmissionGuards(unittest.TestCase):
     def test_v5_input_keeps_historical_dispatch_and_request_limits(self):
         value = authority()[0]
@@ -367,11 +460,54 @@ class ProgramsAdmissionGuards(unittest.TestCase):
         transition = SimpleNamespace(Transition=OldReaders, ProgramsSuccessor=ProgramsReaders,
                                      BinarySuccessor=SimpleNamespace(hosting=lambda probe: {}))
         runtime = SimpleNamespace(TREE_ROOTS=("/tree",), PROTECTED=(),
-                                  PROGRAMS_STAT_ONLY={"/private/master.key", "/private/absent-master.key"})
-        runtime_io = SimpleNamespace(modules={"seed": object(), "gateway": object(), "provision": object()}, provision=object())
+                                  PROGRAMS_STAT_ONLY={"/private/master.key", "/private/absent-master.key"},
+                                  PROGRAMS_RECOVERY_REFERENCE=pin("recovery-reference"), programs_recovery_master_authority=Mock(return_value={}))
+        runtime_io = SimpleNamespace(modules={"seed": SimpleNamespace(descriptor=Mock(return_value={})),
+                                             "gateway": object(), "provision": object()}, provision=object())
         self.assertEqual(m.capture_tv_controls(runtime, transition, runtime_io, baseline, lambda: 60, programs=True), baseline)
         self.assertEqual(touched, ["/tree", "/private/runtime.env", "/private/master.key", "/private/absent-master.key", "/private/catalog.json"])
         self.assertEqual(ordinary_reads, ["/private/catalog.json"])
+
+    def test_programs_controls_use_hashed_reference_with_original_stat_only_readers(self):
+        with recovery_controls_fixture() as fixture:
+            observed = m.capture_tv_controls(fixture.runtime, fixture.transition, fixture.io, fixture.baseline, lambda: 60, programs=True)
+            fixture.descriptor.assert_called_once_with(fixture.pin)
+            fixture.project.assert_called_once_with(fixture.reference, fixture.pin)
+            self.assertEqual(fixture.reads, [fixture.pin["path"]])
+            self.assertIn(fixture.key, fixture.stats)
+            self.assertEqual(observed, fixture.baseline)
+            for facts in (observed["trees"][fixture.root][fixture.relative], observed["fixedFiles"][fixture.key]):
+                self.assertEqual(facts["access"], "stat_only")
+                self.assertEqual((facts["mtimeNs"], facts["ctimeNs"]), (6, 7))
+                self.assertNotIn("sha256", facts)
+                self.assertNotIn("prefixSha256", facts)
+
+    def test_programs_controls_reject_missing_or_changed_reference_before_scan(self):
+        for options, error, message in (({"missing_reference": True}, FileNotFoundError, "fixture_reference_missing"),
+                                        ({"changed_reference": True}, ValueError, "Authority bytes changed")):
+            with self.subTest(options=options), recovery_controls_fixture(**options) as fixture:
+                with self.assertRaisesRegex(error, message):
+                    m.capture_tv_controls(fixture.runtime, fixture.transition, fixture.io, fixture.baseline, lambda: 60, programs=True)
+                fixture.descriptor.assert_called_once_with(fixture.pin)
+                fixture.project.assert_not_called()
+                fixture.hosting.assert_not_called()
+                fixture.scan.assert_not_called()
+                self.assertNotIn(fixture.key, fixture.stats)
+
+    def test_legacy_tv_controls_do_not_require_programs_recovery_reference(self):
+        facts = {"sha256": "b" * 64}
+        baseline = {"trees": {"/legacy": {}}, "controlDocuments": {}, "fixedFiles": {"/legacy/catalog.json": facts},
+                    "loadedUnits": {}, "protected": {}, "hostingBefore": {}, "hostingAfter": {}}
+        readers = SimpleNamespace(file=Mock(return_value=(facts, b"{}")), tree=Mock(return_value=({}, {})),
+                                  loaded_units=Mock(return_value={}))
+        transition = SimpleNamespace(Transition=readers, BinarySuccessor=SimpleNamespace(hosting=lambda probe: {}))
+        runtime = SimpleNamespace(TREE_ROOTS=("/legacy",), PROTECTED=())
+        seed = SimpleNamespace(descriptor=Mock(side_effect=AssertionError("legacy_reference_read_forbidden")))
+        runtime_io = SimpleNamespace(modules={"seed": seed, "gateway": object(), "provision": object()}, provision=object())
+        self.assertEqual(m.capture_tv_controls(runtime, transition, runtime_io, baseline, lambda: 60), baseline)
+        self.assertEqual(readers.tree.call_count, 1)
+        self.assertEqual(readers.file.call_count, 1)
+        seed.descriptor.assert_not_called()
 
     def test_only_owned_authentication_delta_can_change_latest_state(self):
         before, after, logins = tv.state_delta()
