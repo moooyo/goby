@@ -152,7 +152,10 @@ func mediaDiagnosticHTTPPath(body map[string]any) string {
 }
 
 func mediaDiagnosticHTTPHeaders(f *serverFixture, csrf string) http.Header {
-	return http.Header{"X-CSRF-Token": {csrf}, "Origin": {f.cfg.PublicURL}}
+	headers := make(http.Header)
+	headers.Set("X-CSRF-Token", csrf)
+	headers.Set("Origin", f.cfg.PublicURL)
+	return headers
 }
 
 func mediaDiagnosticHTTPRun(t *testing.T, response *httptest.ResponseRecorder, status int, body map[string]any) map[string]any {
