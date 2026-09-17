@@ -168,7 +168,8 @@ def recovery_controls_fixture(*, missing_reference=False, changed_reference=Fals
     raw = reference_raw + b"\n" if changed_reference else reference_raw
     tree = {".": root_facts, relative: directory_facts, relative + "/master.key": key_facts}
     baseline = {"trees": {str(root): tree}, "controlDocuments": {}, "fixedFiles": {str(key): key_facts},
-                "loadedUnits": {}, "protected": {}, "hostingBefore": {}, "hostingAfter": {}}
+                "loadedUnits": {}, "protected": {unit: {"Id": unit, "MainPID": str(index + 100)}
+                    for index, unit in enumerate(sorted(runtime.PROGRAMS_PROTECTED))}, "hostingBefore": {}, "hostingAfter": {}}
     def metadata(facts):
         return SimpleNamespace(st_mode=(0o040000 if facts.get("directory") else 0o100000) | facts["mode"],
                                st_nlink=1, st_dev=facts["dev"], st_ino=facts["ino"], st_uid=facts["uid"], st_gid=facts["gid"],
@@ -191,9 +192,10 @@ def recovery_controls_fixture(*, missing_reference=False, changed_reference=Fals
     class ReferenceStream(text_io.BytesIO):
         def fileno(self):
             return 42
-    runtime_io = SimpleNamespace(modules={"seed": seed, "gateway": object(), "provision": object()}, provision=object())
+    show = Mock(side_effect=lambda unit: copy.deepcopy(baseline["protected"][unit]))
+    runtime_io = SimpleNamespace(modules={"seed": seed, "gateway": object(), "provision": object()}, provision=SimpleNamespace(show=show))
     with contextlib.ExitStack() as stack:
-        for target, name, value in ((runtime, "TREE_ROOTS", (str(root),)), (runtime, "PROTECTED", ()),
+        for target, name, value in ((runtime, "TREE_ROOTS", (str(root),)),
                                     (runtime, "PROGRAMS_RECOVERY_REFERENCE", reference_pin)):
             stack.enter_context(patch.object(target, name, value))
         descriptor = stack.enter_context(patch.object(seed, "descriptor", wraps=seed.descriptor))
@@ -213,7 +215,7 @@ def recovery_controls_fixture(*, missing_reference=False, changed_reference=Fals
         stack.enter_context(patch.object(transition.Path, "lstat", autospec=True, side_effect=lambda path: observed[str(path)]))
         yield SimpleNamespace(runtime=runtime, transition=transition, io=runtime_io, baseline=baseline, reference=reference,
                               pin=reference_pin, descriptor=descriptor, project=project, hosting=hosting, scan=scan,
-                              reads=reads, stats=stats, key=str(key), relative=relative + "/master.key", root=str(root))
+                              reads=reads, stats=stats, show=show, key=str(key), relative=relative + "/master.key", root=str(root))
 
 
 class ProgramsAdmissionGuards(unittest.TestCase):
@@ -459,7 +461,7 @@ class ProgramsAdmissionGuards(unittest.TestCase):
                 return {}, {}
         transition = SimpleNamespace(Transition=OldReaders, ProgramsSuccessor=ProgramsReaders,
                                      BinarySuccessor=SimpleNamespace(hosting=lambda probe: {}))
-        runtime = SimpleNamespace(TREE_ROOTS=("/tree",), PROTECTED=(),
+        runtime = SimpleNamespace(TREE_ROOTS=("/tree",), PROTECTED=(), PROGRAMS_PROTECTED=(),
                                   PROGRAMS_STAT_ONLY={"/private/master.key", "/private/absent-master.key"},
                                   PROGRAMS_RECOVERY_REFERENCE=pin("recovery-reference"), programs_recovery_master_authority=Mock(return_value={}))
         runtime_io = SimpleNamespace(modules={"seed": SimpleNamespace(descriptor=Mock(return_value={})),
@@ -476,11 +478,28 @@ class ProgramsAdmissionGuards(unittest.TestCase):
             self.assertEqual(fixture.reads, [fixture.pin["path"]])
             self.assertIn(fixture.key, fixture.stats)
             self.assertEqual(observed, fixture.baseline)
+            self.assertEqual(len(fixture.runtime.PROTECTED), 4)
+            self.assertEqual(len(fixture.runtime.PROGRAMS_PROTECTED), 6)
+            self.assertEqual({call.args[0] for call in fixture.show.call_args_list}, fixture.runtime.PROGRAMS_PROTECTED)
+            self.assertEqual(fixture.show.call_count, 6)
             for facts in (observed["trees"][fixture.root][fixture.relative], observed["fixedFiles"][fixture.key]):
                 self.assertEqual(facts["access"], "stat_only")
                 self.assertEqual((facts["mtimeNs"], facts["ctimeNs"]), (6, 7))
                 self.assertNotIn("sha256", facts)
                 self.assertNotIn("prefixSha256", facts)
+        with recovery_controls_fixture() as fixture:
+            peer_units = fixture.runtime.PROGRAMS_PROTECTED - set(fixture.runtime.PROTECTED)
+            self.assertEqual(len(peer_units), 2)
+            for unit in peer_units:
+                with self.subTest(changed_protected_unit=unit):
+                    def changed(selected):
+                        value = copy.deepcopy(fixture.baseline["protected"][selected])
+                        if selected == unit:
+                            value["MainPID"] = "99999"
+                        return value
+                    fixture.show.side_effect = changed
+                    with self.assertRaisesRegex(m.AdmissionError, "tv_control_configuration_or_hosting_changed"):
+                        m.capture_tv_controls(fixture.runtime, fixture.transition, fixture.io, fixture.baseline, lambda: 60, programs=True)
 
     def test_programs_controls_reject_missing_or_changed_reference_before_scan(self):
         for options, error, message in (({"missing_reference": True}, FileNotFoundError, "fixture_reference_missing"),
@@ -493,6 +512,19 @@ class ProgramsAdmissionGuards(unittest.TestCase):
                 fixture.hosting.assert_not_called()
                 fixture.scan.assert_not_called()
                 self.assertNotIn(fixture.key, fixture.stats)
+        for change in ("missing", "extra"):
+            with self.subTest(protected_inventory=change), recovery_controls_fixture() as fixture:
+                if change == "missing":
+                    peer = next(iter(fixture.runtime.PROGRAMS_PROTECTED - set(fixture.runtime.PROTECTED)))
+                    del fixture.baseline["protected"][peer]
+                else:
+                    fixture.baseline["protected"]["unreviewed.service"] = {"Id": "unreviewed.service", "MainPID": "0"}
+                with self.assertRaisesRegex(m.AdmissionError, "programs_protected_unit_inventory"):
+                    m.capture_tv_controls(fixture.runtime, fixture.transition, fixture.io, fixture.baseline, lambda: 60, programs=True)
+                fixture.descriptor.assert_not_called()
+                fixture.hosting.assert_not_called()
+                fixture.scan.assert_not_called()
+                fixture.show.assert_not_called()
 
     def test_legacy_tv_controls_do_not_require_programs_recovery_reference(self):
         facts = {"sha256": "b" * 64}

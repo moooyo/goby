@@ -726,6 +726,9 @@ def validate_tv_controls(expected, observed):
 def capture_tv_controls(runtime, transition_module, io, baseline, remaining, *, programs=False):
     """Borrow only the frozen file/tree/unit readers; never construct or run a transition."""
     readers = transition_module.ProgramsSuccessor if programs else transition_module.Transition
+    protected_units = runtime.PROGRAMS_PROTECTED if programs else runtime.PROTECTED
+    if programs:
+        need(set(baseline["protected"]) == set(protected_units), "programs_protected_unit_inventory")
     # ProgramsSuccessor.file uses super(); allocate its type without calling the transition constructor.
     probe = object.__new__(readers) if programs else SimpleNamespace()
     probe.__dict__.update(r=runtime, s=io.modules["seed"], g=io.modules["gateway"], pmod=io.modules["provision"],
@@ -761,7 +764,7 @@ def capture_tv_controls(runtime, transition_module, io, baseline, remaining, *, 
             fixed[name] = probe.file(path)[0]
     observed = {"trees": trees, "controlDocuments": documents, "fixedFiles": fixed,
                 "loadedUnits": transition_module.Transition.loaded_units(probe),
-                "protected": {unit: probe.p.show(unit) for unit in runtime.PROTECTED}, "hostingBefore": hosting_before,
+                "protected": {unit: probe.p.show(unit) for unit in protected_units}, "hostingBefore": hosting_before,
                 "hostingAfter": transition_module.BinarySuccessor.hosting(probe)}
     remaining()
     validate_tv_controls(baseline, observed)
