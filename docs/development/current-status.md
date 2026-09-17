@@ -1,5 +1,13 @@
 # Current implementation and delivery status
 
+Session wrapped up at the user's request on September 17. Start with the
+[restart handoff](session-handoff-20260917-wrap-up.md): M5 and OCI code are merged,
+but delivery remains incomplete. Programs admission r01 failed before any HTTP;
+its protected-service inventory correction passed four targeted methods and is
+in main. The V4 guard's 18 methods passed; actual metadata capture and the new
+M5 full run have not executed. The closing SSH read failed authentication, so
+the saved evidence below must not be presented as a newer live observation.
+
 Current priority on 2026-09-17: **prepare Programs affected live admission and the M5 full-run guard from the independently reviewed V4 finalization**.
 [S2 actually stopped, replaced and started A once](programs-transition-first-execution-failure-20260917.md),
 with three successful GETs, then failed at `after_preservation` with

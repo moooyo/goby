@@ -1,7 +1,9 @@
 # Internal Linux amd64 OCI preparation
 
-Status: **source draft; no image build, Compose validation, artifact test or
-container runtime verification has run**. This prepares the first software
+Status: **implementation merged; image build, Compose validation and container
+runtime verification remain pending**. The 12 synthetic artifact-checker methods
+[passed on test-env](../../docs/development/oci-artifact-checker-verification.md).
+That result accepts no actual release input or container. This prepares the first software
 container profile. It does not change the current Programs artifact, deploy a
 candidate, select E11 for another installation, or complete M6.
 

@@ -1,5 +1,10 @@
 # Current execution plan
 
+Execution was stopped for the user's September 17 wrap-up and code integration.
+Use the [restart handoff](../development/session-handoff-20260917-wrap-up.md)
+before resuming. It supersedes older next-action statements where they conflict;
+the full M2-M6 objective remains incomplete and M7 remains deferred.
+
 Current priority: **prepare Programs affected live admission and the M5 full-run guard from the independently reviewed V4 finalization**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)

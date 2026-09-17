@@ -1,5 +1,11 @@
 # Development handoff
 
+Latest restart entry: [September 17 session wrap-up](session-handoff-20260917-wrap-up.md).
+The user requested code integration and a handoff. M5 and OCI implementations
+are now in main; the first Programs admission failed before HTTP, its six-service
+fix passed four targeted methods, and the next live admission/full run remain
+unexecuted. The notes below describe earlier checkpoints.
+
 Current checkpoint: **2026-09-17, prepare Programs affected live admission and
 the M5 full-run guard from independently reviewed V4 finalization**. S2 stopped, replaced
 and started A once, then failed preservation acceptance. A remains PID `1907978`
