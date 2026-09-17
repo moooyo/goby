@@ -60,8 +60,14 @@ JIT accounts for about 99.93% of reported default execution; the disabled arm's
 snapshots took 3-4 ms versus about 2 seconds. This fresh-plan, fixed-order small
 fixture does not establish the complete original full-failure cause or a product
 fix. Both earlier diagnostic failures retain their SSH results and owned closure.
-Next is a reviewed narrow product JIT correction retaining the full query and
-five-second proof budget, then actual reconciliation, full regression and builds.
+The [narrow correction](../development/m5-auxiliary-jit-fix-targeted-result-20260917.md)
+on `9e70e4b` then passed eight top-level/sixteen child tests once, including the
+original reconciliation cases, with independent result/closure review. The full
+query and five-second proof budget remain unchanged. Existing generic-statement
+coverage establishes `jit=on` creation/execution, same cache/counter reuse and
+equal results, without direct JIT-generation observation. The new full scope
+`/opt/goby-test/m5-combined-full-0add3118b99f` has started in original SSH session
+`43043`; its full/build outcomes remain unknown.
 Older failures and frontend/storage scopes remain unchanged.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
@@ -104,7 +110,10 @@ operator `9b8d5e8a...` is unchanged; formal revised-CLI publication, actual fres
 entry/admission and one transition remain pending. The artifact and typed client
 framework are available. Strict fresh-before checks, explicit predecessor
 recovery, helper pins and budgets remain; actual recovery input requires actual
-failure. No transition/v4/client acceptance is established, and M5 full success
+failure. The separate [caller-fault suite](../development/programs-transition-caller-fault-components-20260917.md)
+passed eight mocked methods once and closed; PowerShell was not executed, and
+the real final GC census and closer `inspect_attempt` are outside its coverage.
+No transition/v4/client acceptance is established, and M5 full success
 is not a prerequisite for the direct Programs A transition.
 
 The latest fixed M5 media-refresh increment is committed and pushed as

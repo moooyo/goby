@@ -1,0 +1,87 @@
+{
+  "kind": "programs-transition-caller-fault-component-verification",
+  "version": 1,
+  "status": "passed_eight_mocked_methods_and_owned_closure",
+  "recordedOn": "2026-09-17",
+  "scope": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3",
+  "sources": [
+    {"file": "test-transition-caller-faults.py", "bytes": 29231, "sha256": "b03be05be1382eb97b5826e4aad3f33fb143dd4de98c438540a9b51c7f376109"},
+    {"file": "dispatch-transition.draft.py", "bytes": 65466, "sha256": "f38233c4799e0ce00682b9b13e367530c8f4edd548c415ceb7f1351768094223"},
+    {"file": "close-transition-session.draft.py", "bytes": 46820, "sha256": "5f2664a233e4d2f2f58037e1222ae791f5ace337118dae8d543a5abd52d1ff84"}
+  ],
+  "result": {
+    "group": "caller-faults",
+    "methods": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "runs": 1,
+    "exitCode": 0,
+    "timedOut": false,
+    "automaticReruns": 0,
+    "priorScoresReused": false
+  },
+  "execution": {
+    "originalSshExitCode": 0,
+    "originalExecToolChunk": "c142a0",
+    "completionMode": "completed_in_initial_exec_command",
+    "pendingExecSessionCreated": false,
+    "exitProvenance": "The original SSH command returned exit_code 0 synchronously; no pending-session completion was inferred."
+  },
+  "componentCoverage": [
+    "Owned cleanup after registration or receipt failures, including an already-exited leader and final receipt-close failure.",
+    "Terminal-evidence ordering before owned stop, with later unit garbage collection treated as closure evidence.",
+    "Listener-inode drift rejection through metadata consumption and preservation comparison.",
+    "Original-exit evidence binding and distinct CLI, caller and SSH failure classification, with a success control."
+  ],
+  "ownedClosure": {
+    "allRecordedPidsAndProcessGroupsAbsent": true,
+    "componentAndOriginalSshSessionCgroupsEmpty": true,
+    "scratchEmpty": true,
+    "sourcesAndRetainedToolsUnchanged": true,
+    "cleanupErrors": [],
+    "lockAcquired": false,
+    "lockReleaseRequired": false,
+    "completeOwnedClosureRecorded": true,
+    "independentProcessFdCensusPerformed": false
+  },
+  "evidence": {
+    "sourceManifest": {
+      "path": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3/private/source-manifest.json",
+      "bytes": 4304,
+      "sha256": "2f3e83438342ec50838385d55dfb7981079884384dbf349b02921ecdc580ad0a"
+    },
+    "result": {
+      "path": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3/private/result.json",
+      "bytes": 2536,
+      "sha256": "c45d71e072981d0e11d7f8b92d8cabf5a0b39673177ded30ea0485b7d3987073"
+    },
+    "dispatchResult": {
+      "path": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3/private/dispatch-result.json",
+      "bytes": 2523,
+      "sha256": "97ba8c78b67e80e86ead4bdd9e8933feff8f24812c6aec2dca131210796be09c"
+    },
+    "unitClosure": {
+      "path": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3/private/closure.json",
+      "bytes": 18568,
+      "sha256": "fd623e1ac97b5f0f2b013c2990cd6487afb961dee0e849963bd17e9ae313ec1e"
+    },
+    "sessionClosure": {
+      "path": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3/private/dispatch-session-closure.json",
+      "bytes": 19976,
+      "sha256": "34e7c373600d33b1dbac162f2fe73a9c58282faea5864dfe9c6ecb1951d759fb"
+    },
+    "rawStderr": {
+      "path": "/opt/goby-test/programs-transition-caller-fault-component-checks-20260917-7b40073ae8a3/private/caller-faults.stderr",
+      "bytes": 1396,
+      "sha256": "b858761b243822b6ca0e18e4661e9135c80180fa74a2b562dba022d28b0163f3"
+    }
+  },
+  "limits": [
+    "Only eight mocked component methods ran. Subject-function filesystem, descriptor, process, command, clock and service effects used finite mocks; no standalone actual caller or closer command ran.",
+    "The final garbage-collection process census and the closer's inspect_attempt after its finite evidence boundary were mocked and are not covered as real behavior. Ordering and classification do not establish a complete live census or saved-receipt graph.",
+    "The PowerShell source did not execute. The earlier runtime 45, successor 46 and closer 71 groups were neither rerun nor included in this count.",
+    "Only the owned component infrastructure unit was created and stopped. No SQL, HTTP, browser, application or PostgreSQL service action, actual capture, Programs transition, recovery or standalone product-loader invocation occurred.",
+    "This saved result does not authorize an actual Programs transition or establish complete live caller/closer behavior. No verification was rerun for this documentation update."
+  ]
+}

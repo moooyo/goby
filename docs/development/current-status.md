@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-17: **prepare and verify a narrow M5 auxiliary-query JIT correction and publish the verified Programs transition CLI for fresh execution admission**.
+Current priority on 2026-09-17: **complete the running M5 full verification and publish the verified Programs transition CLI for fresh execution admission**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -106,9 +106,15 @@ settings. JIT accounts for about 99.93% of reported default execution time;
 the disabled arm's snapshots took 3-4 ms versus about 2 seconds by default. This is
 a fresh-plan, fixed-order small-fixture result, not direct proof of the original
 full failure or a product fix. The two earlier permission/parser and numeric-
-decoder failures retain their original SSH results and owned closure. A narrow
-product correction is being prepared/reviewed with the full query and five-second
-proof budget unchanged; actual reconciliation, full regression and builds remain.
+decoder failures retain their original SSH results and owned closure. The
+[narrow product correction](m5-auxiliary-jit-fix-targeted-result-20260917.md) on
+`9e70e4b` now passed eight top-level tests and sixteen children once, including
+the original reconciliation cases, with independent result/closure review.
+Its full query and five-second proof budget are unchanged. Cached-statement
+checks establish `jit=on` creation/execution, statement/counter reuse and equal
+results; they do not directly observe JIT generation. The separate full scope
+`/opt/goby-test/m5-combined-full-0add3118b99f` has started in original SSH session
+`43043`; its full and build results remain unknown. The earlier full stays failed.
 Programs transition admission has its own prerequisites and does not require M5 full success.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
@@ -222,6 +228,9 @@ The [transition/recovery entry components](programs-transition-admission-verific
 then passed 46 methods once with independent review. Integration at `8477421`
 removed the three-line unconditional Programs dispatch hold from main; strict
 fresh-before checks, explicit predecessor recovery, helper pins and budgets remain.
+The separate [caller-fault components](programs-transition-caller-fault-components-20260917.md)
+passed eight mocked methods once and closed. PowerShell was not executed;
+the real final GC census and closer `inspect_attempt` are outside that coverage.
 The earlier published operator `9b8d5e8a...` is unchanged. Formal publication of
 the revised CLI, fresh execution admission and one actual transition remain next.
 The artifact and typed episode/subtitle framework are available; concrete inputs
@@ -240,9 +249,9 @@ frontend typecheck/build and real schema-29 catalog export have since passed in
 their separate scopes. The combined full has failed and closed, retaining the
 completed deletion/activity/archive/config coverage. The focused reconciliation
 diagnostic and phase-timing scope each passed once without reproduction. The later
-query-plan result isolates dominant JIT cost within its fresh-plan small fixture;
-the narrow product correction and its actual verification remain pending.
-Final builds, later media/server and browser
+query-plan result isolates dominant JIT cost within its fresh-plan small fixture.
+The narrow correction passed its targeted 8/16 scope; the new full run is active
+with no accepted result. Final builds, later media/server and browser
 acceptance remain pending. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -492,7 +501,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | Product verification/build, capture02, the retained captured check and actual saved product gate retain their accepted scopes. The [46-method transition/recovery component scope](programs-transition-admission-verification-20260917.md) passed independently; `8477421` removes main's unconditional dispatch hold | Publish the revised CLI; the earlier published `9b8d5e8a...` operator is unchanged. Complete fresh execution admission and the one actual transition with strict fresh-before and explicit recovery rules. Concrete client inputs bind subsequent facts; no transition/v4/client acceptance is claimed |
+| Programs successor | Product verification/build, capture02, the retained captured check and actual saved product gate retain their scopes. The 46-method entry scope passed and `8477421` removes main's unconditional hold; the separate [eight mocked caller-fault methods](programs-transition-caller-fault-components-20260917.md) also passed and closed | Publish the revised CLI; earlier `9b8d5e8a...` remains unchanged. PowerShell execution, the real final GC census and closer `inspect_attempt` are not covered by the eight methods. Complete actual fresh admission/transition with strict preservation and explicit recovery; no transition/v4/client acceptance is claimed |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B recovered once with its existing binary/configuration. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | A recovered once with its existing binary/configuration and has a ready recovered-runtime envelope. Historical admission/client evidence and preparatory Programs constants do not establish a new artifact's admission |

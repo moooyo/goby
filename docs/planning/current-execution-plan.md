@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **prepare and verify a narrow M5 auxiliary-query JIT correction and publish the verified Programs transition CLI for fresh execution admission**.
+Current priority: **complete the running M5 full verification and publish the verified Programs transition CLI for fresh execution admission**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the earlier expanded root disk was already in use. The user's
@@ -64,10 +64,13 @@ The later [query-plan diagnostic](../development/m5-auxiliary-query-plan-diagnos
 passed its complete third attempt with independent review and closure. JIT
 accounts for about 99.93% of reported default execution time in its fresh-plan,
 fixed-order small fixture; equal snapshots with JIT disabled took 3-4 ms instead
-of about 2 seconds. The two earlier diagnostic failures remain preserved. Prepare
-and review the narrow product JIT correction with the complete query and five-second
-proof budget unchanged, then verify actual reconciliation and the full suite/builds.
-The original full failure remains failed; this diagnostic is not a product fix.
+of about 2 seconds. The two earlier diagnostic failures remain preserved. The
+[narrow product correction](../development/m5-auxiliary-jit-fix-targeted-result-20260917.md)
+on `9e70e4b` passed eight top-level/sixteen child tests once with independent
+result/closure review, including the original reconciliation cases. The full
+query and five-second proof budget remain unchanged. The new full scope
+`/opt/goby-test/m5-combined-full-0add3118b99f` has started in original SSH session
+`43043`; full/build results remain pending. Preserve the earlier full failure.
 The earlier 255 source-status rejection
 and its separate closure supplement remain unchanged. Programs transition
 admission remains independent of M5 full success.
@@ -127,8 +130,11 @@ the owned stop. No loader or captured-state check was replayed for acceptance.
 The [transition/recovery entry components](../development/programs-transition-admission-verification-20260917.md)
 passed 46 methods once with independent review. Integration at `8477421` removes
 main's three-line unconditional dispatch hold; strict fresh-before checks,
-explicit predecessor recovery, helper pins and budgets are unchanged. Publish
-the revised CLI next: the earlier published `9b8d5e8a...` operator still retains
+explicit predecessor recovery, helper pins and budgets are unchanged. The separate
+[eight-method caller-fault result](../development/programs-transition-caller-fault-components-20260917.md)
+passed and closed with mocked effects; PowerShell, the real final GC census and
+closer `inspect_attempt` were not exercised. Publish the revised CLI next:
+the earlier published `9b8d5e8a...` operator still retains
 its original bytes. Formal publication, fresh execution admission and one actual
 transition remain pending. The artifact and typed episode/subtitle framework
 already exist; concrete inputs bind actual state and subsequent closeouts.
@@ -682,9 +688,12 @@ also passed once and localizes almost all removal proof time to the two auxiliar
 snapshots. The subsequent [query-plan result](../development/m5-auxiliary-query-plan-diagnostic-result-20260917.md)
 is independently accepted after two preserved diagnostic failures. It identifies
 dominant JIT cost in the fresh-plan small fixture, not the complete original
-full-failure cause. Independently review the narrow product JIT correction, retain
-the full query/five-second budget, then verify actual reconciliation and full
-regression/builds. The earlier capacity/status failures and storage
+full-failure cause. The correction has now passed its [targeted 8/16 scope](../development/m5-auxiliary-jit-fix-targeted-result-20260917.md),
+with full query/five-second budget unchanged. Existing generic-statement checks
+prove creation/execution with `jit=on`, cache/counter reuse and equal results,
+without directly observing JIT generation. The new `0add3118b99f` full scope is
+running in original SSH session `43043`; no full/build result is accepted yet.
+The earlier capacity/status failures and storage
 acceptance remain unchanged.
 The consumed catalog input
 must not be replayed; it does not supply product acceptance.
@@ -768,8 +777,8 @@ maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| `codex/programs-theme-diagnosis`, `3d6b79b`; transition admission integrated as `8477421` | Product verification/build, capture02, the retained captured check and actual saved product gate retain their accepted scopes. The [46-method transition/recovery components](../development/programs-transition-admission-verification-20260917.md) passed independently; main's unconditional dispatch hold is removed | Publish the revised CLI; earlier published `9b8d5e8a...` remains unchanged. Complete fresh execution admission and one actual transition under strict fresh-before and explicit recovery rules. Reuse the typed client framework and bind concrete inputs to actual facts; no transition/v4/client acceptance exists |
-| `codex/m5-deletion-diagnostics`, `138522b` | [Combined full failure](../development/m5-combined-full-reconciliation-failure-20260917.md) remains failed. The focused/phase scopes retain their non-reproduction results. The third [query-plan diagnostic](../development/m5-auxiliary-query-plan-diagnostic-result-20260917.md) passed one parent/two variants and independently closed; JIT accounts for about 99.93% of default execution in its fresh-plan small fixture. Both earlier diagnostic failures are preserved | Independently review a narrow product JIT correction with the full query and five-second proof budget unchanged, then verify actual reconciliation, full regression and builds. Later server/media checks, release `--frontend-contributions` and 59-asset equality remain open. No completed product fix, original full-failure cause, full pass or M5 acceptance is claimed |
+| `codex/programs-theme-diagnosis`, `3d6b79b`; transition admission integrated as `8477421` | Product, capture and entry-component scopes remain accepted; the separate [eight mocked caller-fault methods](../development/programs-transition-caller-fault-components-20260917.md) passed once and closed | Publish the revised CLI; earlier `9b8d5e8a...` remains unchanged. PowerShell execution, real final GC census and closer `inspect_attempt` are not covered by the eight methods. Complete actual fresh admission/transition with strict preservation and explicit recovery; no v4/client acceptance exists |
+| `codex/m5-auxiliary-jit-fix`, `9e70e4b`, based on M5 `138522b` | The [targeted JIT correction](../development/m5-auxiliary-jit-fix-targeted-result-20260917.md) passed 8 top-level/16 child cases once with independent result/closure review. Original reconciliation cases passed; complete SQL and five-second proof budget are unchanged. Earlier full and diagnostic failures retain their outcomes | The full scope `0add3118b99f` is running under original SSH session `43043`, with full/build outcomes unknown. Generic-statement checks do not directly observe JIT generation. Retain release `--frontend-contributions`, 59-asset equality and later browser obligations; no full pass or complete M5 acceptance is claimed |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md) connects the fixed media stages to native APIs, run ownership, conversion capacity and a Settings panel. The combined frontend and six diagnostic-configuration top-level tests passed in their recorded scopes. The failed full never reached media/server/transcode packages | Prepared Linux media, server-runtime, conversion-reservation, HTTP/real-FFmpeg and browser behavior remain unexecuted. Establish codec/content and available-hardware evidence under their own prerequisites. Defaults remain disabled; no runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |

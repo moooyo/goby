@@ -1,0 +1,84 @@
+{
+  "kind": "m5-auxiliary-jit-fix-targeted-result",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "passed_targeted_checks_and_independent_saved_closure_review",
+  "scope": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2",
+  "source": {
+    "gitHead": "9e70e4b61221018e11696bf8c7ed877d53770be7",
+    "changedFiles": 3,
+    "productionChange": "Temporarily disable JIT only for the auxiliary snapshot query and restore the incoming effective value.",
+    "completeAuxiliaryQueryChanged": false,
+    "fiveSecondProofBudgetChanged": false,
+    "files": 5461,
+    "uncompressedBytes": 121866094,
+    "archive": {"path": "/opt/goby-test/m5-auxiliary-jit-clean-source-20260917-740ee9597add/source.tar.gz", "bytes": 33532022, "sha256": "4bd2b903cc6cddffaf15ee9703555aada449ae58e0239dd7b717b4086f96e265"},
+    "preparation": {"path": "/opt/goby-test/m5-auxiliary-jit-clean-source-20260917-740ee9597add/source-preparation.json", "bytes": 4140, "sha256": "359e6d376760a0c6d07a0df8523a2273864a2f56b4067e77a178c31a7a57ac15"},
+    "testedFiles": [
+      {"repositoryPath": "internal/library/auxiliary_catalog_changes.go", "bytes": 16384, "sha256": "f985eb7851de4e6c681f1ec53112b927acd42fb8e9fcfc214168389c57e10e14"},
+      {"repositoryPath": "internal/library/auxiliary_catalog_jit_integration_test.go", "bytes": 12833, "sha256": "e3871ccb9b76a1c880a46e8bc06de98da67a40efa4f57d4521faffc54ed5168f"},
+      {"repositoryPath": "internal/library/auxiliary_catalog_jit_test.go", "bytes": 5418, "sha256": "fc15f3841e45a5d3913106d22c976789455e7d7dc9622dd4ee77fd5ea55e7a92"}
+    ]
+  },
+  "execution": {
+    "runs": 1,
+    "topLevelPasses": 8,
+    "childPasses": 16,
+    "runAndPassCountPerCase": 1,
+    "failed": 0,
+    "skipped": 0,
+    "packageElapsedSeconds": 3.418,
+    "originalSshSessionId": 20715,
+    "initialToolChunk": "2a89aa",
+    "terminalToolChunk": "a8de7b",
+    "originalSshExitCode": 0,
+    "raceOrTimeoutObserved": false
+  },
+  "coverage": {
+    "originalReconciliation": "Both previously failing top-level tests and both original music children ran and passed within this targeted invocation.",
+    "defaultStatementCache": "Incoming JIT on/off with commit/rollback, repeated production snapshots, the same named cached statement and equal full fields/bookkeeping.",
+    "existingGenericStatement": "A named statement created and executed with jit=on and force_generic_plan is reused with the same name; its generic counter advances from one to two without custom plans, with equal full results.",
+    "jitGenerationDirectlyObservedForGenericStatement": false,
+    "restorationAndOwnership": "The transaction-local JIT value and post-commit/rollback session baseline restore; a real ownedTx remains usable after ordinary caller cancellation, with the same ownership connection and a subsequent transaction.",
+    "failureAndBounds": "Row/byte resync bounds, empty/invalid seeds and synthetic query/scan/iteration/restoration failures preserve errors, close rows and return no usable partial snapshot."
+  },
+  "evidence": {
+    "independentReview": {"path": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2/private/independent-review.json", "bytes": 14511, "sha256": "ed64361d5e2866fb8418b2450538c4370b503060cfeef0accccb5a2028a61f9b"},
+    "input": {"path": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2/private/input.json", "bytes": 8163, "sha256": "7606bac3f428bc1e1939b12cc1f97d8a1c6ba137a1bda2f4446561df80ed773e"},
+    "execution": {"path": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2/execution.json", "bytes": 118819, "sha256": "56f330c320b1632d0680324e58a672194240e85a1f9f712df1462d45298781c3"},
+    "closure": {"path": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2/closure.json", "bytes": 13106, "sha256": "9d0562e6d6731b30ccab998f430d1a2786404ccec39b31fe86ad8220c7048f23"},
+    "outerDispatch": {"path": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2/private/outer-dispatch-result.json", "bytes": 942, "sha256": "1476bf1d38ac4572ed0fa545edc9690abfbde5a0cc5308b86b5f3bc12eab02eb"},
+    "archive": {"path": "/opt/goby-test/m5-auxiliary-jit-fix-targeted-7eee542f28d2/retained/full-private.tar.gz", "bytes": 19636513, "sha256": "e482eae3816f3047795ca7895f3134df3b54c2d5a885dee96dad8f83ae931eda"}
+  },
+  "closure": {
+    "adapterCommandsClosed": 64,
+    "workerCommandsClosed": 23,
+    "ownedPostgresStopped": true,
+    "privateBindRemoved": true,
+    "privateUnitAndRecursiveCgroupEmpty": true,
+    "terminalUnit": {"LoadState": "not-found", "ActiveState": "inactive", "MainPID": "0"},
+    "threeVolumesClosed": true,
+    "outerChildWaitedAndGroupEmpty": true,
+    "lockReleased": true,
+    "protectedBeforeAfterExact": true,
+    "sourceUnchanged": true,
+    "originalReceiptsModified": false
+  },
+  "separateFullAttemptAtThisCheckpoint": {
+    "scope": "/opt/goby-test/m5-combined-full-0add3118b99f",
+    "status": "started_result_pending",
+    "originalSshSessionId": 43043,
+    "initialToolChunk": "038a19",
+    "inputBytes": 8018,
+    "inputSha256": "f9a275dd22821104c05f0a452d42a70ab355cbb8d886f08a3ed1c22fe2f95674",
+    "fullOrBuildResultAccepted": false,
+    "basis": "Root supplied the original running-session state; this documentation update performed no runtime observation."
+  },
+  "limits": [
+    "Acceptance covers this one targeted invocation on 9e70e4b. Go test elapsed totals are not measurements of the five-second proof itself.",
+    "Cached-statement coverage proves jit=on creation/execution, the same statement identity/counters and equal results. It does not directly observe that those generic plans generated JIT code.",
+    "The separate full attempt is still running in original SSH session 43043 at this documentation checkpoint; no full or build result is accepted here.",
+    "The original fcf3 full failure, two failed query-plan attempts and earlier diagnostic scopes retain their own results. This is not full-suite, application/release-build, frontend or deployment acceptance.",
+    "This documentation update read the saved independent-review JSON only; it ran no tests, validators, runtime probes, SQL or service actions, and did not read the large archive."
+  ]
+}
