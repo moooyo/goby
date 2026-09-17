@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pure successor guards and fixed saved-artifact replay; never candidate IO."""
 import copy
+from contextlib import ExitStack, redirect_stdout
 from datetime import datetime, timedelta
 import hashlib
 import importlib.util
@@ -596,6 +597,298 @@ class SuccessorGuards(unittest.TestCase):
         mkdir.assert_not_called()
         replace.assert_not_called()
 
+    def recovery_run_fixture(self, running):
+        """Exercise the real recovery orchestration against finite in-memory IO."""
+        recovery, transition, review, failure, entry, failed, current = self.programs_recovery_fixture(running)
+        addition = M.validate_programs_recovery_review(recovery, transition, review, failure, entry, failed, current)
+        old = copy.deepcopy(self.parent["candidate"])
+        current["current"].update(serverIdentity=copy.deepcopy(old["serverIdentity"]), listener=copy.deepcopy(old["listener"]),
+            postgresProcess=copy.deepcopy(entry["postgresAfter"]), postgresProperties=copy.deepcopy(old["processes"]["postgres"]),
+            lease=copy.deepcopy(entry["leaseAfter"]))
+        stopped, after = copy.deepcopy(failed), copy.deepcopy(failed)
+        stopped["candidateBefore"] = stopped["candidateAfter"] = stopped["leaseBefore"] = stopped["leaseAfter"] = None
+        for row in stopped["diagnostics"]["registry"]["files"]:
+            row.update(closed=True, size=stopped["diagnostics"]["files"][row["name"]]["bytes"])
+        when = (instant(failed["databaseNow"]) + timedelta(seconds=2)).isoformat()
+        after.update(capturedAt=when, databaseNow=when)
+        for section in ("source", "inactiveStage"):
+            after[section]["capturedAt"] = when
+        binary_path = str(M.C / "install/goby")
+        facts = after["fixedFiles"][binary_path]
+        facts.update(sha256=M.PROGRAMS_OLD_BINARY, bytes=entry["fixedFiles"][binary_path]["bytes"])
+        if running:
+            facts.update(ino=facts["ino"] + 1, mtimeNs=facts["mtimeNs"] + 1, ctimeNs=facts["ctimeNs"] + 1)
+            next(row for row in after["source"]["tables"]["task_definitions"] if row["id"] == addition["id"]).update(
+                enabled=False, revision=2, updated_at=when)
+        process = copy.deepcopy(current["current"]["candidateProcess"])
+        process.update(pid=process["pid"] + 200000, startTicks=str(int(process["startTicks"]) + 200000), exeInode=facts["ino"])
+        server = copy.deepcopy(old["processes"]["server"])
+        server.update(MainPID=str(process["pid"]), InvocationID="c" * 32)
+        server_identity = copy.deepcopy(old["serverIdentity"])
+        server_identity.update(pid=process["pid"], startTicks=process["startTicks"], executableInode=process["exeInode"], invocationId=server["InvocationID"])
+        listener = copy.deepcopy(old["listener"])
+        listener.update(pid=process["pid"], socketInode=str(int(listener["socketInode"]) + 2))
+        after["candidateBefore"] = after["candidateAfter"] = {**process,
+            "listener": {"host": "127.0.0.1", "port": listener["port"], "socketInode": listener["socketInode"]}}
+        lease = copy.deepcopy(current["current"]["lease"])
+        lease.update(backendPid=lease["backendPid"] + 200000, backendStart=when)
+        lease["candidateConnection"].update(pid=process["pid"], localPort=lease["clientPort"], remotePort=old["ports"]["postgres"],
+            socketInode=str(int(lease["candidateConnection"]["socketInode"]) + 2))
+        after["leaseBefore"] = after["leaseAfter"] = lease
+        diagnostic = after["diagnostics"]
+        new_entry = copy.deepcopy(diagnostic["registry"]["files"][-1])
+        for row in diagnostic["registry"]["files"]:
+            log = diagnostic["files"][row["name"]]
+            log["prefixSha256"] = log["sha256"]
+            row.update(closed=True, size=log["bytes"])
+        name = "goby-" + diagnostic["registry"]["token"] + "-" + "a" * 32 + ".jsonl"
+        self.assertNotIn(name, diagnostic["files"])
+        new_log = copy.deepcopy(next(iter(diagnostic["files"].values())))
+        new_log.update(ino=max(row["ino"] for row in diagnostic["files"].values()) + 1, bytes=0, sha256=M.digest(b""))
+        new_log.pop("prefixSha256", None)
+        new_entry.update(name=name, closed=False, size=0, created=when, identity={"device": new_log["dev"], "inode": new_log["ino"]})
+        diagnostic["registry"]["files"].append(new_entry)
+        diagnostic["files"][name] = new_log
+        raw = M.canonical(diagnostic["registry"])
+        registry = diagnostic["registryFile"]
+        registry.update(bytes=len(raw), sha256=M.digest(raw), ino=registry["ino"] + 1,
+            mtimeNs=registry["mtimeNs"] + 1, ctimeNs=registry["ctimeNs"] + 1)
+        states = {"recovery-before": copy.deepcopy(failed), "recovery-stopped": stopped, "recovery-after": after}
+        records, effects, files = {}, [], {binary_path: copy.deepcopy(failed["fixedFiles"][binary_path])}
+        host = {"stopped": not running}
+        job = OP.ProgramsRecovery.__new__(OP.ProgramsRecovery)
+        job.r, job.value, job.recovery_value, job.recovery_review = M, transition, recovery, review
+        job.entry_before, job.failed_state, job.current_runtime, job.added_definition = entry, failed, current, addition
+        old["binary"] = {"path": binary_path, "sha256": M.PROGRAMS_OLD_BINARY}
+        job.old, job.previous_epoch, job.seed = old, self.epoch_fixture()[0], copy.deepcopy(self.seed)
+        job.failed_process = None if not running else {key: value for key, value in failed["candidateAfter"].items() if key != "listener"}
+        job.output, job.private = Path(recovery["output"]), Path(recovery["output"]) / "private"
+        job.input_pin = memory_pin(job.output.with_name("programs-synthetic-recovery-input.json"), recovery)
+        job.source_pin, job.runtime_pin, job.transition_input_pin = self.parent["transitionHelper"], self.parent["runtimeHelper"], recovery["transitionInput"]
+        job.stage, job.calls, job.created, job.public_count = "product_preflight", {"stop": 0, "replace": 0, "start": 0}, False, 0
+        job.source_pins, job.old_bytes = {}, b"synthetic retained predecessor executable"
+        job.retention_review = {"kind": "programs-transition-activity-retention-provenance", "version": 1,
+            "status": "saved_provenance_reviewed_not_live_admission", "expectedActivityRetentionDays": 30,
+            "basis": {"preservedRuntimeEnvironmentSha256": M.PROGRAMS_ENV_SHA, "productArchive": transition["newSourceArchive"],
+                "generator": {"sha256": "9b83f402ce539155dc6d1eafc99786c87b593ca47c7834127aeaacd46335ab6a", "activityRetentionEnvironmentKeyOccurrences": 0},
+                "productMembers": [{"name": key, "sha256": value} for key, value in M.PROGRAMS_RETENTION_MEMBERS.items()]},
+            "savedActivityProjection": {"snapshot": copy.deepcopy(M.PROGRAMS_PRIOR_SOURCE)}}
+
+        def write_json(path, value):
+            self.assertNotIn(str(path), records)
+            records[str(path)] = copy.deepcopy(value)
+            effects.append(("record", Path(path).name))
+            return memory_pin(path, value)
+
+        def assert_stopped(*unused):
+            self.assertTrue(host["stopped"])
+
+        def capture(label, *, stopped=False):
+            self.assertEqual(stopped, host["stopped"])
+            effects.append(("capture", label))
+            state = copy.deepcopy(states[label])
+            job.source_pins[label] = write_json(job.private / ("source-" + label + ".json"), state["source"])
+            pin = write_json(job.private / (label + ".json"), state)
+            job.last_capture = {"label": label, "state": pin, "value": state}
+            M.validate_programs_state(state)
+            M.validate_programs_retention(job.retention_review, state, seconds=1800)
+            return state, pin
+
+        def command(label, argv):
+            self.assertEqual((label, argv), ("programs-recovery-stop", ["/usr/bin/systemctl", "stop", server["Id"]]))
+            self.assertFalse(host["stopped"])
+            host["stopped"] = True
+            effects.append(("stop", server["Id"]))
+            job.p.command_responsibilities.append({"processGroupClosed": True, "outcome": "acknowledged", "timedOut": False,
+                "descendantsRemained": False, "exitCode": 0, "sqlOutcome": None})
+
+        def write_binary(path, content, *, mode):
+            assert_stopped()
+            self.assertEqual((content, mode), (job.old_bytes, entry["fixedFiles"][binary_path]["mode"]))
+            files[str(path)] = copy.deepcopy(facts)
+
+        def replace(source, target):
+            assert_stopped()
+            self.assertEqual(str(target), binary_path)
+            self.assertEqual(files[str(source)]["sha256"], M.PROGRAMS_OLD_BINARY)
+            files[str(target)] = files.pop(str(source))
+            effects.append(("replace", binary_path))
+
+        def start(role):
+            assert_stopped()
+            self.assertEqual(role, "server")
+            self.assertEqual(files[binary_path]["sha256"], M.PROGRAMS_OLD_BINARY)
+            host["stopped"] = False
+            effects.append(("start", role))
+            job.p.command_responsibilities.append({"processGroupClosed": True, "outcome": "acknowledged", "timedOut": False,
+                "descendantsRemained": False, "exitCode": 0, "sqlOutcome": None})
+            return copy.deepcopy(server)
+
+        def public_read(route):
+            self.assertFalse(host["stopped"])
+            job.public_count += 1
+            return {"/readyz": (200, {"Status": "ready"}), "/healthz": (200, {"Status": "ok"}),
+                "/emby/System/Info/Public": (200, {"Id": job.seed["serverId"], "StartupWizardCompleted": True, "LocalAddress": old["publicUrl"]})}[route]
+
+        job.s = SimpleNamespace(write_json_once=Mock(side_effect=write_json), sync_dir=Mock(), read_checked=Mock(return_value=job.old_bytes))
+        job.p = SimpleNamespace(units={"server": server["Id"]}, command=Mock(side_effect=command), write=Mock(side_effect=write_binary),
+            start=Mock(side_effect=start), process=Mock(return_value=copy.deepcopy(server_identity)),
+            listener=Mock(return_value=copy.deepcopy(listener)), command_responsibilities=[])
+        job.g = SimpleNamespace(metadata=Mock(return_value=copy.deepcopy(process)))
+        job.io = SimpleNamespace(candidate=copy.deepcopy(old), reader=SimpleNamespace(current=copy.deepcopy(current["current"])))
+        job.recovery_saved, job.recovery_context = Mock(), Mock()
+        job.pin, job.assert_stopped = Mock(side_effect=lambda: self.assertFalse(host["stopped"])), Mock(side_effect=assert_stopped)
+        job.remaining, job.capture, job.public_read = Mock(return_value=900), Mock(side_effect=capture), Mock(side_effect=public_read)
+        job.file = Mock(side_effect=lambda path: (copy.deepcopy(files[str(path)]), None))
+        job.synthetic_replace = replace
+        return job, states, records, effects
+
+    def run_recovery_in_memory(self, job):
+        with patch.object(OP.os.path, "lexists", return_value=False), patch.object(OP.os, "mkdir"), \
+                patch.object(OP.os, "replace", side_effect=job.synthetic_replace), patch.object(OP.signal, "setitimer"), \
+                patch.object(OP.time, "monotonic", return_value=100), \
+                patch.object(OP.time, "sleep", side_effect=AssertionError("unexpected_readiness_retry")):
+            return job.run()
+
+    def invoke_recovery_run_cli(self, job):
+        """Let the real CLI failure branch retain the real recovery run's state."""
+        original_run = OP.ProgramsRecovery.run
+        def actual_run(cli_job, unused_handlers):
+            for key in ("input_pin", "source_pin", "runtime_pin"):
+                setattr(job, key, getattr(cli_job, key))
+            try:
+                with patch.object(OP.ProgramsRecovery, "run", original_run):
+                    return self.run_recovery_in_memory(job)
+            finally:
+                cli_job.__dict__.clear()
+                cli_job.__dict__.update(job.__dict__)
+        return self.invoke_programs_cli(job.recovery_value, ("--recover-failed",), actual_run)
+
+    def test_programs_recovery_completes_both_reviewed_modes_with_exact_state_and_closure(self):
+        for running in (False, True):
+            with self.subTest(running=running):
+                job, states, records, effects = self.recovery_run_fixture(running)
+                original_input = M.canonical(job.recovery_value)
+                result = self.run_recovery_in_memory(job)
+                self.assertEqual(result["status"], "original_binary_restored_awaiting_review")
+                self.assertEqual(result["calls"], {"stop": int(running), "replace": int(running), "start": 1})
+                self.assertEqual(result["publicRequests"], 3)
+                self.assertEqual(result["binary"]["sha256"], M.PROGRAMS_OLD_BINARY)
+                job.s.read_checked.assert_called_once_with(str(M.C / "install/goby"), M.PROGRAMS_OLD_BINARY)
+                self.assertEqual(result["originalProductEpoch"], job.value["previousEpoch"])
+                self.assertEqual(result["currentSource"], job.previous_epoch["currentSource"])
+                self.assertEqual(result["candidateProcess"]["pid"], states["recovery-after"]["candidateAfter"]["pid"])
+                self.assertEqual(result["sourceAfter"], job.source_pins["recovery-after"])
+                self.assertEqual(result["residualStaging"], [])
+                self.assertTrue(all(result[key] is False for key in ("automaticRetry", "automaticRollback", "candidateAdmissionComplete", "clientAcceptance")))
+                self.assertEqual(len(result["commandResponsibilities"]), 2 if running else 1)
+                first_action = next(index for index, row in enumerate(effects) if row[0] in ("stop", "replace", "start"))
+                self.assertLess(effects.index(("record", "recovery-claim.json")), first_action)
+                proof = records[str(job.private / "recovery-preservation.json")]
+                self.assertEqual((proof["existingSourceRowsExact"], proof["sequencesExact"]), (35, 5))
+                self.assertTrue(proof["allPriorPlayAndUserDataExact"] and proof["inactiveStageExact"] and proof["foreignReferencesExact"])
+                self.assertEqual(proof["refreshDefinition"], job.added_definition)
+                if running:
+                    self.assertLess(effects.index(("capture", "recovery-stopped")), effects.index(("replace", str(M.C / "install/goby"))))
+                    restored = next(row for row in states["recovery-after"]["source"]["tables"]["task_definitions"] if row["id"] == job.added_definition["id"])
+                    self.assertEqual((restored["enabled"], restored["revision"]), (False, 2))
+                else:
+                    job.p.command.assert_not_called()
+                    job.p.write.assert_not_called()
+                self.assertEqual(records[str(job.private / "recovery-result.json")], {key: value for key, value in result.items() if key != "receipt"})
+                self.assertEqual(M.canonical(job.recovery_value), original_input)
+
+    def test_programs_recovery_rejects_fresh_drift_and_retention_before_claim_or_service_actions(self):
+        for reason in ("fresh", "retention"):
+            with self.subTest(reason=reason):
+                job, states, records, effects = self.recovery_run_fixture(True)
+                fresh = states["recovery-before"]
+                if reason == "fresh":
+                    fresh["source"]["tables"]["users"][0]["name"] = "unreviewed actor change"
+                    expected = "programs_old_rows_changed_users"
+                else:
+                    expired = min(instant(row["created_at"]) for row in fresh["source"]["tables"]["activity_entries"]) + timedelta(days=30)
+                    fresh["capturedAt"] = fresh["databaseNow"] = fresh["source"]["capturedAt"] = expired.isoformat()
+                    expected = "programs_activity_retention_deadline"
+                with self.assertRaisesRegex(M.ContractError, expected):
+                    self.run_recovery_in_memory(job)
+                self.assertEqual(job.calls, {"stop": 0, "replace": 0, "start": 0})
+                self.assertNotIn(str(Path(job.value["output"]) / "private/recovery-claim.json"), records)
+                self.assertEqual([row for row in effects if row[0] in ("stop", "replace", "start")], [])
+                for operation in (job.p.command, job.p.write, job.p.start, job.public_read):
+                    operation.assert_not_called()
+
+    def test_programs_recovery_after_rejection_keeps_failure_state_without_repeating_service_actions(self):
+        for running in (False, True):
+            for reason in ("rows", "retention"):
+                with self.subTest(running=running, reason=reason):
+                    job, states, records, effects = self.recovery_run_fixture(running)
+                    after = states["recovery-after"]
+                    if reason == "rows":
+                        after["source"]["tables"]["users"][0]["name"] = "unreviewed post-start actor change"
+                        expected = "programs_old_rows_changed_users"
+                    else:
+                        expiry = min(instant(row["created_at"]) for row in after["source"]["tables"]["activity_entries"]) + timedelta(days=30)
+                        after["capturedAt"] = after["databaseNow"] = after["source"]["capturedAt"] = expiry.isoformat()
+                        expected = "programs_activity_retention_deadline"
+                    code, result = self.invoke_recovery_run_cli(job)
+                    self.assertEqual((code, result["code"]), (2, expected))
+                    self.assertEqual(result["kind"], "audited-programs-recovery-failure")
+                    self.assertEqual(result["status"], "programs_recovery_failed_resources_retained")
+                    self.assertEqual(result["input"], job.input_pin)
+                    self.assertEqual(result["transitionInput"], job.transition_input_pin)
+                    self.assertEqual(result["transitionFailure"], job.recovery_value["transitionFailure"])
+                    self.assertEqual(result["calls"], {"stop": int(running), "replace": int(running), "start": 1})
+                    self.assertEqual((job.p.command.call_count, job.p.write.call_count, job.p.start.call_count), (int(running), int(running), 1))
+                    self.assertEqual(len([row for row in effects if row[0] == "replace"]), int(running))
+                    self.assertEqual(len(self.cli_routes), 1)
+                    self.assertTrue(all(result[key] is False for key in ("automaticRetry", "automaticRollback", "candidateAdmissionComplete")))
+                    self.assertNotIn("failureCapture", result)
+                    self.assertNotIn(str(job.private / "recovery-result.json"), records)
+                    self.assertNotIn(str(job.private / "recovery-preservation.json"), records)
+                    self.assertEqual(records[str(job.private / "recovery-after.json")], after)
+                    self.assertEqual(job.last_capture["label"], "recovery-after")
+                    self.assertEqual(result["receipt"]["path"], str(job.private / "recovery-failure.json"))
+                    self.assertEqual(records[result["receipt"]["path"]]["code"], expected)
+                    self.assertEqual(result["commandResponsibilities"], job.p.command_responsibilities)
+                    self.assertEqual(self.cli_timer.call_args_list[-1].args, (OP.signal.ITIMER_REAL, 0))
+
+    def test_programs_recovery_success_receipt_write_failure_preserves_proof_without_automatic_actions(self):
+        for running in (False, True):
+            with self.subTest(running=running):
+                job, states, records, effects = self.recovery_run_fixture(running)
+                write = job.s.write_json_once.side_effect
+                attempts = []
+                def reject_success_receipt(path, value):
+                    if Path(path).name == "recovery-result.json":
+                        attempts.append(str(path))
+                        raise OSError("synthetic recovery result write failure")
+                    return write(path, value)
+                job.s.write_json_once.side_effect = reject_success_receipt
+                code, result = self.invoke_recovery_run_cli(job)
+                self.assertEqual((code, result["errorType"], result["code"]), (2, "OSError", "transition_operation_failed"))
+                self.assertEqual(result["kind"], "audited-programs-recovery-failure")
+                self.assertEqual(result["status"], "programs_recovery_failed_resources_retained")
+                self.assertEqual(result["input"], job.input_pin)
+                self.assertEqual(result["transitionInput"], job.transition_input_pin)
+                self.assertEqual(result["transitionFailure"], job.recovery_value["transitionFailure"])
+                self.assertEqual(result["calls"], {"stop": int(running), "replace": int(running), "start": 1})
+                self.assertEqual((job.p.command.call_count, job.p.write.call_count, job.p.start.call_count), (int(running), int(running), 1))
+                self.assertEqual(len([row for row in effects if row[0] == "replace"]), int(running))
+                self.assertEqual(len(self.cli_routes), 1)
+                self.assertTrue(all(result[key] is False for key in ("automaticRetry", "automaticRollback", "candidateAdmissionComplete")))
+                self.assertNotIn("failureCapture", result)
+                self.assertEqual(attempts, [str(job.private / "recovery-result.json")])
+                self.assertNotIn(attempts[0], records)
+                self.assertEqual(records[str(job.private / "recovery-after.json")], states["recovery-after"])
+                proof = records[str(job.private / "recovery-preservation.json")]
+                self.assertEqual((proof["existingSourceRowsExact"], proof["sequencesExact"]), (35, 5))
+                self.assertEqual(proof["refreshDefinition"], job.added_definition)
+                self.assertEqual(result["receipt"]["path"], str(job.private / "recovery-failure.json"))
+                self.assertEqual(records[result["receipt"]["path"]]["errorType"], "OSError")
+                self.assertEqual(result["commandResponsibilities"], job.p.command_responsibilities)
+                self.assertEqual(self.cli_timer.call_args_list[-1].args, (OP.signal.ITIMER_REAL, 0))
+
     def saved_reader(self, additional=None):
         documents = copy.deepcopy(self.documents)
         documents.update(additional or {})
@@ -943,6 +1236,173 @@ class SuccessorGuards(unittest.TestCase):
         self.assertIn(identity(M.INACTIVE_STAGE), seen)
         for name in ("open", "capture", "public_read", "sql_json", "hosting", "run"):
             getattr(job, name).assert_not_called()
+
+    def invoke_programs_cli(self, value, flags=(), action=None):
+        """Exercise parsing, constructors and routing with all execution replaced."""
+        input_pin = memory_pin(M.R / "programs-synthetic-cli-input.json", value)
+        records = {identity(input_pin): copy.deepcopy(value)}
+        if value.get("kind") == "audited-candidate-programs-recovery-input":
+            records[identity(value["transitionInput"])] = self.programs_input_fixture()
+        self.cli_jobs, self.cli_routes, self.cli_saved, self.cli_handlers = [], [], [], {}
+        output = io.StringIO()
+        arguments = ["transition-audited-candidate.py", "--input", input_pin["path"], "--input-sha256", input_pin["sha256"],
+            "--source-sha256", "1" * 64, "--runtime-helper", str(M.R / "synthetic-runtime.py"),
+            "--runtime-helper-sha256", "2" * 64, *flags]
+
+        def initialize(job, runtime, selected, selected_pin, source_pin, runtime_pin):
+            job.r, job.value, job.input_pin = runtime, selected, selected_pin
+            job.source_pin, job.runtime_pin = source_pin, runtime_pin
+            job.output, job.private = Path(selected["output"]), Path(selected["output"]) / "private"
+            job.stage, job.calls, job.created = "product_preflight", {"stop": 0, "replace": 0, "start": 0}, False
+            job.s = SimpleNamespace(descriptor=lambda pin: copy.deepcopy(records[identity(pin)]))
+            job.p = SimpleNamespace(command_responsibilities=[])
+            job.capture_failure_evidence = Mock(return_value={"status": "not_captured", "reason": "synthetic_cli_boundary"})
+            def save(name, document):
+                self.cli_saved.append((name, copy.deepcopy(document)))
+                return memory_pin(job.private / name, document)
+            job.save = Mock(side_effect=save)
+            self.cli_jobs.append(job)
+
+        def run(job):
+            self.cli_routes.append((type(job).__name__, "run"))
+            if action is not None:
+                return action(job, self.cli_handlers)
+            return {"status": "synthetic_dispatch_completed", "actualExecution": False}
+
+        def checked(job):
+            self.cli_routes.append((type(job).__name__, "check_captured"))
+            return {"status": "synthetic_captured_check", "actualExecution": False}
+
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(OP.sys, "argv", arguments))
+            stack.enter_context(patch.object(OP, "sys", SimpleNamespace(platform="linux",
+                flags=SimpleNamespace(isolated=True, dont_write_bytecode=True))))
+            stack.enter_context(patch.object(OP.os, "geteuid", return_value=0))
+            stack.enter_context(patch.dict(OP.os.environ, {"SSH_CONNECTION": "synthetic_cli_transport"}))
+            stack.enter_context(patch.object(OP.os, "umask"))
+            stack.enter_context(patch.object(OP, "load_runtime", return_value=M))
+            stack.enter_context(patch.object(M, "read_bootstrap", side_effect=lambda pin:
+                M.canonical(records[identity(pin)]) if identity(pin) in records else b"synthetic_source_bytes"))
+            stack.enter_context(patch.object(OP.Transition, "initialize", autospec=True, side_effect=initialize))
+            for selected in (OP.ProgramsSuccessor, OP.ProgramsRecovery):
+                stack.enter_context(patch.object(selected, "run", autospec=True, side_effect=run))
+                stack.enter_context(patch.object(selected, "check_captured", autospec=True, side_effect=checked))
+            stack.enter_context(patch.object(OP.signal, "signal", side_effect=lambda number, handler:
+                self.cli_handlers.__setitem__(number, handler)))
+            self.cli_timer = stack.enter_context(patch.object(OP.signal, "setitimer"))
+            stack.enter_context(patch.object(OP.os, "mkdir", side_effect=AssertionError("cli_filesystem_forbidden")))
+            stack.enter_context(patch.object(OP.os, "replace", side_effect=AssertionError("cli_replacement_forbidden")))
+            stack.enter_context(patch.object(OP.subprocess, "Popen", side_effect=AssertionError("cli_process_forbidden")))
+            stack.enter_context(redirect_stdout(output))
+            code = OP.main()
+        return code, json.loads(output.getvalue())
+
+    def test_programs_cli_routes_transition_and_explicit_recovery_once(self):
+        transition = self.programs_input_fixture()
+        recovery = self.programs_recovery_fixture()[0]
+        for value, flags, selected in ((transition, (), "ProgramsSuccessor"),
+                (recovery, ("--recover-failed",), "ProgramsRecovery")):
+            with self.subTest(selected=selected):
+                code, result = self.invoke_programs_cli(value, flags)
+                self.assertEqual(code, 0)
+                self.assertEqual(result, {"status": "synthetic_dispatch_completed", "actualExecution": False})
+                self.assertEqual(self.cli_routes, [(selected, "run")])
+                self.assertEqual(len(self.cli_jobs), 1)
+                self.assertEqual(self.cli_saved, [])
+                self.assertEqual(self.cli_timer.call_args_list[-1].args, (OP.signal.ITIMER_REAL, 0))
+
+    def test_programs_cli_check_captured_never_dispatches_either_operation(self):
+        for value, selected in ((self.programs_input_fixture(), "ProgramsSuccessor"),
+                (self.programs_recovery_fixture()[0], "ProgramsRecovery")):
+            with self.subTest(selected=selected):
+                code, result = self.invoke_programs_cli(value, ("--check-captured",))
+                self.assertEqual((code, result["status"]), (0, "synthetic_captured_check"))
+                self.assertEqual(self.cli_routes, [(selected, "check_captured")])
+                self.cli_timer.assert_not_called()
+                self.assertEqual(self.cli_saved, [])
+
+    def test_programs_cli_rejects_wrong_recovery_flag_or_contract_before_dispatch(self):
+        transition = self.programs_input_fixture()
+        recovery = self.programs_recovery_fixture()[0]
+        invalid = copy.deepcopy(recovery)
+        invalid["budgets"]["maximumSeconds"] += 1
+        for value, flags, error in ((transition, ("--recover-failed",), "programs_recovery_flag_requires_recovery_input"),
+                (recovery, (), "programs_recovery_requires_explicit_flag"),
+                (invalid, ("--recover-failed",), "programs_recovery_scope")):
+            with self.subTest(error=error), self.assertRaisesRegex(M.ContractError, error):
+                self.invoke_programs_cli(value, flags)
+            self.assertEqual(self.cli_routes, [])
+            self.assertEqual(self.cli_saved, [])
+            self.assertEqual(self.cli_jobs, [])
+            self.assertEqual(self.cli_handlers, {})
+            self.cli_timer.assert_not_called()
+
+    def test_programs_cli_rejects_nonroot_before_loading_or_changing_umask(self):
+        with patch.object(OP.sys, "platform", "linux"), patch.object(OP.os, "geteuid", return_value=1000), \
+                patch.object(OP, "load_runtime") as load, patch.object(OP.os, "umask") as umask, \
+                self.assertRaisesRegex(ValueError, "authorized_isolated_root_ssh_required"):
+            OP.main()
+        load.assert_not_called()
+        umask.assert_not_called()
+
+    def test_programs_cli_retains_known_interruption_without_retry_or_rollback(self):
+        responsibilities = self.programs_recovery_fixture()[3]["commandResponsibilities"]
+        for recovery in (False, True):
+            value = self.programs_recovery_fixture()[0] if recovery else self.programs_input_fixture()
+            phase = "recovery_start_original" if recovery else "readiness"
+            def interrupted(job, handlers):
+                job.created, job.stage = True, phase
+                job.calls = {"stop": 1, "replace": 1, "start": 1}
+                job.p.command_responsibilities = copy.deepcopy(responsibilities)
+                handlers[OP.signal.SIGTERM](OP.signal.SIGTERM, None)
+            with self.subTest(recovery=recovery):
+                code, result = self.invoke_programs_cli(value, ("--recover-failed",) if recovery else (), interrupted)
+                self.assertEqual(code, 2)
+                self.assertEqual(result["status"], "programs_recovery_failed_resources_retained" if recovery else "transition_failed_resources_retained")
+                self.assertEqual(result["stage"], phase)
+                self.assertEqual(result["code"], "transition_deadline_" + phase)
+                self.assertEqual(result["calls"], {"stop": 1, "replace": 1, "start": 1})
+                self.assertEqual(result["commandResponsibilities"], responsibilities)
+                self.assertFalse(result["automaticRetry"])
+                self.assertFalse(result["automaticRollback"])
+                self.assertFalse(result["candidateAdmissionComplete"])
+                self.assertEqual(len(self.cli_routes), 1)
+                self.assertEqual(len(self.cli_saved), 1)
+                self.assertEqual(self.cli_saved[0][0], "recovery-failure.json" if recovery else "failure.json")
+                self.assertEqual(self.cli_timer.call_args_list[-1].args, (OP.signal.ITIMER_REAL, 0))
+                if recovery:
+                    self.assertEqual(result["kind"], "audited-programs-recovery-failure")
+                    self.assertEqual(result["transitionInput"], value["transitionInput"])
+                    self.assertEqual(result["transitionFailure"], value["transitionFailure"])
+                    self.assertNotIn("failureCapture", result)
+                    self.cli_jobs[0].capture_failure_evidence.assert_not_called()
+                else:
+                    self.assertEqual(result["kind"], "audited-programs-transition-failure")
+                    self.cli_jobs[0].capture_failure_evidence.assert_called_once_with()
+
+    def test_programs_failed_state_capture_requires_acknowledged_commands_and_budget(self):
+        values = self.programs_recovery_fixture(False)
+        job = OP.ProgramsSuccessor.__new__(OP.ProgramsSuccessor)
+        job.r, job.stage, job.before_pin = M, "replace", values[2]["before"]
+        job.p = SimpleNamespace(show=Mock(return_value=values[2]["serverProperties"]),
+            units={"server": values[2]["serverProperties"]["Id"]},
+            command_responsibilities=copy.deepcopy(values[3]["commandResponsibilities"]))
+        job.remaining = Mock(return_value=900)
+        job.capture = Mock(return_value=(values[5], values[2]["failedState"]))
+        with patch.object(OP.signal, "setitimer") as timer:
+            result = job.capture_failure_evidence()
+            self.assertEqual(result["state"], values[2]["failedState"])
+            self.assertEqual(result["status"], "captured_awaiting_independent_review")
+            self.assertIsNone(result["serverIdentity"])
+            job.capture.assert_called_once_with("failed", stopped=True)
+            self.assertEqual(timer.call_args_list[-1].args, (OP.signal.ITIMER_REAL, 900))
+            for reason in ("command_outcome_unknown", "insufficient_original_transition_budget"):
+                job.capture.reset_mock()
+                job.p.command_responsibilities[0]["outcome"] = "unknown" if reason == "command_outcome_unknown" else "acknowledged"
+                job.remaining.return_value = 59 if reason == "insufficient_original_transition_budget" else 900
+                rejected = job.capture_failure_evidence()
+                self.assertEqual(rejected, {"status": "not_captured", "reason": reason})
+                job.capture.assert_not_called()
 
 
 if __name__ == "__main__":

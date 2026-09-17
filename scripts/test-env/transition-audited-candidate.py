@@ -1200,9 +1200,6 @@ def main():
         except Exception as error:
             print(json.dumps({"status": "captured_contract_rejected", "stage": "captured_replay", "code": getattr(error, "code", "captured_contract_invalid"), "errorType": type(error).__name__, "businessWrites": 0}))
             return 2
-    # The pure-contract checkpoint must not dispatch before its explicit
-    # failed-transition recovery entry has been implemented and verified.
-    r.need(not isinstance(job, ProgramsSuccessor), "programs_execution_waits_for_recovery_admission")
     def expired(unused_signal, unused_frame):
         raise r.ContractError("transition_deadline_" + job.stage)
     for number in (signal.SIGALRM, signal.SIGTERM, signal.SIGINT):

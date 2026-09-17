@@ -1,0 +1,91 @@
+{
+  "kind": "programs-transition-admission-component-checkpoint",
+  "version": 1,
+  "status": "passed_component_checks_and_owned_closure",
+  "recordedOn": "2026-09-17",
+  "sourceBaseCommit": "8b1deadb1ba7ce81298381e663b5c667c6ff674b",
+  "branch": "codex/programs-transition-admission",
+  "scope": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502",
+  "unit": "goby-programs-transition-admission-components-20260917-3993f552a502.service",
+  "sourceScope": {
+    "frozenFiles": 3,
+    "changedRepositoryFiles": 2,
+    "productionChange": "Remove the three-line unconditional Programs dispatch hold in the isolated operator proposal.",
+    "runtimeRecoveryPolicyBudgetsAndHelperPinsChanged": false,
+    "mainOrEarlierPublishedOperatorsChangedByVerification": false
+  },
+  "sources": [
+    {"repositoryPath": "scripts/test-env/transition-audited-candidate.py", "bytes": 94984, "sha256": "72c177d474214871c1403b0227b47cb343507f530e5ac68783949514744ed0d7"},
+    {"repositoryPath": "scripts/test-env/test-transition-binary-successor.py", "bytes": 100925, "sha256": "78ac3cb3b504ece64f6cbce488278271e0724bdcf9510a949f2ab6c3c602ddde"},
+    {"repositoryPath": "scripts/test-env/audited-candidate-runtime.py", "bytes": 208632, "sha256": "2bbf5e4c9364fcc67b4261b9dceb145d2cf3f66fad86d6baadc2ee16a62893c3"}
+  ],
+  "groups": [
+    {"label": "successor", "file": "test-transition-binary-successor.py", "existingMethods": 36, "newMethods": 10, "tests": 46, "passed": 46, "failed": 0, "skipped": 0, "exitCode": 0, "runs": 1}
+  ],
+  "automaticReruns": 0,
+  "priorScoresReused": false,
+  "unexecutedGroups": ["runtime", "closer"],
+  "execution": {
+    "sshExecSession": 12173,
+    "sshExecExitCode": 0,
+    "outerExecEvidence": {"initialToolChunk": "8216ca", "completedToolChunk": "6f5ed7", "waitedToCompletion": true},
+    "operatorPid": 1851186,
+    "runnerPid": 1851189,
+    "testPidAndProcessGroup": 1851192,
+    "invocationId": "1dd1fef7a37e4e3fa2a644d603118211",
+    "runnerElapsedSeconds": 14.990301368001383,
+    "dispatchElapsedSeconds": 15.421807567006908,
+    "memoryPeakBytes": 104968192,
+    "memoryMaxBytes": 268435456,
+    "memorySwapMaxBytes": 0,
+    "cpuQuotaPercent": 25,
+    "tasksMax": 32,
+    "maximumSecondsPerGroup": 60,
+    "unitRuntimeMaxSeconds": 240,
+    "outerMaximumSeconds": 300,
+    "rawOutputFileLimitBytes": 8388608,
+    "minimumMemAvailableBytes": 1073741824,
+    "minimumRootAvailableBytes": 2147483648,
+    "freshMemAvailableBytes": 5571960832,
+    "freshRootAvailableBytes": 45019627520,
+    "admissionIsSelectedMarginNotMeasuredMinimum": true
+  },
+  "closure": {
+    "recordedPids": 26,
+    "recordedProcessGroups": 24,
+    "allRecordedPidsAndGroupsAbsent": true,
+    "componentAndOriginalSshSessionCgroupsEmpty": true,
+    "scratchEmpty": true,
+    "sourcesAndToolsUnchanged": true,
+    "rawStreamReadbacks": 50,
+    "rawStreamBytes": 36534,
+    "checkedReadDescriptorClosures": 65,
+    "descriptorNumbersReused": true,
+    "ownedProcessDescriptorsClosedByProcessExit": true,
+    "independentProcessFdCensusPerformed": false,
+    "cleanupErrors": [],
+    "lockAcquired": false,
+    "lockReleaseRequired": false
+  },
+  "evidence": {
+    "sourceManifest": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/source-manifest.json", "bytes": 4907, "sha256": "f8f5dde0779b56a6db69a1a5acb108972d04d564fe418be9cb1fab681573cd4c"},
+    "result": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/result.json", "bytes": 2517, "sha256": "0ec9a2c8c4b767d2867565df3eee83458ec0051b0b43abade0c230c018b175ca"},
+    "unitClosure": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/closure.json", "bytes": 37229, "sha256": "ac20030629624796fc2dd926d81d97de2c745379a6c906b65eec4781c5618496"},
+    "dispatchResult": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/dispatch-result.json", "bytes": 2495, "sha256": "2055e40cbb90891b4d3df9e74cd629b84d8e4c4e5f8265fd18ec07517d9f0bff"},
+    "sessionClosure": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/dispatch-session-closure.json", "bytes": 33995, "sha256": "cf374c3c335d15ea53096dca92e39e6e739edb2491c0955e73b6508f6d968e24"},
+    "successorStderr": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/successor.stderr", "bytes": 8218, "sha256": "733630632d08cee8331101aa4f63614f260a859594d2c7891db68373093dea7b"},
+    "independentReview": {"path": "/opt/goby-test/programs-transition-admission-component-checks-20260917-3993f552a502/private/independent-result-review.json", "bytes": 47380, "sha256": "39a28ae31d324f8c28f276686e0392d225c180bb1bdb7215b117d79caebbbb3d"}
+  },
+  "independentReview": {
+    "status": "passed_saved_evidence_review",
+    "scope": "Source and adapter diffs, exact unique method/pass-line inventory, both new after-start failure tests, raw streams and saved unit/session closure bindings.",
+    "additionalTestsOrLiveChecks": false
+  },
+  "applicationActions": {"sqlCalls": 0, "httpCalls": 0, "browserRuns": 0, "applicationServiceActions": 0, "postgresServiceActions": 0, "keyBodyReads": 0, "actualCaptures": 0, "actualTransitions": 0, "actualRecoveries": 0, "actualProductLoaderInvocations": 0},
+  "evidenceLimits": [
+    "Only the successor group ran once. The earlier 45 runtime and 71 closer checks were neither rerun nor added to the 46 methods; subtest combinations are not separate method counts.",
+    "Real recovery orchestration and CLI failure handling ran only on synthetic jobs with finite mocked IO. No actual transition, recovery, production-input admission or client acceptance is established.",
+    "The owned component unit was created and stopped. Main and earlier published operator copies retained their original hold at verification time.",
+    "Formal transition-source publication, fresh entry/recovery admission, client acceptance and remaining M2-M6 obligations retain their separate prerequisites."
+  ]
+}
