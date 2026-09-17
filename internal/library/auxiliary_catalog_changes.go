@@ -2,6 +2,7 @@ package library
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -88,13 +89,13 @@ func readAuxiliaryChildCatalogSnapshot(ctx context.Context, tx pgx.Tx, ownerID s
 	return readAuxiliaryCatalogSnapshot(ctx, tx, []string{ownerID})
 }
 
-func readAuxiliaryCatalogRows(ctx context.Context, tx pgx.Tx, ids, retained []string) (auxiliaryCatalogSnapshot, error) {
+func readAuxiliaryCatalogRows(ctx context.Context, tx pgx.Tx, ids, retained []string) (snapshot auxiliaryCatalogSnapshot, err error) {
 	// ownedTx.Query is the embedded pgx method. Keep its rows on the bounded
 	// ownership context so request cancellation cannot close the lease session.
 	if owned, ok := tx.(*ownedTx); ok {
 		ctx = owned.ctx
 	}
-	snapshot := auxiliaryCatalogSnapshot{items: make(map[string]auxiliaryCatalogItem)}
+	snapshot = auxiliaryCatalogSnapshot{items: make(map[string]auxiliaryCatalogItem)}
 	seeds := make(map[string]bool)
 	for _, id := range ids {
 		if !validCatalogLibraryIdentifier(id) || len(seeds) >= maxCatalogChanges && !seeds[id] {
@@ -110,6 +111,26 @@ func readAuxiliaryCatalogRows(ctx context.Context, tx pgx.Tx, ids, retained []st
 	}
 	sort.Strings(snapshot.ids)
 	snapshot.seeds = append([]string{}, snapshot.ids...)
+	// Compilation can dominate these bounded snapshots. Disable JIT only for
+	// this read, including cached plans, then restore the caller's effective
+	// setting before any later statement on the reserved ownership session.
+	var previousJIT string
+	if err := tx.QueryRow(ctx, `SELECT current_setting('jit')`).Scan(&previousJIT); err != nil {
+		return auxiliaryCatalogSnapshot{}, fmt.Errorf("read auxiliary catalog JIT setting: %w", err)
+	}
+	if previousJIT != "off" {
+		if _, err := tx.Exec(ctx, `SELECT set_config('jit', 'off', true)`); err != nil {
+			return auxiliaryCatalogSnapshot{}, fmt.Errorf("disable auxiliary catalog JIT: %w", err)
+		}
+		defer func() {
+			// The rows defer below runs first. An aborted transaction cannot
+			// restore here; its existing rollback also clears this LOCAL value.
+			if _, restoreErr := tx.Exec(ctx, `SELECT set_config('jit', $1, true)`, previousJIT); restoreErr != nil {
+				snapshot = auxiliaryCatalogSnapshot{}
+				err = errors.Join(err, fmt.Errorf("restore auxiliary catalog JIT setting: %w", restoreErr))
+			}
+		}()
+	}
 	rows, err := tx.Query(ctx, `WITH seeds AS (SELECT unnest($1::text[]) id), resources AS (
 		SELECT id FROM seeds UNION SELECT resource_item_id FROM item_theme_resources
 		WHERE active AND owner_item_id IN (SELECT id FROM seeds)
@@ -133,10 +154,12 @@ func readAuxiliaryCatalogRows(ctx context.Context, tx pgx.Tx, ids, retained []st
 	LEFT JOIN item_theme_resources theme ON theme.resource_item_id=i.id
 	LEFT JOIN item_extra_resources extra ON extra.resource_item_id=i.id
 	ORDER BY i.id`, snapshot.ids, maxCatalogChanges+1, retained)
+	if rows != nil {
+		defer rows.Close()
+	}
 	if err != nil {
 		return auxiliaryCatalogSnapshot{}, fmt.Errorf("read auxiliary catalog notification snapshot: %w", err)
 	}
-	defer rows.Close()
 	bytes := 0
 	for rows.Next() {
 		var item auxiliaryCatalogItem
