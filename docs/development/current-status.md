@@ -9,8 +9,13 @@ invocation `2d8403319f3943dbb3d1da638f33093e`, running `ead67c8f...` at inode
 `d0006145...`, use old A/runtime/guard as current authority, or repeat stop/replace/start.
 The original closer remains resources true/evidence false; independent failure/
 closure supplementation is complete without upgrading that original result.
-Finalization calls remain zero and no V4 or
-client admission exists. The [M5 header correction](m5-http-header-targeted-result-20260917.md)
+The [UTC rollover review and reader closure](programs-transition-utc-rollover-review-20260917.md)
+are now complete; writer-PID attribution remains a source/time/order inference,
+without a captured write syscall. Eight finalization source files are frozen at
+isolated commit `24ad7c1dfd49455f2dd723fca4c9940edca78121`, not merged into main or
+tested. Preparation of 21 methods and one separate saved-only check is underway.
+Actual finalization calls remain zero and no V4 or client admission exists.
+The [M5 header correction](m5-http-header-targeted-result-20260917.md)
 has separately passed two targeted tests and independent closure; complete M5
 full/build and overall M2-M6 delivery remain unfinished.
 The user confirmed that `test-env` is available on September 16 and then requested

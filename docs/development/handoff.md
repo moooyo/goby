@@ -1,18 +1,27 @@
 # Development handoff
 
-Current session checkpoint: **2026-09-16, A/B recovery, ready consumer v2 envelope
-and frozen client components passed; independent diagnostic and M5 source drafts are retained**.
-Execution is blocked pending the unanswered coordinated `test-env` window.
-The five preparation branches below preserve the available independent work;
-none supplies runtime acceptance for its prepared changes or new successor
-authority. A remaining-work audit found
-no necessary bounded implementation that can replace the held checks or missing
-profile facts. Do not treat an automatic goal continuation as a window response.
-Resume with the existing original theme subcase and retain the full M2-M6 scope.
-Start with the [incident record](programs-final-regression-incident.json), the [current execution plan](../planning/current-execution-plan.md),
-[core resolution](core-client-acceptance-resolution.md),
-[successor transition decision](e11-candidate-transition-decision.md), and
-[support matrix](../planning/support-and-delivery-matrix.md).
+Current checkpoint: **2026-09-17, preserve the running Programs successor and
+prepare verification of the frozen finalization sources**. S2 stopped, replaced
+and started A once, then failed preservation acceptance. A remains PID `1907978`
+on `ead67c8f...`; do not replay D000 or repeat stop/replace/start.
+
+The [UTC rollover evidence review](programs-transition-utc-rollover-review-20260917.md)
+and reader closure are complete. The nine old logs and exact 143 + 1101 = 1244
+byte correspondence are retained; writer attribution is inferred from pinned
+source, timing and action order, without write-syscall proof. Original CLI/
+caller/SSH exit 2 and closer evidence false remain; no V4 or client admission exists.
+
+Eight finalization files, including the Python/JavaScript sources and contract,
+are frozen at isolated commit
+`24ad7c1dfd49455f2dd723fca4c9940edca78121`, not merged into main, tested or executed
+as finalization. The 21-method group and one separate saved-only check are being
+prepared. Follow [current status](current-status.md) and the
+[current execution plan](../planning/current-execution-plan.md) for current work;
+complete M5 full/build and M2-M6 delivery remain unfinished.
+
+The September 16 preparation notes and `Next` instructions below are retained
+as historical checkpoints. Their pending window and execution statements are
+superseded by the current pointers above; they are not a queue to replay.
 
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
 identify `codex/programs-theme-diagnosis` at `3d6b79b`,
