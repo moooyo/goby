@@ -122,6 +122,7 @@
     "libraries": 2,
     "perLibrary": {"movies": 2000, "episodes": 2000, "audio": 1000},
     "mediaLeaves": 10000,
+    "provenance": "For the 2026-09-14 run, FFmpeg generated two tiny synthetic templates (black H.264 video and sine-wave FLAC audio), then exclusive byte copies expanded them into 10,000 media leaves. Distinct file identities do not imply independently generated or diverse content. The recorded byte totals below describe that historical corpus; 128 MiB was its allocated-byte ceiling. This is not a representative full-content performance benchmark or a claim of current corpus retention.",
     "catalogItems": 10688,
     "catalogFoldersIncludingPhysicalAndSynthetic": 688,
     "regularFilesIncludingAlbumNfo": 10200,

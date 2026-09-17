@@ -95,8 +95,13 @@ took 4588/4968/4431 ms with active, error-free contexts; the slowest had only
 about 32 ms of the unchanged five-second budget left. This is non-reproduction,
 not a cause or full-run correction. The earlier 255 source-status rejection and
 its original false closure fields remain separate from the physical-closure
-supplement. A later phase-timing overlay is prepared only. Programs transition
-admission has its own prerequisites and does not require M5 full success.
+supplement. The later [phase-timing diagnostic](m5-reconciliation-phase-timing-result-20260917.md)
+also passed two top-level/two child tests once and independently closed. Its two
+auxiliary snapshots consumed 99.2-99.4% of removal proof time, about 2.2 seconds
+each; deletion and final revalidation took about 1-2 ms and 3 ms respectively.
+The cause within JIT/planning/execution remains unknown, and no query-plan result
+is accepted. Programs transition admission has its own prerequisites and does
+not require M5 full success.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -223,8 +228,9 @@ activated. Static review and remote formatting are complete. The combined-source
 frontend typecheck/build and real schema-29 catalog export have since passed in
 their separate scopes. The combined full has failed and closed, retaining the
 completed deletion/activity/archive/config coverage. The focused reconciliation
-diagnostic passed once without reproduction; phase-timing preparation has no
-execution result. Final builds, later media/server and browser
+diagnostic and later phase-timing scope each passed once without reproduction;
+the latter localizes time to auxiliary snapshots without proving a cause or fix.
+Final builds, later media/server and browser
 acceptance remain pending. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain

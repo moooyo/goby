@@ -135,7 +135,8 @@
     "rootCauseEstablished": false,
     "productFixEstablished": false,
     "fullSuiteBuildReleaseFrontendOrBrowserAcceptance": false,
-    "laterPhaseTimingOverlay": "prepared_only_not_executed",
+    "laterPhaseTimingOverlayAtThisCheckpoint": "prepared_only_not_executed",
+    "subsequentPhaseTimingResult": "m5-reconciliation-phase-timing-result-20260917.json",
     "documentationMethod": "Read the saved independent-review JSON, existing failure record and failure-closure supplement only; no tests, validators, builds, runtime probes or service actions were executed."
   }
 }

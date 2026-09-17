@@ -56,8 +56,12 @@ subtests) and separate partial Library evidence, with no full-suite pass.
 Neither build or later media/server packages ran. The later [focused diagnostic](../development/m5-reconciliation-focused-diagnostic-result-20260917.md)
 passed two top-level tests and two music subtests once with independent closure.
 Its slowest removal callback proof observation left about 32 ms in the unchanged five-second
-budget. This non-reproduction does not clear the full failure; the next
-phase-timing overlay is prepared only. The earlier 255 source-status rejection
+budget. This non-reproduction does not clear the full failure. The later
+[phase-timing diagnostic](../development/m5-reconciliation-phase-timing-result-20260917.md)
+passed the same two top-level/two child tests once and independently closed;
+its two auxiliary snapshots accounted for 99.2-99.4% of removal proof time.
+The JIT/planning/execution cause and query-plan result remain unestablished.
+The earlier 255 source-status rejection
 and its separate closure supplement remain unchanged. Programs transition
 admission remains independent of M5 full success.
 No product root-cause correction is established. The other prepared
@@ -659,8 +663,11 @@ scope has now failed Library reconciliation and independently closed. Its
 11 completed passing packages exclude the partial failed Library counts. The
 17 selected new passing tests are a subset; server/media diagnostics and both
 builds remain unexecuted. The [focused diagnostic](../development/m5-reconciliation-focused-diagnostic-result-20260917.md)
-passed once without reproduction or root-cause proof; the next phase-timing
-overlay is only prepared. The earlier capacity/status failures and storage
+passed once without reproduction or root-cause proof. The later
+[phase-timing result](../development/m5-reconciliation-phase-timing-result-20260917.md)
+also passed once and localizes almost all removal proof time to the two auxiliary
+snapshots. Investigate their cost without treating an unexecuted query-plan
+experiment as accepted. The earlier capacity/status failures and storage
 acceptance remain unchanged.
 The consumed catalog input
 must not be replayed; it does not supply product acceptance.
@@ -743,7 +750,7 @@ maintenance record supersedes the earlier unanswered-window blocker.
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
 | `codex/programs-theme-diagnosis`, `3d6b79b`; review-status tooling integrated as `8b1dead` | [Complete-source regression/build](../development/programs-complete-source-full-result-20260916.md), capture02, the retained captured check, separate 151/152 components and [actual saved product gate](../development/programs-saved-product-second-attempt-20260917.md) retain their accepted scopes. The caller failure remains preserved under composite acceptance | Prepare the isolated transition-admission worktree for entry/recovery execution review and concrete admission/client inputs. Reuse the artifact and typed episode/subtitle framework; `run()` checks fresh before-state before stopping A. Keep the technical hold; no v4 or client acceptance exists |
-| `codex/m5-deletion-diagnostics`, `138522b` | [Combined full failure](../development/m5-combined-full-reconciliation-failure-20260917.md) remains failed and independently closed. The [focused diagnostic](../development/m5-reconciliation-focused-diagnostic-result-20260917.md) passed two top-level/two music subtests once without reproduction; the slowest proof observation had about 32 ms remaining. Earlier failure records and frontend/storage acceptance remain unchanged | The phase-timing overlay is prepared only. Later server/media tests and both builds remain open, including release `--frontend-contributions` and package 59-asset equality. No root cause, fix, full pass or M5 acceptance is claimed |
+| `codex/m5-deletion-diagnostics`, `138522b` | [Combined full failure](../development/m5-combined-full-reconciliation-failure-20260917.md) remains failed. The focused and later [phase-timing diagnostic](../development/m5-reconciliation-phase-timing-result-20260917.md) each passed once without reproduction and independently closed. Two auxiliary snapshots account for 99.2-99.4% of the phase scope's removal proof time | Investigate auxiliary snapshot cost; JIT/planning/execution cause and query-plan acceptance remain unestablished. Later server/media tests and both builds remain open, including release `--frontend-contributions` and 59-asset equality. No root cause, fix, full pass or M5 acceptance is claimed |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md) connects the fixed media stages to native APIs, run ownership, conversion capacity and a Settings panel. The combined frontend and six diagnostic-configuration top-level tests passed in their recorded scopes. The failed full never reached media/server/transcode packages | Prepared Linux media, server-runtime, conversion-reservation, HTTP/real-FFmpeg and browser behavior remain unexecuted. Establish codec/content and available-hardware evidence under their own prerequisites. Defaults remain disabled; no runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |

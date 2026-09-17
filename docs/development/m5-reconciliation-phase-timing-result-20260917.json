@@ -1,0 +1,76 @@
+{
+  "kind": "m5-reconciliation-phase-timing-result",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "single_phase_timing_diagnostic_passed_original_failure_not_reproduced",
+  "scope": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4",
+  "source": {
+    "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+    "diagnosisOnly": true,
+    "releaseSource": false,
+    "files": 5460,
+    "uncompressedBytes": 121853667,
+    "membersMatchedAtExecution": true,
+    "archive": {"path": "/opt/goby-test/m5-reconciliation-phase-source-20260917-326ab7f5bbc4/source.tar.gz", "bytes": 33529222, "sha256": "6eebb2cdafdbaa2c28f04f1a2439ebd9ceae2d1a4e137526faca930e64158fcf"},
+    "preparation": {"path": "/opt/goby-test/m5-reconciliation-phase-source-20260917-326ab7f5bbc4/source-preparation.json", "bytes": 7090, "sha256": "5d4bf6e983c04e37d07eb6e670ed42e9d90e6dc444824bf3e52bb53dc130b19e"}
+  },
+  "evidence": {
+    "independentReview": {"path": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4/private/independent-review.json", "bytes": 18265, "sha256": "0af2098afa5071da3b0128415d85f8e934df49308f8950296e9855f0fd37c580"},
+    "phaseMetricsExtraction": {"path": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4/private/phase-metrics-extract.json", "bytes": 76193, "sha256": "b3586c6c32f670d74dc5580c8fc8d945c7671c0143949c070bc93775a5e6c30c"},
+    "archive": {"path": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4/retained/full-private.tar.gz", "bytes": 17339881, "sha256": "2c10740c29afb330211e8a168c7af693b548d93e9143a17e9372494490104b06"},
+    "execution": {"path": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4/execution.json", "bytes": 100296, "sha256": "d3f8c77d67d171a8273e81f00d3df4e5358e6d98763b25de1586552aec652b43"},
+    "closure": {"path": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4/closure.json", "bytes": 13083, "sha256": "d95f07b6bb695f41cf7ee9b7ae4428da77c30f54a92a5fb3ccfb595012ebe380"},
+    "outerDispatch": {"path": "/opt/goby-test/m5-reconciliation-diagnostic-30a3e933b9f4/private/outer-dispatch-result.json", "bytes": 908, "sha256": "4ce9c214a1e51ad30fffa3f48b10612bf2871fdf6d9b9542d6b702a2107f0b73"}
+  },
+  "outcome": {
+    "attempts": 1,
+    "topLevelTestsPassed": 2,
+    "musicSubtestsPassed": 2,
+    "caseRunCountEach": 1,
+    "packageElapsedSeconds": 15.809,
+    "originalSshSessionId": 83625,
+    "originalSshExitCode": 0,
+    "initialToolChunk": "9736d4",
+    "terminalToolChunk": "8a2804",
+    "diagnosticOutputCount": 16,
+    "callbackPairs": 8,
+    "observedContexts": "active",
+    "errorsObserved": false,
+    "originalFullFailureReproduced": false
+  },
+  "removalPhaseMetrics": [
+    {"case": "OldVersionOneMember", "proofElapsedMs": 4438, "auxiliaryBeforeMicroseconds": 2221497, "auxiliaryAfterMicroseconds": 2181912, "auxiliaryShareOfRoundedProofPercent": 99.220572, "deleteMembersMicroseconds": 1280, "finalRevalidateMicroseconds": 3024},
+    {"case": "InvalidTypedMetadata", "proofElapsedMs": 4453, "auxiliaryBeforeMicroseconds": 2208520, "auxiliaryAfterMicroseconds": 2217100, "auxiliaryShareOfRoundedProofPercent": 99.385134, "deleteMembersMicroseconds": 1761, "finalRevalidateMicroseconds": 2993},
+    {"case": "ScanReplacementRetainsThenOriginalResumesWithoutRebind", "proofElapsedMs": 4443, "auxiliaryBeforeMicroseconds": 2195314, "auxiliaryAfterMicroseconds": 2214641, "auxiliaryShareOfRoundedProofPercent": 99.256246, "deleteMembersMicroseconds": 2063, "finalRevalidateMicroseconds": 3364}
+  ],
+  "resourceClosure": {
+    "adapterCommandsClosed": 64,
+    "workerCommandsCompleted": 23,
+    "recordedPidsAbsent": 67,
+    "ownedPostgresPidAbsent": 1847061,
+    "workerPidAbsent": 1847023,
+    "workerPrivateUnitAndRecursiveCgroupEmpty": true,
+    "outerChildWaitedAndGroupEmpty": true,
+    "outerPidfdClosed": true,
+    "threeVolumesClosed": true,
+    "ownedLoopBackingsDoNotReferenceScope": true,
+    "privatePostgresBindRemoved": true,
+    "lockReleased": true,
+    "protectedBeforeAfterExact": true,
+    "sourceUnchanged": true,
+    "originalReceiptsModified": false
+  },
+  "retainedHistory": {
+    "originalFullFailure": "m5-combined-full-reconciliation-failure-20260917.json",
+    "priorFocusedDiagnosticAndSourceRejection": "m5-reconciliation-focused-diagnostic-result-20260917.json",
+    "fcf3FullStillFailed": true,
+    "e1DiagnosticNonReproductionUnchanged": true,
+    "scope255ZeroTestRejectionUnchanged": true
+  },
+  "limits": [
+    "The two auxiliary snapshots account for 99.2-99.4 percent of the rounded removal proof interval, with each snapshot taking about 2.2 seconds. This localizes measured time within this diagnostic only.",
+    "The specific JIT, planning, execution, SQL or filesystem cause is not established. No query-plan experiment ran in this scope and no query-plan result is accepted by this record.",
+    "This is not a product fix, full-suite result, application build, release, frontend or browser acceptance. The original full failure remains unchanged.",
+    "Independent review and this documentation pass used saved evidence. No tests, builds, runtime probes, SQL or service actions were executed for this documentation update."
+  ]
+}

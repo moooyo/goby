@@ -29,7 +29,9 @@ the failure supplement. The original incomplete closure and false `lockReleased`
 and `protectedUnchanged` fields remain intact. Only the diagnostic consumer predicate
 was corrected to accept the existing `prepared_source_only` source status.
 
-The later phase-timing overlay is prepared only. This diagnosis-only source is
+At this checkpoint the phase-timing overlay was prepared only. Its later
+[separate result](m5-reconciliation-phase-timing-result-20260917.md) does not
+change this attempt's outcome. This diagnosis-only source is
 not a release source, and this attempt supplies no full-suite, build, release,
 frontend or browser acceptance. This documentation pass read saved records only
 and ran no tests, validators, builds or runtime probes.

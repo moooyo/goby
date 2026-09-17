@@ -48,8 +48,13 @@ seconds and independently closed. Its removal callback proofs took 4588/4968/
 4431 ms with active, error-free contexts; the minimum remaining five-second
 budget was about 32 ms. Non-reproduction establishes no root cause or full-run
 fix. The earlier 255 source-status rejection preserves its original false
-closure fields with a separate physical-closure supplement. A later phase-timing
-overlay is prepared only; older failures and frontend/storage scopes remain unchanged.
+closure fields with a separate physical-closure supplement. The later
+[phase-timing diagnostic](../development/m5-reconciliation-phase-timing-result-20260917.md)
+passed both top-level and both child tests once in 15.809 seconds and independently
+closed. Two auxiliary snapshots consumed 99.2-99.4% of removal proof time, about
+2.2 seconds each; deletion took about 1-2 ms and final revalidation about 3 ms.
+This localizes measured time without establishing the JIT/planning/execution
+cause or a query-plan result. Older failures and frontend/storage scopes remain unchanged.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
 now includes the completed unique observer: two acknowledged read-only SQL
