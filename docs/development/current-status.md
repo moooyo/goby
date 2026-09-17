@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-16: **verify the combined M5 increment and bind the verified Programs artifact to recovered runtime authority**.
+Current priority on 2026-09-17: **verify the combined M5 increment and resolve the Programs saved product gate before transition admission**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -89,8 +89,8 @@ of the completed counts. Later media/server groups and both builds did not run.
 The 68 recorded PIDs, PG, cgroup, three volumes and lock are closed with protected
 state exact. The saved logs have no race or Go-timeout marker; later PG errors
 and the recorded memory peak establish no cause. A focused diagnostic is being
-prepared and has not run. Programs capture02 can proceed under shared-resource
-coordination; it does not require M5 full to pass.
+prepared and has not run. Programs capture02 and its later saved-file consumer
+have separate results below; their acceptance does not depend on M5 full passing.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -181,11 +181,20 @@ scope must not be retried. The [generation-key metadata correction](programs-gen
 has now passed a separate 151-check run (44/36/71), independent review and closure,
 and is integrated on main at `a5af0b6`. It permits only the reviewed stat-only key
 metadata; no real key body/hash or new capture was exercised by those components.
-The fresh source and capture02 input and r02 dispatcher are prepared. Programs retains its own
-passed artifact; capture needs a coordinated resource window, not a passing M5
-full result. Actual product loading, post-transition v4 records and client acceptance
-remain pending. The original 138/142 evidence, consumed capture01 and transition
-hold are unchanged.
+The [second actual capture](programs-state-capture-second-attempt-20260917.md)
+has now passed independent state and owned-resource closure review. All 16
+read-only SQL frontends closed, both 35-table/five-sequence snapshots match their
+history, and stat-only key metadata matched without a key-body read/hash.
+The exact 12-field startup summary supports retention and transition contracts
+at the captured database time only. The [first saved-file consumer](programs-saved-product-first-attempt-20260917.md)
+then passed `--check-captured` once on the real 23-field input, but its one actual
+`runtime.load_programs_product` call failed with `programs_artifact_independent_review`:
+the canonical review says `passed`, while complete-profile consumers expect
+`verified`. The original failure is retained and owned resources are closed.
+A correction is prepared but untested and not integrated. Large-archive
+acceptance, fresh entry and recovery admission remain open; no transition or
+post-transition v4/client acceptance exists. The separate 138/142/151 evidence,
+consumed capture01 and transition hold are unchanged.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
@@ -444,7 +453,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | Focused 14 top-level/118 subtest passes independently reviewed. The later final full worker failed Library: 11 complete passing packages/475 passes; 605 Library raw passes excluded; no ordinary or embedded build | Product track: Library diagnosis and resource coordination, then final verification/build. Reuse the passed frozen client components and prepare actual authority/live inputs independently. Both tracks join before A changes; full verification remains false |
+| Programs successor | [Complete-source verification](programs-complete-source-full-result-20260916.md) passed all 25 packages and both builds. [Capture02](programs-state-capture-second-attempt-20260917.md) passed independent state/closure review; the later captured-state CLI check passed once | [The first actual product loader](programs-saved-product-first-attempt-20260917.md) failed on the canonical review status mismatch. Verify and integrate the prepared consumer correction, then complete product-gate acceptance, fresh entry and recovery admission before the direct A transition. The hold and client acceptance remain open |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B recovered once with its existing binary/configuration. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | A recovered once with its existing binary/configuration and has a ready recovered-runtime envelope. Historical admission/client evidence and preparatory Programs constants do not establish a new artifact's admission |

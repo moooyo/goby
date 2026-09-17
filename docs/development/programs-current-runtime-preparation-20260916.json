@@ -2,7 +2,7 @@
   "kind": "programs-current-runtime-and-product-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "generation_key_metadata_components_passed_fresh_source_publication_and_capture02_preparing",
+  "status": "capture02_reviewed_captured_check_passed_actual_product_gate_failed",
   "observer": {
     "bytes": 15787,
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observe-current-runtime.py",
@@ -62,9 +62,9 @@
     "The prepared observer changed only DRAFT_ONLY and was remotely compiled before execution. The original pending input retains its null deadline/output; the later independently bound input was consumed exactly once."
   ],
   "remaining": [
-    "Publish the independently verified 151-check consumer sources in a fresh execution scope and prepare a new reviewed capture02 input. Preserve capture01's source/input/failure and partial files unchanged.",
-    "Coordinate the later capture with the active M5 full verification window. No new live capture is established by the 151 component run.",
-    "After successful capture and state review, complete the actual product/runtime consumers, retention/recovery and transition admission. The hold remains; post-transition version 4 records and client acceptance are still pending."
+    "Verify and integrate the prepared complete-profile consumer correction for the canonical passed product-review status. Preserve the original review and the first saved-product reader failure unchanged.",
+    "After the consumer correction is independently verified, complete actual product-gate acceptance in a fresh saved-file execution scope; large-archive acceptance was not reached by the failed attempt.",
+    "Reuse capture02's reviewed state and startup summary within their recorded time boundary. Complete fresh entry, retention/recovery and transition admission before the direct A transition. The hold remains; post-transition version 4 records and client acceptance are still pending."
   ],
   "limits": [
     "The original pending/draft inputs, observer/artifact/product-review drafts and preparation files retain their original bytes and outcomes. The actual observation input is consumed and must not be replayed.",
@@ -76,7 +76,8 @@
     "The new current-runtime envelope is published and the separate 44 + 28 + 70 component scope passed once. The earlier 42 + 28 + 68 source/results retain their own scope; they are not rewritten or combined into one run.",
     "The tested tooling is integrated on main at f45d73c and the two CLI files were published with identical bytes. Source publication and prepared capture/retention inputs do not execute the actual product loader, produce a version 4 successor epoch, remove the transition hold or establish client acceptance.",
     "The first actual capture failed with programs_unreviewed_key_path after 14 acknowledged read-only SQL frontends. Its CLI exit 2, unknown original outer SSH numeric exit and partial evidence retain the boundaries in programs-state-capture-first-attempt-20260916.json. The guard rejected before key-content opening/hashing, with no filename in the failure record.",
-    "The later stat-only generation-key correction passed a separate 44 + 36 + 71 component run and is integrated on main. Its real-key operations were mocked: no live key metadata, key body/hash, capture, product loader or transition was executed. Fresh source publication and capture02 preparation remain the next step."
+    "The later stat-only generation-key correction passed a separate 44 + 36 + 71 component run and is integrated on main. Its real-key operations were mocked: no live key metadata, key body/hash, capture, product loader or transition was executed in that component scope. The later actual capture02 and saved-product reader retain separate records.",
+    "Capture02 passed independent state/closure review. A subsequent actual check-captured invocation passed, followed by one product-loader failure at programs_artifact_independent_review. The canonical review remains passed; the consumer correction is prepared but not yet tested or integrated. No transition or client acceptance is established."
   ],
   "observerDraft": {
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
@@ -534,16 +535,34 @@
     "original138And142ScopesUnchanged": true,
     "capture01FailureAndConsumedInputUnchanged": true
   },
-  "nextCapturePreparation": {
+  "captureSecondAttempt": {
     "identifier": "capture02",
-    "status": "fresh_151_source_publication_and_input_preparation_pending",
+    "status": "captured_state_and_owned_closure_independently_reviewed",
+    "record": "programs-state-capture-second-attempt-20260917.json",
     "verifiedSourceRecord": "programs-generation-key-metadata-verification-20260916.json",
-    "newScopeRequired": true,
-    "publishedExecutionSourceRecord": null,
-    "input": null,
-    "dispatch": null,
-    "result": null,
-    "liveCaptureAcceptance": false,
+    "freshScopeUsed": true,
+    "inputConsumed": true,
+    "scopeReplayAllowed": false,
+    "actualInvocations": 1,
+    "originalSshExitCode": 0,
+    "readOnlySqlFrontends": 16,
+    "liveCaptureAcceptance": true,
+    "startupSummarySupportsCapturedInstantOnly": true,
+    "transitionHoldRemoved": false
+  },
+  "savedProductFirstAttempt": {
+    "record": "programs-saved-product-first-attempt-20260917.json",
+    "status": "captured_check_passed_product_gate_failed_owned_resources_closed",
+    "real23FieldInputPrepared": true,
+    "actualCheckCapturedInvocations": 1,
+    "checkCapturedPassed": true,
+    "actualProductLoaderInvocations": 1,
+    "productLoaderPassed": false,
+    "failureCode": "programs_artifact_independent_review",
+    "correctionPrepared": true,
+    "correctionTested": false,
+    "correctionIntegrated": false,
+    "transitionInvocations": 0,
     "transitionHoldRemoved": false
   }
 }

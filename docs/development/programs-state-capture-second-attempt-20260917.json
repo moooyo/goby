@@ -1,0 +1,195 @@
+{
+  "kind": "programs-state-capture-second-attempt",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "captured_state_and_owned_closure_independently_reviewed",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-02",
+  "inputConsumed": true,
+  "scopeReplayAllowed": false,
+  "input": {
+    "bytes": 2882,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/capture-input.json",
+    "sha256": "24bcca15de1b8c306593669176a33d8cc8de3a9b9f856422ce6d92a71120e4d6"
+  },
+  "runtimeHelper": {
+    "bytes": 208358,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/code/audited-candidate-runtime.py",
+    "sha256": "4d014e155d54f6602cd29dc141956af8268fdd79e2ba071bab6a3a92a0d9da52"
+  },
+  "captureSource": {
+    "bytes": 95233,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/code/transition-audited-candidate.py",
+    "sha256": "9b8d5e8ac8d07fef52d07dff1b7c14bfae25fb00c67b3abfd054f92cb3b28e24"
+  },
+  "sourcePublication": {
+    "bytes": 2402,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/source-publication.json",
+    "sha256": "7dc2bcca9bc3dd223c2890c7b2eb3bdc23c64556e85a4ade1ff1eff601d714be"
+  },
+  "captureResult": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-02/private/capture-result.json",
+    "bytes": 7667,
+    "sha256": "9f205509b364b9d5d786bbba21f80cabe2d0955d4383a3a2917db387b26bd2b2"
+  },
+  "originalCaptureResultStatus": "captured_awaiting_independent_review",
+  "reviewedState": {
+    "bytes": 1179738,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-02/private/reviewed.json",
+    "sha256": "fc8aa4a25fd3f64c8518437ee4a5dd51d5d957e80d4b878b5dcaa1add13e2706"
+  },
+  "sourceSnapshot": {
+    "bytes": 553557,
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-02/private/source-reviewed.json",
+    "sha256": "718c5afb13999fda4324d36e37e3f4a13962ad0318b875ec93bbfe43df0538b3"
+  },
+  "independentReview": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-02/private/independent-review.json",
+    "bytes": 13834,
+    "sha256": "c3b9e4b3da7a9952aa9e4816d5b0cb931d06357171f9d5de272ce9bd780ecdc2"
+  },
+  "startupSummary": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-state-capture-02/private/startup-summary.json",
+    "bytes": 2299,
+    "sha256": "84b83a340ed43ecde0d0b6485eec79d6a5e6277a015803a836e94237c08a9bf5"
+  },
+  "closure": {
+    "outer": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/capture-outer-closure.json",
+      "bytes": 43092,
+      "sha256": "464a1cc966d6385a26ce96fca797f50adc31016c7b1e5590473c8912355a5d9a"
+    },
+    "lock": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/capture-lock-closure.json",
+      "bytes": 1268,
+      "sha256": "2f79d0c78b9906d0e820d089161fed1bb9b82fbe3854131a261b660ccd660a93"
+    },
+    "session": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/capture-dispatch-session-closure.json",
+      "bytes": 22290,
+      "sha256": "d05232c3f4b6d182d76996d76d13b4a7346d310b5555ba99f315eba9446b766d"
+    },
+    "sshCallerExit": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/capture-ssh-caller-exit.json",
+      "bytes": 1039,
+      "sha256": "1401393e05385f63ac377687a4a6adb27a5a135916a04f3f25f540839840e80a"
+    }
+  },
+  "actualExecution": {
+    "invocations": 1,
+    "automaticRetries": 0,
+    "cliPid": 1793918,
+    "outerPid": 1793915,
+    "invocationId": "854c911fb0c84f54bd2fad59edb49847",
+    "sshSessionId": 9393,
+    "cliExitCode": 0,
+    "dispatcherExitCode": 0,
+    "originalSshExitCode": 0,
+    "toolChunkId": "8815a4",
+    "toolWallSeconds": 2.65,
+    "toolReturnedSynchronously": true,
+    "toolAsyncSessionId": null,
+    "readOnlySqlFrontends": 16,
+    "leaseReadOnlyTransactions": 2,
+    "allSqlAcknowledgedExitZero": true,
+    "businessWrites": 0,
+    "httpRequests": 0,
+    "applicationServiceActions": 0
+  },
+  "capturedState": {
+    "tablesPerSnapshot": 35,
+    "sequencesPerSnapshot": 5,
+    "sourceRows": 230,
+    "inactiveStageRows": 147,
+    "sourceAndInactiveHistoricalRowsAndSequencesExact": true,
+    "candidatePostgresLeaseHostingBeforeAfterEqual": true,
+    "currentRuntime": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/current-runtime-binding.json",
+      "sha256": "db22e3d954febd07c422d143027876a94782d3937e0ab374f80d566ba283c4ef"
+    },
+    "activityRows": 72,
+    "databaseNow": "2026-09-16T16:18:54.947417+00:00",
+    "databaseNowEqualsSourceCapturedAt": true,
+    "retentionDays": 30,
+    "transitionAndRecoverySeconds": 1800,
+    "minimumRetentionSlackAfterBudgetSeconds": 2300732.160822,
+    "retentionAcceptedAtCapturedTimeOnly": true,
+    "generationKeyAuthoritySha256": "047e68ffc9fc932146b365430b9ae00720ab6b7708cd52fce623f5c1f0388496",
+    "generationKeyIdentityFieldsCompared": 6,
+    "fixedAndTreeStatOnlyFactsEqual": true,
+    "realKeyBodyReadsOrHashes": 0,
+    "currentKeyHashClaimed": false,
+    "refreshMediaDefinitionAbsent": true
+  },
+  "evidenceAndClosure": {
+    "captureFilesReadBack": 85,
+    "captureFileBytes": 2527941,
+    "independentReviewRecords": 106,
+    "independentReviewRecordBytes": 5286583,
+    "independentPureValidationSeconds": 0.10668337903916836,
+    "pureFunctions": [
+      "validate_programs_capture_input",
+      "validate_programs_state",
+      "compare_programs_logical",
+      "validate_programs_retention",
+      "programs_recovery_master_authority",
+      "validate_current_runtime_schema"
+    ],
+    "productLoaderOrCheckCapturedInvokedByReview": false,
+    "outerCommandsClosed": 7,
+    "outerStreamsRead": 14,
+    "outerStreamBytes": 5559,
+    "recordedPidsAbsent": 26,
+    "recordedGroupsEmpty": 25,
+    "ownedUnitAndSshSessionCgroupsAbsent": true,
+    "lockMetadataUnchanged": true,
+    "lockReleasedAfterOwnedClosure": true,
+    "cleanupErrors": []
+  },
+  "startupSummaryContract": {
+    "kind": "audited-programs-transition-startup-state-review",
+    "version": 1,
+    "status": "captured_state_supports_bounded_transition_contract",
+    "exactTopLevelFields": 12,
+    "descriptorShape": "Pin2: path and sha256",
+    "supportsContractAtCapturedTime": true,
+    "freshTransitionEntryEstablished": false,
+    "productGateEvaluated": false,
+    "recoveryAdmissionComplete": false
+  },
+  "remainingStages": {
+    "real23FieldInputPreparedSeparately": true,
+    "preparedInputIsNotProductValidation": true,
+    "subsequentSavedConsumerRecord": "programs-saved-product-first-attempt-20260917.json",
+    "actualProductLoaderInvocations": 1,
+    "actualProductLoaderPassed": false,
+    "checkCapturedInvocations": 1,
+    "checkCapturedPassed": true,
+    "transitionInvocations": 0,
+    "candidateAdmissionComplete": false,
+    "clientAcceptance": false,
+    "transitionHoldRemoved": false
+  },
+  "retainedEvidence": {
+    "capture01": "programs-state-capture-first-attempt-20260916.json",
+    "capture01FailedConsumedUnchanged": true,
+    "componentRecords": [
+      "programs-binding-components-20260916.json",
+      "programs-final-binding-components-20260916.json",
+      "programs-generation-key-metadata-verification-20260916.json"
+    ],
+    "componentGroupsRemainSeparate": [
+      138,
+      142,
+      151
+    ],
+    "historicalTwoQueryRuntimeObservationUnchanged": true
+  },
+  "limits": [
+    "Capture02 establishes its recorded state and retention at databaseNow only. The 12-field startup summary is not a fresh transition-start observation, actual product gate or recovery admission.",
+    "The independently reviewed pure functions read saved records and did not construct EpochReader, EpochIO or ProgramsSuccessor. They do not substitute for actual product/runtime consumers on the prepared real input.",
+    "SQL frontend PIDs/groups closed; database backend disappearance was not queried. The application deployment-lease backend is expected to remain alive and lies outside the capture cgroup.",
+    "The generation key was handled as stat-only metadata under the saved 047e authority. No real key body/hash or historical hash projection is claimed.",
+    "Original capture-result.json retains captured_awaiting_independent_review. The independent review and startup summary are separate later records; capture01 and all historical outcomes are unchanged.",
+    "The original capture02 documentation update only read the saved small result/review/closure JSON. It did not rerun validators, capture, SQL, HTTP or service actions, and it did not copy the large state bodies. The later saved consumer has its own failed-attempt record."
+  ]
+}

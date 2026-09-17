@@ -64,14 +64,19 @@ not form reviewed state or successful capture. The guard rejected before key
 content was opened/hashed; no specific filename was recorded and the outer SSH
 numeric exit remains unknown. The [generation-key metadata correction](../development/programs-generation-key-metadata-verification-20260916.md)
 has now passed 44/36/71 components, independent review and closure, and is integrated
-at `a5af0b6`. Fresh source and capture02 input and r02 dispatcher are now prepared; the component
-run read no real key body/hash and performed no new capture. Programs retains its
-independently passed artifact, so capture needs shared-window resource closure
-and coordination, not a passing M5 full result.
-Capture01 remains failed and consumed. Actual product/runtime loader verification
-and post-transition v4 records remain pending. The original 138/142 results and
-transition hold remain unchanged;
-no transition or client acceptance is claimed.
+at `a5af0b6`; that component scope read no real key body/hash or live state.
+The later [capture02](../development/programs-state-capture-second-attempt-20260917.md)
+passed independent state/closure review after 16 acknowledged read-only SQL
+frontends. Its startup summary supports the contract at the captured time only.
+The [first actual saved-file consumer](../development/programs-saved-product-first-attempt-20260917.md)
+then passed `--check-captured`, but `runtime.load_programs_product` failed at
+`programs_artifact_independent_review`: the canonical review status is `passed`,
+while complete-profile consumers expect `verified`. The failed scope is closed
+and preserved. The correction is prepared but untested and not integrated;
+large-archive acceptance was not reached. Product-gate acceptance, fresh entry,
+retention/recovery and transition admission remain open. Capture01, the separate
+138/142/151 results and the transition hold are unchanged; no transition,
+post-transition v4 epoch or client acceptance is claimed.
 
 The latest fixed M5 media-refresh increment is committed and pushed as
 `5faf854`. Its [final ordinary regression](../development/m5-final-regression-verification.json)

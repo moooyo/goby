@@ -1,0 +1,94 @@
+{
+  "kind": "programs-saved-product-first-attempt",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "captured_check_passed_product_gate_failed_owned_resources_closed",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-01",
+  "invocations": 1,
+  "automaticRetries": 0,
+  "scopeReplayAllowed": false,
+  "input": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/transition-input.json",
+    "bytes": 5577,
+    "sha256": "d000614532a0647c7c0f1c3df4bd4a81de76eb637acd6546c66c3f664d690168",
+    "actualTopLevelFields": 23,
+    "startupSummaryBound": true
+  },
+  "captureRecord": "programs-state-capture-second-attempt-20260917.json",
+  "checkCaptured": {
+    "invocations": 1,
+    "passed": true,
+    "childExitCode": 0,
+    "stdout": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-01/worker/01-check-captured.stdout",
+      "bytes": 5771,
+      "sha256": "e3737fe3b4f966972735f8c0da78e856b4563cbcb263feff3b8d215b827594c5"
+    }
+  },
+  "actualProductLoader": {
+    "function": "runtime.load_programs_product",
+    "invocations": 1,
+    "passed": false,
+    "childExitCode": 2,
+    "failureType": "ContractError",
+    "failureCode": "programs_artifact_independent_review",
+    "stdout": {
+      "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-01/worker/02-product-loader.stdout",
+      "bytes": 1007,
+      "sha256": "c67469f2968180b2a9efe70b8e9bdee0cb9df8028500b20a915b01ba4aec6eff"
+    },
+    "largeArchiveAcceptanceReached": false
+  },
+  "reviewStatusMismatch": {
+    "canonicalReview": {
+      "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/product-independent-review.json",
+      "bytes": 7409,
+      "sha256": "da454f9b7b9be4d67847c0ae579c7be4d2aaee49ac1c2db4ad5e46707120854b"
+    },
+    "canonicalStatus": "passed",
+    "incorrectPythonAndJavaScriptCompleteProfileExpectedStatus": "verified",
+    "canonicalReviewUnchanged": true,
+    "correctionPreparedInSeparateProgramsWorktree": true,
+    "correctionTested": false,
+    "correctionIntegrated": false
+  },
+  "callerResult": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-01/caller-result.json",
+    "bytes": 3529,
+    "sha256": "f8f2cf93b4712e5ab1e34729dc67c044fbeba02185b069eadb39dc3368b3cffb"
+  },
+  "closureReadback": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-01/closure-readback.json",
+    "bytes": 14418,
+    "sha256": "2e4c192e6daefe05f5602b2c6fb18e74e583f2712147a641c92c03faca1cea2a"
+  },
+  "executionAndClosure": {
+    "originalSshExitCode": 2,
+    "toolChunkId": "749b31",
+    "toolReturnedSynchronously": true,
+    "toolAsyncSessionId": null,
+    "recordedPidsAbsent": 4,
+    "recordedGroupsEmpty": 3,
+    "ownedUnitCgroupAbsent": true,
+    "sourceAndInputPinsUnchanged": true,
+    "memoryPeakBytes": 47345664,
+    "memoryMaxBytes": 1073741824,
+    "cleanupErrors": []
+  },
+  "remainingGates": {
+    "freshTransitionEntryEstablished": false,
+    "productGateAccepted": false,
+    "recoveryAdmissionComplete": false,
+    "newDirectTransitionOutputCreated": false,
+    "transitionInvocations": 0,
+    "transitionHoldRemoved": false,
+    "newVersion4Epoch": false,
+    "clientAcceptance": false
+  },
+  "limits": [
+    "This was a saved-file consumer attempt. Existing application and PostgreSQL runtime were not re-observed; no syscall tracing or live-runtime acceptance is claimed.",
+    "The capture02 independent review did not invoke either actual consumer. The subsequent check-captured pass and product-loader failure are separate evidence, not a revision of capture02's accepted state and closure.",
+    "Capture01 remains failed and consumed. The separate 138, 142 and 151 component scopes and original product review retain their bytes and outcomes.",
+    "This documentation update read saved JSON and source text only; it did not execute tests, validators, capture or runtime probes."
+  ]
+}
