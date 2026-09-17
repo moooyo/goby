@@ -1,0 +1,68 @@
+{
+  "kind": "programs-transition-source-publication-checkpoint",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "published_and_read_back_not_dispatched",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421",
+  "publicationExecution": {
+    "publisher": "PowerShell source publisher",
+    "originalToolChunk": "1b8f88",
+    "originalToolExitCode": 0,
+    "evidenceBasis": "Root's saved complete publication stdout and original tool completion.",
+    "remotePublicationElapsedSeconds": 0.042743587982840836
+  },
+  "manifest": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421/private/source-manifest.json",
+    "bytes": 4087,
+    "sha256": "52ebef1cfe596877a800a67d5175fc5fcca2e59823d42329cac45f777a0e0c82"
+  },
+  "sourcePublication": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421/private/source-publication.json",
+    "bytes": 4860,
+    "sha256": "6404d44e17986a63e519fcad1cbbfa44b42a002590230193128b5893c725ed21"
+  },
+  "publishedSources": [
+    {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421/code/dispatch-transition.py", "bytes": 65466, "sha256": "f38233c4799e0ce00682b9b13e367530c8f4edd548c415ceb7f1351768094223"},
+    {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421/code/close-transition-session.py", "bytes": 46820, "sha256": "5f2664a233e4d2f2f58037e1222ae791f5ace337118dae8d543a5abd52d1ff84"},
+    {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421/code/transition-audited-candidate.py", "bytes": 94984, "sha256": "72c177d474214871c1403b0227b47cb343507f530e5ac68783949514744ed0d7"}
+  ],
+  "retainedBindings": {
+    "runtime": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/code/audited-candidate-runtime-review-status.py", "bytes": 208632, "sha256": "2bbf5e4c9364fcc67b4261b9dceb145d2cf3f66fad86d6baadc2ee16a62893c3"},
+    "input": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/transition-input.json", "bytes": 5577, "sha256": "d000614532a0647c7c0f1c3df4bd4a81de76eb637acd6546c66c3f664d690168"},
+    "helperRoles": ["admission", "gateway", "provision", "reconcile", "seed"],
+    "helperCount": 5,
+    "existingPathsUnchanged": true,
+    "runtimeInputAndHelpersActuallyReadBack": true,
+    "productCompositeAndClosureReadBack": true,
+    "captureSummaryAndStateReadBack": true,
+    "completeBindingPins": "The source-publication receipt retains all existing descriptors and their readback pins."
+  },
+  "scopeBoundary": {
+    "existingFilesModified": 0,
+    "publishedCodeExecuted": false,
+    "transitionDispatched": false,
+    "actualTransitionInvocations": 0,
+    "applicationServiceOperations": 0,
+    "sqlCalls": 0,
+    "lockOperations": 0,
+    "testsRun": 0,
+    "oldTestsReplayed": false,
+    "version4Accepted": false,
+    "clientAcceptance": false
+  },
+  "next": {
+    "resourceCoordination": "Review the original M5 failure evidence and independently review owned closure before fresh Programs execution admission; M5 success is not required.",
+    "relatedFullScope": "/opt/goby-test/m5-combined-full-0add3118b99f",
+    "originalSshSessionId": 43043,
+    "fullOutcomeAtThisCheckpoint": "pending_at_source_publication",
+    "subsequentObservedTerminal": {"terminalToolChunk": "91b1e8", "originalSshExitCode": 1, "independentFailureAndClosureReview": "pending"},
+    "freshBeforeAndRecoveryPolicyChecksRequired": true,
+    "actualRecoveryRequiresActualFailureAndSeparateInput": true
+  },
+  "limits": [
+    "The PowerShell publication script executed, but the published caller, closer and operator did not. Source publication and byte readback are not transition execution or acceptance.",
+    "The earlier operator copy 9b8d5e8a remains unchanged. Runtime 2bbf5e4c, input d0006145 and all five helpers retain their original paths.",
+    "The earlier 46-method entry and eight mocked caller-fault component results retain their own scopes. Publication reran no test or live entry check.",
+    "This documentation update used the saved local publication stdout and root's original terminal report. It made no new runtime observation or remote execution."
+  ]
+}
