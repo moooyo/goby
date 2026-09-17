@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-17: **verify the combined M5 increment and resolve the Programs saved product gate before transition admission**.
+Current priority on 2026-09-17: **continue M5 reconciliation diagnosis and prepare Programs transition/recovery entry admission**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -88,9 +88,15 @@ Seventeen selected new passes (deletion store/activity/archive/config) are a sub
 of the completed counts. Later media/server groups and both builds did not run.
 The 68 recorded PIDs, PG, cgroup, three volumes and lock are closed with protected
 state exact. The saved logs have no race or Go-timeout marker; later PG errors
-and the recorded memory peak establish no cause. A focused diagnostic is being
-prepared and has not run. Programs capture02 and its later saved-file consumer
-have separate results below; their acceptance does not depend on M5 full passing.
+and the recorded memory peak establish no cause. The later [focused diagnostic](m5-reconciliation-focused-diagnostic-result-20260917.md)
+passed the original two top-level tests and two music subtests once in 16.501
+seconds, with independent evidence/resource closure. Removal callback proofs
+took 4588/4968/4431 ms with active, error-free contexts; the slowest had only
+about 32 ms of the unchanged five-second budget left. This is non-reproduction,
+not a cause or full-run correction. The earlier 255 source-status rejection and
+its original false closure fields remain separate from the physical-closure
+supplement. A later phase-timing overlay is prepared only. Programs transition
+admission has its own prerequisites and does not require M5 full success.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -148,9 +154,9 @@ and the actual observation completed one cluster-identity query and one lease
 query. The ready consumer envelope `aed2914...` is published and validated against
 34 records before publication and after file readback. Historical `38b906...`
 remains its predecessor; product epoch, seed, admission and hosting are unchanged.
-The frozen Programs components still retain preparatory authority constants.
-Bind the new runtime authority and actual successor artifact together after final
-verification; the ready envelope alone is not an executable Programs input.
+Those frozen Programs components retained preparatory authority constants.
+The later binding and actual product acceptance below provide their own evidence;
+the historical ready envelope alone is not an executable Programs input.
 The later [binding component scope](programs-binding-components-20260916.json)
 passed runtime 42, successor 28 and closer 68 checks once with independent
 review and full closure. It covers the fixed producer source, second recovery
@@ -191,10 +197,21 @@ then passed `--check-captured` once on the real 23-field input, but its one actu
 `runtime.load_programs_product` call failed with `programs_artifact_independent_review`:
 the canonical review says `passed`, while complete-profile consumers expect
 `verified`. The original failure is retained and owned resources are closed.
-A correction is prepared but untested and not integrated. Large-archive
-acceptance, fresh entry and recovery admission remain open; no transition or
-post-transition v4/client acceptance exists. The separate 138/142/151 evidence,
-consumed capture01 and transition hold are unchanged.
+The [profile-specific correction](programs-review-status-verification-20260917.md)
+then passed 152 component checks and was integrated at `8b1dead`. The
+[second actual product readback](programs-saved-product-second-attempt-20260917.md)
+completed the loader once with real byte reads and has independent composite
+product/closure acceptance. Its caller remains failed with
+`resource_properties_changed`/SSH exit 2: the successful main exit and required
+resource properties were saved before the owned stop and subsequent unit
+garbage collection. The failed caller was not relabeled or the loader replayed.
+The artifact and typed episode/subtitle framework are available. Prepare the
+isolated transition-admission worktree for entry/recovery review and concrete
+admission/client inputs; this next scope is not verified or executed. Existing
+`run()` checks fresh before-state before stopping A; no capture03 label refresh
+is needed. Actual recovery input follows only an actual failure. No transition
+or v4/client acceptance exists; historical failures, separate component scopes
+and the technical hold remain unchanged.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
@@ -205,8 +222,9 @@ Settings panel. Diagnostics remain disabled by default; no deployment was
 activated. Static review and remote formatting are complete. The combined-source
 frontend typecheck/build and real schema-29 catalog export have since passed in
 their separate scopes. The combined full has failed and closed, retaining the
-completed deletion/activity/archive/config coverage; focused reconciliation
-diagnosis is only being prepared. Final builds, later media/server and browser
+completed deletion/activity/archive/config coverage. The focused reconciliation
+diagnostic passed once without reproduction; phase-timing preparation has no
+execution result. Final builds, later media/server and browser
 acceptance remain pending. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -258,14 +276,15 @@ compiler profile and later complete-source verification have since passed,
 including both builds and independent closure review. No `ownedTx.Query`
 fix is scheduled, and non-reproduction cannot clear the original full failure.
 [Client components](programs-client-component-verification.json) passed within
-their frozen scopes. Actual successor authority/artifact and admitted live inputs
-remain pending; no live journey has run. Reuse completed
+their frozen scopes, including the typed episode/subtitle framework. The actual
+artifact's saved-file gate is now accepted; transition/recovery entry review
+and concrete admission/client inputs remain pending. No live journey has run. Reuse completed
 recovery, component and observation evidence without repeating starts or consumed
-inputs. Keep other tool versions frozen; bind actual successor authority/artifacts
-after final verification, with no framework expansion.
+inputs. Keep other tool versions frozen and bind admitted inputs to the verified
+artifact and runtime authority, with no framework expansion.
 Do not replay old inputs or bypass the original guard. The Programs
-successor is built and retained; its transition still awaits current runtime and
-artifact binding. E11/G2 and the completed September 14 recovery retain their
+successor is built and retained; its transition still awaits execution entry
+admission under the technical hold. E11/G2 and the completed September 14 recovery retain their
 historical scopes. Final client acceptance and main promotion remain open.
 
 The earlier resumed work on 2026-09-15 completed the following scoped results.
@@ -449,15 +468,15 @@ application identities and all unchanged protected resources explicitly.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Current incident recovery and runtime binding | [A/B recovery, scoped preservation and ready v2 consumer envelope](candidate-lease-loss-recovery.json) are independently reviewed/validated. The actual observation used one cluster query and one lease query; the new envelope preserves both recovery generations | Reuse these completed scopes. Historical `38b906...` remains predecessor evidence; future Programs authority still needs binding to the actual verified successor. No repeated start/observation or Programs/client acceptance is implied |
+| Current incident recovery and runtime binding | [September 16 recovery](candidate-oom-exit-recovery-completed-20260916.md), the later two-query observation and `db22e3d...` envelope are independently reviewed within their scopes. The [saved product gate](programs-saved-product-second-attempt-20260917.md) is accepted separately | Reuse these completed scopes for transition entry review; the prior envelopes remain historical lineage. No repeated start/observation, transition or client acceptance is implied |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | [Complete-source verification](programs-complete-source-full-result-20260916.md) passed all 25 packages and both builds. [Capture02](programs-state-capture-second-attempt-20260917.md) passed independent state/closure review; the later captured-state CLI check passed once | [The first actual product loader](programs-saved-product-first-attempt-20260917.md) failed on the canonical review status mismatch. Verify and integrate the prepared consumer correction, then complete product-gate acceptance, fresh entry and recovery admission before the direct A transition. The hold and client acceptance remain open |
+| Programs successor | [Complete-source verification](programs-complete-source-full-result-20260916.md) passed all 25 packages and both builds. Capture02, the retained captured-state check, separate 151/152 components and [actual saved product gate](programs-saved-product-second-attempt-20260917.md) have their own accepted scopes | Prepare the isolated transition-admission worktree for transition/recovery entry review and concrete admission/client inputs. The artifact and typed episode/subtitle framework already exist. Fresh before-state is checked inside `run()` before stopping A; the technical hold remains, and no transition/v4/client acceptance is claimed |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B recovered once with its existing binary/configuration. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | A recovered once with its existing binary/configuration and has a ready recovered-runtime envelope. Historical admission/client evidence and preparatory Programs constants do not establish a new artifact's admission |
-| Core original client | MP3/FLAC retain their historical acceptance; video/subtitle failures remain unchanged. The consumed TV diagnostic and reference question informed the focused Programs correction | Complete final episode/subtitle contracts before transition; afterward execute movie/episode/subtitle journeys on the successor and close the explicit audio reuse bridge. No repeat diagnostic/reference work or automatic replay |
+| Core original client | MP3/FLAC retain their historical acceptance; video/subtitle failures remain unchanged. The typed movie/episode/subtitle framework passed its component scope | Prepare concrete input templates and binding plans before transition; bind execution inputs to the actual successor epoch and preceding closeouts when available. Execute the three journeys and close the explicit audio reuse bridge without repeated diagnostic/reference work or automatic replay |
 | M2 catalog | Real-media rescan/ACL and native amd64 stop/start proofs passed. A separate SQL-seeded 10,000-leaf/442-folder handler test passes ACL/UserData isolation during an owned transaction block; those earlier scopes have independent review and closure | The SQL baseline is not physical scan throughput, native TCP/service performance, RSS/SLO or actual kernel filesystem blocking. Representative real-file capacity, host durability and the paused full-scan mount proof remain open |
 | Real small-media capacity | The new 10,000-leaf scan/rescan test and affected seven-file shared-fixture regression passed independent review and resource closure; production is unchanged | This tiny valid-media and in-process Store-reopen profile does not prove HTTP/service performance, service/PG/host restart, actual filesystem stalls or a throughput SLO |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
@@ -466,9 +485,9 @@ application identities and all unchanged protected resources explicitly.
 The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
 maps those obligations to artifact/client/media/deployment slices and concrete
 next actions. The current target is the verified Programs successor. Its
-selected A transition still requires the completed journey/recovery contracts,
-September 16 application recovery and binding of the actual successor artifact
-to new runtime authority. The final-source regression and both builds have passed.
+selected A transition still requires entry/recovery execution review and concrete
+admission/client inputs. September 16 recovery, the runtime envelope, final-source
+regression, both builds and the saved product gate are retained prerequisites.
 
 The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
 passed one race test with zero failures/skips on base `892c536` plus one new

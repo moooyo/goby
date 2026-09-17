@@ -28,13 +28,16 @@ measured; the application lease backend is expected to remain alive.
 
 The exact 12-field Pin2 startup summary has status
 `captured_state_supports_bounded_transition_contract`. It supports the
-contract at the captured instant only. Fresh entry checks, actual product
-gate acceptance and recovery admission remain necessary. The real 23-field
+contract at the captured instant only. Fresh entry checks and recovery-route
+admission remain necessary. The real 23-field
 input and summary were subsequently consumed by the [first saved-file reader](programs-saved-product-first-attempt-20260917.md).
 `--check-captured` passed once, but `runtime.load_programs_product` failed once
 at `programs_artifact_independent_review`: the canonical review says `passed`,
-while the complete-profile consumer expected `verified`. The correction is
-prepared but untested and not integrated. No transition has run; the hold remains.
+while the complete-profile consumer expected `verified`. The correction later
+passed a separate 152-check scope and was integrated at `8b1dead`. The
+[second actual product readback](programs-saved-product-second-attempt-20260917.md)
+now has composite acceptance; its caller failure remains separately preserved.
+The captured-state check was not replayed. No transition has run; the hold remains.
 
 Capture01 remains failed and consumed. The 138, 142 and 151 component results
 retain separate scopes, as does the earlier two-query runtime observation.

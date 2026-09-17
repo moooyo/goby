@@ -159,9 +159,10 @@
   "remainingStages": {
     "real23FieldInputPreparedSeparately": true,
     "preparedInputIsNotProductValidation": true,
-    "subsequentSavedConsumerRecord": "programs-saved-product-first-attempt-20260917.json",
-    "actualProductLoaderInvocations": 1,
-    "actualProductLoaderPassed": false,
+    "subsequentSavedConsumerRecords": ["programs-saved-product-first-attempt-20260917.json", "programs-saved-product-second-attempt-20260917.json"],
+    "actualProductLoaderInvocations": 2,
+    "latestActualProductGateAccepted": true,
+    "firstProductLoaderFailureUnchanged": true,
     "checkCapturedInvocations": 1,
     "checkCapturedPassed": true,
     "transitionInvocations": 0,

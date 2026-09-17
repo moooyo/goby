@@ -1,0 +1,141 @@
+{
+  "kind": "m5-reconciliation-focused-diagnostic-result",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "single_focused_attempt_passed_original_failure_not_reproduced",
+  "scope": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38",
+  "originalFullFailureRecord": "m5-combined-full-reconciliation-failure-20260917.json",
+  "originalFullFailureScope": "/opt/goby-test/m5-combined-full-fcf3c8f4a474",
+  "source": {
+    "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+    "files": 5460,
+    "uncompressedBytes": 121852241,
+    "diagnosisOnly": true,
+    "releaseSource": false,
+    "membersMatchedAtExecution": true,
+    "archive": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-source-20260917-b03a4c6f733a/source.tar.gz",
+      "bytes": 33528894,
+      "sha256": "05bbe31993c5c94600293e32b928fa239e932507aad56c152d94e38bab1d164b"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-source-20260917-b03a4c6f733a/source-preparation.json",
+      "bytes": 2961,
+      "sha256": "e3e386d48ccd66f7fbc6c58e187057f217039db90f57e223f752aa5d3389bbdd"
+    }
+  },
+  "evidence": {
+    "archive": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38/retained/full-private.tar.gz",
+      "bytes": 17338566,
+      "sha256": "a2d86c9f48c21b261e5efead22094667c3c8e31d94b60cad63c05defae6e176c"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38/private/independent-review.json",
+      "bytes": 11496,
+      "sha256": "e8b48bc28e305ab971c8fba3bca51df9176447ffd1903653311fabac59ae406e"
+    },
+    "diagnosticExtraction": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38/private/diagnostic-output-extract.json",
+      "bytes": 30426,
+      "sha256": "c78292c0e1bf897d5ae3a10cf12afc127b1c87be32b6ac2a4eb29e66e20ef211"
+    },
+    "closure": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38/closure.json",
+      "bytes": 13083,
+      "sha256": "0964b8e13d61378e4592531416a3e074ed4b0f4e2c720ee869f59417416e89d0"
+    },
+    "outerDispatch": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38/private/outer-dispatch-result.json",
+      "bytes": 909,
+      "sha256": "d4ae69ddf217118a30c2e0c03533677ef04ebcad362c973f5cd89482cc380fcc"
+    },
+    "execution": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-e1f47328ab38/execution.json",
+      "bytes": 100327,
+      "sha256": "af3a97e1887fc40ad5b971a2f32aa9b4bcedde90e902b16a76adbd99445ce39d"
+    }
+  },
+  "outcome": {
+    "attempts": 1,
+    "selectedTestsPassed": true,
+    "packageElapsedSeconds": 16.501,
+    "originalSshExitCode": 0,
+    "caseRunCountEach": 1,
+    "caseTerminalActions": {
+      "TestScanReconciliationMusicMissingInvalidMemberAllowsAlbumRecovery": "pass",
+      "TestScanReconciliationMusicMissingInvalidMemberAllowsAlbumRecovery/OldVersionOneMember": "pass",
+      "TestScanReconciliationMusicMissingInvalidMemberAllowsAlbumRecovery/InvalidTypedMetadata": "pass",
+      "TestScanReconciliationScanReplacementRetainsThenOriginalResumesWithoutRebind": "pass"
+    },
+    "diagnosticOutputCount": 16,
+    "callbackPairs": 8
+  },
+  "removalCallbackObservations": {
+    "callbackPhase": "final_task_context",
+    "proofBudgetMs": 5000,
+    "cases": [
+      { "case": "OldVersionOneMember", "proofElapsedBeforeFinalizersMs": 4588, "callbackElapsedMs": 4592, "finalElapsedMs": 4594 },
+      { "case": "InvalidTypedMetadata", "proofElapsedBeforeFinalizersMs": 4968, "callbackElapsedMs": 4971, "finalElapsedMs": 4973 },
+      { "case": "ScanReplacementRetainsThenOriginalResumesWithoutRebind", "proofElapsedBeforeFinalizersMs": 4431, "callbackElapsedMs": 4434, "finalElapsedMs": 4437 }
+    ],
+    "ownedAndProofContextsBeforeFinalizers": "active",
+    "taskContexts": "active",
+    "errorsObserved": false,
+    "minimumProofBudgetMarginMs": 32,
+    "timingEstablishesRootCause": false
+  },
+  "resourceClosure": {
+    "adapterCommandsClosed": 64,
+    "workerCommandsCompleted": 23,
+    "recordedPIDsAbsent": 67,
+    "ownedPostgresStoppedAndPIDAbsent": true,
+    "workerPrivateUnitAndRecursiveCgroupEmpty": true,
+    "outerChildWaitedAndSavedGroupEmpty": true,
+    "outerPidfdClosed": true,
+    "threeVolumesClosed": true,
+    "ownedLoopBackingsDoNotReferenceScope": true,
+    "privatePostgresBindRemoved": true,
+    "lockReleased": true,
+    "protectedBeforeAfterExact": true,
+    "sourceUnchanged": true,
+    "originalReceiptsModified": false
+  },
+  "priorSourceAdmissionRejection": {
+    "scope": "/opt/goby-test/m5-reconciliation-diagnostic-255a27096f6d",
+    "originalAdapterExitCode": 1,
+    "originalSshExitCode": 1,
+    "originalSshToolChunk": "9ca46d",
+    "workerInvocations": 0,
+    "testInvocations": 0,
+    "volumesCreated": 0,
+    "lockAcquired": false,
+    "originalLockReleased": false,
+    "originalProtectedUnchanged": false,
+    "originalClosureComplete": false,
+    "originalExecution": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-255a27096f6d/execution.json",
+      "bytes": 6033, "sha256": "8e1b3048321c5ce870d92f6c0c36523aea6ec45f1576ae8296584593c363a272"
+    },
+    "originalClosure": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-255a27096f6d/closure.json",
+      "bytes": 1659, "sha256": "faa125b3ab0581d266002de21bdc44eeb06164559e60cb201f88d97368b5e1e2"
+    },
+    "failureSupplement": {
+      "path": "/opt/goby-test/m5-reconciliation-diagnostic-255a27096f6d/private/failure-closure-supplement-r01.json",
+      "bytes": 5964,
+      "sha256": "e5098041bbf63cfbe71e891ff210f22d83bd9834a0c41173809c459c6b83664d"
+    },
+    "closureBasis": "The supplement separately supports no payload start, no volumes and no acquired lock; it does not rewrite the original incomplete closure or false fields.",
+    "actualSourcePreparationStatus": "prepared_source_only",
+    "correction": "Only the diagnostic consumer admission predicate was corrected; source records and the original rejection evidence remain unchanged."
+  },
+  "limits": {
+    "originalFullRunStillFailed": true,
+    "rootCauseEstablished": false,
+    "productFixEstablished": false,
+    "fullSuiteBuildReleaseFrontendOrBrowserAcceptance": false,
+    "laterPhaseTimingOverlay": "prepared_only_not_executed",
+    "documentationMethod": "Read the saved independent-review JSON, existing failure record and failure-closure supplement only; no tests, validators, builds, runtime probes or service actions were executed."
+  }
+}

@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **verify the combined M5 increment and resolve the Programs saved product gate before transition admission**.
+Current priority: **continue M5 reconciliation diagnosis and prepare Programs transition/recovery entry admission**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the earlier expanded root disk was already in use. The user's
@@ -53,9 +53,13 @@ scope `/opt/goby-test/m5-combined-full-fcf3c8f4a474` has now [failed Library
 reconciliation and closed](../development/m5-combined-full-reconciliation-failure-20260917.md).
 Independent review accepts 11 completed passing packages (492 top-level/1993
 subtests) and separate partial Library evidence, with no full-suite pass.
-Neither build or later media/server packages ran. Prepare the bounded focused
-diagnostic; it has not executed. Programs capture02 and its later saved-file
-consumer have separate results below, independent of M5 full success.
+Neither build or later media/server packages ran. The later [focused diagnostic](../development/m5-reconciliation-focused-diagnostic-result-20260917.md)
+passed two top-level tests and two music subtests once with independent closure.
+Its slowest removal callback proof observation left about 32 ms in the unchanged five-second
+budget. This non-reproduction does not clear the full failure; the next
+phase-timing overlay is prepared only. The earlier 255 source-status rejection
+and its separate closure supplement remain unchanged. Programs transition
+admission remains independent of M5 full success.
 No product root-cause correction is established. The other prepared
 increments retain their separate, incomplete acceptance scopes.
 Keep the complete M2-M6 objective; M7 remains deferred.
@@ -72,10 +76,10 @@ accepts 33 runtime and 27 successor checks across two attempts. The actual
 observation then completed one cluster-identity query and one lease query.
 Ready consumer envelope `aed2914...` passed publication and file-readback
 validation against 34 records, with historical `38b906...` as predecessor and
-the product epoch/seed/admission/hosting bindings unchanged. Frozen Programs
-components still retain preparatory authority constants: after final verification,
-bind the actual successor artifact and new runtime authority together. No actual
-Programs input, artifact admission or client acceptance follows from this envelope.
+the product epoch/seed/admission/hosting bindings unchanged. Those frozen Programs
+components retained preparatory authority constants; later binding and actual
+product acceptance below have separate evidence. No actual Programs input,
+artifact admission or client acceptance follows from that historical envelope alone.
 The later [recovery-aware component scope](../development/programs-binding-components-20260916.json)
 passed runtime 42, successor 28 and closer 68 checks once, with independent
 result/source/closure review. Its frozen producer now supports the separately
@@ -103,10 +107,19 @@ then passed `--check-captured` once on the real 23-field input, but its one
 `runtime.load_programs_product` call failed at `programs_artifact_independent_review`:
 the canonical review status is `passed`, while complete-profile consumers
 expect `verified`. The original failure is retained and owned resources closed.
-Verify and integrate the prepared correction before fresh product-gate execution;
-large-archive acceptance was not reached. Fresh entry, retention/recovery and
-transition admission remain open. Capture01 and the separate 138/142/151 results
-are unchanged; no transition or post-transition v4/client acceptance exists.
+The [profile-specific correction](../development/programs-review-status-verification-20260917.md)
+then passed 152 checks and was integrated at `8b1dead`. The [second actual product readback](../development/programs-saved-product-second-attempt-20260917.md)
+completed once and has independent composite product/closure acceptance. Its
+caller remains `failed_retained`/SSH exit 2 after reading garbage-collected unit
+properties; the successful main exit and resource properties were saved before
+the owned stop. No loader or captured-state check was replayed for acceptance.
+Prepare an isolated transition-admission worktree for execution entry/recovery
+review and concrete admission/client inputs. The artifact and typed episode/
+subtitle framework already exist; this next scope is not verified or executed.
+The existing `run()` checks fresh before-state before stopping A, so capture03
+is not needed merely to refresh a label. A real recovery input follows only a
+real failure. Capture01 and separate component results remain unchanged;
+no transition or post-transition v4/client acceptance exists.
 The hold remains. For the earlier two-query observer, query
 backend disappearance, observer/outer numeric PGIDs and post-close lock-inode
 identity were not additionally measured; the application lease backend is expected to persist.
@@ -611,9 +624,11 @@ capture failed and closed; the subsequent 151-check metadata correction also
 passed. [Capture02](../development/programs-state-capture-second-attempt-20260917.md)
 now has independent state/closure acceptance. The [first saved-file consumer](../development/programs-saved-product-first-attempt-20260917.md)
 passed its captured-state check, then failed the actual product gate on the
-canonical review status mismatch. Verify and integrate the prepared consumer
-correction before a fresh product-gate attempt; fresh entry, recovery and
-transition admission remain pending independently of M5 success.
+canonical review status mismatch. The correction later passed 152 checks and
+was integrated; the [second saved product gate](../development/programs-saved-product-second-attempt-20260917.md)
+now has composite acceptance with its original caller failure preserved.
+Prepare transition/recovery entry review and concrete admission/client inputs
+in the isolated worktree; execution admission remains pending independently of M5 success.
 The [complete M5 catalog source](../development/m5-user-deletion-catalog-source-preparation-20260916.json)
 has now produced the [real schema-29 catalog](../development/m5-user-deletion-catalog-generation-20260916.json)
 once. Content and resource-closure reviews passed, and the exact generated bytes
@@ -643,8 +658,10 @@ scope or relax its gate. The new `/opt/goby-test/m5-combined-full-fcf3c8f4a474`
 scope has now failed Library reconciliation and independently closed. Its
 11 completed passing packages exclude the partial failed Library counts. The
 17 selected new passing tests are a subset; server/media diagnostics and both
-builds remain unexecuted. Prepare the focused diagnostic without a root-cause
-claim; the prior capacity failure and storage acceptance remain unchanged.
+builds remain unexecuted. The [focused diagnostic](../development/m5-reconciliation-focused-diagnostic-result-20260917.md)
+passed once without reproduction or root-cause proof; the next phase-timing
+overlay is only prepared. The earlier capacity/status failures and storage
+acceptance remain unchanged.
 The consumed catalog input
 must not be replayed; it does not supply product acceptance.
 Keep all historical inputs and their original outcomes unchanged.
@@ -656,13 +673,14 @@ passed source verification but was rejected before worker creation because of
 memory availability. The [fresh retry](../development/programs-complete-source-retry.json)
 has completed all 25 packages, both builds and closure with independent review.
 Its [actual artifacts](../development/programs-complete-source-full-result-20260916.json)
-are available for the planned transition after actual product/runtime loading
-and state/recovery admission; the final 142 component checks have passed. The catalog
+are retained and the actual saved product gate is accepted; transition/recovery
+entry admission is still required. The separate 142/151/152 components retain
+their own scopes. The catalog
 job is already closed. Preserve all consumed scopes and their original outcomes.
 The [client components](../development/programs-client-component-verification.json)
-passed within their frozen scopes; actual successor authority/artifact and
-admitted live inputs remain pending, and no new live journey has run. Artifact
-work and authority/live-input preparation join before A changes. Heavy work
+passed within their frozen scopes, including typed episode/subtitle contracts.
+Concrete admitted inputs remain pending, and no new live journey has run.
+Transition/recovery entry review must complete before A changes. Heavy work
 remains serialized on the available test environment.
 
 The [retained Library timeline](../development/library-theme-retained-timeline.md)
@@ -679,13 +697,14 @@ or repeat archive review without new evidence.
 **Closed compatibility exception:** the bounded current-runtime v2 correction
 represents the second recovery through `previousCurrentRuntime`, preserving v1
 semantics and historical `38b906...`. Reuse its verified four-file scope. The
-remaining fixed Programs constants are still preparatory. Bind new runtime and
-artifact authority after final verification without a new tool version,
+later runtime envelope and actual saved product gate now have their own accepted
+bindings. Complete transition admission without a new tool version,
 framework, launcher or general contract redesign.
 
 After incident recovery and resource coordination, the successor's complete-source
-verification/build and the new current runtime envelope are retained. It still
-needs actual product/runtime loader verification and complete recovery/journey entry contracts before
+verification/build, current runtime envelope and actual saved product gate are
+retained. It still needs execution review of transition/recovery entry and concrete
+admission/journey inputs before
 one direct A transition, three client journeys, the audio
 reuse bridge and G3. Follow the
 [core acceptance resolution](../development/core-client-acceptance-resolution.md)
@@ -723,8 +742,8 @@ maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| `codex/programs-theme-diagnosis`, `3d6b79b`; latest metadata tooling integrated as `a5af0b6` | [Complete-source regression/build](../development/programs-complete-source-full-result-20260916.md) passed all 25 packages and both builds. [Capture02](../development/programs-state-capture-second-attempt-20260917.md) passed independent state/closure review; the later captured-state CLI check passed once | [The first actual product loader](../development/programs-saved-product-first-attempt-20260917.md) failed on the canonical review status mismatch. Verify and integrate the prepared consumer correction, then complete product-gate acceptance, fresh entry and recovery admission before transition. Preserve capture01 and the separate 138/142/151 scopes; no v4 or client acceptance exists |
-| `codex/m5-deletion-diagnostics`, `138522b` | [Combined full failure](../development/m5-combined-full-reconciliation-failure-20260917.md) is independently closed: 11 complete packages passed 492 top-level/1993 subtests; Library raw passes remain partial. The 17 selected new passes are a subset. Frontend/storage acceptance and the earlier capacity failure remain unchanged | Prepare the bounded focused reconciliation diagnostic, not yet run. Later server/media tests and both builds remain open, including release `--frontend-contributions` and package 59-asset equality. No root cause, fix, full pass or M5 acceptance is claimed |
+| `codex/programs-theme-diagnosis`, `3d6b79b`; review-status tooling integrated as `8b1dead` | [Complete-source regression/build](../development/programs-complete-source-full-result-20260916.md), capture02, the retained captured check, separate 151/152 components and [actual saved product gate](../development/programs-saved-product-second-attempt-20260917.md) retain their accepted scopes. The caller failure remains preserved under composite acceptance | Prepare the isolated transition-admission worktree for entry/recovery execution review and concrete admission/client inputs. Reuse the artifact and typed episode/subtitle framework; `run()` checks fresh before-state before stopping A. Keep the technical hold; no v4 or client acceptance exists |
+| `codex/m5-deletion-diagnostics`, `138522b` | [Combined full failure](../development/m5-combined-full-reconciliation-failure-20260917.md) remains failed and independently closed. The [focused diagnostic](../development/m5-reconciliation-focused-diagnostic-result-20260917.md) passed two top-level/two music subtests once without reproduction; the slowest proof observation had about 32 ms remaining. Earlier failure records and frontend/storage acceptance remain unchanged | The phase-timing overlay is prepared only. Later server/media tests and both builds remain open, including release `--frontend-contributions` and package 59-asset equality. No root cause, fix, full pass or M5 acceptance is claimed |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md) connects the fixed media stages to native APIs, run ownership, conversion capacity and a Settings panel. The combined frontend and six diagnostic-configuration top-level tests passed in their recorded scopes. The failed full never reached media/server/transcode packages | Prepared Linux media, server-runtime, conversion-reservation, HTTP/real-FFmpeg and browser behavior remain unexecuted. Establish codec/content and available-hardware evidence under their own prerequisites. Defaults remain disabled; no runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |
@@ -747,15 +766,16 @@ and actual execution results distinct.
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
 | 0. Historical application recovery and consumer runtime binding — complete in its original scope | Retain the independently reviewed September 15 recovery, component scopes, actual one-cluster/one-lease observation and validated ready v2 envelope | Both applications were subsequently observed failed after a new September 16 host event. Reuse unaffected evidence, but the old ready envelope is no longer fresh live authority. Do not replay consumed inputs or restart applications merely to refresh a binding |
-| September 16 original application recovery — complete in its recorded scope | The [actual restart and separate post-start observation](../development/candidate-oom-exit-recovery-completed-20260916.md) passed independent review after the four-database, native and pre-start preservation checkpoints. The later unique two-query observation and frozen-producer publication produced `db22e3d...`; final 142 binding component checks subsequently passed | A/B each started once with unchanged binaries/configuration and PGs; health, leases, four-database and old-log preservation passed. Actual product/runtime loader and transition admission remain pending; no physical integrity, exit-cause, transition or client-acceptance claim follows |
+| September 16 original application recovery — complete in its recorded scope | The [actual restart and separate post-start observation](../development/candidate-oom-exit-recovery-completed-20260916.md) passed independent review after the four-database, native and pre-start preservation checkpoints. The later unique two-query observation and frozen-producer publication produced `db22e3d...`; final 142 binding component checks subsequently passed | A/B each started once with unchanged binaries/configuration and PGs; health, leases, four-database and old-log preservation passed. The actual saved product gate is accepted separately; transition entry remains pending. No physical integrity, exit-cause, transition or client-acceptance claim follows |
 | Historical September 14 disk-full recovery — complete | Retain the independently reviewed four-database/native/log preservation and once-only application restart evidence in its original scope | Its replacement runtime identities have since been invalidated by the new incident. Preserve the result and old inputs; do not repeat that workflow to refresh its label |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
 | 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
-| 1. Client components passed; actual authority/live inputs pending | Reuse the [passed frozen client components](../development/programs-client-component-verification.json) and runtime/transition/admission scopes; bind the [journey/recovery contracts](../development/e11-candidate-transition-decision.md) and admitted live inputs to actual successor authority/artifacts | No new framework, version or live-journey acceptance follows from component checks. Bind the new runtime and actual artifact together after final verification. Preparation does not block independent Go diagnosis/build work; both must close before A changes |
+| 1. Typed client framework passed; concrete admission/live inputs pending | Reuse the [passed frozen client components](../development/programs-client-component-verification.json), runtime envelope and actual saved product gate; prepare the [transition/recovery entry](../development/e11-candidate-transition-decision.md) and concrete admission/client inputs in an isolated worktree | Entry preparation is not yet verified or executed. Existing `run()` supplies the fresh-before check before stopping A; real recovery input requires a real failure. The technical hold remains, and independent M5 diagnosis/full results are not a Programs transition prerequisite |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
 | 2. Frozen-source verification/build — complete with the declared profile gap | The [full result](../development/programs-complete-source-full-result-20260916.md) covers 25 packages, 2309 top-level passes, zero failures, one declared skip and both builds. Independent source/result/artifact/closure review passed | Reuse the actual materialized successor after candidate recovery and current runtime binding. Preserve the missing-fixture failure, zero-worker rejection and mount-profile gap; do not replay consumed inputs or combine partial scores |
+| 2a. Actual saved product gate — accepted | The [second actual readback](../development/programs-saved-product-second-attempt-20260917.md) returned once with real byte reads; composite review accepts the product result and owned closure | Preserve both original caller failures. Acceptance does not establish startup, transition, v4 or client execution; do not replay the loader or the retained captured-state check merely for review |
 | 3. One direct A transition — held | After incident recovery, bind the verified successor, new runtime authority, current full state, declared task-definition delta and the recovery/closure plan | No intermediate original-E11 deployment, actor reset, new candidate, old live binding or assumed rollback. Preserve B and all historical evidence |
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
@@ -969,9 +989,12 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    151 checks and independent review; the later capture02 state and closure also
    passed independent review. The actual captured-state CLI check passed once,
    followed by a product-loader failure on the canonical review status mismatch.
-   Verify and integrate the prepared correction, then complete a fresh actual
-   product-gate attempt and fresh entry/recovery admission joining that authority
-   to the artifact before the one direct A transition. Preserve the failed reader,
+   The correction passed 152 checks and was integrated at `8b1dead`; the second
+   actual saved product gate now has composite acceptance. Prepare the isolated
+   transition-admission worktree for entry/recovery execution review and concrete
+   admission/client inputs before the one direct A transition. Reuse the existing
+   fresh-before check rather than refreshing a capture label; actual recovery
+   input requires an actual failure. Preserve both original caller failures,
    consumed capture01 and separate component scopes; M5 full passing is not a
    prerequisite for this Programs work. The separate schema-29 catalog job has already closed; its real
    output now joins the prepared M5 source for combined verification.

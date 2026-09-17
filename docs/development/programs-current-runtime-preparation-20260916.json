@@ -2,7 +2,7 @@
   "kind": "programs-current-runtime-and-product-preparation",
   "version": 1,
   "date": "2026-09-16",
-  "status": "capture02_reviewed_captured_check_passed_actual_product_gate_failed",
+  "status": "actual_saved_product_gate_accepted_transition_admission_preparing",
   "observer": {
     "bytes": 15787,
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-01/private/observe-current-runtime.py",
@@ -62,9 +62,9 @@
     "The prepared observer changed only DRAFT_ONLY and was remotely compiled before execution. The original pending input retains its null deadline/output; the later independently bound input was consumed exactly once."
   ],
   "remaining": [
-    "Verify and integrate the prepared complete-profile consumer correction for the canonical passed product-review status. Preserve the original review and the first saved-product reader failure unchanged.",
-    "After the consumer correction is independently verified, complete actual product-gate acceptance in a fresh saved-file execution scope; large-archive acceptance was not reached by the failed attempt.",
-    "Reuse capture02's reviewed state and startup summary within their recorded time boundary. Complete fresh entry, retention/recovery and transition admission before the direct A transition. The hold remains; post-transition version 4 records and client acceptance are still pending."
+    "Prepare an isolated transition-admission worktree for execution review of the existing transition/recovery entry path and concrete admission/client inputs. The artifact and typed episode/subtitle framework already exist; this next preparation is not yet verified or executed.",
+    "Reuse capture02, the retained check-captured pass and the accepted actual saved-file product gate. The existing run() captures fresh before-state before stopping A; do not add capture03 merely to refresh a label.",
+    "Complete fresh entry, retention and recovery-route admission before the direct A transition. An actual recovery input can only be produced from an actual failure. The technical hold remains; no transition, post-transition version 4 record or client acceptance is established, and M5 full success is not a prerequisite."
   ],
   "limits": [
     "The original pending/draft inputs, observer/artifact/product-review drafts and preparation files retain their original bytes and outcomes. The actual observation input is consumed and must not be replayed.",
@@ -77,7 +77,8 @@
     "The tested tooling is integrated on main at f45d73c and the two CLI files were published with identical bytes. Source publication and prepared capture/retention inputs do not execute the actual product loader, produce a version 4 successor epoch, remove the transition hold or establish client acceptance.",
     "The first actual capture failed with programs_unreviewed_key_path after 14 acknowledged read-only SQL frontends. Its CLI exit 2, unknown original outer SSH numeric exit and partial evidence retain the boundaries in programs-state-capture-first-attempt-20260916.json. The guard rejected before key-content opening/hashing, with no filename in the failure record.",
     "The later stat-only generation-key correction passed a separate 44 + 36 + 71 component run and is integrated on main. Its real-key operations were mocked: no live key metadata, key body/hash, capture, product loader or transition was executed in that component scope. The later actual capture02 and saved-product reader retain separate records.",
-    "Capture02 passed independent state/closure review. A subsequent actual check-captured invocation passed, followed by one product-loader failure at programs_artifact_independent_review. The canonical review remains passed; the consumer correction is prepared but not yet tested or integrated. No transition or client acceptance is established."
+    "Capture02 passed independent state/closure review. The first saved consumer passed check-captured, then failed at programs_artifact_independent_review. The canonical review remains passed and that failure is unchanged. The profile-specific correction later passed a separate 152-check scope and was integrated at 8b1dead.",
+    "The second actual saved-file product loader returned once and has independent composite acceptance with owned-resource closure. Its caller remains failed_retained/resource_properties_changed with SSH exit 2; the successful main-process exit and required resource properties were saved before the owned unit stop and subsequent garbage collection. No loader or captured-state check was replayed for that review."
   ],
   "observerDraft": {
     "path": "/opt/goby-test/candidate-oom-exit-recovery-20260916/current-runtime-preparation-r01/private/observe-current-runtime.draft-r02.py",
@@ -397,7 +398,8 @@
     }
   },
   "stateCaptureExecuted": true,
-  "completeCaptureAccepted": false,
+  "completeCaptureAccepted": true,
+  "acceptedCaptureRecord": "programs-state-capture-second-attempt-20260917.json",
   "captureFirstAttempt": {
     "record": "programs-state-capture-first-attempt-20260916.json",
     "status": "failed_capture_closed_reviewed",
@@ -447,6 +449,7 @@
     "reviewedStatePresent": false,
     "sourceReviewedStatePresent": false,
     "successfulCaptureResultPresent": false,
+    "completeCaptureAccepted": false,
     "checkCapturedInvocations": 0,
     "actualProductLoaderInvocations": 0,
     "transitionInvocations": 0,
@@ -562,6 +565,26 @@
     "correctionPrepared": true,
     "correctionTested": false,
     "correctionIntegrated": false,
+    "transitionInvocations": 0,
+    "transitionHoldRemoved": false
+  },
+  "reviewStatusCorrection": {
+    "record": "programs-review-status-verification-20260917.json",
+    "componentChecks": 152,
+    "mainIntegrationCommit": "8b1dead",
+    "original138142151ScopesUnchanged": true
+  },
+  "savedProductSecondAttempt": {
+    "record": "programs-saved-product-second-attempt-20260917.json",
+    "status": "actual_saved_product_gate_accepted_with_caller_failure_retained",
+    "actualProductLoaderInvocations": 1,
+    "actualProductGateAccepted": true,
+    "independentCompositeAcceptance": true,
+    "ownedResourcesClosed": true,
+    "originalCallerStatus": "failed_retained",
+    "originalCallerFailureCode": "resource_properties_changed",
+    "originalSshExitCode": 2,
+    "priorCheckCapturedReplayed": false,
     "transitionInvocations": 0,
     "transitionHoldRemoved": false
   }

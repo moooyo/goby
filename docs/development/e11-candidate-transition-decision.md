@@ -1,9 +1,10 @@
 # Programs successor candidate transition decision
 
-Status: **candidate A selected; Programs successor not built; transition and
-execution are not admitted**.
+Status: **candidate A selected; Programs successor built and its saved product
+gate accepted; transition and execution are not admitted**.
 Recorded on 2026-09-15 from the retained source comparison and A/B seed/admission
-summaries. This document makes the delivery choice; it does not observe current
+summaries; updated on 2026-09-17 from the retained verification checkpoints.
+This document makes the delivery choice; it does not observe current
 processes, authorize a deployment, or establish successor client acceptance.
 
 ## Decision and evidence
@@ -21,8 +22,11 @@ E11 remains the retained build/G2 baseline,
 `2dc2090441a255ec739f924f6f3453442edc4bc7f9ab9a8e6c4e715b59865a1a`.
 The [package/source bridge](systemd-package-source-checkpoint.json) and accepted
 internal installation result keep their original scopes. The destination now
-includes the [Programs product increment](live-tv-programs.md), so it requires
-a newly verified binary and package. Neither identity exists yet. Do not deploy
+includes the [Programs product increment](live-tv-programs.md). The later
+[complete-source run](programs-complete-source-full-result-20260916.md) passed
+all 25 packages and both builds; the actual binary is `ead67c8f...`
+(30,701,500 bytes). Its [saved product gate](programs-saved-product-second-attempt-20260917.md)
+is accepted within the internal package profile. Do not deploy
 the original E11 first or relabel its bytes as containing the Programs route.
 
 The [focused result](live-tv-programs-focused-verification.json) passed 14
@@ -30,8 +34,9 @@ top-level checks and 118 subtests with independent review. The
 [full regression](live-tv-programs-full-interruption.json) was interrupted for
 user review and safely closed after 10 of 25 packages: 341 passes, zero failures
 and zero skips. The identity package's additional 109 raw passes are incomplete
-and excluded from that total. No build ran; full verification remains false,
-without a product assertion failure.
+and excluded from that total. That interrupted checkpoint had no build or full
+verification and no product assertion failure; the later complete-source result
+above supplies its own final verification and artifact identity.
 
 | Recorded fact | Delivery implication |
 | --- | --- |
@@ -69,15 +74,19 @@ bind a fresh permitted entry observation before transition. Preserve the earlier
 results independently; do not repeat their actors or make complete explanation
 of every old pageerror an indefinite prerequisite for this transition.
 
-Complete the recovery decision and all three final journey entry contracts
-before A is replaced. The episode/subtitle contracts are not yet ready; movie
-v4 and TV v5 do not supply them automatically. Their pure-tool preparation may
-run in parallel with final verification/build of frozen Go source. Tool-only
-Python/JavaScript changes are not a reason to repeat the Go full suite.
-One planned worker will run all 25 ordinary packages and the ordinary build,
-then append one embedded amd64 systemd package build. It has not run and has no
-artifact identity yet. After both prerequisite tracks complete, switch A once,
-run the three client journeys and close the audio reuse bridge before G3.
+Complete transition/recovery entry review and prepare the concrete admission/
+journey input templates and binding plan before A is replaced. Bind execution
+inputs only when the actual successor epoch and preceding closeouts exist.
+The typed episode/subtitle framework
+already passed [client component checks](programs-client-component-verification.json).
+The 25-package product run and both builds are complete, and the separate
+151/152 tool scopes and actual saved product gate retain their own acceptance.
+Prepare a new isolated transition-admission worktree; this entry preparation is
+not yet verified or executed. The existing `run()` takes a fresh `before` snapshot
+before stopping A, so capture03 is not needed merely to refresh a label. A real
+recovery input can only be derived after a real failure. Keep the technical hold
+until entry is admitted; M5 full success is not a Programs transition prerequisite.
+Then switch A once, run the three journeys and close the audio reuse bridge before G3.
 
 The following is the bounded state allowance to turn into a reviewed execution
 input. Values and current ownership must be observed before dispatch; this
@@ -194,8 +203,9 @@ artifact and current A state:
 | Episode | Full declared TV browse through the exact Episode 2-1 identity, advancing decoded playback, pause/seeks/resume/stop/logout, and matching durable state. A no-playback TV diagnostic cannot replace this row. |
 | External subtitles | SRT and VTT selection, visible opening/seek cues, return to Off, stop/logout, actual authorized subtitle/media delivery, and complete timing/cancellation interpretation and owned-state closure. |
 
-Prepare each actor's typed entry/closure contract before the A transition.
-Episode and subtitle contracts remain incomplete. After each actual journey,
+Prepare each actor's input template and binding plan against the existing typed
+entry/closure contract before the A transition. The framework is prepared;
+execution inputs bind the actual successor epoch when available. After each actual journey,
 bind the next journey to the preceding complete closeout; preparing contracts
 early does not freeze stale future snapshot values. The movie v4 and TV v5
 contracts are not automatically episode or subtitle contracts. No new journey
@@ -211,13 +221,16 @@ before accepting changed-source results.
 
 ## Next concrete handoff
 
-Use two parallel prerequisite tracks: recovery/final journey entry preparation,
-and verification/build of frozen product source. Both must complete before
-one source-bound A transition; then run the three final client journeys and audio
+Reuse the completed product verification/build and saved-file gate. Prepare
+transition/recovery entry review, admission/journey input templates and their
+binding plans in the isolated worktree before one source-bound A transition.
+Bind execution inputs to the resulting epoch and preceding closeouts when available;
+then run the three final client journeys and audio
 reuse bridge; then enter G3. The transition input must bind the actual successor,
 latest full state, permitted configuration facts, explicit task-definition
 delta, current process/lease/protection facts and bounded recovery/closure plan.
-No ready input is produced by this document. The original G2 installation slice
+The prepared 23-field input is not dispatch admission, and this document does
+not remove the technical hold. The original G2 installation slice
 remains accepted; review only assertions invalidated by the successor change,
 without automatically queueing another installer run. Other M2-M6 profiles
 retain their independent prerequisites; M7 remains deferred.

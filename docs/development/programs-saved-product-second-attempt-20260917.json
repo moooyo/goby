@@ -1,0 +1,83 @@
+{
+  "kind": "programs-saved-product-second-attempt",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "actual_saved_product_gate_accepted_with_caller_failure_retained",
+  "scope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02",
+  "componentRecord": "programs-review-status-verification-20260917.json",
+  "componentChecks": 152,
+  "mainIntegrationCommit": "8b1dead",
+  "actualFunction": "runtime.load_programs_product(value, read_descriptor)",
+  "actualFunctionInvocations": 1,
+  "defaultReadProgramsBytesUsed": true,
+  "actualProductGateAccepted": true,
+  "automaticRetries": 0,
+  "runtimeHelper": {
+    "path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/code/audited-candidate-runtime-review-status.py",
+    "bytes": 208632,
+    "sha256": "2bbf5e4c9364fcc67b4261b9dceb145d2cf3f66fad86d6baadc2ee16a62893c3",
+    "matches152ComponentSource": true
+  },
+  "product": {
+    "binary": {
+      "path": "/opt/goby-test/livetv-programs-complete-source-final-20260916-r02/artifacts/linux-amd64-systemd/goby",
+      "bytes": 30701500,
+      "sha256": "ead67c8faaf4cde88f7fe1bf57ffed43705259aba7b29f59c3473747afd732fb"
+    },
+    "sourceManifestEntries": 5405,
+    "frontendAssets": 57,
+    "frontendSourceFilesMatched": 64,
+    "receiptKind": "goby-internal-amd64-artifact-receipt",
+    "receiptStatus": "verified_and_closed",
+    "elapsedSeconds": 16.566382360004354,
+    "sqlCalls": 0,
+    "httpCalls": 0,
+    "applicationActions": 0
+  },
+  "evidence": {
+    "productOutput": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02/unit.stdout", "bytes": 2696, "sha256": "2e2ee49ec79c611b9f48ba14f60bd054eb7d53ced414b316bea4f7cf1df946f5"},
+    "prestopMainExit": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02/root-observed-main-exit.json", "bytes": 5078, "sha256": "98d3162f7a880bf3352af35e9f6a0dfeb24496b58ca1e640bdf5924c159de1c7"},
+    "ownedUnitStop": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02/root-owned-unit-stop.json", "bytes": 221, "sha256": "1fd1ca942586fa3e0a52e4780f4c4227bc9cf9c34be3f2fd1aab912c7ad730c7"},
+    "originalCallerResult": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02/caller-result.json", "bytes": 2611, "sha256": "692d1037a5f5a00b917a41990f2b3d885b74f8b0454082adb5a1edebac341332"},
+    "independentCompositeAcceptance": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02/independent-composite-acceptance.json", "bytes": 8012, "sha256": "72c0d6502522b37d30e5a5c841aa71b2195454c4da5eb4c949f93f5a8dcfa853"},
+    "independentClosureSupplement": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/saved-product-readback-02/independent-closure-supplement.json", "bytes": 4839, "sha256": "65b2c5a5e663fddbaa079ee719fe93ae14cfb475f0abf07d5ee97bc4063d942d"}
+  },
+  "originalCaller": {
+    "status": "failed_retained",
+    "failureCode": "resource_properties_changed",
+    "sshExitCode": 2,
+    "recordsModified": false,
+    "explanation": "systemd-run --wait with RemainAfterExit=yes waited after the main process successfully exited. Root saved the successful exit and resource properties before stopping the owned unit. The caller then rejected garbage-collected not-found unit properties."
+  },
+  "executionAndClosure": {
+    "prestopMainPID": 0,
+    "prestopExecMainStatus": 0,
+    "prestopResult": "success",
+    "prestopCPUQuotaPerSecUSec": "1s",
+    "memoryPeakBytes": 643825664,
+    "memoryMaxBytes": 1073741824,
+    "memorySwapMaxBytes": 0,
+    "ownedUnitStopExitCode": 0,
+    "originalLaunchWaitExitCode": 0,
+    "recordedPidsAbsent": [1845034, 1845037],
+    "recordedCallerProcessGroupAbsent": 1845034,
+    "ownedUnitCgroupAbsent": true,
+    "streamsClosed": true,
+    "sourceFilesAndInputUnchanged": true,
+    "deploymentLockAcquired": false
+  },
+  "retainedChecks": {
+    "captureRecord": "programs-state-capture-second-attempt-20260917.json",
+    "priorCheckCapturedInvocations": 1,
+    "priorCheckCapturedPassed": true,
+    "checkCapturedReplayed": false,
+    "firstProductAttempt": "programs-saved-product-first-attempt-20260917.json",
+    "firstProductFailureUnchanged": true
+  },
+  "limits": [
+    "The composite review read saved evidence only: no product loader or validator invocation, archive rescan, SQL, HTTP or service action. Original tool output is retained; terminal fields are the root caller transcription, not original tool JSON bytes.",
+    "Acceptance covers the actual immutable saved-file product gate and owned-resource closure. The internal package profile and original full-regression mount-profile skip remain unchanged.",
+    "No startup, transition, runtime-v4 outcome, client acceptance or deployment is established. The technical hold remains pending transition/recovery entry review and concrete admission/client inputs.",
+    "The existing run() captures fresh before-state before stopping A. No capture03 is required merely to refresh a label; any actual recovery input must derive from an actual failure."
+  ]
+}
