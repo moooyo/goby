@@ -1,12 +1,15 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-17: **review the M5 full failure evidence and owned closure, then perform fresh Programs execution admission**.
+Current priority on 2026-09-17: **verify the M5 test-header correction and correct Programs preflight before preparing a new entry**.
 The [Programs caller/closer/operator sources](programs-transition-source-publication-20260917.md)
-are now published and read back. Publication executed no transition. Full
-`0add3118b99f` exited 1 in original SSH `43043` (terminal chunk `91b1e8`), with
-`full_worker_failed` and worker exit 1. The original receipt reports closed
-resources and unchanged protection; independent failure/closure review is still
-pending, and the specific failure point is not yet established.
+are published and read back. The actual caller subsequently failed preflight at
+`hosting_listener_process_or_namespace`, with `launchAttempts=0`; the CLI and
+replacement did not run. It compared the deliberately isolated hosting network
+namespace to the outer host. Caller/closer are terminal; their independent
+supplemental review is pending. The [M5 full failure](m5-combined-full-http-header-failure-20260917.md)
+and owned closure are independently reviewed: its sole failure was the concurrent
+media-diagnostic request's HTTP 403. The test-helper `Header.Set` correction is
+committed separately as `137b41b` and has not been remotely verified.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -120,8 +123,14 @@ Its full query and five-second proof budget are unchanged. Cached-statement
 checks establish `jit=on` creation/execution, statement/counter reuse and equal
 results; they do not directly observe JIT generation. The separate full scope
 `/opt/goby-test/m5-combined-full-0add3118b99f` exited 1 in original SSH session
-`43043`. Original failure evidence and independent closure review remain pending;
-no test totals, specific failure point or build result are accepted yet.
+`43043`. Its [independent review](m5-combined-full-http-header-failure-20260917.md)
+accepts 18 complete passing packages and the failed server invocation: raw totals
+are 2,129 top-level passes, 6,614 child passes, one top-level failure and the
+original skip. The totals include server's 590/1,751 passing cases. All 24
+JIT/reconciliation identities passed in this full run. Six packages, both builds
+and materialization did not run. Owned resources closed with protection unchanged.
+Subsequent static inspection identified a raw test-header key that bypassed
+canonicalization; the separate `137b41b` helper-only fix awaits remote verification.
 Programs transition admission has its own prerequisites and does not require M5 full success.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
@@ -239,8 +248,11 @@ The separate [caller-fault components](programs-transition-caller-fault-componen
 passed eight mocked methods once and closed. PowerShell was not executed;
 the real final GC census and closer `inspect_attempt` are outside that coverage.
 The earlier operator `9b8d5e8a...` is unchanged. The [revised sources](programs-transition-source-publication-20260917.md)
-are published and read back; after the M5 failure evidence and owned closure are reviewed, fresh execution
-admission and one actual transition remain next.
+are published and read back. The actual caller then failed preflight at
+`hosting_listener_process_or_namespace`, with zero CLI launches or replacements.
+The hosting namespace was incorrectly compared with the outer host namespace.
+Correct that preflight and prepare a new entry; independent supplemental review
+of the terminal caller/closer remains pending.
 The artifact and typed episode/subtitle framework are available; concrete inputs
 still bind actual state and subsequent closeouts. No capture03 label refresh is
 needed, and an actual recovery input follows only an actual failure. Historical
@@ -258,8 +270,9 @@ their separate scopes. The combined full has failed and closed, retaining the
 completed deletion/activity/archive/config coverage. The focused reconciliation
 diagnostic and phase-timing scope each passed once without reproduction. The later
 query-plan result isolates dominant JIT cost within its fresh-plan small fixture.
-The narrow correction passed its targeted 8/16 scope; the new full run exited 1
-and awaits failure-evidence and independent closure review. Final builds, later media/server and browser
+The narrow correction passed its targeted 8/16 scope and its 24 identities also
+passed in the new full run. That full failed the HTTP diagnostic test and is
+independently closed. The test-header correction remains unverified. Final builds and browser
 acceptance remain pending. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -510,7 +523,7 @@ application identities and all unchanged protected resources explicitly.
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | Product, capture and component scopes retain their results; the [revised caller/closer/operator sources](programs-transition-source-publication-20260917.md) are published and read back. Earlier `9b8d5e8a...` remains unchanged | After the M5 failure evidence and independent owned-closure review, complete fresh admission/transition with strict preservation and explicit recovery; M5 need not pass. The caller's PowerShell execution, real final GC census and closer `inspect_attempt` remain outside the eight mocked methods; no transition/v4/client acceptance is claimed |
+| Programs successor | Product, capture, component and source-publication scopes retain their results. The actual caller failed preflight at `hosting_listener_process_or_namespace`; `launchAttempts=0`, so no CLI or replacement ran. Caller/closer are terminal and their independent supplemental review is pending | Correct the hosting-versus-outer namespace check and prepare a new entry while preserving the failed attempt. Retain strict before-state and explicit recovery-policy checks; M5 need not pass. No transition/v4/client acceptance is claimed |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B recovered once with its existing binary/configuration. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
 | Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | A recovered once with its existing binary/configuration and has a ready recovered-runtime envelope. Historical admission/client evidence and preparatory Programs constants do not establish a new artifact's admission |
@@ -524,8 +537,8 @@ The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
 maps those obligations to artifact/client/media/deployment slices and concrete
 next actions. The current target is the verified Programs successor. Its
 selected A transition has completed source publication and still requires actual
-fresh entry/admission and concrete client inputs after the M5 failure evidence
-and owned closure are independently reviewed; M5 success is not required.
+fresh entry/admission and concrete client inputs after correcting its failed
+preflight and reviewing its caller/closer supplement; M5 success is not required.
 September 16 recovery, the runtime
 envelope, product verification/build, saved product gate and 46 component methods
 remain separate prerequisites, without an actual transition or client result.

@@ -1,0 +1,79 @@
+{
+  "kind": "m5-combined-full-http-header-failure",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "failed_full_reviewed_owned_resources_closed",
+  "scope": "/opt/goby-test/m5-combined-full-0add3118b99f",
+  "source": {
+    "gitHead": "9e70e4b61221018e11696bf8c7ed877d53770be7",
+    "files": 5461,
+    "uncompressedBytes": 121866094,
+    "membersMatchedAtExecution": true,
+    "archive": {"path": "/opt/goby-test/m5-auxiliary-jit-clean-source-20260917-740ee9597add/source.tar.gz", "bytes": 33532022, "sha256": "4bd2b903cc6cddffaf15ee9703555aada449ae58e0239dd7b717b4086f96e265"}
+  },
+  "outcome": {
+    "packageInvocations": 19,
+    "completePassingPackages": 18,
+    "failedPackage": "github.com/moooyo/goby/internal/server",
+    "failedStage": "ordinary_package_tests",
+    "originalExecutionFailureCode": "full_worker_failed",
+    "workerExitCode": 1,
+    "failedTest": "TestHTTPMediaDiagnosticDuplicatePostAndInstanceBoundLookup",
+    "failedAssertion": "media_diagnostic_integration_test.go:330: concurrent identical start returned 403",
+    "reportedTopLevelCounts": {"passed": 2129, "failed": 1, "skipped": 1},
+    "rawChildPasses": 6614,
+    "failedServerPackage": {"topLevelPasses": 590, "topLevelFailures": 1, "childPasses": 1751, "skips": 0, "terminalAction": "fail", "interruptedOrTimedOut": false},
+    "jitFixAndOriginalReconciliationPassedIdentities": {"total": 24, "topLevel": 8, "children": 16, "runAndPassCountEach": 1, "observedInThisFullInvocation": true},
+    "originalSkip": "TestRootBindingFullScanMountNamespaceHelper",
+    "unrunPackages": ["internal/settings", "internal/storagebinding", "internal/subtitle", "internal/tasks", "internal/transcode", "internal/recoverydb"],
+    "ordinaryBuildInvocations": 0,
+    "embeddedSystemdBuildInvocations": 0,
+    "artifactMaterializationReached": false,
+    "fullAccepted": false
+  },
+  "originalSsh": {"sessionId": 43043, "initialToolChunk": "038a19", "terminalToolChunk": "91b1e8", "exitCode": 1},
+  "evidence": {
+    "independentReview": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/private/independent-review.json", "bytes": 38724, "sha256": "3965ba907cf0a1dd9b28b212d85f2980ff8ddd5d8a4269b63b3932fa951ec702"},
+    "failureExtraction": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/private/failure-extract.json", "bytes": 40081, "sha256": "f2a3081fc59d16ea024072c41957e39622c053d86b3babb9cc52ddacf9d81b81"},
+    "input": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/private/input.json", "bytes": 8018, "sha256": "f9a275dd22821104c05f0a452d42a70ab355cbb8d886f08a3ed1c22fe2f95674"},
+    "execution": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/execution.json", "bytes": 108889, "sha256": "859dfb0aa0a77d98e6a60bcccf3102c1488a973adc4e908a10c5d8c49f0771e2"},
+    "closure": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/closure.json", "bytes": 12784, "sha256": "a1e7f33c90357b5c4589c40966444ee5312a5bfc6c9aea11cc596ea4bcbd782c"},
+    "outerDispatch": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/private/outer-dispatch-result.json", "bytes": 1805, "sha256": "43b8560ae7dcdcd27e231758f752ba7ce192ef9ed0fcadfabece0317a561ba9e"},
+    "originalTerminal": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/private/original-ssh-terminal-result.json", "bytes": 874, "sha256": "2566b78521af797886ac4a3ad47823dd9cf2aa5a8a20810f026c1eec3e3170dc"},
+    "archive": {"path": "/opt/goby-test/m5-combined-full-0add3118b99f/retained/full-private.tar.gz", "bytes": 117634973, "sha256": "f291e7de23b6fe359bd0e88d181fa82f058c97a9a3a3b627b5843b018103f50f"}
+  },
+  "independentClosure": {
+    "adapterCommands": 64,
+    "workerCommands": 45,
+    "recordedPidsAbsent": 67,
+    "ownedPostgresStopped": true,
+    "privateBindRemoved": true,
+    "ownedCgroupAbsent": true,
+    "threeMountsAndBackingsAbsent": true,
+    "outerGroupAndStreamsClosed": true,
+    "lockUnlockedAndClosed": true,
+    "protectedBeforeAfterExact": true,
+    "sourceUnchanged": true,
+    "failedUnitRecordRetained": {"LoadState": "loaded", "ActiveState": "failed", "MainPID": "0", "ExecMainStatus": "1"}
+  },
+  "subsequentStaticSourceDiagnosis": {
+    "basis": "Root and a source reviewer inspected the test helper, auth.go:64 and the actual Go 1.27.1 Header.Get/Set implementation after the saved failure review.",
+    "finding": "The raw concurrent request assigns a Header map containing X-CSRF-Token without canonicalizing its key. Header.Get uses the canonical key, so the authorization path cannot read that token. Ordinary f.request copies through Header.Add and canonicalizes it.",
+    "fixCommit": "137b41bd73ee29b6a8856c63a45a2ca50fdd8bfd",
+    "baseCommit": "9e70e4b61221018e11696bf8c7ed877d53770be7",
+    "changedFile": "internal/server/media_diagnostic_integration_test.go",
+    "change": "Construct test request headers with Header.Set; four insertions and one deletion in the helper only.",
+    "separateWorktreeCommit": true,
+    "remotelyVerified": false,
+    "productAuthorizationChanged": false,
+    "jitCorrectionChanged": false,
+    "originalFailureCleared": false
+  },
+  "limits": [
+    "The 2129 top-level and 6614 child passes are raw outcomes across the 19 invoked packages and include the failed server package's passing cases. They are not a complete full-suite pass. The server command reached its terminal failure normally; it was not interrupted or timed out.",
+    "The 24 JIT/reconciliation identities passed in this full invocation and are already included in the reported counts; no targeted score was imported or added again.",
+    "The original full and SSH exit remain failed. Six packages, both builds and artifact materialization were not reached. The original mount-profile skip remains explicit.",
+    "The independent failure extraction did not establish a cause at publication. The header finding and unverified test-helper commit are separate later static-source evidence; neither rewrites the failed result or changes product authorization/JIT policy.",
+    "This documentation update only read the two designated saved JSON records and the local committed test-helper diff. It did not rescan archives or run tests, validators, runtime probes, SQL or service actions. Complete M2-M6 delivery remains unfinished."
+  ]
+}

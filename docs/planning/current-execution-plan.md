@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **review the M5 full failure evidence and owned closure, then perform fresh Programs execution admission**.
+Current priority: **verify the M5 test-header correction and correct Programs preflight before preparing a new entry**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the earlier expanded root disk was already in use. The user's
@@ -71,9 +71,14 @@ result/closure review, including the original reconciliation cases. The full
 query and five-second proof budget remain unchanged. The new full scope
 `/opt/goby-test/m5-combined-full-0add3118b99f` exited 1 in original SSH session
 `43043` (terminal chunk `91b1e8`), with `full_worker_failed` and worker exit 1.
-The original closure reports closed resources and unchanged protection, but
-independent failure/closure review is pending. Do not infer the failure point,
-test totals or build outcome before that review. Preserve the earlier full failure.
+The [independent failure/closure review](../development/m5-combined-full-http-header-failure-20260917.md)
+is complete: 18 packages passed and server failed only
+`TestHTTPMediaDiagnosticDuplicatePostAndInstanceBoundLookup` with HTTP 403.
+Raw totals are 2,129 top-level/6,614 child passes, including the failed server's
+passing cases, plus one failure and the original skip. All 24 JIT/reconciliation
+identities passed in this full run; six packages, both builds and materialization
+did not run. Verify the separate `137b41b` test-helper `Header.Set` correction,
+then complete the remaining full/build requirements. Product auth and JIT are unchanged.
 The earlier 255 source-status rejection
 and its separate closure supplement remain unchanged. Programs transition
 admission remains independent of M5 full success.
@@ -138,8 +143,11 @@ explicit predecessor recovery, helper pins and budgets are unchanged. The separa
 passed and closed with mocked effects; PowerShell, the real final GC census and
 closer `inspect_attempt` were not exercised. The [revised caller/closer/operator sources](../development/programs-transition-source-publication-20260917.md)
 are now published and read back; the earlier `9b8d5e8a...` operator retains its
-original bytes. After the M5 failure evidence and independent closure review, fresh execution admission
-and one actual transition remain pending. The artifact and typed episode/subtitle framework
+original bytes. The actual caller then failed preflight at
+`hosting_listener_process_or_namespace`, comparing the isolated hosting namespace
+with the outer host. `launchAttempts=0`: no CLI or replacement ran. Caller/closer
+are terminal, with independent supplemental review pending. Correct the preflight
+and prepare a new entry. The artifact and typed episode/subtitle framework
 already exist; concrete inputs bind actual state and subsequent closeouts.
 No capture03 label refresh is needed; actual recovery input requires actual
 failure. Capture01 and separate component results remain unchanged, with no
@@ -653,8 +661,9 @@ now has composite acceptance with its original caller failure preserved.
 The [46-method transition/recovery component scope](../development/programs-transition-admission-verification-20260917.md)
 passed and was integrated at `8477421`, removing main's unconditional dispatch
 hold. Revised source publication/readback is complete; bind fresh execution
-inputs after the M5 failure evidence and independent closure review. The earlier published operator and
-actual transition outcome remain unchanged. M5 success
+inputs after correcting the caller's failed hosting-namespace preflight and
+reviewing its pending independent supplement. The earlier published operator
+is unchanged and no transition ran. M5 success
 is not a prerequisite for this work.
 The [complete M5 catalog source](../development/m5-user-deletion-catalog-source-preparation-20260916.json)
 has now produced the [real schema-29 catalog](../development/m5-user-deletion-catalog-generation-20260916.json)
@@ -696,8 +705,11 @@ full-failure cause. The correction has now passed its [targeted 8/16 scope](../d
 with full query/five-second budget unchanged. Existing generic-statement checks
 prove creation/execution with `jit=on`, cache/counter reuse and equal results,
 without directly observing JIT generation. The new `0add3118b99f` full scope
-exited 1 in original SSH session `43043`; its failure evidence and independent
-closure review remain pending, with no specific failure point or build result accepted.
+exited 1 in original SSH session `43043` and is [independently reviewed and closed](../development/m5-combined-full-http-header-failure-20260917.md).
+The sole failure was the HTTP media-diagnostic concurrent-start assertion.
+Subsequent static review found the test helper's noncanonical header-map key;
+the isolated `137b41b` correction uses `Header.Set` and remains remotely unverified.
+It changes neither product authorization nor JIT. Six packages and both builds remain open.
 The earlier capacity/status failures and storage
 acceptance remain unchanged.
 The consumed catalog input
@@ -744,7 +756,8 @@ After incident recovery and resource coordination, the successor's complete-sour
 verification/build, current runtime envelope and actual saved product gate are
 retained. The transition/recovery component proposal also passed 46 methods and
 is integrated and the revised sources are published. Actual fresh entry/admission
-remains after the M5 failure evidence and independent closure review and before
+requires correction of the failed caller preflight and its pending supplemental
+review before
 one direct A transition, three client journeys, the audio
 reuse bridge and G3. Follow the
 [core acceptance resolution](../development/core-client-acceptance-resolution.md)
@@ -782,8 +795,8 @@ maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| `codex/programs-theme-diagnosis`, `3d6b79b`; transition admission integrated as `8477421` | Product, capture and component scopes remain accepted; [source publication/readback](../development/programs-transition-source-publication-20260917.md) is complete. Earlier `9b8d5e8a...` remains unchanged | After the M5 failure evidence and independent closure review, complete fresh entry and one actual transition; M5 need not pass. Caller PowerShell execution, real final GC census and closer `inspect_attempt` remain outside the eight mocked methods. Preserve strict before-state and explicit recovery; no v4/client acceptance exists |
-| `codex/m5-auxiliary-jit-fix`, `9e70e4b`, based on M5 `138522b` | The [targeted JIT correction](../development/m5-auxiliary-jit-fix-targeted-result-20260917.md) passed 8 top-level/16 child cases once with independent result/closure review. Original reconciliation cases passed; complete SQL and five-second proof budget are unchanged. Earlier full and diagnostic failures retain their outcomes | Full `0add3118b99f` / original SSH `43043` exited 1. Original failure evidence and independent closure review are pending; the specific failure point, test totals and build result are not yet accepted. Generic-statement checks do not directly observe JIT generation. Retain release `--frontend-contributions`, 59-asset equality and later browser obligations; no full pass or complete M5 acceptance is claimed |
+| `codex/programs-theme-diagnosis`, `3d6b79b`; transition admission integrated as `8477421` | Prior product/component scopes and [source publication](../development/programs-transition-source-publication-20260917.md) remain accepted. Actual caller preflight failed at `hosting_listener_process_or_namespace`, with zero CLI launches/replacements. Caller/closer are terminal; independent supplement is pending | Correct the hosting-versus-outer namespace check and prepare a new entry. Preserve strict before-state and explicit recovery-policy checks and the failed attempt; M5 need not pass. No transition/v4/client acceptance exists |
+| `codex/m5-auxiliary-jit-fix`, `9e70e4b`; separate test-header fix `137b41b` | The [full attempt](../development/m5-combined-full-http-header-failure-20260917.md) passed 18 packages, then failed server's concurrent HTTP diagnostic assertion. All 24 JIT/reconciliation identities passed in this full run. Independent failure/closure review is complete; six packages, both builds and materialization did not run | Remotely verify the `Header.Set` test-helper correction, then complete full/build requirements. Product auth, JIT, full SQL and the five-second proof budget are unchanged. Retain release `--frontend-contributions`, 59-asset equality and browser obligations; no full pass or complete M5 acceptance is claimed |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md) connects the fixed media stages to native APIs, run ownership, conversion capacity and a Settings panel. The combined frontend and six diagnostic-configuration top-level tests passed in their recorded scopes. The failed full never reached media/server/transcode packages | Prepared Linux media, server-runtime, conversion-reservation, HTTP/real-FFmpeg and browser behavior remain unexecuted. Establish codec/content and available-hardware evidence under their own prerequisites. Defaults remain disabled; no runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |
@@ -811,12 +824,12 @@ and actual execution results distinct.
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
 | 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
-| 1. Entry components and source publication complete; actual admission pending | Reuse the typed client framework, runtime envelope, saved product gate, 46-method entry scope and [published caller/closer/operator](../development/programs-transition-source-publication-20260917.md) | Review the M5 full failure evidence and independently review owned closure, then complete fresh entry/admission. Publication ran no transition. Existing before-state and explicit recovery checks remain; actual recovery input requires actual failure. M5 success is not a Programs prerequisite |
+| 1. Entry components/source publication complete; actual caller preflight failed | Reuse prior accepted scopes and preserve the terminal caller/closer attempt: `hosting_listener_process_or_namespace`, `launchAttempts=0`, no CLI/replacement | Correct the namespace precheck and prepare a new entry after its independent supplement. Existing before-state and explicit recovery-policy checks remain; actual recovery input requires actual failure. M5 success is not a Programs prerequisite |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
 | 2. Frozen-source verification/build — complete with the declared profile gap | The [full result](../development/programs-complete-source-full-result-20260916.md) covers 25 packages, 2309 top-level passes, zero failures, one declared skip and both builds. Independent source/result/artifact/closure review passed | Reuse the actual materialized successor after candidate recovery and current runtime binding. Preserve the missing-fixture failure, zero-worker rejection and mount-profile gap; do not replay consumed inputs or combine partial scores |
 | 2a. Actual saved product gate — accepted | The [second actual readback](../development/programs-saved-product-second-attempt-20260917.md) returned once with real byte reads; composite review accepts the product result and owned closure | Preserve both original caller failures. Acceptance does not establish startup, transition, v4 or client execution; do not replay the loader or the retained captured-state check merely for review |
-| 3. One direct A transition — pending fresh entry | After the M5 failure evidence and independent owned-closure review, use the published CLI to bind the successor, runtime authority, current full state, declared task-definition delta and explicit recovery/closure plan for actual admission | No transition has run and M5 need not pass. Preserve strict fresh-before checks, B and historical evidence; no intermediate E11 deployment, actor reset, new candidate, old live binding or assumed rollback |
+| 3. One direct A transition — pending corrected preflight and fresh entry | After the caller precheck correction and pending supplemental review, bind the successor, runtime authority, current full state, task-definition delta and explicit recovery policy for a new admission | No transition has run and M5 need not pass. Preserve strict fresh-before checks, B and historical evidence; no intermediate E11 deployment, actor reset, new candidate, old live binding or assumed rollback |
 | 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
 | Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [original source checkpoint](../development/session-handoff-20260915-native-capacity.md), earlier operator/source-bridge results, and the [verified Running-job collection](../development/native-capacity-running-observation-verification-20260916.md) | No native fixture/input exists. Bind the selected verified artifact and current runtime before native admission. Reuse completed component groups; actual overlap and capacity still require native workload evidence |
@@ -1034,8 +1047,9 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    [46-method entry component scope](../development/programs-transition-admission-verification-20260917.md)
    passed and is integrated as `8477421`; main's unconditional dispatch hold is
    removed. Revised source publication/readback is complete and the earlier
-   operator's bytes are preserved. After the M5 failure evidence and independent closure review, bind fresh
-   admission/client inputs for the one direct A transition. Reuse the existing
+   operator's bytes are preserved. Actual caller preflight failed with zero CLI
+   launches; correct its hosting-namespace comparison and review its pending
+   supplement before preparing fresh admission/client inputs. Reuse the existing
    fresh-before check rather than refreshing a capture label; actual recovery
    input requires an actual failure. Preserve both original caller failures,
    consumed capture01 and separate component scopes; M5 full passing is not a
