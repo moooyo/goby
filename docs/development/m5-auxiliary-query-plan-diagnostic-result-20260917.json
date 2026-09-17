@@ -1,0 +1,82 @@
+{
+  "kind": "m5-auxiliary-query-plan-diagnostic-result",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "third_diagnostic_accepted_two_original_failures_preserved",
+  "attempts": [
+    {
+      "scope": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-7dbac2df9dde",
+      "status": "failed_diagnostic_reviewed_resources_closed",
+      "ssh": {"sessionId": 76693, "initialToolChunk": "10a675", "terminalToolChunk": "9aa4ee", "exitCode": 1},
+      "actualOutcome": "The parent and default variant ran and failed after fixture_ready at settings_read, SQLSTATE 42501: permission denied to examine jit_provider. No snapshot, EXPLAIN or disabled variant ran.",
+      "parserBoundary": "The runner also rejected an OutputType frame event. Its empty parsed markers do not mean the actual Go test was unexecuted.",
+      "resourcesClosed": true,
+      "workerTerminalUnit": {"LoadState": "loaded", "ActiveState": "failed", "MainPID": "0", "ExecMainStatus": "1"},
+      "evidence": {
+        "independentReview": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-7dbac2df9dde/private/independent-failure-review-r01.json", "bytes": 7176, "sha256": "cbc1698e1f52b4195d63393ed1ced22548ee7fad32bec31acba7f12f07db9e0c"},
+        "execution": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-7dbac2df9dde/execution.json", "bytes": 97768, "sha256": "1a7943619e69e0f27e2c9a4cb65c59840577094e5febd8b9708a454577562cd1"},
+        "closure": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-7dbac2df9dde/closure.json", "bytes": 13236, "sha256": "ef5533d822d81798498ae3deb89bf6d86386e59c5333656b594971374f7173e8"},
+        "outerDispatch": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-7dbac2df9dde/private/outer-dispatch-result.json", "bytes": 918, "sha256": "b1015d123431c4d0737e0c41664dc4035b1d858f5684279bce15072623f3362c"},
+        "archive": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-7dbac2df9dde/retained/full-private.tar.gz", "bytes": 15773986, "sha256": "5288058e5f39dfa3a4f2118b857c79bb317e9a92eb02eab64eb44d07836c702e"}
+      }
+    },
+    {
+      "scope": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-564e1bbfbc4d",
+      "status": "failed_diagnostic_reviewed_resources_closed",
+      "ssh": {"sessionId": 45514, "initialToolChunk": "159d90", "terminalToolChunk": "91c3a5", "exitCode": 1},
+      "actualOutcome": "OutputType metadata was accepted and the ordinary default snapshot completed in 2092821 microseconds. EXPLAIN executed and returned JSON, then numeric decoding failed at explain_number_decode. Subsequent source review identified incompatible handling of the nested Generation value. The disabled variant did not run.",
+      "completedSnapshotMarkers": 1,
+      "completedExplainMarkers": 0,
+      "explainStatementExecutedAndReturned": true,
+      "completeVariantComparison": false,
+      "settingsRestorationObserved": false,
+      "resourcesClosed": true,
+      "workerTerminalUnit": {"LoadState": "loaded", "ActiveState": "failed", "MainPID": "0", "ExecMainStatus": "1"},
+      "evidence": {
+        "independentReview": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-564e1bbfbc4d/private/independent-failure-review-r01.json", "bytes": 9941, "sha256": "7909a07c94dab4a8059799588902fab7113ed339aead8b7cabe3fc9d59c018af"},
+        "execution": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-564e1bbfbc4d/execution.json", "bytes": 97772, "sha256": "2b83e80156564707b45b66173590a5eb51038399b56dde80c38da47f32bc58ac"},
+        "closure": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-564e1bbfbc4d/closure.json", "bytes": 13236, "sha256": "a1cc6f4d31e8b3ce5b6a84d95bd9ce6ba0ceb5b70bce6f75d7e86211b5c227f1"},
+        "outerDispatch": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-564e1bbfbc4d/private/outer-dispatch-result.json", "bytes": 918, "sha256": "4d5c17a8d35323e4c6e068ce1270dad4abd5286e2654280acd5fe76ff4abdaf7"},
+        "archive": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-564e1bbfbc4d/retained/full-private.tar.gz", "bytes": 15774651, "sha256": "2fd0eee284e286cdc5e7bb5476e0bb0166e84ce296565646fcf1745357cf4d55"}
+      }
+    },
+    {
+      "scope": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326",
+      "status": "passed_independent_diagnostic_and_saved_closure_review",
+      "ssh": {"sessionId": 73065, "initialToolChunk": "f82d4c", "terminalToolChunk": "b7de34", "exitCode": 0},
+      "actualOutcome": {"runs": 1, "parentTestsPassed": 1, "variantSubtestsPassed": 2, "normalMarkers": 15, "sampleTransactions": 4, "snapshotCalls": 4, "explainCalls": 4, "fullSnapshotsEqual": true, "propertyDigestsEqual": true, "settingsRestored": true, "variantRollbacksObserved": true},
+      "source": {
+        "gitHead": "138522b707d0c3ba6012b119e38a18d38cf530c0",
+        "files": 5460,
+        "uncompressedBytes": 121863023,
+        "diagnosisOnly": true,
+        "archive": {"path": "/opt/goby-test/m5-auxiliary-query-plan-source-20260917-661a2c45268d/source.tar.gz", "bytes": 33531784, "sha256": "0140711db6b4016918a7cae7f4197d7f90a52816a1be7a3c80b8a340396ffe22"}
+      },
+      "evidence": {
+        "independentReview": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326/private/independent-review.json", "bytes": 6442, "sha256": "6f0373f56b0f6744738143fd41d687ff9ae7cd9fe1fecd99b174f3bd637e703d"},
+        "metricExtraction": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326/private/query-plan-metric-extract.json", "bytes": 27236, "sha256": "6375573aed573a2ff22e4f8a041b698b3b9b6f18255a9fec57d247a9526f1cd0"},
+        "execution": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326/execution.json", "bytes": 124835, "sha256": "0c707fefd579df936bc5f62c5465e9cf3de913ecfab252f9f856b8c0e9e1f68d"},
+        "closure": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326/closure.json", "bytes": 13236, "sha256": "f2b6105ca84f1d48fdcc9a83279d11aaca9c12ec1e574e11b24eba21a9c81344"},
+        "outerDispatch": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326/private/outer-dispatch-result.json", "bytes": 920, "sha256": "f46efe293d47a41d76d79e3e17d5b5cd97b6ca44146a1b123f170ef6a78aaa85"},
+        "archive": {"path": "/opt/goby-test/m5-auxiliary-query-plan-diagnostic-8d749eaa6326/retained/full-private.tar.gz", "bytes": 15783616, "sha256": "273145cd65d9b3f1a4417893a6e6a15d053c24a4604442a92391c4fb1ac59072"}
+      },
+      "closure": {"adapterCommandsClosed": 64, "workerCommandsClosed": 23, "ownedPostgresStopped": true, "privateUnitAndRecursiveCgroupEmpty": true, "threeVolumesClosed": true, "outerGroupEmpty": true, "lockReleased": true, "protectedBeforeAfterExact": true, "sourceUnchanged": true, "workerTerminalUnit": {"LoadState": "not-found", "ActiveState": "inactive", "MainPID": "0"}}
+    }
+  ],
+  "acceptedComparisons": [
+    {"selection": "ordinary", "defaultSnapshotMicroseconds": 2034891, "defaultPlanningMs": 2.166, "defaultExplainExecutionMs": 2008.324, "defaultJitTotalMs": 2006.839, "defaultJitFunctions": 662, "reportedJitShareOfExecutionPercent": 99.92605774765426, "disabledSnapshotMicroseconds": 3537, "disabledPlanningMs": 1.873, "disabledExplainExecutionMs": 0.418, "disabledJitReported": false},
+    {"selection": "removal_retained", "defaultSnapshotMicroseconds": 2029386, "defaultPlanningMs": 1.943, "defaultExplainExecutionMs": 2022.768, "defaultJitTotalMs": 2021.429, "defaultJitFunctions": 662, "reportedJitShareOfExecutionPercent": 99.93380358004478, "disabledSnapshotMicroseconds": 3319, "disabledPlanningMs": 1.881, "disabledExplainExecutionMs": 0.391, "disabledJitReported": false}
+  ],
+  "interpretation": "JIT compilation dominates the reported default EXPLAIN execution time on this fresh-plan small fixture, at approximately 99.93 percent. The disabled-JIT arm retained equal full snapshots and property digests with substantially lower observed time.",
+  "remaining": [
+    "Freeze and verify the isolated product correction, preserving the complete auxiliary query and the five-second proof budget.",
+    "Verify the correction through actual reconciliation, then the required complete regression and builds; the original fcf3 full run remains failed."
+  ],
+  "limits": [
+    "Each attempt has its own immutable source, input, original SSH result and owned-resource closure. The first two failed units remain recorded as loaded/failed/MainPID 0; resource closure does not claim their unit records were deleted.",
+    "QueryExecModeExec forces fresh plans. Default preceded disabled JIT in fixed order with one sample per selection and arm; there is no repeated performance distribution or demonstrated cached product-path outcome.",
+    "Generation.Total already contains Deform; the JIT total does not add that subphase twice.",
+    "The result does not directly establish the complete cause of the original fcf3 failure, a product fix, full-suite acceptance, application builds, frontend or browser acceptance. Earlier e1, 255 and phase-timing scopes are unchanged.",
+    "Independent reviews and this documentation update read saved evidence only. No tests, validators, runtime probes, SQL or service actions were executed for this documentation update. Programs has not transitioned."
+  ]
+}

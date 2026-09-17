@@ -53,8 +53,16 @@ closure fields with a separate physical-closure supplement. The later
 passed both top-level and both child tests once in 15.809 seconds and independently
 closed. Two auxiliary snapshots consumed 99.2-99.4% of removal proof time, about
 2.2 seconds each; deletion took about 1-2 ms and final revalidation about 3 ms.
-This localizes measured time without establishing the JIT/planning/execution
-cause or a query-plan result. Older failures and frontend/storage scopes remain unchanged.
+The later [query-plan diagnostic](../development/m5-auxiliary-query-plan-diagnostic-result-20260917.md)
+is independently accepted in its third attempt, with three passing cases, four
+snapshots/four `EXPLAIN` calls, equal per-selection results/digests and restored settings.
+JIT accounts for about 99.93% of reported default execution; the disabled arm's
+snapshots took 3-4 ms versus about 2 seconds. This fresh-plan, fixed-order small
+fixture does not establish the complete original full-failure cause or a product
+fix. Both earlier diagnostic failures retain their SSH results and owned closure.
+Next is a reviewed narrow product JIT correction retaining the full query and
+five-second proof budget, then actual reconciliation, full regression and builds.
+Older failures and frontend/storage scopes remain unchanged.
 
 The [Programs runtime/product preparation](../development/programs-current-runtime-preparation-20260916.json)
 now includes the completed unique observer: two acknowledged read-only SQL

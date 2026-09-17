@@ -1,6 +1,6 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-17: **continue M5 reconciliation diagnosis and publish the verified Programs transition CLI for fresh execution admission**.
+Current priority on 2026-09-17: **prepare and verify a narrow M5 auxiliary-query JIT correction and publish the verified Programs transition CLI for fresh execution admission**.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -99,9 +99,17 @@ supplement. The later [phase-timing diagnostic](m5-reconciliation-phase-timing-r
 also passed two top-level/two child tests once and independently closed. Its two
 auxiliary snapshots consumed 99.2-99.4% of removal proof time, about 2.2 seconds
 each; deletion and final revalidation took about 1-2 ms and 3 ms respectively.
-The cause within JIT/planning/execution remains unknown, and no query-plan result
-is accepted. Programs transition admission has its own prerequisites and does
-not require M5 full success.
+The later [query-plan diagnostic](m5-auxiliary-query-plan-diagnostic-result-20260917.md)
+is independently accepted in its third scope: one parent/two variants passed,
+with four snapshots, four `EXPLAIN` calls, equal per-selection results/digests and restored
+settings. JIT accounts for about 99.93% of reported default execution time;
+the disabled arm's snapshots took 3-4 ms versus about 2 seconds by default. This is
+a fresh-plan, fixed-order small-fixture result, not direct proof of the original
+full failure or a product fix. The two earlier permission/parser and numeric-
+decoder failures retain their original SSH results and owned closure. A narrow
+product correction is being prepared/reviewed with the full query and five-second
+proof budget unchanged; actual reconciliation, full regression and builds remain.
+Programs transition admission has its own prerequisites and does not require M5 full success.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
 blocker no longer applies.
@@ -231,8 +239,9 @@ activated. Static review and remote formatting are complete. The combined-source
 frontend typecheck/build and real schema-29 catalog export have since passed in
 their separate scopes. The combined full has failed and closed, retaining the
 completed deletion/activity/archive/config coverage. The focused reconciliation
-diagnostic and later phase-timing scope each passed once without reproduction;
-the latter localizes time to auxiliary snapshots without proving a cause or fix.
+diagnostic and phase-timing scope each passed once without reproduction. The later
+query-plan result isolates dominant JIT cost within its fresh-plan small fixture;
+the narrow product correction and its actual verification remain pending.
 Final builds, later media/server and browser
 acceptance remain pending. Main's Programs product
 source is unchanged.
