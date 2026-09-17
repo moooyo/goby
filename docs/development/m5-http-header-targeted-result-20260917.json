@@ -1,0 +1,96 @@
+{
+  "kind": "m5-http-header-targeted-result",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "accepted_two_targeted_tests_and_owned_closure",
+  "scope": "/opt/goby-test/m5-diagnostic-http-header-fix-targeted-53ff9b7dac32",
+  "source": {
+    "gitHead": "137b41bd73ee29b6a8856c63a45a2ca50fdd8bfd",
+    "files": 5461,
+    "descriptor": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-clean-source-20260917-33f9f1cf1deb/source-descriptor.json",
+      "bytes": 815,
+      "sha256": "8b883735cb52ade4b05c913caaee6c33c8d46127737808a4869ccc973beb8775"
+    },
+    "archive": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-clean-source-20260917-33f9f1cf1deb/source.tar.gz",
+      "bytes": 33532059,
+      "sha256": "b6920684765595ad9bfd8f696f287042451bddadfd47d770c00ba9574d518f5a"
+    },
+    "manifest": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-clean-source-20260917-33f9f1cf1deb/source-manifest.json",
+      "bytes": 1103008,
+      "sha256": "8eae71f3f579c233fd538fc314031148b9370524268694bc4bda3eca4525be68"
+    },
+    "preparation": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-clean-source-20260917-33f9f1cf1deb/source-preparation.json",
+      "bytes": 4563,
+      "sha256": "201d514af7629e0be821f2a3f780235a007026c7189d96efc5e0cd545f0d1cc3"
+    }
+  },
+  "result": {
+    "package": "github.com/moooyo/goby/internal/server",
+    "raceEnabled": true,
+    "invocations": 1,
+    "topLevelPassed": 2,
+    "childTests": 0,
+    "failed": 0,
+    "skipped": 0,
+    "raceTimeoutOrInterruptionObserved": false,
+    "commandExitCode": 0,
+    "packageResult": "pass",
+    "packageElapsedSeconds": 3.937,
+    "priorResultsReused": false,
+    "tests": [
+      {"name": "TestHTTPMediaDiagnosticsRequireNativeCookieCSRFAndOrigin", "runs": 1, "result": "pass", "elapsedSeconds": 1.74},
+      {"name": "TestHTTPMediaDiagnosticDuplicatePostAndInstanceBoundLookup", "runs": 1, "result": "pass", "elapsedSeconds": 1.18}
+    ]
+  },
+  "originalSsh": {
+    "sessionId": 30627,
+    "initialToolChunk": "de396b",
+    "terminalToolChunk": "46ecbb",
+    "exitCode": 0
+  },
+  "ownedClosure": {
+    "independentReviewAccepted": true,
+    "recordedPidsAbsent": 68,
+    "ownedProcessGroupsAbsent": true,
+    "ownedMountsClosed": 3,
+    "unitCgroupAbsent": true,
+    "ownedPostgresStopped": true,
+    "privateBindRemoved": true,
+    "lockReleased": true,
+    "protectedBeforeEqualsAfter": true,
+    "sourceUnchanged": true
+  },
+  "evidence": {
+    "execution": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-fix-targeted-53ff9b7dac32/execution.json",
+      "bytes": 101413,
+      "sha256": "798fbe4fc878fb758a49bc5ffdc35a9f5317ee72db3a93f4f549e46bc40e1c69"
+    },
+    "closure": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-fix-targeted-53ff9b7dac32/closure.json",
+      "bytes": 13340,
+      "sha256": "f5e1e3442ecb1118f7dcfe37863b459c09233a2b45c2e25e77e4dd344f54cbae"
+    },
+    "independentReview": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-fix-targeted-53ff9b7dac32/private/independent-review.json",
+      "bytes": 54401,
+      "sha256": "1f310a14f556b864ba8d5faa2c5d068024d1c16733a79e0427e9a49ab621f4c6"
+    },
+    "independentExtraction": {
+      "path": "/opt/goby-test/m5-diagnostic-http-header-fix-targeted-53ff9b7dac32/private/independent-targeted-extraction.json",
+      "bytes": 57009,
+      "sha256": "11baee069551e453a476777ba8dcc9c52c86160608bc5ed7a7c287cf6e70e1c7"
+    }
+  },
+  "limits": [
+    "Accept only these two top-level tests and their owned execution closure. The tests use a fake executor owner and HTTP test fixtures; real FFmpeg execution and native client acceptance are not established.",
+    "The earlier full-suite failure and S1 zero-launch Programs failure remain unchanged. This targeted result is not a passing result for the six packages not reached by the earlier full run or application, embedded, frontend or release builds.",
+    "No automatic retry or actual Programs transition occurred in this scope. Deployment acceptance remains separate.",
+    "Independent review checked saved manifest, preparation, source binding and committed header source. It did not rescan the complete source archive; the original run's archive-member checks remain its own evidence.",
+    "This documentation update only read saved JSON and created this record; it ran no tests, validation, runtime probes, SQL, HTTP or service actions."
+  ]
+}

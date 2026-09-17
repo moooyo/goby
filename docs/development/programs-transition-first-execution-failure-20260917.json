@@ -1,0 +1,132 @@
+{
+  "kind": "programs-transition-first-execution-failure",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "failed_transition_reviewed_running_successor_finalization_pending",
+  "dispatchScope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02",
+  "outputScope": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-transition-01",
+  "hostingComponentRecord": "programs-hosting-namespace-r02-components-20260917.json",
+  "sourcePublication": {
+    "originalToolChunk": "30d9c6",
+    "originalToolExitCode": 0,
+    "manifest": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/source-manifest.json", "bytes": 4114, "sha256": "1934b535613802db560a4b66fd335b01774306c0983a2366815970affc93ecd8"},
+    "receipt": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/source-publication.json", "bytes": 4873, "sha256": "173f67a76e82df3ca889c4b4e1de8ccba4aff5aab1c506a19c779f4f8fa4d734"},
+    "caller": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/code/dispatch-transition.py", "bytes": 66550, "sha256": "632e3a9fed7239250ca0f3375783d389347c9675f8e07a17a1c8f07fb2851207"},
+    "closer": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/code/close-transition-session.py", "bytes": 46889, "sha256": "9d11d53cefe1368e8fba397305553443808b90753d119bbe0f30f40c9b4a1a18"}
+  },
+  "operationSource": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-72c177d47421/code/transition-audited-candidate.py", "bytes": 94984, "sha256": "72c177d474214871c1403b0227b47cb343507f530e5ac68783949514744ed0d7"},
+  "runtimeHelper": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/code/audited-candidate-runtime-review-status.py", "bytes": 208632, "sha256": "2bbf5e4c9364fcc67b4261b9dceb145d2cf3f66fad86d6baadc2ee16a62893c3"},
+  "actualExecution": {
+    "transitionInvocations": 1,
+    "calls": {"stop": 1, "replace": 1, "start": 1},
+    "successfulGetRequests": 3,
+    "getResults": [{"route": "/readyz", "status": 200}, {"route": "/healthz", "status": 200}, {"route": "/emby/System/Info/Public", "status": 200}],
+    "failureStage": "after_preservation",
+    "failureCode": "diagnostic_file_membership_changed",
+    "originalStatus": "transition_failed_resources_retained",
+    "originalPowerShellSessionId": 5509,
+    "initialToolChunk": "6af88e",
+    "terminalToolChunk": "ef1b62",
+    "powerShellToolExitCode": 1,
+    "actualSshExitCode": 2,
+    "actualCallerExitCode": 2,
+    "actualCliExitCode": 2,
+    "automaticRetry": false,
+    "automaticRollback": false
+  },
+  "originalEvidence": {
+    "input": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-stat-only-consumer-20260916-ebf5c219b928/private/transition-input.json", "bytes": 5577, "sha256": "d000614532a0647c7c0f1c3df4bd4a81de76eb637acd6546c66c3f664d690168"},
+    "failure": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-transition-01/private/failure.json", "bytes": 14591, "sha256": "096ff73e322baffd016baa74eafe292981d6239f88f721a79a435a691b2a869a"},
+    "before": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-transition-01/private/before.json", "bytes": 1180198, "sha256": "beefe4737b681a65f969cc0a97903795fb8e700bbb7a7e094f1fee7aab1a78ed"},
+    "after": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/candidate-programs-transition-01/private/after.json", "bytes": 1182171, "sha256": "a3e1b3e88920a85efcbf6e843e7aa892f1f07999c8e3a591222faabfeab5f913"},
+    "beforeAfterAndFailureRemainReadOnly": true,
+    "inputAndOutputConsumed": true,
+    "d000ReplayAllowed": false
+  },
+  "recordedCurrentCandidate": {
+    "pid": 1907978,
+    "startTicks": "34901535",
+    "invocationId": "2d8403319f3943dbb3d1da638f33093e",
+    "activeState": "active",
+    "subState": "running",
+    "binaryBytes": 30701500,
+    "binarySha256": "ead67c8faaf4cde88f7fe1bf57ffed43705259aba7b29f59c3473747afd732fb",
+    "binaryInode": 1580898,
+    "oldCandidatePid": 1648477,
+    "oldCandidatePidAbsent": true,
+    "oldRuntimeAndGuardAreCurrentAuthority": false
+  },
+  "diagnosticDifference": {
+    "basis": "Root's saved snapshot comparison and source inspection of UTC rotation, old-process shutdown and new-process startup.",
+    "originalLogsRetained": 9,
+    "newClosedOldCandidateShutdownLogBytes": 143,
+    "newActiveSuccessorStartupAndGetLogBytes": 1101,
+    "oldCandidateShutdownCrossedUtcDate": "2026-09-16 to 2026-09-17",
+    "unitLogAppendBytes": 1244,
+    "postgresUnitLogPhysicalChange": false,
+    "postgresPrefixComparisonFieldUpdated": true,
+    "utcCauseEvidenceBoundary": "The UTC shutdown/startup explanation uses separate source-author log-body reading and old-source binding. The final independent saved-metadata review did not read those new log bodies or independently establish that causal mechanism.",
+    "otherDifferences": "Expected binary, process, lease and listener identities plus the new library.refresh_media definition; no other non-diagnostic difference was identified in the saved comparison.",
+    "strictUtcLogAuthorizationAccepted": false
+  },
+  "originalCloser": {
+    "invocations": 1,
+    "toolChunk": "60cf1f",
+    "exitCode": 1,
+    "reportedResourcesClosed": true,
+    "evidenceAccepted": false,
+    "receipt": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/session-closure.json", "bytes": 377454, "sha256": "99832656a3a5fa86bef971e2da1641a89fa94b56d3e334a76e7723328b4c54d2"},
+    "originalResultUnchanged": true
+  },
+  "currentMetadataSupplement": {
+    "record": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/independent-transition-current-metadata.json", "bytes": 40865, "sha256": "f8a2f932a4a1232fd33242bf48ebde1fecb1b992c3b66de1440f8c2ed5d4313f"},
+    "observedAt": "2026-09-17T07:44:49.973234+00:00",
+    "candidateAndProtectedMetadataMatchSavedAfter": true,
+    "recordedOwnedPidsAbsent": 78,
+    "originalFailedUnitRetained": true,
+    "currentSqlLeaseGrantRechecked": false,
+    "leaseBoundary": "Saved after-state records the lease grant; subsequent metadata matches the candidate socket and backend process without a new SQL grant observation."
+  },
+  "completeIndependentFailureSupplement": {
+    "status": "failed_transition_reviewed_owned_closed_current_candidate_retained",
+    "originalToolChunk": "eb81a3",
+    "originalToolExitCode": 0,
+    "record": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/independent-transition-failure-review-r02.json", "bytes": 26227, "sha256": "84ed56b8fdaa4531a81fd1d7b1fe548c066a46dfb51a35fa558ef83198f46e85"},
+    "readerClosure": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/independent-transition-reader-closure.json", "bytes": 2748, "sha256": "fdb3be31bdccc89185b78d1b28f73cb5527e9b8aa911ac33afd5b8ddd28e4f01"},
+    "issues": [],
+    "savedFieldsOnlyCorrection": true,
+    "newRuntimeObservations": 0,
+    "newLogBodiesRead": false,
+    "ownedPidsGone": 78,
+    "ownedCgroupsGone": 3,
+    "intentionallyRetainedPids": [1907978, 1907986],
+    "originalCliAndCloserFailuresPreserved": true,
+    "successPreservationEpochAndBindingAbsent": true
+  },
+  "firstIndependentSupplementRetained": {
+    "status": "failure_review_incomplete",
+    "originalToolChunk": "fa605f",
+    "originalToolExitCode": 1,
+    "record": {"path": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/programs-transition-dispatch-20260917-hosting-namespace-r02/private/independent-transition-failure-review.json", "bytes": 23183, "sha256": "9d0aa2d0633aa6e26170e6be775331d7ad1861cb3ac994e03e12f57ca7c757d8"},
+    "issue": "unit_log_delta_names",
+    "correctionBoundary": "The first reviewer compared full PostgreSQL unit-log observations. Only prefixSha256 moved to the unchanged whole-file hash; physical content and identity were unchanged. The r02 saved-field correction preserves the original incomplete review."
+  },
+  "finalizationPreparation": {
+    "status": "implementation_and_review_in_isolated_worktree",
+    "baseCommit": "f1a53e2",
+    "plannedContract": "Strict UTC log authorization and an optional V4 finalization descriptor binding the original operation and a separate continuation/publication program.",
+    "actualFinalizerCalls": 0,
+    "additionalStopReplaceStartPlanned": false,
+    "newCandidatePreserved": true,
+    "manualV4PublicationAllowed": false,
+    "version4Formed": false,
+    "clientAdmissionAccepted": false
+  },
+  "limits": [
+    "S1's earlier hosting preflight failed with zero launches. It is historical and cannot describe S2, which actually stopped, replaced and started A once.",
+    "Original operationSource remains the S1 scope's 72c file. Publication, component acceptance and metadata supplementation do not rewrite that source or any original failure/snapshot/closer outcome.",
+    "Preserve the running successor and its recorded identity. Do not replay D000, restart/replace A, edit old snapshots or handwrite V4 records. The old A process, runtime envelope and guard are not current live authority.",
+    "The original closer accepted resources but rejected evidence. Final independent failure/closure review is complete, but the original CLI/caller/SSH 2, PowerShell 1 and closer evidenceAccepted=false remain unchanged. It produces no preservation success, epoch, binding, V4 or client admission.",
+    "This documentation pass read saved records only and performed no validator, test, SQL, HTTP, service or archive operation. Complete M5 full verification and overall M2-M6 delivery remain unfinished."
+  ]
+}

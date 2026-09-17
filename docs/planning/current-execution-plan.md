@@ -1,6 +1,6 @@
 # Current execution plan
 
-Current priority: **verify the M5 test-header correction and correct Programs preflight before preparing a new entry**.
+Current priority: **preserve the running Programs successor, prepare strict finalization, and complete the remaining M5 full/build requirements**.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the earlier expanded root disk was already in use. The user's
@@ -32,9 +32,9 @@ has now [passed all 25 packages and both builds](../development/programs-complet
 Independent result, source, artifact and resource-closure reviews passed. Its
 scope is terminal and closed; no further worker observation or replay is needed.
 The [September 16 application recovery](../development/candidate-oom-exit-recovery-completed-20260916.md)
-and separate post-start preservation have passed independent review. Bind this
-actual successor and the recovered runtime authority before the direct A
-transition. The separately owned [schema-29 catalog job](../development/m5-user-deletion-catalog-generation-20260916.json)
+and separate post-start preservation passed independent review in their scope.
+S2 has since installed the successor; retain new A and bind strict finalization
+to its recorded identity. The old runtime authority is historical. The separately owned [schema-29 catalog job](../development/m5-user-deletion-catalog-generation-20260916.json)
 has generated its artifact and closed with independent content and resource
 reviews. Its exact bytes are now in the M5 source; no M5 product test ran in
 that generator scope. The [combined M5 frontend](../development/m5-final-frontend-verification-20260916.md)
@@ -77,8 +77,10 @@ is complete: 18 packages passed and server failed only
 Raw totals are 2,129 top-level/6,614 child passes, including the failed server's
 passing cases, plus one failure and the original skip. All 24 JIT/reconciliation
 identities passed in this full run; six packages, both builds and materialization
-did not run. Verify the separate `137b41b` test-helper `Header.Set` correction,
-then complete the remaining full/build requirements. Product auth and JIT are unchanged.
+did not run. The separate [137b41b header correction](../development/m5-http-header-targeted-result-20260917.md)
+now passed both selected top-level tests once (no children) in 3.937 seconds,
+with original SSH `30627` exit 0 and independent closure. Preserve the fake-owner
+boundary; complete full/build requirements remain, and product auth/JIT are unchanged.
 The earlier 255 source-status rejection
 and its separate closure supplement remain unchanged. Programs transition
 admission remains independent of M5 full success.
@@ -143,15 +145,21 @@ explicit predecessor recovery, helper pins and budgets are unchanged. The separa
 passed and closed with mocked effects; PowerShell, the real final GC census and
 closer `inspect_attempt` were not exercised. The [revised caller/closer/operator sources](../development/programs-transition-source-publication-20260917.md)
 are now published and read back; the earlier `9b8d5e8a...` operator retains its
-original bytes. The actual caller then failed preflight at
-`hosting_listener_process_or_namespace`, comparing the isolated hosting namespace
-with the outer host. `launchAttempts=0`: no CLI or replacement ran. Caller/closer
-are terminal, with independent supplemental review pending. Correct the preflight
-and prepare a new entry. The artifact and typed episode/subtitle framework
-already exist; concrete inputs bind actual state and subsequent closeouts.
-No capture03 label refresh is needed; actual recovery input requires actual
-failure. Capture01 and separate component results remain unchanged, with no
-transition or v4/client acceptance. For the earlier two-query observer, query
+original bytes. S1 failed the hosting preflight with zero launches; the correction
+then passed [three mocked r02 methods](../development/programs-hosting-namespace-r02-components-20260917.md).
+[S2 actually stopped, replaced and started A once](../development/programs-transition-first-execution-failure-20260917.md)
+and completed three GETs, then failed `after_preservation` with
+`diagnostic_file_membership_changed`. New A is PID `1907978`, start `34901535`,
+invocation `2d8403319f3943dbb3d1da638f33093e`, running `ead67c8f...` at inode
+`1580898`. Preserve that process and the consumed D000/output scope; no replay or
+further stop/replace/start. Old A/runtime/guard are historical authority only.
+The original closer remains resources true/evidence false; current metadata
+matches new A and protection but does not re-establish a SQL lease grant.
+Independent failure/closure supplementation is complete and retains the original
+failed CLI/caller/SSH and closer results. Prepare strict UTC log
+authorization, an optional V4 finalization descriptor and a continuation/publication
+program in the isolated worktree; actual finalizer calls are zero. No V4/client
+admission exists. For the earlier two-query observer, query
 backend disappearance, observer/outer numeric PGIDs and post-close lock-inode
 identity were not additionally measured; the application lease backend is expected to persist.
 
@@ -660,10 +668,10 @@ was integrated; the [second saved product gate](../development/programs-saved-pr
 now has composite acceptance with its original caller failure preserved.
 The [46-method transition/recovery component scope](../development/programs-transition-admission-verification-20260917.md)
 passed and was integrated at `8477421`, removing main's unconditional dispatch
-hold. Revised source publication/readback is complete; bind fresh execution
-inputs after correcting the caller's failed hosting-namespace preflight and
-reviewing its pending independent supplement. The earlier published operator
-is unchanged and no transition ran. M5 success
+hold. The later S2 publication and actual stop/replace/start are complete, but
+transition acceptance failed on the two added diagnostic logs. Preserve the new
+running A, original operator, D000 and before/after/failure records. Prepare
+strict finalization using the completed independent supplement; do not dispatch again. M5 success
 is not a prerequisite for this work.
 The [complete M5 catalog source](../development/m5-user-deletion-catalog-source-preparation-20260916.json)
 has now produced the [real schema-29 catalog](../development/m5-user-deletion-catalog-generation-20260916.json)
@@ -708,8 +716,10 @@ without directly observing JIT generation. The new `0add3118b99f` full scope
 exited 1 in original SSH session `43043` and is [independently reviewed and closed](../development/m5-combined-full-http-header-failure-20260917.md).
 The sole failure was the HTTP media-diagnostic concurrent-start assertion.
 Subsequent static review found the test helper's noncanonical header-map key;
-the isolated `137b41b` correction uses `Header.Set` and remains remotely unverified.
-It changes neither product authorization nor JIT. Six packages and both builds remain open.
+the isolated `137b41b` correction uses `Header.Set` and now passed its [two-test
+targeted scope](../development/m5-http-header-targeted-result-20260917.md) with independent closure.
+It changes neither product authorization nor JIT. The fake executor owner does
+not prove real FFmpeg or a complete full result; full/build requirements remain open.
 The earlier capacity/status failures and storage
 acceptance remain unchanged.
 The consumed catalog input
@@ -723,14 +733,14 @@ passed source verification but was rejected before worker creation because of
 memory availability. The [fresh retry](../development/programs-complete-source-retry.json)
 has completed all 25 packages, both builds and closure with independent review.
 Its [actual artifacts](../development/programs-complete-source-full-result-20260916.json)
-are retained and the actual saved product gate is accepted; transition/recovery
-entry admission is still required. The separate 142/151/152 components retain
+are retained and the actual saved product gate is accepted. S2 executed and
+failed preservation acceptance; strict finalization/V4 remains required. The separate 142/151/152 components retain
 their own scopes. The catalog
 job is already closed. Preserve all consumed scopes and their original outcomes.
 The [client components](../development/programs-client-component-verification.json)
 passed within their frozen scopes, including typed episode/subtitle contracts.
 Concrete admitted inputs remain pending, and no new live journey has run.
-Transition/recovery entry review must complete before A changes. Heavy work
+Preserve the new A while preparing finalization and client admission; do not change it again. Heavy work
 remains serialized on the available test environment.
 
 The [retained Library timeline](../development/library-theme-retained-timeline.md)
@@ -747,18 +757,18 @@ or repeat archive review without new evidence.
 **Closed compatibility exception:** the bounded current-runtime v2 correction
 represents the second recovery through `previousCurrentRuntime`, preserving v1
 semantics and historical `38b906...`. Reuse its verified four-file scope. The
-later runtime envelope and actual saved product gate now have their own accepted
-bindings. The verified operator revision is published under the existing contract
-version; complete actual entry/admission without a framework, launcher or
-general contract redesign.
+later runtime envelope and saved product gate retain their accepted historical
+bindings. S2 changed A, so old runtime/guard pins no longer authorize live work.
+The new isolated finalization contract must bind the original operation and
+failure to the retained successor without another transition.
 
 After incident recovery and resource coordination, the successor's complete-source
-verification/build, current runtime envelope and actual saved product gate are
-retained. The transition/recovery component proposal also passed 46 methods and
-is integrated and the revised sources are published. Actual fresh entry/admission
-requires correction of the failed caller preflight and its pending supplemental
-review before
-one direct A transition, three client journeys, the audio
+verification/build and saved product gate are retained. The 46-method entry scope,
+three-method hosting correction and actual S2 operation retain distinct results.
+S2's new A remains running after failed preservation acceptance. Prepare and
+verify strict UTC log authorization and optional V4 finalization, preserving all
+original records. The finalizer has not run and must not repeat stop/replace/start. After validated
+V4/client admission, complete three client journeys, the audio
 reuse bridge and G3. Follow the
 [core acceptance resolution](../development/core-client-acceptance-resolution.md)
 and [selected A transition](../development/e11-candidate-transition-decision.md).
@@ -795,8 +805,8 @@ maintenance record supersedes the earlier unanswered-window blocker.
 
 | Branch and source | Prepared work | Remaining requirements |
 | --- | --- | --- |
-| `codex/programs-theme-diagnosis`, `3d6b79b`; transition admission integrated as `8477421` | Prior product/component scopes and [source publication](../development/programs-transition-source-publication-20260917.md) remain accepted. Actual caller preflight failed at `hosting_listener_process_or_namespace`, with zero CLI launches/replacements. Caller/closer are terminal; independent supplement is pending | Correct the hosting-versus-outer namespace check and prepare a new entry. Preserve strict before-state and explicit recovery-policy checks and the failed attempt; M5 need not pass. No transition/v4/client acceptance exists |
-| `codex/m5-auxiliary-jit-fix`, `9e70e4b`; separate test-header fix `137b41b` | The [full attempt](../development/m5-combined-full-http-header-failure-20260917.md) passed 18 packages, then failed server's concurrent HTTP diagnostic assertion. All 24 JIT/reconciliation identities passed in this full run. Independent failure/closure review is complete; six packages, both builds and materialization did not run | Remotely verify the `Header.Set` test-helper correction, then complete full/build requirements. Product auth, JIT, full SQL and the five-second proof budget are unchanged. Retain release `--frontend-contributions`, 59-asset equality and browser obligations; no full pass or complete M5 acceptance is claimed |
+| Programs finalization worktree, based on `f1a53e2` | [S2](../development/programs-transition-first-execution-failure-20260917.md) executed stop/replace/start once and three GETs, then failed diagnostic-file membership. New A `1907978`/`ead67c8f...` remains active. Independent failure/closure review is complete; original caller/CLI/SSH failures and closer evidence false remain | Implement strict UTC log authorization, optional V4 finalization descriptor and continuation/publication with actual finalizer calls still zero. Preserve new A and all original records; no D000 replay, further stop/replace/start or handwritten V4. No V4/client admission exists |
+| `codex/m5-auxiliary-jit-fix`, `9e70e4b`; header fix `137b41b` / source publication `33f9f1cf1deb` | The original full remains failed and independently closed. The [header targeted scope](../development/m5-http-header-targeted-result-20260917.md) passed two top-level tests once, no children, with independent closure; its fake executor owner is explicit | Complete full/build requirements and retain `--frontend-contributions`, 59-asset equality and browser obligations. Targeted HTTP coverage does not prove real FFmpeg or clear the original full failure; complete M5/M2-M6 acceptance remains open |
 | `codex/native-capacity-measurement`, `00bd9d4` (integrated on main as `fb0b18c`) | [Running-job collection and result reading](../development/native-capacity-running-observation-verification-20260916.md): 61 unittest methods plus reader 12, transport eight and pool six groups passed with independent review and closure. The original 600-request cap and deadlines are retained; same-library Running intervals require exact clock/source/job binding. Earlier 47-method results and the source bridge keep their own scopes | Bind current runtime/artifact prerequisites and a fresh owned fixture before actual native admission. Short scans may still yield insufficient real overlap; component results do not establish native capacity or M2 acceptance |
 | `codex/m5-media-diagnostics`, `1fcdede` | [Administrator diagnostic draft](https://github.com/moooyo/goby/blob/1fcdedee572d97cf10719da12c29413568dea8cd/docs/development/media-diagnostics.md) connects the fixed media stages to native APIs, run ownership, conversion capacity and a Settings panel. The combined frontend and six diagnostic-configuration top-level tests passed in their recorded scopes. The failed full never reached media/server/transcode packages | Prepared Linux media, server-runtime, conversion-reservation, HTTP/real-FFmpeg and browser behavior remain unexecuted. Establish codec/content and available-hardware evidence under their own prerequisites. Defaults remain disabled; no runtime or M5 acceptance is claimed |
 | `codex/m6-frontend-contributions`, `43a9b76` | [Private frontend contribution capture tooling](https://github.com/moooyo/goby/blob/4796aa1/docs/development/frontend-contribution-capture.md) passed [producer 7+8 and consumer 5+9 synthetic cases](../development/frontend-contribution-verification.md), once per group. Integrated M5 then passed a [real typecheck/Vite build](../development/m5-final-frontend-verification-20260916.md), retaining the original 48-chunk sidecar and complete 59-asset inventory | Execute the separately required release consumer with `--frontend-contributions` and exact final assets after relocation. Saved-data shape review is not consumer execution. No unchanged E11 rebuild, Programs artifact change, complete dependency graph or legal completeness is claimed |
@@ -819,18 +829,18 @@ and actual execution results distinct.
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
 | 0. Historical application recovery and consumer runtime binding — complete in its original scope | Retain the independently reviewed September 15 recovery, component scopes, actual one-cluster/one-lease observation and validated ready v2 envelope | Both applications were subsequently observed failed after a new September 16 host event. Reuse unaffected evidence, but the old ready envelope is no longer fresh live authority. Do not replay consumed inputs or restart applications merely to refresh a binding |
-| September 16 original application recovery — complete in its recorded scope | The [actual restart and separate post-start observation](../development/candidate-oom-exit-recovery-completed-20260916.md) passed independent review after the four-database, native and pre-start preservation checkpoints. The later unique two-query observation and frozen-producer publication produced `db22e3d...`; final 142 binding component checks subsequently passed | A/B each started once with unchanged binaries/configuration and PGs; health, leases, four-database and old-log preservation passed. The actual saved product gate is accepted separately; transition entry remains pending. No physical integrity, exit-cause, transition or client-acceptance claim follows |
+| September 16 original application recovery — complete in its recorded scope | The [actual restart and separate post-start observation](../development/candidate-oom-exit-recovery-completed-20260916.md) passed independent review after preservation checks; the subsequent observation produced `db22e3d...` and 142 binding components passed | These recovery identities are historical after S2 replaced A. Retain their lineage without using them as current authority; S2's failed acceptance now requires strict finalization/V4 and client admission |
 | Historical September 14 disk-full recovery — complete | Retain the independently reviewed four-database/native/log preservation and once-only application restart evidence in its original scope | Its replacement runtime identities have since been invalidated by the new incident. Preserve the result and old inputs; do not repeat that workflow to refresh its label |
 | 0a. Fixed M5 refresh increment — complete | Native task, focused Go/API and real administrator-browser acceptance, final ordinary regression and independent result/resource closure | Focused coverage is 109+1 across two source-bound phases. The final source passed one complete 25-package run with 2,295 passes/0 failures/1 declared skip and the ordinary Linux build. Preserve every earlier failure and the paused profile gap |
 | 0b. Internal amd64 systemd installation — accepted | Retain the [composite G2 acceptance](../development/internal-amd64-installation-acceptance.json): original two-start runtime, complete saved HTTP review, exact archived final state and independent resource closure | No further installer run is queued. Preserve all four installer attempts and failed copy0001; native arm64/OCI, upgrade, host durability and full M6 remain separate |
 | 0c. Programs diagnosis, reference and focused scope — complete | Preserve the consumed [TV diagnostic](../development/audited-tv-browse02-diagnostic.json), [reference observation](../development/reference-programs-verification.json) and [14 top-level/118-subtest focused result](../development/live-tv-programs-focused-verification.json) with their independent reviews | No repeat reference, focused or diagnostic work without an invalidating change. Full Live TV, full regression and client acceptance are not claimed |
-| 1. Entry components/source publication complete; actual caller preflight failed | Reuse prior accepted scopes and preserve the terminal caller/closer attempt: `hosting_listener_process_or_namespace`, `launchAttempts=0`, no CLI/replacement | Correct the namespace precheck and prepare a new entry after its independent supplement. Existing before-state and explicit recovery-policy checks remain; actual recovery input requires actual failure. M5 success is not a Programs prerequisite |
+| 1. S2 executed; strict finalization pending | Preserve running A `1907978`/`ead67c8f...`, the original stop/replace/start evidence, consumed D000 and before/after/failure records. S1 zero-launch preflight remains historical; independent failure/closure supplementation is complete | Prepare validated UTC log authorization plus optional V4 finalization. Actual finalizer calls are zero; do not use old runtime/guard as current authority or replay the transition |
 | 1a. Original theme diagnostic — complete | One parent and one theme subtest passed with the existing `90/15/20/5/15s` budgets; recovery scan completed in about 0.832 seconds, and owned resources closed with protected state unchanged | This is non-reproduction. It does not clear the original full failure or establish a product fix; do not repeat this single case |
 | 1b. Complete Library package diagnosis — complete | One complete package run passed 606 top-level tests and 1584 subtests with the single existing M2 skip; original assertions/budgets and protected state were preserved, and resources closed | Non-reproduction, not a root-cause or product-fix claim. Do not combine it with old partial-package counts to manufacture full regression |
 | 2. Frozen-source verification/build — complete with the declared profile gap | The [full result](../development/programs-complete-source-full-result-20260916.md) covers 25 packages, 2309 top-level passes, zero failures, one declared skip and both builds. Independent source/result/artifact/closure review passed | Reuse the actual materialized successor after candidate recovery and current runtime binding. Preserve the missing-fixture failure, zero-worker rejection and mount-profile gap; do not replay consumed inputs or combine partial scores |
 | 2a. Actual saved product gate — accepted | The [second actual readback](../development/programs-saved-product-second-attempt-20260917.md) returned once with real byte reads; composite review accepts the product result and owned closure | Preserve both original caller failures. Acceptance does not establish startup, transition, v4 or client execution; do not replay the loader or the retained captured-state check merely for review |
-| 3. One direct A transition — pending corrected preflight and fresh entry | After the caller precheck correction and pending supplemental review, bind the successor, runtime authority, current full state, task-definition delta and explicit recovery policy for a new admission | No transition has run and M5 need not pass. Preserve strict fresh-before checks, B and historical evidence; no intermediate E11 deployment, actor reset, new candidate, old live binding or assumed rollback |
-| 4. Final core client acceptance — held | After the admitted successor transition, run the declared movie, episode and SRT/VTT journeys and close the explicit audio reuse bridge | Each journey uses its preceding complete closeout and current runtime identity. Old failures are not relabeled; no ancestor execution is a successor run |
+| 3. One direct A transition — executed; acceptance failed | The original operation performed one stop/replace/start and left the Programs successor running. Continue only through the separate strict finalization/publication plan | Original failures remain failed. Preserve B, new A and historical evidence; no additional stop/replace/start, D000 replay or handwritten V4 |
+| 4. Final core client acceptance — held | After validated finalization/V4 and client admission, run the declared movie, episode and SRT/VTT journeys and close the audio reuse bridge | Bind each journey to the retained successor and preceding closeout. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
 | Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [original source checkpoint](../development/session-handoff-20260915-native-capacity.md), earlier operator/source-bridge results, and the [verified Running-job collection](../development/native-capacity-running-observation-verification-20260916.md) | No native fixture/input exists. Bind the selected verified artifact and current runtime before native admission. Reuse completed component groups; actual overlap and capacity still require native workload evidence |
 | Independent profile: package attribution | Retain the [46-chunk graph](../development/systemd-package-javascript-attribution.md), completed [73-row fixed-commit MUI lookup](../development/systemd-package-mui-source-correspondence.md) and [19-text payload draft](../development/systemd-package-legal-payload-draft.md). The [real M5 frontend build](../development/m5-final-frontend-verification-20260916.md) now has its own original contribution sidecar and exact asset/source bindings | The new sidecar does not supply historical E11 provenance or a complete compiled graph. Keep historical Google/input gaps explicit; no unchanged E11 rebuild or repeated source lookup without concrete new evidence. Actual consumer execution, final payload, pending license choice and external-distribution gate remain open |
@@ -1047,11 +1057,13 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    [46-method entry component scope](../development/programs-transition-admission-verification-20260917.md)
    passed and is integrated as `8477421`; main's unconditional dispatch hold is
    removed. Revised source publication/readback is complete and the earlier
-   operator's bytes are preserved. Actual caller preflight failed with zero CLI
-   launches; correct its hosting-namespace comparison and review its pending
-   supplement before preparing fresh admission/client inputs. Reuse the existing
-   fresh-before check rather than refreshing a capture label; actual recovery
-   input requires an actual failure. Preserve both original caller failures,
+   operator's bytes are preserved. S1's zero-launch failure is historical. The
+   hosting correction passed three mocked methods, and S2 executed stop/replace/
+   start once plus three GETs before failing diagnostic-file preservation.
+   Preserve the running new A and all original records while preparing strict UTC
+   log authorization, optional V4 finalization and a continuation/publication
+   program in the isolated worktree. Actual finalizer calls are zero. No repeat
+   transition, D000 replay or handwritten V4 is permitted. Preserve original caller failures,
    consumed capture01 and separate component scopes; M5 full passing is not a
    prerequisite for this Programs work. The separate schema-29 catalog job has already closed; its real
    output now joins the prepared M5 source for combined verification.
@@ -1060,7 +1072,7 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
    Tool-only
    changes do not themselves require another Go full run. E11 and the September
    14 recovery remain historical accepted evidence, not current runtime authority.
-3. Core acceptance then requires the three declared successor journeys and the
+3. After validated finalization/V4 and client admission, core acceptance requires the three declared successor journeys and the
    explicit MP3/FLAC reuse bridge. Each consumes a reviewed current-state input;
    no automatic replay or generic instrumentation. Main promotion joins that
    acceptance with applicable current safety/recovery proofs.

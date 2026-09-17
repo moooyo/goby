@@ -1,0 +1,27 @@
+{
+  "kind": "programs-hosting-namespace-r02-component-result",
+  "version": 1,
+  "recordedOn": "2026-09-17",
+  "status": "passed_three_mocked_methods_and_owned_closure",
+  "scope": "/opt/goby-test/programs-hosting-namespace-r02-component-checks-20260917-0571d705c199",
+  "sources": [
+    {"file": "test-hosting-namespace-r02.py", "bytes": 10220, "sha256": "bd2b94a7e104ffe08dcd05bf40d9ffeccf02b2e545020b29baba0ca4849f0da1"},
+    {"file": "dispatch-transition.hosting-namespace-r02.py", "bytes": 66550, "sha256": "632e3a9fed7239250ca0f3375783d389347c9675f8e07a17a1c8f07fb2851207"}
+  ],
+  "result": {"runs": 1, "methods": 3, "passed": 3, "failed": 0, "skipped": 0, "exitCode": 0, "automaticReruns": 0},
+  "execution": {"originalToolChunk": "92e3fc", "originalSshExitCode": 0, "returnedSynchronously": true, "pendingSessionCreated": false},
+  "coverage": "Finite mocked hosting metadata accepts the reviewed isolated namespace and owned tcp6 wildcard listener. Before/after namespace or identity drift, wrong/competing socket inodes and missing descriptor ownership reject.",
+  "evidence": {
+    "sourceManifest": {"path": "/opt/goby-test/programs-hosting-namespace-r02-component-checks-20260917-0571d705c199/private/source-manifest.json", "bytes": 3908, "sha256": "c98047b1f7c5bfb3f783d0b1cd6308bdaae8c6b522348be4e1bc1e060c3392cb"},
+    "result": {"path": "/opt/goby-test/programs-hosting-namespace-r02-component-checks-20260917-0571d705c199/private/result.json", "bytes": 2294, "sha256": "2d7af02e875c0d87e05a00ec9037a0af88688cea2f7cebf602d7d6ebafea633b"},
+    "unitClosure": {"path": "/opt/goby-test/programs-hosting-namespace-r02-component-checks-20260917-0571d705c199/private/closure.json", "bytes": 18215, "sha256": "83fc49a09574ba0eab8256269d5e0538ba471bda49895b59de4e23182fd1529e"},
+    "sessionClosure": {"path": "/opt/goby-test/programs-hosting-namespace-r02-component-checks-20260917-0571d705c199/private/dispatch-session-closure.json", "bytes": 19480, "sha256": "233b033c4669b165e1aaab359faf2fcde5081e994ec12b0e975e7d0dee6fcd85"}
+  },
+  "closure": {"recordedPidsAbsent": 12, "recordedGroupsAbsent": 10, "rawStreamsReadBack": 22, "componentAndSshSessionCgroupsEmpty": true, "scratchEmpty": true, "sourceAndToolsUnchanged": true, "lockAcquired": false, "cleanupErrors": []},
+  "independentSavedReview": {"accepted": true, "separateReviewArtifactCreated": false, "testsOrLiveChecksRepeated": false},
+  "limits": [
+    "Only three mocked methods ran. Updated PowerShell and closer sources were not tested, and no fresh actual hosting observation or application transition occurred in this component scope.",
+    "The earlier eight caller-fault, 45 runtime, 46 successor and 71 closer groups were not rerun or added to this result.",
+    "The later S2 publication and actual transition have separate evidence. This record does not relabel the S1 zero-launch failure or establish V4/client acceptance."
+  ]
+}

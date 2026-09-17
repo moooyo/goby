@@ -1,15 +1,18 @@
 # Current implementation and delivery status
 
-Current priority on 2026-09-17: **verify the M5 test-header correction and correct Programs preflight before preparing a new entry**.
-The [Programs caller/closer/operator sources](programs-transition-source-publication-20260917.md)
-are published and read back. The actual caller subsequently failed preflight at
-`hosting_listener_process_or_namespace`, with `launchAttempts=0`; the CLI and
-replacement did not run. It compared the deliberately isolated hosting network
-namespace to the outer host. Caller/closer are terminal; their independent
-supplemental review is pending. The [M5 full failure](m5-combined-full-http-header-failure-20260917.md)
-and owned closure are independently reviewed: its sole failure was the concurrent
-media-diagnostic request's HTTP 403. The test-helper `Header.Set` correction is
-committed separately as `137b41b` and has not been remotely verified.
+Current priority on 2026-09-17: **preserve the running Programs successor, prepare strict finalization, and complete the remaining M5 full/build requirements**.
+[S2 actually stopped, replaced and started A once](programs-transition-first-execution-failure-20260917.md),
+with three successful GETs, then failed at `after_preservation` with
+`diagnostic_file_membership_changed`. A is now PID `1907978`, start `34901535`,
+invocation `2d8403319f3943dbb3d1da638f33093e`, running `ead67c8f...` at inode
+`1580898`. S1's earlier zero-launch preflight failure is historical. Do not replay
+`d0006145...`, use old A/runtime/guard as current authority, or repeat stop/replace/start.
+The original closer remains resources true/evidence false; independent failure/
+closure supplementation is complete without upgrading that original result.
+Finalization calls remain zero and no V4 or
+client admission exists. The [M5 header correction](m5-http-header-targeted-result-20260917.md)
+has separately passed two targeted tests and independent closure; complete M5
+full/build and overall M2-M6 delivery remain unfinished.
 The user confirmed that `test-env` is available on September 16 and then requested
 root filesystem cleanup. The [capacity review and cleanup](test-env-root-cleanup-20260916.md)
 confirm that the September 10 disk expansion is already in use; there is no
@@ -130,7 +133,10 @@ original skip. The totals include server's 590/1,751 passing cases. All 24
 JIT/reconciliation identities passed in this full run. Six packages, both builds
 and materialization did not run. Owned resources closed with protection unchanged.
 Subsequent static inspection identified a raw test-header key that bypassed
-canonicalization; the separate `137b41b` helper-only fix awaits remote verification.
+canonicalization. The separate [137b41b targeted result](m5-http-header-targeted-result-20260917.md)
+now passes both selected top-level tests once (no children), in 3.937 seconds,
+with original SSH `30627` exit 0 and independent closure. Its fake executor owner
+does not establish real FFmpeg, the remaining full suite or builds; `0add` stays failed.
 Programs transition admission has its own prerequisites and does not require M5 full success.
 The other prepared increments remain short of full acceptance. Complete M2-M6
 delivery remains unfinished and in scope. The previous unanswered-window
@@ -247,16 +253,21 @@ fresh-before checks, explicit predecessor recovery, helper pins and budgets rema
 The separate [caller-fault components](programs-transition-caller-fault-components-20260917.md)
 passed eight mocked methods once and closed. PowerShell was not executed;
 the real final GC census and closer `inspect_attempt` are outside that coverage.
-The earlier operator `9b8d5e8a...` is unchanged. The [revised sources](programs-transition-source-publication-20260917.md)
-are published and read back. The actual caller then failed preflight at
-`hosting_listener_process_or_namespace`, with zero CLI launches or replacements.
-The hosting namespace was incorrectly compared with the outer host namespace.
-Correct that preflight and prepare a new entry; independent supplemental review
-of the terminal caller/closer remains pending.
-The artifact and typed episode/subtitle framework are available; concrete inputs
-still bind actual state and subsequent closeouts. No capture03 label refresh is
-needed, and an actual recovery input follows only an actual failure. Historical
-failures and component scopes remain separate; no transition/v4/client acceptance exists.
+The earlier operator `9b8d5e8a...` is unchanged. S1's caller preflight failed with
+zero launches; its hosting correction then passed [three mocked methods](programs-hosting-namespace-r02-components-20260917.md).
+The later S2 publication retained the S1-path `72c...` operation source and actually
+performed the transition once. It failed after preservation because UTC rollover
+at old-A shutdown produced a closed 143-byte log before new-A startup/GETs added
+an active 1101-byte log. All nine old logs remain; other saved differences match
+the expected transition, definition and unit-log changes. Original failures and
+snapshots stay unchanged. The metadata supplement matches the running new A and
+protected state and records 78 owned PIDs gone; it supplies no new SQL lease-grant
+proof or V4 admission. Final independent failure/closure supplementation is
+complete. Its initial prefix-field comparison rejection remains preserved;
+the corrected saved-field review confirms the PostgreSQL log was physically unchanged.
+An isolated finalization worktree is preparing strict UTC log authorization,
+an optional V4 finalization descriptor and a continuation/publication program.
+Its actual calls remain zero. Preserve new A; do not handwrite V4 or repeat transition.
 The [execution plan](../planning/current-execution-plan.md)
 is the active queue. Complete M2-M6 delivery remains in scope; M7 is deferred.
 The [isolated preparation checkpoints](../planning/current-execution-plan.md#isolated-preparation-checkpoints)
@@ -272,7 +283,8 @@ diagnostic and phase-timing scope each passed once without reproduction. The lat
 query-plan result isolates dominant JIT cost within its fresh-plan small fixture.
 The narrow correction passed its targeted 8/16 scope and its 24 identities also
 passed in the new full run. That full failed the HTTP diagnostic test and is
-independently closed. The test-header correction remains unverified. Final builds and browser
+independently closed. The test-header correction then passed its two-test scope
+with independent closure; full/build and browser
 acceptance remain pending. Main's Programs product
 source is unchanged.
 Historical handoffs, PIDs, experiment inputs and verification receipts retain
@@ -326,15 +338,14 @@ fix is scheduled, and non-reproduction cannot clear the original full failure.
 [Client components](programs-client-component-verification.json) passed within
 their frozen scopes, including the typed episode/subtitle framework. The actual
 artifact's saved-file gate and the separate 46-method transition/recovery component
-scope are accepted, and revised source publication/readback is complete. Fresh
-admission/client inputs remain pending. No live journey has run. Reuse completed
+scope are accepted. S2 has now changed A and failed transition acceptance;
+strict finalization/V4 and client-admission inputs remain pending. No live journey has run. Reuse completed
 recovery, component and observation evidence without repeating starts or consumed
 inputs. Keep other tool versions frozen and bind admitted inputs to the verified
 artifact and runtime authority, with no framework expansion.
 Do not replay old inputs or bypass the original guard. The Programs
-successor is built and retained. Main's unconditional dispatch hold is removed;
-the earlier operator is unchanged, the revised sources are published, and actual
-execution admission remains pending.
+successor is running at the recorded new identity. Preserve that process while
+preparing finalization; old runtime/guard pins are predecessor evidence only.
 E11/G2 and the completed September 14 recovery retain their
 historical scopes. Final client acceptance and main promotion remain open.
 
@@ -369,8 +380,8 @@ preservation evidence. The completed recovery checks do not turn a historical
 client or runtime input into fresh execution authority.
 The [transition decision](e11-candidate-transition-decision.md) selects existing A
 for one direct Programs-successor transition and establishes its external administrator asset override from
-saved configuration provenance and pre-incident hashes. No transition or deployment
-has occurred. The [reference response question](reference-programs-verification.json),
+saved configuration provenance and pre-incident hashes. At that historical checkpoint,
+no transition or deployment had occurred. The [reference response question](reference-programs-verification.json),
 diagnostic and focused product scope are complete and consumed; they are not
 queued for repetition. The [core resolution](core-client-acceptance-resolution.md)
 remains subject to the incident-preservation and recovery hold above.
@@ -519,15 +530,15 @@ application identities and all unchanged protected resources explicitly.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
-| Current incident recovery and runtime binding | [September 16 recovery](candidate-oom-exit-recovery-completed-20260916.md), the later two-query observation and `db22e3d...` envelope are independently reviewed within their scopes. The [saved product gate](programs-saved-product-second-attempt-20260917.md) is accepted separately | Reuse these completed scopes for transition entry review; the prior envelopes remain historical lineage. No repeated start/observation, transition or client acceptance is implied |
+| Current candidate and runtime binding | S2 left [A running as PID 1907978 on ead67c8f](programs-transition-first-execution-failure-20260917.md); saved current metadata matches that identity and protected state. Original transition and closer evidence acceptance remain failed | Retain the running successor and all original evidence. Old PID 1648477, `db22e3d...` and the old guard are historical, not current entry authority. Prepare validated finalization/V4 without replaying the transition |
 | Earlier client-candidate product | R01-R21, diagnostics, cancellation fixes and TV parent metadata passed 2,270 tests/25 packages and a Linux build on that earlier audited source/binary | Keep this historical proof with its original client candidate; it is distinct from the intended embedded artifact and its ordinary regression below |
 | Earlier ordinary regression | Same badf396 source completed 25 ordinary packages across two phases: 2,276 passes/0 failures/1 explicit mount opt-in skip, ordinary amd64 build and independent review/closure | Retain that source and exclude its partial Library counts; it is not the new media-refresh source |
 | Accepted media-refresh baseline | Frozen `f5b70c00...` passed one complete 25-package ordinary run: 2,295 passes/0 failures/1 explicit skip, Linux amd64 build, independent result/closure reviews and resource disposal | Retain its exact scope; Programs changes product source and cannot inherit this as its final full regression or artifact identity |
-| Programs successor | Product, capture, component and source-publication scopes retain their results. The actual caller failed preflight at `hosting_listener_process_or_namespace`; `launchAttempts=0`, so no CLI or replacement ran. Caller/closer are terminal and their independent supplemental review is pending | Correct the hosting-versus-outer namespace check and prepare a new entry while preserving the failed attempt. Retain strict before-state and explicit recovery-policy checks; M5 need not pass. No transition/v4/client acceptance is claimed |
+| Programs successor | [S2](programs-transition-first-execution-failure-20260917.md) executed stop/replace/start once and three GETs, then failed `after_preservation` on two added diagnostic logs. New A remains active; S1's zero-launch failure is historical. Independent failure/closure review is complete; original CLI/caller/SSH 2, PowerShell 1 and closer evidence false remain | Prepare strict UTC log authorization, optional V4 finalization descriptor and continuation/publication in the isolated worktree. Finalizer calls are zero. No D000 replay, further stop/replace/start or handwritten V4; no V4/client admission or complete M2-M6 acceptance |
 | Internal amd64 systemd package | Three actual builds, seven focused top-level tests (26 including subtests), 26 guards and independent closure passed. After the OID correction, r04 passed two nonroot starts/stops, 272 requests, six observers and three snapshots; its seal rejected a valid Emby plain-text 401. All four attempts have independently verified preservation/resource closure | The original final observer did not run; the independently reviewed archived final state now closes G2 through the composite acceptance. Native arm64, upgrade and whole-M6 remain open; no further installer run is queued |
 | Fresh embedded candidate | Embedded `59096592...` was provisioned once; initial inspection, seed and native admission passed independent review. Admission used 88 actual requests with no cleanup failures. Recorded operator guards passed 213 checks | B recovered once with its existing binary/configuration. Preserve its inactive cancelled stage, consumed inputs and historical admission; no repeat inspection/seed/admission |
-| Earlier audited candidate | TV successor installed; admission05 passed changed TV projections/access and reused the original admission04 contracts | A recovered once with its existing binary/configuration and has a ready recovered-runtime envelope. Historical admission/client evidence and preparatory Programs constants do not establish a new artifact's admission |
-| Core original client | MP3/FLAC retain their historical acceptance; video/subtitle failures remain unchanged. The typed movie/episode/subtitle framework passed its component scope | Prepare concrete input templates and binding plans before transition; bind execution inputs to the actual successor epoch and preceding closeouts when available. Execute the three journeys and close the explicit audio reuse bridge without repeated diagnostic/reference work or automatic replay |
+| Earlier audited candidate | TV successor, admission05 and September 16 recovery retain their original accepted scopes | S2 has replaced A with the Programs binary. Earlier process/runtime/guard bindings are historical; finalization and client admission must bind the retained new A |
+| Core original client | MP3/FLAC retain their historical acceptance; video/subtitle failures remain unchanged. The typed movie/episode/subtitle framework passed its component scope | After validated finalization/V4 and client admission, bind inputs to the retained successor and preceding closeouts. Execute the three journeys and audio reuse bridge without replaying the transition or old client attempts |
 | M2 catalog | Real-media rescan/ACL and native amd64 stop/start proofs passed. A separate SQL-seeded 10,000-leaf/442-folder handler test passes ACL/UserData isolation during an owned transaction block; those earlier scopes have independent review and closure | The SQL baseline is not physical scan throughput, native TCP/service performance, RSS/SLO or actual kernel filesystem blocking. Representative real-file capacity, host durability and the paused full-scan mount proof remain open |
 | Real small-media capacity | The new 10,000-leaf scan/rescan test and affected seven-file shared-fixture regression passed independent review and resource closure; production is unchanged | This tiny valid-media and in-process Store-reopen profile does not prove HTTP/service performance, service/PG/host restart, actual filesystem stalls or a throughput SLO |
 | Main recovery and deployment | Native archive/key witness, both distinct restore/restart proofs, actual old-installation return and final cluster/credential disposal passed. Original failures and private evidence remain preserved; fixture processes/namespace/runtime unit files are closed, and main is inactive | Core video acceptance still blocks new-binary main promotion. M2 host-reboot/power-loss durability and the remaining complete M2-M6 release requirements stay open |
@@ -536,12 +547,12 @@ application identities and all unchanged protected resources explicitly.
 The [support and delivery matrix](../planning/support-and-delivery-matrix.md)
 maps those obligations to artifact/client/media/deployment slices and concrete
 next actions. The current target is the verified Programs successor. Its
-selected A transition has completed source publication and still requires actual
-fresh entry/admission and concrete client inputs after correcting its failed
-preflight and reviewing its caller/closer supplement; M5 success is not required.
+selected A transition already executed and failed acceptance after preservation.
+Keep the new A running while preparing strict finalization and concrete client
+admission; M5 success is not a prerequisite and a second transition is not planned.
 September 16 recovery, the runtime
 envelope, product verification/build, saved product gate and 46 component methods
-remain separate prerequisites, without an actual transition or client result.
+retain their historical scopes. No validated V4 or client result has been produced.
 
 The [catalog capacity/isolation increment](catalog-capacity-isolation-verification.json)
 passed one race test with zero failures/skips on base `892c536` plus one new
