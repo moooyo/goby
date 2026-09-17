@@ -1,0 +1,9 @@
+**
+!.dockerignore
+!Dockerfile
+!build-ffmpeg.sh
+!check-artifact.py
+!entrypoint.sh
+!source-pins.json
+!goby
+!manifest.json

@@ -1,0 +1,70 @@
+{
+  "kind": "goby-oci-source-profile",
+  "version": 1,
+  "status": "source_draft_unbuilt",
+  "recordedOn": "2026-09-16",
+  "target": { "os": "linux", "arch": "amd64", "mediaProfile": "software" },
+  "baseImage": {
+    "repository": "docker.io/library/debian",
+    "observedTag": "trixie-slim",
+    "registryReportedIndexDigest": "sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132",
+    "selectedAmd64ManifestDigest": "sha256:abc9cb88a5587630d7f915f47b23b0668fe250fbfc6457aa4d52b534c1bbf73f",
+    "selectedManifestBytes": 1021,
+    "manifestUrl": "https://registry-1.docker.io/v2/library/debian/manifests/sha256:abc9cb88a5587630d7f915f47b23b0668fe250fbfc6457aa4d52b534c1bbf73f",
+    "officialImageIndex": "https://github.com/docker-library/official-images/blob/master/library/debian",
+    "boundary": "Registry metadata only. No image layer was pulled or inspected, and no root filesystem or runtime property was verified."
+  },
+  "apt": {
+    "snapshot": "20260915T000000Z",
+    "debianRelease": "https://snapshot.debian.org/archive/debian/20260915T000000Z/dists/trixie/Release",
+    "observedDebianVersion": "13.7",
+    "observedDebianReleaseDate": "Sat, 12 Sep 2026 07:55:41 UTC",
+    "securityRelease": "https://snapshot.debian.org/archive/debian-security/20260915T000000Z/dists/trixie-security/Release",
+    "observedSecurityReleaseDate": "Mon, 14 Sep 2026 18:36:51 UTC",
+    "suites": ["trixie", "trixie-updates", "trixie-security"],
+    "components": ["main"],
+    "packageResolutionExecuted": false,
+    "boundary": "The recipe fixes snapshot repositories and retains ordinary APT signature/package-hash verification. Package availability, resolution, installation and final dependency closure remain unverified."
+  },
+  "ffmpeg": {
+    "version": "9.0.1",
+    "sourceUrl": "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz",
+    "sourceSha256": "cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635",
+    "checksumRecordRead": "/opt/goby-toolchains/ffmpeg-9.0.1.sha256",
+    "signatureUrl": "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz.asc",
+    "keyUrl": "https://ffmpeg.org/ffmpeg-devel.asc",
+    "requiredSignerFingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "signatureReverifiedThisPreparation": false,
+    "boundary": "The source hash was read from the existing toolchain record. The Docker recipe still must verify both this hash and the selected signer before compilation."
+  },
+  "nvCodecHeaders": {
+    "tag": "n13.1.15.0",
+    "annotatedTagObject": "a807fd4b35442891306b7ba23a300581302fa76d",
+    "commit": "0a6fba9a2820628b8103464f4c8753ee05838baa",
+    "tagObjectUrl": "https://api.github.com/repos/FFmpeg/nv-codec-headers/git/tags/a807fd4b35442891306b7ba23a300581302fa76d",
+    "archiveUrl": "https://codeload.github.com/FFmpeg/nv-codec-headers/tar.gz/0a6fba9a2820628b8103464f4c8753ee05838baa",
+    "bytes": 86265,
+    "sha256": "1d2070546de622fd6074a99d4b283e727988b7c3624ef85f97b88962264314d2",
+    "retainedArchive": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/oci-source-capture-20260916-01/nv-codec-headers-0a6fba9a2820628b8103464f4c8753ee05838baa.tar.gz",
+    "hashEnvironment": "ssh test-env",
+    "downloadedCodeExecuted": false,
+    "boundary": "Pinned header source and remote data-file hash only; no NVIDIA device, driver or codec execution is established."
+  },
+  "applicationArtifact": {
+    "selected": false,
+    "requiredKind": "goby-linux-embedded-administrator-build",
+    "requiredExternalPins": ["GOBY_BINARY_SHA256", "GOBY_BUILD_MANIFEST_SHA256"],
+    "boundary": "Select a separately verified release. No E11 rebuild, successor artifact selection or candidate transition follows from this recipe."
+  },
+  "postgresClients": { "requiredMajor": 17, "selectedPackage": "postgresql-client-17", "serverIncluded": false },
+  "verification": {
+    "artifactTestsRun": false,
+    "composeValidated": false,
+    "imageBuilt": false,
+    "runtimeExecuted": false,
+    "hardwareVerified": false,
+    "reproducibilityVerified": false,
+    "legalCompletenessClaimed": false,
+    "distributionApproved": false
+  }
+}
