@@ -1,10 +1,10 @@
 # Advanced media source contract
 
-Status on September 19, 2026: implemented in the integrated
-`codex/media-library-management` source. Consolidated functional acceptance is
-**running**, not complete. Provider-specific acceptance is **deferred by the
-user**. The [feature-wave record](feature-wave-20260919.md) owns the acceptance
-and merge gates; older playback reports do not accept these additions.
+Status on September 19, 2026: implemented, accepted within the recorded software
+profile, and integrated into `main` by the media/library/management wave.
+Provider-specific acceptance is **deferred by the user**. The
+[feature-wave record](feature-wave-20260919.md) and its verification record
+define this acceptance; older playback reports do not accept these additions.
 
 ## Implemented output paths
 
@@ -87,8 +87,8 @@ the user. See [routes](../../internal/server/providers.go#L22) and
 
 The [implemented API inventory](../api/implemented.md) separately records the
 new collection, policy, account, settings, task, download and deletion APIs.
-Consolidated remote media/browser/regression acceptance is still running;
-neither this inventory nor existing unit-test files certify its completion.
+Consolidated remote media/browser/regression acceptance and both Linux builds
+completed in the [recorded scope](feature-wave-verification-20260919.md).
 OCI delivery work remains deferred. Actual GPU execution, full Emby parity,
 arbitrary codecs/containers and every third-party client remain outside the
 supported claim.

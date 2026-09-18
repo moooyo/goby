@@ -1,9 +1,11 @@
 # Current implementation and delivery status
 
 The [media, collections, and management implementation wave](feature-wave-20260919.md)
-has completed its source implementation on `codex/media-library-management`.
-Consolidated remote verification remains in progress; the wave, merge and push
-are not complete. Provider-specific acceptance and OCI work are user-deferred.
+has completed its selected functional acceptance, builds and resource closeout.
+Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was fast-forward merged
+into `main` and pushed to `origin/main`; the current local branch is `main`.
+Documentation-only changes are separate from the tested product snapshot. Provider-specific
+acceptance and OCI work remain user-deferred.
 Use the [current handoff](handoff.md) for earlier evidence and retained stop
 points. Canonical 116 full/build and native software diagnostics retain their
 historical scoped acceptance; M2-M6 delivery is still incomplete. No new H1 live
@@ -11,13 +13,14 @@ continuation has run.
 
 ## Current wave checkpoint
 
-| Area | Current result | Still required |
+| Area | Current result | Scope boundary |
 | --- | --- | --- |
-| Source | All three selected areas are implemented: advanced subtitles/media, playlists/collections, and supported policy/management APIs and UI | Final source-bound verification and explicit integration selection; provider-specific acceptance remains deferred |
-| Server | 692-test scope covered through 676 original passes and 127 targeted rerun passes, including new, failed and previously unfinished cases | These overlapping counts are not additive and do not replace the remaining wave gates |
-| Other packages | Ten core packages: 5,136 passes and one existing opt-in helper skip; identity: 181 passes; backuppg: 497; recoverydb: 177 | Full recovery-manager package |
-| Browser | Seven real browser phases and five new mocked checks passed | Four existing mocked checks |
-| Closeout | Remote verification continues | Final build, owned-resource closure, merge into main and push |
+| Source | All three selected areas are complete: advanced subtitles/media, playlists/collections, and supported policy/management APIs and UI | Provider-specific acceptance remains deferred; unsupported profiles and fields are not implied |
+| Server | 692-test scope covered through 676 original passes and 127 targeted rerun passes, including new, failed and previously unfinished cases | These overlapping counts are not additive |
+| Other packages | Ten core packages: 5,136 passes and one existing `TestRootBindingFullScanMountNamespaceHelper` skip; identity: 181 passes; backuppg: 497; recoverydb: 177; full recovery-manager `recovery-accept04`: 73 passes, zero failures/skips | The old opt-in mount profile remains unexecuted; no zero-skip claim is made for the core run |
+| Browser | Seven real browser phases, five new mocked checks and four existing mocked checks passed | These named scenarios do not establish every third-party-client journey |
+| Build and closure | Ordinary/embedded builds passed; 1,178 source files matched; 33 recorded worker invocations closed; owned PostgreSQL stopped; five protected PID/start/executable identities unchanged | Closure covers the owned wave resources, not unrelated retained historical resources |
+| Integration | Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` fast-forward merged into main and pushed to origin/main | Documentation changes are separate from the tested product snapshot; OCI and provider-specific acceptance remain deferred |
 
 See the [wave verification record](feature-wave-verification-20260919.md) for
 source identities and terminal evidence, and the [implemented API](../api/implemented.md)
@@ -1346,15 +1349,16 @@ discriminating evidence or a concrete product decision before reopening.
 
 ## Remaining release work
 
-The selected feature implementations are complete in source. This table keeps
-the wider release obligations separate from the pending wave closeout above.
+The selected feature implementations and scoped functional closeout are
+complete. This table keeps the wider release obligations separate from that
+completed wave.
 
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
 | Catalog and operations | Native root-profile restart, r04 nonroot two-start runtime, SQL catalog/isolation and tiny real-file scan/rescan baselines passed with closure; internal amd64 installation sealing is now accepted through supplemental final-state evidence; representative throughput, actual blocked storage, host reboot and filesystem measurements remain open |
-| Playback | Complete pinned original-client journeys and profiles outside the selected advanced-media contract; the implemented subtitle, HLS, dynamic-source, filter and copy-seek paths remain subject to the pending wave closeout |
-| Administration | Native user deletion and diagnostics already exist; the selected policy/settings/task/provider source is complete. Finish the current wave's remaining package/browser/build/closure gates, keep provider acceptance deferred, and retain unsupported upstream fields and wider M5/deployment obligations. Earlier frozen Programs scopes are not retroactively expanded |
+| Playback | Complete pinned original-client journeys and profiles outside the accepted selected advanced-media contract; broader format, client and hardware claims retain their own gates |
+| Administration | Native user deletion, diagnostics and the selected policy/settings/task source have their recorded acceptance. Provider code is integrated but provider-specific acceptance remains deferred; unsupported upstream fields and wider M5/deployment obligations remain open. Earlier frozen Programs scopes are not retroactively expanded |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |
 | Hardware | Actual GPU decode, encode and combined-path profiles |
 | Packaging | Native arm64/OCI and deployed embedded-bundle/profile acceptance, support rows, project license and dependency notices; focused embedded tests and amd64/arm64 build artifacts are already recorded |

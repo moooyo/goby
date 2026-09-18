@@ -3,9 +3,10 @@
 Initially recorded on 2026-09-15 from committed plans and saved evidence. This is a
 delivery decision map, not a worker or runtime-status ledger. The user selected
 the [media, collections, and management wave](../development/feature-wave-20260919.md),
-whose implementation is complete in source; consolidated remote acceptance is
-still running. Final build, resource closure, merge and push remain pending. OCI
-work and provider-specific testing are deferred by the user's decisions. The
+whose scoped functional acceptance, builds and owned-resource closure are
+complete. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was fast-forward
+merged into `main` and pushed to `origin/main`. OCI work and provider-specific
+acceptance remain deferred by the user's decisions. The
 [current handoff](../development/handoff.md) governs current disposition;
 older queue entries are historical. The
 [delivery and verification](delivery-and-verification.md) retains the complete
@@ -17,23 +18,30 @@ project license and final distribution payload remain pending.
 The [wave verification record](../development/feature-wave-verification-20260919.md)
 owns the current results. The server scope covers 692 tests: 676 original passes
 and 127 targeted rerun passes overlap and must not be added together. The core
-10-package run recorded 5136 passes and one existing helper skip. Separate
+10-package run recorded 5136 passes and one existing mount-helper skip,
+`TestRootBindingFullScanMountNamespaceHelper`. Separate
 completed scopes recorded 181 identity passes, 497 backuppg passes and 177
 recoverydb passes. The real browser journey passed seven stages, and five new
-mock checks passed. These are scoped results, not a completed wave acceptance.
+mock checks passed. The full recovery-manager package run `recovery-accept04`
+recorded 73 passes, zero failures and zero skips; all four existing mock checks
+also passed.
 
-The full recovery-manager package, four existing mock checks, final build,
-owned-resource closure, merge and push remain pending. The rows below share
-that consolidated gate; the counts above are not independent per-row totals.
+Ordinary and embedded builds passed, and all 1178 source files matched the
+accepted source. All 33 recorded worker invocations closed, owned PostgreSQL stopped, and the
+five protected processes retained their PID, start time and executable
+identity. The declared functional, build, resource-closure and code-integration
+scope for this wave is complete. The rows below share those results; the
+counts above are not independent per-row totals. This does not complete the
+full M2-M6 goal or accept deferred provider and OCI work.
 Use the [current status](../development/current-status.md) and
 [handoff](../development/handoff.md) for current disposition. No result here
 changes the ownership or acceptance of the historical evidence below.
 
 | Group | Implemented source scope | Current acceptance evidence | Remaining boundary |
 | --- | --- | --- | --- |
-| Media and subtitles | Advanced text subtitle delivery, font attachments and HLS burn-in; generated TS/fMP4/packed-audio and encoded multi-variant HLS; software HDR/deinterlacing; configured dynamic sources; narrowly admitted nonzero H.264 video-copy seeks. | Source is complete for this wave and participates in the scoped server/core results above. See the [source contract](../development/advanced-media.md) and consolidated verification record for exact output and profile limits. | The shared acceptance and integration gate remains open. No full third-party-client matrix, arbitrary source/profile support, actual GPU acceptance or Live TV business subsystem is claimed. |
-| Collections and library state | Persisted Playlist/BoxSet containers, ordered duplicate playlist entries, unique BoxSet membership, current access checks and per-user state; bounded original downloads and recoverable physical media deletion. | Source is complete for this wave and participates in the scoped server/core and browser results above. The [API inventory](../api/implemented.md) records the container, membership, download and deletion boundaries. | The shared acceptance and integration gate remains open. Container deletion retains media; physical deletion and download retain their separate authority and source restrictions. These results do not close complete M2 storage or delivery coverage. |
-| Administration and management | Expanded user policy and account operations, feature discovery, closed management configuration, metadata/subtitle/cache task executors, and configured provider adapters. | Source is complete for this wave. The scoped identity/server, seven-stage real-browser and five new mock results above are recorded; provider-specific acceptance remains user-deferred. | The full recovery-manager package, four existing mock checks and the shared build/closure/integration gate remain pending. OCI work remains deferred; no complete M5, M6, provider or distribution acceptance is inferred. |
+| Media and subtitles | Advanced text subtitle delivery, font attachments and HLS burn-in; generated TS/fMP4/packed-audio and encoded multi-variant HLS; software HDR/deinterlacing; configured dynamic sources; narrowly admitted nonzero H.264 video-copy seeks. | The declared wave scope passed its shared acceptance, build and closure gates; code is merged and pushed to main. The scoped server/core results above apply. See the [source contract](../development/advanced-media.md) and consolidated verification record for exact output and profile limits. | No full third-party-client matrix, arbitrary source/profile support, actual GPU acceptance or Live TV business subsystem is claimed. |
+| Collections and library state | Persisted Playlist/BoxSet containers, ordered duplicate playlist entries, unique BoxSet membership, current access checks and per-user state; bounded original downloads and recoverable physical media deletion. | The declared wave scope passed its shared acceptance, build and closure gates; code is merged and pushed to main. The scoped server/core and browser results above apply. The [API inventory](../api/implemented.md) records the container, membership, download and deletion boundaries. | Container deletion retains media; physical deletion and download retain their separate authority and source restrictions. These results do not close complete M2 storage or delivery coverage. |
+| Administration and management | Expanded user policy and account operations, feature discovery, closed management configuration, metadata/subtitle/cache task executors, and configured provider adapters. | The declared wave scope passed its shared acceptance, build and closure gates; code is merged and pushed to main. The scoped identity/server, recovery-manager, real-browser and new/existing mock results above apply. Provider-specific acceptance remains user-deferred. | OCI work remains user-deferred; no complete M5, M6, provider or distribution acceptance is inferred. |
 
 ## Historical checkpoints
 

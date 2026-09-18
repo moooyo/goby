@@ -1,21 +1,27 @@
 # Implementation progress
 
 The [media, collections, and management wave](feature-wave-20260919.md) has
-completed all selected source implementation on `codex/media-library-management`.
-Consolidated remote verification is still running; see the
+completed its selected implementation, functional acceptance, builds and
+resource closeout. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was
+fast-forward merged into `main` and pushed to `origin/main`; the local branch
+is now `main`. See the
 [wave verification record](feature-wave-verification-20260919.md).
 
 At this checkpoint, the 692-test server scope is covered through 676 original
 passes and 127 targeted rerun passes, including new, failed and previously
 unfinished cases; reruns overlap and the counts are not additive. Ten core
-packages recorded 5,136 passes and one existing opt-in helper skip. Identity
-recorded 181 passes, backuppg 497 and recoverydb 177. Seven real browser phases
-and five new mocked checks passed.
+packages recorded 5,136 passes and one existing mount-helper skip,
+`TestRootBindingFullScanMountNamespaceHelper`. Identity recorded 181 passes,
+backuppg 497 and recoverydb 177. The full recovery-manager `recovery-accept04`
+scope recorded 73 passes, zero failures and zero skips. Seven real browser
+phases, five new mocked checks and all four existing mocked checks passed.
 
-The full recovery-manager package, four existing mocked checks, final build,
-owned-resource closure, merge and push remain pending. The wave is not yet
-accepted as a whole. Provider-specific testing and OCI work remain
-user-deferred. Read the [current handoff](handoff.md) for prior accepted evidence
+Ordinary and embedded builds passed, and all 1,178 source files matched the
+checked inventory. All 33 recorded worker invocations closed, owned PostgreSQL stopped, and
+five protected PID/start/executable identities remained unchanged. The selected
+wave's functional acceptance and code integration are complete. Documentation
+changes are separate from that tested product snapshot. Provider-specific testing
+and OCI work remain user-deferred. Read the [current handoff](handoff.md) for prior accepted evidence
 and retained failures. The original M2-M6/H1 and broader client/release gaps
 remain separate; no old artifact inherits acceptance from these current checks.
 

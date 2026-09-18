@@ -55,7 +55,7 @@ establish runtime support. Unfinished requirements remain open.
 | D1 | Migrations, published migration manifest, backup schema catalog, and upgrade/restart compatibility | Implemented and verified |
 | D2 | Updated API/support documentation and review of all intended commits | Implemented and verified |
 | V1 | Consolidated remote build, automated regression, database integration, browser and actual media/client acceptance | Passed within the documented software and browser scope |
-| V2 | Final accepted source merged into main and pushed to origin/main | Ready for requested integration |
+| V2 | Final accepted source merged into main and pushed to origin/main | Completed at feature commit `39893aa` |
 
 ## Shared contracts and ownership
 
@@ -103,7 +103,7 @@ The implementation and scoped consolidated acceptance are complete. Actual
 media, core/database, identity, archive/recovery, and browser checks passed;
 both native builds completed, the intended source matched the remote copy,
 and all owned workers and PostgreSQL closed with protected identities intact.
-Online-provider acceptance remains user-deferred. The reviewed source is ready
-for the requested main integration and publication. See the
+Online-provider acceptance remains user-deferred. Feature commit `39893aa` was
+merged into `main` and pushed to `origin/main`. See the
 [verification record](feature-wave-verification-20260919.md) for exact scope,
 original failures, passing successors, artifacts and remaining project boundaries.

@@ -4,16 +4,16 @@ This file tracks implementation separately from the immutable upstream research 
 
 The [September 19 feature wave](../development/feature-wave-20260919.md) adds
 advanced subtitles/media processing, playlists/collections, policies, management
-settings/tasks, and provider adapters in source. Its consolidated verification
-is in progress. The historical passes below do not accept these new paths;
-provider-specific testing was explicitly deferred by the user.
+settings/tasks, and provider adapters. Its scoped consolidated remote acceptance
+and main integration are complete; the [verification record](../development/feature-wave-verification-20260919.md)
+owns the evidence. Provider-specific testing remains explicitly user-deferred.
 
 The [advanced-media source contract](../development/advanced-media.md) records
 the new output formats, subtitle delivery, dynamic-source limits, and source
-anchors. "Implemented" below means present in the frozen feature-wave source;
-it does not mean consolidated acceptance or deployment has completed. OCI,
-Live TV business features, and a general hardware-support claim remain outside
-this wave.
+anchors. "Implemented" below describes the delivered source contract, while
+acceptance remains limited to the recorded profiles and scenarios. OCI,
+Live TV business features, deployment and general hardware support remain
+outside this wave.
 
 Use [current status](../development/current-status.md) for the active implementation, verification, and deployment boundaries, and [the audit remediation record](../development/audit-remediation-20260913.md) for the current repair scope. Historical source-specific results below retain their original acceptance limits.
 
@@ -406,6 +406,6 @@ Subtitle labels retain indexed language, title, native codec and stream identity
 
 `/admin/` serves the built React/MUI application, with route fallback for UI navigation. `/admin/v1` always goes through the API router, including unknown routes. `/healthz` exposes minimal liveness; `/readyz` checks PostgreSQL, the catalog ownership session, and the configured diagnostic store. An unhealthy diagnostic store returns `503 diagnostics_not_ready`. This policy is deployed with M5i. The service runs as an unprivileged Linux user in the test deployment.
 
-There is no consumer web player by design. Original-file, Universal/progressive audio, progressive MP4 video, advanced text subtitles, HLS burn-in, TS/fMP4/packed-audio and encoded multi-variant HLS, configured dynamic-source conversion, software HDR/deinterlacing and proof-gated nonzero video-copy seeks are implemented in source. Playlists/collections and the supported management/policy interfaces are also connected. Historical M4e/M5a passes retain their own scope. The September 19 consolidated acceptance is running; provider-specific acceptance is user-deferred. Actual GPU execution, arbitrary input/timing/profile combinations, full third-party-client and Emby compatibility, OCI delivery work, and Live TV channels/tuners/EPG/DVR remain unsupported or unaccepted. See [advanced media](../development/advanced-media.md) and the [feature-wave record](../development/feature-wave-20260919.md).
+There is no consumer web player by design. Original-file, Universal/progressive audio, progressive MP4 video, advanced text subtitles, HLS burn-in, TS/fMP4/packed-audio and encoded multi-variant HLS, configured dynamic-source conversion, software HDR/deinterlacing and proof-gated nonzero video-copy seeks are implemented in source. Playlists/collections and the supported management/policy interfaces are also connected. Historical M4e/M5a passes retain their own scope. The recorded September 19 consolidated scope is accepted; provider-specific acceptance remains user-deferred. Actual GPU execution, arbitrary input/timing/profile combinations, full third-party-client and Emby compatibility, OCI delivery work, and Live TV channels/tuners/EPG/DVR remain unsupported or unaccepted. See [advanced media](../development/advanced-media.md) and the [feature-wave record](../development/feature-wave-20260919.md).
 
 The [conversion engine](../development/transcode-engine.md) supplies PostgreSQL job records, FFmpeg execution and shared cache supervision for HLS and progressive audio/video. The adapters apply current policy, retain canonical playback ownership, address immutable output revisions and cancel owned work; HLS additionally builds source-global timelines. Configuration and exact supported limits are documented separately; engine/HTTP tests do not establish compatibility with every third-party client or actual GPU execution.

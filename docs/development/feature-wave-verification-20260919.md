@@ -91,11 +91,11 @@ The owned PostgreSQL instance now has a password-authenticated loopback endpoint
 and separate unprivileged backup roles/databases. No existing PostgreSQL service
 was restarted or reconfigured. Recovery tests retain their original endpoint by
 default and require an explicit test-only port override for this owned instance.
-The administrator production build has passed. The focused regression found
-two application-key/download fixture prerequisites, which are corrected in the
-working source and still require a fresh result. HLS subtitle review identified
-the need to measure the actual mux timestamp shift rather than assume zero;
-that correction and real subtitle/media clock acceptance remain in progress.
+The administrator production build passed. The initial focused regression found
+two application-key/download fixture prerequisites, subsequently corrected and
+reverified. HLS subtitle review identified the need to measure the actual mux
+timestamp shift rather than assume zero; its final real subtitle/media clock
+comparisons passed in server-repair03.
 
 The private FFmpeg build uses the official 9.0.1 source archive (SHA-256
 `cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635`),
@@ -121,14 +121,15 @@ hidden-member removal, ancestor collection invalidation, and deletion-worker
 shutdown ownership. Queued remote commands retain and revalidate their original
 sender session. Original media responses acquire an independent known-expiry
 deadline, and user-state/playback transactions recheck current credentials and
-time-dependent policy after business-row waits. These repairs require final
-integrated regression and are not accepted by the earlier passing results.
+time-dependent policy after business-row waits. These repairs passed the later
+integrated core and server scopes; earlier passing results alone did not accept
+the changes.
 
 The updated HLS subtitle code measures an actual first-packet clock before and
 after muxing. FFmpeg supplies pre-mux statistics for encoded streams, but omits
 them for copied streams; a bounded single-packet framehash side output covers
 the latter. The original real decoded-frame alignment assertions remain in
-place, with copied-stream and adaptive-rendition acceptance still pending.
+place, and copied-stream/adaptive-rendition acceptance passed in server-repair03.
 
 The server run confirmed copied TS/fMP4 subtitle alignment, then found a
 multi-rendition FFmpeg statistics-pipe conflict. Each rendition now has an
@@ -195,7 +196,9 @@ complete M2-M6 release objective.
 
 ## Integration
 
-Scoped source review and the requested merge/publication follow these accepted
-results. No unrelated OCI, packaging, client-helper, or historical-draft edits
-belong to the feature-wave commit selection. The final repository handoff
-records the actual integration outcome.
+Feature commit `39893aa` was fast-forward merged into `main` and successfully
+pushed to `origin/main`. Its selected source files match the accepted source
+tree; the following closeout edit changes documentation only. Unrelated OCI,
+packaging, client-helper and historical-draft work remains outside the wave's
+commits. The current repository handoff records the delivered scope and the
+remaining project decisions.

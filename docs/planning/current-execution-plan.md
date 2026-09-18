@@ -2,15 +2,19 @@
 
 The selected [media, collections, and management implementation
 wave](../development/feature-wave-20260919.md) has completed all three source
-areas on `codex/media-library-management`. Consolidated remote verification
-is still running. The [current status](../development/current-status.md#current-wave-checkpoint)
-records completed server/core/identity/backup-database/browser coverage without
-adding overlapping rerun counts.
+areas, scoped functional acceptance, ordinary/embedded builds and owned-resource
+closure. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was fast-forward
+merged into `main` and pushed to `origin/main`; the current local branch is
+`main`. The [current status](../development/current-status.md#current-wave-checkpoint)
+records the 692-test server scope without adding overlapping reruns, the one
+existing core mount-helper skip, and the completed package/browser results.
 
-The active remaining order is the full recovery-manager package, four existing
-mocked browser checks, final build, owned-resource closure and review of the
-exact integrated source; only after acceptance, merge into main and push.
-The wave is not yet complete. Provider-specific acceptance and OCI work remain
+The final recovery-manager scope passed 73 tests with zero failures/skips, and
+all four existing mocked browser checks passed. The 1,178-source-file match is
+recorded; all 33 recorded worker invocations closed, owned PostgreSQL stopped, and five
+protected PID/start/executable identities remained unchanged. No functional
+wave gate or code merge/push remains pending. Documentation changes are separate
+from the tested product snapshot. Provider-specific acceptance and OCI work remain
 user-deferred. The [current handoff](../development/handoff.md) retains earlier
 evidence and stop points. The full M2-M6 scope remains incomplete and M7 remains
 deferred; historical Programs/W and H1 gates do not close through this wave by
@@ -667,8 +671,8 @@ resolve the separately recorded media cancellation timing discrepancy.
 ## Immediate queue
 
 Historical queue: the entries in this section preserve the earlier Programs
-execution checkpoint and consumed inputs. They are not the active remaining
-order at the top of this document and do not authorize replay.
+execution checkpoint and consumed inputs. They are separate from the completed
+wave recorded at the top of this document and do not authorize replay.
 
 The September 15 [application recovery and preservation](../development/candidate-lease-loss-recovery.json),
 v2 component scopes, two-SQL observation and ready consumer envelope retain
@@ -858,8 +862,8 @@ and actual execution results distinct.
 ### Delivery order
 
 Historical delivery order: retain these original results and dependencies as
-recorded. Current feature-wave verification and integration follow the opening
-queue; deferred OCI/H1 work is not automatically resumed.
+recorded. The completed feature-wave closeout is recorded at the top; deferred
+OCI/H1 work is not automatically resumed.
 
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
@@ -1073,8 +1077,8 @@ complete declared checks and overall closeout pass. Episode01 does not qualify.
 
 Historical/full-delivery dependencies: these obligations retain their recorded
 scope and are not a claim that the three selected feature areas remain
-unimplemented. The current wave's immediate verification and integration work
-is listed at the top; complete M2-M6 delivery remains a separate open objective.
+unimplemented. The completed wave's closeout is recorded at the top; complete
+M2-M6 delivery remains a separate open objective.
 
 1. Retain the completed native archive, both distinct restoration/restart proofs,
    actual old installation return and final cluster/credential disposal records.

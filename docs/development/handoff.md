@@ -1,11 +1,11 @@
 # Goby handoff — September 19, 2026
 
-The source implementation for the [media, collections, and management
-wave](feature-wave-20260919.md) is complete on
-`codex/media-library-management`. Consolidated remote verification is still
-running; the remaining checks, final build, resource closure, merge into main,
-and push have not completed. Provider-specific acceptance and OCI work are
-deferred by the user. Do not automatically resume older execution scopes or
+The [media, collections, and management wave](feature-wave-20260919.md) has
+completed its selected implementation, functional acceptance, builds and
+resource closeout. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was
+fast-forward merged into `main` and pushed to `origin/main`. Provider-specific
+acceptance and OCI work remain deferred by the user. This is completion of the
+selected wave, not the full delivery objective. Do not resume older scopes or
 pending rows. The original M2–M6 scope is still incomplete; M7 remains deferred.
 License selection and external distribution remain undecided.
 
@@ -17,15 +17,16 @@ failed attempts and independent reviews remain preserved.
 
 ## Repository and closeout
 
-- Workspace: `D:/Code/goby`; branch `codex/media-library-management`.
-- HEAD: `a8e525bff77180d4db46fdeba489097697ec0ee2`.
+- Workspace: `D:/Code/goby`; current branch `main`.
+- Integrated code commit: `39893aa195553d501ba0ffb56ce618066f2cb5e1`,
+  fast-forward merged and pushed to `origin/main`.
 - Remote: `git@github.com:moooyo/goby.git`.
 - The historical accepted canonical full/build source is
   `1162808afafacdc9ab9a4d6c037263764b1afd7a`. Do not describe the current dirty
-  feature checkout as that exact tested source without an explicit source comparison.
-- The wave source and documentation are awaiting final integration. Select
-  reviewed changes explicitly; unrelated OCI, packaging, client/helper and
-  historical-draft changes remain outside this wave's commit selection.
+  checkout as that exact tested source without an explicit source comparison.
+- The wave code is integrated. Final documentation changes are recorded
+  separately from the tested product snapshot. Unrelated OCI, packaging,
+  client/helper and historical-draft changes remain outside the selected work.
 - The pre-wave uncommitted product/tooling inventory included diagnostic
   plan/cgroup/process changes, user-configuration DTO/tests, a refresh browser
   test, release/notice packaging, the OCI recipe and client-execution helpers.
@@ -40,17 +41,23 @@ failed attempts and independent reviews remain preserved.
 - No local test, build, candidate execution or verification suite was run.
   A public index was downloaded on Windows as unverified transfer data only.
 
-## Current wave verification checkpoint
+## Current wave verification closeout
 
 - The 692-test server scope is covered by 676 original passes and 127 targeted
   rerun passes, including new, failed and previously unfinished cases. The
   reruns overlap the original scope; these counts must not be added together.
-- Ten core packages recorded 5,136 passes and one existing opt-in helper skip.
+- Ten core packages recorded 5,136 passes and one existing mount-helper skip,
+  `TestRootBindingFullScanMountNamespaceHelper`.
   Identity recorded 181 passes, backuppg 497, and recoverydb 177.
-- Seven real browser phases and five new mocked checks passed.
-- The full recovery-manager package, four existing mocked checks, final build,
-  owned-resource closure, merge and push remain pending. The wave is not yet
-  accepted as a whole.
+- The full recovery-manager scope `recovery-accept04` recorded 73 passes,
+  zero failures and zero skips. Seven real browser phases, five new mocked
+  checks and all four existing mocked checks passed.
+- Ordinary and embedded builds passed; all 1,178 source files matched the
+  checked source inventory. All 33 recorded worker invocations closed, owned PostgreSQL stopped,
+  and the five protected PID/start/executable identities remained unchanged.
+- Selected functional acceptance, owned-resource closure, code merge and push
+  are complete. Provider-specific acceptance and OCI remain excluded by the
+  user's deferral, not silently accepted.
 
 The [wave verification record](feature-wave-verification-20260919.md) owns the
 source-bound results and final closeout. These checks do not upgrade old
@@ -67,9 +74,9 @@ Emby compatibility or completion of every milestone.
 | Service and authentication | Linux Go service, PostgreSQL migrations/persistence, first-admin setup, users, tokens, sessions, application keys and library policies | Full upstream policy/configuration and client-wire behavior are not complete |
 | Media catalog | Movie/TV/music scanning, ffprobe, stable identities, local NFO metadata, artwork, search/filtering, hierarchy and library ACLs | Representative native scan/HTTP concurrency, broader storage faults and durability remain unaccepted |
 | Basic client playback | Login/browse, PlaybackInfo, original-file HTTP/ranges, external SRT/WebVTT, progress/resume, watched/favorite state, sessions and initial events/control | Complete current-version real-client journeys and broader event/NextUp/refresh behavior remain open |
-| Software media pipeline | Remux/progressive audio/video, embedded/external text and ASS subtitles, bounded fonts and HLS burn-in, TS/fMP4/packed-audio and adaptive HLS, generic dynamic-source conversion, software HDR/deinterlacing, and proof-gated nonzero copy seeks | Source implementation is complete for the selected contract; consolidated closeout, arbitrary format/timing combinations, actual hardware and full client profiles remain open |
+| Software media pipeline | Remux/progressive audio/video, embedded/external text and ASS subtitles, bounded fonts and HLS burn-in, TS/fMP4/packed-audio and adaptive HLS, generic dynamic-source conversion, software HDR/deinterlacing, and proof-gated nonzero copy seeks | The selected functional contract and consolidated closeout are complete; arbitrary format/timing combinations, actual hardware and full client profiles remain open |
 | Playlists and collections | Persistent Playlist/BoxSet containers, membership, ordered duplicate playlist entries, sharing/ownership, catalog queries and user-state behavior | Current member authorization and the documented playlist/BoxSet distinctions apply; full upstream parity is not claimed |
-| Administrator dashboard | Users and supported expanded policies, metadata/locks, sessions, keys, devices, tasks/schedules, typed management settings, activity/logs, media diagnostics, and integrated provider controls | Selected source is complete; provider-specific acceptance is user-deferred, the final wave gate is pending, and unsupported upstream fields remain outside the contract |
+| Administrator dashboard | Users and supported expanded policies, metadata/locks, sessions, keys, devices, tasks/schedules, typed management settings, activity/logs, media diagnostics, and integrated provider controls | Selected functional acceptance is complete; provider-specific acceptance remains user-deferred and unsupported upstream fields remain outside the contract |
 | Native backup/recovery | Encrypted backup, import/restore planning, activation/rollback, administrator UI and offline CLI | Acceptance belongs to recorded native scopes; OCI upgrade/restore and final delivery still need their own evidence |
 | Packaging | Embedded assets, native systemd package work, OCI recipe/build/import and internal notices assembly | Final architecture/hardware/deployment matrix, licensing and external release are not complete |
 
@@ -95,8 +102,8 @@ See [implemented API surface](../api/implemented.md),
 4. Supported subfolder/parental policies, user mutations, management settings
    and task executors are implemented. Complete upstream policy/configuration
    coverage is not claimed; online provider-specific acceptance is deferred.
-5. Broader Emby preference, event, query, alias and client-behavior coverage,
-   plus the current wave's remaining verification and integration gates.
+5. Broader Emby preference, event, query, alias and client-behavior coverage
+   outside the completed wave's declared functional scope.
 
 M7/P2 decisions remain separate: Live TV/EPG/DVR/tuners, DLNA, offline sync,
 external channels/provider extensions beyond the integrated adapters, group
@@ -274,8 +281,8 @@ for a completed startup trace or client acceptance.
 
 ## Work remaining before complete delivery
 
-These are full-delivery obligations, not the immediate feature-wave queue.
-The current wave's remaining checks and integration steps are listed above.
+These are full-delivery obligations outside the completed feature wave.
+They do not reopen its closed checks or authorize a deferred historical queue.
 
 - Current Programs update/admission, then movie/resume, episode/browse,
   SRT/VTT/Off, audio bridge and G3 promotion after their prerequisites.
