@@ -12,7 +12,7 @@ func TestSubtitleDirectoryIndexUsesCompleteMediaBasenames(t *testing.T) {
 		"Feature.EN.SRT", "Feature.en.fr.forced.VTT", "Feature.zh-CN.default.forced.sdh.VTT",
 		"Feature extended.srt", "Feature2.srt", "Feature.unknown.srt", "Feature.en.mkv.srt",
 		"Feature.en.fr.commentary.vtt", "../Feature.fr.srt", `nested\Feature.fr.srt`,
-		"Feature.fr.forced.forced.srt", "Feature.fr.srt.tmp", "Feature.ass"}
+		"Feature.fr.forced.forced.srt", "Feature.fr.srt.tmp", "Feature.idx"}
 	index := newSubtitleDirectoryIndex(subtitleTestDirectoryEntries(names...), "movies", nil)
 	tracks, overflow := index.candidates("Feature.mkv")
 	if overflow || !reflect.DeepEqual(subtitleCandidateFilenames(tracks), []string{"Feature.srt", "Feature.zh-CN.default.forced.sdh.VTT"}) {
@@ -32,6 +32,20 @@ func TestSubtitleDirectoryIndexUsesCompleteMediaBasenames(t *testing.T) {
 	tracks, _ = index.candidates("Feature extended.mkv")
 	if !reflect.DeepEqual(subtitleCandidateFilenames(tracks), []string{"Feature extended.srt"}) {
 		t.Fatalf("prefix collision changed extended movie tracks: %+v", tracks)
+	}
+}
+
+func TestSubtitleDirectoryIndexPreservesStyledTrackMetadata(t *testing.T) {
+	index := newSubtitleDirectoryIndex(subtitleTestDirectoryEntries("Movie.mkv", "Movie.ja.default.ass", "Movie.en.forced.ssa"), "movies", nil)
+	tracks, overflow := index.candidates("Movie.mkv")
+	if overflow || len(tracks) != 2 {
+		t.Fatalf("styled sidecars were not indexed: %+v, %t", tracks, overflow)
+	}
+	if tracks[0].info.Codec != "ssa" || tracks[0].info.Language != "en" || !tracks[0].info.IsForced || tracks[0].info.MIMEType != "text/x-ssa" {
+		t.Fatalf("SSA metadata was lost: %+v", tracks[0].info)
+	}
+	if tracks[1].info.Codec != "ass" || tracks[1].info.Language != "ja" || !tracks[1].info.IsDefault || tracks[1].info.MIMEType != "text/x-ssa" {
+		t.Fatalf("ASS metadata was lost: %+v", tracks[1].info)
 	}
 }
 

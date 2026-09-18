@@ -9,13 +9,13 @@ import (
 func startupConfigEnvironment(t *testing.T) {
 	t.Helper()
 	for name, value := range map[string]string{
-		"GOBY_DATABASE_URL": "postgres://goby:fixture@localhost:5432/goby?sslmode=disable",
-		"GOBY_PUBLIC_URL": "http://localhost:8096",
-		"GOBY_SERVER_NAME": "Goby",
-		"GOBY_SETUP_TOKEN": "",
-		"GOBY_COOKIE_SECURE": "true",
+		"GOBY_DATABASE_URL":    "postgres://goby:fixture@localhost:5432/goby?sslmode=disable",
+		"GOBY_PUBLIC_URL":      "http://localhost:8096",
+		"GOBY_SERVER_NAME":     "Goby",
+		"GOBY_SETUP_TOKEN":     "",
+		"GOBY_COOKIE_SECURE":   "true",
 		"GOBY_TRUSTED_PROXIES": "",
-		"GOBY_MEDIA_ROOTS": "",
+		"GOBY_MEDIA_ROOTS":     "",
 	} {
 		t.Setenv(name, value)
 	}
@@ -25,7 +25,7 @@ func TestLoadStartupTimeoutDefaultsAndValidDurations(t *testing.T) {
 	startupConfigEnvironment(t)
 	for _, test := range []struct {
 		value string
-		want time.Duration
+		want  time.Duration
 	}{
 		{value: "", want: 5 * time.Minute},
 		{value: "1s", want: time.Second},

@@ -489,9 +489,9 @@ async function showRefreshRunState(page: Page, detail: TaskRunDetail) {
   const state = detail.Run.State[0].toUpperCase() + detail.Run.State.slice(1);
   await expect(runDialog(page).getByText(state, { exact: true }))
     .toHaveCount(1 + detail.Children.Items.filter((child) => child.State === detail.Run.State).length, { timeout: 15_000 });
-  await expect(runDialog(page).getByRole('progressbar', { name: 'Library progress', exact: true }))
-    .toHaveAttribute('aria-valuetext', `${detail.Run.TerminalChildren} of 2 libraries finished`);
-  await expect(runDialog(page).getByRole('list', { name: 'Task library work', exact: true }).getByRole('listitem')).toHaveCount(2);
+  await expect(runDialog(page).getByRole('progressbar', { name: 'Work progress', exact: true }))
+    .toHaveAttribute('aria-valuetext', `${detail.Run.TerminalChildren} of 2 work items finished`);
+  await expect(runDialog(page).getByRole('list', { name: 'Task work items', exact: true }).getByRole('listitem')).toHaveCount(2);
 }
 
 // The isolated runner creates real libraries and media, and owns both restarts
@@ -551,8 +551,8 @@ test('isolated native scheduled tasks, durable admissions, schedule editing, and
         result.Observations.ActiveStopDialogObserved = true;
       }
       const completed = await completeRun(context.request, fixture, admission.Run.Id);
-      await expect(runDialog(page).getByRole('progressbar', { name: 'Library progress', exact: true })).toHaveAttribute('aria-valuetext', '2 of 2 libraries finished', { timeout: 15_000 });
-      await expect(runDialog(page).getByRole('list', { name: 'Task library work', exact: true }).getByRole('listitem')).toHaveCount(2);
+      await expect(runDialog(page).getByRole('progressbar', { name: 'Work progress', exact: true })).toHaveAttribute('aria-valuetext', '2 of 2 work items finished', { timeout: 15_000 });
+      await expect(runDialog(page).getByRole('list', { name: 'Task work items', exact: true }).getByRole('listitem')).toHaveCount(2);
       const jobsResponse = await context.request.get('/admin/v1/jobs');
       expect(jobsResponse.status()).toBe(200);
       const jobs = (await jobsResponse.json() as { Items: Job[] }).Items;
@@ -573,7 +573,7 @@ test('isolated native scheduled tasks, durable admissions, schedule editing, and
       expect(firstPage.Items).toHaveLength(1); expect(secondPage.Items).toHaveLength(1);
       expect(firstPage.Items[0].Id).not.toBe(secondPage.Items[0].Id);
       const resizedChildren = responseFor(page, 'GET', runPath(admission.Run.Id), { StartIndex: '0', Limit: '25' });
-      await runDialog(page).getByRole('combobox', { name: /Libraries per page/ }).click();
+      await runDialog(page).getByRole('combobox', { name: /Work items per page/ }).click();
       await page.getByRole('option', { name: '25', exact: true }).click();
       const childResponse = await resizedChildren;
       expect(childResponse.status()).toBe(200);

@@ -1,3 +1,5 @@
+import { normalizeUserPolicy, validExpandedPolicy } from './userPolicy';
+
 export interface User {
   Id: string;
   Name: string;
@@ -14,7 +16,41 @@ export interface UserPolicy {
   EnablePlaybackRemuxing: boolean;
   EnableAudioPlaybackTranscoding: boolean;
   EnableVideoPlaybackTranscoding: boolean;
+  IsHidden: boolean;
+  IsHiddenRemotely: boolean;
+  IsHiddenFromUnusedDevices: boolean;
+  MaxParentalRating: number | null;
+  AllowTagOrRating: boolean;
+  IsTagBlockingModeInclusive: boolean;
+  BlockedTags: string[];
+  IncludeTags: string[];
+  BlockUnratedItems: string[];
+  EnableUserPreferenceAccess: boolean;
+  AccessSchedules: { DayOfWeek: string; StartHour: number; EndHour: number }[];
+  EnableRemoteControlOfOtherUsers: boolean;
+  EnableSharedDeviceControl: boolean;
+  EnableRemoteAccess: boolean;
+  AutoRemoteQuality: number;
+  EnableContentDeletion: boolean;
+  RestrictedFeatures: string[];
+  EnableContentDeletionFromFolders: string[];
+  EnableContentDownloading: boolean;
+  EnableSubtitleDownloading: boolean;
+  EnableSubtitleManagement: boolean;
+  RemoteClientBitrateLimit: number;
+  ExcludedSubFolders: string[];
+  SimultaneousStreamLimit: number;
+  EnabledDevices: string[];
+  EnableAllDevices: boolean;
 }
+
+export interface FeatureInfo {
+  Id: string;
+  Name: string;
+  FeatureType: "User";
+}
+
+export interface FeaturesResponse { Items: FeatureInfo[] }
 
 export interface ManagedUser extends User {
   Revision: string;
@@ -549,6 +585,12 @@ export interface SettingsEncoding {
   TranscodingMaxWidth: number;
 }
 
+export interface ManagementSettings {
+  Metadata: { EnableInternetProviders: boolean; PreferredMetadataLanguage: string; MetadataCountryCode: string };
+  Subtitles: { DownloadLanguages: string[]; DownloadMovieSubtitles: boolean; DownloadEpisodeSubtitles: boolean };
+  Tasks: { MaxConcurrent: number; CacheRetentionDays: number; CacheMaxEntries: number };
+}
+
 export interface SettingsDeployment {
   HostName: string;
   TranscodingEnabled: boolean;
@@ -570,6 +612,9 @@ export interface ServerSettings {
   Deployment: SettingsDeployment;
   ServerNameMode: ServerNameMode;
   Encoding: SettingsEncoding;
+  Management?: ManagementSettings;
+  ManagementDefaults?: ManagementSettings;
+  ManagementEffects?: unknown;
 }
 
 export interface SettingsUpdateInput {
@@ -577,6 +622,7 @@ export interface SettingsUpdateInput {
   Overrides: SettingsOverrides;
   ServerNameMode: ServerNameMode;
   Encoding: SettingsEncoding;
+  Management?: ManagementSettings;
 }
 export interface SettingsResetInput { Revision: string; Fields: SettingsResetField[] }
 
@@ -970,6 +1016,8 @@ function validateManagedUser(result: ManagedUserResponse): void {
     || ![policy.EnableAllFolders, policy.EnableMediaPlayback, policy.EnablePlaybackRemuxing,
       policy.EnableAudioPlaybackTranscoding, policy.EnableVideoPlaybackTranscoding]
       .every((value) => typeof value === "boolean")) throw invalidResponse();
+  if (!validExpandedPolicy(policy)) throw invalidResponse();
+  user.Policy = normalizeUserPolicy(user.Policy as unknown as UserPolicy);
 }
 
 function validSessionTimestamp(value: unknown): value is string {
@@ -1438,7 +1486,8 @@ function validSettingValue(field: SettingsField, value: unknown): boolean {
 }
 
 function validateSettings(value: ServerSettings): void {
-  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding"])
+  if (!isRecord(value)) throw invalidResponse();
+  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", ...["Management", "ManagementDefaults", "ManagementEffects"].filter((field) => Object.prototype.hasOwnProperty.call(value, field))])
     || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
     || value.Revision.length > 19 || BigInt(value.Revision) > 9223372036854775807n
     || !validSessionTimestamp(value.UpdatedAt)
@@ -1485,6 +1534,23 @@ function validateSettings(value: ServerSettings): void {
   }
   const width = value.Encoding.TranscodingMaxWidth;
   if (typeof width !== "number" || !Number.isSafeInteger(width) || width < 0 || width > 8192) throw invalidResponse();
+  for (const management of [value.Management, value.ManagementDefaults]) {
+    if (management === undefined) continue;
+    if (!validSettingsRecord(management, ["Metadata", "Subtitles", "Tasks"])
+      || !validSettingsRecord(management.Metadata, ["EnableInternetProviders", "PreferredMetadataLanguage", "MetadataCountryCode"])
+      || !validSettingsRecord(management.Subtitles, ["DownloadLanguages", "DownloadMovieSubtitles", "DownloadEpisodeSubtitles"])
+      || !validSettingsRecord(management.Tasks, ["MaxConcurrent", "CacheRetentionDays", "CacheMaxEntries"])
+      || typeof management.Metadata.EnableInternetProviders !== "boolean"
+      || typeof management.Metadata.PreferredMetadataLanguage !== "string" || !/^[a-z]{2,3}(-[A-Z]{2})?$/.test(management.Metadata.PreferredMetadataLanguage)
+      || typeof management.Metadata.MetadataCountryCode !== "string" || !/^[A-Z]{2}$/.test(management.Metadata.MetadataCountryCode)
+      || !Array.isArray(management.Subtitles.DownloadLanguages) || management.Subtitles.DownloadLanguages.length > 8
+      || new Set(management.Subtitles.DownloadLanguages).size !== management.Subtitles.DownloadLanguages.length
+      || !management.Subtitles.DownloadLanguages.every((language) => typeof language === "string" && /^[a-z]{2}(-[A-Z]{2})?$/.test(language))
+      || ![management.Subtitles.DownloadMovieSubtitles, management.Subtitles.DownloadEpisodeSubtitles].every((entry) => typeof entry === "boolean")
+      || !Number.isInteger(management.Tasks.MaxConcurrent) || management.Tasks.MaxConcurrent < 1 || management.Tasks.MaxConcurrent > 16
+      || !Number.isInteger(management.Tasks.CacheRetentionDays) || management.Tasks.CacheRetentionDays < 1 || management.Tasks.CacheRetentionDays > 3650
+      || !Number.isInteger(management.Tasks.CacheMaxEntries) || management.Tasks.CacheMaxEntries < 1 || management.Tasks.CacheMaxEntries > 1000000) throw invalidResponse();
+  }
 }
 
 function validObservabilityDecimal(value: unknown, positive = false): value is string {
@@ -1534,6 +1600,15 @@ function validateObservabilityPage(value: { Items: unknown[]; TotalRecordCount: 
 }
 
 export const adminApi = {
+  async getFeatures(options: RequestOptions = {}): Promise<FeaturesResponse> {
+    const result = await authenticatedRequest<FeaturesResponse>("/features", options);
+    if (!isRecord(result) || !Array.isArray(result.Items)
+      || !result.Items.every((feature) => isRecord(feature) && nonemptyString(feature.Id)
+        && nonemptyString(feature.Name) && feature.FeatureType === "User")
+      || new Set(result.Items.map((feature) => feature.Id)).size !== result.Items.length) throw invalidResponse();
+    return result;
+  },
+
   getBootstrap(options: RequestOptions = {}): Promise<BootstrapResponse> {
     return request("/bootstrap", { ...options, public: true });
   },

@@ -311,12 +311,11 @@ func TestPlanProgressiveVideoAudioTargetsAreExactAndUseSelectedFacts(t *testing.
 	progressiveVideoTestDeclined(t, progressiveVideoTestSource(), request, conversionTestLimits())
 }
 
-func TestPlanProgressiveVideoRejectsUnimplementedSourceTransforms(t *testing.T) {
+func TestPlanProgressiveVideoRejectsUnverifiedSourceTransforms(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		mutate func(*Source)
 	}{
-		{"interlaced", func(s *Source) { s.Info.Streams[0].IsInterlaced = true }},
 		{"PQ", func(s *Source) { s.Info.Streams[0].ColorTransfer = "smpte2084" }},
 		{"HLG", func(s *Source) { s.Info.Streams[0].ColorTransfer = "arib-std-b67" }},
 		{"declared HDR", func(s *Source) { s.Info.Streams[0].VideoRange = "HDR10" }},

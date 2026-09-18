@@ -228,7 +228,7 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 }
 
 func (s *Store) ListLibraries(ctx context.Context) ([]Library, error) {
-	rows, err := s.pool.Query(ctx, "SELECT "+libraryColumns+" FROM libraries l ORDER BY lower(l.name), l.id")
+	rows, err := s.pool.Query(ctx, "SELECT "+libraryColumns+" FROM libraries l WHERE l.id <> $1 ORDER BY lower(l.name), l.id", collectionLibraryID)
 	if err != nil {
 		return nil, fmt.Errorf("list libraries: %w", err)
 	}
@@ -245,6 +245,9 @@ func (s *Store) ListLibraries(ctx context.Context) ([]Library, error) {
 }
 
 func (s *Store) GetLibrary(ctx context.Context, id string) (Library, error) {
+	if id == collectionLibraryID {
+		return Library{}, ErrNotFound
+	}
 	library, err := scanLibrary(s.pool.QueryRow(ctx, "SELECT "+libraryColumns+" FROM libraries l WHERE l.id = $1", id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Library{}, ErrNotFound
@@ -268,6 +271,9 @@ func (s *Store) DeleteLibraryAsAdministrator(ctx context.Context, actor identity
 }
 
 func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdministrator, id string) error {
+	if id == collectionLibraryID {
+		return ErrNotFound
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed || s.closing.Load() {
@@ -301,8 +307,11 @@ func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdminis
 	if err := tx.QueryRow(ctx, "SELECT count(*) FROM library_roots WHERE library_id = $1", id).Scan(&paths); err != nil {
 		return fmt.Errorf("count removed library directories: %w", err)
 	}
-	if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogRemoved, ItemID: exists, LibraryID: exists,
-		IsFolder: true, IsCollectionFolder: true}); err != nil {
+	change := CatalogChange{Kind: CatalogRemoved, ItemID: exists, LibraryID: exists, IsFolder: true, IsCollectionFolder: true}
+	if err := recordCollectionSourceRemovals(tx, []CatalogChange{change}); err != nil {
+		return err
+	}
+	if err := recordCatalogChanges(tx, change); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(ctx, "DELETE FROM libraries WHERE id = $1", id); err != nil {
@@ -337,6 +346,11 @@ func (s *Store) Close(ctx context.Context) error {
 			close(s.queue)
 			s.mu.Unlock()
 			s.workers.Wait()
+			// A canceled filesystem call can complete after its HTTP caller has
+			// returned. Keep ownership until every admitted deletion has finished
+			// its syscall and recovery work, so a successor cannot clear its journal
+			// while an old rename is still capable of taking effect.
+			s.fileDeletions.Wait()
 			ownershipErr := s.ownership.release()
 			s.closeCatalogChangeListener()
 			s.mu.Lock()

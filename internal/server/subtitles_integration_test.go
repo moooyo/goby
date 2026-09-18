@@ -370,7 +370,7 @@ func TestHTTPSubtitleWindowsUseReferenceOffsetsAndRejectInvalidQueries(t *testin
 		{"negative-start", "", "srt", "?StartPositionTicks=-1", 6, http.StatusBadRequest},
 		{"invalid-copy", "", "srt", "?CopyTimestamps=invalid", 6, http.StatusBadRequest},
 		{"negative-index", "", "srt", "", -1, http.StatusBadRequest},
-		{"unsupported-format", "", "ass", "", 6, http.StatusUnsupportedMediaType},
+		{"unsupported-format", "", "idx", "", 6, http.StatusUnsupportedMediaType},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			response := p.s.request(t, http.MethodGet, subtitleHTTPRoute(s, test.index, test.start, test.format)+test.query, p.s.token, nil, nil)

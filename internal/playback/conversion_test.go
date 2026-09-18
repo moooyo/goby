@@ -362,7 +362,6 @@ func TestPlanConversionProfileScopeAndUnsupportedFeatures(t *testing.T) {
 			request.DeviceProfile.TranscodingProfiles[0].Context = EncodingContextStatic
 		}},
 		{"DASH", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].Protocol = "dash" }},
-		{"fragmented MP4", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].Container = "mp4" }},
 		{"HEVC output only", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].VideoCodec = "hevc" }},
 		{"AV1 output only", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].VideoCodec = "av1" }},
 		{"Opus output only", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].AudioCodec = "opus" }},
@@ -372,10 +371,6 @@ func TestPlanConversionProfileScopeAndUnsupportedFeatures(t *testing.T) {
 		{"unclassified 10 bit pixel format", func(source *Source, _ *Request) {
 			source.Info.Streams[0].BitDepth = 0
 			source.Info.Streams[0].PixelFormat = "p010le"
-		}},
-		{"interlaced even if client permits copy", func(source *Source, request *Request) {
-			source.Info.Streams[0].IsInterlaced = true
-			request.AllowInterlacedVideoStreamCopy = profileTestPtr(true)
 		}},
 		{"embedded text subtitle", func(_ *Source, request *Request) { request.SubtitleStreamIndex = profileTestPtr(12) }},
 		{"external audio", func(source *Source, _ *Request) { source.Info.Streams[1].IsExternal = true }},

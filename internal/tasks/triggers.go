@@ -57,7 +57,7 @@ func (s *Store) ReplaceTriggers(ctx context.Context, actor Actor, request Replac
 		if definition.Revision != request.Revision {
 			return ErrRevisionConflict
 		}
-		if err := checkTaskExecutor(definition.Key, actor); err != nil {
+		if err := s.checkTaskExecutor(definition.Key, actor); err != nil {
 			return err
 		}
 		changed := changedTaskScheduleFields(definition, request.ScheduleTimezone)

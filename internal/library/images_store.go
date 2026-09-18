@@ -129,7 +129,7 @@ func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID strin
 		return nil, err
 	}
 	rows, err := tx.Query(ctx, "SELECT "+storedImageColumns+storedImageSource+`
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+storedImageOrder,
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i")+storedImageOrder,
 		itemID, access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("%w: query item images: %w", ErrUnavailable, err)
@@ -146,6 +146,12 @@ func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID strin
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("%w: read item images: %w", ErrUnavailable, err)
 	}
+	rows.Close()
+	selected := map[string][]Image{itemID: images}
+	if err := mergeProviderImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
+		return nil, err
+	}
+	images = selected[itemID]
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("%w: complete item image read: %w", ErrUnavailable, err)
 	}
@@ -176,7 +182,7 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 	result := make(map[string][]Image)
 	if len(ids) != 0 {
 		rows, err := tx.Query(ctx, "SELECT i.id, "+storedImageColumns+storedImageSource+`
-			WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+
+			WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i")+
 			strings.Replace(storedImageOrder, " ORDER BY ", " ORDER BY i.id, ", 1),
 			ids, access.all, access.folders)
 		if err != nil {
@@ -194,6 +200,10 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 		if err := rows.Err(); err != nil {
 			return nil, fmt.Errorf("%w: read item image batch: %w", ErrUnavailable, err)
 		}
+		rows.Close()
+	}
+	if err := mergeProviderImageListing(ctx, tx, access, ids, result); err != nil {
+		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("%w: complete item image batch: %w", ErrUnavailable, err)
@@ -201,11 +211,43 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 	return result, nil
 }
 
-// OpenPublicImage deliberately does not require a user or token: indexed image
-// binary routes are public. The caller owns the returned descriptor, positioned
-// at offset zero. It must hash its bounded read against Image.Tag before serving
-// or rendering those bytes because another process can modify a regular file
-// after this function returns.
+// OpenImageFor authorizes the item and its image in one policy snapshot before
+// any cache hit or filesystem open can expose media artwork.
+func (s *Store) OpenImageFor(ctx context.Context, subject Subject, itemID, imageType string, index int) (*os.File, Image, error) {
+	if !validImageItemID(itemID) {
+		return nil, Image{}, ErrInvalidInput
+	}
+	imageType, err := normalizeStoredImageType(imageType, index)
+	if err != nil {
+		return nil, Image{}, err
+	}
+	return runPublicImageWorker(ctx, publicImageWorkers, func() (*os.File, Image, error) {
+		tx, access, err := s.beginSubjectRead(ctx, subject)
+		if err != nil {
+			return nil, Image{}, err
+		}
+		defer rollback(tx)
+		stored, err := scanStoredImage(tx.QueryRow(ctx, "SELECT "+storedImageColumns+storedImageSource+`
+			WHERE i.id=$1 AND im.image_type=$2 AND im.image_index=$3 AND `+access.directSQL("i"), itemID, imageType, index))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, Image{}, ErrNotFound
+		}
+		if err != nil {
+			return nil, Image{}, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return nil, Image{}, fmt.Errorf("complete authorized image source read: %w", err)
+		}
+		file, err := s.openStoredImage(ctx, stored)
+		if err != nil {
+			return nil, Image{}, err
+		}
+		return file, stored.Image, nil
+	})
+}
+
+// OpenPublicImage is retained for internal source-integrity fixtures. HTTP item
+// image handlers must use OpenImageFor so media policies cover cached artwork.
 func (s *Store) OpenPublicImage(ctx context.Context, itemID, imageType string, index int) (*os.File, Image, error) {
 	if !validImageItemID(itemID) {
 		return nil, Image{}, ErrInvalidInput

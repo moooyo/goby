@@ -6,29 +6,35 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
-import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, UserPolicy, UserMutationResponse } from './api';
+import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, UserMutationResponse } from './api';
 import { ErrorNotice } from './components';
+import { UserPolicyFields } from './UserPolicyFields';
+import { draftFromUserPolicy, parseUserPolicyDraft } from './userPolicy';
+import type { UserPolicyDraft } from './userPolicy';
 import { fieldError, PasswordField } from './formFields';
 import { colors, theme } from './theme';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 
-function inputFor(user: ManagedUser): UpdateUserInput {
+type ManagedUserDraft = Omit<UpdateUserInput, 'Policy'> & { Policy: UserPolicyDraft };
+
+function inputFor(user: ManagedUser): ManagedUserDraft {
   return {
     Revision: user.Revision,
     Name: user.Name,
     IsAdministrator: user.IsAdministrator,
     IsDisabled: user.IsDisabled,
-    Policy: { ...user.Policy, EnabledFolders: [...user.Policy.EnabledFolders] },
+    Policy: draftFromUserPolicy(user.Policy),
   };
 }
 
-function draftKey(input: UpdateUserInput): string {
-  return JSON.stringify({ ...input, Policy: { ...input.Policy, EnabledFolders: [...input.Policy.EnabledFolders].sort() } });
+function draftKey(input: ManagedUserDraft): string {
+  const policy = parseUserPolicyDraft(input.Policy).policy ?? input.Policy;
+  return JSON.stringify({ ...input, Policy: { ...policy, EnabledFolders: [...policy.EnabledFolders].sort() } });
 }
 
 function isUnknownOutcome(error: unknown): boolean {
-  return error instanceof ApiError && ['network_error', 'invalid_response'].includes(error.code);
+  return error instanceof ApiError && (error.status >= 500 || ['network_error', 'invalid_response'].includes(error.code));
 }
 
 function isRevisionConflict(error: unknown): boolean {
@@ -223,7 +229,7 @@ function DeleteUserDialog({ user, isCurrentUser, onClose, onDeleted, onReload, o
 export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, onRemoved, onNavigationGuardChange }: { userId: string; currentUserId: string; onClose: () => void; onUpdated: (user: ManagedUser, message: string) => void; onRemoved: (userId: string, message: string, severity: 'success' | 'info') => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const [user, setUser] = useState<ManagedUser>();
-  const [draft, setDraft] = useState<UpdateUserInput>();
+  const [draft, setDraft] = useState<ManagedUserDraft>();
   const [libraries, setLibraries] = useState<Library[]>();
   const [loading, setLoading] = useState(true);
   const [librariesLoading, setLibrariesLoading] = useState(true);
@@ -242,6 +248,8 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   const [passwordDraftState, setPasswordDraftState] = useState({ dirty: false, busy: false });
   const [pendingAction, setPendingAction] = useState<'close' | 'reload'>();
   const [notice, setNotice] = useState('');
+  const parsedPolicy = draft ? parseUserPolicyDraft(draft.Policy) : undefined;
+  const folderError = parsedPolicy?.errors['Policy.EnabledFolders'] ?? fieldError(error, 'Policy.EnabledFolders');
   const dirty = Boolean(user && draft && draftKey(draft) !== draftKey(inputFor(user)));
   const blocked = deleteReviewRequired || isRevisionConflict(error) || isUnknownOutcome(error);
   const disabled = busy || loading || deleteBusy || loadError != null;
@@ -288,12 +296,12 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
     else onClose();
   }
 
-  function change<K extends keyof UpdateUserInput>(key: K, value: UpdateUserInput[K]) {
+  function change<K extends keyof ManagedUserDraft>(key: K, value: ManagedUserDraft[K]) {
     setDraft((current) => current ? { ...current, [key]: value } : current);
     setNotice('');
   }
 
-  function changePolicy<K extends keyof UserPolicy>(key: K, value: UserPolicy[K]) {
+  function changePolicy<K extends keyof UserPolicyDraft>(key: K, value: UserPolicyDraft[K]) {
     setDraft((current) => current ? { ...current, Policy: { ...current.Policy, [key]: value } } : current);
     setNotice('');
   }
@@ -313,13 +321,13 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlight.current || !draft || !dirty || blocked || disabled || deletingUser || resettingPassword || !draft.Name.trim()) return;
+    if (inFlight.current || !draft || !parsedPolicy?.policy || !dirty || blocked || disabled || deletingUser || resettingPassword || !draft.Name.trim()) return;
     inFlight.current = true;
     setBusy(true);
     setError(null);
     setNotice('');
     try {
-      const result = await adminApi.updateUser(userId, { ...draft, Name: draft.Name.trim() });
+      const result = await adminApi.updateUser(userId, { ...draft, Name: draft.Name.trim(), Policy: parsedPolicy.policy });
       saved(result, false);
     } catch (cause) {
       if (!isAbortError(cause)) setError(cause);
@@ -371,7 +379,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                     <Stack spacing={2}>
                       {draft.IsAdministrator && <Alert severity="info">Administrators can access every library. The choices below are saved for member access and take effect if administrator access is removed.</Alert>}
                       <PermissionSwitch id="managed-user-all-libraries" label="All libraries" description="Include every current library and any libraries added later." checked={draft.Policy.EnableAllFolders} disabled={disabled} onChange={(value) => changePolicy('EnableAllFolders', value)} error={fieldError(error, 'Policy.EnableAllFolders')} />
-                      {(!draft.Policy.EnableAllFolders || unavailableFolderIds.length > 0 || Boolean(fieldError(error, 'Policy.EnabledFolders'))) && (
+                      {(!draft.Policy.EnableAllFolders || unavailableFolderIds.length > 0 || Boolean(folderError)) && (
                         <Box>
                           {draft.Policy.EnableAllFolders && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>These saved selections apply when All libraries is turned off. Remove any unavailable libraries to keep this configuration valid.</Typography>}
                           {librariesError != null && <ErrorNotice error={librariesError} retry={() => setLibraryRevision((value) => value + 1)} />}
@@ -381,7 +389,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                           {!draft.Policy.EnableAllFolders && libraries && libraries.length > 0 && draft.Policy.EnabledFolders.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No libraries selected. Members with this configuration cannot access any library.</Typography>}
                         </Box>
                       )}
-                      {fieldError(error, 'Policy.EnabledFolders') && <Typography variant="body2" color="error.main">{fieldError(error, 'Policy.EnabledFolders')}</Typography>}
+                      {folderError && <Typography variant="body2" color="error.main">{folderError}</Typography>}
                     </Stack>
                   </Section>
                   <Divider />
@@ -391,6 +399,8 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                       {!draft.Policy.EnableMediaPlayback && <Typography variant="body2" color="text.secondary">Remuxing and transcoding settings are retained and apply when media playback is enabled.</Typography>}
                     </Stack>
                   </Section>
+                  <Divider />
+                  <UserPolicyFields policy={draft.Policy} disabled={disabled} error={error} errors={parsedPolicy?.errors ?? {}} onChange={changePolicy} />
                   <Divider />
                   <Section title="Account security" description="Manage sign-in access and the account password.">
                     <Stack spacing={2.5}>
@@ -410,7 +420,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
           <DialogActions sx={{ px: { xs: 2.5, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', gap: 1, flexWrap: 'wrap' }}>
             <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{loading ? 'Loading user...' : dirty ? 'Unsaved changes' : user ? 'All changes saved' : ''}</Typography>
             <Button onClick={() => requestAction('close')} disabled={busy || deleteBusy} color="secondary">Close</Button>
-            <Button type="submit" variant="contained" disabled={disabled || !draft?.Name.trim() || !dirty || blocked} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />}>{busy ? 'Saving changes...' : 'Save changes'}</Button>
+            <Button type="submit" variant="contained" disabled={disabled || !draft?.Name.trim() || !parsedPolicy?.policy || !dirty || blocked} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />}>{busy ? 'Saving changes...' : 'Save changes'}</Button>
           </DialogActions>
         </Box>
       </Dialog>

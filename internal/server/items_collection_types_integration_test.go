@@ -69,8 +69,7 @@ func TestHTTPItemsObservedPlaylistAndBoxSetFiltersUseAuthorizedCatalog(t *testin
 			t.Fatal("an absent client-requested kind returned unrelated catalog objects")
 		}
 	}
-	// Seed catalog representations directly to prove real nonempty filtering.
-	// This change does not introduce playlist/collection creation or editing.
+	// Seed owned collection representations to exercise nonempty filtering.
 	if _, err := f.pool.Exec(f.ctx, `INSERT INTO items(id,library_id,parent_id,name,sort_name,type,is_folder) VALUES
 		('playlist-visible','collection-visible','collection-visible','B Visible Playlist','B Visible Playlist','Playlist',true),
 		('folder-visible','collection-visible','collection-visible','Nested Folder','Nested Folder','Folder',true),
@@ -79,6 +78,10 @@ func TestHTTPItemsObservedPlaylistAndBoxSetFiltersUseAuthorizedCatalog(t *testin
 		('playlist-hidden','collection-hidden','collection-hidden','0 Hidden Playlist','0 Hidden Playlist','Playlist',true),
 		('boxset-hidden','collection-hidden','collection-hidden','0 Hidden Collection','0 Hidden Collection','BoxSet',true)`); err != nil {
 		t.Fatalf("seed real collection-kind item representations: %v", err)
+	}
+	if _, err := f.pool.Exec(f.ctx, `INSERT INTO media_collections(item_id,owner_id,kind)
+		SELECT id,$1,type FROM items WHERE type IN ('Playlist','BoxSet')`, viewer.ID); err != nil {
+		t.Fatalf("seed collection ownership: %v", err)
 	}
 	for _, test := range []struct {
 		name, types string

@@ -135,13 +135,13 @@ func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, it
 	}
 	var snapshot indexedMediaSource
 	var modified *time.Time
-	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+itemColumns+`,
+	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`,
 		i.relative_path, i.file_identity, i.file_size, i.modified_at,
 		r.id, r.library_id, r.path, r.allowed_path, r.relative_path
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
-		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"), itemID, access.all, access.folders),
+		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i"), itemID, access.all, access.folders),
 		&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
 		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath)
 	if errors.Is(err, pgx.ErrNoRows) {

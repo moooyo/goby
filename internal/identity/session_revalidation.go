@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -40,11 +41,12 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 		return Principal{}, ErrUnauthorized
 	}
 	var principal Principal
+	var observedAt time.Time
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
 		u.has_password, u.created_at, u.policy, u.configuration, authentication.id,
 		authentication.client_name, authentication.device_id, COALESCE(d.custom_name, authentication.device_name),
 		authentication.client_version, authentication.kind, authentication.expires_at,
-		authentication.last_seen_at
+		authentication.last_seen_at, clock_timestamp()
 		FROM sessions authentication JOIN users u ON u.id = authentication.user_id
 		LEFT JOIN devices d ON d.id = authentication.device_registry_id AND d.deleted_at IS NULL
 		WHERE authentication.id = $1 AND authentication.user_id = $2
@@ -55,13 +57,19 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt,
 			&principal.User.Policy, &principal.User.Configuration, &principal.SessionID, &principal.Client.Name,
 			&principal.Client.DeviceID, &principal.Client.Device, &principal.Client.Version,
-			&principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt)
+			&principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt, &observedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Principal{}, ErrUnauthorized
 	}
 	if err != nil {
 		return Principal{}, fmt.Errorf("revalidate authenticated Emby session: %w", err)
 	}
+	policy, err := ParseRuntimePolicy(principal.User.Policy)
+	if err != nil || !loginPolicyAllows(principal.User.Policy, principal.Client.DeviceID, observedAt) ||
+		(!policy.EnableRemoteAccess && !IsLocalPeer(previouslyAuthenticated.PeerIP)) {
+		return Principal{}, ErrUnauthorized
+	}
+	principal.PeerIP = previouslyAuthenticated.PeerIP
 	return principal, nil
 }
 

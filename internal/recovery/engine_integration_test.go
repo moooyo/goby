@@ -615,8 +615,7 @@ func recoveryEngineTestFacts(t *testing.T, ctx context.Context, pool *pgxpool.Po
 
 func recoveryEngineRetainedState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
-	var state string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
+	return recoveryEngineJSONState(t, ctx, pool, `SELECT jsonb_build_object(
 		'users',(SELECT jsonb_agg(to_jsonb(u) ORDER BY id) FROM users u),
 		'user_settings',(SELECT jsonb_agg(to_jsonb(p) ORDER BY user_id) FROM user_settings p),
 		'sessions',(SELECT jsonb_agg(to_jsonb(s)-'revoked_at' ORDER BY id) FROM sessions s),
@@ -632,18 +631,38 @@ func recoveryEngineRetainedState(t *testing.T, ctx context.Context, pool *pgxpoo
 		'item_metadata_state',(SELECT jsonb_agg(to_jsonb(m) ORDER BY item_id) FROM item_metadata_state m),
 		'definitions',(SELECT jsonb_agg(to_jsonb(d) ORDER BY id) FROM task_definitions d),
 		'triggers',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM task_triggers t),
-		'settings',(SELECT jsonb_agg(to_jsonb(s) ORDER BY id) FROM managed_settings s))::text`).Scan(&state); err != nil {
-		t.Fatal("read retained identity and catalog history")
-	}
-	return state
+		'settings',(SELECT jsonb_agg(to_jsonb(s) ORDER BY id) FROM managed_settings s))::text`)
 }
 
 func recoveryEnginePreferenceState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
+	return recoveryEngineJSONState(t, ctx, pool, `SELECT COALESCE(jsonb_agg(to_jsonb(p) ORDER BY user_id), '[]'::jsonb)::text
+		FROM user_settings p`)
+}
+
+// Preserve complete PostgreSQL JSON text with the backup serializer's canonical
+// type output settings. Reopened application pools retain their own session
+// defaults, which must not change witnesses of stored timestamps or numbers.
+func recoveryEngineJSONState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, statement string) string {
+	t.Helper()
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		t.Fatal("begin canonical retained-state snapshot")
+	}
+	defer rollbackRestore(tx)
+	if _, err := tx.Exec(ctx, `SELECT
+		pg_catalog.set_config('TimeZone','UTC',true),
+		pg_catalog.set_config('DateStyle','ISO, YMD',true),
+		pg_catalog.set_config('IntervalStyle','postgres',true),
+		pg_catalog.set_config('bytea_output','hex',true),
+		pg_catalog.set_config('extra_float_digits','3',true),
+		pg_catalog.set_config('client_encoding','UTF8',true),
+		pg_catalog.set_config('standard_conforming_strings','on',true)`); err != nil {
+		t.Fatal("configure canonical retained-state snapshot")
+	}
 	var state string
-	if err := pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(to_jsonb(p) ORDER BY user_id), '[]'::jsonb)::text
-		FROM user_settings p`).Scan(&state); err != nil {
-		t.Fatal("read retained user preference maps and timestamps")
+	if err := tx.QueryRow(ctx, statement).Scan(&state); err != nil {
+		t.Fatal("read exact retained PostgreSQL JSON state")
 	}
 	return state
 }

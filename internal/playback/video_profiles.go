@@ -7,6 +7,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 const (
@@ -119,10 +122,22 @@ func PlanVideoConversion(source Source, request Request, limits ConversionLimits
 func planHTTPVideoProfile(source Source, request Request, profile TranscodingProfile, limits ConversionLimits, selection selectedStreams, search *videoProfileBudget) ConversionDecision {
 	var result ConversionDecision
 	var unverified *ConversionDecision
-	// Restart evidence cannot affect profile compatibility. Select it once for
-	// the final accepted plan, rather than revalidating a large scan index for
-	// every bounded profile-search attempt. This value copy leaves Source intact.
+	// Decoder restart evidence is optional and selected only for the final
+	// encoded plan. Copy seeking instead needs a feasible exact boundary before
+	// choosing a delivery mode. Reduce its checked scan evidence once so bounded
+	// profile retries cannot repeatedly traverse a large catalog index.
+	copySeekInfo := source.Info
 	source.Info.VideoSeekIndexes = nil
+	if request.StartTimeTicks != nil && *request.StartTimeTicks > 0 {
+		prepared := transcode.Plan{OutputMode: "progressive", Container: "mp4", VideoCodec: "copy", VideoStreamIndex: selection.video.Index,
+			AudioStreamIndex: -1, StartTicks: *request.StartTimeTicks, DurationTicks: source.Info.DurationTicks,
+			SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks}
+		if transcode.AttachVideoCopySeekCandidate(&prepared, copySeekInfo) {
+			if candidate, err := media.ValidateVideoCopySeekCandidate(prepared.VideoCopySeekCandidate); err == nil {
+				source.Info.VideoSeekIndexes = []media.VideoSeekIndex{candidate.Index}
+			}
+		}
+	}
 	if selection.subtitle != nil || !httpVideoProfileOptionsSupported(profile) {
 		result.Reasons = []Reason{*conversionReason("video_profile_options_unsupported", "TranscodingProfiles", "The progressive profile requires delivery behavior not represented by the video execution plan.")}
 		return result

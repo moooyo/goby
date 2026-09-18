@@ -16,7 +16,7 @@ import (
 type entityHTTPFixture struct {
 	*serverFixture
 	adminID, viewerID, visibleID, hiddenID string
-	adminHeaders, viewerHeaders          http.Header
+	adminHeaders, viewerHeaders            http.Header
 }
 
 type entityHTTPKind struct {

@@ -42,11 +42,16 @@ type Info struct {
 }
 
 type Stream struct {
-	Index                int
-	Codec                string
-	CodecType            string
-	Language             string
-	Title                string
+	Index     int
+	Codec     string
+	CodecType string
+	Language  string
+	Title     string
+	Filename  string
+	MIMEType  string
+	// SubtitleTag binds an authorized external subtitle to its indexed bytes.
+	// Primary probing leaves it empty; the library projection supplies it.
+	SubtitleTag          string
 	Width                int
 	Height               int
 	Channels             int

@@ -351,5 +351,6 @@ func diagnosticAudioOutput(args []string, plan *DiagnosticPlan) []string {
 		return append(args, "-c:a", "pcm_s16le", "-f", "s16le")
 	}
 	plan.OutputFormat, plan.OutputCodec = "adts", "aac"
-	return append(args, "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "128000", "-f", "adts")
+	// Retain the fixed PCM through two AAC generations under the content policy.
+	return append(args, "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "256000", "-f", "adts")
 }

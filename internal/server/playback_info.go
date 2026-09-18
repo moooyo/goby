@@ -15,11 +15,12 @@ import (
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
+	"github.com/moooyo/goby/internal/subtitle"
 )
 
 func playbackOwner(principal identity.Principal) library.PlaybackOwner {
 	return library.PlaybackOwner{UserID: principal.User.ID, SessionID: principal.SessionID, DeviceID: principal.Client.DeviceID,
-		ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID}
+		PeerIP: principal.PeerIP, ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID}
 }
 
 func (s *Server) registerPlaybackRoutes(mux *http.ServeMux) {
@@ -168,6 +169,9 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if s.tryDynamicPlaybackInfo(w, r, request) {
+		return
+	}
 	file, source, err := s.library.OpenMediaFor(ctx, librarySubject(principal, principal.User.ID), request.ID, request.MediaSourceID)
 	if err != nil {
 		s.playbackError(w, r, err)
@@ -182,13 +186,12 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The playback request or media facts cannot be evaluated.")
 		return
 	}
+	if !principalOriginalBitrateAllowed(principal, source) {
+		decision.DirectPlay, decision.DirectStream = false, false
+	}
 	var conversion playback.ConversionDecision
 	if s.hls != nil && request.DeviceProfile != nil && len(request.DeviceProfile.TranscodingProfiles) > 0 {
-		if source.Item.Type == "Audio" {
-			conversion, err = playback.PlanAudioConversion(input, request, limits)
-		} else {
-			conversion, err = playback.PlanVideoConversion(input, request, limits)
-		}
+		conversion, err = principalConversionDecision(principal, source, input, request, limits)
 		if err != nil {
 			apiError(w, r, http.StatusBadRequest, "invalid_playback_request", "The requested conversion profile cannot be evaluated.")
 			return
@@ -205,7 +208,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 		formats = playback.ExternalSubtitleCandidateFormats(input, request.DeviceProfile)
 	}
 	if decision.SubtitleMethod == playback.SubtitleDeliveryMethodExternal && decision.DefaultSubtitleStreamIndex != nil {
-		if _, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex); err != nil {
+		if _, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, *decision.DefaultSubtitleStreamIndex, subtitle.Format(decision.SubtitleFormat)); err != nil {
 			s.playbackError(w, r, err)
 			return
 		}
@@ -218,7 +221,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			index := *conversion.Output.DefaultSubtitleStreamIndex
-			if _, err := s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, index); err != nil {
+			if _, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), source.Item.ID, source.SourceID, index, subtitle.Format(conversion.Output.SubtitleFormat)); err != nil {
 				s.playbackError(w, r, err)
 				return
 			}
@@ -286,7 +289,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 					resource = "Audio"
 				}
 				streamURL = hlsSessionURL(hls, resource, "master.m3u8", token, start)
-				container, protocol = "ts", "hls"
+				container, protocol = conversion.Plan.Container, "hls"
 			}
 		}
 		if streamURL != "" {

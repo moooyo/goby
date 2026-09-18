@@ -360,9 +360,10 @@ func (c *cacheRoot) ScanJob(id string) (bytes int64, ready bool, err error) {
 	return c.ScanPlanJob(id, Plan{})
 }
 
-// ScanPlanJob accounts only files belonging to the selected output mode. For
-// progressive output, ready reports positive file length, not playable payload;
-// the manager must also require a valid payload signal from the runner.
+// ScanPlanJob accounts files belonging to the selected output mode and private
+// rendering assets. For progressive output, ready reports positive stream
+// length, not playable payload; the manager also requires the runner's payload
+// signal. Private asset bytes never establish output readiness.
 func (c *cacheRoot) ScanPlanJob(id string, plan Plan) (bytes int64, ready bool, err error) {
 	if !validJobID(id) {
 		return 0, false, ErrCacheInvalid
@@ -385,7 +386,11 @@ func (c *cacheRoot) ScanPlanJob(id string, plan Plan) (bytes int64, ready bool, 
 		return 0, false, err
 	}
 	defer dir.Close()
-	_, bytes, ready, err = cacheInspectJobMode(dir, mode == cacheInspectHLS, mode)
+	var files []cacheFileSnapshot
+	files, bytes, ready, err = cacheInspectJobMode(dir, mode == cacheInspectHLS, mode)
+	if err == nil && mode == cacheInspectHLS {
+		ready = cacheHLSReady(files, plan)
+	}
 	return bytes, ready, err
 }
 
@@ -478,12 +483,12 @@ func cacheInspectJobMode(dir *os.File, tolerateRename bool, mode cacheInspection
 	type inode struct{ device, number uint64 }
 	seen := make(map[inode]bool, len(names))
 	var bytes int64
-	playlist, segment := false, false
+	progressiveReady := false
 	for _, name := range names {
 		if !validCacheFileName(name) {
 			return nil, 0, false, fmt.Errorf("%w: unrecognized job file", ErrCacheUnsafe)
 		}
-		if mode == cacheInspectHLS && name == "stream.bin" || mode == cacheInspectProgressive && name != "stream.bin" {
+		if mode == cacheInspectHLS && name == "stream.bin" || mode == cacheInspectProgressive && name != "stream.bin" && !privateCacheAssetName(name) {
 			return nil, 0, false, fmt.Errorf("%w: file does not belong to the planned output mode", ErrCacheUnsafe)
 		}
 		file, err := cacheOpenRegular(dir, name, syscall.O_RDONLY, 0)
@@ -512,14 +517,89 @@ func cacheInspectJobMode(dir *os.File, tolerateRename bool, mode cacheInspection
 			bytes += info.Size()
 			seen[key] = true
 		}
-		playlist = playlist || name == "main.m3u8" && info.Size() > 0
-		segment = segment || strings.HasPrefix(name, "segment-") && strings.HasSuffix(name, ".ts") && info.Size() > 0
+		progressiveReady = progressiveReady || name == "stream.bin" && info.Size() > 0
 		files = append(files, cacheFileSnapshot{name: name, info: info})
 	}
 	if mode == cacheInspectProgressive {
-		return files, bytes, bytes > 0, nil
+		return files, bytes, progressiveReady, nil
 	}
-	return files, bytes, playlist && segment, nil
+	return files, bytes, cacheHLSReady(files, Plan{}), nil
+}
+
+// cacheHLSReady considers only published, nonempty artifacts. Each selected
+// rendition needs its own playlist and segment; fragmented MP4 also needs the
+// matching initialization file. Temporary output and subtitle files never make
+// an audio/video rendition playable, but they are still included in accounting.
+func cacheHLSReady(files []cacheFileSnapshot, plan Plan) bool {
+	const (
+		transportStream = 1 << iota
+		fragmentedMP4
+		packedAAC
+		packedMP3
+	)
+	type renditionState struct {
+		playlist bool
+		init     bool
+		segments int
+	}
+	var renditions [5]renditionState
+	for _, file := range files {
+		kind, ok := HLSArtifact(file.name)
+		if !ok || file.info.Size() <= 0 {
+			continue
+		}
+		index := 0
+		if len(file.name) > 2 && file.name[0] == 'v' && file.name[1] >= '0' && file.name[1] <= '3' {
+			index = int(file.name[1]-'0') + 1
+		}
+		state := &renditions[index]
+		switch kind {
+		case "playlist":
+			state.playlist = true
+		case "init":
+			state.init = true
+		case "segment":
+			switch filepath.Ext(file.name) {
+			case ".ts":
+				state.segments |= transportStream
+			case ".m4s":
+				state.segments |= fragmentedMP4
+			case ".aac":
+				state.segments |= packedAAC
+			case ".mp3":
+				state.segments |= packedMP3
+			}
+		}
+	}
+	ready := func(state renditionState) bool {
+		if !state.playlist {
+			return false
+		}
+		switch plan.HLS.SegmentType {
+		case "mpegts":
+			return state.segments&transportStream != 0
+		case "fmp4":
+			return state.init && state.segments&fragmentedMP4 != 0
+		case "packed":
+			return state.segments&(packedAAC|packedMP3) != 0
+		case "":
+			return state.segments&(transportStream|packedAAC|packedMP3) != 0 || state.init && state.segments&fragmentedMP4 != 0
+		default:
+			return false
+		}
+	}
+	if plan.HLS.RenditionCount == 0 {
+		return ready(renditions[0])
+	}
+	if plan.HLS.RenditionCount < 2 || plan.HLS.RenditionCount > len(plan.HLS.Renditions) {
+		return false
+	}
+	for index := 0; index < plan.HLS.RenditionCount; index++ {
+		if !ready(renditions[index+1]) {
+			return false
+		}
+	}
+	return true
 }
 
 func cacheDirectoryNames(dir *os.File, limit int) ([]string, error) {
@@ -614,25 +694,14 @@ func validJobID(id string) bool {
 }
 
 func validOutputName(name string) bool {
-	if name == "main.m3u8" {
-		return true
-	}
-	if len(name) > 255 || !strings.HasPrefix(name, "segment-") || !strings.HasSuffix(name, ".ts") {
-		return false
-	}
-	digits := name[len("segment-") : len(name)-len(".ts")]
-	if digits == "" {
-		return false
-	}
-	for _, char := range digits {
-		if char < '0' || char > '9' {
-			return false
-		}
-	}
-	return true
+	_, ok := HLSArtifact(name)
+	return ok
 }
 
 func validCacheFileName(name string) bool {
+	if privateCacheAssetName(name) {
+		return true
+	}
 	switch name {
 	case "stream.bin":
 		// Progressive output is private and is read only through its dedicated
@@ -644,5 +713,24 @@ func validCacheFileName(name string) bool {
 		// but validOutputName deliberately excludes all of them.
 		return true
 	}
+	if strings.HasSuffix(name, ".publish.tmp") {
+		base := strings.TrimSuffix(name, ".publish.tmp")
+		return (strings.HasSuffix(base, ".aac") || strings.HasSuffix(base, ".mp3")) && validOutputName(base)
+	}
 	return len(name) <= 255 && validOutputName(strings.TrimSuffix(name, ".tmp"))
+}
+
+// Subtitle rendering assets use fixed private names in the owned job directory.
+// They count toward storage limits and are removed through the same descriptor
+// checks as output files, but never become public artifacts or nested paths.
+func privateCacheAssetName(name string) bool {
+	if name == "subtitle.ass" {
+		return true
+	}
+	if !strings.HasPrefix(name, "font-") || !strings.HasSuffix(name, ".ttf") {
+		return false
+	}
+	index := strings.TrimSuffix(strings.TrimPrefix(name, "font-"), ".ttf")
+	return len(index) == 1 && index[0] >= '0' && index[0] <= '9' ||
+		len(index) == 2 && index[0] == '1' && index[1] >= '0' && index[1] <= '5'
 }

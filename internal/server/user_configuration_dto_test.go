@@ -40,16 +40,65 @@ func observedUserConfigurationObject(t *testing.T) map[string]any {
 	return expected
 }
 
-func TestUserConfigurationProjectionMatchesObservedDefaultShape(t *testing.T) {
+func gobyDefaultUserConfigurationObject(t *testing.T) map[string]any {
+	t.Helper()
+	// Preserve the historical wire shape; Goby only changes the intro-skip default.
+	expected := observedUserConfigurationObject(t)
+	expected["IntroSkipMode"] = "None"
+	return expected
+}
+
+func TestUserConfigurationProjectionMatchesGobyDefaultShape(t *testing.T) {
 	for _, raw := range []json.RawMessage{nil, json.RawMessage(`{}`), json.RawMessage(`null`), json.RawMessage(`[]`), json.RawMessage(`false`),
 		json.RawMessage(`{"OrderedViews":`), json.RawMessage(`{"OrderedViews":["\ud800"]}`), json.RawMessage("{\"OrderedViews\":[\"\xff\"]}")} {
 		projected := projectUserConfiguration(raw)
-		if !reflect.DeepEqual(userConfigurationObject(t, projected), observedUserConfigurationObject(t)) {
-			t.Fatal("default or malformed configuration did not retain the observed fifteen-field shape")
+		if !reflect.DeepEqual(userConfigurationObject(t, projected), gobyDefaultUserConfigurationObject(t)) {
+			t.Fatal("default or malformed configuration did not retain the observed shape with intro skip disabled")
 		}
 		if projected.OrderedViews == nil || projected.LatestItemsExcludes == nil || projected.MyMediaExcludes == nil {
 			t.Fatal("client array preferences must never become absent or null")
 		}
+	}
+}
+
+func TestUserConfigurationProjectionIntroSkipModeBoundary(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		modeJSON string
+		want     string
+	}{
+		{name: "missing", want: "None"},
+		{name: "null", modeJSON: `null`, want: "None"},
+		{name: "boolean", modeJSON: `true`, want: "None"},
+		{name: "number", modeJSON: `1`, want: "None"},
+		{name: "object", modeJSON: `{}`, want: "None"},
+		{name: "array", modeJSON: `["None"]`, want: "None"},
+		{name: "unknown", modeJSON: `"Unknown"`, want: "None"},
+		{name: "empty", modeJSON: `""`, want: "None"},
+		{name: "lowercase", modeJSON: `"none"`, want: "None"},
+		{name: "whitespace", modeJSON: `" None "`, want: "None"},
+		{name: "stored_none", modeJSON: `"None"`, want: "None"},
+		{name: "stored_button", modeJSON: `"ShowButton"`, want: "ShowButton"},
+		{name: "stored_auto_skip", modeJSON: `"AutoSkip"`, want: "AutoSkip"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stored := `{"OrderedViews":["retained"],"RememberAudioSelections":false`
+			if test.modeJSON != "" {
+				stored += `,"IntroSkipMode":` + test.modeJSON
+			}
+			raw := json.RawMessage(stored + "}")
+			before := append([]byte(nil), raw...)
+			expected := gobyDefaultUserConfigurationObject(t)
+			expected["IntroSkipMode"] = test.want
+			expected["OrderedViews"] = []any{"retained"}
+			expected["RememberAudioSelections"] = false
+			if !reflect.DeepEqual(userConfigurationObject(t, projectUserConfiguration(raw)), expected) {
+				t.Fatal("intro-skip projection changed a stored mode or unrelated valid preferences")
+			}
+			if !bytes.Equal(raw, before) {
+				t.Fatal("intro-skip projection changed the stored configuration bytes")
+			}
+		})
 	}
 }
 
@@ -105,7 +154,7 @@ func TestUserConfigurationProjectionFallsBackPerInvalidField(t *testing.T) {
 		}
 	}
 	result := projectUserConfiguration(json.RawMessage(`{"SubtitleMode":"Unknown","IntroSkipMode":true,"ResumeRewindSeconds":2147483647}`))
-	if result.SubtitleMode != "Smart" || result.IntroSkipMode != "ShowButton" || result.ResumeRewindSeconds != 2147483647 {
+	if result.SubtitleMode != "Smart" || result.IntroSkipMode != "None" || result.ResumeRewindSeconds != 2147483647 {
 		t.Fatal("enum defaults or the declared int32 boundary changed")
 	}
 }

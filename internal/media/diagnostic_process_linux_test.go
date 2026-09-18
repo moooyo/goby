@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"syscall"
@@ -14,6 +15,55 @@ import (
 
 	"golang.org/x/sys/unix"
 )
+
+func TestDiagnosticToolCapabilityQueries(t *testing.T) {
+	tool, err := os.CreateTemp(t.TempDir(), "tool-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tool.Close()
+	// Exercise the real failing syscall return instead of assuming that its
+	// size result is zero when the capability attribute does not exist.
+	size, queryErr := unix.Fgetxattr(int(tool.Fd()), "security.capability", nil)
+	if !errors.Is(queryErr, unix.ENODATA) && !errors.Is(queryErr, unix.ENOTSUP) {
+		t.Fatalf("fresh file capability query: size=%d error=%v", size, queryErr)
+	}
+	t.Logf("missing capability attribute: size=%d error=%v", size, queryErr)
+	if !diagnosticToolCapabilitiesAllowed(size, queryErr) {
+		t.Fatal("a file without capability attributes was rejected")
+	}
+	size, queryErr = unix.Fgetxattr(-1, "security.capability", nil)
+	if !errors.Is(queryErr, unix.EBADF) {
+		t.Fatalf("invalid descriptor capability query: size=%d error=%v", size, queryErr)
+	}
+	if diagnosticToolCapabilitiesAllowed(size, queryErr) {
+		t.Fatal("a failed capability inspection was accepted")
+	}
+}
+
+func TestDiagnosticToolCapabilityPolicy(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		size    int
+		err     error
+		allowed bool
+	}{
+		{"empty attribute", 0, nil, true},
+		{"present capability", 20, nil, false},
+		{"invalid successful size", -1, nil, false},
+		{"missing attribute", -1, unix.ENODATA, true},
+		{"unsupported attributes", -1, unix.ENOTSUP, true},
+		{"permission denied with zero size", 0, unix.EACCES, false},
+		{"operation denied", -1, unix.EPERM, false},
+		{"unknown read failure", -1, unix.EIO, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if diagnosticToolCapabilitiesAllowed(test.size, test.err) != test.allowed {
+				t.Fatal("capability query did not preserve the tool admission policy")
+			}
+		})
+	}
+}
 
 func TestDiagnosticProcessPreservesPreExecCgroupPlacement(t *testing.T) {
 	cmd := exec.CommandContext(context.Background(), "/unused/ffmpeg")
@@ -174,5 +224,77 @@ func TestDiagnosticSessionClosesBeforeAnyResourceWasAcquired(t *testing.T) {
 	}
 	if err := session.close(); err != nil {
 		t.Fatal("partial close is not idempotent")
+	}
+}
+
+func TestDiagnosticSessionRejectsUnclosedCommandOwnership(t *testing.T) {
+	for _, session := range []*diagnosticProcessSession{
+		{ctx: context.Background(), commandGroup: &diagnosticCgroup{}},
+		{ctx: context.Background(), pending: make(chan error)},
+	} {
+		observation, err := session.version()
+		if !errors.Is(err, ErrDiagnosticResources) || observation.Started || session.commands != 0 {
+			t.Fatal("unclosed command ownership permitted another command")
+		}
+	}
+}
+
+func TestDiagnosticCommandRetirementKeepsAggregateEventsAndFailedLeaf(t *testing.T) {
+	for _, readableEvents := range []bool{false, true} {
+		domain, domainPath := diagnosticTestOwnedGroup(t)
+		leaf, leafPath := diagnosticTestOwnedGroup(t)
+		domain.domain = true
+		diagnosticTestControl(t, domainPath, "cgroup.kill", "0")
+		if readableEvents {
+			diagnosticTestControl(t, domainPath, "memory.events", "max 2\noom 3\noom_kill 4\n")
+			diagnosticTestControl(t, domainPath, "pids.events", "max 5\n")
+		}
+		diagnosticTestControl(t, leafPath, "cgroup.kill", "0")
+		diagnosticTestControl(t, leafPath, "cgroup.events", "populated 0\n")
+		diagnosticTestControl(t, leafPath, "memory.events", "max 0\noom 0\noom_kill 0\n")
+		diagnosticTestControl(t, leafPath, "pids.events", "max 0\n")
+		session := &diagnosticProcessSession{group: domain, commandGroup: leaf}
+		events, err := session.retireCommand(context.Background())
+		if err == nil || session.commandGroup != leaf || leaf.group == nil || leaf.parent == nil || !leaf.retired || domain.retired {
+			t.Fatal("failed command retirement lost ownership or killed the aggregate domain")
+		}
+		if readableEvents && (events != (diagnosticLimitEvents{memoryMax: 2, memoryOOM: 3, memoryOOMKills: 4, tasksMax: 5}) || !errors.Is(err, ErrDiagnosticClosure)) {
+			t.Fatal("command retirement did not retain parent limit events across leaf removal failure")
+		}
+		if !readableEvents && !errors.Is(err, ErrDiagnosticResources) {
+			t.Fatal("missing aggregate events were accepted")
+		}
+		kill, err := os.ReadFile(filepath.Join(domainPath, "cgroup.kill"))
+		if err != nil || string(kill) != "0" {
+			t.Fatal("normal command retirement signaled the reusable aggregate domain")
+		}
+	}
+}
+
+func TestDiagnosticCommandRetirementRequiresJoinedProcess(t *testing.T) {
+	leaf := &diagnosticCgroup{}
+	pending := make(chan error)
+	session := &diagnosticProcessSession{commandGroup: leaf, pending: pending}
+	if _, err := session.retireCommand(context.Background()); !errors.Is(err, ErrDiagnosticClosure) || session.commandGroup != leaf || session.pending != pending || leaf.retired {
+		t.Fatal("command retirement discarded an unjoined process")
+	}
+}
+
+func TestDiagnosticSessionCloseAttemptsDomainAfterLeafKillFailure(t *testing.T) {
+	domain, domainPath := diagnosticTestOwnedGroup(t)
+	leaf, _ := diagnosticTestOwnedGroup(t)
+	domain.domain = true
+	diagnosticTestControl(t, domainPath, "cgroup.kill", "0")
+	diagnosticTestControl(t, domainPath, "cgroup.events", "populated 0\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	pending := make(chan error)
+	session := &diagnosticProcessSession{ctx: ctx, cancel: cancel, group: domain, commandGroup: leaf, pending: pending}
+	if err := session.close(); !errors.Is(err, ErrDiagnosticClosure) || session.closed || !session.failed ||
+		!domain.retired || !leaf.retired || session.commandGroup != leaf || session.pending != pending || ctx.Err() != context.Canceled {
+		t.Fatal("failed final closure lost the leaf, domain or pending join")
+	}
+	data, err := os.ReadFile(filepath.Join(domainPath, "cgroup.kill"))
+	if err != nil || string(data) != "1" {
+		t.Fatal("leaf failure prevented final aggregate-domain signaling")
 	}
 }

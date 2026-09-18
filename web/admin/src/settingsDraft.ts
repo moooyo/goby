@@ -1,4 +1,6 @@
 import type { ServerNameMode, ServerSettings, SettingsField, SettingsOverrides, SettingsResetField, SettingsUpdateInput, SettingsValues } from './api';
+import { managementDraft, managementDraftKey, parseManagementDraft } from './managementDraft';
+import type { ManagementDraft } from './managementDraft';
 
 export const settingsFields: readonly SettingsField[] = [
   'ServerName', 'MaxBitrate', 'MaxWidth', 'MaxHeight', 'MaxAudioChannels',
@@ -30,8 +32,9 @@ export interface ServerNameDraft {
 export type SettingsDraft = Record<OutputSettingField, SettingDraft> & {
   ServerName: ServerNameDraft;
   TranscodingMaxWidth: string;
+  Management?: ManagementDraft;
 };
-type SettingsDraftErrors = Partial<Record<SettingsResetField, string>>;
+type SettingsDraftErrors = Partial<Record<SettingsResetField, string>> & Record<string, string | undefined>;
 type SettingsDraftInput = Omit<SettingsUpdateInput, 'Revision'>;
 
 const maxNumericInputLength = 64;
@@ -76,6 +79,7 @@ export function draftFromSettings(value: ServerSettings): SettingsDraft {
     MaxHeight: create('MaxHeight'),
     MaxAudioChannels: create('MaxAudioChannels'),
     TranscodingMaxWidth: String(value.Encoding.TranscodingMaxWidth),
+    ...(value.Management ? { Management: managementDraft(value.Management) } : {}),
   };
 }
 
@@ -132,7 +136,9 @@ function parseDraft(draft: SettingsDraft): { input: SettingsDraftInput; errors: 
   }
   const additionalWidth = parseWholeNumber(draft.TranscodingMaxWidth, 8192, 0);
   if (additionalWidth === undefined) errors.TranscodingMaxWidth = 'Enter a whole number from 0 to 8192.';
-  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 } }, errors };
+  const management = draft.Management ? parseManagementDraft(draft.Management) : undefined;
+  Object.assign(errors, management?.errors);
+  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 }, ...(management?.value ? { Management: management.value } : {}) }, errors };
 }
 
 export function parseSettingsDraft(draft: SettingsDraft): {
@@ -157,5 +163,6 @@ export function settingsDraftKey(draft: SettingsDraft): string {
     ['ServerName', draft.ServerName.mode, errors.ServerName ? ['invalid', draft.ServerName.value] : input.Overrides.ServerName],
     ...output,
     ['TranscodingMaxWidth', errors.TranscodingMaxWidth ? ['invalid', draft.TranscodingMaxWidth] : input.Encoding.TranscodingMaxWidth],
+    ['Management', draft.Management ? managementDraftKey(draft.Management) : undefined],
   ]);
 }

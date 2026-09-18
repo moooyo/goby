@@ -102,10 +102,10 @@ func (c *imageCache) put(value cachedImage) {
 
 func (s *Server) registerImageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /emby/Items/{Id}/Images", s.requireEmby(s.embyImages))
-	// The reference serves indexed item artwork without authenticating its
-	// binary endpoint. Metadata enumeration and every mutation remain separate.
-	mux.HandleFunc("GET /emby/Items/{Id}/Images/{Type}", s.embyImage)
-	mux.HandleFunc("GET /emby/Items/{Id}/Images/{Type}/{Index}", s.embyImage)
+	// Artwork carries the same library and parental visibility as its item.
+	// Authorize before evaluating cache validators, including a potential 304.
+	mux.HandleFunc("GET /emby/Items/{Id}/Images/{Type}", s.requireEmby(s.embyImage))
+	mux.HandleFunc("GET /emby/Items/{Id}/Images/{Type}/{Index}", s.requireEmby(s.embyImage))
 }
 
 func (s *Server) embyImages(w http.ResponseWriter, r *http.Request) {
@@ -260,6 +260,10 @@ func matchesImageETag(header, tag string) bool {
 }
 
 func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
+	userID, ok := s.itemUser(w, r)
+	if !ok {
+		return
+	}
 	request, err := parseImageRequest(r)
 	if err != nil {
 		apiError(w, r, http.StatusBadRequest, "invalid_image_request", "Check the image type, index, format, dimensions, and supported transformations.")
@@ -282,7 +286,7 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 		s.imageError(w, r, ctx.Err())
 		return
 	}
-	file, source, err := s.library.OpenPublicImage(ctx, r.PathValue("Id"), request.typeName, request.index)
+	file, source, err := s.library.OpenImageContentFor(ctx, requestLibrarySubject(r, userID), r.PathValue("Id"), request.typeName, request.index)
 	if err != nil {
 		s.imageError(w, r, err)
 		return
@@ -329,17 +333,14 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 	defer writer.finish()
 	w.Header().Set("Content-Type", result.contentType)
 	w.Header().Set("ETag", result.etag)
+	w.Header().Set("Cache-Control", "private, no-cache")
 	if matchesImageETag(strings.Join(r.Header.Values("If-None-Match"), ","), result.etag) {
-		// These omissions match the recorded reference GET and HEAD 304s.
+		// Revalidation must pass current authorization, even for unchanged bytes.
 		w.Header().Del("Content-Length")
-		w.Header().Del("Cache-Control")
 		writer.WriteHeader(http.StatusNotModified)
 		return
 	}
-	w.Header().Set("Cache-Control", "public")
 	if request.tag != "" && request.tag == source.Tag {
-		w.Header().Set("Cache-Control", "public, max-age=31536000")
-		w.Header().Set("Expires", time.Now().UTC().Add(365*24*time.Hour).Format(http.TimeFormat))
 		if !source.ModifiedAt.IsZero() {
 			w.Header().Set("Last-Modified", source.ModifiedAt.UTC().Format(http.TimeFormat))
 		}

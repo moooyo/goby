@@ -101,7 +101,7 @@ func TestManagedFolderBounds(t *testing.T) {
 func TestManagedActorRequiresTrustedAdminSessionShape(t *testing.T) {
 	for _, actor := range []Principal{
 		{},
-		{Kind: "emby", SessionID: "session", User: User{ID: "user", IsAdministrator: true}},
+		{Kind: "emby", ApplicationKeyID: 1, SessionID: "session", User: User{ID: "user", IsAdministrator: true}},
 		{Kind: "admin", SessionID: "", User: User{ID: "user", IsAdministrator: true}},
 		{Kind: "admin", SessionID: "session", User: User{ID: " user", IsAdministrator: true}},
 	} {
@@ -112,5 +112,8 @@ func TestManagedActorRequiresTrustedAdminSessionShape(t *testing.T) {
 	// Authorization comes from the locked database account, never this snapshot.
 	if !validManagedActor(Principal{Kind: "admin", SessionID: "session", User: User{ID: "user", IsAdministrator: false, IsDisabled: true}}) {
 		t.Error("snapshot role or disabled flags must not replace database authorization")
+	}
+	if !validManagedActor(Principal{Kind: "emby", SessionID: "session", User: User{ID: "user"}}) {
+		t.Error("an Emby login shape must reach transactional administrator authorization")
 	}
 }

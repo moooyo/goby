@@ -31,6 +31,7 @@ type diagnosticProcessSession struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
 	group           *diagnosticCgroup
+	commandGroup    *diagnosticCgroup
 	tool            *os.File
 	toolPath        string
 	toolStamp       string
@@ -81,7 +82,7 @@ func newDiagnosticProcessSession(ctx context.Context, options diagnosticProcessO
 		return nil, ErrDiagnosticTool
 	}
 	capabilityBytes, capabilityErr := unix.Fgetxattr(int(tool.Fd()), "security.capability", nil)
-	if capabilityBytes != 0 || capabilityErr != nil && !errors.Is(capabilityErr, unix.ENODATA) && !errors.Is(capabilityErr, unix.ENOTSUP) {
+	if !diagnosticToolCapabilitiesAllowed(capabilityBytes, capabilityErr) {
 		_ = tool.Close()
 		return nil, ErrDiagnosticTool
 	}
@@ -126,6 +127,15 @@ func newDiagnosticProcessSession(ctx context.Context, options diagnosticProcessO
 	hash := sha256.Sum256(encoded)
 	s.environmentHash = hex.EncodeToString(hash[:])
 	return s, nil
+}
+
+func diagnosticToolCapabilitiesAllowed(size int, err error) bool {
+	// A failed query returns an unspecified size (currently -1 on Linux), not
+	// a capability attribute length. Only successful queries may use it.
+	if err != nil {
+		return errors.Is(err, unix.ENODATA) || errors.Is(err, unix.ENOTSUP)
+	}
+	return size == 0
 }
 
 func diagnosticUnprivileged() bool {
@@ -340,7 +350,7 @@ func (s *diagnosticProcessSession) version() (diagnosticCommandObservation, erro
 
 func (s *diagnosticProcessSession) command(input *os.File, args []string, outputBytes int) (diagnosticCommandObservation, error) {
 	result := diagnosticCommandObservation{ExitCode: -1, ToolSHA256: s.toolHash, EnvironmentSHA256: s.environmentHash}
-	if s.closed || s.failed || s.pending != nil || s.commands >= diagnosticMaximumCommands {
+	if s.closed || s.failed || s.pending != nil || s.commandGroup != nil || s.commands >= diagnosticMaximumCommands {
 		return result, ErrDiagnosticResources
 	}
 	if err := s.ctx.Err(); err != nil {
@@ -359,6 +369,15 @@ func (s *diagnosticProcessSession) command(input *os.File, args []string, output
 	started := time.Now()
 	ctx, cancel := context.WithTimeout(s.ctx, DiagnosticDeadline)
 	defer cancel()
+	// A killed cgroup may not safely accept CLONE_INTO_CGROUP on older kernels.
+	// Keep the aggregate domain alive, but give every command a fresh leaf.
+	// Assign before checking the error: a failed creation may still own handles
+	// or a directory that only final session closure can remove.
+	s.commandGroup, err = s.group.newCommand()
+	if err != nil {
+		s.failed = true
+		return result, err
+	}
 	stdout := &limitedOutput{limit: outputBytes, cancel: cancel}
 	stderr := &limitedOutput{limit: maxProcessStderr, cancel: cancel}
 	cmd := exec.CommandContext(ctx, "/proc/self/fd/4", args...)
@@ -369,12 +388,12 @@ func (s *diagnosticProcessSession) command(input *os.File, args []string, output
 	// child still has the parent's held descriptor number, not the future fd5.
 	cmd.Dir = fmt.Sprintf("/proc/self/fd/%d", s.directoryFD.Fd())
 	cmd.Stdout, cmd.Stderr, cmd.WaitDelay = stdout, stderr, time.Second
-	cmd.SysProcAttr = &syscall.SysProcAttr{UseCgroupFD: true, CgroupFD: int(s.group.group.Fd())}
+	cmd.SysProcAttr = &syscall.SysProcAttr{UseCgroupFD: true, CgroupFD: int(s.commandGroup.group.Fd())}
 	retired, startErr := startMediaProcess(cmd)
 	if startErr != nil {
 		s.failed = true
 		closeCtx, closeCancel := context.WithTimeout(context.Background(), diagnosticCloseDeadline)
-		closeErr := s.group.retire(closeCtx)
+		_, closeErr := s.retireCommand(closeCtx)
 		closeCancel()
 		result.ProcessesClosed = closeErr == nil
 		if closeErr != nil {
@@ -411,13 +430,12 @@ func (s *diagnosticProcessSession) command(input *os.File, args []string, output
 	// therefore requires strictly less than the byte limit on both streams.
 	result.OutputLimitReached = stdout.exceeded || stderr.exceeded || len(result.Stdout) >= outputBytes || len(result.Stderr) >= maxProcessStderr
 	closeCtx, closeCancel := context.WithTimeout(context.Background(), diagnosticCloseDeadline)
-	closeErr := s.group.retire(closeCtx)
+	events, closeErr := s.retireCommand(closeCtx)
 	closeCancel()
 	result.ProcessesClosed = closeErr == nil
-	events, err := s.group.limitEvents()
 	result.MemoryLimitEvents, result.MemoryOOMEvents, result.MemoryOOMKills, result.TaskLimitEvents =
 		events.memoryMax, events.memoryOOM, events.memoryOOMKills, events.tasksMax
-	if closeErr != nil || err != nil {
+	if closeErr != nil {
 		s.failed = true
 		return result, ErrDiagnosticClosure
 	}
@@ -442,6 +460,29 @@ func (s *diagnosticProcessSession) command(input *os.File, args []string, output
 	return result, nil
 }
 
+// The caller has joined the command before retiring its leaf. Events remain
+// session-wide, including charges that survive removal of an earlier leaf.
+// Failed signaling, observation or removal retains ownership for final close;
+// another command cannot start while commandGroup or pending is still set.
+func (s *diagnosticProcessSession) retireCommand(ctx context.Context) (diagnosticLimitEvents, error) {
+	var events diagnosticLimitEvents
+	if s.pending != nil || s.commandGroup == nil {
+		return events, ErrDiagnosticClosure
+	}
+	if err := s.commandGroup.retire(ctx); err != nil {
+		return events, err
+	}
+	events, err := s.group.limitEvents()
+	if err != nil {
+		return events, err
+	}
+	if err := s.commandGroup.close(); err != nil {
+		return events, err
+	}
+	s.commandGroup = nil
+	return events, nil
+}
+
 func (s *diagnosticProcessSession) close() error {
 	s.cancel()
 	s.mu.Lock()
@@ -451,11 +492,14 @@ func (s *diagnosticProcessSession) close() error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), diagnosticCloseDeadline)
 	defer cancel()
-	if s.group != nil && s.group.group != nil {
-		if err := s.group.retire(ctx); err != nil {
-			s.failed = true
-			return err
-		}
+	// Final closure may kill the aggregate domain; it will never be reused.
+	// Attempt both scopes even if one observation fails, and keep all ownership
+	// on any error so a subsequent close can finish the same cleanup.
+	leafErr := s.commandGroup.retire(ctx)
+	domainErr := s.group.retire(ctx)
+	if err := errors.Join(leafErr, domainErr); err != nil {
+		s.failed = true
+		return err
 	}
 	if s.pending != nil {
 		select {
@@ -466,6 +510,11 @@ func (s *diagnosticProcessSession) close() error {
 			return ErrDiagnosticClosure
 		}
 	}
+	if err := s.commandGroup.close(); err != nil {
+		s.failed = true
+		return err
+	}
+	s.commandGroup = nil
 	if err := s.group.close(); err != nil {
 		s.failed = true
 		return err

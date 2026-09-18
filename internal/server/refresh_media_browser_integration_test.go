@@ -471,6 +471,42 @@ func refreshBrowserMediaFacts(path string) (map[string]any, error) {
 		"Mode": uint32(info.Mode().Perm()), "Bytes": info.Size(), "ModifiedNs": info.ModTime().UnixNano(), "ChangedNs": value.Ctim.Nano(), "SHA256": hex.EncodeToString(hash[:])}, nil
 }
 
+func refreshBrowserAssetInventory(assets iofs.FS) ([]map[string]any, error) {
+	rows := []map[string]any{}
+	hasEntry := false
+	err := iofs.WalkDir(assets, ".", func(path string, entry iofs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		if !entry.Type().IsRegular() {
+			return fmt.Errorf("administrator asset %q must be a regular file", path)
+		}
+		raw, err := iofs.ReadFile(assets, path)
+		if err != nil {
+			return err
+		}
+		if path == "index.html" {
+			if len(raw) == 0 {
+				return errors.New("administrator HTML entry must not be empty")
+			}
+			hasEntry = true
+		}
+		checksum := sha256.Sum256(raw)
+		rows = append(rows, map[string]any{"Path": path, "Bytes": len(raw), "SHA256": hex.EncodeToString(checksum[:])})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !hasEntry {
+		return nil, errors.New("administrator bundle must contain index.html")
+	}
+	return rows, nil
+}
+
 func TestNativeRefreshMediaAdministratorBrowser(t *testing.T) {
 	// Explicit build tags are admission: unavailable required inputs fail rather
 	// than appearing as a successful ordinary-suite skip.
@@ -502,14 +538,19 @@ func TestNativeRefreshMediaAdministratorBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal("read browser driver working directory")
 	}
+	sourceRoot := ""
 	for directory := cwd; directory != filepath.Dir(directory); directory = filepath.Dir(directory) {
 		if _, err := os.Stat(filepath.Join(directory, "go.mod")); err == nil {
+			sourceRoot = directory
 			relative, err := filepath.Rel(directory, work)
 			if err != nil || (relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))) {
 				t.Fatal("Playwright work must be a writable copy outside frozen Go source")
 			}
 			break
 		}
+	}
+	if sourceRoot == "" {
+		t.Fatal("locate frozen browser source root")
 	}
 	output, err := os.MkdirTemp(artifacts, "refresh-media-browser-")
 	if err != nil {
@@ -609,28 +650,32 @@ func TestNativeRefreshMediaAdministratorBrowser(t *testing.T) {
 	if err != nil {
 		t.Fatal("open the real embedded administrator bundle")
 	}
-	assetRows := []map[string]any{}
-	if err := iofs.WalkDir(assets, ".", func(path string, entry iofs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		raw, err := iofs.ReadFile(assets, path)
-		if err != nil {
-			return err
-		}
-		checksum := sha256.Sum256(raw)
-		assetRows = append(assetRows, map[string]any{"Path": path, "Bytes": len(raw), "SHA256": hex.EncodeToString(checksum[:])})
-		return nil
-	}); err != nil || len(assetRows) != 57 {
-		t.Fatal("the real administrator bundle must contain all 57 assets")
+	assetRows, err := refreshBrowserAssetInventory(assets)
+	if err != nil {
+		t.Fatalf("inventory the embedded administrator bundle: %v", err)
+	}
+	bundlePath := filepath.Join(sourceRoot, "web", "admin", "dist")
+	if resolved, err := filepath.EvalSymlinks(bundlePath); err != nil || resolved != bundlePath {
+		t.Fatal("the frozen administrator bundle must have a canonical source path")
+	}
+	sourceAssetRows, err := refreshBrowserAssetInventory(os.DirFS(bundlePath))
+	if err != nil {
+		t.Fatalf("inventory the frozen administrator bundle: %v", err)
 	}
 	if err := refreshBrowserWriteJSON(filepath.Join(output, "embedded-assets.json"), assetRows); err != nil {
 		t.Fatal("preserve embedded asset inventory")
 	}
+	if err := refreshBrowserWriteJSON(filepath.Join(output, "source-assets.json"), sourceAssetRows); err != nil {
+		t.Fatal("preserve frozen source asset inventory")
+	}
 	driver["EmbeddedAssetCount"] = len(assetRows)
+	driver["SourceAssetCount"] = len(sourceAssetRows)
+	// The runner binds the frozen source archive; compare its complete bundle,
+	// including each file's bytes, instead of one historical Vite chunk count.
+	if !reflect.DeepEqual(assetRows, sourceAssetRows) {
+		t.Fatal("the embedded administrator bundle must match every frozen source asset")
+	}
+	driver["EmbeddedAssetsMatchFrozenSource"] = true
 	WithDashboardAssets(assets)(f.app)
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {

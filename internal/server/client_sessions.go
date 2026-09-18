@@ -156,7 +156,7 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		}
 		controlled := make([]identity.ClientSession, 0, len(sessions))
 		for _, session := range sessions {
-			if (controller.IsAdministrator || session.UserID == controller.ID) && session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID) {
+			if identity.CanControlClientSession(controller, session) && session.Capabilities.SupportsMediaControl && s.hasClientControlTransport(session.SessionID) {
 				controlled = append(controlled, session)
 			}
 		}

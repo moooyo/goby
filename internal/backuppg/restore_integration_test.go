@@ -168,9 +168,7 @@ func TestPostgreSQLBackupConsistentSnapshotAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal("read snapshot fingerprints")
 	}
-	if facts.SchemaVersion != 29 || len(facts.MigrationChecksums) != 29 || len(facts.Tables) != 35 {
-		t.Fatal("the current archive fixture did not describe all schema29 tables")
-	}
+	assertCurrentRecoveryFacts(t, facts)
 	if _, err := source.Exec(ctx, `UPDATE users SET name='After snapshot' WHERE id='backup-admin';
 		UPDATE managed_settings SET revision=revision+1;
 		UPDATE user_settings SET settings=jsonb_set(settings,'{Theme}','"after-snapshot"'::jsonb),
@@ -208,7 +206,7 @@ func TestPostgreSQLBackupConsistentSnapshotAndRestore(t *testing.T) {
 		logFixtureCatalogDifference(t, ctx, target, options)
 		t.Fatalf("restore decoded archive: %v", err)
 	}
-	if result.SourceVersion != facts.SchemaVersion || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if result.SourceVersion != facts.SchemaVersion || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatal("restore result differs from original snapshot")
 	}
 	if musicSnapshotState(t, ctx, target) != musicBefore || musicSnapshotState(t, ctx, source) != musicAfter {

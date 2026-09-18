@@ -7,6 +7,8 @@ import "github.com/moooyo/goby/internal/settings"
 func serverConfigurationDTO(view settings.Configuration) map[string]any {
 	result := map[string]any{"IsStartupWizardCompleted": view.StartupWizardCompleted}
 	snapshot := view.Snapshot
+	result["PreferredMetadataLanguage"] = snapshot.Management.Metadata.PreferredMetadataLanguage
+	result["MetadataCountryCode"] = snapshot.Management.Metadata.MetadataCountryCode
 	switch snapshot.ServerNameMode {
 	case settings.ServerNameDeployment:
 		result["ServerName"] = snapshot.Defaults.ServerName

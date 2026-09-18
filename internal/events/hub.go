@@ -73,11 +73,16 @@ type Scope struct {
 
 // Authority is trusted, in-memory publication metadata. It never appears in a
 // client message and cannot be supplied through a command's JSON body. An
-// application sender retains identifiers needed for current revalidation.
+// ordinary sender retains its authenticated session-owner pair and trusted peer;
+// an application sender retains its independent credential and client context.
 type Authority struct {
-	CredentialID     string
-	ClientSessionID  string
-	ApplicationKeyID int64
+	Kind             string `json:"-"`
+	UserID           string `json:"-"`
+	SessionID        string `json:"-"`
+	PeerIP           string `json:"-"`
+	CredentialID     string `json:"-"`
+	ClientSessionID  string `json:"-"`
+	ApplicationKeyID int64  `json:"-"`
 }
 
 // CatalogScope is trusted publication metadata for current resource permission
@@ -469,6 +474,20 @@ func validScope(scope Scope) bool {
 	return scope.CredentialID == "" && validScopeField(scope.UserID, true)
 }
 
+func validAuthority(authority Authority) bool {
+	if authority == (Authority{}) {
+		return true
+	}
+	if authority.Kind == "emby" {
+		return validScopeField(authority.UserID, true) && validScopeField(authority.SessionID, true) &&
+			validScopeField(authority.PeerIP, false) && authority.CredentialID == "" &&
+			authority.ClientSessionID == "" && authority.ApplicationKeyID == 0
+	}
+	return authority.Kind == "" && authority.UserID == "" && authority.SessionID == "" && authority.PeerIP == "" &&
+		authority.ApplicationKeyID > 0 && validScopeField(authority.CredentialID, true) &&
+		validScopeField(authority.ClientSessionID, true)
+}
+
 func catalogScopesSize(scopes []CatalogScope, maxBytes int) (int, error) {
 	// Check the count before multiplication or copying, even when callers use
 	// an unusually large byte limit. Every subsequent addition uses subtraction.
@@ -494,8 +513,7 @@ func catalogScopesSize(scopes []CatalogScope, maxBytes int) (int, error) {
 }
 
 func encodeEvent(envelope Envelope, maxBytes int) (Event, error) {
-	if envelope.Authority != (Authority{}) && (envelope.Authority.ApplicationKeyID <= 0 ||
-		!validScopeField(envelope.Authority.CredentialID, true) || !validScopeField(envelope.Authority.ClientSessionID, true)) {
+	if !validAuthority(envelope.Authority) {
 		return Event{}, ErrInvalidEvent
 	}
 	if len(envelope.Data) > maxBytes || len(envelope.MessageType) > maxBytes || len(envelope.MessageID) > maxBytes {

@@ -181,6 +181,9 @@ func (s *Store) TouchClientSessionFromAddress(ctx context.Context, principal Pri
 	if err := validateDevicePeer(peerIP); err != nil {
 		return err
 	}
+	if peerIP != "" {
+		principal.PeerIP = peerIP
+	}
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin client session activity: %w", err)
@@ -243,6 +246,19 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 	if err != nil {
 		return nil, err
 	}
+	controlOtherUsers, controlSharedDevices := isAdmin, isAdmin
+	if !principal.IsApplicationKey() {
+		var raw json.RawMessage
+		if err := tx.QueryRow(ctx, "SELECT policy FROM users WHERE id = $1", principal.User.ID).Scan(&raw); err != nil {
+			return nil, fmt.Errorf("read client session visibility policy: %w", err)
+		}
+		policy, err := ParseRuntimePolicy(raw)
+		if err != nil {
+			return nil, ErrUnauthorized
+		}
+		controlOtherUsers = controlOtherUsers || policy.EnableRemoteControlOfOtherUsers
+		controlSharedDevices = controlSharedDevices || policy.EnableSharedDeviceControl
+	}
 	rows, err := tx.Query(ctx, `WITH clients AS (
 		SELECT a.id, a.id AS credential_id, u.id AS user_id, u.name AS user_name,
 			a.client_name, a.device_id, COALESCE(d.custom_name, a.device_name) AS device_name, a.client_version, a.created_at,
@@ -251,7 +267,7 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 		FROM sessions a JOIN users u ON u.id = a.user_id
 		LEFT JOIN devices d ON d.id = a.device_registry_id AND d.deleted_at IS NULL
 		WHERE a.kind = 'emby' AND a.revoked_at IS NULL AND a.expires_at > now()
-		AND NOT u.is_disabled AND ($1::boolean OR a.user_id = $2)
+		AND NOT u.is_disabled AND ($1::boolean OR a.user_id = $2 OR $7::boolean)
 		UNION ALL
 		SELECT c.id, a.id, '', '', c.client_name, c.device_id, c.device_name,
 			c.client_version, c.created_at, c.last_seen_at, NULL::timestamptz,
@@ -259,7 +275,7 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 			CASE WHEN k.last_used_at IS NOT NULL THEN c.last_seen_at END
 		FROM application_key_clients c JOIN sessions a ON a.id = c.credential_id
 		JOIN application_keys k ON k.credential_id = a.id
-		WHERE $1::boolean AND a.kind = 'application_key' AND a.user_id IS NULL
+		WHERE ($1::boolean OR $8::boolean) AND a.kind = 'application_key' AND a.user_id IS NULL
 		AND a.expires_at IS NULL AND a.revoked_at IS NULL
 	)
 	SELECT id, credential_id, user_id, user_name, client_name, device_id, device_name,
@@ -267,7 +283,7 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 	FROM clients WHERE ($3 = '' OR id = $3) AND ($4 = '' OR device_id = $4)
 	AND ($5::bigint = 0 OR last_seen_at >= now() - ($5::bigint * interval '1 second'))
 	ORDER BY last_seen_at DESC, id LIMIT $6`, isAdmin, principal.User.ID,
-		filter.SessionID, filter.DeviceID, activeSeconds, limit)
+		filter.SessionID, filter.DeviceID, activeSeconds, limit, controlOtherUsers, controlSharedDevices)
 	if err != nil {
 		return nil, fmt.Errorf("list client sessions: %w", err)
 	}
@@ -302,6 +318,9 @@ func (s *Store) ListClientSessions(ctx context.Context, principal Principal, fil
 		return nil, fmt.Errorf("read client session list: %w", err)
 	}
 	rows.Close()
+	if _, err := lockClientSession(ctx, tx, principal, false); err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit client session list: %w", err)
 	}
@@ -349,11 +368,12 @@ func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, muta
 		return false, ErrUnauthorized
 	}
 	var isAdmin bool
+	var policyJSON json.RawMessage
 	// Account mutations and playback state writes lock the account before its
 	// sessions. Keep this order explicit instead of relying on a join plan's
 	// row-lock order, which could deadlock with administrator changes.
-	err := tx.QueryRow(ctx, `SELECT is_administrator FROM users
-		WHERE id = $1 AND NOT is_disabled FOR SHARE`, principal.User.ID).Scan(&isAdmin)
+	err := tx.QueryRow(ctx, `SELECT is_administrator, policy FROM users
+		WHERE id = $1 AND NOT is_disabled FOR SHARE`, principal.User.ID).Scan(&isAdmin, &policyJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, ErrUnauthorized
 	}
@@ -377,11 +397,18 @@ func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, muta
 	// Evaluate expiration after any row-lock wait. The account and session now
 	// remain fixed until this transaction finishes.
 	var active bool
-	if err := tx.QueryRow(ctx, `SELECT revoked_at IS NULL AND expires_at > clock_timestamp()
-		FROM sessions WHERE id = $1`, sessionID).Scan(&active); err != nil {
+	var deviceID string
+	var observedAt time.Time
+	if err := tx.QueryRow(ctx, `SELECT revoked_at IS NULL AND expires_at > clock_timestamp(), device_id, clock_timestamp()
+		FROM sessions WHERE id = $1`, sessionID).Scan(&active, &deviceID, &observedAt); err != nil {
 		return false, fmt.Errorf("revalidate locked client session: %w", err)
 	}
 	if !active {
+		return false, ErrUnauthorized
+	}
+	policy, err := ParseRuntimePolicy(policyJSON)
+	if err != nil || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+		(!policy.EnableRemoteAccess && !IsLocalPeer(principal.PeerIP)) {
 		return false, ErrUnauthorized
 	}
 	return isAdmin, nil

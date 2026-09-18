@@ -15,6 +15,8 @@ func librarySubject(principal identity.Principal, userID string) library.Subject
 	subject := library.Subject{UserID: userID}
 	if principal.IsApplicationKey() {
 		subject.ApplicationCredentialID = principal.SessionID
+	} else {
+		subject.Actor = &principal
 	}
 	return subject
 }

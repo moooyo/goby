@@ -41,7 +41,7 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 	if query.SeriesID != "" {
 		var id string
 		err := tx.QueryRow(ctx, `SELECT i.id FROM items i WHERE i.id = $1 AND i.type = 'Series' AND i.is_folder
-			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+ordinaryItemSQL("i"), query.SeriesID, access.all, access.folders).Scan(&id)
+			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.ordinarySQL("i"), query.SeriesID, access.all, access.folders).Scan(&id)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ItemResult{}, ErrNotFound
 		}
@@ -53,13 +53,13 @@ func (s *Store) NextUp(ctx context.Context, query NextUpQuery) (ItemResult, erro
 		return ItemResult{}, err
 	}
 	args := []any{query.UserID, access.all, access.folders, query.SeriesID, query.ParentID}
-	prefix := nextUpScopeSQL() + nextUpCandidateSQL()
+	prefix := nextUpScopeSQL(access) + nextUpCandidateSQL()
 	result := ItemResult{Items: make([]Item, 0)}
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM next_up WHERE candidate_rank = 1", args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, fmt.Errorf("count next-up episodes: %w", err)
 	}
 	args = append(args, query.Limit, query.StartIndex)
-	rows, err := tx.Query(ctx, prefix+"SELECT "+nextUpItemColumns+` FROM next_up candidate
+	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(nextUpItemColumns)+` FROM next_up candidate
 		JOIN items i ON i.id = candidate.id AND i.library_id = candidate.library_id
 		WHERE candidate.candidate_rank = 1
 		ORDER BY candidate.last_activity DESC NULLS LAST, lower(candidate.series_sort_name), candidate.series_id, candidate.episode_order, i.id
@@ -107,25 +107,29 @@ func normalizeNextUpQuery(query NextUpQuery) (NextUpQuery, error) {
 	return query, nil
 }
 
-func nextUpScopeSQL() string {
+func nextUpScopeSQL(scopes ...libraryAccess) string {
+	access := unrestrictedLibraryAccess()
+	if len(scopes) != 0 {
+		access = scopes[0]
+	}
 	return `WITH RECURSIVE parent_scope AS (
 		SELECT i.id, i.library_id FROM items i WHERE i.id = $5::text
-			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND ` + ordinaryItemSQL("i") + `
+			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND ` + access.ordinarySQL("i") + `
 		UNION
 		SELECT child.id, child.library_id FROM items child JOIN parent_scope parent
 			ON child.parent_id = parent.id AND child.library_id = parent.library_id
-		WHERE ` + ordinaryItemSQL("child") + `
+		WHERE ` + access.ordinarySQL("child") + `
 	), series_tree AS (
 		SELECT series.id AS series_id, series.id AS item_id, series.library_id, NULL::integer AS season_number
 		FROM items series WHERE series.type = 'Series' AND series.is_folder
 			AND ($2::boolean OR series.library_id = ANY($3::text[]))
-			AND ($4::text = '' OR series.id = $4) AND ` + ordinaryItemSQL("series") + `
+			AND ($4::text = '' OR series.id = $4) AND ` + access.ordinarySQL("series") + `
 		UNION
 		SELECT parent.series_id, child.id, child.library_id,
 			CASE WHEN child.type = 'Season' THEN child.index_number ELSE parent.season_number END
 		FROM series_tree parent JOIN items child
 			ON child.parent_id = parent.item_id AND child.library_id = parent.library_id
-		WHERE child.type <> 'Series' AND ` + ordinaryItemSQL("child") + `
+		WHERE child.type <> 'Series' AND ` + access.ordinarySQL("child") + `
 	), episode_state AS (
 		SELECT episode.id, episode.library_id, tree.series_id, series.sort_name AS series_sort_name,
 			COALESCE(episode.parent_index_number, tree.season_number) AS season_number,
@@ -141,7 +145,7 @@ func nextUpScopeSQL() string {
 		FROM series_tree tree JOIN items episode ON episode.id = tree.item_id AND episode.library_id = tree.library_id
 		JOIN items series ON series.id = tree.series_id AND series.library_id = tree.library_id
 		LEFT JOIN user_item_data data ON data.item_id = episode.id AND data.user_id = $1::text
-		WHERE episode.type = 'Episode' AND NOT episode.is_folder AND ` + ordinaryItemSQL("episode") + `
+		WHERE episode.type = 'Episode' AND NOT episode.is_folder AND ` + access.ordinarySQL("episode") + `
 	), ordered_episodes AS (
 		SELECT episode_state.*, row_number() OVER (PARTITION BY series_id
 			ORDER BY season_number ASC NULLS LAST, episode_number ASC NULLS LAST, lower(sort_name), id) AS episode_order

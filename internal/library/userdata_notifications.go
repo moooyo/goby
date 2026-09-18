@@ -40,14 +40,14 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 	var libraryID string
 	var folder bool
 	err = tx.QueryRow(ctx, `SELECT i.library_id, i.is_folder FROM items i WHERE i.id = $1
-		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"), query.ItemID, access.all, access.folders).Scan(&libraryID, &folder)
+		AND `+access.directSQL("i"), query.ItemID).Scan(&libraryID, &folder)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return UserDataNotificationResult{}, ErrNotFound
 	}
 	if err != nil {
 		return UserDataNotificationResult{}, fmt.Errorf("authorize user data notification target: %w", err)
 	}
-	rows, err := tx.Query(ctx, userDataNotificationItemsSQL(), query.ItemID, libraryID, query.Recursive && folder, query.AfterID, query.Limit+1)
+	rows, err := tx.Query(ctx, userDataNotificationItemsSQL(access), query.ItemID, libraryID, query.Recursive && folder, query.AfterID, query.Limit+1)
 	if err != nil {
 		return UserDataNotificationResult{}, fmt.Errorf("query user data notification items: %w", err)
 	}
@@ -69,7 +69,7 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 		items = items[:query.Limit]
 		result.NextAfterID = items[len(items)-1].ID
 	}
-	if err := attachUserData(ctx, tx, query.UserID, items); err != nil {
+	if err := attachUserData(ctx, tx, query.UserID, items, access); err != nil {
 		return UserDataNotificationResult{}, err
 	}
 	for _, item := range items {
@@ -98,22 +98,38 @@ func normalizeUserDataNotificationQuery(query UserDataNotificationQuery) (UserDa
 	return query, nil
 }
 
-// Both traversals retain the authorized target's library and use UNION to stop
-// cycles. Filtering the combined set avoids duplicates where the trees overlap.
-// Only identifiers and item types are read before loading the current user data.
-func userDataNotificationItemsSQL() string {
-	return `WITH RECURSIVE ancestors AS (
-		SELECT i.id, i.parent_id, i.library_id FROM items i WHERE i.id = $1::text AND i.library_id = $2::text AND ` + directItemSQL("i") + `
+// Physical edges remain within a library; collection membership may cross it.
+// Reverse membership includes every visible container whose derived state can
+// change. UNION bounds cycles and repeated playlist occurrences before paging.
+func userDataNotificationItemsSQL(scopes ...libraryAccess) string {
+	access := unrestrictedLibraryAccess()
+	if len(scopes) != 0 {
+		access = scopes[0]
+	}
+	return `WITH RECURSIVE descendants AS (
+		SELECT i.id,i.parent_id,i.library_id FROM items i
+		WHERE i.id=$1::text AND i.library_id=$2::text AND $3::boolean AND ` + access.ordinarySQL("i") + `
+		UNION SELECT child.id,child.parent_id,child.library_id
+		FROM descendants walk JOIN items parent ON parent.id=walk.id AND parent.library_id=walk.library_id
+		JOIN LATERAL (
+			SELECT physical.id FROM items physical WHERE physical.parent_id=parent.id AND physical.library_id=parent.library_id AND parent.type NOT IN ('Playlist','BoxSet')
+			UNION SELECT membership.item_id FROM media_collection_entries membership WHERE membership.collection_id=parent.id
+				AND parent.type IN ('Playlist','BoxSet') AND EXISTS(SELECT 1 FROM items seed WHERE seed.id=$1::text AND seed.type IN ('Playlist','BoxSet'))
+		) relationship ON true JOIN items child ON child.id=relationship.id
+		WHERE ` + access.ordinarySQL("parent") + ` AND ` + access.ordinarySQL("child") + `
+	), ancestors AS (
+		SELECT i.id, i.parent_id, i.library_id FROM items i WHERE i.id = $1::text AND i.library_id = $2::text AND ` + access.directSQL("i") + `
 		UNION
-		SELECT parent.id, parent.parent_id, parent.library_id FROM ancestors child JOIN items parent
-			ON parent.id = child.parent_id AND parent.library_id = child.library_id
-		WHERE ` + ordinaryItemSQL("parent") + `
-	), descendants AS (
-		SELECT i.id, i.library_id FROM items i WHERE i.id = $1::text AND i.library_id = $2::text AND $3::boolean AND ` + ordinaryItemSQL("i") + `
+		SELECT id,parent_id,library_id FROM descendants
 		UNION
-		SELECT child.id, child.library_id FROM descendants parent JOIN items child
-			ON child.parent_id = parent.id AND child.library_id = parent.library_id
-		WHERE ` + ordinaryItemSQL("child") + `
+		SELECT parent.id, parent.parent_id, parent.library_id FROM ancestors walk
+		JOIN LATERAL (
+			SELECT physical.id FROM items physical WHERE physical.id=walk.parent_id AND physical.library_id=walk.library_id
+			UNION SELECT membership.collection_id FROM media_collection_entries membership
+				JOIN items membership_item ON membership_item.id=membership.item_id
+				WHERE membership.item_id=walk.id AND ` + access.ordinarySQL("membership_item") + `
+		) relationship ON true JOIN items parent ON parent.id=relationship.id
+		WHERE ` + access.ordinarySQL("parent") + `
 	), related AS (
 		SELECT id, library_id FROM ancestors
 		UNION
@@ -122,7 +138,7 @@ func userDataNotificationItemsSQL() string {
 	SELECT item.id, item.type FROM related JOIN items item
 		ON item.id = related.id AND item.library_id = related.library_id
 	WHERE item.type IN (` + userDataFolderTypesSQL + `)
-		AND (` + ordinaryItemSQL("item") + ` OR (item.id = $1::text AND ` + directItemSQL("item") + `))
+		AND (` + access.ordinarySQL("item") + ` OR (item.id = $1::text AND ` + access.directSQL("item") + `))
 		AND item.id COLLATE "C" > $4::text COLLATE "C"
 	ORDER BY item.id COLLATE "C" LIMIT $5`
 }

@@ -181,8 +181,19 @@ func TestDiagnosticAACStagesRequireMeasuredPrimingReferences(t *testing.T) {
 			if !diagnosticTestPair(input, "-c:a", "aac") || !diagnosticTestPair(output, "-c:a", "pcm_s16le") || diagnosticTestPair(output, "-c:a", "aac") {
 				t.Fatal("AAC decode-only included a compressed encoder")
 			}
-		} else if !diagnosticTestPair(output, "-c:a", "aac") || !diagnosticTestPair(output, "-f", "adts") || !plan.Verification.OutputMustBeDecoded {
+		} else if !diagnosticTestPair(output, "-c:a", "aac") || !diagnosticTestPair(output, "-profile:a", "aac_low") ||
+			!diagnosticTestPair(output, "-b:a", "256000") || !diagnosticTestPair(output, "-f", "adts") || !plan.Verification.OutputMustBeDecoded {
 			t.Fatal("AAC encoding lacks its independently decoded-output requirement")
+		}
+		if mode != DiagnosticDecode {
+			for _, bitrate := range []string{"128000", "192000", "512000"} {
+				changed := plan
+				changed.Args = slices.Clone(plan.Args)
+				changed.Args[slices.Index(changed.Args, "-b:a")+1] = bitrate
+				if !errors.Is(ValidateDiagnosticPlan(changed), ErrDiagnosticPlan) {
+					t.Fatal("AAC accepted a caller-selected bitrate outside its fixed preset")
+				}
+			}
 		}
 		if _, err := BuildDiagnosticPlan(mode, sample, DiagnosticProfile{Decode: "cuda"}); !errors.Is(err, ErrDiagnosticPlan) {
 			t.Fatal("AAC silently ignored a hardware-only profile")

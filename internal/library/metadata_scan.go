@@ -22,15 +22,16 @@ type scannedMetadataOptions struct {
 // automatic fields, inside that same owned transaction. It reads administrator
 // state only now, never from a stale snapshot taken before probing a file.
 func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options ...scannedMetadataOptions) error {
-	var automatic, sourceKey, localSource, musicSource, rawOverrides, rawLocks []byte
+	var automatic, sourceKey, localSource, musicSource, onlineSource, rawOverrides, rawLocks []byte
 	var itemType, name, sortName, overview string
 	var indexNumber, parentIndexNumber int
 	err := tx.QueryRow(ctx, `SELECT i.name, i.sort_name, i.overview, i.type, i.index_number, i.parent_index_number,
-		i.local_metadata, ms.music_source, ms.overrides, ms.locked_values, catalog_metadata_source_key(i)
+		i.local_metadata, ms.music_source, CASE WHEN ms.online_type=i.type THEN ms.online_source ELSE '{}'::jsonb END,
+		ms.overrides, ms.locked_values, catalog_metadata_source_key(i)
 		FROM items i JOIN item_metadata_state ms ON ms.item_id = i.id
 		WHERE i.id = $1 FOR UPDATE OF ms`, itemID).
 		Scan(&name, &sortName, &overview, &itemType, &indexNumber, &parentIndexNumber,
-			&localSource, &musicSource, &rawOverrides, &rawLocks, &sourceKey)
+			&localSource, &musicSource, &onlineSource, &rawOverrides, &rawLocks, &sourceKey)
 	if err != nil {
 		return fmt.Errorf("read scanned metadata state: %w", err)
 	}
@@ -86,6 +87,19 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	if err := tx.QueryRow(ctx, "SELECT catalog_metadata_automatic_values($1, $2, $3, $4, $5, $6, $7::jsonb)",
 		name, sortName, overview, itemType, indexNumber, parentIndexNumber, mergedSource).Scan(&automatic); err != nil {
 		return fmt.Errorf("compose scanned automatic metadata: %w", err)
+	}
+	if string(onlineSource) != "{}" {
+		if _, err := tx.Exec(ctx, `UPDATE item_metadata_state SET online_base=$2 WHERE item_id=$1`, itemID, automatic); err != nil {
+			return err
+		}
+		automatic, err = mergeOnlineSource(automatic, onlineSource)
+		if err != nil {
+			return err
+		}
+		mergedSource, err = mergeOnlineSource(mergedSource, onlineSource)
+		if err != nil {
+			return err
+		}
 	}
 	overrides, err := metadataSourceObject(rawOverrides)
 	if err != nil {

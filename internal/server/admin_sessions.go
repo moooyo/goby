@@ -138,7 +138,7 @@ func (s *Server) revokeAdminSession(w http.ResponseWriter, r *http.Request) {
 	if s.eventHub != nil {
 		s.eventHub.DisconnectSession(result.SessionID)
 	}
-	s.hls.cancelMatching(result.SessionID, "")
+	s.cancelPlaybackResources(result.SessionID, "")
 	s.mediaDiagnostics.cancelActor("", result.SessionID)
 	if result.CurrentSessionRevoked {
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true,

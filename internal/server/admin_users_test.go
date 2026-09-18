@@ -156,6 +156,9 @@ func TestDecodeManagedUserUpdatePreservesSupportedConfiguration(t *testing.T) {
 					EnableAllFolders: false, EnabledFolders: []string{"library-a", "library-b"},
 					EnableMediaPlayback: true, EnablePlaybackRemuxing: false,
 					EnableAudioPlaybackTranscoding: true, EnableVideoPlaybackTranscoding: false,
+					EnabledDevices: []string{}, ExcludedSubFolders: []string{}, BlockedTags: []string{}, IncludeTags: []string{},
+					BlockUnratedItems: []string{}, RestrictedFeatures: []string{}, EnableContentDeletionFromFolders: []string{},
+					AccessSchedules: []identity.AccessSchedule{},
 				},
 			}
 			if !reflect.DeepEqual(input, want) {
@@ -434,7 +437,7 @@ func TestManagedUserDecodersRejectUnknownCaseVariantAndDuplicateFields(t *testin
 	for _, test := range []struct {
 		name, before, after string
 	}{
-		{name: "unknown_policy_field", before: `"Policy":{`, after: `"Policy":{"EnableContentDeletion":true,`},
+		{name: "unknown_policy_field", before: `"Policy":{`, after: `"Policy":{"UnexpectedPolicy":true,`},
 		{name: "case_variant_policy", before: `"Policy"`, after: `"policy"`},
 		{name: "case_variant_flag", before: `"EnableAllFolders"`, after: `"enableAllFolders"`},
 		{name: "case_variant_folders", before: `"EnabledFolders"`, after: `"enabledFolders"`},
@@ -557,15 +560,25 @@ func TestNativeManagedUserExposesOnlyEditableProjectionAndDecimalRevision(t *tes
 			want := map[string]any{
 				"Id": "user-id", "Name": "Managed User", "IsAdministrator": true, "IsDisabled": true,
 				"HasPassword": true, "CreatedAt": created.Format(time.RFC3339), "Revision": "9223372036854775807",
-				"Policy": map[string]any{
-					"EnableAllFolders": false, "EnabledFolders": folders, "EnableMediaPlayback": true,
-					"EnablePlaybackRemuxing": false, "EnableAudioPlaybackTranscoding": true, "EnableVideoPlaybackTranscoding": false,
-				},
 			}
+			policy := objectValue(t, dto, "Policy")
+			if len(policy) != len(managedPolicyFields) {
+				t.Errorf("managed policy exposes %d fields, want %d", len(policy), len(managedPolicyFields))
+			}
+			for key, expected := range map[string]any{
+				"EnableAllFolders": false, "EnabledFolders": folders, "EnableMediaPlayback": true,
+				"EnablePlaybackRemuxing": false, "EnableAudioPlaybackTranscoding": true, "EnableVideoPlaybackTranscoding": false,
+				"EnableContentDeletion": false, "MaxParentalRating": nil,
+			} {
+				if !reflect.DeepEqual(policy[key], expected) {
+					t.Errorf("managed policy %s = %#v, want %#v", key, policy[key], expected)
+				}
+			}
+			delete(dto, "Policy")
 			if !reflect.DeepEqual(dto, want) {
 				t.Errorf("managed user DTO = %#v, want %#v", dto, want)
 			}
-			if bytes.Contains(encoded, []byte("private-")) || bytes.Contains(encoded, []byte("EnableContentDeletion")) {
+			if bytes.Contains(encoded, []byte("private-")) {
 				t.Error("managed user DTO exposed raw stored policy")
 			}
 			if !bytes.Equal(user.User.Policy, rawBefore) || !reflect.DeepEqual(append([]string(nil), user.Policy.EnabledFolders...), foldersBefore) {

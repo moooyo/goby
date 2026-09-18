@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"reflect"
 	"testing"
@@ -15,8 +14,8 @@ func TestHTTPUserConfigurationReadsPersistedPreferencesWithoutChangingAuthority(
 		t.Fatal("create user configuration viewer")
 	}
 	login := f.embyLogin(t, viewer.Name, "configuration-viewer-password")
-	if got := objectValue(t, objectValue(t, login, "User"), "Configuration"); !reflect.DeepEqual(got, observedUserConfigurationObject(t)) {
-		t.Fatal("fresh login did not project the reference viewer configuration defaults")
+	if got := objectValue(t, objectValue(t, login, "User"), "Configuration"); !reflect.DeepEqual(got, gobyDefaultUserConfigurationObject(t)) {
+		t.Fatal("fresh login did not project Goby defaults with intro skip disabled")
 	}
 	token := stringValue(t, login, "AccessToken")
 	headers := http.Header{"X-Emby-Token": {token}}
@@ -29,7 +28,7 @@ func TestHTTPUserConfigurationReadsPersistedPreferencesWithoutChangingAuthority(
 	}
 	stored := `{"OrderedViews":["configuration-hidden","configuration-visible","configuration-hidden"],
 		"LatestItemsExcludes":["configuration-visible"],"MyMediaExcludes":["configuration-hidden"],
-		"HidePlayedInLatest":false,"ResumeRewindSeconds":10,"SubtitleMode":"Always",
+		"HidePlayedInLatest":false,"IntroSkipMode":"ShowButton","ResumeRewindSeconds":10,"SubtitleMode":"Always",
 		"EnableAllFolders":true,"IsAdministrator":true,"ProfilePin":"retained-private-pin"}`
 	if _, err := f.pool.Exec(f.ctx, `UPDATE users SET configuration=$2::jsonb,
 		policy='{"EnableAllFolders":false,"EnabledFolders":["configuration-visible"]}'::jsonb WHERE id=$1`, viewer.ID, stored); err != nil {
@@ -39,7 +38,14 @@ func TestHTTPUserConfigurationReadsPersistedPreferencesWithoutChangingAuthority(
 	if err := f.pool.QueryRow(f.ctx, "SELECT to_jsonb(u)::text FROM users u WHERE id=$1", viewer.ID).Scan(&before); err != nil {
 		t.Fatal("snapshot user configuration before reads")
 	}
-	expected := userConfigurationObject(t, projectUserConfiguration(json.RawMessage(stored)))
+	expected := gobyDefaultUserConfigurationObject(t)
+	expected["OrderedViews"] = []any{"configuration-hidden", "configuration-visible", "configuration-hidden"}
+	expected["LatestItemsExcludes"] = []any{"configuration-visible"}
+	expected["MyMediaExcludes"] = []any{"configuration-hidden"}
+	expected["HidePlayedInLatest"] = false
+	expected["IntroSkipMode"] = "ShowButton"
+	expected["ResumeRewindSeconds"] = float64(10)
+	expected["SubtitleMode"] = "Always"
 	for _, response := range []map[string]any{
 		jsonObject(t, f.request(t, http.MethodGet, "/emby/Users/"+viewer.ID, nil, headers)),
 		objectValue(t, f.embyLogin(t, viewer.Name, "configuration-viewer-password"), "User"),
@@ -60,12 +66,12 @@ func TestHTTPUserConfigurationReadsPersistedPreferencesWithoutChangingAuthority(
 	if err := f.pool.QueryRow(f.ctx, "SELECT to_jsonb(u)::text FROM users u WHERE id=$1", viewer.ID).Scan(&after); err != nil || before != after {
 		t.Fatal("configuration projection or authentication changed persisted account fields")
 	}
-	if _, err := f.pool.Exec(f.ctx, `UPDATE users SET configuration='{"OrderedViews":null,"LatestItemsExcludes":"bad","MyMediaExcludes":[null],"HidePlayedInLatest":"false"}'::jsonb WHERE id=$1`, viewer.ID); err != nil {
+	if _, err := f.pool.Exec(f.ctx, `UPDATE users SET configuration='{"OrderedViews":null,"LatestItemsExcludes":"bad","MyMediaExcludes":[null],"HidePlayedInLatest":"false","IntroSkipMode":"Unknown"}'::jsonb WHERE id=$1`, viewer.ID); err != nil {
 		t.Fatal("seed wrong-typed but valid JSON configuration")
 	}
 	response := f.request(t, http.MethodGet, "/emby/Users/"+viewer.ID, nil, headers)
 	expectStatus(t, response, http.StatusOK)
-	if !reflect.DeepEqual(objectValue(t, jsonObject(t, response), "Configuration"), observedUserConfigurationObject(t)) {
+	if !reflect.DeepEqual(objectValue(t, jsonObject(t, response), "Configuration"), gobyDefaultUserConfigurationObject(t)) {
 		t.Fatal("wrong-typed stored preferences produced unsafe client configuration")
 	}
 }

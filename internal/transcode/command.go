@@ -35,7 +35,16 @@ const (
 // select compatible, authorized streams and reject unsupported HDR conversions.
 func ValidatePlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: %s", ErrInvalidPlan, field) }
+	if err := ValidateVideoFilters(p); err != nil {
+		return err
+	}
+	if err := ValidateSubtitlePlan(p); err != nil {
+		return err
+	}
 	if p.OutputMode == "progressive" {
+		if p.HLS != (HLSPlan{}) || p.SourceMode != "" {
+			return invalid("progressive HLS or source mode")
+		}
 		return validateProgressivePlan(p)
 	}
 	if p.OutputMode != "" {
@@ -44,20 +53,23 @@ func ValidatePlan(p Plan) error {
 	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
 		return invalid("source format clock")
 	}
-	if p.VideoSeekCandidate != "" {
+	if p.VideoSeekCandidate != "" || p.VideoCopySeekCandidate != "" {
 		return invalid("progressive video seek candidate")
 	}
 	if p.AudioBitDepth != 0 || !p.AudioSampleSeek && (p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0) {
 		return invalid("audio bit depth")
 	}
-	if p.Container != "ts" && p.Container != "mpegts" {
+	if p.Container != "ts" && p.Container != "mpegts" && !(p.HLS.SegmentType == "fmp4" && p.Container == "mp4") && !(p.HLS.SegmentType == "packed" && (p.Container == "aac" || p.Container == "mp3")) {
 		return invalid("container")
 	}
-	if p.DurationTicks <= 0 || p.DurationTicks > maxDurationTicks || p.StartTicks < 0 || p.StartTicks >= p.DurationTicks {
+	if p.SourceMode != "stream" && (p.DurationTicks <= 0 || p.DurationTicks > maxDurationTicks || p.StartTicks < 0 || p.StartTicks >= p.DurationTicks) {
 		return invalid("duration or start")
 	}
 	if p.SegmentSeconds < 1 || p.SegmentSeconds > 10 {
 		return invalid("segment duration")
+	}
+	if err := validateHLSPlan(p); err != nil {
+		return err
 	}
 	if _, err := planSegmentTimes(p); err != nil {
 		return err
@@ -172,6 +184,9 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	if p.OutputMode == "progressive" {
 		return buildProgressiveArgs(p, threads), nil
 	}
+	if GeneratedHLS(p) {
+		return buildGeneratedHLSArgs(p, threads), nil
+	}
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y",
 		"-progress", "pipe:1", "-stats_period", "0.5", "-filter_threads", threadCount,
@@ -191,7 +206,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	}
 	args = append(args, "-map_metadata", "-1", "-map_chapters", "-1", "-sn", "-dn")
 	if p.VideoStreamIndex >= 0 {
-		args = append(args, "-map", "0:"+strconv.Itoa(p.VideoStreamIndex))
+		args = appendHLSVideoMap(args, p, decode, encode)
 	} else {
 		args = append(args, "-vn")
 	}
@@ -216,8 +231,10 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 				forcedFrames += "," + tickSeconds(cut-p.StartTicks)
 			}
 		}
-		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-vf", videoFilter(p, decode, encode), "-bf", "0",
+		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-bf", "0",
 			"-force_key_frames", forcedFrames)
+		args = appendHLSVideoFilter(args, p, decode, encode)
+		args = AppendVideoColorArgs(args, p)
 		if p.FrameRate > 0 {
 			args = append(args, "-r", strconv.FormatFloat(p.FrameRate, 'f', -1, 64), "-g", strconv.Itoa(int(math.Ceil(p.FrameRate*float64(p.SegmentSeconds)))))
 		}
@@ -378,6 +395,19 @@ func tickSeconds(ticks int64) string {
 }
 
 func videoFilter(p Plan, decode, encode string) string {
+	filter := basicVideoFilter(p, decode, encode)
+	if p.Subtitle.Mode == "burn" {
+		if subtitle, _ := TextSubtitleFilter(p); subtitle != "" {
+			return filter + "," + subtitle
+		}
+	}
+	return filter
+}
+
+func basicVideoFilter(p Plan, decode, encode string) string {
+	if p.VideoFilters != (VideoFilters{}) {
+		return softwareVideoFilter(p)
+	}
 	width, height := "trunc(iw/2)*2", "trunc(ih/2)*2"
 	if p.Width > 0 {
 		width, height = strconv.Itoa(p.Width), strconv.Itoa(p.Height)

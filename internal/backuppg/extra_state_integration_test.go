@@ -64,9 +64,7 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 	want := extraSnapshotState(t, ctx, source)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
-	if facts.SchemaVersion != 29 || len(facts.Tables) != 35 || len(facts.MigrationChecksums) != 29 {
-		t.Fatal("the extra archive did not contain the complete actual schema29")
-	}
+	assertCurrentRecoveryFacts(t, facts)
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
 	for _, mutation := range []string{
@@ -77,7 +75,7 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 		failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 			func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 				called = true
-				if result.SourceVersion != 29 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+				if result.SourceVersion != facts.SchemaVersion || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 					return errors.New("extra finalizer received changed source facts")
 				}
 				_, err := tx.Exec(ctx, mutation)
@@ -93,7 +91,7 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 		}
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 29 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != facts.SchemaVersion || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the unchanged nonempty extra archive: %v", err)
 	}
 	if extraSnapshotState(t, ctx, target) != want {
@@ -103,11 +101,11 @@ func TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer(t *t
 	targetOptions.SourceURL = target.Config().ConnString()
 	targetFacts, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
 	if !equalJSON(targetFacts, before) || len(targetSequences) != len(sequences) {
-		t.Fatal("the schema29 round trip changed complete source table fingerprints or sequence inventory")
+		t.Fatal("the current-schema round trip changed complete source table fingerprints or sequence inventory")
 	}
 	for name, expected := range sequences {
 		if actual, exists := targetSequences[name]; !exists || actual != expected {
-			t.Fatalf("the schema29 round trip changed original sequence %s", name)
+			t.Fatalf("the current-schema round trip changed original sequence %s", name)
 		}
 	}
 	for _, test := range []struct {

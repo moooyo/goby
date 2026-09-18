@@ -27,12 +27,13 @@ const (
 	terminateGrace  = 2 * time.Second
 )
 
-// Run borrows a regular source file and opens it in the child through procfs.
+// Run borrows a regular source file or an authorized stream pipe. Regular
+// sources are opened in the child through procfs; stream pipes use pipe:3.
 // Reopening the inherited descriptor preserves the source inode while giving
 // FFmpeg an independent file offset. The caller owns the file and must keep it
 // open until Run returns. The output directory must be empty and privately
-// owned by the job manager. onProgress runs synchronously on the stdout reader
-// and must return promptly; it must not perform blocking network or disk work.
+// owned by the job manager. Calls to onProgress from process-output readers are
+// serialized and must return promptly without blocking network or disk work.
 func Run(ctx context.Context, executable, directory string, input *os.File, plan Plan, threads int, onProgress func(Progress)) (RunResult, error) {
 	result := RunResult{ExitCode: -1}
 	if err := ctx.Err(); err != nil {
@@ -45,8 +46,8 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if input == nil {
 		return result, ErrInvalidInput
 	}
-	info, err := input.Stat()
-	if err != nil || !info.Mode().IsRegular() {
+	info, err := validateSourceInput(input, plan)
+	if err != nil {
 		return result, ErrInvalidInput
 	}
 	if !emptyOutputDirectory(directory) {
@@ -55,9 +56,25 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if executable == "" || strings.ContainsAny(executable, "\x00\r\n") {
 		return result, ErrStart
 	}
+	if err := PrepareSubtitleAssets(ctx, executable, directory, input, plan); err != nil {
+		return result, err
+	}
 	resolved, err := exec.LookPath(executable)
 	if err != nil || !filepath.IsAbs(resolved) {
 		return result, ErrStart
+	}
+	if plan.VideoCopySeekCandidate != "" {
+		verification, err := media.VerifyVideoCopySeekCandidate(ctx, resolved, input, plan.VideoCopySeekCandidate, threads)
+		if ctx.Err() != nil {
+			return result, ctx.Err()
+		}
+		// A copy plan cannot fall back to an unverified packet boundary. The
+		// planner may choose encoding before a job exists; a failed fresh proof
+		// must fail this immutable copy job before it publishes any bytes.
+		if err != nil || !verification.Verified || !transcodeSourceUnchanged(input, info) {
+			return result, ErrInvalidInput
+		}
+		args = buildProgressiveVideoArgsWithSeek(plan, threads, verification.InputSeekTicks)
 	}
 	if progressiveVideoSeekPreflightEnabled(plan) {
 		verification, err := media.VerifyVideoSeekCandidate(ctx, resolved, input, plan.VideoSeekCandidate, threads)
@@ -73,9 +90,28 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	}
 	processCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	progress := &progressWriter{callback: onProgress, cancel: cancel}
+	report := onProgress
+	var reportMu sync.Mutex
+	if needsHLSClock(plan) {
+		report = func(update Progress) {
+			reportMu.Lock()
+			defer reportMu.Unlock()
+			if onProgress != nil {
+				onProgress(update)
+			}
+		}
+	}
+	progress := &progressWriter{callback: report, cancel: cancel}
 	stderr := &stderrTail{cancel: cancel}
 	var progressive *progressiveObserver
+	var hlsClock *hlsClockObserver
+	if needsHLSClock(plan) {
+		hlsClock, err = newHLSClockObserver(plan, report, cancel)
+		if err != nil {
+			return result, ErrStart
+		}
+		defer hlsClock.close()
+	}
 	if plan.OutputMode == "progressive" {
 		progressive, err = newProgressiveObserver(directory, input, plan, onProgress, cancel)
 		if err != nil {
@@ -92,6 +128,11 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	cmd.ExtraFiles = []*os.File{input}
 	if progressive != nil {
 		cmd.ExtraFiles = append(cmd.ExtraFiles, progressive.file)
+	}
+	if hlsClock != nil {
+		for _, pipe := range hlsClock.pipes {
+			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
+		}
 	}
 	cmd.Stdout, cmd.Stderr = progress, stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -126,10 +167,20 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if progressive != nil {
 		progressive.start()
 	}
-	var publisher *vodPublisher
+	if hlsClock != nil {
+		hlsClock.start()
+	}
+	var publish func(bool) error
+	var publicationErr error
 	var publishStop, publishDone chan struct{}
 	if plan.SegmentMode == "vod" {
-		publisher = &vodPublisher{directory: directory, plan: plan}
+		publisher := &vodPublisher{directory: directory, plan: plan}
+		publish = publisher.publish
+	} else if plan.HLS.SegmentType == "packed" {
+		publisher := &packedHLSPublisher{directory: directory, plan: plan}
+		publish = publisher.publish
+	}
+	if publish != nil {
 		publishStop, publishDone = make(chan struct{}), make(chan struct{})
 		go func() {
 			defer close(publishDone)
@@ -140,8 +191,8 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 				case <-publishStop:
 					return
 				case <-ticker.C:
-					if err := publisher.publish(false); err != nil {
-						publisher.err = err
+					if err := publish(false); err != nil {
+						publicationErr = err
 						cancel()
 						return
 					}
@@ -166,16 +217,20 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	retired = true
 	groupMu.Unlock()
 	err = cmd.Wait()
-	unchanged := transcodeSourceUnchanged(input, info)
+	var hlsClockErr error
+	if hlsClock != nil {
+		hlsClockErr = hlsClock.finish()
+	}
+	unchanged := plan.SourceMode == "stream" || transcodeSourceUnchanged(input, info)
 	var progressiveErr error
 	if progressive != nil {
 		progressiveErr = progressive.finish(err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed && unchanged)
 	}
-	if publisher != nil {
+	if publish != nil {
 		close(publishStop)
 		<-publishDone
-		if publisher.err == nil && err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed && unchanged {
-			publisher.err = publisher.publish(true)
+		if publicationErr == nil && err == nil && waitErr == nil && ctx.Err() == nil && !stderr.failed && unchanged {
+			publicationErr = publish(true)
 		}
 	}
 	result.StderrTail = stderr.String()
@@ -192,7 +247,7 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if progress.err != nil {
 		return result, ErrProgress
 	}
-	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publisher != nil && publisher.err != nil {
+	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil {
 		return result, ErrProcess
 	}
 	return result, nil

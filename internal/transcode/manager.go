@@ -59,31 +59,36 @@ type Options struct {
 	NoProgressTimeout   time.Duration
 	MaxRuntime          time.Duration
 	Repository          Repository
-	run                 runnerFunc
-	pollInterval        time.Duration
+	// SubtitleSource reauthorizes an external track immediately before burn-in.
+	// It returns bounded ASS bytes bound to Spec.Plan.Subtitle.ExternalTag.
+	SubtitleSource func(context.Context, Spec) ([]byte, error)
+	run            runnerFunc
+	pollInterval   time.Duration
 }
 
 type managedJob struct {
-	record       Record
-	input        *os.File
-	ctx          context.Context
-	cancel       context.CancelFunc
-	created      chan struct{}
-	launch       chan struct{}
-	done         chan struct{}
-	changed      chan struct{}
-	durable      bool
-	running      bool
-	finished     bool
-	directory    bool
-	ready        bool
-	mediaReady   bool
-	readers      int
-	stopCode     string
-	started      time.Time
-	lastProgress time.Time
-	outputTicks  int64
-	progressSize int64
+	record        Record
+	input         *os.File
+	ctx           context.Context
+	cancel        context.CancelFunc
+	created       chan struct{}
+	launch        chan struct{}
+	done          chan struct{}
+	changed       chan struct{}
+	durable       bool
+	running       bool
+	finished      bool
+	directory     bool
+	ready         bool
+	mediaReady    bool
+	readers       int
+	stopCode      string
+	started       time.Time
+	lastProgress  time.Time
+	outputTicks   int64
+	progressSize  int64
+	hlsClocks     [MaxHLSRenditions]HLSMuxClock
+	hlsClockKnown [MaxHLSRenditions]bool
 }
 
 // Manager owns every input accepted by Ensure and every process it starts.
@@ -270,11 +275,14 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 	if err := ValidatePlan(spec.Plan); err != nil {
 		return Record{}, err
 	}
+	if spec.Plan.Subtitle.Mode == "burn" && spec.Plan.Subtitle.ExternalTag != "" && m.options.SubtitleSource == nil {
+		return Record{}, ErrInvalidOptions
+	}
 	if input == nil {
 		return Record{}, ErrInvalidInput
 	}
-	info, err := input.Stat()
-	if err != nil || !info.Mode().IsRegular() {
+	_, err := validateSourceInput(input, spec.Plan)
+	if err != nil {
 		return Record{}, ErrInvalidInput
 	}
 	m.mu.Lock()
@@ -572,8 +580,9 @@ func (m *Manager) Snapshot(scope Scope, id string) (Record, error) {
 	return j.record, jobError(j)
 }
 
-// WaitReady requires an atomically published HLS playlist and at least one
-// completed segment, or a nonempty progressive stream whose media payload the
+// WaitReady requires each planned HLS rendition to have a published playlist,
+// a completed segment, and its initialization file when using fragmented MP4.
+// Progressive output instead requires a nonempty stream whose media payload the
 // runner has confirmed. It does not expose temporary or header-only output.
 func (m *Manager) WaitReady(ctx context.Context, scope Scope, id string) (Record, error) {
 	for {
@@ -609,10 +618,14 @@ func (m *Manager) WaitReady(ctx context.Context, scope Scope, id string) (Record
 // method rather than closing the embedded file directly.
 type ReadHandle struct {
 	*os.File
+	jobID   string
 	once    sync.Once
 	release func()
 	err     error
 }
+
+// EncodingID ties private timing evidence to the exact pinned media object.
+func (h *ReadHandle) EncodingID() string { return h.jobID }
 
 func (h *ReadHandle) Close() error {
 	h.once.Do(func() { h.err = h.File.Close(); h.release() })
@@ -657,7 +670,7 @@ func (m *Manager) Open(ctx context.Context, scope Scope, id, name string) (*Read
 }
 
 // TryOpen performs one output lookup without waiting for startup or a future
-// segment. It returns ErrOutputUnavailable until the job is ready and the final
+// artifact. It returns ErrOutputUnavailable until the job is ready and the final
 // requested file exists. Filesystem access and manager locks still synchronize
 // normally; this method performs no database authorization. The caller must
 // revalidate its current token, user policy, source, and library permission.
@@ -674,7 +687,8 @@ type outputAttempt struct {
 
 func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 	var attempt outputAttempt
-	if !validOutputName(name) {
+	kind, valid := HLSArtifact(name)
+	if !valid {
 		return attempt, ErrOutputUnavailable
 	}
 	m.mu.Lock()
@@ -709,7 +723,7 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 	m.filesMu.Unlock()
 	if openErr == nil {
 		info, statErr := file.Stat()
-		if statErr != nil || info.Size() <= 0 || info.Size() > m.options.MaxJobBytes || (name == "main.m3u8" && info.Size() > 1<<20) {
+		if statErr != nil || info.Size() <= 0 || info.Size() > m.options.MaxJobBytes || (kind == "playlist" && info.Size() > MaxPlaylistBytes) {
 			openErr = ErrOutputUnavailable
 		}
 	}
@@ -741,7 +755,7 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 		m.releaseReader(j)
 		return attempt, err
 	}
-	attempt.handle = &ReadHandle{File: file, release: func() { m.releaseReader(j) }}
+	attempt.handle = &ReadHandle{File: file, jobID: id, release: func() { m.releaseReader(j) }}
 	return attempt, nil
 }
 
@@ -937,8 +951,15 @@ func (m *Manager) runJob(j *managedJob) {
 		m.finish(j, err)
 		return
 	}
-	_, err = m.options.run(j.ctx, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, m.options.Threads, func(p Progress) {
+	runContext := withSubtitleSource(j.ctx, j.record.Spec, m.options.SubtitleSource)
+	_, err = m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, m.options.Threads, func(p Progress) {
 		m.mu.Lock()
+		if clock := p.HLSClock; clock != nil && needsHLSClock(j.record.Spec.Plan) && clock.Rendition >= 0 && clock.Rendition < max(1, j.record.Spec.Plan.HLS.RenditionCount) {
+			if _, err := clock.Ticks(); err == nil && !j.hlsClockKnown[clock.Rendition] {
+				j.hlsClocks[clock.Rendition], j.hlsClockKnown[clock.Rendition] = *clock, true
+				m.notifyLocked(j)
+			}
+		}
 		becameReady := p.Ready && !j.mediaReady && j.record.Spec.Plan.OutputMode == "progressive"
 		if becameReady {
 			j.mediaReady = true

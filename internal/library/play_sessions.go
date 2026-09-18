@@ -15,8 +15,10 @@ import (
 
 type PlaybackOwner struct {
 	UserID, SessionID, DeviceID string
-	ApplicationClientID         string
-	ApplicationKey              bool
+	// PeerIP is the transport address retained from the authenticated principal.
+	PeerIP              string
+	ApplicationClientID string
+	ApplicationKey      bool
 }
 
 type PlaySession struct {
@@ -27,6 +29,7 @@ type PlaySession struct {
 	PlayerState                                                       PlayerState
 	ApplicationKey                                                    bool
 	ApplicationClientID                                               string
+	IsDynamic                                                         bool
 	counted                                                           bool
 	live                                                              bool
 	clientCorrelated                                                  bool
@@ -43,7 +46,7 @@ type PlaybackReport struct {
 }
 
 const playSessionColumns = `id, user_id, auth_session_id, device_id, item_id, media_source_id, state,
-	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id, client_correlated`
+	position_ticks, duration_ticks, created_at, updated_at, expires_at, started_at, stopped_at, player_state, counted, expires_at > clock_timestamp(), application_client_id, client_correlated, is_dynamic`
 
 func scanPlaySession(row rowScanner) (PlaySession, error) {
 	var session PlaySession
@@ -53,7 +56,7 @@ func scanPlaySession(row rowScanner) (PlaySession, error) {
 	err := row.Scan(&session.ID, &userID, &session.AuthSessionID, &session.DeviceID,
 		&session.ItemID, &session.MediaSourceID, &session.State, &session.PositionTicks,
 		&session.DurationTicks, &session.CreatedAt, &session.UpdatedAt, &session.ExpiresAt,
-		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID, &session.clientCorrelated)
+		&session.StartedAt, &session.StoppedAt, &rawPlayerState, &session.counted, &session.live, &applicationClientID, &session.clientCorrelated, &session.IsDynamic)
 	if err != nil {
 		return session, err
 	}
@@ -107,27 +110,9 @@ func (s *Store) beginPlaybackWrite(ctx context.Context, owner PlaybackOwner) (pg
 	if err != nil {
 		return nil, libraryAccess{}, err
 	}
-	var sessionID string
-	if owner.ApplicationKey {
-		err = tx.QueryRow(ctx, `SELECT authentication.id FROM sessions authentication
-			JOIN application_keys application ON application.credential_id = authentication.id
-			JOIN application_key_clients client ON client.credential_id = authentication.id
-			WHERE authentication.id = $1 AND authentication.user_id IS NULL AND client.id = $2 AND client.device_id = $3
-			AND authentication.kind = 'application_key' AND authentication.revoked_at IS NULL
-			FOR SHARE OF authentication, application, client`, owner.SessionID, owner.ApplicationClientID, owner.DeviceID).Scan(&sessionID)
-	} else {
-		err = tx.QueryRow(ctx, `SELECT authentication.id FROM sessions authentication JOIN users account ON account.id = authentication.user_id
-		WHERE authentication.id = $1 AND authentication.user_id = $2 AND authentication.device_id = $3
-		AND authentication.revoked_at IS NULL AND authentication.expires_at > clock_timestamp()
-		AND (authentication.kind <> 'admin' OR account.is_administrator)
-		FOR SHARE OF authentication`, owner.SessionID, owner.UserID, owner.DeviceID).Scan(&sessionID)
-	}
-	if err != nil {
+	if err := checkPlaybackStateWrite(ctx, tx, owner, true); err != nil {
 		rollback(tx)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, libraryAccess{}, ErrForbidden
-		}
-		return nil, libraryAccess{}, fmt.Errorf("authorize playback authentication session: %w", err)
+		return nil, libraryAccess{}, err
 	}
 	return tx, access, nil
 }
@@ -157,7 +142,7 @@ func (s *Store) cleanupPlayback(ctx context.Context, owner PlaybackOwner) error 
 					AND authentication.expires_at > clock_timestamp() AND NOT account.is_disabled
 					AND (authentication.kind <> 'admin' OR account.is_administrator)))
 		) OR NOT EXISTS (SELECT 1 FROM items i WHERE i.id = play.item_id
-			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+`))
+			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i")+`))
 		ORDER BY play.expires_at, play.id LIMIT 256 FOR UPDATE OF play SKIP LOCKED
 	) UPDATE play_sessions SET state = 'Expired', stopped_at = COALESCE(stopped_at, clock_timestamp()), updated_at = clock_timestamp()
 	WHERE id IN (SELECT id FROM expired)`, owner.UserID, access.all, access.folders, owner.ApplicationKey, owner.SessionID, owner.ApplicationClientID); err != nil {
@@ -178,7 +163,7 @@ func (s *Store) cleanupPlayback(ctx context.Context, owner PlaybackOwner) error 
 	if err := pruneInactiveClientPlaybackReferences(ctx, tx, owner); err != nil {
 		return err
 	}
-	return tx.Commit(ctx)
+	return commitPlaybackWrite(ctx, tx, owner)
 }
 
 func sourceForItem(itemID, requested string) (string, error) {
@@ -285,11 +270,18 @@ func lockPlaybackUserData(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, i
 }
 
 func activeOrNewPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData) (PlaySession, error) {
+	return activeOrNewPlaybackMode(ctx, tx, owner, item, sourceID, data, false)
+}
+
+func activeOrNewPlaybackMode(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, item stateItem, sourceID string, data UserData, dynamic bool) (PlaySession, error) {
 	// Select by active state without an expiry predicate, then decide while the
 	// row is locked. A deadline crossing between SQL statements cannot hide an
 	// active-state row that still occupies the unique source key.
 	session, err := currentPlaySession(ctx, tx, owner, item.id, sourceID, false)
 	if err == nil && session.live {
+		if session.IsDynamic != dynamic {
+			return PlaySession{}, ErrSourceChanged
+		}
 		return session, nil
 	}
 	if err != nil && !errors.Is(err, ErrNotFound) {
@@ -301,14 +293,30 @@ func activeOrNewPlayback(ctx context.Context, tx pgx.Tx, owner PlaybackOwner, it
 			return PlaySession{}, err
 		}
 	}
-	return createPlaySession(ctx, tx, owner, item, sourceID, data)
+	session, err = createPlaySession(ctx, tx, owner, item, sourceID, data)
+	if err != nil || !dynamic {
+		return session, err
+	}
+	return scanPlaySession(tx.QueryRow(ctx, `UPDATE play_sessions SET is_dynamic=true,
+		position_ticks=0, duration_ticks=0 WHERE id=$1 RETURNING `+playSessionColumns, session.ID))
 }
 
 func (s *Store) PreparePlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string) (PlaySession, error) {
 	return s.preparePlayback(ctx, owner, itemID, mediaSourceID, currentPlaySessionID, false)
 }
 
+// PrepareDynamicPlayback is a server-owned source choice, never a request flag.
+// It persists a separate stream clock and prevents reports from overwriting the
+// catalog item's local-file watched state and resume position.
+func (s *Store) PrepareDynamicPlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string) (PlaySession, error) {
+	return s.preparePlaybackMode(ctx, owner, itemID, mediaSourceID, currentPlaySessionID, false, true)
+}
+
 func (s *Store) preparePlayback(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string, createReference bool) (PlaySession, error) {
+	return s.preparePlaybackMode(ctx, owner, itemID, mediaSourceID, currentPlaySessionID, createReference, false)
+}
+
+func (s *Store) preparePlaybackMode(ctx context.Context, owner PlaybackOwner, itemID, mediaSourceID, currentPlaySessionID string, createReference, dynamic bool) (PlaySession, error) {
 	if (currentPlaySessionID != "" || createReference) && !validClientPlaybackReference(currentPlaySessionID) {
 		return PlaySession{}, ErrInvalidInput
 	}
@@ -336,9 +344,12 @@ func (s *Store) preparePlayback(ctx context.Context, owner PlaybackOwner, itemID
 	if err := lockPlaybackCapacity(ctx, tx, owner); err != nil {
 		return PlaySession{}, fmt.Errorf("lock playback session capacity: %w", err)
 	}
-	data, err := lockPlaybackUserData(ctx, tx, owner, itemID)
-	if err != nil {
-		return PlaySession{}, err
+	data := UserData{ItemID: itemID}
+	if !dynamic {
+		data, err = lockPlaybackUserData(ctx, tx, owner, itemID)
+		if err != nil {
+			return PlaySession{}, err
+		}
 	}
 	var session PlaySession
 	if currentPlaySessionID != "" {
@@ -361,20 +372,27 @@ func (s *Store) preparePlayback(ctx context.Context, owner PlaybackOwner, itemID
 			return PlaySession{}, ErrNotFound
 		}
 	} else {
-		session, err = activeOrNewPlayback(ctx, tx, owner, item, sourceID, data)
+		session, err = activeOrNewPlaybackMode(ctx, tx, owner, item, sourceID, data, dynamic)
 		if err != nil {
 			return PlaySession{}, err
 		}
 	}
+	if session.IsDynamic != dynamic {
+		return PlaySession{}, ErrSourceChanged
+	}
+	duration := item.duration
+	if dynamic {
+		duration = 0
+	}
 	session, err = scanPlaySession(tx.QueryRow(ctx, `UPDATE play_sessions SET updated_at = clock_timestamp(),
 		expires_at = clock_timestamp() + interval '30 minutes',
 		position_ticks = CASE WHEN state = 'Prepared' THEN LEAST(position_ticks, $2) ELSE position_ticks END,
-		duration_ticks = CASE WHEN state = 'Prepared' THEN $2 ELSE duration_ticks END
-		WHERE id = $1 RETURNING `+playSessionColumns, session.ID, item.duration))
+		duration_ticks = CASE WHEN state = 'Prepared' THEN $2 ELSE duration_ticks END, is_dynamic = $3
+		WHERE id = $1 RETURNING `+playSessionColumns, session.ID, duration, dynamic))
 	if err != nil {
 		return PlaySession{}, fmt.Errorf("refresh prepared playback session: %w", err)
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, fmt.Errorf("commit prepared playback session: %w", err)
 	}
 	return session, nil
@@ -407,7 +425,7 @@ func (s *Store) GetPlaybackSession(ctx context.Context, owner PlaybackOwner, id 
 	if session.State == "Stopped" || session.State == "Expired" || !session.live {
 		return PlaySession{}, ErrNotFound
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, fmt.Errorf("complete playback session validation: %w", err)
 	}
 	return session, nil
@@ -499,7 +517,7 @@ func (s *Store) listPlaybackSessions(ctx context.Context, subject Subject, admin
 					ELSE '[]'::jsonb END) AS folder(value) WHERE jsonb_typeof(folder.value) <> 'string')
 				AND (account.policy -> 'EnabledFolders') ? i.library_id
 			))))
-		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[])) AND ` + directItemSQL("i") + filter
+		AND ($1::boolean OR play.user_id = $2) AND ($3::boolean OR i.library_id = ANY($4::text[])) AND ` + access.directSQL("i") + filter
 	if nowPlayingOnly {
 		statement += " ORDER BY play.auth_session_id, play.application_client_id, play.updated_at DESC, play.id DESC"
 		statement = "SELECT * FROM (" + statement + ") AS current_playback ORDER BY updated_at DESC, id DESC LIMIT 256"
@@ -610,15 +628,28 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 	if err != nil {
 		return PlaySession{}, UserData{}, err
 	}
+	if report.PlaySessionID == "" {
+		// Resolve an existing dynamic session before touching local-file user
+		// data. The source mode is immutable for the lifetime of a session.
+		current, lookupErr := currentPlaySession(ctx, tx, owner, report.ItemID, sourceID, false)
+		if lookupErr == nil && current.IsDynamic {
+			identified, report.PlaySessionID = current, current.ID
+		} else if lookupErr != nil && !errors.Is(lookupErr, ErrNotFound) {
+			return PlaySession{}, UserData{}, lookupErr
+		}
+	}
 	if event == "Started" && report.PlaySessionID == "" {
 		if err := lockPlaybackCapacity(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 	}
 	// Every event uses the same data-before-playback-row lock order.
-	data, err := lockPlaybackUserData(ctx, tx, owner, report.ItemID)
-	if err != nil {
-		return PlaySession{}, UserData{}, err
+	data := UserData{ItemID: report.ItemID}
+	if !identified.IsDynamic {
+		data, err = lockPlaybackUserData(ctx, tx, owner, report.ItemID)
+		if err != nil {
+			return PlaySession{}, UserData{}, err
+		}
 	}
 	var session PlaySession
 	if report.PlaySessionID != "" {
@@ -632,7 +663,7 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		return PlaySession{}, UserData{}, err
 	}
 	if session.State == "Stopped" || session.State == "Expired" {
-		if err := tx.Commit(ctx); err != nil {
+		if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 		return session, data, nil
@@ -643,20 +674,27 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		if err != nil {
 			return PlaySession{}, UserData{}, err
 		}
-		if err := tx.Commit(ctx); err != nil {
+		if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 		return session, data, nil
 	}
 	if event == "Started" && session.StartedAt != nil {
-		if err := tx.Commit(ctx); err != nil {
+		if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 		return session, data, nil
 	}
-	position := clampPosition(session.PositionTicks, item.duration)
+	duration := item.duration
+	position := clampPosition(session.PositionTicks, duration)
+	if session.IsDynamic {
+		duration, position = 0, session.PositionTicks
+	}
 	if report.PositionTicks != nil && event != "Ping" {
-		position = clampPosition(*report.PositionTicks, item.duration)
+		position = clampPosition(*report.PositionTicks, duration)
+		if session.IsDynamic {
+			position = *report.PositionTicks
+		}
 	}
 	countNow := !session.counted && (event == "Started" || event == "Progress" || (event == "Stopped" && position > 0))
 	counted := session.counted || countNow
@@ -676,11 +714,11 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		expires_at = CASE WHEN $2 = 'Stopped' THEN clock_timestamp() ELSE clock_timestamp() + interval '30 minutes' END,
 		player_state = CASE WHEN $7::boolean THEN player_state || $8::jsonb ELSE player_state END,
 		updated_at = clock_timestamp() WHERE id = $1 RETURNING `+playSessionColumns,
-		session.ID, state, position, item.duration, counted, countNow, report.PlayerState != nil && event != "Ping", playerStatePatch))
+		session.ID, state, position, duration, counted, countNow, report.PlayerState != nil && event != "Ping", playerStatePatch))
 	if err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("persist playback report: %w", err)
 	}
-	if event != "Ping" && !owner.ApplicationKey {
+	if event != "Ping" && !owner.ApplicationKey && !session.IsDynamic {
 		if countNow && data.PlayCount < math.MaxInt32 {
 			data.PlayCount++
 		}
@@ -698,7 +736,7 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 			return PlaySession{}, UserData{}, fmt.Errorf("persist playback user data: %w", err)
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("commit playback report: %w", err)
 	}
 	return session, data, nil

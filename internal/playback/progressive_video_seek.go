@@ -20,7 +20,7 @@ func attachProgressiveVideoSeekCandidate(source Source, plan *transcode.Plan) {
 		return
 	}
 	plan.VideoSeekCandidate = ""
-	if plan.OutputMode != "progressive" || plan.Container != "mp4" || plan.VideoCodec != "h264" || plan.StartTicks <= 0 ||
+	if plan.OutputMode != "progressive" || plan.Container != "mp4" || plan.VideoCodec != "h264" || plan.StartTicks <= 0 || plan.VideoFilters.Deinterlace != "" ||
 		plan.Hardware.Decode != "" && plan.Hardware.Decode != "software" || source.Info.ProbeVersion != media.CurrentProbeVersion ||
 		!source.Info.FormatStartKnown || !plan.SourceFormatStartKnown || plan.DurationTicks != source.Info.DurationTicks ||
 		plan.SourceFormatStartTicks != source.Info.FormatStartTicks || len(source.Info.VideoSeekIndexes) == 0 ||

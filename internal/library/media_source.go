@@ -139,15 +139,30 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 	if !access.canPlay {
 		return indexedMediaSource{}, ErrForbidden
 	}
+	snapshot, err := readIndexedMediaSource(ctx, tx, access, itemID, sourceID)
+	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	// Release the policy snapshot before potentially blocking filesystem calls;
+	// unavailable NFS storage must not retain a database connection indefinitely.
+	if err := tx.Commit(ctx); err != nil {
+		return indexedMediaSource{}, fmt.Errorf("%w: complete authorized media source read: %w", ErrUnavailable, err)
+	}
+	return snapshot, nil
+}
+
+// readIndexedMediaSource shares visibility and source identity checks between
+// playback and downloading after each caller has checked its own permission.
+func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID, sourceID string) (indexedMediaSource, error) {
 	var snapshot indexedMediaSource
 	var modified *time.Time
-	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+itemColumns+`,
+	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`,
 		i.relative_path, i.file_identity, i.file_size, i.modified_at,
 		r.id, r.library_id, r.path, r.allowed_path, r.relative_path
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
-		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"), itemID, access.all, access.folders),
+		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i"), itemID, access.all, access.folders),
 		&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
 		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -169,7 +184,7 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 	if modified == nil || modified.IsZero() || snapshot.identity == "" || snapshot.mediaFile.Size <= 0 {
 		return indexedMediaSource{}, fmt.Errorf("%w: media source has no valid indexed snapshot", ErrUnavailable)
 	}
-	item.CanPlay = true
+	item.CanPlay = access.canPlay
 	items := []Item{item}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return indexedMediaSource{}, err
@@ -184,11 +199,6 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 	snapshot.mediaFile.Container = media.CanonicalContainer(*item.Media, item.Path)
 	snapshot.mediaFile.MIMEType = media.SourceMIMEType(*item.Media, item.Path)
 	snapshot.mediaFile.ETag = mediaSnapshotTag(snapshot)
-	// Release the policy snapshot before potentially blocking filesystem calls;
-	// unavailable NFS storage must not retain a database connection indefinitely.
-	if err := tx.Commit(ctx); err != nil {
-		return indexedMediaSource{}, fmt.Errorf("%w: complete authorized media source read: %w", ErrUnavailable, err)
-	}
 	return snapshot, nil
 }
 

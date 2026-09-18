@@ -48,7 +48,7 @@ func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 			apiError(w, r, 401, "authentication_required", "Sign in as an administrator.")
 			return
 		}
-		principal, err := s.identity.Resolve(r.Context(), cookie.Value, "admin")
+		principal, err := s.identity.ResolveWithPeer(r.Context(), cookie.Value, "admin", s.policyClientAddress(r))
 		if err != nil {
 			s.identityError(w, r, err)
 			return
@@ -77,7 +77,8 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 			embyTextError(w, r, http.StatusUnauthorized, embyInvalidTokenMessage)
 			return
 		}
-		principal, err := s.identity.ResolveEmbyForClient(r.Context(), token, client)
+		peer := s.policyClientAddress(r)
+		principal, err := s.identity.ResolveEmbyForClientWithPeer(r.Context(), token, client, peer)
 		if err != nil {
 			if errors.Is(err, identity.ErrInvalidInput) {
 				apiError(w, r, http.StatusBadRequest, "invalid_client", "Check the client metadata and application key client-session limit.")
@@ -96,7 +97,7 @@ func (s *Server) requireEmby(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		if principal.IsApplicationKey() || time.Since(principal.LastSeenAt) >= identity.ClientSessionTouchInterval {
-			if err := s.identity.TouchClientSessionFromAddress(r.Context(), principal, s.clientAddress(r)); err != nil {
+			if err := s.identity.TouchClientSessionFromAddress(r.Context(), principal, peer); err != nil {
 				s.identityError(w, r, err)
 				return
 			}
@@ -283,6 +284,45 @@ func (s *Server) clientAddress(r *http.Request) string {
 		address, parseErr := netip.ParseAddr(strings.TrimSpace(forwarded[i]))
 		if parseErr != nil {
 			return peer.String()
+		}
+		current = address.Unmap()
+	}
+	return current.String()
+}
+
+// policyClientAddress uses the configured proxy trust boundary, but never
+// treats an unknown or malformed forwarded client as the proxy's local IP.
+// That conservative distinction prevents a remote-access policy bypass.
+func (s *Server) policyClientAddress(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	peer, err := netip.ParseAddr(host)
+	if err != nil {
+		return ""
+	}
+	peer = peer.Unmap()
+	trusted := func(address netip.Addr) bool {
+		for _, prefix := range s.cfg.TrustedProxies {
+			if prefix.Contains(address) {
+				return true
+			}
+		}
+		return false
+	}
+	if !trusted(peer) {
+		return peer.String()
+	}
+	forwarded := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
+	if len(forwarded) > 32 {
+		return ""
+	}
+	current := peer
+	for index := len(forwarded) - 1; index >= 0 && trusted(current); index-- {
+		address, err := netip.ParseAddr(strings.TrimSpace(forwarded[index]))
+		if err != nil {
+			return ""
 		}
 		current = address.Unmap()
 	}

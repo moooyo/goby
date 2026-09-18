@@ -62,7 +62,11 @@ type ApplicationKeyRevocation struct {
 // ResolveEmby accepts either a normal Emby login or a userless application key.
 // Resolve itself continues to enforce its original exact login-kind boundary.
 func (s *Store) ResolveEmby(ctx context.Context, token string) (Principal, error) {
-	principal, err := s.Resolve(ctx, token, "emby")
+	return s.resolveEmbyWithPeer(ctx, token, "")
+}
+
+func (s *Store) resolveEmbyWithPeer(ctx context.Context, token, peerIP string) (Principal, error) {
+	principal, err := s.ResolveWithPeer(ctx, token, "emby", peerIP)
 	if err == nil || !errors.Is(err, ErrUnauthorized) {
 		return principal, err
 	}

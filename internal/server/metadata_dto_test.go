@@ -373,8 +373,8 @@ func TestMetadataDTOPersistentEntityIDsUseReferenceWireTypes(t *testing.T) {
 	item := metadataDTOFixture(t)
 	zero, later := 0, 2
 	item.Entities = library.ItemEntities{
-		Genres: []library.EntityRef{{ID: 22, Name: "Science Fiction"}, {ID: 21, Name: "Drama"}},
-		Tags: []library.EntityRef{{ID: 25, Name: "reference"}, {ID: 24, Name: "local-artwork"}},
+		Genres:  []library.EntityRef{{ID: 22, Name: "Science Fiction"}, {ID: 21, Name: "Drama"}},
+		Tags:    []library.EntityRef{{ID: 25, Name: "reference"}, {ID: 24, Name: "local-artwork"}},
 		Studios: []library.EntityRef{{ID: 23, Name: "Reference Studio"}},
 		People: []library.PersonRef{
 			{ID: "20", Name: "Reference Director", Type: "Director", SortOrder: &later},
@@ -386,17 +386,17 @@ func TestMetadataDTOPersistentEntityIDsUseReferenceWireTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := map[string]any{
-		"Genres": []any{"Science Fiction", "Drama"},
+		"Genres":     []any{"Science Fiction", "Drama"},
 		"GenreItems": []any{map[string]any{"Name": "Science Fiction", "Id": float64(22)}, map[string]any{"Name": "Drama", "Id": float64(21)}},
-		"TagItems": []any{map[string]any{"Name": "local-artwork", "Id": float64(24)}, map[string]any{"Name": "reference", "Id": float64(25)}},
-		"Studios": []any{map[string]any{"Name": "Reference Studio", "Id": float64(23)}},
+		"TagItems":   []any{map[string]any{"Name": "local-artwork", "Id": float64(24)}, map[string]any{"Name": "reference", "Id": float64(25)}},
+		"Studios":    []any{map[string]any{"Name": "Reference Studio", "Id": float64(23)}},
 		"People": []any{
 			map[string]any{"Name": "Reference Actor", "Id": "19", "Type": "Actor", "Role": "Lead"},
 			map[string]any{"Name": "Reference Director", "Id": "20", "Type": "Director"},
 		},
 	}
 	for _, mode := range []struct {
-		name string
+		name   string
 		fields []string
 		detail bool
 	}{
@@ -411,10 +411,19 @@ func TestMetadataDTOPersistentEntityIDsUseReferenceWireTypes(t *testing.T) {
 				}
 			}
 			var wire struct {
-				GenreItems []struct { Name string; ID int64 `json:"Id"` }
-				TagItems []struct { Name string; ID int64 `json:"Id"` }
-				Studios []struct { Name string; ID int64 `json:"Id"` }
-				People []struct { Name, ID string }
+				GenreItems []struct {
+					Name string
+					ID   int64 `json:"Id"`
+				}
+				TagItems []struct {
+					Name string
+					ID   int64 `json:"Id"`
+				}
+				Studios []struct {
+					Name string
+					ID   int64 `json:"Id"`
+				}
+				People []struct{ Name, ID string }
 			}
 			if err := json.Unmarshal(encoded, &wire); err != nil {
 				t.Fatalf("entity identifiers do not use the reference JSON types: %v", err)

@@ -65,7 +65,7 @@ func musicSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) s
 	var state string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i WHERE library_id='music-snapshot-library'),
-		'metadata',(SELECT jsonb_agg(to_jsonb(m) ORDER BY item_id) FROM item_metadata_state m WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
+		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'online_source'-'online_type'-'online_base' ORDER BY item_id) FROM item_metadata_state m WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
 		'associations',(SELECT jsonb_agg(to_jsonb(a) ORDER BY item_id,entity_id,credit_group,position) FROM item_entities a WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e WHERE id IN
 			(SELECT entity_id FROM item_entities WHERE item_id IN ('music-snapshot-track','music-snapshot-album'))))::text`).Scan(&state); err != nil {
@@ -133,9 +133,9 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
 	if err != nil {
 		logFixtureCatalogDifference(t, ctx, target, options)
-		t.Fatalf("restore the actual schema25 music archive into schema29: %v", err)
+		t.Fatalf("restore the actual schema25 music archive into the current schema: %v", err)
 	}
-	if result.SourceVersion != 25 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if result.SourceVersion != 25 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatal("theme migration rewrote the historical archive version or source table facts")
 	}
 	for table, expected := range before {
@@ -168,10 +168,12 @@ func TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners(t
 	if historicalArchiveRows(t, ctx, target, "theme_owner_ids", 26) != ownersBefore {
 		t.Fatal("repeating current migrations rotated restored theme owner identities")
 	}
-	var targetVersion, targetTables int
+	currentCatalog, _ := currentRecoveryCatalog(t, options.Schema)
+	var targetVersion int64
+	var targetTables int
 	if err := target.QueryRow(ctx, `SELECT (SELECT max(version) FROM schema_migrations),
-		(SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())`).Scan(&targetVersion, &targetTables); err != nil || targetVersion != 29 || targetTables != 35 {
-		t.Fatalf("historical music restoration did not reach the complete schema29: version=%d tables=%d error=%v", targetVersion, targetTables, err)
+		(SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())`).Scan(&targetVersion, &targetTables); err != nil || targetVersion != currentRecoveryVersion(t) || targetTables != len(currentCatalog.Tables) {
+		t.Fatalf("historical music restoration did not reach the complete current schema: version=%d tables=%d error=%v", targetVersion, targetTables, err)
 	}
 	assertSourceWitness(t, ctx, source, options, sourceBefore, sequences)
 	if err := source.QueryRow(ctx, `SELECT to_regclass('theme_owner_ids') IS NULL

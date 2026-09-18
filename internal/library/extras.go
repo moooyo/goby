@@ -44,7 +44,7 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 	defer rollback(tx)
 	var libraryID, ownerName string
 	err = tx.QueryRow(ctx, `SELECT i.library_id, i.name FROM items i WHERE i.id=$1
-		AND `+ordinaryItemSQL("i")+` AND ($2::boolean OR i.library_id=ANY($3::text[]))`,
+		AND `+access.ordinarySQL("i")+` AND ($2::boolean OR i.library_id=ANY($3::text[]))`,
 		ownerID, access.all, access.folders).Scan(&libraryID, &ownerName)
 	if errors.Is(err, pgx.ErrNoRows) {
 		if !trailers {
@@ -82,12 +82,12 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 	if active > MaxExtraResourcesPerOwner || active != valid {
 		return nil, fmt.Errorf("%w: extra population is invalid or exceeds its owner limit", ErrUnavailable)
 	}
-	rows, err := tx.Query(ctx, "SELECT "+itemColumns+`, association.kind FROM item_extra_resources association
+	rows, err := tx.Query(ctx, "SELECT "+access.itemColumnsSQL()+`, association.kind FROM item_extra_resources association
 		JOIN items i ON i.id=association.resource_item_id
 		WHERE association.owner_item_id=$1 AND association.active
 		AND (association.kind='trailer')=$2 AND i.library_id=$3
 		AND ($4::boolean OR i.library_id=ANY($5::text[]))
-		AND `+database.ExtraResourceItemSQL("i", true)+`
+		AND `+database.ExtraResourceItemSQL("i", true)+` AND `+access.itemPolicySQL("i")+`
 		ORDER BY lower(i.sort_name) COLLATE "C", i.id`, ownerID, trailers, libraryID, access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("query extra resources: %w", err)
@@ -113,7 +113,7 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return nil, err
 	}
-	if err := attachExtraItemAttributes(ctx, tx, items); err != nil {
+	if err := attachExtraItemAttributes(ctx, tx, items, access); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -125,7 +125,11 @@ func (s *Store) queryExtraItems(ctx context.Context, ownerID string, subject Sub
 // attachExtraItemAttributes enriches already authorized direct items within
 // their existing snapshot. Only the owner's display name is borrowed; source
 // metadata and per-resource state remain independent of the main movie.
-func attachExtraItemAttributes(ctx context.Context, tx pgx.Tx, items []Item) error {
+func attachExtraItemAttributes(ctx context.Context, tx pgx.Tx, items []Item, scopes ...libraryAccess) error {
+	access := unrestrictedLibraryAccess()
+	if len(scopes) != 0 {
+		access = scopes[0]
+	}
 	positions := make(map[string][]int)
 	ids := make([]string, 0, len(items))
 	for index, item := range items {
@@ -143,7 +147,7 @@ func attachExtraItemAttributes(ctx context.Context, tx pgx.Tx, items []Item) err
 		FROM item_extra_resources association JOIN items i ON i.id=association.resource_item_id
 		JOIN items owner ON owner.id=association.owner_item_id
 		LEFT JOIN item_metadata_state state ON state.item_id=i.id
-		WHERE i.id=ANY($1::text[]) AND `+database.ExtraResourceItemSQL("i", true), ids)
+		WHERE i.id=ANY($1::text[]) AND `+database.ExtraResourceItemSQL("i", true)+` AND `+access.directSQL("i"), ids)
 	if err != nil {
 		return fmt.Errorf("query extra item attributes: %w", err)
 	}
@@ -166,14 +170,14 @@ func attachExtraItemAttributes(ctx context.Context, tx pgx.Tx, items []Item) err
 		return fmt.Errorf("read extra item attributes: %w", err)
 	}
 	rows.Close()
-	return attachExtraParentCounts(ctx, tx, items, positions, ids)
+	return attachExtraParentCounts(ctx, tx, items, positions, ids, access)
 }
 
-func attachExtraParentCounts(ctx context.Context, tx pgx.Tx, items []Item, positions map[string][]int, ids []string) error {
+func attachExtraParentCounts(ctx context.Context, tx pgx.Tx, items []Item, positions map[string][]int, ids []string, access libraryAccess) error {
 	rows, err := tx.Query(ctx, `SELECT association.owner_item_id, count(*) FROM item_extra_resources association
 		JOIN items i ON i.id=association.resource_item_id
 		WHERE association.owner_item_id=ANY($1::text[]) AND association.kind='trailer'
-		AND `+database.ExtraResourceItemSQL("i", true)+` GROUP BY association.owner_item_id`, ids)
+		AND `+database.ExtraResourceItemSQL("i", true)+` AND `+access.directSQL("i")+` GROUP BY association.owner_item_id`, ids)
 	if err != nil {
 		return fmt.Errorf("query local trailer counts: %w", err)
 	}

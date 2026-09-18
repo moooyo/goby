@@ -17,7 +17,7 @@ const (
 	maxSubtitleStreamIndex = 1<<31 - 1
 )
 
-// Subtitle is an indexed, validated external text track. Its index shares the
+// Subtitle is an indexed, validated SRT, WebVTT, ASS, or SSA external track. Its index shares the
 // media stream namespace, while the source file snapshot is stored separately.
 type Subtitle struct {
 	Index                                           int
@@ -123,6 +123,10 @@ func subtitleMIME(codec string) string {
 		return "application/x-subrip"
 	case "vtt":
 		return "text/vtt"
+	case "ass":
+		return "text/x-ssa"
+	case "ssa":
+		return "text/x-ssa"
 	default:
 		return ""
 	}

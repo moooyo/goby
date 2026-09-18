@@ -39,9 +39,8 @@ type ProgressiveVideoDecision struct {
 }
 
 // PlanProgressiveVideo plans bounded H.264/AAC fragmented MP4 without starting
-// a worker or granting source access. Copy seeks are deliberately unavailable
-// until a client-independent pre-roll contract is verified. Valid unsupported
-// requirements return nil Plan and reasons; malformed input returns an error.
+// a worker or granting source access. Valid unsupported requirements return nil
+// Plan and reasons; malformed input returns an error.
 func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits ConversionLimits) (ProgressiveVideoDecision, error) {
 	var result ProgressiveVideoDecision
 	if err := validateProgressiveVideoRequest(request); err != nil {
@@ -89,9 +88,6 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 	if video.Width <= 0 || video.Height <= 0 || video.Width > 65536 || video.Height > 65536 || video.Bitrate < 0 || video.BitDepth < 0 {
 		return decline("progressive_video_facts_missing", "Width", "Known bounded video dimensions and valid source facts are required.")
 	}
-	if video.IsInterlaced || conversionHDR(&video) {
-		return decline("progressive_video_range_unsupported", "VideoRange", "This MP4 pipeline does not implement deinterlacing or HDR tone mapping.")
-	}
 	container, videoCodec, audioCodec := strings.ToLower(request.OutputContainer), strings.ToLower(request.VideoCodec), strings.ToLower(request.AudioCodec)
 	if container != "mp4" || videoCodec != "h264" && videoCodec != "copy" || audioCodec != "" && audioCodec != "none" && audioCodec != "aac" && audioCodec != "copy" {
 		return decline("progressive_video_format_unsupported", "OutputContainer", "The selected video conversion format is not implemented.")
@@ -119,7 +115,7 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 				continue
 			}
 		}
-		if videoCopy && (isFalse(request.AllowVideoStreamCopy) || request.StartTimeTicks != 0 || request.FrameRate != nil) ||
+		if videoCopy && (isFalse(request.AllowVideoStreamCopy) || request.FrameRate != nil) ||
 			!videoCopy && (!limits.AllowVideoTranscode || videoCodec == "copy") ||
 			selection.audio != nil && (audioCopy && isFalse(request.AllowAudioStreamCopy) || !audioCopy && (!limits.AllowAudioTranscode || audioCodec == "copy")) ||
 			videoCopy && audioCopy && !limits.AllowRemux {
@@ -173,6 +169,9 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 				candidate.AudioStreamIndex, candidate.AudioCodec = selection.audio.Index, audio.codec
 				candidate.AudioBitrate, candidate.AudioChannels, candidate.AudioSampleRate = audio.bitrate, audio.channels, audio.rate
 				streams = append(streams, audio.output)
+			}
+			if videoCopy && request.StartTimeTicks > 0 && !transcode.AttachVideoCopySeekCandidate(&candidate, source.Info) {
+				continue
 			}
 			if transcode.ValidatePlan(candidate) != nil {
 				continue
@@ -249,7 +248,7 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 	}
 	bitrate := output.Bitrate
 	if copy {
-		if !strings.EqualFold(output.Codec, "h264") || !output.InterlaceKnown && isFalse(request.AllowInterlacedVideoStreamCopy) ||
+		if !strings.EqualFold(output.Codec, "h264") || output.IsInterlaced || conversionHDR(output) || !output.InterlaceKnown && isFalse(request.AllowInterlacedVideoStreamCopy) ||
 			output.Width > maxWidth || output.Height > maxHeight || request.Width != nil && output.Width != *request.Width || request.Height != nil && output.Height != *request.Height {
 			return fail("VideoCodec", "The source video cannot be copied with the requested codec, geometry, or interlace restriction.")
 		}
@@ -267,16 +266,25 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 		}
 		plan.VideoCodec = "copy"
 	} else {
+		filters, reason := videoProcessingPlan(*output)
+		if reason != nil {
+			return 0, reason
+		}
 		width, height, ok := progressiveVideoDimensions(output.Width, output.Height, maxWidth, maxHeight, request.Width, request.Height)
 		if !ok {
 			return fail("Width", "The requested dimensions cannot be constructed within the video limits.")
 		}
 		plan.VideoCodec, plan.Width, plan.Height, plan.Hardware = "h264", width, height, limits.Hardware
+		plan.VideoFilters = filters
+		if filters != (transcode.VideoFilters{}) {
+			plan.Hardware = transcode.Hardware{}
+		}
 		output.Codec, output.Width, output.Height = "h264", width, height
 		output.Profile, output.Level, output.RefFrames = "", 0, 0
 		output.BitDepth, output.PixelFormat = 8, "yuv420p"
 		output.IsInterlaced, output.InterlaceKnown, output.FieldOrder = false, true, "progressive"
 		output.ColorRange, output.ColorSpace, output.ColorTransfer, output.ColorPrimaries = "", "", "", ""
+		videoProcessingOutput(output, filters)
 		fps := float64(0)
 		if request.FrameRate != nil {
 			fps = *request.FrameRate

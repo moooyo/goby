@@ -54,6 +54,8 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 		return Snapshot{}, identity.ErrUnauthorized
 	}
 	mutation.ServerName = clonePointer(mutation.ServerName)
+	mutation.PreferredMetadataLanguage = clonePointer(mutation.PreferredMetadataLanguage)
+	mutation.MetadataCountryCode = clonePointer(mutation.MetadataCountryCode)
 	mutation.StartupWizardCompleted = clonePointer(mutation.StartupWizardCompleted)
 	if err := validateConfigurationMutation(mutation); err != nil {
 		return Snapshot{}, err
@@ -69,6 +71,17 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 					"IsStartupWizardCompleted": "initialization state is read-only and must match the server",
 				}}
 			}
+		}
+		if mutation.Section == ConfigurationFull {
+			defaults := DefaultManagement()
+			previous.Management.Metadata.PreferredMetadataLanguage = defaults.Metadata.PreferredMetadataLanguage
+			previous.Management.Metadata.MetadataCountryCode = defaults.Metadata.MetadataCountryCode
+		}
+		if mutation.PreferredMetadataLanguage != nil {
+			previous.Management.Metadata.PreferredMetadataLanguage = *mutation.PreferredMetadataLanguage
+		}
+		if mutation.MetadataCountryCode != nil {
+			previous.Management.Metadata.MetadataCountryCode = *mutation.MetadataCountryCode
 		}
 		switch mutation.Section {
 		case ConfigurationFull:
@@ -102,6 +115,12 @@ func validateConfigurationMutation(value ConfigurationMutation) error {
 	invalid := func(message string) error {
 		return &ValidationError{Fields: map[string]string{"Configuration": message}}
 	}
+	if value.PreferredMetadataLanguage != nil && !managementLanguage.MatchString(*value.PreferredMetadataLanguage) {
+		return invalid("use a supported metadata language code")
+	}
+	if value.MetadataCountryCode != nil && !managementCountry.MatchString(*value.MetadataCountryCode) {
+		return invalid("use an uppercase two-letter metadata country code")
+	}
 	if !value.ServerNamePresent && value.ServerName != nil {
 		return invalid("a name value requires its explicit presence marker")
 	}
@@ -117,7 +136,7 @@ func validateConfigurationMutation(value ConfigurationMutation) error {
 			return validateName(configurationNameMode(value.ServerName), value.ServerName)
 		}
 	case ConfigurationEncoding:
-		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil {
+		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil || value.PreferredMetadataLanguage != nil || value.MetadataCountryCode != nil {
 			return invalid("named encoding configuration cannot include server settings")
 		}
 		return validateEncoding(Encoding{TranscodingMaxWidth: value.TranscodingMaxWidth})

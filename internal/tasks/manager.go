@@ -32,6 +32,8 @@ type ManagerOptions struct {
 	ReconcileInterval time.Duration
 	BatchSize         int
 	Logger            *slog.Logger
+	// MaxConcurrent is read before dispatch; existing workers retain their slots.
+	MaxConcurrent func() int
 }
 
 // Manager initializes persisted schedules, admits due occurrences, and
@@ -65,6 +67,7 @@ type Manager struct {
 	nextDue              *time.Time
 	lastScheduleErrorLog time.Time
 	runtimeDeadlines     map[string]time.Time
+	executions           map[string]*workerExecution
 }
 
 func NewManager(store *Store, scans ScanExecutor, options ManagerOptions) (*Manager, error) {
@@ -91,7 +94,7 @@ func NewManager(store *Store, scans ScanExecutor, options ManagerOptions) (*Mana
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	m := &Manager{store: store, scans: scans, options: options, ctx: ctx, cancel: cancel,
-		wake: make(chan struct{}, 1), loopDone: make(chan struct{}), done: make(chan struct{}), childOffsets: make(map[string]int), runtimeDeadlines: make(map[string]time.Time)}
+		wake: make(chan struct{}, 1), loopDone: make(chan struct{}), done: make(chan struct{}), childOffsets: make(map[string]int), runtimeDeadlines: make(map[string]time.Time), executions: make(map[string]*workerExecution)}
 	go m.loop()
 	return m, nil
 }
@@ -289,6 +292,7 @@ func (m *Manager) shutdown() {
 		fenced := m.closeErr != nil
 		m.mu.Unlock()
 		if fenced {
+			m.drainExecutions()
 			return
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), managerCycleTimeout)
@@ -456,6 +460,9 @@ func (m *Manager) reconcile(ctx context.Context, shutdown bool) (bool, error) {
 	if err := m.checkOwnership(ctx); err != nil {
 		return false, err
 	}
+	if err := m.reapExecutions(ctx, shutdown); err != nil {
+		return false, err
+	}
 	page, err := m.store.ListActiveRuns(ctx, Page{StartIndex: m.runOffset, Limit: m.options.BatchSize})
 	if err != nil {
 		return false, err
@@ -534,7 +541,9 @@ func (m *Manager) reconcile(ctx context.Context, shutdown bool) (bool, error) {
 					break
 				}
 			}
-			if shutdown || run.State == RunStopping {
+			if _, scanTask := library.TaskScanOptions(run.TaskKey); !scanTask {
+				queueFull, err = m.reconcileExecution(ctx, run, child, shutdown)
+			} else if shutdown || run.State == RunStopping {
 				err = m.scans.CancelTaskScan(ctx, child.ID)
 			} else if child.State == ChildWaiting {
 				if !m.enter() {

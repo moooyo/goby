@@ -52,9 +52,9 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 	// by the schema's unique positions, independently of retained history.
 	rows, err := s.pool.Query(ctx, `SELECT t.id, d.key FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
-        WHERE d.key IN ($1,$2) AND d.enabled AND t.retired_at IS NULL
-            AND t.calculation_error = '' AND t.created_at <= $3
-        ORDER BY d.key, t.position, t.id LIMIT $4`, LibraryScanKey, LibraryRefreshMediaKey, startupAt, 2*MaxTriggers)
+        WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
+            AND t.calculation_error = '' AND t.created_at <= $2
+        ORDER BY d.key, t.position, t.id LIMIT $3`, s.executorKeys(), startupAt, len(s.executorKeys())*MaxTriggers)
 	if err != nil {
 		return fmt.Errorf("list startup task rules: %w", err)
 	}
@@ -83,7 +83,7 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 
 func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupAt time.Time) error {
 	return s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
-		definition, err := lockScheduledDefinition(tx, key)
+		definition, err := s.lockScheduledDefinition(tx, key)
 		if errors.Is(err, ErrNotFound) {
 			return nil
 		}
@@ -104,7 +104,7 @@ func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupA
 			if err := ValidateSchedule(triggerScheduleRule(trigger)); err != nil {
 				return pauseSchedule(tx, trigger.ID, err)
 			}
-			if err := admitScheduledOccurrence(tx, definition, trigger, startupAt, "startup"); err != nil {
+			if err := s.admitScheduledOccurrence(tx, definition, trigger, startupAt, "startup"); err != nil {
 				return err
 			}
 			_, err := tx.Exec(`UPDATE task_triggers SET last_due_at = $2, updated_at = clock_timestamp() WHERE id = $1`, trigger.ID, startupAt)
@@ -162,8 +162,8 @@ func (s *Store) dispatchOneSchedule(ctx context.Context) (bool, error) {
 		// prevents one definition from starving the other when limit is one.
 		definitions := make(map[string]Definition, 2)
 		ids := make([]string, 0, 2)
-		for _, key := range []string{LibraryScanKey, LibraryRefreshMediaKey} {
-			definition, err := lockScheduledDefinition(tx, key)
+		for _, key := range s.executorKeys() {
+			definition, err := s.lockScheduledDefinition(tx, key)
 			if errors.Is(err, ErrNotFound) {
 				continue
 			}
@@ -206,7 +206,7 @@ func (s *Store) dispatchOneSchedule(ctx context.Context) (bool, error) {
 				return err
 			}
 		}
-		if err := admitScheduledOccurrence(tx, definition, trigger, due.Last, "schedule"); err != nil {
+		if err := s.admitScheduledOccurrence(tx, definition, trigger, due.Last, "schedule"); err != nil {
 			return err
 		}
 		return advanceSchedule(tx, trigger.ID, due)
@@ -223,17 +223,19 @@ func (s *Store) NextDue(ctx context.Context) (*time.Time, error) {
 	var next *time.Time
 	if err := s.pool.QueryRow(ctx, `SELECT min(t.next_fire_at) FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
-        WHERE d.key IN ($1,$2) AND d.enabled AND t.retired_at IS NULL
-            AND t.calculation_error = '' AND t.kind <> 'startup'`, LibraryScanKey, LibraryRefreshMediaKey).Scan(&next); err != nil {
+        WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
+            AND t.calculation_error = '' AND t.kind <> 'startup'`, s.executorKeys()).Scan(&next); err != nil {
 		return nil, fmt.Errorf("read next task occurrence: %w", err)
 	}
 	utcPointer(&next)
 	return next, nil
 }
 
-func lockScheduledDefinition(tx library.OwnedTx, key string) (Definition, error) {
+func (s *Store) lockScheduledDefinition(tx library.OwnedTx, key string) (Definition, error) {
 	if _, supported := library.TaskScanOptions(key); !supported {
-		return Definition{}, ErrNotFound
+		if _, exists := s.executors.lookup(key); !exists {
+			return Definition{}, ErrNotFound
+		}
 	}
 	var definition Definition
 	err := decodeRow(tx.QueryRow(`SELECT to_jsonb(d) FROM task_definitions d
@@ -352,7 +354,7 @@ func recordMissedOccurrences(tx library.OwnedTx, trigger Trigger, first, last ti
 // The caller holds the definition and trigger locks, in that order. Admission,
 // occurrence identity, library snapshot, and rule advancement share its fenced
 // transaction; no public Start call can open a second owner transaction.
-func admitScheduledOccurrence(tx library.OwnedTx, definition Definition, trigger Trigger, due time.Time, source string) error {
+func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definition, trigger Trigger, due time.Time, source string) error {
 	var exists bool
 	if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_occurrences
         WHERE trigger_id = $1 AND schedule_revision = $2 AND due_at = $3)`,
@@ -385,17 +387,15 @@ func admitScheduledOccurrence(tx library.OwnedTx, definition Definition, trigger
 			trigger.ScheduleRevision, due, trigger.MaxRuntimeTicks); err != nil {
 			return fmt.Errorf("admit scheduled task run: %w", err)
 		}
-		children, err := tx.Exec(`INSERT INTO task_run_children (id,run_id,library_id,library_name,ordinal)
-            SELECT md5($1 || ':' || id), $1, id, name,
-                (row_number() OVER (ORDER BY id) - 1)::integer FROM libraries`, runID)
+		childCount, err := s.snapshotChildren(tx, runID, definition.Key)
 		if err != nil {
 			return fmt.Errorf("snapshot scheduled task libraries: %w", err)
 		}
-		if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, runID, children.RowsAffected()); err != nil {
+		if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, runID, childCount); err != nil {
 			return fmt.Errorf("record scheduled task child count: %w", err)
 		}
 		if err := recordTaskActivity(tx, nil, activity.ActionTaskAdmitted, runID,
-			trigger.ScheduleRevision, children.RowsAffected(), ""); err != nil {
+			trigger.ScheduleRevision, childCount, ""); err != nil {
 			return err
 		}
 		if _, err := refreshRun(tx, runID); err != nil {

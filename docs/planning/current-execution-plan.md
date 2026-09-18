@@ -1,11 +1,26 @@
 # Current execution plan
 
-Execution was stopped for the user's September 17 wrap-up and code integration.
-Use the [restart handoff](../development/session-handoff-20260917-wrap-up.md)
-before resuming. It supersedes older next-action statements where they conflict;
-the full M2-M6 objective remains incomplete and M7 remains deferred.
+The selected [media, collections, and management implementation
+wave](../development/feature-wave-20260919.md) has completed all three source
+areas on `codex/media-library-management`. Consolidated remote verification
+is still running. The [current status](../development/current-status.md#current-wave-checkpoint)
+records completed server/core/identity/backup-database/browser coverage without
+adding overlapping rerun counts.
 
-Current priority: **prepare Programs affected live admission and the M5 full-run guard from the independently reviewed V4 finalization**.
+The active remaining order is the full recovery-manager package, four existing
+mocked browser checks, final build, owned-resource closure and review of the
+exact integrated source; only after acceptance, merge into main and push.
+The wave is not yet complete. Provider-specific acceptance and OCI work remain
+user-deferred. The [current handoff](../development/handoff.md) retains earlier
+evidence and stop points. The full M2-M6 scope remains incomplete and M7 remains
+deferred; historical Programs/W and H1 gates do not close through this wave by
+implication.
+
+## Historical execution planning
+
+The entries below preserve earlier planning and observations, including consumed
+attempts. Their old priorities and capacity readings are not current admission.
+The September 17 priority was Programs affected admission and the M5 full-run guard.
 The user confirmed `test-env` availability on September 16, then requested root
 filesystem cleanup. The [capacity review and cleanup](../development/test-env-root-cleanup-20260916.md)
 confirm that the earlier expanded root disk was already in use. The user's
@@ -651,6 +666,10 @@ resolve the separately recorded media cancellation timing discrepancy.
 
 ## Immediate queue
 
+Historical queue: the entries in this section preserve the earlier Programs
+execution checkpoint and consumed inputs. They are not the active remaining
+order at the top of this document and do not authorize replay.
+
 The September 15 [application recovery and preservation](../development/candidate-lease-loss-recovery.json),
 v2 component scopes, two-SQL observation and ready consumer envelope retain
 their historical acceptance. Both candidate applications failed again on
@@ -789,7 +808,7 @@ are complete within their recorded boundaries and are not queued again. The
 [measurement decision](../development/native-capacity-measurement-decision.md)
 holds native capacity execution. The [support matrix](support-and-delivery-matrix.md)
 maps the complete obligations to bounded delivery slices. The
-[session handoff](../development/session-handoff-20260915-native-capacity.md)
+[current handoff](../development/handoff.md)
 retains the exact paused sources, remote results and native execution
 prerequisites. No M2-M6 obligation is removed; M7 remains deferred.
 
@@ -838,6 +857,10 @@ and actual execution results distinct.
 
 ### Delivery order
 
+Historical delivery order: retain these original results and dependencies as
+recorded. Current feature-wave verification and integration follow the opening
+queue; deferred OCI/H1 work is not automatically resumed.
+
 | Order | Concrete deliverable | Completion or stop condition |
 | --- | --- | --- |
 | 0. Historical application recovery and consumer runtime binding — complete in its original scope | Retain the independently reviewed September 15 recovery, component scopes, actual one-cluster/one-lease observation and validated ready v2 envelope | Both applications were subsequently observed failed after a new September 16 host event. Reuse unaffected evidence, but the old ready envelope is no longer fresh live authority. Do not replay consumed inputs or restart applications merely to refresh a binding |
@@ -854,7 +877,7 @@ and actual execution results distinct.
 | 3. One direct A transition — executed; separate finalization/V4 reviewed | The original operation remains failed. Later read-only finalization generated V4 and has original closer plus independent review/closeout support | Preserve B, new A, generated records and original failures. No additional stop/replace/start, D000 replay or handwritten V4; affected live admission remains pending |
 | 4. Final core client acceptance — held | After validated finalization/V4 and client admission, run the declared movie, episode and SRT/VTT journeys and close the audio reuse bridge | Bind each journey to the retained successor and preceding closeout. Old failures are not relabeled; no ancestor execution is a successor run |
 | 5. G3 main promotion | Once core acceptance passes, bind the actual successor to current preservation/recovery prerequisites and the bounded upgrade/post-upgrade workflow | Existing recovery proofs retain their source scopes; refresh only prerequisites invalidated by actual changes |
-| Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [original source checkpoint](../development/session-handoff-20260915-native-capacity.md), earlier operator/source-bridge results, and the [verified Running-job collection](../development/native-capacity-running-observation-verification-20260916.md) | No native fixture/input exists. Bind the selected verified artifact and current runtime before native admission. Reuse completed component groups; actual overlap and capacity still require native workload evidence |
+| Independent profile: native scan/concurrent HTTP capacity — held | Preserve the [current capacity handoff](../development/handoff.md), earlier operator/source-bridge results, and the [verified Running-job collection](../development/native-capacity-running-observation-verification-20260916.md) | No native fixture/input exists. Bind the selected verified artifact and current runtime before native admission. Reuse completed component groups; actual overlap and capacity still require native workload evidence |
 | Independent profile: package attribution | Retain the [46-chunk graph](../development/systemd-package-javascript-attribution.md), completed [73-row fixed-commit MUI lookup](../development/systemd-package-mui-source-correspondence.md) and [19-text payload draft](../development/systemd-package-legal-payload-draft.md). The [real M5 frontend build](../development/m5-final-frontend-verification-20260916.md) now has its own original contribution sidecar and exact asset/source bindings | The new sidecar does not supply historical E11 provenance or a complete compiled graph. Keep historical Google/input gaps explicit; no unchanged E11 rebuild or repeated source lookup without concrete new evidence. Actual consumer execution, final payload, pending license choice and external-distribution gate remain open |
 | Independent profiles: remaining M2-M6 | Progress blocked I/O, durability, media/transcode, administration, hardware/architecture, OCI and support rows under their own prerequisites | No blanket dependence on main promotion; unavailable hardware/licensing blocks the corresponding claim. M7 remains deferred |
 
@@ -1047,6 +1070,11 @@ per-attempt constants. Overlapping coverage closes another gate only when its
 complete declared checks and overall closeout pass. Episode01 does not qualify.
 
 ## Remaining work and dependencies
+
+Historical/full-delivery dependencies: these obligations retain their recorded
+scope and are not a claim that the three selected feature areas remain
+unimplemented. The current wave's immediate verification and integration work
+is listed at the top; complete M2-M6 delivery remains a separate open objective.
 
 1. Retain the completed native archive, both distinct restoration/restart proofs,
    actual old installation return and final cluster/credential disposal records.

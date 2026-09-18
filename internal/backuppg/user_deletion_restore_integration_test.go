@@ -46,7 +46,7 @@ func TestPostgreSQLSchema29ArchivePreservesCommittedUserDeletion(t *testing.T) {
 		t.Fatal("the deletion archive did not use the actual schema29 catalog and migration prefix")
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, options)
-	if err != nil || result.SourceVersion != 29 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 29 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("round trip the actual schema29 deleted-user archive: %v", err)
 	}
 	var absent bool
@@ -68,14 +68,7 @@ func TestPostgreSQLSchema29ArchivePreservesCommittedUserDeletion(t *testing.T) {
 	targetOptions := options
 	targetOptions.SourceURL = target.Config().ConnString()
 	after, restoredSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
-	if !equalJSON(after, facts) || len(restoredSequences) != len(sequences) {
-		t.Fatal("the schema29 round trip changed complete table fingerprints or the sequence inventory")
-	}
-	for name, expected := range sequences {
-		if actual, exists := restoredSequences[name]; !exists || actual != expected {
-			t.Fatalf("the schema29 round trip changed sequence %s", name)
-		}
-	}
+	assertHistoricalRecoveryFacts(t, ctx, source, target, facts, after, sequences, restoredSequences)
 	assertSourceWitness(t, ctx, source, options, before, sequences)
 }
 
@@ -99,7 +92,7 @@ func TestPostgreSQLSchema28ArchiveRejectsLaterUserDeletedAction(t *testing.T) {
 	_, err := RestoreOfflineFinalized(ctx, target, archive, originalFacts, options,
 		func(_ context.Context, _ pgx.Tx, result RestoreResult) error {
 			controlCalled = true
-			if result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, originalFacts.Tables) {
+			if result.SourceVersion != 28 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, originalFacts.Tables) {
 				return errors.New("schema28 control changed the source or latest target")
 			}
 			return refused

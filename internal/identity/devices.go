@@ -193,16 +193,26 @@ func authorizeDeviceActor(ctx context.Context, tx AuthorizationTx, actor Princip
 		return authorizeApplicationKeyActor(ctx, tx, actor, selfRevocation)
 	}
 	var administrator bool
-	err := tx.QueryRow(ctx, `SELECT u.is_administrator FROM sessions a JOIN users u ON u.id = a.user_id
+	var policyJSON json.RawMessage
+	var deviceID string
+	var observedAt time.Time
+	err := tx.QueryRow(ctx, `SELECT u.is_administrator, u.policy, a.device_id, clock_timestamp() FROM sessions a JOIN users u ON u.id = a.user_id
 		WHERE a.id = $1 AND a.user_id = $2 AND a.kind = $3 AND NOT u.is_disabled
 		AND a.expires_at > clock_timestamp()
 		AND (a.revoked_at IS NULL OR ($4::timestamptz IS NOT NULL AND a.revoked_at = $4))`,
-		actor.SessionID, actor.User.ID, actor.Kind, selfRevocation).Scan(&administrator)
+		actor.SessionID, actor.User.ID, actor.Kind, selfRevocation).Scan(&administrator, &policyJSON, &deviceID, &observedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrUnauthorized
 	}
 	if err != nil {
 		return fmt.Errorf("authorize device manager: %w", err)
+	}
+	if actor.Kind == "emby" {
+		policy, err := ParseRuntimePolicy(policyJSON)
+		if err != nil || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
+			return ErrUnauthorized
+		}
 	}
 	if !administrator {
 		if native || actor.Kind == "admin" {

@@ -99,7 +99,7 @@ func TestHTTPManagedUserReadContractAndAuthorization(t *testing.T) {
 		t.Fatalf("managed revision must be a positive decimal string: %#v", user["Revision"])
 	}
 	policy := objectValue(t, user, "Policy")
-	if len(policy) != 6 || policy["EnableAllFolders"] != false || policy["EnableMediaPlayback"] != false || policy["EnablePlaybackRemuxing"] != true {
+	if len(policy) != len(managedPolicyFields) || policy["EnableAllFolders"] != false || policy["EnableMediaPlayback"] != false || policy["EnablePlaybackRemuxing"] != true {
 		t.Fatalf("native policy must show configured facts without administrator or runtime overrides: %#v", policy)
 	}
 	if folders, ok := policy["EnabledFolders"].([]any); !ok || len(folders) != 0 {

@@ -43,6 +43,9 @@ func recordSettingsActivity(tx library.OwnedTx, actor Actor, previous, changed s
 	if previous.Encoding != changed.Encoding {
 		fields = append(fields, activity.FieldTranscodingMaxWidth)
 	}
+	if !equalManagement(previous.Management, changed.Management) {
+		fields = append(fields, activity.FieldManagement)
+	}
 	return activity.RecordOwned(tx, activity.Event{
 		Action: activity.ActionSettingsUpdated, Severity: activity.SeverityInfo,
 		Source: source, Actor: identityActor,

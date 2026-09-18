@@ -78,6 +78,16 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 				configurationInputError(w, r)
 				return settings.ConfigurationMutation{}, false
 			}
+		case section != settings.ConfigurationEncoding && field == "preferredmetadatalanguage":
+			if json.Unmarshal(raw, &mutation.PreferredMetadataLanguage) != nil || mutation.PreferredMetadataLanguage == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case section != settings.ConfigurationEncoding && field == "metadatacountrycode":
+			if json.Unmarshal(raw, &mutation.MetadataCountryCode) != nil || mutation.MetadataCountryCode == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
 		case section == settings.ConfigurationEncoding && field == "transcodingmaxwidth":
 			var width *int
 			if json.Unmarshal(raw, &width) != nil || width == nil || *width < 0 || *width > 8192 {

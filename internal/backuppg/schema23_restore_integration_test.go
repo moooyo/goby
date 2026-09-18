@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -21,34 +22,79 @@ func schema23ArchiveRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool, 
 	return historicalArchiveRows(t, ctx, pool, table, 23)
 }
 
-// Only columns introduced after these historical schemas are omitted. Every
-// original field, including unbounded credit types and exact JSON numbers,
-// remains part of the ordered row multiset. New binding and audit defaults are
-// asserted separately on each migrated target.
+// Compare exact PostgreSQL JSON text under the same canonical output settings
+// as restoration, including timestamps when a database defaults to another zone.
 func historicalArchiveRows(t *testing.T, ctx context.Context, pool *pgxpool.Pool, table string, version int64) string {
 	t.Helper()
-	projection := "to_jsonb(original)"
-	if version < 25 && table == "item_metadata_state" {
-		projection += " - 'music_source'"
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		t.Fatalf("begin schema %d archive table %s snapshot: %v", version, table, err)
 	}
-	if version < 25 && table == "item_entities" {
-		projection += " - 'credit_group'"
+	defer rollback(tx)
+	var schema string
+	if err := tx.QueryRow(ctx, `SELECT current_schema()`).Scan(&schema); err != nil {
+		t.Fatalf("read schema %d archive table %s snapshot schema: %v", version, table, err)
 	}
-	if version < 28 && table == "library_roots" {
-		projection += " - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by'"
+	if err := configureTransaction(ctx, tx, schema); err != nil {
+		t.Fatalf("configure schema %d archive table %s snapshot: %v", version, table, err)
 	}
-	if version < 28 && table == "activity_entries" {
-		projection += " - 'previous_revision' - 'observation_fingerprint'"
+	var rows string
+	if err := tx.QueryRow(ctx, historicalArchiveRowsStatement(t, table, version)).Scan(&rows); err != nil {
+		t.Fatalf("snapshot schema %d archive table %s: %v", version, table, err)
 	}
+	return rows
+}
+
+// The authenticated historical catalog defines the original row shape. New
+// columns never change this comparison of exact historical values and numbers.
+func historicalArchiveRowsStatement(t *testing.T, table string, version int64) string {
+	t.Helper()
+	catalog, _, err := loadCatalog(version, "historical_rows_test")
+	if err != nil {
+		t.Fatalf("load schema %d row projection catalog: %v", version, err)
+	}
+	var columns []string
+	for _, spec := range catalog.Tables {
+		if spec.Name == table {
+			for _, column := range spec.Columns {
+				columns = append(columns, "original."+pgx.Identifier{column}.Sanitize())
+			}
+			break
+		}
+	}
+	if len(columns) == 0 {
+		t.Fatalf("schema %d catalog omitted table %s", version, table)
+	}
+	// COPY columns exclude generated values, which remain part of the complete
+	// historical row witness and are recorded in the authenticated objects.
+	data, err := catalogFiles.ReadFile(fmt.Sprintf("catalogs/schema-%d-postgresql-17.json", version))
+	var baseline catalogBaseline
+	if err != nil || json.Unmarshal(data, &baseline) != nil {
+		t.Fatalf("read authenticated schema %d column metadata: %v", version, err)
+	}
+	var objects []struct {
+		Kind  string `json:"kind"`
+		Name  string `json:"name"`
+		Value struct {
+			Name      string `json:"name"`
+			Generated string `json:"generated"`
+			Dropped   bool   `json:"dropped"`
+		} `json:"value"`
+	}
+	if err := json.Unmarshal(baseline.Objects, &objects); err != nil {
+		t.Fatalf("decode schema %d generated columns: %v", version, err)
+	}
+	for _, object := range objects {
+		if object.Kind == "column" && strings.HasPrefix(object.Name, table+".") && object.Value.Generated != "" && !object.Value.Dropped {
+			columns = append(columns, "original."+pgx.Identifier{object.Value.Name}.Sanitize())
+		}
+	}
+	projection := "(SELECT to_jsonb(historical) FROM (SELECT " + strings.Join(columns, ",") + ") historical)"
 	statement := `SELECT COALESCE(jsonb_agg(` + projection + ` ORDER BY (` + projection + `)::text), '[]'::jsonb)::text FROM ` + pgx.Identifier{table}.Sanitize() + ` original`
 	if table == "schema_migrations" {
 		statement += fmt.Sprintf(" WHERE version <= %d", version)
 	}
-	var rows string
-	if err := pool.QueryRow(ctx, statement).Scan(&rows); err != nil {
-		t.Fatalf("snapshot schema %d archive table %s: %v", version, table, err)
-	}
-	return rows
+	return statement
 }
 
 func assertHistoricalArchiveBindingDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
@@ -73,6 +119,7 @@ func TestPostgreSQLOfflineSchema23RestoreFinalizerFailureRollsBackAndRetries(t *
 
 func restoreSchema23Archive(t *testing.T, offline bool) {
 	t.Helper()
+	current := currentRecoveryVersion(t)
 	ctx, source, target, options := recoveryFixtureAtVersion(t, 23)
 	if version, err := database.SchemaVersion(ctx, source); err != nil || version != 23 {
 		t.Fatalf("historical archive source schema = %d, want 23: %v", version, err)
@@ -120,7 +167,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 		failed, restoreErr := RestoreOfflineFinalized(ctx, target, archive, facts, offlineOptions,
 			func(callbackCtx context.Context, tx pgx.Tx, raw RestoreResult) error {
 				called = true
-				if raw.SourceVersion != 23 || raw.CurrentVersion < 26 || !equalJSON(raw.Tables, facts.Tables) {
+				if raw.SourceVersion != 23 || raw.CurrentVersion != current || !equalJSON(raw.Tables, facts.Tables) {
 					return errors.New("finalizer did not receive preserved source facts after migration")
 				}
 				var version int64
@@ -134,8 +181,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 					return errors.New("finalizer did not observe the migrated empty preference table")
 				}
 				var users string
-				if err := tx.QueryRow(callbackCtx, `SELECT COALESCE(jsonb_agg(to_jsonb(original)
-					ORDER BY to_jsonb(original)::text), '[]'::jsonb)::text FROM users original`).Scan(&users); err != nil {
+				if err := tx.QueryRow(callbackCtx, historicalArchiveRowsStatement(t, "users", 23)).Scan(&users); err != nil {
 					return err
 				}
 				if users != before["users"] {
@@ -183,8 +229,7 @@ func restoreSchema23Archive(t *testing.T, offline bool) {
 	if err != nil || len(migrations) == 0 {
 		t.Fatal("read current compiled migration inventory")
 	}
-	current := migrations[len(migrations)-1].Version
-	if current < 26 || result.SourceVersion != 23 || result.CurrentVersion != current || !equalJSON(result.Tables, facts.Tables) {
+	if result.SourceVersion != 23 || result.CurrentVersion != current || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("cross-version restore result source=%d current=%d, want source 23 and compiled version %d with unchanged source table facts", result.SourceVersion, result.CurrentVersion, current)
 	}
 	factsAfter, err := json.Marshal(facts)

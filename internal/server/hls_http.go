@@ -23,6 +23,7 @@ func (s *Server) registerHLSRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("GET /emby/"+kind+"/{Id}/master.m3u8", s.requireEmby(s.hlsPlaylist(kind == "Audio", true)))
 		mux.HandleFunc("GET /emby/"+kind+"/{Id}/main.m3u8", s.requireEmby(s.hlsPlaylist(kind == "Audio", false)))
 		mux.HandleFunc("GET /emby/"+kind+"/{Id}/hls1/{PlaylistId}/{SegmentFile}", s.requireEmby(s.hlsSegment(kind == "Audio")))
+		mux.HandleFunc("GET /emby/"+kind+"/{Id}/hls2/{PlaylistId}/{Artifact}", s.requireEmby(s.hlsArtifact(kind == "Audio")))
 	}
 	mux.HandleFunc("DELETE /emby/Videos/ActiveEncodings", s.requireEmby(s.stopHLSEncodings))
 	mux.HandleFunc("POST /emby/Videos/ActiveEncodings/Delete", s.requireEmby(s.stopHLSEncodings))
@@ -120,7 +121,7 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		for _, key := range []string{"videocodec", "audiocodec", "videobitrate", "audiobitrate", "width", "height", "maxwidth", "maxheight",
 			"audiostreamindex", "subtitlestreamindex", "segmentlength", "allowvideostreamcopy", "allowaudiostreamcopy", "enableautostreamcopy",
 			"audiochannels", "maxaudiochannels", "transcodingmaxaudiochannels", "audiosamplerate", "framerate", "maxframerate",
-			"maxstreamingbitrate", "container", "segmentcontainer", "protocol", "copytimestamps", "minsegments", "breakonnonkeyframes", "subtitlemethod"} {
+			"maxstreamingbitrate", "container", "segmentcontainer", "protocol", "copytimestamps", "minsegments", "breakonnonkeyframes", "subtitlemethod", "subtitledeliverymethod", "manifestsubtitles", "maxmanifestsubtitles", "enableadaptivebitrate", "adaptivebitrate", "burnsubtitles", "burninsubtitles", "deinterlace", "deinterlacevideo", "tonemapping", "enabletonemapping", "subtitleoffsetticks"} {
 			if _, supplied := values[key]; supplied {
 				return nil, nil, library.MediaFile{}, errHLSRequestInvalid
 			}
@@ -147,8 +148,13 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		return nil, nil, library.MediaFile{}, err
 	}
 	planning := s.requestPlanningConfig(r)
-	decision, err := hlsRequestConversion(values, playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
-		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}, hlsPrincipalLimits(planning, principal))
+	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
+		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
+	limits := hlsPrincipalLimits(planning, principal)
+	decision, err := hlsRequestConversion(values, input, limits)
+	if err == nil && decision.Plan != nil && !principalPlanBitrateAllowed(principal, source, *decision.Plan) {
+		decision, err = hlsRequestConversion(remoteBitrateEncodingValues(values), input, limits)
+	}
 	if err != nil || decision.Plan == nil {
 		_ = file.Close()
 		if err == nil {
@@ -202,6 +208,9 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 			startHint = 0
 		}
 		start, err := hlsStart(values, startHint, session.key.plan.DurationTicks)
+		if session.key.plan.SourceMode == "stream" {
+			start, err = 0, nil
+		}
 		if err != nil {
 			s.hlsError(w, r, err)
 			return
@@ -211,8 +220,35 @@ func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {
 		if audioOnly {
 			resource = "Audio"
 		}
+		if r.Method == http.MethodHead && !master && transcode.GeneratedHLS(session.key.plan) {
+			w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		var body []byte
-		if master {
+		if transcode.GeneratedHLS(session.key.plan) {
+			if master {
+				body, err = hlsGeneratedMaster(session, resource, token, start)
+			} else {
+				if r.Method != http.MethodHead {
+					policyContext, release, policyErr := s.acquireMediaPolicy(ctx, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
+					if policyErr != nil {
+						s.hlsError(w, r, policyErr)
+						return
+					}
+					defer release()
+					ctx = policyContext
+				}
+				body, err = s.hls.generatedPlaylist(ctx, session, file, transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount), resource, token, start)
+				if err != nil && r.Method != http.MethodHead {
+					s.failMediaPolicy(ctx, session.key.scope)
+				}
+				if err == nil && r.Method != http.MethodHead {
+					s.touchMediaPolicy(ctx, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
+				}
+			}
+		} else if master {
 			var width, height int
 			for _, stream := range session.output.Info.Streams {
 				if stream.CodecType == "video" && !stream.IsAttachedPicture {
@@ -286,15 +322,35 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 			s.hlsError(w, r, library.ErrNotFound)
 			return
 		}
+		if r.Method != http.MethodHead {
+			policyContext, release, policyErr := s.acquireMediaPolicy(ctx, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
+			if policyErr != nil {
+				_ = file.Close()
+				s.hlsError(w, r, policyErr)
+				return
+			}
+			defer release()
+			ctx = policyContext
+		}
 		work, cancel := context.WithTimeout(ctx, 45*time.Second)
 		stopSession := context.AfterFunc(session.ctx, cancel)
 		defer func() { stopSession(); cancel() }()
-		handle, err := s.hls.segment(work, session, file, int(number))
+		var handle *transcode.ReadHandle
+		if r.Method == http.MethodHead {
+			handle, err = s.hls.segmentHeader(work, session, file, int(number))
+		} else {
+			handle, err = s.hls.segment(work, session, file, int(number))
+		}
 		if err != nil {
+			if r.Method != http.MethodHead {
+				s.failMediaPolicy(work, session.key.scope)
+			}
 			s.hlsError(w, r, err)
 			return
 		}
-		defer handle.Close()
+		if handle != nil {
+			defer handle.Close()
+		}
 		principal := r.Context().Value(principalKey).(identity.Principal)
 		verified, _, err := s.authorizeHLS(work, principal, session.key.scope, session.key.stamp, session.key.plan)
 		if err != nil {
@@ -305,6 +361,12 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		_ = verified.Close()
+		if handle == nil {
+			w.Header().Set("Content-Type", "video/mp2t")
+			w.Header().Set("Cache-Control", "private, no-transform")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		info, err := handle.Stat()
 		if err != nil {
 			s.hlsError(w, r, err)
@@ -320,6 +382,9 @@ func (s *Server) hlsSegment(audioOnly bool) http.HandlerFunc {
 		interrupted := make(chan struct{})
 		stop := context.AfterFunc(work, func() { _ = controller.SetWriteDeadline(time.Now()); _ = handle.Close(); close(interrupted) })
 		http.ServeContent(w, r, "segment.ts", info.ModTime(), handle)
+		if work.Err() == nil && r.Method != http.MethodHead {
+			s.touchMediaPolicy(work, principal, session.key.scope)
+		}
 		if !stop() {
 			<-interrupted
 		}
@@ -347,7 +412,7 @@ func (s *Server) stopHLSEncodings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err == nil {
-		s.hls.cancelMatching(principal.SessionID, canonical)
+		s.cancelPlaybackResources(principal.SessionID, canonical)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

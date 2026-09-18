@@ -55,7 +55,7 @@ func applicationKeyLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpo
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
-		'playback', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM play_sessions t),
+		'playback', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' - 'is_dynamic' ORDER BY id) FROM play_sessions t),
 		'userdata', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, item_id) FROM user_item_data t),
 		'encodings', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM encoding_jobs t),
 		'references', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY user_id, auth_session_id, device_id, client_nonce)
@@ -105,8 +105,8 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("migrate application credentials: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
-		t.Fatalf("application key schema = %d, want 29, error=%v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != currentMigrationVersion(t) {
+		t.Fatalf("application key schema = %d, want current, error=%v", version, err)
 	}
 	if after := applicationKeyLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("application key migration changed historical rows or credential material")

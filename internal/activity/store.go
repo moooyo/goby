@@ -176,7 +176,7 @@ func actionResource(action Action) ResourceKind {
 		return ResourceLibraryRoot
 	case ActionScanRequested, ActionScanCancelRequested, ActionScanFinished:
 		return ResourceScan
-	case ActionMetadataUpdated:
+	case ActionMetadataUpdated, ActionItemDeleted, ActionSubtitleDeleted:
 		return ResourceItem
 	case ActionSettingsUpdated:
 		return ResourceSettings
@@ -217,7 +217,7 @@ func fieldAllowed(action Action, field Field) bool {
 	case ActionSettingsUpdated:
 		switch field {
 		case FieldServerName, FieldServerNameMode, FieldMaxBitrate, FieldMaxWidth,
-			FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth:
+			FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement:
 			return true
 		}
 	case ActionTaskScheduleUpdated:

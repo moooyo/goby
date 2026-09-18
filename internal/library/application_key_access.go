@@ -16,6 +16,9 @@ import (
 type Subject struct {
 	UserID                  string
 	ApplicationCredentialID string
+	// Actor is the trusted login that selected UserID. A nil actor is reserved
+	// for internal callers; HTTP user state writes always retain their principal.
+	Actor *identity.Principal
 }
 
 func validSubject(subject Subject) bool {
@@ -69,24 +72,29 @@ func (s *Store) beginSubjectRead(ctx context.Context, subject Subject) (pgx.Tx, 
 			}
 			return nil, libraryAccess{}, fmt.Errorf("read application catalog target: %w", err)
 		}
-		if !administrator {
-			access, err := parseLibraryPolicy(policy)
-			if err != nil {
-				rollback(tx)
-				return nil, libraryAccess{}, err
-			}
-			access.canPlay = true
-			return tx, access, nil
+		access, err := parseLibraryPolicy(policy)
+		if err != nil {
+			rollback(tx)
+			return nil, libraryAccess{}, err
 		}
+		access.userID, access.administrator, access.canPlay = subject.UserID, administrator, true
+		// Feature privileges belong to the server credential; UserID selects
+		// catalog content and user state without borrowing account authority.
+		access.policy.RestrictedFeatures = nil
+		if administrator {
+			access.all = true
+		}
+		return tx, access, nil
 	}
-	return tx, libraryAccess{all: true, folders: []string{}, canPlay: true}, nil
+	return tx, libraryAccess{all: true, folders: []string{}, canPlay: true, administrator: true}, nil
 }
 
-// Target account locks precede credential locks throughout state writes. An
-// absent target is valid for playback lifecycle state, never for user_item_data.
+// Target account locks precede credential locks throughout state writes. The
+// target selects state ownership, not the server credential's write authority.
+// An absent target is valid for playback lifecycle state, never user_item_data.
 func (s *Store) beginSubjectStateWrite(ctx context.Context, subject Subject, requirePlayback bool) (pgx.Tx, libraryAccess, error) {
 	if subject.ApplicationCredentialID == "" {
-		return s.beginStateWrite(ctx, subject.UserID, requirePlayback)
+		return s.beginStateWrite(ctx, subject, requirePlayback)
 	}
 	if !validSubject(subject) || s == nil || s.pool == nil {
 		return nil, libraryAccess{}, ErrInvalidInput
@@ -101,19 +109,10 @@ func (s *Store) beginSubjectStateWrite(ctx context.Context, subject Subject, req
 	if err != nil {
 		return nil, libraryAccess{}, fmt.Errorf("begin application state update: %w", err)
 	}
-	if subject.UserID != "" {
-		var id string
-		if err := tx.QueryRow(ctx, "SELECT id FROM users WHERE id = $1 FOR SHARE", subject.UserID).Scan(&id); err != nil {
-			rollback(tx)
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil, libraryAccess{}, ErrNotFound
-			}
-			return nil, libraryAccess{}, fmt.Errorf("lock application state target: %w", err)
-		}
-	}
-	if err := checkSubjectApplicationKey(ctx, tx, subject.ApplicationCredentialID, true); err != nil {
+	access, err := checkSubjectStateWrite(ctx, tx, subject, requirePlayback, true)
+	if err != nil {
 		rollback(tx)
 		return nil, libraryAccess{}, err
 	}
-	return tx, libraryAccess{all: true, folders: []string{}, canPlay: true}, nil
+	return tx, access, nil
 }

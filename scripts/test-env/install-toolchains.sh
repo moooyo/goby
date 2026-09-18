@@ -12,7 +12,7 @@ GO_SHA256=63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
 FFMPEG_VERSION=9.0.1
 FFMPEG_KEY=FCF986EA15E6E293A5644F10B4322F04D67658D8
 NV_CODEC_VERSION=n13.1.15.0
-TOOLCHAINS=/opt/goby-toolchains
+TOOLCHAINS=${GOBY_TOOLCHAINS:-/opt/goby-toolchains}
 GO_PREFIX="$TOOLCHAINS/go$GO_VERSION"
 FFMPEG_PREFIX="$TOOLCHAINS/ffmpeg-$FFMPEG_VERSION"
 BUILD_ROOT=${GOBY_BUILD_ROOT:-/var/tmp}
@@ -28,7 +28,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install --no-install-recommends -y \
   build-essential ca-certificates curl gnupg libass-dev libdrm-dev libmp3lame-dev libnuma-dev libopus-dev \
-  libssl-dev libva-dev libvorbis-dev libvpl-dev libx264-dev nasm pkg-config \
+  libssl-dev libva-dev libvorbis-dev libvpl-dev libx264-dev libzimg-dev nasm pkg-config \
   python3 xz-utils yasm
 
 if [[ ! -x "$GO_PREFIX/bin/go" ]]; then
@@ -40,7 +40,8 @@ if [[ ! -x "$GO_PREFIX/bin/go" ]]; then
 fi
 
 if [[ ! -x "$FFMPEG_PREFIX/bin/ffmpeg" ]] || \
-  ! "$FFMPEG_PREFIX/bin/ffmpeg" -buildconf 2>/dev/null | grep -Fq -- '--enable-libass'; then
+  ! "$FFMPEG_PREFIX/bin/ffmpeg" -buildconf 2>/dev/null | grep -Fq -- '--enable-libass' || \
+  ! "$FFMPEG_PREFIX/bin/ffmpeg" -buildconf 2>/dev/null | grep -Fq -- '--enable-libzimg'; then
   curl --fail --location --silent --show-error --retry 3 \
     "https://ffmpeg.org/releases/ffmpeg-$FFMPEG_VERSION.tar.xz" -o "$work/ffmpeg.tar.xz"
   curl --fail --location --silent --show-error --retry 3 \
@@ -69,7 +70,7 @@ if [[ ! -x "$FFMPEG_PREFIX/bin/ffmpeg" ]] || \
     cd "$work/ffmpeg-$FFMPEG_VERSION"
     ./configure --prefix="$FFMPEG_PREFIX" \
       --enable-gpl --enable-libx264 --enable-libass --enable-libmp3lame \
-      --enable-libopus --enable-libvorbis --enable-vaapi --enable-libvpl \
+      --enable-libopus --enable-libvorbis --enable-libzimg --enable-vaapi --enable-libvpl \
       --enable-ffnvcodec --enable-cuvid --enable-nvenc \
       --disable-debug --disable-doc --disable-ffplay \
       > "$TOOLCHAINS/ffmpeg-configure.log" 2>&1

@@ -12,6 +12,7 @@ import { adminApi, isAbortError } from './api';
 import type { MetadataItemSummary, MetadataItemsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { MetadataEditorDialog } from './MetadataEditorDialog';
+import { OnlineSourcesDialog } from './OnlineSourcesDialog';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 const itemTypes = [
@@ -63,7 +64,7 @@ function ItemsLoading() {
   return <Stack spacing={1} sx={{ px: { xs: 2.5, sm: 3 }, py: 2 }} role="status" aria-label="Loading library items"><Skeleton height={62} /><Skeleton height={62} /><Skeleton height={62} /><Skeleton height={62} /></Stack>;
 }
 
-function ItemsList({ items, onEdit }: { items: MetadataItemSummary[]; onEdit: (itemId: string) => void }) {
+function ItemsList({ items, onEdit, onSources }: { items: MetadataItemSummary[]; onEdit: (itemId: string) => void; onSources: (itemId: string) => void }) {
   return (
     <>
       <Box component="ul" aria-label="Library items" sx={{ display: { xs: 'block', lg: 'none' }, listStyle: 'none', p: 0, m: 0 }}>
@@ -76,6 +77,7 @@ function ItemsList({ items, onEdit }: { items: MetadataItemSummary[]; onEdit: (i
             <ItemIdentity name={item.Name} path={item.Path} parentId={item.ParentId} parentName={item.ParentName} position={itemPosition(item)} />
             <Box sx={{ mt: 2 }}><MetadataStatus hasOverrides={item.HasOverrides} lockedFieldCount={item.LockedFieldCount} /></Box>
             <Button size="small" variant="outlined" startIcon={<EditOutlined />} onClick={() => onEdit(item.Id)} aria-label={`Edit metadata for ${item.Name}`} sx={{ mt: 2 }}>Edit metadata</Button>
+            <Button size="small" onClick={() => onSources(item.Id)} aria-label={`Online sources for ${item.Name}`} sx={{ mt: 2, ml: 1 }}>Online sources</Button>
           </Box>
         ))}
       </Box>
@@ -89,7 +91,7 @@ function ItemsList({ items, onEdit }: { items: MetadataItemSummary[]; onEdit: (i
                 <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2">{itemTypeName(item.Type)}</Typography></TableCell>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2" color="text.secondary">{item.ProductionYear ?? '—'}</Typography></TableCell>
                 <TableCell><MetadataStatus hasOverrides={item.HasOverrides} lockedFieldCount={item.LockedFieldCount} /></TableCell>
-                <TableCell align="right" sx={{ pr: 3, whiteSpace: 'nowrap' }}><Button size="small" startIcon={<EditOutlined />} onClick={() => onEdit(item.Id)} aria-label={`Edit metadata for ${item.Name}`}>Edit metadata</Button></TableCell>
+                <TableCell align="right" sx={{ pr: 3, whiteSpace: 'nowrap' }}><Stack sx={{ alignItems: 'flex-end' }}><Button size="small" startIcon={<EditOutlined />} onClick={() => onEdit(item.Id)} aria-label={`Edit metadata for ${item.Name}`}>Edit metadata</Button><Button size="small" onClick={() => onSources(item.Id)} aria-label={`Online sources for ${item.Name}`}>Online sources</Button></Stack></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -144,6 +146,7 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
   const [pending, setPending] = useState(true);
   const [revision, setRevision] = useState(0);
   const [editingItemId, setEditingItemId] = useState<string>();
+  const [sourcesItemId, setSourcesItemId] = useState<string>();
   const queryKey = JSON.stringify([libraryId, query.searchTerm, query.types, query.page, query.pageSize]);
   const data = loaded?.queryKey === queryKey ? loaded.result : undefined;
   const failed = failure?.queryKey === queryKey;
@@ -215,7 +218,7 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
             <Button onClick={filtered ? clearFilters : onLibraries} startIcon={filtered ? <FilterAltOffOutlined /> : <ArrowBackRounded />}>{filtered ? 'Clear filters' : 'Back to libraries'}</Button>
           </Stack>
         )}
-        {data && data.Items.length > 0 && <ItemsList items={data.Items} onEdit={setEditingItemId} />}
+        {data && data.Items.length > 0 && <ItemsList items={data.Items} onEdit={setEditingItemId} onSources={setSourcesItemId} />}
         {!data && !loading && failed && <Typography variant="body2" color="text.secondary" sx={{ px: { xs: 2.5, sm: 3 }, pb: 3 }}>The item list could not be loaded. Retry the request to see this library.</Typography>}
         {data && (
           <TablePagination
@@ -237,6 +240,7 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
       </Paper>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Manual overrides stay in effect during library scans. Locked fields keep their saved values.</Typography>
       {editingItemId && <MetadataEditorDialog key={editingItemId} itemId={editingItemId} onClose={() => { setEditingItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={onNavigationGuardChange} />}
+      {sourcesItemId && <OnlineSourcesDialog key={sourcesItemId} itemId={sourcesItemId} onClose={() => { setSourcesItemId(undefined); refresh(); }} onSaved={refresh} onNavigationGuardChange={onNavigationGuardChange} />}
     </Box>
   );
 }

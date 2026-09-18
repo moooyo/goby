@@ -13,7 +13,13 @@ import (
 // key to a persisted client context. A client/device pair never issues another
 // bearer token or another row in the shared credential table.
 func (s *Store) ResolveEmbyForClient(ctx context.Context, token string, client Client) (Principal, error) {
-	principal, err := s.ResolveEmby(ctx, token)
+	return s.ResolveEmbyForClientWithPeer(ctx, token, client, "")
+}
+
+// ResolveEmbyForClientWithPeer preserves the ordinary login's trusted transport
+// peer for remote-access checks and retains application-key client isolation.
+func (s *Store) ResolveEmbyForClientWithPeer(ctx context.Context, token string, client Client, peerIP string) (Principal, error) {
+	principal, err := s.resolveEmbyWithPeer(ctx, token, peerIP)
 	if err != nil || !principal.IsApplicationKey() || client == (Client{}) {
 		return principal, err
 	}

@@ -154,6 +154,10 @@ func description(action Action, state State) (string, string) {
 		return terminalDescription("Library scan", state)
 	case ActionMetadataUpdated:
 		return "Metadata updated", "Item metadata controls were updated."
+	case ActionItemDeleted:
+		return "Media deleted", "An authorized media deletion was committed to the catalog."
+	case ActionSubtitleDeleted:
+		return "Subtitle deleted", "An authorized external subtitle deletion was committed to the catalog."
 	case ActionSettingsUpdated:
 		return "Server settings updated", "Supported server settings were updated."
 	case ActionTaskAdmitted:

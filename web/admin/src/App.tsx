@@ -11,6 +11,8 @@ import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
 import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import BackupOutlined from '@mui/icons-material/BackupOutlined';
+import CloudOutlined from '@mui/icons-material/CloudOutlined';
+import QueueMusicRounded from '@mui/icons-material/QueueMusicRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
@@ -32,8 +34,10 @@ const SettingsPage = lazy(() => import('./SettingsPage').then((module) => ({ def
 const ObservabilityPage = lazy(() => import('./ObservabilityPage').then((module) => ({ default: module.ObservabilityPage })));
 const BackupsPage = lazy(() => import('./BackupsPage').then((module) => ({ default: module.BackupsPage })));
 const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module) => ({ default: module.MetadataItemsPage })));
+const ProvidersPage = lazy(() => import('./ProvidersPage').then((module) => ({ default: module.ProvidersPage })));
+const CollectionsPage = lazy(() => import('./CollectionsPage').then((module) => ({ default: module.CollectionsPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -42,7 +46,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -66,6 +70,8 @@ function pageFromLocation(): Page {
   if (path.endsWith('/settings')) return 'settings';
   if (path.endsWith('/observability')) return 'observability';
   if (path.endsWith('/backups')) return 'backups';
+  if (path.endsWith('/providers')) return 'providers';
+  if (path.endsWith('/collections')) return 'collections';
   return 'overview';
 }
 
@@ -77,7 +83,7 @@ function pageURL(page: Page, libraryId?: string): string {
 function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, event?: MouseEvent<HTMLAnchorElement>) => void }) {
   const selectedPage = page === 'metadata' ? 'libraries' : page;
   return (
-    <Stack component="nav" aria-label="Administration" sx={{ height: '100%', bgcolor: colors.deep, color: 'white', p: 2.5 }}>
+    <Stack component="nav" aria-label="Administration" sx={{ height: '100%', overflowY: 'auto', bgcolor: colors.deep, color: 'white', p: 2.5 }}>
       <Box sx={{ px: 0.75, pt: 1, pb: 5 }}><Brand light /></Box>
       <Typography variant="overline" sx={{ px: 1.5, mb: 1, color: '#92B6C1' }}>Workspace</Typography>
       <List disablePadding sx={{ '& .MuiListItemButton-root': { borderRadius: 2, minHeight: 46, px: 1.5, mb: 0.6, color: '#BCD1D8', '&.Mui-selected': { bgcolor: '#FFFFFF14', color: 'white', boxShadow: 'inset 3px 0 0 #72C5C2' }, '&.Mui-selected:hover': { bgcolor: '#FFFFFF1C' }, '&:hover': { bgcolor: '#FFFFFF0B' } }, '& .MuiListItemIcon-root': { minWidth: 34, color: 'inherit' }, '& .MuiListItemText-primary': { fontSize: 13, fontWeight: 580 } }}>
@@ -85,7 +91,9 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'overview' as const, label: 'Overview', icon: SpaceDashboardOutlined },
           { id: 'users' as const, label: 'Users', icon: PeopleOutlineRounded },
           { id: 'libraries' as const, label: 'Libraries', icon: VideoLibraryOutlined },
+          { id: 'collections' as const, label: 'Playlists & collections', icon: QueueMusicRounded },
           { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
+          { id: 'providers' as const, label: 'Online providers', icon: CloudOutlined },
           { id: 'sessions' as const, label: 'Sessions', icon: SensorsRounded },
           { id: 'devices' as const, label: 'Devices', icon: DevicesOutlined },
           { id: 'api-keys' as const, label: 'API keys', icon: KeyRounded },
@@ -206,6 +214,8 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'settings' && <SettingsPage currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'observability' && <ObservabilityPage />}
             {page === 'backups' && <BackupsPage key={user.Id} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
+            {page === 'providers' && <ProvidersPage />}
+            {page === 'collections' && <CollectionsPage onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>
         </Box>
       </Box>

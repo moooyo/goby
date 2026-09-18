@@ -68,7 +68,11 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
 	planning := s.requestPlanningConfig(r)
-	decision, err := videoRequestDecision(input, values, container, hlsPrincipalLimits(planning, principal))
+	limits := hlsPrincipalLimits(planning, principal)
+	decision, err := videoRequestDecision(input, values, container, limits)
+	if err == nil && !decision.Original && decision.Conversion.Plan != nil && !principalPlanBitrateAllowed(principal, source, *decision.Conversion.Plan) {
+		decision, err = videoRequestDecision(input, remoteBitrateEncodingValues(values), container, limits)
+	}
 	if err != nil {
 		s.videoError(w, r, err)
 		return

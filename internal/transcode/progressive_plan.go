@@ -32,7 +32,7 @@ func validateProgressivePlan(p Plan) error {
 	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
 		return invalid("source format clock")
 	}
-	if p.VideoSeekCandidate != "" {
+	if p.VideoSeekCandidate != "" || p.VideoCopySeekCandidate != "" {
 		return invalid("video seek candidate")
 	}
 	if p.OutputMode != "progressive" || p.VideoStreamIndex != -1 || p.VideoCodec != "" || p.AudioStreamIndex < 0 || p.AudioStreamIndex > maxStreamIndex {

@@ -96,6 +96,9 @@ const rootBindingMetadataColumns = `
 // ListRegisteredRoots discovers root IDs using bounded catalog metadata only.
 // It neither reads stored topology documents nor opens any media directory.
 func (s *Store) ListRegisteredRoots(ctx context.Context, actor identity.Principal, libraryID string) ([]RegisteredRootInfo, error) {
+	if libraryID == collectionLibraryID {
+		return nil, ErrNotFound
+	}
 	if ctx == nil || !validCatalogLibraryIdentifier(libraryID) {
 		return nil, ErrInvalidInput
 	}

@@ -9,11 +9,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/diagnostics"
+	"github.com/moooyo/goby/internal/dynamicsource"
 	"github.com/moooyo/goby/internal/events"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
@@ -40,6 +42,10 @@ type Server struct {
 	notifier         *userDataNotifier
 	catalogNotifier  *libraryNotifier
 	hls              *hlsRuntime
+	dynamicSources   *dynamicsource.Manager
+	dynamicStreams   *dynamicStreamRuntime
+	mediaPolicyOnce  sync.Once
+	mediaPolicy      *mediaPolicyRuntime
 	taskStore        *tasks.Store
 	taskManager      *tasks.Manager
 	settings         *settings.Store
@@ -98,6 +104,10 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		_ = app.Close(context.Background())
 		return nil, err
 	}
+	if err := app.initializeDynamicSources(ctx); err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
 	if err := app.initializeTasks(ctx); err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
@@ -138,7 +148,11 @@ func (s *Server) initializeSettings(ctx context.Context) error {
 }
 
 func (s *Server) initializeTasks(ctx context.Context) error {
-	store, err := tasks.New(s.db, s.library)
+	executors, err := s.managementTaskExecutors()
+	if err != nil {
+		return err
+	}
+	store, err := tasks.New(s.db, s.library, executors)
 	if err != nil {
 		return err
 	}
@@ -148,7 +162,8 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 	if err := store.RecoverRuns(ctx); err != nil {
 		return err
 	}
-	manager, err := tasks.NewManager(store, s.library, tasks.ManagerOptions{Logger: s.log})
+	manager, err := tasks.NewManager(store, s.library, tasks.ManagerOptions{Logger: s.log,
+		MaxConcurrent: func() int { return s.settings.Snapshot().Management.Tasks.MaxConcurrent }})
 	if err != nil {
 		return err
 	}
@@ -157,6 +172,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	s.stopMediaPolicy()
 	s.mediaDiagnostics.BeginClose()
 	s.catalogNotifier.Close()
 	s.cancelActivityRetention()
@@ -200,6 +216,13 @@ func (s *Server) Handler() http.Handler {
 	s.registerSubtitleRoutes(mux)
 	s.registerRemoteCommandRoutes(mux)
 	s.registerHLSRoutes(mux)
+	s.registerLiveStreamRoutes(mux)
+	s.registerCollectionRoutes(mux)
+	s.registerProviderRoutes(mux)
+	s.registerUserManagementRoutes(mux)
+	s.registerMediaDownloadRoutes(mux)
+	s.registerMediaManagementRoutes(mux)
+	s.registerFeatureRoutes(mux)
 	mux.HandleFunc("/admin/v1/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested administrator API is not available.")
 	})

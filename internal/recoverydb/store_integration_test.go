@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -424,12 +425,12 @@ func TestRecoveryDatabaseStoreIntegration(t *testing.T) {
 
 	run("transactional_stamp_rejects_a_different_actual_peer", func(t *testing.T) {
 		before := f.capture(t, f.source)
-		proxyAddress := recoveryForwardSource(t, f.ctx)
+		proxyAddress := recoveryForwardSource(t, f.ctx, f.source.endpoint, f.source.port)
 		config := f.source.pool.Config()
 		config.MaxConns = 1
 		config.MinConns = 0
 		config.ConnConfig.DialFunc = func(ctx context.Context, network, address string) (net.Conn, error) {
-			if network != "tcp" && network != "tcp4" || address != "127.0.0.1:15432" {
+			if network != "tcp" && network != "tcp4" || address != f.source.endpoint {
 				return nil, errors.New("unexpected recovery fixture dial destination")
 			}
 			dialer := net.Dialer{Timeout: 3 * time.Second}
@@ -451,12 +452,12 @@ func TestRecoveryDatabaseStoreIntegration(t *testing.T) {
 			t.Fatal("the forwarding fixture changed the declared connection identity")
 		}
 		peer := tx.Conn().PgConn().Conn().RemoteAddr()
-		if peer == nil || peer.String() != proxyAddress || peer.String() == "127.0.0.1:15432" {
+		if peer == nil || peer.String() != proxyAddress || peer.String() == f.source.endpoint {
 			t.Fatal("the forwarding fixture did not establish a different actual peer")
 		}
 		var actualDatabase, actualRole, actualServer string
 		var actualPort int
-		if tx.QueryRow(f.ctx, `SELECT current_database(),current_user,host(inet_server_addr()),inet_server_port()`).Scan(&actualDatabase, &actualRole, &actualServer, &actualPort) != nil || actualDatabase != f.source.database || actualRole != f.source.role || actualServer != "127.0.0.1" || actualPort != 15432 {
+		if tx.QueryRow(f.ctx, `SELECT current_database(),current_user,host(inet_server_addr()),inet_server_port()`).Scan(&actualDatabase, &actualRole, &actualServer, &actualPort) != nil || actualDatabase != f.source.database || actualRole != f.source.role || actualServer != f.source.host || actualPort != int(f.source.port) {
 			t.Fatal("the forwarder did not reach the same explicitly owned PostgreSQL database and role")
 		}
 		if !f.source.lease.Protects(f.source.pool) {
@@ -893,11 +894,20 @@ type recoveryFixtureDatabase struct {
 	store                                              *Store
 	config                                             Config
 	database, role, application                        string
+	host, endpoint                                     string
+	port                                               uint16
 	databaseOID, roleOID, namespaceOID, namespaceOwner int64
 }
 
 func newRecoveryStoreFixture(t *testing.T) *recoveryStoreFixture {
 	t.Helper()
+	rawPort, explicitPort := os.LookupEnv("GOBY_TEST_RECOVERY_PORT")
+	port, err := parseRecoveryFixturePort(rawPort, explicitPort)
+	if err != nil {
+		t.Fatal(err)
+	}
+	portText := strconv.FormatUint(uint64(port), 10)
+	endpoint := net.JoinHostPort(recoveryFixtureHost, portText)
 	urls := []string{os.Getenv("GOBY_TEST_BACKUP_SOURCE_DATABASE_URL"), os.Getenv("GOBY_TEST_BACKUP_TARGET_DATABASE_URL")}
 	if urls[0] == "" && urls[1] == "" {
 		t.Skip("two explicitly disposable recovery databases are required")
@@ -920,18 +930,18 @@ func newRecoveryStoreFixture(t *testing.T) *recoveryStoreFixture {
 	namePattern := regexp.MustCompile(`^[a-z][a-z0-9_]{0,62}$`)
 	for _, raw := range urls {
 		uri, err := url.Parse(raw)
-		if err != nil || uri.Scheme != "postgresql" && uri.Scheme != "postgres" || uri.Hostname() != "127.0.0.1" || uri.Port() != "15432" || uri.Fragment != "" {
-			t.Fatal("recovery fixture is restricted to the isolated 127.0.0.1:15432 cluster")
+		if err != nil || uri.Scheme != "postgresql" && uri.Scheme != "postgres" || uri.Hostname() != recoveryFixtureHost || uri.Port() != portText || uri.Fragment != "" {
+			t.Fatal("recovery fixture is restricted to its explicitly selected IPv4 loopback port")
 		}
 		query, err := url.ParseQuery(uri.RawQuery)
 		if err != nil || len(query) != 1 || len(query["sslmode"]) != 1 || query.Get("sslmode") != "disable" {
 			t.Fatal("recovery fixture accepts only the explicit local sslmode=disable URI")
 		}
 		config, err := pgxpool.ParseConfig(raw)
-		if err != nil || config.ConnConfig.Host != "127.0.0.1" || config.ConnConfig.Port != 15432 || len(config.ConnConfig.Fallbacks) != 0 || config.ConnConfig.TLSConfig != nil || len(config.ConnConfig.RuntimeParams) != 0 {
+		if err != nil || config.ConnConfig.Host != recoveryFixtureHost || config.ConnConfig.Port != port || len(config.ConnConfig.Fallbacks) != 0 || config.ConnConfig.TLSConfig != nil || len(config.ConnConfig.RuntimeParams) != 0 {
 			t.Fatal("recovery fixture connection has an unexpected route or session policy")
 		}
-		if !strings.HasPrefix(config.ConnConfig.Database, "goby_backup_") || !namePattern.MatchString(config.ConnConfig.Database) || !namePattern.MatchString(config.ConnConfig.User) {
+		if !strings.HasPrefix(config.ConnConfig.Database, "goby_backup_") || !strings.HasPrefix(config.ConnConfig.User, "goby_backup_") || !namePattern.MatchString(config.ConnConfig.Database) || !namePattern.MatchString(config.ConnConfig.User) {
 			t.Fatal("recovery fixture requires explicit owned database and role names")
 		}
 		config.MaxConns = 6
@@ -956,6 +966,7 @@ func newRecoveryStoreFixture(t *testing.T) *recoveryStoreFixture {
 		postgres := options
 		postgres.SourceURL = urls[index]
 		entry := &recoveryFixtureDatabase{pool: pool, database: config.ConnConfig.Database, role: config.ConnConfig.User, application: application,
+			host: recoveryFixtureHost, port: port, endpoint: endpoint,
 			config: Config{Postgres: postgres, DeploymentID: recoveryFixtureDeployment, Slot: slot}}
 		f.preflight(t, entry)
 		if index == 0 {
@@ -976,18 +987,27 @@ func newRecoveryStoreFixture(t *testing.T) *recoveryStoreFixture {
 
 func (f *recoveryStoreFixture) preflight(t *testing.T, entry *recoveryFixtureDatabase) {
 	t.Helper()
+	connection, err := entry.pool.Acquire(f.ctx)
+	if err != nil {
+		t.Fatal("acquire the explicitly owned recovery fixture connection")
+	}
+	defer connection.Release()
+	peer := connection.Conn().PgConn().Conn().RemoteAddr()
+	if peer == nil || peer.String() != entry.endpoint {
+		t.Fatal("the recovery fixture connection has a different actual physical peer")
+	}
 	var actualDatabase, actualRole, address, ownerName string
 	var port int
 	var databaseOwner int64
 	var unsafeRole, member bool
-	err := entry.pool.QueryRow(f.ctx, `SELECT current_database(),current_user,host(inet_server_addr()),inet_server_port(),
+	err = connection.QueryRow(f.ctx, `SELECT current_database(),current_user,host(inet_server_addr()),inet_server_port(),
 		d.oid::bigint,d.datdba::bigint,r.oid::bigint,n.oid::bigint,n.nspowner::bigint,pg_catalog.pg_get_userbyid(n.nspowner),
 		(r.rolsuper OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication OR r.rolbypassrls),
 		EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid)
 		FROM pg_catalog.pg_database d JOIN pg_catalog.pg_roles r ON r.rolname=current_user
 		CROSS JOIN pg_catalog.pg_namespace n WHERE d.datname=current_database() AND n.nspname='public'`).Scan(
 		&actualDatabase, &actualRole, &address, &port, &entry.databaseOID, &databaseOwner, &entry.roleOID, &entry.namespaceOID, &entry.namespaceOwner, &ownerName, &unsafeRole, &member)
-	if err != nil || actualDatabase != entry.database || actualRole != entry.role || address != "127.0.0.1" || port != 15432 || databaseOwner != entry.roleOID || unsafeRole || member || entry.namespaceOID <= 0 || entry.namespaceOwner != entry.roleOID && ownerName != "pg_database_owner" {
+	if err != nil || actualDatabase != entry.database || actualRole != entry.role || address != entry.host || port != int(entry.port) || databaseOwner != entry.roleOID || unsafeRole || member || entry.namespaceOID <= 0 || entry.namespaceOwner != entry.roleOID && ownerName != "pg_database_owner" {
 		t.Fatal("actual recovery fixture identity, namespace ownership, or least privilege was not proven")
 	}
 	var unexpectedSchemas int
@@ -1287,19 +1307,22 @@ func recoveryRollback(tx pgx.Tx) {
 // the isolated test cluster. It never logs, decodes, or persists protocol bytes.
 // The returned endpoint differs physically while pgx's declared URI stays the
 // same, proving the lease check is stronger than database and role names.
-func recoveryForwardSource(t *testing.T, parent context.Context) string {
+func recoveryForwardSource(t *testing.T, parent context.Context, sourceEndpoint string, sourcePort uint16) string {
 	t.Helper()
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if sourcePort == 0 || sourceEndpoint != net.JoinHostPort(recoveryFixtureHost, strconv.FormatUint(uint64(sourcePort), 10)) {
+		t.Fatal("the forwarding source is not the fixture's validated loopback endpoint")
+	}
+	listener, err := net.Listen("tcp4", net.JoinHostPort(recoveryFixtureHost, "0"))
 	if err != nil {
 		t.Fatal("open the owned loopback forwarding listener")
 	}
 	address, ok := listener.Addr().(*net.TCPAddr)
-	if !ok || !address.IP.Equal(net.ParseIP("127.0.0.1")) || address.Port == 15432 || address.Port == 5432 || address.Port < 1 {
+	if !ok || !address.IP.Equal(net.ParseIP(recoveryFixtureHost)) || address.Port == int(sourcePort) || address.Port == int(recoveryFixtureDefaultPort) || address.Port == 5432 || address.Port < 1 {
 		_ = listener.Close()
 		t.Fatal("the owned forwarding listener selected an unexpected endpoint")
 	}
 	ctx, cancel := context.WithCancel(parent)
-	forwarder := &recoverySingleForwarder{listener: listener, done: make(chan struct{})}
+	forwarder := &recoverySingleForwarder{listener: listener, upstream: sourceEndpoint, done: make(chan struct{})}
 	t.Cleanup(func() {
 		cancel()
 		_ = listener.Close()
@@ -1322,6 +1345,7 @@ func recoveryForwardSource(t *testing.T, parent context.Context) string {
 
 type recoverySingleForwarder struct {
 	listener    net.Listener
+	upstream    string
 	done        chan struct{}
 	mu          sync.Mutex
 	closing     bool
@@ -1347,7 +1371,7 @@ func (forwarder *recoverySingleForwarder) run(ctx context.Context) {
 	}
 	defer client.Close()
 	dialer := net.Dialer{Timeout: 3 * time.Second}
-	upstream, err := dialer.DialContext(ctx, "tcp4", "127.0.0.1:15432")
+	upstream, err := dialer.DialContext(ctx, "tcp4", forwarder.upstream)
 	if err != nil || !forwarder.retain(upstream) {
 		return
 	}

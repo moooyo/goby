@@ -20,14 +20,18 @@ type Hardware struct {
 type Plan struct {
 	// Empty mode preserves HLS output. Progressive mode produces one append-only
 	// audio stream or fragmented MP4 video, subject to the closed runner matrix.
-	OutputMode       string `json:"OutputMode,omitempty"`
-	Container        string `json:"Container"`
-	VideoCodec       string `json:"VideoCodec,omitempty"`
-	AudioCodec       string `json:"AudioCodec,omitempty"`
-	VideoStreamIndex int    `json:"VideoStreamIndex"`
-	AudioStreamIndex int    `json:"AudioStreamIndex"`
-	StartTicks       int64  `json:"StartTicks"`
-	DurationTicks    int64  `json:"DurationTicks"`
+	OutputMode       string       `json:"OutputMode,omitempty"`
+	SourceMode       string       `json:"SourceMode,omitempty"`
+	HLS              HLSPlan      `json:"HLS,omitempty"`
+	VideoFilters     VideoFilters `json:"VideoFilters,omitempty"`
+	Subtitle         SubtitlePlan `json:"Subtitle,omitempty"`
+	Container        string       `json:"Container"`
+	VideoCodec       string       `json:"VideoCodec,omitempty"`
+	AudioCodec       string       `json:"AudioCodec,omitempty"`
+	VideoStreamIndex int          `json:"VideoStreamIndex"`
+	AudioStreamIndex int          `json:"AudioStreamIndex"`
+	StartTicks       int64        `json:"StartTicks"`
+	DurationTicks    int64        `json:"DurationTicks"`
 	// Progressive video uses the probed container clock even when a track is
 	// disabled. The explicit known bit distinguishes an actual zero origin from
 	// a missing timestamp; neither field is populated from client arguments.
@@ -37,6 +41,7 @@ type Plan struct {
 	// completed restart proof. Run must revalidate it against its borrowed source
 	// and actual FFmpeg executable before changing the linear decode path.
 	VideoSeekCandidate     string  `json:"VideoSeekCandidate,omitempty"`
+	VideoCopySeekCandidate string  `json:"VideoCopySeekCandidate,omitempty"`
 	Width                  int     `json:"Width,omitempty"`
 	Height                 int     `json:"Height,omitempty"`
 	FrameRate              float64 `json:"FrameRate,omitempty"`
@@ -96,6 +101,9 @@ type Record struct {
 // Progress carries FFmpeg output timing only. It cannot change authoritative
 // playback position, watched state, or the requesting user's permissions.
 type Progress struct {
+	// HLSClock is the first reference packet immediately before container
+	// timestamp adjustment. It is private timing evidence, never playback state.
+	HLSClock    *HLSMuxClock
 	OutputTicks int64
 	Bytes       int64
 	Ended       bool

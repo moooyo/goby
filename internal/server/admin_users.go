@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/library"
 )
 
 func (s *Server) registerAdminUserRoutes(mux *http.ServeMux) {
@@ -25,14 +26,7 @@ func (s *Server) registerAdminUserRoutes(mux *http.ServeMux) {
 func nativeManagedUser(managed identity.ManagedUser) map[string]any {
 	user := nativeUser(managed.User)
 	user["Revision"] = strconv.FormatInt(managed.Revision, 10)
-	user["Policy"] = map[string]any{
-		"EnableAllFolders":               managed.Policy.EnableAllFolders,
-		"EnabledFolders":                 append([]string{}, managed.Policy.EnabledFolders...),
-		"EnableMediaPlayback":            managed.Policy.EnableMediaPlayback,
-		"EnablePlaybackRemuxing":         managed.Policy.EnablePlaybackRemuxing,
-		"EnableAudioPlaybackTranscoding": managed.Policy.EnableAudioPlaybackTranscoding,
-		"EnableVideoPlaybackTranscoding": managed.Policy.EnableVideoPlaybackTranscoding,
-	}
+	user["Policy"] = nativeManagedPolicy(managed.Policy)
 	return user
 }
 
@@ -54,7 +48,12 @@ func (s *Server) updateManagedUser(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	input, ok := decodeManagedUserUpdate(w, r)
+	current, err := s.identity.GetManagedUser(r.Context(), id)
+	if err != nil {
+		s.managedUserError(w, r, err)
+		return
+	}
+	input, ok := decodeManagedUserUpdate(w, r, current.Policy)
 	if !ok {
 		return
 	}
@@ -102,12 +101,15 @@ func (s *Server) deleteManagedUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// Database deletion has committed. Retire local consumers without holding
 	// account/session locks or waiting for a conversion process to terminate.
+	if result.CollectionsChanged {
+		s.catalogNotifier.Enqueue(library.CatalogNotification{Resync: true})
+	}
 	s.mediaDiagnostics.cancelActor(id, "")
 	for _, sessionID := range result.RevokedSessionIDs {
 		if s.eventHub != nil {
 			s.eventHub.DisconnectCredential(sessionID)
 		}
-		s.hls.cancelCredential(sessionID)
+		s.cancelPlaybackCredential(sessionID)
 	}
 	if result.CurrentSessionRevoked {
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
@@ -117,6 +119,7 @@ func (s *Server) deleteManagedUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, actor identity.Principal, action string, result identity.ManagedUserMutation) {
+	s.retireManagedUserSessions(result.RevokedSessionIDs)
 	if action == "reset_user_password" || !result.User.User.IsAdministrator || result.User.User.IsDisabled {
 		s.mediaDiagnostics.cancelActor(result.User.User.ID, "")
 	}
@@ -129,6 +132,10 @@ func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, act
 }
 
 func managedUserInputError(w http.ResponseWriter, r *http.Request, fields map[string]string) {
+	if strings.HasPrefix(r.URL.Path, "/emby/") {
+		apiError(w, r, http.StatusBadRequest, "invalid_input", "Check the user fields and supported policy values.")
+		return
+	}
 	requestID, _ := r.Context().Value(requestIDKey).(string)
 	jsonResponse(w, http.StatusBadRequest, map[string]any{
 		"Error":     map[string]any{"Code": "invalid_input", "Message": "Check the highlighted user fields.", "Fields": fields},
@@ -266,7 +273,7 @@ func managedUserRevision(raw json.RawMessage, invalid map[string]string) int64 {
 	return revision
 }
 
-func decodeManagedUserUpdate(w http.ResponseWriter, r *http.Request) (identity.ManagedUserUpdate, bool) {
+func decodeManagedUserUpdate(w http.ResponseWriter, r *http.Request, base ...identity.ManagedPolicy) (identity.ManagedUserUpdate, bool) {
 	var input identity.ManagedUserUpdate
 	values, ok := managedUserBody(w, r, []string{"Revision", "Name", "IsAdministrator", "IsDisabled", "Policy"})
 	if !ok {
@@ -277,23 +284,31 @@ func decodeManagedUserUpdate(w http.ResponseWriter, r *http.Request) (identity.M
 	managedUserValue(values["Name"], "Name", &input.Name, invalid)
 	managedUserValue(values["IsAdministrator"], "IsAdministrator", &input.IsAdministrator, invalid)
 	managedUserValue(values["IsDisabled"], "IsDisabled", &input.IsDisabled, invalid)
-	policy, policyErrors := managedUserObject(values["Policy"], []string{
-		"EnableAllFolders", "EnabledFolders", "EnableMediaPlayback", "EnablePlaybackRemuxing", "EnableAudioPlaybackTranscoding", "EnableVideoPlaybackTranscoding",
-	}, "Policy")
+	policy, policyErrors := userManagementObject(values["Policy"], managedPolicyFields, false, "Policy")
 	for field, message := range policyErrors {
 		invalid[field] = message
 	}
 	if policyErrors == nil {
-		managedUserValue(policy["EnableAllFolders"], "Policy.EnableAllFolders", &input.Policy.EnableAllFolders, invalid)
-		managedUserValue(policy["EnableMediaPlayback"], "Policy.EnableMediaPlayback", &input.Policy.EnableMediaPlayback, invalid)
-		managedUserValue(policy["EnablePlaybackRemuxing"], "Policy.EnablePlaybackRemuxing", &input.Policy.EnablePlaybackRemuxing, invalid)
-		managedUserValue(policy["EnableAudioPlaybackTranscoding"], "Policy.EnableAudioPlaybackTranscoding", &input.Policy.EnableAudioPlaybackTranscoding, invalid)
-		managedUserValue(policy["EnableVideoPlaybackTranscoding"], "Policy.EnableVideoPlaybackTranscoding", &input.Policy.EnableVideoPlaybackTranscoding, invalid)
-		var folders []json.RawMessage
-		managedUserValue(policy["EnabledFolders"], "Policy.EnabledFolders", &folders, invalid)
-		input.Policy.EnabledFolders = make([]string, len(folders))
-		for index, folder := range folders {
-			managedUserValue(folder, "Policy.EnabledFolders", &input.Policy.EnabledFolders[index], invalid)
+		for _, field := range legacyManagedPolicyFields {
+			if _, found := policy[field]; !found {
+				invalid["Policy."+field] = "This field is required."
+			}
+		}
+		initial := identity.ManagedPolicy{}
+		if len(base) != 0 {
+			initial = base[0]
+		}
+		var err error
+		input.Policy, err = mergeManagedPolicy(initial, policy)
+		if err != nil {
+			var validation *identity.ManagedUserValidationError
+			if errors.As(err, &validation) {
+				for field, message := range validation.Fields {
+					invalid[field] = message
+				}
+			} else {
+				invalid["Policy"] = "Supply supported policy values of the required types."
+			}
 		}
 	}
 	if len(invalid) != 0 {

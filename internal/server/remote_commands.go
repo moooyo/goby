@@ -466,6 +466,9 @@ func remoteCommandEnvelope(messageType string, data map[string]any, actor identi
 	if actor.IsApplicationKey() {
 		envelope.Authority = events.Authority{CredentialID: actor.SessionID,
 			ClientSessionID: actor.ClientSessionID, ApplicationKeyID: actor.ApplicationKeyID}
+	} else {
+		envelope.Authority = events.Authority{Kind: actor.Kind, UserID: actor.User.ID,
+			SessionID: actor.SessionID, PeerIP: actor.PeerIP}
 	}
 	return envelope, nil
 }
@@ -490,6 +493,10 @@ func (s *Server) acceptRemoteCommand(w http.ResponseWriter, r *http.Request, mes
 		return
 	}
 	target := targets[0]
+	if !actor.IsApplicationKey() && !identity.CanControlClientSession(actor.User, target) {
+		s.clientSessionError(w, r, identity.ErrClientSessionForbidden)
+		return
+	}
 	if messageType == "Play" {
 		if err := s.authorizeRemotePlayItems(r.Context(), librarySubject(actor, actor.User.ID), clientSessionLibrarySubject(target), data["ItemIds"].([]string)); err != nil {
 			s.libraryError(w, r, err)
@@ -546,9 +553,9 @@ func (s *Server) authorizeRemotePlayItems(ctx context.Context, actor, target lib
 }
 
 // authorizeRemoteSocketEvent closes the gap between queueing a command and
-// transport delivery. No raw token is retained; ordinary controllers use their
-// current account while application controllers revalidate their client context
-// and parent credential from trusted publication metadata.
+// transport delivery. Both controller kinds revalidate the original credential
+// from trusted publication metadata without retaining a raw token. Ordinary
+// controllers also retain the peer used for the original remote-access check.
 func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identity.Principal, event events.Event) (bool, error) {
 	switch event.MessageType() {
 	case "Play", "Playstate", "GeneralCommand":
@@ -572,8 +579,8 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 		return false, nil
 	}
 	var controllerSubject library.Subject
-	if authority := event.Authority(); authority != (events.Authority{}) {
-		if controllerSupplied {
+	if authority := event.Authority(); authority.Kind != "emby" {
+		if authority == (events.Authority{}) || controllerSupplied {
 			return false, nil
 		}
 		controller, err := s.identity.RevalidateSession(ctx, identity.Principal{
@@ -591,20 +598,23 @@ func (s *Server) authorizeRemoteSocketEvent(ctx context.Context, receiver identi
 		}
 		controllerSubject = librarySubject(controller, "")
 	} else {
-		if !validRemoteCommandText(controllerID, 256, true) {
+		if !controllerSupplied || controllerID != authority.UserID {
 			return false, nil
 		}
-		controller, err := s.identity.GetUser(ctx, controllerID)
-		if errors.Is(err, identity.ErrNotFound) {
+		controller, err := s.identity.RevalidateSession(ctx, identity.Principal{
+			Kind: authority.Kind, User: identity.User{ID: authority.UserID},
+			SessionID: authority.SessionID, PeerIP: authority.PeerIP,
+		})
+		if errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, identity.ErrInvalidCredentials) {
 			return false, nil
 		}
 		if err != nil {
 			return false, err
 		}
-		if controller.IsDisabled || (controller.ID != receiver.User.ID && !controller.IsAdministrator) {
+		if !identity.CanControlClientSession(controller.User, identity.ClientSession{UserID: receiver.User.ID, Kind: receiver.Kind}) {
 			return false, nil
 		}
-		controllerSubject = library.Subject{UserID: controller.ID}
+		controllerSubject = library.Subject{UserID: controller.User.ID}
 	}
 	noPresenceFilter := 0
 	targets, err := s.identity.ListClientSessions(ctx, receiver, identity.ClientSessionFilter{

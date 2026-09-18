@@ -5,7 +5,6 @@ package transcode
 import (
 	"errors"
 	"os"
-	"strings"
 )
 
 var (
@@ -53,20 +52,6 @@ func validJobID(id string) bool {
 }
 
 func validOutputName(name string) bool {
-	if name == "main.m3u8" {
-		return true
-	}
-	if len(name) > 255 || !strings.HasPrefix(name, "segment-") || !strings.HasSuffix(name, ".ts") {
-		return false
-	}
-	digits := name[len("segment-") : len(name)-len(".ts")]
-	if digits == "" {
-		return false
-	}
-	for _, char := range digits {
-		if char < '0' || char > '9' {
-			return false
-		}
-	}
-	return true
+	_, ok := HLSArtifact(name)
+	return ok
 }

@@ -18,12 +18,8 @@ func validateProgressiveVideoPlan(p Plan) error {
 		p.AudioBitDepth != 0 || p.AudioSourceSampleRate != 0 || p.AudioSourceSampleCount != 0 || p.AudioSampleSeek {
 		return invalid("inapplicable options")
 	}
-	// Fragmented MP4 edit lists do not consistently hide copied video pre-roll
-	// across clients. Until that contract is established, a requested seek must
-	// use the precise decoded-video path or fail instead of returning an earlier
-	// keyframe as though it were the requested presentation position.
-	if p.VideoCodec == "copy" && p.StartTicks != 0 {
-		return invalid("video copy seek")
+	if err := validateVideoCopySeekCandidate(p); err != nil {
+		return err
 	}
 	if err := validateProgressiveVideoSeekCandidate(p); err != nil {
 		return err
@@ -34,6 +30,7 @@ func validateProgressiveVideoPlan(p Plan) error {
 	video.OutputMode, video.Container, video.SegmentSeconds = "", "ts", 1
 	video.SourceFormatStartKnown, video.SourceFormatStartTicks = false, 0
 	video.VideoSeekCandidate = ""
+	video.VideoCopySeekCandidate = ""
 	if err := ValidatePlan(video); err != nil {
 		return err
 	}
@@ -106,6 +103,7 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-vf", filter, "-bf", "0",
 			"-fps_mode", "passthrough", "-enc_time_base:v", timeBase, "-force_key_frames", "expr:gte(t,n_forced)")
 		args = appendVideoEncoderOptions(args, encode)
+		args = AppendVideoColorArgs(args, p)
 		bitrate := p.VideoBitrate
 		if bitrate == 0 {
 			bitrate = 4_000_000

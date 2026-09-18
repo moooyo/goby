@@ -16,6 +16,21 @@ Resolve release changes through official sources when updating the toolchain. Co
 
 These version pins describe the required target. They do not establish that Go, FFmpeg, PostgreSQL, drivers, or codecs are already installed or operational on `test-env`. Record the actual installed versions and build configuration in remote verification evidence before claiming them.
 
+The advanced software media profile also requires FFmpeg's `zscale`, `tonemap`,
+`bwdif`, `subtitles`, and `overlay` filters, libx264 encoding, and the declared
+audio encoders. HDR conversion uses a real linear-light transform; changing
+color tags alone is not a substitute. Build FFmpeg with `--enable-libzimg` and
+`--enable-libass` for this profile. FFmpeg documents libzimg as the dependency
+of its [zscale filter](https://ffmpeg.org/ffmpeg-filters.html#zscale).
+
+For a new isolated verification toolchain, `scripts/test-env/install-toolchains.sh`
+accepts `GOBY_TOOLCHAINS` as the installation root. Use a separate root when an
+existing service or retained verification scope is bound to the current tools.
+The feature wave builds a private FFmpeg 9.0.1 instance from the official signed
+archive and private development headers; it does not replace tools used by
+the retained native services. Actual acceptance remains in the wave's result
+record, including any missing filter or device prerequisites.
+
 ## Build and test boundary
 
 All formatting, compilation, production builds, type checks, test suites, schema validators, smoke tests, server execution, HTTP probes, media conversion, and GPU checks run through `ssh test-env`. Local verification requires explicit authorization in the current task; historical permissions do not carry forward automatically.

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestHTTPListMembershipGuardOnlyReturnsProvableEmptyResults(t *testing.T) {
+func TestHTTPListMembershipReturnsEmptyForAbsentMembers(t *testing.T) {
 	f := newServerFixture(t)
 	f.bootstrap(t)
 	viewer, err := f.users.CreateUser(f.ctx, "List guard viewer", "list-guard-viewer-password", false)
@@ -37,21 +37,20 @@ func TestHTTPListMembershipGuardOnlyReturnsProvableEmptyResults(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, suffix := range []string{"", "&Limit=0", "&StartIndex=1000&Limit=1"} {
-			response := f.request(t, http.MethodGet, path+suffix, nil, headers)
-			expectAPIError(t, response, http.StatusNotImplemented, "unsupported_filter", true)
-			if _, exists := jsonObject(t, response)["TotalRecordCount"]; exists {
-				t.Fatal("an unknown membership result claimed a total count")
-			}
+			assertEmpty(path + suffix)
 		}
 	}
 	assertEmpty(path + "&ExcludeItemIds=visible-Playlist,visible-BoxSet")
 	assertEmpty(path + "&SearchTerm=NoSuchVisibleList")
 	for _, route := range []string{
-		"/emby/Users/" + viewer.ID + "/Items/Latest", "/emby/Users/" + viewer.ID + "/Items/Resume",
-		"/emby/Shows/NextUp", "/emby/Genres",
+		"/emby/Users/" + viewer.ID + "/Items/Resume", "/emby/Genres",
 	} {
-		expectAPIError(t, f.request(t, http.MethodGet, route+"?ListItemIds=album-id", nil, headers), http.StatusNotImplemented, "unsupported_filter", true)
+		assertEmpty(route + "?ListItemIds=album-id")
 	}
+	if items := responseArray(t, f.request(t, http.MethodGet, "/emby/Users/"+viewer.ID+"/Items/Latest?ListItemIds=album-id", nil, headers)); len(items) != 0 {
+		t.Fatal("Latest ignored missing membership")
+	}
+	expectAPIError(t, f.request(t, http.MethodGet, "/emby/Shows/NextUp?ListItemIds=album-id", nil, headers), http.StatusNotImplemented, "unsupported_filter", true)
 	for _, suffix := range []string{"ListItemIds=", "ListItemIds=album,"} {
 		expectAPIError(t, f.request(t, http.MethodGet, "/emby/Items?"+suffix, nil, headers), http.StatusBadRequest, "invalid_input", true)
 	}

@@ -27,27 +27,46 @@ func projectedUserPolicyForTest(t *testing.T, user identity.User) map[string]any
 
 func assertUserPolicyWhitelist(t *testing.T, policy map[string]any) {
 	t.Helper()
-	allowed := map[string]bool{
-		"IsAdministrator": true, "IsDisabled": true, "EnableMediaPlayback": true,
-		"EnableAllFolders": true, "EnabledFolders": true, "EnablePlaybackRemuxing": true,
-		"EnableAudioPlaybackTranscoding": true, "EnableVideoPlaybackTranscoding": true, "EnableContentDeletion": true,
+	allowed := nativeManagedPolicy(identity.DefaultManagedPolicy())
+	allowed["IsAdministrator"] = false
+	allowed["IsDisabled"] = false
+	for name, value := range deferredEmbyPolicy {
+		allowed[name] = value
 	}
+	allowed["LockedOutDate"] = int64(0)
+	allowed["InvalidLoginAttemptCount"] = int64(0)
 	if len(policy) != len(allowed) {
 		t.Errorf("projected policy has %d fields, want the %d supported fields: %#v", len(policy), len(allowed), policy)
 	}
 	for key, value := range policy {
-		if !allowed[key] {
+		prototype, found := allowed[key]
+		if !found {
 			t.Errorf("projected policy exposes unsupported stored field %s", key)
 		}
-		if key == "EnabledFolders" {
+		switch prototype.(type) {
+		case []string, []identity.AccessSchedule:
 			if _, ok := value.([]any); !ok {
-				t.Errorf("EnabledFolders must be a non-null JSON array: %#v", value)
+				t.Errorf("%s must be a non-null JSON array: %#v", key, value)
 			}
-		} else if _, ok := value.(bool); !ok {
-			t.Errorf("policy field %s must be a JSON boolean: %#v", key, value)
+		case bool:
+			if _, ok := value.(bool); !ok {
+				t.Errorf("policy field %s must be a JSON boolean: %#v", key, value)
+			}
+		case int, int64:
+			if _, ok := value.(float64); !ok {
+				t.Errorf("policy field %s must be a JSON number: %#v", key, value)
+			}
+		case *int:
+			if _, ok := value.(float64); value != nil && !ok {
+				t.Errorf("policy field %s must be a nullable JSON number: %#v", key, value)
+			}
+		case string:
+			if _, ok := value.(string); !ok {
+				t.Errorf("policy field %s must be a JSON string: %#v", key, value)
+			}
 		}
 	}
-	for _, field := range []string{"EnablePlaybackRemuxing", "EnableAudioPlaybackTranscoding", "EnableVideoPlaybackTranscoding", "EnableContentDeletion"} {
+	for _, field := range []string{"EnablePlaybackRemuxing", "EnableAudioPlaybackTranscoding", "EnableVideoPlaybackTranscoding", "EnableLiveTvAccess", "EnableLiveTvManagement", "EnableSyncTranscoding", "EnableMediaConversion"} {
 		if value, ok := policy[field].(bool); !ok || value {
 			t.Errorf("unsupported capability %s must remain false: %#v", field, policy[field])
 		}
@@ -133,7 +152,7 @@ func TestUserDTOPolicyFolderAccessUsesSafeDefaultsAndColumnRoles(t *testing.T) {
 		{name: "nil_policy"},
 		{name: "empty_object_grants_all", raw: `{}`, all: true},
 		{name: "missing_flag_ignores_folder_list", raw: `{"EnabledFolders":["ignored"]}`, all: true},
-		{name: "true_flag_ignores_wrong_folder_type", raw: `{"EnableAllFolders":true,"EnabledFolders":42}`, all: true},
+		{name: "true_flag_with_wrong_folder_type_fails_closed", raw: `{"EnableAllFolders":true,"EnabledFolders":42}`},
 		{name: "true_flag_ignores_folder_list", raw: `{"EnableAllFolders":true,"EnabledFolders":["ignored"]}`, all: true},
 		{name: "false_flag_preserves_explicit_folders", raw: `{"EnableAllFolders":false,"EnabledFolders":["library-a","library-b"]}`, folders: []string{"library-a", "library-b"}},
 		{name: "false_flag_without_folders", raw: `{"EnableAllFolders":false}`},
@@ -152,8 +171,8 @@ func TestUserDTOPolicyFolderAccessUsesSafeDefaultsAndColumnRoles(t *testing.T) {
 		{name: "whole_policy_boolean", raw: `true`},
 		{name: "malformed_policy", raw: `{`},
 		{name: "administrator_bypasses_restricted_folders", raw: `{"EnableAllFolders":false,"EnabledFolders":["ignored"]}`, admin: true, all: true},
-		{name: "administrator_bypasses_invalid_folder_policy", raw: `true`, admin: true, all: true},
-		{name: "administrator_bypasses_missing_policy", admin: true, all: true},
+		{name: "administrator_invalid_folder_policy_fails_closed", raw: `true`, admin: true},
+		{name: "administrator_missing_policy_fails_closed", admin: true},
 		{name: "disabled_user_denied_all_folders", raw: `{"EnableAllFolders":true}`, disabled: true},
 		{name: "disabled_user_hides_explicit_folders", raw: `{"EnableAllFolders":false,"EnabledFolders":["library-a"]}`, disabled: true},
 		{name: "disabled_administrator_denied_all_folders", raw: `{}`, admin: true, disabled: true},

@@ -201,7 +201,7 @@ func (s *Server) retireDeviceLogins(result identity.DeviceDeletion) {
 		if s.eventHub != nil {
 			s.eventHub.DisconnectCredential(sessionID)
 		}
-		s.hls.cancelMatching(sessionID, "")
+		s.cancelPlaybackResources(sessionID, "")
 		s.mediaDiagnostics.cancelActor("", sessionID)
 	}
 }

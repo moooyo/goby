@@ -40,10 +40,9 @@ type ConversionDecision struct {
 	SelectedProfileIndex *int
 }
 
-// PlanConversion chooses a bounded MPEG-TS HLS conversion that the supplied
-// client profile accepts. It leaves Evaluate's original-file behavior intact.
-// The supported output codecs are H.264, AAC and MP3. Embedded subtitles,
-// deinterlacing and HDR tone mapping need separate implementations.
+// PlanConversion chooses a bounded HLS conversion accepted by the client.
+// Original-file evaluation stays separate from MPEG-TS, fragmented MP4, packed
+// audio, subtitle delivery, and explicitly requested adaptive output planning.
 func PlanConversion(source Source, request Request, limits ConversionLimits) (ConversionDecision, error) {
 	original, err := Evaluate(source, request)
 	if err != nil {
@@ -79,9 +78,6 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 	if selection.audio != nil && selection.audio.IsExternal || selection.video != nil && selection.video.IsExternal {
 		return decline("conversion_external_stream_unsupported", "AudioStreamIndex", "Audio and video conversion inputs must belong to the opened original file.")
 	}
-	if selection.subtitle != nil && (!selection.subtitle.IsExternal || !selection.subtitle.IsTextSubtitleStream) {
-		return decline("conversion_subtitle_unsupported", "SubtitleStreamIndex", "HLS conversion currently supports separately delivered indexed external text subtitles only.")
-	}
 	var failures []Reason
 	for _, profile := range request.DeviceProfile.TranscodingProfiles {
 		if !conversionProfileMatches(profile, kind) {
@@ -99,6 +95,9 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 		}
 		for _, mode := range modes {
 			videoCopy, audioCopy := mode[0], mode[1]
+			if isTrue(profile.EnableAdaptiveBitrate) && videoCopy {
+				continue
+			}
 			if selection.video == nil || kind == DlnaProfileTypeAudio {
 				videoCopy = true
 			}
@@ -109,18 +108,22 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 				continue
 			}
 			for _, candidateProfile := range conversionAudioProfiles(profile, audioCopy) {
-				plan, projected, reason := conversionCandidate(source, request, limits, candidateProfile, kind, selection, videoCopy, audioCopy)
+				plan, projected, reason := conversionCandidate(source, request, limits, candidateProfile, kind, selection, videoCopy, audioCopy, false)
 				if reason != nil {
 					failures = appendConversionReasons(failures, *reason)
 					continue
 				}
 				outputRequest := conversionOutputRequest(request, candidateProfile, kind)
+				if plan.Subtitle.Mode == "burn" || plan.Subtitle.Mode == "hls" {
+					disabled := -1
+					outputRequest.SubtitleStreamIndex = &disabled
+				}
 				output, evaluateErr := Evaluate(projected, outputRequest)
 				if evaluateErr != nil {
 					return result, evaluateErr
 				}
 				if !output.OriginalCompatible || !output.ProfileMatched ||
-					selection.subtitle != nil && output.SubtitleMethod != SubtitleDeliveryMethodExternal {
+					selection.subtitle != nil && plan.Subtitle.Mode == "" && output.SubtitleMethod != SubtitleDeliveryMethodExternal {
 					failures = appendConversionReasons(failures, output.Reasons...)
 					continue
 				}
@@ -129,6 +132,16 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 					continue
 				}
 				result.Plan, result.Output, result.OutputSource = &plan, output, projected
+				if plan.Subtitle.Mode == "hls" {
+					result.Output.SubtitleMethod, result.Output.SubtitleFormat = SubtitleDeliveryMethodHls, "vtt"
+				}
+				if plan.Subtitle.Mode == "burn" {
+					result.Output.SubtitleMethod = SubtitleDeliveryMethodEncode
+				}
+				if selection.subtitle != nil {
+					selected := selection.subtitle.Index
+					result.Output.DefaultSubtitleStreamIndex = &selected
+				}
 				result.Method = "DirectStream"
 				if !videoCopy || !audioCopy {
 					result.Method = "Transcode"
@@ -185,7 +198,7 @@ func validateConversionProfiles(profiles []TranscodingProfile) error {
 func conversionProfileMatches(profile TranscodingProfile, kind DlnaProfileType) bool {
 	return strings.EqualFold(string(profile.Type), string(kind)) && strings.EqualFold(profile.Protocol, "hls") &&
 		(profile.Context == "" || strings.EqualFold(string(profile.Context), string(EncodingContextStreaming))) &&
-		(matchesList(profile.Container, "ts") || matchesList(profile.Container, "mpegts")) &&
+		(hlsProfileContainer(profile, kind) != "") &&
 		(kind != DlnaProfileTypeVideo || matchesList(profile.VideoCodec, "h264"))
 }
 
@@ -214,8 +227,13 @@ func conversionRequestAliases(request Request) Request {
 func conversionContainerSelector(selector string) string {
 	values := strings.Split(selector, ",")
 	for index, value := range values {
-		if strings.EqualFold(strings.TrimSpace(value), "mpegts") {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "mpegts", "mpeg-ts":
 			values[index] = "ts"
+		case "fmp4":
+			values[index] = "mp4"
+		case "adts":
+			values[index] = "aac"
 		}
 	}
 	return strings.Join(values, ",")
@@ -239,7 +257,7 @@ func conversionAudioProfiles(profile TranscodingProfile, copy bool) []Transcodin
 func unsupportedConversionOptions(profile TranscodingProfile) *Reason {
 	if isTrue(profile.EnableMpegtsM2TsMode) || isTrue(profile.CopyTimestamps) || isTrue(profile.BreakOnNonKeyFrames) ||
 		profile.SegmentLength != nil && *profile.SegmentLength > 10 || profile.MinSegments != nil && *profile.MinSegments > 1 ||
-		profile.ManifestSubtitles != "" || profile.MaxManifestSubtitles != nil && *profile.MaxManifestSubtitles > 0 ||
+		profile.ManifestSubtitles != "" && !strings.EqualFold(profile.ManifestSubtitles, "vtt") && !strings.EqualFold(profile.ManifestSubtitles, "webvtt") ||
 		profile.TranscodeSeekInfo == TranscodeSeekInfoBytes {
 		return conversionReason("conversion_profile_option_unsupported", "TranscodingProfiles", "The HLS profile requires output settings not implemented by the bounded conversion runner.")
 	}
@@ -268,9 +286,16 @@ type conversionCaps struct {
 	videoBitrate, audioBitrate          int64
 }
 
-func conversionCandidate(source Source, request Request, limits ConversionLimits, profile TranscodingProfile, kind DlnaProfileType, selection selectedStreams, videoCopy, audioCopy bool) (transcode.Plan, Source, *Reason) {
+func conversionCandidate(source Source, request Request, limits ConversionLimits, profile TranscodingProfile, kind DlnaProfileType, selection selectedStreams, videoCopy, audioCopy, streamingInput bool) (transcode.Plan, Source, *Reason) {
 	plan := transcode.Plan{Container: "ts", VideoStreamIndex: -1, AudioStreamIndex: -1,
 		DurationTicks: source.Info.DurationTicks, SegmentSeconds: 6}
+	plan.Container = hlsProfileContainer(profile, kind)
+	switch plan.Container {
+	case "mp4":
+		plan.HLS.SegmentType = "fmp4"
+	case "aac", "mp3":
+		plan.HLS.SegmentType = "packed"
+	}
 	if request.StartTimeTicks != nil {
 		plan.StartTicks = *request.StartTimeTicks
 	}
@@ -278,7 +303,11 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		plan.SegmentSeconds = *profile.SegmentLength
 	}
 	projected := Source{ItemID: source.ItemID, MediaSourceID: source.MediaSourceID, ItemType: source.ItemType, Path: "output.ts",
-		Info: media.Info{Container: "mpegts", DurationTicks: source.Info.DurationTicks}}
+		Info: media.Info{Container: plan.Container, DurationTicks: source.Info.DurationTicks}}
+	projected.Path = "output." + plan.Container
+	if plan.Container == "ts" {
+		projected.Info.Container = "mpegts"
+	}
 	fail := func(code, property, message string) (transcode.Plan, Source, *Reason) {
 		return plan, projected, conversionReason(code, property, message)
 	}
@@ -320,8 +349,8 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		if video.Width < 1 || video.Height < 1 || video.Width > 65536 || video.Height > 65536 {
 			return fail("conversion_video_dimensions_unknown", "Width", "Known bounded source dimensions are required for video conversion.")
 		}
-		if video.IsInterlaced || conversionHDR(video) {
-			return fail("conversion_video_range_unsupported", "VideoRange", "This HLS conversion path does not implement interlaced output or HDR tone mapping.")
+		if videoCopy && (video.IsInterlaced || conversionHDR(video)) {
+			return fail("conversion_video_range_unsupported", "VideoRange", "The selected source requires decoded deinterlacing or tone mapping.")
 		}
 		if videoCopy {
 			if !video.InterlaceKnown && (isFalse(request.AllowInterlacedVideoStreamCopy) || isFalse(profile.AllowInterlacedVideoStreamCopy)) {
@@ -338,14 +367,23 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		} else {
 			plan.VideoCodec = "h264"
 			plan.Hardware = limits.Hardware
+			filters, reason := videoProcessingPlan(*video)
+			if reason != nil {
+				return plan, projected, reason
+			}
+			plan.VideoFilters = filters
+			if filters != (transcode.VideoFilters{}) {
+				plan.Hardware = transcode.Hardware{}
+			}
 			video.Codec, video.BitDepth, video.PixelFormat = "h264", 8, "yuv420p"
 			video.Profile, video.Level, video.RefFrames = "", 0, 0
 			video.ColorRange, video.ColorSpace, video.ColorTransfer, video.ColorPrimaries = "", "", "", ""
 			video.IsInterlaced, video.InterlaceKnown, video.FieldOrder = false, true, "progressive"
+			videoProcessingOutput(video, filters)
 		}
 		// MPEG-TS carries H.264 Annex B. MP4's AVC framing and codec tags must
 		// not survive the output projection even when the payload is copied.
-		video.IsAVC, video.IsAVCKnown, video.CodecTag, video.CodecTagString = false, true, "", ""
+		video.IsAVC, video.IsAVCKnown, video.CodecTag, video.CodecTagString = plan.Container == "mp4", true, "", ""
 		video.TimeBase = ""
 		video.IsDefault = true
 		projected.Info.Streams = append(projected.Info.Streams, *video)
@@ -358,6 +396,12 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 			return fail("conversion_audio_channels_unknown", "AudioChannels", "Known source audio channels are required for conversion.")
 		}
 		if audioCopy {
+			if plan.HLS.SegmentType == "packed" {
+				return fail("conversion_packed_audio_encode_required", "AudioCodec", "Packed audio requires an encoded packet clock.")
+			}
+			if plan.HLS.SegmentType == "fmp4" && !strings.EqualFold(audio.Codec, "aac") {
+				return fail("conversion_fmp4_audio_codec", "AudioCodec", "Fragmented MP4 HLS requires AAC audio.")
+			}
 			if (!strings.EqualFold(audio.Codec, "aac") && !strings.EqualFold(audio.Codec, "mp3")) || !matchesList(profile.AudioCodec, audio.Codec) {
 				return fail("conversion_audio_copy_codec_unsupported", "AudioCodec", "The selected audio cannot be copied into the declared AAC or MP3 HLS output.")
 			}
@@ -377,6 +421,9 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 			if codec == "" {
 				return fail("conversion_audio_codec_unsupported", "AudioCodec", "The declared profile offers no supported audio encoder.")
 			}
+			if plan.HLS.SegmentType == "packed" && codec != plan.Container || plan.HLS.SegmentType == "fmp4" && codec != "aac" {
+				return fail("conversion_hls_audio_container", "AudioCodec", "The encoded audio must match the selected HLS container.")
+			}
 			plan.AudioCodec, audio.Codec, audio.Profile, audio.BitDepth = codec, codec, "", 0
 			if codec == "aac" {
 				audio.Profile = "LC"
@@ -389,10 +436,13 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		audio.AudioTiming = nil
 		projected.Info.Streams = append(projected.Info.Streams, *audio)
 	}
-	if selection.subtitle != nil {
+	if reason := configureHLSSubtitle(&plan, source, request, profile, selection.subtitle, videoCopy); reason != nil {
+		return plan, projected, reason
+	}
+	if selection.subtitle != nil && plan.Subtitle.Mode == "" {
 		projected.Info.Streams = append(projected.Info.Streams, *selection.subtitle)
 	}
-	if kind == DlnaProfileTypeAudio && media.CanonicalContainer(source.Info, source.Path) == "ogg" {
+	if !streamingInput && kind == DlnaProfileTypeAudio && media.CanonicalContainer(source.Info, source.Path) == "ogg" {
 		// A demuxer page seek can land at the wrong decoded sample while
 		// preserving the expected duration. Ogg conversions must trim the
 		// measured input sample window after decoding from the beginning.
@@ -512,6 +562,11 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 		nextSelection, _ := selectStreams(projected, request)
 		applyConversionCaps(&nextCaps, request.DeviceProfile, kind, conditionFacts{source: projected, streams: nextSelection})
 		if nextCaps == caps {
+			if isTrue(profile.EnableAdaptiveBitrate) {
+				if reason := configureHLSRenditions(&plan, request, profile, projected, kind); reason != nil {
+					return plan, projected, reason
+				}
+			}
 			return plan, projected, nil
 		}
 		caps = nextCaps
@@ -522,7 +577,7 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 func conversionOutputRequest(request Request, profile TranscodingProfile, kind DlnaProfileType) Request {
 	output := request
 	device := *request.DeviceProfile
-	device.DirectPlayProfiles = []DirectPlayProfile{{Type: kind, Container: "ts", VideoCodec: profile.VideoCodec, AudioCodec: profile.AudioCodec}}
+	device.DirectPlayProfiles = []DirectPlayProfile{{Type: kind, Container: hlsProfileContainer(profile, kind), VideoCodec: profile.VideoCodec, AudioCodec: profile.AudioCodec}}
 	device.MaxStaticBitrate = nil
 	device.MaxStaticMusicBitrate = nil
 	output.DeviceProfile = &device
@@ -565,13 +620,13 @@ func applyConversionCaps(caps *conversionCaps, profile *DeviceProfile, kind Dlna
 		}
 	}
 	for _, constraint := range profile.ContainerProfiles {
-		if strings.EqualFold(string(constraint.Type), string(kind)) && matchesList(constraint.Container, "ts") {
+		if strings.EqualFold(string(constraint.Type), string(kind)) && matchesList(constraint.Container, media.CanonicalContainer(facts.source.Info, facts.source.Path)) {
 			apply(constraint.Conditions)
 		}
 	}
 	for _, constraint := range profile.CodecProfiles {
 		stream := codecProfileStream(constraint.Type, kind, facts.streams)
-		if stream == nil || !matchesList(constraint.Container, "ts") || !matchesList(constraint.Codec, stream.Codec) {
+		if stream == nil || !matchesList(constraint.Container, media.CanonicalContainer(facts.source.Info, facts.source.Path)) || !matchesList(constraint.Codec, stream.Codec) {
 			continue
 		}
 		if applicable, _ := applies(constraint.ApplyConditions, facts); applicable {

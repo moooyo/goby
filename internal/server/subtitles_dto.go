@@ -26,7 +26,7 @@ func playbackMediaInfo(item library.Item) media.Info {
 		}
 		info.Streams = append(info.Streams, media.Stream{Index: source.Index, Codec: codec, CodecType: "subtitle",
 			Language: source.Language, Title: source.Title, IsDefault: source.IsDefault, IsForced: source.IsForced,
-			IsExternal: true, IsTextSubtitleStream: true})
+			IsExternal: true, IsTextSubtitleStream: true, SubtitleTag: source.Tag})
 	}
 	return info
 }
@@ -87,6 +87,24 @@ func itemMediaStreamsDTO(item library.Item) []map[string]any {
 		return []map[string]any{}
 	}
 	streams := mediaStreamsDTO(item.Media.Streams)
+	for position, source := range item.Media.Streams {
+		if position >= len(streams) {
+			break
+		}
+		stream := streams[position]
+		if source.CodecType == "subtitle" {
+			if format := media.SubtitleExtractFormat(source.Codec); format != "" {
+				stream["SupportsExternalStream"] = true
+				stream["DeliveryMethod"] = "External"
+				stream["DeliveryUrl"] = externalSubtitleURL(item.ID, source.Index, format, "")
+			}
+		}
+		if media.FontAttachment(source) {
+			stream["Filename"] = filepath.Base(source.Filename)
+			stream["MimeType"] = source.MIMEType
+			stream["DeliveryUrl"] = subtitleAttachmentURL(item.ID, source.Index, "")
+		}
+	}
 	for _, source := range item.Subtitles {
 		language := externalSubtitleDisplayLanguage(source.Language)
 		stream := map[string]any{
@@ -108,14 +126,25 @@ func itemMediaStreamsDTO(item library.Item) []map[string]any {
 func addSubtitleDeliveryCredentials(dto map[string]any, itemID, token string, formats map[int]string) {
 	if streams, ok := dto["MediaStreams"].([]map[string]any); ok {
 		for _, stream := range streams {
-			if stream["IsExternal"] != true || stream["Type"] != "Subtitle" {
-				continue
-			}
 			index, ok := stream["Index"].(int)
 			if !ok {
 				continue
 			}
+			if stream["Type"] == "Attachment" {
+				if _, exists := stream["DeliveryUrl"]; exists {
+					stream["DeliveryUrl"] = subtitleAttachmentURL(itemID, index, token)
+				}
+				continue
+			}
+			if stream["Type"] != "Subtitle" || stream["SupportsExternalStream"] != true {
+				continue
+			}
 			format, _ := stream["Codec"].(string)
+			if stream["IsExternal"] != true {
+				if extracted := media.SubtitleExtractFormat(format); extracted != "" {
+					format = extracted
+				}
+			}
 			if selected := formats[index]; selected != "" {
 				format = selected
 			}
@@ -127,6 +156,14 @@ func addSubtitleDeliveryCredentials(dto map[string]any, itemID, token string, fo
 			addSubtitleDeliveryCredentials(source, itemID, token, formats)
 		}
 	}
+}
+
+func subtitleAttachmentURL(itemID string, index int, token string) string {
+	path := "/Videos/" + url.PathEscape(itemID) + "/" + url.PathEscape(media.SourceID(itemID)) + "/Attachments/" + strconv.Itoa(index) + "/Stream"
+	if token != "" {
+		path += "?" + url.Values{"api_key": {token}}.Encode()
+	}
+	return path
 }
 
 func (s *Server) itemDTOForRequest(r *http.Request, item library.Item, fields []string, detail bool) map[string]any {

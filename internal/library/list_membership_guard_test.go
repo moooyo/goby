@@ -1,63 +1,59 @@
 package library
 
-import (
-	"errors"
-	"testing"
-)
+import "testing"
 
-func TestListMembershipGuardOnlyReturnsProvenEmptyCandidates(t *testing.T) {
+func TestListMembershipRequiresVisibleContainersAndVisibleMembersBeforePaging(t *testing.T) {
 	ctx, store := libraryQueryTestStore(t)
 	seedLibraryQueryFixture(t, ctx, store.pool)
-	query := Query{UserID: "restricted", Recursive: true, IncludeItemTypes: []string{"Playlist", "BoxSet"}, ListItemIds: []string{"album-id"}}
-	assertEmpty := func(query Query) {
-		t.Helper()
-		result, err := store.QueryItems(ctx, query)
-		if err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
-			t.Fatalf("an empty authorized candidate intersection was not retained: %+v, %v", result, err)
-		}
-	}
-	assertEmpty(query)
-	if _, err := store.pool.Exec(ctx, `INSERT INTO items(id,library_id,parent_id,name,sort_name,type,is_folder)
-		VALUES('hidden-list','library-a','library-a','Hidden List','hidden list','Playlist',true)`); err != nil {
+	if _, err := store.pool.Exec(ctx, `INSERT INTO items(id,library_id,parent_id,name,sort_name,type,is_folder) VALUES
+		('playlist','library-b','library-b','A Playlist','A Playlist','Playlist',true),
+		('boxset','library-b','library-b','B Collection','B Collection','BoxSet',true),
+		('private-list','library-b','library-b','Private','Private','Playlist',true);
+		INSERT INTO media_collections(item_id,owner_id,kind) VALUES
+		('playlist','restricted','Playlist'),('boxset','restricted','BoxSet'),('private-list','default','Playlist');
+		INSERT INTO media_collection_entries(collection_id,item_id,position) VALUES
+		('playlist','movie-b',0),('boxset','movie-b',0),('private-list','movie-b',0),('playlist','movie-a',1)`); err != nil {
 		t.Fatal(err)
 	}
-	assertEmpty(query)
-	for _, kind := range []string{"Playlist", "BoxSet"} {
-		if _, err := store.pool.Exec(ctx, `INSERT INTO items(id,library_id,parent_id,name,sort_name,type,is_folder)
-			VALUES($1,'library-b','library-b',$1,$1,$2,true)`, "visible-"+kind, kind); err != nil {
-			t.Fatal(err)
-		}
-		for _, page := range []struct{ offset, limit int }{{0, 1}, {0, 0}, {1000, 1}} {
-			candidate := query
-			candidate.IncludeItemTypes = []string{kind}
-			candidate.StartIndex, candidate.Limit = page.offset, page.limit
-			result, err := store.QueryItems(ctx, candidate)
-			if !errors.Is(err, ErrUnsupportedFilter) || len(result.Items) != 0 || result.TotalRecordCount != 0 {
-				t.Fatalf("unknown list membership was ignored or bypassed by pagination: %+v, %v", result, err)
-			}
+	query := Query{UserID: "restricted", Recursive: true, IncludeItemTypes: []string{"Playlist", "BoxSet"}, ListItemIds: []string{"movie-b"}, Limit: 1}
+	result, err := store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 2 || len(result.Items) != 1 || result.Items[0].ID != "playlist" {
+		t.Fatalf("container membership result=%+v err=%v", result, err)
+	}
+	query.StartIndex = 1000
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 2 || len(result.Items) != 0 {
+		t.Fatalf("membership count changed with paging: %+v %v", result, err)
+	}
+	for _, member := range []string{"missing-member", "movie-a"} {
+		query.ListItemIds = []string{member}
+		query.StartIndex = 0
+		result, err = store.QueryItems(ctx, query)
+		if err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+			t.Fatalf("inaccessible member disclosed containing collections: %+v %v", result, err)
 		}
 	}
-	query.ExcludeItemIds = []string{"visible-Playlist", "visible-BoxSet"}
-	assertEmpty(query)
-	query.ExcludeItemIds = nil
-	query.SearchTerm = "No candidate has this name"
-	assertEmpty(query)
-	query.SearchTerm = ""
-	query.UserID = "none"
-	assertEmpty(query)
+	query.ListItemIds = []string{"movie-b"}
+	if _, err := store.pool.Exec(ctx, `UPDATE users SET policy=policy||'{"ExcludedSubFolders":["movie-b"]}' WHERE id='restricted'`); err != nil {
+		t.Fatal(err)
+	}
+	result, err = store.QueryItems(ctx, query)
+	if err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+		t.Fatalf("subfolder restriction bypassed membership: %+v %v", result, err)
+	}
 }
 
-func TestListMembershipGuardCannotBeDiscardedByAlternateQueries(t *testing.T) {
+func TestListMembershipCannotBeDiscardedByAlternateQueries(t *testing.T) {
 	ctx, store := libraryQueryTestStore(t)
 	seedLibraryQueryFixture(t, ctx, store.pool)
-	query := Query{UserID: "restricted", ListItemIds: []string{"album-id"}}
-	if _, err := store.QueryLatest(ctx, query, true); !errors.Is(err, ErrUnsupportedFilter) {
-		t.Fatal("Latest ignored an unevaluated membership predicate")
+	query := Query{UserID: "restricted", ListItemIds: []string{"missing-member"}}
+	if items, err := store.QueryLatest(ctx, query, true); err != nil || len(items) != 0 {
+		t.Fatalf("Latest ignored membership: %+v %v", items, err)
 	}
-	if _, err := store.QueryResume(ctx, query); !errors.Is(err, ErrUnsupportedFilter) {
-		t.Fatal("Resume ignored an unevaluated membership predicate")
+	if result, err := store.QueryResume(ctx, query); err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+		t.Fatalf("Resume ignored membership: %+v %v", result, err)
 	}
-	if _, err := store.ListEntities(ctx, "Genre", query); !errors.Is(err, ErrUnsupportedFilter) {
-		t.Fatal("entity listing ignored an unevaluated membership predicate")
+	if result, err := store.ListEntities(ctx, "Genre", query); err != nil || result.TotalRecordCount != 0 || len(result.Items) != 0 {
+		t.Fatalf("entity listing ignored membership: %+v %v", result, err)
 	}
 }

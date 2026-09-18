@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -17,7 +16,7 @@ const embyAPIVersion = "4.9.5.0"
 
 func (s *Server) userDTO(user identity.User) map[string]any {
 	policy := embyUserPolicy(user)
-	if s.hls != nil {
+	if s.hls != nil && policy["EnableMediaPlayback"] == true {
 		// User DTOs project permissions, independently of per-plan output limits.
 		limits := hlsUserLimits(config.TranscodingConfig{Enabled: s.cfg.Transcoding.Enabled}, user)
 		policy["EnablePlaybackRemuxing"] = limits.AllowRemux
@@ -35,58 +34,30 @@ func (s *Server) userDTO(user identity.User) map[string]any {
 // This is a supported-policy projection, never an authorization source. Media
 // opening and playback events independently recheck current database policy.
 func embyUserPolicy(user identity.User) map[string]any {
-	var stored map[string]json.RawMessage
-	valid := json.Unmarshal(user.Policy, &stored) == nil && stored != nil
-	playback := false
-	if valid && !user.IsDisabled {
-		playback = true
-		if raw, exists := stored["EnableMediaPlayback"]; exists {
-			var enabled *bool
-			playback = json.Unmarshal(raw, &enabled) == nil && enabled != nil && *enabled
-		}
+	parsed, err := identity.ParseRuntimePolicy(user.Policy)
+	valid := err == nil && !user.IsDisabled
+	if err != nil {
+		parsed = identity.ProjectManagedPolicy(user.Policy)
 	}
-	allFolders, folders := projectedLibraryAccess(user, stored, valid)
-	return map[string]any{
-		"IsAdministrator": user.IsAdministrator, "IsDisabled": user.IsDisabled,
-		"EnableMediaPlayback": playback, "EnableAllFolders": allFolders, "EnabledFolders": folders,
-		"EnableAudioPlaybackTranscoding": false, "EnableVideoPlaybackTranscoding": false,
-		"EnablePlaybackRemuxing": false, "EnableContentDeletion": false,
+	policy := nativeManagedPolicy(parsed)
+	policy["IsAdministrator"] = user.IsAdministrator
+	policy["IsDisabled"] = user.IsDisabled
+	policy["EnableMediaPlayback"] = valid && parsed.EnableMediaPlayback
+	policy["EnableAllFolders"] = valid && (user.IsAdministrator || parsed.EnableAllFolders)
+	policy["EnabledFolders"] = []string{}
+	if valid && !user.IsAdministrator && !parsed.EnableAllFolders {
+		policy["EnabledFolders"] = append([]string{}, parsed.EnabledFolders...)
 	}
-}
-
-func projectedLibraryAccess(user identity.User, stored map[string]json.RawMessage, valid bool) (bool, []string) {
-	folders := []string{}
-	if user.IsDisabled {
-		return false, folders
+	policy["EnableAudioPlaybackTranscoding"] = false
+	policy["EnableVideoPlaybackTranscoding"] = false
+	policy["EnablePlaybackRemuxing"] = false
+	for name, value := range deferredEmbyPolicy {
+		policy[name] = value
 	}
-	// Library access grants administrators all folders before interpreting the
-	// folder policy. The playback switch above still applies to administrators.
-	if user.IsAdministrator {
-		return true, folders
+	for name, value := range readOnlyEmbyPolicy(user) {
+		policy[name] = value
 	}
-	if !valid {
-		return false, folders
-	}
-	all := true
-	if raw, exists := stored["EnableAllFolders"]; exists {
-		var enabled *bool
-		if json.Unmarshal(raw, &enabled) != nil || enabled == nil {
-			return false, folders
-		}
-		all = *enabled
-	}
-	if all {
-		return true, folders
-	}
-	if raw, exists := stored["EnabledFolders"]; exists {
-		if json.Unmarshal(raw, &folders) != nil {
-			return false, []string{}
-		}
-	}
-	if folders == nil {
-		folders = []string{}
-	}
-	return false, folders
+	return policy
 }
 
 func (s *Server) publicSystemInfo(w http.ResponseWriter, r *http.Request) {
@@ -117,14 +88,26 @@ func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) publicUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	_, client, err := parseEmbyCredentials(r)
+	if err != nil {
+		apiError(w, r, http.StatusBadRequest, "invalid_client", "Supply unambiguous client metadata.")
+		return
+	}
 	users, err := s.identity.ListUsers(r.Context())
 	if err != nil {
 		s.identityError(w, r, err)
 		return
 	}
 	items := make([]map[string]any, 0, len(users))
+	remote := !s.endpointInfo(r).IsInNetwork
 	for _, user := range users {
-		if !user.IsDisabled && !user.IsAdministrator {
+		visible, err := s.publicUserVisible(r, user, remote, client.DeviceID)
+		if err != nil {
+			s.identityError(w, r, err)
+			return
+		}
+		if visible {
 			items = append(items, map[string]any{"Id": user.ID, "Name": user.Name, "ServerId": s.serverID, "HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword})
 		}
 	}
@@ -176,7 +159,7 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 		embyTextError(w, r, http.StatusBadRequest, embyMissingDeviceMessage)
 		return
 	}
-	credentials, err := s.identity.AuthenticateWithPeer(r.Context(), name, password, client, "emby", s.clientAddress(r))
+	credentials, err := s.identity.AuthenticateWithPeer(r.Context(), name, password, client, "emby", s.policyClientAddress(r))
 	if err != nil {
 		if errors.Is(err, identity.ErrInvalidCredentials) || errors.Is(err, identity.ErrUnauthorized) {
 			embyTextError(w, r, http.StatusUnauthorized, embyInvalidLoginMessage)
@@ -267,7 +250,7 @@ func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 		principal := r.Context().Value(principalKey).(identity.Principal)
 		s.eventHub.DisconnectSession(principal.SessionID)
 	}
-	s.hls.cancelMatching(principal.SessionID, "")
+	s.cancelPlaybackResources(principal.SessionID, "")
 	w.WriteHeader(http.StatusNoContent)
 }
 

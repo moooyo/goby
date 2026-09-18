@@ -434,6 +434,20 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[string]any {
 	dto := map[string]any{"Id": item.ID, "Name": item.Name, "SortName": item.SortName, "Type": item.Type, "IsFolder": item.IsFolder, "ServerId": s.serverID, "DateCreated": item.CreatedAt, "ImageTags": map[string]string{}, "BackdropImageTags": []string{}}
+	if item.PlaylistItemID != "" {
+		dto["PlaylistItemId"] = item.PlaylistItemID
+	}
+	if item.Collection != nil {
+		collection := item.Collection
+		dto["ChildCount"] = collection.ItemCount
+		dto["IsLocked"] = collection.IsLocked
+		dto["IsPublic"] = collection.IsPublic
+		if collection.MediaType != "" {
+			dto["MediaType"] = collection.MediaType
+		}
+		// Share recipients and edit grants belong to the separately authorized
+		// collection-management response, not a catalog item projection.
+	}
 	if item.ThemeKind == "song" && item.Type == "Audio" {
 		dto["ExtraType"] = "ThemeSong"
 	} else if item.ThemeKind == "video" && item.Type == "Video" {

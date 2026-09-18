@@ -1,14 +1,37 @@
 # Current implementation and delivery status
 
-Session wrapped up at the user's request on September 17. Start with the
-[restart handoff](session-handoff-20260917-wrap-up.md): M5 and OCI code are merged,
-but delivery remains incomplete. Programs admission r01 failed before any HTTP;
-its protected-service inventory correction passed four targeted methods and is
-in main. The V4 guard's 18 methods passed; actual metadata capture and the new
-M5 full run have not executed. The closing SSH read failed authentication, so
-the saved evidence below must not be presented as a newer live observation.
+The [media, collections, and management implementation wave](feature-wave-20260919.md)
+has completed its source implementation on `codex/media-library-management`.
+Consolidated remote verification remains in progress; the wave, merge and push
+are not complete. Provider-specific acceptance and OCI work are user-deferred.
+Use the [current handoff](handoff.md) for earlier evidence and retained stop
+points. Canonical 116 full/build and native software diagnostics retain their
+historical scoped acceptance; M2-M6 delivery is still incomplete. No new H1 live
+continuation has run.
 
-Current priority on 2026-09-17: **prepare Programs affected live admission and the M5 full-run guard from the independently reviewed V4 finalization**.
+## Current wave checkpoint
+
+| Area | Current result | Still required |
+| --- | --- | --- |
+| Source | All three selected areas are implemented: advanced subtitles/media, playlists/collections, and supported policy/management APIs and UI | Final source-bound verification and explicit integration selection; provider-specific acceptance remains deferred |
+| Server | 692-test scope covered through 676 original passes and 127 targeted rerun passes, including new, failed and previously unfinished cases | These overlapping counts are not additive and do not replace the remaining wave gates |
+| Other packages | Ten core packages: 5,136 passes and one existing opt-in helper skip; identity: 181 passes; backuppg: 497; recoverydb: 177 | Full recovery-manager package |
+| Browser | Seven real browser phases and five new mocked checks passed | Four existing mocked checks |
+| Closeout | Remote verification continues | Final build, owned-resource closure, merge into main and push |
+
+See the [wave verification record](feature-wave-verification-20260919.md) for
+source identities and terminal evidence, and the [implemented API](../api/implemented.md)
+and [advanced-media contract](advanced-media.md) for exact behavior and limits.
+No current result automatically accepts an old Programs/W or H1 journey, a
+production promotion, OCI delivery, or the full M2-M6 objective.
+
+## Historical checkpoints
+
+The dated statements below retain their original context. They do not override
+the current handoff or authorize replay of completed or failed scopes.
+
+The September 17 priority was to prepare Programs affected admission and the
+M5 full-run guard from the independently reviewed V4 finalization.
 [S2 actually stopped, replaced and started A once](programs-transition-first-execution-failure-20260917.md),
 with three successful GETs, then failed at `after_preservation` with
 `diagnostic_file_membership_changed`. A is now PID `1907978`, start `34901535`,
@@ -408,7 +431,7 @@ remains subject to the incident-preservation and recovery hold above.
 Native capacity execution is held under its
 [measurement decision](native-capacity-measurement-decision.md). The
 historical pause, integrated capacity controller and remaining work are preserved
-in the [saved handoff](session-handoff-20260915-native-capacity.md) and
+in the [current handoff](handoff.md) and
 [tracked source manifest](native-scan-http-capacity-source-snapshot.json). Eight control-transport
 groups and six child-lifecycle fixture groups passed remotely, separately from
 the earlier twelve reader groups. Independent full review of the two new
@@ -547,6 +570,11 @@ candidate metadata remain unchanged. The revised input binds both new
 application identities and all unchanged protected resources explicitly.
 
 ## Current gates
+
+This table retains the historical Programs checkpoint's gate wording and
+results. Its "current" identities and next actions are scoped to that
+checkpoint, not the active feature-wave queue above; they do not authorize a
+replay or override later recorded outcomes.
 
 | Gate | Accepted result | Next required result |
 | --- | --- | --- |
@@ -1318,12 +1346,15 @@ discriminating evidence or a concrete product decision before reopening.
 
 ## Remaining release work
 
+The selected feature implementations are complete in source. This table keeps
+the wider release obligations separate from the pending wave closeout above.
+
 | Area | Remaining acceptance obligation |
 | --- | --- |
 | Foundation and recovery | Main migration and bounded post-upgrade workflow against the admitted artifact/current state; isolated selected rollback, actual old-binary restoration and restart/disposal proofs are complete |
 | Catalog and operations | Native root-profile restart, r04 nonroot two-start runtime, SQL catalog/isolation and tiny real-file scan/rescan baselines passed with closure; internal amd64 installation sealing is now accepted through supplemental final-state evidence; representative throughput, actual blocked storage, host reboot and filesystem measurements remain open |
-| Playback | Complete pinned original-client journeys, broader direct-play/transcode formats, seeks and subtitle cases |
-| Administration | Later independent increments for native user deletion and an administrator entry for actual decode/encode diagnostic results, as scoped in the [support matrix](../planning/support-and-delivery-matrix.md#remaining-delivery-slices). Reuse accepted M5 scopes and map further policy/executor/provider work to concrete requirements; do not insert these Go/UI changes into the frozen Programs increment |
+| Playback | Complete pinned original-client journeys and profiles outside the selected advanced-media contract; the implemented subtitle, HLS, dynamic-source, filter and copy-seek paths remain subject to the pending wave closeout |
+| Administration | Native user deletion and diagnostics already exist; the selected policy/settings/task/provider source is complete. Finish the current wave's remaining package/browser/build/closure gates, keep provider acceptance deferred, and retain unsupported upstream fields and wider M5/deployment obligations. Earlier frozen Programs scopes are not retroactively expanded |
 | NextUp and refresh | Positive selector/ordering/client behavior and automatic-refresh evidence for those feature claims |
 | Hardware | Actual GPU decode, encode and combined-path profiles |
 | Packaging | Native arm64/OCI and deployed embedded-bundle/profile acceptance, support rows, project license and dependency notices; focused embedded tests and amd64/arm64 build artifacts are already recorded |

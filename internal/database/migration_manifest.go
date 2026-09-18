@@ -53,6 +53,12 @@ var publishedMigrations = [...]publishedMigration{
 	{27, "0027_movie_extras.sql", "b62d0422dddb9e258f46589898f672b08fc6e4c12fea7456059f855a6600353c"},
 	{28, "0028_storage_root_bindings.sql", "85eab266e6c7f13c34370e562a45e53ad4bdce148ff8d24c428f8ebd1505ddb0"},
 	{29, "0029_user_deletion_activity.sql", "cc2bc10bdd78866854559485b05c34018b4d6ea2ec9e25c880ff234609388564"},
+	{30, "0030_playlists_collections.sql", "2a87384ef8eef2425dd13d75468f8ceb2b49be043be1bb9af282c6d74743fae6"},
+	{31, "0031_online_providers.sql", "751d206d5a55104b8fdc83d900fa1e18e680f0e8fe02ee308c0cad9ec13b4b64"},
+	{32, "0032_management_extensions.sql", "1ffe2ef8fb7810bcbda4641e8813b77225e0130e102ef53cfbac21c05cf1fbb3"},
+	{33, "0033_subtitle_styles.sql", "ab04a075a70d501e5cb11fdda8212666478f86c8a8d8fa2726d4fe5b24b36d5b"},
+	{34, "0034_media_deletion_operations.sql", "6553630d31803d351859e0ad60811059b8ddc4f53914cb3de532637405c657cd"},
+	{35, "0035_dynamic_playback.sql", "a69e32ca488467d69f26d5dd688525b48896c683c9b9bb42a26a0ae24910e67a"},
 }
 
 func validatePublishedMigrations(available []migration) error {

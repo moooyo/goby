@@ -16,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/backupformat"
 	"github.com/moooyo/goby/internal/backuppg"
 	"github.com/moooyo/goby/internal/backupstore"
 	"github.com/moooyo/goby/internal/database"
@@ -52,12 +53,18 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	})
 	f := newManagerIntegrationFixture(t)
 	ctx := f.seed.ctx
+	migrations, err := database.EmbeddedMigrations()
+	if err != nil || len(migrations) == 0 {
+		t.Fatal("read the current compiled migration inventory")
+	}
+	currentVersion := migrations[len(migrations)-1].Version
 	if err := f.runtime.BindDatabase(ctx, f.seed.configuration, f.seed.source, f.lease); err != nil {
 		t.Fatal("bind the current primary before importing a historical archive")
 	}
-	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != 29 {
-		t.Fatalf("original primary schema = %d, want 29: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, f.seed.source); err != nil || version != currentVersion {
+		t.Fatalf("original primary schema = %d, want compiled version %d: %v", version, currentVersion, err)
 	}
+	currentFacts := recoveryEngineTestFacts(t, ctx, f.seed.source, f.seed.engine.options)
 	var preferenceOwners int
 	if err := f.seed.source.QueryRow(ctx, "SELECT count(*) FROM user_settings WHERE settings<>'{}'::jsonb").Scan(&preferenceOwners); err != nil || preferenceOwners != 2 {
 		t.Fatal("the current primary lacks two nonempty independent preference witnesses")
@@ -125,10 +132,10 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	operation, err := f.manager.operationCopy(plan.Id)
 	if err != nil || operation.Manifest == nil || operation.Manifest.Source.SchemaVersion != sourceVersion ||
-		operation.Target == nil || operation.Target.Facts.SchemaVersion != 29 || len(operation.Target.Facts.Tables) != 35 {
-		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated schema29 target")
+		operation.Target == nil || operation.Target.Facts.SchemaVersion != currentVersion || len(operation.Target.Facts.Tables) != len(currentFacts.Tables) {
+		t.Fatal("the ready manager operation conflated the historical archive schema with its migrated current target")
 	}
-	assertHistoricalManagerTarget(t, ctx, f.seed.target, legacyState)
+	assertHistoricalManagerTarget(t, ctx, f.seed.target, legacyState, currentFacts)
 	assertHistoricalManagerGeneration(t, ctx, f.runtime, operation.GenerationID, f.seed.target, legacy, legacyMaster, originalMaster)
 	if actual := recoveryEngineRetainedState(t, ctx, f.seed.source); actual != originalHistory ||
 		historicalManagerCurrentThemeState(t, ctx, f.seed.source) != originalThemes {
@@ -179,7 +186,7 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 		t.Fatalf("finish historical target acceptance after reopening: %v", err)
 	}
 	assertTransitionAppliedReceipt(t, ctx, resumed.Pool, plan.Id)
-	assertHistoricalManagerTarget(t, ctx, resumed.Pool, legacyState)
+	assertHistoricalManagerTarget(t, ctx, resumed.Pool, legacyState, currentFacts)
 	assertHistoricalManagerGeneration(t, ctx, f.runtime, resumed.State.GenerationID, resumed.Pool, legacy, legacyMaster, originalMaster)
 	activeIdentities := identity.NewWithApplicationKeyVault(resumed.Pool, identity.NewApplicationKeyVault(f.manager.cfg.APIKeyMasterKeyFile))
 	login, err := activeIdentities.Authenticate(ctx, legacy.actor.User.Name, historicalManagerAdministratorPassword(sourceVersion), identity.Client{Name: "Historical target administrator"}, "admin")
@@ -206,7 +213,7 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 	}
 	status, err := f.manager.Status(ctx, actor)
 	if err != nil || !status.Rollback.Available || status.GenerationRevision != "1" {
-		t.Fatal("the historical target did not retain the original schema29 rollback image")
+		t.Fatal("the historical target did not retain the original current-schema rollback image")
 	}
 	rollback, err := f.manager.Rollback(ctx, actor, RollbackRequest{RequestId: recoveryEngineTestID(t), GenerationRevision: "1"})
 	if err != nil {
@@ -233,8 +240,8 @@ func testRecoveryManagerHistoricalEncryptedArchiveApplyRestartAndRollback(t *tes
 		t.Fatalf("accept rollback after the historical encrypted archive transition: %v", err)
 	}
 	assertTransitionAppliedReceipt(t, ctx, returned.Pool, rollback.Id)
-	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != 29 {
-		t.Fatalf("rollback schema = %d, want original schema29: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, returned.Pool); err != nil || version != currentVersion {
+		t.Fatalf("rollback schema = %d, want original compiled version %d: %v", version, currentVersion, err)
 	}
 	if actual := recoveryEngineRetainedState(t, ctx, returned.Pool); actual != originalHistory ||
 		recoveryEnginePreferenceState(t, ctx, returned.Pool) != originalPreferences ||
@@ -383,9 +390,7 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	}
 	localFacts := recoveryEngineTestFacts(t, ctx, pool, legacy.engine.options)
 	state := historicalManagerArchiveState{schemaVersion: version, preferences: "[]"}
-	if err := pool.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u").Scan(&state.users); err != nil {
-		t.Fatal("capture the historical users before encryption")
-	}
+	state.users = recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u")
 	if version >= 24 {
 		state.preferences = recoveryEnginePreferenceState(t, ctx, pool)
 	}
@@ -534,38 +539,36 @@ func seedHistoricalManagerCatalog(t *testing.T, ctx context.Context, pool *pgxpo
 	}
 }
 
-// Compare every old catalog field while checking the schema25 and schema28
-// additions separately. JSON stays in PostgreSQL to preserve exact integers.
+// Compare every old catalog field while checking the schema25, schema28, and
+// schema31 additions separately. JSON stays in PostgreSQL for exact integers.
 func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
-	var state string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
+	return recoveryEngineJSONState(t, ctx, pool, `SELECT jsonb_build_object(
 		'libraries',(SELECT jsonb_agg(to_jsonb(l) ORDER BY id) FROM libraries l),
 		'roots',(SELECT jsonb_agg(to_jsonb(r)-'binding_revision'-'storage_binding'-'bound_at'-'bound_by' ORDER BY id) FROM library_roots r),
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e),
 		'credits',(SELECT jsonb_agg(to_jsonb(c)-'credit_group' ORDER BY item_id,entity_id,position) FROM item_entities c),
-		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'music_source' ORDER BY item_id) FROM item_metadata_state m))::text`).Scan(&state); err != nil {
-		t.Fatal("capture every original historical catalog and metadata field")
-	}
-	return state
+		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'music_source'-'online_source'-'online_type'-'online_base' ORDER BY item_id) FROM item_metadata_state m))::text`)
 }
 
-func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool, state historicalManagerArchiveState) {
+func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool, state historicalManagerArchiveState, currentFacts backupformat.SourceFacts) {
 	t.Helper()
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
-		t.Fatalf("the historical archive target schema = %d, want 29: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != currentFacts.SchemaVersion {
+		t.Fatalf("the historical archive target schema = %d, want compiled version %d: %v", version, currentFacts.SchemaVersion, err)
 	}
 	var migrationCount int
 	var deletionMigration string
 	if err := pool.QueryRow(ctx, `SELECT count(*),max(name) FILTER (WHERE version=29)
-		FROM schema_migrations`).Scan(&migrationCount, &deletionMigration); err != nil || migrationCount != 29 || deletionMigration != "0029_user_deletion_activity.sql" {
+		FROM schema_migrations`).Scan(&migrationCount, &deletionMigration); err != nil || migrationCount != len(currentFacts.MigrationChecksums) || deletionMigration != "0029_user_deletion_activity.sql" {
 		t.Fatalf("historical restoration missed the exact current migration suffix: %v", err)
 	}
-	var actualUsers string
-	if err := pool.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u").Scan(&actualUsers); err != nil || actualUsers != state.users ||
-		recoveryEnginePreferenceState(t, ctx, pool) != state.preferences {
-		t.Fatalf("native historical restoration changed schema%d accounts or preferences", state.schemaVersion)
+	actualUsers := recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u")
+	if actualUsers != state.users {
+		t.Fatalf("native historical restoration changed schema%d accounts", state.schemaVersion)
+	}
+	if recoveryEnginePreferenceState(t, ctx, pool) != state.preferences {
+		t.Fatalf("native historical restoration changed schema%d preferences", state.schemaVersion)
 	}
 	if actual := historicalManagerCatalogState(t, ctx, pool); actual != state.catalog {
 		t.Fatal("native historical restoration changed an original metadata, catalog, or credit field")
@@ -585,32 +588,37 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 		(SELECT count(*) FROM catalog_entities WHERE kind='MusicArtist')`).Scan(&musicSources, &creditGroups, &artists); err != nil || musicSources != 0 || creditGroups != 0 || artists != 0 {
 		t.Fatal("historical restoration inferred music provenance, artist identities, or credit groups")
 	}
+	var onlineDefaults bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM item_metadata_state WHERE online_source IS DISTINCT FROM '{}'::jsonb
+			OR online_type IS DISTINCT FROM '' OR online_base IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM item_provider_sources)
+		AND NOT EXISTS(SELECT 1 FROM item_provider_images)
+		AND NOT EXISTS(SELECT 1 FROM item_subtitle_provider_sources)`).Scan(&onlineDefaults); err != nil || !onlineDefaults {
+		t.Fatalf("historical restoration inferred online provider state: %v", err)
+	}
 	var completeThemes bool
 	if err := pool.QueryRow(ctx, `SELECT
-		(SELECT count(*) FROM pg_tables WHERE schemaname='public')=35
+		(SELECT count(*) FROM pg_tables WHERE schemaname='public')=$1
 		AND (SELECT count(*) FROM theme_owner_ids WHERE virtual_root AND item_id IS NULL)=1
 		AND (SELECT count(*) FROM theme_owner_ids)=(SELECT count(*)+1 FROM items)
 		AND NOT EXISTS(SELECT 1 FROM items i LEFT JOIN theme_owner_ids owner ON owner.item_id=i.id WHERE owner.id IS NULL)
 		AND NOT EXISTS(SELECT 1 FROM theme_reserved_paths)
 		AND NOT EXISTS(SELECT 1 FROM item_theme_resources)
 		AND NOT EXISTS(SELECT 1 FROM extra_reserved_paths)
-		AND NOT EXISTS(SELECT 1 FROM item_extra_resources)`).Scan(&completeThemes); err != nil || !completeThemes {
+		AND NOT EXISTS(SELECT 1 FROM item_extra_resources)`, len(currentFacts.Tables)).Scan(&completeThemes); err != nil || !completeThemes {
 		t.Fatal("historical restoration omitted theme owners or inferred auxiliary resources from this unreserved fixture")
 	}
 }
 
 func historicalManagerCurrentThemeState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
-	var state string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
+	return recoveryEngineJSONState(t, ctx, pool, `SELECT jsonb_build_object(
 		'owners',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM theme_owner_ids o),
 		'paths',(SELECT jsonb_agg(to_jsonb(p) ORDER BY root_id,relative_path) FROM theme_reserved_paths p),
 		'resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_theme_resources r),
 		'extra_paths',(SELECT jsonb_agg(to_jsonb(p) ORDER BY root_id,relative_path) FROM extra_reserved_paths p),
-		'extra_resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_extra_resources r))::text`).Scan(&state); err != nil {
-		t.Fatal("capture the current primary's independent auxiliary state")
-	}
-	return state
+		'extra_resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_extra_resources r))::text`)
 }
 
 func assertHistoricalManagerGeneration(t *testing.T, ctx context.Context, runtime *Runtime, generationID string,

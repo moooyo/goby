@@ -60,6 +60,9 @@ const metadataItemSummaryColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''
 
 // QueryMetadataItems reads one library and its summaries from the same snapshot.
 func (s *Store) QueryMetadataItems(ctx context.Context, actor identity.Principal, libraryID string, query MetadataItemQuery) (MetadataItemResult, error) {
+	if libraryID == collectionLibraryID {
+		return MetadataItemResult{}, ErrNotFound
+	}
 	query, err := normalizeMetadataItemQuery(libraryID, query)
 	if err != nil {
 		return MetadataItemResult{}, err

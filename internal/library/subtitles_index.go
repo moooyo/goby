@@ -100,6 +100,7 @@ func subtitleNameMetadata(filename, suffix, codec string) (Subtitle, bool) {
 		return Subtitle{}, false
 	}
 	seen := make(map[string]bool)
+	providerToken := false
 	for _, value := range parts {
 		flag := strings.ToLower(value)
 		if seen[flag] {
@@ -114,6 +115,13 @@ func subtitleNameMetadata(filename, suffix, codec string) (Subtitle, bool) {
 		case "sdh":
 			track.IsHearingImpaired = true
 		default:
+			if validProviderSubtitleToken(flag) {
+				if providerToken {
+					return Subtitle{}, false
+				}
+				providerToken = true
+				continue
+			}
 			if track.Language != "" || !subtitleLanguagePattern.MatchString(value) {
 				return Subtitle{}, false
 			}
@@ -122,6 +130,21 @@ func subtitleNameMetadata(filename, suffix, codec string) (Subtitle, bool) {
 	}
 	track.Title = track.Language
 	return track, true
+}
+
+func validProviderSubtitleToken(value string) bool {
+	const prefix = "opensubtitles-"
+	if !strings.HasPrefix(value, prefix) || len(value) != len(prefix)+64 {
+		return false
+	}
+	for _, character := range value[len(prefix):] {
+		if character < '0' || character > '9' {
+			if character < 'a' || character > 'f' {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (index *subtitleDirectoryIndex) candidates(relative string) ([]subtitleCandidate, bool) {

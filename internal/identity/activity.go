@@ -1,6 +1,7 @@
 package identity
 
 import (
+	"reflect"
 	"slices"
 	"strconv"
 
@@ -61,6 +62,18 @@ func managedUserActivityFields(current, updated ManagedUser) []activity.Field {
 	}
 	if current.Policy.EnableVideoPlaybackTranscoding != updated.Policy.EnableVideoPlaybackTranscoding {
 		fields = append(fields, activity.FieldEnableVideoPlaybackTranscoding)
+	}
+	// Preserve the established field names while recording newer policy changes
+	// without exposing values such as tags, schedules, or device identifiers.
+	previous, next := current.Policy, updated.Policy
+	previous.EnableAllFolders, next.EnableAllFolders = false, false
+	previous.EnabledFolders, next.EnabledFolders = nil, nil
+	previous.EnableMediaPlayback, next.EnableMediaPlayback = false, false
+	previous.EnablePlaybackRemuxing, next.EnablePlaybackRemuxing = false, false
+	previous.EnableAudioPlaybackTranscoding, next.EnableAudioPlaybackTranscoding = false, false
+	previous.EnableVideoPlaybackTranscoding, next.EnableVideoPlaybackTranscoding = false, false
+	if !reflect.DeepEqual(previous, next) {
+		fields = append(fields, activity.FieldPolicy)
 	}
 	return fields
 }

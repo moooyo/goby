@@ -13,6 +13,16 @@ import (
 func TestHTTPImageSlowTransfersReleaseProcessingSlotsAndBoundAdmission(t *testing.T) {
 	fixture := newImageAPIFixture(t)
 	path := "/emby/Items/" + fixture.itemID + "/Images/Primary"
+	viewer, err := fixture.f.users.CreateUser(fixture.f.ctx, "Image Transfer Viewer", "image-transfer-viewer-password", false)
+	if err != nil {
+		t.Fatal("create the authorized image transfer viewer")
+	}
+	if _, err := fixture.f.pool.Exec(fixture.f.ctx, `UPDATE users SET policy = policy || jsonb_build_object(
+		'EnableAllFolders', false, 'EnabledFolders', jsonb_build_array($2::text)) WHERE id = $1`, viewer.ID, fixture.libraryID); err != nil {
+		t.Fatal("limit the image transfer viewer to its fixture library")
+	}
+	viewerToken := stringValue(t, fixture.f.embyLogin(t, viewer.Name, "image-transfer-viewer-password"), "AccessToken")
+	headers := http.Header{"X-Emby-Token": {viewerToken}}
 	type transfer struct {
 		response *blockedDiagnosticResponse
 		cancel   context.CancelFunc
@@ -46,14 +56,19 @@ func TestHTTPImageSlowTransfersReleaseProcessingSlotsAndBoundAdmission(t *testin
 		response := newBlockedDiagnosticResponse()
 		done := make(chan any, 1)
 		pending = append(pending, transfer{response: response, cancel: cancel, done: done})
+		request := httptest.NewRequest(http.MethodGet, path, nil).WithContext(ctx)
+		request.Header.Set("X-Emby-Token", viewerToken)
 		go func() {
 			defer func() { done <- recover() }()
-			fixture.f.handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil).WithContext(ctx))
+			fixture.f.handler.ServeHTTP(response, request)
 		}()
 		select {
 		case <-response.entered:
 		case <-time.After(5 * time.Second):
-			t.Fatal("public image failed to enter its bounded transmission phase")
+			t.Fatal("authorized image failed to enter its bounded transmission phase")
+		}
+		if response.Code != http.StatusOK {
+			t.Fatalf("authorized image entered transmission with status %d, want 200", response.Code)
 		}
 		if len(fixture.f.app.images.slots) != 0 {
 			t.Fatal("a stalled image transmission retained a processing slot")
@@ -61,11 +76,11 @@ func TestHTTPImageSlowTransfersReleaseProcessingSlotsAndBoundAdmission(t *testin
 		if index == 3 {
 			// A new uncached variant must still render while four earlier bodies
 			// are stalled, the situation that previously exhausted all work slots.
-			response := fixture.f.request(t, http.MethodGet, path+"?Width=64&Format=png", nil, nil)
+			response := fixture.f.request(t, http.MethodGet, path+"?Width=64&Format=png", nil, headers)
 			assertAPIImage(t, response, 64, 96, "png")
 		}
 	}
-	expectStatus(t, fixture.f.request(t, http.MethodGet, path, nil, nil), http.StatusTooManyRequests)
+	expectStatus(t, fixture.f.request(t, http.MethodGet, path, nil, headers), http.StatusTooManyRequests)
 	if len(fixture.f.app.images.slots) != 0 {
 		t.Fatal("rejected image transmission retained a processing slot")
 	}

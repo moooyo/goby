@@ -28,7 +28,9 @@ type metadataRecord struct {
 
 const metadataRecordColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''),
 	COALESCE(parent.name, ''), i.name, i.type, i.path, i.is_folder,
-	ms.automatic, i.local_metadata, ms.music_source, ms.overrides, ms.locked_values, ms.revision,
+	ms.automatic, i.local_metadata, ms.music_source,
+	CASE WHEN ms.online_type=i.type THEN ms.online_source ELSE '{}'::jsonb END,
+	ms.overrides, ms.locked_values, ms.revision,
 	COALESCE(ms.last_edited_by, ''), ms.last_edited_at`
 
 func metadataIdentifier(value string) bool {
@@ -157,10 +159,10 @@ func readMetadataRecord(ctx context.Context, tx pgx.Tx, itemID string, lock bool
 		statement += " FOR UPDATE OF i, ms"
 	}
 	var record metadataRecord
-	var musicSource []byte
+	var musicSource, onlineSource []byte
 	err := tx.QueryRow(ctx, statement, itemID).Scan(&record.itemID, &record.libraryID,
 		&record.parentID, &record.parentName, &record.name, &record.itemType, &record.path,
-		&record.isFolder, &record.automatic, &record.localSource, &musicSource, &record.overrides,
+		&record.isFolder, &record.automatic, &record.localSource, &musicSource, &onlineSource, &record.overrides,
 		&record.locked, &record.revision, &record.lastEditedBy, &record.lastEditedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return metadataRecord{}, ErrNotFound
@@ -174,6 +176,12 @@ func readMetadataRecord(ctx context.Context, tx pgx.Tx, itemID string, lock bool
 	record.localSource, err = mergeAcceptedMusicSource(record.localSource, musicSource)
 	if err != nil {
 		return metadataRecord{}, err
+	}
+	if string(onlineSource) != "{}" {
+		record.localSource, err = mergeOnlineSource(record.localSource, onlineSource)
+		if err != nil {
+			return metadataRecord{}, err
+		}
 	}
 	return record, nil
 }

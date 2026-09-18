@@ -176,7 +176,7 @@ func hlsUnsupportedOptions(values map[string]string) error {
 	for _, name := range []string{"container", "segmentcontainer"} {
 		if raw, exists := values[name]; exists {
 			switch strings.ToLower(strings.TrimSpace(raw)) {
-			case "ts", "mpegts", "mpeg-ts":
+			case "ts", "mpegts", "mpeg-ts", "mp4", "fmp4", "aac", "adts", "mp3":
 			case "":
 				return errHLSRequestInvalid
 			default:
@@ -186,8 +186,7 @@ func hlsUnsupportedOptions(values map[string]string) error {
 	}
 	for _, name := range []string{
 		"copytimestamps", "breakonnonkeyframes", "enablempegtsm2tsmode",
-		"burnsubtitles", "burninsubtitles", "deinterlace", "deinterlacevideo",
-		"enabletonemapping", "tonemapping", "enablehdr", "hdr",
+		"enablehdr", "hdr",
 	} {
 		value, err := hlsQueryBoolean(values, name)
 		if err != nil {
@@ -198,7 +197,7 @@ func hlsUnsupportedOptions(values map[string]string) error {
 		}
 	}
 	for _, name := range []string{
-		"subtitlecodec", "manifestsubtitles", "tonemappingalgorithm", "videoprofile",
+		"tonemappingalgorithm", "videoprofile",
 		"videolevel", "pixelformat", "colortransfer", "colorspace", "colorprimaries",
 		"videofilter", "audiofilter", "filtercomplex", "startpositionticks",
 	} {
@@ -207,7 +206,7 @@ func hlsUnsupportedOptions(values map[string]string) error {
 		}
 	}
 	for _, name := range []string{"subtitlemethod", "subtitledeliverymethod"} {
-		if value := strings.ToLower(values[name]); value != "" && value != "none" && value != "external" {
+		if value := strings.ToLower(values[name]); value != "" && value != "none" && value != "external" && value != "hls" && value != "encode" {
 			return errHLSRequestUnsupported
 		}
 	}
@@ -219,7 +218,7 @@ func hlsUnsupportedOptions(values map[string]string) error {
 	for _, option := range []struct {
 		name    string
 		maximum int64
-	}{{"minsegments", 1}, {"maxmanifestsubtitles", 0}} {
+	}{{"minsegments", 1}, {"maxmanifestsubtitles", 1}} {
 		value, err := hlsQueryInteger(values, 0, 1<<31-1, option.name)
 		if err != nil {
 			return err
@@ -263,6 +262,47 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 	profile := playback.TranscodingProfile{
 		Type: kind, Container: "ts", Protocol: "hls", Context: playback.EncodingContextStreaming,
 		VideoCodec: videoCodec, AudioCodec: audioCodec,
+	}
+	selectedContainer := ""
+	for _, name := range []string{"container", "segmentcontainer"} {
+		if value := strings.ToLower(strings.TrimSpace(values[name])); value != "" {
+			switch value {
+			case "fmp4":
+				value = "mp4"
+			case "adts":
+				value = "aac"
+			case "mpegts", "mpeg-ts":
+				value = "ts"
+			}
+			if selectedContainer != "" && selectedContainer != value {
+				return playback.ConversionDecision{}, errHLSRequestInvalid
+			}
+			selectedContainer = value
+		}
+	}
+	if selectedContainer != "" {
+		profile.Container = selectedContainer
+	}
+	profile.EnableAdaptiveBitrate, err = hlsQueryBoolean(values, "enableadaptivebitrate")
+	if err != nil {
+		return playback.ConversionDecision{}, err
+	}
+	if value, supplied := values["adaptivebitrate"]; supplied {
+		canonical := map[string]string{"enableadaptivebitrate": value}
+		flag, parseErr := hlsQueryBoolean(canonical, "enableadaptivebitrate")
+		if parseErr != nil || profile.EnableAdaptiveBitrate != nil && *flag != *profile.EnableAdaptiveBitrate {
+			return playback.ConversionDecision{}, errHLSRequestInvalid
+		}
+		profile.EnableAdaptiveBitrate = flag
+	}
+	if value := strings.ToLower(values["manifestsubtitles"]); value != "" {
+		if value != "vtt" && value != "webvtt" {
+			return playback.ConversionDecision{}, errHLSRequestUnsupported
+		}
+		profile.ManifestSubtitles = "vtt"
+	}
+	if value := strings.ToLower(values["subtitlecodec"]); value != "" && value != "vtt" && value != "webvtt" && value != "ass" && value != "ssa" {
+		return playback.ConversionDecision{}, errHLSRequestUnsupported
 	}
 	request := playback.Request{ID: source.ItemID, MediaSourceID: source.MediaSourceID}
 	if source.Info.DurationTicks <= 0 {
@@ -342,9 +382,6 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 			return playback.ConversionDecision{}, err
 		}
 		if value != nil {
-			if field.subtitle && *value != -1 {
-				return playback.ConversionDecision{}, errHLSRequestUnsupported
-			}
 			converted := int(*value)
 			*field.target = &converted
 		}
@@ -373,13 +410,45 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 		disabledVideo, disabledAudio := false, false
 		request.AllowVideoStreamCopy, request.AllowAudioStreamCopy = &disabledVideo, &disabledAudio
 	}
+	for _, name := range []string{"deinterlace", "deinterlacevideo", "enabletonemapping", "tonemapping", "burnsubtitles", "burninsubtitles"} {
+		flag, parseErr := hlsQueryBoolean(values, name)
+		if parseErr != nil {
+			return playback.ConversionDecision{}, parseErr
+		}
+		if flag != nil && *flag {
+			disabled := false
+			request.AllowVideoStreamCopy = &disabled
+		}
+	}
+	subtitleMethod := playback.SubtitleDeliveryMethodHls
+	for _, name := range []string{"subtitlemethod", "subtitledeliverymethod"} {
+		switch strings.ToLower(values[name]) {
+		case "external":
+			subtitleMethod = playback.SubtitleDeliveryMethodExternal
+		case "encode":
+			subtitleMethod = playback.SubtitleDeliveryMethodEncode
+		case "none":
+			disabled := -1
+			request.SubtitleStreamIndex = &disabled
+		}
+	}
+	for _, name := range []string{"burnsubtitles", "burninsubtitles"} {
+		if flag, _ := hlsQueryBoolean(values, name); flag != nil && *flag {
+			subtitleMethod = playback.SubtitleDeliveryMethodEncode
+		}
+	}
+	subtitleFormat := "vtt"
+	if subtitleMethod == playback.SubtitleDeliveryMethodEncode {
+		subtitleFormat = ""
+	}
 	request.DeviceProfile = &playback.DeviceProfile{
 		Name: "Goby explicit HLS request", SupportedMediaTypes: string(kind),
 		TranscodingProfiles: []playback.TranscodingProfile{profile},
 		CodecProfiles: []playback.CodecProfile{
-			{Type: playback.CodecTypeVideo, Container: "ts", Codec: videoCodec, Conditions: videoConditions},
-			{Type: audioKind, Container: "ts", Codec: audioCodec, Conditions: audioConditions},
+			{Type: playback.CodecTypeVideo, Container: profile.Container, Codec: videoCodec, Conditions: videoConditions},
+			{Type: audioKind, Container: profile.Container, Codec: audioCodec, Conditions: audioConditions},
 		},
+		SubtitleProfiles: []playback.SubtitleProfile{{Format: subtitleFormat, Method: subtitleMethod, Container: profile.Container, Protocol: "hls"}},
 	}
 	decision, err := playback.PlanConversion(source, request, limits)
 	if err != nil {
@@ -387,6 +456,14 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 	}
 	if decision.Plan == nil {
 		return decision, errHLSRequestUnsupported
+	}
+	if offset, parseErr := hlsQueryInteger(values, -24*60*60*10_000_000, 24*60*60*10_000_000, "subtitleoffsetticks"); parseErr != nil {
+		return playback.ConversionDecision{}, parseErr
+	} else if offset != nil {
+		if decision.Plan.Subtitle.Mode == "" {
+			return playback.ConversionDecision{}, errHLSRequestUnsupported
+		}
+		decision.Plan.Subtitle.OffsetTicks = *offset
 	}
 	return decision, nil
 }

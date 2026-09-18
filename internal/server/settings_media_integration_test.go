@@ -68,6 +68,7 @@ func TestHTTPSettingsMediaPreservesRegisteredHLSAndAppliesNewPlanLimits(t *testi
 		if err != nil {
 			t.Fatalf("resolve settings media fixture client (%T)", err)
 		}
+		principal.PeerIP = "127.0.0.1"
 		session, err := f.app.hls.find(parsed.Query().Get("GobyHlsId"), principal, fixture.item.ID)
 		if err != nil || session.key.scope.PlaySessionID != result.PlaySessionID {
 			t.Fatal("negotiation did not register the returned HLS output identity")

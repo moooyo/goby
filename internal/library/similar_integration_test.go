@@ -185,11 +185,15 @@ func similarMusicFixture(t *testing.T) (context.Context, *Store, int64, int64) {
 type similarScoreTracer struct {
 	statement string
 	arguments []any
+	captures  int
 }
 
 func (trace *similarScoreTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	if strings.Contains(data.SQL, "JOIN similar_scores ranked") {
+	if strings.Contains(data.SQL, "similar_page AS MATERIALIZED (") &&
+		strings.Contains(data.SQL, "JOIN similar_scores ranked") &&
+		strings.Contains(data.SQL, "JOIN similar_page ranked ON ranked.id = i.id ORDER BY ranked.ordinal") {
 		trace.statement, trace.arguments = data.SQL, append([]any(nil), data.Args...)
+		trace.captures++
 	}
 	return ctx
 }
@@ -213,6 +217,18 @@ func TestStoreSimilarMovieCombinationsExcludePeopleFromQualificationAndOrder(t *
 		similarInsert(t, ctx, store, fixture.id, "Movie", "library-b", "library-b", fixture.values)
 	}
 	query := SimilarQuery{Query: Query{UserID: "restricted", Limit: 20}}
+	// Derive the exact authorized projection from the fixture's real account.
+	// Nested parent projections now carry the same ACL as the similar candidates;
+	// an unscoped item-column literal is no longer the production projection.
+	projectionTx, projectionAccess, err := store.beginSubjectRead(ctx, Subject{UserID: query.UserID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rollback(projectionTx)
+	if err := projectionTx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	expectedProjection := "SELECT " + projectionAccess.scopeSQL(similarItemColumns("Movie")) + " FROM items i"
 	trace := &similarScoreTracer{}
 	config := store.pool.Config()
 	config.ConnConfig.Tracer = trace
@@ -229,13 +245,16 @@ func TestStoreSimilarMovieCombinationsExcludePeopleFromQualificationAndOrder(t *
 	// Inspect the score produced by the actual production query, changing only
 	// its final projection. This proves the tied tier without requiring an RNG
 	// event or reimplementing the scoring formula in the fixture.
+	if trace.captures != 1 {
+		t.Fatalf("expected one actual similar ranking/page query, captured %d", trace.captures)
+	}
 	if strings.Contains(trace.statement, "album_ancestors") {
 		t.Fatal("the ordinary Movie query retained an unreachable recursive music subplan")
 	}
-	scoreQuery := strings.Replace(trace.statement, "SELECT "+similarItemColumns("Movie")+" FROM items i", "SELECT i.id, ranked.score FROM items i", 1)
-	if scoreQuery == trace.statement {
-		t.Fatal("the actual similar query did not expose its expected result projection")
+	if strings.Count(trace.statement, expectedProjection) != 1 {
+		t.Fatal("the actual similar query did not expose exactly one expected authorized result projection")
 	}
+	scoreQuery := strings.Replace(trace.statement, expectedProjection, "SELECT i.id, ranked.score FROM items i", 1)
 	rows, err := store.pool.Query(ctx, scoreQuery, trace.arguments...)
 	if err != nil {
 		t.Fatal(err)

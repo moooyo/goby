@@ -56,7 +56,7 @@ func (s *Store) ResolvePlaybackReference(ctx context.Context, owner PlaybackOwne
 	if _, err := sourceForItem(session.ItemID, session.MediaSourceID); err != nil {
 		return "", err
 	}
-	if err := tx.Commit(ctx); err != nil {
+	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return "", fmt.Errorf("complete playback reference resolution: %w", err)
 	}
 	return session.ID, nil

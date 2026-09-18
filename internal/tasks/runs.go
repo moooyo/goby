@@ -42,7 +42,7 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 		if err := checkActor(tx, actor, false); err != nil {
 			return err
 		}
-		if err := checkTaskExecutor(definition.Key, actor); err != nil {
+		if err := s.checkTaskExecutor(definition.Key, actor); err != nil {
 			return err
 		}
 		// Preserve the original ordinary-scan JSON field order and values. New
@@ -89,6 +89,11 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			}
 			result.Run = run
 		} else {
+			// Receipt replay and active-run coalescing remain available after a
+			// provider is disabled. A new manual run requires a usable executor.
+			if entry, generic := s.executors.lookup(definition.Key); generic && !entry.Executor.Available() {
+				return ErrUnavailable
+			}
 			var requestID any
 			var initialFingerprint any
 			if request.RequestID != "" {
@@ -104,19 +109,15 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			}
 			// A per-run random namespace and stable library IDs give every
 			// snapshot child an independent deterministic 32-hex identity.
-			children, err := tx.Exec(`INSERT INTO task_run_children
-                (id,run_id,library_id,library_name,ordinal)
-                SELECT md5($1 || ':' || id), $1, id, name,
-                    (row_number() OVER (ORDER BY id) - 1)::integer
-                FROM libraries`, id)
+			childCount, err := s.snapshotChildren(tx, id, definition.Key)
 			if err != nil {
 				return fmt.Errorf("snapshot task libraries: %w", err)
 			}
-			if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, id, children.RowsAffected()); err != nil {
+			if _, err := tx.Exec(`UPDATE task_runs SET total_children = $2 WHERE id = $1`, id, childCount); err != nil {
 				return fmt.Errorf("record task child count: %w", err)
 			}
 			if err := recordTaskActivity(tx, &actor, activity.ActionTaskAdmitted, id,
-				definition.Revision, children.RowsAffected(), ""); err != nil {
+				definition.Revision, childCount, ""); err != nil {
 				return err
 			}
 			run, err := refreshRun(tx, id)
@@ -392,11 +393,11 @@ func refreshRun(tx library.OwnedTx, runID string) (Run, error) {
 				code, message = "max_runtime", "The task reached its maximum runtime."
 			}
 		case counts.failed > 0 || counts.unavailable > 0:
-			state, code, message = RunFailed, "child_failed", "One or more libraries could not be scanned."
+			state, code, message = RunFailed, "child_failed", "One or more task work items failed."
 		case counts.interrupted > 0:
-			state, code, message = RunInterrupted, "child_interrupted", "One or more library scans were interrupted."
+			state, code, message = RunInterrupted, "child_interrupted", "One or more task work items were interrupted."
 		case counts.cancelled > 0:
-			state, code, message = RunCancelled, "child_cancelled", "One or more library scans were cancelled."
+			state, code, message = RunCancelled, "child_cancelled", "One or more task work items were cancelled."
 		default:
 			state, code, message = RunCompleted, "", ""
 			if counts.warnings > 0 {
@@ -466,7 +467,7 @@ func (s *Store) RecoverRuns(ctx context.Context) error {
 			if _, err := tx.Exec(`UPDATE task_run_children SET state = 'interrupted',
                 finished_at = clock_timestamp(), error_code = 'server_interrupted',
                 error_message = 'The server stopped before this library scan was admitted.'
-                WHERE run_id = $1 AND state = 'waiting'`, id); err != nil {
+                WHERE run_id = $1 AND (state = 'waiting' OR (executor_token IS NOT NULL AND state IN ('queued','running')))`, id); err != nil {
 				return fmt.Errorf("recover unadmitted task children: %w", err)
 			}
 			counts, err := totals(tx, id)
@@ -502,15 +503,23 @@ func lockRunChildrenAndScans(tx library.OwnedTx, runID string) error {
 		return fmt.Errorf("read task execution mode: %w", err)
 	}
 	options, supported := library.TaskScanOptions(taskKey)
-	if !supported {
-		return ErrInconsistent
-	}
 	rows, err := tx.Query(`SELECT id FROM task_run_children WHERE run_id = $1 ORDER BY id FOR UPDATE`, runID)
 	if err != nil {
 		return fmt.Errorf("lock task children: %w", err)
 	}
 	if _, err := collectIDs(rows); err != nil {
 		return err
+	}
+	if !supported {
+		var invalid bool
+		if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_run_children WHERE run_id=$1
+			AND (scan_job_id IS NOT NULL OR (state IN ('queued','running') AND executor_token IS NULL)))`, runID).Scan(&invalid); err != nil {
+			return err
+		}
+		if invalid {
+			return ErrInconsistent
+		}
+		return nil
 	}
 	rows, err = tx.Query(`SELECT j.id FROM scan_jobs j JOIN task_run_children c
         ON c.id = j.task_child_id AND c.scan_job_id = j.id

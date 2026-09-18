@@ -68,6 +68,8 @@ type Item struct {
 	UserData                                                      *UserData
 	Subtitles                                                     []Subtitle
 	CanPlay                                                       bool
+	PlaylistItemID                                                string
+	Collection                                                    *CollectionInfo
 }
 
 // AlbumRef is the nearest physical MusicAlbum in the item's authorized library.
@@ -123,22 +125,23 @@ type scanTask struct {
 // Store runs exactly two scan workers. Administrators must be authorized by the
 // caller before using management methods; item methods enforce user policies.
 type Store struct {
-	pool        *pgxpool.Pool
-	ownership   *scanOwnership
-	prober      Prober
-	roots       []approvedRoot
-	ctx         context.Context
-	cancel      context.CancelFunc
-	mu          sync.Mutex
-	closed      bool
-	closing     atomic.Bool
-	closeOnce   sync.Once
-	shutdownErr error
-	active      map[string]*scanTask
-	queue       chan *scanTask
-	scanUpdates chan struct{}
-	workers     sync.WaitGroup
-	done        chan struct{}
+	pool          *pgxpool.Pool
+	ownership     *scanOwnership
+	prober        Prober
+	roots         []approvedRoot
+	ctx           context.Context
+	cancel        context.CancelFunc
+	mu            sync.Mutex
+	closed        bool
+	closing       atomic.Bool
+	closeOnce     sync.Once
+	shutdownErr   error
+	active        map[string]*scanTask
+	queue         chan *scanTask
+	scanUpdates   chan struct{}
+	workers       sync.WaitGroup
+	fileDeletions sync.WaitGroup
+	done          chan struct{}
 
 	rootBindingAnchors   map[string]rootBindingAnchor
 	rootAnchorReferences map[*os.Root]*rootAnchorReference

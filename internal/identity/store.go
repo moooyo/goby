@@ -80,6 +80,9 @@ type Credentials struct {
 type Principal struct {
 	User      User
 	SessionID string
+	// PeerIP is the trusted transport address observed during authentication.
+	// It is never accepted from client JSON or device-reported metadata.
+	PeerIP string `json:"-"`
 	// ClientSessionID identifies a userless application's client context. It is
 	// empty for logins, whose existing SessionID is also their client session ID.
 	ClientSessionID  string
@@ -248,6 +251,12 @@ func (s *Store) AuthenticateWithPeer(ctx context.Context, name, password string,
 
 // Resolve accepts only the requested session kind and checks current user state.
 func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, error) {
+	return s.ResolveWithPeer(ctx, token, kind, "")
+}
+
+// ResolveWithPeer also enforces the current login's remote-access policy using
+// the trusted transport peer. Callers must not pass an untrusted proxy header.
+func (s *Store) ResolveWithPeer(ctx context.Context, token, kind, peerIP string) (Principal, error) {
 	if _, err := sessionLifetime(kind); err != nil {
 		return Principal{}, ErrUnauthorized
 	}
@@ -256,25 +265,34 @@ func (s *Store) Resolve(ctx context.Context, token, kind string) (Principal, err
 		return Principal{}, ErrUnauthorized
 	}
 	var principal Principal
+	var observedAt time.Time
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
 		u.has_password, u.created_at, u.policy, u.configuration, s.id, s.client_name, s.device_id, COALESCE(d.custom_name, s.device_name),
-		s.client_version, s.kind, s.expires_at, s.last_seen_at
+		s.client_version, s.kind, s.expires_at, s.last_seen_at, clock_timestamp()
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		LEFT JOIN devices d ON d.id = s.device_registry_id AND d.deleted_at IS NULL
 		WHERE s.token_hash = $1 AND s.kind = $2 AND s.revoked_at IS NULL
-		AND s.expires_at > now() AND NOT u.is_disabled
+		AND s.expires_at > clock_timestamp() AND NOT u.is_disabled
 		AND ($2 <> 'admin' OR u.is_administrator)`, digest[:], kind).
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt, &principal.User.Policy,
 			&principal.User.Configuration,
 			&principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
-			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt)
+			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt, &observedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Principal{}, ErrUnauthorized
 	}
 	if err != nil {
 		return Principal{}, fmt.Errorf("resolve authentication session: %w", err)
 	}
+	if kind == "emby" {
+		policy, err := ParseRuntimePolicy(principal.User.Policy)
+		if err != nil || !loginPolicyAllows(principal.User.Policy, principal.Client.DeviceID, observedAt) ||
+			(!policy.EnableRemoteAccess && !IsLocalPeer(peerIP)) {
+			return Principal{}, ErrUnauthorized
+		}
+	}
+	principal.PeerIP = peerIP
 	return principal, nil
 }
 

@@ -306,6 +306,9 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 				facts = append(facts, item.fact())
 			}
 		}
+		if err := recordCollectionSourceRemovals(raw, facts); err != nil {
+			return err
+		}
 		if err := recordCatalogChanges(raw, facts...); err != nil {
 			return err
 		}

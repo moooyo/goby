@@ -33,12 +33,14 @@ type MediaPlaylist struct {
 	Type           string
 	Independent    bool
 	Ended          bool
+	InitName       string
 	Segments       []MediaSegment
 }
 
-// ParseMediaPlaylist accepts the bounded MPEG-TS subset emitted by this runner.
+// ParseMediaPlaylist accepts the bounded media subset emitted by this runner.
 // Every URI must name a generated segment in the same job directory. Encryption,
-// maps, alternate playlists, arbitrary paths, and external URIs are rejected.
+// alternate playlists, arbitrary paths, and external URIs are rejected. An fMP4
+// playlist must name exactly one generated initialization segment before media.
 func ParseMediaPlaylist(data []byte) (MediaPlaylist, error) {
 	invalid := func() (MediaPlaylist, error) { return MediaPlaylist{}, ErrInvalidPlaylist }
 	if len(data) == 0 || len(data) > MaxPlaylistBytes || !utf8.Valid(data) || bytes.ContainsRune(data, '\x00') {
@@ -52,6 +54,7 @@ func ParseMediaPlaylist(data []byte) (MediaPlaylist, error) {
 	seen := map[string]bool{}
 	var pendingDuration int64
 	var discontinuity bool
+	var segmentRendition, segmentExtension string
 	for _, line := range lines[1:] {
 		if line == "" {
 			continue
@@ -60,9 +63,21 @@ func ParseMediaPlaylist(data []byte) (MediaPlaylist, error) {
 			return invalid()
 		}
 		if !strings.HasPrefix(line, "#") {
-			number, ok := segmentNumber(line)
+			number, rendition, extension, ok := generatedHLSSegment(line)
 			if !ok || pendingDuration <= 0 || len(playlist.Segments) >= MaxPlaylistSegments ||
 				number != playlist.Sequence+int64(len(playlist.Segments)) {
+				return invalid()
+			}
+			if len(playlist.Segments) == 0 {
+				segmentRendition, segmentExtension = rendition, extension
+				if extension == "m4s" {
+					if playlist.InitName != renditionInitName(rendition) {
+						return invalid()
+					}
+				} else if playlist.InitName != "" {
+					return invalid()
+				}
+			} else if rendition != segmentRendition || extension != segmentExtension {
 				return invalid()
 			}
 			playlist.Segments = append(playlist.Segments, MediaSegment{Number: number, Name: line, DurationTicks: pendingDuration, Discontinuity: discontinuity})
@@ -91,6 +106,17 @@ func ParseMediaPlaylist(data []byte) (MediaPlaylist, error) {
 				return invalid()
 			}
 			playlist.Ended = true
+		case "#EXT-X-MAP":
+			if !hasValue || playlist.InitName != "" || len(playlist.Segments) != 0 || pendingDuration != 0 || discontinuity ||
+				len(value) < len("URI=\"\"") || !strings.HasPrefix(value, "URI=\"") || !strings.HasSuffix(value, "\"") {
+				return invalid()
+			}
+			initName := value[len("URI=\"") : len(value)-1]
+			kind, ok := HLSArtifact(initName)
+			if !ok || kind != "init" {
+				return invalid()
+			}
+			playlist.InitName = initName
 		case "#EXT-X-VERSION", "#EXT-X-TARGETDURATION", "#EXT-X-MEDIA-SEQUENCE", "#EXT-X-PLAYLIST-TYPE", "#EXT-X-INDEPENDENT-SEGMENTS":
 			if seen[name] || len(playlist.Segments) != 0 || pendingDuration != 0 {
 				return invalid()
@@ -154,9 +180,17 @@ func ParseMediaPlaylist(data []byte) (MediaPlaylist, error) {
 // RewriteMediaPlaylist keeps measured durations, sequence and completion state,
 // replacing only generated file names with authorized relative child URLs. It
 // never adds ENDLIST or independent-segment claims to unfinished/copied output.
+// Playlists with initialization maps require RewriteMediaPlaylistWithMap.
 func RewriteMediaPlaylist(data []byte, childURL func(MediaSegment) string) ([]byte, error) {
+	return RewriteMediaPlaylistWithMap(data, childURL, nil)
+}
+
+// RewriteMediaPlaylistWithMap rewrites every generated media and initialization
+// URI through authorized child URL callbacks. An initialization callback is
+// required only when the playlist contains an initialization map.
+func RewriteMediaPlaylistWithMap(data []byte, segmentURL func(MediaSegment) string, initURL func(string) string) ([]byte, error) {
 	playlist, err := ParseMediaPlaylist(data)
-	if err != nil || childURL == nil {
+	if err != nil || segmentURL == nil || (playlist.InitName != "" && initURL == nil) {
 		return nil, ErrInvalidPlaylist
 	}
 	var result strings.Builder
@@ -167,8 +201,15 @@ func RewriteMediaPlaylist(data []byte, childURL func(MediaSegment) string) ([]by
 	if playlist.Independent {
 		result.WriteString("#EXT-X-INDEPENDENT-SEGMENTS\n")
 	}
+	if playlist.InitName != "" {
+		child := initURL(playlist.InitName)
+		if !validPlaylistChildURL(child) {
+			return nil, ErrInvalidPlaylist
+		}
+		fmt.Fprintf(&result, "#EXT-X-MAP:URI=\"%s\"\n", child)
+	}
 	for _, segment := range playlist.Segments {
-		child := childURL(segment)
+		child := segmentURL(segment)
 		if !validPlaylistChildURL(child) {
 			return nil, ErrInvalidPlaylist
 		}
@@ -183,24 +224,15 @@ func RewriteMediaPlaylist(data []byte, childURL func(MediaSegment) string) ([]by
 	if playlist.Ended {
 		result.WriteString("#EXT-X-ENDLIST\n")
 	}
+	if result.Len() > MaxPlaylistBytes {
+		return nil, ErrInvalidPlaylist
+	}
 	return []byte(result.String()), nil
 }
 
 func segmentNumber(name string) (int64, bool) {
-	if !strings.HasPrefix(name, "segment-") || !strings.HasSuffix(name, ".ts") {
-		return 0, false
-	}
-	number := strings.TrimSuffix(strings.TrimPrefix(name, "segment-"), ".ts")
-	if len(number) < 6 || len(number) > 10 {
-		return 0, false
-	}
-	for _, char := range number {
-		if char < '0' || char > '9' {
-			return 0, false
-		}
-	}
-	index, err := strconv.ParseInt(number, 10, 32)
-	return index, err == nil
+	number, _, _, ok := generatedHLSSegment(name)
+	return number, ok
 }
 
 func playlistDurationTicks(value string) (int64, bool) {

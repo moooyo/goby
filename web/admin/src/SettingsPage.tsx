@@ -9,6 +9,7 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { ServerSettings, SettingsResetField } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { MediaDiagnosticsPanel } from './MediaDiagnosticsPanel';
+import { ManagementSettingsFields } from './ManagementSettingsFields';
 import { fieldError } from './formFields';
 import { draftFromSettings, formatMbps, formatSettingValue, outputSettingsFields, parseSettingsDraft, settingLabels, settingsDraftKey, settingsResetFields } from './settingsDraft';
 import type { OutputSettingField, ServerNameDraft, SettingDraft, SettingsDraft } from './settingsDraft';
@@ -337,6 +338,7 @@ export function SettingsPage({ currentUserId, onNavigationGuardChange }: { curre
                 onChange={(value) => change('TranscodingMaxWidth', value)} />
             </Box>
           </Paper>
+          {draft.Management && <ManagementSettingsFields draft={draft.Management} defaults={settings.ManagementDefaults} disabled={disabled} errors={parsed?.errors ?? {}} mutationError={mutationError} onChange={(value) => change('Management', value)} />}
           {resetFields === undefined && mutationError != null && <MutationNotice error={mutationError} reload={requestReload} />}
           {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}
           <Paper variant="outlined" sx={{ p: 2.5 }}>

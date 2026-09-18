@@ -26,8 +26,9 @@ func assertHistoricalArchiveMusicDefaults(t *testing.T, ctx context.Context, poo
 
 // This archive is generated from the actual schema24 prefix with two separate
 // preference owners and a legal old credit type larger than a B-tree key. The
-// offline retry must preserve those rows while applying the real schema29 DDL.
+// offline retry must preserve those rows while applying the current schema DDL.
 func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *testing.T) {
+	current := currentRecoveryVersion(t)
 	ctx, source, target, options := recoveryFixtureAtVersion(t, 24)
 	if _, err := source.Exec(ctx, `INSERT INTO users(id,name,normalized_name,password_hash,configuration)
 		VALUES('schema24-viewer','Historical viewer','historical viewer','historical-test-digest',
@@ -71,11 +72,11 @@ func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *tes
 	called := false
 	failed, restoreErr := RestoreOfflineFinalized(ctx, target, archive, facts, offlineOptions,
 		func(callbackCtx context.Context, tx pgx.Tx, result RestoreResult) error {
-			if result.SourceVersion != 24 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+			if result.SourceVersion != 24 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 				return errors.New("schema24 finalizer received incorrect archive or target facts")
 			}
 			var preferenceRows string
-			if err := tx.QueryRow(callbackCtx, `SELECT jsonb_agg(to_jsonb(p) ORDER BY to_jsonb(p)::text)::text FROM user_settings p`).Scan(&preferenceRows); err != nil {
+			if err := tx.QueryRow(callbackCtx, historicalArchiveRowsStatement(t, "user_settings", 24)).Scan(&preferenceRows); err != nil {
 				return err
 			}
 			if preferenceRows != before["user_settings"] {
@@ -108,13 +109,13 @@ func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *tes
 	result, err := RestoreOffline(ctx, target, archive, facts, offlineOptions)
 	if err != nil {
 		logFixtureCatalogDifference(t, ctx, target, options)
-		t.Fatalf("retry the real schema24 archive into schema29: %v", err)
+		t.Fatalf("retry the real schema24 archive into the current schema: %v", err)
 	}
-	if result.SourceVersion != 24 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
-		t.Fatal("schema24 retry changed source facts or did not reach schema29")
+	if result.SourceVersion != 24 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
+		t.Fatal("schema24 retry changed source facts or did not reach the current schema")
 	}
-	if version, err := database.SchemaVersion(ctx, target); err != nil || version != 29 {
-		t.Fatalf("schema24 restored target version=%d, want 29: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, target); err != nil || version != current {
+		t.Fatalf("schema24 restored target version=%d, want %d: %v", version, current, err)
 	}
 	if version, err := database.SchemaVersion(ctx, source); err != nil || version != 24 {
 		t.Fatalf("offline restore changed original schema24: version=%d error=%v", version, err)
@@ -139,9 +140,9 @@ func TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer(t *tes
 	var historyCount int
 	var musicMigrationName, themeMigrationName, extraMigrationName, bindingMigrationName, deletionMigrationName string
 	if err := target.QueryRow(ctx, `SELECT count(*),max(name) FILTER (WHERE version=25),max(name) FILTER (WHERE version=26),max(name) FILTER (WHERE version=27),max(name) FILTER (WHERE version=28),max(name) FILTER (WHERE version=29)
-		FROM schema_migrations`).Scan(&historyCount, &musicMigrationName, &themeMigrationName, &extraMigrationName, &bindingMigrationName, &deletionMigrationName); err != nil || historyCount != 29 ||
+		FROM schema_migrations`).Scan(&historyCount, &musicMigrationName, &themeMigrationName, &extraMigrationName, &bindingMigrationName, &deletionMigrationName); err != nil || int64(historyCount) != current ||
 		musicMigrationName != "0025_music_artists.sql" || themeMigrationName != "0026_theme_owners.sql" || extraMigrationName != "0027_movie_extras.sql" ||
 		bindingMigrationName != "0028_storage_root_bindings.sql" || deletionMigrationName != "0029_user_deletion_activity.sql" {
-		t.Fatal("schema24 restoration did not append exactly the music, theme, extra, root binding and user deletion migrations")
+		t.Fatal("schema24 restoration did not retain historical migration names and append the complete current prefix")
 	}
 }

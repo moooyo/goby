@@ -96,20 +96,10 @@ func rootBindingArchiveAssertRoundTrip(t *testing.T, ctx context.Context, source
 	targetOptions := options
 	targetOptions.SourceURL = target.Config().ConnString()
 	actual, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
-	if expected.SchemaVersion != 28 || actual.SchemaVersion != 29 || len(actual.MigrationChecksums) != 29 ||
-		len(actual.Tables) != len(expected.Tables) || actual.SchemaSHA256 == expected.SchemaSHA256 || len(targetSequences) != len(sequences) {
-		t.Fatal("root binding restoration did not distinguish the historical source and current target inventories")
+	if expected.SchemaVersion != 28 {
+		t.Fatal("root binding restoration did not preserve the historical schema28 source inventory")
 	}
-	for _, table := range expected.Tables {
-		if historicalArchiveRows(t, ctx, source, table.Name, 28) != historicalArchiveRows(t, ctx, target, table.Name, 28) {
-			t.Fatalf("root binding restoration changed historical schema28 rows in %s", table.Name)
-		}
-	}
-	for name, expected := range sequences {
-		if actual, exists := targetSequences[name]; !exists || actual != expected {
-			t.Fatalf("root binding restoration changed sequence %s", name)
-		}
-	}
+	assertHistoricalRecoveryFacts(t, ctx, source, target, expected, actual, sequences, targetSequences)
 }
 
 func TestPostgreSQLRootBindingArchiveRoundTripsCompleteOfflineState(t *testing.T) {
@@ -123,7 +113,7 @@ func TestPostgreSQLRootBindingArchiveRoundTripsCompleteOfflineState(t *testing.T
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the complete root binding archive with an unavailable source: %v", err)
 	}
 	rootBindingArchiveAssertBinding(t, ctx, target, document)
@@ -159,7 +149,7 @@ func TestPostgreSQLRootBindingArchiveRejectsInvalidFinalizersAndRetries(t *testi
 			failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 				func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 					called = true
-					if result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+					if result.SourceVersion != 28 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 						return errors.New("root binding finalizer received changed source facts")
 					}
 					tag, err := tx.Exec(ctx, `UPDATE library_roots SET storage_binding=$1::jsonb WHERE id='theme-root'`, test.document)
@@ -179,7 +169,7 @@ func TestPostgreSQLRootBindingArchiveRejectsInvalidFinalizersAndRetries(t *testi
 		}
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 28 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("retry the unchanged root binding archive after all semantic rollbacks: %v", err)
 	}
 	rootBindingArchiveAssertBinding(t, ctx, target, document)
@@ -217,7 +207,7 @@ func TestPostgreSQLRootBindingArchiveMigratesSchema27WithoutInferringApproval(t 
 	offline := options
 	offline.SourceURL = unavailableSourceURL(t, options.SourceURL)
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 27 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 27 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore schema27 without replacing its authenticated source table facts: %v", err)
 	}
 	for table, expected := range rowsBefore {
@@ -229,18 +219,7 @@ func TestPostgreSQLRootBindingArchiveMigratesSchema27WithoutInferringApproval(t 
 	targetOptions := options
 	targetOptions.SourceURL = target.Config().ConnString()
 	actual, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
-	if actual.SchemaVersion != 29 || len(actual.Tables) != 35 || len(actual.MigrationChecksums) != 29 ||
-		actual.SchemaSHA256 == facts.SchemaSHA256 || equalJSON(actual.Tables, facts.Tables) {
-		t.Fatal("the migrated target was not independently fingerprinted as schema29")
-	}
-	if len(targetSequences) != len(sequences) {
-		t.Fatal("root binding migration changed the historical sequence inventory")
-	}
-	for name, expected := range sequences {
-		if actual, exists := targetSequences[name]; !exists || actual != expected {
-			t.Fatalf("root binding migration changed historical sequence %s", name)
-		}
-	}
+	assertHistoricalRecoveryFacts(t, ctx, source, target, facts, actual, sequences, targetSequences)
 	if facts.SchemaVersion != 27 || !equalJSON(facts, before) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatal("root binding migration rewrote the original schema27 archive descriptor")
 	}

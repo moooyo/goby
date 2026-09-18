@@ -1,5 +1,29 @@
 # Implementation progress
 
+The [media, collections, and management wave](feature-wave-20260919.md) has
+completed all selected source implementation on `codex/media-library-management`.
+Consolidated remote verification is still running; see the
+[wave verification record](feature-wave-verification-20260919.md).
+
+At this checkpoint, the 692-test server scope is covered through 676 original
+passes and 127 targeted rerun passes, including new, failed and previously
+unfinished cases; reruns overlap and the counts are not additive. Ten core
+packages recorded 5,136 passes and one existing opt-in helper skip. Identity
+recorded 181 passes, backuppg 497 and recoverydb 177. Seven real browser phases
+and five new mocked checks passed.
+
+The full recovery-manager package, four existing mocked checks, final build,
+owned-resource closure, merge and push remain pending. The wave is not yet
+accepted as a whole. Provider-specific testing and OCI work remain
+user-deferred. Read the [current handoff](handoff.md) for prior accepted evidence
+and retained failures. The original M2-M6/H1 and broader client/release gaps
+remain separate; no old artifact inherits acceptance from these current checks.
+
+## Historical dated ledger
+
+The entries below retain their original observations and next-step wording.
+They are historical, not the active execution queue or current runtime authority.
+
 The 2026-09-13 planning review paused execution and revised the next work order.
 See the [current execution plan](../planning/current-execution-plan.md): bounded
 failure diagnosis, an audited candidate, core client regression and a fresh main

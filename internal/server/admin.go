@@ -9,6 +9,7 @@ import (
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/library"
 )
 
 func nativeUser(user identity.User) map[string]any {
@@ -54,7 +55,7 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := identity.Client{Name: "Goby Dashboard", DeviceID: "goby-dashboard", Device: "Web browser", Version: s.version}
-	credentials, err := s.identity.AuthenticateWithPeer(r.Context(), body.Name, body.Password, client, "admin", s.clientAddress(r))
+	credentials, err := s.identity.AuthenticateWithPeer(r.Context(), body.Name, body.Password, client, "admin", s.policyClientAddress(r))
 	if err != nil {
 		s.identityError(w, r, err)
 		return
@@ -121,7 +122,7 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 		(SELECT count(*) FROM sessions JOIN users ON sessions.user_id=users.id
 		WHERE revoked_at IS NULL AND expires_at>now() AND NOT users.is_disabled
 		AND (sessions.kind='emby' OR users.is_administrator)),
-		(SELECT count(*) FROM libraries), (SELECT count(*) FROM items i WHERE NOT i.is_folder AND `+database.CatalogOrdinaryItemSQL("i")+`)`).Scan(&userCount, &sessionCount, &libraryCount, &itemCount)
+		(SELECT count(*) FROM libraries WHERE id <> $1), (SELECT count(*) FROM items i WHERE NOT i.is_folder AND `+database.CatalogOrdinaryItemSQL("i")+`)`, library.CollectionsLibraryID).Scan(&userCount, &sessionCount, &libraryCount, &itemCount)
 	if err != nil {
 		s.identityError(w, r, err)
 		return

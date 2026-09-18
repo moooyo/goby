@@ -101,7 +101,7 @@ func TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration(t *
 	result, err = RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 		func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 			called = true
-			if result.SourceVersion != 26 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+			if result.SourceVersion != 26 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 				return errors.New("migration finalizer lost original archive facts")
 			}
 			var active bool
@@ -120,7 +120,7 @@ func TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration(t *
 		t.Fatal("rewind the unchanged historical archive after semantic rollback")
 	}
 	result, err = RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore exact schema26 archive with its permitted selective migration: %v", err)
 	}
 	for table, expected := range rowsBefore {
@@ -137,13 +137,14 @@ func TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration(t *
 			t.Fatalf("migration changed the original sequence %s: %v", name, err)
 		}
 	}
+	currentCatalog, _ := currentRecoveryCatalog(t, options.Schema)
 	var valid bool
 	if err := target.QueryRow(ctx, `SELECT
-		(SELECT max(version) FROM schema_migrations)=29
-		AND (SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())=35
+		(SELECT max(version) FROM schema_migrations)=$1
+		AND (SELECT count(*) FROM pg_tables WHERE schemaname=current_schema())=$2
 		AND (SELECT count(*) FROM extra_reserved_paths)=1
 		AND EXISTS(SELECT 1 FROM extra_reserved_paths WHERE root_id='theme-root' AND relative_path='Legacy/featurettes' AND is_directory)
-		AND NOT EXISTS(SELECT 1 FROM item_extra_resources)`).Scan(&valid); err != nil || !valid {
+		AND NOT EXISTS(SELECT 1 FROM item_extra_resources)`, currentRecoveryVersion(t), len(currentCatalog.Tables)).Scan(&valid); err != nil || !valid {
 		t.Fatalf("schema26 migration inferred extras or missed its exact reserved boundary: %v", err)
 	}
 	assertHistoricalArchiveBindingDefaults(t, ctx, target)

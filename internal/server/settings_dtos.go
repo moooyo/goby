@@ -49,8 +49,11 @@ func settingsDTO(snapshot settings.Snapshot, deployment config.TranscodingConfig
 			"MaxHeight":        settingsSource(snapshot.Overrides.MaxHeight != nil),
 			"MaxAudioChannels": settingsSource(snapshot.Overrides.MaxAudioChannels != nil),
 		},
-		"Encoding":  map[string]any{"TranscodingMaxWidth": snapshot.Encoding.TranscodingMaxWidth},
-		"UpdatedAt": snapshot.UpdatedAt.UTC(),
+		"Encoding":           map[string]any{"TranscodingMaxWidth": snapshot.Encoding.TranscodingMaxWidth},
+		"UpdatedAt":          snapshot.UpdatedAt.UTC(),
+		"Management":         snapshot.Management,
+		"ManagementDefaults": settings.DefaultManagement(),
+		"ManagementEffects":  map[string]any{"Metadata": "next_work_item", "Subtitles": "next_work_item", "Tasks": "next_admission", "RestartRequired": false},
 		"Deployment": map[string]any{
 			"HostName":           snapshot.HostName,
 			"TranscodingEnabled": deployment.Enabled,

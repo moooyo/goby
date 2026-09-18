@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -24,21 +25,13 @@ type UserData struct {
 // playbackAllowed is shared by source opening and event handling. Playback
 // policy applies to administrators too; malformed policy fails closed.
 func playbackAllowed(policy []byte) bool {
-	var values map[string]json.RawMessage
-	if err := json.Unmarshal(policy, &values); err != nil || values == nil {
-		return false
-	}
-	raw, exists := values["EnableMediaPlayback"]
-	if !exists {
-		return true
-	}
-	var enabled *bool
-	return json.Unmarshal(raw, &enabled) == nil && enabled != nil && *enabled
+	parsed, err := identity.ParseRuntimePolicy(policy)
+	return err == nil && parsed.EnableMediaPlayback && parsed.AllowsFeature(identity.FeaturePlayback)
 }
 
 func supportsUserData(itemType string) bool {
 	switch itemType {
-	case "Movie", "Series", "Season", "Episode", "Video", "Audio", "MusicAlbum", "MusicArtist":
+	case "Movie", "Series", "Season", "Episode", "Video", "Audio", "MusicVideo", "MusicAlbum", "MusicArtist", PlaylistKind, BoxSetKind:
 		return true
 	default:
 		return false
@@ -54,8 +47,8 @@ type stateItem struct {
 // Writes lock the account before reading its policy, so a concurrent disable or
 // library-policy change cannot commit before a stale authorization writes data.
 // These short transactions use the pool independently from the scan owner.
-func (s *Store) beginStateWrite(ctx context.Context, userID string, requirePlayback bool) (pgx.Tx, libraryAccess, error) {
-	if s == nil || s.pool == nil || strings.TrimSpace(userID) == "" || strings.ContainsRune(userID, '\x00') {
+func (s *Store) beginStateWrite(ctx context.Context, subject Subject, requirePlayback bool) (pgx.Tx, libraryAccess, error) {
+	if s == nil || s.pool == nil || !validSubject(subject) {
 		return nil, libraryAccess{}, ErrInvalidInput
 	}
 	s.mu.Lock()
@@ -68,25 +61,7 @@ func (s *Store) beginStateWrite(ctx context.Context, userID string, requirePlayb
 	if err != nil {
 		return nil, libraryAccess{}, fmt.Errorf("begin user state update: %w", err)
 	}
-	var administrator, disabled bool
-	var policy []byte
-	err = tx.QueryRow(ctx, `SELECT is_administrator, is_disabled, policy FROM users
-		WHERE id = $1 FOR SHARE`, userID).Scan(&administrator, &disabled, &policy)
-	if err != nil {
-		rollback(tx)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, libraryAccess{}, ErrForbidden
-		}
-		return nil, libraryAccess{}, fmt.Errorf("authorize user state update: %w", err)
-	}
-	if disabled || (requirePlayback && !playbackAllowed(policy)) {
-		rollback(tx)
-		return nil, libraryAccess{}, ErrForbidden
-	}
-	if administrator {
-		return tx, libraryAccess{all: true, folders: []string{}}, nil
-	}
-	access, err := parseLibraryPolicy(policy)
+	access, err := checkSubjectStateWrite(ctx, tx, subject, requirePlayback, true)
 	if err != nil {
 		rollback(tx)
 		return nil, libraryAccess{}, err
@@ -101,8 +76,8 @@ func lockStateItem(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID 
 	var item stateItem
 	var raw []byte
 	err := tx.QueryRow(ctx, `SELECT i.id, i.type, i.library_id, i.is_folder, i.media FROM items i
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+` FOR SHARE OF i`,
-		itemID, access.all, access.folders).Scan(&item.id, &item.itemType, &item.libraryID, &item.isFolder, &raw)
+		WHERE i.id = $1 AND `+access.directSQL("i")+` FOR SHARE OF i`,
+		itemID).Scan(&item.id, &item.itemType, &item.libraryID, &item.isFolder, &raw)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return stateItem{}, ErrNotFound
 	}
@@ -113,7 +88,7 @@ func lockStateItem(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID 
 	// this statement waited for that lock, its original READ COMMITTED snapshot
 	// may predate the marker or relationship change; reread after acquiring SHARE.
 	var direct bool
-	if err := tx.QueryRow(ctx, "SELECT "+directItemSQL("i")+" FROM items i WHERE i.id=$1", itemID).Scan(&direct); err != nil {
+	if err := tx.QueryRow(ctx, "SELECT "+access.directSQL("i")+" FROM items i WHERE i.id=$1", itemID).Scan(&direct); err != nil {
 		return stateItem{}, fmt.Errorf("recheck user state item visibility: %w", err)
 	}
 	if !direct {
@@ -201,9 +176,9 @@ func (s *Store) GetUserDataBatchFor(ctx context.Context, subject Subject, itemID
 	rows, err := tx.Query(ctx, `SELECT i.id, COALESCE(data.playback_position_ticks, 0),
 		COALESCE(data.play_count, 0), COALESCE(data.is_favorite, false), COALESCE(data.played, false), data.last_played_at
 		FROM items i LEFT JOIN user_item_data data ON data.item_id = i.id AND data.user_id = $1
-		WHERE i.id = ANY($2::text[]) AND ($3::boolean OR i.library_id = ANY($4::text[]))
-		AND i.type IN ('Movie','Series','Season','Episode','Video','Audio','MusicAlbum','MusicArtist') AND `+directItemSQL("i"),
-		userID, itemIDs, access.all, access.folders)
+		WHERE i.id = ANY($2::text[])
+		AND i.type IN (`+userDataFolderTypesSQL+`) AND `+access.directSQL("i"),
+		userID, itemIDs)
 	if err != nil {
 		return nil, fmt.Errorf("query user item data: %w", err)
 	}
@@ -220,7 +195,7 @@ func (s *Store) GetUserDataBatchFor(ctx context.Context, subject Subject, itemID
 		return nil, fmt.Errorf("read user item data list: %w", err)
 	}
 	rows.Close()
-	if err := deriveUserDataFolders(ctx, tx, userID, result); err != nil {
+	if err := deriveUserDataFolders(ctx, tx, userID, result, access); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -256,10 +231,13 @@ func (s *Store) SetFavoriteFor(ctx context.Context, subject Subject, itemID stri
 		return UserData{}, fmt.Errorf("set favorite state: %w", err)
 	}
 	derived := map[string]UserData{itemID: data}
-	if err := deriveUserDataFolders(ctx, tx, userID, derived); err != nil {
+	if err := deriveUserDataFolders(ctx, tx, userID, derived, access); err != nil {
 		return UserData{}, err
 	}
 	data = derived[itemID]
+	if _, err := checkSubjectStateWrite(ctx, tx, subject, false, false); err != nil {
+		return UserData{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return UserData{}, fmt.Errorf("commit favorite state: %w", err)
 	}
@@ -273,7 +251,9 @@ func (s *Store) SetPlayed(ctx context.Context, userID, itemID string, played boo
 	return s.SetPlayedFor(ctx, Subject{UserID: userID}, itemID, played, datePlayed)
 }
 
-// SetPlayedFor retains same-library descendant updates for the explicit target.
+// SetPlayedFor updates the explicit account's visible folder members. BoxSet
+// references may cross libraries; playlists expose derived state without a
+// bulk-marking contract and therefore reject this mutation explicitly.
 func (s *Store) SetPlayedFor(ctx context.Context, subject Subject, itemID string, played bool, datePlayed *time.Time) (UserData, error) {
 	if strings.TrimSpace(subject.UserID) == "" {
 		return UserData{}, ErrInvalidInput
@@ -286,16 +266,23 @@ func (s *Store) SetPlayedFor(ctx context.Context, subject Subject, itemID string
 		}
 		datePlayed = &utc
 	}
-	tx, access, err := s.beginSubjectStateWrite(ctx, subject, false)
+	callerCtx := ctx
+	tx, access, err := s.beginPlayedStateWrite(ctx, subject, itemID)
 	if err != nil {
 		return UserData{}, err
 	}
 	defer rollback(tx)
+	if owned, ok := tx.(*ownedTx); ok {
+		ctx = owned.ctx
+	}
 	item, err := lockStateItem(ctx, tx, access, itemID, false)
 	if err != nil {
 		return UserData{}, err
 	}
-	itemIDs, err := lockPlayedTargets(ctx, tx, item)
+	if item.itemType == PlaylistKind {
+		return UserData{}, fmt.Errorf("%w: playlist played state is derived from its members", ErrInvalidInput)
+	}
+	itemIDs, err := lockPlayedTargets(ctx, tx, item, access)
 	if err != nil {
 		return UserData{}, err
 	}
@@ -315,28 +302,43 @@ func (s *Store) SetPlayedFor(ctx context.Context, subject Subject, itemID string
 		return UserData{}, err
 	}
 	derived := map[string]UserData{itemID: data}
-	if err := deriveUserDataFolders(ctx, tx, userID, derived); err != nil {
+	if err := deriveUserDataFolders(ctx, tx, userID, derived, access); err != nil {
 		return UserData{}, err
 	}
 	data = derived[itemID]
-	if err := tx.Commit(ctx); err != nil {
+	if _, err := checkSubjectStateWrite(ctx, tx, subject, false, false); err != nil {
+		return UserData{}, err
+	}
+	if _, owned := tx.(*ownedTx); owned {
+		err = commitCollectionWrite(callerCtx, tx)
+	} else {
+		err = tx.Commit(ctx)
+	}
+	if err != nil {
 		return UserData{}, fmt.Errorf("commit played state: %w", err)
 	}
 	return data, nil
 }
 
-func lockPlayedTargets(ctx context.Context, tx pgx.Tx, root stateItem) ([]string, error) {
+func lockPlayedTargets(ctx context.Context, tx pgx.Tx, root stateItem, scopes ...libraryAccess) ([]string, error) {
+	access := unrestrictedLibraryAccess()
+	if len(scopes) != 0 {
+		access = scopes[0]
+	}
 	if !root.isFolder {
 		return []string{root.id}, nil
 	}
+	if root.itemType == BoxSetKind {
+		return lockCollectionPlayedTargets(ctx, tx, root, access)
+	}
 	rows, err := tx.Query(ctx, `WITH RECURSIVE targets AS (
-		SELECT i.id, i.library_id FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+ordinaryItemSQL("i")+`
+		SELECT i.id, i.library_id FROM items i WHERE i.id = $1 AND i.library_id = $2 AND `+access.ordinarySQL("i")+`
 		UNION
 		SELECT child.id, child.library_id FROM items child JOIN targets parent
 			ON child.parent_id = parent.id AND child.library_id = parent.library_id
-		WHERE `+ordinaryItemSQL("child")+`
+		WHERE `+access.ordinarySQL("child")+`
 	) SELECT i.id FROM items i JOIN targets target ON target.id = i.id AND target.library_id = i.library_id
-	WHERE i.type IN ('Movie','Series','Season','Episode','Video','Audio','MusicAlbum','MusicArtist') AND `+ordinaryItemSQL("i")+`
+	WHERE i.type IN (`+userDataPhysicalTypesSQL+`) AND `+access.ordinarySQL("i")+`
 	ORDER BY i.id FOR SHARE OF i`, root.id, root.libraryID)
 	if err != nil {
 		return nil, fmt.Errorf("lock played folder descendants: %w", err)
@@ -359,7 +361,7 @@ func lockPlayedTargets(ctx context.Context, tx pgx.Tx, root stateItem) ([]string
 	// a marker committed while the locking query waited must reject the batch.
 	var ordinaryCount int
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM items i
-		WHERE i.id=ANY($1::text[]) AND i.library_id=$2 AND `+ordinaryItemSQL("i"), ids, root.libraryID).Scan(&ordinaryCount); err != nil {
+		WHERE i.id=ANY($1::text[]) AND i.library_id=$2 AND `+access.ordinarySQL("i"), ids, root.libraryID).Scan(&ordinaryCount); err != nil {
 		return nil, fmt.Errorf("recheck played folder item visibility: %w", err)
 	}
 	if ordinaryCount != len(ids) || ordinaryCount == 0 {

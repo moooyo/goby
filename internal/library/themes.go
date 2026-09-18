@@ -160,7 +160,7 @@ func readThemeSeed(ctx context.Context, tx pgx.Tx, id string, access libraryAcce
 	var number *int64
 	err := tx.QueryRow(ctx, `SELECT i.id, i.library_id, mapping.id FROM items i
 		LEFT JOIN theme_owner_ids mapping ON mapping.item_id = i.id AND NOT mapping.virtual_root
-		WHERE i.id = $1 AND `+directItemSQL("i")+` AND ($2::boolean OR i.library_id = ANY($3::text[]))`,
+		WHERE i.id = $1 AND `+access.directSQL("i")+` AND ($2::boolean OR i.library_id = ANY($3::text[]))`,
 		id, access.all, access.folders).Scan(&owner.id, &owner.libraryID, &number)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return themeOwner{}, themeMissingSeed(ctx, tx, id, access)
@@ -184,7 +184,7 @@ func themeMissingSeed(ctx context.Context, tx pgx.Tx, seedID string, access libr
 	err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM catalog_entities entity
 		JOIN item_entities association ON association.entity_id = entity.id JOIN items i ON i.id = association.item_id
 		WHERE entity.id = $1 AND i.type <> 'CollectionFolder' AND `+validEntityAssociationSQL+`
-		AND `+ordinaryItemSQL("i")+` AND ($2::boolean OR i.library_id = ANY($3::text[])))`,
+		AND `+access.ordinarySQL("i")+` AND ($2::boolean OR i.library_id = ANY($3::text[])))`,
 		id, access.all, access.folders).Scan(&visible)
 	if err != nil {
 		return fmt.Errorf("authorize theme entity seed: %w", err)
@@ -203,7 +203,7 @@ func readThemeAncestors(ctx context.Context, tx pgx.Tx, seed themeOwner, access 
 		SELECT parent.id, parent.library_id, parent.parent_id, child.visited || parent.id,
 			child.depth + 1, parent.id = ANY(child.visited)
 		FROM theme_ancestors child JOIN items parent ON parent.id = child.parent_id
-		WHERE parent.library_id = $2 AND `+ordinaryItemSQL("parent")+`
+		WHERE parent.library_id = $2 AND `+access.ordinarySQL("parent")+`
 			AND ($3::boolean OR parent.library_id = ANY($4::text[]))
 			AND NOT child.cycle AND child.depth <= $5
 	) SELECT ancestor.id, ancestor.library_id, mapping.id, ancestor.depth, ancestor.cycle
@@ -244,9 +244,9 @@ func readThemePopulations(ctx context.Context, tx pgx.Tx, owners []themeOwner, a
 		ids = append(ids, owner.id)
 	}
 	rows, err := tx.Query(ctx, `SELECT association.owner_item_id, count(*),
-		bool_or(association.kind = 'song' AND `+directItemSQL("i")+`
+		bool_or(association.kind = 'song' AND `+access.directSQL("i")+`
 			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND i.library_id = $4),
-		bool_or(association.kind = 'video' AND `+directItemSQL("i")+`
+		bool_or(association.kind = 'video' AND `+access.directSQL("i")+`
 			AND ($2::boolean OR i.library_id = ANY($3::text[])) AND i.library_id = $4)
 		FROM item_theme_resources association JOIN items i ON i.id = association.resource_item_id
 		WHERE association.active AND association.owner_item_id = ANY($1::text[])
@@ -271,11 +271,11 @@ func readThemePopulations(ctx context.Context, tx pgx.Tx, owners []themeOwner, a
 }
 
 func readThemeItems(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, libraryID, songOwner, videoOwner string, result *ThemeMediaResult) error {
-	rows, err := tx.Query(ctx, "SELECT "+itemColumns+`, association.kind FROM item_theme_resources association
+	rows, err := tx.Query(ctx, "SELECT "+access.itemColumnsSQL()+`, association.kind FROM item_theme_resources association
 		JOIN items i ON i.id = association.resource_item_id
 		WHERE association.active AND ((association.kind = 'song' AND association.owner_item_id = $1)
 			OR (association.kind = 'video' AND association.owner_item_id = $2))
-			AND `+directItemSQL("i")+` AND i.library_id = $3
+			AND `+access.directSQL("i")+` AND i.library_id = $3
 			AND ($4::boolean OR i.library_id = ANY($5::text[]))
 		ORDER BY association.kind, lower(i.sort_name) COLLATE "C", i.id`,
 		songOwner, videoOwner, libraryID, access.all, access.folders)
@@ -304,7 +304,7 @@ func readThemeItems(ctx context.Context, tx pgx.Tx, subject Subject, access libr
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return err
 	}
-	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+	if err := attachThemeItemAttributes(ctx, tx, items, access); err != nil {
 		return err
 	}
 	for index, item := range items {
@@ -326,7 +326,11 @@ func readThemeItems(ctx context.Context, tx pgx.Tx, subject Subject, access libr
 // neither source metadata nor catalog relationships are persisted by a read.
 // Explicit native controls, including empty overrides and empty saved locks,
 // prevent fallback. The existing NFO parser does not implement NFO lock fields.
-func attachThemeItemAttributes(ctx context.Context, tx pgx.Tx, items []Item) error {
+func attachThemeItemAttributes(ctx context.Context, tx pgx.Tx, items []Item, scopes ...libraryAccess) error {
+	access := unrestrictedLibraryAccess()
+	if len(scopes) != 0 {
+		access = scopes[0]
+	}
 	positions := make(map[string][]int)
 	ids := make([]string, 0, len(items))
 	for index, item := range items {
@@ -349,8 +353,8 @@ func attachThemeItemAttributes(ctx context.Context, tx pgx.Tx, items []Item) err
 		JOIN items owner ON owner.id=relationship.owner_item_id
 		LEFT JOIN item_metadata_state state ON state.item_id=i.id
 		LEFT JOIN item_metadata_state owner_state ON owner_state.item_id=owner.id
-		WHERE relationship.active AND i.id=ANY($1::text[]) AND `+directItemSQL("i")+`
-			AND `+ordinaryItemSQL("owner")+` AND owner.library_id=i.library_id`, ids)
+		WHERE relationship.active AND i.id=ANY($1::text[]) AND `+access.directSQL("i")+`
+			AND `+access.ordinarySQL("owner")+` AND owner.library_id=i.library_id`, ids)
 	if err != nil {
 		return fmt.Errorf("query inherited theme genres: %w", err)
 	}

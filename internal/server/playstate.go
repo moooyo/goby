@@ -55,11 +55,12 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			s.playbackError(w, r, err)
 			return
 		}
-		if principal.User.ID != "" {
+		if principal.User.ID != "" && !play.IsDynamic {
 			s.notifier.Enqueue(principal.User.ID, data.ItemID, false)
 		}
 		if event == "Stopped" {
-			s.hls.cancelMatching(principal.SessionID, play.ID)
+			s.cancelPlaybackResources(principal.SessionID, play.ID)
+			s.cancelMediaPolicySource(principal, play.ItemID, play.MediaSourceID)
 		} else {
 			s.hls.touchMatching(principal.SessionID, play.ID)
 		}

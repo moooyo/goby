@@ -20,10 +20,16 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 	t.Helper()
 	projection := "to_jsonb(original)"
 	if table == "managed_settings" {
-		projection += " - 'server_name_mode' - 'compatibility_max_width'"
+		projection += " - 'server_name_mode' - 'compatibility_max_width' - 'management'"
 	}
 	if table == "item_metadata_state" {
-		projection += " - 'music_source'"
+		projection += " - 'music_source' - 'online_source' - 'online_type' - 'online_base'"
+	}
+	if table == "task_run_children" {
+		projection += " - 'executor_token'"
+	}
+	if table == "play_sessions" {
+		projection += " - 'is_dynamic'"
 	}
 	if table == "item_entities" {
 		projection += " - 'credit_group'"
@@ -55,11 +61,15 @@ func compatibilityMigrationManagedColumns(t *testing.T, ctx context.Context, poo
 
 func compatibilityMigrationHistory(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
+	expected, err := database.EmbeddedMigrations()
+	if err != nil {
+		t.Fatal(err)
+	}
 	var count int
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT count(*), jsonb_agg(to_jsonb(m) ORDER BY version)::text
-		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != 29 {
-		t.Fatalf("compatibility full migration history count = %d, want 29: %v", count, err)
+		FROM schema_migrations m`).Scan(&count, &snapshot); err != nil || count != len(expected) {
+		t.Fatalf("compatibility full migration history count = %d, want %d: %v", count, len(expected), err)
 	}
 	return snapshot
 }
@@ -75,6 +85,11 @@ func compatibilityMigrationBindingDefaults(t *testing.T, ctx context.Context, po
 }
 
 func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testing.T) {
+	migrations, err := database.EmbeddedMigrations()
+	if err != nil || len(migrations) == 0 {
+		t.Fatalf("read current migration inventory: %v", err)
+	}
+	latest := migrations[len(migrations)-1].Version
 	for _, test := range []struct {
 		name, rawName, mode string
 		explicitLimits      bool
@@ -113,24 +128,28 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			if len(columns) != 9 {
 				t.Fatalf("schema 20 managed settings has %d columns, want 9", len(columns))
 			}
-			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width")
+			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width", "management")
 			sort.Strings(wantColumns)
-			currentTables := append(append([]string(nil), tables...), "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources")
+			currentTables := append(append([]string(nil), tables...), "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources", "media_collections", "media_collection_entries", "media_collection_shares", "item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations")
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory string
 			for attempt := 1; attempt <= 2; attempt++ {
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
 				}
-				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
-					t.Fatalf("compatibility full migration schema version = %d, want 29: %v", version, err)
+				if version, err := database.SchemaVersion(ctx, pool); err != nil || version != latest {
+					t.Fatalf("compatibility full migration schema version = %d, want %d: %v", version, latest, err)
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
+				var dynamicSessions int
+				if err := pool.QueryRow(ctx, `SELECT count(*) FROM play_sessions WHERE is_dynamic IS DISTINCT FROM false`).Scan(&dynamicSessions); err != nil || dynamicSessions != 0 {
+					t.Errorf("current migration marked historical playback sessions as dynamic: count=%d error=%v", dynamicSessions, err)
+				}
 				var name string
 				if err := pool.QueryRow(ctx, "SELECT name FROM schema_migrations WHERE version = 21").Scan(&name); err != nil || name != "0021_configuration_compatibility.sql" {
 					t.Fatalf("compatibility migration history name = %q: %v", name, err)
 				}
-				if after := settingsMigrationTables(t, ctx, pool); len(after) != 35 || strings.Join(after, " ") != strings.Join(currentTables, " ") {
+				if after := settingsMigrationTables(t, ctx, pool); len(after) != len(currentTables) || strings.Join(after, " ") != strings.Join(currentTables, " ") {
 					t.Errorf("current migration did not retain every historical table and add activity entries, user settings, and five auxiliary tables: %v", after)
 				}
 				var activityCount int
@@ -147,8 +166,13 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 					(SELECT count(*) FROM item_entities WHERE credit_group IS DISTINCT FROM 0)`).Scan(&musicSourceCount, &groupedCreditCount); err != nil || musicSourceCount != 0 || groupedCreditCount != 0 {
 					t.Errorf("current migration populated historical music sources or grouped credits: sources=%d credits=%d error=%v", musicSourceCount, groupedCreditCount, err)
 				}
+				var onlineMetadata int
+				if err := pool.QueryRow(ctx, `SELECT count(*) FROM item_metadata_state
+					WHERE online_source IS DISTINCT FROM '{}'::jsonb OR online_type IS DISTINCT FROM '' OR online_base IS NOT NULL`).Scan(&onlineMetadata); err != nil || onlineMetadata != 0 {
+					t.Errorf("current migration populated online metadata for historical rows: count=%d error=%v", onlineMetadata, err)
+				}
 				if after := compatibilityMigrationManagedColumns(t, ctx, pool); strings.Join(after, " ") != strings.Join(wantColumns, " ") {
-					t.Errorf("compatibility migration did not add exactly its two columns: %v", after)
+					t.Errorf("compatibility migration did not add exactly its supported settings columns: %v", after)
 				}
 				for _, table := range tables {
 					if after := compatibilityMigrationSnapshot(t, ctx, pool, table); after != before[table] {

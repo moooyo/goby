@@ -120,13 +120,18 @@ func rootBindingAssertOldTables(t *testing.T, ctx context.Context, pool *pgxpool
 	}
 }
 
-func rootBindingActivityChecks(t *testing.T, ctx context.Context, pool *pgxpool.Pool, preservedOnly bool) string {
+func rootBindingActivityChecks(t *testing.T, ctx context.Context, pool *pgxpool.Pool, preservedOnly bool, laterManagement ...bool) string {
 	t.Helper()
 	filter := ""
 	if preservedOnly {
 		filter = ` WHERE name <> 'activity_entries_root_binding_fact_check'
 			AND NOT (columns = ARRAY['action']::text[] OR columns = ARRAY['resource_kind']::text[]
 				OR columns = ARRAY['action','resource_kind']::text[])`
+		if len(laterManagement) != 0 && laterManagement[0] {
+			// Schema32 deliberately extends this one allowlist. The schema28
+			// recovery path still verifies the unchanged historical constraint.
+			filter += ` AND columns <> ARRAY['action','changed_fields']::text[]`
+		}
 	}
 	var snapshot string
 	if err := pool.QueryRow(ctx, `WITH checks AS (
@@ -155,19 +160,21 @@ func TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks(t *tes
 			END $$`); err != nil {
 				t.Fatalf("rename the original activity CHECKs: %v", err)
 			}
-			preserved := rootBindingActivityChecks(t, ctx, pool, true)
+			preserved := rootBindingActivityChecks(t, ctx, pool, true, !recovery)
 			for range 2 {
 				if err := migrateRootBindings28(ctx, pool, recovery); err != nil {
 					t.Fatalf("migrate published roots to schema28: %v", err)
 				}
 			}
 			rootBindingAssertOldTables(t, ctx, pool, tables)
-			if rootBindingActivityChecks(t, ctx, pool, true) != preserved {
+			if rootBindingActivityChecks(t, ctx, pool, true, !recovery) != preserved {
 				t.Fatal("migration replaced an unrelated activity CHECK or the original terminal CHECK")
 			}
-			wantVersion := int64(29)
+			wantVersion := currentMigrationVersion(t)
+			wantTables := currentMigrationTableCount
 			if recovery {
 				wantVersion = 28
+				wantTables = 35
 			}
 			var version int64
 			var count, boundRoots, changedLegacyActivity int
@@ -175,7 +182,7 @@ func TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks(t *tes
 				(SELECT count(*) FROM pg_tables WHERE schemaname=current_schema()),
 				(SELECT count(*) FROM library_roots WHERE binding_revision<>1 OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL),
 				(SELECT count(*) FROM activity_entries WHERE previous_revision<>0 OR observation_fingerprint<>'')`).Scan(
-				&version, &count, &boundRoots, &changedLegacyActivity); err != nil || version != wantVersion || count != 35 || boundRoots != 0 || changedLegacyActivity != 0 {
+				&version, &count, &boundRoots, &changedLegacyActivity); err != nil || version != wantVersion || count != wantTables || boundRoots != 0 || changedLegacyActivity != 0 {
 				t.Fatalf("schema28 inferred binding or audit facts: version=%d tables=%d roots=%d activity=%d error=%v", version, count, boundRoots, changedLegacyActivity, err)
 			}
 		})

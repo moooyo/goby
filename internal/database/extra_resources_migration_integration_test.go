@@ -198,6 +198,10 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				expected[table.name] = extraSnapshot(t, ctx, pool, table, true)
 			}
 			identities, sequences := themeReservedTableIdentities(t, ctx, pool, names), themeOwnersSequences(t, ctx, pool)
+			expectedSequences := make(map[string]string, len(sequences)+1)
+			for name, snapshot := range sequences {
+				expectedSequences[name] = snapshot
+			}
 			themeSequence := extraThemeSequenceSnapshot(t, ctx, pool)
 			tx, err := pool.Begin(ctx)
 			if err != nil {
@@ -244,8 +248,35 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				if extraThemeSequenceSnapshot(t, ctx, pool) != themeSequence {
 					t.Fatal("extra migration advanced or replaced the theme identity sequence")
 				}
-				if themeReservedTableIdentities(t, ctx, pool, names) != identities || !reflect.DeepEqual(themeOwnersSequences(t, ctx, pool), sequences) {
-					t.Fatal("extra migration changed a historical table identity or sequence")
+				actualSequences := themeOwnersSequences(t, ctx, pool)
+				if runner == "normal" && attempt == 0 {
+					// Schema30 adds exactly one independent, unconsumed identity.
+					// Retain every historical snapshot and admit only this declared
+					// sequence after checking its ownership, definition and state.
+					var validCollectionIdentity bool
+					if err := pool.QueryRow(ctx, `SELECT
+						pg_get_serial_sequence('media_collection_entries','id')::regclass='media_collection_entries_id_seq'::regclass
+						AND EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='media_collection_entries'::regclass AND attname='id' AND attidentity='a')
+						AND EXISTS(SELECT 1 FROM pg_sequence WHERE seqrelid='media_collection_entries_id_seq'::regclass
+							AND seqtypid='bigint'::regtype AND seqstart=1 AND seqincrement=1 AND seqmin=1
+							AND seqmax=9223372036854775807 AND seqcache=1 AND NOT seqcycle)
+						AND NOT EXISTS(SELECT 1 FROM media_collection_entries)
+						AND last_value=1 AND log_cnt=0 AND NOT is_called
+						FROM media_collection_entries_id_seq`).Scan(&validCollectionIdentity); err != nil || !validCollectionIdentity {
+						t.Fatalf("schema30 did not add the declared unused collection identity: %v", err)
+					}
+					const name = "media_collection_entries_id_seq"
+					added, exists := actualSequences[name]
+					if _, previouslyExisted := sequences[name]; previouslyExisted || !exists {
+						t.Fatal("collection sequence was not an independent addition to schema26")
+					}
+					expectedSequences[name] = added
+				}
+				if themeReservedTableIdentities(t, ctx, pool, names) != identities {
+					t.Fatal("extra migration changed a historical table identity")
+				}
+				if !reflect.DeepEqual(actualSequences, expectedSequences) {
+					t.Fatal("extra migration changed a preserved sequence or introduced an undeclared sequence")
 				}
 			}
 			want := map[themeReservedMarker]bool{
@@ -281,12 +312,14 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				t.Fatal("the historical schema26 predicate acquired current-schema reservations")
 			}
 			wantVersion := 27
+			wantTables := 35
 			if runner == "normal" {
-				wantVersion = 29
+				wantVersion = int(currentMigrationVersion(t))
+				wantTables = currentMigrationTableCount
 			}
 			var tables, resources, version int
 			if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM pg_tables WHERE schemaname=current_schema()),
-				(SELECT count(*) FROM item_extra_resources),(SELECT max(version) FROM schema_migrations)`).Scan(&tables, &resources, &version); err != nil || tables != 35 || resources != 0 || version != wantVersion {
+				(SELECT count(*) FROM item_extra_resources),(SELECT max(version) FROM schema_migrations)`).Scan(&tables, &resources, &version); err != nil || tables != wantTables || resources != 0 || version != wantVersion {
 				t.Fatalf("extra migration inventory: tables=%d resources=%d version=%d error=%v", tables, resources, version, err)
 			}
 		})

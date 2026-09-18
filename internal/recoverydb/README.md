@@ -67,7 +67,17 @@ on one host; independent external DDL clients and routing proxies require
 operator exclusion. The adapter delegates user intent, durable transition
 records, generation publication, and HTTP lifecycle to the coordinator.
 
-Integration tests require exclusive use of the two complete public schemas in
-the dedicated PostgreSQL 15432 pair fixture, with distinct ordinary roles and
-explicit ownership markers. Final database and role removal belongs to that
-operator; the fixture never uses a fallback `DROP SCHEMA CASCADE` cleanup.
+Integration tests require exclusive use of two complete public schemas in an
+independently owned PostgreSQL pair fixture, with distinct `goby_backup_` database
+and role names and explicit ownership markers. The default endpoint remains
+`127.0.0.1:15432`. An operator can select another isolated cluster by setting
+`GOBY_TEST_RECOVERY_PORT` to its canonical decimal TCP port (1 through 65535) and
+using that same explicit port in both fixture database URLs. An unset variable
+retains the default; an explicitly empty or malformed value is rejected.
+
+The override never changes the fixed IPv4 loopback host, least-privilege and
+ownership checks, closed URI/TLS/session options, or physical-peer validation.
+The forwarding test reaches the selected real database through a separate
+loopback connection while retaining the declared endpoint, proving that the
+lease rejects a different actual peer. Final database and role removal belongs
+to the operator; the fixture never uses a fallback `DROP SCHEMA CASCADE` cleanup.

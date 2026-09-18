@@ -27,8 +27,8 @@ func TestQueryCollectionTypesUseRealCatalogFilteringAndPermissions(t *testing.T)
 			t.Fatal("an absent collection kind did not produce its real empty catalog result")
 		}
 	}
-	// These rows represent catalog facts, not a new playlist or collection
-	// creation API. Their nonempty results prevent a hard-coded empty response.
+	// Owned collection rows exercise real nonempty filtering and source-library
+	// policy together; an unowned item projection is not a valid collection.
 	if _, err := store.pool.Exec(ctx, `INSERT INTO items (id, library_id, parent_id, name, sort_name, type, is_folder) VALUES
 		('playlist-a', 'library-a', 'library-a', '0 Hidden Playlist', '0 Hidden Playlist', 'Playlist', true),
 		('boxset-a', 'library-a', 'library-a', '0 Hidden Collection', '0 Hidden Collection', 'BoxSet', true),
@@ -37,6 +37,10 @@ func TestQueryCollectionTypesUseRealCatalogFilteringAndPermissions(t *testing.T)
 		('playlist-nested-b', 'library-b', 'folder-b', 'F Nested Playlist', 'F Nested Playlist', 'Playlist', true),
 		('boxset-b', 'library-b', 'library-b', 'G Visible Collection', 'G Visible Collection', 'BoxSet', true)`); err != nil {
 		t.Fatalf("seed representative catalog collection kinds: %v", err)
+	}
+	if _, err := store.pool.Exec(ctx, `INSERT INTO media_collections(item_id,owner_id,kind)
+		SELECT id,'restricted',type FROM items WHERE type IN ('Playlist','BoxSet')`); err != nil {
+		t.Fatalf("seed real collection ownership: %v", err)
 	}
 	for _, test := range []struct {
 		name  string

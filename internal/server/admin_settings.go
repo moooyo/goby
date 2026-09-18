@@ -168,12 +168,15 @@ func adminSettingsNumber(raw json.RawMessage, field string, invalid map[string]s
 }
 
 func decodeAdminSettingsUpdate(w http.ResponseWriter, r *http.Request) (settings.UpdateRequest, bool) {
-	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding"}, []string{"Revision", "Overrides"})
+	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding", "Management"}, []string{"Revision", "Overrides"})
 	if !ok {
 		return settings.UpdateRequest{}, false
 	}
 	invalid := make(map[string]string)
 	request := settings.UpdateRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
+	if raw, present := values["Management"]; present {
+		request.Management = decodeManagementSettings(raw, invalid)
+	}
 	if raw, present := values["ServerNameMode"]; present {
 		var mode settings.ServerNameMode
 		if json.Unmarshal(raw, &mode) != nil {
@@ -246,13 +249,13 @@ func decodeAdminSettingsReset(w http.ResponseWriter, r *http.Request) (settings.
 	invalid := make(map[string]string)
 	request := settings.ResetRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
 	var fields []settings.Field
-	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+1 {
-		invalid["Fields"] = "Select between one and six supported settings to reset."
+	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+5 {
+		invalid["Fields"] = "Select between one and ten supported settings to reset."
 	} else {
 		seen := make(map[settings.Field]bool, len(fields))
 		for _, field := range fields {
 			switch field {
-			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth:
+			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth, settings.FieldManagement, settings.FieldMetadata, settings.FieldSubtitles, settings.FieldTasks:
 				if seen[field] {
 					invalid["Fields"] = "Select each supported setting at most once."
 				}
@@ -340,6 +343,10 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 	case errors.As(err, &invalid):
 		fields := make(map[string]string)
 		for field := range invalid.Fields {
+			if strings.HasPrefix(field, "Management.") {
+				fields[field] = invalid.Fields[field]
+				continue
+			}
 			switch field {
 			case "ServerName":
 				fields["Overrides.ServerName"] = "Match the selected name mode; custom names require nonblank UTF-8 text of at most 128 bytes without NUL characters."
@@ -356,7 +363,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 			case "Revision":
 				fields[field] = "Supply the current positive decimal revision string with room for its successor."
 			case "Fields":
-				fields[field] = "Select between one and six unique supported settings."
+				fields[field] = "Select between one and ten unique supported settings."
 			default:
 				fields["Body"] = "Supply supported settings values."
 			}

@@ -155,6 +155,11 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'application_client_id'
 				ORDER BY (to_jsonb(original) - 'application_client_id')::text), '[]'::jsonb)::text FROM ` + pgx.Identifier{table}.Sanitize() + " original"
 		}
+		if table == "play_sessions" {
+			// Dynamic playback is new; preserve every schema-13 session field.
+			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'application_client_id' - 'is_dynamic'
+				ORDER BY (to_jsonb(original) - 'application_client_id' - 'is_dynamic')::text), '[]'::jsonb)::text FROM play_sessions original`
+		}
 		if table == "item_entities" {
 			// Music credit groups are checked independently after migration.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'credit_group'
@@ -205,6 +210,11 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 }
 
 func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t *testing.T) {
+	published, err := database.EmbeddedMigrations()
+	if err != nil || len(published) == 0 {
+		t.Fatalf("read published migration inventory: %v", err)
+	}
+	latestVersion := published[len(published)-1].Version
 	ctx, pool := metadataMigrationLegacyPool(t)
 	actor := metadataEditTestActor(t, ctx, pool, "legacy-metadata-administrator")
 	if _, err := pool.Exec(ctx, "UPDATE users SET management_revision = 9007199254740993 WHERE id = $1", actor.User.ID); err != nil {
@@ -303,8 +313,8 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	if err := database.Migrate(ctx, pool); err != nil {
 		t.Fatalf("upgrade administrator metadata state: %v", err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
-		t.Fatalf("metadata migration version = %d, want 29, error = %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != latestVersion {
+		t.Fatalf("metadata migration version = %d, want %d, error = %v", version, latestVersion, err)
 	}
 	assertOldTables := func() {
 		t.Helper()
@@ -323,6 +333,10 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM scan_jobs WHERE task_child_id IS NOT NULL").Scan(&taskLinkedScans); err != nil || taskLinkedScans != 0 {
 			t.Errorf("metadata migration attached historical scans to task children: count=%d error=%v", taskLinkedScans, err)
 		}
+		var dynamicSessions int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM play_sessions WHERE is_dynamic IS DISTINCT FROM false`).Scan(&dynamicSessions); err != nil || dynamicSessions != 0 {
+			t.Errorf("metadata migration marked historical playback sessions as dynamic: count=%d error=%v", dynamicSessions, err)
+		}
 		var activityCount int
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {
 			t.Errorf("metadata migration backfilled historical state into activity entries: count=%d error=%v", activityCount, err)
@@ -336,6 +350,11 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 			(SELECT count(*) FROM item_metadata_state WHERE music_source IS DISTINCT FROM '{}'::jsonb),
 			(SELECT count(*) FROM item_entities WHERE credit_group IS DISTINCT FROM 0)`).Scan(&musicSourceCount, &groupedCreditCount); err != nil || musicSourceCount != 0 || groupedCreditCount != 0 {
 			t.Errorf("metadata migration populated historical music sources or grouped credits: sources=%d credits=%d error=%v", musicSourceCount, groupedCreditCount, err)
+		}
+		var onlineMetadata int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM item_metadata_state
+			WHERE online_source IS DISTINCT FROM '{}'::jsonb OR online_type IS DISTINCT FROM '' OR online_base IS NOT NULL`).Scan(&onlineMetadata); err != nil || onlineMetadata != 0 {
+			t.Errorf("metadata migration populated online source facts for historical rows: count=%d error=%v", onlineMetadata, err)
 		}
 	}
 	assertOldTables()
@@ -382,6 +401,9 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	taskTables := []string{"task_definitions", "task_occurrences", "task_run_children", "task_run_requests", "task_runs", "task_triggers"}
 	expectedAdditions := append([]string{"activity_entries", "application_key_clients", "application_key_devices", "application_keys", "devices", "extra_reserved_paths", "item_extra_resources", "item_metadata_state", "item_theme_resources", "managed_settings"}, taskTables...)
 	expectedAdditions = append(expectedAdditions, "theme_owner_ids", "theme_reserved_paths", "user_settings")
+	expectedAdditions = append(expectedAdditions, "media_collections", "media_collection_entries", "media_collection_shares",
+		"item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations")
+	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
 	}

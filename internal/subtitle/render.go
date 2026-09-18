@@ -2,6 +2,7 @@ package subtitle
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -9,6 +10,7 @@ import (
 
 // Render emits UTF-8 subtitles, canonicalizing line endings, cue numbering, and
 // timestamp spelling unless complete source layout preservation was requested.
+// Same-format ASS/SSA output always retains script metadata and dialogue layout.
 // StartTicks selects source cue starts. EndTicks limits cue starts after any
 // offset, matching the observed subtitle delivery behavior of Emby 4.9.5.0.
 func Render(doc Document, options Options) (Result, error) {
@@ -26,11 +28,17 @@ func Render(doc Document, options Options) (Result, error) {
 	if options.StartTicks < 0 || (options.EndTicks != nil && *options.EndTicks < 0) {
 		return Result{}, fmt.Errorf("%w: expected nonnegative start and end", ErrInvalidRange)
 	}
+	if options.OffsetTicks < -MaxOffsetTicks || options.OffsetTicks > MaxOffsetTicks {
+		return Result{}, fmt.Errorf("%w: offset exceeds 24 hours", ErrInvalidRange)
+	}
 	if err := validateCues(doc.Cues); err != nil {
 		return Result{}, err
 	}
-	if options.PreserveSource && format == doc.sourceFormat && options.StartTicks == 0 && options.EndTicks == nil && unchangedCues(doc) {
+	if options.PreserveSource && format == doc.sourceFormat && options.StartTicks == 0 && options.EndTicks == nil && options.OffsetTicks == 0 && unchangedCues(doc) {
 		return Result{Data: []byte(doc.source), ContentType: contentType(format)}, nil
+	}
+	if isASS(format) {
+		return renderASS(doc, sourceFormat, format, options)
 	}
 	var out strings.Builder
 	write := func(value string) error {
@@ -63,7 +71,10 @@ func Render(doc Document, options Options) (Result, error) {
 		if index == len(doc.Cues) {
 			break
 		}
-		cue, offset, include := transformCue(doc.Cues[index], options)
+		cue, include, err := transformCue(doc.Cues[index], options)
+		if err != nil {
+			return Result{}, err
+		}
 		if !include {
 			continue
 		}
@@ -87,7 +98,11 @@ func Render(doc Document, options Options) (Result, error) {
 		if sourceFormat == FormatSRT && format == FormatSRT && index < len(doc.sourcePayloads) && index < len(doc.sourceCues) && cue.Text == doc.sourceCues[index].Text {
 			cue.Text = doc.sourcePayloads[index]
 		}
-		block.WriteString(renderCueText(cue, sourceFormat, format, offset))
+		if isASS(sourceFormat) {
+			block.WriteString(assPlainText(doc, index, cue.Text, format))
+		} else {
+			block.WriteString(renderCueText(cue, sourceFormat, format, options))
+		}
 		block.WriteString("\n\n")
 		if err := write(block.String()); err != nil {
 			return Result{}, err
@@ -176,25 +191,43 @@ func formatTimestamp(ticks int64, format Format) string {
 }
 
 // transformCue is the only place that applies selection and timeline offsets.
-func transformCue(cue Cue, options Options) (Cue, int64, bool) {
+func transformCue(cue Cue, options Options) (Cue, bool, error) {
 	if cue.StartTicks < options.StartTicks {
-		return Cue{}, 0, false
+		return Cue{}, false, nil
 	}
-	var offset int64
-	if !options.CopyTimestamps {
-		offset = options.StartTicks
-		cue.StartTicks -= options.StartTicks
-		cue.EndTicks -= options.StartTicks
+	var err error
+	if cue.StartTicks, err = shiftTimestamp(cue.StartTicks, options); err != nil {
+		return Cue{}, false, err
+	}
+	if cue.EndTicks, err = shiftTimestamp(cue.EndTicks, options); err != nil {
+		return Cue{}, false, err
+	}
+	if cue.EndTicks < 0 || (options.OffsetTicks < 0 && cue.EndTicks == 0) {
+		return Cue{}, false, nil
+	}
+	if cue.StartTicks < 0 {
+		cue.StartTicks = 0
 	}
 	if options.EndTicks != nil && cue.StartTicks >= *options.EndTicks {
-		return Cue{}, 0, false
+		return Cue{}, false, nil
 	}
-	return cue, offset, true
+	return cue, true, nil
+}
+
+func shiftTimestamp(ticks int64, options Options) (int64, error) {
+	if !options.CopyTimestamps {
+		ticks -= options.StartTicks
+	}
+	if (options.OffsetTicks > 0 && ticks > math.MaxInt64-options.OffsetTicks) ||
+		(options.OffsetTicks < 0 && ticks < math.MinInt64-options.OffsetTicks) {
+		return 0, fmt.Errorf("%w: timestamp offset overflows", ErrInvalidRange)
+	}
+	return ticks + options.OffsetTicks, nil
 }
 
 // WebVTT inline timestamps share the cue timeline. A shifted cue must not retain
 // absolute inline timestamps, and SRT has no representation for these markers.
-func renderCueText(cue Cue, sourceFormat, outputFormat Format, offset int64) string {
+func renderCueText(cue Cue, sourceFormat, outputFormat Format, options Options) string {
 	if sourceFormat != FormatWebVTT || !strings.ContainsRune(cue.Text, '<') {
 		return cue.Text
 	}
@@ -223,11 +256,11 @@ func renderCueText(cue Cue, sourceFormat, outputFormat Format, offset int64) str
 		}
 		if !timestampMarker {
 			out.WriteString(text[open : close+1])
-		} else if outputFormat == FormatWebVTT && timestamp >= offset {
-			timestamp -= offset
-			if timestamp > cue.StartTicks && timestamp < cue.EndTicks {
+		} else if outputFormat == FormatWebVTT {
+			shifted, err := shiftTimestamp(timestamp, options)
+			if err == nil && shifted > cue.StartTicks && shifted < cue.EndTicks {
 				out.WriteByte('<')
-				out.WriteString(formatTimestamp(timestamp, FormatWebVTT))
+				out.WriteString(formatTimestamp(shifted, FormatWebVTT))
 				out.WriteByte('>')
 			}
 		}

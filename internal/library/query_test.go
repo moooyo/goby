@@ -26,10 +26,10 @@ func TestLibraryPolicyDefaultsAndRestrictions(t *testing.T) {
 		denied  bool
 	}{
 		{name: "missing flag grants all", policy: `{}`, all: true, folders: []string{}},
-		{name: "explicit all ignores restricted folders", policy: `{"EnableAllFolders":true,"EnabledFolders":17}`, all: true, folders: []string{}},
+		{name: "malformed list is denied even with all folders", policy: `{"EnableAllFolders":true,"EnabledFolders":17}`, denied: true},
 		{name: "restricted folders", policy: `{"EnableAllFolders":false,"EnabledFolders":["library-b"]}`, folders: []string{"library-b"}},
 		{name: "missing folders grants none", policy: `{"EnableAllFolders":false}`, folders: []string{}},
-		{name: "null folders grants none", policy: `{"EnableAllFolders":false,"EnabledFolders":null}`, folders: []string{}},
+		{name: "null folders is invalid", policy: `{"EnableAllFolders":false,"EnabledFolders":null}`, denied: true},
 		{name: "string boolean is rejected", policy: `{"EnableAllFolders":"false"}`, denied: true},
 		{name: "null boolean is rejected", policy: `{"EnableAllFolders":null}`, denied: true},
 		{name: "invalid folder list is rejected", policy: `{"EnableAllFolders":false,"EnabledFolders":[17]}`, denied: true},

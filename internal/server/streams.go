@@ -12,6 +12,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 // Shared media aliases dispatch to original or negotiated conversion delivery.
@@ -61,9 +62,9 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 	if err != nil {
 		if errors.Is(err, identity.ErrUnauthorized) {
 			s.identityError(w, r, err)
-		} else if errors.Is(err, library.ErrBusy) {
+		} else if errors.Is(err, library.ErrBusy) || errors.Is(err, transcode.ErrBusy) {
 			w.Header().Set("Retry-After", "2")
-			apiError(w, r, http.StatusTooManyRequests, "stream_limit", "The authenticated owner has reached its active original stream limit.")
+			apiError(w, r, http.StatusTooManyRequests, "stream_limit", "The authenticated owner has reached its active media stream limit.")
 		} else if errors.Is(err, context.Canceled) {
 			if r.Context().Err() == nil {
 				apiError(w, r, http.StatusServiceUnavailable, "media_cancelled", "The original media response was cancelled.")
@@ -98,5 +99,13 @@ func (s *Server) serveOriginalMedia(w http.ResponseWriter, r *http.Request, file
 	http.ServeContent(writer, r, "original."+source.Container, modified, file)
 	if work.Err() != nil {
 		panic(http.ErrAbortHandler)
+	}
+	if r.Method != http.MethodHead && (writer.status == http.StatusOK || writer.status == http.StatusPartialContent) {
+		s.touchOriginalMediaPolicy(work, r.Context().Value(principalKey).(identity.Principal))
+	}
+	if r.Method != http.MethodHead && writer.err == nil && writer.status == http.StatusOK && r.Header.Get("Range") == "" {
+		s.completeOriginalMediaPolicy(work)
+	} else if writer.err != nil || writer.status != http.StatusOK && writer.status != http.StatusPartialContent {
+		s.failOriginalMediaPolicy(work)
 	}
 }

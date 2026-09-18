@@ -67,7 +67,7 @@ func adminSettingsHTTPWrite(t *testing.T, f *serverFixture, cookie *http.Cookie,
 
 func adminSettingsHTTPAssertSnapshot(t *testing.T, value map[string]any, revision string) {
 	t.Helper()
-	fields := []string{"Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding"}
+	fields := []string{"Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", "Management", "ManagementDefaults", "ManagementEffects"}
 	if len(value) != len(fields) || value["Revision"] != revision {
 		t.Fatal("settings response changed its exact top-level contract or revision")
 	}

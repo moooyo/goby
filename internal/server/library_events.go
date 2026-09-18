@@ -79,8 +79,8 @@ func parseLibraryChangedData(raw json.RawMessage) (libraryChangedData, error) {
 
 // The socket loop revalidates the session immediately before calling this method.
 // Resource authorization uses a fresh catalog snapshot, including application
-// credentials independently of any user. Deleted IDs use the committed private
-// scope and do not require a surviving item or library row.
+// credentials independently of any user. A retained library identity cannot
+// prove subfolder, parental, or tag access after an item has been deleted.
 func (s *Server) libraryChangedSocketPayload(ctx context.Context, principal identity.Principal, event events.Event) ([]byte, error) {
 	payload := event.Bytes()
 	if len(payload) > events.DefaultMaxMessageBytes {
@@ -113,15 +113,28 @@ func (s *Server) libraryChangedSocketPayload(ctx context.Context, principal iden
 	if err != nil {
 		return nil, err
 	}
-	allowedItems := make(map[string]bool, len(scopes))
+	candidates := make([]string, 0, len(scopes))
+	seenItems := make(map[string]bool, len(scopes))
 	for _, scope := range scopes {
-		// A shared or removed identifier can have several trusted visibility
-		// contexts. A permitted context allows this identifier, without exposing
-		// the other libraries; subsequent resource reads keep their own checks.
-		if allowedLibraries[scope.LibraryID] {
-			allowedItems[scope.ItemID] = true
+		if allowedLibraries[scope.LibraryID] && !seenItems[scope.ItemID] {
+			seenItems[scope.ItemID] = true
+			candidates = append(candidates, scope.ItemID)
 		}
 	}
+	allowedItems := make(map[string]bool, len(candidates))
+	for start := 0; start < len(candidates); start += 1000 {
+		end := min(start+1000, len(candidates))
+		items, err := s.library.GetItemsByIDFor(ctx, librarySubject(principal, principal.User.ID), candidates[start:end])
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			allowedItems[item.ID] = true
+		}
+	}
+	// Removal notices have no surviving policy facts. A visible parent's change
+	// still invalidates that container; never disclose historical hidden item IDs.
+	data.ItemsRemoved = []string{}
 	count := 0
 	for _, ids := range []*[]string{&data.FoldersAddedTo, &data.FoldersRemovedFrom, &data.ItemsAdded,
 		&data.ItemsRemoved, &data.ItemsUpdated, &data.CollectionFolders} {

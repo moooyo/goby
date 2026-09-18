@@ -59,12 +59,28 @@ func setLibraryChangedFolders(t *testing.T, f *serverFixture, userID string, fol
 	setHTTPUserPolicy(t, f, userID, string(raw))
 }
 
+func createLibraryChangedItem(t *testing.T, f *serverFixture, id, libraryID, itemType string) {
+	t.Helper()
+	if _, err := f.pool.Exec(f.ctx, `INSERT INTO items(id,library_id,name,sort_name,type,is_folder)
+		VALUES ($1,$2,$1,$1,$3,$4)`, id, libraryID, itemType, itemType == "Folder" || itemType == "CollectionFolder"); err != nil {
+		t.Fatal("create current catalog notification item")
+	}
+}
+
 func TestHTTPWebSocketLibraryChangedFiltersBroadcastsWithoutChangingPublication(t *testing.T) {
 	f, accounts := newClientSessionHTTPAccounts(t)
 	for _, id := range []string{"catalog-a", "catalog-b"} {
 		if _, err := f.pool.Exec(f.ctx, "INSERT INTO libraries (id, name, collection_type) VALUES ($1, $1, 'movies')", id); err != nil {
 			t.Fatal("create catalog broadcast library")
 		}
+		createLibraryChangedItem(t, f, id, id, "CollectionFolder")
+	}
+	for _, item := range []struct{ id, libraryID, itemType string }{
+		{"folder-a", "catalog-a", "Folder"}, {"folder-b", "catalog-b", "Folder"},
+		{"item-a", "catalog-a", "Movie"}, {"item-b", "catalog-b", "Movie"},
+		{"moved", "catalog-b", "Movie"}, {"no-scope", "catalog-a", "Movie"},
+	} {
+		createLibraryChangedItem(t, f, item.id, item.libraryID, item.itemType)
 	}
 	setLibraryChangedFolders(t, f, accounts.viewer.userID, "catalog-a")
 	setLibraryChangedFolders(t, f, accounts.other.userID, "catalog-b")
@@ -93,10 +109,10 @@ func TestHTTPWebSocketLibraryChangedFiltersBroadcastsWithoutChangingPublication(
 	}
 	assertLibraryChangedPayload(t, first.next(t), envelope.MessageID, map[string][]string{
 		"FoldersAddedTo": {"folder-a"}, "FoldersRemovedFrom": {"folder-a"}, "ItemsAdded": {"item-a", "item-a"},
-		"ItemsRemoved": {"removed-a"}, "ItemsUpdated": {"moved", "item-a"}, "CollectionFolders": {"catalog-a"},
+		"ItemsUpdated": {"item-a"}, "CollectionFolders": {"catalog-a"},
 	})
 	assertLibraryChangedPayload(t, second.next(t), envelope.MessageID, map[string][]string{
-		"FoldersAddedTo": {"folder-b"}, "ItemsAdded": {"item-b"}, "ItemsRemoved": {"removed-b"},
+		"FoldersAddedTo": {"folder-b"}, "ItemsAdded": {"item-b"},
 		"ItemsUpdated": {"moved", "item-b", "item-b"}, "CollectionFolders": {"catalog-b"},
 	})
 	// A JSON scope claim is inert even when its claimed library is authorized.
@@ -111,12 +127,13 @@ func TestHTTPWebSocketLibraryChangedFiltersBroadcastsWithoutChangingPublication(
 	second.quiet(t)
 }
 
-func TestSocketLibraryChangedRechecksPolicyAndRetainsDeletedLibraryScopes(t *testing.T) {
+func TestSocketLibraryChangedRechecksPolicyAndDropsDeletedItemScopes(t *testing.T) {
 	f, accounts := newClientSessionHTTPAccounts(t)
 	for _, id := range []string{"historical-catalog-a", "historical-catalog-b"} {
 		if _, err := f.pool.Exec(f.ctx, "INSERT INTO libraries (id, name, collection_type) VALUES ($1, $1, 'movies')", id); err != nil {
 			t.Fatal("create historical catalog fixture")
 		}
+		createLibraryChangedItem(t, f, id, id, "CollectionFolder")
 	}
 	if _, err := f.pool.Exec(f.ctx, `INSERT INTO items (id, library_id, name, sort_name, type)
 		VALUES ('removed-item', 'historical-catalog-a', 'Removed', 'Removed', 'Movie')`); err != nil {
@@ -138,20 +155,19 @@ func TestSocketLibraryChangedRechecksPolicyAndRetainsDeletedLibraryScopes(t *tes
 	original := event.Bytes()
 	// The principal was resolved and the event published before this restriction.
 	setLibraryChangedFolders(t, f, accounts.viewer.userID, "historical-catalog-a")
-	if _, err := f.pool.Exec(f.ctx, "DELETE FROM libraries WHERE id = 'historical-catalog-a'"); err != nil {
-		t.Fatal("remove the historical library and item")
+	if _, err := f.pool.Exec(f.ctx, "DELETE FROM items WHERE id = 'removed-item'"); err != nil {
+		t.Fatal("remove the historical item while retaining its visible container")
 	}
 	var exists bool
-	if err := f.pool.QueryRow(f.ctx, `SELECT EXISTS(SELECT 1 FROM items WHERE id = 'removed-item')
-		OR EXISTS(SELECT 1 FROM libraries WHERE id = 'historical-catalog-a')`).Scan(&exists); err != nil || exists {
-		t.Fatal("historical fixture still exists after deletion")
+	if err := f.pool.QueryRow(f.ctx, `SELECT EXISTS(SELECT 1 FROM items WHERE id = 'removed-item')`).Scan(&exists); err != nil || exists {
+		t.Fatal("historical item still exists after deletion")
 	}
 	payload, err := f.app.socketEventPayload(f.ctx, principal, event)
 	if err != nil {
 		t.Fatalf("authorize deleted catalog scope (%T)", err)
 	}
 	assertLibraryChangedPayload(t, payload, envelope.MessageID, map[string][]string{
-		"ItemsRemoved": {"removed-item", "moved-item", "removed-item"}, "CollectionFolders": {"historical-catalog-a"},
+		"CollectionFolders": {"historical-catalog-a"},
 	})
 	setLibraryChangedFolders(t, f, accounts.viewer.userID, "historical-catalog-a", "historical-catalog-b")
 	payload, err = f.app.socketEventPayload(f.ctx, principal, event)
@@ -159,8 +175,14 @@ func TestSocketLibraryChangedRechecksPolicyAndRetainsDeletedLibraryScopes(t *tes
 		t.Fatal(err)
 	}
 	assertLibraryChangedPayload(t, payload, envelope.MessageID, map[string][]string{
-		"ItemsRemoved": {"removed-item", "moved-item", "removed-item"}, "CollectionFolders": {"historical-catalog-a"},
+		"CollectionFolders": {"historical-catalog-a"},
 	})
+	if _, err := f.pool.Exec(f.ctx, "DELETE FROM libraries WHERE id = 'historical-catalog-a'"); err != nil {
+		t.Fatal("remove the historical library")
+	}
+	if payload, err := f.app.socketEventPayload(f.ctx, principal, event); err != nil || len(payload) != 0 {
+		t.Errorf("historical library scope disclosed a deleted item or container: bytes=%d error=%T", len(payload), err)
+	}
 	setLibraryChangedFolders(t, f, accounts.viewer.userID)
 	if payload, err := f.app.socketEventPayload(f.ctx, principal, event); err != nil || len(payload) != 0 {
 		t.Errorf("revoked library policy produced a frame or stale authority: bytes=%d error=%T", len(payload), err)
@@ -208,6 +230,10 @@ func TestSocketLibraryChangedRejectsUnscopedAndMalformedPublications(t *testing.
 
 func TestHTTPWebSocketLibraryChangedUsesIndependentApplicationCredential(t *testing.T) {
 	f, accounts := newClientSessionHTTPAccounts(t)
+	if _, err := f.pool.Exec(f.ctx, "INSERT INTO libraries(id,name,collection_type) VALUES ('application-catalog','Application catalog','movies')"); err != nil {
+		t.Fatal("create application catalog fixture")
+	}
+	createLibraryChangedItem(t, f, "application-item", "application-catalog", "Movie")
 	keys := applicationMediaIssueKeys(t, f, accounts.admin.headers.Get("X-Emby-Token"))
 	server := websocketHTTPServer(t, f, time.Hour)
 	first := websocketHTTPDial(t, server, "/emby/socket", keys[0].headers, http.StatusSwitchingProtocols)
@@ -219,14 +245,15 @@ func TestHTTPWebSocketLibraryChangedUsesIndependentApplicationCredential(t *test
 	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET is_disabled = true WHERE id = $1", accounts.admin.userID); err != nil {
 		t.Fatal("disable the creator independently of the application keys")
 	}
-	envelope := libraryChangedEnvelope(t, "application-catalog-event", map[string]any{"ItemsRemoved": []string{"deleted-item"}},
-		[]events.CatalogScope{{ItemID: "deleted-item", LibraryID: "deleted-library"}})
+	envelope := libraryChangedEnvelope(t, "application-catalog-event", map[string]any{
+		"ItemsUpdated": []string{"application-item"}, "ItemsRemoved": []string{"deleted-item"}},
+		[]events.CatalogScope{{ItemID: "application-item", LibraryID: "application-catalog"}, {ItemID: "deleted-item", LibraryID: "deleted-library"}})
 	queued := websocketHTTPPublishedEvent(t, envelope, accounts.viewer.userID)
 	if _, err := f.app.eventHub.PublishAll(envelope); err != nil {
 		t.Fatal(err)
 	}
-	assertLibraryChangedPayload(t, first.next(t), envelope.MessageID, map[string][]string{"ItemsRemoved": {"deleted-item"}})
-	assertLibraryChangedPayload(t, second.next(t), envelope.MessageID, map[string][]string{"ItemsRemoved": {"deleted-item"}})
+	assertLibraryChangedPayload(t, first.next(t), envelope.MessageID, map[string][]string{"ItemsUpdated": {"application-item"}})
+	assertLibraryChangedPayload(t, second.next(t), envelope.MessageID, map[string][]string{"ItemsUpdated": {"application-item"}})
 	if _, err := f.users.RevokeApplicationKey(f.ctx, keys[1].principal, keys[0].key.ID); err != nil {
 		t.Fatalf("revoke one independent credential (%T)", err)
 	}
@@ -249,7 +276,61 @@ func TestHTTPWebSocketLibraryChangedUsesIndependentApplicationCredential(t *test
 		t.Error("revoked application socket received an additional catalog frame")
 	default:
 	}
-	assertLibraryChangedPayload(t, second.next(t), envelope.MessageID, map[string][]string{"ItemsRemoved": {"deleted-item"}})
+	assertLibraryChangedPayload(t, second.next(t), envelope.MessageID, map[string][]string{"ItemsUpdated": {"application-item"}})
+}
+
+func TestSocketLibraryChangedAppliesCurrentParentalPolicyPerRecipient(t *testing.T) {
+	f, accounts := newClientSessionHTTPAccounts(t)
+	const libraryID = "parental-notification-library"
+	if _, err := f.pool.Exec(f.ctx, "INSERT INTO libraries(id,name,collection_type) VALUES ($1,$1,'movies')", libraryID); err != nil {
+		t.Fatal(err)
+	}
+	createLibraryChangedItem(t, f, libraryID, libraryID, "CollectionFolder")
+	for _, item := range []struct{ id, rating string }{{"family-notification-item", "G"}, {"restricted-notification-item", "R"}} {
+		createLibraryChangedItem(t, f, item.id, libraryID, "Movie")
+		if _, err := f.pool.Exec(f.ctx, "UPDATE items SET local_metadata=jsonb_build_object('OfficialRating',$2::text) WHERE id=$1", item.id, item.rating); err != nil {
+			t.Fatal(err)
+		}
+	}
+	viewer, err := f.users.ResolveEmby(f.ctx, accounts.viewer.headers.Get("X-Emby-Token"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := f.users.ResolveEmby(f.ctx, accounts.other.headers.Get("X-Emby-Token"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	envelope := libraryChangedEnvelope(t, "parental-shared-publication", map[string]any{
+		"ItemsUpdated": []string{"family-notification-item", "restricted-notification-item"}, "CollectionFolders": []string{libraryID},
+	}, []events.CatalogScope{
+		{ItemID: "family-notification-item", LibraryID: libraryID}, {ItemID: "restricted-notification-item", LibraryID: libraryID}, {ItemID: libraryID, LibraryID: libraryID},
+	})
+	event := websocketHTTPPublishedEvent(t, envelope, accounts.viewer.userID)
+	original := event.Bytes()
+	// Resolve and enqueue first, then change the recipient's rating ceiling.
+	setHTTPUserPolicy(t, f, accounts.viewer.userID, `{"MaxParentalRating":5}`)
+	setHTTPUserPolicy(t, f, accounts.other.userID, `{"MaxParentalRating":15}`)
+	payload, err := f.app.socketEventPayload(f.ctx, viewer, event)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertLibraryChangedPayload(t, payload, envelope.MessageID, map[string][]string{"ItemsUpdated": {"family-notification-item"}, "CollectionFolders": {libraryID}})
+	payload, err = f.app.socketEventPayload(f.ctx, other, event)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertLibraryChangedPayload(t, payload, envelope.MessageID, map[string][]string{"ItemsUpdated": {"family-notification-item", "restricted-notification-item"}, "CollectionFolders": {libraryID}})
+	if _, err := f.pool.Exec(f.ctx, `UPDATE items SET local_metadata='{"OfficialRating":"R"}'::jsonb WHERE id='family-notification-item'`); err != nil {
+		t.Fatal(err)
+	}
+	payload, err = f.app.socketEventPayload(f.ctx, viewer, event)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertLibraryChangedPayload(t, payload, envelope.MessageID, map[string][]string{"CollectionFolders": {libraryID}})
+	if !bytes.Equal(original, event.Bytes()) {
+		t.Fatal("recipient policy filtering modified the shared publication")
+	}
 }
 
 func TestLibraryChangedDataBoundsAndKnownFieldProjection(t *testing.T) {

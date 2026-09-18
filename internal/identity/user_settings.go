@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -130,15 +131,26 @@ func authorizeUserSettings(ctx context.Context, tx pgx.Tx, actor Principal, user
 			return ErrUnauthorized
 		}
 		var administrator bool
-		err := tx.QueryRow(ctx, `SELECT u.is_administrator FROM users u
+		var policyJSON json.RawMessage
+		var deviceID string
+		var observedAt time.Time
+		err := tx.QueryRow(ctx, `SELECT u.is_administrator, u.policy, s.device_id, clock_timestamp() FROM users u
 			JOIN sessions s ON s.user_id=u.id WHERE u.id=$1 AND s.id=$2
 			AND s.kind='emby' AND s.revoked_at IS NULL AND NOT u.is_disabled
-			AND s.expires_at>clock_timestamp()`, actor.User.ID, actor.SessionID).Scan(&administrator)
+			AND s.expires_at>clock_timestamp()`, actor.User.ID, actor.SessionID).Scan(&administrator, &policyJSON, &deviceID, &observedAt)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrUnauthorized
 		}
 		if err != nil {
 			return fmt.Errorf("authorize user settings: %w", err)
+		}
+		policy, err := ParseRuntimePolicy(policyJSON)
+		if err != nil || !loginPolicyAllows(policyJSON, deviceID, observedAt) ||
+			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
+			return ErrUnauthorized
+		}
+		if userID == actor.User.ID && (!policy.EnableUserPreferenceAccess || !policy.AllowsFeature(FeaturePreferences)) {
+			return ErrClientSessionForbidden
 		}
 		if userID != actor.User.ID && !administrator {
 			return ErrClientSessionForbidden

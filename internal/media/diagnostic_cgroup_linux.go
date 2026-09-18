@@ -20,6 +20,9 @@ type diagnosticCgroup struct {
 	group    *os.File
 	name     string
 	identity unix.Stat_t
+	domain   bool
+	retired  bool
+	removed  bool
 }
 
 type diagnosticLimitEvents struct {
@@ -54,6 +57,54 @@ func newDiagnosticCgroup(parentPath string) (*diagnosticCgroup, error) {
 	if err != nil {
 		return nil, ErrDiagnosticResources
 	}
+	g, err := createDiagnosticCgroup(parent, "goby-media-")
+	if err != nil {
+		return g, err
+	}
+	fail := func() (*diagnosticCgroup, error) {
+		if err := g.close(); err != nil {
+			return g, errors.Join(ErrDiagnosticResources, err)
+		}
+		return nil, ErrDiagnosticResources
+	}
+	// The persistent, empty domain owns the whole session's limits and events.
+	// Only this newly created domain enables controllers for command leaves;
+	// the deployment-supplied ancestor is never modified.
+	for _, setting := range [][2]string{
+		{"memory.max", strconv.Itoa(diagnosticMemoryBytes)},
+		{"memory.swap.max", "0"}, {"memory.oom.group", "1"},
+		{"pids.max", strconv.Itoa(diagnosticMaximumTasks)},
+	} {
+		if g.write(setting[0], setting[1]) != nil {
+			return fail()
+		}
+		actual, err := g.read(setting[0])
+		if err != nil || strings.TrimSpace(string(actual)) != setting[1] {
+			return fail()
+		}
+	}
+	available, err := g.read("cgroup.controllers")
+	if err != nil || !diagnosticControllers(available, false) {
+		return fail()
+	}
+	active, err := g.read("cgroup.subtree_control")
+	if err != nil || len(strings.Fields(string(active))) != 0 {
+		return fail()
+	}
+	if g.write("cgroup.subtree_control", "+memory +pids") != nil {
+		return fail()
+	}
+	active, err = g.read("cgroup.subtree_control")
+	if err != nil || !diagnosticControllers(active, true) {
+		return fail()
+	}
+	g.domain = true
+	return g, nil
+}
+
+// Ownership of parent transfers to the returned group, including on a partial
+// creation failure. A nil group means no directory or descriptor remains owned.
+func createDiagnosticCgroup(parent *os.File, prefix string) (*diagnosticCgroup, error) {
 	var filesystem unix.Statfs_t
 	if unix.Fstatfs(int(parent.Fd()), &filesystem) != nil || filesystem.Type != unix.CGROUP2_SUPER_MAGIC {
 		_ = parent.Close()
@@ -64,7 +115,7 @@ func newDiagnosticCgroup(parentPath string) (*diagnosticCgroup, error) {
 		_ = parent.Close()
 		return nil, ErrDiagnosticResources
 	}
-	name := "goby-media-" + hex.EncodeToString(random[:])
+	name := prefix + hex.EncodeToString(random[:])
 	if unix.Mkdirat(int(parent.Fd()), name, 0700) != nil {
 		_ = parent.Close()
 		return nil, ErrDiagnosticResources
@@ -84,20 +135,12 @@ func newDiagnosticCgroup(parentPath string) (*diagnosticCgroup, error) {
 		}
 		return nil, ErrDiagnosticResources
 	}
-	// These files must already exist in this new leaf. Missing controllers do
-	// not authorize changing an ancestor's subtree_control or resource limits.
-	for _, setting := range [][2]string{
-		{"memory.max", strconv.Itoa(diagnosticMemoryBytes)},
-		{"memory.swap.max", "0"}, {"memory.oom.group", "1"},
-		{"pids.max", strconv.Itoa(diagnosticMaximumTasks)},
-	} {
-		if g.write(setting[0], setting[1]) != nil {
-			return fail()
-		}
-		actual, err := g.read(setting[0])
-		if err != nil || strings.TrimSpace(string(actual)) != setting[1] {
-			return fail()
-		}
+	if err := g.checkIdentity(); err != nil {
+		return fail()
+	}
+	groupType, err := g.read("cgroup.type")
+	if err != nil || strings.TrimSpace(string(groupType)) != "domain" {
+		return fail()
 	}
 	if err := g.checkEmpty(); err != nil {
 		return fail()
@@ -115,7 +158,50 @@ func newDiagnosticCgroup(parentPath string) (*diagnosticCgroup, error) {
 	return g, nil
 }
 
+func diagnosticControllers(data []byte, exact bool) bool {
+	seen := make(map[string]bool)
+	for _, name := range strings.Fields(string(data)) {
+		if seen[name] {
+			return false
+		}
+		seen[name] = true
+	}
+	return seen["memory"] && seen["pids"] && (!exact || len(seen) == 2)
+}
+
+func (g *diagnosticCgroup) newCommand() (*diagnosticCgroup, error) {
+	if g == nil || !g.domain || g.retired || g.removed || g.group == nil {
+		return nil, ErrDiagnosticResources
+	}
+	if err := g.checkIdentity(); err != nil {
+		return nil, err
+	}
+	fd, err := unix.FcntlInt(g.group.Fd(), unix.F_DUPFD_CLOEXEC, 0)
+	if err != nil {
+		return nil, ErrDiagnosticResources
+	}
+	leaf, err := createDiagnosticCgroup(os.NewFile(uintptr(fd), g.name), "command-")
+	if err != nil {
+		return leaf, err
+	}
+	// Local maxima remain unlimited so the persistent parent is the limit
+	// boundary, including on kernels configured with local PID event reporting.
+	for _, name := range []string{"memory.max", "memory.swap.max", "pids.max"} {
+		value, err := leaf.read(name)
+		if err != nil || strings.TrimSpace(string(value)) != "max" {
+			if closeErr := leaf.close(); closeErr != nil {
+				return leaf, errors.Join(ErrDiagnosticResources, closeErr)
+			}
+			return nil, ErrDiagnosticResources
+		}
+	}
+	return leaf, nil
+}
+
 func (g *diagnosticCgroup) open(name string, flags int) (*os.File, error) {
+	if g == nil || g.group == nil || g.removed {
+		return nil, ErrDiagnosticResources
+	}
 	fd, err := unix.Openat(int(g.group.Fd()), name, flags|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, ErrDiagnosticResources
@@ -208,9 +294,17 @@ func (g *diagnosticCgroup) checkEmpty() error {
 }
 
 // The directory descriptor remains held through signaling and the empty check.
-// No numeric PID is used after reaping, and only this freshly created leaf is
-// killed. A failed close preserves the group and handles for a later join.
+// No numeric PID is used after reaping. A kill attempt permanently prevents this
+// group from accepting another command, even if the write's outcome is unknown.
+// A failed close preserves the group and handles for a later join.
 func (g *diagnosticCgroup) retire(ctx context.Context) error {
+	if g == nil || g.removed || g.parent == nil && g.group == nil {
+		return nil
+	}
+	g.retired = true
+	if err := g.checkIdentity(); err != nil {
+		return err
+	}
 	if err := g.write("cgroup.kill", "1"); err != nil {
 		return ErrDiagnosticClosure
 	}
@@ -230,9 +324,9 @@ func (g *diagnosticCgroup) retire(ctx context.Context) error {
 	}
 }
 
-func (g *diagnosticCgroup) close() error {
-	if g == nil || g.parent == nil {
-		return nil
+func (g *diagnosticCgroup) checkIdentity() error {
+	if g == nil || g.parent == nil || g.removed {
+		return ErrDiagnosticClosure
 	}
 	var held, named unix.Stat_t
 	if g.identity.Ino == 0 || unix.Fstatat(int(g.parent.Fd()), g.name, &named, unix.AT_SYMLINK_NOFOLLOW) != nil ||
@@ -249,16 +343,48 @@ func (g *diagnosticCgroup) close() error {
 	if unix.Fstat(int(g.group.Fd()), &held) != nil || held.Dev != named.Dev || held.Ino != named.Ino {
 		return ErrDiagnosticClosure
 	}
+	return nil
+}
+
+func (g *diagnosticCgroup) close() error {
+	if g == nil || g.parent == nil && g.group == nil {
+		return nil
+	}
+	if g.removed {
+		return g.releaseDescriptors()
+	}
+	if err := g.checkIdentity(); err != nil {
+		return err
+	}
 	if err := g.checkEmpty(); err != nil {
+		return err
+	}
+	return g.removeEmpty()
+}
+
+func (g *diagnosticCgroup) removeEmpty() error {
+	if err := g.checkIdentity(); err != nil {
 		return err
 	}
 	if err := unix.Unlinkat(int(g.parent.Fd()), g.name, unix.AT_REMOVEDIR); err != nil {
 		return ErrDiagnosticClosure
 	}
-	groupErr, parentErr := g.group.Close(), g.parent.Close()
-	g.group, g.parent = nil, nil
-	if groupErr != nil || parentErr != nil {
-		return ErrDiagnosticClosure
+	g.removed = true
+	return g.releaseDescriptors()
+}
+
+func (g *diagnosticCgroup) releaseDescriptors() error {
+	var result error
+	for _, slot := range []**os.File{&g.group, &g.parent} {
+		if *slot == nil {
+			continue
+		}
+		err := (*slot).Close()
+		if err != nil && !errors.Is(err, os.ErrClosed) {
+			result = ErrDiagnosticClosure
+			continue
+		}
+		*slot = nil
 	}
-	return nil
+	return result
 }

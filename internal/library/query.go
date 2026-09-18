@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/database"
+	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -69,9 +70,12 @@ const libraryColumns = `l.id, l.name, l.collection_type,
 		WHERE r.library_id = l.id), '{}'::text[]), l.created_at, l.last_scan_at`
 
 type libraryAccess struct {
-	all     bool
-	folders []string
-	canPlay bool
+	all           bool
+	folders       []string
+	canPlay       bool
+	userID        string
+	administrator bool
+	policy        identity.ManagedPolicy
 }
 
 // QueryItems applies the current user policy before counting or paging items.
@@ -84,6 +88,7 @@ func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (
 }
 
 func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder, explicitExtras bool) (ItemResult, error) {
+	collectionSortExplicit := strings.TrimSpace(query.SortBy) != ""
 	query, err := normalizeItemQuery(query)
 	if err != nil {
 		return ItemResult{}, err
@@ -93,6 +98,23 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 		return ItemResult{}, err
 	}
 	defer tx.Rollback(ctx)
+	if err := collectionAdministrator(ctx).check(ctx, tx, false); err != nil {
+		return ItemResult{}, err
+	}
+
+	collectionQuery := query
+	if !collectionSortExplicit {
+		collectionQuery.SortBy = ""
+	}
+	if result, handled, err := queryCollectionItems(ctx, tx, collectionQuery, access); handled || err != nil {
+		if err != nil {
+			return ItemResult{}, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return ItemResult{}, fmt.Errorf("complete collection item query: %w", err)
+		}
+		return result, nil
+	}
 
 	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
@@ -109,12 +131,6 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 		args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, fmt.Errorf("count library items: %w", err)
 	}
-	// Membership is not indexed yet. An empty authorized candidate set proves
-	// that its intersection is empty; any nonempty set remains undetermined.
-	// Count before pagination so Limit=0 or a distant page cannot bypass this.
-	if len(query.ListItemIds) != 0 && result.TotalRecordCount != 0 {
-		return ItemResult{}, ErrUnsupportedFilter
-	}
 	userOrderParameter := 0
 	if itemSortUsesUserData(query.SortBy) {
 		args = append(args, query.UserID)
@@ -127,8 +143,8 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 			WHERE user_data.user_id = $%d::text AND user_data.item_id = i.id) DESC NULLS LAST, i.id ASC`, len(args))
 	}
 	args = append(args, query.Limit, query.StartIndex)
-	statement := prefix + "SELECT " + itemColumns + " FROM items i WHERE " + filter +
-		" ORDER BY " + order + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	statement := prefix + "SELECT " + access.itemColumnsSQL() + " FROM items i WHERE " + filter +
+		" ORDER BY " + access.scopeSQL(order) + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
 	rows, err := tx.Query(ctx, statement, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query library items: %w", err)
@@ -146,16 +162,19 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 		return ItemResult{}, fmt.Errorf("read library items: %w", err)
 	}
 	rows.Close()
-	if err := attachUserData(ctx, tx, query.UserID, result.Items); err != nil {
+	if err := attachUserData(ctx, tx, query.UserID, result.Items, access); err != nil {
 		return ItemResult{}, err
 	}
 	if err := attachSubtitles(ctx, tx, result.Items); err != nil {
 		return ItemResult{}, err
 	}
 	if explicitExtras {
-		if err := attachExtraItemAttributes(ctx, tx, result.Items); err != nil {
+		if err := attachExtraItemAttributes(ctx, tx, result.Items, access); err != nil {
 			return ItemResult{}, err
 		}
+	}
+	if err := attachCollectionInfo(ctx, tx, access, result.Items); err != nil {
+		return ItemResult{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return ItemResult{}, fmt.Errorf("complete item query: %w", err)
@@ -178,8 +197,8 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 		return Item{}, err
 	}
 	defer tx.Rollback(ctx)
-	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+itemColumns+` FROM items i
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i"),
+	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+` FROM items i
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i"),
 		id, access.all, access.folders))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
@@ -189,16 +208,19 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 	}
 	item.CanPlay = access.canPlay
 	items := []Item{item}
-	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+	if err := attachThemeItemAttributes(ctx, tx, items, access); err != nil {
 		return Item{}, err
 	}
-	if err := attachExtraItemAttributes(ctx, tx, items); err != nil {
+	if err := attachExtraItemAttributes(ctx, tx, items, access); err != nil {
 		return Item{}, err
 	}
-	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
+	if err := attachUserData(ctx, tx, subject.UserID, items, access); err != nil {
 		return Item{}, err
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
+		return Item{}, err
+	}
+	if err := attachCollectionInfo(ctx, tx, access, items); err != nil {
 		return Item{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -227,8 +249,8 @@ func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []stri
 		return nil, err
 	}
 	defer rollback(tx)
-	rows, err := tx.Query(ctx, "SELECT "+itemColumns+` FROM items i
-		WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+directItemSQL("i")+`
+	rows, err := tx.Query(ctx, "SELECT "+access.itemColumnsSQL()+` FROM items i
+		WHERE i.id = ANY($1::text[]) AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i")+`
 		ORDER BY array_position($1::text[], i.id)`, ids, access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("query direct item identities: %w", err)
@@ -247,16 +269,19 @@ func (s *Store) GetItemsByIDFor(ctx context.Context, subject Subject, ids []stri
 		return nil, fmt.Errorf("read direct item identities: %w", err)
 	}
 	rows.Close()
-	if err := attachThemeItemAttributes(ctx, tx, items); err != nil {
+	if err := attachThemeItemAttributes(ctx, tx, items, access); err != nil {
 		return nil, err
 	}
-	if err := attachExtraItemAttributes(ctx, tx, items); err != nil {
+	if err := attachExtraItemAttributes(ctx, tx, items, access); err != nil {
 		return nil, err
 	}
-	if err := attachUserData(ctx, tx, subject.UserID, items); err != nil {
+	if err := attachUserData(ctx, tx, subject.UserID, items, access); err != nil {
 		return nil, err
 	}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
+		return nil, err
+	}
+	if err := attachCollectionInfo(ctx, tx, access, items); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -278,7 +303,8 @@ func (s *Store) ListUserLibrariesFor(ctx context.Context, subject Subject) ([]Li
 	}
 	defer tx.Rollback(ctx)
 	rows, err := tx.Query(ctx, "SELECT "+libraryColumns+` FROM libraries l
-		WHERE ($1::boolean OR l.id = ANY($2::text[])) ORDER BY lower(l.name), l.id`,
+		WHERE ($1::boolean OR l.id = ANY($2::text[])) AND l.id <> `+policySQLString(collectionLibraryID)+`
+		AND NOT EXISTS (SELECT 1 FROM items i WHERE i.id=l.id AND NOT `+access.itemPolicySQL("i")+`) ORDER BY lower(l.name), l.id`,
 		access.all, access.folders)
 	if err != nil {
 		return nil, fmt.Errorf("query user libraries: %w", err)
@@ -328,25 +354,24 @@ func (s *Store) beginUserRead(ctx context.Context, userID string) (pgx.Tx, libra
 		tx.Rollback(ctx)
 		return nil, libraryAccess{}, ErrForbidden
 	}
-	canPlay := playbackAllowed(policy)
-	if administrator {
-		return tx, libraryAccess{all: true, folders: []string{}, canPlay: canPlay}, nil
-	}
 	access, err := parseLibraryPolicy(policy)
 	if err != nil {
 		tx.Rollback(ctx)
 		return nil, libraryAccess{}, err
 	}
-	access.canPlay = canPlay
+	access.userID, access.administrator = userID, administrator
+	if administrator {
+		access.all = true
+	}
 	return tx, access, nil
 }
 
 func readQueryParent(ctx context.Context, tx pgx.Tx, parentID string, access libraryAccess) (string, error) {
-	return readVisibleQueryParent(ctx, tx, parentID, access, directItemSQL("i"))
+	return readVisibleQueryParent(ctx, tx, parentID, access, access.directSQL("i"))
 }
 
 func readOrdinaryQueryParent(ctx context.Context, tx pgx.Tx, parentID string, access libraryAccess) (string, error) {
-	return readVisibleQueryParent(ctx, tx, parentID, access, ordinaryItemSQL("i"))
+	return readVisibleQueryParent(ctx, tx, parentID, access, access.ordinarySQL("i"))
 }
 
 func readVisibleQueryParent(ctx context.Context, tx pgx.Tx, parentID string, access libraryAccess, visibility string) (string, error) {
@@ -355,7 +380,7 @@ func readVisibleQueryParent(ctx context.Context, tx pgx.Tx, parentID string, acc
 	}
 	var libraryID string
 	err := tx.QueryRow(ctx, `SELECT i.library_id FROM items i
-		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+visibility,
+		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+visibility,
 		parentID, access.all, access.folders).Scan(&libraryID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNotFound
@@ -364,33 +389,6 @@ func readVisibleQueryParent(ctx context.Context, tx pgx.Tx, parentID string, acc
 		return "", fmt.Errorf("read query parent: %w", err)
 	}
 	return libraryID, nil
-}
-
-func parseLibraryPolicy(data []byte) (libraryAccess, error) {
-	var policy map[string]json.RawMessage
-	if err := json.Unmarshal(data, &policy); err != nil || policy == nil {
-		return libraryAccess{}, ErrForbidden
-	}
-	access := libraryAccess{all: true, folders: []string{}}
-	if raw, ok := policy["EnableAllFolders"]; ok {
-		var all *bool
-		if err := json.Unmarshal(raw, &all); err != nil || all == nil {
-			return libraryAccess{}, ErrForbidden
-		}
-		access.all = *all
-	}
-	if access.all {
-		return access, nil
-	}
-	if raw, ok := policy["EnabledFolders"]; ok {
-		if err := json.Unmarshal(raw, &access.folders); err != nil {
-			return libraryAccess{}, ErrForbidden
-		}
-	}
-	if access.folders == nil {
-		access.folders = []string{}
-	}
-	return access, nil
 }
 
 func normalizeItemQuery(query Query) (Query, error) {
@@ -520,11 +518,11 @@ func itemQuerySQL(query Query, access libraryAccess, parentLibraryID string) (st
 func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID string, explicitExtras bool) (string, string, []any) {
 	explicitExtras = explicitExtras && len(query.Ids) != 0
 	args := []any{access.all, access.folders}
-	visibility := ordinaryItemSQL("i")
+	visibility := access.ordinarySQL("i")
 	if explicitExtras {
-		visibility = "(" + visibility + " OR " + database.ExtraResourceItemSQL("i", true) + ")"
+		visibility = "(" + visibility + " OR (" + database.ExtraResourceItemSQL("i", true) + " AND " + access.directSQL("i") + ")" + ")"
 	}
-	conditions := []string{"($1::boolean OR i.library_id = ANY($2::text[]))", visibility}
+	conditions := []string{"($1::boolean OR i.library_id = ANY($2::text[]) OR i.library_id = " + policySQLString(collectionLibraryID) + ")", visibility}
 	prefix := ""
 	if query.ParentID != "" {
 		args = append(args, query.ParentID, parentLibraryID)
@@ -605,8 +603,11 @@ func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID
 	}
 	conditions, args = addEntityConditions(query, conditions, args)
 	conditions, args = addMusicConditions(query, conditions, args)
-	conditions, args = addUserDataConditions(query, conditions, args)
-	return prefix, strings.Join(conditions, " AND "), args
+	conditions, args = addUserDataConditions(query, conditions, args, access)
+	if len(query.ListItemIds) != 0 {
+		conditions = append(conditions, collectionMembershipSQL("i", query.ListItemIds, access))
+	}
+	return access.scopeSQL(prefix), access.scopeSQL(strings.Join(conditions, " AND ")), args
 }
 
 func hasEntityFilters(query Query) bool {

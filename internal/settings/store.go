@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -102,8 +103,19 @@ func (s *Store) Update(ctx context.Context, actor Actor, request UpdateRequest) 
 			return Snapshot{}, err
 		}
 	}
+	var management *Management
+	if request.Management != nil {
+		copy := cloneManagement(*request.Management)
+		if err := ValidateManagement(copy); err != nil {
+			return Snapshot{}, err
+		}
+		management = &copy
+	}
 	return s.change(ctx, actor, &request.Revision, func(_ library.OwnedTx, previous settingsRecord) (settingsRecord, error) {
 		previous.Overrides, previous.ServerNameMode = overrides, mode
+		if management != nil {
+			previous.Management = cloneManagement(*management)
+		}
 		if encoding != nil {
 			previous.Encoding = *encoding
 		}
@@ -123,6 +135,7 @@ func (s *Store) Reset(ctx context.Context, actor Actor, request ResetRequest) (S
 	}
 	return s.change(ctx, actor, &request.Revision, func(_ library.OwnedTx, previous settingsRecord) (settingsRecord, error) {
 		previous.Overrides = clearFields(previous.Overrides, fields)
+		previous.Management = resetManagement(previous.Management, fields)
 		for _, field := range fields {
 			if field == FieldServerName {
 				previous.ServerNameMode = ServerNameDeployment
@@ -156,11 +169,12 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 		}
 		current := s.current.Load()
 		if current == nil || previous.Revision != current.Revision || !equalOverrides(previous.Overrides, current.Overrides) ||
-			previous.ServerNameMode != current.ServerNameMode || previous.Encoding != current.Encoding {
+			previous.ServerNameMode != current.ServerNameMode || previous.Encoding != current.Encoding || !equalManagement(previous.Management, current.Management) {
 			return fmt.Errorf("%w: persisted state differs from the published application state", ErrStoredSettings)
 		}
 		next := previous
 		next.Overrides = cloneOverrides(previous.Overrides)
+		next.Management = cloneManagement(previous.Management)
 		next, err = replacement(tx, next)
 		if err != nil {
 			return err
@@ -169,7 +183,7 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 		if err := s.validateRecordValues(next); err != nil {
 			return err
 		}
-		if equalOverrides(previous.Overrides, next.Overrides) && previous.ServerNameMode == next.ServerNameMode && previous.Encoding == next.Encoding {
+		if equalOverrides(previous.Overrides, next.Overrides) && previous.ServerNameMode == next.ServerNameMode && previous.Encoding == next.Encoding && equalManagement(previous.Management, next.Management) {
 			// A no-op still validates the caller's revision and live authority.
 			committed, err = s.materialize(previous)
 			if err != nil {
@@ -179,14 +193,18 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 			if err := validateRevision(previous.Revision); err != nil {
 				return err
 			}
+			managementJSON, err := json.Marshal(next.Management)
+			if err != nil {
+				return err
+			}
 			changed, err := readRecord(tx.QueryRow(`UPDATE managed_settings SET
 				revision = revision + 1, server_name = $2, max_bitrate = $3,
 				max_width = $4, max_height = $5, max_audio_channels = $6,
-				server_name_mode = $7, compatibility_max_width = $8,
+				server_name_mode = $7, compatibility_max_width = $8, management = $9,
 				updated_at = clock_timestamp() WHERE id = 1 AND revision = $1
 				RETURNING `+recordColumns, previous.Revision, next.Overrides.ServerName, next.Overrides.MaxBitrate,
 				next.Overrides.MaxWidth, next.Overrides.MaxHeight, next.Overrides.MaxAudioChannels,
-				next.ServerNameMode, next.Encoding.TranscodingMaxWidth))
+				next.ServerNameMode, next.Encoding.TranscodingMaxWidth, managementJSON))
 			if err != nil {
 				return err
 			}
@@ -224,7 +242,7 @@ func (s *Store) publish(value Snapshot) Snapshot {
 	}
 }
 
-const recordColumns = "revision, server_name, max_bitrate, max_width, max_height, max_audio_channels, updated_at, server_name_mode, compatibility_max_width"
+const recordColumns = "revision, server_name, max_bitrate, max_width, max_height, max_audio_channels, updated_at, server_name_mode, compatibility_max_width, management"
 
 type settingsRecord struct {
 	Revision       int64
@@ -232,20 +250,26 @@ type settingsRecord struct {
 	UpdatedAt      time.Time
 	ServerNameMode ServerNameMode
 	Encoding       Encoding
+	Management     Management
 }
 
 type rowScanner interface{ Scan(...any) error }
 
 func readRecord(row rowScanner) (settingsRecord, error) {
 	var record settingsRecord
+	var managementJSON []byte
 	err := row.Scan(&record.Revision, &record.Overrides.ServerName, &record.Overrides.MaxBitrate,
 		&record.Overrides.MaxWidth, &record.Overrides.MaxHeight, &record.Overrides.MaxAudioChannels, &record.UpdatedAt,
-		&record.ServerNameMode, &record.Encoding.TranscodingMaxWidth)
+		&record.ServerNameMode, &record.Encoding.TranscodingMaxWidth, &managementJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return settingsRecord{}, fmt.Errorf("%w: managed settings singleton is missing", ErrStoredSettings)
 	}
 	if err != nil {
 		return settingsRecord{}, fmt.Errorf("read managed settings: %w", err)
+	}
+	record.Management, err = decodeStoredManagement(managementJSON)
+	if err != nil {
+		return settingsRecord{}, err
 	}
 	record.UpdatedAt = record.UpdatedAt.UTC()
 	return record, nil
@@ -262,7 +286,7 @@ func (s *Store) materialize(record settingsRecord) (Snapshot, error) {
 	}
 	return Snapshot{Revision: record.Revision, Defaults: s.defaults,
 		Overrides: cloneOverrides(record.Overrides), Effective: effectiveValues(s.defaults, record.Overrides, record.ServerNameMode, s.hostName),
-		ServerNameMode: record.ServerNameMode, HostName: s.hostName, Encoding: record.Encoding, UpdatedAt: record.UpdatedAt.UTC()}, nil
+		ServerNameMode: record.ServerNameMode, HostName: s.hostName, Encoding: record.Encoding, Management: cloneManagement(record.Management), UpdatedAt: record.UpdatedAt.UTC()}, nil
 }
 
 func (s *Store) validateRecordValues(record settingsRecord) error {
@@ -270,6 +294,9 @@ func (s *Store) validateRecordValues(record settingsRecord) error {
 		return err
 	}
 	if err := validateEncoding(record.Encoding); err != nil {
+		return err
+	}
+	if err := ValidateManagement(record.Management); err != nil {
 		return err
 	}
 	return validateValues(effectiveValues(s.defaults, record.Overrides, record.ServerNameMode, s.hostName))

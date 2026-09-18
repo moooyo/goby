@@ -35,6 +35,7 @@ func configurationMediaHLS(t *testing.T, fixture *hlsHTTPFixture, login clientSe
 	if err != nil {
 		t.Fatalf("resolve the configuration media client (%T)", err)
 	}
+	principal.PeerIP = "127.0.0.1"
 	session, err := fixture.f.app.hls.find(parsed.Query().Get("GobyHlsId"), principal, fixture.item.ID)
 	if err != nil || session.key.scope.PlaySessionID != result.PlaySessionID {
 		t.Fatal("configuration negotiation did not register its HLS identity")

@@ -213,7 +213,7 @@ func (s *Server) retireApplicationKey(result identity.ApplicationKeyRevocation) 
 	if s.eventHub != nil {
 		s.eventHub.DisconnectCredential(result.CredentialID)
 	}
-	s.hls.cancelMatching(result.CredentialID, "")
+	s.cancelPlaybackCredential(result.CredentialID)
 	s.log.Info("application key revoked", "application_key_id", result.ID)
 }
 

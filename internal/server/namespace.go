@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "UserSettings", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons", "Auth", "Devices", "ScheduledTasks", "Branding"}
+	resources := []string{"System", "Users", "UserSettings", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "Providers", "Features"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -58,6 +58,16 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	}
 	switch resource {
+	case "Playlists", "Collections":
+		literal(2, "Items", "Delete", "Users")
+		literal(3, "Delete")
+		literal(4, "Move", "Delete")
+	case "LiveStreams":
+		literal(1, "Open", "MediaInfo", "Close")
+		literal(2, "hls")
+	case "Providers":
+		literal(1, "Subtitles")
+		literal(2, "Subtitles")
 	case "UserSettings":
 		literal(2, "Partial")
 	case "Branding":
@@ -86,22 +96,26 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	case "Users":
 		literal(1, "Public", "Query", "New", "AuthenticateByName")
-		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "Password", "Policy", "Configuration")
+		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "Password", "Policy", "Configuration", "Delete")
 		if len(parts) > 2 && parts[2] == "Items" {
 			literal(3, "Root", "Latest", "Resume")
 			literal(4, "UserData", "HideFromResume", "SpecialFeatures", "LocalTrailers")
 		}
 		literal(4, "Delete")
 	case "Items":
-		literal(2, "PlaybackInfo", "Images", "Refresh", "File", "Similar", "ThemeMedia")
-		literal(3, "Subtitles")
+		literal(2, "PlaybackInfo", "Images", "Refresh", "File", "Download", "Similar", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
+		literal(3, "Subtitles", "Attachments")
+		literal(4, "Delete")
+		literal(5, "Stream")
 	case "Videos", "Audio":
 		literal(1, "ActiveEncodings")
-		literal(2, "stream", "master.m3u8", "main.m3u8", "hls1")
+		literal(2, "stream", "master.m3u8", "main.m3u8", "live.m3u8", "subtitles.m3u8", "live_subtitles.m3u8", "hls1", "hls2", "Subtitles")
 		if len(parts) > 1 && parts[1] == "ActiveEncodings" {
 			literal(2, "Delete")
 		}
-		literal(3, "Subtitles")
+		literal(3, "Subtitles", "Attachments")
+		literal(4, "Delete")
+		literal(5, "Stream")
 	case "Sessions":
 		literal(1, "Playing", "Logout", "Capabilities")
 		literal(2, "Playing", "Progress", "Ping", "Stopped", "Full", "Command")

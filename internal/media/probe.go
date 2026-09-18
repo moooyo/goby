@@ -354,6 +354,8 @@ func parseProbe(data []byte) (Info, error) {
 			CodecType:            source.CodecType,
 			Language:             tagValue(source.Tags, "language"),
 			Title:                tagValue(source.Tags, "title"),
+			Filename:             tagValue(source.Tags, "filename"),
+			MIMEType:             tagValue(source.Tags, "mimetype"),
 			Profile:              source.Profile,
 			CodecTag:             source.CodecTag,
 			CodecTagString:       source.CodecTagString,

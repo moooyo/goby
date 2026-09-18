@@ -186,7 +186,7 @@ func newAudioRuntimeFixture(t *testing.T) *audioRuntimeFixture {
 	fixture := &audioRuntimeFixture{
 		h: h, jobs: jobs,
 		principal: identity.Principal{
-			User: identity.User{ID: "audio-runtime-user"}, SessionID: "audio-runtime-auth",
+			User: identity.User{ID: "audio-runtime-user", Policy: []byte(`{}`)}, SessionID: "audio-runtime-auth",
 			Client: identity.Client{DeviceID: "audio-runtime-device"}, Kind: "emby",
 		},
 		source: library.MediaFile{

@@ -64,6 +64,7 @@ type Snapshot struct {
 	ServerNameMode ServerNameMode
 	HostName       string
 	Encoding       Encoding
+	Management     Management
 	UpdatedAt      time.Time
 }
 
@@ -76,10 +77,11 @@ type Actor struct {
 // semantics apply: nil name means deployment and non-nil name means custom.
 // Omitted Encoding preserves the current independent compatibility setting.
 type UpdateRequest struct {
-	Revision  int64
-	Overrides Overrides
-	NameMode  *ServerNameMode
-	Encoding  *Encoding
+	Revision   int64
+	Overrides  Overrides
+	NameMode   *ServerNameMode
+	Encoding   *Encoding
+	Management *Management
 }
 
 type Field string
@@ -125,6 +127,8 @@ type ConfigurationMutation struct {
 	TranscodingMaxWidthPresent bool
 	TranscodingMaxWidth        int
 	StartupWizardCompleted     *bool
+	PreferredMetadataLanguage  *string
+	MetadataCountryCode        *string
 }
 
 type ValidationError struct{ Fields map[string]string }
@@ -152,6 +156,7 @@ func cloneOverrides(value Overrides) Overrides {
 
 func cloneSnapshot(value Snapshot) Snapshot {
 	value.Overrides = cloneOverrides(value.Overrides)
+	value.Management = cloneManagement(value.Management)
 	return value
 }
 

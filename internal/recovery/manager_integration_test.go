@@ -22,11 +22,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/activity"
+	"github.com/moooyo/goby/internal/backuppg"
 	"github.com/moooyo/goby/internal/backupstore"
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/lifecycle"
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/recoverydb"
 )
 
@@ -449,6 +451,7 @@ func newManagerIntegrationFixture(t *testing.T) *managerIntegrationFixture {
 			}
 		}
 	})
+	var cleanupIdentities [2]backuppg.RecoveryIdentity
 	for index, poolConfig := range []*pgxpool.Config{sourceConfig, targetConfig} {
 		poolConfig.MaxConns = 4
 		if poolConfig.ConnConfig.RuntimeParams == nil {
@@ -461,17 +464,16 @@ func newManagerIntegrationFixture(t *testing.T) *managerIntegrationFixture {
 			t.Fatal("open dedicated manager fixture database")
 		}
 		t.Cleanup(pool.Close)
-		var unsafe, empty bool
-		if err := pool.QueryRow(ctx, `SELECT r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls,
-			NOT EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
-				WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'
-				UNION ALL SELECT 1 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
-				WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema'
-				UNION ALL SELECT 1 FROM pg_catalog.pg_type y JOIN pg_catalog.pg_namespace n ON n.oid=y.typnamespace
-				WHERE n.nspname !~ '^pg_' AND n.nspname<>'information_schema')
-			FROM pg_catalog.pg_roles r WHERE r.rolname=current_user`).Scan(&unsafe, &empty); err != nil || unsafe || !empty {
+		inspectionTx, err := pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+		if err != nil {
+			t.Fatal("begin dedicated manager fixture ownership inspection")
+		}
+		ownedIdentity, inspectionErr := backuppg.InspectEmptyRecoveryTransaction(ctx, inspectionTx, "public")
+		rollbackErr := inspectionTx.Rollback(ctx)
+		if inspectionErr != nil || rollbackErr != nil || ownedIdentity.Database != poolConfig.ConnConfig.Database || ownedIdentity.Role != poolConfig.ConnConfig.User {
 			t.Fatal("manager fixture requires an empty database owned by a low-privilege role")
 		}
+		cleanupIdentities[index] = ownedIdentity
 		if index == 0 {
 			fixture.seed.source = pool
 		} else {
@@ -489,8 +491,8 @@ func newManagerIntegrationFixture(t *testing.T) *managerIntegrationFixture {
 		if fixture.lease != nil {
 			_ = fixture.lease.Close()
 		}
-		cleanupManagerPublicObjects(t, fixture.seed.target)
-		cleanupManagerPublicObjects(t, fixture.seed.source)
+		cleanupManagerPublicObjects(t, fixture.seed.target, cleanupIdentities[1])
+		cleanupManagerPublicObjects(t, fixture.seed.source, cleanupIdentities[0])
 	})
 	fixture.lease, err = database.AcquireLease(ctx, fixture.seed.source)
 	if err != nil {
@@ -693,34 +695,53 @@ func (f *managerIntegrationFixture) assertNoSecrets(t *testing.T, passphrase []b
 	}
 }
 
-func cleanupManagerPublicObjects(t *testing.T, pool *pgxpool.Pool) {
+func cleanupManagerPublicObjects(t *testing.T, pool *pgxpool.Pool, expectedIdentity backuppg.RecoveryIdentity) {
 	t.Helper()
 	if pool == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	tx, err := pool.Begin(ctx)
+	lease, err := database.AcquireLease(ctx, pool)
+	if err != nil {
+		t.Error("retain manager fixture objects because exclusive cleanup ownership is unavailable")
+		return
+	}
+	defer lease.Close()
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		t.Error("begin cleanup of explicitly owned manager objects")
 		return
 	}
 	defer tx.Rollback(ctx)
-	const ownedTables = "activity_entries application_key_clients application_key_devices application_keys catalog_entities client_playback_references devices encoding_jobs extra_reserved_paths item_entities item_extra_resources item_images item_metadata_state item_subtitles item_theme_resources items libraries library_roots managed_settings play_sessions scan_jobs schema_migrations server_settings sessions task_definitions task_occurrences task_run_children task_run_requests task_runs task_triggers theme_owner_ids theme_reserved_paths user_item_data user_settings users"
-	qualified := make([]string, 0, 33)
-	for _, table := range strings.Fields(ownedTables) {
-		qualified = append(qualified, pgx.Identifier{"public", table}.Sanitize())
-	}
-	if _, err := tx.Exec(ctx, "DROP TABLE IF EXISTS "+strings.Join(qualified, ",")+" CASCADE"); err != nil {
-		t.Error("remove only explicitly owned compiled fixture tables")
+	if !lease.ProtectsTransaction(pool, tx) {
+		t.Error("retain manager fixture objects because cleanup is not bound to its leased database")
 		return
 	}
-	// Dropping items also removes its composite-argument source-key function.
-	if _, err := tx.Exec(ctx, `DROP FUNCTION IF EXISTS
-		public.catalog_metadata_automatic_values(text,text,text,text,integer,integer,jsonb),
-		public.initialize_catalog_metadata_state(),public.set_catalog_entity_name_hash(),
-		public.sync_catalog_item_entities(text,jsonb),public.assign_theme_owner_id()`); err != nil {
-		t.Error("remove only explicitly owned compiled fixture functions")
+	if identity, err := backuppg.InspectEmptyRecoveryTransaction(ctx, tx, "public"); err == nil {
+		if identity != expectedIdentity {
+			t.Error("the empty manager fixture no longer has its admitted database identity")
+		}
+		return
+	}
+	// Only the admitted database and its exact compiled catalog are eligible.
+	// Unknown objects or dependencies retain the entire fixture as evidence.
+	inspection, err := backuppg.InspectRecoveryTransaction(ctx, tx, "public")
+	if err != nil || inspection.Identity() != expectedIdentity {
+		t.Errorf("retain manager fixture objects after cleanup identity or catalog refusal: %v", err)
+		return
+	}
+	if err := inspection.LockTables(ctx); err != nil {
+		t.Errorf("retain manager fixture objects after cleanup lock refusal: %v", err)
+		return
+	}
+	facts, err := inspection.Facts(ctx, media.CurrentProbeVersion)
+	if err != nil || !lease.ProtectsTransaction(pool, tx) {
+		t.Errorf("retain manager fixture objects after cleanup witness refusal: %v", err)
+		return
+	}
+	if err := inspection.EmptyTrustedSchema(ctx, facts); err != nil || !lease.ProtectsTransaction(pool, tx) {
+		t.Errorf("retain manager fixture objects after compiled RESTRICT cleanup refusal: %v", err)
 		return
 	}
 	if err := tx.Commit(ctx); err != nil {

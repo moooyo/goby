@@ -188,14 +188,14 @@ func TestLiveTVProgramsAuthorizesTheRequestedSubjectBeforeReturningEmptyGuide(t 
 		subject   library.Subject
 		series    string
 	}{
-		{"implicit self", viewer, "", library.Subject{UserID: "viewer"}, ""},
-		{"empty user defaults to self", viewer, "UserId=", library.Subject{UserID: "viewer"}, ""},
-		{"explicit self", viewer, "UserId=viewer", library.Subject{UserID: "viewer"}, ""},
-		{"visible series", viewer, "LibrarySeriesId=series", library.Subject{UserID: "viewer"}, "series"},
-		{"zero limit catalog", viewer, "Limit=0&EnableUserData=false", library.Subject{UserID: "viewer"}, ""},
-		{"zero limit series", viewer, "Limit=0&EnableUserData=false&LibrarySeriesId=series", library.Subject{UserID: "viewer"}, "series"},
-		{"admin target catalog", admin, "UserId=target", library.Subject{UserID: "target"}, ""},
-		{"admin target series", admin, "UserId=target&LibrarySeriesId=series", library.Subject{UserID: "target"}, "series"},
+		{"implicit self", viewer, "", library.Subject{UserID: "viewer", Actor: &viewer}, ""},
+		{"empty user defaults to self", viewer, "UserId=", library.Subject{UserID: "viewer", Actor: &viewer}, ""},
+		{"explicit self", viewer, "UserId=viewer", library.Subject{UserID: "viewer", Actor: &viewer}, ""},
+		{"visible series", viewer, "LibrarySeriesId=series", library.Subject{UserID: "viewer", Actor: &viewer}, "series"},
+		{"zero limit catalog", viewer, "Limit=0&EnableUserData=false", library.Subject{UserID: "viewer", Actor: &viewer}, ""},
+		{"zero limit series", viewer, "Limit=0&EnableUserData=false&LibrarySeriesId=series", library.Subject{UserID: "viewer", Actor: &viewer}, "series"},
+		{"admin target catalog", admin, "UserId=target", library.Subject{UserID: "target", Actor: &admin}, ""},
+		{"admin target series", admin, "UserId=target&LibrarySeriesId=series", library.Subject{UserID: "target", Actor: &admin}, "series"},
 		{"userless key catalog", key, "", library.Subject{ApplicationCredentialID: "application-credential"}, ""},
 		{"userless key series", key, "LibrarySeriesId=series", library.Subject{ApplicationCredentialID: "application-credential"}, "series"},
 		{"key target catalog", key, "UserId=target", library.Subject{UserID: "target", ApplicationCredentialID: "application-credential"}, ""},

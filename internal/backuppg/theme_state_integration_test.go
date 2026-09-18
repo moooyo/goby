@@ -88,7 +88,7 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 	failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 		func(ctx context.Context, tx pgx.Tx, result RestoreResult) error {
 			called = true
-			if result.SourceVersion != 26 || result.CurrentVersion != 29 {
+			if result.SourceVersion != 26 || result.CurrentVersion != currentRecoveryVersion(t) {
 				t.Fatal("the theme finalizer received a different migration transition")
 			}
 			_, err := tx.Exec(ctx, "DELETE FROM theme_owner_ids WHERE virtual_root")
@@ -103,7 +103,7 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 		t.Fatal("rewind unchanged theme archive for retry")
 	}
 	result, err := RestoreOffline(ctx, target, archive, facts, offline)
-	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != 29 || !equalJSON(result.Tables, facts.Tables) {
+	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the same nonempty theme archive after semantic rollback: %v", err)
 	}
 	if themeSnapshotState(t, ctx, target) != want {
@@ -200,7 +200,7 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 			before := themeSnapshotState(t, ctx, source)
 			archive, facts := sourceArchive(t, ctx, source, options)
 			result, err := RestoreOffline(ctx, target, archive, facts, options)
-			if err != nil || result.CurrentVersion != 29 || themeSnapshotState(t, ctx, target) != before {
+			if err != nil || result.CurrentVersion != currentRecoveryVersion(t) || themeSnapshotState(t, ctx, target) != before {
 				t.Fatalf("inactive history could not be preserved after its owner moved or became reserved: %v", err)
 			}
 			assertHistoricalArchiveBindingDefaults(t, ctx, target)

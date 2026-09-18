@@ -15,7 +15,7 @@ func TestEntityFiltersPreserveDocumentedNameSeparators(t *testing.T) {
 		t.Fatalf("valid entity filters rejected: %s", response.Body.String())
 	}
 	for _, field := range []struct {
-		name string
+		name             string
 		actual, expected []string
 	}{
 		{name: "Genres", actual: query.Genres, expected: []string{"Science Fiction", "Drama"}},

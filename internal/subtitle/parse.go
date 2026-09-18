@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-// Parse accepts conventional SRT with optional decimal cue indices and WebVTT
-// with a mandatory WEBVTT signature. Caption order and overlapping cues survive.
+// Parse accepts SRT, WebVTT, and ASS/SSA. Caption order and overlapping cues survive.
 func Parse(data []byte, format Format) (Document, error) {
 	normalized, err := NormalizeFormat(string(format))
 	if err != nil {
@@ -25,6 +24,9 @@ func Parse(data []byte, format Format) (Document, error) {
 	doc := Document{Format: normalized, source: source, sourceFormat: normalized}
 	if len(data) >= 3 && data[0] == 0xef && data[1] == 0xbb && data[2] == 0xbf {
 		doc.source = string(data)
+	}
+	if isASS(normalized) {
+		return parseASS(doc, source, lines)
 	}
 	var spans []lineSpan
 	if normalized == FormatSRT {

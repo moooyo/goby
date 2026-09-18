@@ -32,9 +32,10 @@ const (
 )
 
 type hlsKey struct {
-	scope transcode.Scope
-	stamp string
-	plan  transcode.Plan
+	scope  transcode.Scope
+	stamp  string
+	plan   transcode.Plan
+	remote bool
 }
 
 type hlsProducer struct {
@@ -81,6 +82,9 @@ type hlsSession struct {
 	timeline           *transcode.Timeline
 	lead               int64
 	building           chan struct{}
+	subtitleClockJob   string
+	subtitleClockTicks int64
+	subtitleClockBusy  chan struct{}
 	producers          []hlsProducer
 	progressiveReaders int
 	lastAsked          int
@@ -120,7 +124,9 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 	if _, err := exec.LookPath(server.cfg.FFprobePath); err != nil {
 		return nil, errors.New("the configured FFprobe executable is unavailable")
 	}
-	manager, err := transcode.NewManager(ctx, server.cfg.Transcoding.ManagerOptions(server.cfg.FFmpegPath, transcode.NewRepository(server.db)))
+	managerOptions := server.cfg.Transcoding.ManagerOptions(server.cfg.FFmpegPath, transcode.NewRepository(server.db))
+	managerOptions.SubtitleSource = server.readBurnSubtitleAsset
+	manager, err := transcode.NewManager(ctx, managerOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -147,13 +153,17 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 	if decision.Plan == nil {
 		return nil, transcode.ErrInvalidPlan
 	}
+	if !principalPlanBitrateAllowed(principal, source, *decision.Plan) {
+		return nil, library.ErrForbidden
+	}
 	plan := *decision.Plan
 	if plan.OutputMode == "" {
 		plan.StartTicks = 0
 	}
 	key := hlsKey{scope: transcode.Scope{UserID: principal.User.ID, AuthSessionID: principal.SessionID, DeviceID: principal.Client.DeviceID,
 		ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID,
-		PlaySessionID: playID, ItemID: source.Item.ID, SourceID: source.SourceID}, stamp: source.ETag, plan: plan}
+		PlaySessionID: playID, ItemID: source.Item.ID, SourceID: source.SourceID}, stamp: source.ETag, plan: plan,
+		remote: !identity.IsLocalPeer(principal.PeerIP)}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.closing {
@@ -206,7 +216,7 @@ func (h *hlsRuntime) find(id string, principal identity.Principal, itemID string
 	if h.closing || session == nil || session.key.scope.ApplicationKey != principal.IsApplicationKey() || session.key.scope.UserID != principal.User.ID ||
 		session.key.scope.ApplicationClientID != principal.ClientSessionID ||
 		session.key.scope.AuthSessionID != principal.SessionID || session.key.scope.DeviceID != principal.Client.DeviceID ||
-		session.key.scope.ItemID != itemID {
+		session.key.scope.ItemID != itemID || session.key.remote != !identity.IsLocalPeer(principal.PeerIP) {
 		return nil, transcode.ErrJobNotFound
 	}
 	session.mu.Lock()
@@ -292,7 +302,14 @@ func permanentHLSError(err error) bool {
 	return errors.Is(err, identity.ErrUnauthorized) || errors.Is(err, library.ErrForbidden) || errors.Is(err, library.ErrNotFound) || errors.Is(err, library.ErrSourceChanged)
 }
 
-func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal, scope transcode.Scope, stamp string, plan transcode.Plan) (*os.File, library.MediaFile, error) {
+func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal, scope transcode.Scope, stamp string, plan transcode.Plan) (resultFile *os.File, resultSource library.MediaFile, resultErr error) {
+	owned := principal.SessionID == scope.AuthSessionID && principal.User.ID == scope.UserID && principal.ClientSessionID == scope.ApplicationClientID &&
+		principal.Client.DeviceID == scope.DeviceID && principal.IsApplicationKey() == scope.ApplicationKey
+	defer func() {
+		if owned && permanentHLSError(resultErr) {
+			s.cancelMediaPolicy(scope.AuthSessionID, scope.PlaySessionID)
+		}
+	}()
 	fresh, err := s.identity.RevalidateSession(ctx, principal)
 	if err != nil {
 		return nil, library.MediaFile{}, err
@@ -301,6 +318,9 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 		fresh.ClientSessionID != scope.ApplicationClientID ||
 		fresh.SessionID != scope.AuthSessionID || fresh.Client.DeviceID != scope.DeviceID {
 		return nil, library.MediaFile{}, library.ErrNotFound
+	}
+	if err := s.checkMediaPolicy(fresh, scope); err != nil {
+		return nil, library.MediaFile{}, err
 	}
 	// Registered outputs retain their original planning limits. Revalidation
 	// checks conversion support and current user permissions without replanning.
@@ -311,6 +331,9 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 	play, err := s.library.GetPlaybackSession(ctx, playbackOwner(fresh), scope.PlaySessionID)
 	if err != nil {
 		return nil, library.MediaFile{}, err
+	}
+	if play.IsDynamic {
+		return nil, library.MediaFile{}, library.ErrSourceChanged
 	}
 	if play.ItemID != scope.ItemID || play.MediaSourceID != scope.SourceID || !time.Now().Before(play.ExpiresAt) ||
 		(play.State != "Prepared" && play.State != "Playing" && play.State != "Paused") {
@@ -324,6 +347,16 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 		_ = file.Close()
 		return nil, library.MediaFile{}, library.ErrNotFound
 	}
+	if !principalPlanBitrateAllowed(fresh, source, plan) {
+		_ = file.Close()
+		return nil, library.MediaFile{}, library.ErrForbidden
+	}
+	if plan.Subtitle.ExternalTag != "" {
+		if _, err := s.readPlannedExternalSubtitle(ctx, fresh, scope, plan); err != nil {
+			_ = file.Close()
+			return nil, library.MediaFile{}, err
+		}
+	}
 	return file, source, nil
 }
 
@@ -331,7 +364,7 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 // a user's playback policy. Login sessions continue to enforce persisted policy.
 func hlsPrincipalLimits(cfg config.TranscodingConfig, principal identity.Principal) playback.ConversionLimits {
 	if !principal.IsApplicationKey() {
-		return hlsUserLimits(cfg, principal.User)
+		return applyPrincipalRemoteBitrateLimit(hlsUserLimits(cfg, principal.User), principal)
 	}
 	return hlsServerLimits(cfg)
 }

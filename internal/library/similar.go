@@ -61,7 +61,7 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 	}
 	defer rollback(tx)
 	var seedType string
-	err = tx.QueryRow(ctx, `SELECT i.type FROM items i WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+ordinaryItemSQL("i"),
+	err = tx.QueryRow(ctx, `SELECT i.type FROM items i WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.ordinarySQL("i"),
 		seedID, access.all, access.folders).Scan(&seedType)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ItemResult{}, similarMissingSeed(ctx, tx, seedID, access)
@@ -72,11 +72,6 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
 		return ItemResult{}, err
-	}
-	// An unsupported membership filter must not become a successful distant or
-	// zero page. It remains explicit until that separate relationship is indexed.
-	if len(query.ListItemIds) != 0 {
-		return ItemResult{}, ErrUnsupportedFilter
 	}
 	if limit == 0 && seedType == "Movie" {
 		limit = 1
@@ -90,7 +85,7 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 			args = append(args, query.UserID)
 			userParameter = len(args)
 		}
-		order = itemOrderSQL(query.Query, userParameter)
+		order = access.scopeSQL(itemOrderSQL(query.Query, userParameter))
 	}
 	args = append(args, query.Limit, query.StartIndex)
 	// Rank and page IDs before expanding metadata/entity/album projections.
@@ -100,7 +95,7 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 		SELECT i.id, ranked.score, row_number() OVER (ORDER BY ` + order + `) AS ordinal
 		FROM items i JOIN similar_scores ranked ON ranked.id = i.id WHERE ranked.score >= 2
 		ORDER BY ordinal` + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)) + ") "
-	rows, err := tx.Query(ctx, prefix+"SELECT "+similarItemColumns(seedType)+` FROM items i
+	rows, err := tx.Query(ctx, prefix+"SELECT "+access.scopeSQL(similarItemColumns(seedType))+` FROM items i
 		JOIN similar_page ranked ON ranked.id = i.id ORDER BY ranked.ordinal`, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query similar items: %w", err)
@@ -162,11 +157,11 @@ func similarRelationSQL(seedID, seedType string, query SimilarQuery, access libr
 	if seedType == "MusicAlbum" {
 		album = "CASE WHEN i.is_folder THEN i.id END"
 	} else if music {
-		album = physicalMusicAlbumIDSQL
+		album = access.scopeSQL(physicalMusicAlbumIDSQL)
 	}
 	prefix += fmt.Sprintf(`similar_scope_albums AS MATERIALIZED (
 		SELECT i.id, i.type, `+album+` AS album_id FROM items i
-		WHERE `+ordinaryItemSQL("i")+` AND (i.id = $%d::text OR (`+filter+`))
+		WHERE `+access.ordinarySQL("i")+` AND (i.id = $%d::text OR (`+filter+`))
 	), `, seedParameter)
 	artistOwner := "NULL::text"
 	if music {
@@ -235,7 +230,7 @@ func similarMissingSeed(ctx context.Context, tx pgx.Tx, seedID string, access li
 	err = tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM catalog_entities entity
 		JOIN item_entities association ON association.entity_id = entity.id JOIN items i ON i.id = association.item_id
 		WHERE entity.id = $1 AND i.type <> 'CollectionFolder' AND `+validEntityAssociationSQL+`
-		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+ordinaryItemSQL("i")+`)`, id, access.all, access.folders).Scan(&visible)
+		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.ordinarySQL("i")+`)`, id, access.all, access.folders).Scan(&visible)
 	if err != nil {
 		return fmt.Errorf("authorize similar entity seed: %w", err)
 	}

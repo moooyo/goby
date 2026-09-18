@@ -3,6 +3,7 @@ package database
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/fs"
 	"testing"
 	"testing/fstest"
@@ -49,7 +50,8 @@ func TestPublishedMigrationManifestMatchesEmbeddedRelease(t *testing.T) {
 }
 
 func TestPublishedMigrationManifestRejectsSameNameSQLDrift(t *testing.T) {
-	for _, name := range []string{"0001_identity.sql", "0014_item_metadata.sql", "0028_storage_root_bindings.sql", "0029_user_deletion_activity.sql"} {
+	for _, migration := range publishedMigrations {
+		name := migration.name
 		t.Run(name, func(t *testing.T) {
 			source := publishedMigrationTestFiles(t)
 			path := "migrations/" + name
@@ -77,6 +79,7 @@ func TestPublishedMigrationManifestRejectsSameNameSQLDrift(t *testing.T) {
 }
 
 func TestPublishedMigrationManifestRejectsChangedInventory(t *testing.T) {
+	last := publishedMigrations[len(publishedMigrations)-1]
 	for _, change := range []string{"missing first", "missing middle", "missing last", "renamed SQL", "unpublished addition", "duplicate version", "invalid filename"} {
 		t.Run(change, func(t *testing.T) {
 			source := publishedMigrationTestFiles(t)
@@ -86,12 +89,12 @@ func TestPublishedMigrationManifestRejectsChangedInventory(t *testing.T) {
 			case "missing middle":
 				delete(source, "migrations/0014_item_metadata.sql")
 			case "missing last":
-				delete(source, "migrations/0029_user_deletion_activity.sql")
+				delete(source, "migrations/"+last.name)
 			case "renamed SQL":
 				source["migrations/0001_renamed.sql"] = source["migrations/0001_identity.sql"]
 				delete(source, "migrations/0001_identity.sql")
 			case "unpublished addition":
-				source["migrations/0030_unpublished.sql"] = &fstest.MapFile{Data: []byte("SELECT 1;\n")}
+				source[fmt.Sprintf("migrations/%04d_unpublished.sql", last.version+1)] = &fstest.MapFile{Data: []byte("SELECT 1;\n")}
 			case "duplicate version":
 				source["migrations/0001_duplicate.sql"] = &fstest.MapFile{Data: []byte("SELECT 1;\n")}
 			case "invalid filename":

@@ -121,6 +121,7 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 					overrides = map[string]any{"ServerName": "Deployment Server", "MaxBitrate": float64(20_000_000), "MaxWidth": float64(1920), "MaxHeight": float64(1080), "MaxAudioChannels": float64(8)}
 					source = "database"
 				}
+				snapshot.Management = settings.DefaultManagement()
 				encoded, err := json.Marshal(settingsDTO(snapshot, deployment))
 				if err != nil {
 					t.Fatal(err)
@@ -140,6 +141,13 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 					"UpdatedAt":      "2026-09-10T04:13:14.123456789Z",
 					"Deployment":     map[string]any{"HostName": "fixture-host", "TranscodingEnabled": true, "HardwareDecoder": "vaapi", "HardwareEncoder": "qsv", "Threads": float64(3), "MaxJobs": float64(4), "MaxUserJobs": float64(2), "MaxSessionJobs": float64(1)},
 				}
+				expectedManagement := map[string]any{
+					"Metadata":  map[string]any{"EnableInternetProviders": false, "PreferredMetadataLanguage": "en", "MetadataCountryCode": "US"},
+					"Subtitles": map[string]any{"DownloadLanguages": []any{"en"}, "DownloadMovieSubtitles": true, "DownloadEpisodeSubtitles": true},
+					"Tasks":     map[string]any{"MaxConcurrent": float64(2), "CacheRetentionDays": float64(30), "CacheMaxEntries": float64(10000)},
+				}
+				want["Management"], want["ManagementDefaults"] = expectedManagement, expectedManagement
+				want["ManagementEffects"] = map[string]any{"Metadata": "next_work_item", "Subtitles": "next_work_item", "Tasks": "next_admission", "RestartRequired": false}
 				if !reflect.DeepEqual(got, want) {
 					t.Fatal("settings DTO changed its exact safe fields, value types, null overrides, explicit sources, revision precision, or UTC timestamp")
 				}
@@ -209,6 +217,7 @@ func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
 					Revision: 7, Defaults: defaults, Overrides: settings.Overrides{ServerName: test.override}, Effective: effective,
 					ServerNameMode: test.mode, HostName: "fixture-host", Encoding: settings.Encoding{TranscodingMaxWidth: width},
 				}
+				snapshot.Management = settings.DefaultManagement()
 				encoded, err := json.Marshal(settingsDTO(snapshot, config.TranscodingConfig{MaxWidth: 4096}))
 				if err != nil {
 					t.Fatal(err)
@@ -224,7 +233,7 @@ func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
 				overrides := got["Overrides"].(map[string]any)
 				sources := got["Sources"].(map[string]any)
 				deployment := got["Deployment"].(map[string]any)
-				if len(got) != 9 || got["ServerNameMode"] != string(test.mode) || overrides["ServerName"] != wantOverride ||
+				if len(got) != 12 || got["ServerNameMode"] != string(test.mode) || overrides["ServerName"] != wantOverride ||
 					got["Defaults"].(map[string]any)["ServerName"] != defaults.ServerName ||
 					got["Effective"].(map[string]any)["ServerName"] != test.effective || sources["ServerName"] != test.source {
 					t.Fatal("settings DTO collapsed distinct name modes, nullable overrides, or hostname fallback")

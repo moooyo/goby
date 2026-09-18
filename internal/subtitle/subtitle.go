@@ -1,4 +1,4 @@
-// Package subtitle parses and renders bounded SRT and WebVTT text subtitles.
+// Package subtitle parses and renders bounded SRT, WebVTT, ASS, and SSA subtitles.
 // It accepts UTF-8 and BOM-marked UTF-16. Legacy encodings must be converted
 // explicitly by the caller rather than guessed from potentially ambiguous bytes.
 package subtitle
@@ -14,9 +14,12 @@ type Format string
 const (
 	FormatSRT    Format = "srt"
 	FormatWebVTT Format = "vtt"
+	FormatASS    Format = "ass"
+	FormatSSA    Format = "ssa"
 
 	TicksPerSecond      = int64(10_000_000)
 	TicksPerMillisecond = TicksPerSecond / 1000
+	MaxOffsetTicks      = 24 * 60 * 60 * TicksPerSecond
 	MaxInputBytes       = 8 << 20
 	MaxOutputBytes      = 16 << 20
 	MaxCueCount         = 50_000
@@ -35,6 +38,7 @@ var (
 
 // Cue uses 100-nanosecond ticks. Text preserves caption line breaks and markup.
 // Identifier and Settings are WebVTT fields; SRT indices become identifiers.
+// ASS and SSA text retains its original override tags and escaped line breaks.
 type Cue struct {
 	StartTicks int64
 	EndTicks   int64
@@ -52,6 +56,7 @@ type Document struct {
 	sourceFormat   Format
 	sourceCues     []Cue
 	sourcePayloads []string
+	ass            *assDocument
 }
 
 type metadataBlock struct {
@@ -66,8 +71,12 @@ type Options struct {
 	// EndTicks is an exclusive cue-start limit after the timestamp offset.
 	EndTicks       *int64
 	CopyTimestamps bool
+	// OffsetTicks adds a signed delay after the legacy start offset. Its absolute
+	// value must not exceed MaxOffsetTicks. Cues crossing zero are clipped at zero.
+	OffsetTicks int64
 	// PreserveSource retains source layout for a complete, same-format response.
 	// It preserves a UTF-8 BOM when present. BOM-marked UTF-16 becomes UTF-8.
+	// Parsed ASS/SSA also retains non-dialogue layout when filtered or shifted.
 	PreserveSource bool
 }
 
@@ -82,6 +91,10 @@ func NormalizeFormat(value string) (Format, error) {
 		return FormatSRT, nil
 	case "vtt", "webvtt":
 		return FormatWebVTT, nil
+	case "ass":
+		return FormatASS, nil
+	case "ssa":
+		return FormatSSA, nil
 	default:
 		return "", fmt.Errorf("%w: %q", ErrUnsupportedFormat, value)
 	}
@@ -93,3 +106,5 @@ func contentType(format Format) string {
 	}
 	return "text/plain"
 }
+
+func isASS(format Format) bool { return format == FormatASS || format == FormatSSA }

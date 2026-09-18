@@ -274,13 +274,13 @@ func TestRenderRejectsInvalidRangesAndConstructedCues(t *testing.T) {
 }
 
 func TestSupportedFormatsAreExplicit(t *testing.T) {
-	for name, want := range map[string]Format{"SRT": FormatSRT, " subrip ": FormatSRT, "WebVTT": FormatWebVTT, "vtt": FormatWebVTT} {
+	for name, want := range map[string]Format{"SRT": FormatSRT, " subrip ": FormatSRT, "WebVTT": FormatWebVTT, "vtt": FormatWebVTT, " ASS ": FormatASS, "SSA": FormatSSA} {
 		got, err := NormalizeFormat(name)
 		if err != nil || got != want {
 			t.Errorf("NormalizeFormat(%q) = %q, %v", name, got, err)
 		}
 	}
-	for _, name := range []string{"ass", "ssa", "ttml", "", "sub"} {
+	for _, name := range []string{"ttml", "", "sub"} {
 		if _, err := Parse(nil, Format(name)); !errors.Is(err, ErrUnsupportedFormat) {
 			t.Errorf("format %q error = %v", name, err)
 		}

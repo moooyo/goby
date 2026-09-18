@@ -18,23 +18,35 @@ import (
 // Store reads committed task state through its pool and performs every write
 // through the same fenced transaction owner used by the scanner.
 type Store struct {
-	pool  *pgxpool.Pool
-	owner library.OwnedTransactions
+	pool      *pgxpool.Pool
+	owner     library.OwnedTransactions
+	executors *ExecutorRegistry
 }
 
-func New(pool *pgxpool.Pool, owner library.OwnedTransactions) (*Store, error) {
+func New(pool *pgxpool.Pool, owner library.OwnedTransactions, registries ...*ExecutorRegistry) (*Store, error) {
 	if pool == nil || owner == nil {
 		return nil, fmt.Errorf("%w: task pool and transaction owner are required", ErrInvalidInput)
 	}
-	return &Store{pool: pool, owner: owner}, nil
+	if len(registries) > 1 {
+		return nil, ErrInvalidInput
+	}
+	var registry *ExecutorRegistry
+	if len(registries) == 1 {
+		registry = registries[0]
+	}
+	return &Store{pool: pool, owner: owner, executors: registry}, nil
 }
 
 // Reconcile registers only executable definitions and never creates a run or
 // schedule. Administrator choices and existing definition identities survive.
 func (s *Store) Reconcile(ctx context.Context) error {
-	definitions := []struct{ id, key, embyKey, name, description string }{
-		{"", LibraryScanKey, LibraryScanEmbyKey, "Scan media library", "Scan all registered media libraries."},
-		{"", LibraryRefreshMediaKey, "", "Refresh media details", "Refresh media details in all registered libraries, including unchanged files."},
+	definitions := []struct{ id, key, embyKey, name, description, category string }{
+		{"", LibraryScanKey, LibraryScanEmbyKey, "Scan media library", "Scan all registered media libraries.", "Library"},
+		{"", LibraryRefreshMediaKey, "", "Refresh media details", "Refresh media details in all registered libraries, including unchanged files.", "Library"},
+	}
+	for _, key := range s.executorKeys()[2:] {
+		entry, _ := s.executors.lookup(key)
+		definitions = append(definitions, struct{ id, key, embyKey, name, description, category string }{"", entry.Key, "", entry.Name, entry.Description, entry.Category})
 	}
 	for index := range definitions {
 		id, err := randomID()
@@ -47,21 +59,21 @@ func (s *Store) Reconcile(ctx context.Context) error {
 		for _, definition := range definitions {
 			_, err := tx.Exec(`INSERT INTO task_definitions
             (id, key, emby_key, name, description, category)
-            VALUES ($1,$2,$3,$4,$5,'Library')
+            VALUES ($1,$2,$3,$4,$5,$6)
             ON CONFLICT (key) DO UPDATE SET emby_key = EXCLUDED.emby_key,
                 name = EXCLUDED.name, description = EXCLUDED.description,
                 category = EXCLUDED.category, updated_at = clock_timestamp()
             WHERE (task_definitions.emby_key, task_definitions.name,
                 task_definitions.description, task_definitions.category)
                 IS DISTINCT FROM (EXCLUDED.emby_key, EXCLUDED.name,
-					EXCLUDED.description, EXCLUDED.category)`, definition.id, definition.key, definition.embyKey, definition.name, definition.description)
+					EXCLUDED.description, EXCLUDED.category)`, definition.id, definition.key, definition.embyKey, definition.name, definition.description, definition.category)
 			if err != nil {
 				return fmt.Errorf("register library task: %w", err)
 			}
 		}
 		_, err := tx.Exec(`UPDATE task_definitions SET enabled = false,
             revision = revision + 1, updated_at = clock_timestamp()
-            WHERE key NOT IN ($1,$2) AND enabled`, LibraryScanKey, LibraryRefreshMediaKey)
+            WHERE NOT (key = ANY($1::text[])) AND enabled`, s.executorKeys())
 		if err != nil {
 			return fmt.Errorf("disable unavailable task definitions: %w", err)
 		}
@@ -69,9 +81,12 @@ func (s *Store) Reconcile(ctx context.Context) error {
 	})
 }
 
-func checkTaskExecutor(key string, actor Actor) error {
+func (s *Store) checkTaskExecutor(key string, actor Actor) error {
 	if _, supported := library.TaskScanOptions(key); !supported {
-		return ErrUnavailable
+		_, exists := s.executors.lookup(key)
+		if !exists {
+			return ErrUnavailable
+		}
 	}
 	if actor.Audience == identity.AdministratorEmby && key != LibraryScanKey {
 		return identity.ErrClientSessionForbidden

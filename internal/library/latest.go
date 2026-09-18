@@ -21,9 +21,6 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 	if err != nil {
 		return nil, err
 	}
-	if len(query.ListItemIds) != 0 {
-		return nil, ErrUnsupportedFilter
-	}
 	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
 	if err != nil {
 		return nil, err
@@ -37,10 +34,10 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 	filter += " AND NOT i.is_folder AND i.type <> 'CollectionFolder'"
 	args = append(args, query.Limit, query.StartIndex)
 	pagination := fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
-	statement := prefix + "SELECT " + itemColumns + ", 1 FROM items i WHERE " + filter +
+	statement := prefix + "SELECT " + access.itemColumnsSQL() + ", 1 FROM items i WHERE " + filter +
 		" ORDER BY i.created_at DESC, i.id ASC" + pagination
 	if group {
-		statement = latestGroupedSQL(prefix, filter) + pagination
+		statement = latestGroupedSQL(prefix, filter, access) + pagination
 	}
 	rows, err := tx.Query(ctx, statement, args...)
 	if err != nil {
@@ -80,7 +77,11 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 	return items, nil
 }
 
-func latestGroupedSQL(prefix, filter string) string {
+func latestGroupedSQL(prefix, filter string, scopes ...libraryAccess) string {
+	access := unrestrictedLibraryAccess()
+	if len(scopes) != 0 {
+		access = scopes[0]
+	}
 	if prefix == "" {
 		prefix = "WITH RECURSIVE "
 	} else {
@@ -97,13 +98,13 @@ func latestGroupedSQL(prefix, filter string) string {
 			ARRAY[source.id, parent.id] AS visited
 		FROM source_items source
 		JOIN items parent ON parent.id = source.parent_id AND parent.library_id = source.library_id
-		WHERE source.type IN ('Episode', 'Audio') AND parent.id <> source.id AND ` + ordinaryItemSQL("parent") + `
+		WHERE source.type IN ('Episode', 'Audio') AND parent.id <> source.id AND ` + access.ordinarySQL("parent") + `
 		UNION ALL
 		SELECT ancestor.source_id, ancestor.library_id, parent.id, parent.parent_id, parent.type,
 			ancestor.target_type, ancestor.visited || parent.id
 		FROM ancestors ancestor
 		JOIN items parent ON parent.id = ancestor.parent_id AND parent.library_id = ancestor.library_id
-		WHERE ancestor.type <> ancestor.target_type AND NOT parent.id = ANY(ancestor.visited) AND ` + ordinaryItemSQL("parent") + `
+		WHERE ancestor.type <> ancestor.target_type AND NOT parent.id = ANY(ancestor.visited) AND ` + access.ordinarySQL("parent") + `
 	), latest_groups AS (
 		SELECT COALESCE(ancestor.id, source.id) AS group_id, source.library_id,
 			count(*) AS child_count, max(source.created_at) AS newest_created_at
@@ -111,9 +112,9 @@ func latestGroupedSQL(prefix, filter string) string {
 		LEFT JOIN ancestors ancestor ON ancestor.source_id = source.id AND ancestor.type = ancestor.target_type
 		GROUP BY COALESCE(ancestor.id, source.id), source.library_id
 	)
-	SELECT ` + itemColumns + `, latest.child_count
+	SELECT ` + access.itemColumnsSQL() + `, latest.child_count
 	FROM latest_groups latest
 	JOIN items i ON i.id = latest.group_id AND i.library_id = latest.library_id
-	WHERE ($1::boolean OR i.library_id = ANY($2::text[])) AND ` + ordinaryItemSQL("i") + `
+	WHERE ($1::boolean OR i.library_id = ANY($2::text[])) AND ` + access.ordinarySQL("i") + `
 	ORDER BY latest.newest_created_at DESC, i.id ASC`
 }

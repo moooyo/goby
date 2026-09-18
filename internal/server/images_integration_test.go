@@ -127,20 +127,25 @@ func assertImageNotModified(t *testing.T, response *httptest.ResponseRecorder, e
 	if response.Header().Get("ETag") != etag {
 		t.Errorf("304 ETag = %q, want %q", response.Header().Get("ETag"), etag)
 	}
-	if response.Header().Get("Cache-Control") != "" {
-		t.Errorf("reference-compatible 304 must omit Cache-Control: %v", response.Header())
+	if response.Header().Get("Cache-Control") != "private, no-cache" {
+		t.Errorf("authenticated 304 must require private cache revalidation: %v", response.Header())
 	}
 }
 
-func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing.T) {
+func imageValidatorHeaders(fixture *imageAPIFixture, validator string) http.Header {
+	headers := fixture.headers.Clone()
+	headers.Set("If-None-Match", validator)
+	return headers
+}
+
+func TestHTTPImagesAuthenticatedBodiesProjectionTransformsAndCacheValidators(t *testing.T) {
 	fixture := newImageAPIFixture(t)
 	f := fixture.f
 	path := "/emby/Items/" + fixture.itemID + "/Images/Primary"
 	tag := imageSourceTag(fixture.poster)
 	etag := `"` + tag + `"`
 
-	// Public binary artwork is an intentional reference contract. Its metadata
-	// enumeration has a separate authenticated and user-scoped route below.
+	// Binary images and metadata enumeration share the current user policy.
 	for name, headers := range map[string]http.Header{
 		"anonymous":   nil,
 		"bad token":   {"X-Emby-Token": {strings.Repeat("A", 43)}},
@@ -148,23 +153,28 @@ func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing
 	} {
 		t.Run(name, func(t *testing.T) {
 			response := f.request(t, http.MethodGet, path, nil, headers)
+			if name != "valid token" {
+				expectStatus(t, response, http.StatusUnauthorized)
+				return
+			}
 			assertAPIImage(t, response, 160, 240, "jpeg")
 			if !bytes.Equal(response.Body.Bytes(), fixture.poster) || response.Header().Get("ETag") != etag {
 				t.Errorf("original image bytes or source ETag changed")
 			}
-			if response.Header().Get("Cache-Control") != "public" {
-				t.Errorf("untagged public image cache policy = %q", response.Header().Get("Cache-Control"))
+			if response.Header().Get("Cache-Control") != "private, no-cache" {
+				t.Errorf("authenticated image cache policy = %q", response.Header().Get("Cache-Control"))
 			}
 		})
 	}
-	for _, suffix := range []string{"/0", "?Index=0", "?api_key=invalid-token", "?Format=original", "?Quality=0"} {
-		response := f.request(t, http.MethodGet, path+suffix, nil, nil)
+	expectStatus(t, f.request(t, http.MethodGet, path+"?api_key=invalid-token", nil, nil), http.StatusUnauthorized)
+	for _, suffix := range []string{"/0", "?Index=0", "?Format=original", "?Quality=0"} {
+		response := f.request(t, http.MethodGet, path+suffix, nil, fixture.headers)
 		assertAPIImage(t, response, 160, 240, "jpeg")
 		if !bytes.Equal(response.Body.Bytes(), fixture.poster) {
 			t.Errorf("original image changed for %s", suffix)
 		}
 	}
-	head := f.request(t, http.MethodHead, path, nil, nil)
+	head := f.request(t, http.MethodHead, path, nil, fixture.headers)
 	expectStatus(t, head, http.StatusOK)
 	if head.Body.Len() != 0 || head.Header().Get("Content-Length") != strconv.Itoa(len(fixture.poster)) ||
 		head.Header().Get("Content-Type") != "image/jpeg" || head.Header().Get("ETag") != etag {
@@ -200,7 +210,7 @@ func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing
 		{"matching duplicate values", "Width=64&width=64", "jpeg", 64, 96},
 	} {
 		t.Run(variant.name, func(t *testing.T) {
-			response := f.request(t, http.MethodGet, path+"?"+variant.query, nil, nil)
+			response := f.request(t, http.MethodGet, path+"?"+variant.query, nil, fixture.headers)
 			assertAPIImage(t, response, variant.width, variant.height, variant.format)
 			validator := response.Header().Get("ETag")
 			if validator == etag {
@@ -212,7 +222,7 @@ func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing
 			if variant.name == "maximum width" {
 				maxWidthETag = validator
 			}
-			repeated := f.request(t, http.MethodGet, path+"?"+variant.query, nil, nil)
+			repeated := f.request(t, http.MethodGet, path+"?"+variant.query, nil, fixture.headers)
 			if repeated.Header().Get("ETag") != validator || !bytes.Equal(repeated.Body.Bytes(), response.Body.Bytes()) {
 				t.Error("repeated image request changed its representation or ETag")
 			}
@@ -221,15 +231,15 @@ func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing
 	if widthETag == "" || widthETag == maxWidthETag {
 		t.Error("different transformation parameters must have separate validators")
 	}
-	low := f.request(t, http.MethodGet, path+"?Width=64&Quality=20", nil, nil)
-	high := f.request(t, http.MethodGet, path+"?Width=64&Quality=95", nil, nil)
+	low := f.request(t, http.MethodGet, path+"?Width=64&Quality=20", nil, fixture.headers)
+	high := f.request(t, http.MethodGet, path+"?Width=64&Quality=95", nil, fixture.headers)
 	assertAPIImage(t, low, 64, 96, "jpeg")
 	assertAPIImage(t, high, 64, 96, "jpeg")
 	if bytes.Equal(low.Body.Bytes(), high.Body.Bytes()) || low.Header().Get("ETag") == high.Header().Get("ETag") {
 		t.Error("JPEG quality change did not affect representation and validator")
 	}
-	pngGET := f.request(t, http.MethodGet, path+"?Width=64&Format=png", nil, nil)
-	pngHEAD := f.request(t, http.MethodHead, path+"?Width=64&Format=png", nil, nil)
+	pngGET := f.request(t, http.MethodGet, path+"?Width=64&Format=png", nil, fixture.headers)
+	pngHEAD := f.request(t, http.MethodHead, path+"?Width=64&Format=png", nil, fixture.headers)
 	expectStatus(t, pngHEAD, http.StatusOK)
 	if pngHEAD.Body.Len() != 0 || pngHEAD.Header().Get("Content-Length") != strconv.Itoa(pngGET.Body.Len()) ||
 		pngHEAD.Header().Get("Content-Type") != "image/png" || pngHEAD.Header().Get("ETag") != pngGET.Header().Get("ETag") {
@@ -238,28 +248,25 @@ func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing
 
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
 		for _, validator := range []string{etag, "W/" + etag, `"other", W/` + etag, "*"} {
-			response := f.request(t, method, path, nil, http.Header{"If-None-Match": {validator}})
+			response := f.request(t, method, path, nil, imageValidatorHeaders(fixture, validator))
 			assertImageNotModified(t, response, etag)
 		}
-		response := f.request(t, method, path+"?Width=64", nil, http.Header{"If-None-Match": {widthETag}})
+		response := f.request(t, method, path+"?Width=64", nil, imageValidatorHeaders(fixture, widthETag))
 		assertImageNotModified(t, response, widthETag)
 	}
-	wrongVariant := f.request(t, http.MethodGet, path+"?Width=64", nil, http.Header{"If-None-Match": {etag}})
+	wrongVariant := f.request(t, http.MethodGet, path+"?Width=64", nil, imageValidatorHeaders(fixture, etag))
 	assertAPIImage(t, wrongVariant, 64, 96, "jpeg")
 	for _, query := range []string{"Tag=" + tag, "tAg=" + tag + "&Format=png&Width=64"} {
-		response := f.request(t, http.MethodGet, path+"?"+query, nil, nil)
+		response := f.request(t, http.MethodGet, path+"?"+query, nil, fixture.headers)
 		expectStatus(t, response, http.StatusOK)
-		if response.Header().Get("Cache-Control") != "public, max-age=31536000" {
-			t.Errorf("matching Tag did not enable long-lived caching: %v", response.Header())
-		}
-		if _, err := http.ParseTime(response.Header().Get("Expires")); err != nil {
-			t.Errorf("tagged image Expires is missing or invalid: %v", err)
+		if response.Header().Get("Cache-Control") != "private, no-cache" || response.Header().Get("Expires") != "" {
+			t.Errorf("tagged image must recheck authorization before cache reuse: %v", response.Header())
 		}
 	}
-	wrongTag := f.request(t, http.MethodGet, path+"?Tag="+strings.Repeat("0", 64), nil, nil)
+	wrongTag := f.request(t, http.MethodGet, path+"?Tag="+strings.Repeat("0", 64), nil, fixture.headers)
 	assertAPIImage(t, wrongTag, 160, 240, "jpeg")
-	if wrongTag.Header().Get("Cache-Control") != "public" {
-		t.Errorf("nonmatching Tag incorrectly enabled immutable caching: %v", wrongTag.Header())
+	if wrongTag.Header().Get("Cache-Control") != "private, no-cache" {
+		t.Errorf("nonmatching Tag changed authenticated caching: %v", wrongTag.Header())
 	}
 
 	for _, query := range []string{
@@ -270,24 +277,24 @@ func TestHTTPImagesPublicBodiesProjectionTransformsAndCacheValidators(t *testing
 		"Index=-1", "Index=32", "Index=invalid",
 	} {
 		t.Run("reject "+query, func(t *testing.T) {
-			expectAPIError(t, f.request(t, http.MethodGet, path+"?"+query, nil, nil), http.StatusBadRequest, "invalid_image_request", true)
+			expectAPIError(t, f.request(t, http.MethodGet, path+"?"+query, nil, fixture.headers), http.StatusBadRequest, "invalid_image_request", true)
 		})
 	}
 	for _, index := range []string{"-1", "32", "invalid"} {
-		expectAPIError(t, f.request(t, http.MethodGet, path+"/"+index, nil, nil), http.StatusBadRequest, "invalid_image_request", true)
+		expectAPIError(t, f.request(t, http.MethodGet, path+"/"+index, nil, fixture.headers), http.StatusBadRequest, "invalid_image_request", true)
 	}
-	expectAPIError(t, f.request(t, http.MethodGet, path+"/0?Index=1", nil, nil), http.StatusBadRequest, "invalid_image_request", true)
+	expectAPIError(t, f.request(t, http.MethodGet, path+"/0?Index=1", nil, fixture.headers), http.StatusBadRequest, "invalid_image_request", true)
 	for _, missing := range []string{
 		"/emby/Items/" + fixture.itemID + "/Images/Primary/1",
 		"/emby/Items/" + fixture.itemID + "/Images/Backdrop/31",
 		"/emby/Items/" + fixture.itemID + "/Images/Logo",
 		"/emby/Items/missing-image-item/Images/Primary",
 	} {
-		expectAPIError(t, f.request(t, http.MethodGet, missing, nil, nil), http.StatusNotFound, "not_found", true)
+		expectAPIError(t, f.request(t, http.MethodGet, missing, nil, fixture.headers), http.StatusNotFound, "not_found", true)
 	}
 }
 
-func TestHTTPImageListsEnforceUserLibraryACLWhileBinaryArtworkRemainsPublic(t *testing.T) {
+func TestHTTPImageListsAndBinaryArtworkEnforceUserLibraryACL(t *testing.T) {
 	fixture := newImageAPIFixture(t)
 	f := fixture.f
 	writeAPIMediaFile(t, fixture.root, "other/Other.Movie.mp4")
@@ -371,10 +378,12 @@ func TestHTTPImageListsEnforceUserLibraryACLWhileBinaryArtworkRemainsPublic(t *t
 		t.Errorf("authorized item without artwork did not return an empty array: %#v", empty)
 	}
 	expectAPIError(t, f.request(t, http.MethodGet, path+"?UserId="+fixture.adminID, nil, viewers[1].headers), http.StatusForbidden, "access_denied", true)
-	// The same restricted viewer may read a known public image URL, but cannot
-	// enumerate its source metadata. Keep this compatibility decision explicit.
-	assertAPIImage(t, f.request(t, http.MethodGet, path+"/Primary", nil, viewers[1].headers), 160, 240, "jpeg")
-	assertAPIImage(t, f.request(t, http.MethodGet, path+"/Backdrop/0", nil, nil), 240, 160, "jpeg")
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		expectStatus(t, f.request(t, method, path+"/Primary", nil, viewers[1].headers), http.StatusNotFound)
+		expectStatus(t, f.request(t, method, path+"/Backdrop/0", nil, nil), http.StatusUnauthorized)
+	}
+	assertAPIImage(t, f.request(t, http.MethodGet, path+"/Primary", nil, viewers[0].headers), 160, 240, "jpeg")
+	assertAPIImage(t, f.request(t, http.MethodGet, path+"/Backdrop/0", nil, viewers[0].headers), 240, 160, "jpeg")
 	for _, method := range []string{http.MethodPost, http.MethodDelete} {
 		expectAPIError(t, f.request(t, method, path+"/Primary", nil, viewers[0].headers), http.StatusNotFound, "not_implemented", true)
 	}
@@ -388,8 +397,8 @@ func TestHTTPImageCacheRejectsChangedSourcesAndDeletedLibraries(t *testing.T) {
 	f := fixture.f
 	path := "/emby/Items/" + fixture.itemID + "/Images/Primary"
 	oldTag := imageSourceTag(fixture.poster)
-	oldOriginal := f.request(t, http.MethodGet, path+"?Tag="+oldTag, nil, nil)
-	oldVariant := f.request(t, http.MethodGet, path+"?Width=64&Format=png&Tag="+oldTag, nil, nil)
+	oldOriginal := f.request(t, http.MethodGet, path+"?Tag="+oldTag, nil, fixture.headers)
+	oldVariant := f.request(t, http.MethodGet, path+"?Width=64&Format=png&Tag="+oldTag, nil, fixture.headers)
 	assertAPIImage(t, oldOriginal, 160, 240, "jpeg")
 	assertAPIImage(t, oldVariant, 64, 96, "png")
 	stat, err := os.Stat(fixture.posterPath)
@@ -407,7 +416,7 @@ func TestHTTPImageCacheRejectsChangedSourcesAndDeletedLibraries(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, suffix := range []string{"", "?Width=64&Format=png"} {
-		response := f.request(t, http.MethodGet, path+suffix, nil, nil)
+		response := f.request(t, http.MethodGet, path+suffix, nil, fixture.headers)
 		expectStatus(t, response, http.StatusServiceUnavailable)
 		if response.Header().Get("ETag") != "" {
 			t.Error("unconditional cache request returned a stale image validator")
@@ -415,7 +424,7 @@ func TestHTTPImageCacheRejectsChangedSourcesAndDeletedLibraries(t *testing.T) {
 	}
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
 		for _, suffix := range []string{"", "?Tag=" + oldTag, "?Width=64&Format=png&Tag=" + oldTag} {
-			response := f.request(t, method, path+suffix, nil, http.Header{"If-None-Match": {"*"}})
+			response := f.request(t, method, path+suffix, nil, imageValidatorHeaders(fixture, "*"))
 			expectStatus(t, response, http.StatusServiceUnavailable)
 			if response.Header().Get("ETag") != "" || bytes.Equal(response.Body.Bytes(), oldOriginal.Body.Bytes()) || bytes.Equal(response.Body.Bytes(), oldVariant.Body.Bytes()) {
 				t.Errorf("stale source reached an image cache response: status = %d, headers = %v", response.Code, response.Header())
@@ -429,7 +438,7 @@ func TestHTTPImageCacheRejectsChangedSourcesAndDeletedLibraries(t *testing.T) {
 	if err := os.Rename(replacementPath, fixture.posterPath); err != nil {
 		t.Fatalf("replace image fixture inode: %v", err)
 	}
-	expectStatus(t, f.request(t, http.MethodGet, path, nil, nil), http.StatusServiceUnavailable)
+	expectStatus(t, f.request(t, http.MethodGet, path, nil, fixture.headers), http.StatusServiceUnavailable)
 	indexed, total := responseItems(t, f.request(t, http.MethodGet, "/emby/Items?Ids="+fixture.itemID, nil, fixture.headers))
 	if total != 1 || len(indexed) != 1 || objectValue(t, indexed[0], "ImageTags")["Primary"] != oldTag {
 		t.Fatalf("image replacement changed the indexed tag without a completed scan: %#v", indexed)
@@ -440,31 +449,31 @@ func TestHTTPImageCacheRejectsChangedSourcesAndDeletedLibraries(t *testing.T) {
 	if total != 1 || len(items) != 1 || objectValue(t, items[0], "ImageTags")["Primary"] != newTag || newTag == oldTag {
 		t.Fatalf("rescan did not publish the replacement image tag: %#v", items)
 	}
-	updated := f.request(t, http.MethodGet, path+"?Tag="+newTag, nil, http.Header{"If-None-Match": {oldOriginal.Header().Get("ETag")}})
+	updated := f.request(t, http.MethodGet, path+"?Tag="+newTag, nil, imageValidatorHeaders(fixture, oldOriginal.Header().Get("ETag")))
 	assertAPIImage(t, updated, 160, 240, "jpeg")
 	if !bytes.Equal(updated.Body.Bytes(), replacement) || updated.Header().Get("ETag") != `"`+newTag+`"` {
 		t.Error("replacement image bytes or source validator are stale")
 	}
-	newVariant := f.request(t, http.MethodGet, path+"?Width=64&Format=png", nil, http.Header{"If-None-Match": {oldVariant.Header().Get("ETag")}})
+	newVariant := f.request(t, http.MethodGet, path+"?Width=64&Format=png", nil, imageValidatorHeaders(fixture, oldVariant.Header().Get("ETag")))
 	assertAPIImage(t, newVariant, 64, 96, "png")
 	if bytes.Equal(newVariant.Body.Bytes(), oldVariant.Body.Bytes()) || newVariant.Header().Get("ETag") == oldVariant.Header().Get("ETag") {
 		t.Error("replacement image reused its predecessor's transformed cache entry")
 	}
-	staleTag := f.request(t, http.MethodGet, path+"?Tag="+oldTag, nil, nil)
+	staleTag := f.request(t, http.MethodGet, path+"?Tag="+oldTag, nil, fixture.headers)
 	assertAPIImage(t, staleTag, 160, 240, "jpeg")
-	if !bytes.Equal(staleTag.Body.Bytes(), replacement) || staleTag.Header().Get("Cache-Control") != "public" {
-		t.Error("old tag URL returned old data or retained a long-lived cache policy")
+	if !bytes.Equal(staleTag.Body.Bytes(), replacement) || staleTag.Header().Get("Cache-Control") != "private, no-cache" {
+		t.Error("old tag URL returned old data or bypassed authenticated cache revalidation")
 	}
 	backdropURL := "/emby/Items/" + fixture.itemID + "/Images/Backdrop/0"
-	assertAPIImage(t, f.request(t, http.MethodGet, backdropURL, nil, nil), 240, 160, "jpeg")
+	assertAPIImage(t, f.request(t, http.MethodGet, backdropURL, nil, fixture.headers), 240, 160, "jpeg")
 	if err := os.Remove(fixture.backdropPath); err != nil {
 		t.Fatalf("remove indexed backdrop fixture: %v", err)
 	}
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
-		expectStatus(t, f.request(t, method, backdropURL, nil, http.Header{"If-None-Match": {"*"}}), http.StatusServiceUnavailable)
+		expectStatus(t, f.request(t, method, backdropURL, nil, imageValidatorHeaders(fixture, "*")), http.StatusServiceUnavailable)
 	}
 	rescanAPIImageLibrary(t, fixture)
-	expectAPIError(t, f.request(t, http.MethodGet, backdropURL, nil, nil), http.StatusNotFound, "not_found", true)
+	expectAPIError(t, f.request(t, http.MethodGet, backdropURL, nil, fixture.headers), http.StatusNotFound, "not_found", true)
 	remainingImages := responseArray(t, f.request(t, http.MethodGet, "/emby/Items/"+fixture.itemID+"/Images", nil, fixture.headers))
 	if len(remainingImages) != 1 || remainingImages[0]["ImageType"] != "Primary" {
 		t.Errorf("rescan retained deleted backdrop metadata: %#v", remainingImages)
@@ -474,7 +483,7 @@ func TestHTTPImageCacheRejectsChangedSourcesAndDeletedLibraries(t *testing.T) {
 	expectStatus(t, deleted, http.StatusNoContent)
 	for _, suffix := range []string{"", "?Width=64&Format=png&Tag=" + newTag} {
 		for _, method := range []string{http.MethodGet, http.MethodHead} {
-			expectStatus(t, f.request(t, method, path+suffix, nil, http.Header{"If-None-Match": {"*"}}), http.StatusNotFound)
+			expectStatus(t, f.request(t, method, path+suffix, nil, imageValidatorHeaders(fixture, "*")), http.StatusNotFound)
 		}
 	}
 	expectAPIError(t, f.request(t, http.MethodGet, "/emby/Items/"+fixture.itemID+"/Images", nil, fixture.headers), http.StatusNotFound, "not_found", true)

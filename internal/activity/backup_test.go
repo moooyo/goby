@@ -85,6 +85,11 @@ func snapshotActivityChecks(t *testing.T, ctx context.Context, pool *pgxpool.Poo
 }
 
 func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t *testing.T) {
+	published, err := database.EmbeddedMigrations()
+	if err != nil || len(published) == 0 {
+		t.Fatalf("read published migration inventory: %v", err)
+	}
+	latestVersion := published[len(published)-1].Version
 	ctx, pool := activityIntegrationPool(t, false)
 	activityMigrationVersion22(t, ctx, pool)
 	seedActivityUser(t, ctx, pool)
@@ -120,8 +125,8 @@ func TestBackupActivityMigrationPreservesPublishedHistoryAndFindsRenamedChecks(t
 		WHERE previous_revision IS DISTINCT FROM 0 OR observation_fingerprint IS DISTINCT FROM ''`).Scan(&nondefault); err != nil || nondefault != 0 {
 		t.Fatalf("historical activity received invented root binding facts: count=%d error=%v", nondefault, err)
 	}
-	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != 29 {
-		t.Fatalf("upgraded activity schema version = %d, want 29: %v", version, err)
+	if version, err := database.SchemaVersion(ctx, pool); err != nil || version != latestVersion {
+		t.Fatalf("upgraded activity schema version = %d, want %d: %v", version, latestVersion, err)
 	}
 	insertActivityEvent(t, ctx, pool, activity.Event{Action: activity.ActionBackupFinished,
 		Source: activity.SourceSystem, Actor: activity.Actor{Kind: activity.ActorSystem},

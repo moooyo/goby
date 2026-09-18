@@ -84,7 +84,27 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
 	planning := s.requestPlanningConfig(r)
-	decision, err := audioRequestDecision(input, values, suffix, universal, hlsPrincipalLimits(planning, principal))
+	limits := hlsPrincipalLimits(planning, principal)
+	decision, err := audioRequestDecision(input, values, suffix, universal, limits)
+	if err == nil && decision.Original && universal && !principalOriginalBitrateAllowed(principal, source) {
+		static, _ := hlsQueryBoolean(values, "static")
+		if static == nil || !*static {
+			fallback := remoteBitrateEncodingValues(values)
+			fallback["static"] = "false"
+			decision, err = audioRequestDecision(input, fallback, suffix, universal, limits)
+		}
+	}
+	if err == nil && !decision.Original {
+		var proposed *transcode.Plan
+		if decision.HLS != nil {
+			proposed = decision.HLS.Plan
+		} else if decision.Progressive != nil {
+			proposed = decision.Progressive.Plan
+		}
+		if proposed != nil && !principalPlanBitrateAllowed(principal, source, *proposed) {
+			decision, err = audioRequestDecision(input, remoteBitrateEncodingValues(values), suffix, universal, limits)
+		}
+	}
 	if err != nil {
 		s.audioError(w, r, err)
 		return
@@ -234,6 +254,14 @@ func (s *Server) serveProgressiveMedia(w http.ResponseWriter, r *http.Request, s
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+	policyWork, policyDone, err := s.acquireMediaPolicy(work, principal, session.key.scope)
+	if err != nil {
+		_ = input.Close()
+		respondError(w, r, err)
+		return
+	}
+	defer policyDone()
+	work = policyWork
 	controller := http.NewResponseController(w)
 	_ = controller.SetWriteDeadline(time.Now().Add(time.Minute))
 	var transportMu sync.Mutex
@@ -265,6 +293,7 @@ func (s *Server) serveProgressiveMedia(w http.ResponseWriter, r *http.Request, s
 		if cause := context.Cause(work); cause != nil {
 			err = cause
 		}
+		s.failMediaPolicy(work, session.key.scope)
 		respondError(w, r, err)
 		return
 	}
@@ -300,6 +329,7 @@ func (s *Server) serveProgressiveMedia(w http.ResponseWriter, r *http.Request, s
 			if err := controller.Flush(); err != nil {
 				panic(http.ErrAbortHandler)
 			}
+			s.touchMediaPolicy(work, principal, session.key.scope)
 			session.mu.Lock()
 			if !session.closed {
 				session.accessed = time.Now()
@@ -307,6 +337,7 @@ func (s *Server) serveProgressiveMedia(w http.ResponseWriter, r *http.Request, s
 			session.mu.Unlock()
 		}
 		if errors.Is(readErr, io.EOF) {
+			s.completeMediaPolicy(work, session.key.scope)
 			return
 		}
 		if readErr != nil {

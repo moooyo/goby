@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -27,17 +26,6 @@ const (
 	managedUsersLockID int64 = 4919415424202458192
 	maxManagedFolders        = 256
 )
-
-// ManagedPolicy contains supported configuration facts, independent of the
-// account's current administrator role, disabled state, and server limits.
-type ManagedPolicy struct {
-	EnableAllFolders               bool
-	EnabledFolders                 []string
-	EnableMediaPlayback            bool
-	EnablePlaybackRemuxing         bool
-	EnableAudioPlaybackTranscoding bool
-	EnableVideoPlaybackTranscoding bool
-}
 
 // ManagedUser adds an optimistic revision and an editable policy projection.
 // User.Policy remains internal and must not be exposed by native API adapters.
@@ -60,6 +48,7 @@ type ManagedUserUpdate struct {
 type ManagedUserMutation struct {
 	User                  ManagedUser
 	CurrentSessionRevoked bool
+	RevokedSessionIDs     []string `json:"-"`
 }
 
 // ManagedUserDeletion contains only committed deletion facts. Session IDs are
@@ -67,6 +56,7 @@ type ManagedUserMutation struct {
 type ManagedUserDeletion struct {
 	CurrentSessionRevoked bool
 	RevokedSessionIDs     []string
+	CollectionsChanged    bool `json:"-"`
 }
 
 // ManagedUserValidationError carries safe field messages for native forms.
@@ -138,10 +128,13 @@ func (s *Store) CreateManagedUser(ctx context.Context, actor Principal, name, pa
 		return User{}, err
 	}
 	if err := activity.Record(ctx, tx, activity.Event{
-		Action: activity.ActionUserCreated, Source: activity.SourceNative, Actor: auditActor,
+		Action: activity.ActionUserCreated, Source: identityActivitySource(actor.Kind), Actor: auditActor,
 		Resource: activity.Resource{Kind: activity.ResourceUser, ID: user.ID}, Revision: 1, Count: 1,
 		ChangedFields: []activity.Field{activity.FieldName, activity.FieldIsAdministrator},
 	}); err != nil {
+		return User{}, err
+	}
+	if err := recheckManagedMutation(ctx, tx, actor, false, nil); err != nil {
 		return User{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -151,7 +144,7 @@ func (s *Store) CreateManagedUser(ctx context.Context, actor Principal, name, pa
 }
 
 // UpdateManagedUser accepts only a Principal previously authenticated by
-// Resolve as an admin session. It rechecks that trusted session and current
+// Resolve as a native or Emby administrator login. It rechecks that session and current
 // database role inside the mutation transaction; caller-supplied role snapshots
 // never authorize an update.
 func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id string, input ManagedUserUpdate) (ManagedUserMutation, error) {
@@ -182,6 +175,13 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 	if err := validateManagedLibraries(ctx, tx, policy.EnabledFolders); err != nil {
 		return ManagedUserMutation{}, err
 	}
+	if err := validateManagedLibraries(ctx, tx, policy.EnableContentDeletionFromFolders); err != nil {
+		var validation *ManagedUserValidationError
+		if errors.As(err, &validation) {
+			return ManagedUserMutation{}, managedUserFieldError("Policy.EnableContentDeletionFromFolders", "every deletion folder must identify an existing library")
+		}
+		return ManagedUserMutation{}, err
+	}
 	encodedPolicy, err := json.Marshal(policy)
 	if err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("encode managed user policy: %w", err)
@@ -202,7 +202,7 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 	}
 	result := ManagedUserMutation{User: updated}
 	if input.IsDisabled || (current.User.IsAdministrator && !input.IsAdministrator) {
-		result.CurrentSessionRevoked, err = revokeManagedUserSessions(ctx, tx, actor, id, input.IsDisabled)
+		result.CurrentSessionRevoked, result.RevokedSessionIDs, err = revokeManagedUserSessions(ctx, tx, actor, id, input.IsDisabled)
 		if err != nil {
 			return ManagedUserMutation{}, err
 		}
@@ -212,10 +212,13 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 		return ManagedUserMutation{}, err
 	}
 	if err := activity.Record(ctx, tx, activity.Event{
-		Action: activity.ActionUserUpdated, Source: activity.SourceNative, Actor: auditActor,
+		Action: activity.ActionUserUpdated, Source: identityActivitySource(actor.Kind), Actor: auditActor,
 		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: updated.Revision, Count: 1,
 		ChangedFields: managedUserActivityFields(current, updated),
 	}); err != nil {
+		return ManagedUserMutation{}, err
+	}
+	if err := recheckManagedMutation(ctx, tx, actor, id == actor.User.ID, current.User.Policy); err != nil {
 		return ManagedUserMutation{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -263,7 +266,7 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 	if err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("reset managed user password: %w", err)
 	}
-	revoked, err := revokeManagedUserSessions(ctx, tx, actor, id, true)
+	revoked, revokedSessionIDs, err := revokeManagedUserSessions(ctx, tx, actor, id, true)
 	if err != nil {
 		return ManagedUserMutation{}, err
 	}
@@ -272,15 +275,18 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 		return ManagedUserMutation{}, err
 	}
 	if err := activity.Record(ctx, tx, activity.Event{
-		Action: activity.ActionUserPasswordReset, Source: activity.SourceNative, Actor: auditActor,
+		Action: activity.ActionUserPasswordReset, Source: identityActivitySource(actor.Kind), Actor: auditActor,
 		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: updated.Revision, Count: 1,
 	}); err != nil {
+		return ManagedUserMutation{}, err
+	}
+	if err := recheckManagedMutation(ctx, tx, actor, id == actor.User.ID, current.User.Policy); err != nil {
 		return ManagedUserMutation{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return ManagedUserMutation{}, fmt.Errorf("commit managed user password reset: %w", err)
 	}
-	return ManagedUserMutation{User: updated, CurrentSessionRevoked: revoked}, nil
+	return ManagedUserMutation{User: updated, CurrentSessionRevoked: revoked, RevokedSessionIDs: revokedSessionIDs}, nil
 }
 
 // DeleteManagedUser removes an account and its FK-owned state atomically with
@@ -295,7 +301,7 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 		return ManagedUserDeletion{}, err
 	}
 	defer rollback(tx)
-	if err := CheckAdministrator(ctx, tx, actor, AdministratorNative, false); err != nil {
+	if err := CheckAdministrator(ctx, tx, actor, managedAdministratorAudience(actor), false); err != nil {
 		return ManagedUserDeletion{}, err
 	}
 	if current.Revision != revision {
@@ -313,7 +319,8 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 	// This value comes from the credential already locked and reauthorized in
 	// this transaction. A Principal expiry snapshot cannot authorize self-deletion.
 	var actorExpiresAt time.Time
-	if err := tx.QueryRow(ctx, "SELECT expires_at FROM sessions WHERE id = $1 AND user_id = $2", actor.SessionID, actor.User.ID).Scan(&actorExpiresAt); err != nil {
+	var actorDeviceID string
+	if err := tx.QueryRow(ctx, "SELECT expires_at, device_id FROM sessions WHERE id = $1 AND user_id = $2", actor.SessionID, actor.User.ID).Scan(&actorExpiresAt, &actorDeviceID); err != nil {
 		return ManagedUserDeletion{}, fmt.Errorf("read locked deletion authority expiry: %w", err)
 	}
 	rows, err := tx.Query(ctx, "SELECT id FROM sessions WHERE user_id = $1 ORDER BY id", id)
@@ -333,6 +340,14 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 	if err := rows.Err(); err != nil {
 		return ManagedUserDeletion{}, fmt.Errorf("read deleted user sessions: %w", err)
 	}
+	// Account locks also fence new collection ownership/share references. Keep
+	// this pre-cascade fact in the committed result: ordinary account deletion
+	// must not force unrelated catalog subscribers to disconnect and resync.
+	if err := tx.QueryRow(ctx, `SELECT
+		EXISTS (SELECT 1 FROM media_collections WHERE owner_id = $1)
+		OR EXISTS (SELECT 1 FROM media_collection_shares WHERE user_id = $1)`, id).Scan(&result.CollectionsChanged); err != nil {
+		return ManagedUserDeletion{}, fmt.Errorf("read deleted user collection effects: %w", err)
+	}
 	deleted, err := tx.Exec(ctx, "DELETE FROM users WHERE id = $1 AND management_revision = $2", id, revision)
 	if err != nil {
 		return ManagedUserDeletion{}, fmt.Errorf("delete managed user: %w", err)
@@ -345,7 +360,7 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 		return ManagedUserDeletion{}, err
 	}
 	if err := activity.Record(ctx, tx, activity.Event{
-		Action: activity.ActionUserDeleted, Source: activity.SourceNative, Actor: auditActor,
+		Action: activity.ActionUserDeleted, Source: identityActivitySource(actor.Kind), Actor: auditActor,
 		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: revision, Count: 1,
 	}); err != nil {
 		return ManagedUserDeletion{}, err
@@ -354,13 +369,14 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 		// The locked account and session were removed by this exact DELETE. Their
 		// role/revocation cannot change concurrently, but the database clock can.
 		var unexpired bool
-		if err := tx.QueryRow(ctx, "SELECT $1::timestamptz > clock_timestamp()", actorExpiresAt).Scan(&unexpired); err != nil {
+		var observedAt time.Time
+		if err := tx.QueryRow(ctx, "SELECT $1::timestamptz > clock_timestamp(), clock_timestamp()", actorExpiresAt).Scan(&unexpired, &observedAt); err != nil {
 			return ManagedUserDeletion{}, fmt.Errorf("recheck self-deletion authority expiry: %w", err)
 		}
-		if !unexpired {
+		if !unexpired || (actor.Kind == "emby" && !loginPolicyAllows(current.User.Policy, actorDeviceID, observedAt)) {
 			return ManagedUserDeletion{}, ErrUnauthorized
 		}
-	} else if err := CheckAdministrator(ctx, tx, actor, AdministratorNative, false); err != nil {
+	} else if err := CheckAdministrator(ctx, tx, actor, managedAdministratorAudience(actor), false); err != nil {
 		return ManagedUserDeletion{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -448,12 +464,24 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 	// may expire or be revoked while waiting for its account/session row.
 	var authorized bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM sessions
-		WHERE id = $1 AND user_id = $2 AND kind = 'admin' AND revoked_at IS NULL
-		AND expires_at > clock_timestamp())`, sessionID, actor.User.ID).Scan(&authorized); err != nil {
+		WHERE id = $1 AND user_id = $2 AND kind = $3 AND revoked_at IS NULL
+		AND expires_at > clock_timestamp())`, sessionID, actor.User.ID, actor.Kind).Scan(&authorized); err != nil {
 		return nil, ManagedUser{}, fmt.Errorf("revalidate managed user actor: %w", err)
 	}
 	if !authorized {
 		return nil, ManagedUser{}, ErrUnauthorized
+	}
+	if actor.Kind == "emby" {
+		var deviceID string
+		var observedAt time.Time
+		if err := tx.QueryRow(ctx, "SELECT device_id, clock_timestamp() FROM sessions WHERE id = $1", sessionID).Scan(&deviceID, &observedAt); err != nil {
+			return nil, ManagedUser{}, fmt.Errorf("read managed user actor policy context: %w", err)
+		}
+		policy, err := ParseRuntimePolicy(account.User.Policy)
+		if err != nil || !loginPolicyAllows(account.User.Policy, deviceID, observedAt) ||
+			(!policy.EnableRemoteAccess && !IsLocalPeer(actor.PeerIP)) {
+			return nil, ManagedUser{}, ErrUnauthorized
+		}
 	}
 	target, found := users[id]
 	if !found {
@@ -464,29 +492,63 @@ func (s *Store) beginManagedUserMutation(ctx context.Context, actor Principal, i
 }
 
 func validManagedActor(actor Principal) bool {
-	return actor.Kind == "admin" && validRevalidationID(actor.User.ID) && validRevalidationID(actor.SessionID)
+	return (actor.Kind == "admin" || actor.Kind == "emby") && actor.ApplicationKeyID == 0 && actor.ClientSessionID == "" &&
+		validRevalidationID(actor.User.ID) && validRevalidationID(actor.SessionID)
 }
 
-func revokeManagedUserSessions(ctx context.Context, tx pgx.Tx, actor Principal, id string, allKinds bool) (bool, error) {
+func managedAdministratorAudience(actor Principal) AdministratorAudience {
+	if actor.Kind == "emby" {
+		return AdministratorEmby
+	}
+	return AdministratorNative
+}
+
+func recheckManagedMutation(ctx context.Context, tx pgx.Tx, actor Principal, selfMutation bool, policyBefore json.RawMessage) error {
+	if !selfMutation {
+		return CheckAdministrator(ctx, tx, actor, managedAdministratorAudience(actor), false)
+	}
+	// This transaction already locked and authorized the actor, and it alone
+	// can have changed its own role, policy or revocation while those locks are
+	// held. Expiration still advances and is checked after audit persistence.
+	var unexpired bool
+	var deviceID string
+	var observedAt time.Time
+	if err := tx.QueryRow(ctx, `SELECT expires_at > clock_timestamp(), device_id, clock_timestamp() FROM sessions
+		WHERE id = $1 AND user_id = $2 AND kind = $3`, actor.SessionID, actor.User.ID, actor.Kind).Scan(&unexpired, &deviceID, &observedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUnauthorized
+		}
+		return fmt.Errorf("recheck managed user actor expiry: %w", err)
+	}
+	if !unexpired || (actor.Kind == "emby" && !loginPolicyAllows(policyBefore, deviceID, observedAt)) {
+		return ErrUnauthorized
+	}
+	return nil
+}
+
+func revokeManagedUserSessions(ctx context.Context, tx pgx.Tx, actor Principal, id string, allKinds bool) (bool, []string, error) {
 	rows, err := tx.Query(ctx, `UPDATE sessions SET revoked_at = clock_timestamp()
 		WHERE user_id = $1 AND revoked_at IS NULL AND ($2 OR kind = 'admin')
 		RETURNING id`, id, allKinds)
 	if err != nil {
-		return false, fmt.Errorf("revoke managed user sessions: %w", err)
+		return false, nil, fmt.Errorf("revoke managed user sessions: %w", err)
 	}
 	defer rows.Close()
 	currentRevoked := false
+	revokedSessionIDs := make([]string, 0)
 	for rows.Next() {
 		var sessionID string
 		if err := rows.Scan(&sessionID); err != nil {
-			return false, fmt.Errorf("read revoked managed user session: %w", err)
+			return false, nil, fmt.Errorf("read revoked managed user session: %w", err)
 		}
 		currentRevoked = currentRevoked || (id == actor.User.ID && sessionID == actor.SessionID)
+		revokedSessionIDs = append(revokedSessionIDs, sessionID)
 	}
 	if err := rows.Err(); err != nil {
-		return false, fmt.Errorf("read managed user session revocations: %w", err)
+		return false, nil, fmt.Errorf("read managed user session revocations: %w", err)
 	}
-	return currentRevoked, nil
+	slices.Sort(revokedSessionIDs)
+	return currentRevoked, revokedSessionIDs, nil
 }
 
 func validateManagedLibraries(ctx context.Context, tx pgx.Tx, folders []string) error {
@@ -525,11 +587,7 @@ func validateManagedUserUpdate(input ManagedUserUpdate) (string, string, Managed
 	if err != nil {
 		fields["Name"] = managedInputMessage(err)
 	}
-	policy := input.Policy
-	policy.EnabledFolders, err = canonicalManagedFolders(policy.EnabledFolders)
-	if err != nil {
-		fields["Policy.EnabledFolders"] = managedInputMessage(err)
-	}
+	policy := canonicalManagedPolicy(input.Policy, fields)
 	if len(fields) != 0 {
 		return "", "", ManagedPolicy{}, &ManagedUserValidationError{Fields: fields}
 	}
@@ -558,40 +616,6 @@ func scanManagedUser(row rowScanner) (ManagedUser, error) {
 		return ManagedUser{}, err
 	}
 	return ManagedUser{User: user, Revision: revision, Policy: projectManagedPolicy(user.Policy)}, nil
-}
-
-func projectManagedPolicy(raw json.RawMessage) ManagedPolicy {
-	policy := ManagedPolicy{EnabledFolders: []string{}}
-	var values map[string]json.RawMessage
-	if !utf8.Valid(raw) || json.Unmarshal(raw, &values) != nil || values == nil {
-		return policy
-	}
-	readFlag := func(name string) (bool, bool) {
-		value, found := values[name]
-		if !found {
-			return true, true
-		}
-		var enabled *bool
-		if json.Unmarshal(value, &enabled) != nil || enabled == nil {
-			return false, false
-		}
-		return *enabled, true
-	}
-	var validFoldersFlag bool
-	policy.EnableAllFolders, validFoldersFlag = readFlag("EnableAllFolders")
-	policy.EnableMediaPlayback, _ = readFlag("EnableMediaPlayback")
-	policy.EnablePlaybackRemuxing, _ = readFlag("EnablePlaybackRemuxing")
-	policy.EnableAudioPlaybackTranscoding, _ = readFlag("EnableAudioPlaybackTranscoding")
-	policy.EnableVideoPlaybackTranscoding, _ = readFlag("EnableVideoPlaybackTranscoding")
-	if value, found := values["EnabledFolders"]; validFoldersFlag && found {
-		var folders []string
-		if json.Unmarshal(value, &folders) == nil {
-			if canonical, err := canonicalManagedFolders(folders); err == nil {
-				policy.EnabledFolders = canonical
-			}
-		}
-	}
-	return policy
 }
 
 func managedUserFieldError(field, message string) error {

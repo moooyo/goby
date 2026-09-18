@@ -228,8 +228,16 @@ func TestHTTPLibraryNotifierNativeAuxiliaryScansRespectMovieOwnershipAndCurrentA
 				t.Fatal("the semantic Movie owner was published as a browse folder")
 			}
 			firstPayload, secondPayload := first.next(t), second.next(t)
-			assertLibraryChangedPayload(t, firstPayload, published.MessageID(), fields)
-			assertLibraryChangedPayload(t, secondPayload, published.MessageID(), fields)
+			// The producer keeps its committed transition for trusted observers.
+			// Socket delivery cannot prove the retired child's former policy, so
+			// only its surviving owner invalidation crosses the public boundary.
+			wireFields := make(map[string][]string, len(fields))
+			for name, ids := range fields {
+				wireFields[name] = ids
+			}
+			wireFields["ItemsRemoved"] = []string{}
+			assertLibraryChangedPayload(t, firstPayload, published.MessageID(), wireFields)
+			assertLibraryChangedPayload(t, secondPayload, published.MessageID(), wireFields)
 			if !bytes.Equal(firstPayload, secondPayload) {
 				t.Fatal("two authorized sessions did not share the same auxiliary publication")
 			}

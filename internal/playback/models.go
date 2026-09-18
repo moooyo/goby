@@ -90,6 +90,8 @@ type ResponseProfile struct {
 
 // TranscodingProfile declares the output formats and settings a client accepts.
 type TranscodingProfile struct {
+	// EnableAdaptiveBitrate is a Goby extension requesting an encoded ladder.
+	EnableAdaptiveBitrate          *bool             `json:"EnableAdaptiveBitrate,omitempty"`
 	Container                      string            `json:"Container,omitempty"`
 	Type                           DlnaProfileType   `json:"Type,omitempty"`
 	VideoCodec                     string            `json:"VideoCodec,omitempty"`

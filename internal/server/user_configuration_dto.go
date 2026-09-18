@@ -7,10 +7,12 @@ import (
 	"unicode/utf8"
 )
 
-// These are client preferences, never permissions or advertised server
-// features. The default values and field presence were observed on the fresh
-// Emby 4.9.5.0 viewer in m3e-reference-client-initialization.json. Unobserved
-// language and PIN fields remain omitted; this projection adds no write API.
+// These are client preferences, never permissions or server capability claims.
+// Field presence and baseline defaults follow the fresh Emby 4.9.5.0 viewer in
+// m3e-reference-client-initialization.json. Goby disables intro skipping by
+// default because it does not provide that feature. Valid stored preferences
+// remain intact. Unobserved language and PIN fields stay omitted; this
+// projection adds no write API.
 type embyUserConfiguration struct {
 	DisplayMissingEpisodes     bool
 	EnableLocalPassword        bool
@@ -32,7 +34,7 @@ type embyUserConfiguration struct {
 func defaultUserConfiguration() embyUserConfiguration {
 	return embyUserConfiguration{
 		EnableNextEpisodeAutoPlay: true, HidePlayedInLatest: true,
-		IntroSkipMode: "ShowButton", LatestItemsExcludes: []string{}, MyMediaExcludes: []string{}, OrderedViews: []string{},
+		IntroSkipMode: "None", LatestItemsExcludes: []string{}, MyMediaExcludes: []string{}, OrderedViews: []string{},
 		PlayDefaultAudioTrack: true, RememberAudioSelections: true, RememberSubtitleSelections: true,
 		SubtitleMode: "Smart",
 	}

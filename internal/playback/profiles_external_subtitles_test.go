@@ -168,15 +168,15 @@ func TestExternalSubtitleCandidateFormatsPreserveOffAndSourceFacts(t *testing.T)
 		want    map[int]string
 	}{
 		{"VTT external candidates", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal}),
-			map[int]string{externalSubtitleTestIndex: "vtt", second: "vtt"}},
+			map[int]string{12: "vtt", externalSubtitleTestIndex: "vtt", second: "vtt", second + 1: "vtt", second + 3: "vtt"}},
 		{"both formats prefer each native codec", profile(SubtitleProfile{Format: "vtt,srt", Method: SubtitleDeliveryMethodExternal}),
-			map[int]string{externalSubtitleTestIndex: "srt", second: "vtt"}},
+			map[int]string{12: "srt", externalSubtitleTestIndex: "srt", second: "vtt", second + 1: "vtt", second + 3: "srt"}},
 		{"SRT external candidates", profile(SubtitleProfile{Format: "srt", Method: SubtitleDeliveryMethodExternal}),
-			map[int]string{externalSubtitleTestIndex: "srt", second: "srt"}},
+			map[int]string{12: "srt", externalSubtitleTestIndex: "srt", second: "srt", second + 1: "srt", second + 3: "srt"}},
 		{"absent profile", nil, map[int]string{}},
 		{"no subtitle declarations", profile(), map[int]string{}},
 		{"HLS does not imply external", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodHls}), map[int]string{}},
-		{"unsupported ASS remains unsupported", profile(SubtitleProfile{Format: "ass", Method: SubtitleDeliveryMethodExternal}), map[int]string{}},
+		{"ASS extraction and conversion", profile(SubtitleProfile{Format: "ass", Method: SubtitleDeliveryMethodExternal}), map[int]string{12: "ass", externalSubtitleTestIndex: "ass", second: "ass", second + 1: "ass", second + 3: "ass"}},
 		{"language restriction", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal, Language: "fra"}), map[int]string{}},
 		{"container restriction", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal, Container: "mkv"}), map[int]string{}},
 		{"protocol restriction", profile(SubtitleProfile{Format: "vtt", Method: SubtitleDeliveryMethodExternal, Protocol: "file"}), map[int]string{}},
@@ -227,7 +227,7 @@ func TestEvaluateExternalSubtitleSelectionUsesGlobalStreamIndices(t *testing.T) 
 	}
 }
 
-func TestEvaluateExternalDeliveryDoesNotEnableBurnInBitmapOrExtraction(t *testing.T) {
+func TestEvaluateExternalDeliveryDoesNotEnableBurnInOrBitmap(t *testing.T) {
 	for _, method := range []SubtitleDeliveryMethod{SubtitleDeliveryMethodEmbed, SubtitleDeliveryMethodEncode, SubtitleDeliveryMethodHls, SubtitleDeliveryMethodVideoSideData} {
 		request := externalSubtitleTestRequest(SubtitleProfile{Format: "srt", Method: method})
 		decision := profileTestDecision(t, externalSubtitleTestSource("srt"), request, false)
@@ -238,7 +238,7 @@ func TestEvaluateExternalDeliveryDoesNotEnableBurnInBitmapOrExtraction(t *testin
 	for _, test := range []struct {
 		codec string
 		text  bool
-	}{{"hdmv_pgs_subtitle", false}, {"dvd_subtitle", false}, {"ass", true}, {"srt", false}, {"webvtt", false}} {
+	}{{"hdmv_pgs_subtitle", false}, {"dvd_subtitle", false}, {"unsupported_text", true}, {"srt", false}, {"webvtt", false}} {
 		source := externalSubtitleTestSource(test.codec)
 		source.Info.Streams[len(source.Info.Streams)-1].IsTextSubtitleStream = test.text
 		for _, request := range []Request{
@@ -251,8 +251,8 @@ func TestEvaluateExternalDeliveryDoesNotEnableBurnInBitmapOrExtraction(t *testin
 			}
 		}
 	}
-	// Embedded subtitle behavior stays unchanged: native Embed is supported,
-	// but External would require an extraction operation this phase lacks.
+	// Native embedding remains preferred, while explicit external delivery uses
+	// the bounded subtitle extractor without changing the source stream index.
 	request := profileTestRequest()
 	request.SubtitleStreamIndex = profileTestPtr(12)
 	request.DeviceProfile.SubtitleProfiles = []SubtitleProfile{{Format: "subrip", Method: SubtitleDeliveryMethodEmbed}}
@@ -261,7 +261,10 @@ func TestEvaluateExternalDeliveryDoesNotEnableBurnInBitmapOrExtraction(t *testin
 		t.Fatalf("external text support changed native embedded subtitle behavior: %+v", decision)
 	}
 	request.DeviceProfile.SubtitleProfiles[0].Method = SubtitleDeliveryMethodExternal
-	profileTestDecision(t, profileTestSource(), request, false)
+	decision = profileTestDecision(t, profileTestSource(), request, true)
+	if decision.SubtitleMethod != SubtitleDeliveryMethodExternal || decision.SubtitleFormat != "srt" {
+		t.Fatalf("embedded extraction was not advertised: %+v", decision)
+	}
 }
 
 func TestEvaluateOriginalFallbackCannotBypassUnsupportedExternalSubtitles(t *testing.T) {
