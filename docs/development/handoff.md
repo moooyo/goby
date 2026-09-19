@@ -7,8 +7,13 @@ next account/playback, subtitle, artwork, music, management configuration,
 search and client-protocol increment and requested its execution table. The
 [new four-phase plan](../planning/selected-compatibility-plan-20260920.md) is the
 current next-work scope. Phase 1 code is implemented on
-`codex/selected-client-compatibility`; consolidated verification and actual
-client-fixture repairs are in progress. Phases 2-4 have not started implementation.
+`codex/selected-client-compatibility`. Backend, administration, original-client
+PIN/local-password, next-episode, restart and cleanup journeys have passed in
+their recorded scopes. The original Web client's two enabled intro modes are
+blocked by its external entitlement service. A client-adapter versus explicit
+original-client-limitation decision is pending; phase 1 is not closed and phases
+2-4 have not started implementation. The owned verification PostgreSQL service
+is stopped, with data and evidence preserved.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 Each phase implements all delivery code before consolidated verification.
 Local compilation and unit tests are now authorized; actual integration/E2E

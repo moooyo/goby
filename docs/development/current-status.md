@@ -6,9 +6,13 @@ Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920
 is approved; phase 1 code is implemented on
 `codex/selected-client-compatibility`, and phases 2-4 are not started.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
-implementation from ongoing consolidated verification and actual client-fixture
-repairs. Backend repair scopes, mocked administration and the original-client
-local-password/PIN journey have passed; playback closeout remains pending.
+implementation from scoped acceptance. Backend repair scopes, administration,
+original-client local-password/PIN, enabled/disabled autoplay, runtime restart,
+credential revocation and cleanup passed. The original Web client's ShowButton
+and AutoSkip intro modes remain blocked by external entitlement, with page errors
+confined to those phases. The client delivery boundary is awaiting user input;
+the phase is not closed. Owned test workers and PostgreSQL are stopped, with
+evidence and database files preserved.
 Live TV/EPG/DVR/tuners, DLNA, external
 channels and group playback are now explicitly excluded. Offline sync and other
 unselected work remain deferred. Local compilation and unit tests are authorized;

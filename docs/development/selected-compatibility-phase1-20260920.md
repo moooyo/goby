@@ -1,6 +1,6 @@
 # Selected compatibility phase 1 execution record
 
-Status: **implementation complete; consolidated verification and browser repairs in progress**.
+Status: **implementation complete; browser cleanup verified; original-client intro entitlement boundary unresolved**.
 
 The user authorized execution of the [four-phase plan](../planning/selected-compatibility-plan-20260920.md),
 with all delivery code implemented before each phase's consolidated verification.
@@ -22,11 +22,11 @@ must be handed off, merged to `main` and pushed.
 
 | Requirement | Implementation | Evidence |
 | --- | --- | --- |
-| A1 PIN and local password | Implemented | Identity/HTTP, original-client local-password/profile PIN and integrated restart/revocation journeys passed; full browser closeout pending |
+| A1 PIN and local password | Implemented | Identity/HTTP, original-client local-password/profile PIN and integrated restart/revocation journeys passed |
 | A2 Source-bound intro intervals | Implemented | Source/HTTP repairs passed; real native administrator journey passed |
 | A3 Actual intro skip behavior | Implemented | Item/PlaybackInfo, explicit-start and original-client None contracts passed; ShowButton/AutoSkip are blocked by the original client's external entitlement |
-| A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts and original-client enabled/disabled/natural final-episode journeys passed; integrated browser closeout pending |
-| A5 Administration, migrations and recovery | Implemented | Historical migration repairs, real encrypted PIN archive/restore, mocked UI and application-runtime restart passed; browser sign-out closeout pending |
+| A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts and original-client enabled/disabled/natural final-episode journeys passed |
+| A5 Administration, migrations and recovery | Implemented | Historical migration repairs, real encrypted PIN archive/restore, mocked UI, application-runtime restart and native sign-out/owned cleanup passed |
 
 Contract research uses the pinned SDK and retained official client distribution.
 Prepared harnesses and code review are not actual client acceptance. The phase
@@ -121,6 +121,7 @@ authentication, catalog, playback and WebSockets still target Goby.
 | r05 | Driver `9470400`; unchanged Go fixture `2de476d` | Native administration and actual original-client local-password login passed with database acknowledgements. The worker reached `activated`. The PIN journey then failed because same-tab reload retained the client's `sessionStorage` validation state. |
 | r06 | Driver `afc6b6d`; unchanged Go fixture `2de476d` | Local-password login and the fresh-tab PIN gate passed, including wrong-PIN rejection, correct-PIN unlock and no replacement authentication. Actual E1-to-E2 autoplay reached both natural endings with two distinct starts/stops, but its database terminal-state predicate failed; that playback stage is not accepted. |
 | r07 | Driver and Go fixture `e82bcee` | Thirteen stages reached their database observations. Local-password/PIN, enabled/disabled autoplay, intro None, application-runtime restart/persistence and credential clearing passed. ShowButton and AutoSkip remained explicitly blocked by external entitlement. Native sign-out failed before its cleanup-stage request; the overall scope failed. |
+| r08 | Driver `5052b36`; unchanged Go fixture `e82bcee` | All fourteen stages reached independent database observations: twelve completed and the two enabled intro modes remained blocked. Native sign-out returned 204, its browser context closed and cleanup passed without fallback revocation. Four original-client page errors occurred only in the two blocked intro phases. The overall test still failed. |
 
 The driver now allows the original client's real service worker behind a
 deny-only egress proxy and waits for its actual activation. It neither changes
@@ -165,3 +166,35 @@ closed the test process group, application/listener, schema, media root and
 private credential context. The owned PostgreSQL cluster remains available for
 the cleanup repair. Phase 1 cannot close until the client entitlement boundary
 and remaining browser failures are resolved.
+
+## Current closeout boundary
+
+r08 used the real native overview navigation before sign-out because saving
+credentials intentionally leaves management dialogs open. Its administrator
+DELETE `/admin/v1/session` returned 204 and the login page appeared. Independent
+cleanup observed zero active authentication sessions; no fallback revocation was
+needed. All test/application/browser/proxy resources, the owned fixture schema,
+media root and private credential context closed. The pinned original host's
+identity was preserved with zero lifecycle mutations. The worker used 620.4 MiB
+peak memory with no swap and terminated after 158.4 seconds.
+
+Each enabled intro phase emitted two original-client page errors whose values
+were `undefined`, without retained resource frames. Other phases emitted none.
+This establishes their phase and surface, not an exact exception cause. Sixteen
+external registration calls were denied and separately classified; no external
+entitlement was obtained or manufactured. The global page-error and actual-seek
+requirements remain unmet, so r08 is not a passing full browser result.
+
+The user was asked to choose between a deliverable client adapter using Goby's
+local free-registration policy and retaining the original client with an
+explicit limitation for its two enabled intro modes. That choice is pending;
+neither a modified client nor a reduced acceptance boundary has been assumed.
+Phase 1 is not closed, phases 2-4 have not started implementation, and merge/push
+has not occurred.
+
+After preserving r08 evidence, the owned PostgreSQL unit
+`goby-selected-p1-pg-20260920-a` was stopped. The observed terminal state was
+`MainPID=0`, `ActiveState=inactive`, `SubState=dead`, with an empty control group.
+Its data directory and all failed/accepted evidence were preserved. Resumption
+must explicitly restart the owned database environment before remote checks;
+it must not reuse an old worker invocation or alter the retained reference host.
