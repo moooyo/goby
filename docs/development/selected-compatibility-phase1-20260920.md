@@ -22,11 +22,11 @@ must be handed off, merged to `main` and pushed.
 
 | Requirement | Implementation | Evidence |
 | --- | --- | --- |
-| A1 PIN and local password | Implemented | Identity/HTTP scopes and original-client local-password/profile PIN journey passed; integrated restart/revocation closeout pending |
+| A1 PIN and local password | Implemented | Identity/HTTP, original-client local-password/profile PIN and integrated restart/revocation journeys passed; full browser closeout pending |
 | A2 Source-bound intro intervals | Implemented | Source/HTTP repairs passed; real native administrator journey passed |
-| A3 Actual intro skip behavior | Implemented | Item/PlaybackInfo and explicit-start contracts passed; original-client seek journey pending |
-| A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts passed; original-client transition journey pending |
-| A5 Administration, migrations and recovery | Implemented | Historical migration repairs, real encrypted PIN archive/restore and mocked UI passed; full browser closeout pending |
+| A3 Actual intro skip behavior | Implemented | Item/PlaybackInfo, explicit-start and original-client None contracts passed; ShowButton/AutoSkip are blocked by the original client's external entitlement |
+| A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts and original-client enabled/disabled/natural final-episode journeys passed; integrated browser closeout pending |
+| A5 Administration, migrations and recovery | Implemented | Historical migration repairs, real encrypted PIN archive/restore, mocked UI and application-runtime restart passed; browser sign-out closeout pending |
 
 Contract research uses the pinned SDK and retained official client distribution.
 Prepared harnesses and code review are not actual client acceptance. The phase
@@ -120,6 +120,7 @@ authentication, catalog, playback and WebSockets still target Goby.
 | r04 | Driver `38e67dc`; unchanged Go fixture `2de476d` | Native administration passed. The real service worker reached `activating`; the fixture incorrectly required immediate activation. |
 | r05 | Driver `9470400`; unchanged Go fixture `2de476d` | Native administration and actual original-client local-password login passed with database acknowledgements. The worker reached `activated`. The PIN journey then failed because same-tab reload retained the client's `sessionStorage` validation state. |
 | r06 | Driver `afc6b6d`; unchanged Go fixture `2de476d` | Local-password login and the fresh-tab PIN gate passed, including wrong-PIN rejection, correct-PIN unlock and no replacement authentication. Actual E1-to-E2 autoplay reached both natural endings with two distinct starts/stops, but its database terminal-state predicate failed; that playback stage is not accepted. |
+| r07 | Driver and Go fixture `e82bcee` | Thirteen stages reached their database observations. Local-password/PIN, enabled/disabled autoplay, intro None, application-runtime restart/persistence and credential clearing passed. ShowButton and AutoSkip remained explicitly blocked by external entitlement. Native sign-out failed before its cleanup-stage request; the overall scope failed. |
 
 The driver now allows the original client's real service worker behind a
 deny-only egress proxy and waits for its actual activation. It neither changes
@@ -141,5 +142,26 @@ target request. This new evidence does not reclassify r05's unknown requests.
 The r03-r06 workers terminated and closed their process groups. r06 removed
 its private credential context, owned schema and media root and closed its
 application workers/listener. One administrator session required the documented
-failure cleanup. Next-episode database acceptance, intro-skip and final
-restart/revocation journeys remain pending; the phase is not complete.
+failure cleanup. At r06, next-episode database acceptance, intro-skip and final
+restart/revocation journeys remained pending; the phase was not complete.
+
+r07 records the previously missing database facts. Each next-episode item had
+exactly one newly started, counted and stopped play, the expected end position
+and exact durable play count. Each also retained one unstarted Prepared plan
+whose authentication was no longer valid. Effective active sessions, unexplained
+inactive sessions, unterminated started sessions and all measured original/HLS/
+policy/stream resources were zero. The corrected observer distinguishes these
+inactive plans while retaining strict started-play and resource checks; it does
+not delete state to make acceptance pass. These new facts do not invent a
+database snapshot for r06.
+
+r07 observed sixteen denied calls to the known external registration endpoint,
+with independently validated classifications and no claimed external
+authorization. Four page errors were counted without per-error classifications;
+their cause remains unverified. Both enabled intro modes produced no accepted
+seek and retain blocked results. The administrator's final sign-out was not
+accepted. Its failure cleanup revoked the remaining administrator session and
+closed the test process group, application/listener, schema, media root and
+private credential context. The owned PostgreSQL cluster remains available for
+the cleanup repair. Phase 1 cannot close until the client entitlement boundary
+and remaining browser failures are resolved.
