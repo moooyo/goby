@@ -1,6 +1,6 @@
 # Selected compatibility phase 1 execution record
 
-Status: **implementation in progress; consolidated verification not started**.
+Status: **implementation complete; consolidated verification and browser repairs in progress**.
 
 The user authorized execution of the [four-phase plan](../planning/selected-compatibility-plan-20260920.md),
 with all delivery code implemented before each phase's consolidated verification.
@@ -22,11 +22,11 @@ must be handed off, merged to `main` and pushed.
 
 | Requirement | Implementation | Evidence |
 | --- | --- | --- |
-| A1 PIN and local password | In progress | No verification claim |
-| A2 Source-bound intro intervals | In progress | No verification claim |
-| A3 Actual intro skip behavior | In progress | No verification claim |
-| A4 Next-episode preference and consumer | In progress | No verification claim |
-| A5 Administration, migrations and recovery | In progress | No verification claim |
+| A1 PIN and local password | Implemented | Identity and HTTP scopes passed; original-client profile journey pending |
+| A2 Source-bound intro intervals | Implemented | Source/HTTP repairs passed; real native administrator journey passed |
+| A3 Actual intro skip behavior | Implemented | Item/PlaybackInfo and explicit-start contracts passed; original-client seek journey pending |
+| A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts passed; original-client transition journey pending |
+| A5 Administration, migrations and recovery | Implemented | Historical migration repairs, real encrypted PIN archive/restore and mocked UI passed; full browser closeout pending |
 
 Contract research uses the pinned SDK and retained official client distribution.
 Prepared harnesses and code review are not actual client acceptance. The phase
@@ -55,3 +55,55 @@ movie/episode playback, administrator, persistence and recovery journeys.
   found that the retained original Web intro control calls a hardcoded external
   device-registration service; the local adapter does not redirect that request.
   Actual consumer evidence must distinguish those paths.
+
+## First consolidated verification and repairs
+
+Development commits are `bdadd88` (implementation), `a5a56b7` (fresh schema43
+catalog), `43b0fdf` and `5c0fef6` (test fixture corrections), and `a99988f`
+(administrator dialog accessibility/layout correction). Later repairs must
+record their own actual source rather than reclassifying these attempts.
+
+Local frontend typecheck/build and ordinary/embedded Linux cross-builds passed.
+Local identity/database unit packages passed. The attempted Windows library/server
+scope failed existing Linux-fixture and descriptor assumptions; it is not a
+passing platform result. The Linux package scope below is authoritative for those
+packages. A fresh owned PostgreSQL 17 cluster generated schema43 catalog SHA-256
+`1dc5115fd00947b8beac7384bc16e0d393f9fca70e031a71f9ccec5846ad511c`.
+
+| Remote scope | Original source/result | Separate repair result |
+| --- | --- | --- |
+| Identity | a5a56b7: 182 parent passes, no failures/skips | Not repeated |
+| Database | a5a56b7: 51 parent passes; historical whole-row projections/table inventory failed | 61 parent passes, including explicit legacy plaintext-PIN cleanup; no failures/skips |
+| Library | a5a56b7: 709 parent passes, three failures and the existing mount-namespace helper skip | Three affected parents passed with current probe fixtures and exact historical-field/default checks |
+| Server | a5a56b7: 822 parent passes, one intro-fixture failure and the explicit AMD profile skip | The affected intro HTTP parent passed |
+| PostgreSQL backup | a5a56b7: 98 parent passes, no failures/skips | Two selected account/intro archive parents passed, including strengthened sequence equality |
+| Recovery database | a5a56b7: 12 parent passes, no failures/skips | Not repeated |
+| Recovery manager/engine | a5a56b7: 21 parent passes; historical identity seed failed, retaining its pair and causing four subsequent empty-target refusals | Six selected parents passed on a fresh pair, including the real encrypted-PIN archive/finalizer/new-login journey |
+| Mocked administrator browser | a5a56b7: one pass, nine failures from duplicate dialog title IDs | a99988f: 10 passes, no skips/flaky cases; owned static server closed |
+
+Counts from overlapping original and repair scopes are not added. Runtime
+receipts record the exact test binary hashes. The first package batch closed
+all eight process groups; peak worker memory was 712.7 MiB with no swap. The
+recovery failure's databases were retained, and the repair used a separately
+created pair. The owned PostgreSQL service remains running for pending browser
+verification and has not been claimed closed.
+
+The first real-browser attempt stopped before launching a browser because the
+selected Node executable was not root-owned. A new owned byte-identical Node
+copy satisfied that prerequisite without changing the original installation.
+The next attempt passed three native administrator stages and their database
+acknowledgements, with zero page errors/foreign requests, then failed before any
+original-client authentication request: the fixture incorrectly treated
+WebDirectory as a `/web` host. Its media/schema/context cleanup passed.
+The corrected fixture must transparently serve complete official `/web`
+responses, including dynamically generated apphost.js, from the pinned retained
+host. A raw distribution directory is insufficient. Business APIs and WebSockets
+must still reach the real Goby application; reference-host mutations, client
+patches and synthetic license success are not acceptance evidence.
+
+Private execution material is under
+`D:/Code/goby/.git/selected-compatibility-20260920/phase1/` and the remote root
+`/opt/goby-selected-compatibility-20260920-p1a`. The local mutable checkpoint is
+`D:/Code/goby/.git/selected-compatibility-20260920/checkpoint.json`. These are
+private operator/evidence paths, not portable clone prerequisites. The current
+phase is not complete and phases 2-4 have not started implementation.

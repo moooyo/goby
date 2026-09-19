@@ -9,10 +9,24 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"hash"
+	"io"
+	"io/fs"
+	"log"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	goruntime "runtime"
+	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -23,9 +37,514 @@ import (
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	adminassets "github.com/moooyo/goby/web/admin"
+	"golang.org/x/sys/unix"
 )
 
 const selectedPhase1OriginalWebDirectory = "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-01/package/opt/emby-server/system/dashboard-ui"
+
+const selectedPhase1OriginalHostExecutable = "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-01/package/opt/emby-server/system/EmbyServer"
+
+type selectedPhase1ClientHostConfig struct {
+	Marker            string
+	Origin            string
+	PID               int
+	StartTicks        uint64
+	BootID            string `json:"BootId"`
+	NetworkNamespace  string
+	Executable        string
+	ExecutableSHA256  string
+	ServerID          string `json:"ServerId"`
+	Version           string
+}
+
+type selectedPhase1ExecutableStamp struct {
+	Device, Inode     uint64
+	Size              int64
+	Modified, Changed int64
+	Mode              uint32
+}
+
+type selectedPhase1AssetRecord struct {
+	Method, Path, MIME, SHA256 string
+	Status                   int
+	Bytes                    int64
+	Complete                 bool
+	ErrorCode                string `json:",omitempty"`
+}
+
+// This transport never starts, stops, or mutates the retained host. Only the
+// original static client routes reach it; Goby owns all browser API traffic.
+type selectedPhase1ClientHost struct {
+	config     selectedPhase1ClientHostConfig
+	origin     *url.URL
+	stamp      selectedPhase1ExecutableStamp
+	transport  *http.Transport
+	proxy      *httputil.ReverseProxy
+	output     string
+	runID      string
+	mu         sync.Mutex
+	records    []selectedPhase1AssetRecord
+	bytes      int64
+	reserved   int64
+	budgetChanged chan struct{}
+	failure    string
+	publicRead bool
+}
+
+const (
+	selectedPhase1AssetLimit = int64(32 << 20)
+	selectedPhase1TotalAssetLimit = int64(512 << 20)
+	selectedPhase1AssetCountLimit = 4096
+)
+
+func (host *selectedPhase1ClientHost) verify(fullHash bool) error {
+	process, alive := refreshBrowserProcessAt(host.config.PID)
+	if !alive || process.Start != host.config.StartTicks {
+		return errors.New("original_client_host_process_changed")
+	}
+	boot, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
+	if err != nil || strings.TrimSpace(string(boot)) != host.config.BootID {
+		return errors.New("original_client_host_boot_changed")
+	}
+	base := fmt.Sprintf("/proc/%d", host.config.PID)
+	namespace, err := os.Readlink(base + "/ns/net")
+	if err != nil || namespace != host.config.NetworkNamespace {
+		return errors.New("original_client_host_namespace_changed")
+	}
+	executable, err := os.Readlink(base + "/exe")
+	if err != nil || executable != host.config.Executable {
+		return errors.New("original_client_host_executable_changed")
+	}
+	info, err := os.Stat(base + "/exe")
+	if err != nil || !info.Mode().IsRegular() || info.Size() <= 0 || info.Size() > 128<<20 {
+		return errors.New("original_client_host_executable_metadata_changed")
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok || stat.Uid != 0 || info.Mode().Perm()&0o022 != 0 {
+		return errors.New("original_client_host_executable_ownership_changed")
+	}
+	stamp := selectedPhase1ExecutableStamp{Device: uint64(stat.Dev), Inode: stat.Ino, Size: info.Size(),
+		Modified: info.ModTime().UnixNano(), Changed: stat.Ctim.Nano(), Mode: uint32(info.Mode().Perm())}
+	disk, err := os.Stat(host.config.Executable)
+	if err != nil || !os.SameFile(info, disk) {
+		return errors.New("original_client_host_executable_path_changed")
+	}
+	if host.stamp != (selectedPhase1ExecutableStamp{}) && stamp != host.stamp {
+		return errors.New("original_client_host_executable_stamp_changed")
+	}
+	if fullHash {
+		file, err := os.Open(base + "/exe")
+		if err != nil {
+			return errors.New("original_client_host_executable_unreadable")
+		}
+		digest := sha256.New()
+		count, copyErr := io.Copy(digest, io.LimitReader(file, info.Size()+1))
+		after, statErr := file.Stat()
+		closeErr := file.Close()
+		if copyErr != nil || statErr != nil || closeErr != nil || count != info.Size() || !os.SameFile(info, after) ||
+			after.ModTime() != info.ModTime() || hex.EncodeToString(digest.Sum(nil)) != host.config.ExecutableSHA256 {
+			return errors.New("original_client_host_executable_hash_changed")
+		}
+		if host.stamp == (selectedPhase1ExecutableStamp{}) {
+			host.stamp = stamp
+		}
+	}
+	return nil
+}
+
+// Numeric IPv4 dialing keeps socket creation on this dedicated locked thread.
+// A restoration failure leaves the thread locked; Go destroys that OS thread
+// when the goroutine exits rather than admitting its namespace to the pool.
+func (host *selectedPhase1ClientHost) dial(ctx context.Context, network, address string) (net.Conn, error) {
+	if (network != "tcp" && network != "tcp4") || address != host.origin.Host {
+		return nil, errors.New("original_client_host_dial_scope_invalid")
+	}
+	type outcome struct {
+		connection net.Conn
+		err        error
+	}
+	done := make(chan outcome, 1)
+	go func() {
+		goruntime.LockOSThread()
+		restored := true
+		defer func() {
+			if restored {
+				goruntime.UnlockOSThread()
+			}
+		}()
+		original, err := os.Open(fmt.Sprintf("/proc/self/task/%d/ns/net", unix.Gettid()))
+		if err != nil {
+			done <- outcome{err: errors.New("original_client_host_current_namespace_unavailable")}
+			return
+		}
+		defer original.Close()
+		if err := host.verify(false); err != nil {
+			done <- outcome{err: err}
+			return
+		}
+		target, err := os.Open(fmt.Sprintf("/proc/%d/ns/net", host.config.PID))
+		if err != nil {
+			done <- outcome{err: errors.New("original_client_host_namespace_unavailable")}
+			return
+		}
+		defer target.Close()
+		name, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", target.Fd()))
+		if err != nil || name != host.config.NetworkNamespace || host.verify(false) != nil {
+			done <- outcome{err: errors.New("original_client_host_namespace_descriptor_changed")}
+			return
+		}
+		if unix.Setns(int(target.Fd()), unix.CLONE_NEWNET) != nil {
+			done <- outcome{err: errors.New("original_client_host_namespace_entry_failed")}
+			return
+		}
+		restored = false
+		dialer := net.Dialer{Timeout: 5 * time.Second, KeepAlive: -1, FallbackDelay: -1}
+		connection, dialErr := dialer.DialContext(ctx, "tcp4", address)
+		if unix.Setns(int(original.Fd()), unix.CLONE_NEWNET) != nil {
+			if connection != nil {
+				connection.Close()
+			}
+			done <- outcome{err: errors.New("original_client_host_namespace_restore_failed")}
+			return
+		}
+		restored = true
+		done <- outcome{connection: connection, err: dialErr}
+	}()
+	// Always receive the bounded dial result, even if ctx was cancelled, so an
+	// established descriptor cannot be abandoned in a buffered result channel.
+	result := <-done
+	return result.connection, result.err
+}
+
+func (host *selectedPhase1ClientHost) flushLocked() error {
+	file := filepath.Join(host.output, "asset-hashes.json")
+	temporary := file + ".pending"
+	defer os.Remove(temporary)
+	if err := refreshBrowserWriteJSON(temporary, map[string]any{"Marker": "goby-selected-phase1-original-assets-v1",
+		"RunId": host.runID, "Host": host.config, "PublicIdentityPinned": host.publicRead,
+		"CompleteMeaning": "upstream response reached EOF with stable pinned host identity",
+		"Bytes": host.bytes, "FailureCode": host.failure, "Assets": host.records}); err != nil {
+		return err
+	}
+	return os.Rename(temporary, file)
+}
+
+func (host *selectedPhase1ClientHost) fail(code string) {
+	host.mu.Lock()
+	defer host.mu.Unlock()
+	if host.failure == "" {
+		host.failure = code
+	}
+}
+
+func (host *selectedPhase1ClientHost) finish(index int, record selectedPhase1AssetRecord) {
+	if host.verify(false) != nil {
+		record.Complete, record.ErrorCode = false, "original_client_host_identity_changed_after_asset"
+	}
+	host.mu.Lock()
+	defer host.mu.Unlock()
+	host.records[index] = record
+	if record.ErrorCode != "" && host.failure == "" {
+		host.failure = record.ErrorCode
+	}
+	if err := host.flushLocked(); err != nil && host.failure == "" {
+		host.failure = "original_client_asset_evidence_write_failed"
+	}
+}
+
+func (host *selectedPhase1ClientHost) reserve(ctx context.Context, wanted int64) (int64, error) {
+	if wanted <= 0 {
+		return 0, nil
+	}
+	for {
+		host.mu.Lock()
+		available := selectedPhase1TotalAssetLimit - host.bytes - host.reserved
+		if available > 0 {
+			count := min(wanted, available)
+			host.reserved += count
+			host.mu.Unlock()
+			return count, nil
+		}
+		if host.bytes >= selectedPhase1TotalAssetLimit {
+			host.mu.Unlock()
+			return 0, nil
+		}
+		changed := host.budgetChanged
+		host.mu.Unlock()
+		// An in-flight read may release unused capacity after a short read or
+		// EOF; temporary reservations are not proof of an actual byte overrun.
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		case <-changed:
+		}
+	}
+}
+
+func (host *selectedPhase1ClientHost) release(reserved, consumed int64) {
+	host.mu.Lock()
+	defer host.mu.Unlock()
+	host.reserved -= reserved
+	host.bytes += consumed
+	close(host.budgetChanged)
+	host.budgetChanged = make(chan struct{})
+}
+
+type selectedPhase1AssetBody struct {
+	io.ReadCloser
+	host      *selectedPhase1ClientHost
+	ctx       context.Context
+	index     int
+	record    selectedPhase1AssetRecord
+	digest    hash.Hash
+	once      sync.Once
+	closeOnce sync.Once
+	closeErr  error
+	empty     bool
+	finished  bool
+}
+
+func (body *selectedPhase1AssetBody) finish(complete bool, code string) {
+	body.once.Do(func() {
+		if err := body.host.verify(false); err != nil {
+			complete, code = false, "original_client_host_identity_changed_after_asset"
+		}
+		body.record.Complete, body.record.ErrorCode = complete, code
+		body.record.SHA256 = hex.EncodeToString(body.digest.Sum(nil))
+		body.finished = true
+		body.host.finish(body.index, body.record)
+	})
+}
+
+func (body *selectedPhase1AssetBody) Read(buffer []byte) (int, error) {
+	if len(buffer) == 0 {
+		return 0, nil
+	}
+	wanted := min(int64(len(buffer)), selectedPhase1AssetLimit-body.record.Bytes)
+	reserved, reserveErr := body.host.reserve(body.ctx, max(wanted, 0))
+	if reserveErr != nil {
+		body.finish(false, "original_client_asset_budget_wait_cancelled")
+		return 0, reserveErr
+	}
+	if reserved == 0 {
+		// One unforwarded byte distinguishes a real EOF at the exact bound from
+		// an overrun. It never contributes to a successful response digest.
+		var probe [1]byte
+		n, err := body.ReadCloser.Read(probe[:])
+		if n == 0 && errors.Is(err, io.EOF) {
+			body.finish(true, "")
+			return 0, io.EOF
+		}
+		body.finish(false, "original_client_asset_byte_bound_exceeded")
+		return 0, errors.New("original_client_asset_byte_bound_exceeded")
+	}
+	n, err := body.ReadCloser.Read(buffer[:int(reserved)])
+	body.host.release(reserved, int64(n))
+	if n > 0 {
+		body.record.Bytes += int64(n)
+		_, _ = body.digest.Write(buffer[:n])
+	}
+	if errors.Is(err, io.EOF) {
+		body.finish(true, "")
+	} else if err != nil {
+		body.finish(false, "original_client_asset_read_failed")
+	}
+	return n, err
+}
+
+func (body *selectedPhase1AssetBody) Close() error {
+	body.closeOnce.Do(func() {
+		body.closeErr = body.ReadCloser.Close()
+		if !body.finished {
+			if body.empty && body.closeErr == nil {
+				body.finish(true, "")
+			} else {
+				body.finish(false, "original_client_asset_response_incomplete")
+			}
+		}
+		if body.closeErr != nil {
+			body.record.Complete, body.record.ErrorCode = false, "original_client_asset_close_failed"
+			body.host.finish(body.index, body.record)
+		}
+	})
+	return body.closeErr
+}
+
+type selectedPhase1AssetContextKey struct{}
+
+type selectedPhase1AssetTransport struct{ host *selectedPhase1ClientHost }
+
+func (transport selectedPhase1AssetTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	host := transport.host
+	index, ok := request.Context().Value(selectedPhase1AssetContextKey{}).(int)
+	if !ok || host.verify(false) != nil {
+		host.fail("original_client_host_identity_changed_before_asset")
+		return nil, errors.New("original_client_host_identity_changed_before_asset")
+	}
+	response, err := host.transport.RoundTrip(request)
+	if err != nil {
+		host.finish(index, selectedPhase1AssetRecord{Method: request.Method, Path: request.URL.Path, ErrorCode: "original_client_asset_request_failed"})
+		return nil, errors.New("original_client_asset_request_failed")
+	}
+	record := selectedPhase1AssetRecord{Method: request.Method, Path: request.URL.Path,
+		Status: response.StatusCode, MIME: response.Header.Get("Content-Type")}
+	empty := request.Method == http.MethodHead || response.StatusCode == http.StatusNotModified || response.StatusCode == http.StatusNoContent
+	if response.StatusCode == http.StatusSwitchingProtocols || !empty && response.ContentLength > selectedPhase1AssetLimit || len(record.MIME) > 256 {
+		response.Body.Close()
+		record.ErrorCode = "original_client_asset_response_invalid"
+		host.finish(index, record)
+		return nil, errors.New(record.ErrorCode)
+	}
+	response.Body = &selectedPhase1AssetBody{ReadCloser: response.Body, host: host, ctx: request.Context(), index: index,
+		record: record, digest: sha256.New(), empty: empty}
+	return response, nil
+}
+
+func selectedPhase1AssetRequest(request *http.Request) bool {
+	if (request.Method != http.MethodGet && request.Method != http.MethodHead) ||
+		request.ContentLength != 0 || len(request.TransferEncoding) != 0 || request.Header.Get("Upgrade") != "" ||
+		request.URL.User != nil || !strings.HasPrefix(request.URL.Path, "/web/") || len(request.URL.Path) > 1024 ||
+		strings.ContainsAny(request.URL.Path, "\\%\x00") || request.URL.Path != "/web/" && path.Clean(request.URL.Path) != request.URL.Path {
+		return false
+	}
+	escaped := strings.ToLower(request.URL.RawPath)
+	if strings.Contains(escaped, "%2f") || strings.Contains(escaped, "%5c") || strings.Contains(escaped, "%2e") || strings.Contains(escaped, "%25") {
+		return false
+	}
+	query, err := url.ParseQuery(request.URL.RawQuery)
+	if err != nil || len(request.URL.RawQuery) > 4096 {
+		return false
+	}
+	for key := range query {
+		lower := strings.ToLower(key)
+		if lower == "pw" || lower == "pin" || lower == "profilepin" || strings.Contains(lower, "token") || strings.Contains(lower, "password") || strings.Contains(lower, "authorization") ||
+			strings.Contains(lower, "api_key") || strings.Contains(lower, "apikey") || strings.HasPrefix(lower, "x-emby-") || strings.HasPrefix(lower, "x-mediabrowser-") {
+			return false
+		}
+	}
+	return true
+}
+
+func (host *selectedPhase1ClientHost) ServeHTTP(w http.ResponseWriter, request *http.Request) {
+	if !selectedPhase1AssetRequest(request) {
+		host.fail("original_client_asset_request_scope_invalid")
+		http.Error(w, "Original client asset request is outside the fixture scope.", http.StatusForbidden)
+		return
+	}
+	host.mu.Lock()
+	if host.failure != "" || len(host.records) >= selectedPhase1AssetCountLimit {
+		if host.failure == "" {
+			host.failure = "original_client_asset_request_bound_exceeded"
+		}
+		host.mu.Unlock()
+		http.Error(w, "Original client asset proxy is unavailable.", http.StatusBadGateway)
+		return
+	}
+	index := len(host.records)
+	host.records = append(host.records, selectedPhase1AssetRecord{Method: request.Method, Path: request.URL.Path})
+	host.mu.Unlock()
+	ctx, cancel := context.WithTimeout(request.Context(), 30*time.Second)
+	defer cancel()
+	ctx = context.WithValue(ctx, selectedPhase1AssetContextKey{}, index)
+	host.proxy.ServeHTTP(w, request.WithContext(ctx))
+}
+
+func selectedPhase1OpenClientHost(configPath, output, runID string) (*selectedPhase1ClientHost, error) {
+	var raw json.RawMessage
+	if err := featureWavePrivateJSON(configPath, 16<<10, &raw); err != nil {
+		return nil, errors.New("original_client_host_private_config_required")
+	}
+	var config selectedPhase1ClientHostConfig
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&config) != nil || config.Marker != "goby-selected-phase1-client-host-v1" ||
+		config.Origin != "http://127.0.0.1:28497" || config.PID != 366598 || config.StartTicks != 506485 ||
+		config.BootID != "4de83999-7586-4716-83d1-0d81c9343126" || config.NetworkNamespace != "net:[4026532544]" ||
+		config.Executable != selectedPhase1OriginalHostExecutable ||
+		config.ExecutableSHA256 != "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2" ||
+		config.ServerID != "9b45875a4abd417fb19ef7f71ad81e7a" || config.Version != "4.9.5.0" {
+		return nil, errors.New("original_client_host_config_identity_mismatch")
+	}
+	origin, err := url.Parse(config.Origin)
+	if err != nil || origin.Host != "127.0.0.1:28497" || origin.Path != "" || origin.RawQuery != "" || origin.User != nil {
+		return nil, errors.New("original_client_host_origin_invalid")
+	}
+	host := &selectedPhase1ClientHost{config: config, origin: origin, output: output, runID: runID, budgetChanged: make(chan struct{}),
+		records: []selectedPhase1AssetRecord{}}
+	if err := host.verify(true); err != nil {
+		return nil, err
+	}
+	host.transport = &http.Transport{DialContext: host.dial, DisableCompression: true, DisableKeepAlives: true,
+		MaxConnsPerHost: 16, ResponseHeaderTimeout: 15 * time.Second, MaxResponseHeaderBytes: 64 << 10}
+	client := &http.Client{Transport: host.transport, Timeout: 10 * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	request, err := http.NewRequest(http.MethodGet, config.Origin+"/emby/System/Info/Public", nil)
+	if err != nil {
+		return nil, errors.New("original_client_host_public_identity_request_invalid")
+	}
+	request.Header.Set("Accept-Encoding", "identity")
+	response, err := client.Do(request)
+	if err != nil {
+		host.transport.CloseIdleConnections()
+		return nil, errors.New("original_client_host_public_identity_unavailable")
+	}
+	public, readErr := io.ReadAll(io.LimitReader(response.Body, (64<<10)+1))
+	closeErr := response.Body.Close()
+	identityErr := host.verify(false)
+	var identity struct { ID string `json:"Id"`; Version string }
+	if readErr != nil || closeErr != nil || response.StatusCode != http.StatusOK || len(public) > 64<<10 ||
+		json.Unmarshal(public, &identity) != nil || identity.ID != config.ServerID || identity.Version != config.Version || identityErr != nil {
+		host.transport.CloseIdleConnections()
+		return nil, errors.New("original_client_host_public_identity_mismatch")
+	}
+	host.publicRead = true
+	host.proxy = &httputil.ReverseProxy{
+		Rewrite: func(request *httputil.ProxyRequest) {
+			request.SetURL(host.origin)
+			request.Out.URL.User = nil
+			request.Out.Header = make(http.Header)
+			for _, name := range []string{"Accept", "Accept-Language", "Cache-Control", "If-Modified-Since", "If-None-Match", "If-Range", "Range", "User-Agent"} {
+				for _, value := range request.In.Header.Values(name) {
+					request.Out.Header.Add(name, value)
+				}
+			}
+			request.Out.Header.Set("Accept-Encoding", "identity")
+		},
+		Transport: selectedPhase1AssetTransport{host: host}, ErrorLog: log.New(io.Discard, "", 0),
+		ErrorHandler: func(w http.ResponseWriter, request *http.Request, err error) {
+			host.fail("original_client_asset_proxy_failed")
+			http.Error(w, "Original client asset proxy failed.", http.StatusBadGateway)
+		},
+	}
+	host.mu.Lock()
+	err = host.flushLocked()
+	host.mu.Unlock()
+	if err != nil {
+		return nil, errors.New("original_client_asset_evidence_write_failed")
+	}
+	return host, nil
+}
+
+func (host *selectedPhase1ClientHost) close() error {
+	host.transport.CloseIdleConnections()
+	if err := host.verify(true); err != nil {
+		host.fail("original_client_host_identity_changed_after_browser")
+	}
+	host.mu.Lock()
+	defer host.mu.Unlock()
+	for _, record := range host.records {
+		if !record.Complete && host.failure == "" {
+			host.failure = "original_client_asset_response_incomplete"
+		}
+	}
+	if err := host.flushLocked(); err != nil {
+		return errors.New("original_client_asset_evidence_write_failed")
+	}
+	if host.failure != "" {
+		return errors.New(host.failure)
+	}
+	return nil
+}
 
 var selectedPhase1BrowserPhases = []string{
 	"admin-credentials", "admin-preferences", "admin-intro", "original-local-login", "profile-pin",
@@ -71,6 +590,72 @@ type selectedPhase1BrowserResult struct {
 	PageErrors      *int
 	ForeignRequests *int
 	Stages          []struct{ Phase, State string }
+}
+
+// The product serves its native administration at /admin/. This owned fixture
+// transparently proxies the pinned original host's consumer assets at /web/ on
+// the same private origin; every API request reaches the actual application.
+// No client files, host-generated modules, or API responses are substituted.
+type selectedPhase1BrowserRuntime struct {
+	f      *serverFixture
+	assets fs.FS
+	client *selectedPhase1ClientHost
+	server *httptest.Server
+	addr   string
+}
+
+func (runtime *selectedPhase1BrowserRuntime) listen() error {
+	if runtime.client == nil {
+		return errors.New("selected phase 1 requires its pinned original client host")
+	}
+	listener, err := net.Listen("tcp4", runtime.addr)
+	if err != nil {
+		return err
+	}
+	runtime.addr = listener.Addr().String()
+	origin := "http://" + runtime.addr
+	runtime.f.cfg.PublicURL, runtime.f.cfg.CookieSecure = origin, false
+	runtime.f.app.cfg.PublicURL, runtime.f.app.cfg.CookieSecure = origin, false
+	WithDashboardAssets(runtime.assets)(runtime.f.app)
+	application := runtime.f.app.Handler()
+	runtime.f.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/web/") {
+			runtime.client.ServeHTTP(w, r)
+			return
+		}
+		application.ServeHTTP(w, r)
+	})
+	actual := httptest.NewUnstartedServer(runtime.f.handler)
+	actual.Listener.Close()
+	actual.Listener = listener
+	actual.Start()
+	runtime.server = actual
+	return nil
+}
+
+func (runtime *selectedPhase1BrowserRuntime) close(ctx context.Context) error {
+	if runtime.server != nil {
+		runtime.server.CloseClientConnections()
+	}
+	err := runtime.f.app.Close(ctx)
+	if runtime.server != nil {
+		runtime.server.Close()
+		runtime.server = nil
+	}
+	return err
+}
+
+func (runtime *selectedPhase1BrowserRuntime) restart(ctx context.Context) error {
+	if err := runtime.close(ctx); err != nil {
+		return err
+	}
+	app, err := New(runtime.f.ctx, runtime.f.cfg, runtime.f.pool, runtime.f.users, runtime.f.log,
+		"selected-phase1-browser-integration", WithDashboardAssets(runtime.assets))
+	if err != nil {
+		return err
+	}
+	runtime.f.app = app
+	return runtime.listen()
 }
 
 func selectedPhase1SourceFacts(paths []string) ([]map[string]any, error) {
@@ -126,7 +711,7 @@ func selectedPhase1DatabaseSnapshot(ctx context.Context, f *serverFixture, fixtu
 }
 
 type selectedPhase1BrowserObserver struct {
-	runtime          *phase3BrowserRuntime
+	runtime          *selectedPhase1BrowserRuntime
 	fixture          selectedPhase1BrowserContext
 	paths            []string
 	sources          []map[string]any
@@ -468,18 +1053,13 @@ func TestSelectedCompatibilityPhase1BrowserIntegration(t *testing.T) {
 	browserCache := refreshBrowserPath(t, "PLAYWRIGHT_BROWSERS_PATH", true)
 	ffmpeg := refreshBrowserPath(t, "GOBY_FFMPEG", false)
 	ffprobe := refreshBrowserPath(t, "GOBY_FFPROBE", false)
+	clientHostConfig := refreshBrowserPath(t, "GOBY_SELECTED_PHASE1_CLIENT_HOST_CONFIG", false)
 	if info, err := os.Stat(artifacts); err != nil || info.Mode().Perm() != 0o700 {
 		t.Fatal("selected phase 1 artifact parent must be private")
 	}
 	runID := os.Getenv("GOBY_SELECTED_PHASE1_RUN_ID")
 	if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$`).MatchString(runID) {
 		t.Fatal("an explicit selected phase 1 browser run ID is required")
-	}
-	if resolved, err := filepath.EvalSymlinks(selectedPhase1OriginalWebDirectory); err != nil || resolved != selectedPhase1OriginalWebDirectory {
-		t.Fatal("the original Emby Web asset directory must exist at its pinned canonical path")
-	}
-	if info, err := os.Lstat(filepath.Join(selectedPhase1OriginalWebDirectory, "index.html")); err != nil || !info.Mode().IsRegular() {
-		t.Fatal("the original Emby Web entry point is unavailable")
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -539,6 +1119,20 @@ func TestSelectedCompatibilityPhase1BrowserIntegration(t *testing.T) {
 			t.Error("preserve the selected phase 1 driver result")
 		}
 	})
+	clientHost, err := selectedPhase1OpenClientHost(clientHostConfig, output, runID)
+	if err != nil {
+		t.Fatal("admit the explicitly pinned original client host: " + err.Error())
+	}
+	driver["OriginalClientHostIdentityPinned"] = true
+	driver["OriginalClientHostLifecycleMutations"] = 0
+	t.Cleanup(func() {
+		if err := clientHost.close(); err != nil {
+			driver["OriginalClientHostFailure"] = err.Error()
+			t.Error("close selected phase 1 original client evidence: " + err.Error())
+		} else {
+			driver["OriginalClientHostIdentityPreserved"] = true
+		}
+	})
 	f := newServerFixtureWithTimeout(t, 15*time.Minute)
 	if f.pool.QueryRow(f.ctx, "SELECT current_schema()").Scan(&schema) != nil {
 		t.Fatal("identify the owned selected phase 1 schema")
@@ -571,7 +1165,6 @@ func TestSelectedCompatibilityPhase1BrowserIntegration(t *testing.T) {
 	vaultPath := filepath.Join(t.TempDir(), "profile-credentials.master")
 	f.users = identity.NewWithApplicationKeyVault(f.pool, identity.NewApplicationKeyVault(vaultPath))
 	f.cfg.FFmpegPath, f.cfg.FFprobePath, f.cfg.MediaRoots = ffmpeg, ffprobe, []string{mediaRoot}
-	f.cfg.WebDirectory = selectedPhase1OriginalWebDirectory
 	f.cfg.Transcoding = config.TranscodingConfig{Enabled: true, CacheDirectory: t.TempDir(), Threads: 1,
 		MaxJobs: 2, MaxUserJobs: 2, MaxSessionJobs: 2, MaxQueueJobs: 8, MaxRetainedJobs: 32,
 		MaxCacheBytes: 64 << 20, MaxJobBytes: 16 << 20, MinFreeBytes: 1 << 20,
@@ -585,7 +1178,7 @@ func TestSelectedCompatibilityPhase1BrowserIntegration(t *testing.T) {
 		t.Fatal("construct the selected phase 1 real media application")
 	}
 	f.app, f.handler = app, app.Handler()
-	runtime := &phase3BrowserRuntime{f: f, assets: assets, addr: "127.0.0.1:0"}
+	runtime := &selectedPhase1BrowserRuntime{f: f, assets: assets, client: clientHost, addr: "127.0.0.1:0"}
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()

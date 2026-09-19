@@ -116,6 +116,13 @@ async function userDialog(action, dialogName) {
 }
 async function credentials(clear = false) {
   const dialog = await userDialog('Manage local credentials', 'Local credentials');
+  if (!clear) {
+    await dialog.getByLabel('New local password', { exact: true }).waitFor();
+    check(await dialog.getByLabel('New local password', { exact: true }).inputValue() === '' &&
+      await dialog.getByLabel('New profile PIN', { exact: true }).inputValue() === '', 'credential_screenshot_fields_not_empty');
+    await admin.screenshot({ path: path.join(fixture.ArtifactsDir, 'native-credentials-empty-desktop.png') });
+    result.Screenshots.push('native-credentials-empty-desktop.png');
+  }
   await dialog.getByRole('checkbox', { name: 'Enable local password', exact: true }).setChecked(!clear);
   if (clear) {
     await dialog.getByRole('button', { name: 'Clear local password', exact: true }).click();
@@ -167,9 +174,10 @@ async function introEditor() {
   check(saved.Effective.StartTicks === 30000000 && saved.Effective.EndTicks === 80000000 &&
     saved.OverrideSource === 'Manual' && saved.SourceRevision && saved.Revision !== '0', 'intro_not_persisted');
   result.IntroAdministration = { InvalidIntervalRejected: true, ImportSaved: true, ResetCleared: true, ManualSaved: true };
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await dialog.getByText('Intro interval saved for this media source.', { exact: true }).waitFor();
   await admin.screenshot({ path: path.join(fixture.ArtifactsDir, 'native-intro-desktop.png') });
   result.Screenshots.push('native-intro-desktop.png');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 }
 
 // These listeners observe platform media events and decoded frame counts. They
@@ -204,35 +212,78 @@ function observePlayback(page) {
   return reports;
 }
 async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = false) {
+  const diagnostic = { Phase: currentPhase, Operation: 'create-context', Document: null,
+    StartupResponses: [], AssetFailures: [], RequestFailures: [], ConsoleErrorKinds: [] };
+  (result.OriginalClientAttempts ??= []).push(diagnostic);
+  async function operation(name, action) {
+    diagnostic.Operation = name;
+    try { return await action(); }
+    catch (error) {
+      diagnostic.FailureOperation = name;
+      diagnostic.ErrorKind = ['TimeoutError', 'Error', 'AggregateError'].includes(error.name) ? error.name : 'BrowserError';
+      if (!error.safeCode) error.safeCode = `original_client_${name.replaceAll('-', '_')}_failed`;
+      throw error;
+    }
+  }
   const context = await guardedContext();
   await installMediaObserver(context);
   const page = await context.newPage();
   const reports = observePlayback(page);
   const session = { context, page, reports, AuthenticationRequests: 0 };
+  const safeAssetPath = value => {
+    const url = new URL(value);
+    return url.origin === fixture.BaseURL && /^\/web\/[A-Za-z0-9_./-]{0,240}$/.test(url.pathname) ? url.pathname : null;
+  };
+  page.on('response', response => {
+    const url = new URL(response.url());
+    const pathname = url.pathname.replace(/^\/emby(?=\/)/i, '').toLowerCase();
+    if (url.origin === fixture.BaseURL && ['/system/info/public', '/users/public', '/users/authenticatebyname'].includes(pathname) &&
+      diagnostic.StartupResponses.length < 40) diagnostic.StartupResponses.push({ Path: pathname,
+      Method: response.request().method(), Status: response.status() });
+    const asset = safeAssetPath(response.url());
+    if (asset && response.status() >= 400 && diagnostic.AssetFailures.length < 40)
+      diagnostic.AssetFailures.push({ Path: asset, Status: response.status() });
+  });
+  page.on('requestfailed', request => {
+    const asset = safeAssetPath(request.url());
+    if (asset && diagnostic.RequestFailures.length < 40) diagnostic.RequestFailures.push({ Path: asset });
+  });
+  page.on('console', message => {
+    if (message.type() !== 'error' || diagnostic.ConsoleErrorKinds.length >= 40) return;
+    const text = message.text();
+    diagnostic.ConsoleErrorKinds.push(/Content Security Policy|content-security-policy|Refused to execute inline/i.test(text) ? 'ContentSecurityPolicy' :
+      /MIME type|module script/i.test(text) ? 'ModuleMimeType' : /Failed to load resource/i.test(text) ? 'ResourceLoad' : 'Other');
+  });
   page.on('request', request => {
     if (request.method() === 'POST' && /\/(?:Users\/AuthenticateByName|Users\/[^/]+\/Authenticate)\/?$/i.test(new URL(request.url()).pathname))
       session.AuthenticationRequests += 1;
   });
-  await page.goto(`${fixture.BaseURL}/web/index.html`, { waitUntil: 'domcontentloaded' });
+  const document = await operation('document-navigation', () => page.goto(`${fixture.BaseURL}/web/index.html`, { waitUntil: 'domcontentloaded' }));
+  diagnostic.Document = { Status: document?.status() ?? null, Path: new URL(page.url()).pathname,
+    ContentType: (document?.headers()['content-type'] ?? '').split(';', 1)[0] };
+  check(document?.status() === 200 && diagnostic.Document.ContentType === 'text/html', 'original_client_document_failed');
   const form = page.locator('form:has(input[type="password"]:visible)');
   const manual = page.getByText('Manual Login', { exact: true });
-  await Promise.any([form.waitFor({ state: 'visible', timeout: 15000 }), manual.waitFor({ state: 'visible', timeout: 15000 })]);
-  if (!await form.isVisible()) await manual.locator('xpath=..').getByRole('button').click();
-  await form.locator('input[type="text"]:visible').fill(fixture.UserName);
-  await form.locator('input[type="password"]:visible').fill(secret);
+  await operation('login-controls', () => Promise.any([form.waitFor({ state: 'visible', timeout: 15000 }), manual.waitFor({ state: 'visible', timeout: 15000 })]));
+  if (!await form.isVisible()) await operation('manual-login', () => manual.locator('xpath=..').getByRole('button').click());
+  await operation('username-input', () => form.locator('input[type="text"]:visible').fill(fixture.UserName));
+  await operation('password-input', () => form.locator('input[type="password"]:visible').fill(secret));
   const authentication = page.waitForResponse(response => response.request().method() === 'POST' &&
     new URL(response.url()).origin === fixture.BaseURL && /\/(?:Users\/AuthenticateByName|Users\/[^/]+\/Authenticate)\/?$/i.test(new URL(response.url()).pathname));
   void authentication.catch(() => {});
-  await form.getByRole('button', { name: 'Sign In', exact: true }).click();
-  const response = await authentication;
+  await operation('login-submit', () => form.getByRole('button', { name: 'Sign In', exact: true }).click());
+  const response = await operation('authentication-response', () => authentication);
   result.Authentication.push({ CredentialKind: secret === fixture.LocalPassword ? 'LocalPassword' : 'NormalPassword', Status: response.status() });
   check(response.status() === 200, 'original_client_login_rejected');
   // The original router offers this per-device preference after authentication
   // when the server returns the current user's configured profile PIN.
   const confirmation = page.locator('.confirmDialog:visible');
-  await confirmation.locator('.formDialogHeaderTitle').filter({ hasText: /^Profile PIN$/ }).waitFor();
-  await confirmation.locator(`.btnOption[data-id="${enableProfilePin ? 'ok' : 'cancel'}"]`).click();
-  await form.waitFor({ state: 'hidden' });
+  await operation('profile-pin-choice', async () => {
+    await confirmation.locator('.formDialogHeaderTitle').filter({ hasText: /^Profile PIN$/ }).waitFor();
+    await confirmation.locator(`.btnOption[data-id="${enableProfilePin ? 'ok' : 'cancel'}"]`).click();
+  });
+  await operation('authenticated-navigation', () => form.waitFor({ state: 'hidden' }));
+  diagnostic.Operation = 'complete';
   return session;
 }
 async function originalLogout(session, reload = false) {

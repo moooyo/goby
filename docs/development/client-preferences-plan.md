@@ -1,5 +1,16 @@
 # Client preference persistence and schema evolution
 
+## Selected phase 1 extension
+
+The [account/playback contract](../api/playback-accounts.md) extends the completed
+phase 3 baseline below. IntroSkipMode and EnableNextEpisodeAutoPlay have writable
+consumers; ProfilePin uses encrypted state and owner-only authenticated
+projection, while local-password enablement belongs to credential management.
+Configuration/Partial is supported. DisplayMissingEpisodes and
+HidePlayedInSuggestions remain phase 3 of the next plan. Original-client
+acceptance is in progress; earlier successful records do not validate this
+extension by implication.
+
 ## Current phase 3 integration boundary
 
 UserSettings, User Configuration and DisplayPreferences are separate contracts.
