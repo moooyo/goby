@@ -28,8 +28,22 @@ func addMusicCatalogFields(dto map[string]any, item library.Item) {
 	if len(albumArtistNames) == 1 {
 		dto["AlbumArtist"] = albumArtistNames[0]
 	}
-	// Composer tags and associations are not indexed by this increment.
-	dto["Composers"] = []map[string]any{}
+	composers := make([]map[string]any, 0)
+	seenComposers := make(map[string]bool)
+	for _, person := range item.Entities.People {
+		if person.Type != "Composer" || person.Name == "" || seenComposers[person.ID] {
+			continue
+		}
+		if _, valid := positiveEntityID(person.ID); !valid {
+			continue
+		}
+		seenComposers[person.ID] = true
+		composers = append(composers, map[string]any{"Name": person.Name, "Id": person.ID})
+	}
+	dto["Composers"] = composers
+	if item.Type == "Audio" {
+		dto["IndexNumber"], dto["ParentIndexNumber"] = item.IndexNumber, item.ParentIndexNumber
+	}
 	if item.Type == "MusicAlbum" && item.IsFolder && item.ChildCount != nil {
 		dto["ChildCount"] = *item.ChildCount
 	}

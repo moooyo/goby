@@ -101,7 +101,7 @@ func VideoSeekToolIdentity(ctx context.Context, executable string) (string, stri
 // AnalyzeVideoSeekIndexes performs optional library analysis. Unsupported or
 // budget-exhausted evidence leaves a playable source without indexes. Caller
 // cancellation and mutation of the borrowed source remain hard failures.
-func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.File, info Info) (indexes []VideoSeekIndex, resultErr error) {
+func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.File, info Info, probeExecutables ...string) (indexes []VideoSeekIndex, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 	streams := make([]Stream, 0)
 	for _, stream := range info.Streams {
 		_, supported := videoSeekFrameBytes(stream.Width, stream.Height, stream.PixelFormat)
-		if stream.CodecType == "video" && stream.Codec == "h264" && !stream.IsAttachedPicture &&
-			supported && stream.BitDepth == videoSeekPixelDepth(stream.PixelFormat) {
+		if stream.CodecType == "video" && videoCopySeekSourceCodecSupported(stream) && !stream.IsAttachedPicture && !stream.IsExternal &&
+			supported && videoCopySeekSourceDepth(stream) == videoSeekPixelDepth(stream.PixelFormat) {
 			streams = append(streams, stream)
 		}
 	}
@@ -164,14 +164,27 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 			FormatStartTicks: info.FormatStartTicks, DurationTicks: info.DurationTicks,
 			TimeBaseNumerator: timeBase.Num().Int64(), TimeBaseDenominator: timeBase.Denom().Int64(),
 			SourceIdentity: sourceIdentity, ToolIdentity: toolIdentity, Width: stream.Width, Height: stream.Height, PixelFormat: stream.PixelFormat}
-		args, err := BuildVideoSeekCommandArgs(stream.Index, nil, 1)
+		if stream.Codec != "h264" {
+			base.Codec = stream.Codec
+		}
+		var index VideoSeekIndex
+		if stream.Codec == "av1" {
+			probe := "ffprobe"
+			if len(probeExecutables) > 0 && probeExecutables[0] != "" {
+				probe = probeExecutables[0]
+			}
+			index, err = analyzeAV1CopySeekIndex(analysisContext, resolved, probe, file, base, remainingEntries)
+		} else {
+			var args []string
+			args, err = BuildVideoSeekCommandArgsForCodec(stream.Index, stream.Codec, nil, 1)
+			if err == nil {
+				index, err = runVideoSeekFrameHash(analysisContext, resolved, file, args, base, remainingEntries, maxVideoSeekScanBytes)
+			}
+		}
 		if err != nil {
 			continue
 		}
-		index, err := runVideoSeekFrameHash(analysisContext, resolved, file, args, base, remainingEntries, maxVideoSeekScanBytes)
-		if err != nil {
-			continue
-		}
+		index = analyzeVideoCopySeekAudio(analysisContext, resolved, file, info, index)
 		proposed := append(indexes, index)
 		data, err := json.Marshal(proposed)
 		if err != nil || len(data) > MaxVideoSeekIndexBytes {
@@ -296,7 +309,7 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 		}
 		absolute := new(big.Int).Add(big.NewInt(candidate.Index.FormatStartTicks), big.NewInt(inputTicks))
 		seconds := new(big.Rat).SetFrac(absolute, big.NewInt(TicksPerSecond)).FloatString(7)
-		args, err := BuildVideoSeekCommandArgs(candidate.Index.StreamIndex, &seconds, decoderThreads)
+		args, err := BuildVideoSeekCommandArgsForCodec(candidate.Index.StreamIndex, VideoSeekCodec(candidate.Index), &seconds, decoderThreads)
 		if err != nil {
 			continue
 		}
@@ -310,7 +323,7 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 		point := actual.Entries[0]
 		matched := false
 		for _, expected := range candidate.Index.Entries {
-			if point == expected {
+			if point.PTS == expected.PTS && point.DTS == expected.DTS && point.CodedSHA256 == expected.CodedSHA256 && point.DecodedSHA256 == expected.DecodedSHA256 {
 				matched = true
 				break
 			}

@@ -195,6 +195,7 @@ func TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked(t *t
 			}
 		}
 		assertStorageBindingMigrationDefaults(t, ctx, pool)
+		assertPhase3MigrationDefaults(t, ctx, pool)
 		scheduledTasksAssertEmptyTables(t, ctx, pool)
 	}
 }

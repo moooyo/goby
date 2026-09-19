@@ -5,7 +5,7 @@ import { metadataCreditTypes } from './metadataCreditTypes';
 export const metadataFields: MetadataFieldName[] = [
   'Name', 'SortName', 'Overview', 'OriginalTitle', 'OfficialRating', 'ProductionYear',
   'PremiereDate', 'CommunityRating', 'Genres', 'Tags', 'Studios', 'People',
-  'ProviderIds', 'IndexNumber', 'ParentIndexNumber',
+  'ProviderIds', 'IndexNumber', 'ParentIndexNumber', 'Album', 'Artists', 'AlbumArtists',
 ];
 
 export interface MetadataDraftValues {
@@ -24,6 +24,9 @@ export interface MetadataDraftValues {
   ProviderIds: ProviderEntry[];
   IndexNumber: string;
   ParentIndexNumber: string;
+  Album: string;
+  Artists: StringEntry[];
+  AlbumArtists: StringEntry[];
 }
 
 export type MetadataDraftOverrides = Partial<MetadataDraftValues>;
@@ -59,7 +62,7 @@ export function hasOverride(overrides: object, field: string): boolean {
 }
 
 export function draftValues(values: MetadataValues): MetadataDraftValues {
-  const entries = (field: 'Genres' | 'Tags' | 'Studios'): StringEntry[] => values[field].map((value, index) => ({ id: `${field}-${index}`, value }));
+  const entries = (field: 'Genres' | 'Tags' | 'Studios' | 'Artists' | 'AlbumArtists'): StringEntry[] => values[field].map((value, index) => ({ id: `${field}-${index}`, value }));
   return {
     Name: values.Name,
     SortName: values.SortName,
@@ -76,6 +79,9 @@ export function draftValues(values: MetadataValues): MetadataDraftValues {
     ProviderIds: Object.entries(values.ProviderIds).map(([Key, Value], index) => ({ id: `ProviderIds-${index}`, Key, Value })),
     IndexNumber: values.IndexNumber === null ? '' : String(values.IndexNumber),
     ParentIndexNumber: values.ParentIndexNumber === null ? '' : String(values.ParentIndexNumber),
+    Album: values.Album,
+    Artists: entries('Artists'),
+    AlbumArtists: entries('AlbumArtists'),
   };
 }
 
@@ -136,12 +142,12 @@ export function metadataInput(revision: string, overrides: MetadataDraftOverride
       Object.assign(values, { [field]: structuredClone(source.Overrides[field]) });
     }
   }
-  const textFields = ['Name', 'SortName', 'Overview', 'OriginalTitle', 'OfficialRating'] as const;
+  const textFields = ['Name', 'SortName', 'Overview', 'OriginalTitle', 'OfficialRating', 'Album'] as const;
   for (const field of textFields) {
     if (!hasActiveOverride(field)) continue;
     const value = overrides[field] ?? '';
     values[field] = value;
-    checkText(value, field, errors, { maximum: field === 'Name' || field === 'SortName' ? 1024 : maxTextBytes, trim: field === 'Name' || field === 'SortName' });
+    checkText(value, field, errors, { maximum: field === 'Name' || field === 'SortName' || field === 'Album' ? 1024 : maxTextBytes, trim: field === 'Name' || field === 'SortName' || field === 'Album' });
     if ((field === 'Name' || field === 'SortName') && !value.trim()) errors[field] = field === 'Name' ? 'Enter a title.' : 'Enter a sort title.';
   }
   if (hasActiveOverride('ProductionYear')) values.ProductionYear = nullableNumber(overrides.ProductionYear ?? '', 'ProductionYear', errors, { integer: true, min: 1, max: 9999 });
@@ -150,7 +156,7 @@ export function metadataInput(revision: string, overrides: MetadataDraftOverride
     if (!hasActiveOverride(field)) continue;
     const raw = overrides[field] ?? '';
     if (field === 'IndexNumber' && source?.EditableFields.includes(field) && !raw.trim()) {
-      errors[field] = 'Enter an episode number from 0 to 2147483647.';
+      errors[field] = `Enter ${source.Item.Type === 'Audio' ? 'a track' : 'an episode'} number from 0 to 2147483647.`;
       continue;
     }
     values[field] = nullableNumber(raw, field, errors, { integer: true, min: 0, max: 2147483647 });
@@ -160,12 +166,14 @@ export function metadataInput(revision: string, overrides: MetadataDraftOverride
     values.PremiereDate = value || null;
     if (value && !validUTCDate(value)) errors.PremiereDate = 'Enter a valid premiere date or leave this empty.';
   }
-  for (const field of ['Genres', 'Tags', 'Studios'] as const) {
+  for (const field of ['Genres', 'Tags', 'Studios', 'Artists', 'AlbumArtists'] as const) {
     if (!hasActiveOverride(field)) continue;
     const rows = overrides[field] ?? [];
+    const musicCredit = field === 'Artists' || field === 'AlbumArtists';
     if (rows.length > maxEntries) errors[field] = `Use at most ${maxEntries.toLocaleString('en-US')} entries.`;
     values[field] = rows.map((entry, index) => {
-      checkText(entry.value, `${field}.${index}`, errors, { maximum: maxTextBytes, nonempty: true, trim: true });
+      checkText(entry.value, `${field}.${index}`, errors, { maximum: musicCredit ? 1024 : maxTextBytes, nonempty: true, trim: true });
+      if (musicCredit && /[\u0000-\u001f\u007f-\u009f]/.test(entry.value.trim())) errors[`${field}.${index}`] = 'Remove control characters from the artist name.';
       return entry.value;
     });
   }

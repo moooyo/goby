@@ -13,6 +13,7 @@ import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import BackupOutlined from '@mui/icons-material/BackupOutlined';
 import CloudOutlined from '@mui/icons-material/CloudOutlined';
 import QueueMusicRounded from '@mui/icons-material/QueueMusicRounded';
+import ImageOutlined from '@mui/icons-material/ImageOutlined';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
@@ -36,8 +37,9 @@ const BackupsPage = lazy(() => import('./BackupsPage').then((module) => ({ defau
 const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module) => ({ default: module.MetadataItemsPage })));
 const ProvidersPage = lazy(() => import('./ProvidersPage').then((module) => ({ default: module.ProvidersPage })));
 const CollectionsPage = lazy(() => import('./CollectionsPage').then((module) => ({ default: module.CollectionsPage })));
+const CatalogArtworkPage = lazy(() => import('./CatalogArtworkPage').then((module) => ({ default: module.CatalogArtworkPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -46,7 +48,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections', artwork: 'Catalog artwork' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -72,6 +74,7 @@ function pageFromLocation(): Page {
   if (path.endsWith('/backups')) return 'backups';
   if (path.endsWith('/providers')) return 'providers';
   if (path.endsWith('/collections')) return 'collections';
+  if (path.endsWith('/artwork')) return 'artwork';
   return 'overview';
 }
 
@@ -91,6 +94,7 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'overview' as const, label: 'Overview', icon: SpaceDashboardOutlined },
           { id: 'users' as const, label: 'Users', icon: PeopleOutlineRounded },
           { id: 'libraries' as const, label: 'Libraries', icon: VideoLibraryOutlined },
+          { id: 'artwork' as const, label: 'Catalog artwork', icon: ImageOutlined },
           { id: 'collections' as const, label: 'Playlists & collections', icon: QueueMusicRounded },
           { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
           { id: 'providers' as const, label: 'Online providers', icon: CloudOutlined },
@@ -168,6 +172,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
 
   async function signOut() {
     if (signingOut) return;
+    if (navigationGuard.current && !navigationGuard.current()) return;
     setSigningOut(true);
     setError(null);
     try {
@@ -215,7 +220,8 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'observability' && <ObservabilityPage />}
             {page === 'backups' && <BackupsPage key={user.Id} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'providers' && <ProvidersPage />}
-            {page === 'collections' && <CollectionsPage onNavigationGuardChange={setNavigationGuard} />}
+                {page === 'collections' && <CollectionsPage onNavigationGuardChange={setNavigationGuard} />}
+                {page === 'artwork' && <CatalogArtworkPage onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>
         </Box>
       </Box>

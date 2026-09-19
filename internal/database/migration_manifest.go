@@ -59,6 +59,12 @@ var publishedMigrations = [...]publishedMigration{
 	{33, "0033_subtitle_styles.sql", "ab04a075a70d501e5cb11fdda8212666478f86c8a8d8fa2726d4fe5b24b36d5b"},
 	{34, "0034_media_deletion_operations.sql", "6553630d31803d351859e0ad60811059b8ddc4f53914cb3de532637405c657cd"},
 	{35, "0035_dynamic_playback.sql", "a69e32ca488467d69f26d5dd688525b48896c683c9b9bb42a26a0ae24910e67a"},
+	{36, "0036_library_editing.sql", "648fef528ec0ca156ab5bd56efb4d6401a5fdb9e3973f16eb589f9d136bca716"},
+	{37, "0037_user_preferences.sql", "f07125bce70286ffb9cbc854ad9fbca518dbf3fd42fd5dabffb631a8f40789ef"},
+	{38, "0038_artwork_entity_state.sql", "8a4379545b8cc0c3b7720a82c8455673a3d6fb1fe43daa30afe4f29a055ddb84"},
+	{39, "0039_music_metadata.sql", "c05fa509d6966c4bddae7d432c7ccfe7d9e14bb755d6e4a3f1ff249fbd500a09"},
+	{40, "0040_management_events.sql", "b79c5bbdf0244c8124eb14fb7679ce94bc2d5c4ca9d01acad9bc049ee69f2ac0"},
+	{41, "0041_music_activity.sql", "e6bd647e9d45a3c8ce79bf94123fdd7f91abcf7a89157677868e2da09e8ed6e5"},
 }
 
 func validatePublishedMigrations(available []migration) error {

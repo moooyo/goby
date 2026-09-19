@@ -81,3 +81,60 @@ func TestConfiguredSourceValidationRejectsProtocolAndHeaderInjection(t *testing.
 		}
 	}
 }
+
+func TestHTTPPrefixIsReplayedToBothPipesWithoutReopeningUpstream(t *testing.T) {
+	body := bytes.Repeat([]byte("single HTTP ingress\x00\xff"), 16000)
+	var requests atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write(body)
+	}))
+	defer upstream.Close()
+	connector := NewHTTPConnector(media.Prober{}, t.TempDir())
+	defer connector.Close()
+	connector.probe = func(_ context.Context, file *os.File) (media.Info, error) {
+		prefix := make([]byte, probeSampleBytes)
+		if _, err := file.ReadAt(prefix, 0); err != nil || !bytes.Equal(prefix, body[:probeSampleBytes]) {
+			t.Fatal("prefix probe did not see generation byte zero")
+		}
+		return testFacts(), nil
+	}
+	manager, err := New(context.Background(), []Definition{{ItemID: "42", URL: upstream.URL, Infinite: true}}, Options{
+		Authorize: func(context.Context, Owner, string, string) error { return nil }, Connector: connector,
+		FanoutBufferBytes: pipeChunkBytes, FanoutTotalBytes: pipeChunkBytes,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close(context.Background())
+	lease := testOpen(t, manager, testOwner(), "prefix_fanout")
+	input, err := manager.Acquire(context.Background(), testOwner(), lease.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := input.OpenPipeSet(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer set.Close()
+	type result struct {
+		data []byte
+		err  error
+	}
+	results := make(chan result, 2)
+	for _, reader := range set.Readers {
+		go func() { data, err := io.ReadAll(reader); results <- result{data, err} }()
+	}
+	if err := waitPipeSet(t, set); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		got := <-results
+		if got.err != nil || !bytes.Equal(got.data, body) {
+			t.Fatal("fanout consumed, duplicated, or truncated probed prefix bytes")
+		}
+	}
+	if requests.Load() != 1 {
+		t.Fatal("second pipe caused a second HTTP source request")
+	}
+}

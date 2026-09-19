@@ -81,9 +81,9 @@ func currentMigrationVersion(t *testing.T) int64 {
 	return migrations[len(migrations)-1].Version
 }
 
-// The inventory covers every table in the reviewed feature-wave DDL. Historical
-// fixture counts remain pinned to their original published schema versions.
-const currentMigrationTableCount = 42
+// The inventory matches the exported schema-40 PostgreSQL-17 recovery catalog.
+// Historical fixture counts remain pinned to their original schema versions.
+const currentMigrationTableCount = 48
 
 // Original-column snapshots prove row preservation; these checks account for
 // every binding column added by the current migration without inferring approval.
@@ -165,6 +165,7 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM pg_tables WHERE schemaname = current_schema()").Scan(&count); err != nil || count != currentMigrationTableCount {
 		t.Errorf("current schema table count = %d, want %d, error = %v", count, currentMigrationTableCount, err)
 	}
+	assertPhase3MigrationDefaults(t, ctx, pool)
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated activity entries: count=%d error=%v", count, err)
 	}

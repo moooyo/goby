@@ -36,7 +36,7 @@ func newHLSClockObserver(plan Plan, report func(Progress), cancel func()) (*hlsC
 			return nil, err
 		}
 		observer.pipes = append(observer.pipes, &hlsClockPipe{read: read, write: write,
-			parser: &hlsClockWriter{count: count, callback: report, cancel: cancel, copyReference: needsHLSCopyClock(plan), expectRendition: true, expectedRendition: index}})
+			parser: &hlsClockWriter{count: count, callback: report, cancel: cancel, copyReference: needsHLSCopyClock(plan), expectRendition: true, expectedRendition: index, liveTimeline: plan.SourceMode == "stream"}})
 	}
 	return observer, nil
 }

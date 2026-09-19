@@ -48,15 +48,24 @@ func seedThemeSnapshotWitness(t *testing.T, ctx context.Context, pool *pgxpool.P
 	}
 }
 
-func themeSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
+func themeSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, sourceVersion ...int64) string {
 	t.Helper()
+	userData := `(SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id,item_id) FROM user_item_data d)`
+	if len(sourceVersion) > 1 {
+		t.Fatal("a theme snapshot supplied multiple historical source versions")
+	}
+	if len(sourceVersion) == 1 {
+		// The published source catalog retains every original user-data column.
+		// Same-schema and refused-operation witnesses keep the full row above.
+		userData = `((` + historicalArchiveRowsStatement(t, "user_item_data", sourceVersion[0]) + `)::jsonb)`
+	}
 	var state string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'owners',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM theme_owner_ids o),
 		'paths',(SELECT jsonb_agg(to_jsonb(p) ORDER BY root_id,relative_path) FROM theme_reserved_paths p),
 		'resources',(SELECT jsonb_agg(to_jsonb(r) ORDER BY resource_item_id) FROM item_theme_resources r),
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
-		'userdata',(SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id,item_id) FROM user_item_data d))::text`).Scan(&state); err != nil {
+		'userdata',`+userData+`)::text`).Scan(&state); err != nil {
 		t.Fatal("capture complete private theme source rows")
 	}
 	return state
@@ -76,7 +85,7 @@ func assertThemeRestoreTargetEmpty(t *testing.T, ctx context.Context, target *pg
 func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemanticFinalizer(t *testing.T) {
 	ctx, source, target, options := recoveryFixtureAtVersion(t, 26)
 	seedThemeSnapshotWitness(t, ctx, source)
-	want := themeSnapshotState(t, ctx, source)
+	want := themeSnapshotState(t, ctx, source, 26)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
 	if facts.SchemaVersion != 26 || len(facts.Tables) != 33 {
@@ -106,10 +115,11 @@ func TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemantic
 	if err != nil || result.SourceVersion != 26 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the same nonempty theme archive after semantic rollback: %v", err)
 	}
-	if themeSnapshotState(t, ctx, target) != want {
+	if themeSnapshotState(t, ctx, target, facts.SchemaVersion) != want {
 		t.Fatal("restore rotated owner IDs, lost inactive classification, reparented an item, or changed user data")
 	}
 	assertHistoricalArchiveBindingDefaults(t, ctx, target)
+	assertPhase3HistoricalPreferenceDefaults(t, ctx, target)
 	for _, test := range []struct {
 		id       string
 		ordinary bool
@@ -179,10 +189,7 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 		t.Run(test.name, func(t *testing.T) {
 			ctx, source, target, options := recoveryFixtureAtVersion(t, 26)
 			seedThemeSnapshotWitness(t, ctx, source)
-			var userDataBefore string
-			if err := source.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id,item_id)::text FROM user_item_data d").Scan(&userDataBefore); err != nil {
-				t.Fatal("capture user history before changing theme owner eligibility")
-			}
+			userDataBefore := historicalArchiveRows(t, ctx, source, "user_item_data", 26)
 			tx, err := source.Begin(ctx)
 			if err != nil {
 				t.Fatal("begin atomic owner change and child deactivation")
@@ -197,13 +204,17 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 			if err := tx.Commit(ctx); err != nil {
 				t.Fatal("commit the owner change and deactivation together")
 			}
-			before := themeSnapshotState(t, ctx, source)
+			before := themeSnapshotState(t, ctx, source, 26)
 			archive, facts := sourceArchive(t, ctx, source, options)
 			result, err := RestoreOffline(ctx, target, archive, facts, options)
-			if err != nil || result.CurrentVersion != currentRecoveryVersion(t) || themeSnapshotState(t, ctx, target) != before {
+			if err != nil || result.SourceVersion != 26 || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 				t.Fatalf("inactive history could not be preserved after its owner moved or became reserved: %v", err)
 			}
+			if themeSnapshotState(t, ctx, target, facts.SchemaVersion) != before {
+				t.Fatal("inactive restoration changed historical owner identity, classification, ancestry, or user data")
+			}
 			assertHistoricalArchiveBindingDefaults(t, ctx, target)
+			assertPhase3HistoricalPreferenceDefaults(t, ctx, target)
 			var active, ordinary, direct int
 			if err := target.QueryRow(ctx, `SELECT count(*) FILTER(WHERE link.active),
 				count(*) FILTER(WHERE `+database.ThemeOrdinaryItemSQL("i")+`),
@@ -211,8 +222,7 @@ func TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges(t *testin
 				FROM item_theme_resources link JOIN items i ON i.id=link.resource_item_id WHERE link.owner_item_id='theme-owner'`).Scan(&active, &ordinary, &direct); err != nil || active != 0 || ordinary != 0 || direct != 0 {
 				t.Fatal("restored inactive children returned to ordinary or direct visibility")
 			}
-			var userDataAfter string
-			if err := target.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id,item_id)::text FROM user_item_data d").Scan(&userDataAfter); err != nil || userDataAfter != userDataBefore {
+			if historicalArchiveRows(t, ctx, target, "user_item_data", facts.SchemaVersion) != userDataBefore {
 				t.Fatal("owner eligibility changes or restore rewrote prior user history")
 			}
 		})

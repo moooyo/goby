@@ -238,7 +238,7 @@ func validateVideoSeekHashHeaders(streams []videoSeekHashStream, headers map[str
 		return fmt.Errorf("missing video seek hash header")
 	}
 	for number, stream := range streams {
-		codec := "h264"
+		codec := VideoSeekCodec(base)
 		if number == 1 {
 			codec = "rawvideo"
 		}

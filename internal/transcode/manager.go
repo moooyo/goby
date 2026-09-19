@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,13 +63,21 @@ type Options struct {
 	// SubtitleSource reauthorizes an external track immediately before burn-in.
 	// It returns bounded ASS bytes bound to Spec.Plan.Subtitle.ExternalTag.
 	SubtitleSource func(context.Context, Spec) ([]byte, error)
-	run            runnerFunc
-	pollInterval   time.Duration
+	// LivePublish synchronously copies one complete aligned bundle into the
+	// authorized time-shift store. Borrowed files expire when the call returns.
+	// LiveSubtitle consumes a bounded incremental subtitle stream; it must not
+	// infer cue completeness from an unrelated AV publication callback.
+	LivePublish  func(context.Context, Spec, string, LiveSegment) error
+	LiveSubtitle func(context.Context, Spec, string, int, io.Reader) error
+	LiveCaption  func(context.Context, Spec, string, LiveCaptionSegment) error
+	run          runnerFunc
+	pollInterval time.Duration
 }
 
 type managedJob struct {
 	record        Record
 	input         *os.File
+	bitmap        *os.File
 	ctx           context.Context
 	cancel        context.CancelFunc
 	created       chan struct{}
@@ -260,10 +269,15 @@ func validManagerIdentifier(value string, limit int, optional bool) bool {
 // exhausted capacity, and persistence errors. An identical live/completed spec
 // reuses its job; a failed or cancelled job can be retried with a new ID.
 func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record, error) {
+	return m.ensureInputs(ctx, spec, StreamInputs{Media: input})
+}
+
+func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInputs) (Record, error) {
+	input := inputs.Media
 	owned := false
 	defer func() {
-		if !owned && input != nil {
-			_ = input.Close()
+		if !owned {
+			inputs.close()
 		}
 	}()
 	if err := ctx.Err(); err != nil {
@@ -273,6 +287,12 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 		return Record{}, ErrInvalidScope
 	}
 	if err := ValidatePlan(spec.Plan); err != nil {
+		return Record{}, err
+	}
+	if spec.Plan.SourceMode == "stream" && m.options.LivePublish == nil {
+		return Record{}, ErrInvalidOptions
+	}
+	if err := validateStreamInputs(inputs, spec.Plan); err != nil {
 		return Record{}, err
 	}
 	if spec.Plan.Subtitle.Mode == "burn" && spec.Plan.Subtitle.ExternalTag != "" && m.options.SubtitleSource == nil {
@@ -343,7 +363,7 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 	now := time.Now().UTC()
 	jobCtx, cancel := context.WithCancel(m.ctx)
 	j := &managedJob{record: Record{ID: hex.EncodeToString(randomID[:]), Spec: spec, State: "queued", CreatedAt: now, UpdatedAt: now, LastAccessAt: now},
-		input: input, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
+		input: input, bitmap: inputs.Bitmap, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
 	m.mu.Lock()
 	if m.closing {
 		m.mu.Unlock()
@@ -361,7 +381,7 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 		m.mu.Unlock()
 		cancel()
 		owned = true
-		return m.Ensure(ctx, spec, input)
+		return m.ensureInputs(ctx, spec, inputs)
 	}
 	if !m.admissionAvailableLocked(spec.Scope) {
 		m.mu.Unlock()
@@ -700,7 +720,7 @@ func (m *Manager) tryOpen(scope Scope, id, name string) (outputAttempt, error) {
 		m.mu.Unlock()
 		return attempt, err
 	}
-	if j.record.Spec.Plan.OutputMode != "" {
+	if j.record.Spec.Plan.OutputMode != "" || j.record.Spec.Plan.SourceMode == "stream" {
 		m.mu.Unlock()
 		return attempt, ErrOutputUnavailable
 	}
@@ -952,15 +972,19 @@ func (m *Manager) runJob(j *managedJob) {
 		return
 	}
 	runContext := withSubtitleSource(j.ctx, j.record.Spec, m.options.SubtitleSource)
+	if j.record.Spec.Plan.SourceMode == "stream" {
+		runContext = withLiveRuntime(runContext, liveRuntime{spec: j.record.Spec, jobID: j.record.ID, inputs: StreamInputs{Media: j.input, Bitmap: j.bitmap},
+			maxBytes: min(MaxLiveScratchBytes, m.options.MaxJobBytes), timeout: m.options.NoProgressTimeout, publish: m.options.LivePublish, subtitle: m.options.LiveSubtitle, caption: m.options.LiveCaption})
+	}
 	_, err = m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, m.options.Threads, func(p Progress) {
 		m.mu.Lock()
 		if clock := p.HLSClock; clock != nil && needsHLSClock(j.record.Spec.Plan) && clock.Rendition >= 0 && clock.Rendition < max(1, j.record.Spec.Plan.HLS.RenditionCount) {
-			if _, err := clock.Ticks(); err == nil && !j.hlsClockKnown[clock.Rendition] {
+			if _, err := clock.ticks(j.record.Spec.Plan.SourceMode != "stream"); err == nil && !j.hlsClockKnown[clock.Rendition] {
 				j.hlsClocks[clock.Rendition], j.hlsClockKnown[clock.Rendition] = *clock, true
 				m.notifyLocked(j)
 			}
 		}
-		becameReady := p.Ready && !j.mediaReady && j.record.Spec.Plan.OutputMode == "progressive"
+		becameReady := p.Ready && !j.mediaReady && (j.record.Spec.Plan.OutputMode == "progressive" || j.record.Spec.Plan.SourceMode == "stream")
 		if becameReady {
 			j.mediaReady = true
 			m.notifyLocked(j)
@@ -1000,7 +1024,7 @@ func (m *Manager) persist(j *managedJob) error {
 }
 
 func (m *Manager) finish(j *managedJob, runErr error) {
-	_ = j.input.Close()
+	(StreamInputs{Media: j.input, Bitmap: j.bitmap}).close()
 	m.mu.Lock()
 	directory := j.directory
 	m.mu.Unlock()
@@ -1012,6 +1036,9 @@ func (m *Manager) finish(j *managedJob, runErr error) {
 		size, ready, scanErr = m.cache.ScanPlanJob(j.record.ID, j.record.Spec.Plan)
 	}
 	m.mu.Lock()
+	if j.record.Spec.Plan.SourceMode == "stream" {
+		ready = j.mediaReady
+	}
 	if j.record.Spec.Plan.OutputMode == "progressive" {
 		ready = ready && j.mediaReady
 		if size < j.record.OutputBytes && j.stopCode == "" {
@@ -1122,6 +1149,9 @@ func (m *Manager) maintain() {
 				m.invalidateFinishedLocked(j, "cache_unavailable")
 			}
 		} else {
+			if j.record.Spec.Plan.SourceMode == "stream" {
+				ready = j.mediaReady
+			}
 			if j.record.Spec.Plan.OutputMode == "progressive" {
 				ready = ready && j.mediaReady
 				if size < j.record.OutputBytes {
@@ -1173,7 +1203,7 @@ func (m *Manager) maintain() {
 			m.stopLocked(j, "cache_quota")
 		case j.readers == 0 && now.Sub(j.record.LastAccessAt) > m.options.IdleTimeout:
 			m.stopLocked(j, "idle_timeout")
-		case j.running && now.Sub(j.started) > m.options.MaxRuntime:
+		case j.running && j.record.Spec.Plan.SourceMode != "stream" && now.Sub(j.started) > m.options.MaxRuntime:
 			m.stopLocked(j, "runtime_timeout")
 		case j.running && !j.ready && now.Sub(j.started) > m.options.StartupTimeout:
 			m.stopLocked(j, "startup_timeout")

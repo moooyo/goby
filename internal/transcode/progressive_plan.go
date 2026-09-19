@@ -29,7 +29,7 @@ func validateProgressivePlan(p Plan) error {
 		return validateProgressiveVideoPlan(p)
 	}
 	invalid := func(field string) error { return fmt.Errorf("%w: progressive %s", ErrInvalidPlan, field) }
-	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
+	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 || p.CopyTimestamps {
 		return invalid("source format clock")
 	}
 	if p.VideoSeekCandidate != "" || p.VideoCopySeekCandidate != "" {

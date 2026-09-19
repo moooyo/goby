@@ -34,6 +34,9 @@ func (state *scanState) localNFO(candidates []string, kind string, previous loca
 	if previous.value != nil && previous.value.Kind != kind {
 		previous = localMetadata{}
 	}
+	if !EffectiveLibraryOptions(state.library).EnableLocalMetadata {
+		return previous
+	}
 	for _, candidate := range candidates {
 		data, found, err := state.readLocalNFO(candidate)
 		if err != nil {

@@ -627,6 +627,7 @@ func TestRootBindingWriteIntegrationRechecksRevocationAfterAdministratorLockWait
 
 func TestRootBindingWriteIntegrationPersistsExactDocumentAndAuditProjection(t *testing.T) {
 	fixture := newRootBindingReadFixture(t)
+	libraryIntegrationCreate(t, fixture.ctx, fixture.store, "Unrelated binding library", "movies", fixture.root.Path)
 	const initialRevision int64 = 9007199254740992
 	if _, err := fixture.pool.Exec(fixture.ctx, `UPDATE library_roots SET binding_revision = $1,
 		storage_binding = NULL, bound_at = NULL, bound_by = NULL WHERE id = $2`,
@@ -634,6 +635,34 @@ func TestRootBindingWriteIntegrationPersistsExactDocumentAndAuditProjection(t *t
 		t.Fatalf("seed an exact unbound revision: %v", err)
 	}
 	before := rootBindingWriteTestUnrelatedCatalog(t, fixture)
+	decodeLibraries := func(raw json.RawMessage) []map[string]json.RawMessage {
+		var libraries []map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &libraries); err != nil {
+			t.Fatalf("decode exact library snapshot: %v", err)
+		}
+		return libraries
+	}
+	expectedLibraries := decodeLibraries(before["libraries"])
+	var expectedLibrary map[string]json.RawMessage
+	var initialLibraryRevision int64
+	for _, library := range expectedLibraries {
+		var id string
+		if err := json.Unmarshal(library["id"], &id); err != nil {
+			t.Fatalf("decode library snapshot identity: %v", err)
+		}
+		if id == fixture.library.ID {
+			if expectedLibrary != nil {
+				t.Fatal("library snapshot contains duplicate target identities")
+			}
+			expectedLibrary = library
+			if err := json.Unmarshal(library["revision"], &initialLibraryRevision); err != nil || initialLibraryRevision < 1 {
+				t.Fatalf("decode exact target library revision: %v", err)
+			}
+		}
+	}
+	if expectedLibrary == nil || len(expectedLibraries) < 2 {
+		t.Fatal("library snapshot must include the target and an unrelated library")
+	}
 	actor := fixture.actor
 	actor.User.IsAdministrator, actor.User.IsDisabled, actor.ExpiresAt = false, true, time.Unix(1, 0)
 	for step := int64(0); step < 2; step++ {
@@ -704,8 +733,15 @@ func TestRootBindingWriteIntegrationPersistsExactDocumentAndAuditProjection(t *t
 				t.Fatalf("binding activity retained private storage data: %q", privateValue)
 			}
 		}
-		if after := rootBindingWriteTestUnrelatedCatalog(t, fixture); !reflect.DeepEqual(after, before) {
-			t.Fatal("root binding approval changed libraries, media, metadata, entities, or scans")
+		// Each successful approval changes exactly this library's edit revision
+		// once. Keep every other library field (including options), every other
+		// library row, and the remaining complete catalog snapshot unchanged.
+		expectedLibrary["revision"] = json.RawMessage(strconv.FormatInt(initialLibraryRevision+step+1, 10))
+		before["libraries"] = metadataEditTestRaw(t, expectedLibraries)
+		after := rootBindingWriteTestUnrelatedCatalog(t, fixture)
+		after["libraries"] = metadataEditTestRaw(t, decodeLibraries(after["libraries"]))
+		if !reflect.DeepEqual(after, before) {
+			t.Fatal("root binding approval changed more than the target library edit revision, approved binding, and audit fact")
 		}
 	}
 }

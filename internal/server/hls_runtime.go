@@ -69,27 +69,31 @@ func (h *hlsRuntime) health() transcode.Health {
 }
 
 type hlsSession struct {
-	mu                 sync.Mutex
-	id                 string
-	key                hlsKey
-	principal          identity.Principal
-	output             playback.Source
-	audioTiming        *media.AudioTiming
-	startHint          int64
-	accessed           time.Time
-	presenceUpdated    time.Time
-	closed             bool
-	timeline           *transcode.Timeline
-	lead               int64
-	building           chan struct{}
-	subtitleClockJob   string
-	subtitleClockTicks int64
-	subtitleClockBusy  chan struct{}
-	producers          []hlsProducer
-	progressiveReaders int
-	lastAsked          int
-	ctx                context.Context
-	cancel             context.CancelFunc
+	mu                  sync.Mutex
+	id                  string
+	key                 hlsKey
+	principal           identity.Principal
+	output              playback.Source
+	subtitleSource      playback.Source
+	subtitleView        playback.HLSSubtitleView
+	audioTiming         *media.AudioTiming
+	startHint           int64
+	accessed            time.Time
+	presenceUpdated     time.Time
+	closed              bool
+	timeline            *transcode.Timeline
+	lead                int64
+	building            chan struct{}
+	subtitleClockJob    string
+	subtitleClockTicks  int64
+	subtitleClockOrigin int64
+	subtitleClockBusy   chan struct{}
+	subtitleWindows     hlsSubtitleTimeline
+	producers           []hlsProducer
+	progressiveReaders  int
+	lastAsked           int
+	ctx                 context.Context
+	cancel              context.CancelFunc
 }
 
 // HLS session IDs identify immutable output revisions, not credentials. Their
@@ -126,6 +130,9 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 	}
 	managerOptions := server.cfg.Transcoding.ManagerOptions(server.cfg.FFmpegPath, transcode.NewRepository(server.db))
 	managerOptions.SubtitleSource = server.readBurnSubtitleAsset
+	managerOptions.LivePublish = server.publishDynamicSegment
+	managerOptions.LiveSubtitle = server.receiveDynamicSubtitles
+	managerOptions.LiveCaption = server.receiveDynamicCaption
 	manager, err := transcode.NewManager(ctx, managerOptions)
 	if err != nil {
 		return nil, err
@@ -198,7 +205,20 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 	}
 	ctx, cancel := context.WithCancel(h.ctx)
 	session := &hlsSession{id: hex.EncodeToString(random[:]), key: key, principal: principal, output: decision.OutputSource,
-		startHint: start, accessed: time.Now(), presenceUpdated: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel}
+		subtitleSource: playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)},
+		subtitleView:   decision.SubtitleView,
+		startHint:      start, accessed: time.Now(), presenceUpdated: time.Now(), lastAsked: -1, ctx: ctx, cancel: cancel}
+	if !session.subtitleView.SelectionSet {
+		if plan.Subtitle.Mode == "hls" {
+			session.subtitleView.OffsetTicks = plan.Subtitle.OffsetTicks
+		}
+		view, err := playback.HLSSubtitleViewFor(plan, nil, session.subtitleView.OffsetTicks)
+		if err != nil {
+			cancel()
+			return nil, errHLSRequestInvalid
+		}
+		session.subtitleView = view
+	}
 	if source.Item.Type == "Audio" && source.Item.Media != nil {
 		if timing := exactAudioCoverage(*source.Item.Media, plan.AudioStreamIndex); timing != nil {
 			copy := *timing
@@ -356,6 +376,10 @@ func (s *Server) authorizeHLS(ctx context.Context, principal identity.Principal,
 			_ = file.Close()
 			return nil, library.MediaFile{}, err
 		}
+	}
+	if err := s.authorizeHLSSubtitles(ctx, fresh, scope, source, plan); err != nil {
+		_ = file.Close()
+		return nil, library.MediaFile{}, err
 	}
 	return file, source, nil
 }

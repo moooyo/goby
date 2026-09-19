@@ -9,11 +9,15 @@ import RestartAltRounded from '@mui/icons-material/RestartAltRounded';
 import VideoLibraryOutlined from '@mui/icons-material/VideoLibraryOutlined';
 import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
 import ListAltRounded from '@mui/icons-material/ListAltRounded';
+import EditOutlined from '@mui/icons-material/EditOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { Library, LibraryInput, LibraryResponse, LibrariesResponse, StorageRootsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError } from './formFields';
 import { RootBindingDialog } from './RootBindingDialog';
+import { LibraryEditorDialog } from './LibraryEditorDialog';
+import { DirectoryPickerDialog } from './DirectoryPickerDialog';
+import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 const collectionTypes: { value: LibraryInput['CollectionType']; label: string }[] = [
@@ -54,7 +58,7 @@ function StorageRoots({ roots }: { roots: StorageRootsResponse }) {
   );
 }
 
-function CreateLibraryDialog({ roots, onClose, onCreated }: { roots: StorageRootsResponse; onClose: () => void; onCreated: (result: LibraryResponse) => void }) {
+function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChange }: { roots: StorageRootsResponse; onClose: () => void; onCreated: (result: LibraryResponse) => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [name, setName] = useState('');
   const [type, setType] = useState<LibraryInput['CollectionType']>('movies');
   const [pathsText, setPathsText] = useState('');
@@ -62,6 +66,10 @@ function CreateLibraryDialog({ roots, onClose, onCreated }: { roots: StorageRoot
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
+  const dirty = Boolean(name || pathsText || type !== 'movies' || !scan);
+  useUserDraftNavigation(dirty && !outcomeUnknown, busy, onNavigationGuardChange, 'Discard the new library draft and leave this page?');
+  function close() { if (!busy && (outcomeUnknown || !dirty || window.confirm('Discard the new library draft?'))) onClose(); }
   const paths = [...new Set(pathsText.split(/\r?\n/).map((path) => path.trim()).filter(Boolean))];
   const invalidPaths = paths.some((path) => !path.startsWith('/'));
   const pathsMessage = fieldError(error, 'Paths') ?? (invalidPaths ? 'Use an absolute Linux path beginning with / for each directory.' : 'Enter one absolute Linux directory path per line.');
@@ -83,7 +91,7 @@ function CreateLibraryDialog({ roots, onClose, onCreated }: { roots: StorageRoot
   }
 
   return (
-    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="sm" aria-labelledby="create-library-title">
+    <><Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="create-library-title">
       <Box component="form" onSubmit={submit} aria-busy={busy}>
         <DialogTitle id="create-library-title" sx={{ px: 3, pt: 3, pb: 0.5 }}><Typography component="span" variant="h3">Create library</Typography></DialogTitle>
         <DialogContent sx={{ px: 3, pt: '12px !important' }}>
@@ -96,16 +104,17 @@ function CreateLibraryDialog({ roots, onClose, onCreated }: { roots: StorageRoot
               {collectionTypes.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
             </TextField>
             <TextField id="library-paths" name="Paths" required fullWidth multiline minRows={3} maxRows={6} label="Media directories" value={pathsText} onChange={(event) => setPathsText(event.target.value)} disabled={busy} error={invalidPaths || Boolean(fieldError(error, 'Paths'))} helperText={pathsMessage} slotProps={{ htmlInput: { spellCheck: false, autoCapitalize: 'none' } }} sx={{ '& textarea': { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13 } }} />
+            <Button type="button" startIcon={<FolderOpenOutlined />} onClick={() => setBrowsing(true)} disabled={busy || outcomeUnknown} sx={{ alignSelf: 'flex-start' }}>Browse directories</Button>
             <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}><StorageRoots roots={roots} /></Paper>
             <FormControlLabel control={<Checkbox checked={scan} onChange={(event) => setScan(event.target.checked)} disabled={busy} />} label={<Box><Typography variant="body2" sx={{ fontWeight: 600 }}>Scan after creating</Typography><Typography variant="caption" color="text.secondary">Find media files and add them to the catalog.</Typography></Box>} />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-          <Button color="secondary" onClick={onClose} disabled={busy}>{outcomeUnknown ? 'Close' : 'Cancel'}</Button>
+          <Button color="secondary" onClick={close} disabled={busy}>{outcomeUnknown ? 'Close' : 'Cancel'}</Button>
           {outcomeUnknown ? <Button variant="contained" onClick={onClose} startIcon={<RefreshRounded />}>Check libraries</Button> : <Button type="submit" variant="contained" disabled={busy || !name.trim() || paths.length === 0 || invalidPaths} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <AddRounded />}>{busy ? 'Creating library...' : 'Create library'}</Button>}
         </DialogActions>
       </Box>
-    </Dialog>
+    </Dialog>{browsing && <DirectoryPickerDialog onClose={() => setBrowsing(false)} onChoose={(path) => { setPathsText([...new Set([...paths, path])].join('\n')); setBrowsing(false); }} />}</>
   );
 }
 
@@ -195,6 +204,7 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
   const [deleting, setDeleting] = useState<Library>();
   const [refreshingMedia, setRefreshingMedia] = useState<Library>();
   const [bindingLibrary, setBindingLibrary] = useState<Library>();
+  const [editingLibrary, setEditingLibrary] = useState<Library>();
   const [unconfirmedRefreshes, setUnconfirmedRefreshes] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<{ message: string; taskLink: boolean }>();
@@ -273,6 +283,7 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
                       <Box sx={{ minWidth: 0 }}><Typography component="h3" variant="h3" sx={{ overflowWrap: 'anywhere' }}>{library.Name}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>{collectionName(library.CollectionType)}</Typography></Box>
                     </Stack>
                     <Stack direction="row" sx={{ gap: 1, flexShrink: 0, flexWrap: 'wrap', maxWidth: '100%' }}>
+                      <Button size="small" startIcon={<EditOutlined />} onClick={() => setEditingLibrary(library)} aria-label={`Edit library ${library.Name}`}>Edit library</Button>
                       <Button variant="contained" size="small" startIcon={<ListAltRounded />} onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}>Manage items</Button>
                       <Button size="small" color="secondary" startIcon={<FolderOpenOutlined />} onClick={() => setBindingLibrary(library)} aria-label={`Storage bindings for ${library.Name}`}>Storage bindings</Button>
                       <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
@@ -293,10 +304,11 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
         )}
         <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1, borderTop: 1, borderColor: 'divider', pt: 2 }}><Typography variant="body2" color="text.secondary">Scans and media details refreshes run in the background. Open Tasks to follow their progress.</Typography><Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />} sx={{ flexShrink: 0 }}>View tasks</Button></Stack>
       </Stack>
-      {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} />}
+      {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} onNavigationGuardChange={onNavigationGuardChange} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
       {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}
       {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => setBindingLibrary(undefined)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {editingLibrary && <LibraryEditorDialog key={editingLibrary.Id} libraryId={editingLibrary.Id} onClose={() => setEditingLibrary(undefined)} onSaved={(result) => { setEditingLibrary(undefined); refresh(); if (result.ScanError) setActionError(new Error(`Library saved, but the scan could not start. ${result.ScanError.Message}`)); else setNotice({ message: `Library ${result.Library.Name} saved.`, taskLink: Boolean(result.Job) }); }} onNavigationGuardChange={onNavigationGuardChange} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
     </Box>
   );

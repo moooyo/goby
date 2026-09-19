@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 // Store is one server's settings publisher. Its defaults never change during
@@ -213,6 +214,9 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 				return err
 			}
 			if err := recordSettingsActivity(tx, actor, previous, changed); err != nil {
+				return err
+			}
+			if err := systemevents.Record(tx.Exec, systemevents.ConfigurationChanged); err != nil {
 				return err
 			}
 		}

@@ -55,6 +55,10 @@ type playbackHTTPFixture struct {
 func newPlaybackHTTPFixture(t *testing.T) *playbackHTTPFixture {
 	t.Helper()
 	f := newServerFixture(t)
+	// Notification readers and the catalog listener belong to the store being
+	// replaced, just like the task manager. Retire them before closing it.
+	f.app.notifier.Close()
+	f.app.catalogNotifier.Close()
 	closeFixtureCatalogForReplacement(t, f)
 	root := t.TempDir()
 	catalog, err := library.New(f.pool, playbackHTTPProber{}, []string{root})
@@ -93,6 +97,15 @@ func newPlaybackHTTPFixture(t *testing.T) *playbackHTTPFixture {
 	s.token = stringValue(t, login, "AccessToken")
 	fixture.authSessionID = stringValue(t, objectValue(t, login, "SessionInfo"), "Id")
 	fixture.headers = http.Header{"X-Emby-Token": {s.token}}
+	// Attach the replacement store before accepting clients. Fixture seed work
+	// has no connected consumer and must not become a queued historical event.
+	userNotifier := newUserDataNotifier(catalog, f.app.eventHub)
+	catalogNotifier := newLibraryNotifier(catalog, f.app.eventHub)
+	f.app.notifier, f.app.catalogNotifier = userNotifier, catalogNotifier
+	t.Cleanup(func() {
+		userNotifier.Close()
+		catalogNotifier.Close()
+	})
 	s.server = httptest.NewServer(f.handler)
 	t.Cleanup(s.server.Close)
 	s.client = s.server.Client()

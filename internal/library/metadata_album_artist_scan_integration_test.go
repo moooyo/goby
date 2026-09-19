@@ -41,7 +41,7 @@ func TestStoreAlbumArtistTagsPublishMixedArtistsWithSharedPersistentCredits(t *t
 			Version: 1, Name: track.title, Album: "Shared album", Artists: []string{track.artist}, AlbumArtists: []string{"Artist A"},
 		})
 		if track.item.ParentID != album.ID || track.item.Album == nil || track.item.Album.ID != album.ID ||
-			track.item.Media == nil || track.item.Media.ProbeVersion != 6 || track.item.Media.EmbeddedMusic == nil ||
+			track.item.Media == nil || track.item.Media.ProbeVersion != media.CurrentProbeVersion || track.item.Media.EmbeddedMusic == nil ||
 			track.item.Media.EmbeddedMusic.Version != media.CurrentMusicMetadataVersion || track.item.Media.EmbeddedMusic.AlbumArtist != "Artist A" {
 			t.Fatalf("explicit album artist changed the physical album or technical cache: %+v", track.item)
 		}

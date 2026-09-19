@@ -208,7 +208,12 @@ func fingerprints(ctx context.Context, tx pgx.Tx, catalog Catalog) ([]backupform
 		for index, column := range table.SortKey {
 			order[index] = `t.` + pgx.Identifier{column}.Sanitize() + `::text COLLATE "C" NULLS FIRST`
 		}
-		rows, err := tx.Query(ctx, `SELECT CASE WHEN pg_catalog.octet_length(pg_catalog.to_jsonb(t)::text)<=33554432 THEN pg_catalog.to_jsonb(t)::text ELSE NULL END FROM `+qualified(catalog.Schema, table.Name)+` t ORDER BY `+strings.Join(order, ","))
+		// OFFSET 0 prevents PostgreSQL from flattening this row-local projection
+		// and repeating bytea/JSONB/text conversion for the guard and its result.
+		rows, err := tx.Query(ctx, `SELECT CASE WHEN pg_catalog.octet_length(serialized.row_text)<=$1 THEN serialized.row_text ELSE NULL END
+			FROM `+qualified(catalog.Schema, table.Name)+` t
+			CROSS JOIN LATERAL (SELECT pg_catalog.to_jsonb(t)::text AS row_text OFFSET 0) serialized
+			ORDER BY `+strings.Join(order, ","), maxSerializedRowBytes)
 		if err != nil {
 			return nil, ErrDatabase
 		}
@@ -221,7 +226,7 @@ func fingerprints(ctx context.Context, tx pgx.Tx, catalog Catalog) ([]backupform
 				rows.Close()
 				return nil, ErrDatabase
 			}
-			if row == nil || len(*row) > 32<<20 {
+			if row == nil || int64(len(*row)) > maxSerializedRowBytes {
 				rows.Close()
 				return nil, ErrLimit
 			}

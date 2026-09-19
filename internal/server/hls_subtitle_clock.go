@@ -13,11 +13,12 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/subtitle"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
-func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File) bool {
+func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Request, session *hlsSession, input *os.File, slot int, sequence int64, view playback.HLSSubtitleView) bool {
 	select {
 	case s.subtitleSlots <- struct{}{}:
 		defer func() { <-s.subtitleSlots }()
@@ -28,13 +29,23 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
 	defer cancel()
-	delta, err := s.hls.subtitleClock(ctx, session, input)
+	_, windows, delta, err := s.hls.subtitleMediaWindow(ctx, session, input)
 	if err != nil {
 		s.hlsError(w, r, err)
 		return false
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	content, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, session.key.plan.Subtitle.StreamIndex, subtitle.FormatWebVTT)
+	track, ok := transcode.HLSSubtitleTrackAt(session.key.plan, slot)
+	if !ok {
+		s.hlsError(w, r, transcode.ErrJobNotFound)
+		return false
+	}
+	window, exists := windows[sequence]
+	if sequence >= 0 && !exists {
+		s.hlsError(w, r, transcode.ErrJobNotFound)
+		return false
+	}
+	content, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), session.key.scope.ItemID, session.key.scope.SourceID, track.StreamIndex, subtitle.FormatWebVTT)
 	if err != nil {
 		s.subtitleError(w, r, err)
 		return false
@@ -44,7 +55,12 @@ func (s *Server) serveGeneratedHLSSubtitle(w http.ResponseWriter, r *http.Reques
 		s.subtitleError(w, r, err)
 		return false
 	}
-	result, err := subtitle.RenderHLS(document, session.key.plan.Subtitle.OffsetTicks, delta)
+	var result subtitle.Result
+	if sequence < 0 {
+		result, err = subtitle.RenderHLS(document, view.OffsetTicks, delta)
+	} else {
+		result, err = subtitle.RenderHLSWindow(document, max(0, window.Start), max(0, window.End), view.OffsetTicks, delta)
+	}
 	if err != nil {
 		s.subtitleError(w, r, err)
 		return false
@@ -82,7 +98,7 @@ type hlsClockJobs interface {
 // avoids guesses about decoder reorder delay, AAC priming, and MP4 timescales.
 func (h *hlsRuntime) subtitleClock(ctx context.Context, session *hlsSession, input *os.File) (int64, error) {
 	clocks, ok := h.manager.(hlsClockJobs)
-	if !ok || session.key.plan.Subtitle.Mode != "hls" {
+	if !ok || !transcode.HasHLSSubtitles(session.key.plan) {
 		return 0, transcode.ErrOutputUnavailable
 	}
 	first, err := h.generatedArtifact(ctx, session, input, transcode.HLSPlaylistName(0, session.key.plan.HLS.RenditionCount))
@@ -186,6 +202,9 @@ func (h *hlsRuntime) measureSubtitleClock(ctx context.Context, session *hlsSessi
 					err = transcode.ErrInvalidTimeline
 				} else if index == 0 {
 					sharedDelta = delta
+					session.mu.Lock()
+					session.subtitleClockOrigin = preTicks
+					session.mu.Unlock()
 				} else if delta-sharedDelta > 112 || sharedDelta-delta > 112 {
 					err = transcode.ErrInvalidTimeline
 				}

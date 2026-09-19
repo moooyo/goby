@@ -111,7 +111,24 @@ func (s *Store) OpenImageContentFor(ctx context.Context, subject Subject, itemID
 	}
 	defer rollback(tx)
 	if _, err := readQueryParent(ctx, tx, itemID, access); err != nil {
+		if id, parseErr := strconv.ParseInt(itemID, 10, 64); errors.Is(err, ErrNotFound) && parseErr == nil && id > 0 {
+			rollback(tx)
+			return s.OpenEntityImageFor(ctx, subject, id, imageType, index)
+		}
 		return nil, Image{}, err
+	}
+	managed, ownsType, err := artwork.ReadManagedImage(ctx, tx, artwork.Target{Kind: "item", ID: itemID}, imageType, index)
+	if err != nil {
+		return nil, Image{}, err
+	}
+	if ownsType {
+		if managed.Tag == "" {
+			return nil, Image{}, ErrNotFound
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return nil, Image{}, err
+		}
+		return io.NopCloser(bytes.NewReader(managed.Content)), imageFromManaged(managed), nil
 	}
 	var data []byte
 	var source Image

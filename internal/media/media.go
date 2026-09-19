@@ -6,7 +6,7 @@ import "time"
 const TicksPerSecond int64 = 10_000_000
 
 // CurrentProbeVersion identifies the media facts stored by this prober.
-const CurrentProbeVersion = 6
+const CurrentProbeVersion = 8
 
 type Prober struct {
 	FFprobePath string
@@ -49,7 +49,9 @@ type Stream struct {
 	Title     string
 	Filename  string
 	MIMEType  string
-	// SubtitleTag binds an authorized external subtitle to its indexed bytes.
+	// SubtitleTag binds an authorized finite subtitle to its indexed bytes.
+	// Dynamic sources bind an operator declaration and lease instead; their
+	// current generation and authority are checked before reading each source.
 	// Primary probing leaves it empty; the library projection supplies it.
 	SubtitleTag          string
 	Width                int
@@ -80,11 +82,34 @@ type Stream struct {
 	ColorPrimaries       string
 	VideoRange           string
 	VideoRangeKnown      bool
+	DolbyVision          *DolbyVisionMetadata
 	IsDefault            bool
 	IsForced             bool
+	IsHearingImpaired    bool
 	IsExternal           bool
 	IsTextSubtitleStream bool
 	AudioTiming          *AudioTiming
+}
+
+// DolbyVisionMetadata preserves the probed Dolby Vision profile and layer flags.
+// It is present only when all six configuration fields are known and consistent.
+// RPU evidence is accepted only after a complete, bounded access-unit scan.
+type DolbyVisionMetadata struct {
+	Profile             int
+	Level               int
+	RPUPresent          bool
+	ELPresent           bool
+	BLPresent           bool
+	CompatibilityID     int
+	MetadataCompression string
+	RPUVerified         bool
+	// RPUProfile is the common profile inferred from RPU headers, or zero.
+	RPUProfile       int
+	RPUResidualMixed bool
+	ResidualDisabled bool
+	RPUFrameCount    int64
+	// Verified RPUs can still report residual or profile inconsistency here.
+	RPUValidationReason string
 }
 
 // AudioTiming describes a fully scanned, continuous audio presentation. Sample

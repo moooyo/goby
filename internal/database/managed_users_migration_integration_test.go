@@ -55,7 +55,7 @@ func managedUsersVersion12Baseline(t *testing.T, ctx context.Context, pool *pgxp
 	}
 }
 
-// Exclude new management, device registry, client-context, and storage-binding
+// Exclude only later management, device, playback, storage, and phase 3
 // columns; old fields, including password digests, token digests, timestamps,
 // policy, and configuration, remain in the exact comparison. Snapshot contents
 // are never printed on failure.
@@ -64,13 +64,15 @@ func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
-		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' ORDER BY id) FROM users t),
+		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' - 'configuration_revision' ORDER BY id) FROM users t),
 		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
-		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
+		'libraries', (SELECT jsonb_agg(to_jsonb(t) - 'revision' - 'options' ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
 		'play', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' - 'is_dynamic' ORDER BY id) FROM play_sessions t),
-		'userdata', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, item_id) FROM user_item_data t),
+		'userdata', (SELECT jsonb_agg(to_jsonb(t) - ARRAY['hide_from_resume','rating','likes',
+			'remembered_media_source_id','remembered_media_stamp','remembered_audio_stream_index',
+			'remembered_subtitle_stream_index'] ORDER BY user_id, item_id) FROM user_item_data t),
 		'encodings', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM encoding_jobs t),
 		'references', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY user_id, auth_session_id, device_id, client_nonce)
 			FROM client_playback_references t)
@@ -146,6 +148,7 @@ func TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions(t *tes
 	if after := managedUsersLegacySnapshot(t, ctx, pool); after != before {
 		t.Error("managed user migration changed historical identity, settings, catalog, or playback state")
 	}
+	assertPhase3MigrationDefaults(t, ctx, pool)
 	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	var preservedHistory, migrationName string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(t) ORDER BY version)::text

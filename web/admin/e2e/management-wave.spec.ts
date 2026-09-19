@@ -37,6 +37,7 @@ function metadata(): MetadataDetail {
   const values: MetadataValues = {
     Name: 'Catalog feature', SortName: '', Overview: '', OriginalTitle: '', OfficialRating: '', ProductionYear: 2020,
     PremiereDate: null, CommunityRating: null, ProviderIds: {}, Genres: [], Tags: [], Studios: [], People: [], IndexNumber: null, ParentIndexNumber: null,
+    Album: '', Artists: [], AlbumArtists: [],
   };
   return {
     Item: { Id: 'movie-one', LibraryId: library.Id, ParentId: '', ParentName: '', Name: values.Name, Type: 'Movie', Path: '/synthetic/media/feature.mkv', IsFolder: false },

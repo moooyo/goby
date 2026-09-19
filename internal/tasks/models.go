@@ -90,23 +90,25 @@ type Definition struct {
 
 // Trigger uses Goby's typed schedule model, not unobserved Emby write fields.
 type Trigger struct {
-	ID               string     `json:"id"`
-	TaskID           string     `json:"task_id"`
-	ScheduleRevision int64      `json:"schedule_revision"`
-	Position         int        `json:"position"`
-	Kind             string     `json:"kind"`
-	IntervalTicks    *int64     `json:"interval_ticks"`
-	AnchorAt         *time.Time `json:"anchor_at"`
-	TimeOfDayTicks   *int64     `json:"time_of_day_ticks"`
-	DayOfWeek        *int       `json:"day_of_week"`
-	Timezone         *string    `json:"timezone"`
-	MaxRuntimeTicks  *int64     `json:"max_runtime_ticks"`
-	NextFireAt       *time.Time `json:"next_fire_at"`
-	LastDueAt        *time.Time `json:"last_due_at"`
-	CalculationError string     `json:"calculation_error"`
-	RetiredAt        *time.Time `json:"retired_at"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	ID                string     `json:"id"`
+	TaskID            string     `json:"task_id"`
+	ScheduleRevision  int64      `json:"schedule_revision"`
+	Position          int        `json:"position"`
+	Kind              string     `json:"kind"`
+	SystemEvent       *string    `json:"system_event"`
+	LastEventSequence int64      `json:"last_event_sequence"`
+	IntervalTicks     *int64     `json:"interval_ticks"`
+	AnchorAt          *time.Time `json:"anchor_at"`
+	TimeOfDayTicks    *int64     `json:"time_of_day_ticks"`
+	DayOfWeek         *int       `json:"day_of_week"`
+	Timezone          *string    `json:"timezone"`
+	MaxRuntimeTicks   *int64     `json:"max_runtime_ticks"`
+	NextFireAt        *time.Time `json:"next_fire_at"`
+	LastDueAt         *time.Time `json:"last_due_at"`
+	CalculationError  string     `json:"calculation_error"`
+	RetiredAt         *time.Time `json:"retired_at"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 }
 
 type Run struct {

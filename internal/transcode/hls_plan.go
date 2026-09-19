@@ -13,6 +13,7 @@ type HLSPlan struct {
 	SegmentType    string                         `json:"SegmentType,omitempty"`
 	RenditionCount int                            `json:"RenditionCount,omitempty"`
 	Renditions     [MaxHLSRenditions]HLSRendition `json:"Renditions,omitempty"`
+	Subtitles      HLSSubtitlePlan                `json:"Subtitles,omitempty"`
 }
 
 type HLSRendition struct {
@@ -24,15 +25,18 @@ type HLSRendition struct {
 // GeneratedHLS distinguishes measured multi-resource HLS from the original
 // source-timeline TS API. Empty HLS retains its original output contract.
 func GeneratedHLS(p Plan) bool {
-	return p.HLS != (HLSPlan{}) || p.Subtitle.Mode == "hls" || p.SourceMode == "stream"
+	return p.HLS != (HLSPlan{}) || HasHLSSubtitles(p) || p.SourceMode == "stream"
 }
 
 func validateHLSPlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: %s", ErrInvalidPlan, field) }
+	if err := ValidateHLSSubtitlePlan(p); err != nil {
+		return err
+	}
 	if p.SourceMode != "" && p.SourceMode != "stream" {
 		return invalid("source mode")
 	}
-	if p.SourceMode == "stream" && (p.StartTicks != 0 || p.DurationTicks != 0 || p.AudioSampleSeek || p.SegmentMode != "" || p.Subtitle.Mode != "") {
+	if p.SourceMode == "stream" && (p.StartTicks != 0 || p.DurationTicks != 0 || p.AudioSampleSeek || p.SegmentMode != "" || p.Subtitle.Mode != "" && p.Subtitle.Mode != "burn") {
 		return invalid("stream timeline")
 	}
 	if p.HLS.SegmentType != "" && p.HLS.SegmentType != "mpegts" && p.HLS.SegmentType != "fmp4" && p.HLS.SegmentType != "packed" {
@@ -44,6 +48,9 @@ func validateHLSPlan(p Plan) error {
 	if p.HLS.SegmentType == "fmp4" && p.AudioCodec == "mp3" {
 		return invalid("fMP4 audio codec")
 	}
+	if VideoOutputCodec(p) == "av1" && p.HLS.SegmentType != "fmp4" {
+		return invalid("AV1 requires fMP4 HLS")
+	}
 	if p.HLS.SegmentType == "fmp4" && p.Container != "mp4" || p.HLS.SegmentType == "packed" && p.Container != p.AudioCodec {
 		return invalid("HLS container")
 	}
@@ -53,7 +60,7 @@ func validateHLSPlan(p Plan) error {
 	if p.HLS.RenditionCount < 0 || p.HLS.RenditionCount > MaxHLSRenditions || p.HLS.RenditionCount == 1 {
 		return invalid("rendition count")
 	}
-	if p.HLS.RenditionCount > 0 && (p.VideoCodec != "h264" || p.VideoStreamIndex < 0 || p.FrameRate == 0 || p.HLS.SegmentType == "packed") {
+	if p.HLS.RenditionCount > 0 && (!VideoEncodingSupported(p.VideoCodec) || p.VideoStreamIndex < 0 || p.FrameRate == 0 || p.HLS.SegmentType == "packed") {
 		return invalid("adaptive video")
 	}
 	for index, rendition := range p.HLS.Renditions {

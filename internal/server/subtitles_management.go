@@ -9,6 +9,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 func (s *Server) deleteSubtitle(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +50,15 @@ func (s *Server) retireDeletedSubtitle(itemID string, index int) {
 	s.hls.mu.Lock()
 	var affected []*hlsSession
 	for _, session := range s.hls.sessions {
-		if session.key.scope.ItemID == itemID && session.key.plan.Subtitle.Mode != "" && session.key.plan.Subtitle.StreamIndex == index {
+		if session.key.scope.ItemID != itemID {
+			continue
+		}
+		bound := session.key.plan.Subtitle.Mode != "" && session.key.plan.Subtitle.StreamIndex == index
+		tracks := transcode.PlanHLSSubtitles(session.key.plan)
+		for slot := 0; slot < tracks.Count; slot++ {
+			bound = bound || tracks.Tracks[slot].StreamIndex == index
+		}
+		if bound {
 			affected = append(affected, session)
 		}
 	}

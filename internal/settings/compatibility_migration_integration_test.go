@@ -37,6 +37,18 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 	if table == "library_roots" {
 		projection += " - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by'"
 	}
+	if table == "libraries" {
+		projection += " - 'revision' - 'options'"
+	}
+	if table == "users" {
+		projection += " - 'configuration_revision'"
+	}
+	if table == "user_item_data" {
+		projection += " - 'hide_from_resume' - 'rating' - 'likes' - 'remembered_media_source_id' - 'remembered_media_stamp' - 'remembered_audio_stream_index' - 'remembered_subtitle_stream_index'"
+	}
+	if table == "task_triggers" {
+		projection += " - 'system_event' - 'last_event_sequence'"
+	}
 	statement := "SELECT COALESCE(jsonb_agg(" + projection + " ORDER BY (" + projection + ")::text), '[]'::jsonb)::text FROM " + pgx.Identifier{table}.Sanitize() + " original"
 	if table == "schema_migrations" {
 		statement += " WHERE version <= 20"
@@ -81,6 +93,29 @@ func compatibilityMigrationBindingDefaults(t *testing.T, ctx context.Context, po
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
 		OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL`).Scan(&changedRoots); err != nil || changedRoots != 0 {
 		t.Fatalf("compatibility migration changed historical root binding defaults: count=%d error=%v", changedRoots, err)
+	}
+}
+
+func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM libraries WHERE revision IS DISTINCT FROM 1
+			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb)
+		AND NOT EXISTS(SELECT 1 FROM users WHERE configuration_revision IS DISTINCT FROM 1)
+		AND NOT EXISTS(SELECT 1 FROM user_item_data WHERE hide_from_resume IS DISTINCT FROM false
+			OR rating IS NOT NULL OR likes IS NOT NULL OR remembered_media_source_id IS DISTINCT FROM ''
+			OR remembered_media_stamp IS DISTINCT FROM '' OR remembered_audio_stream_index IS NOT NULL
+			OR remembered_subtitle_stream_index IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM display_preferences)
+		AND NOT EXISTS(SELECT 1 FROM artwork_state)
+		AND NOT EXISTS(SELECT 1 FROM artwork_images)
+		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
+		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
+		AND (SELECT count(*) FROM task_system_events)=3
+		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '')
+		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("compatibility migration inferred phase 3 preferences, artwork, or system-event history: %v", err)
 	}
 }
 
@@ -130,7 +165,11 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			}
 			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width", "management")
 			sort.Strings(wantColumns)
-			currentTables := append(append([]string(nil), tables...), "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources", "media_collections", "media_collection_entries", "media_collection_shares", "item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations")
+			currentTables := append(append([]string(nil), tables...),
+				"activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources",
+				"extra_reserved_paths", "item_extra_resources", "media_collections", "media_collection_entries", "media_collection_shares",
+				"item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations",
+				"display_preferences", "artwork_state", "artwork_images", "entity_user_data", "task_system_events", "task_system_event_receipts")
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory string
 			for attempt := 1; attempt <= 2; attempt++ {
@@ -141,6 +180,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 					t.Fatalf("compatibility full migration schema version = %d, want %d: %v", version, latest, err)
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
+				compatibilityMigrationPhase3Defaults(t, ctx, pool)
 				var dynamicSessions int
 				if err := pool.QueryRow(ctx, `SELECT count(*) FROM play_sessions WHERE is_dynamic IS DISTINCT FROM false`).Scan(&dynamicSessions); err != nil || dynamicSessions != 0 {
 					t.Errorf("current migration marked historical playback sessions as dynamic: count=%d error=%v", dynamicSessions, err)
@@ -150,7 +190,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 					t.Fatalf("compatibility migration history name = %q: %v", name, err)
 				}
 				if after := settingsMigrationTables(t, ctx, pool); len(after) != len(currentTables) || strings.Join(after, " ") != strings.Join(currentTables, " ") {
-					t.Errorf("current migration did not retain every historical table and add activity entries, user settings, and five auxiliary tables: %v", after)
+					t.Errorf("current migration did not retain the complete historical and current native table inventory: %v", after)
 				}
 				var activityCount int
 				if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&activityCount); err != nil || activityCount != 0 {

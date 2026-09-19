@@ -35,6 +35,9 @@ const (
 // select compatible, authorized streams and reject unsupported HDR conversions.
 func ValidatePlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: %s", ErrInvalidPlan, field) }
+	if err := validateVideoEncoding(p); err != nil {
+		return err
+	}
 	if err := ValidateVideoFilters(p); err != nil {
 		return err
 	}
@@ -50,7 +53,8 @@ func ValidatePlan(p Plan) error {
 	if p.OutputMode != "" {
 		return invalid("output mode")
 	}
-	if p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0 {
+	if p.CopyTimestamps || p.SourceMode != "stream" && (p.SourceFormatStartKnown || p.SourceFormatStartTicks != 0) ||
+		p.SourceMode == "stream" && (!p.SourceFormatStartKnown && p.SourceFormatStartTicks != 0 || p.SourceFormatStartTicks < -(math.MaxInt64-ticksPerSecond) || p.SourceFormatStartTicks > math.MaxInt64-ticksPerSecond) {
 		return invalid("source format clock")
 	}
 	if p.VideoSeekCandidate != "" || p.VideoCopySeekCandidate != "" {
@@ -78,7 +82,7 @@ func ValidatePlan(p Plan) error {
 		(p.VideoStreamIndex < 0 && p.AudioStreamIndex < 0) || (p.VideoStreamIndex >= 0 && p.VideoStreamIndex == p.AudioStreamIndex) {
 		return invalid("stream indexes")
 	}
-	if (p.VideoStreamIndex < 0 && p.VideoCodec != "") || (p.VideoStreamIndex >= 0 && p.VideoCodec != "copy" && p.VideoCodec != "h264") {
+	if (p.VideoStreamIndex < 0 && p.VideoCodec != "") || (p.VideoStreamIndex >= 0 && p.VideoCodec != "copy" && !VideoEncodingSupported(p.VideoCodec)) {
 		return invalid("video codec")
 	}
 	if (p.AudioStreamIndex < 0 && p.AudioCodec != "") || (p.AudioStreamIndex >= 0 && p.AudioCodec != "copy" && p.AudioCodec != "aac" && p.AudioCodec != "mp3") {
@@ -124,13 +128,17 @@ func ValidatePlan(p Plan) error {
 		backend = decode
 	}
 	if backend == "software" {
-		if p.Hardware.Device != "" {
+		if p.VideoFilters.Backend == "vulkan" {
+			if !validHardwareDevice("vaapi", p.Hardware.Device) {
+				return invalid("Vulkan hardware device")
+			}
+		} else if p.Hardware.Device != "" {
 			return invalid("software device")
 		}
 	} else if !validHardwareDevice(backend, p.Hardware.Device) {
 		return invalid("hardware device")
 	}
-	if p.VideoCodec != "h264" && (p.Width != 0 || p.Height != 0 || p.FrameRate != 0 || p.VideoBitrate != 0 || backend != "software") {
+	if !VideoEncodingSupported(p.VideoCodec) && (p.Width != 0 || p.Height != 0 || p.FrameRate != 0 || p.VideoBitrate != 0 || backend != "software") {
 		return invalid("video options require encoding")
 	}
 	if p.AudioCodec != "aac" && p.AudioCodec != "mp3" && (p.AudioBitrate != 0 || p.AudioChannels != 0 || p.AudioSampleRate != 0) {
@@ -185,13 +193,13 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		return buildProgressiveArgs(p, threads), nil
 	}
 	if GeneratedHLS(p) {
-		return buildGeneratedHLSArgs(p, threads), nil
+		return buildGeneratedHLSArgs(p, threads)
 	}
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y",
 		"-progress", "pipe:1", "-stats_period", "0.5", "-filter_threads", threadCount,
 		"-filter_complex_threads", threadCount}
-	args, decode, encode := appendHardwareInputArgs(args, p.Hardware)
+	args, decode, encode := appendHardwareInputArgs(args, p)
 	args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats)
 	if p.StartTicks > 0 && !p.AudioSampleSeek {
 		args = append(args, "-ss", tickSeconds(p.StartTicks))
@@ -201,6 +209,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		end = p.EndTicks
 	}
 	args = append(args, "-i", "/proc/self/fd/3")
+	args = appendBitmapSubtitleInputArgs(args, p, threads)
 	if !p.AudioSampleSeek {
 		args = append(args, "-t", tickSeconds(end-p.StartTicks))
 	}
@@ -217,12 +226,8 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	}
 	if p.VideoCodec == "copy" {
 		args = append(args, "-c:v", "copy")
-	} else if p.VideoCodec == "h264" {
-		codec := "libx264"
-		switch encode {
-		case "vaapi", "qsv", "nvenc":
-			codec = "h264_" + encode
-		}
+	} else if VideoEncodingSupported(p.VideoCodec) {
+		codec := VideoEncoder(p.VideoCodec, encode)
 		forcedFrames := "expr:gte(t,n_forced*" + strconv.Itoa(p.SegmentSeconds) + ")"
 		if p.SegmentMode == "vod" {
 			forcedFrames = "0"
@@ -238,7 +243,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 		if p.FrameRate > 0 {
 			args = append(args, "-r", strconv.FormatFloat(p.FrameRate, 'f', -1, 64), "-g", strconv.Itoa(int(math.Ceil(p.FrameRate*float64(p.SegmentSeconds)))))
 		}
-		args = appendVideoEncoderOptions(args, encode)
+		args = appendVideoEncoderOptions(args, p, encode, threads)
 		bitrate := p.VideoBitrate
 		if bitrate == 0 {
 			bitrate = 4_000_000
@@ -312,7 +317,8 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	return args, nil
 }
 
-func appendHardwareInputArgs(args []string, hardware Hardware) ([]string, string, string) {
+func appendHardwareInputArgs(args []string, p Plan) ([]string, string, string) {
+	hardware := p.Hardware
 	decode, encode := hardwareSelection(hardware)
 	backend := encode
 	if backend == "nvenc" {
@@ -328,6 +334,23 @@ func appendHardwareInputArgs(args []string, hardware Hardware) ([]string, string
 			device = "0"
 		}
 	}
+	if p.VideoFilters.Backend == "vulkan" {
+		if backend == "vaapi" || hardware.Device != "" {
+			// Both APIs descend from one explicitly selected render node. Vulkan
+			// performs pixel processing; VAAPI handles the selected codec work.
+			args = append(args, "-init_hw_device", "drm=gobydrm:"+device)
+			if backend == "vaapi" {
+				args = append(args, "-init_hw_device", "vaapi=goby@gobydrm")
+			}
+			args = append(args, "-init_hw_device", "vulkan=gobyvk@gobydrm", "-filter_hw_device", "gobyvk")
+		} else {
+			args = append(args, "-init_hw_device", "vulkan=gobyvk", "-filter_hw_device", "gobyvk")
+		}
+		if decode != "software" {
+			args = append(args, "-hwaccel", decode, "-hwaccel_device", "goby", "-hwaccel_output_format", decode)
+		}
+		return args, decode, encode
+	}
 	switch backend {
 	case "vaapi":
 		args = append(args, "-init_hw_device", "vaapi=goby:"+device, "-filter_hw_device", "goby")
@@ -340,18 +363,6 @@ func appendHardwareInputArgs(args []string, hardware Hardware) ([]string, string
 		args = append(args, "-hwaccel", decode, "-hwaccel_device", "goby", "-hwaccel_output_format", decode)
 	}
 	return args, decode, encode
-}
-
-func appendVideoEncoderOptions(args []string, encode string) []string {
-	switch encode {
-	case "software":
-		return append(args, "-preset", "veryfast", "-pix_fmt", "yuv420p", "-sc_threshold", "0", "-flags", "+cgop")
-	case "qsv":
-		return append(args, "-idr_interval", "0", "-forced_idr", "1")
-	case "nvenc":
-		return append(args, "-forced-idr", "1")
-	}
-	return args
 }
 
 func planSegmentTimes(p Plan) ([]int64, error) {
@@ -395,18 +406,38 @@ func tickSeconds(ticks int64) string {
 }
 
 func videoFilter(p Plan, decode, encode string) string {
-	filter := basicVideoFilter(p, decode, encode)
-	if p.Subtitle.Mode == "burn" {
-		if subtitle, _ := TextSubtitleFilter(p); subtitle != "" {
-			return filter + "," + subtitle
+	if p.Subtitle.Mode == "burn" && !IsBitmapSubtitle(p.Subtitle.Codec) && !gpuSubtitleComposition(p) {
+		filters := []string{}
+		if processing := videoCanvasFilter(p, decode); processing != "" {
+			filters = append(filters, processing)
 		}
+		width, height := videoDimensions(p)
+		filters = append(filters, "scale=w="+width+":h="+height, "format="+videoSoftwareFormat(p))
+		if subtitle, _ := TextSubtitleFilter(p); subtitle != "" {
+			filters = append(filters, subtitle)
+		}
+		if encode != "software" {
+			filters = append(filters, videoOutputFilter(p, encode, false))
+		}
+		return strings.Join(filters, ",")
 	}
+	filter := basicVideoFilter(p, decode, encode)
 	return filter
 }
 
 func basicVideoFilter(p Plan, decode, encode string) string {
 	if p.VideoFilters != (VideoFilters{}) {
-		return softwareVideoFilter(p)
+		processing := videoCanvasFilter(p, decode)
+		if processing != "" {
+			processing += ","
+		}
+		return processing + videoOutputFilter(p, encode, true)
+	}
+	if decode == "vaapi" {
+		// VAAPI VPP can silently retain an aligned surface canvas or report
+		// device errors while FFmpeg exits successfully. Preserve hardware
+		// decoding, but perform exact resizing on downloaded software frames.
+		return videoCanvasFilter(p, decode) + "," + videoOutputFilter(p, encode, true)
 	}
 	width, height := "trunc(iw/2)*2", "trunc(ih/2)*2"
 	if p.Width > 0 {
@@ -417,15 +448,15 @@ func basicVideoFilter(p Plan, decode, encode string) string {
 		if decode == "qsv" {
 			filter = "vpp_qsv"
 		}
-		filter += "=w=" + width + ":h=" + height + ":format=nv12"
+		filter += "=w=" + width + ":h=" + height + ":format=" + videoHardwareFormat(p)
 		if encode == "software" {
-			filter += ",hwdownload,format=nv12,format=yuv420p"
+			filter += ",hwdownload,format=" + videoHardwareFormat(p) + ",format=" + videoSoftwareFormat(p)
 		}
 		return filter
 	}
 	filter := "scale=w=" + width + ":h=" + height
 	if encode == "software" {
-		return filter + ",format=yuv420p"
+		return filter + ",format=" + videoSoftwareFormat(p)
 	}
-	return filter + ",format=nv12,hwupload=extra_hw_frames=64"
+	return filter + ",format=" + videoHardwareFormat(p) + ",hwupload=extra_hw_frames=64"
 }

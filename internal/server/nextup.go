@@ -15,6 +15,10 @@ func (s *Server) nextUpItems(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if hasNavigationFilters(query) || query.IsFavoriteOrLikes != nil || query.SortBy != "" || query.SortOrder != "" {
+		s.libraryError(w, r, library.ErrInvalidInput)
+		return
+	}
 	if len(query.ListItemIds) != 0 {
 		s.libraryError(w, r, library.ErrUnsupportedFilter)
 		return

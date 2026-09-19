@@ -222,6 +222,7 @@ func videoHTTPJobCount(t *testing.T, fixture *hlsHTTPFixture, playID string, act
 
 type videoHTTPOutput struct {
 	width, height, frames int
+	codec, pixelFormat    string
 	audio                 bool
 	seconds               float64
 	color                 [3]int
@@ -242,25 +243,30 @@ func videoHTTPVerifyMP4(t *testing.T, fixture *hlsHTTPFixture, data []byte, want
 			Duration string `json:"duration"`
 		} `json:"format"`
 		Streams []struct {
-			Codec  string `json:"codec_name"`
-			Type   string `json:"codec_type"`
-			Frames string `json:"nb_read_frames"`
-			Width  int    `json:"width"`
-			Height int    `json:"height"`
+			Codec       string `json:"codec_name"`
+			PixelFormat string `json:"pix_fmt"`
+			Type        string `json:"codec_type"`
+			Frames      string `json:"nb_read_frames"`
+			Width       int    `json:"width"`
+			Height      int    `json:"height"`
 		} `json:"streams"`
 	}
 	facts := hlsHTTPMediaCommand(t, fixture.ffprobe, "-v", "error", "-count_frames", "-show_entries",
-		"format=format_name,duration:stream=codec_name,codec_type,nb_read_frames,width,height", "-of", "json", path)
+		"format=format_name,duration:stream=codec_name,codec_type,nb_read_frames,width,height,pix_fmt", "-of", "json", path)
 	if err := json.Unmarshal(facts, &probe); err != nil || !strings.Contains(probe.Format.Name, "mp4") {
 		t.Fatal("received video cannot be probed as MP4")
 	}
 	videoCount, audioCount := 0, 0
+	if want.codec == "" {
+		want.codec = "h264"
+	}
 	for _, stream := range probe.Streams {
 		switch stream.Type {
 		case "video":
 			videoCount++
 			frames, err := strconv.Atoi(stream.Frames)
-			if err != nil || frames != want.frames || stream.Codec != "h264" || stream.Width != want.width || stream.Height != want.height {
+			if err != nil || frames != want.frames || stream.Codec != want.codec || stream.Width != want.width || stream.Height != want.height ||
+				want.pixelFormat != "" && stream.PixelFormat != want.pixelFormat {
 				t.Fatalf("received MP4 video does not retain its expected geometry and frame count: %d frames, want %d", frames, want.frames)
 			}
 		case "audio":
@@ -390,6 +396,9 @@ func TestHTTPVideoProgressiveNegotiationSeekMixedCopyAndSilentSource(t *testing.
 	head := fixture.request(t, http.MethodHead, prepared.uri.String(), nil, nil)
 	expectHLSHTTPStatus(t, head, http.StatusOK)
 	assertAudioHTTPProgressiveHeaders(t, head.header, "video/mp4")
+	if head.header.Get("X-Goby-Start-Time-Ticks") != "0" || head.header.Get("X-Goby-Seek-Aligned") != "" {
+		t.Fatal("video HEAD omitted the actual start or invented seek alignment")
+	}
 	if len(head.body) != 0 || videoHTTPJobCount(t, fixture, prepared.playID, false) != 0 {
 		t.Fatal("video HEAD started production or supplied a media body")
 	}
@@ -406,6 +415,9 @@ func TestHTTPVideoProgressiveNegotiationSeekMixedCopyAndSilentSource(t *testing.
 	seek := fixture.request(t, http.MethodGet, seekURL.String(), nil, nil)
 	expectHLSHTTPStatus(t, seek, http.StatusOK)
 	assertAudioHTTPProgressiveHeaders(t, seek.header, "video/mp4")
+	if seek.header.Get("X-Goby-Start-Time-Ticks") != "42500000" || seek.header.Get("X-Goby-Seek-Aligned") != "" {
+		t.Fatal("precise encoded seek did not report its actual source start")
+	}
 	videoHTTPVerifyMP4(t, fixture, seek.body, videoHTTPOutput{width: 96, height: 54, frames: 186, audio: true, seconds: 7.75, color: [3]int{0, 128, 0}})
 	_, seekRecord := videoHTTPRecord(t, fixture, prepared.playID, "h264", 42_500_000)
 	if !seekRecord.Spec.Plan.SourceFormatStartKnown || seekRecord.Spec.Plan.StartTicks != 42_500_000 || seekRecord.State != "completed" {

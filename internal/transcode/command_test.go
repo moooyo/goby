@@ -48,13 +48,13 @@ func TestBuildArgsHardwareDecodeAndEncodeIndependently(t *testing.T) {
 		name, decode, encode, device, wantFilter, wantEncoder string
 	}{
 		{"software", "", "", "", "scale=w=160:h=90,format=yuv420p", "libx264"},
-		{"vaapi decode", "vaapi", "software", "/dev/dri/renderD129", "scale_vaapi=w=160:h=90:format=nv12,hwdownload,format=nv12,format=yuv420p", "libx264"},
+		{"vaapi decode", "vaapi", "software", "/dev/dri/renderD129", "hwdownload,format=nv12,scale=w=160:h=90,format=yuv420p", "libx264"},
 		{"qsv decode", "qsv", "software", "", "vpp_qsv=w=160:h=90:format=nv12,hwdownload,format=nv12,format=yuv420p", "libx264"},
 		{"cuda decode", "cuda", "software", "1", "scale_cuda=w=160:h=90:format=nv12,hwdownload,format=nv12,format=yuv420p", "libx264"},
 		{"vaapi encode", "software", "vaapi", "", "scale=w=160:h=90,format=nv12,hwupload=extra_hw_frames=64", "h264_vaapi"},
 		{"qsv encode", "software", "qsv", "", "scale=w=160:h=90,format=nv12,hwupload=extra_hw_frames=64", "h264_qsv"},
 		{"nvenc encode", "software", "nvenc", "0", "scale=w=160:h=90,format=nv12,hwupload=extra_hw_frames=64", "h264_nvenc"},
-		{"vaapi both", "vaapi", "vaapi", "", "scale_vaapi=w=160:h=90:format=nv12", "h264_vaapi"},
+		{"vaapi both", "vaapi", "vaapi", "", "hwdownload,format=nv12,scale=w=160:h=90,format=nv12,hwupload=extra_hw_frames=64", "h264_vaapi"},
 		{"qsv both", "qsv", "qsv", "", "vpp_qsv=w=160:h=90:format=nv12", "h264_qsv"},
 		{"cuda both", "cuda", "nvenc", "", "scale_cuda=w=160:h=90:format=nv12", "h264_nvenc"},
 	} {

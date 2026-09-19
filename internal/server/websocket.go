@@ -201,8 +201,10 @@ func (s *Server) clientSocket(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscription, principal identity.Principal, peerIP string) {
 	ctx, cancel := context.WithCancel(s.sockets.ctx)
+	updates := newSessionSubscription()
+	queuedEvents := make(chan events.Event, 1)
 	var workers sync.WaitGroup
-	workers.Add(3)
+	workers.Add(4)
 	defer func() {
 		cancel()
 		_ = conn.CloseNow()
@@ -211,7 +213,7 @@ func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscriptio
 	go func() {
 		defer workers.Done()
 		defer cancel()
-		readSocketMessages(ctx, conn)
+		readSocketMessages(ctx, conn, updates.handle)
 	}()
 	go func() {
 		defer workers.Done()
@@ -229,20 +231,94 @@ func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscriptio
 		// or shutdown; queued data must not drain after authorization is lost.
 		_ = conn.CloseNow()
 	}()
+	go func() {
+		defer workers.Done()
+		defer cancel()
+		for {
+			event, err := sub.Next(ctx)
+			if err != nil {
+				return
+			}
+			select {
+			case queuedEvents <- event:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	var timer *time.Timer
+	var refresh <-chan time.Time
+	var timerRevision uint64
+	stopTimer := func() {
+		if timer != nil {
+			timer.Stop()
+		}
+		refresh = nil
+	}
+	defer stopTimer()
+	resetTimer := func(delay time.Duration, revision uint64) {
+		stopTimer()
+		timer = time.NewTimer(delay)
+		refresh = timer.C
+		timerRevision = revision
+	}
 	for {
-		event, err := sub.Next(ctx)
-		if err != nil {
+		var event events.Event
+		var state sessionSubscriptionState
+		isSessionRefresh := false
+		select {
+		case <-ctx.Done():
 			return
+		case <-updates.wake:
+			state = updates.snapshot()
+			if state.active {
+				resetTimer(state.delay, state.revision)
+			} else {
+				stopTimer()
+			}
+			continue
+		case <-refresh:
+			state = updates.snapshot()
+			if !state.active {
+				stopTimer()
+				continue
+			}
+			// An expired timer from the replaced subscription cannot bypass the
+			// new subscription's requested initial delay while its wake is pending.
+			if state.revision != timerRevision {
+				resetTimer(state.delay, state.revision)
+				continue
+			}
+			isSessionRefresh = true
+		case event = <-queuedEvents:
 		}
 		authorizationCtx, stopAuthorization := context.WithTimeout(ctx, 2*time.Second)
 		fresh, err := s.identity.RevalidateSession(authorizationCtx, principal)
 		var payload []byte
 		if err == nil {
-			payload, err = s.socketEventPayload(authorizationCtx, fresh, event)
+			if isSessionRefresh {
+				payload, err = s.socketSessionPayload(authorizationCtx, fresh)
+				if err == nil {
+					current, recheckErr := s.identity.RevalidateSession(authorizationCtx, fresh)
+					err = recheckErr
+					if err == nil && !sameSessionSnapshotAuthority(fresh, current) {
+						payload = nil
+					}
+				}
+			} else {
+				payload, err = s.socketEventPayload(authorizationCtx, fresh, event)
+			}
 		}
 		stopAuthorization()
 		if err != nil {
 			return
+		}
+		if isSessionRefresh {
+			current := updates.snapshot()
+			if current.revision != state.revision || !current.active {
+				continue
+			}
+			resetTimer(state.interval, state.revision)
 		}
 		if len(payload) == 0 {
 			continue
@@ -256,7 +332,7 @@ func (s *Server) serveClientSocket(conn *websocket.Conn, sub *events.Subscriptio
 	}
 }
 
-func readSocketMessages(ctx context.Context, conn *websocket.Conn) {
+func readSocketMessages(ctx context.Context, conn *websocket.Conn, handle func(string, json.RawMessage) error) {
 	window, messages := time.Now(), 0
 	for {
 		_, data, err := conn.Read(ctx)
@@ -279,6 +355,12 @@ func readSocketMessages(ctx context.Context, conn *websocket.Conn) {
 			len(envelope.MessageType) > 128 || strings.IndexFunc(envelope.MessageType, unicode.IsControl) >= 0 {
 			_ = conn.Close(websocket.StatusInvalidFramePayloadData, "Expected a JSON message envelope.")
 			return
+		}
+		if handle != nil {
+			if err := handle(envelope.MessageType, envelope.Data); err != nil {
+				_ = conn.Close(websocket.StatusPolicyViolation, "Invalid subscription request.")
+				return
+			}
 		}
 		// The verified progress operation is HTTP Sessions/Playing/Progress.
 		// Unsupported application messages are inert. Conn.Read handles RFC
@@ -361,7 +443,7 @@ func (s *Server) socketEventPayload(ctx context.Context, principal identity.Prin
 		}
 		ids = append(ids, item.ItemID)
 	}
-	visible, err := s.library.GetUserDataBatch(ctx, principal.User.ID, ids)
+	visible, err := s.library.VisibleUserDataFor(ctx, librarySubject(principal, principal.User.ID), ids)
 	if err != nil {
 		return nil, err
 	}

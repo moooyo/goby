@@ -57,6 +57,12 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 	mutation.PreferredMetadataLanguage = clonePointer(mutation.PreferredMetadataLanguage)
 	mutation.MetadataCountryCode = clonePointer(mutation.MetadataCountryCode)
 	mutation.StartupWizardCompleted = clonePointer(mutation.StartupWizardCompleted)
+	mutation.EnableInternetProviders = clonePointer(mutation.EnableInternetProviders)
+	mutation.Tasks = clonePointer(mutation.Tasks)
+	if mutation.Subtitles != nil {
+		copy := cloneManagement(Management{Subtitles: *mutation.Subtitles}).Subtitles
+		mutation.Subtitles = &copy
+	}
 	if err := validateConfigurationMutation(mutation); err != nil {
 		return Snapshot{}, err
 	}
@@ -76,12 +82,16 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 			defaults := DefaultManagement()
 			previous.Management.Metadata.PreferredMetadataLanguage = defaults.Metadata.PreferredMetadataLanguage
 			previous.Management.Metadata.MetadataCountryCode = defaults.Metadata.MetadataCountryCode
+			previous.Management.Metadata.EnableInternetProviders = defaults.Metadata.EnableInternetProviders
 		}
 		if mutation.PreferredMetadataLanguage != nil {
 			previous.Management.Metadata.PreferredMetadataLanguage = *mutation.PreferredMetadataLanguage
 		}
 		if mutation.MetadataCountryCode != nil {
 			previous.Management.Metadata.MetadataCountryCode = *mutation.MetadataCountryCode
+		}
+		if mutation.EnableInternetProviders != nil {
+			previous.Management.Metadata.EnableInternetProviders = *mutation.EnableInternetProviders
 		}
 		switch mutation.Section {
 		case ConfigurationFull:
@@ -96,6 +106,10 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 			// Absence in a complete named encoding object resets only this
 			// compatibility ceiling. Native MaxWidth is never changed here.
 			previous.Encoding.TranscodingMaxWidth = mutation.TranscodingMaxWidth
+		case ConfigurationSubtitles:
+			previous.Management.Subtitles = *mutation.Subtitles
+		case ConfigurationTasks:
+			previous.Management.Tasks = *mutation.Tasks
 		}
 		return previous, nil
 	})
@@ -114,6 +128,29 @@ func configurationNameMode(value *string) ServerNameMode {
 func validateConfigurationMutation(value ConfigurationMutation) error {
 	invalid := func(message string) error {
 		return &ValidationError{Fields: map[string]string{"Configuration": message}}
+	}
+	if value.Section == ConfigurationSubtitles || value.Section == ConfigurationTasks {
+		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil ||
+			value.TranscodingMaxWidthPresent || value.TranscodingMaxWidth != 0 || value.PreferredMetadataLanguage != nil ||
+			value.MetadataCountryCode != nil || value.EnableInternetProviders != nil {
+			return invalid("named management configuration cannot include another section")
+		}
+		management := DefaultManagement()
+		if value.Section == ConfigurationSubtitles {
+			if value.Subtitles == nil || value.Tasks != nil {
+				return invalid("supply subtitle configuration")
+			}
+			management.Subtitles = *value.Subtitles
+		} else {
+			if value.Tasks == nil || value.Subtitles != nil {
+				return invalid("supply task configuration")
+			}
+			management.Tasks = *value.Tasks
+		}
+		return ValidateManagement(management)
+	}
+	if value.Subtitles != nil || value.Tasks != nil {
+		return invalid("management configuration requires its named section")
 	}
 	if value.PreferredMetadataLanguage != nil && !managementLanguage.MatchString(*value.PreferredMetadataLanguage) {
 		return invalid("use a supported metadata language code")
@@ -136,7 +173,7 @@ func validateConfigurationMutation(value ConfigurationMutation) error {
 			return validateName(configurationNameMode(value.ServerName), value.ServerName)
 		}
 	case ConfigurationEncoding:
-		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil || value.PreferredMetadataLanguage != nil || value.MetadataCountryCode != nil {
+		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil || value.PreferredMetadataLanguage != nil || value.MetadataCountryCode != nil || value.EnableInternetProviders != nil {
 			return invalid("named encoding configuration cannot include server settings")
 		}
 		return validateEncoding(Encoding{TranscodingMaxWidth: value.TranscodingMaxWidth})

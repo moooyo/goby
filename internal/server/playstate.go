@@ -21,6 +21,15 @@ func userDataDTO(data library.UserData, includeItemID bool) map[string]any {
 	if data.UnplayedItemCount != nil {
 		result["UnplayedItemCount"] = *data.UnplayedItemCount
 	}
+	if data.Rating != nil {
+		result["Rating"] = *data.Rating
+	}
+	if data.Likes != nil {
+		result["Likes"] = *data.Likes
+	}
+	if data.HideFromResume {
+		result["HideFromResume"] = true
+	}
 	return result
 }
 
@@ -63,6 +72,9 @@ func (s *Server) playbackReport(event string) http.HandlerFunc {
 			s.cancelMediaPolicySource(principal, play.ItemID, play.MediaSourceID)
 		} else {
 			s.hls.touchMatching(principal.SessionID, play.ID)
+			if s.heartbeatDynamicMediaPolicy(principal, play) {
+				s.heartbeatDynamicPlayback(r.Context(), principal, play)
+			}
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -91,6 +103,9 @@ func (s *Server) playbackPing(w http.ResponseWriter, r *http.Request) {
 	}
 	if err == nil {
 		s.hls.touchMatching(principal.SessionID, play.ID)
+		if s.heartbeatDynamicMediaPolicy(principal, play) {
+			s.heartbeatDynamicPlayback(r.Context(), principal, play)
+		}
 	}
 	// Unknown or foreign play-session keys are inert, matching the captured
 	// reference while disclosing no ownership information or changing state.
@@ -105,6 +120,37 @@ func (s *Server) setUserFlag(favorite, value bool) http.HandlerFunc {
 		}
 		var data library.UserData
 		var err error
+		if id, entity := positiveEntityID(r.PathValue("Id")); entity {
+			patch := library.UserDataPatch{}
+			if favorite {
+				patch.IsFavorite = &value
+			} else {
+				patch.Played = &value
+			}
+			if !favorite {
+				if raw := r.URL.Query().Get("DatePlayed"); raw != "" {
+					parsed, parseErr := time.Parse(time.RFC3339Nano, raw)
+					if parseErr != nil {
+						apiError(w, r, http.StatusBadRequest, "invalid_input", "DatePlayed must be an RFC3339 timestamp.")
+						return
+					}
+					if value {
+						patch.LastPlayedDate = &parsed
+					}
+				}
+				if !value {
+					patch.ClearLastPlayedDate = true
+				}
+			}
+			data, err = s.library.UpdateEntityUserDataFor(r.Context(), requestLibrarySubject(r, userID), id, patch)
+			if err != nil {
+				s.playbackError(w, r, err)
+				return
+			}
+			s.notifier.Enqueue(userID, data.ItemID, false)
+			jsonResponse(w, http.StatusOK, userDataDTO(data, false))
+			return
+		}
 		if favorite {
 			data, err = s.library.SetFavoriteFor(r.Context(), requestLibrarySubject(r, userID), r.PathValue("Id"), value)
 		} else {

@@ -185,7 +185,7 @@ func itemPlayedSQL(userParameter int, scopes ...libraryAccess) string {
 }
 
 func addUserDataConditions(query Query, conditions []string, args []any, scopes ...libraryAccess) ([]string, []any) {
-	if query.IsPlayed == nil && query.IsFavorite == nil && !query.Resumable {
+	if query.IsPlayed == nil && query.IsFavorite == nil && query.IsFavoriteOrLikes == nil && !query.Resumable {
 		return conditions, args
 	}
 	args = append(args, query.UserID)
@@ -209,6 +209,11 @@ func addUserDataConditions(query Query, conditions []string, args []any, scopes 
 			WHERE user_data.user_id = $%d::text AND user_data.item_id = i.id AND user_data.%s)) = $%d::boolean`,
 			userParameter, flag.column, len(args)))
 	}
+	if query.IsFavoriteOrLikes != nil {
+		args = append(args, *query.IsFavoriteOrLikes)
+		conditions = append(conditions, fmt.Sprintf(`(EXISTS(SELECT 1 FROM user_item_data user_data
+			WHERE user_data.user_id=$%d::text AND user_data.item_id=i.id AND (user_data.is_favorite OR user_data.likes IS TRUE)))=$%d::boolean`, userParameter, len(args)))
+	}
 	if query.Resumable {
 		// The catalog's current duration is authoritative after file replacement
 		// or reprobe. Initial resume policy accepts 2% through less than 90% of
@@ -222,7 +227,7 @@ func addUserDataConditions(query Query, conditions []string, args []any, scopes 
 					THEN (i.media ->> 'DurationTicks')::numeric ELSE 0 END
 				ELSE 0 END AS duration_ticks) runtime
 			WHERE user_data.user_id = $%d::text AND user_data.item_id = i.id
-				AND user_data.playback_position_ticks > 0 AND NOT user_data.played
+				AND user_data.playback_position_ticks > 0 AND NOT user_data.played AND NOT user_data.hide_from_resume
 				AND runtime.duration_ticks >= %d
 				AND user_data.playback_position_ticks < runtime.duration_ticks
 				AND user_data.playback_position_ticks::numeric * 100 >= runtime.duration_ticks * 2

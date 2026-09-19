@@ -67,7 +67,8 @@ const itemEntitiesColumn = `(SELECT jsonb_build_object(
 
 const libraryColumns = `l.id, l.name, l.collection_type,
 	COALESCE((SELECT array_agg(r.path ORDER BY r.path) FROM library_roots r
-		WHERE r.library_id = l.id), '{}'::text[]), l.created_at, l.last_scan_at`
+		WHERE r.library_id = l.id), '{}'::text[]), l.created_at, l.last_scan_at,
+	l.revision::text, l.options`
 
 type libraryAccess struct {
 	all           bool
@@ -395,7 +396,7 @@ func normalizeItemQuery(query Query) (Query, error) {
 	if !validSubject(Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}) || query.StartIndex < 0 || query.Limit < 0 || query.Limit > 1000 {
 		return Query{}, ErrInvalidInput
 	}
-	if query.UserID == "" && (query.IsPlayed != nil || query.IsFavorite != nil || query.Resumable) {
+	if query.UserID == "" && (query.IsPlayed != nil || query.IsFavorite != nil || query.IsFavoriteOrLikes != nil || query.Resumable) {
 		return Query{}, ErrInvalidInput
 	}
 	if query.ParentIndexNumber != nil && (*query.ParentIndexNumber < 0 || *query.ParentIndexNumber > 1<<31-1) {
@@ -442,7 +443,11 @@ func normalizeItemQuery(query Query) (Query, error) {
 	if err != nil {
 		return Query{}, err
 	}
-	return normalizeMusicFilters(query)
+	query, err = normalizeMusicFilters(query)
+	if err != nil {
+		return Query{}, err
+	}
+	return normalizeNavigationFilters(query)
 }
 
 func normalizeEntityFilters(query Query) (Query, error) {
@@ -595,7 +600,7 @@ func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID
 	if len(query.MediaTypes) != 0 {
 		args = append(args, query.MediaTypes)
 		conditions = append(conditions, fmt.Sprintf(`(CASE WHEN i.type = 'Audio' THEN 'Audio'
-			WHEN i.type IN ('Movie', 'Episode', 'Video') THEN 'Video' ELSE '' END) = ANY($%d::text[])`, len(args)))
+			WHEN i.type IN ('Movie', 'Episode', 'Video', 'MusicVideo') THEN 'Video' ELSE '' END) = ANY($%d::text[])`, len(args)))
 	}
 	if query.SearchTerm != "" {
 		args = append(args, "%"+escapeLikeLiteral(query.SearchTerm)+"%")
@@ -603,6 +608,7 @@ func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID
 	}
 	conditions, args = addEntityConditions(query, conditions, args)
 	conditions, args = addMusicConditions(query, conditions, args)
+	conditions, args = addNavigationConditions(query, conditions, args)
 	conditions, args = addUserDataConditions(query, conditions, args, access)
 	if len(query.ListItemIds) != 0 {
 		conditions = append(conditions, collectionMembershipSQL("i", query.ListItemIds, access))
@@ -715,7 +721,12 @@ func scanItem(row rowScanner, additional ...any) (Item, error) {
 
 func scanLibrary(row rowScanner) (Library, error) {
 	var library Library
+	var options []byte
 	err := row.Scan(&library.ID, &library.Name, &library.CollectionType, &library.Paths,
-		&library.CreatedAt, &library.LastScanAt)
+		&library.CreatedAt, &library.LastScanAt, &library.Revision, &options)
+	if err == nil {
+		library.Options = &LibraryOptions{}
+		err = json.Unmarshal(options, library.Options)
+	}
 	return library, err
 }

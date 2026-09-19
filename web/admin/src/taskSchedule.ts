@@ -1,4 +1,4 @@
-import type { TaskScheduleInput, TaskTrigger, TaskTriggerInput, TaskTriggerKind } from './api';
+import type { TaskScheduleInput, TaskTrigger, TaskTriggerInput, TaskTriggerKind, TaskSystemEvent } from './api';
 
 export const ticksPerSecond = 10000000n;
 const maxDurationTicks = 92233720368547758n;
@@ -6,7 +6,8 @@ const ticksPerDay = 86400n * ticksPerSecond;
 export const durationUnits = { seconds: ticksPerSecond, minutes: 60n * ticksPerSecond, hours: 3600n * ticksPerSecond, days: ticksPerDay };
 export type DurationUnit = keyof typeof durationUnits;
 export interface DurationDraft { value: string; unit: DurationUnit }
-export interface TriggerDraft { key: string; kind: TaskTriggerKind; interval: DurationDraft; time: string; day: number; runtime: DurationDraft; limitRuntime: boolean }
+export interface TriggerDraft { key: string; kind: TaskTriggerKind; systemEvent: TaskSystemEvent; interval: DurationDraft; time: string; day: number; runtime: DurationDraft; limitRuntime: boolean }
+export const systemEvents: { value: TaskSystemEvent; label: string }[] = [{ value: 'ServerStarted', label: 'Server started' }, { value: 'LibraryChanged', label: 'Library changed' }, { value: 'ConfigurationChanged', label: 'Configuration changed' }];
 export interface ScheduleDraft { timezone: string; triggers: TriggerDraft[] }
 export const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -56,12 +57,12 @@ export function timeToTicks(value: string): string {
 }
 
 export function newTrigger(): TriggerDraft {
-  return { key: globalThis.crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`, kind: 'daily', interval: { value: '1', unit: 'days' }, time: '03:00', day: 0, runtime: { value: '1', unit: 'hours' }, limitRuntime: false };
+  return { key: globalThis.crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`, kind: 'daily', systemEvent: 'LibraryChanged', interval: { value: '1', unit: 'days' }, time: '03:00', day: 0, runtime: { value: '1', unit: 'hours' }, limitRuntime: false };
 }
 
 export function scheduleFromTask(timezone: string, triggers: TaskTrigger[]): ScheduleDraft {
   return { timezone, triggers: triggers.map((trigger) => ({
-    key: trigger.Id, kind: trigger.Kind, interval: durationFromTicks(trigger.IntervalTicks ?? ticksPerDay.toString()),
+    key: trigger.Id, kind: trigger.Kind, systemEvent: trigger.SystemEvent ?? 'LibraryChanged', interval: durationFromTicks(trigger.IntervalTicks ?? ticksPerDay.toString()),
     time: timeFromTicks(trigger.TimeOfDayTicks ?? '108000000000'), day: trigger.DayOfWeek ?? 0,
     runtime: durationFromTicks(trigger.MaxRuntimeTicks && trigger.MaxRuntimeTicks !== '0' ? trigger.MaxRuntimeTicks : '36000000000'),
     limitRuntime: trigger.MaxRuntimeTicks !== null && trigger.MaxRuntimeTicks !== '0',
@@ -80,6 +81,7 @@ export function scheduleInput(draft: ScheduleDraft): TaskScheduleInput {
       if (trigger.kind === 'interval') result.IntervalTicks = durationToTicks(trigger.interval);
       if (trigger.kind === 'daily' || trigger.kind === 'weekly') result.TimeOfDayTicks = timeToTicks(trigger.time);
       if (trigger.kind === 'weekly') result.DayOfWeek = trigger.day;
+      if (trigger.kind === 'system_event') result.SystemEvent = trigger.systemEvent;
       return result;
     } catch (error) {
       throw new Error(`Trigger ${index + 1}: ${error instanceof Error ? error.message : 'Review this trigger.'}`);
@@ -97,6 +99,7 @@ export function describeTrigger(trigger: TaskTrigger): string {
     case 'daily': return `Daily at ${timeFromTicks(trigger.TimeOfDayTicks ?? '0')}`;
     case 'weekly': return `${weekdays[trigger.DayOfWeek ?? 0]} at ${timeFromTicks(trigger.TimeOfDayTicks ?? '0')}`;
     case 'startup': return 'At server startup';
+    case 'system_event': return `When ${systemEvents.find((event) => event.value === trigger.SystemEvent)?.label.toLowerCase() ?? 'a system event occurs'}`;
   }
 }
 

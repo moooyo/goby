@@ -54,6 +54,13 @@ func TestVideoCopySeekActualExactIDRRetainsVideoAndAACAlignment(t *testing.T) {
 			if audio != "" {
 				assertProgressiveChirpWindow(t, reference, plan, facts, decodeProgressivePCM(t, ctx, ffmpeg, path, 16))
 			}
+			global := plan
+			global.CopyTimestamps, global.VideoCopySeekCandidate = true, ""
+			if !AttachVideoCopySeekCandidate(&global, info) {
+				t.Fatal("the source-global H.264 restart was not proposed")
+			}
+			globalPath := runProgressiveVideo(t, ctx, ffmpeg, source, global)
+			assertVideoCopySeekSourceClock(t, ctx, ffmpeg, ffprobe, globalPath, global, reference)
 		})
 	}
 	plan := progressiveVideoFixturePlan(info, "copy", "aac", 23_700_000)

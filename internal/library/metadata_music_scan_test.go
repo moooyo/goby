@@ -3,6 +3,7 @@ package library
 import (
 	"encoding/json"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -14,7 +15,7 @@ func TestAcceptedTrackMusicSeparatesProbeVersionFromStoredSourceVersion(t *testi
 		Album: "Exact album", Artist: "Track A / B", AlbumArtist: "Album A; B"}
 	raw, err := json.Marshal(facts)
 	if err != nil {
-		t.Fatal("encode accepted version-two probe facts")
+		t.Fatal("encode accepted current probe facts")
 	}
 	decoded, accepted := acceptedTrackMusic(raw)
 	if !accepted || !reflect.DeepEqual(decoded, facts) {
@@ -30,7 +31,7 @@ func TestAcceptedTrackMusicSeparatesProbeVersionFromStoredSourceVersion(t *testi
 		t.Fatalf("encode unchanged source format after a probe upgrade: %v", err)
 	}
 	if retained, extracted, err := decodeAcceptedMusicSource(encoded); err != nil || !extracted || !reflect.DeepEqual(retained, source) {
-		t.Fatal("the existing source format stopped being readable after probe version two")
+		t.Fatal("the existing source format stopped being readable after a music probe upgrade")
 	}
 	legacy := []byte(`{"Version":1,"Name":"Retained v1 source","Album":"Retained album","Artists":["A"],"AlbumArtists":["B"]}`)
 	if retained, extracted, err := decodeAcceptedMusicSource(legacy); err != nil || !extracted || retained.Version != 1 ||
@@ -45,8 +46,8 @@ func TestAcceptedTrackMusicSeparatesProbeVersionFromStoredSourceVersion(t *testi
 func TestAcceptedTrackMusicRejectsUnsupportedOrUnboundedAlbumArtistFacts(t *testing.T) {
 	for _, test := range []struct{ name, raw string }{
 		{"missing version", `{"AlbumArtist":"A"}`},
-		{"unknown version", `{"Version":3,"AlbumArtist":"A"}`},
-		{"plural alias", `{"Version":2,"AlbumArtists":["A"]}`},
+		{"unknown version", `{"Version":` + strconv.Itoa(media.CurrentMusicMetadataVersion+1) + `,"AlbumArtist":"A"}`},
+		{"legacy plural cache", `{"Version":2,"AlbumArtists":["A"]}`},
 		{"format tag spelling", `{"Version":2,"album_artist":"A"}`},
 		{"wrong case", `{"Version":2,"Albumartist":"A"}`},
 		{"duplicate", `{"Version":2,"AlbumArtist":"A","AlbumArtist":"B"}`},
@@ -61,10 +62,20 @@ func TestAcceptedTrackMusicRejectsUnsupportedOrUnboundedAlbumArtistFacts(t *test
 		{"invalid utf8", "{\"Version\":2,\"AlbumArtist\":\"" + string([]byte{0xff}) + "\"}"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, accepted := acceptedTrackMusic([]byte(test.raw)); accepted {
+			raw := test.raw
+			// Malformed current facts must fail for their content, not merely
+			// because the older fixture version now requires a refresh.
+			if test.name != "legacy plural cache" {
+				raw = strings.Replace(raw, `"Version":2`, `"Version":`+strconv.Itoa(media.CurrentMusicMetadataVersion), 1)
+			}
+			if _, accepted := acceptedTrackMusic([]byte(raw)); accepted {
 				t.Fatal("invalid persisted probe facts were accepted as a complete member")
 			}
 		})
+	}
+	current, accepted := acceptedTrackMusic([]byte(`{"Version":3,"AlbumArtist":"A","Artists":["One","Two"]}`))
+	if !accepted || current.Version != 3 || !reflect.DeepEqual(current.Artists, []string{"One", "Two"}) {
+		t.Fatal("supported version-three explicit credits were rejected")
 	}
 	for _, value := range []string{strings.Repeat("a", 1025), "\n", string([]byte{0xff})} {
 		facts := media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, AlbumArtist: value}

@@ -202,7 +202,7 @@ func TestRefreshMediaManagerStopIsolatesOrdinaryAndIndependentScans(t *testing.T
 			}
 			ownedGate.open()
 			cancelled := managerWaitRun(t, f, runIDs[LibraryRefreshMediaKey], RunCancelled)
-			if cancelled.TaskKey != LibraryRefreshMediaKey || cancelled.TaskEmbyKey != "" || cancelled.Source != "manual" ||
+			if cancelled.TaskKey != LibraryRefreshMediaKey || cancelled.TaskEmbyKey != CompatibilityKey(LibraryRefreshMediaKey) || cancelled.Source != "manual" ||
 				cancelled.TotalChildren != 2 || cancelled.CancelledChildren != 2 || cancelled.StopReason != "administrator" {
 				t.Fatal("refresh cancellation lost its own terminal child outcomes")
 			}

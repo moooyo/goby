@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -84,6 +85,7 @@ type Image struct {
 	Width, Height       int
 	Size                int64
 	ModifiedAt          time.Time
+	Source              string
 }
 
 type storedImage struct {
@@ -126,6 +128,10 @@ func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID strin
 	}
 	defer tx.Rollback(ctx)
 	if _, err := readQueryParent(ctx, tx, itemID, access); err != nil {
+		if id, parseErr := strconv.ParseInt(itemID, 10, 64); errors.Is(err, ErrNotFound) && parseErr == nil && id > 0 {
+			rollback(tx)
+			return s.ListEntityImagesFor(ctx, subject, id)
+		}
 		return nil, err
 	}
 	rows, err := tx.Query(ctx, "SELECT "+storedImageColumns+storedImageSource+`
@@ -149,6 +155,9 @@ func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID strin
 	rows.Close()
 	selected := map[string][]Image{itemID: images}
 	if err := mergeProviderImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
+		return nil, err
+	}
+	if err := mergeManagedImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
 		return nil, err
 	}
 	images = selected[itemID]
@@ -203,6 +212,12 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 		rows.Close()
 	}
 	if err := mergeProviderImageListing(ctx, tx, access, ids, result); err != nil {
+		return nil, err
+	}
+	if err := mergeManagedImageListing(ctx, tx, access, ids, result); err != nil {
+		return nil, err
+	}
+	if err := mergeEntityImageListing(ctx, tx, access, ids, result); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {

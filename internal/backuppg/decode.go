@@ -13,8 +13,11 @@ import (
 )
 
 const (
+	// PostgreSQL renders bytea as hex in both COPY text and JSON fingerprints.
+	// Admit a supported 20 MiB image plus ordinary row metadata in either form.
+	maxSerializedRowBytes    int64 = 64 << 20
 	defaultDecodeMaxBytes    int64 = 64 << 30
-	defaultDecodeMaxRowBytes int64 = 32 << 20
+	defaultDecodeMaxRowBytes int64 = maxSerializedRowBytes
 	decodeMaxSQLLineBytes    int64 = 1 << 20
 )
 

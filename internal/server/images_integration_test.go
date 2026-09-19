@@ -379,16 +379,33 @@ func TestHTTPImageListsAndBinaryArtworkEnforceUserLibraryACL(t *testing.T) {
 	}
 	expectAPIError(t, f.request(t, http.MethodGet, path+"?UserId="+fixture.adminID, nil, viewers[1].headers), http.StatusForbidden, "access_denied", true)
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
-		expectStatus(t, f.request(t, method, path+"/Primary", nil, viewers[1].headers), http.StatusNotFound)
+		for _, hiddenOrMissing := range []string{path + "/Primary", "/emby/Items/missing-artwork-owner/Images/Primary"} {
+			expectStatus(t, f.request(t, method, hiddenOrMissing, nil, viewers[1].headers), http.StatusNotFound)
+		}
 		expectStatus(t, f.request(t, method, path+"/Backdrop/0", nil, nil), http.StatusUnauthorized)
 	}
 	assertAPIImage(t, f.request(t, http.MethodGet, path+"/Primary", nil, viewers[0].headers), 160, 240, "jpeg")
 	assertAPIImage(t, f.request(t, http.MethodGet, path+"/Backdrop/0", nil, viewers[0].headers), 240, 160, "jpeg")
+	// Image mutations now exist, but require current administrator authority
+	// before resolving the owner. A viewer cannot distinguish hidden from absent
+	// items through either upload or delete, even when another item is readable.
 	for _, method := range []string{http.MethodPost, http.MethodDelete} {
-		expectAPIError(t, f.request(t, method, path+"/Primary", nil, viewers[0].headers), http.StatusNotFound, "not_implemented", true)
+		var deniedBody string
+		for _, target := range []string{path + "/Primary", otherPath + "/Primary", "/emby/Items/missing-artwork-owner/Images/Primary"} {
+			response := f.request(t, method, target, nil, viewers[0].headers)
+			expectAPIError(t, response, http.StatusForbidden, "access_denied", true)
+			if deniedBody != "" && response.Body.String() != deniedBody {
+				t.Error("denied image mutation disclosed whether its owner exists or is visible")
+			}
+			deniedBody = response.Body.String()
+		}
+	}
+	var managedState, managedImages int
+	if err := f.pool.QueryRow(f.ctx, `SELECT (SELECT count(*) FROM artwork_state), (SELECT count(*) FROM artwork_images)`).Scan(&managedState, &managedImages); err != nil || managedState != 0 || managedImages != 0 {
+		t.Errorf("denied image mutation persisted managed state: states=%d images=%d error=%v", managedState, managedImages, err)
 	}
 	if data, err := os.ReadFile(fixture.posterPath); err != nil || !bytes.Equal(data, fixture.poster) {
-		t.Errorf("unsupported image mutation changed its source: %v", err)
+		t.Errorf("denied image mutation changed its source: %v", err)
 	}
 }
 

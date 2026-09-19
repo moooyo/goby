@@ -169,6 +169,7 @@ func TestMusicAlbumCatalogChangesKeepHiddenAutomaticChangesQuiet(t *testing.T) {
 	detail := metadataEditTestDetail(t, ctx, store, actor, album.ID)
 	detail = metadataEditTestUpdate(t, ctx, store, actor, detail, map[string]json.RawMessage{
 		"Name": json.RawMessage(`"Manual album"`), "SortName": json.RawMessage(`"Manual album order"`),
+		"Album": json.RawMessage(`"Manual album tag"`),
 	}, []string{"Name"})
 	before := metadataMusicScanSource(t, ctx, pool, album.ID)
 	notifications := catalogChangesTestListener(t, store)

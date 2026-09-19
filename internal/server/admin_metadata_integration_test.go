@@ -222,8 +222,14 @@ func TestHTTPAdminMetadataReadContractsAuthorizationAndQueries(t *testing.T) {
 	}
 	for _, layer := range []string{"Automatic", "Effective"} {
 		values := objectValue(t, detail, layer)
-		if len(values) != 15 || values["Name"] != "Automatic Alpha" || values["ProductionYear"] != float64(2020) || values["IndexNumber"] != nil {
+		assertNativeMetadataCompleteValueFields(t, values)
+		if values["Name"] != "Automatic Alpha" || values["ProductionYear"] != float64(2020) || values["IndexNumber"] != nil || values["ParentIndexNumber"] != nil || values["Album"] != "" {
 			t.Fatal("initial complete metadata values do not describe the automatic source")
+		}
+		for _, field := range []string{"Artists", "AlbumArtists"} {
+			if entries, ok := values[field].([]any); !ok || len(entries) != 0 {
+				t.Fatal("unannotated movie acquired music credits or null collections")
+			}
 		}
 	}
 	if len(objectValue(t, detail, "Overrides")) != 0 || len(objectValue(t, detail, "LockedValues")) != 0 || len(detail["LockedFields"].([]any)) != 0 {
@@ -420,31 +426,35 @@ func TestHTTPAdminMetadataEmptyEditPreservesNFOAbsentEmbyProjections(t *testing.
 			for _, field := range detail["EditableFields"].([]any) {
 				editable[field.(string)] = true
 			}
-			if editable["ParentIndexNumber"] || editable["IndexNumber"] != (test.kind == "Episode") {
-				t.Fatal("editable metadata fields exposed a structural season or audio-track number")
+			if editable["ParentIndexNumber"] != (test.kind == "Audio") || editable["IndexNumber"] != (test.kind == "Episode" || test.kind == "Audio") {
+				t.Fatal("editable metadata fields lost audio numbering or exposed structural season numbering")
 			}
-			if test.kind == "Episode" {
+			if test.kind == "Episode" || test.kind == "Audio" {
 				rowState := func() string {
 					var snapshot string
 					if err := f.pool.QueryRow(f.ctx, `SELECT jsonb_build_object('Item', to_jsonb(i), 'Metadata', to_jsonb(ms))::text
 						FROM items i JOIN item_metadata_state ms ON ms.item_id = i.id WHERE i.id = $1`, id).Scan(&snapshot); err != nil {
-						t.Fatalf("read episode metadata row snapshot: %v", err)
+						t.Fatalf("read numbered metadata row snapshot: %v", err)
 					}
 					return snapshot
 				}
 				beforeRow := rowState()
 				expectAPIError(t, f.update(t, id, adminMetadataHTTPRevision(t, detail), map[string]any{"IndexNumber": nil}, []string{}), http.StatusBadRequest, "invalid_input", false)
 				if rowState() != beforeRow || !reflect.DeepEqual(f.detail(t, id), detail) || !reflect.DeepEqual(f.embyDetail(t, id), before) {
-					t.Fatal("rejected null episode number changed a catalog row, revision, or projection")
+					t.Fatal("rejected null item number changed a catalog row, revision, or projection")
 				}
 			}
 			readOnly := "IndexNumber"
 			if test.kind == "Episode" {
 				readOnly = "ParentIndexNumber"
 			}
+			readOnlyValue := objectValue(t, detail, "Automatic")[readOnly]
+			if test.kind == "Audio" {
+				readOnly, readOnlyValue = "ParentId", objectValue(t, detail, "Item")["ParentId"]
+			}
 			// A structural field remains read-only even when its supplied
 			// value is unchanged or the request only tries to lock it.
-			expectAPIError(t, f.update(t, id, adminMetadataHTTPRevision(t, detail), map[string]any{readOnly: objectValue(t, detail, "Automatic")[readOnly]}, []string{}), http.StatusBadRequest, "invalid_input", false)
+			expectAPIError(t, f.update(t, id, adminMetadataHTTPRevision(t, detail), map[string]any{readOnly: readOnlyValue}, []string{}), http.StatusBadRequest, "invalid_input", false)
 			expectAPIError(t, f.update(t, id, adminMetadataHTTPRevision(t, detail), map[string]any{}, []string{readOnly}), http.StatusBadRequest, "invalid_input", false)
 			response := f.update(t, id, adminMetadataHTTPRevision(t, detail), map[string]any{}, []string{})
 			expectStatus(t, response, http.StatusOK)
@@ -454,6 +464,23 @@ func TestHTTPAdminMetadataEmptyEditPreservesNFOAbsentEmbyProjections(t *testing.
 			}
 			if len(objectValue(t, jsonObject(t, response), "Overrides")) != 0 || len(objectValue(t, jsonObject(t, response), "LockedValues")) != 0 {
 				t.Fatal("an empty edit fabricated a manual metadata layer")
+			}
+			if test.kind == "Audio" {
+				response = f.update(t, id, adminMetadataHTTPRevision(t, detail), map[string]any{"IndexNumber": 7, "ParentIndexNumber": 3}, []string{})
+				expectStatus(t, response, http.StatusOK)
+				numbered := jsonObject(t, response)
+				effective, projected := objectValue(t, numbered, "Effective"), f.embyDetail(t, id)
+				if effective["IndexNumber"] != float64(7) || effective["ParentIndexNumber"] != float64(3) ||
+					projected["IndexNumber"] != float64(7) || projected["ParentIndexNumber"] != float64(3) ||
+					projected["Id"] != before["Id"] || projected["ParentId"] != before["ParentId"] || projected["Path"] != before["Path"] || projected["AlbumId"] != before["AlbumId"] {
+					t.Fatal("audio numbering edit was not consumed or changed physical identity")
+				}
+				response = f.update(t, id, adminMetadataHTTPRevision(t, numbered), map[string]any{}, []string{})
+				expectStatus(t, response, http.StatusOK)
+				restored := f.embyDetail(t, id)
+				if restored["IndexNumber"] != before["IndexNumber"] || restored["ParentIndexNumber"] != before["ParentIndexNumber"] || restored["ParentId"] != before["ParentId"] {
+					t.Fatal("audio numbering reset did not restore its automatic values and parent")
+				}
 			}
 		})
 	}

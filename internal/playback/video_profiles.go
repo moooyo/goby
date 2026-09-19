@@ -84,9 +84,9 @@ func PlanVideoConversion(source Source, request Request, limits ConversionLimits
 		protocol := strings.ToLower(candidate.Protocol)
 		switch protocol {
 		case "hls":
-			// A single video HLS profile evaluates its original source and up
-			// to four video/audio copy modes with two encoded audio choices.
-			if !search.take(9) {
+			// Reserve the bounded container, codec, depth, profile and audio
+			// alternatives that the HLS planner can examine for one profile.
+			if !search.take(129) {
 				return searchLimit()
 			}
 			selected, err = PlanConversion(source, single, limits)
@@ -128,23 +128,54 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 	// profile retries cannot repeatedly traverse a large catalog index.
 	copySeekInfo := source.Info
 	source.Info.VideoSeekIndexes = nil
+	allowAlignment := !isFalse(request.AllowVideoSeekAlignment) && !isFalse(profile.CopyTimestamps)
 	if request.StartTimeTicks != nil && *request.StartTimeTicks > 0 {
 		prepared := transcode.Plan{OutputMode: "progressive", Container: "mp4", VideoCodec: "copy", VideoStreamIndex: selection.video.Index,
 			AudioStreamIndex: -1, StartTicks: *request.StartTimeTicks, DurationTicks: source.Info.DurationTicks,
-			SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks}
-		if transcode.AttachVideoCopySeekCandidate(&prepared, copySeekInfo) {
+			SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks, CopyTimestamps: isTrue(profile.CopyTimestamps)}
+		attached := transcode.AttachVideoCopySeekCandidate(&prepared, copySeekInfo)
+		if !attached && allowAlignment {
+			prepared.CopyTimestamps = true
+			attached = transcode.AttachVideoCopySeekCandidateAligned(&prepared, copySeekInfo, 10*media.TicksPerSecond)
+		}
+		if attached {
 			if candidate, err := media.ValidateVideoCopySeekCandidate(prepared.VideoCopySeekCandidate); err == nil {
 				source.Info.VideoSeekIndexes = []media.VideoSeekIndex{candidate.Index}
 			}
 		}
 	}
-	if selection.subtitle != nil || !httpVideoProfileOptionsSupported(profile) {
+	for _, format := range videoEncodingFormats(profile.VideoCodec, "mp4") {
+		candidate := planHTTPVideoEncoding(source, request, profile, limits, selection, search, format)
+		if candidate.Plan != nil {
+			if !candidate.Output.ClientMustValidate {
+				return candidate
+			}
+			if unverified == nil {
+				unverified = &candidate
+			}
+		}
+		result.Reasons = appendConversionReasons(result.Reasons, candidate.Reasons...)
+		if search.exhausted {
+			break
+		}
+	}
+	if unverified != nil {
+		return *unverified
+	}
+	result.Reasons = appendConversionReasons(result.Reasons, *conversionReason("progressive_video_profile_unavailable", "VideoCodec", "No offered MP4 video encoding satisfies the client profile."))
+	return result
+}
+
+func planHTTPVideoEncoding(source Source, request Request, profile TranscodingProfile, limits ConversionLimits, selection selectedStreams, search *videoProfileBudget, format videoEncodingFormat) ConversionDecision {
+	var result ConversionDecision
+	var unverified *ConversionDecision
+	if !httpVideoProfileOptionsSupported(profile) {
 		result.Reasons = []Reason{*conversionReason("video_profile_options_unsupported", "TranscodingProfiles", "The progressive profile requires delivery behavior not represented by the video execution plan.")}
 		return result
 	}
-	if !videoProfileHasSelector(profile.Container, "mp4") || !videoProfileHasSelector(profile.VideoCodec, "h264") ||
+	if !videoProfileHasSelector(profile.Container, "mp4") || !videoProfileHasSelector(profile.VideoCodec, format.codec) ||
 		selection.audio != nil && !videoProfileHasSelector(profile.AudioCodec, "aac") {
-		result.Reasons = []Reason{*conversionReason("progressive_video_format_unsupported", "TranscodingProfiles", "Progressive video requires an explicit MP4/H.264 profile and AAC support when the source contains audio.")}
+		result.Reasons = []Reason{*conversionReason("progressive_video_format_unsupported", "TranscodingProfiles", "Progressive video requires an explicit supported MP4 video codec and AAC support when the source contains audio.")}
 		return result
 	}
 	if isFalse(request.EnableTranscoding) {
@@ -154,10 +185,26 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 		}
 	}
 	videoIndex := selection.video.Index
-	base := ProgressiveVideoRequest{OutputContainer: "mp4", VideoCodec: "h264", AudioCodec: "none", VideoStreamIndex: &videoIndex,
+	base := ProgressiveVideoRequest{OutputContainer: "mp4", VideoCodec: format.codec, VideoRange: format.videoRange, AudioCodec: "none", VideoStreamIndex: &videoIndex,
 		MaxBitrate: lowerLimit(request.MaxStreamingBitrate, request.DeviceProfile.MaxStreamingBitrate), MaxAudioChannels: request.MaxAudioChannels,
 		MaxWidth: profile.MaxWidth, MaxHeight: profile.MaxHeight, AllowVideoStreamCopy: request.AllowVideoStreamCopy,
-		AllowAudioStreamCopy: request.AllowAudioStreamCopy, AllowInterlacedVideoStreamCopy: request.AllowInterlacedVideoStreamCopy}
+		AllowAudioStreamCopy: request.AllowAudioStreamCopy, AllowInterlacedVideoStreamCopy: request.AllowInterlacedVideoStreamCopy,
+		AllowVideoSeekAlignment: !isFalse(request.AllowVideoSeekAlignment) && !isFalse(profile.CopyTimestamps), CopyTimestamps: isTrue(profile.CopyTimestamps)}
+	if selection.subtitle != nil {
+		for _, subtitle := range request.DeviceProfile.SubtitleProfiles {
+			if subtitle.Method == SubtitleDeliveryMethodEncode && matchesList(subtitle.Format, selection.subtitle.Codec) &&
+				matchesList(subtitle.Container, "mp4") && matchesList(subtitle.Language, selection.subtitle.Language) &&
+				(subtitle.Protocol == "" || strings.EqualFold(subtitle.Protocol, "http")) {
+				index := selection.subtitle.Index
+				base.SubtitleStreamIndex, base.BurnSubtitles = &index, true
+				break
+			}
+		}
+		if !base.BurnSubtitles {
+			result.Reasons = []Reason{*conversionReason("progressive_video_subtitle_unsupported", "SubtitleStreamIndex", "The selected subtitle requires an explicit supported MP4 burn-in profile.")}
+			return result
+		}
+	}
 	if selection.audio != nil {
 		index := selection.audio.Index
 		base.AudioCodec, base.AudioStreamIndex = "aac", &index
@@ -193,7 +240,10 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 			disabled := false
 			attempt.AllowAudioStreamCopy = &disabled
 		}
-		states := [][]ProfileCondition{videoOutputConditions(request.DeviceProfile, selection.audio != nil, nil)}
+		if isFalse(attempt.AllowVideoStreamCopy) || attempt.BurnSubtitles {
+			attempt.VideoProfile, attempt.VideoBitDepth = format.profile, &format.bitDepth
+		}
+		states := [][]ProfileCondition{videoOutputConditions(request.DeviceProfile, selection.audio != nil, nil, format.codec)}
 		for state := 0; state < len(states) && state < maxVideoProfileStates; state++ {
 			for variant := range videoProfileRequests(attempt, selection, limits, states[state], search) {
 				if !search.take(1) {
@@ -204,14 +254,20 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 					result.Reasons = appendConversionReasons(result.Reasons, converted.Reasons...)
 					continue
 				}
-				outputRequest := videoOutputRequest(request, selection.audio != nil)
+				outputRequest := videoOutputRequest(request, selection.audio != nil, format.codec)
 				output, err := Evaluate(converted.OutputSource, outputRequest)
 				if err != nil {
 					result.Reasons = appendConversionReasons(result.Reasons, *conversionReason("video_output_evaluation_failed", "TranscodingProfiles", "Projected MP4 output could not be evaluated against the client profile."))
 					continue
 				}
 				if output.OriginalCompatible && output.ProfileMatched {
-					candidate := ConversionDecision{Plan: converted.Plan, OutputSource: converted.OutputSource, Output: output, Method: converted.Method, Reasons: output.Reasons}
+					candidate := ConversionDecision{Plan: converted.Plan, OutputSource: converted.OutputSource, Output: output, Method: converted.Method, Reasons: output.Reasons,
+						outputValidationRequest: snapshotConversionOutputRequest(outputRequest)}
+					if converted.Plan.Subtitle.Mode == "burn" {
+						candidate.Output.SubtitleMethod = SubtitleDeliveryMethodEncode
+						index := selection.subtitle.Index
+						candidate.Output.DefaultSubtitleStreamIndex = &index
+					}
 					if !output.ClientMustValidate {
 						return candidate
 					}
@@ -227,7 +283,7 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 					continue
 				}
 				facts := conditionFacts{source: converted.OutputSource, streams: streams}
-				next := videoOutputConditions(request.DeviceProfile, selection.audio != nil, &facts)
+				next := videoOutputConditions(request.DeviceProfile, selection.audio != nil, &facts, format.codec)
 				seen := false
 				for _, previous := range states {
 					seen = seen || reflect.DeepEqual(previous, next)
@@ -249,6 +305,9 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 }
 
 func httpVideoProfileOptionsSupported(profile TranscodingProfile) bool {
+	// Progressive video can keep the normalized source-global clock. The
+	// audio-only planner does not share that output timeline contract.
+	profile.CopyTimestamps = nil
 	return httpAudioProfileOptionsSupported(profile) &&
 		(profile.MinSegments == nil || *profile.MinSegments == 0) && profile.SegmentLength == nil
 }
@@ -262,10 +321,14 @@ func videoProfileHasSelector(selector, expected string) bool {
 	return false
 }
 
-func videoOutputRequest(request Request, hasAudio bool) Request {
+func videoOutputRequest(request Request, hasAudio bool, codecs ...string) Request {
 	output := request
 	device := *request.DeviceProfile
-	device.DirectPlayProfiles = []DirectPlayProfile{{Type: DlnaProfileTypeVideo, Container: "mp4", VideoCodec: "h264", AudioCodec: "aac"}}
+	codec := "h264"
+	if len(codecs) > 0 {
+		codec = codecs[0]
+	}
+	device.DirectPlayProfiles = []DirectPlayProfile{{Type: DlnaProfileTypeVideo, Container: "mp4", VideoCodec: codec, AudioCodec: "aac"}}
 	device.MaxStaticBitrate = nil
 	device.MaxStaticMusicBitrate = nil
 	output.DeviceProfile = &device
@@ -279,8 +342,12 @@ func videoOutputRequest(request Request, hasAudio bool) Request {
 	return output
 }
 
-func videoOutputConditions(profile *DeviceProfile, hasAudio bool, facts *conditionFacts) []ProfileCondition {
+func videoOutputConditions(profile *DeviceProfile, hasAudio bool, facts *conditionFacts, codecs ...string) []ProfileCondition {
 	var conditions []ProfileCondition
+	videoCodec := "h264"
+	if len(codecs) > 0 {
+		videoCodec = codecs[0]
+	}
 	for _, constraint := range profile.ContainerProfiles {
 		if strings.EqualFold(string(constraint.Type), string(DlnaProfileTypeVideo)) && matchesList(constraint.Container, "mp4") {
 			conditions = append(conditions, constraint.Conditions...)
@@ -290,7 +357,7 @@ func videoOutputConditions(profile *DeviceProfile, hasAudio bool, facts *conditi
 		codec := ""
 		switch {
 		case strings.EqualFold(string(constraint.Type), string(CodecTypeVideo)):
-			codec = "h264"
+			codec = videoCodec
 		case hasAudio && strings.EqualFold(string(constraint.Type), string(CodecTypeVideoAudio)):
 			codec = "aac"
 		}

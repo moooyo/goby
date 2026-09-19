@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const maxUserCopyItemRows = 100000
+const maxUserCopyStateRows = 100000
 
 type userCopySelection struct {
 	policy, configuration, data bool
@@ -54,6 +54,8 @@ func selectUserCopyOptions(sourceID string, options []string) (userCopySelection
 // CreateManagedUserCopy creates a new passwordless member and copies only the
 // requested supported facets. Credentials, roles, disabled/lockout state,
 // session history, device registrations and sharing grants remain independent.
+// Public item/entity state is a single bounded UserData facet. Remembered
+// source/track indexes, client display preferences and avatars are not copied.
 // The source and actor accounts use the same lock order and final authorization
 // check as ordinary managed-user writes; nothing is committed on a copy error.
 func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name, sourceID string, options []string) (User, error) {
@@ -110,7 +112,7 @@ func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name
 		}
 	}
 	if selected.data {
-		if err := lockCopiedUserDataItems(ctx, tx, sourceID); err != nil {
+		if err := lockCopiedUserData(ctx, tx, sourceID); err != nil {
 			return User{}, err
 		}
 	}
@@ -127,10 +129,16 @@ func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name
 	}
 	if selected.data {
 		if _, err := tx.Exec(ctx, `INSERT INTO user_item_data
-			(user_id, item_id, playback_position_ticks, play_count, is_favorite, played, last_played_at)
-			SELECT $1, item_id, playback_position_ticks, play_count, is_favorite, played, last_played_at
+			(user_id, item_id, playback_position_ticks, play_count, is_favorite, played, last_played_at,rating,likes,hide_from_resume)
+			SELECT $1, item_id, playback_position_ticks, play_count, is_favorite, played, last_played_at,rating,likes,hide_from_resume
 			FROM user_item_data WHERE user_id=$2 ORDER BY item_id`, id, sourceID); err != nil {
 			return User{}, fmt.Errorf("copy user media state: %w", err)
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO entity_user_data
+			(user_id,entity_id,playback_position_ticks,play_count,is_favorite,played,last_played_at,rating,likes)
+			SELECT $1,entity_id,playback_position_ticks,play_count,is_favorite,played,last_played_at,rating,likes
+			FROM entity_user_data WHERE user_id=$2 ORDER BY entity_id`, id, sourceID); err != nil {
+			return User{}, fmt.Errorf("copy user entity state: %w", err)
 		}
 	}
 	auditActor, err := identityActivityActor(actor)
@@ -157,12 +165,13 @@ func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name
 	return user, nil
 }
 
-func lockCopiedUserDataItems(ctx context.Context, tx pgx.Tx, sourceID string) error {
+func lockCopiedUserData(ctx context.Context, tx pgx.Tx, sourceID string) error {
 	// Account locks already block normal source-state writes. Lock referenced
 	// items before reading their data so scanning/deletion cannot remove the
-	// foreign-key targets midway through the copy. No playback sessions move.
+	// foreign-key targets midway through the copy. Entity locks follow item
+	// locks, matching catalog writers, and share the same total row budget.
 	rows, err := tx.Query(ctx, `SELECT i.id FROM items i JOIN user_item_data d ON d.item_id=i.id
-		WHERE d.user_id=$1 ORDER BY i.id LIMIT $2 FOR KEY SHARE OF i`, sourceID, maxUserCopyItemRows+1)
+		WHERE d.user_id=$1 ORDER BY i.id LIMIT $2 FOR KEY SHARE OF i`, sourceID, maxUserCopyStateRows+1)
 	if err != nil {
 		return fmt.Errorf("lock copied user media items: %w", err)
 	}
@@ -174,12 +183,33 @@ func lockCopiedUserDataItems(ctx context.Context, tx pgx.Tx, sourceID string) er
 			return fmt.Errorf("read copied user media item: %w", err)
 		}
 		count++
-		if count > maxUserCopyItemRows {
-			return managedUserFieldError("UserCopyOptions", "UserData exceeds the 100000-item copy limit")
+		if count > maxUserCopyStateRows {
+			return managedUserFieldError("UserCopyOptions", "UserData exceeds the combined 100000 item/entity state row copy limit")
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("read copied user media items: %w", err)
+	}
+	rows.Close()
+	entities, err := tx.Query(ctx, `SELECT entity.id FROM catalog_entities entity
+		JOIN entity_user_data d ON d.entity_id=entity.id WHERE d.user_id=$1
+		ORDER BY entity.id LIMIT $2 FOR KEY SHARE OF entity`, sourceID, maxUserCopyStateRows-count+1)
+	if err != nil {
+		return fmt.Errorf("lock copied user catalog entities: %w", err)
+	}
+	defer entities.Close()
+	for entities.Next() {
+		var id int64
+		if err := entities.Scan(&id); err != nil {
+			return fmt.Errorf("read copied user catalog entity: %w", err)
+		}
+		count++
+		if count > maxUserCopyStateRows {
+			return managedUserFieldError("UserCopyOptions", "UserData exceeds the combined 100000 item/entity state row copy limit")
+		}
+	}
+	if err := entities.Err(); err != nil {
+		return fmt.Errorf("read copied user catalog entities: %w", err)
 	}
 	return nil
 }
@@ -199,7 +229,7 @@ func copyUserConfiguration(raw json.RawMessage) ([]byte, error) {
 		"HidePlayedInMoreLikeThis", "HidePlayedInSuggestions", "PlayDefaultAudioTrack", "RememberAudioSelections", "RememberSubtitleSelections"}
 	lists := []string{"LatestItemsExcludes", "MyMediaExcludes", "OrderedViews"}
 	known := append(append([]string{}, flags...), lists...)
-	known = append(known, "IntroSkipMode", "SubtitleMode", "ResumeRewindSeconds")
+	known = append(known, "IntroSkipMode", "SubtitleMode", "ResumeRewindSeconds", "AudioLanguagePreference", "SubtitleLanguagePreference")
 	for name, raw := range values {
 		for _, canonical := range known {
 			if strings.EqualFold(name, canonical) && name != canonical {
@@ -235,6 +265,11 @@ func copyUserConfiguration(raw json.RawMessage) ([]byte, error) {
 		case name == "ResumeRewindSeconds":
 			var value *int32
 			if json.Unmarshal(raw, &value) != nil || value == nil || *value < 0 {
+				return fail()
+			}
+		case name == "AudioLanguagePreference" || name == "SubtitleLanguagePreference":
+			var value *string
+			if json.Unmarshal(raw, &value) != nil || value == nil || *value != "" && PreferenceLanguageKey(*value) == "" {
 				return fail()
 			}
 		default:

@@ -221,6 +221,21 @@ func TestAdminMetadataJSONAndBodyResourceBounds(t *testing.T) {
 	}
 }
 
+func assertNativeMetadataCompleteValueFields(t *testing.T, values map[string]any) {
+	t.Helper()
+	fields := []string{"Name", "SortName", "Overview", "OriginalTitle", "OfficialRating",
+		"ProductionYear", "PremiereDate", "CommunityRating", "ProviderIds", "Genres", "Tags", "Studios", "People",
+		"IndexNumber", "ParentIndexNumber", "Album", "Artists", "AlbumArtists"}
+	if len(values) != len(fields) {
+		t.Fatal("complete metadata value field set changed")
+	}
+	for _, field := range fields {
+		if _, exists := values[field]; !exists {
+			t.Fatalf("complete metadata values omitted %s", field)
+		}
+	}
+}
+
 func TestNativeItemMetadataPreservesCompleteAndSparseValueShapes(t *testing.T) {
 	var detail library.ItemMetadataDetail
 	const input = `{"ItemId":"item-id","LibraryId":"library-id","ParentId":"parent-id","ParentName":"Parent","Name":"Manual title","Type":"Movie","Path":"/media/movie.mp4","IsFolder":false,"Revision":"9007199254740993","Automatic":{"Name":"Automatic title","SortName":"automatic","ProviderIds":{},"Genres":[],"Tags":[],"Studios":[],"People":[]},"Effective":{"Name":"Manual title","SortName":"automatic","ProductionYear":null,"CommunityRating":0,"ProviderIds":{},"Genres":[],"Tags":[],"Studios":[],"People":[]},"Overrides":{"Name":"Manual title","ProductionYear":null},"LockedValues":{"Overview":"Locked overview"},"LockedFields":["Overview"],"EditableFields":["Name","Overview","ProductionYear"],"LastEditedBy":"actor-id","LastEditedAt":"2026-09-09T01:02:03Z"}`
@@ -247,15 +262,23 @@ func TestNativeItemMetadataPreservesCompleteAndSparseValueShapes(t *testing.T) {
 	}
 	for _, layer := range []string{"Automatic", "Effective"} {
 		values := output[layer].(map[string]any)
-		if len(values) != 15 || values["PremiereDate"] != nil || values["IndexNumber"] != nil || values["ParentIndexNumber"] != nil {
+		assertNativeMetadataCompleteValueFields(t, values)
+		if values["PremiereDate"] != nil || values["IndexNumber"] != nil || values["ParentIndexNumber"] != nil || values["Album"] != "" {
 			t.Fatal("complete metadata values omitted an absent scalar or added internal fields")
 		}
 		if _, ok := values["ProviderIds"].(map[string]any); !ok {
 			t.Fatal("provider identifiers must remain a non-null object with public casing")
 		}
-		for _, field := range []string{"Genres", "Tags", "Studios", "People"} {
+		for _, field := range []string{"Genres", "Tags", "Studios", "People", "Artists", "AlbumArtists"} {
 			if entries, ok := values[field].([]any); !ok || len(entries) != 0 {
 				t.Fatal("empty complete metadata collections must remain arrays")
+			}
+		}
+	}
+	for _, layer := range []string{"Overrides", "LockedValues"} {
+		for _, field := range []string{"Album", "Artists", "AlbumArtists"} {
+			if _, exists := output[layer].(map[string]any)[field]; exists {
+				t.Fatal("complete music defaults expanded a sparse metadata layer")
 			}
 		}
 	}

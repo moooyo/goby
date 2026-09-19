@@ -6,6 +6,7 @@ import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { MetadataDetail, MetadataFieldName } from './api';
 import { ErrorNotice } from './components';
+import { ArtworkManagerDialog } from './ArtworkManagerDialog';
 import { fieldError } from './formFields';
 import { InactiveMetadataField, MetadataField, MetadataSection } from './MetadataField';
 import { MetadataPeopleList, MetadataProviderList, MetadataStringList } from './MetadataCollections';
@@ -38,6 +39,9 @@ const labels: Record<MetadataFieldName, string> = {
   ProviderIds: 'Provider identifiers',
   IndexNumber: 'Episode number',
   ParentIndexNumber: 'Season number',
+  Album: 'Album tag',
+  Artists: 'Artists',
+  AlbumArtists: 'Album artists',
 };
 
 function MetadataDiscardDialog({ reload, onKeep, onDiscard }: { reload: boolean; onKeep: () => void; onDiscard: () => void }) {
@@ -91,6 +95,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
   const [pendingAction, setPendingAction] = useState<'close' | 'reload'>();
   const [notice, setNotice] = useState('');
   const [tab, setTab] = useState(0);
+  const [editingArtwork, setEditingArtwork] = useState(false);
   const inFlight = useRef(false);
   const mounted = useRef(true);
   const validation = useMemo(() => metadataInput(detail?.Revision ?? '', overrides, lockedFields, detail), [detail, overrides, lockedFields]);
@@ -130,7 +135,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
   }
 
   function requestAction(action: 'close' | 'reload') {
-    if (inFlight.current) return;
+    if (inFlight.current || editingArtwork) return;
     if (dirty) setPendingAction(action);
     else if (action === 'reload') reload();
     else onClose();
@@ -214,7 +219,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
     );
   }
 
-  function textField(field: 'Name' | 'SortName' | 'Overview' | 'OriginalTitle' | 'OfficialRating') {
+  function textField(field: 'Name' | 'SortName' | 'Overview' | 'OriginalTitle' | 'OfficialRating' | 'Album') {
     if (!values) return null;
     return frame(field, (
       <TextField
@@ -230,7 +235,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
         minRows={field === 'Overview' ? 4 : undefined}
         maxRows={field === 'Overview' ? 12 : undefined}
         error={Boolean(errorFor(field))}
-        helperText={field === 'SortName' ? 'Controls alphabetical ordering independently of the title.' : undefined}
+        helperText={field === 'SortName' ? 'Controls alphabetical ordering independently of the title.' : field === 'Album' ? 'Stored album tag, up to 1,024 UTF-8 bytes. This does not move files or change their album identity or directory. Edit the album item title to rename the album.' : undefined}
         autoComplete="off"
         slotProps={{ htmlInput: { 'aria-describedby': `metadata-${field}-help` } }}
       />
@@ -251,7 +256,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
         onChange={(event) => change(field, event.target.value)}
         disabled={disabled || !editable(field)}
         error={Boolean(errorFor(field))}
-        helperText={!editable(field) ? undefined : field === 'IndexNumber' ? 'Enter an episode number from 0 to 2147483647.' : field === 'CommunityRating' ? 'Use a rating from 0 to 10. Leave empty to clear.' : 'Leave empty to clear.'}
+        helperText={!editable(field) ? undefined : field === 'IndexNumber' ? `Enter ${detail?.Item.Type === 'Audio' ? 'a track' : 'an episode'} number from 0 to 2147483647.` : field === 'CommunityRating' ? 'Use a rating from 0 to 10. Leave empty to clear.' : 'Leave empty to clear.'}
         slotProps={{ htmlInput: { inputMode: field === 'CommunityRating' ? 'decimal' : 'numeric', 'aria-describedby': `metadata-${field}-help` } }}
       />
     ), label);
@@ -314,7 +319,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
                 <Typography component="span" variant="h3">Edit metadata</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{detail?.Effective.Name ?? 'Loading item details...'}</Typography>
               </Box>
-              {detail && <Chip label={detail.Item.Type} size="small" variant="outlined" />}
+              {detail && <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}><Chip label={detail.Item.Type} size="small" variant="outlined" /><Button type="button" onClick={() => setEditingArtwork(true)} disabled={disabled || dirty || Boolean(review)}>Manage artwork</Button></Stack>}
             </Stack>
           </DialogTitle>
           {detail && <Tabs value={tab} onChange={(_, next: number) => setTab(next)} variant="scrollable" scrollButtons="auto" aria-label="Metadata sections" sx={{ px: { xs: 1, sm: 1.5 }, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
@@ -338,6 +343,10 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
                       {textField('Overview')}
                     </MetadataSection>
                     <Divider />
+                    {['Audio', 'MusicAlbum', 'MusicArtist'].includes(detail.Item.Type) && <><MetadataSection title="Music credits" description="Keep each artist on a separate row, with up to 1,024 UTF-8 bytes (1 KiB) per name and 1,024 entries per list. Punctuation remains part of the name. Add composers in People & categories.">
+                      {textField('Album')}
+                      {(['Artists', 'AlbumArtists'] as const).map((field) => frame(field, <MetadataStringList id={`metadata-${field}-list`} label={labels[field]} singular={field === 'Artists' ? 'Artist' : 'Album artist'} value={values[field]} disabled={disabled || !editable(field)} onChange={(next) => change(field, next)} errorFor={(path) => errorFor(`${field}.${path}`)} />))}
+                    </MetadataSection><Divider /></>}
                     <MetadataSection title="Release and ratings" description="Add release details and the ratings shown in media clients.">
                       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 3 }}>
                         {numberField('ProductionYear')}
@@ -409,6 +418,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
         </Box>
       </Dialog>
       {pendingAction && <MetadataDiscardDialog reload={pendingAction === 'reload'} onKeep={() => setPendingAction(undefined)} onDiscard={() => { if (pendingAction === 'reload') reload(); else onClose(); }} />}
+      {editingArtwork && detail && <ArtworkManagerDialog target={{ kind: 'items', id: itemId, name: detail.Effective.Name }} onClose={() => setEditingArtwork(false)} onNavigationGuardChange={onNavigationGuardChange} />}
     </>
   );
 }

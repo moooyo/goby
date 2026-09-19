@@ -61,13 +61,13 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Value: credentials.Token, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, Expires: credentials.ExpiresAt, MaxAge: int(time.Until(credentials.ExpiresAt).Seconds())})
-	jsonResponse(w, 200, map[string]any{"User": nativeUser(credentials.User), "CSRFToken": csrfToken(credentials.Token)})
+	jsonResponse(w, 200, map[string]any{"User": s.avatarUserDTO(r.Context(), nativeUser(credentials.User)), "CSRFToken": csrfToken(credentials.Token)})
 }
 
 func (s *Server) adminSession(w http.ResponseWriter, r *http.Request) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	cookie, _ := r.Cookie(sessionCookie)
-	jsonResponse(w, 200, map[string]any{"User": nativeUser(principal.User), "CSRFToken": csrfToken(cookie.Value)})
+	jsonResponse(w, 200, map[string]any{"User": s.avatarUserDTO(r.Context(), nativeUser(principal.User)), "CSRFToken": csrfToken(cookie.Value)})
 }
 
 func (s *Server) adminLogout(w http.ResponseWriter, r *http.Request) {
@@ -165,6 +165,7 @@ func (s *Server) users(w http.ResponseWriter, r *http.Request) {
 	for _, user := range users {
 		items = append(items, nativeUser(user))
 	}
+	s.attachAvatarDTOs(r.Context(), items)
 	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": len(items)})
 }
 

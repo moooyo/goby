@@ -12,6 +12,7 @@ import (
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/playback"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 var (
@@ -197,7 +198,7 @@ func hlsUnsupportedOptions(values map[string]string) error {
 		}
 	}
 	for _, name := range []string{
-		"tonemappingalgorithm", "videoprofile",
+		"tonemappingalgorithm",
 		"videolevel", "pixelformat", "colortransfer", "colorspace", "colorprimaries",
 		"videofilter", "audiofilter", "filtercomplex", "startpositionticks",
 	} {
@@ -210,15 +211,10 @@ func hlsUnsupportedOptions(values map[string]string) error {
 			return errHLSRequestUnsupported
 		}
 	}
-	for _, name := range []string{"videorange", "videorangetype"} {
-		if value := strings.ToLower(values[name]); value != "" && value != "sdr" {
-			return errHLSRequestUnsupported
-		}
-	}
 	for _, option := range []struct {
 		name    string
 		maximum int64
-	}{{"minsegments", 1}, {"maxmanifestsubtitles", 1}} {
+	}{{"minsegments", 1}} {
 		value, err := hlsQueryInteger(values, 0, 1<<31-1, option.name)
 		if err != nil {
 			return err
@@ -247,7 +243,7 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 	if err := hlsUnsupportedOptions(values); err != nil {
 		return playback.ConversionDecision{}, err
 	}
-	videoCodec, err := hlsQueryCodecs(values, "videocodec", "h264", "h264")
+	videoCodec, err := hlsQueryCodecs(values, "videocodec", "h264", "h264", "hevc", "av1")
 	if err != nil {
 		return playback.ConversionDecision{}, err
 	}
@@ -301,6 +297,12 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 		}
 		profile.ManifestSubtitles = "vtt"
 	}
+	if maximum, parseErr := hlsQueryInteger(values, 0, 1<<31-1, "maxmanifestsubtitles"); parseErr != nil {
+		return playback.ConversionDecision{}, parseErr
+	} else if maximum != nil {
+		limit := min(int(*maximum), transcode.MaxHLSSubtitleTracks)
+		profile.MaxManifestSubtitles = &limit
+	}
 	if value := strings.ToLower(values["subtitlecodec"]); value != "" && value != "vtt" && value != "webvtt" && value != "ass" && value != "ssa" {
 		return playback.ConversionDecision{}, errHLSRequestUnsupported
 	}
@@ -317,6 +319,18 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 		return playback.ConversionDecision{}, err
 	}
 	var videoConditions, audioConditions []playback.ProfileCondition
+	videoDepth, videoProfile, err := videoQueryEncoding(values)
+	if err != nil {
+		return playback.ConversionDecision{}, err
+	}
+	if videoDepth != nil {
+		videoConditions = append(videoConditions, hlsRequiredCondition(playback.ProfileConditionValueVideoBitDepth,
+			playback.ProfileConditionTypeEquals, strconv.Itoa(*videoDepth)))
+	}
+	if videoProfile != "" {
+		videoConditions = append(videoConditions, hlsRequiredCondition(playback.ProfileConditionValueVideoProfile,
+			playback.ProfileConditionTypeEquals, videoProfileCondition(videoProfile)))
+	}
 	for _, field := range []struct {
 		names    []string
 		min, max int64
@@ -359,8 +373,12 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 		videoConditions = append(videoConditions, hlsRequiredCondition(playback.ProfileConditionValueVideoFramerate,
 			playback.ProfileConditionTypeLessThanEqual, strconv.FormatFloat(*framerate, 'g', -1, 64)))
 	}
-	if strings.EqualFold(values["videorange"], "SDR") || strings.EqualFold(values["videorangetype"], "SDR") {
-		videoConditions = append(videoConditions, hlsRequiredCondition(playback.ProfileConditionValueVideoRange, playback.ProfileConditionTypeEquals, "SDR"))
+	videoRange, err := videoQueryRange(values)
+	if err != nil {
+		return playback.ConversionDecision{}, err
+	}
+	if videoRange != "" {
+		videoConditions = append(videoConditions, hlsRequiredCondition(playback.ProfileConditionValueVideoRange, playback.ProfileConditionTypeEquals, videoRange))
 	}
 	for _, field := range []struct {
 		name     string
@@ -460,10 +478,15 @@ func hlsRequestConversion(values map[string]string, source playback.Source, limi
 	if offset, parseErr := hlsQueryInteger(values, -24*60*60*10_000_000, 24*60*60*10_000_000, "subtitleoffsetticks"); parseErr != nil {
 		return playback.ConversionDecision{}, parseErr
 	} else if offset != nil {
-		if decision.Plan.Subtitle.Mode == "" {
-			return playback.ConversionDecision{}, errHLSRequestUnsupported
+		if decision.Plan.Subtitle.Mode == "burn" {
+			decision.Plan.Subtitle.OffsetTicks = *offset
+		} else {
+			view, viewErr := playback.HLSSubtitleViewFor(*decision.Plan, request.SubtitleStreamIndex, *offset)
+			if viewErr != nil {
+				return playback.ConversionDecision{}, errHLSRequestUnsupported
+			}
+			decision.SubtitleView = view
 		}
-		decision.Plan.Subtitle.OffsetTicks = *offset
 	}
 	return decision, nil
 }

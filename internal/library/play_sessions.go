@@ -735,6 +735,9 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 		if err != nil {
 			return PlaySession{}, UserData{}, fmt.Errorf("persist playback user data: %w", err)
 		}
+		if err := rememberPlaybackSelections(ctx, tx, owner, item.id, session.MediaSourceID, report.PlayerState); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
 	}
 	if err := commitPlaybackWrite(ctx, tx, owner); err != nil {
 		return PlaySession{}, UserData{}, fmt.Errorf("commit playback report: %w", err)

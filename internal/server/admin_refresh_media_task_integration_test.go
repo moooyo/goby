@@ -90,7 +90,7 @@ func TestHTTPAdminRefreshMediaTaskForcesOnlyMediaProbesAndCancelsOwnedWork(t *te
 	f, root, prober := adminRefreshMediaHTTPFixture(t)
 	collections := []library.Library{scheduledTaskHTTPCreateLibrary(t, f, root, 0), scheduledTaskHTTPCreateLibrary(t, f, root, 1)}
 	refresh, err := f.app.taskStore.GetByKey(f.ctx, tasks.LibraryRefreshMediaKey)
-	if err != nil || refresh.ID == f.taskID || refresh.EmbyKey != "" || refresh.Name != "Refresh media details" {
+	if err != nil || refresh.ID == f.taskID || refresh.EmbyKey != tasks.CompatibilityKey(tasks.LibraryRefreshMediaKey) || refresh.Name != "Refresh media details" {
 		t.Fatalf("native refresh definition is missing or has a compatibility alias: %v", err)
 	}
 	scheduledTaskHTTPNoContent(t, f.request(t, http.MethodPost, "/emby/Library/Refresh", nil, f.admin))
@@ -132,7 +132,7 @@ func TestHTTPAdminRefreshMediaTaskForcesOnlyMediaProbesAndCancelsOwnedWork(t *te
 	first := adminRefreshMediaHTTPStart(t, f, refresh.ID, "refresh-complete")
 	firstID := stringValue(t, objectValue(t, first, "Run"), "Id")
 	finished := scheduledTaskHTTPWaitRun(t, f, firstID, tasks.RunCompleted)
-	if first["Admitted"] != true || finished.TaskKey != tasks.LibraryRefreshMediaKey || finished.TaskEmbyKey != "" || finished.TotalChildren != 2 || finished.CompletedChildren != 2 || prober.calls.Load() != 4 {
+	if first["Admitted"] != true || finished.TaskKey != tasks.LibraryRefreshMediaKey || finished.TaskEmbyKey != tasks.CompatibilityKey(tasks.LibraryRefreshMediaKey) || finished.TotalChildren != 2 || finished.CompletedChildren != 2 || prober.calls.Load() != 4 {
 		t.Fatal("native refresh did not force probing across both registered libraries")
 	}
 	scheduledTaskHTTPNoContent(t, f.request(t, http.MethodPost, "/Library/Refresh", nil, f.admin))
@@ -166,24 +166,14 @@ func TestHTTPAdminRefreshMediaTaskForcesOnlyMediaProbesAndCancelsOwnedWork(t *te
 	if repeated["Admitted"] != false || objectValue(t, repeated, "Run")["Id"] != secondID {
 		t.Fatal("an active native refresh request retry created another execution")
 	}
-	// A known, running native task must remain unavailable through every Emby ID route.
-	for _, route := range []struct {
-		method, path string
-		body         any
-	}{
-		{http.MethodGet, "/ScheduledTasks/" + refresh.ID, nil},
-		{http.MethodPost, "/emby/ScheduledTasks/Running/" + refresh.ID, nil},
-		{http.MethodDelete, "/ScheduledTasks/Running/" + refresh.ID, nil},
-		{http.MethodPost, "/ScheduledTasks/Running/" + refresh.ID + "/Delete", nil},
-		{http.MethodPost, "/ScheduledTasks/" + refresh.ID + "/Triggers", []any{}},
-	} {
-		expectEmbyTextError(t, f.request(t, route.method, route.path, route.body, f.admin), http.StatusNotFound, "Task not found")
+	// The compatibility projection shares this running native execution.
+	projection := f.request(t, http.MethodGet, "/ScheduledTasks/"+refresh.ID, nil, f.admin)
+	expectStatus(t, projection, http.StatusOK)
+	if info := jsonObject(t, projection); info["Key"] != refresh.EmbyKey || info["State"] != "Running" {
+		t.Fatal("compatibility refresh projection lost the native execution")
 	}
 	items := responseArray(t, f.request(t, http.MethodGet, "/emby/ScheduledTasks", nil, f.admin))
-	if len(items) != 1 {
-		t.Fatal("Emby exposed the native refresh task")
-	}
-	scheduledTaskHTTPAssertInfo(t, items[0], f.taskID)
+	assertPublishedTaskCollection(t, f, items)
 	current, err := f.app.taskStore.GetRun(f.ctx, secondID)
 	if err != nil || current.State != tasks.RunRunning || gate.cancelled.Load() != 0 {
 		t.Fatal("an Emby request changed the running native refresh")

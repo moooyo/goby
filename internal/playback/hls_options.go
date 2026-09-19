@@ -34,10 +34,15 @@ func hlsProfileContainer(profile TranscodingProfile, kind DlnaProfileType) strin
 
 func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, profile TranscodingProfile, subtitle *media.Stream, videoCopy bool) *Reason {
 	if subtitle == nil {
-		return nil
+		return configureHLSSubtitleTracks(plan, source, request, profile, nil)
 	}
 	fail := func() *Reason {
 		return conversionReason("conversion_subtitle_unsupported", "SubtitleStreamIndex", "The selected subtitle requires an explicitly supported HLS, external, or encoded delivery method.")
+	}
+	if clientAcceptsHLSSubtitle(*subtitle, plan.Container, request, profile) {
+		// Once the client can select this rendition from the shared manifest,
+		// retain that delivery path when it also advertises fallback methods.
+		return configureHLSSubtitleTracks(plan, source, request, profile, subtitle)
 	}
 	deliverySource := source
 	deliverySource.Info.Container, deliverySource.Path = plan.Container, "output."+plan.Container
@@ -69,43 +74,52 @@ func configureHLSSubtitle(plan *transcode.Plan, source Source, request Request, 
 	if selected == SubtitleDeliveryMethodEncode && (videoCopy || plan.VideoStreamIndex < 0) {
 		return fail()
 	}
-	plan.Subtitle = transcode.SubtitlePlan{Mode: "hls", Codec: subtitle.Codec, StreamIndex: subtitle.Index}
+	if selected == SubtitleDeliveryMethodEncode {
+		return configureEncodedSubtitle(plan, source, subtitle)
+	}
+	return configureHLSSubtitleTracks(plan, source, request, profile, subtitle)
+}
+
+func configureEncodedSubtitle(plan *transcode.Plan, source Source, subtitle *media.Stream) *Reason {
+	fail := func() *Reason {
+		return conversionReason("conversion_subtitle_unsupported", "SubtitleStreamIndex", "Subtitle burn-in requires a supported selected track and bounded font attachments.")
+	}
+	if subtitle == nil || !transcode.VideoEncodingSupported(plan.VideoCodec) || plan.VideoStreamIndex < 0 || transcode.HasHLSSubtitles(*plan) {
+		return fail()
+	}
+	plan.Subtitle = transcode.SubtitlePlan{Mode: "burn", Codec: subtitle.Codec, StreamIndex: subtitle.Index}
 	if subtitle.IsExternal {
 		if subtitle.SubtitleTag == "" {
 			return fail()
 		}
 		plan.Subtitle.ExternalTag = subtitle.SubtitleTag
 	}
+	var indexes []int
 	for _, stream := range source.Info.Streams {
 		if stream.CodecType == "subtitle" && !stream.IsExternal && stream.Index < subtitle.Index {
 			plan.Subtitle.SubtitleOrdinal++
 		}
-	}
-	if selected == SubtitleDeliveryMethodEncode {
-		plan.Subtitle.Mode, plan.Hardware = "burn", transcode.Hardware{}
-		var indexes []int
-		for _, stream := range source.Info.Streams {
-			if stream.CodecType == "attachment" && media.FontAttachment(stream) {
-				indexes = append(indexes, stream.Index)
-			}
-		}
-		sort.Ints(indexes)
-		if len(indexes) > 16 {
-			return fail()
-		}
-		if !transcode.IsBitmapSubtitle(subtitle.Codec) {
-			values := make([]string, len(indexes))
-			for index, stream := range indexes {
-				values[index] = strconv.Itoa(stream)
-			}
-			plan.Subtitle.FontStreams = strings.Join(values, ",")
+		if stream.CodecType == "attachment" && media.FontAttachment(stream) {
+			indexes = append(indexes, stream.Index)
 		}
 	}
+	sort.Ints(indexes)
+	if len(indexes) > 16 {
+		return fail()
+	}
+	if !transcode.IsBitmapSubtitle(subtitle.Codec) {
+		values := make([]string, len(indexes))
+		for index, stream := range indexes {
+			values[index] = strconv.Itoa(stream)
+		}
+		plan.Subtitle.FontStreams = strings.Join(values, ",")
+	}
+	selectVideoProcessingHardware(plan)
 	return nil
 }
 
 func configureHLSRenditions(plan *transcode.Plan, request Request, profile TranscodingProfile, projected Source, kind DlnaProfileType) *Reason {
-	if plan.VideoCodec != "h264" || plan.Width < 4 || plan.Height < 4 || plan.VideoBitrate < 128000 {
+	if !transcode.VideoEncodingSupported(plan.VideoCodec) || plan.Width < 4 || plan.Height < 4 || plan.VideoBitrate < 128000 {
 		return conversionReason("conversion_adaptive_video_required", "EnableAdaptiveBitrate", "Adaptive HLS requires video encoding and at least two compatible renditions.")
 	}
 	plan.HLS.Renditions[0] = transcode.HLSRendition{Width: plan.Width, Height: plan.Height, VideoBitrate: plan.VideoBitrate}
@@ -125,7 +139,7 @@ func configureHLSRenditions(plan *transcode.Plan, request Request, profile Trans
 		}
 		output.Info.Bitrate = (candidate.VideoBitrate + max(plan.AudioBitrate, projected.Info.Bitrate*9/10-plan.VideoBitrate)) * 10 / 9
 		outputRequest := conversionOutputRequest(request, profile, kind)
-		if plan.Subtitle.Mode != "" {
+		if plan.Subtitle.Mode != "" || transcode.HasHLSSubtitles(*plan) {
 			disabled := -1
 			outputRequest.SubtitleStreamIndex = &disabled
 		}

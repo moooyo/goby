@@ -619,19 +619,19 @@ func TestStoreEntityMigrationBackfillsLocalMetadataWithoutScanning(t *testing.T)
 	}
 	assertVisibleEntity := func(kind, name string, id int64) {
 		t.Helper()
-		want := Entity{ID: id, Name: name, Type: kind, Count: 1}
+		want := Entity{ID: id, Name: name, Type: kind, Count: 1, Images: []Image{}, UserData: &UserData{ItemID: strconv.FormatInt(id, 10)}}
 		listed := entitiesList(t, ctx, store, kind, Query{UserID: userID, ParentID: libraryID})
 		wantCount := 1
 		if kind == "Genre" {
 			wantCount = 2
 		}
-		if listed.TotalRecordCount != wantCount || len(listed.Items) != wantCount || entitiesNamed(t, listed, name) != want {
+		if listed.TotalRecordCount != wantCount || len(listed.Items) != wantCount || !reflect.DeepEqual(entitiesNamed(t, listed, name), want) {
 			t.Fatalf("migrated %s listing = %+v, want %+v", kind, listed, want)
 		}
-		if byName, err := store.GetEntity(ctx, userID, kind, name); err != nil || byName != want {
+		if byName, err := store.GetEntity(ctx, userID, kind, name); err != nil || !reflect.DeepEqual(byName, want) {
 			t.Errorf("migrated %s name lookup = %+v, error = %v", kind, byName, err)
 		}
-		if byID, err := store.GetEntityByID(ctx, userID, id); err != nil || byID != want {
+		if byID, err := store.GetEntityByID(ctx, userID, id); err != nil || !reflect.DeepEqual(byID, want) {
 			t.Errorf("migrated %s ID lookup = %+v, error = %v", kind, byID, err)
 		}
 	}

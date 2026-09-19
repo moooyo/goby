@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 	_ "time/tzdata" // Keep named-zone data available in minimal Linux deployments.
+
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 // These are native proposal boundaries, not inferred Emby trigger semantics.
@@ -39,10 +41,11 @@ var (
 type ScheduleKind string
 
 const (
-	ScheduleInterval ScheduleKind = "interval"
-	ScheduleDaily    ScheduleKind = "daily"
-	ScheduleWeekly   ScheduleKind = "weekly"
-	ScheduleStartup  ScheduleKind = "startup"
+	ScheduleInterval    ScheduleKind = "interval"
+	ScheduleDaily       ScheduleKind = "daily"
+	ScheduleWeekly      ScheduleKind = "weekly"
+	ScheduleStartup     ScheduleKind = "startup"
+	ScheduleSystemEvent ScheduleKind = "system_event"
 )
 
 // ScheduleRule is the native calculation model, independent of persisted
@@ -58,6 +61,7 @@ type ScheduleRule struct {
 	DayOfWeek       *int
 	Timezone        string
 	MaxRuntimeTicks *int64
+	SystemEvent     systemevents.Event
 }
 
 // MissedIntervalSummary describes due instants in (after, through], without
@@ -140,7 +144,14 @@ func prepareSchedule(rule ScheduleRule) (preparedSchedule, error) {
 		return result, err
 	}
 	result.kind = rule.Kind
+	if rule.Kind != ScheduleSystemEvent && rule.SystemEvent != "" {
+		return result, invalidSchedule("system event belongs only to an event rule")
+	}
 	switch rule.Kind {
+	case ScheduleSystemEvent:
+		if !systemevents.Valid(rule.SystemEvent) || rule.AnchorAt != nil || rule.IntervalTicks != nil || rule.TimeOfDayTicks != nil || rule.DayOfWeek != nil || rule.Timezone != "" {
+			return result, invalidSchedule("system event requires a supported event name without calendar fields")
+		}
 	case ScheduleStartup:
 		if rule.AnchorAt != nil || rule.IntervalTicks != nil || rule.TimeOfDayTicks != nil || rule.DayOfWeek != nil || rule.Timezone != "" {
 			return result, invalidSchedule("startup accepts no time, interval, weekday, or timezone")
@@ -206,7 +217,7 @@ func Next(rule ScheduleRule, after time.Time) (time.Time, error) {
 }
 
 func nextSchedule(rule preparedSchedule, after time.Time) (time.Time, error) {
-	if rule.kind == ScheduleStartup {
+	if rule.kind == ScheduleStartup || rule.kind == ScheduleSystemEvent {
 		return time.Time{}, ErrScheduleEvent
 	}
 	if !supportedScheduleInstant(after) {
@@ -348,7 +359,7 @@ func MissedIntervals(rule ScheduleRule, after, through time.Time) (MissedInterva
 	if err != nil {
 		return result, err
 	}
-	if prepared.kind == ScheduleStartup {
+	if prepared.kind == ScheduleStartup || prepared.kind == ScheduleSystemEvent {
 		return result, ErrScheduleEvent
 	}
 	if prepared.kind != ScheduleInterval {

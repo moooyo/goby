@@ -18,6 +18,7 @@ func normalizeItemSort(query Query) (Query, error) {
 		canonical := map[string]string{
 			"sortname": "SortName", "name": "Name", "datecreated": "DateCreated", "indexnumber": "IndexNumber",
 			"productionyear": "ProductionYear", "premieredate": "PremiereDate", "dateplayed": "DatePlayed", "playcount": "PlayCount",
+			"communityrating": "CommunityRating", "runtime": "Runtime", "parentindexnumber": "ParentIndexNumber",
 		}[strings.ToLower(strings.TrimSpace(field))]
 		if canonical == "" || seen[canonical] {
 			return Query{}, ErrInvalidInput
@@ -76,6 +77,12 @@ func itemOrderSQL(query Query, userParameter int) string {
 		case "IndexNumber":
 			clauses = append(clauses, "i.parent_index_number "+direction)
 			column = "i.index_number"
+		case "ParentIndexNumber":
+			column = "i.parent_index_number"
+		case "CommunityRating":
+			column = navigationNumberSQL(itemMetadataColumn, "CommunityRating")
+		case "Runtime":
+			column = navigationNumberSQL("i.media", "DurationTicks")
 		case "ProductionYear":
 			column = "(CASE WHEN jsonb_typeof(" + itemMetadataColumn + "->'ProductionYear') = 'number' THEN (" + itemMetadataColumn + "->>'ProductionYear')::numeric END)"
 		case "PremiereDate":

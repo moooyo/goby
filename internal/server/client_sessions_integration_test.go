@@ -42,9 +42,16 @@ func loginClientSessionHTTP(t *testing.T, f *serverFixture, name, password, devi
 	}
 }
 
-func newClientSessionHTTPAccounts(t *testing.T) (*serverFixture, clientSessionHTTPAccounts) {
+func newClientSessionHTTPAccounts(t *testing.T, timeouts ...time.Duration) (*serverFixture, clientSessionHTTPAccounts) {
 	t.Helper()
-	f := newServerFixture(t)
+	timeout := 90 * time.Second
+	if len(timeouts) > 1 {
+		t.Fatal("at most one explicit fixture timeout is supported")
+	}
+	if len(timeouts) == 1 {
+		timeout = timeouts[0]
+	}
+	f := newServerFixtureWithTimeout(t, timeout)
 	f.bootstrap(t)
 	cookie, _ := f.adminLogin(t)
 	for _, name := range []string{"Session Viewer", "Session Other"} {

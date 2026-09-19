@@ -5,6 +5,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/moooyo/goby/internal/identity"
 )
 
 // These are client preferences, never permissions or server capability claims.
@@ -12,8 +14,11 @@ import (
 // m3e-reference-client-initialization.json. Goby disables intro skipping by
 // default because it does not provide that feature. Valid stored preferences
 // remain intact. Unobserved language and PIN fields stay omitted; this
-// projection adds no write API.
+// projection is never accepted as an account mutation. Separate preference
+// endpoints persist validated changes with their own revision and authority.
 type embyUserConfiguration struct {
+	AudioLanguagePreference    string `json:",omitempty"`
+	SubtitleLanguagePreference string `json:",omitempty"`
 	DisplayMissingEpisodes     bool
 	EnableLocalPassword        bool
 	EnableNextEpisodeAutoPlay  bool
@@ -112,5 +117,8 @@ func projectUserConfiguration(raw json.RawMessage) embyUserConfiguration {
 	if json.Unmarshal(values["ResumeRewindSeconds"], &rewind) == nil && rewind != nil && *rewind >= 0 {
 		result.ResumeRewindSeconds = *rewind
 	}
+	preferences := identity.ProjectUserConfiguration(raw)
+	result.AudioLanguagePreference = preferences.AudioLanguagePreference
+	result.SubtitleLanguagePreference = preferences.SubtitleLanguagePreference
 	return result
 }

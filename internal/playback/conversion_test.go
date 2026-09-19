@@ -289,7 +289,7 @@ func TestPlanConversionRejectsUnverifiedInterlacedCopyWhenDisabled(t *testing.T)
 func TestPlanConversionProjectsEncodedFactsBeforeCheckingClientConditions(t *testing.T) {
 	source, request := conversionTestSource(), conversionTestRequest()
 	source.Info.Streams[0].Codec = "hevc"
-	source.Info.Streams[0].BitDepth = 10
+	source.Info.Streams[0].BitDepth, source.Info.Streams[0].PixelFormat = 0, "yuv420p10le"
 	source.Info.Streams[0].VideoRange, source.Info.Streams[0].VideoRangeKnown = "SDR", true
 	source.Info.Streams[0].ColorRange, source.Info.Streams[0].ColorTransfer = "tv", "bt709"
 	request.AudioStreamIndex = profileTestPtr(9)
@@ -327,7 +327,7 @@ func TestPlanConversionProjectsEncodedFactsBeforeCheckingClientConditions(t *tes
 func TestPlanConversionRechecksOutputPredicatesInsteadOfDiscardingInputConstraints(t *testing.T) {
 	for _, condition := range []ProfileCondition{
 		conversionRequired(ProfileConditionValueVideoBitDepth, ProfileConditionTypeGreaterThanEqual, "10"),
-		conversionRequired(ProfileConditionValueVideoProfile, ProfileConditionTypeEquals, "Baseline"),
+		conversionRequired(ProfileConditionValueVideoProfile, ProfileConditionTypeEquals, "UnsupportedProfile"),
 		conversionRequired(ProfileConditionValueVideoLevel, ProfileConditionTypeLessThanEqual, "41"),
 		conversionRequired(ProfileConditionValueRefFrames, ProfileConditionTypeLessThanEqual, "4"),
 		conversionRequired(ProfileConditionValue("UnknownOutputFact"), ProfileConditionTypeEquals, "true"),
@@ -362,7 +362,7 @@ func TestPlanConversionProfileScopeAndUnsupportedFeatures(t *testing.T) {
 			request.DeviceProfile.TranscodingProfiles[0].Context = EncodingContextStatic
 		}},
 		{"DASH", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].Protocol = "dash" }},
-		{"HEVC output only", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].VideoCodec = "hevc" }},
+		{"unsupported video output", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].VideoCodec = "vp9" }},
 		{"AV1 output only", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].VideoCodec = "av1" }},
 		{"Opus output only", func(_ *Source, request *Request) { request.DeviceProfile.TranscodingProfiles[0].AudioCodec = "opus" }},
 		{"HDR PQ", func(source *Source, _ *Request) { source.Info.Streams[0].ColorTransfer = "smpte2084" }},

@@ -26,7 +26,7 @@ func playbackMediaInfo(item library.Item) media.Info {
 		}
 		info.Streams = append(info.Streams, media.Stream{Index: source.Index, Codec: codec, CodecType: "subtitle",
 			Language: source.Language, Title: source.Title, IsDefault: source.IsDefault, IsForced: source.IsForced,
-			IsExternal: true, IsTextSubtitleStream: true, SubtitleTag: source.Tag})
+			IsExternal: true, IsTextSubtitleStream: true, IsHearingImpaired: source.IsHearingImpaired, SubtitleTag: source.Tag})
 	}
 	return info
 }

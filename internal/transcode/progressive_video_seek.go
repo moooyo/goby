@@ -19,12 +19,12 @@ func validateProgressiveVideoSeekCandidate(p Plan) error {
 		return nil
 	}
 	invalid := func() error { return fmt.Errorf("%w: progressive video seek candidate", ErrInvalidPlan) }
-	if p.VideoCodec != "h264" || p.StartTicks <= 0 || !p.SourceFormatStartKnown {
+	if !VideoEncodingSupported(p.VideoCodec) || p.StartTicks <= 0 || !p.SourceFormatStartKnown {
 		return invalid()
 	}
 	candidate, err := media.ValidateVideoSeekCandidate(p.VideoSeekCandidate)
 	if err != nil || candidate.Index.StreamIndex != p.VideoStreamIndex || candidate.Index.DurationTicks != p.DurationTicks ||
-		candidate.Index.FormatStartTicks != p.SourceFormatStartTicks || candidate.RequestedStartTicks != p.StartTicks {
+		candidate.Index.FormatStartTicks != p.SourceFormatStartTicks || candidate.RequestedStartTicks != p.StartTicks || media.VideoSeekCodec(candidate.Index) == "av1" {
 		return invalid()
 	}
 	// Canonical private JSON preserves registry equality and leaves ample room

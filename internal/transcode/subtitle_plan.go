@@ -47,8 +47,8 @@ func IsBitmapSubtitle(codec string) bool {
 	}
 }
 
-// ValidateSubtitlePlan rejects unbound stream identities and filters that
-// require a decoded software video pipeline before command construction.
+// ValidateSubtitlePlan rejects unbound stream identities and unsupported
+// composition paths before command construction.
 func ValidateSubtitlePlan(p Plan) error {
 	s := p.Subtitle
 	invalid := func() error { return fmt.Errorf("%w: subtitle selection", ErrInvalidPlan) }
@@ -85,8 +85,16 @@ func ValidateSubtitlePlan(p Plan) error {
 		}
 	case "burn":
 		decode, encode := hardwareSelection(p.Hardware)
-		if p.SourceMode == "stream" || p.VideoStreamIndex < 0 || p.VideoCodec != "h264" || decode != "software" || encode != "software" ||
-			(!text && !IsBitmapSubtitle(s.Codec)) || p.OutputMode != "" || (!text && s.FontStreams != "") {
+		// An unbounded text input cannot be reopened by the finite ASS asset
+		// extractor. Streaming bitmap composition uses an independently owned
+		// input pipe supplied by the runner, never an external file identity.
+		if p.SourceMode == "stream" && (!IsBitmapSubtitle(s.Codec) || s.ExternalTag != "" || s.FontStreams != "") ||
+			p.VideoStreamIndex < 0 || !VideoEncodingSupported(p.VideoCodec) ||
+			decode != "software" && decode != "vaapi" || encode != "software" && encode != "vaapi" ||
+			(!text && !IsBitmapSubtitle(s.Codec)) || p.OutputMode != "" && p.OutputMode != "progressive" || (!text && s.FontStreams != "") {
+			return invalid()
+		}
+		if (decode != "software" || encode != "software") && !gpuSubtitleComposition(p) {
 			return invalid()
 		}
 	default:
@@ -105,39 +113,53 @@ func TextSubtitleFilter(p Plan) (string, error) {
 		return "", nil
 	}
 	shift := p.StartTicks - p.Subtitle.OffsetTicks
-	filter := "subtitles=filename='subtitle.ass':fontsdir='.'"
+	if p.OutputMode == "progressive" {
+		// Progressive video retains the normalized source clock until its
+		// output trim. HLS input seeking resets that clock to the seek origin.
+		shift = -p.Subtitle.OffsetTicks
+	}
+	filter := "subtitles=filename='subtitle.ass'"
+	if p.Subtitle.FontStreams != "" {
+		filter += ":fontsdir='.'"
+	}
 	if shift == 0 {
 		return filter, nil
 	}
 	seconds := strconv.FormatFloat(float64(shift)/float64(ticksPerSecond), 'f', 7, 64)
-	return "setpts=PTS+(" + seconds + ")/TB," + filter + ",setpts=PTS-(" + seconds + ")/TB", nil
+	return "settb=AVTB,setpts=PTS+(" + seconds + ")/TB," + filter + ",setpts=PTS-(" + seconds + ")/TB", nil
 }
 
 // BitmapSubtitleGraph transforms video before overlaying subtitles, so HDR
 // mapping and deinterlacing cannot change caption colors or glyph edges. The
 // source canvas is kept until after overlay, then both layers are scaled once.
+// Vulkan also uses this graph entry point for text subtitles: libass rasterizes
+// an alpha plane on the CPU and libplacebo composites that plane on the GPU.
 func BitmapSubtitleGraph(p Plan, videoFilters string) (string, string, error) {
 	if err := ValidateSubtitlePlan(p); err != nil {
 		return "", "", err
 	}
-	if p.Subtitle.Mode != "burn" || !IsBitmapSubtitle(p.Subtitle.Codec) {
+	if p.Subtitle.Mode != "burn" {
+		return "", "", nil
+	}
+	if gpuSubtitleComposition(p) {
+		return gpuSubtitleGraph(p)
+	}
+	if !IsBitmapSubtitle(p.Subtitle.Codec) {
 		return "", "", nil
 	}
 	graph := "[0:" + strconv.Itoa(p.VideoStreamIndex) + "]"
-	processing := softwareVideoProcessingFilter(p)
+	decode, encode := hardwareSelection(p.Hardware)
+	processing := videoCanvasFilter(p, decode)
 	if processing != "" {
-		videoFilters = strings.TrimPrefix(videoFilters, processing+",")
+		videoFilters = videoOutputFilter(p, encode, true)
 	} else {
 		processing = "null"
 	}
-	graph += processing + "[goby_canvas];[0:" + strconv.Itoa(p.Subtitle.StreamIndex) + "]"
-	var subtitleFilters []string
+	graph += processing + ",settb=AVTB[goby_canvas];[1:" + strconv.Itoa(p.Subtitle.StreamIndex) + "]"
+	subtitleFilters := []string{"settb=AVTB"}
 	if p.Subtitle.OffsetTicks != 0 {
 		seconds := strconv.FormatFloat(float64(p.Subtitle.OffsetTicks)/float64(ticksPerSecond), 'f', 7, 64)
 		subtitleFilters = append(subtitleFilters, "setpts=PTS+("+seconds+")/TB")
-	}
-	if len(subtitleFilters) == 0 {
-		subtitleFilters = append(subtitleFilters, "null")
 	}
 	graph += strings.Join(subtitleFilters, ",") + "[goby_subtitle];[goby_canvas][goby_subtitle]overlay=eof_action=pass:shortest=0:repeatlast=0"
 	if videoFilters != "" {
@@ -145,6 +167,72 @@ func BitmapSubtitleGraph(p Plan, videoFilters string) (string, string, error) {
 	}
 	graph += "[goby_video]"
 	return graph, "[goby_video]", nil
+}
+
+func gpuSubtitleGraph(p Plan) (string, string, error) {
+	decode, encode := hardwareSelection(p.Hardware)
+	processing := videoCanvasFilter(p, decode)
+	if processing == "" {
+		processing = "null"
+	}
+	const subtitleColor = "setparams=range=pc:color_primaries=bt709:color_trc=iec61966-2-1:colorspace=gbr"
+	graph := "[0:" + strconv.Itoa(p.VideoStreamIndex) + "]" + processing
+	if IsBitmapSubtitle(p.Subtitle.Codec) {
+		// Sparse bitmap events and sub2video EOF heartbeats are not video
+		// frames. Sample only the transparent subtitle plane on the primary
+		// video's exact clock before GPU composition; leave video untouched.
+		graph += ",split=2[goby_canvas][goby_blank];[goby_blank]settb=AVTB,format=rgba,colorchannelmixer=rr=0:gg=0:bb=0:aa=0," + subtitleColor + "[goby_subtitle_clock];[1:" + strconv.Itoa(p.Subtitle.StreamIndex) + "]settb=AVTB,"
+		if p.Subtitle.OffsetTicks != 0 {
+			seconds := strconv.FormatFloat(float64(p.Subtitle.OffsetTicks)/float64(ticksPerSecond), 'f', 7, 64)
+			graph += "setpts=PTS+(" + seconds + ")/TB,"
+		}
+		graph += "format=rgba," + subtitleColor + "[goby_bitmap];[goby_subtitle_clock][goby_bitmap]overlay=eof_action=pass:shortest=0:repeatlast=0:format=auto:alpha=straight:ts_sync_mode=default," + subtitleColor + "[goby_subtitle];"
+	} else {
+		// Derive the transparent subtitle plane from the video itself. This
+		// preserves every source timestamp and avoids a synthetic frame rate.
+		subtitle, err := TextSubtitleFilter(p)
+		if err != nil {
+			return "", "", err
+		}
+		subtitle = strings.Replace(subtitle, "subtitles=filename='subtitle.ass'", "subtitles=filename='subtitle.ass':alpha=1", 1)
+		graph += ",split=2[goby_canvas][goby_blank];[goby_blank]format=rgba,colorchannelmixer=rr=0:gg=0:bb=0:aa=0," + subtitle + "," + subtitleColor + "[goby_subtitle];"
+	}
+	width, height := videoDimensions(p)
+	// Each input keeps its own color description. Captions remain SDR white
+	// even when the main canvas and encoded output use HDR10 PQ values.
+	graph += "[goby_canvas][goby_subtitle]libplacebo=inputs=2:w=" + width + ":h=" + height + ":format=" + videoSoftwareFormat(p) + ":apply_dolbyvision=0"
+	if p.VideoFilters.ToneMap != "" {
+		graph += libplaceboOutputColor(p)
+	}
+	graph += ",format=" + videoSoftwareFormat(p)
+	if encode != "software" {
+		graph += "," + videoOutputFilter(p, encode, false)
+	}
+	graph += "[goby_video]"
+	return graph, "[goby_video]", nil
+}
+
+// hasBitmapSubtitleInput selects one independent demuxer for sparse bitmap
+// events. Sharing video decoding can let sub2video heartbeats overtake captions.
+func hasBitmapSubtitleInput(p Plan) bool {
+	return p.Subtitle.Mode == "burn" && IsBitmapSubtitle(p.Subtitle.Codec)
+}
+
+// appendBitmapSubtitleInputArgs reopens the same authorized descriptor. It does
+// not accept another pathname, seek past an active bitmap, or decode video/audio.
+func appendBitmapSubtitleInputArgs(args []string, p Plan, threads int) []string {
+	if !hasBitmapSubtitleInput(p) {
+		return args
+	}
+	if p.SourceMode == "stream" {
+		return appendLiveBitmapInputArgs(args, p, threads)
+	}
+	origin := p.StartTicks
+	if p.OutputMode == "progressive" {
+		origin = p.SourceFormatStartTicks
+	}
+	return append(args, "-threads", strconv.Itoa(threads), "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats,
+		"-discard:v", "all", "-discard:a", "all", "-itsoffset", signedTickSeconds(-origin), "-i", "/proc/self/fd/3")
 }
 
 func subtitleFontIndexes(value string) ([]int, error) {

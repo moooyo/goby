@@ -63,13 +63,13 @@ func hlsHTTPMediaCommand(t *testing.T, executable string, args ...string) []byte
 	return output
 }
 
-func newHLSHTTPFixture(t *testing.T) *hlsHTTPFixture {
+func newHLSHTTPFixture(t *testing.T, timeouts ...time.Duration) *hlsHTTPFixture {
 	t.Helper()
 	ffmpeg, ffprobe := os.Getenv("GOBY_FFMPEG"), os.Getenv("GOBY_FFPROBE")
 	if ffmpeg == "" || ffprobe == "" {
 		t.Skip("GOBY_FFMPEG and GOBY_FFPROBE are required for real Linux HLS HTTP verification")
 	}
-	f, accounts := newClientSessionHTTPAccounts(t)
+	f, accounts := newClientSessionHTTPAccounts(t, timeouts...)
 	root := t.TempDir()
 	source := filepath.Join(root, "HLS.Color.Sequence.mp4")
 	// Four full-GOP color intervals make a wrong source-global segment visible

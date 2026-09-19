@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 // scanOwnership reserves a PostgreSQL session for the lifetime of the store.
@@ -166,16 +167,20 @@ func (s *Store) beginOwnedTx(ctx context.Context) (pgx.Tx, error) {
 
 type ownedTx struct {
 	pgx.Tx
-	store          *Store
-	ctx            context.Context
-	cancel         context.CancelFunc
-	finished       bool
-	catalogChanges catalogChangeBatch
+	store               *Store
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	finished            bool
+	catalogChanges      catalogChangeBatch
+	systemEventRecorded bool
 }
 
 func (tx *ownedTx) Exec(_ context.Context, statement string, args ...any) (pgconn.CommandTag, error) {
 	if tx.finished {
 		return pgconn.CommandTag{}, pgx.ErrTxClosed
+	}
+	if err := tx.flushSystemEvent(); err != nil {
+		return pgconn.CommandTag{}, err
 	}
 	tag, err := tx.Tx.Exec(tx.ctx, statement, args...)
 	return tag, tx.store.ownershipErrorLocked(err)
@@ -184,11 +189,15 @@ func (tx *ownedTx) Exec(_ context.Context, statement string, args ...any) (pgcon
 type ownedTxRow struct {
 	tx  *ownedTx
 	row pgx.Row
+	err error
 }
 
 func (tx *ownedTx) QueryRow(_ context.Context, statement string, args ...any) pgx.Row {
 	if tx.finished {
 		return ownedTxRow{tx: tx}
+	}
+	if err := tx.flushSystemEvent(); err != nil {
+		return ownedTxRow{tx: tx, err: err}
 	}
 	return ownedTxRow{tx: tx, row: tx.Tx.QueryRow(tx.ctx, statement, args...)}
 }
@@ -197,12 +206,19 @@ func (row ownedTxRow) Scan(destinations ...any) error {
 	if row.tx.finished {
 		return pgx.ErrTxClosed
 	}
+	if row.err != nil {
+		return row.err
+	}
 	return row.tx.store.ownershipErrorLocked(row.row.Scan(destinations...))
 }
 
 func (tx *ownedTx) Commit(_ context.Context) error {
 	if tx.finished {
 		return pgx.ErrTxClosed
+	}
+	if err := tx.flushSystemEvent(); err != nil {
+		_ = tx.Rollback(context.Background())
+		return errors.Join(pgx.ErrTxCommitRollback, err)
 	}
 	err := tx.Tx.Commit(tx.ctx)
 	tx.cancel()
@@ -214,6 +230,20 @@ func (tx *ownedTx) Commit(_ context.Context) error {
 		tx.store.notifyCatalogChanges(notification)
 	}
 	return err
+}
+
+// Flush before subsequent statements so a final authorization query remains
+// after the event write. Unauthenticated/internal transactions may instead
+// flush at commit. One signal covers all catalog facts in this transaction.
+func (tx *ownedTx) flushSystemEvent() error {
+	if tx.systemEventRecorded || (!tx.catalogChanges.resync && len(tx.catalogChanges.changes) == 0) || systemevents.IsDerived(tx.ctx) {
+		return nil
+	}
+	err := systemevents.Record(func(sql string, args ...any) (pgconn.CommandTag, error) { return tx.Tx.Exec(tx.ctx, sql, args...) }, systemevents.LibraryChanged)
+	if err == nil {
+		tx.systemEventRecorded = true
+	}
+	return tx.store.ownershipErrorLocked(err)
 }
 
 func (tx *ownedTx) Rollback(_ context.Context) error {

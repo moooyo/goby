@@ -111,9 +111,11 @@ type Configuration struct {
 type ConfigurationSection string
 
 const (
-	ConfigurationFull     ConfigurationSection = "full"
-	ConfigurationPartial  ConfigurationSection = "partial"
-	ConfigurationEncoding ConfigurationSection = "encoding"
+	ConfigurationFull      ConfigurationSection = "full"
+	ConfigurationPartial   ConfigurationSection = "partial"
+	ConfigurationEncoding  ConfigurationSection = "encoding"
+	ConfigurationSubtitles ConfigurationSection = "subtitles"
+	ConfigurationTasks     ConfigurationSection = "tasks"
 )
 
 // ConfigurationMutation is already decoded by the compatibility boundary.
@@ -129,6 +131,9 @@ type ConfigurationMutation struct {
 	StartupWizardCompleted     *bool
 	PreferredMetadataLanguage  *string
 	MetadataCountryCode        *string
+	EnableInternetProviders    *bool
+	Subtitles                  *SubtitleOptions
+	Tasks                      *TaskOptions
 }
 
 type ValidationError struct{ Fields map[string]string }

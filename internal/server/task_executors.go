@@ -23,6 +23,9 @@ func (executor managementTaskExecutor) Available() bool {
 	if executor.key == tasks.CacheMaintainKey {
 		return true
 	}
+	if !s.cfg.OnlineProviders.Enabled || !s.settings.Snapshot().Management.Metadata.EnableInternetProviders {
+		return false
+	}
 	for _, status := range s.onlineProviderConfig().Status() {
 		if !status.Configured {
 			continue

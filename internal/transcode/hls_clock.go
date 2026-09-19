@@ -18,6 +18,10 @@ type HLSMuxClock struct {
 }
 
 func (clock HLSMuxClock) Ticks() (int64, error) {
+	return clock.ticks(true)
+}
+
+func (clock HLSMuxClock) ticks(boundedDuration bool) (int64, error) {
 	if clock.Rendition < 0 || clock.Rendition >= MaxHLSRenditions || clock.TimeBaseNumerator <= 0 || clock.TimeBaseNumerator > 1_000_000_000 || clock.TimeBaseDenominator <= 0 || clock.TimeBaseDenominator > 1_000_000_000 {
 		return 0, ErrInvalidTimeline
 	}
@@ -31,13 +35,15 @@ func (clock HLSMuxClock) Ticks() (int64, error) {
 		value.Add(value, new(big.Int).Quo(denominator, big.NewInt(2)))
 	}
 	value.Quo(value, denominator)
-	if !value.IsInt64() || value.Int64() < -maxDurationTicks || value.Int64() > maxDurationTicks {
+	if !value.IsInt64() || boundedDuration && (value.Int64() < -maxDurationTicks || value.Int64() > maxDurationTicks) {
 		return 0, ErrInvalidTimeline
 	}
 	return value.Int64(), nil
 }
 
-func needsHLSClock(p Plan) bool { return p.OutputMode == "" && p.Subtitle.Mode == "hls" }
+func needsHLSClock(p Plan) bool {
+	return p.OutputMode == "" && (p.SourceMode == "stream" || HasHLSSubtitles(p))
+}
 
 func needsHLSCopyClock(p Plan) bool {
 	return needsHLSClock(p) && (p.VideoStreamIndex >= 0 && p.VideoCodec == "copy" || p.VideoStreamIndex < 0 && p.AudioCodec == "copy")
@@ -58,6 +64,7 @@ type hlsClockWriter struct {
 	copyBytes         int
 	expectRendition   bool
 	expectedRendition int
+	liveTimeline      bool
 }
 
 func (writer *hlsClockWriter) Write(data []byte) (int, error) {
@@ -135,7 +142,7 @@ func (writer *hlsClockWriter) consume() error {
 	if err != nil {
 		return ErrProgress
 	}
-	if _, err := clock.Ticks(); err != nil {
+	if _, err := clock.ticks(!writer.liveTimeline); err != nil {
 		return ErrProgress
 	}
 	writer.seen[index] = true
@@ -174,7 +181,7 @@ func (writer *hlsClockWriter) consumeCopyReference() error {
 		if err != nil {
 			return ErrProgress
 		}
-		if _, err := writer.copyTimeBase.Ticks(); err != nil {
+		if _, err := writer.copyTimeBase.ticks(!writer.liveTimeline); err != nil {
 			return ErrProgress
 		}
 		writer.copyTimeBaseKnown = true
@@ -210,7 +217,7 @@ func (writer *hlsClockWriter) consumeCopyReference() error {
 	}
 	clock := writer.copyTimeBase
 	clock.PTS, _ = strconv.ParseInt(fields[2], 10, 64)
-	if _, err := clock.Ticks(); err != nil {
+	if _, err := clock.ticks(!writer.liveTimeline); err != nil {
 		return ErrProgress
 	}
 	writer.seen[0] = true

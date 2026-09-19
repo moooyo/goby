@@ -9,6 +9,8 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, UserMutationResponse } from './api';
 import { ErrorNotice } from './components';
 import { UserPolicyFields } from './UserPolicyFields';
+import { UserPreferencesDialog } from './UserPreferencesDialog';
+import { ArtworkManagerDialog } from './ArtworkManagerDialog';
 import { draftFromUserPolicy, parseUserPolicyDraft } from './userPolicy';
 import type { UserPolicyDraft } from './userPolicy';
 import { fieldError, PasswordField } from './formFields';
@@ -244,6 +246,8 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   const inFlight = useRef(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
+  const [editingPreferences, setEditingPreferences] = useState(false);
+  const [editingAvatar, setEditingAvatar] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [passwordDraftState, setPasswordDraftState] = useState({ dirty: false, busy: false });
   const [pendingAction, setPendingAction] = useState<'close' | 'reload'>();
@@ -290,7 +294,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   }
 
   function requestAction(action: 'close' | 'reload') {
-    if (inFlight.current || deleteBusy) return;
+    if (inFlight.current || deleteBusy || editingPreferences || editingAvatar) return;
     if (dirty) setPendingAction(action);
     else if (action === 'reload') reload();
     else onClose();
@@ -369,6 +373,8 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                   {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}
                   <Section title="Account" description="Choose the account name and who can administer the server.">
                     <Stack spacing={2.5}>
+                      <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" disabled={disabled || dirty || blocked} onClick={() => setEditingPreferences(true)}>Playback and display preferences</Button><Button variant="outlined" disabled={disabled || dirty || blocked} onClick={() => setEditingAvatar(true)}>Manage avatar</Button></Stack>
+                      {dirty && <Typography variant="caption" color="text.secondary">Save or discard account changes before editing preferences or the avatar.</Typography>}
                       <TextField id="managed-user-name" name="Name" autoFocus required fullWidth label="Username" value={draft.Name} onChange={(event) => change('Name', event.target.value)} disabled={disabled} autoComplete="off" error={Boolean(fieldError(error, 'Name'))} helperText={fieldError(error, 'Name')} slotProps={{ htmlInput: { autoCapitalize: 'none', spellCheck: false } }} />
                       <PermissionSwitch id="managed-user-administrator" label="Administrator access" description="Administrators can manage this server and every user, and access every library." checked={draft.IsAdministrator} disabled={disabled} onChange={(value) => change('IsAdministrator', value)} error={fieldError(error, 'IsAdministrator')} />
                       {user.Id === currentUserId && user.IsAdministrator && !draft.IsAdministrator && <Alert severity="warning">Removing your administrator access will end your current sign-in. An administrator must restore access before you can use this dashboard again.</Alert>}
@@ -427,6 +433,8 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
       {pendingAction && <UnsavedChangesDialog reload={pendingAction === 'reload'} onKeep={() => setPendingAction(undefined)} onDiscard={() => { if (pendingAction === 'reload') reload(); else onClose(); }} />}
       {resettingPassword && user && <ResetPasswordDialog user={user} isCurrentUser={user.Id === currentUserId} onClose={() => setResettingPassword(false)} onReload={reload} onReset={(result) => saved(result, true)} onReviewRequired={(cause) => { setError(cause); setPasswordReviewRequired(true); }} onDraftStateChange={setPasswordDraftState} />}
       {deletingUser && user && <DeleteUserDialog user={user} isCurrentUser={user.Id === currentUserId} onClose={() => setDeletingUser(false)} onReload={() => requestAction('reload')} onDeleted={(result) => { if (!result.CurrentSessionRevoked) onRemoved(user.Id, `User ${user.Name} deleted.`, 'success'); }} onReviewRequired={(cause) => { setError(cause); setDeleteReviewRequired(true); setNotice(''); }} onBusyChange={setDeleteBusy} />}
+      {editingPreferences && user && <UserPreferencesDialog userId={user.Id} userName={user.Name} onClose={() => setEditingPreferences(false)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {editingAvatar && user && <ArtworkManagerDialog target={{ kind: 'users', id: user.Id, name: user.Name }} onClose={() => setEditingAvatar(false)} onNavigationGuardChange={onNavigationGuardChange} />}
     </>
   );
 }

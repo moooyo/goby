@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/identity"
 )
 
 // EntityRef carries the numeric identifier used by genre, tag, and studio item
@@ -34,6 +35,8 @@ type Entity struct {
 	ID         int64
 	Name, Type string
 	Count      int
+	Images     []Image
+	UserData   *UserData
 }
 
 type EntityResult struct {
@@ -50,12 +53,27 @@ const validEntityAssociationSQL = `(entity.kind <> 'MusicArtist' OR
 // ListEntities counts distinct authorized source items before entity pagination.
 // SearchTerm searches entity names; other item filters scope the source catalog.
 func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (EntityResult, error) {
+	return s.listEntities(ctx, kind, query, nil)
+}
+
+// QueryArtworkEntities retains the native administrator credential while
+// selecting entity membership, images and preferences in one catalog snapshot.
+func (s *Store) QueryArtworkEntities(ctx context.Context, actor identity.Principal, kind string, query Query) (EntityResult, error) {
+	query.UserID, query.ApplicationCredentialID = actor.User.ID, ""
+	return s.listEntities(ctx, kind, query, &actor)
+}
+
+func (s *Store) listEntities(ctx context.Context, kind string, query Query, actor *identity.Principal) (EntityResult, error) {
 	kind, err := normalizeEntityKind(kind)
 	if err != nil {
 		return EntityResult{}, err
 	}
 	searchTerm := query.SearchTerm
-	if !utf8.ValidString(searchTerm) || strings.ContainsRune(searchTerm, '\x00') {
+	favorite := query.IsFavorite
+	favoriteOrLikes := query.IsFavoriteOrLikes
+	query.IsFavorite = nil
+	query.IsFavoriteOrLikes = nil
+	if len(searchTerm) > 1024 || !utf8.ValidString(searchTerm) || strings.ContainsRune(searchTerm, '\x00') || (favorite != nil || favoriteOrLikes != nil) && query.UserID == "" {
 		return EntityResult{}, ErrInvalidInput
 	}
 	query.SearchTerm = ""
@@ -67,7 +85,14 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 	if query.SortBy != "Name" && query.SortBy != "SortName" {
 		return EntityResult{}, ErrInvalidInput
 	}
-	tx, access, err := s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
+	var tx pgx.Tx
+	var access libraryAccess
+	if actor == nil {
+		tx, access, err = s.beginSubjectRead(ctx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID})
+	} else {
+		tx, err = s.beginMetadataRead(ctx, *actor)
+		access = libraryAccess{all: true, administrator: true, userID: actor.User.ID}
+	}
 	if err != nil {
 		return EntityResult{}, err
 	}
@@ -79,6 +104,26 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 	prefix, filter, args := itemQuerySQL(query, access, parentLibraryID)
 	args = append(args, kind)
 	filter += fmt.Sprintf(" AND entity.kind = $%d", len(args)) + " AND " + validEntityAssociationSQL
+	if favorite != nil {
+		if query.UserID == "" {
+			return EntityResult{}, ErrInvalidInput
+		}
+		args = append(args, query.UserID)
+		predicate := fmt.Sprintf(`EXISTS (SELECT 1 FROM entity_user_data entity_state WHERE entity_state.user_id=$%d AND entity_state.entity_id=entity.id AND entity_state.is_favorite)`, len(args))
+		if !*favorite {
+			predicate = "NOT " + predicate
+		}
+		filter += " AND " + predicate
+	}
+	if favoriteOrLikes != nil {
+		args = append(args, query.UserID)
+		predicate := fmt.Sprintf(`EXISTS (SELECT 1 FROM entity_user_data entity_state WHERE entity_state.user_id=$%d
+			AND entity_state.entity_id=entity.id AND (entity_state.is_favorite OR entity_state.likes IS TRUE))`, len(args))
+		if !*favoriteOrLikes {
+			predicate = "NOT " + predicate
+		}
+		filter += " AND " + predicate
+	}
 	if searchTerm != "" {
 		args = append(args, "%"+escapeLikeLiteral(searchTerm)+"%")
 		filter += fmt.Sprintf(" AND entity.name ILIKE $%d ESCAPE E'\\\\'", len(args))
@@ -115,6 +160,15 @@ func (s *Store) ListEntities(ctx context.Context, kind string, query Query) (Ent
 	}
 	if err := rows.Err(); err != nil {
 		return EntityResult{}, fmt.Errorf("read visible catalog entities: %w", err)
+	}
+	rows.Close()
+	if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, result.Items); err != nil {
+		return EntityResult{}, err
+	}
+	if actor != nil {
+		if err := authorizeMetadataActor(ctx, tx, *actor); err != nil {
+			return EntityResult{}, err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return EntityResult{}, fmt.Errorf("complete entity listing: %w", err)
@@ -171,6 +225,11 @@ func (s *Store) getEntity(ctx context.Context, subject Subject, condition string
 	if err != nil {
 		return Entity{}, fmt.Errorf("get visible catalog entity: %w", err)
 	}
+	projected := []Entity{entity}
+	if err := populateEntityProjections(ctx, tx, subject, projected); err != nil {
+		return Entity{}, err
+	}
+	entity = projected[0]
 	if err := tx.Commit(ctx); err != nil {
 		return Entity{}, fmt.Errorf("complete entity read: %w", err)
 	}

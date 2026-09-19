@@ -23,7 +23,7 @@ func applicationKeyDeviceLegacySnapshot(t *testing.T, ctx context.Context, pool 
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
-		'users', (SELECT jsonb_agg(to_jsonb(u) ORDER BY id) FROM users u),
+		'users', (SELECT jsonb_agg(to_jsonb(u) - 'configuration_revision' ORDER BY id) FROM users u),
 		'credentials', (SELECT jsonb_agg(to_jsonb(a) - 'device_registry_id' ORDER BY id) FROM sessions a),
 		'keys', (SELECT jsonb_agg(to_jsonb(k) ORDER BY id) FROM application_keys k),
 		'clients', (SELECT jsonb_agg(to_jsonb(c) ORDER BY id) FROM application_key_clients c))::text`).Scan(&snapshot); err != nil {
@@ -133,6 +133,7 @@ func TestMigrateApplicationKeyDevicesPreservesSchema16CredentialsAndProjection(t
 	if after := applicationKeyDeviceLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("schema 18 changed old key, token digest, ciphertext, client, or account fields")
 	}
+	assertPhase3MigrationDefaults(t, ctx, pool)
 	var oldHistory string
 	if err := pool.QueryRow(ctx, "SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version <= 16").Scan(&oldHistory); err != nil || oldHistory != history {
 		t.Fatalf("shared device migration rewrote published migration history: %v", err)

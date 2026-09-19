@@ -346,7 +346,10 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 		if !m.enter() {
 			return context.Canceled
 		}
-		err = m.store.InitializeSchedules(ctx, m.startupAt)
+		err = m.store.InitializeSystemEvents(ctx, m.startupAt)
+		if err == nil {
+			err = m.store.InitializeSchedules(ctx, m.startupAt)
+		}
 		m.operations.Done()
 		if err != nil {
 			return err
@@ -359,6 +362,9 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 		return context.Canceled
 	}
 	_, err = m.store.DispatchDue(ctx, managerScheduleBatch)
+	if err == nil {
+		_, err = m.store.DispatchSystemEvents(ctx, managerScheduleBatch)
+	}
 	m.operations.Done()
 	if err != nil {
 		return err

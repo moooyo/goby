@@ -119,7 +119,7 @@ func TestStoreMusicMetadataRefreshesLegacyAudioWithoutReprobingVideo(t *testing.
 		t.Errorf("embedded titles were changed: first = %q, second = %q", first.Name, second.Name)
 	}
 	for _, item := range []Item{first, second, empty} {
-		if item.Media == nil || item.Media.ProbeVersion != 6 || item.Media.EmbeddedMusic == nil || item.Media.EmbeddedMusic.Version != media.CurrentMusicMetadataVersion {
+		if item.Media == nil || item.Media.ProbeVersion != media.CurrentProbeVersion || item.Media.EmbeddedMusic == nil || item.Media.EmbeddedMusic.Version != media.CurrentMusicMetadataVersion {
 			t.Fatalf("audio %s retained an unversioned music cache", item.ID)
 		}
 	}

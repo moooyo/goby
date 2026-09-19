@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -162,15 +163,28 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		}
 		sessions = controlled
 	}
+	result, itemDTOs, err := s.clientSessionSnapshot(r.Context(), principal, sessions)
+	if err != nil {
+		s.clientSessionSnapshotError(w, r, err)
+		return
+	}
+	if len(itemDTOs) > 0 && !s.applyIndexedImages(w, r, principal.User.ID, itemDTOs, false) {
+		return
+	}
+	jsonResponse(w, http.StatusOK, result)
+}
+
+// clientSessionSnapshot is shared by HTTP lists and per-connection Sessions
+// subscriptions. The caller obtains sessions through current identity authority.
+func (s *Server) clientSessionSnapshot(ctx context.Context, principal identity.Principal, sessions []identity.ClientSession) ([]map[string]any, []map[string]any, error) {
 	authIDs := make([]string, 0, len(sessions))
 	for _, session := range sessions {
 		authIDs = append(authIDs, session.SessionID)
 	}
 	subject := librarySubject(principal, principal.User.ID)
-	playing, err := s.library.ListNowPlayingSessionsForSubject(r.Context(), subject, principal.CanManageServer(), authIDs)
+	playing, err := s.library.ListNowPlayingSessionsForSubject(ctx, subject, principal.CanManageServer(), authIDs)
 	if err != nil {
-		s.playbackError(w, r, err)
-		return
+		return nil, nil, err
 	}
 	bySession := map[string]library.PlaySession{}
 	ids, seen := []string{}, map[string]bool{}
@@ -192,18 +206,14 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 	}
 	items, itemDTOs := map[string]map[string]any{}, []map[string]any{}
 	if len(ids) > 0 {
-		result, err := s.library.GetItemsByIDFor(r.Context(), subject, ids)
+		result, err := s.library.GetItemsByIDFor(ctx, subject, ids)
 		if err != nil {
-			s.libraryError(w, r, err)
-			return
+			return nil, nil, err
 		}
 		for _, item := range result {
 			item.UserData = nil
 			dto := s.itemDTO(item, nil, false)
 			items[item.ID], itemDTOs = dto, append(itemDTOs, dto)
-		}
-		if !s.applyIndexedImages(w, r, principal.User.ID, itemDTOs, false) {
-			return
 		}
 	}
 	result := make([]map[string]any, 0, len(sessions))
@@ -222,7 +232,15 @@ func (s *Server) clientSessions(w http.ResponseWriter, r *http.Request) {
 		}
 		result = append(result, dto)
 	}
-	jsonResponse(w, http.StatusOK, result)
+	return result, itemDTOs, nil
+}
+
+func (s *Server) clientSessionSnapshotError(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, library.ErrForbidden) || errors.Is(err, library.ErrNotFound) || errors.Is(err, library.ErrUnavailable) || errors.Is(err, library.ErrInvalidInput) {
+		s.libraryError(w, r, err)
+		return
+	}
+	s.clientSessionError(w, r, err)
 }
 
 func (s *Server) clientSessionError(w http.ResponseWriter, r *http.Request, err error) {

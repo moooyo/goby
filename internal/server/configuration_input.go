@@ -65,6 +65,9 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 		return settings.ConfigurationMutation{}, false
 	}
 	mutation := settings.ConfigurationMutation{Section: section}
+	if section == settings.ConfigurationSubtitles || section == settings.ConfigurationTasks {
+		return decodeManagementConfiguration(w, r, mutation, values)
+	}
 	for field, raw := range values {
 		switch {
 		case section != settings.ConfigurationEncoding && field == "servername":
@@ -85,6 +88,11 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 			}
 		case section != settings.ConfigurationEncoding && field == "metadatacountrycode":
 			if json.Unmarshal(raw, &mutation.MetadataCountryCode) != nil || mutation.MetadataCountryCode == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case section != settings.ConfigurationEncoding && field == "enableinternetproviders":
+			if json.Unmarshal(raw, &mutation.EnableInternetProviders) != nil || mutation.EnableInternetProviders == nil {
 				configurationInputError(w, r)
 				return settings.ConfigurationMutation{}, false
 			}

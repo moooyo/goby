@@ -227,9 +227,9 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		target string
 		count  int
 	}{
-		{"/emby/ScheduledTasks", 1},
-		{"/ScheduledTasks", 1},
-		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 1},
+		{"/emby/ScheduledTasks", 5},
+		{"/ScheduledTasks", 5},
+		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 5},
 		{"/ScheduledTasks?IsHidden=true", 0},
 		{"/ScheduledTasks?IsEnabled=false", 0},
 		{"/ScheduledTasks?IsHidden=false&IsEnabled=false", 0},
@@ -242,8 +242,8 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		if response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("Pragma") != "no-cache" {
 			t.Error("task list is cacheable")
 		}
-		for _, info := range items {
-			scheduledTaskHTTPAssertInfo(t, info, f.taskID)
+		if test.count != 0 {
+			assertPublishedTaskCollection(t, f, items)
 		}
 	}
 	for _, target := range []string{"/sChEdUlEdTaSkS/" + f.taskID, "/EMBY/SCHEDULEDTASKS/" + f.taskID} {
@@ -662,10 +662,7 @@ func TestHTTPScheduledTasksProjectApplicationKeyAuthorization(t *testing.T) {
 	scheduledTaskHTTPWait(t, f, "application-key task manager readiness", func() bool { return f.app.taskManager.Available() })
 	queryPath := "/ScheduledTasks?IsHidden=false&api_key=" + url.QueryEscape(key.token)
 	items := responseArray(t, f.request(t, http.MethodGet, queryPath, nil, nil))
-	if len(items) != 1 {
-		t.Fatal("application-key query transport did not expose the executable task")
-	}
-	scheduledTaskHTTPAssertInfo(t, items[0], f.taskID)
+	assertPublishedTaskCollection(t, f, items)
 	triggerPath := "/emby/ScheduledTasks/" + f.taskID + "/Triggers"
 	startPath := "/emby/ScheduledTasks/Running/" + f.taskID
 	scheduledTaskHTTPNoContent(t, f.request(t, http.MethodPost, triggerPath, []any{}, headers))

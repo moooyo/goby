@@ -63,6 +63,17 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 	if err := runVideoCopySeekProof(proofContext, resolved, file, args, candidate); err != nil {
 		return verification, nil
 	}
+	if candidate.Audio != nil {
+		audioArgs, err := BuildVideoCopySeekAudioCommandArgs(encoded, threads)
+		if err != nil {
+			return verification, nil
+		}
+		if err := runVideoCopySeekHashProof(proofContext, resolved, file, audioArgs, func(input io.Reader) error {
+			return parseVideoCopySeekAudioProof(input, candidate)
+		}); err != nil {
+			return verification, nil
+		}
+	}
 	if err := videoSeekCheckSource(file, before); err != nil {
 		return verification, err
 	}
@@ -74,6 +85,12 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 }
 
 func runVideoCopySeekProof(ctx context.Context, executable string, file *os.File, args []string, candidate VideoCopySeekCandidate) error {
+	return runVideoCopySeekHashProof(ctx, executable, file, args, func(input io.Reader) error {
+		return parseVideoCopySeekProof(input, candidate)
+	})
+}
+
+func runVideoCopySeekHashProof(ctx context.Context, executable string, file *os.File, args []string, parse func(io.Reader) error) error {
 	processContext, cancel := context.WithCancel(ctx)
 	defer cancel()
 	stdout := &limitedOutput{limit: maxVideoCopySeekProofBytes, cancel: cancel}
@@ -102,7 +119,7 @@ func runVideoCopySeekProof(ctx context.Context, executable string, file *os.File
 			return fmt.Errorf("video copy seek reported an error")
 		}
 	}
-	return parseVideoCopySeekProof(&stdout.buffer, candidate)
+	return parse(&stdout.buffer)
 }
 
 func parseVideoCopySeekProof(input io.Reader, candidate VideoCopySeekCandidate) error {
@@ -112,7 +129,12 @@ func parseVideoCopySeekProof(input io.Reader, candidate VideoCopySeekCandidate) 
 	if err := validateVideoCopySeekCandidate(candidate); err != nil {
 		return err
 	}
-	streams := make([]videoSeekHashStream, 2)
+	videoStreams := 2
+	if VideoSeekCodec(candidate.Index) == "hevc" {
+		videoStreams = 3
+	}
+	streamCount := videoStreams
+	streams := make([]videoSeekHashStream, streamCount)
 	for number := range streams {
 		streams[number].seen = make(map[string]bool)
 	}
@@ -120,7 +142,7 @@ func parseVideoCopySeekProof(input io.Reader, candidate VideoCopySeekCandidate) 
 	bounded := &io.LimitedReader{R: input, N: maxVideoCopySeekProofBytes + 1}
 	reader := bufio.NewReaderSize(bounded, maxVideoSeekLine)
 	started := false
-	records := [2]*videoSeekHashRecord{}
+	records := make([]*videoSeekHashRecord, streamCount)
 	for {
 		raw, err := reader.ReadSlice('\n')
 		if err == io.EOF && len(raw) == 0 {
@@ -146,8 +168,12 @@ func parseVideoCopySeekProof(input io.Reader, candidate VideoCopySeekCandidate) 
 			if !headers["format"] || !headers["version"] || !headers["hash"] {
 				return fmt.Errorf("video copy seek proof has incomplete headers")
 			}
-			for _, stream := range streams {
-				if len(stream.seen) != 4 || stream.timeBase == nil || stream.media != "video" || stream.codec != "h264" ||
+			for number, stream := range streams {
+				codec := VideoSeekCodec(candidate.Index)
+				if codec == "av1" && number == 1 || codec == "hevc" && number == 2 {
+					codec = "rawvideo"
+				}
+				if len(stream.seen) != 4 || stream.timeBase == nil || stream.media != "video" || stream.codec != codec ||
 					stream.width != candidate.Index.Width || stream.height != candidate.Index.Height ||
 					stream.timeBase.Cmp(videoSeekTimeBase(candidate.Index.TimeBaseNumerator, candidate.Index.TimeBaseDenominator)) != 0 {
 					return fmt.Errorf("video copy seek packet metadata differs from the source")
@@ -159,19 +185,36 @@ func parseVideoCopySeekProof(input io.Reader, candidate VideoCopySeekCandidate) 
 		if err != nil || number >= len(records) || records[number] != nil {
 			return fmt.Errorf("video copy seek proof has unexpected packet records")
 		}
-		// The production output subtracts the requested source position. Zero
-		// native timestamps prove that neither decode nor presentation pre-roll
-		// survives that exact argument sequence; no rounded tick comparison is
-		// used here. The scoped source index has strictly increasing native DTS,
-		// so the two branches cannot match different packets at this boundary.
+		// Output-side trimming removes the requested source position; an
+		// explicit source-clock contract restores that offset at the muxer.
+		// Exact native timestamps prove that neither decode nor presentation
+		// preroll survives either sequence. The scoped source index has strictly
+		// increasing DTS, so branches cannot match different boundary packets.
 		duration, durationErr := strconv.ParseInt(strings.TrimSpace(strings.Split(line, ",")[3]), 10, 64)
-		if durationErr != nil || duration <= 0 || record.pts != 0 || record.dts != 0 || !videoSeekSupportedPacketSideData(record.sideData) {
+		expectedTimestamp, timestampErr := videoCopySeekOutputTimestamp(candidate, streams[number].timeBase)
+		if durationErr != nil || duration <= 0 || timestampErr != nil || record.pts != expectedTimestamp || record.dts != expectedTimestamp || !videoSeekSupportedPacketSideData(record.sideData) {
 			return fmt.Errorf("video copy seek first packet does not start at the requested position")
 		}
 		records[number] = &record
 	}
-	if !started || records[0] == nil || records[1] == nil || records[1].hash != candidate.Index.Entries[0].CodedSHA256 {
+	for _, record := range records {
+		if record == nil {
+			return fmt.Errorf("video copy seek proof has incomplete packet evidence")
+		}
+	}
+	point := candidate.Index.Entries[0]
+	if !started || point.PacketSHA256 != "" && records[0].hash != point.PacketSHA256 {
+		return fmt.Errorf("video copy seek first packet differs from the indexed packet")
+	}
+	if VideoSeekCodec(candidate.Index) == "av1" {
+		if records[1].hash != point.DecodedSHA256 || records[1].size != candidate.Index.DecodedFrameBytes {
+			return fmt.Errorf("video copy seek AV1 decoder did not restart at the indexed picture")
+		}
+	} else if records[1].hash != point.CodedSHA256 {
 		return fmt.Errorf("video copy seek first packet has no matching IDR evidence")
+	}
+	if VideoSeekCodec(candidate.Index) == "hevc" && (records[2].hash != point.DecodedSHA256 || records[2].size != candidate.Index.DecodedFrameBytes) {
+		return fmt.Errorf("video copy seek HEVC decoder did not restart at the indexed picture")
 	}
 	return nil
 }

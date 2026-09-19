@@ -12,7 +12,7 @@ import (
 
 // CurrentMusicMetadataVersion identifies the format-tag facts extracted from
 // audio-only sources, independently of technical probe-cache compatibility.
-const CurrentMusicMetadataVersion = 2
+const CurrentMusicMetadataVersion = 3
 
 const (
 	maxMusicMetadataNameBytes  = 1024
@@ -22,15 +22,26 @@ const (
 // ErrInvalidMusicMetadata never includes untrusted tag names or values.
 var ErrInvalidMusicMetadata = errors.New("invalid embedded music metadata")
 
-// MusicMetadata contains only explicitly observed format tags. Artist and
-// AlbumArtist remain exact scalars; aliases, separators, composers, and numbering
-// are not inferred. Version distinguishes refreshed facts from older caches.
+// MusicMetadata retains scalar display credits separately from explicitly
+// plural credit tags. Punctuation in Artist or AlbumArtist never creates people.
+// Version distinguishes refreshed tag facts from older technical probe caches.
 type MusicMetadata struct {
-	Version     int
-	Title       string
-	Album       string
-	Artist      string
-	AlbumArtist string
+	Version      int
+	Title        string
+	Album        string
+	Artist       string
+	AlbumArtist  string
+	Artists      []string          `json:",omitempty"`
+	AlbumArtists []string          `json:",omitempty"`
+	Composers    []string          `json:",omitempty"`
+	Genres       []string          `json:",omitempty"`
+	TrackNumber  int               `json:",omitempty"`
+	TrackTotal   int               `json:",omitempty"`
+	DiscNumber   int               `json:",omitempty"`
+	DiscTotal    int               `json:",omitempty"`
+	Year         int               `json:",omitempty"`
+	Date         string            `json:",omitempty"`
+	ProviderIDs  map[string]string `json:",omitempty"`
 }
 
 func isMusicMetadataSource(info Info) bool {
@@ -93,34 +104,10 @@ func parseMusicMetadata(raw json.RawMessage) (MusicMetadata, error) {
 	}
 	result.Title, result.Album, result.Artist = seen["title"], seen["album"], seen["artist"]
 	result.AlbumArtist = seen["album_artist"]
-	if len(result.Title)+len(result.Album)+len(result.Artist)+len(result.AlbumArtist) > maxMusicMetadataTotalBytes {
+	if err := completeMusicMetadata(&result, seen); err != nil {
 		return MusicMetadata{}, ErrInvalidMusicMetadata
 	}
 	return result, nil
-}
-
-func musicMetadataTagName(name string) string {
-	if len(name) < 5 || len(name) > len("album_artist") {
-		return ""
-	}
-	var lowered [len("album_artist")]byte
-	for index := range len(name) {
-		character := name[index]
-		if character >= 'A' && character <= 'Z' {
-			character += 'a' - 'A'
-		}
-		if (character < 'a' || character > 'z') && character != '_' {
-			return ""
-		}
-		lowered[index] = character
-	}
-	key := string(lowered[:len(name)])
-	switch key {
-	case "title", "album", "artist", "album_artist":
-		return key
-	default:
-		return ""
-	}
 }
 
 func musicMetadataString(raw json.RawMessage) (string, error) {

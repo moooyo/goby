@@ -390,7 +390,7 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	}
 	localFacts := recoveryEngineTestFacts(t, ctx, pool, legacy.engine.options)
 	state := historicalManagerArchiveState{schemaVersion: version, preferences: "[]"}
-	state.users = recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u")
+	state.users = recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u)-'configuration_revision' ORDER BY id)::text FROM users u")
 	if version >= 24 {
 		state.preferences = recoveryEnginePreferenceState(t, ctx, pool)
 	}
@@ -539,12 +539,12 @@ func seedHistoricalManagerCatalog(t *testing.T, ctx context.Context, pool *pgxpo
 	}
 }
 
-// Compare every old catalog field while checking the schema25, schema28, and
-// schema31 additions separately. JSON stays in PostgreSQL for exact integers.
+// Compare every old catalog field while checking later additions separately.
+// JSON stays in PostgreSQL for exact integers and preserves historical values.
 func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	return recoveryEngineJSONState(t, ctx, pool, `SELECT jsonb_build_object(
-		'libraries',(SELECT jsonb_agg(to_jsonb(l) ORDER BY id) FROM libraries l),
+		'libraries',(SELECT jsonb_agg(to_jsonb(l)-'revision'-'options' ORDER BY id) FROM libraries l),
 		'roots',(SELECT jsonb_agg(to_jsonb(r)-'binding_revision'-'storage_binding'-'bound_at'-'bound_by' ORDER BY id) FROM library_roots r),
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e),
@@ -563,7 +563,7 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 		FROM schema_migrations`).Scan(&migrationCount, &deletionMigration); err != nil || migrationCount != len(currentFacts.MigrationChecksums) || deletionMigration != "0029_user_deletion_activity.sql" {
 		t.Fatalf("historical restoration missed the exact current migration suffix: %v", err)
 	}
-	actualUsers := recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u) ORDER BY id)::text FROM users u")
+	actualUsers := recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u)-'configuration_revision' ORDER BY id)::text FROM users u")
 	if actualUsers != state.users {
 		t.Fatalf("native historical restoration changed schema%d accounts", state.schemaVersion)
 	}
@@ -577,9 +577,24 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 	if err := pool.QueryRow(ctx, `SELECT
 		NOT EXISTS(SELECT 1 FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
 			OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM libraries WHERE revision IS DISTINCT FROM 1
+			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb)
+		AND NOT EXISTS(SELECT 1 FROM users WHERE configuration_revision IS DISTINCT FROM 1)
 		AND NOT EXISTS(SELECT 1 FROM activity_entries WHERE previous_revision IS DISTINCT FROM 0
 			OR observation_fingerprint IS DISTINCT FROM '')`).Scan(&bindingDefaults); err != nil || !bindingDefaults {
-		t.Fatalf("historical manager restoration inferred a root binding or changed neutral audit defaults: %v", err)
+		t.Fatalf("historical manager restoration inferred root, library-edit, or audit state: %v", err)
+	}
+	var phase3Defaults bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM display_preferences)
+		AND NOT EXISTS(SELECT 1 FROM artwork_state)
+		AND NOT EXISTS(SELECT 1 FROM artwork_images)
+		AND NOT EXISTS(SELECT 1 FROM entity_user_data)
+		AND NOT EXISTS(SELECT 1 FROM user_item_data WHERE hide_from_resume IS DISTINCT FROM false
+			OR rating IS NOT NULL OR likes IS NOT NULL OR remembered_media_source_id IS DISTINCT FROM ''
+			OR remembered_media_stamp IS DISTINCT FROM '' OR remembered_audio_stream_index IS NOT NULL
+			OR remembered_subtitle_stream_index IS NOT NULL)`).Scan(&phase3Defaults); err != nil || !phase3Defaults {
+		t.Fatalf("historical manager restoration inferred client, item, entity, or artwork preferences: %v", err)
 	}
 	var musicSources, creditGroups, artists int
 	if err := pool.QueryRow(ctx, `SELECT

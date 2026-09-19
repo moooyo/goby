@@ -9,6 +9,7 @@ func serverConfigurationDTO(view settings.Configuration) map[string]any {
 	snapshot := view.Snapshot
 	result["PreferredMetadataLanguage"] = snapshot.Management.Metadata.PreferredMetadataLanguage
 	result["MetadataCountryCode"] = snapshot.Management.Metadata.MetadataCountryCode
+	result["EnableInternetProviders"] = snapshot.Management.Metadata.EnableInternetProviders
 	switch snapshot.ServerNameMode {
 	case settings.ServerNameDeployment:
 		result["ServerName"] = snapshot.Defaults.ServerName

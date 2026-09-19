@@ -3,13 +3,10 @@ package server
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +17,7 @@ import (
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
+	"github.com/moooyo/goby/internal/timeshift"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -36,6 +34,18 @@ type dynamicStreamSession struct {
 	scope           transcode.Scope
 	request         playback.Request
 	output          playback.Source
+	subtitleSource  playback.Source
+	subtitleView    playback.HLSSubtitleView
+	principal       identity.Principal
+	windowID        string
+	generation      uint64
+	producerStarted bool
+	producerEnded   bool
+	changed         chan struct{}
+	subtitles       *dynamicSubtitleRuntime
+	clockGeneration uint64
+	clockDeltaTicks int64
+	lastSequence    int64
 	jobID           string
 	input           *dynamicsource.Input
 	infinite        bool
@@ -51,6 +61,8 @@ type dynamicStreamRuntime struct {
 	sessions   map[string]*dynamicStreamSession
 	byKey      map[dynamicStreamKey]*dynamicStreamSession
 	closing    bool
+	store      *timeshift.Store
+	workers    sync.WaitGroup
 	revalidate func(context.Context, identity.Principal) (identity.Principal, error)
 }
 
@@ -58,7 +70,7 @@ func (s *Server) initializeDynamicSources(_ context.Context) error {
 	definitions := make([]dynamicsource.Definition, 0, len(s.cfg.DynamicSources))
 	for _, configured := range s.cfg.DynamicSources {
 		definitions = append(definitions, dynamicsource.Definition{ItemID: configured.ItemID, Name: configured.Name,
-			URL: configured.URL, Headers: configured.Headers, Infinite: configured.Infinite, MaxReconnects: configured.MaxReconnects})
+			URL: configured.URL, Headers: configured.Headers, Infinite: configured.Infinite, MaxReconnects: configured.MaxReconnects, Subtitles: configured.Subtitles})
 	}
 	manager, err := dynamicsource.New(context.Background(), definitions, dynamicsource.Options{
 		Prober: media.Prober{FFprobePath: s.cfg.FFprobePath, Timeout: 10 * time.Second},
@@ -93,6 +105,13 @@ func (s *Server) initializeDynamicSources(_ context.Context) error {
 	}
 	s.dynamicSources = manager
 	s.dynamicStreams = &dynamicStreamRuntime{sessions: make(map[string]*dynamicStreamSession), byKey: make(map[dynamicStreamKey]*dynamicStreamSession), revalidate: s.identity.RevalidateSession}
+	if len(definitions) > 0 && s.cfg.Transcoding.Enabled && s.cfg.Timeshift.Enabled {
+		store, err := timeshift.New(s.cfg.Timeshift.Options())
+		if err != nil {
+			return err
+		}
+		s.dynamicStreams.store = store
+	}
 	return nil
 }
 
@@ -141,6 +160,16 @@ func (s *Server) dynamicPlaybackDTO(r *http.Request, principal identity.Principa
 	if err != nil {
 		return nil, err
 	}
+	start := request.StartTimeTicks
+	if start != nil && *start < 0 {
+		return nil, playback.ErrInvalidRequest
+	}
+	// Standard opening requests use zero for a fresh live start. An explicit
+	// retained-position query on a published HLS URL remains a real seek.
+	if start != nil && *start == 0 {
+		start = nil
+	}
+	request.StartTimeTicks = nil
 	conversion, err := playback.PlanDynamicConversion(dynamicPlaybackSource(lease), request, limits)
 	if err != nil {
 		return nil, err
@@ -148,7 +177,7 @@ func (s *Server) dynamicPlaybackDTO(r *http.Request, principal identity.Principa
 	if request.DeviceProfile == nil {
 		return dynamicSourceDTO(lease), nil
 	}
-	if s.hls == nil || !s.hls.health().Available {
+	if s.hls == nil || !s.hls.health().Available || s.dynamicStreams.store == nil {
 		return nil, dynamicsource.ErrUnavailable
 	}
 	if conversion.Plan == nil {
@@ -167,7 +196,15 @@ func (s *Server) dynamicPlaybackDTO(r *http.Request, principal identity.Principa
 			return nil, library.ErrForbidden
 		}
 	}
-	key := dynamicStreamKey{owner: dynamicSourceOwner(principal).Identity(), liveID: lease.ID, plan: *conversion.Plan}
+	conversion, err = s.resolveHardwareEncoding(r.Context(), limits, conversion, r.Method != http.MethodHead)
+	if err != nil {
+		return nil, err
+	}
+	keyPlan := *conversion.Plan
+	// The source origin belongs to a connection generation. Reconnection may
+	// change it while the authorized codec, processing and track set stay fixed.
+	keyPlan.SourceFormatStartKnown, keyPlan.SourceFormatStartTicks = false, 0
+	key := dynamicStreamKey{owner: dynamicSourceOwner(principal).Identity(), liveID: lease.ID, plan: keyPlan}
 	runtime := s.dynamicStreams
 	runtime.mu.Lock()
 	defer runtime.mu.Unlock()
@@ -176,17 +213,21 @@ func (s *Server) dynamicPlaybackDTO(r *http.Request, principal identity.Principa
 	}
 	for id, previous := range runtime.sessions {
 		previous.mu.Lock()
-		expired := previous.closed || time.Since(previous.accessed) >= hlsIdleTTL ||
-			previous.key.owner == key.owner && previous.key.liveID == key.liveID && previous.key.plan != key.plan
-		if previous.jobID != "" {
-			record, err := s.hls.manager.Snapshot(previous.scope, previous.jobID)
-			expired = expired || err != nil || record.State == "failed" || record.State == "cancelled" || record.State == "interrupted" || previous.infinite && record.State == "completed"
-		}
+		expired := previous.closed || time.Since(previous.accessed) >= hlsIdleTTL
+		replaced := !expired && previous.key.owner == key.owner && previous.key.liveID == key.liveID && previous.key.plan != key.plan
 		previous.mu.Unlock()
+		if replaced {
+			s.stopDynamicProducer(previous)
+			if runtime.byKey[previous.key] == previous {
+				delete(runtime.byKey, previous.key)
+			}
+		}
 		if expired {
 			s.retireDynamicSession(previous)
 			delete(runtime.sessions, id)
-			delete(runtime.byKey, previous.key)
+			if runtime.byKey[previous.key] == previous {
+				delete(runtime.byKey, previous.key)
+			}
 		}
 	}
 	session := runtime.byKey[key]
@@ -206,23 +247,43 @@ func (s *Server) dynamicPlaybackDTO(r *http.Request, principal identity.Principa
 		}
 		lifetime, cancel := context.WithCancel(s.hls.ctx)
 		session = &dynamicStreamSession{id: hex.EncodeToString(random[:]), key: key, request: request, output: conversion.OutputSource, infinite: lease.Infinite,
+			subtitleSource: dynamicPlaybackSource(lease), subtitleView: conversion.SubtitleView, principal: principal, changed: make(chan struct{}),
 			accessed: time.Now(), presenceUpdated: time.Now(), ctx: lifetime, cancel: cancel, scope: transcode.Scope{UserID: principal.User.ID, AuthSessionID: principal.SessionID,
 				DeviceID: principal.Client.DeviceID, ApplicationKey: principal.IsApplicationKey(), ApplicationClientID: principal.ClientSessionID,
 				PlaySessionID: lease.PlaySessionID, ItemID: lease.ItemID, SourceID: lease.SourceID}}
+		windowOptions := s.cfg.Timeshift.WindowOptions(dynamicVariants(key.plan))
+		windowOptions.TargetDurationTicks = dynamicTargetDuration(key.plan)
+		window, err := runtime.store.Create(r.Context(), timeshiftScope(session.scope), windowOptions)
+		if err != nil {
+			cancel()
+			return nil, err
+		}
+		session.windowID = window.PresentationID
 		runtime.sessions[session.id], runtime.byKey[key] = session, session
+		runtime.workers.Add(1)
+		go s.maintainDynamicPresentation(session)
 	}
 	token, _, _ := parseEmbyCredentials(r)
 	dto := dynamicSourceDTO(lease)
+	view := dynamicPlaybackView{Subtitles: conversion.SubtitleView, StartTicks: start}
 	dto["TranscodingContainer"], dto["TranscodingSubProtocol"] = conversion.Plan.Container, "hls"
 	if conversion.Method == "DirectStream" && request.EnableTranscoding != nil && !*request.EnableTranscoding {
-		dto["SupportsDirectStream"], dto["DirectStreamUrl"] = true, dynamicArtifactURL(session, "master.m3u8", token)
+		dto["SupportsDirectStream"], dto["DirectStreamUrl"] = true, dynamicArtifactURLView(session, "master.m3u8", token, view, true)
 	} else {
-		dto["SupportsTranscoding"], dto["TranscodingUrl"] = true, dynamicArtifactURL(session, "master.m3u8", token)
+		dto["SupportsTranscoding"], dto["TranscodingUrl"] = true, dynamicArtifactURLView(session, "master.m3u8", token, view, true)
 	}
 	if conversion.Output.DefaultAudioStreamIndex != nil {
 		dto["DefaultAudioStreamIndex"] = *conversion.Output.DefaultAudioStreamIndex
 	}
 	dto["DefaultSubtitleStreamIndex"] = -1
+	if conversion.SubtitleView.SelectionSet {
+		dto["DefaultSubtitleStreamIndex"] = conversion.SubtitleView.SelectedStreamIndex
+	}
+	if conversion.Output.DefaultSubtitleStreamIndex != nil {
+		dto["DefaultSubtitleStreamIndex"] = *conversion.Output.DefaultSubtitleStreamIndex
+	}
+	dto["SupportsSeeking"], dto["SupportsPause"] = true, true
+	dto["GobyWindowUrl"] = dynamicArtifactURLView(session, "window.json", token, view, false)
 	return dto, nil
 }
 
@@ -268,6 +329,7 @@ func (s *Server) tryDynamicPlaybackInfo(w http.ResponseWriter, r *http.Request, 
 		s.liveStreamError(w, r, err)
 		return true
 	}
+	ApplyDynamicUserPreferences(principal, lease.Info, &request)
 	dto, err := s.dynamicPlaybackDTO(r, principal, lease, request)
 	if err != nil {
 		if request.LiveStreamID == "" {
@@ -281,9 +343,7 @@ func (s *Server) tryDynamicPlaybackInfo(w http.ResponseWriter, r *http.Request, 
 }
 
 func dynamicArtifactURL(session *dynamicStreamSession, name, token string) string {
-	query := url.Values{"api_key": {token}, "GobyLiveId": {session.id}, "PlaySessionId": {session.scope.PlaySessionID},
-		"DeviceId": {session.scope.DeviceID}, "MediaSourceId": {session.scope.SourceID}}
-	return "/emby/LiveStreams/" + url.PathEscape(session.key.liveID) + "/hls/" + url.PathEscape(name) + "?" + query.Encode()
+	return dynamicArtifactURLView(session, name, token, dynamicPlaybackView{Subtitles: session.subtitleView}, strings.HasSuffix(name, ".m3u8"))
 }
 
 func (s *Server) dynamicMediaInfoDTO(r *http.Request, principal identity.Principal, lease dynamicsource.Lease) (map[string]any, error) {
@@ -293,7 +353,7 @@ func (s *Server) dynamicMediaInfoDTO(r *http.Request, principal identity.Princip
 	s.dynamicStreams.mu.Lock()
 	var selected *dynamicStreamSession
 	for _, session := range s.dynamicStreams.sessions {
-		if session.key.owner == dynamicSourceOwner(principal).Identity() && session.key.liveID == lease.ID {
+		if session.key.owner == dynamicSourceOwner(principal).Identity() && session.key.liveID == lease.ID && s.dynamicStreams.byKey[session.key] == session {
 			selected = session
 			break
 		}
@@ -311,7 +371,7 @@ func (s *Server) findDynamicSession(r *http.Request, values map[string]string) (
 	}
 	for name := range values {
 		switch name {
-		case "gobyliveid", "playsessionid", "mediasourceid", "deviceid", "api_key", "starttimeticks":
+		case "gobyliveid", "playsessionid", "mediasourceid", "deviceid", "api_key", "starttimeticks", "subtitlestreamindex", "subtitleoffsetticks", "live":
 		default:
 			return nil, dynamicsource.Lease{}, dynamicsource.ErrInvalid
 		}
@@ -333,7 +393,7 @@ func (s *Server) findDynamicSession(r *http.Request, values map[string]string) (
 			return nil, dynamicsource.Lease{}, dynamicsource.ErrNotFound
 		}
 	}
-	if start := values["starttimeticks"]; start != "" && start != "0" {
+	if _, err := dynamicRequestView(values, session); err != nil {
 		return nil, dynamicsource.Lease{}, dynamicsource.ErrInvalid
 	}
 	if err := s.checkMediaPolicy(principal, session.scope); err != nil {
@@ -342,18 +402,36 @@ func (s *Server) findDynamicSession(r *http.Request, values map[string]string) (
 	}
 	lease, err := s.dynamicSources.Info(r.Context(), dynamicSourceOwner(principal), session.key.liveID)
 	if err != nil {
-		s.retireDynamicSession(session)
+		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, dynamicsource.ErrBusy) {
+			s.retireDynamicSession(session)
+		}
 		return nil, lease, err
 	}
 	limits, err := s.dynamicLimits(r.Context(), principal, session.request, r)
 	if err != nil {
-		s.retireDynamicSession(session)
+		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+			s.retireDynamicSession(session)
+		}
 		return nil, lease, err
 	}
-	conversion, err := playback.PlanDynamicConversion(dynamicPlaybackSource(lease), session.request, limits)
-	if err != nil || conversion.Plan == nil || *conversion.Plan != session.key.plan || !principalPlanBitrateAllowed(principal, library.MediaFile{Item: library.Item{Media: &lease.Info}}, session.key.plan) {
+	session.mu.Lock()
+	planningSource := dynamicPlaybackSource(lease)
+	if session.producerEnded {
+		planningSource = session.subtitleSource
+	}
+	session.mu.Unlock()
+	conversion, err := playback.PlanDynamicConversion(planningSource, session.request, limits)
+	actualPlan, matches := dynamicEncodingRevision(conversion.Plan, session.key.plan)
+	if err != nil || !matches || !principalPlanBitrateAllowed(principal, library.MediaFile{Item: library.Item{Media: &lease.Info}}, session.key.plan) {
 		s.retireDynamicSession(session)
 		return nil, lease, library.ErrForbidden
+	}
+	if *conversion.Plan != actualPlan {
+		conversion, err = playback.ReprojectVideoEncodingOutput(conversion, actualPlan)
+		if err != nil || conversion.Plan == nil {
+			s.retireDynamicSession(session)
+			return nil, lease, library.ErrForbidden
+		}
 	}
 	session.mu.Lock()
 	if session.closed {
@@ -366,6 +444,9 @@ func (s *Server) findDynamicSession(r *http.Request, values map[string]string) (
 		session.presenceUpdated = time.Now()
 	}
 	session.mu.Unlock()
+	if r.Method != http.MethodHead {
+		s.touchDynamicProducer(session)
+	}
 	if refreshPresence {
 		_, _, err := s.library.ReportPlayback(r.Context(), playbackOwner(principal), library.PlaybackReport{Event: "Ping", PlaySessionID: session.scope.PlaySessionID, ItemID: session.scope.ItemID, MediaSourceID: session.scope.SourceID})
 		if err != nil {
@@ -381,60 +462,166 @@ func (s *Server) ensureDynamicJob(ctx context.Context, r *http.Request, session 
 	if session.closed {
 		return "", dynamicsource.ErrNotFound
 	}
-	if session.jobID != "" {
+	if session.producerStarted {
+		return session.jobID, nil
+	}
+	if r.Method == http.MethodHead {
+		return "", dynamicsource.ErrNotFound
+	}
+	if err := s.startDynamicEpochLocked(ctx, session); err != nil {
+		return "", err
+	}
+	session.producerStarted = true
+	signalDynamicSessionLocked(session)
+	return session.jobID, nil
+}
+
+type dynamicStreamJobs interface {
+	EnsureStreamInputs(context.Context, transcode.Spec, transcode.StreamInputs) (transcode.Record, error)
+}
+
+// The caller serializes generation changes with session.mu. A new upstream
+// connection always receives a new encoder job and a new retained media epoch.
+func (s *Server) startDynamicEpochLocked(ctx context.Context, session *dynamicStreamSession) error {
+	engine, ok := s.hls.manager.(dynamicStreamJobs)
+	if !ok {
+		return dynamicsource.ErrUnavailable
+	}
+	principal, err := s.freshDynamicPrincipal(ctx, session.principal)
+	if err != nil {
+		return err
+	}
+	input, err := s.dynamicSources.Acquire(ctx, dynamicSourceOwner(principal), session.key.liveID)
+	if err != nil {
+		return err
+	}
+	closeInput := true
+	defer func() {
+		if closeInput {
+			_ = input.Close()
+			if session.subtitles != nil {
+				session.subtitles.CancelEpoch(input.Generation)
+			}
+		}
+	}()
+	request := &http.Request{Method: http.MethodGet}
+	request = request.WithContext(context.WithValue(ctx, principalKey, principal))
+	limits, err := s.dynamicLimits(ctx, principal, session.request, request)
+	if err != nil {
+		return err
+	}
+	conversion, err := playback.PlanDynamicConversion(dynamicPlaybackSource(input.Lease), session.request, limits)
+	actualPlan, matches := dynamicEncodingRevision(conversion.Plan, session.key.plan)
+	if err != nil || !matches ||
+		!principalPlanBitrateAllowed(principal, library.MediaFile{Item: library.Item{Media: &input.Info}}, session.key.plan) {
+		return errHLSRequestUnsupported
+	}
+	conversion, err = playback.ReprojectVideoEncodingOutput(conversion, actualPlan)
+	if err != nil || conversion.Plan == nil {
+		return errHLSRequestUnsupported
+	}
+	count := 1
+	if session.key.plan.Subtitle.Mode == "burn" {
+		count = 2
+	}
+	pipes, err := input.OpenPipeSet(count)
+	if err != nil {
+		return err
+	}
+	inputs := transcode.StreamInputs{Media: pipes.Readers[0]}
+	if count == 2 {
+		inputs.Bitmap = pipes.Readers[1]
+	}
+	session.generation = input.Generation
+	if err := s.beginDynamicSubtitlesLocked(session, input.Lease, actualPlan); err != nil {
+		_ = pipes.Close()
+		return err
+	}
+	record, err := engine.EnsureStreamInputs(ctx, transcode.Spec{Scope: session.scope, SourceStamp: input.Stamp, Plan: actualPlan}, inputs)
+	if err != nil {
+		_ = pipes.Close()
+		return err
+	}
+	session.input, session.jobID, session.output, session.principal = input, record.ID, conversion.OutputSource, principal
+	session.subtitleSource = dynamicPlaybackSource(input.Lease)
+	closeInput = false
+	return nil
+}
+
+func signalDynamicSessionLocked(session *dynamicStreamSession) {
+	if session.changed != nil {
+		close(session.changed)
+	}
+	session.changed = make(chan struct{})
+}
+
+func (s *Server) maintainDynamicPresentation(session *dynamicStreamSession) {
+	defer s.dynamicStreams.workers.Done()
+	timer := time.NewTicker(time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-session.ctx.Done():
+			return
+		case <-timer.C:
+		}
+		session.mu.Lock()
+		if session.closed {
+			session.mu.Unlock()
+			return
+		}
+		if time.Since(session.accessed) >= hlsIdleTTL {
+			session.mu.Unlock()
+			s.retireDynamicSession(session)
+			return
+		}
+		if !session.producerStarted || session.producerEnded {
+			session.mu.Unlock()
+			continue
+		}
 		record, err := s.hls.manager.Snapshot(session.scope, session.jobID)
-		if err == nil && (record.State == "queued" || record.State == "running" || record.State == "completed" && !session.infinite) {
-			return record.ID, nil
+		if err == nil && (record.State == "queued" || record.State == "running") {
+			session.mu.Unlock()
+			continue
+		}
+		// Published epochs already belong to the timeshift store. Retire this
+		// terminal job's scratch before replacing its only session reference;
+		// otherwise a later stop can cancel only the newest job and old caches
+		// remain until their unrelated idle TTL expires.
+		if session.jobID != "" {
+			cancelErr := s.hls.manager.CancelJob(session.jobID, session.scope)
+			if cancelErr != nil && !errors.Is(cancelErr, transcode.ErrJobNotFound) {
+				session.mu.Unlock()
+				continue
+			}
 		}
 		if session.input != nil {
 			_ = session.input.Close()
 			session.input = nil
 		}
-		// A new upstream presentation must receive a fresh public output ID.
-		// Close this revision; Open/MediaInfo negotiation can create the next
-		// bounded reconnect without reusing old segment URLs or media sequence.
-		session.closed = true
-		session.cancel()
-		_ = s.hls.manager.CancelJob(session.jobID, session.scope)
-		return "", dynamicsource.ErrUnavailable
+		if session.infinite && session.ctx.Err() == nil {
+			_ = s.dynamicStreams.store.SetState(session.ctx, timeshiftScope(session.scope), session.windowID, timeshift.State{Stalled: true})
+			opening, cancel := context.WithTimeout(session.ctx, 30*time.Second)
+			err = s.startDynamicEpochLocked(opening, session)
+			cancel()
+			if err == nil {
+				signalDynamicSessionLocked(session)
+				session.mu.Unlock()
+				continue
+			}
+		}
+		session.producerEnded = true
+		state := timeshift.State{Ended: !session.infinite && err == nil && record.State == "completed", Stalled: session.infinite || err != nil || record.State != "completed"}
+		_ = s.dynamicStreams.store.SetState(session.ctx, timeshiftScope(session.scope), session.windowID, state)
+		signalDynamicSessionLocked(session)
+		session.mu.Unlock()
 	}
-	if r.Method == http.MethodHead {
-		return "", dynamicsource.ErrNotFound
-	}
-	input, err := s.dynamicSources.Acquire(ctx, dynamicSourceOwner(r.Context().Value(principalKey).(identity.Principal)), session.key.liveID)
-	if err != nil {
-		return "", err
-	}
-	principal, err := s.freshDynamicPrincipal(ctx, r.Context().Value(principalKey).(identity.Principal))
-	if err != nil {
-		_ = input.Close()
-		return "", err
-	}
-	limits, err := s.dynamicLimits(ctx, principal, session.request, r)
-	if err != nil {
-		_ = input.Close()
-		return "", err
-	}
-	conversion, err := playback.PlanDynamicConversion(dynamicPlaybackSource(input.Lease), session.request, limits)
-	if err != nil || conversion.Plan == nil || *conversion.Plan != session.key.plan || !principalPlanBitrateAllowed(principal, library.MediaFile{Item: library.Item{Media: &input.Info}}, session.key.plan) {
-		_ = input.Close()
-		return "", errHLSRequestUnsupported
-	}
-	pipe, err := input.OpenPipe()
-	if err != nil {
-		_ = input.Close()
-		return "", err
-	}
-	record, err := s.hls.manager.Ensure(ctx, transcode.Spec{Scope: session.scope, SourceStamp: input.Stamp, Plan: session.key.plan}, pipe)
-	if err != nil {
-		_ = input.Close()
-		return "", err
-	}
-	session.input, session.jobID, session.output = input, record.ID, conversion.OutputSource
-	return record.ID, nil
+}
+func dynamicMasterPlaylist(session *dynamicStreamSession, token string) ([]byte, error) {
+	return dynamicMasterPlaylistView(session, token, dynamicPlaybackView{Subtitles: session.subtitleView})
 }
 
-func dynamicMasterPlaylist(session *dynamicStreamSession, token string) ([]byte, error) {
+func dynamicMasterPlaylistView(session *dynamicStreamSession, token string, view dynamicPlaybackView) ([]byte, error) {
 	session.mu.Lock()
 	defer session.mu.Unlock()
 	if session.closed {
@@ -443,6 +630,34 @@ func dynamicMasterPlaylist(session *dynamicStreamSession, token string) ([]byte,
 	plan := session.key.plan
 	var result strings.Builder
 	result.WriteString("#EXTM3U\n#EXT-X-VERSION:7\n")
+	tracks := transcode.PlanHLSSubtitles(plan)
+	for slot := 0; slot < tracks.Count; slot++ {
+		metadata, ok := playback.HLSSubtitleMetadata(session.subtitleSource, plan, slot)
+		if !ok {
+			return nil, errInvalidHLSManifest
+		}
+		label := hlsSubtitleLabel(metadata.Title)
+		if label == "" {
+			label = hlsSubtitleLabel(metadata.Language)
+		}
+		if label == "" {
+			label = "Subtitle"
+		}
+		label += " [" + strconv.Itoa(metadata.Index) + "]"
+		selected := "NO"
+		if view.Subtitles.SelectedStreamIndex == metadata.Index {
+			selected = "YES"
+		}
+		address := dynamicArtifactURLView(session, hlsSubtitlePlaylistName(slot), token, view, true)
+		if !validHLSManifestURL(address) {
+			return nil, errInvalidHLSManifest
+		}
+		fmt.Fprintf(&result, "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"%s\",DEFAULT=%s,AUTOSELECT=%s", label, selected, selected)
+		if language := hlsSubtitleLabel(metadata.Language); language != "" {
+			fmt.Fprintf(&result, ",LANGUAGE=\"%s\"", language)
+		}
+		fmt.Fprintf(&result, ",URI=\"%s\"\n", address)
+	}
 	for index := 0; index < max(1, plan.HLS.RenditionCount); index++ {
 		bandwidth, width, height := session.output.Info.Bitrate, 0, 0
 		for _, stream := range session.output.Info.Streams {
@@ -462,13 +677,16 @@ func dynamicMasterPlaylist(session *dynamicStreamSession, token string) ([]byte,
 			}
 			bandwidth = (rendition.VideoBitrate + audio) * 10 / 9
 		}
-		child := dynamicArtifactURL(session, transcode.HLSPlaylistName(index, plan.HLS.RenditionCount), token)
+		child := dynamicArtifactURLView(session, transcode.HLSPlaylistName(index, plan.HLS.RenditionCount), token, view, true)
 		if bandwidth <= 0 || !validHLSManifestURL(child) {
 			return nil, errInvalidHLSManifest
 		}
 		fmt.Fprintf(&result, "#EXT-X-STREAM-INF:BANDWIDTH=%d", bandwidth)
 		if width > 0 && height > 0 {
 			fmt.Fprintf(&result, ",RESOLUTION=%dx%d", width, height)
+		}
+		if tracks.Count > 0 {
+			result.WriteString(",SUBTITLES=\"subs\"")
 		}
 		fmt.Fprintf(&result, "\n%s\n", child)
 	}
@@ -495,7 +713,12 @@ func (s *Server) dynamicHLSArtifact(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(context.WithValue(ctx, principalKey, principal))
 	session, _, err := s.findDynamicSession(r, values)
 	if err != nil {
-		s.liveStreamError(w, r, err)
+		s.dynamicWindowError(w, r, err)
+		return
+	}
+	view, err := dynamicRequestView(values, session)
+	if err != nil {
+		s.dynamicWindowError(w, r, err)
 		return
 	}
 	work, cancel := context.WithCancel(ctx)
@@ -503,123 +726,161 @@ func (s *Server) dynamicHLSArtifact(w http.ResponseWriter, r *http.Request) {
 	defer func() { stop(); cancel() }()
 	token, _, _ := parseEmbyCredentials(r)
 	name := r.PathValue("Artifact")
-	policyAdmitted, delivered := false, false
+	if name == "master.m3u8" {
+		body, err := dynamicMasterPlaylistView(session, token, view)
+		if err != nil {
+			s.dynamicWindowError(w, r, err)
+			return
+		}
+		if _, _, err = s.findDynamicSession(r, values); err != nil {
+			s.dynamicWindowError(w, r, err)
+			return
+		}
+		writeDynamicManifest(w, r, body)
+		return
+	}
+	if s.dynamicStreams.store == nil {
+		s.liveStreamError(w, r, dynamicsource.ErrUnavailable)
+		return
+	}
+	artifactID, opaqueArtifact := dynamicOpaqueArtifactID(name)
+	_, mediaPlaylist := dynamicMediaPlaylistIndex(session.key.plan, name)
+	_, subtitleSequence, _, subtitleResource := hlsSubtitleArtifact(session.key.plan, name, view.Subtitles)
+	if !opaqueArtifact && !mediaPlaylist && !subtitleResource && name != "window.json" {
+		s.dynamicWindowError(w, r, timeshift.ErrNotFound)
+		return
+	}
+	if opaqueArtifact {
+		artifact, variant, err := s.dynamicStreams.store.ResolveArtifact(work, timeshiftScope(session.scope), session.windowID, artifactID)
+		if err != nil {
+			s.dynamicWindowError(w, r, err)
+			return
+		}
+		if name != dynamicArtifactName(artifact.ID, variant.Format, artifact.Initialization) {
+			s.dynamicWindowError(w, r, timeshift.ErrNotFound)
+			return
+		}
+	}
+	policyAdmitted, delivered, mediaDelivered := false, false, false
+	var releasePolicy func()
 	defer func() {
-		if policyAdmitted && !delivered {
+		// Record delivery before release cancels the policy context. A running
+		// producer keeps its bounded idle lease across retryable startup waits.
+		session.mu.Lock()
+		started := session.producerStarted
+		session.mu.Unlock()
+		if policyAdmitted && !delivered && !started {
 			s.failMediaPolicy(work, session.scope)
-		} else if policyAdmitted && work.Err() == nil {
+		} else if policyAdmitted && mediaDelivered && work.Err() == nil {
 			s.touchMediaPolicy(work, principal, session.scope)
 		}
+		if releasePolicy != nil {
+			releasePolicy()
+		}
 	}()
-	var body []byte
-	if name == "master.m3u8" {
-		body, err = dynamicMasterPlaylist(session, token)
-	} else {
-		if !hlsPlanArtifact(session.key.plan, name) {
-			s.liveStreamError(w, r, dynamicsource.ErrNotFound)
+	if r.Method != http.MethodHead {
+		fresh, err := s.freshDynamicPrincipal(work, principal)
+		if err != nil {
+			s.identityError(w, r, err)
 			return
 		}
-		if r.Method != http.MethodHead {
-			fresh, freshErr := s.freshDynamicPrincipal(work, principal)
-			if freshErr != nil {
-				s.identityError(w, r, freshErr)
-				return
-			}
-			policyContext, release, policyErr := s.acquireMediaPolicy(work, fresh, session.scope)
-			if policyErr != nil {
-				s.hlsError(w, r, policyErr)
-				return
-			}
-			defer release()
-			policyAdmitted = true
-			work = policyContext
-			r = r.WithContext(context.WithValue(work, principalKey, fresh))
-		}
-		jobID, jobErr := s.ensureDynamicJob(work, r, session)
-		if jobErr != nil {
-			s.liveStreamError(w, r, jobErr)
-			return
-		}
-		var handle *transcode.ReadHandle
-		if r.Method == http.MethodHead {
-			handle, err = s.hls.manager.TryOpen(session.scope, jobID, name)
-		} else {
-			handle, err = s.hls.manager.Open(work, session.scope, jobID, name)
-		}
+		policyContext, release, err := s.acquireMediaPolicy(work, fresh, session.scope)
 		if err != nil {
 			s.hlsError(w, r, err)
 			return
 		}
-		defer handle.Close()
-		if strings.HasSuffix(name, ".m3u8") {
-			body, err = io.ReadAll(io.LimitReader(handle, transcode.MaxPlaylistBytes+1))
-			if err == nil {
-				prefix := ""
-				if name != "main.m3u8" {
-					prefix = strings.TrimSuffix(name, ".m3u8") + "-"
-				}
-				body, err = transcode.RewriteMediaPlaylistWithMap(body, func(segment transcode.MediaSegment) string {
-					if !hlsPlanArtifact(session.key.plan, segment.Name) || !strings.HasPrefix(segment.Name, prefix+"segment-") {
-						return ""
-					}
-					return dynamicArtifactURL(session, segment.Name, token)
-				}, func(init string) string {
-					if !hlsPlanArtifact(session.key.plan, init) || init != prefix+"init.mp4" {
-						return ""
-					}
-					return dynamicArtifactURL(session, init, token)
-				})
-			}
-		} else {
-			if _, _, err := s.findDynamicSession(r, values); err != nil {
-				s.liveStreamError(w, r, err)
-				return
-			}
-			info, err := handle.Stat()
-			if err != nil {
-				s.hlsError(w, r, err)
-				return
-			}
-			contentType := "video/mp2t"
-			if strings.HasSuffix(name, ".mp4") || strings.HasSuffix(name, ".m4s") {
-				contentType = "video/mp4"
-				if session.key.plan.VideoStreamIndex < 0 {
-					contentType = "audio/mp4"
-				}
-			}
-			digest := sha256.Sum256([]byte(jobID + ":" + name + ":" + strconv.FormatInt(info.Size(), 10)))
-			w.Header().Set("Content-Type", contentType)
-			w.Header().Set("Cache-Control", "private, no-transform")
-			w.Header().Set("ETag", "\""+hex.EncodeToString(digest[:])+"\"")
-			stopRead := context.AfterFunc(work, func() { _ = handle.Close() })
-			delivered = true
-			http.ServeContent(w, r, name, info.ModTime(), handle)
-			stopRead()
+		releasePolicy = release
+		policyAdmitted, principal, work = true, fresh, policyContext
+		r = r.WithContext(context.WithValue(work, principalKey, fresh))
+	}
+	if opaqueArtifact {
+		delivered = s.serveDynamicMediaArtifact(w, r, session, name, artifactID)
+		mediaDelivered = delivered
+		return
+	}
+	if _, err := s.ensureDynamicJob(work, r, session); err != nil {
+		s.dynamicWindowError(w, r, err)
+		return
+	}
+	if view.StartTicks != nil {
+		current, err := s.dynamicStreams.store.Snapshot(work, timeshiftScope(session.scope), session.windowID)
+		if err != nil {
+			s.dynamicWindowError(w, r, err)
+			return
+		}
+		if *view.StartTicks < current.EarliestTicks {
+			s.dynamicWindowError(w, r, timeshift.ErrWindowExpired)
 			return
 		}
 	}
-	if err != nil {
-		s.hlsError(w, r, err)
-		return
+	var snapshot timeshift.WindowSnapshot
+	if subtitleResource && subtitleSequence >= 0 {
+		snapshot, err = s.dynamicStreams.store.Snapshot(work, timeshiftScope(session.scope), session.windowID)
+	} else {
+		snapshot, err = s.dynamicMediaWindow(work, session, r.Method != http.MethodHead, name != "window.json")
 	}
-	if len(body) > maxHLSManifestBytes {
-		s.hlsError(w, r, errHLSManifestLimit)
+	if err != nil {
+		if view.StartTicks != nil {
+			current, inspectErr := s.dynamicStreams.store.Snapshot(work, timeshiftScope(session.scope), session.windowID)
+			if inspectErr == nil && *view.StartTicks < current.EarliestTicks {
+				err = timeshift.ErrWindowExpired
+			}
+		}
+		s.dynamicWindowError(w, r, err)
 		return
 	}
 	if _, _, err := s.findDynamicSession(r, values); err != nil {
-		s.liveStreamError(w, r, err)
+		s.dynamicWindowError(w, r, err)
 		return
 	}
+	if name == "window.json" {
+		delivered = true
+		writeDynamicWindow(w, r, session, snapshot, token, view)
+		return
+	}
+	if index, ok := dynamicMediaPlaylistIndex(session.key.plan, name); ok {
+		var body []byte
+		for attempt := 0; attempt < 3; attempt++ {
+			body, err = dynamicWindowPlaylist(snapshot, "r"+strconv.Itoa(index), view, func(id, format string, init bool) string {
+				return dynamicArtifactURLView(session, dynamicArtifactName(id, format, init), token, view, false)
+			})
+			if err != nil {
+				break
+			}
+			err = s.dynamicStreams.store.Advertise(work, timeshiftScope(session.scope), session.windowID, snapshot.Revision)
+			if !errors.Is(err, timeshift.ErrSnapshotChanged) {
+				break
+			}
+			snapshot, err = s.dynamicStreams.store.Snapshot(work, timeshiftScope(session.scope), session.windowID)
+			if err != nil {
+				break
+			}
+			err = timeshift.ErrSnapshotChanged
+		}
+		if err != nil {
+			s.dynamicWindowError(w, r, err)
+			return
+		}
+		delivered = true
+		writeDynamicManifest(w, r, body)
+		return
+	}
+	if slot, sequence, playlist, valid := hlsSubtitleArtifact(session.key.plan, name, view.Subtitles); valid {
+		delivered = s.serveDynamicSubtitle(w, r, session, snapshot, slot, sequence, playlist, token, view)
+		return
+	}
+	s.dynamicWindowError(w, r, timeshift.ErrNotFound)
+}
+
+func writeDynamicManifest(w http.ResponseWriter, r *http.Request, body []byte) {
 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
-	delivered = true
 	w.WriteHeader(http.StatusOK)
 	if r.Method != http.MethodHead {
 		_, _ = w.Write(body)
 	}
 }
-
 func (s *Server) retireDynamicSession(session *dynamicStreamSession) {
 	session.cancel()
 	session.mu.Lock()
@@ -628,31 +889,63 @@ func (s *Server) retireDynamicSession(session *dynamicStreamSession) {
 		return
 	}
 	session.closed = true
+	signalDynamicSessionLocked(session)
+	if session.jobID != "" && s.hls != nil {
+		_ = s.hls.manager.CancelJob(session.jobID, session.scope)
+	}
 	if session.input != nil {
 		_ = session.input.Close()
 		session.input = nil
 	}
+	if s.dynamicStreams != nil && s.dynamicStreams.store != nil {
+		_ = s.dynamicStreams.store.ClosePresentation(context.Background(), timeshiftScope(session.scope), session.windowID)
+	}
+}
+
+// A burn/profile change starts a new presentation. Previously retained output
+// remains readable with its original pixels and subtitle view until expiration.
+func (s *Server) stopDynamicProducer(session *dynamicStreamSession) {
+	session.mu.Lock()
+	defer session.mu.Unlock()
+	if session.closed || session.producerEnded {
+		return
+	}
+	session.producerEnded = true
+	if session.subtitles != nil {
+		session.subtitles.StopEpoch(session.generation)
+	}
 	if session.jobID != "" && s.hls != nil {
 		_ = s.hls.manager.CancelJob(session.jobID, session.scope)
 	}
+	if session.input != nil {
+		_ = session.input.Close()
+		session.input = nil
+	}
+	if s.dynamicStreams.store != nil {
+		_ = s.dynamicStreams.store.SetState(context.Background(), timeshiftScope(session.scope), session.windowID, timeshift.State{Ended: true})
+	}
+	signalDynamicSessionLocked(session)
 }
 
 // cancelDynamicStreams uses the same authenticated credential/play scope as
 // original and HLS cancellation. Empty playID cancels all credential plays.
 func (s *Server) cancelDynamicStreams(authID, playID string) {
-	s.dynamicSources.CancelMatching(authID, playID)
 	if s.dynamicStreams == nil {
+		s.dynamicSources.CancelMatching(authID, playID)
 		return
 	}
 	s.dynamicStreams.mu.Lock()
-	defer s.dynamicStreams.mu.Unlock()
 	for id, session := range s.dynamicStreams.sessions {
 		if session.scope.AuthSessionID == authID && (playID == "" || session.scope.PlaySessionID == playID) {
 			s.retireDynamicSession(session)
 			delete(s.dynamicStreams.sessions, id)
-			delete(s.dynamicStreams.byKey, session.key)
+			if s.dynamicStreams.byKey[session.key] == session {
+				delete(s.dynamicStreams.byKey, session.key)
+			}
 		}
 	}
+	s.dynamicStreams.mu.Unlock()
+	s.dynamicSources.CancelMatching(authID, playID)
 }
 
 func (s *Server) cancelDynamicLease(owner dynamicsource.Owner, liveID string) {
@@ -666,7 +959,9 @@ func (s *Server) cancelDynamicLease(owner dynamicsource.Owner, liveID string) {
 			s.retireDynamicSession(session)
 			scopes = append(scopes, session.scope)
 			delete(s.dynamicStreams.sessions, id)
-			delete(s.dynamicStreams.byKey, session.key)
+			if s.dynamicStreams.byKey[session.key] == session {
+				delete(s.dynamicStreams.byKey, session.key)
+			}
 		}
 	}
 	s.dynamicStreams.mu.Unlock()
@@ -676,9 +971,8 @@ func (s *Server) cancelDynamicLease(owner dynamicsource.Owner, liveID string) {
 }
 
 func (s *Server) closeDynamicSources(ctx context.Context) error {
-	err := s.dynamicSources.Close(ctx)
 	if s.dynamicStreams == nil {
-		return err
+		return s.dynamicSources.Close(ctx)
 	}
 	s.dynamicStreams.mu.Lock()
 	s.dynamicStreams.closing = true
@@ -688,5 +982,16 @@ func (s *Server) closeDynamicSources(ctx context.Context) error {
 	s.dynamicStreams.sessions = make(map[string]*dynamicStreamSession)
 	s.dynamicStreams.byKey = make(map[dynamicStreamKey]*dynamicStreamSession)
 	s.dynamicStreams.mu.Unlock()
+	err := s.dynamicSources.Close(ctx)
+	done := make(chan struct{})
+	go func() { s.dynamicStreams.workers.Wait(); close(done) }()
+	select {
+	case <-ctx.Done():
+		return errors.Join(err, ctx.Err())
+	case <-done:
+	}
+	if s.dynamicStreams.store != nil {
+		err = errors.Join(err, s.dynamicStreams.store.Close(ctx))
+	}
 	return err
 }

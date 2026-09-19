@@ -95,6 +95,10 @@ func TestHTTPLiveTVProgramsRecordedQueryAndBusinessState(t *testing.T) {
 	for _, suffix := range []string{"", "?UserId=", "?Limit=0&EnableUserData=false", "?HasAired=true&Limit=2147483647&ImageTypeLimit=0", "?LibrarySeriesId=" + a.seriesID} {
 		assertEmptyLiveTVPrograms(t, f.request(t, http.MethodGet, liveTVProgramsPath+suffix, nil, a.viewerHeaders))
 	}
+	// Namespace aliases reach the same authenticated, read-only Programs handler.
+	for _, path := range []string{"/LiveTv/Programs", "/livetv/programs", "/EMBY/livetv/programs"} {
+		assertEmptyLiveTVPrograms(t, f.request(t, http.MethodGet, path+"?LibrarySeriesId="+a.seriesID, nil, a.viewerHeaders))
+	}
 	if after := liveTVProgramBusinessState(t, f); !reflect.DeepEqual(before, after) {
 		t.Fatal("read-only Programs queries changed catalog, user data, playback, references, or encoding history")
 	}
@@ -163,13 +167,17 @@ func TestHTTPLiveTVProgramsCurrentCredentialsAndPolicies(t *testing.T) {
 func TestHTTPLiveTVProgramsInputAndStorageFailuresRemainErrors(t *testing.T) {
 	a := newApplicationKeyCatalogFixture(t)
 	f := a.f
-	for _, query := range []string{"Limit=-1", "Limit=2147483648", "Limit=1&Limit=1", "Fields=ChannelInfo,Unknown", "Limit=0&UserId=x&UserId=x", "X-Emby-Language=%00", "X-Emby-Unknown=x"} {
-		expectStatus(t, f.request(t, http.MethodGet, liveTVProgramsPath+"?"+query, nil, a.headers), http.StatusBadRequest)
+	for _, path := range []string{liveTVProgramsPath, "/livetv/programs"} {
+		for _, query := range []string{"Limit=-1", "Limit=2147483648", "Limit=1&Limit=1", "Fields=ChannelInfo,Unknown", "Limit=0&UserId=x&UserId=x", "X-Emby-Language=%00", "X-Emby-Unknown=x"} {
+			expectStatus(t, f.request(t, http.MethodGet, path+"?"+query, nil, a.headers), http.StatusBadRequest)
+		}
+		expectStatus(t, f.request(t, http.MethodGet, path+"?LibrarySeriesId=missing-programs-series", nil, a.headers), http.StatusNotFound)
+		expectStatus(t, f.request(t, http.MethodGet, path+"?LibrarySeriesId="+a.seriesID, nil, a.viewerHeaders), http.StatusNotFound)
+		expectStatus(t, f.request(t, http.MethodGet, path, nil, nil, a.adminCookie), http.StatusUnauthorized)
 	}
 	expectStatus(t, f.request(t, http.MethodGet, liveTVProgramsPath+"?broken=%gg", nil, a.headers), http.StatusUnauthorized)
 	expectStatus(t, f.request(t, http.MethodGet, liveTVProgramsPath+"?api_key=conflicting-token", nil, a.headers), http.StatusUnauthorized)
 	expectStatus(t, f.request(t, http.MethodPost, liveTVProgramsPath, nil, a.headers), http.StatusNotFound)
-	expectStatus(t, f.request(t, http.MethodGet, "/LiveTv/Programs", nil, a.headers), http.StatusNotFound)
 	request := httptest.NewRequest(http.MethodGet, liveTVProgramsPath, strings.NewReader("unexpected"))
 	request.Header = a.headers.Clone()
 	response := httptest.NewRecorder()

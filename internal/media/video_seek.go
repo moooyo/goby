@@ -22,11 +22,15 @@ const (
 	MaxVideoSeekDecoderThreads        = 64
 )
 
-// VideoSeekIndex records paired compressed IDR and decoded image evidence on
-// the source clock, with complete parameter-set and packet-scope checks. It is
-// private metadata and does not authorize a seek alone.
+// VideoSeekIndex records paired compressed restart packets and decoded images
+// on the source clock. H.264/HEVC use IDR and NAL-scope checks; AV1 additionally
+// checks the complete key packet's sequence/frame syntax. All codecs require
+// stable configuration and packet-side-data evidence. This private metadata
+// does not authorize a seek alone.
 type VideoSeekIndex struct {
 	Version               int              `json:"version"`
+	Codec                 string           `json:"codec,omitempty"`
+	PacketRestartChecked  bool             `json:"packet_restart_checked,omitempty"`
 	StreamIndex           int              `json:"stream_index"`
 	FormatStartTicks      int64            `json:"format_start_ticks"`
 	DurationTicks         int64            `json:"duration_ticks"`
@@ -46,10 +50,20 @@ type VideoSeekIndex struct {
 
 // VideoSeekPoint retains original demuxer timestamps without tick rounding.
 type VideoSeekPoint struct {
-	PTS           int64  `json:"pts"`
-	DTS           int64  `json:"dts"`
-	CodedSHA256   string `json:"coded_sha256"`
-	DecodedSHA256 string `json:"decoded_sha256"`
+	PTS           int64                `json:"pts"`
+	DTS           int64                `json:"dts"`
+	CodedSHA256   string               `json:"coded_sha256"`
+	DecodedSHA256 string               `json:"decoded_sha256"`
+	PacketSHA256  string               `json:"packet_sha256,omitempty"`
+	Audio         []VideoCopySeekAudio `json:"audio,omitempty"`
+}
+
+// VideoSeekCodec resolves legacy H.264 indexes without changing their wire form.
+func VideoSeekCodec(index VideoSeekIndex) string {
+	if index.Codec == "" {
+		return "h264"
+	}
+	return index.Codec
 }
 
 func videoSeekSHA256(value string) bool {
@@ -63,16 +77,39 @@ func videoSeekSHA256(value string) bool {
 // ValidateVideoSeekIndex validates bounded evidence without opening a source.
 func ValidateVideoSeekIndex(index VideoSeekIndex) error {
 	frameBytes, supported := videoSeekFrameBytes(index.Width, index.Height, index.PixelFormat)
+	codec := VideoSeekCodec(index)
+	parameterEvidence := videoSeekSHA256(index.ParameterSetsSHA256) && index.NALScopeChecked
+	if codec == "av1" {
+		parameterEvidence = index.PacketRestartChecked && videoSeekSHA256(index.ParameterSetsSHA256) && !index.NALScopeChecked
+	}
 	if index.Version != VideoSeekIndexVersion || index.StreamIndex < 0 ||
+		(codec != "h264" && codec != "hevc" && codec != "av1") ||
 		index.DurationTicks <= 0 || index.DurationTicks > MaxVideoSeekDurationTicks || index.TimeBaseNumerator <= 0 || index.TimeBaseDenominator <= 0 ||
 		!supported || index.DecodedFrameBytes != frameBytes ||
-		len(index.PixelFormat) > 64 || !videoSeekSHA256(index.SourceIdentity) || !videoSeekSHA256(index.ToolIdentity) || !videoSeekSHA256(index.ParameterSetsSHA256) || !index.PacketSideDataChecked || !index.NALScopeChecked ||
+		len(index.PixelFormat) > 64 || !videoSeekSHA256(index.SourceIdentity) || !videoSeekSHA256(index.ToolIdentity) || !parameterEvidence || !index.PacketSideDataChecked ||
 		len(index.Entries) == 0 || len(index.Entries) > MaxVideoSeekEntries {
 		return fmt.Errorf("invalid video seek index metadata")
 	}
 	for position, entry := range index.Entries {
 		if entry.PTS == -1<<63 || entry.DTS == -1<<63 || !videoSeekSHA256(entry.CodedSHA256) || !videoSeekSHA256(entry.DecodedSHA256) {
 			return fmt.Errorf("invalid video seek entry")
+		}
+		if entry.PacketSHA256 != "" && !videoSeekSHA256(entry.PacketSHA256) || codec == "av1" && entry.PacketSHA256 != entry.CodedSHA256 {
+			return fmt.Errorf("invalid video seek packet identity")
+		}
+		if len(entry.Audio) > 32 {
+			return fmt.Errorf("video seek audio exceeds its stream budget")
+		}
+		seenAudio := make(map[int]bool, len(entry.Audio))
+		for _, audio := range entry.Audio {
+			if validateVideoCopySeekAudio(audio) != nil || seenAudio[audio.StreamIndex] {
+				return fmt.Errorf("invalid video seek audio packet evidence")
+			}
+			audioTime := new(big.Rat).Mul(new(big.Rat).SetInt64(audio.PTS), videoSeekTimeBase(audio.TimeBaseNumerator, audio.TimeBaseDenominator))
+			if audioTime.Cmp(VideoSeekPointTime(index, entry)) != 0 {
+				return fmt.Errorf("video seek audio packet is not on the video restart clock")
+			}
+			seenAudio[audio.StreamIndex] = true
 		}
 		if position > 0 && (entry.PTS <= index.Entries[position-1].PTS || entry.DTS <= index.Entries[position-1].DTS) {
 			return fmt.Errorf("video seek entries are not strictly ordered")
@@ -155,6 +192,14 @@ func parseVideoSeekTimeBase(value string) (*big.Rat, error) {
 // demuxer delay discovery matches playback. A candidate is an absolute decimal
 // source timestamp, not a decoded landing point.
 func BuildVideoSeekCommandArgs(streamIndex int, candidateSeconds *string, decoderThreads int) ([]string, error) {
+	return BuildVideoSeekCommandArgsForCodec(streamIndex, "h264", candidateSeconds, decoderThreads)
+}
+
+// BuildVideoSeekCommandArgsForCodec preserves codec-specific restart evidence.
+func BuildVideoSeekCommandArgsForCodec(streamIndex int, codec string, candidateSeconds *string, decoderThreads int) ([]string, error) {
+	if codec != "h264" && codec != "hevc" {
+		return nil, fmt.Errorf("unsupported NAL restart codec")
+	}
 	if streamIndex < 0 || decoderThreads < 1 || decoderThreads > MaxVideoSeekDecoderThreads || candidateSeconds == nil && decoderThreads != 1 {
 		return nil, fmt.Errorf("invalid video seek stream or decoder thread count")
 	}
@@ -197,16 +242,22 @@ func BuildVideoSeekCommandArgs(streamIndex int, candidateSeconds *string, decode
 	if candidateSeconds == nil {
 		args = append(args, "-map", "0:"+strconv.Itoa(streamIndex), "-map", "0:"+strconv.Itoa(streamIndex))
 	}
+	restartFilter, parameterFilter, scopeFilter := "filter_units=pass_types=5", "h264_mp4toannexb,filter_units=pass_types=7|8", "filter_units=remove_types=1|5|6|7|8|9|10|11|12"
+	if codec == "hevc" {
+		restartFilter = "filter_units=pass_types=19|20"
+		parameterFilter = "hevc_mp4toannexb,filter_units=pass_types=32|33|34"
+		scopeFilter = "filter_units=remove_types=0|1|2|3|4|5|6|7|8|9|16|17|18|19|20|21|32|33|34|35|36|37|38|39|40"
+	}
 	args = append(args,
-		"-c:v:0", "copy", "-copyinkf:v:0", "-copypriorss:v:0", "1", "-bsf:v:0", "filter_units=pass_types=5",
+		"-c:v:0", "copy", "-copyinkf:v:0", "-copypriorss:v:0", "1", "-bsf:v:0", restartFilter,
 		"-c:v:1", "rawvideo", "-threads:v:1", "1", "-fps_mode:v:1", "passthrough", "-enc_time_base:v:1", "demux",
-		"-c:v:2", "copy", "-copyinkf:v:2", "-copypriorss:v:2", "1", "-bsf:v:2", "h264_mp4toannexb,filter_units=pass_types=7|8")
+		"-c:v:2", "copy", "-copyinkf:v:2", "-copypriorss:v:2", "1", "-bsf:v:2", parameterFilter)
 	if candidateSeconds != nil {
 		args = append(args, "-filter:v:1", "select=key", "-frames:v:0", "1", "-frames:v:1", "1", "-frames:v:2", "1")
 	} else {
 		args = append(args, "-c:v:3", "copy", "-copyinkf:v:3", "-copypriorss:v:3", "1",
 			"-c:v:4", "copy", "-copyinkf:v:4", "-copypriorss:v:4", "1",
-			"-bsf:v:4", "filter_units=remove_types=1|5|6|7|8|9|10|11|12")
+			"-bsf:v:4", scopeFilter)
 	}
 	return append(args, "-f", "framehash", "-hash", "sha256", "pipe:1"), nil
 }

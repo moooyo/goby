@@ -73,7 +73,16 @@ func (s *Server) embyNamedConfiguration(w http.ResponseWriter, r *http.Request) 
 	if !ok || !configurationQuery(w, r) || !configurationSection(w, r) {
 		return
 	}
-	configurationJSON(w, r, encodingConfigurationDTO(view.Snapshot))
+	switch strings.ToLower(r.PathValue("key")) {
+	case "subtitles":
+		options := view.Snapshot.Management.Subtitles
+		configurationJSON(w, r, map[string]any{"DownloadLanguages": options.DownloadLanguages, "DownloadMovieSubtitles": options.DownloadMovieSubtitles, "DownloadEpisodeSubtitles": options.DownloadEpisodeSubtitles})
+	case "tasks":
+		options := view.Snapshot.Management.Tasks
+		configurationJSON(w, r, map[string]any{"MaxConcurrent": options.MaxConcurrent, "CacheRetentionDays": options.CacheRetentionDays, "CacheMaxEntries": options.CacheMaxEntries})
+	default:
+		configurationJSON(w, r, encodingConfigurationDTO(view.Snapshot))
+	}
 }
 
 func (s *Server) updateEmbyConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -85,14 +94,14 @@ func (s *Server) patchEmbyConfiguration(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) updateEmbyNamedConfiguration(w http.ResponseWriter, r *http.Request) {
-	s.writeEmbyConfiguration(w, r, settings.ConfigurationEncoding)
+	s.writeEmbyConfiguration(w, r, settings.ConfigurationSection(strings.ToLower(r.PathValue("key"))))
 }
 
 func (s *Server) writeEmbyConfiguration(w http.ResponseWriter, r *http.Request, section settings.ConfigurationSection) {
 	if _, ok := s.configurationAccess(w, r, true, "ManageServer"); !ok {
 		return
 	}
-	if !configurationQuery(w, r) || section == settings.ConfigurationEncoding && !configurationSection(w, r) {
+	if !configurationQuery(w, r) || section != settings.ConfigurationFull && section != settings.ConfigurationPartial && !configurationSection(w, r) {
 		return
 	}
 	mutation, ok := decodeConfiguration(w, r, section)
@@ -110,7 +119,7 @@ func (s *Server) writeEmbyConfiguration(w http.ResponseWriter, r *http.Request, 
 // path or a bag of values that can be saved without a corresponding consumer.
 func configurationSection(w http.ResponseWriter, r *http.Request) bool {
 	switch strings.ToLower(r.PathValue("key")) {
-	case "encoding":
+	case "encoding", "subtitles", "tasks":
 		return true
 	case "devices", "dlna":
 		embyTextError(w, r, http.StatusNotImplemented, "This configuration section is not implemented.")

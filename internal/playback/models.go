@@ -18,6 +18,7 @@ type Request struct {
 	EnableTranscoding              *bool          `json:"EnableTranscoding,omitempty"`
 	AllowInterlacedVideoStreamCopy *bool          `json:"AllowInterlacedVideoStreamCopy,omitempty"`
 	AllowVideoStreamCopy           *bool          `json:"AllowVideoStreamCopy,omitempty"`
+	AllowVideoSeekAlignment        *bool          `json:"AllowVideoSeekAlignment,omitempty"`
 	AllowAudioStreamCopy           *bool          `json:"AllowAudioStreamCopy,omitempty"`
 	IsPlayback                     *bool          `json:"IsPlayback,omitempty"`
 	AutoOpenLiveStream             *bool          `json:"AutoOpenLiveStream,omitempty"`
@@ -170,6 +171,7 @@ const (
 	ProfileConditionValueVideoFramerate   ProfileConditionValue = "VideoFramerate"
 	ProfileConditionValueVideoLevel       ProfileConditionValue = "VideoLevel"
 	ProfileConditionValueVideoProfile     ProfileConditionValue = "VideoProfile"
+	ProfileConditionValueVideoRangeType   ProfileConditionValue = "VideoRangeType"
 	ProfileConditionValueVideoTimestamp   ProfileConditionValue = "VideoTimestamp"
 	ProfileConditionValueIsAnamorphic     ProfileConditionValue = "IsAnamorphic"
 	ProfileConditionValueRefFrames        ProfileConditionValue = "RefFrames"

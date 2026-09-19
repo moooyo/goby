@@ -85,12 +85,28 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		s.videoError(w, r, errVideoRequestUnsupported)
 		return
 	}
+	if !principalPlanBitrateAllowed(principal, source, *decision.Conversion.Plan) {
+		s.videoError(w, r, library.ErrForbidden)
+		return
+	}
 	var play library.PlaySession
 	if reference := values["playsessionid"]; reference != "" {
 		play, err = s.library.PrepareCorrelatedPlayback(prepare, playbackOwner(principal), source.Item.ID, source.SourceID, reference)
 	} else {
 		play, err = s.library.PreparePlayback(prepare, playbackOwner(principal), source.Item.ID, source.SourceID, "")
 	}
+	if err != nil {
+		s.videoError(w, r, err)
+		return
+	}
+	if decision.Conversion.Plan.Subtitle.ExternalTag != "" {
+		_, err := s.readPlannedExternalSubtitle(prepare, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *decision.Conversion.Plan)
+		if err != nil {
+			s.videoError(w, r, err)
+			return
+		}
+	}
+	decision.Conversion, err = s.resolveHardwareEncoding(prepare, limits, decision.Conversion, r.Method != http.MethodHead)
 	if err != nil {
 		s.videoError(w, r, err)
 		return
@@ -102,7 +118,31 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 	}
 	owned := file
 	file = nil
+	requestedStart, _ := strconv.ParseInt(values["starttimeticks"], 10, 64)
+	setVideoStartHeaders(w.Header(), session.key.plan.StartTicks, requestedStart)
 	s.serveProgressiveMedia(w, r, session, owned)
+}
+
+func setVideoStartHeaders(header http.Header, actual, requested int64) {
+	header.Set("X-Goby-Start-Time-Ticks", strconv.FormatInt(actual, 10))
+	header.Del("X-Goby-Seek-Aligned")
+	if actual != requested {
+		header.Set("X-Goby-Seek-Aligned", "true")
+	}
+	exposed := strings.Join(header.Values("Access-Control-Expose-Headers"), ", ")
+	for _, name := range []string{"X-Goby-Start-Time-Ticks", "X-Goby-Seek-Aligned"} {
+		found := false
+		for _, existing := range strings.Split(exposed, ",") {
+			found = found || strings.EqualFold(strings.TrimSpace(existing), name)
+		}
+		if !found {
+			if exposed != "" {
+				exposed += ", "
+			}
+			exposed += name
+		}
+	}
+	header.Set("Access-Control-Expose-Headers", exposed)
 }
 
 func videoPlaybackURL(itemID, sourceID, playID, deviceID, token string, plan transcode.Plan) string {
@@ -111,7 +151,18 @@ func videoPlaybackURL(itemID, sourceID, playID, deviceID, token string, plan tra
 		"VideoStreamIndex": {strconv.Itoa(plan.VideoStreamIndex)}, "VideoCodec": {plan.VideoCodec},
 		"AllowVideoStreamCopy": {strconv.FormatBool(plan.VideoCodec == "copy")},
 		"SubtitleStreamIndex":  {"-1"}}
+	if plan.CopyTimestamps {
+		query.Set("CopyTimestamps", "true")
+	}
+	if plan.Subtitle.Mode == "burn" {
+		query.Set("SubtitleStreamIndex", strconv.Itoa(plan.Subtitle.StreamIndex))
+		query.Set("SubtitleDeliveryMethod", "Encode")
+		if plan.Subtitle.OffsetTicks != 0 {
+			query.Set("SubtitleOffsetTicks", strconv.FormatInt(plan.Subtitle.OffsetTicks, 10))
+		}
+	}
 	if plan.VideoCodec != "copy" {
+		setVideoEncodingQuery(query, plan)
 		query.Set("Width", strconv.Itoa(plan.Width))
 		query.Set("Height", strconv.Itoa(plan.Height))
 		query.Set("VideoBitrate", strconv.FormatInt(plan.VideoBitrate, 10))

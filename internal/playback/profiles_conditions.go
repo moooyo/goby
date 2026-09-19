@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/moooyo/goby/internal/media"
 )
 
 type conditionFacts struct {
@@ -62,7 +64,8 @@ func (facts conditionFacts) value(property ProfileConditionValue) fact {
 		case "height":
 			return numberFact(int64(video.Height), video.Height > 0)
 		case "videobitdepth":
-			return numberFact(int64(video.BitDepth), video.BitDepth > 0)
+			depth := media.EffectiveVideoBitDepth(*video)
+			return numberFact(int64(depth), depth > 0 && !media.VideoBitDepthConflict(*video))
 		case "videobitrate":
 			return numberFact(video.Bitrate, video.Bitrate > 0)
 		case "videolevel":
@@ -93,7 +96,7 @@ func (facts conditionFacts) value(property ProfileConditionValue) fact {
 		case "audiobitdepth":
 			return numberFact(int64(audio.BitDepth), audio.BitDepth > 0)
 		}
-	case "videoprofile", "videocodectag", "videorange":
+	case "videoprofile", "videocodectag", "videorange", "videorangetype":
 		if video == nil {
 			return stringFact("", false)
 		}
@@ -102,7 +105,7 @@ func (facts conditionFacts) value(property ProfileConditionValue) fact {
 			return stringFact(video.Profile, true)
 		case "videocodectag":
 			return stringFact(video.CodecTag, true)
-		case "videorange":
+		case "videorange", "videorangetype":
 			return stringFact(video.VideoRange, video.VideoRangeKnown)
 		}
 	case "audioprofile":
@@ -184,7 +187,25 @@ func evaluateCondition(condition ProfileCondition, facts conditionFacts) conditi
 			if operator == "lessthanequal" || operator == "greaterthanequal" {
 				return conditionInvalid
 			}
-			if !strings.EqualFold(actual.text, text) {
+			actualText := actual.text
+			if strings.EqualFold(string(condition.Property), string(ProfileConditionValueVideoProfile)) && facts.streams.video != nil && strings.EqualFold(facts.streams.video.Codec, "h264") {
+				// Constrained Baseline is the restricted Baseline bitstream
+				// emitted by the selected x264 and VAAPI baseline encoders.
+				if strings.EqualFold(actualText, "Constrained Baseline") && strings.EqualFold(text, "baseline") {
+					actualText = "baseline"
+				}
+			}
+			if strings.EqualFold(string(condition.Property), string(ProfileConditionValueVideoProfile)) && facts.streams.video != nil && strings.EqualFold(facts.streams.video.Codec, "hevc") {
+				// FFmpeg uses "Main 10" while encoder and client options also
+				// use "main10" for the same HEVC profile.
+				if strings.EqualFold(actualText, "Main 10") {
+					actualText = "main10"
+				}
+				if strings.EqualFold(text, "Main 10") {
+					text = "main10"
+				}
+			}
+			if !strings.EqualFold(actualText, text) {
 				comparison = 1
 			}
 		case booleanFact:

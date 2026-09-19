@@ -16,6 +16,7 @@ import (
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/subtitle"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 func playbackOwner(principal identity.Principal) library.PlaybackOwner {
@@ -24,6 +25,7 @@ func playbackOwner(principal identity.Principal) library.PlaybackOwner {
 }
 
 func (s *Server) registerPlaybackRoutes(mux *http.ServeMux) {
+	s.registerExtendedUserStateRoutes(mux)
 	mux.HandleFunc("GET /emby/Items/{Id}/PlaybackInfo", s.requireEmby(s.playbackInfo))
 	mux.HandleFunc("POST /emby/Items/{Id}/PlaybackInfo", s.requireEmby(s.playbackInfo))
 	for _, event := range []struct{ route, name string }{
@@ -96,6 +98,7 @@ func mergePlaybackQuery(request *playback.Request, values map[string]string) err
 	}{
 		{"enabledirectplay", &request.EnableDirectPlay}, {"enabledirectstream", &request.EnableDirectStream}, {"enabletranscoding", &request.EnableTranscoding},
 		{"allowinterlacedvideostreamcopy", &request.AllowInterlacedVideoStreamCopy}, {"allowvideostreamcopy", &request.AllowVideoStreamCopy},
+		{"allowvideoseekalignment", &request.AllowVideoSeekAlignment},
 		{"allowaudiostreamcopy", &request.AllowAudioStreamCopy}, {"isplayback", &request.IsPlayback}, {"autoopenlivestream", &request.AutoOpenLiveStream},
 	} {
 		if raw, exists := values[field.name]; exists {
@@ -179,6 +182,10 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	request.MediaSourceID = source.SourceID
+	if err := s.applyStaticPlaybackPreferences(ctx, r, principal, source, &request); err != nil {
+		s.playbackError(w, r, err)
+		return
+	}
 	input := playback.Source{ItemID: source.Item.ID, MediaSourceID: source.SourceID,
 		Path: source.Item.Path, ItemType: source.Item.Type, Info: playbackMediaInfo(source.Item)}
 	decision, err := playback.Evaluate(input, request)
@@ -228,10 +235,23 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			formats[index] = conversion.Output.SubtitleFormat
 		}
 	}
+	if conversion.Plan != nil && conversion.Plan.Subtitle.ExternalTag != "" {
+		if _, err := s.readPlannedExternalSubtitle(ctx, principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, *conversion.Plan); err != nil {
+			s.playbackError(w, r, err)
+			return
+		}
+	}
 	session, err := s.library.PreparePlayback(ctx, playbackOwner(principal), source.Item.ID, source.SourceID, request.CurrentPlaySessionID)
 	if err != nil {
 		s.playbackError(w, r, err)
 		return
+	}
+	if conversion.Plan != nil && (request.EnableTranscoding == nil || *request.EnableTranscoding || (conversion.Method == "DirectStream" && !decision.DirectStream)) {
+		conversion, err = s.resolveHardwareEncoding(ctx, limits, conversion, r.Method != http.MethodHead)
+		if err != nil {
+			s.hlsError(w, r, err)
+			return
+		}
 	}
 	dto := originalSourceDTO(source.Item)
 	token, _, _ := parseEmbyCredentials(r)
@@ -277,6 +297,10 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			}
 			container, protocol = conversion.Plan.Container, "http"
 		} else {
+			if err := s.authorizeHLSSubtitles(r.Context(), principal, transcode.Scope{ItemID: source.Item.ID, SourceID: source.SourceID}, source, *conversion.Plan); err != nil {
+				s.hlsError(w, r, err)
+				return
+			}
 			hls, err := s.hls.register(principal, source, session.ID, conversion, start)
 			if err != nil {
 				if !decision.DirectPlay && !decision.DirectStream {
@@ -289,6 +313,9 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 					resource = "Audio"
 				}
 				streamURL = hlsSessionURL(hls, resource, "master.m3u8", token, start)
+				if transcode.HasHLSSubtitles(*conversion.Plan) {
+					streamURL = hlsSubtitleURLView(streamURL, conversion.SubtitleView)
+				}
 				container, protocol = conversion.Plan.Container, "hls"
 			}
 		}

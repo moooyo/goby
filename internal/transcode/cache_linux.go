@@ -699,6 +699,9 @@ func validOutputName(name string) bool {
 }
 
 func validCacheFileName(name string) bool {
+	if isLiveCaptionScratchName(name) {
+		return true
+	}
 	if privateCacheAssetName(name) {
 		return true
 	}

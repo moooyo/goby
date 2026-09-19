@@ -312,6 +312,38 @@ func (runtime *mediaPolicyRuntime) touch(principal identity.Principal, scope tra
 	runtime.mu.Unlock()
 }
 
+// heartbeat is called only after an authenticated client playback report has
+// revalidated the stored play. It cannot admit a stream, claim delivery, or
+// revive an expired/completed lease; producer activity must not call this path.
+func (runtime *mediaPolicyRuntime) heartbeat(principal identity.Principal, scope transcode.Scope) bool {
+	key, limit, err := mediaPolicyIdentity(principal, scope)
+	if err != nil || key.play == "" {
+		return false
+	}
+	runtime.mu.Lock()
+	if runtime.closed {
+		runtime.mu.Unlock()
+		return false
+	}
+	retired := runtime.reconcileLocked(key, limit)
+	lease := runtime.leases[key]
+	refreshed := lease != nil && lease.scope == scope && lease.delivered && !lease.complete && !lease.failed && lease.ctx.Err() == nil
+	if refreshed {
+		lease.last = runtime.now()
+		if lease.refs == 0 {
+			if lease.timer != nil {
+				lease.timer.Stop()
+			}
+			lease.version++
+			version := lease.version
+			lease.timer = time.AfterFunc(mediaPolicyIdleTTL, func() { runtime.expire(lease, version) })
+		}
+	}
+	runtime.mu.Unlock()
+	runtime.notify(retired)
+	return refreshed
+}
+
 func (runtime *mediaPolicyRuntime) stop() {
 	runtime.mu.Lock()
 	runtime.closed = true
@@ -350,6 +382,16 @@ func mediaPolicyContextLease(ctx context.Context) *mediaPolicyLease {
 
 func (s *Server) touchMediaPolicy(ctx context.Context, principal identity.Principal, scope transcode.Scope) {
 	s.playbackPolicyGate().touch(principal, scope, mediaPolicyContextLease(ctx))
+}
+
+func (s *Server) heartbeatDynamicMediaPolicy(principal identity.Principal, play library.PlaySession) bool {
+	if !play.IsDynamic || play.ID == "" || play.State == "Stopped" || play.State == "Expired" || play.StoppedAt != nil {
+		return false
+	}
+	scope := transcode.Scope{ApplicationKey: play.ApplicationKey, ApplicationClientID: play.ApplicationClientID,
+		UserID: play.UserID, AuthSessionID: play.AuthSessionID, DeviceID: play.DeviceID,
+		PlaySessionID: play.ID, ItemID: play.ItemID, SourceID: play.MediaSourceID}
+	return s.playbackPolicyGate().heartbeat(principal, scope)
 }
 
 func (s *Server) releaseMediaPolicy(scope transcode.Scope) { s.playbackPolicyGate().release(scope) }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 type ReplaceTriggersRequest struct {
@@ -76,7 +77,7 @@ func (s *Store) ReplaceTriggers(ctx context.Context, actor Actor, request Replac
 			if err := ValidateSchedule(rules[index]); err != nil {
 				return triggerValidationError(index, err)
 			}
-			if rules[index].Kind != ScheduleStartup {
+			if rules[index].Kind != ScheduleStartup && rules[index].Kind != ScheduleSystemEvent {
 				next, err := Next(rules[index], now)
 				if err != nil {
 					return triggerValidationError(index, err)
@@ -103,15 +104,23 @@ func (s *Store) ReplaceTriggers(ctx context.Context, actor Actor, request Replac
 		}
 		for index, rule := range rules {
 			var zone any
+			var event any
+			var sequence int64
+			if rule.Kind == ScheduleSystemEvent {
+				event = string(rule.SystemEvent)
+				if err := tx.QueryRow(`SELECT sequence FROM task_system_events WHERE name=$1`, event).Scan(&sequence); err != nil {
+					return err
+				}
+			}
 			if rule.Timezone != "" {
 				zone = rule.Timezone
 			}
 			if _, err := tx.Exec(`INSERT INTO task_triggers
                 (id,task_id,schedule_revision,position,kind,interval_ticks,anchor_at,
-                 time_of_day_ticks,day_of_week,timezone,max_runtime_ticks,next_fire_at,created_at,updated_at)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)`, ids[index], definition.ID,
+                 time_of_day_ticks,day_of_week,timezone,max_runtime_ticks,next_fire_at,created_at,updated_at,system_event,last_event_sequence)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13,$14,$15)`, ids[index], definition.ID,
 				definition.Revision+1, index, string(rule.Kind), rule.IntervalTicks, rule.AnchorAt,
-				rule.TimeOfDayTicks, rule.DayOfWeek, zone, rule.MaxRuntimeTicks, nextTimes[index], now); err != nil {
+				rule.TimeOfDayTicks, rule.DayOfWeek, zone, rule.MaxRuntimeTicks, nextTimes[index], now, event, sequence); err != nil {
 				return fmt.Errorf("insert task trigger: %w", err)
 			}
 		}
@@ -148,8 +157,11 @@ func (s *Store) PreviewTriggers(ctx context.Context, taskID, timezone string, in
 	result.ServerTime = result.ServerTime.UTC()
 	for index, rule := range rules {
 		item := TriggerPreview{Index: index, Occurrences: []time.Time{}}
-		if rule.Kind == ScheduleStartup {
+		if rule.Kind == ScheduleStartup || rule.Kind == ScheduleSystemEvent {
 			event := "startup"
+			if rule.Kind == ScheduleSystemEvent {
+				event = string(rule.SystemEvent)
+			}
 			item.Event = &event
 		} else {
 			if rule.Kind == ScheduleInterval {
@@ -191,7 +203,7 @@ func prepareTriggerInput(taskID, timezone string, input []ScheduleRule, anchor t
 		if value.AnchorAt != nil || value.Timezone != "" {
 			return nil, triggerValidationError(index, invalidSchedule("anchor and per-rule timezone are server-owned"))
 		}
-		rule := ScheduleRule{Kind: value.Kind, IntervalTicks: copyScheduleInt64(value.IntervalTicks),
+		rule := ScheduleRule{Kind: value.Kind, SystemEvent: value.SystemEvent, IntervalTicks: copyScheduleInt64(value.IntervalTicks),
 			TimeOfDayTicks: copyScheduleInt64(value.TimeOfDayTicks), MaxRuntimeTicks: copyScheduleInt64(value.MaxRuntimeTicks)}
 		if value.DayOfWeek != nil {
 			day := *value.DayOfWeek
@@ -250,6 +262,9 @@ func triggerScheduleRule(trigger Trigger) ScheduleRule {
 		DayOfWeek: trigger.DayOfWeek, MaxRuntimeTicks: trigger.MaxRuntimeTicks}
 	if trigger.Timezone != nil {
 		rule.Timezone = *trigger.Timezone
+	}
+	if trigger.SystemEvent != nil {
+		rule.SystemEvent = systemevents.Event(*trigger.SystemEvent)
 	}
 	return rule
 }

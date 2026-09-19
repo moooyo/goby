@@ -105,7 +105,7 @@ func TestProgressiveVideoRejectsUnknownAndIncompatiblePlans(t *testing.T) {
 		"origin overflow":       func(p *Plan) { p.SourceFormatStartTicks = math.MinInt64 },
 		"video disabled":        func(p *Plan) { p.VideoStreamIndex = -1 },
 		"duplicate stream":      func(p *Plan) { p.AudioStreamIndex = p.VideoStreamIndex },
-		"video codec":           func(p *Plan) { p.VideoCodec = "hevc" },
+		"video codec":           func(p *Plan) { p.VideoCodec = "vp9" },
 		"audio codec":           func(p *Plan) { p.AudioCodec = "mp3" },
 		"audio sample timing":   func(p *Plan) { p.AudioSourceSampleCount = 1 },
 		"audio sample rate":     func(p *Plan) { p.AudioSourceSampleRate = 48000 },

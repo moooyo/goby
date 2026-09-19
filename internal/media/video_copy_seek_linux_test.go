@@ -80,3 +80,27 @@ func TestVideoCopySeekFailedPacketProofNeverVerifies(t *testing.T) {
 		})
 	}
 }
+
+func TestVideoCopySeekFreshProofRequiresBothIndependentStreamProofs(t *testing.T) {
+	for _, name := range []string{"valid", "wrong audio packet", "audio mutation"} {
+		t.Run(name, func(t *testing.T) {
+			file, _ := videoSeekLinuxTestSource(t)
+			candidate := videoCopySeekAudioTestCandidate(t)
+			audio := videoCopySeekAudioTestHash(candidate)
+			mutation := ""
+			if name == "wrong audio packet" {
+				audio = strings.Replace(audio, candidate.Audio.PacketSHA256, strings.Repeat("8", 64), 1)
+			}
+			if name == "audio mutation" {
+				mutation = "printf x >> /proc/self/fd/3\n"
+			}
+			prefix := "case \" $* \" in *' -vn '*)\n" + mutation + "cat <<'COPY_AUDIO_PROOF_EOF'\n" + audio + "COPY_AUDIO_PROOF_EOF\nexit 0;; esac\n"
+			executable := videoSeekLinuxTestTool(t, prefix, videoCopySeekTestHash(candidate))
+			encoded := videoCopySeekBoundCandidate(t, file, executable, candidate)
+			verification, err := VerifyVideoCopySeekCandidate(context.Background(), executable, file, encoded, 1)
+			if name == "valid" && (err != nil || !verification.Verified) || name != "valid" && verification.Verified || name == "audio mutation" && err == nil {
+				t.Fatalf("split packet proofs did not remain jointly required and source-bound: %+v, %v", verification, err)
+			}
+		})
+	}
+}

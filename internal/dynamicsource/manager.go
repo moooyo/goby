@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -20,22 +19,25 @@ import (
 )
 
 var (
-	ErrInvalid     = errors.New("invalid dynamic source request")
-	ErrNotFound    = errors.New("dynamic source not found")
-	ErrBusy        = errors.New("dynamic source capacity exhausted")
-	ErrClosed      = errors.New("dynamic source manager closed")
-	ErrUnavailable = errors.New("dynamic source unavailable")
+	ErrInvalid         = errors.New("invalid dynamic source request")
+	ErrNotFound        = errors.New("dynamic source not found")
+	ErrBusy            = errors.New("dynamic source capacity exhausted")
+	ErrClosed          = errors.New("dynamic source manager closed")
+	ErrUnavailable     = errors.New("dynamic source unavailable")
+	ErrStaleGeneration = errors.New("dynamic source generation changed")
+	ErrFanoutStalled   = errors.New("dynamic source reader stalled")
 )
 
 // Definition is trusted startup configuration, never a playback request DTO.
 // URL and Headers must never be included in a public source description.
 type Definition struct {
-	ItemID        string            `json:"itemId"`
-	Name          string            `json:"name,omitempty"`
-	URL           string            `json:"url"`
-	Headers       map[string]string `json:"headers,omitempty"`
-	Infinite      bool              `json:"infinite,omitempty"`
-	MaxReconnects int               `json:"maxReconnects,omitempty"`
+	ItemID        string               `json:"itemId"`
+	Name          string               `json:"name,omitempty"`
+	URL           string               `json:"url"`
+	Headers       map[string]string    `json:"headers,omitempty"`
+	Infinite      bool                 `json:"infinite,omitempty"`
+	MaxReconnects int                  `json:"maxReconnects,omitempty"`
+	Subtitles     []SubtitleDefinition `json:"subtitles,omitempty"`
 }
 
 func (Definition) String() string   { return "<dynamic-source configuration>" }
@@ -91,6 +93,9 @@ type Options struct {
 	TempDir                               string
 	OpenTimeout, IdleTimeout              time.Duration
 	MaxLeases, MaxOwnerLeases, MaxOpening int
+	// Fanout limits bound decoder lag, not a replay or time-shift archive.
+	FanoutBufferBytes, FanoutTotalBytes int
+	FanoutStallTimeout                  time.Duration
 }
 
 type leaseKey struct {
@@ -128,6 +133,7 @@ type Manager struct {
 	workers        sync.WaitGroup
 	done           chan struct{}
 	ownedConnector *HTTPConnector
+	fanoutBytes    int
 }
 
 func validID(value string, optional bool) bool {
@@ -168,6 +174,20 @@ func New(ctx context.Context, definitions []Definition, options Options) (*Manag
 	if options.MaxOpening <= 0 {
 		options.MaxOpening = 4
 	}
+	if options.FanoutBufferBytes == 0 {
+		options.FanoutBufferBytes = 8 << 20
+	}
+	if options.FanoutTotalBytes == 0 {
+		options.FanoutTotalBytes = 64 << 20
+	}
+	if options.FanoutStallTimeout == 0 {
+		options.FanoutStallTimeout = 10 * time.Second
+	}
+	if options.FanoutBufferBytes < 32*1024 || options.FanoutBufferBytes > 32<<20 ||
+		options.FanoutTotalBytes < options.FanoutBufferBytes || options.FanoutTotalBytes > 256<<20 ||
+		options.FanoutStallTimeout <= 0 || options.FanoutStallTimeout > time.Minute {
+		return nil, ErrInvalid
+	}
 	if options.OpenTimeout > time.Minute || options.IdleTimeout > time.Hour || options.MaxLeases > 1024 || options.MaxOpening > 32 {
 		return nil, ErrInvalid
 	}
@@ -190,6 +210,7 @@ func New(ctx context.Context, definitions []Definition, options Options) (*Manag
 			return nil, ErrInvalid
 		}
 		definition.Headers = cloneHeaders(definition.Headers)
+		definition.Subtitles = cloneSubtitles(definition.Subtitles)
 		token, err := newID("open_")
 		if err != nil {
 			cancel()
@@ -326,7 +347,7 @@ func (m *Manager) Open(ctx context.Context, owner Owner, request OpenRequest) (L
 		m.closeLocked(state)
 	} else {
 		state.connection = connection
-		state.lease.Info = cloneInfo(connection.Info)
+		state.lease.Info = sourceInfo(connection.Info, state.lease.ID, state.definition.Subtitles)
 		state.lease.ItemType = streamItemType(connection.Info)
 	}
 	close(state.ready)
@@ -354,7 +375,10 @@ func (m *Manager) connect(ctx context.Context, state *leaseState) (*Connection, 
 		// only while opening and permanently to the lease itself.
 		connectionCtx, connectionCancel := context.WithCancel(state.ctx)
 		stopOpening := context.AfterFunc(opening, connectionCancel)
-		connection, err := m.options.Connector.Open(connectionCtx, state.definition)
+		definition := state.definition
+		definition.Headers = cloneHeaders(definition.Headers)
+		definition.Subtitles = cloneSubtitles(definition.Subtitles)
+		connection, err := m.options.Connector.Open(connectionCtx, definition)
 		stopped := stopOpening()
 		if opening.Err() != nil || !stopped {
 			connectionCancel()
@@ -365,6 +389,14 @@ func (m *Manager) connect(ctx context.Context, state *leaseState) (*Connection, 
 		}
 		if err == nil && (connection == nil || connection.Reader == nil || len(connection.Info.Streams) == 0) {
 			err = ErrUnavailable
+		}
+		if err == nil {
+			for _, stream := range connection.Info.Streams {
+				if stream.Index >= ExternalSubtitleIndexBase || stream.IsExternal || stream.SubtitleTag != "" {
+					err = ErrUnavailable
+					break
+				}
+			}
 		}
 		if err == nil {
 			connection.Reader = &cancelReader{ReadCloser: connection.Reader, cancel: connectionCancel}
@@ -402,7 +434,10 @@ func (m *Manager) Info(ctx context.Context, owner Owner, id string) (Lease, erro
 		m.mu.Unlock()
 		return Lease{}, ErrNotFound
 	}
-	if state.opening {
+	// A reconnect keeps the last committed generation readable while its new
+	// connection is opening. Authorization still runs below on every request.
+	// Initial opening has no committed media facts to describe yet.
+	if state.opening && len(state.lease.Info.Streams) == 0 {
 		m.mu.Unlock()
 		return Lease{}, ErrBusy
 	}
@@ -468,11 +503,31 @@ func (m *Manager) Acquire(ctx context.Context, owner Owner, id string) (*Input, 
 		}
 		state.lease.Generation++
 		state.lease.Stamp = fmt.Sprintf("%s-%d", state.lease.ID, state.lease.Generation)
-		state.lease.Info = cloneInfo(connection.Info)
+		state.lease.Info = sourceInfo(connection.Info, state.lease.ID, state.definition.Subtitles)
 		state.lease.ItemType = streamItemType(connection.Info)
 	}
 	state.connection = nil
-	input := &Input{Lease: cloneLease(state.lease), reader: connection.Reader, ctx: state.ctx}
+	input := &Input{Lease: cloneLease(state.lease), reader: connection.Reader, ctx: state.ctx,
+		bufferBytes: m.options.FanoutBufferBytes, stallTimeout: m.options.FanoutStallTimeout}
+	input.reserve = func() (func(), error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if m.closing || state.closed {
+			return nil, ErrClosed
+		}
+		if m.fanoutBytes > m.options.FanoutTotalBytes-m.options.FanoutBufferBytes {
+			return nil, ErrBusy
+		}
+		m.fanoutBytes += m.options.FanoutBufferBytes
+		return func() {
+			m.mu.Lock()
+			m.fanoutBytes -= m.options.FanoutBufferBytes
+			m.mu.Unlock()
+		}, nil
+	}
+	// Input ownership includes every pipe pump, so shutdown cannot report
+	// completion while an authorized upstream reader is still running.
+	m.workers.Add(1)
 	input.release = func() {
 		m.mu.Lock()
 		if state.input == input {
@@ -480,6 +535,7 @@ func (m *Manager) Acquire(ctx context.Context, owner Owner, id string) (*Input, 
 			state.accessed = time.Now()
 		}
 		m.mu.Unlock()
+		m.workers.Done()
 	}
 	state.input = input
 	m.mu.Unlock()
@@ -616,6 +672,10 @@ func cloneInfo(info media.Info) media.Info {
 			timing := *info.Streams[index].AudioTiming
 			info.Streams[index].AudioTiming = &timing
 		}
+		if info.Streams[index].DolbyVision != nil {
+			metadata := *info.Streams[index].DolbyVision
+			info.Streams[index].DolbyVision = &metadata
+		}
 	}
 	info.Chapters = append([]media.Chapter(nil), info.Chapters...)
 	info.VideoSeekIndexes = nil
@@ -640,74 +700,3 @@ type cancelReader struct {
 }
 
 func (r *cancelReader) Close() error { r.cancel(); return r.ReadCloser.Close() }
-
-// Input closes its upstream transport and releases the lease reader together.
-type Input struct {
-	Lease
-	reader  io.ReadCloser
-	ctx     context.Context
-	release func()
-	once    sync.Once
-	pipeMu  sync.Mutex
-	pipe    *os.File
-	piped   bool
-	closed  bool
-}
-
-func (input *Input) Read(data []byte) (int, error) {
-	input.pipeMu.Lock()
-	closed, piped := input.closed, input.piped
-	input.pipeMu.Unlock()
-	if closed {
-		return 0, ErrClosed
-	}
-	if piped {
-		return 0, ErrBusy
-	}
-	return input.reader.Read(data)
-}
-
-func (input *Input) Close() error {
-	var err error
-	input.once.Do(func() {
-		input.pipeMu.Lock()
-		input.closed = true
-		if input.pipe != nil {
-			_ = input.pipe.Close()
-		}
-		input.pipeMu.Unlock()
-		err = input.reader.Close()
-		input.release()
-	})
-	return err
-}
-
-// OpenPipe hands a real anonymous descriptor to the conversion manager. It
-// feeds only already authorized bytes; FFmpeg never resolves a remote URL.
-// The recipient consumes the read descriptor. Closing it releases this input.
-func (input *Input) OpenPipe() (*os.File, error) {
-	input.pipeMu.Lock()
-	if input.closed {
-		input.pipeMu.Unlock()
-		return nil, ErrClosed
-	}
-	if input.piped {
-		input.pipeMu.Unlock()
-		return nil, ErrBusy
-	}
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		input.pipeMu.Unlock()
-		return nil, err
-	}
-	input.piped, input.pipe = true, writer
-	input.pipeMu.Unlock()
-	go func() {
-		stop := context.AfterFunc(input.ctx, func() { _ = writer.Close(); _ = input.reader.Close() })
-		_, _ = io.Copy(writer, input.reader)
-		stop()
-		_ = writer.Close()
-		_ = input.Close()
-	}()
-	return reader, nil
-}

@@ -9,7 +9,7 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { TaskDefinition, TaskScheduleInput, TaskSchedulePreview, TaskTriggerKind } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
-import { durationUnits, newTrigger, scheduleDate, scheduleFromTask, scheduleInput, weekdays } from './taskSchedule';
+import { durationUnits, newTrigger, scheduleDate, scheduleFromTask, scheduleInput, systemEvents, weekdays } from './taskSchedule';
 import type { DurationDraft, DurationUnit, ScheduleDraft, TriggerDraft } from './taskSchedule';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
@@ -17,7 +17,7 @@ import type { UserNavigationGuardChange } from './userDraftNavigation';
 const timezoneChoices = ['UTC', ...Intl.supportedValuesOf('timeZone')];
 const triggerKinds: { value: TaskTriggerKind; label: string }[] = [
   { value: 'interval', label: 'At an interval' }, { value: 'daily', label: 'Every day' },
-  { value: 'weekly', label: 'Every week' }, { value: 'startup', label: 'At server startup' },
+  { value: 'weekly', label: 'Every week' }, { value: 'startup', label: 'At server startup' }, { value: 'system_event', label: 'On a system event' },
 ];
 
 function DurationField({ label, draft, disabled, onChange }: { label: string; draft: DurationDraft; disabled: boolean; onChange: (value: DurationDraft) => void }) {
@@ -169,6 +169,7 @@ export function ScheduleEditor({ taskId, onClose, onSaved, onNavigationGuardChan
                 {trigger.kind === 'weekly' && <TextField select label="Day of week" value={trigger.day} disabled={disabled || Boolean(loadError)} onChange={(event) => changeTrigger(index, { ...trigger, day: Number(event.target.value) })}>{weekdays.map((day, value) => <MenuItem key={day} value={value}>{day}</MenuItem>)}</TextField>}
                 {(trigger.kind === 'daily' || trigger.kind === 'weekly') && <TextField label="Time of day" value={trigger.time} disabled={disabled || Boolean(loadError)} onChange={(event) => changeTrigger(index, { ...trigger, time: event.target.value })} helperText={`24-hour time in ${draft.timezone || 'the selected time zone'}. Use HH:mm or HH:mm:ss with up to seven decimal places.`} slotProps={{ htmlInput: { autoComplete: 'off', spellCheck: false } }} />}
                 {trigger.kind === 'startup' && <Typography variant="body2" color="text.secondary">Runs when the server starts. A startup trigger has no calendar time.</Typography>}
+                {trigger.kind === 'system_event' && <TextField select label="System event" value={trigger.systemEvent} disabled={disabled || Boolean(loadError)} onChange={(event) => changeTrigger(index, { ...trigger, systemEvent: event.target.value as TriggerDraft['systemEvent'] })} helperText="Runs for new server events after this schedule is saved. Overlapping work is combined into the active run.">{systemEvents.map((event) => <MenuItem key={event.value} value={event.value}>{event.label}</MenuItem>)}</TextField>}
                 <FormControlLabel control={<Switch checked={trigger.limitRuntime} disabled={disabled || Boolean(loadError)} onChange={(event) => changeTrigger(index, { ...trigger, limitRuntime: event.target.checked })} />} label="Limit run time" />
                 {trigger.limitRuntime && <DurationField label="Maximum run time" draft={trigger.runtime} disabled={disabled || Boolean(loadError)} onChange={(runtime) => changeTrigger(index, { ...trigger, runtime })} />}
               </Stack>

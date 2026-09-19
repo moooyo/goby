@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,14 +51,27 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if err != nil {
 		return result, ErrInvalidInput
 	}
+	var liveConfig liveRuntime
+	if plan.SourceMode == "stream" {
+		var available bool
+		liveConfig, available = liveRuntimeFromContext(ctx)
+		if !available {
+			return result, ErrInvalidOptions
+		}
+		if liveConfig.inputs.Media != input || validateStreamInputs(liveConfig.inputs, plan) != nil {
+			return result, ErrInvalidInput
+		}
+	}
 	if !emptyOutputDirectory(directory) {
 		return result, ErrInvalidDirectory
 	}
 	if executable == "" || strings.ContainsAny(executable, "\x00\r\n") {
 		return result, ErrStart
 	}
-	if err := PrepareSubtitleAssets(ctx, executable, directory, input, plan); err != nil {
-		return result, err
+	if plan.SourceMode != "stream" {
+		if err := PrepareSubtitleAssets(ctx, executable, directory, input, plan); err != nil {
+			return result, err
+		}
 	}
 	resolved, err := exec.LookPath(executable)
 	if err != nil || !filepath.IsAbs(resolved) {
@@ -92,16 +106,20 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	defer cancel()
 	report := onProgress
 	var reportMu sync.Mutex
+	var live *liveObserver
 	if needsHLSClock(plan) {
 		report = func(update Progress) {
 			reportMu.Lock()
 			defer reportMu.Unlock()
+			if live != nil && update.HLSClock != nil {
+				live.setClock(*update.HLSClock)
+			}
 			if onProgress != nil {
 				onProgress(update)
 			}
 		}
 	}
-	progress := &progressWriter{callback: report, cancel: cancel}
+	progress := &progressWriter{callback: report, cancel: cancel, liveTimeline: plan.SourceMode == "stream"}
 	stderr := &stderrTail{cancel: cancel}
 	var progressive *progressiveObserver
 	var hlsClock *hlsClockObserver
@@ -123,6 +141,13 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		defer progressive.file.Close()
 		progress.callback = progressive.report
 	}
+	if plan.SourceMode == "stream" {
+		live, err = newLiveObserver(processCtx, directory, plan, liveConfig, cancel, report)
+		if err != nil {
+			return result, err
+		}
+		defer live.close()
+	}
 	cmd := exec.CommandContext(processCtx, resolved, args...)
 	cmd.Dir = directory
 	cmd.ExtraFiles = []*os.File{input}
@@ -131,6 +156,17 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	}
 	if hlsClock != nil {
 		for _, pipe := range hlsClock.pipes {
+			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
+		}
+	}
+	if live != nil {
+		for _, pipe := range live.journals {
+			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
+		}
+		if hasBitmapSubtitleInput(plan) {
+			cmd.ExtraFiles = append(cmd.ExtraFiles, liveConfig.inputs.Bitmap)
+		}
+		for _, pipe := range live.subtitles {
 			cmd.ExtraFiles = append(cmd.ExtraFiles, pipe.write)
 		}
 	}
@@ -169,6 +205,9 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	}
 	if hlsClock != nil {
 		hlsClock.start()
+	}
+	if live != nil {
+		live.start()
 	}
 	var publish func(bool) error
 	var publicationErr error
@@ -221,6 +260,13 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if hlsClock != nil {
 		hlsClockErr = hlsClock.finish()
 	}
+	var liveErr error
+	if live != nil {
+		if err != nil || waitErr != nil || stderr.failed || hlsClockErr != nil {
+			cancel()
+		}
+		liveErr = live.finish(err == nil && waitErr == nil && !stderr.failed && hlsClockErr == nil && ctx.Err() == nil)
+	}
 	unchanged := plan.SourceMode == "stream" || transcodeSourceUnchanged(input, info)
 	var progressiveErr error
 	if progressive != nil {
@@ -234,6 +280,9 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		}
 	}
 	result.StderrTail = stderr.String()
+	if liveErr != nil {
+		result.StderrTail += "\nlive publication: " + liveErr.Error()
+	}
 	if cmd.ProcessState != nil {
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
@@ -247,7 +296,7 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if progress.err != nil {
 		return result, ErrProgress
 	}
-	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil {
+	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil || liveErr != nil {
 		return result, ErrProcess
 	}
 	return result, nil
@@ -338,6 +387,9 @@ type progressWriter struct {
 	callback func(Progress)
 	cancel   context.CancelFunc
 	err      error
+	// Live clocks accumulate for the source lifetime, independently of the
+	// finite-media duration limit. Tick conversion must still fit in int64.
+	liveTimeline bool
 }
 
 func (w *progressWriter) Write(p []byte) (int, error) {
@@ -392,7 +444,11 @@ func (w *progressWriter) consumeLine() bool {
 			return true
 		}
 		microseconds, err := strconv.ParseInt(value, 10, 64)
-		if err != nil || microseconds > maxDurationTicks/10+10_000_000 {
+		limit := int64(maxDurationTicks/10 + 10_000_000)
+		if w.liveTimeline {
+			limit = math.MaxInt64 / 10
+		}
+		if err != nil || microseconds > limit {
 			return false
 		}
 		if microseconds < 0 {

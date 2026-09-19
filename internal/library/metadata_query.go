@@ -48,8 +48,8 @@ var metadataItemFilterSQL = `i.library_id = $1 AND i.id <> $1
 
 const metadataItemSummaryColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''),
 	COALESCE(parent.name, ''), i.name, i.type, i.path, i.is_folder,
-	CASE WHEN i.type IN ('Season', 'Episode') THEN i.index_number END,
-	CASE WHEN i.type = 'Episode' THEN i.parent_index_number END,
+	CASE WHEN i.type IN ('Season', 'Episode', 'Audio') THEN i.index_number END,
+	CASE WHEN i.type IN ('Episode', 'Audio') THEN i.parent_index_number END,
 	CASE WHEN jsonb_typeof(metadata_year.value) = 'number' THEN
 		CASE WHEN metadata_year.value::text::numeric BETWEEN 1 AND 9999
 			AND trunc(metadata_year.value::text::numeric) = metadata_year.value::text::numeric

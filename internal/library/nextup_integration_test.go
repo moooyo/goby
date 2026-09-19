@@ -500,7 +500,7 @@ func TestStoreNextUpExplicitSeriesIncludesThePartialCursorWithoutWatchedEpisodes
 			assertUserData(laterSeason.Items[0])
 			for _, parentID := range []string{"", library.ID, series.ID} {
 				global := nextUpQuery(t, ctx, store, NextUpQuery{UserID: viewerID, ParentID: parentID})
-				nextUpAssertIDs(t, global, episodes[0])
+				nextUpAssertIDs(t, global, episodes[scenario.partialIndex])
 				assertUserData(global.Items[0])
 			}
 			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: otherUser, SeriesID: series.ID, Limit: 1}))
@@ -572,7 +572,7 @@ func TestStoreNextUpExplicitSeriesGobyPartialCursorUsesActivityAndRetainsWatched
 					t.Errorf("Goby partial activity policy changed episode order at %d: got %s, want %s", index, item.ID, expected[index])
 				}
 			}
-			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: userID}), episodes[0])
+			nextUpAssertIDs(t, nextUpQuery(t, ctx, store, NextUpQuery{UserID: userID}), episodes[scenario.wantedIndex])
 		})
 	}
 	// A newer partial in an earlier episode must not move an existing watched
@@ -592,7 +592,7 @@ func TestStoreNextUpGlobalGobyPolicySeparatesWatchedPartialAndFavoriteState(t *t
 		wantedIndex int
 	}{
 		{name: "MiddleWatchedSkipsEarlierGap", played: true, wantedIndex: 2},
-		{name: "PartialWithoutWatchedStartsAtFirstEpisode", position: 120 * media.TicksPerSecond, wantedIndex: 0},
+		{name: "PartialWithoutWatchedUsesPartialCursor", position: 120 * media.TicksPerSecond, wantedIndex: 1},
 		{name: "FavoriteOnlyHasNoWatchingHistory", favorite: true, wantedIndex: -1},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {

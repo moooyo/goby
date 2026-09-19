@@ -65,6 +65,52 @@ func (s *Server) embyViews(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
+	preferences, err := s.requestUserConfiguration(r.Context(), r, userID)
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	excluded := make(map[string]bool, len(preferences.MyMediaExcludes))
+	for _, id := range preferences.MyMediaExcludes {
+		excluded[id] = true
+	}
+	visible := libraries[:0]
+	for _, entry := range libraries {
+		if !excluded[entry.ID] {
+			visible = append(visible, entry)
+		}
+	}
+	libraries = visible
+	if r.URL.Query().Get("SortBy") == "" && r.URL.Query().Get("SortOrder") == "" {
+		ranks := make(map[string]int, len(preferences.OrderedViews))
+		for index, id := range preferences.OrderedViews {
+			if _, present := ranks[id]; !present {
+				ranks[id] = index
+			}
+		}
+		rank := func(id string) int {
+			if position, found := ranks[id]; found {
+				return position
+			}
+			return len(preferences.OrderedViews)
+		}
+		sort.SliceStable(libraries, func(left, right int) bool { return rank(libraries[left].ID) < rank(libraries[right].ID) })
+	} else {
+		sortBy, sortOrder := r.URL.Query().Get("SortBy"), r.URL.Query().Get("SortOrder")
+		if sortBy != "" && !strings.EqualFold(sortBy, "Name") && !strings.EqualFold(sortBy, "SortName") ||
+			sortOrder != "" && !strings.EqualFold(sortOrder, "Ascending") && !strings.EqualFold(sortOrder, "Descending") && !strings.EqualFold(sortOrder, "ASC") && !strings.EqualFold(sortOrder, "DESC") {
+			apiError(w, r, http.StatusBadRequest, "invalid_input", "Views support name ordering only.")
+			return
+		}
+		descending := strings.EqualFold(sortOrder, "Descending") || strings.EqualFold(sortOrder, "DESC")
+		sort.SliceStable(libraries, func(left, right int) bool {
+			a, b := strings.ToLower(libraries[left].Name), strings.ToLower(libraries[right].Name)
+			if descending {
+				return a > b
+			}
+			return a < b
+		})
+	}
 	items := make([]map[string]any, 0, len(libraries))
 	for _, entry := range libraries {
 		item := s.itemDTO(library.Item{ID: entry.ID, LibraryID: entry.ID, Name: entry.Name, SortName: entry.Name, Type: "CollectionFolder", IsFolder: true, CreatedAt: entry.CreatedAt}, nil, false)
@@ -131,7 +177,7 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 		name   string
 		target **bool
 	}{
-		{"IsPlayed", &query.IsPlayed}, {"IsFavorite", &query.IsFavorite},
+		{"IsPlayed", &query.IsPlayed}, {"IsFavorite", &query.IsFavorite}, {"IsFavoriteOrLikes", &query.IsFavoriteOrLikes},
 		{"IsFolder", &query.IsFolder}, {"IsSpecialSeason", &query.IsSpecialSeason},
 		{"IsSpecialEpisode", &query.IsSpecialEpisode},
 	} {
@@ -152,8 +198,10 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 			target, value = &query.IsPlayed, true
 		case "isunplayed":
 			target, value = &query.IsPlayed, false
-		case "isfavorite", "isfavoriteorlikes":
+		case "isfavorite":
 			target, value = &query.IsFavorite, true
+		case "isfavoriteorlikes":
+			target, value = &query.IsFavoriteOrLikes, true
 		case "isresumable":
 			query.Resumable = true
 			continue
@@ -171,6 +219,9 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 		return query, false
 	}
 	if !readMusicFilters(w, r, &query) {
+		return query, false
+	}
+	if !readNavigationFilters(w, r, &query) {
 		return query, false
 	}
 	return query, true
@@ -201,6 +252,9 @@ func (s *Server) embyItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query library.Query, bare bool) {
+	if !s.applyDisplayPreferenceDefaults(w, r, &query) {
+		return
+	}
 	attachApplicationCredentialID(r, &query)
 	zeroLimit := query.Limit == 0
 	if zeroLimit {
@@ -310,6 +364,25 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 	query.Recursive = true
 	query.SortBy = "DateCreated"
 	query.SortOrder = "Descending"
+	latestPreferences := library.LatestPreferences{}
+	principal := r.Context().Value(principalKey).(identity.Principal)
+	if !principal.IsApplicationKey() {
+		preferences, err := s.requestUserConfiguration(r.Context(), r, userID)
+		if err != nil {
+			s.identityError(w, r, err)
+			return
+		}
+		if query.IsPlayed == nil && preferences.HidePlayedInLatest {
+			value := false
+			query.IsPlayed = &value
+		}
+		if query.ParentID == "" && len(query.Ids) == 0 {
+			latestPreferences.ExcludedLibraryIDs = preferences.LatestItemsExcludes
+		}
+	}
+	// An application key's explicit UserId selects catalog ACLs and projected
+	// user data, not a personal preference identity. Preserve explicit played
+	// filters without injecting the target's saved or default presentation rules.
 	if r.URL.Query().Get("Limit") == "" {
 		query.Limit = 20
 	}
@@ -330,7 +403,7 @@ func (s *Server) embyLatest(w http.ResponseWriter, r *http.Request) {
 		query.Limit = 1
 	}
 	attachApplicationCredentialID(r, &query)
-	result, err := s.library.QueryLatest(r.Context(), query, group)
+	result, err := s.library.QueryLatest(r.Context(), query, group, latestPreferences)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -659,6 +732,9 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 			kind = "Data"
 		}
 		item := map[string]any{"Index": stream.Index, "Type": kind, "Codec": stream.Codec, "Language": stream.Language, "Title": stream.Title, "DisplayTitle": streamDisplayTitle(stream), "IsDefault": stream.IsDefault, "IsForced": stream.IsForced, "IsExternal": stream.IsExternal, "IsTextSubtitleStream": stream.IsTextSubtitleStream, "Profile": stream.Profile}
+		if stream.IsHearingImpaired {
+			item["IsHearingImpaired"] = true
+		}
 		if stream.Width > 0 {
 			item["Width"] = stream.Width
 		}
@@ -689,8 +765,12 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 		if stream.CodecTagString != "" {
 			item["CodecTag"] = stream.CodecTagString
 		}
-		if stream.BitDepth > 0 {
-			item["BitDepth"] = stream.BitDepth
+		bitDepth := stream.BitDepth
+		if stream.CodecType == "video" {
+			bitDepth = media.EffectiveVideoBitDepth(stream)
+		}
+		if bitDepth > 0 {
+			item["BitDepth"] = bitDepth
 		}
 		if stream.RefFrames > 0 {
 			item["RefFrames"] = stream.RefFrames
@@ -700,6 +780,12 @@ func mediaStreamsDTO(streams []media.Stream) []map[string]any {
 		}
 		if stream.VideoRangeKnown {
 			item["VideoRange"] = stream.VideoRange
+		}
+		if stream.DolbyVision != nil {
+			metadata := stream.DolbyVision
+			item["DvProfile"], item["DvLevel"] = metadata.Profile, metadata.Level
+			item["RpuPresentFlag"], item["ElPresentFlag"], item["BlPresentFlag"] = metadata.RPUPresent, metadata.ELPresent, metadata.BLPresent
+			item["DvBlSignalCompatibilityId"] = metadata.CompatibilityID
 		}
 		if numerator, denominator, ok := strings.Cut(stream.AverageFrameRate, "/"); ok {
 			n, nerr := strconv.ParseFloat(numerator, 64)

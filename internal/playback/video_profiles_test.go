@@ -171,11 +171,11 @@ func TestPlanVideoConversionSkipsUnusableLeadingProfiles(t *testing.T) {
 		{"empty video codec", func(profile *TranscodingProfile) { profile.VideoCodec = "" }},
 		{"empty audio codec", func(profile *TranscodingProfile) { profile.AudioCodec = "" }},
 		{"unsupported output", func(profile *TranscodingProfile) { profile.Container = "webm" }},
-		{"unsupported video codec", func(profile *TranscodingProfile) { profile.VideoCodec = "hevc" }},
+		{"unsupported video codec", func(profile *TranscodingProfile) { profile.VideoCodec = "vp9" }},
 		{"unsupported audio codec", func(profile *TranscodingProfile) { profile.AudioCodec = "opus" }},
 		{"static context", func(profile *TranscodingProfile) { profile.Context = EncodingContextStatic }},
 		{"malformed channels", func(profile *TranscodingProfile) { profile.MaxAudioChannels = "two" }},
-		{"copy timestamps", func(profile *TranscodingProfile) { profile.CopyTimestamps = profileTestPtr(true) }},
+		{"transport mode", func(profile *TranscodingProfile) { profile.EnableMpegtsM2TsMode = profileTestPtr(true) }},
 		{"estimated size", func(profile *TranscodingProfile) { profile.EstimateContentLength = profileTestPtr(true) }},
 		{"byte seek", func(profile *TranscodingProfile) { profile.TranscodeSeekInfo = TranscodeSeekInfoBytes }},
 		{"manifest subtitles", func(profile *TranscodingProfile) { profile.ManifestSubtitles = "vtt" }},
@@ -499,7 +499,7 @@ func TestPlanVideoConversionTriesEncodingWhenCopiedFactsAreUnverified(t *testing
 func TestPlanVideoConversionPreservesUnknownAndRequiredConditions(t *testing.T) {
 	for _, condition := range []ProfileCondition{
 		conversionRequired("FutureVideoCapability", ProfileConditionTypeEquals, "supported"),
-		conversionRequired(ProfileConditionValueVideoProfile, ProfileConditionTypeEquals, "High"),
+		conversionRequired(ProfileConditionValueVideoProfile, ProfileConditionTypeEquals, "UnsupportedProfile"),
 		conversionRequired(ProfileConditionValueVideoLevel, ProfileConditionTypeEquals, "41"),
 		conversionRequired(ProfileConditionValueRefFrames, ProfileConditionTypeEquals, "4"),
 	} {

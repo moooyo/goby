@@ -20,7 +20,7 @@ func attachProgressiveVideoSeekCandidate(source Source, plan *transcode.Plan) {
 		return
 	}
 	plan.VideoSeekCandidate = ""
-	if plan.OutputMode != "progressive" || plan.Container != "mp4" || plan.VideoCodec != "h264" || plan.StartTicks <= 0 || plan.VideoFilters.Deinterlace != "" ||
+	if plan.OutputMode != "progressive" || plan.Container != "mp4" || !transcode.VideoEncodingSupported(plan.VideoCodec) || plan.StartTicks <= 0 || plan.VideoFilters.Deinterlace != "" ||
 		plan.Hardware.Decode != "" && plan.Hardware.Decode != "software" || source.Info.ProbeVersion != media.CurrentProbeVersion ||
 		!source.Info.FormatStartKnown || !plan.SourceFormatStartKnown || plan.DurationTicks != source.Info.DurationTicks ||
 		plan.SourceFormatStartTicks != source.Info.FormatStartTicks || len(source.Info.VideoSeekIndexes) == 0 ||
@@ -31,7 +31,7 @@ func attachProgressiveVideoSeekCandidate(source Source, plan *transcode.Plan) {
 	for index := range source.Info.Streams {
 		stream := &source.Info.Streams[index]
 		if stream.Index == plan.VideoStreamIndex {
-			if video != nil || stream.CodecType != "video" || stream.Codec != "h264" || stream.IsExternal || stream.IsAttachedPicture {
+			if video != nil || stream.CodecType != "video" || (stream.Codec != "h264" && stream.Codec != "hevc") || stream.IsExternal || stream.IsAttachedPicture {
 				return
 			}
 			video = stream
@@ -56,7 +56,7 @@ func attachProgressiveVideoSeekCandidate(source Source, plan *transcode.Plan) {
 		entries += len(index.Entries)
 		if entries > media.MaxVideoSeekEntries || seen[index.StreamIndex] || index.DurationTicks != source.Info.DurationTicks ||
 			index.FormatStartTicks != source.Info.FormatStartTicks || len(index.PixelFormat) > 64 ||
-			len(index.SourceIdentity) != 64 || len(index.ToolIdentity) != 64 || len(index.ParameterSetsSHA256) != 64 {
+			len(index.SourceIdentity) != 64 || len(index.ToolIdentity) != 64 {
 			return
 		}
 		seen[index.StreamIndex] = true
@@ -80,7 +80,7 @@ func attachProgressiveVideoSeekCandidate(source Source, plan *transcode.Plan) {
 			return
 		}
 		if index.StreamIndex == video.Index {
-			if index.Width != video.Width || index.Height != video.Height || index.PixelFormat != strings.ToLower(video.PixelFormat) ||
+			if media.VideoSeekCodec(*index) != video.Codec || index.Width != video.Width || index.Height != video.Height || index.PixelFormat != strings.ToLower(video.PixelFormat) ||
 				timeBase.Cmp(new(big.Rat).SetFrac(big.NewInt(index.TimeBaseNumerator), big.NewInt(index.TimeBaseDenominator))) != 0 {
 				return
 			}

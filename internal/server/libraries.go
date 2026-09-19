@@ -14,6 +14,7 @@ import (
 
 func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
 	s.registerRootBindingRoutes(mux)
+	s.registerLibraryEditingRoutes(mux)
 	mux.HandleFunc("GET /admin/v1/libraries", s.requireAdmin(s.listLibraries))
 	mux.HandleFunc("POST /admin/v1/libraries", s.requireAdmin(s.createLibrary))
 	mux.HandleFunc("DELETE /admin/v1/libraries/{id}", s.requireAdmin(s.deleteLibrary))
@@ -40,7 +41,8 @@ func (s *Server) registerLibraryRoutes(mux *http.ServeMux) {
 }
 
 func libraryDTO(item library.Library) map[string]any {
-	return map[string]any{"Id": item.ID, "Name": item.Name, "CollectionType": item.CollectionType, "Paths": item.Paths, "CreatedAt": item.CreatedAt, "LastScanAt": item.LastScanAt}
+	return map[string]any{"Id": item.ID, "Name": item.Name, "CollectionType": item.CollectionType, "Paths": item.Paths, "CreatedAt": item.CreatedAt, "LastScanAt": item.LastScanAt,
+		"Revision": item.Revision, "LibraryOptions": library.EffectiveLibraryOptions(item)}
 }
 
 func jobDTO(job library.Job) map[string]any {
@@ -61,12 +63,16 @@ func libraryErrorInfo(err error) (int, string, string) {
 		return 404, "not_found", "The library resource was not found."
 	case errors.Is(err, library.ErrForbidden):
 		return 403, "access_denied", "The resource or directory is not permitted."
+	case errors.Is(err, library.ErrLibraryConflict):
+		return 409, "library_conflict", "The library changed. Reload its current revision before editing."
+	case errors.Is(err, library.ErrDirectoryLimit):
+		return 422, "directory_limit", "This directory exceeds the bounded directory browser limit. Enter a more specific approved directory."
 	case errors.Is(err, library.ErrInvalidInput):
 		return 400, "invalid_input", "Check the library name, media type, configured directories, and query parameters."
 	case errors.Is(err, library.ErrUnsupportedFilter):
 		return http.StatusNotImplemented, "unsupported_filter", "List membership cannot be evaluated for this result set."
 	case errors.Is(err, library.ErrBusy):
-		return 409, "scan_busy", "A scan is already active or the scan queue is full."
+		return 409, "scan_busy", "A scan or media deletion is active, or the scan queue is full."
 	case errors.Is(err, library.ErrUnavailable):
 		return 503, "library_unavailable", "The configured media directory or scanner is unavailable."
 	default:
@@ -100,12 +106,13 @@ func (s *Server) createLibrary(w http.ResponseWriter, r *http.Request) {
 		Name, CollectionType string
 		Paths                []string
 		Scan                 bool
+		LibraryOptions       *library.LibraryOptionsUpdate
 	}
-	if !decodeBody(w, r, &body) {
+	if !decodeLibraryEditingBody(w, r, &body) {
 		return
 	}
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	item, err := s.library.CreateLibraryAsAdministrator(r.Context(), principal, identity.AdministratorNative, body.Name, body.CollectionType, body.Paths)
+	item, err := s.library.CreateLibraryWithOptionsAsAdministrator(r.Context(), principal, identity.AdministratorNative, body.Name, body.CollectionType, body.Paths, nativeLibraryCreationOptions(body.LibraryOptions))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return
@@ -216,7 +223,8 @@ func (s *Server) embyLibraryList(w http.ResponseWriter, r *http.Request) {
 	}
 	items := make([]map[string]any, 0, len(libraries))
 	for _, item := range libraries {
-		items = append(items, map[string]any{"Name": item.Name, "ItemId": item.ID, "CollectionType": item.CollectionType, "Locations": item.Paths})
+		items = append(items, map[string]any{"Name": item.Name, "ItemId": item.ID, "CollectionType": item.CollectionType, "Locations": item.Paths,
+			"LibraryOptions": embyEditableLibraryOptions(item), "Revision": item.Revision})
 	}
 	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": len(items)})
 }
@@ -229,12 +237,22 @@ func (s *Server) embyCreateLibrary(w http.ResponseWriter, r *http.Request) {
 		Name, CollectionType string
 		Paths                []string
 		RefreshLibrary       bool
+		LibraryOptions       *embyLibraryOptionsUpdate
 	}
-	if !decodeBody(w, r, &body) {
+	if !decodeLibraryEditingBody(w, r, &body) {
 		return
 	}
+	var options *library.LibraryOptionsUpdate
+	if body.LibraryOptions != nil {
+		var err error
+		options, err = body.LibraryOptions.native()
+		if err != nil {
+			s.libraryError(w, r, err)
+			return
+		}
+	}
 	actor := r.Context().Value(principalKey).(identity.Principal)
-	item, err := s.library.CreateLibraryAsAdministrator(r.Context(), actor, identity.AdministratorEmby, body.Name, body.CollectionType, body.Paths)
+	item, err := s.library.CreateLibraryWithOptionsAsAdministrator(r.Context(), actor, identity.AdministratorEmby, body.Name, body.CollectionType, body.Paths, nativeLibraryCreationOptions(options))
 	if err != nil {
 		s.libraryError(w, r, err)
 		return

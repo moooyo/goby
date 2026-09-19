@@ -111,6 +111,7 @@ func (s *Server) publicUsers(w http.ResponseWriter, r *http.Request) {
 			items = append(items, map[string]any{"Id": user.ID, "Name": user.Name, "ServerId": s.serverID, "HasPassword": user.HasPassword, "HasConfiguredPassword": user.HasPassword})
 		}
 	}
+	s.attachAvatarDTOs(r.Context(), items)
 	jsonResponse(w, 200, items)
 }
 
@@ -169,7 +170,7 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 		return
 	}
 	jsonResponse(w, 200, map[string]any{
-		"User": s.userDTO(credentials.User), "AccessToken": credentials.Token, "ServerId": s.serverID,
+		"User": s.avatarUserDTO(r.Context(), s.userDTO(credentials.User)), "AccessToken": credentials.Token, "ServerId": s.serverID,
 		"SessionInfo": s.clientSessionDTO(identity.ClientSession{SessionID: credentials.SessionID,
 			UserID: credentials.User.ID, UserName: credentials.User.Name, Client: credentials.Client,
 			CreatedAt: credentials.CreatedAt, LastSeenAt: credentials.CreatedAt, ExpiresAt: credentials.ExpiresAt}),
@@ -188,7 +189,7 @@ func (s *Server) embyUser(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, s.userDTO(user))
+	jsonResponse(w, 200, s.avatarUserDTO(r.Context(), s.userDTO(user)))
 }
 
 func (s *Server) embyUsers(w http.ResponseWriter, r *http.Request) {
@@ -225,6 +226,7 @@ func (s *Server) embyUsers(w http.ResponseWriter, r *http.Request) {
 	for _, user := range users[start:end] {
 		items = append(items, s.userDTO(user))
 	}
+	s.attachAvatarDTOs(r.Context(), items)
 	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": total})
 }
 
@@ -269,5 +271,6 @@ func (s *Server) embyUsersBare(w http.ResponseWriter, r *http.Request) {
 	for _, user := range users {
 		items = append(items, s.userDTO(user))
 	}
+	s.attachAvatarDTOs(r.Context(), items)
 	jsonResponse(w, http.StatusOK, items)
 }

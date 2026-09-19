@@ -20,12 +20,12 @@ func ProgressiveMediaReady(plan Plan, prefix []byte) (bool, error) {
 }
 
 // ProgressiveVideoReady recognizes the bounded FFmpeg fragmented-MP4 output:
-// one avc1 H.264 track, optionally one initialized mp4a AAC track, self-contained
+// one H.264, HEVC or AV1 track, optionally one initialized mp4a AAC track, self-contained
 // data references, and movie-fragment-relative sample addressing. The structural
 // rules follow https://www.w3.org/TR/mse-byte-stream-format-isobmff/ and FFmpeg's
 // movenc.c. This is a startup detector, not a decoder or a complete file audit.
 //
-// A complete video sample with a complete length-prefixed VCL NAL must have
+// A complete video sample with a complete VCL NAL or AV1 frame payload must have
 // arrived inside the declared mdat and its trun extent. A large mdat need not
 // have arrived in full; its bytes are never allocated from its declared size.
 // Initialization, moof metadata, and the first usable sample must fit the same
@@ -37,7 +37,7 @@ func ProgressiveMediaReady(plan Plan, prefix []byte) (bool, error) {
 func ProgressiveVideoReady(plan Plan, prefix []byte) (bool, error) {
 	if plan.OutputMode != "progressive" || plan.Container != "mp4" ||
 		plan.VideoStreamIndex < 0 || plan.VideoStreamIndex > maxStreamIndex ||
-		(plan.VideoCodec != "h264" && plan.VideoCodec != "copy") ||
+		(!VideoEncodingSupported(plan.VideoCodec) && plan.VideoCodec != "copy") ||
 		plan.AudioStreamIndex < -1 || plan.AudioStreamIndex > maxStreamIndex ||
 		plan.AudioStreamIndex == plan.VideoStreamIndex ||
 		(plan.AudioStreamIndex == -1 && plan.AudioCodec != "") ||
@@ -47,7 +47,11 @@ func ProgressiveVideoReady(plan Plan, prefix []byte) (bool, error) {
 	if len(prefix) > MaxProgressivePrefixBytes {
 		return false, invalidProgressive("video prefix limit")
 	}
-	parser := progressiveVideoParser{tracks: make(map[uint32]progressiveVideoTrack), wantAudio: plan.AudioStreamIndex >= 0}
+	codec := VideoOutputCodec(plan)
+	if !VideoEncodingSupported(codec) {
+		return false, invalidProgressive("video output codec")
+	}
+	parser := progressiveVideoParser{tracks: make(map[uint32]progressiveVideoTrack), wantAudio: plan.AudioStreamIndex >= 0, wantCodec: codec}
 	ready, err := parser.read(prefix)
 	if !ready && err == nil && len(prefix) == MaxProgressivePrefixBytes {
 		err = invalidProgressive("video startup exhausts prefix limit")
@@ -66,6 +70,7 @@ type progressiveVideoBox struct {
 type progressiveVideoTrack struct {
 	id          uint32
 	video       bool
+	codec       string
 	nalLength   int
 	defaultSize uint32
 }
@@ -73,6 +78,7 @@ type progressiveVideoTrack struct {
 type progressiveVideoSample struct {
 	start, end uint64
 	nalLength  int
+	codec      string
 }
 
 type progressiveVideoExtent struct{ start, end uint64 }
@@ -83,10 +89,13 @@ type progressiveVideoFragment struct {
 }
 
 type progressiveVideoParser struct {
-	tracks    map[uint32]progressiveVideoTrack
-	wantAudio bool
-	elements  int
-	samples   uint64
+	tracks      map[uint32]progressiveVideoTrack
+	wantAudio   bool
+	wantCodec   string
+	av1Sequence bool
+	av1Profile  byte
+	elements    int
+	samples     uint64
 }
 
 func (p *progressiveVideoParser) count() error {
@@ -218,7 +227,7 @@ func (p *progressiveVideoParser) read(data []byte) (bool, error) {
 				if sample.end > uint64(len(data)) {
 					return false, nil
 				}
-				vcl, err := p.videoSample(data[sample.start:sample.end], sample.nalLength)
+				vcl, err := p.videoSample(data[sample.start:sample.end], sample.nalLength, sample.codec)
 				if err != nil {
 					return false, err
 				}
@@ -462,18 +471,14 @@ func (p *progressiveVideoParser) track(data []byte) (progressiveVideoTrack, erro
 		return track, invalidProgressive("video external sample reference")
 	}
 	if track.video {
-		if entry.kind != "avc1" || len(entry.payload) < 78 || binary.BigEndian.Uint16(entry.payload[24:26]) == 0 || binary.BigEndian.Uint16(entry.payload[26:28]) == 0 {
-			return track, invalidProgressive("video AVC sample entry")
+		if len(entry.payload) < 78 || binary.BigEndian.Uint16(entry.payload[24:26]) == 0 || binary.BigEndian.Uint16(entry.payload[26:28]) == 0 {
+			return track, invalidProgressive("video sample entry dimensions")
 		}
 		configuration, err := p.children(entry.payload[78:])
 		if err != nil {
 			return track, err
 		}
-		avcc, err := progressiveVideoOne(configuration, "avcC", true)
-		if err != nil {
-			return track, err
-		}
-		track.nalLength, err = progressiveVideoAVCC(avcc.payload)
+		track.codec, track.nalLength, err = p.videoConfiguration(entry.kind, configuration)
 		if err != nil {
 			return track, err
 		}
@@ -1061,7 +1066,7 @@ func (p *progressiveVideoParser) trackFragment(data []byte, moof progressiveVide
 			}
 			next := end + uint64(size)
 			if track.video {
-				result.video = append(result.video, progressiveVideoSample{start: end, end: next, nalLength: track.nalLength})
+				result.video = append(result.video, progressiveVideoSample{start: end, end: next, nalLength: track.nalLength, codec: track.codec})
 			}
 			end = next
 		}
@@ -1079,7 +1084,13 @@ func (p *progressiveVideoParser) trackFragment(data []byte, moof progressiveVide
 	return nil
 }
 
-func (p *progressiveVideoParser) videoSample(data []byte, length int) (bool, error) {
+func (p *progressiveVideoParser) videoSample(data []byte, length int, codec string) (bool, error) {
+	if codec == "av1" {
+		return p.av1VideoSample(data)
+	}
+	if length != 1 && length != 2 && length != 4 {
+		return false, invalidProgressive("video NAL length width")
+	}
 	vcl := false
 	for offset := 0; offset < len(data); {
 		if len(data)-offset < length {
@@ -1093,14 +1104,23 @@ func (p *progressiveVideoParser) videoSample(data []byte, length int) (bool, err
 		if size < 2 || uint64(size) > uint64(len(data)-offset) {
 			return false, invalidProgressive("video NAL sample boundary")
 		}
-		kind := data[offset] & 31
-		if data[offset]&0x80 != 0 || kind == 0 || kind >= 24 {
-			return false, invalidProgressive("video AVC NAL header")
+		if codec == "hevc" {
+			kind := (data[offset] >> 1) & 63
+			if data[offset]&0x80 != 0 || data[offset+1]&7 == 0 || kind > 40 ||
+				kind >= 10 && kind <= 15 || kind >= 22 && kind <= 31 || kind <= 31 && size < 3 {
+				return false, invalidProgressive("video HEVC NAL header")
+			}
+			vcl = vcl || kind <= 31
+		} else {
+			kind := data[offset] & 31
+			if codec != "h264" || data[offset]&0x80 != 0 || kind == 0 || kind >= 24 {
+				return false, invalidProgressive("video AVC NAL header")
+			}
+			vcl = vcl || kind == 1 || kind == 2 || kind == 5
 		}
 		if err := p.count(); err != nil {
 			return false, err
 		}
-		vcl = vcl || kind == 1 || kind == 2 || kind == 5
 		offset += int(size)
 	}
 	return vcl, nil

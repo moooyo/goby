@@ -50,15 +50,7 @@ func normalizeOnlineMetadata(result providers.Metadata) ([]byte, error) {
 		}
 		var canonical []byte
 		var err error
-		if key == "Artists" || key == "AlbumArtists" {
-			var names []string
-			names, err = metadataStringValues(value)
-			if err == nil {
-				canonical, err = json.Marshal(names)
-			}
-		} else {
-			canonical, err = normalizeMetadataValue(key, value)
-		}
+		canonical, err = normalizeMetadataValue(key, value)
 		if err != nil {
 			return nil, fmt.Errorf("%w: unsupported provider metadata", ErrInvalidInput)
 		}

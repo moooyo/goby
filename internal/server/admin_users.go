@@ -40,7 +40,7 @@ func (s *Server) managedUser(w http.ResponseWriter, r *http.Request) {
 		s.managedUserError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, map[string]any{"User": nativeManagedUser(user)})
+	jsonResponse(w, http.StatusOK, map[string]any{"User": s.avatarUserDTO(r.Context(), nativeManagedUser(user))})
 }
 
 func (s *Server) updateManagedUser(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +128,7 @@ func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, act
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", result.User.User.ID, "action", action)
-	jsonResponse(w, http.StatusOK, map[string]any{"User": nativeManagedUser(result.User), "CurrentSessionRevoked": result.CurrentSessionRevoked})
+	jsonResponse(w, http.StatusOK, map[string]any{"User": s.avatarUserDTO(r.Context(), nativeManagedUser(result.User)), "CurrentSessionRevoked": result.CurrentSessionRevoked})
 }
 
 func managedUserInputError(w http.ResponseWriter, r *http.Request, fields map[string]string) {

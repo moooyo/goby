@@ -32,13 +32,13 @@ func TestMusicMetadataFormatTagsPreserveTechnicalFacts(t *testing.T) {
 		"title":"  Title \u00e9 \ud83c\udfb5  ","album":"Tagged Album",
 		"artist":"Earth, Wind & Fire; Guest / Duo",
 		"album_artist":"  Album Artist & Guest; Duo / Ensemble  ",
-		"album artist":"Ignored Alias","albumartist":"Ignored Alias","composer":"Unobserved Composer","track":"3/12","disc":"1/2"
+		"album artist":"  Album Artist & Guest; Duo / Ensemble  ","albumartist":"  Album Artist & Guest; Duo / Ensemble  ","composer":"Observed Composer","track":"3/12","disc":"1/2"
 	}`, ""))
 	if err != nil {
 		t.Fatalf("parse supported format music tags: %v", err)
 	}
-	want := &MusicMetadata{Version: 2, Title: "  Title \u00e9 \U0001f3b5  ", Album: "Tagged Album", Artist: "Earth, Wind & Fire; Guest / Duo",
-		AlbumArtist: "  Album Artist & Guest; Duo / Ensemble  "}
+	want := &MusicMetadata{Version: CurrentMusicMetadataVersion, Title: "  Title \u00e9 \U0001f3b5  ", Album: "Tagged Album", Artist: "Earth, Wind & Fire; Guest / Duo",
+		AlbumArtist: "  Album Artist & Guest; Duo / Ensemble  ", Composers: []string{"Observed Composer"}, TrackNumber: 3, TrackTotal: 12, DiscNumber: 1, DiscTotal: 2}
 	if !reflect.DeepEqual(info.EmbeddedMusic, want) {
 		t.Fatal("format music facts changed observed tag text or inferred extra metadata")
 	}
@@ -62,10 +62,10 @@ func TestMusicMetadataFormatTagsPreserveTechnicalFacts(t *testing.T) {
 
 func TestMusicMetadataInspectedEmptyFactsDifferFromLegacyCache(t *testing.T) {
 	for _, tags := range []string{"", `{}`, `{"title":"","album":"","artist":"","album_artist":""}`,
-		`{"album artist":"Ignored","albumartist":["Ignored"],"composer":["Ignored"],"track":3,"disc":null,"private":{"nested":true}}`,
+		`{"album__artist":"Ignored","private_artist":["Ignored"],"private_composer":["Ignored"],"private_track":3,"private_disc":null,"private":{"nested":true}}`,
 		`{"unknown":"\ud800","another":[null,false,1],"private":"` + strings.Repeat("x", 2048) + `"}`} {
 		info, err := parseProbe(musicMetadataProbeDocument(tags, ""))
-		if err != nil || !reflect.DeepEqual(info.EmbeddedMusic, &MusicMetadata{Version: 2}) {
+		if err != nil || !reflect.DeepEqual(info.EmbeddedMusic, &MusicMetadata{Version: CurrentMusicMetadataVersion}) {
 			t.Fatal("an inspected source without supported tags lost its explicit empty version")
 		}
 		encoded, err := json.Marshal(info)
@@ -81,8 +81,8 @@ func TestMusicMetadataInspectedEmptyFactsDifferFromLegacyCache(t *testing.T) {
 	if err := json.Unmarshal([]byte(`{"ProbeVersion":6,"Container":"mp3","Streams":[{"Index":0,"CodecType":"audio"}]}`), &legacy); err != nil || legacy.EmbeddedMusic != nil {
 		t.Fatal("a legacy cache was mislabeled as inspected music metadata")
 	}
-	if CurrentProbeVersion != 6 || (Prober{}).CacheVersion() != 6 || CurrentMusicMetadataVersion != 2 || (Prober{}).MusicMetadataVersion() != 2 {
-		t.Fatal("music metadata refresh changed the accepted technical probe version")
+	if (Prober{}).CacheVersion() != CurrentProbeVersion || CurrentMusicMetadataVersion != 3 || (Prober{}).MusicMetadataVersion() != 3 {
+		t.Fatal("technical and music metadata cache versions disagree with their separate current baselines")
 	}
 }
 
@@ -104,8 +104,9 @@ func TestMusicMetadataVersionOneCachePreservesObservedFactsWithoutAlbumArtist(t 
 	if err := json.Unmarshal(encoded, &roundTrip); err != nil || !reflect.DeepEqual(roundTrip.EmbeddedMusic, want) {
 		t.Fatal("historical music facts changed during cache round-trip serialization")
 	}
-	if (Prober{}).MusicMetadataVersion() != 2 || legacy.EmbeddedMusic.Version == (Prober{}).MusicMetadataVersion() || (Prober{}).CacheVersion() != legacy.ProbeVersion {
-		t.Fatal("album artist extraction did not require only an independent music metadata refresh")
+	if (Prober{}).MusicMetadataVersion() != CurrentMusicMetadataVersion || legacy.EmbeddedMusic.Version == (Prober{}).MusicMetadataVersion() ||
+		(Prober{}).CacheVersion() != CurrentProbeVersion || legacy.ProbeVersion >= CurrentProbeVersion {
+		t.Fatal("historical music facts must require their own refresh alongside the newer technical probe migration")
 	}
 }
 
@@ -117,14 +118,14 @@ func TestMusicMetadataCaseAliasesPreserveMatchingScalarValues(t *testing.T) {
 		`{"\u0074itle":"Title","TITLE":"\u0054itle","album":"Album","artist":"Artist","album\u005fartist":"Album Artist","\u0041LBUM_ARTIST":"\u0041lbum Artist"}`,
 	} {
 		info, err := parseProbe(musicMetadataProbeDocument(tags, ""))
-		if err != nil || !reflect.DeepEqual(info.EmbeddedMusic, &MusicMetadata{Version: 2, Title: "Title", Album: "Album", Artist: "Artist", AlbumArtist: "Album Artist"}) {
+		if err != nil || !reflect.DeepEqual(info.EmbeddedMusic, &MusicMetadata{Version: CurrentMusicMetadataVersion, Title: "Title", Album: "Album", Artist: "Artist", AlbumArtist: "Album Artist"}) {
 			t.Fatal("matching ASCII-insensitive music aliases did not preserve one exact scalar")
 		}
 	}
 	info, err := parseProbe(musicMetadataProbeDocument(`{"arti\u017ft":"Not an ASCII alias"," title":"Not an exact tag key",
-		"album_arti\u017ft":"Not an ASCII alias","album_artist ":"Not an exact tag key","album artist":null,"albumartist":false,
-		"album__artist":["Ignored"],"album-artist":{"Ignored":true},"composer":"Ignored"}`, ""))
-	if err != nil || !reflect.DeepEqual(info.EmbeddedMusic, &MusicMetadata{Version: 2}) {
+		"album_arti\u017ft":"Not an ASCII alias","album_artist ":"Not an exact tag key","private artist":null,"privateartist":false,
+		"album__artist":["Ignored"],"album-artist":{"Ignored":true},"private_composer":"Ignored"}`, ""))
+	if err != nil || !reflect.DeepEqual(info.EmbeddedMusic, &MusicMetadata{Version: CurrentMusicMetadataVersion}) {
 		t.Fatal("non-ASCII or whitespace key variants became supported music tags")
 	}
 }

@@ -142,6 +142,8 @@ func description(action Action, state State) (string, string) {
 		return "Device removed", "A device registration was removed and its affected sessions were revoked."
 	case ActionLibraryCreated:
 		return "Library created", "A media library was registered."
+	case ActionLibraryUpdated:
+		return "Library updated", "A media library name, registered directories, or scan options were updated."
 	case ActionLibraryRemoved:
 		return "Library removed", "A media library was removed from the catalog; media files were retained."
 	case ActionLibraryRootBindingUpdated:

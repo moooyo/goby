@@ -43,20 +43,22 @@ func requireApplicationKeyConstraint(t *testing.T, err error, code string) {
 }
 
 // Version 15 already contains management revisions and all login metadata.
-// Exclude the new device registry, client-context, and storage-binding columns;
-// every old field, including secrets and timestamps, remains compared.
+// Exclude only later device, playback, storage-binding, and phase 3 columns;
+// every schema15 field, including secrets and timestamps, remains compared.
 func applicationKeyLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
-		'users', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM users t),
+		'users', (SELECT jsonb_agg(to_jsonb(t) - 'configuration_revision' ORDER BY id) FROM users t),
 		'credentials', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
-		'libraries', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM libraries t),
+		'libraries', (SELECT jsonb_agg(to_jsonb(t) - 'revision' - 'options' ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
 		'playback', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' - 'is_dynamic' ORDER BY id) FROM play_sessions t),
-		'userdata', (SELECT jsonb_agg(to_jsonb(t) ORDER BY user_id, item_id) FROM user_item_data t),
+		'userdata', (SELECT jsonb_agg(to_jsonb(t) - ARRAY['hide_from_resume','rating','likes',
+			'remembered_media_source_id','remembered_media_stamp','remembered_audio_stream_index',
+			'remembered_subtitle_stream_index'] ORDER BY user_id, item_id) FROM user_item_data t),
 		'encodings', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY id) FROM encoding_jobs t),
 		'references', (SELECT jsonb_agg(to_jsonb(t) - 'application_client_id' ORDER BY user_id, auth_session_id, device_id, client_nonce)
 			FROM client_playback_references t))::text`).Scan(&snapshot); err != nil {
@@ -111,6 +113,7 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 	if after := applicationKeyLegacySnapshot(t, ctx, pool); after != before {
 		t.Fatal("application key migration changed historical rows or credential material")
 	}
+	assertPhase3MigrationDefaults(t, ctx, pool)
 	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	var registeredLogins int
 	var registryMatches bool

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/activity"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 var (
@@ -288,7 +289,11 @@ func (s *Store) taskCancellationStatus(child *taskScanChild) (string, string) {
 }
 
 func (s *Store) enqueueScan(job Job) {
-	taskCtx, cancel := context.WithCancel(s.ctx)
+	parent := s.ctx
+	if job.TaskChildID != "" {
+		parent = systemevents.WithDerived(parent)
+	}
+	taskCtx, cancel := context.WithCancel(parent)
 	task := &scanTask{job: job, ctx: taskCtx, cancel: cancel}
 	s.active[job.ID] = task
 	s.queue <- task

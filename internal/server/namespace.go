@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "UserSettings", "Items", "Videos", "Audio", "Sessions", "Library", "Shows", "Genres", "Tags", "Studios", "Persons", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "Providers", "Features"}
+	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -70,6 +70,26 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(2, "Subtitles")
 	case "UserSettings":
 		literal(2, "Partial")
+	case "Environment":
+		literal(1, "DefaultDirectoryBrowser", "DirectoryContents", "ParentPath", "ValidatePath")
+	case "Artists", "AlbumArtists", "MusicGenres", "Genres", "Tags", "Studios", "Persons":
+		nestedArtists := false
+		if resource == "Artists" {
+			imagePath := false
+			if len(parts) > 3 {
+				next, _ := url.PathUnescape(parts[2])
+				imagePath = strings.EqualFold(next, "Images")
+			}
+			if !imagePath {
+				literal(1, "AlbumArtists")
+				nestedArtists = len(parts) > 1 && parts[1] == "AlbumArtists"
+			}
+		}
+		if !nestedArtists {
+			literal(2, "Images")
+		}
+	case "LiveTv":
+		literal(1, "Programs")
 	case "Branding":
 		literal(1, "Configuration", "Css", "Css.css")
 	case "ScheduledTasks":
@@ -90,26 +110,37 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	case "System":
 		literal(1, "Info", "Ping", "Endpoint", "Configuration")
 		if len(parts) > 1 && parts[1] == "Configuration" {
-			literal(2, "Partial")
+			literal(2, "Partial", "encoding", "subtitles", "tasks")
 		} else {
 			literal(2, "Public")
 		}
 	case "Users":
 		literal(1, "Public", "Query", "New", "AuthenticateByName")
-		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "Password", "Policy", "Configuration", "Delete")
+		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "PlayingItems", "Password", "Policy", "Configuration", "Images", "Delete")
 		if len(parts) > 2 && parts[2] == "Items" {
 			literal(3, "Root", "Latest", "Resume")
-			literal(4, "UserData", "HideFromResume", "SpecialFeatures", "LocalTrailers")
+			literal(4, "UserData", "HideFromResume", "Rating", "SpecialFeatures", "LocalTrailers")
 		}
-		literal(4, "Delete")
+		if len(parts) > 2 && parts[2] == "Images" {
+			literal(3, "Primary")
+		}
+		literal(4, "Delete", "Progress")
+		literal(5, "Delete")
 	case "Items":
-		literal(2, "PlaybackInfo", "Images", "Refresh", "File", "Download", "Similar", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
+		if len(parts) == 2 {
+			literal(1, "Counts")
+		}
+		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "Refresh", "File", "Download", "Similar", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
 		literal(3, "Subtitles", "Attachments")
 		literal(4, "Delete")
 		literal(5, "Stream")
+		if len(parts) > 2 && parts[2] == "Images" {
+			literal(4, "Delete")
+			literal(5, "Delete", "Index")
+		}
 	case "Videos", "Audio":
 		literal(1, "ActiveEncodings")
-		literal(2, "stream", "master.m3u8", "main.m3u8", "live.m3u8", "subtitles.m3u8", "live_subtitles.m3u8", "hls1", "hls2", "Subtitles")
+		literal(2, "stream", "AdditionalParts", "master.m3u8", "main.m3u8", "live.m3u8", "subtitles.m3u8", "live_subtitles.m3u8", "hls1", "hls2", "Subtitles")
 		if len(parts) > 1 && parts[1] == "ActiveEncodings" {
 			literal(2, "Delete")
 		}
@@ -121,7 +152,8 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(2, "Playing", "Progress", "Ping", "Stopped", "Full", "Command")
 	case "Library":
 		literal(1, "VirtualFolders", "Refresh")
-		literal(2, "Query", "Delete", "LibraryOptions")
+		literal(2, "Query", "Delete", "LibraryOptions", "Name", "Paths")
+		literal(3, "Delete")
 	case "Shows":
 		literal(1, "NextUp")
 		literal(2, "Seasons", "Episodes")

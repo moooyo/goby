@@ -27,6 +27,9 @@ func (state *scanState) scanImages(itemID, itemType, relative string, isFolder b
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
+	if !EffectiveLibraryOptions(state.library).EnableLocalImages {
+		return nil
+	}
 	if !validImageScanPath(relative) || (strings.HasPrefix(relative, "//")) {
 		state.warnings++
 		return nil

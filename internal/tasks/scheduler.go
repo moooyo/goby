@@ -100,6 +100,9 @@ func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupA
 		if err != nil {
 			return err
 		}
+		if trigger.Kind == string(ScheduleSystemEvent) {
+			return nil
+		}
 		if trigger.Kind == string(ScheduleStartup) {
 			if err := ValidateSchedule(triggerScheduleRule(trigger)); err != nil {
 				return pauseSchedule(tx, trigger.ID, err)

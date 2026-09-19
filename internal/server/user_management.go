@@ -95,6 +95,7 @@ func mergeManagedPolicy(base identity.ManagedPolicy, patch map[string]json.RawMe
 }
 
 func (s *Server) registerUserManagementRoutes(mux *http.ServeMux) {
+	s.registerUserPreferenceRoutes(mux)
 	wrap := func(next http.HandlerFunc) http.HandlerFunc {
 		return s.requireEmby(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "no-store")
@@ -552,24 +553,7 @@ func (s *Server) retireManagedUserSessions(sessionIDs []string) {
 }
 
 func publicPolicyVisible(user identity.User, remote bool, deviceID string, usedDevice bool) bool {
-	policy, err := identity.ParseRuntimePolicy(user.Policy)
-	if err != nil || user.IsDisabled || user.IsAdministrator || policy.IsHidden ||
-		(remote && (policy.IsHiddenRemotely || !policy.EnableRemoteAccess)) ||
-		(policy.IsHiddenFromUnusedDevices && !usedDevice) {
-		return false
-	}
-	if !policy.EnableAllDevices {
-		if deviceID == "" {
-			return false
-		}
-		for _, id := range policy.EnabledDevices {
-			if id == deviceID {
-				return true
-			}
-		}
-		return false
-	}
-	return true
+	return identity.PublicAvatarVisible(user, remote, deviceID, usedDevice)
 }
 
 func (s *Server) publicUserVisible(r *http.Request, user identity.User, remote bool, deviceID string) (bool, error) {

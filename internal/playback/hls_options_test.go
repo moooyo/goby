@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 func TestPlanHLSAdaptiveRenditionsEachMatchOutputConstraints(t *testing.T) {
@@ -65,14 +66,20 @@ func TestPlanHLSSelectedSubtitleRenditionAndBurnIn(t *testing.T) {
 		}
 		request.DeviceProfile.SubtitleProfiles = []SubtitleProfile{{Method: method, Format: format, Container: "ts", Protocol: "hls"}}
 		decision := conversionTestPlan(t, source, request, conversionTestLimits())
-		mode := "hls"
 		if method == SubtitleDeliveryMethodEncode {
-			mode = "burn"
 			if decision.Plan.VideoCodec != "h264" {
 				t.Fatal("burn-in did not encode video")
 			}
+			if decision.Plan.Subtitle.Mode != "burn" || decision.Plan.Subtitle.StreamIndex != 12 {
+				t.Fatal("burn-in lost its selected original track")
+			}
+		} else {
+			track, ok := transcode.HLSSubtitleTrackAt(*decision.Plan, 0)
+			if !ok || track.StreamIndex != 12 || decision.SubtitleView.SelectedStreamIndex != 12 {
+				t.Fatal("the one-track HLS rendition lost its original selection")
+			}
 		}
-		if decision.Plan.Subtitle.Mode != mode || decision.Plan.Subtitle.StreamIndex != 12 || decision.Output.SubtitleMethod != method {
+		if decision.Output.SubtitleMethod != method {
 			t.Fatalf("subtitle plan = %+v", decision)
 		}
 	}

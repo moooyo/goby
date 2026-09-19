@@ -16,7 +16,13 @@ import (
 // Format-clock facts never belong here: only the verified source supplies them.
 type ProgressiveVideoRequest struct {
 	OutputContainer, VideoCodec, AudioCodec                         string
+	VideoProfile, VideoRange                                        string
+	VideoBitDepth                                                   *int
 	VideoStreamIndex, AudioStreamIndex                              *int
+	SubtitleStreamIndex                                             *int
+	BurnSubtitles, AllowVideoSeekAlignment                          bool
+	CopyTimestamps                                                  bool
+	SubtitleOffsetTicks                                             int64
 	StartTimeTicks                                                  int64
 	VideoBitrate, AudioBitrate, MaxBitrate                          *int64
 	MaxVideoBitrate, MaxAudioBitrate                                *int64
@@ -30,7 +36,9 @@ type ProgressiveVideoRequest struct {
 // ProgressiveVideoDecision describes an immutable MP4 conversion. Stream
 // indexes in Plan refer to the source; projected output indexes are video 0 and
 // audio 1. Bitrates are source declarations or encoder targets, not measured
-// network throughput. DurationTicks describes the requested presentation window.
+// network throughput. DurationTicks describes the output clock's endpoint:
+// rebased output uses the remaining window, while source timestamps keep the
+// original endpoint even when its first retained packet is nonzero.
 type ProgressiveVideoDecision struct {
 	Plan         *transcode.Plan
 	OutputSource Source
@@ -38,7 +46,7 @@ type ProgressiveVideoDecision struct {
 	Reasons      []Reason
 }
 
-// PlanProgressiveVideo plans bounded H.264/AAC fragmented MP4 without starting
+// PlanProgressiveVideo plans bounded video/AAC fragmented MP4 without starting
 // a worker or granting source access. Valid unsupported requirements return nil
 // Plan and reasons; malformed input returns an error.
 func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits ConversionLimits) (ProgressiveVideoDecision, error) {
@@ -46,7 +54,7 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 	if err := validateProgressiveVideoRequest(request); err != nil {
 		return result, err
 	}
-	selectionRequest := Request{AudioStreamIndex: request.AudioStreamIndex}
+	selectionRequest := Request{AudioStreamIndex: request.AudioStreamIndex, SubtitleStreamIndex: request.SubtitleStreamIndex}
 	if err := validateRequest(source, selectionRequest); err != nil {
 		return result, err
 	}
@@ -89,8 +97,11 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 		return decline("progressive_video_facts_missing", "Width", "Known bounded video dimensions and valid source facts are required.")
 	}
 	container, videoCodec, audioCodec := strings.ToLower(request.OutputContainer), strings.ToLower(request.VideoCodec), strings.ToLower(request.AudioCodec)
-	if container != "mp4" || videoCodec != "h264" && videoCodec != "copy" || audioCodec != "" && audioCodec != "none" && audioCodec != "aac" && audioCodec != "copy" {
+	if container != "mp4" || !transcode.VideoEncodingSupported(videoCodec) && videoCodec != "copy" || audioCodec != "" && audioCodec != "none" && audioCodec != "aac" && audioCodec != "copy" {
 		return decline("progressive_video_format_unsupported", "OutputContainer", "The selected video conversion format is not implemented.")
+	}
+	if request.BurnSubtitles && (selection.subtitle == nil || request.SubtitleStreamIndex == nil || *request.SubtitleStreamIndex < 0) {
+		return decline("progressive_video_subtitle_missing", "SubtitleStreamIndex", "Subtitle burn-in requires an explicitly selected subtitle stream.")
 	}
 	if selection.audio == nil {
 		if request.AudioChannels != nil || request.AudioSampleRate != nil || request.AudioBitrate != nil {
@@ -115,7 +126,7 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 				continue
 			}
 		}
-		if videoCopy && (isFalse(request.AllowVideoStreamCopy) || request.FrameRate != nil) ||
+		if videoCopy && (isFalse(request.AllowVideoStreamCopy) || request.FrameRate != nil || request.BurnSubtitles) ||
 			!videoCopy && (!limits.AllowVideoTranscode || videoCodec == "copy") ||
 			selection.audio != nil && (audioCopy && isFalse(request.AllowAudioStreamCopy) || !audioCopy && (!limits.AllowAudioTranscode || audioCodec == "copy")) ||
 			videoCopy && audioCopy && !limits.AllowRemux {
@@ -123,12 +134,19 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 		}
 		plan := transcode.Plan{OutputMode: "progressive", Container: "mp4", VideoStreamIndex: video.Index, AudioStreamIndex: -1,
 			StartTicks: request.StartTimeTicks, DurationTicks: source.Info.DurationTicks,
-			SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks}
+			SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks, CopyTimestamps: request.CopyTimestamps}
 		projectedVideo := video
 		videoCost, videoReason := progressiveVideoTrack(&plan, &projectedVideo, source.Info.Bitrate, request, limits, videoCopy)
 		if videoReason != nil {
 			result.Reasons = appendConversionReasons(result.Reasons, *videoReason)
 			continue
+		}
+		if request.BurnSubtitles {
+			if reason := configureEncodedSubtitle(&plan, source, selection.subtitle); reason != nil {
+				result.Reasons = appendConversionReasons(result.Reasons, *reason)
+				continue
+			}
+			plan.Subtitle.OffsetTicks = request.SubtitleOffsetTicks
 		}
 		reservedVideo := int64(64_000)
 		if videoCopy || request.VideoBitrate != nil {
@@ -170,8 +188,15 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 				candidate.AudioBitrate, candidate.AudioChannels, candidate.AudioSampleRate = audio.bitrate, audio.channels, audio.rate
 				streams = append(streams, audio.output)
 			}
-			if videoCopy && request.StartTimeTicks > 0 && !transcode.AttachVideoCopySeekCandidate(&candidate, source.Info) {
-				continue
+			if videoCopy && request.StartTimeTicks > 0 {
+				attached := transcode.AttachVideoCopySeekCandidate(&candidate, source.Info)
+				if !attached && request.AllowVideoSeekAlignment {
+					candidate.CopyTimestamps = true
+					attached = transcode.AttachVideoCopySeekCandidateAligned(&candidate, source.Info, 10*media.TicksPerSecond)
+				}
+				if !attached {
+					continue
+				}
 			}
 			if transcode.ValidatePlan(candidate) != nil {
 				continue
@@ -181,8 +206,12 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 			if !videoCopy || !audioCopy {
 				result.Method = "Transcode"
 			}
+			outputDuration := source.Info.DurationTicks - candidate.StartTicks
+			if candidate.CopyTimestamps {
+				outputDuration = source.Info.DurationTicks
+			}
 			result.OutputSource = Source{ItemID: source.ItemID, MediaSourceID: source.MediaSourceID, ItemType: source.ItemType, Path: "output.mp4",
-				Info: media.Info{Container: "mp4", DurationTicks: source.Info.DurationTicks - request.StartTimeTicks,
+				Info: media.Info{Container: "mp4", DurationTicks: outputDuration,
 					Bitrate: plannedVideoRate + audio.cost, Streams: streams}}
 			result.Reasons = nil
 			return result, nil
@@ -199,6 +228,15 @@ func validateProgressiveVideoRequest(request ProgressiveVideoRequest) error {
 	}
 	if request.AudioCodec != "" && !progressiveVideoSelector(request.AudioCodec) || request.StartTimeTicks < 0 {
 		return fmt.Errorf("%w: invalid video selector or start position", ErrInvalidRequest)
+	}
+	if request.VideoProfile != "" && !progressiveVideoSelector(request.VideoProfile) || request.VideoBitDepth != nil && *request.VideoBitDepth != 8 && *request.VideoBitDepth != 10 ||
+		request.VideoRange != "" && !strings.EqualFold(request.VideoRange, "SDR") && !strings.EqualFold(request.VideoRange, "HDR10") ||
+		request.SubtitleStreamIndex != nil && (*request.SubtitleStreamIndex < -1 || *request.SubtitleStreamIndex > math.MaxInt32) {
+		return fmt.Errorf("%w: invalid video profile, bit depth, range, or subtitle index", ErrInvalidRequest)
+	}
+	if request.SubtitleOffsetTicks < -24*60*60*media.TicksPerSecond || request.SubtitleOffsetTicks > 24*60*60*media.TicksPerSecond ||
+		request.SubtitleOffsetTicks != 0 && !request.BurnSubtitles {
+		return fmt.Errorf("%w: subtitle offsets require burn-in and a bounded interval", ErrInvalidRequest)
 	}
 	for _, value := range []*int{request.Width, request.Height, request.MaxWidth, request.MaxHeight, request.AudioChannels, request.AudioSampleRate, request.MaxAudioChannels, request.MaxSampleRate} {
 		if value != nil && (*value <= 0 || *value > math.MaxInt32) {
@@ -248,7 +286,10 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 	}
 	bitrate := output.Bitrate
 	if copy {
-		if !strings.EqualFold(output.Codec, "h264") || output.IsInterlaced || conversionHDR(output) || !output.InterlaceKnown && isFalse(request.AllowInterlacedVideoStreamCopy) ||
+		if !videoCodecContainerSupported(strings.ToLower(output.Codec), "mp4") || request.VideoCodec != "copy" && !strings.EqualFold(output.Codec, request.VideoCodec) ||
+			media.VideoBitDepthConflict(*output) || request.VideoBitDepth != nil && media.EffectiveVideoBitDepth(*output) != *request.VideoBitDepth || request.VideoProfile != "" && !strings.EqualFold(output.Profile, videoEncodingProfileName(request.VideoProfile)) ||
+			request.VideoRange != "" && (!output.VideoRangeKnown || !strings.EqualFold(output.VideoRange, request.VideoRange)) ||
+			output.IsInterlaced || conversionHDR(output) || !output.InterlaceKnown && isFalse(request.AllowInterlacedVideoStreamCopy) ||
 			output.Width > maxWidth || output.Height > maxHeight || request.Width != nil && output.Width != *request.Width || request.Height != nil && output.Height != *request.Height {
 			return fail("VideoCodec", "The source video cannot be copied with the requested codec, geometry, or interlace restriction.")
 		}
@@ -264,9 +305,13 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 		if bitrate <= 0 || request.MaxVideoBitrate != nil && bitrate > *request.MaxVideoBitrate {
 			return fail("MaxVideoBitrate", "Copied video lacks a usable bitrate budget or exceeds its ceiling.")
 		}
-		plan.VideoCodec = "copy"
+		plan.VideoCodec, plan.VideoCopyCodec = "copy", strings.ToLower(output.Codec)
 	} else {
-		filters, reason := videoProcessingPlan(*output)
+		format, supported := progressiveVideoEncoding(request)
+		if !supported {
+			return fail("VideoProfile", "The requested codec, profile, bit depth, and range combination is not supported.")
+		}
+		filters, reason := videoProcessingPlanForRange(*output, request.VideoRange)
 		if reason != nil {
 			return 0, reason
 		}
@@ -274,17 +319,12 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 		if !ok {
 			return fail("Width", "The requested dimensions cannot be constructed within the video limits.")
 		}
-		plan.VideoCodec, plan.Width, plan.Height, plan.Hardware = "h264", width, height, limits.Hardware
+		plan.VideoCodec, plan.VideoProfile, plan.VideoBitDepth = format.codec, format.profile, format.bitDepth
+		plan.Width, plan.Height, plan.Hardware = width, height, limits.Hardware
 		plan.VideoFilters = filters
-		if filters != (transcode.VideoFilters{}) {
-			plan.Hardware = transcode.Hardware{}
-		}
-		output.Codec, output.Width, output.Height = "h264", width, height
-		output.Profile, output.Level, output.RefFrames = "", 0, 0
-		output.BitDepth, output.PixelFormat = 8, "yuv420p"
-		output.IsInterlaced, output.InterlaceKnown, output.FieldOrder = false, true, "progressive"
-		output.ColorRange, output.ColorSpace, output.ColorTransfer, output.ColorPrimaries = "", "", "", ""
-		videoProcessingOutput(output, filters)
+		selectVideoProcessingHardware(plan)
+		output.Width, output.Height = width, height
+		videoEncodedOutput(output, *plan)
 		fps := float64(0)
 		if request.FrameRate != nil {
 			fps = *request.FrameRate
@@ -318,8 +358,8 @@ func progressiveVideoTrack(plan *transcode.Plan, output *media.Stream, sourceBit
 			return fail("VideoBitrate", "The exact video bitrate is outside the supported encoder range.")
 		}
 	}
-	output.Index, output.Codec, output.IsDefault, output.IsAVC, output.IsAVCKnown = 0, "h264", true, true, true
-	output.CodecTag, output.CodecTagString, output.TimeBase = "avc1", "avc1", ""
+	output.Index, output.IsDefault = 0, true
+	videoOutputFraming(output, *plan)
 	output.Language, output.Title, output.AudioTiming = "", "", nil
 	return bitrate, nil
 }

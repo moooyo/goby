@@ -46,14 +46,26 @@ func runLimited(ctx context.Context, timeout time.Duration, maxStdout int, execu
 }
 
 func runLimitedFiles(ctx context.Context, timeout time.Duration, maxStdout int, executable string, files []*os.File, args ...string) ([]byte, error) {
+	output, err := runLimitedFilesOutput(ctx, timeout, maxStdout, executable, files, args...)
+	return output.stdout, err
+}
+
+type mediaProcessOutput struct {
+	stdout []byte
+	stderr []byte
+}
+
+// runLimitedFilesOutput retains bounded diagnostics for callers whose evidence
+// requires a clean decoder run even when the executable returns success.
+func runLimitedFilesOutput(ctx context.Context, timeout time.Duration, maxStdout int, executable string, files []*os.File, args ...string) (mediaProcessOutput, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return mediaProcessOutput{}, err
 	}
 	if timeout <= 0 {
 		timeout = defaultProcessTimeout
 	}
 	if maxStdout <= 0 {
-		return nil, fmt.Errorf("media process stdout limit must be positive")
+		return mediaProcessOutput{}, fmt.Errorf("media process stdout limit must be positive")
 	}
 	processContext, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -72,10 +84,10 @@ func runLimitedFiles(ctx context.Context, timeout time.Duration, maxStdout int, 
 		err = errors.Join(<-retired, cmd.Wait())
 	}
 	if stdout.exceeded || stderr.exceeded {
-		return nil, fmt.Errorf("%s: %w", filepath.Base(executable), ErrOutputLimit)
+		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), ErrOutputLimit)
 	}
 	if processContext.Err() != nil {
-		return nil, fmt.Errorf("%s: %w", filepath.Base(executable), processContext.Err())
+		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), processContext.Err())
 	}
 	if err != nil {
 		detail := stderr.buffer.String()
@@ -84,11 +96,11 @@ func runLimitedFiles(ctx context.Context, timeout time.Duration, maxStdout int, 
 		}
 		detail = strings.TrimSpace(detail)
 		if detail != "" {
-			return nil, fmt.Errorf("execute %s: %w: %s", filepath.Base(executable), err, detail)
+			return mediaProcessOutput{}, fmt.Errorf("execute %s: %w: %s", filepath.Base(executable), err, detail)
 		}
-		return nil, fmt.Errorf("execute %s: %w", filepath.Base(executable), err)
+		return mediaProcessOutput{}, fmt.Errorf("execute %s: %w", filepath.Base(executable), err)
 	}
-	return stdout.buffer.Bytes(), nil
+	return mediaProcessOutput{stdout: stdout.buffer.Bytes(), stderr: stderr.buffer.Bytes()}, nil
 }
 
 // Descriptor probes need no inherited reporting, proxy, or user configuration

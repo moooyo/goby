@@ -166,8 +166,8 @@ func nextUpScopeSQL(scopes ...libraryAccess) string {
 // partial episode with episode order as a stable tie-break. Multiple simultaneous
 // partial episodes remain a Goby policy, not a verified reference behavior.
 // Global selection remains a Goby policy: one unwatched episode after the watched
-// cursor per active series, or the first unwatched episode when only incomplete
-// playback history exists.
+// cursor per active series, otherwise the most recently active partial cursor.
+// Count/date-only history without a partial cursor starts at the first episode.
 // Positive global results have not been established by reference captures.
 func nextUpCandidateSQL() string {
 	return `next_up AS (
@@ -179,7 +179,8 @@ func nextUpCandidateSQL() string {
 			AND (($4::text <> '' AND (
 					(activity.last_played_order IS NOT NULL AND episode.episode_order > activity.last_played_order)
 					OR (activity.last_played_order IS NULL AND episode.episode_order >= activity.partial_start_order)))
-				OR ($4::text = '' AND activity.has_history
-					AND episode.episode_order > COALESCE(activity.last_played_order, 0)))
+				OR ($4::text = '' AND activity.has_history AND (
+					(activity.last_played_order IS NOT NULL AND episode.episode_order > activity.last_played_order)
+					OR (activity.last_played_order IS NULL AND episode.episode_order >= COALESCE(activity.partial_start_order,1)))))
 	) `
 }

@@ -142,10 +142,10 @@ func TestVideoRequestCeilingsNeverFallThroughToRawBytes(t *testing.T) {
 
 func TestVideoRequestUnsupportedTransformsCannotBecomeOriginalDelivery(t *testing.T) {
 	for _, query := range []struct{ name, value string }{
-		{"CopyTimestamps", "true"}, {"Deinterlace", "true"}, {"EnableToneMapping", "true"}, {"HDR", "true"},
-		{"VideoCodec", "hevc"}, {"AudioCodec", "opus"}, {"TranscodingProtocol", "hls"}, {"SegmentContainer", "ts"},
-		{"VideoFilter", "scale=640:360"}, {"AudioFilter", "volume=0.5"}, {"VideoProfile", "baseline"},
-		{"LiveStreamId", "unimplemented-live-source"}, {"VideoRange", "HDR10"}, {"VideoRangeType", "HLG"},
+		{"BreakOnNonKeyFrames", "true"}, {"HDR", "true"},
+		{"VideoCodec", "vp9"}, {"AudioCodec", "opus"}, {"TranscodingProtocol", "hls"}, {"SegmentContainer", "ts"},
+		{"VideoFilter", "scale=640:360"}, {"AudioFilter", "volume=0.5"}, {"VideoProfile", "high444"},
+		{"LiveStreamId", "unimplemented-live-source"}, {"VideoRange", "DolbyVision"}, {"VideoRangeType", "HLG"},
 		{"SubtitleMethod", "Encode"}, {"SubtitleDeliveryMethod", "Encode"}, {"SubtitleStreamIndex", "12"}, {"SubtitleStreamIndex", "99"},
 	} {
 		t.Run(query.name+"/"+query.value, func(t *testing.T) {

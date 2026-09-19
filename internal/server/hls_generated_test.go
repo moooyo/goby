@@ -20,7 +20,7 @@ func TestGeneratedHLSMasterUsesDistinctScopedVariantURLs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Count(string(data), "#EXT-X-STREAM-INF:") != 2 || !strings.Contains(string(data), "#EXT-X-MEDIA:TYPE=SUBTITLES") || !strings.Contains(string(data), "/subtitles.m3u8?") {
+	if strings.Count(string(data), "#EXT-X-STREAM-INF:") != 2 || !strings.Contains(string(data), "#EXT-X-MEDIA:TYPE=SUBTITLES") || !strings.Contains(string(data), "/subtitles-0.m3u8?") {
 		t.Fatalf("missing HLS graph: %s", data)
 	}
 	var children []string
@@ -55,8 +55,8 @@ func TestManualHLSRequestsConstructAdaptiveFragmentedAndSubtitleOutputs(t *testi
 	}
 	source := hlsRequestTestSource()
 	source.Info.Streams = append(source.Info.Streams, media.Stream{Index: 12, CodecType: "subtitle", Codec: "subrip", IsTextSubtitleStream: true})
-	decision = hlsRequestTestPlan(t, map[string]string{"SubtitleStreamIndex": "12", "ManifestSubtitles": "vtt"}, source, hlsRequestTestLimits())
-	if decision.Plan.Subtitle.Mode != "hls" {
+	decision = hlsRequestTestPlan(t, map[string]string{"SubtitleStreamIndex": "12", "ManifestSubtitles": "vtt", "MaxManifestSubtitles": "10"}, source, hlsRequestTestLimits())
+	if !transcode.HasHLSSubtitles(*decision.Plan) || decision.SubtitleView.SelectedStreamIndex != 12 {
 		t.Fatalf("manual subtitle = %+v", decision.Plan)
 	}
 }

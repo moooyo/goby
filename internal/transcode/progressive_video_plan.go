@@ -3,11 +3,12 @@ package transcode
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 func validateProgressiveVideoPlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: progressive video %s", ErrInvalidPlan, field) }
-	if p.OutputMode != "progressive" || p.Container != "mp4" || p.VideoStreamIndex < 0 || p.VideoCodec != "copy" && p.VideoCodec != "h264" ||
+	if p.OutputMode != "progressive" || p.Container != "mp4" || p.VideoStreamIndex < 0 || p.VideoCodec != "copy" && !VideoEncodingSupported(p.VideoCodec) ||
 		p.AudioStreamIndex < -1 || p.AudioStreamIndex < 0 && p.AudioCodec != "" || p.AudioStreamIndex >= 0 && p.AudioCodec != "copy" && p.AudioCodec != "aac" {
 		return invalid("streams")
 	}
@@ -28,7 +29,11 @@ func validateProgressiveVideoPlan(p Plan) error {
 	// Only its output-specific fields differ; no caller option bypasses checks.
 	video := p
 	video.OutputMode, video.Container, video.SegmentSeconds = "", "ts", 1
+	if VideoOutputCodec(p) == "av1" {
+		video.Container, video.HLS.SegmentType = "mp4", "fmp4"
+	}
 	video.SourceFormatStartKnown, video.SourceFormatStartTicks = false, 0
+	video.CopyTimestamps = false
 	video.VideoSeekCandidate = ""
 	video.VideoCopySeekCandidate = ""
 	if err := ValidatePlan(video); err != nil {
@@ -58,7 +63,7 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 	threadCount := strconv.Itoa(threads)
 	args := []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "level+warning", "-y", "-progress", "pipe:1", "-stats_period", "0.5",
 		"-filter_threads", threadCount, "-filter_complex_threads", threadCount, "-copyts"}
-	args, decode, encode := appendHardwareInputArgs(args, p.Hardware)
+	args, decode, encode := appendHardwareInputArgs(args, p)
 	// FFmpeg may otherwise change its effective input origin when a track is
 	// disabled. Use one probed container clock for every stream and selection.
 	args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats)
@@ -68,8 +73,9 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 		args = append(args, "-seek_timestamp", "1", "-noaccurate_seek", "-ss", signedTickSeconds(p.SourceFormatStartTicks+inputSeekTicks))
 	}
 	args = append(args, "-itsoffset", signedTickSeconds(-p.SourceFormatStartTicks), "-i", "/proc/self/fd/3")
+	args = appendBitmapSubtitleInputArgs(args, p, threads)
 	audioInput := "0:"
-	if inputSeekTicks > 0 && p.AudioStreamIndex >= 0 {
+	if inputSeekTicks > 0 && p.AudioStreamIndex >= 0 && !(p.VideoCodec == "copy" && p.AudioCodec == "copy") {
 		// Reopen the same inherited source independently. Linear audio keeps
 		// decoder history and the existing sample/timestamp behavior, while
 		// discarded video avoids the expensive prefix video decoding. This
@@ -77,6 +83,9 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 		args = append(args, "-threads", threadCount, "-protocol_whitelist", "file,pipe", "-format_whitelist", inputFormats,
 			"-discard:v", "all", "-itsoffset", signedTickSeconds(-p.SourceFormatStartTicks), "-i", "/proc/self/fd/3")
 		audioInput = "1:"
+		if hasBitmapSubtitleInput(p) {
+			audioInput = "2:"
+		}
 	}
 	if p.StartTicks > 0 {
 		// Trim presentation on the shared source clock, whether video starts
@@ -84,25 +93,33 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 		// the same linear decoding history in both cases.
 		args = append(args, "-ss", tickSeconds(p.StartTicks))
 	}
-	args = append(args, "-t", tickSeconds(p.DurationTicks-p.StartTicks), "-map", "0:"+strconv.Itoa(p.VideoStreamIndex),
-		"-map_metadata", "-1", "-map_metadata:s:v", "-1", "-map_chapters", "-1", "-sn", "-dn", "-tag:v", "avc1")
+	args = append(args, "-t", tickSeconds(p.DurationTicks-p.StartTicks),
+		"-map_metadata", "-1", "-map_metadata:s:v", "-1", "-map_chapters", "-1", "-sn", "-dn", "-tag:v", VideoMP4Tag(p))
 	if p.VideoCodec == "copy" {
-		args = append(args, "-c:v", "copy")
+		args = append(args, "-map", "0:"+strconv.Itoa(p.VideoStreamIndex), "-c:v", "copy")
 	} else {
-		codec := "libx264"
-		if encode != "software" {
-			codec = "h264_" + encode
-		}
+		codec := VideoEncoder(p.VideoCodec, encode)
 		filter, timeBase := videoFilter(p, decode, encode), "demux"
+		graph, output, _ := BitmapSubtitleGraph(p, filter)
 		if p.FrameRate > 0 {
 			// A requested frame rate is a real frame conversion. Without this
 			// option, retain the source timestamps and do not claim a CFR stream.
-			filter += ",fps=" + strconv.FormatFloat(p.FrameRate, 'f', -1, 64)
+			fps := ",fps=" + strconv.FormatFloat(p.FrameRate, 'f', -1, 64)
+			if graph != "" {
+				graph = strings.TrimSuffix(graph, output) + fps + output
+			} else {
+				filter += fps
+			}
 			timeBase = "filter"
 		}
-		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-vf", filter, "-bf", "0",
+		if graph != "" {
+			args = append(args, "-filter_complex", graph, "-map", output)
+		} else {
+			args = append(args, "-map", "0:"+strconv.Itoa(p.VideoStreamIndex), "-vf", filter)
+		}
+		args = append(args, "-c:v", codec, "-threads:v", threadCount, "-bf", "0",
 			"-fps_mode", "passthrough", "-enc_time_base:v", timeBase, "-force_key_frames", "expr:gte(t,n_forced)")
-		args = appendVideoEncoderOptions(args, encode)
+		args = appendVideoEncoderOptions(args, p, encode, threads)
 		args = AppendVideoColorArgs(args, p)
 		bitrate := p.VideoBitrate
 		if bitrate == 0 {
@@ -130,6 +147,12 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 			args = append(args, "-c:a", "aac", "-threads:a", threadCount, "-profile:a", "aac_low",
 				"-b:a", strconv.FormatInt(bitrate, 10), "-ac", strconv.Itoa(channels), "-ar", strconv.Itoa(rate), "-channel_layout", layout)
 		}
+	}
+	if p.CopyTimestamps {
+		// Output-side -ss normalizes the selected window to zero. Restore only
+		// that removed offset; the input has already removed FormatStartTicks.
+		// The muxer preserves the positive origin through its delayed edit list.
+		args = append(args, "-output_ts_offset", tickSeconds(p.StartTicks))
 	}
 	return append(args, "-avoid_negative_ts", "disabled", "-flush_packets", "1", "-max_muxing_queue_size", "1024", "-f", "mp4",
 		// Delayed initialization preserves B-frame edit lists and AAC priming.

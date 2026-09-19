@@ -27,10 +27,12 @@ func clientPlaybackLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpo
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
-		'users', (SELECT jsonb_agg(to_jsonb(u) - 'management_revision' ORDER BY id) FROM users u),
+		'users', (SELECT jsonb_agg(to_jsonb(u) - 'management_revision' - 'configuration_revision' ORDER BY id) FROM users u),
 		'auth', (SELECT jsonb_agg(to_jsonb(a) - 'device_registry_id' ORDER BY id) FROM sessions a),
 		'play', (SELECT jsonb_agg(to_jsonb(p) - 'client_correlated' - 'application_client_id' - 'is_dynamic' ORDER BY id) FROM play_sessions p),
-		'userdata', (SELECT jsonb_agg(to_jsonb(d) ORDER BY user_id, item_id) FROM user_item_data d)
+		'userdata', (SELECT jsonb_agg(to_jsonb(d) - ARRAY['hide_from_resume','rating','likes',
+			'remembered_media_source_id','remembered_media_stamp','remembered_audio_stream_index',
+			'remembered_subtitle_stream_index'] ORDER BY user_id, item_id) FROM user_item_data d)
 	)::text`).Scan(&snapshot); err != nil {
 		t.Fatal(err)
 	}
@@ -71,6 +73,7 @@ func TestMigrateClientPlaybackReferencesPreservesDefaultsAndRetainsScopedTombsto
 	if after := clientPlaybackLegacySnapshot(t, ctx, pool); before != after {
 		t.Error("client playback migration changed existing identity, playback, or user-data values")
 	}
+	assertPhase3MigrationDefaults(t, ctx, pool)
 	var oldHistory string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text FROM schema_migrations m WHERE version <= 11`).Scan(&oldHistory); err != nil || oldHistory != history {
 		t.Error("client playback migration changed published migration history")

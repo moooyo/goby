@@ -7,7 +7,7 @@ import (
 	"github.com/moooyo/goby/internal/transcode"
 )
 
-func TestProgressiveVideoHDRToSDRUsesSoftwareAndProjectsActualColor(t *testing.T) {
+func TestProgressiveVideoHDRToSDRUsesAMDAndProjectsActualColor(t *testing.T) {
 	for _, transfer := range []string{"smpte2084", "arib-std-b67"} {
 		t.Run(transfer, func(t *testing.T) {
 			source := progressiveVideoTestSource()
@@ -22,8 +22,8 @@ func TestProgressiveVideoHDRToSDRUsesSoftwareAndProjectsActualColor(t *testing.T
 			request.MaxWidth, request.MaxHeight = profileTestPtr(640), profileTestPtr(360)
 			decision := progressiveVideoTestPlan(t, source, request, limits)
 			output := decision.OutputSource.Info.Streams[0]
-			if decision.Method != "Transcode" || decision.Plan.VideoCodec != "h264" || decision.Plan.VideoFilters.SourceTransfer != transfer || decision.Plan.Hardware != (transcode.Hardware{}) {
-				t.Fatalf("HDR conversion did not select its executable software path: %+v", decision.Plan)
+			if decision.Method != "Transcode" || decision.Plan.VideoCodec != "h264" || decision.Plan.VideoFilters.SourceTransfer != transfer || decision.Plan.VideoFilters.Backend != "vulkan" || decision.Plan.Hardware != limits.Hardware {
+				t.Fatalf("HDR conversion did not select the configured AMD path: %+v", decision.Plan)
 			}
 			if output.VideoRange != "SDR" || !output.VideoRangeKnown || output.ColorTransfer != "bt709" || output.ColorPrimaries != "bt709" || output.ColorSpace != "bt709" || output.ColorRange != "tv" || output.BitDepth != 8 || output.Width > 640 || output.Height > 360 {
 				t.Fatalf("SDR projection does not describe the pixel transform: %+v", output)
@@ -48,6 +48,17 @@ func TestProgressiveVideoDeinterlaceUsesDisplayFieldOrder(t *testing.T) {
 				t.Fatalf("field order or frame cadence was not retained: %+v, %+v", decision.Plan, video)
 			}
 		})
+	}
+}
+
+func TestAMDDeinterlaceSelectsVulkanWithoutChangingCodecBackends(t *testing.T) {
+	source := progressiveVideoTestSource()
+	source.Info.Streams[0].IsInterlaced, source.Info.Streams[0].FieldOrder = true, "tt"
+	limits := conversionTestLimits()
+	limits.Hardware = transcode.Hardware{Decode: "vaapi", Encode: "vaapi", Device: "/dev/dri/renderD128"}
+	decision := progressiveVideoTestPlan(t, source, progressiveVideoTestRequest(), limits)
+	if decision.Plan.VideoFilters.Backend != "vulkan" || decision.Plan.VideoFilters.Deinterlace != "tff" || decision.Plan.Hardware != limits.Hardware {
+		t.Fatalf("AMD processing selected unusable VPP or discarded codec acceleration: %+v", decision.Plan)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -37,6 +38,30 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 		return UserDataNotificationResult{}, err
 	}
 	defer rollback(tx)
+	// Numeric entity IDs occupy their own namespace. Their state belongs to the
+	// entity itself, never to its associated media or those items' ancestors.
+	if entityID, parseErr := strconv.ParseInt(query.ItemID, 10, 64); parseErr == nil &&
+		entityID > 0 && strconv.FormatInt(entityID, 10) == query.ItemID {
+		if err := visibleEntityForState(ctx, tx, access, entityID, false); err != nil {
+			return UserDataNotificationResult{}, err
+		}
+		result := UserDataNotificationResult{Items: []UserData{}}
+		if query.AfterID == "" || query.AfterID < query.ItemID {
+			data, err := scanEntityUserData(tx.QueryRow(ctx, "SELECT "+entityUserDataColumns+
+				" FROM entity_user_data WHERE user_id=$1 AND entity_id=$2", query.UserID, entityID))
+			if errors.Is(err, pgx.ErrNoRows) {
+				data, err = UserData{ItemID: query.ItemID}, nil
+			}
+			if err != nil {
+				return UserDataNotificationResult{}, fmt.Errorf("read entity notification state: %w", err)
+			}
+			result.Items = append(result.Items, data)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return UserDataNotificationResult{}, fmt.Errorf("complete entity notification read: %w", err)
+		}
+		return result, nil
+	}
 	var libraryID string
 	var folder bool
 	err = tx.QueryRow(ctx, `SELECT i.library_id, i.is_folder FROM items i WHERE i.id = $1

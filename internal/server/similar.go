@@ -55,6 +55,15 @@ func (s *Server) embySimilar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	attachApplicationCredentialID(r, &query.Query)
+	preferences, err := s.requestUserConfiguration(r.Context(), r, userID)
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	if query.IsPlayed == nil && preferences.HidePlayedInMoreLikeThis {
+		value := false
+		query.IsPlayed = &value
+	}
 	result, err := s.library.QuerySimilar(r.Context(), r.PathValue("Id"), query)
 	if err != nil {
 		s.libraryError(w, r, err)

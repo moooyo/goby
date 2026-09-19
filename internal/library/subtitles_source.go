@@ -97,8 +97,11 @@ func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, me
 		// Recheck the original descriptor and pathname after sidecar storage work.
 		// Reading the video contents is unnecessary for this snapshot contract.
 		after, err := file.Stat()
-		if err != nil || !primary.matches(after) {
-			return SubtitleContent{}, fmt.Errorf("%w: primary media changed during subtitle reading", ErrUnavailable)
+		if err != nil {
+			return SubtitleContent{}, fmt.Errorf("%w: primary media metadata cannot be rechecked during subtitle reading", ErrUnavailable)
+		}
+		if !primary.matches(after) {
+			return SubtitleContent{}, fmt.Errorf("%w: %w: primary media changed during subtitle reading", ErrUnavailable, ErrSourceChanged)
 		}
 		current, err := s.openMediaSource(ctx, primary)
 		if err != nil {
@@ -106,8 +109,11 @@ func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, me
 		}
 		defer current.Close()
 		currentInfo, err := current.Stat()
-		if err != nil || !sameMediaSourceFile(after, currentInfo) {
-			return SubtitleContent{}, fmt.Errorf("%w: primary media was replaced during subtitle reading", ErrUnavailable)
+		if err != nil {
+			return SubtitleContent{}, fmt.Errorf("%w: current media metadata cannot be read during subtitle reading", ErrUnavailable)
+		}
+		if !sameMediaSourceFile(after, currentInfo) {
+			return SubtitleContent{}, fmt.Errorf("%w: %w: primary media was replaced during subtitle reading", ErrUnavailable, ErrSourceChanged)
 		}
 		if err := ctx.Err(); err != nil {
 			return SubtitleContent{}, err
@@ -223,17 +229,29 @@ func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSour
 	}
 	defer parent.Close()
 	before, err := parent.Lstat(source.Filename)
-	if err != nil || !source.matches(before) {
-		return nil, fmt.Errorf("%w: indexed subtitle changed before opening; rescan required", ErrUnavailable)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("%w: %w: indexed subtitle was removed; rescan required", ErrUnavailable, ErrSourceChanged)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w: indexed subtitle metadata cannot be read", ErrUnavailable)
+	}
+	if !source.matches(before) {
+		return nil, fmt.Errorf("%w: %w: indexed subtitle changed before opening; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
 	file, err := openScanFile(parent, source.Filename)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("%w: %w: indexed subtitle was removed while opening", ErrUnavailable, ErrSourceChanged)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("%w: indexed subtitle cannot be opened safely", ErrUnavailable)
 	}
 	defer file.Close()
 	opened, err := file.Stat()
-	if err != nil || !source.matches(opened) || !sameMediaSourceFile(before, opened) {
-		return nil, fmt.Errorf("%w: indexed subtitle changed while opening", ErrUnavailable)
+	if err != nil {
+		return nil, fmt.Errorf("%w: open subtitle metadata cannot be read", ErrUnavailable)
+	}
+	if !source.matches(opened) || !sameMediaSourceFile(before, opened) {
+		return nil, fmt.Errorf("%w: %w: indexed subtitle changed while opening", ErrUnavailable, ErrSourceChanged)
 	}
 	data, err := readSubtitleBytes(ctx, file)
 	if err != nil {
@@ -241,7 +259,7 @@ func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSour
 	}
 	digest := sha256.Sum256(data)
 	if int64(len(data)) != source.Size || hex.EncodeToString(digest[:]) != source.Tag {
-		return nil, fmt.Errorf("%w: indexed subtitle content changed; rescan required", ErrUnavailable)
+		return nil, fmt.Errorf("%w: %w: indexed subtitle content changed; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
 	if _, err := subtitle.Parse(data, subtitle.Format(source.Codec)); err != nil {
 		return nil, fmt.Errorf("%w: indexed subtitle is invalid: %w", ErrUnavailable, err)
@@ -258,10 +276,15 @@ func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSour
 	defer currentParent.Close()
 	current, currentErr := currentParent.Lstat(source.Filename)
 	after, afterErr := file.Stat()
-	if !sameMediaSourceDirectory(root, currentRoot) || !sameMediaSourceDirectory(parent, currentParent) ||
-		currentErr != nil || afterErr != nil || !source.matches(current) || !source.matches(after) ||
+	if !sameMediaSourceDirectory(root, currentRoot) || !sameMediaSourceDirectory(parent, currentParent) || errors.Is(currentErr, os.ErrNotExist) {
+		return nil, fmt.Errorf("%w: %w: indexed subtitle was removed or its directory changed during reading", ErrUnavailable, ErrSourceChanged)
+	}
+	if currentErr != nil || afterErr != nil {
+		return nil, fmt.Errorf("%w: subtitle metadata cannot be rechecked", ErrUnavailable)
+	}
+	if !source.matches(current) || !source.matches(after) ||
 		!sameMediaSourceFile(opened, current) || !sameMediaSourceFile(opened, after) {
-		return nil, fmt.Errorf("%w: indexed subtitle changed during reading; rescan required", ErrUnavailable)
+		return nil, fmt.Errorf("%w: %w: indexed subtitle changed during reading; rescan required", ErrUnavailable, ErrSourceChanged)
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err

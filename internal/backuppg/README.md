@@ -14,7 +14,26 @@ preferred; the userless client-reference table instead uses its actual complete
 value is prefixed with its unsigned, eight-byte big-endian UTF-8 byte length
 before hashing. UTC, ISO dates, PostgreSQL intervals, hexadecimal bytea output,
 and exact PostgreSQL numeric serialization are fixed for the transaction. The
-engine retains one row at a time and rejects rows above 32 MiB.
+engine retains one row at a time and rejects serialized rows above 64 MiB.
+The same ceiling applies to COPY text rows, including their terminating newline.
+PostgreSQL hex-encodes `bytea`, so a supported 20 MiB managed or provider image
+occupies about 40 MiB before ordinary row metadata in either representation.
+The decoder may lower this ceiling through `DecodeOptions.MaxRowBytes`; it
+cannot raise it. The independent compressed and expanded archive limits still
+apply, and SQL/comment lines remain limited to 1 MiB.
+
+The 64 MiB ceiling bounds one logical serialized row, not process resident
+memory. COPY decoding assembles one complete row before validating it and
+passing it to the synchronous sink; slice growth can temporarily retain an
+older allocation. Fingerprinting receives one JSON row through PostgreSQL/pgx,
+whose protocol buffers and string copies add memory beyond the row itself.
+Its length guard and result share one fenced per-row serialization, avoiding
+duplicate `bytea`, JSONB, and text allocations for the same value. The canonical
+PostgreSQL row representation and trusted sort order remain unchanged.
+The change doubles the admitted per-row size, rather than buffering a complete
+table or archive. A maximum-size image therefore requires roughly 40 MiB of
+serialized row data plus these buffers and database-side serialization memory;
+worker memory budgets must include that overhead.
 
 `Snapshot.Dump` runs PostgreSQL 17 `pg_dump --format=custom` with the same
 exported snapshot and an exact, quoted schema selector. It writes a caller-owned

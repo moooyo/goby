@@ -8,6 +8,7 @@ import (
 
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 var (
@@ -53,12 +54,7 @@ func videoUnsupportedTransforms(source playback.Source, values map[string]string
 	if values["livestreamid"] != "" {
 		return errVideoRequestUnsupported
 	}
-	for _, name := range []string{"videorange", "videorangetype"} {
-		if value := strings.ToLower(values[name]); value != "" && value != "sdr" {
-			return errVideoRequestUnsupported
-		}
-	}
-	for _, name := range []string{"copytimestamps", "breakonnonkeyframes", "enablempegtsm2tsmode", "burnsubtitles", "burninsubtitles", "deinterlace", "deinterlacevideo", "enabletonemapping", "tonemapping", "enablehdr", "hdr"} {
+	for _, name := range []string{"breakonnonkeyframes", "enablempegtsm2tsmode", "enablehdr", "hdr"} {
 		value, err := hlsQueryBoolean(values, name)
 		if err != nil {
 			return errVideoRequestInvalid
@@ -67,7 +63,7 @@ func videoUnsupportedTransforms(source playback.Source, values map[string]string
 			return errVideoRequestUnsupported
 		}
 	}
-	for _, name := range []string{"audiofilter", "videofilter", "filtercomplex", "subtitlecodec", "manifestsubtitles", "segmentcontainer", "segmentlength", "minsegments", "audiobitdepth", "channelmap", "channelmapping", "tonemappingalgorithm", "videoprofile", "videolevel", "pixelformat", "colortransfer", "colorspace", "colorprimaries"} {
+	for _, name := range []string{"audiofilter", "videofilter", "filtercomplex", "subtitlecodec", "manifestsubtitles", "segmentcontainer", "segmentlength", "minsegments", "audiobitdepth", "channelmap", "channelmapping", "tonemappingalgorithm", "videolevel", "pixelformat", "colortransfer", "colorspace", "colorprimaries"} {
 		if values[name] != "" {
 			return errVideoRequestUnsupported
 		}
@@ -79,26 +75,6 @@ func videoUnsupportedTransforms(source playback.Source, values map[string]string
 	}
 	if value := strings.ToLower(values["transcodeseekinfo"]); value != "" && value != "auto" {
 		return errVideoRequestUnsupported
-	}
-	for _, name := range []string{"subtitlemethod", "subtitledeliverymethod"} {
-		if value := strings.ToLower(values[name]); value != "" && value != "none" && value != "external" {
-			return errVideoRequestUnsupported
-		}
-	}
-	if raw, exists := values["subtitlestreamindex"]; exists {
-		index, err := strconv.ParseInt(raw, 10, 32)
-		if err != nil || index < -1 {
-			return errVideoRequestInvalid
-		}
-		if index >= 0 {
-			found := false
-			for _, stream := range source.Info.Streams {
-				found = found || stream.Index == int(index) && stream.CodecType == "subtitle" && stream.IsExternal && stream.IsTextSubtitleStream
-			}
-			if !found {
-				return errVideoRequestUnsupported
-			}
-		}
 	}
 	return nil
 }
@@ -144,11 +120,12 @@ func videoRequestDecision(source playback.Source, values map[string]string, suff
 		"width", "height", "maxwidth", "maxheight", "framerate", "maxframerate", "audiochannels", "maxaudiochannels", "audiobitdepth",
 		"transcodingmaxaudiochannels", "audiosamplerate", "maxsamplerate", "videostreamindex", "audiostreamindex", "allowvideostreamcopy",
 		"allowaudiostreamcopy", "allowinterlacedvideostreamcopy", "enableautostreamcopy", "protocol", "transcodingprotocol", "transcodingcontainer",
+		"allowvideoseekalignment",
 		"copytimestamps", "breakonnonkeyframes", "enablempegtsm2tsmode", "burnsubtitles", "burninsubtitles", "deinterlace", "deinterlacevideo",
 		"enabletonemapping", "tonemapping", "enablehdr", "hdr", "audiofilter", "videofilter", "filtercomplex", "subtitlecodec", "manifestsubtitles",
-		"segmentcontainer", "segmentlength", "minsegments", "channelmap", "channelmapping", "tonemappingalgorithm", "videoprofile", "videolevel",
+		"segmentcontainer", "segmentlength", "minsegments", "channelmap", "channelmapping", "tonemappingalgorithm", "videoprofile", "videobitdepth", "videolevel",
 		"pixelformat", "colortransfer", "colorspace", "colorprimaries", "transcodeseekinfo",
-		"subtitlemethod", "subtitledeliverymethod", "subtitlestreamindex", "livestreamid", "videorange", "videorangetype",
+		"subtitlemethod", "subtitledeliverymethod", "subtitlestreamindex", "subtitleoffsetticks", "livestreamid", "videorange", "videorangetype",
 	} {
 		_, supplied := values[name]
 		explicit = explicit || supplied
@@ -184,6 +161,45 @@ func videoRequestDecision(source playback.Source, values map[string]string, suff
 		AudioChannels: options.request.AudioChannels, AudioSampleRate: options.request.AudioSampleRate,
 		MaxAudioChannels: options.request.MaxAudioChannels, MaxSampleRate: options.request.MaxSampleRate,
 		MaxBitrate: options.request.MaxBitrate, AllowAudioStreamCopy: options.request.AllowAudioStreamCopy}
+	if copyTimestamps, parseErr := hlsQueryBoolean(values, "copytimestamps"); parseErr != nil {
+		return result, errVideoRequestInvalid
+	} else if copyTimestamps != nil {
+		request.CopyTimestamps = *copyTimestamps
+		request.AllowVideoSeekAlignment = *copyTimestamps
+	}
+	if alignment, parseErr := hlsQueryBoolean(values, "allowvideoseekalignment"); parseErr != nil {
+		return result, errVideoRequestInvalid
+	} else if alignment != nil {
+		request.AllowVideoSeekAlignment = *alignment
+	}
+	request.VideoBitDepth, request.VideoProfile, err = videoQueryEncoding(values)
+	if err != nil {
+		if errors.Is(err, errHLSRequestUnsupported) {
+			return result, errVideoRequestUnsupported
+		}
+		return result, errVideoRequestInvalid
+	}
+	request.VideoRange, err = videoQueryRange(values)
+	if err != nil {
+		if errors.Is(err, errHLSRequestUnsupported) {
+			return result, errVideoRequestUnsupported
+		}
+		return result, errVideoRequestInvalid
+	}
+	request.SubtitleStreamIndex, request.BurnSubtitles, err = videoQuerySubtitle(source, values)
+	if err != nil {
+		return result, err
+	}
+	subtitleOffset, err := hlsQueryInteger(values, -24*60*60*media.TicksPerSecond, 24*60*60*media.TicksPerSecond, "subtitleoffsetticks")
+	if err != nil {
+		return result, errVideoRequestInvalid
+	}
+	if subtitleOffset != nil && !request.BurnSubtitles {
+		return result, errVideoRequestUnsupported
+	}
+	if subtitleOffset != nil {
+		request.SubtitleOffsetTicks = *subtitleOffset
+	}
 	if ceiling := options.transcodingMaxAudioChannels; ceiling != nil && (request.MaxAudioChannels == nil || *ceiling < *request.MaxAudioChannels) {
 		request.MaxAudioChannels = ceiling
 	}
@@ -227,6 +243,16 @@ func videoRequestDecision(source playback.Source, values map[string]string, suff
 		disabled := false
 		request.AllowVideoStreamCopy, request.AllowAudioStreamCopy = &disabled, &disabled
 	}
+	for _, name := range []string{"deinterlace", "deinterlacevideo", "enabletonemapping", "tonemapping"} {
+		flag, parseErr := hlsQueryBoolean(values, name)
+		if parseErr != nil {
+			return result, errVideoRequestInvalid
+		}
+		if flag != nil && *flag {
+			disabled := false
+			request.AllowVideoStreamCopy = &disabled
+		}
+	}
 	request.FrameRate, err = videoQueryFrameRate(values, "framerate")
 	if err != nil {
 		return result, err
@@ -256,7 +282,7 @@ func videoRequestDecision(source playback.Source, values map[string]string, suff
 		audioCodecs = []string{""}
 	}
 	for _, video := range videoCodecs {
-		if video != "h264" && video != "copy" {
+		if !transcode.VideoEncodingSupported(video) && video != "copy" {
 			continue
 		}
 		for _, audio := range audioCodecs {
@@ -269,6 +295,7 @@ func videoRequestDecision(source playback.Source, values map[string]string, suff
 				return result, errVideoRequestInvalid
 			}
 			if decision.Plan != nil {
+				result.StartTicks = decision.Plan.StartTicks
 				result.Conversion = playback.ConversionDecision{Plan: decision.Plan, OutputSource: decision.OutputSource, Method: decision.Method, Reasons: decision.Reasons}
 				return result, nil
 			}

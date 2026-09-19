@@ -133,7 +133,7 @@ func TestReadSubtitleChecksSnapshotsWithoutReadingPrimaryContents(t *testing.T) 
 	if err := os.Chtimes(path, before.ModTime(), before.ModTime()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index); !errors.Is(err, ErrUnavailable) {
+	if _, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index); !errors.Is(err, ErrUnavailable) || !errors.Is(err, ErrSourceChanged) {
 		t.Fatalf("same-size subtitle mutation with restored mtime remained readable: %v", err)
 	}
 	mutated, err := os.Stat(path)
@@ -146,7 +146,7 @@ func TestReadSubtitleChecksSnapshotsWithoutReadingPrimaryContents(t *testing.T) 
 		WHERE item_id = $1 AND stream_index = $2`, fixture.item.ID, track.Index, media.FileChangeTime(mutated)); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index); !errors.Is(err, ErrUnavailable) {
+	if _, err := fixture.store.ReadSubtitle(fixture.ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index); !errors.Is(err, ErrUnavailable) || !errors.Is(err, ErrSourceChanged) {
 		t.Fatalf("mismatched subtitle hash remained readable despite matching metadata: %v", err)
 	}
 	libraryIntegrationScan(t, fixture.ctx, fixture.store, fixture.library.ID, "Completed")
@@ -169,7 +169,7 @@ func TestReadSubtitleChecksSnapshotsWithoutReadingPrimaryContents(t *testing.T) 
 }
 
 func TestReadSubtitleRejectsReplacedAndNonregularPaths(t *testing.T) {
-	for _, kind := range []string{"leaf-symlink", "parent-symlink", "root-symlink", "replacement", "fifo", "oversized"} {
+	for _, kind := range []string{"leaf-symlink", "parent-symlink", "root-symlink", "replacement", "fifo", "oversized", "removed"} {
 		t.Run(kind, func(t *testing.T) {
 			fixture, track, path := subtitleTestCatalog(t)
 			switch kind {
@@ -211,11 +211,19 @@ func TestReadSubtitleRejectsReplacedAndNonregularPaths(t *testing.T) {
 				if err := os.Truncate(path, 8<<20+1); err != nil {
 					t.Fatal(err)
 				}
+			case "removed":
+				if err := os.Remove(path); err != nil {
+					t.Fatal(err)
+				}
 			}
 			ctx, cancel := context.WithTimeout(fixture.ctx, 2*time.Second)
 			defer cancel()
-			if _, err := fixture.store.ReadSubtitle(ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index); !errors.Is(err, ErrUnavailable) || ctx.Err() != nil {
+			_, err := fixture.store.ReadSubtitle(ctx, fixture.userID, fixture.item.ID, media.SourceID(fixture.item.ID), track.Index)
+			if !errors.Is(err, ErrUnavailable) || ctx.Err() != nil {
 				t.Fatalf("unsafe %s subtitle returned %v (context=%v)", kind, err, ctx.Err())
+			}
+			if kind != "parent-symlink" && kind != "root-symlink" && !errors.Is(err, ErrSourceChanged) {
+				t.Fatalf("confirmed %s subtitle mutation did not invalidate bound conversions: %v", kind, err)
 			}
 		})
 	}

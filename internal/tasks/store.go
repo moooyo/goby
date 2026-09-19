@@ -42,11 +42,11 @@ func New(pool *pgxpool.Pool, owner library.OwnedTransactions, registries ...*Exe
 func (s *Store) Reconcile(ctx context.Context) error {
 	definitions := []struct{ id, key, embyKey, name, description, category string }{
 		{"", LibraryScanKey, LibraryScanEmbyKey, "Scan media library", "Scan all registered media libraries.", "Library"},
-		{"", LibraryRefreshMediaKey, "", "Refresh media details", "Refresh media details in all registered libraries, including unchanged files.", "Library"},
+		{"", LibraryRefreshMediaKey, CompatibilityKey(LibraryRefreshMediaKey), "Refresh media details", "Refresh media details in all registered libraries, including unchanged files.", "Library"},
 	}
 	for _, key := range s.executorKeys()[2:] {
 		entry, _ := s.executors.lookup(key)
-		definitions = append(definitions, struct{ id, key, embyKey, name, description, category string }{"", entry.Key, "", entry.Name, entry.Description, entry.Category})
+		definitions = append(definitions, struct{ id, key, embyKey, name, description, category string }{"", entry.Key, CompatibilityKey(entry.Key), entry.Name, entry.Description, entry.Category})
 	}
 	for index := range definitions {
 		id, err := randomID()
@@ -88,7 +88,7 @@ func (s *Store) checkTaskExecutor(key string, actor Actor) error {
 			return ErrUnavailable
 		}
 	}
-	if actor.Audience == identity.AdministratorEmby && key != LibraryScanKey {
+	if actor.Audience == identity.AdministratorEmby && CompatibilityKey(key) == "" {
 		return identity.ErrClientSessionForbidden
 	}
 	return nil

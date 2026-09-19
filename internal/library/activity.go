@@ -180,6 +180,12 @@ func metadataActivityField(name string) (activity.Field, bool) {
 		return activity.FieldStudios, true
 	case "People":
 		return activity.FieldPeople, true
+	case "Album":
+		return activity.FieldAlbum, true
+	case "Artists":
+		return activity.FieldArtists, true
+	case "AlbumArtists":
+		return activity.FieldAlbumArtists, true
 	default:
 		return "", false
 	}

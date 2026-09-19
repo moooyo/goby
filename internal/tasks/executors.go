@@ -13,6 +13,25 @@ const (
 	CacheMaintainKey    = "cache.maintain"
 )
 
+// CompatibilityKey publishes only implemented executors. Goby-prefixed keys
+// distinguish narrower native work from unrelated upstream maintenance jobs.
+func CompatibilityKey(key string) string {
+	switch key {
+	case LibraryScanKey:
+		return LibraryScanEmbyKey
+	case LibraryRefreshMediaKey:
+		return "GobyRefreshMediaDetails"
+	case MetadataRefreshKey:
+		return "GobyRefreshOnlineMetadata"
+	case SubtitleDownloadKey:
+		return "DownloadSubtitles"
+	case CacheMaintainKey:
+		return "GobyMaintainProviderCache"
+	default:
+		return ""
+	}
+}
+
 // Work is an immutable child snapshot. A global task has an empty LibraryID.
 // Executors must honor cancellation and must not start background work after
 // Execute returns. Progress contains absolute counters, not increments.

@@ -78,7 +78,7 @@ func TestMetadataConfigurationUpdatesShareRuntimeSettingsAndRespectSectionReset(
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reset.Management.Metadata.PreferredMetadataLanguage != "en" || reset.Management.Metadata.MetadataCountryCode != "US" || !reset.Management.Metadata.EnableInternetProviders || reset.Management.Tasks.CacheRetentionDays != 7 {
+	if reset.Management.Metadata.PreferredMetadataLanguage != "en" || reset.Management.Metadata.MetadataCountryCode != "US" || reset.Management.Metadata.EnableInternetProviders || reset.Management.Tasks.CacheRetentionDays != 7 {
 		t.Fatal("full compatibility reset changed an unrelated native management setting")
 	}
 }

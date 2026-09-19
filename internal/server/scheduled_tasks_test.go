@@ -154,8 +154,8 @@ func TestEmbyScheduledTaskTriggersPreserveObservedArrayShapes(t *testing.T) {
 		})
 	}
 	for _, name := range []string{"trigger-unknown", "trigger-mixed", "trigger-system-event"} {
-		// The reference accepts SystemEventTrigger. Goby deliberately rejects
-		// that unsupported executor; unknown/mixed rejection is observed.
+		// The reference's DisplayConfigurationChange event remains unsupported;
+		// the implemented lifecycle/catalog/settings events are separate contracts.
 		t.Run(name, func(t *testing.T) {
 			rules, err := parseEmbyTaskTriggers(scheduledTaskFixtureBody(t, name, true), "UTC")
 			if !errors.Is(err, errUnsupportedTaskTrigger) || rules != nil {
@@ -241,13 +241,17 @@ func TestEmbyScheduledTaskTriggerBodyAndQueryValidation(t *testing.T) {
 	}
 }
 
-func TestEmbyScheduledTaskExecutorExcludesNativeRefreshMedia(t *testing.T) {
+func TestEmbyScheduledTaskExecutorRequiresItsPublishedKey(t *testing.T) {
 	for _, test := range []struct {
 		key, embyKey string
 		allowed      bool
 	}{
 		{tasks.LibraryScanKey, tasks.LibraryScanEmbyKey, true},
 		{tasks.LibraryRefreshMediaKey, "", false},
+		{tasks.LibraryRefreshMediaKey, tasks.CompatibilityKey(tasks.LibraryRefreshMediaKey), true},
+		{tasks.MetadataRefreshKey, tasks.CompatibilityKey(tasks.MetadataRefreshKey), true},
+		{tasks.SubtitleDownloadKey, tasks.CompatibilityKey(tasks.SubtitleDownloadKey), true},
+		{tasks.CacheMaintainKey, tasks.CompatibilityKey(tasks.CacheMaintainKey), true},
 		{tasks.LibraryRefreshMediaKey, tasks.LibraryScanEmbyKey, false},
 		{tasks.LibraryScanKey, "", false},
 	} {

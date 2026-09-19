@@ -13,6 +13,7 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/playback"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -21,15 +22,19 @@ func hlsArtifactURL(session *hlsSession, resource, name, token string, start int
 }
 
 func hlsGeneratedMaster(session *hlsSession, resource, token string, start int64) ([]byte, error) {
+	view, err := hlsSubtitleRequestView(nil, session)
+	if err != nil {
+		return nil, err
+	}
+	return hlsGeneratedMasterView(session, resource, token, start, view)
+}
+
+func hlsGeneratedMasterView(session *hlsSession, resource, token string, start int64, view playback.HLSSubtitleView) ([]byte, error) {
 	plan := session.key.plan
 	var result strings.Builder
 	result.WriteString("#EXTM3U\n#EXT-X-VERSION:7\n")
-	if plan.Subtitle.Mode == "hls" {
-		child := hlsArtifactURL(session, resource, "subtitles.m3u8", token, start)
-		if !validHLSManifestURL(child) {
-			return nil, errInvalidHLSManifest
-		}
-		fmt.Fprintf(&result, "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"Selected subtitles\",DEFAULT=YES,AUTOSELECT=YES,URI=\"%s\"\n", child)
+	if err := writeHLSSubtitleRenditions(&result, session, resource, token, start, view); err != nil {
+		return nil, err
 	}
 	for index := 0; index < max(1, plan.HLS.RenditionCount); index++ {
 		bandwidth, width, height := session.output.Info.Bitrate, plan.Width, plan.Height
@@ -50,6 +55,9 @@ func hlsGeneratedMaster(session *hlsSession, resource, token string, start int64
 			return nil, errInvalidHLSManifest
 		}
 		child := hlsArtifactURL(session, resource, transcode.HLSPlaylistName(index, plan.HLS.RenditionCount), token, start)
+		if transcode.HasHLSSubtitles(plan) {
+			child = hlsSubtitleURLView(child, view)
+		}
 		if !validHLSManifestURL(child) {
 			return nil, errInvalidHLSManifest
 		}
@@ -60,7 +68,7 @@ func hlsGeneratedMaster(session *hlsSession, resource, token string, start int64
 		if plan.FrameRate > 0 {
 			fmt.Fprintf(&result, ",FRAME-RATE=%.3f", plan.FrameRate)
 		}
-		if plan.Subtitle.Mode == "hls" {
+		if transcode.HasHLSSubtitles(plan) {
 			result.WriteString(",SUBTITLES=\"subs\"")
 		}
 		fmt.Fprintf(&result, "\n%s\n", child)
@@ -156,7 +164,14 @@ func hlsPlanArtifact(plan transcode.Plan, name string) bool {
 	return strings.HasPrefix(name, prefix+"segment-") && strings.HasSuffix(name, ext)
 }
 
-func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession, input *os.File, name, resource, token string, start int64) ([]byte, error) {
+func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession, input *os.File, name, resource, token string, start int64, views ...playback.HLSSubtitleView) ([]byte, error) {
+	view, err := hlsSubtitleRequestView(nil, session)
+	if err != nil {
+		return nil, err
+	}
+	if len(views) != 0 {
+		view = views[0]
+	}
 	handle, err := h.generatedArtifact(ctx, session, input, name)
 	if err != nil {
 		return nil, err
@@ -174,12 +189,20 @@ func (h *hlsRuntime) generatedPlaylist(ctx context.Context, session *hlsSession,
 		if !hlsPlanArtifact(session.key.plan, segment.Name) || !strings.HasPrefix(segment.Name, prefix+"segment-") {
 			return ""
 		}
-		return hlsArtifactURL(session, resource, segment.Name, token, start)
+		child := hlsArtifactURL(session, resource, segment.Name, token, start)
+		if transcode.HasHLSSubtitles(session.key.plan) {
+			child = hlsSubtitleURLView(child, view)
+		}
+		return child
 	}, func(init string) string {
 		if !hlsPlanArtifact(session.key.plan, init) || init != prefix+"init.mp4" {
 			return ""
 		}
-		return hlsArtifactURL(session, resource, init, token, start)
+		child := hlsArtifactURL(session, resource, init, token, start)
+		if transcode.HasHLSSubtitles(session.key.plan) {
+			child = hlsSubtitleURLView(child, view)
+		}
+		return child
 	})
 	if err == nil && start > 0 {
 		data = []byte(strings.Replace(string(data), "#EXTM3U\n", fmt.Sprintf("#EXTM3U\n#EXT-X-START:TIME-OFFSET=%d.%07d,PRECISE=YES\n", start/media.TicksPerSecond, start%media.TicksPerSecond), 1))
@@ -230,7 +253,12 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 		work, cancel := context.WithCancel(ctx)
 		stop := context.AfterFunc(session.ctx, cancel)
 		defer func() { stop(); cancel() }()
-		allowedSubtitle := session.key.plan.Subtitle.Mode == "hls" && (name == "subtitles.m3u8" || name == "subtitles.vtt")
+		view, err := hlsSubtitleRequestView(values, session)
+		if err != nil {
+			s.hlsError(w, r, err)
+			return
+		}
+		slot, sequence, subtitlePlaylist, allowedSubtitle := hlsSubtitleArtifact(session.key.plan, name, view)
 		if !allowedSubtitle && !hlsPlanArtifact(session.key.plan, name) {
 			s.hlsError(w, r, library.ErrNotFound)
 			return
@@ -258,7 +286,7 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		policyDelivered := false
-		if r.Method != http.MethodHead && name != "subtitles.m3u8" {
+		if r.Method != http.MethodHead {
 			policyContext, release, policyErr := s.acquireMediaPolicy(work, r.Context().Value(principalKey).(identity.Principal), session.key.scope)
 			if policyErr != nil {
 				s.hlsError(w, r, policyErr)
@@ -274,18 +302,26 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 				}
 			}()
 		}
-		if name == "subtitles.m3u8" || name == "subtitles.vtt" {
-			if session.key.plan.Subtitle.Mode != "hls" {
-				s.hlsError(w, r, library.ErrNotFound)
+		if allowedSubtitle {
+			if !subtitlePlaylist {
+				policyDelivered = s.serveGeneratedHLSSubtitle(w, r.WithContext(work), session, input, slot, sequence, view)
 				return
 			}
-			if name == "subtitles.vtt" {
-				policyDelivered = s.serveGeneratedHLSSubtitle(w, r.WithContext(work), session, input)
+			list, _, _, err := s.hls.subtitleMediaWindow(work, session, input)
+			if err != nil {
+				s.hlsError(w, r, err)
 				return
 			}
-			duration := session.key.plan.DurationTicks
-			body := fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%d\n#EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXTINF:%d.%07d,\n%s\n#EXT-X-ENDLIST\n", (duration+media.TicksPerSecond-1)/media.TicksPerSecond, duration/media.TicksPerSecond, duration%media.TicksPerSecond, hlsArtifactURL(session, resource, "subtitles.vtt", token, 0))
-			writeGeneratedHLSManifest(w, r, []byte(body))
+			body, err := hlsSubtitleManifest(session, resource, token, start, slot, view, list)
+			if err != nil {
+				s.hlsError(w, r, err)
+				return
+			}
+			if !s.revalidateGeneratedHLS(work, w, r, session) {
+				return
+			}
+			policyDelivered = true
+			writeGeneratedHLSManifest(w, r, body)
 			return
 		}
 		if !hlsPlanArtifact(session.key.plan, name) {
@@ -293,7 +329,7 @@ func (s *Server) hlsArtifact(audioOnly bool) http.HandlerFunc {
 			return
 		}
 		if strings.HasSuffix(name, ".m3u8") {
-			body, err := s.hls.generatedPlaylist(work, session, input, name, resource, token, start)
+			body, err := s.hls.generatedPlaylist(work, session, input, name, resource, token, start, view)
 			if err != nil {
 				s.failMediaPolicy(work, session.key.scope)
 				s.hlsError(w, r, err)

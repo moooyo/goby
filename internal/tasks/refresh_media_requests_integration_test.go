@@ -72,7 +72,7 @@ func TestRefreshMediaKeepsLiteralLegacyRequestReceiptsAndDefinitionScope(t *test
 			}
 			newRun, err := store.Start(ctx, actor, StartRequest{TaskID: refresh.ID, RequestID: requestID})
 			if err != nil || !newRun.Admitted || newRun.Run.ID == legacyRunID || newRun.Run.State != RunCompleted ||
-				newRun.Run.TaskKey != LibraryRefreshMediaKey || newRun.Run.TaskEmbyKey != "" {
+				newRun.Run.TaskKey != LibraryRefreshMediaKey || newRun.Run.TaskEmbyKey != CompatibilityKey(LibraryRefreshMediaKey) {
 				t.Fatalf("the same request ID crossed task definitions: admission=%+v error=%v", newRun, err)
 			}
 			wantRefresh := sha256.Sum256([]byte(fmt.Sprintf(`{"TaskID":"%s","Executor":"library.refresh_media","Source":"manual"}`, refresh.ID)))

@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -48,20 +49,8 @@ func init() {
 	args := os.Args[1:]
 	if name == videoSeekHTTPProbeName {
 		tool, kind = "ffprobe", "probe"
-	} else if len(args) == 1 && args[0] == "-version" {
-		kind = "identity"
-	} else if len(args) > 0 && args[len(args)-1] == "pipe:4" {
-		kind = "producer"
 	} else {
-		for index := 0; index+1 < len(args); index++ {
-			if args[index] == "-f" && args[index+1] == "framehash" {
-				kind = "proof"
-			}
-			if args[index] == "-skip_frame" && args[index+1] == "nokey" {
-				kind = "index"
-				break
-			}
-		}
+		kind = videoSeekHTTPFFmpegKind(args)
 	}
 	executable, err := os.Executable()
 	if err != nil {
@@ -86,6 +75,65 @@ func init() {
 	}
 	if err := syscall.Exec(resolved, append([]string{resolved}, args...), os.Environ()); err != nil {
 		os.Exit(96)
+	}
+}
+
+func videoSeekHTTPFFmpegKind(args []string) string {
+	if len(args) == 1 && args[0] == "-version" {
+		return "identity"
+	}
+	if len(args) > 0 && args[len(args)-1] == "pipe:4" {
+		return "producer"
+	}
+	if !videoSeekHTTPArgument(args, "-f", "framehash") {
+		return "ffmpeg"
+	}
+	// Framehash is shared by full-source analysis and fresh restart proofs.
+	// Only the bounded, seeked command establishes a runtime proof. AAC packet
+	// indexing has no video decoder and therefore no -skip_frame marker.
+	if videoSeekHTTPArgument(args, "-seek_timestamp", "1") && slices.Contains(args, "-ss") &&
+		(videoSeekHTTPArgument(args, "-frames:v:0", "1") || videoSeekHTTPArgument(args, "-frames:a", "1")) {
+		return "proof"
+	}
+	if !slices.Contains(args, "-ss") && videoSeekHTTPArgument(args, "-skip_frame", "nokey") {
+		return "index"
+	}
+	if !slices.Contains(args, "-ss") && !slices.Contains(args, "-seek_timestamp") && !slices.Contains(args, "-frames:a") &&
+		slices.Contains(args, "-vn") && videoSeekHTTPArgument(args, "-c:a", "copy") {
+		return "audio-index"
+	}
+	return "unknown-framehash"
+}
+
+func TestVideoSeekHTTPRecorderDistinguishesFullScansFromFreshProofs(t *testing.T) {
+	index, err := media.BuildVideoSeekCommandArgs(0, nil, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seconds := "6.0000000"
+	proof, err := media.BuildVideoSeekCommandArgs(0, &seconds, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name string
+		args []string
+		kind string
+	}{
+		{"video scan", index, "index"},
+		{"video restart", proof, "proof"},
+		{"audio packet scan", []string{"-i", "/proc/self/fd/3", "-map", "0:1", "-vn", "-c:a", "copy", "-f", "framehash", "pipe:1"}, "audio-index"},
+		{"audio restart", []string{"-seek_timestamp", "1", "-ss", seconds, "-i", "/proc/self/fd/3", "-ss", seconds, "-vn", "-c:a", "copy", "-frames:a", "1", "-f", "framehash", "pipe:1"}, "proof"},
+		{"unrecognized hash job", []string{"-f", "framehash", "pipe:1"}, "unknown-framehash"},
+		{"unbounded seeked audio", []string{"-ss", seconds, "-vn", "-c:a", "copy", "-f", "framehash", "pipe:1"}, "unknown-framehash"},
+		{"production", []string{"-ss", seconds, "-f", "mp4", "pipe:4"}, "producer"},
+		{"tool identity", []string{"-version"}, "identity"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if kind := videoSeekHTTPFFmpegKind(test.args); kind != test.kind {
+				t.Fatalf("tool invocation kind=%q, want %q", kind, test.kind)
+			}
+		})
 	}
 }
 
@@ -224,7 +272,7 @@ func newVideoSeekHTTPFixture(t *testing.T) (*hlsHTTPFixture, string) {
 			source = item
 		}
 	}
-	if source.ID == "" || source.Media == nil || source.Media.ProbeVersion != 6 || len(source.Media.VideoSeekIndexes) != 1 ||
+	if source.ID == "" || source.Media == nil || source.Media.ProbeVersion != media.CurrentProbeVersion || len(source.Media.VideoSeekIndexes) != 1 ||
 		len(source.Media.VideoSeekIndexes[0].Entries) != 4 || media.ValidateVideoSeekIndex(source.Media.VideoSeekIndexes[0]) != nil {
 		t.Fatal("actual application scanning did not persist trusted restart evidence")
 	}
@@ -239,6 +287,7 @@ func TestHTTPVideoSeekTrustedScanIndexSurvivesNegotiationAndCannotBeInjected(t *
 	fixture, logPath := newVideoSeekHTTPFixture(t)
 	before := videoSeekHTTPInvocations(t, logPath)
 	if videoSeekHTTPKindCount(before, "probe") == 0 || videoSeekHTTPKindCount(before, "index") != 1 ||
+		videoSeekHTTPKindCount(before, "audio-index") != 1 || videoSeekHTTPKindCount(before, "unknown-framehash") != 0 ||
 		videoSeekHTTPKindCount(before, "proof") != 0 || videoSeekHTTPKindCount(before, "producer") != 0 {
 		t.Fatal("scan-time tool observations did not distinguish indexing from runtime proof and production")
 	}
@@ -297,6 +346,7 @@ func TestHTTPVideoSeekTrustedScanIndexSurvivesNegotiationAndCannotBeInjected(t *
 	}
 	after := videoSeekHTTPInvocations(t, logPath)
 	if videoSeekHTTPKindCount(after, "probe") != videoSeekHTTPKindCount(before, "probe") || videoSeekHTTPKindCount(after, "index") != 1 ||
+		videoSeekHTTPKindCount(after, "audio-index") != videoSeekHTTPKindCount(before, "audio-index") || videoSeekHTTPKindCount(after, "unknown-framehash") != 0 ||
 		videoSeekHTTPKindCount(after, "proof") == 0 || videoSeekHTTPKindCount(after, "producer") != 1 {
 		t.Fatal("GET did not perform bounded fresh proof before one producer, or unexpectedly reindexed the source")
 	}
@@ -376,13 +426,14 @@ func TestHTTPVideoSeekProbeFiveUpgradePreservesMetadataControlsAndUserData(t *te
 	}
 	(&streamHTTPFixture{f: fixture.f}).rescan(t, fixture.libraryID)
 	current, err := fixture.f.app.library.GetItem(fixture.f.ctx, fixture.accounts.viewer.userID, fixture.item.ID)
-	if err != nil || current.Media == nil || current.Media.ProbeVersion != 6 || len(current.Media.VideoSeekIndexes) != 1 ||
+	if err != nil || current.Media == nil || current.Media.ProbeVersion != media.CurrentProbeVersion || len(current.Media.VideoSeekIndexes) != 1 ||
 		media.ValidateVideoSeekIndex(current.Media.VideoSeekIndexes[0]) != nil {
 		t.Fatal("normal library rescan did not replace legacy probe facts with a trusted seek index")
 	}
 	afterTools := videoSeekHTTPInvocations(t, logPath)
 	if videoSeekHTTPKindCount(afterTools, "probe") <= videoSeekHTTPKindCount(beforeTools, "probe") ||
 		videoSeekHTTPKindCount(afterTools, "index") != videoSeekHTTPKindCount(beforeTools, "index")+1 ||
+		videoSeekHTTPKindCount(afterTools, "audio-index") != videoSeekHTTPKindCount(beforeTools, "audio-index")+1 || videoSeekHTTPKindCount(afterTools, "unknown-framehash") != 0 ||
 		videoSeekHTTPKindCount(afterTools, "proof") != 0 || videoSeekHTTPKindCount(afterTools, "producer") != 0 {
 		t.Fatal("probe upgrade did not run real indexing independently from runtime proof and conversion")
 	}

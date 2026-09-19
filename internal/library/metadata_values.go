@@ -34,6 +34,9 @@ type MetadataValues struct {
 	People            []metadata.Person `json:"People"`
 	IndexNumber       *int              `json:"IndexNumber"`
 	ParentIndexNumber *int              `json:"ParentIndexNumber"`
+	Album             string            `json:"Album"`
+	Artists           []string          `json:"Artists"`
+	AlbumArtists      []string          `json:"AlbumArtists"`
 }
 
 func (values MetadataValues) MarshalJSON() ([]byte, error) {
@@ -93,6 +96,7 @@ var metadataValueFieldNames = []string{
 	"Name", "SortName", "Overview", "OriginalTitle", "OfficialRating",
 	"ProductionYear", "PremiereDate", "CommunityRating", "ProviderIds",
 	"Genres", "Tags", "Studios", "People", "IndexNumber", "ParentIndexNumber",
+	"Album", "Artists", "AlbumArtists",
 }
 
 func normalizeMetadataEdit(edit MetadataEdit, editable []string) (MetadataEdit, error) {
@@ -319,6 +323,12 @@ func completeMetadataCollections(values MetadataValues) MetadataValues {
 	if values.People == nil {
 		values.People = []metadata.Person{}
 	}
+	if values.Artists == nil {
+		values.Artists = []string{}
+	}
+	if values.AlbumArtists == nil {
+		values.AlbumArtists = []string{}
+	}
 	return values
 }
 
@@ -411,6 +421,12 @@ func normalizeMetadataValue(field string, raw json.RawMessage) (json.RawMessage,
 			return nil, err
 		}
 		value = text
+	case "Album":
+		text, err := metadataStringValue(raw, false, metadataValueMaxName, true)
+		if err != nil {
+			return nil, err
+		}
+		value = text
 	case "ProductionYear":
 		number, err := metadataIntegerValue(raw, 1, 9999)
 		if err != nil {
@@ -447,6 +463,12 @@ func normalizeMetadataValue(field string, raw json.RawMessage) (json.RawMessage,
 			return nil, err
 		}
 		value = providers
+	case "Artists", "AlbumArtists":
+		names, err := normalizeMusicCreditValues(raw)
+		if err != nil {
+			return nil, err
+		}
+		value = names
 	case "Genres", "Tags", "Studios":
 		names, err := metadataStringValues(raw)
 		if err != nil {
@@ -474,7 +496,14 @@ func normalizeMetadataValue(field string, raw json.RawMessage) (json.RawMessage,
 // the normalization required for a new manual name. Keep the same type, UTF-8,
 // NUL, and byte limits; all other fields retain their existing domain checks.
 func normalizeMetadataLockValue(field string, raw json.RawMessage) (json.RawMessage, error) {
-	if field != "Name" && field != "SortName" {
+	if field == "Artists" || field == "AlbumArtists" {
+		values, err := acceptedMusicStrings(raw)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(values)
+	}
+	if field != "Name" && field != "SortName" && field != "Album" {
 		return normalizeMetadataValue(field, raw)
 	}
 	if !utf8.Valid(raw) || !json.Valid(raw) {
@@ -539,6 +568,16 @@ func metadataProviderValues(raw []byte) (map[string]string, error) {
 			name = "Tmdb"
 		case "tvdb":
 			name = "Tvdb"
+		case "musicbrainz":
+			name = "MusicBrainz"
+		case "musicbrainzrecording":
+			name = "MusicBrainzRecording"
+		case "musicbrainzrelease":
+			name = "MusicBrainzRelease"
+		case "musicbrainzreleasegroup":
+			name = "MusicBrainzReleaseGroup"
+		case "musicbrainzartist":
+			name = "MusicBrainzArtist"
 		}
 		if previous, exists := providers[name]; exists && previous != value {
 			return nil, fmt.Errorf("Canonical provider keys must not have conflicting IDs.")

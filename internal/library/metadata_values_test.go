@@ -49,27 +49,32 @@ func metadataTestEqualJSON(t *testing.T, actual, expected []byte) {
 }
 
 func TestMetadataValuesAlwaysEncodeCompleteCollections(t *testing.T) {
-	for _, raw := range [][]byte{nil, []byte("null"), []byte(`{"Genres":null,"Tags":null,"Studios":null,"People":null,"ProviderIDs":null}`)} {
+	for _, raw := range [][]byte{nil, []byte("null"), []byte(`{"Genres":null,"Tags":null,"Studios":null,"People":null,"ProviderIDs":null,"Artists":null,"AlbumArtists":null}`)} {
 		values, err := decodeMetadataValues(raw)
 		if err != nil {
 			t.Fatalf("decode empty metadata: %v", err)
 		}
-		if values.ProviderIDs == nil || values.Genres == nil || values.Tags == nil || values.Studios == nil || values.People == nil {
+		if values.ProviderIDs == nil || values.Genres == nil || values.Tags == nil || values.Studios == nil || values.People == nil || values.Artists == nil || values.AlbumArtists == nil {
 			t.Fatalf("decoded collections must be nonnil: %+v", values)
 		}
 	}
 	encoded := metadataTestRaw(t, MetadataValues{})
 	object := metadataTestObject(t, encoded)
-	if len(object) != 15 {
-		t.Errorf("complete value projection has %d fields, want 15: %s", len(object), encoded)
+	if len(object) != 18 {
+		t.Errorf("complete value projection has %d fields, want 18: %s", len(object), encoded)
 	}
-	for _, field := range []string{"Genres", "Tags", "Studios", "People"} {
+	for _, field := range []string{"Genres", "Tags", "Studios", "People", "Artists", "AlbumArtists"} {
 		if string(object[field]) != "[]" {
 			t.Errorf("empty %s = %s, want []", field, object[field])
 		}
 	}
 	if string(object["ProviderIds"]) != "{}" {
 		t.Errorf("empty ProviderIds = %s, want {}", object["ProviderIds"])
+	}
+	for _, field := range []string{"Name", "SortName", "Overview", "OriginalTitle", "OfficialRating", "Album"} {
+		if string(object[field]) != `""` {
+			t.Errorf("empty %s = %s, want empty string", field, object[field])
+		}
 	}
 	for _, field := range []string{"ProductionYear", "PremiereDate", "CommunityRating", "IndexNumber", "ParentIndexNumber"} {
 		if string(object[field]) != "null" {

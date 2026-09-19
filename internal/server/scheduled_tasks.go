@@ -17,6 +17,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/systemevents"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -123,6 +124,11 @@ func embyTaskTriggerDTO(trigger tasks.Trigger) map[string]any {
 		}
 	case tasks.ScheduleStartup:
 		result["Type"] = "StartupTrigger"
+	case tasks.ScheduleSystemEvent:
+		result["Type"] = "SystemEventTrigger"
+		if trigger.SystemEvent != nil {
+			result["SystemEvent"] = *trigger.SystemEvent
+		}
 	}
 	if trigger.TimeOfDayTicks != nil {
 		result["TimeOfDayTicks"] = *trigger.TimeOfDayTicks
@@ -186,7 +192,8 @@ func embyTaskDTO(definition tasks.Definition) map[string]any {
 }
 
 func executableEmbyTask(definition tasks.Definition) bool {
-	return definition.Key == tasks.LibraryScanKey && definition.EmbyKey == tasks.LibraryScanEmbyKey
+	key := tasks.CompatibilityKey(definition.Key)
+	return key != "" && definition.EmbyKey == key
 }
 
 func (s *Server) scheduledTaskDefinition(ctx context.Context, id string) (tasks.Definition, error) {
@@ -321,9 +328,9 @@ func parseEmbyTaskTriggers(data []byte, timezone string) ([]tasks.ScheduleRule, 
 			rule.Kind = tasks.ScheduleWeekly
 		case "StartupTrigger":
 			rule.Kind = tasks.ScheduleStartup
+		case "SystemEventTrigger":
+			rule.Kind = tasks.ScheduleSystemEvent
 		default:
-			// No Linux event executor exists for SystemEventTrigger. Accepting
-			// it would persist a schedule that cannot execute as requested.
 			return nil, errUnsupportedTaskTrigger
 		}
 		for name, value := range fields {
@@ -337,6 +344,12 @@ func parseEmbyTaskTriggers(data []byte, timezone string) ([]tasks.ScheduleRule, 
 				rule.MaxRuntimeTicks, err = embyTaskTicks(value)
 			case "dayofweek":
 				rule.DayOfWeek, err = embyTaskWeekday(value)
+			case "systemevent":
+				var event string
+				if json.Unmarshal(value, &event) != nil || !systemevents.Valid(systemevents.Event(event)) {
+					return nil, errUnsupportedTaskTrigger
+				}
+				rule.SystemEvent = systemevents.Event(event)
 			default:
 				err = tasks.ErrInvalidInput
 			}

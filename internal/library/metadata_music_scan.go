@@ -1,15 +1,15 @@
 package library
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
@@ -31,28 +31,13 @@ func musicSourceFromProbe(probe *media.Info) (musicMetadataSource, bool) {
 	}
 	facts := probe.EmbeddedMusic
 	source := musicMetadataSource{Version: musicSourceVersion, Name: facts.Title, Album: facts.Album,
-		Artists: []string{}, AlbumArtists: []string{}}
-	if strings.TrimSpace(facts.Artist) != "" {
-		source.Artists = append(source.Artists, facts.Artist)
-	}
-	if strings.TrimSpace(facts.AlbumArtist) != "" {
-		source.AlbumArtists = append(source.AlbumArtists, facts.AlbumArtist)
-	}
+		Artists: probeMusicCredits(facts.Artists, facts.Artist), AlbumArtists: probeMusicCredits(facts.AlbumArtists, facts.AlbumArtist)}
+	extendedMusicSource(*facts, &source)
 	return source, true
 }
 
 func validTrackMusic(facts media.MusicMetadata) bool {
-	if facts.Version != media.CurrentMusicMetadataVersion {
-		return false
-	}
-	total := 0
-	for _, value := range []string{facts.Title, facts.Album, facts.Artist, facts.AlbumArtist} {
-		if !utf8.ValidString(value) || len(value) > metadataValueMaxName || strings.IndexFunc(value, unicode.IsControl) >= 0 {
-			return false
-		}
-		total += len(value)
-	}
-	return total <= 4*metadataValueMaxName
+	return media.ValidateMusicMetadata(facts) == nil
 }
 
 func encodeAcceptedMusicSource(source musicMetadataSource) ([]byte, error) {
@@ -75,13 +60,21 @@ func acceptedTrackMusic(raw []byte) (media.MusicMetadata, bool) {
 		return media.MusicMetadata{}, false
 	}
 	for field := range object {
-		if field != "Version" && field != "Title" && field != "Album" && field != "Artist" && field != "AlbumArtist" {
+		switch field {
+		case "Version", "Title", "Album", "Artist", "AlbumArtist", "Artists", "AlbumArtists", "Composers", "Genres",
+			"TrackNumber", "TrackTotal", "DiscNumber", "DiscTotal", "Year", "Date", "ProviderIDs":
+		default:
 			return media.MusicMetadata{}, false
 		}
 	}
 	var facts media.MusicMetadata
-	if json.Unmarshal(object["Version"], &facts.Version) != nil || facts.Version != media.CurrentMusicMetadataVersion {
+	if json.Unmarshal(raw, &facts) != nil || facts.Version != media.CurrentMusicMetadataVersion {
 		return media.MusicMetadata{}, false
+	}
+	for _, field := range []string{"Artists", "AlbumArtists", "Composers", "Genres", "TrackNumber", "TrackTotal", "DiscNumber", "DiscTotal", "Year", "ProviderIDs"} {
+		if value, present := object[field]; present && bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return media.MusicMetadata{}, false
+		}
 	}
 	for _, field := range []struct {
 		name  string
@@ -91,6 +84,7 @@ func acceptedTrackMusic(raw []byte) (media.MusicMetadata, bool) {
 		{name: "Album", value: &facts.Album},
 		{name: "Artist", value: &facts.Artist},
 		{name: "AlbumArtist", value: &facts.AlbumArtist},
+		{name: "Date", value: &facts.Date},
 	} {
 		if value, exists := object[field.name]; exists {
 			text, err := acceptedMusicText(value)
@@ -437,8 +431,10 @@ func readAcceptedMusicAlbumSource(ctx context.Context, tx pgx.Tx, libraryID, alb
 		tracks = ordered
 	}
 	source := musicMetadataSource{Version: musicSourceVersion, Artists: []string{}, AlbumArtists: []string{}}
+	var extended albumMusicMetadata
 	seenArtists := make(map[string]bool)
-	var uniformAlbum, uniformArtist, uniformAlbumArtist string
+	var uniformAlbum string
+	var uniformArtist, uniformAlbumArtist []string
 	allAlbums, allArtists, readAll, withinBounds := true, true, true, true
 	allAlbumArtists, noAlbumArtists := true, true
 	memberCount := 0
@@ -452,21 +448,25 @@ func readAcceptedMusicAlbumSource(ctx context.Context, tx pgx.Tx, libraryID, alb
 			continue
 		}
 		if memberCount == 0 {
-			uniformAlbum, uniformArtist, uniformAlbumArtist = facts.Album, facts.Artist, facts.AlbumArtist
+			uniformAlbum, uniformArtist, uniformAlbumArtist = facts.Album, probeMusicCredits(facts.Artists, facts.Artist), probeMusicCredits(facts.AlbumArtists, facts.AlbumArtist)
 		}
 		memberCount++
+		withinBounds = extended.add(facts) && withinBounds
 		allAlbums = allAlbums && strings.TrimSpace(facts.Album) != "" && facts.Album == uniformAlbum
-		allArtists = allArtists && strings.TrimSpace(facts.Artist) != "" && facts.Artist == uniformArtist
-		albumArtistPresent := strings.TrimSpace(facts.AlbumArtist) != ""
-		allAlbumArtists = allAlbumArtists && albumArtistPresent && facts.AlbumArtist == uniformAlbumArtist
+		artists, albumArtists := probeMusicCredits(facts.Artists, facts.Artist), probeMusicCredits(facts.AlbumArtists, facts.AlbumArtist)
+		allArtists = allArtists && len(artists) > 0 && slices.Equal(artists, uniformArtist)
+		albumArtistPresent := len(albumArtists) > 0
+		allAlbumArtists = allAlbumArtists && albumArtistPresent && slices.Equal(albumArtists, uniformAlbumArtist)
 		noAlbumArtists = noAlbumArtists && !albumArtistPresent
-		if strings.TrimSpace(facts.Artist) != "" && !seenArtists[facts.Artist] {
-			if len(source.Artists) == musicSourceMaxEntries {
-				withinBounds = false
-				continue
+		for _, artist := range artists {
+			if !seenArtists[artist] {
+				if len(source.Artists) == musicSourceMaxEntries {
+					withinBounds = false
+					continue
+				}
+				source.Artists = append(source.Artists, artist)
+				seenArtists[artist] = true
 			}
-			source.Artists = append(source.Artists, facts.Artist)
-			seenArtists[facts.Artist] = true
 		}
 	}
 	if !readAll || !withinBounds {
@@ -480,11 +480,12 @@ func readAcceptedMusicAlbumSource(ctx context.Context, tx pgx.Tx, libraryID, alb
 	// partial or conflicting explicit facts must not be hidden by that fallback.
 	if memberCount > 0 {
 		if allAlbumArtists {
-			source.AlbumArtists = []string{uniformAlbumArtist}
+			source.AlbumArtists = uniformAlbumArtist
 		} else if noAlbumArtists && allArtists {
-			source.AlbumArtists = []string{uniformArtist}
+			source.AlbumArtists = uniformArtist
 		}
 	}
+	extended.apply(&source)
 	encoded, err := encodeAcceptedMusicSource(source)
 	if err != nil {
 		return nil, false, nil

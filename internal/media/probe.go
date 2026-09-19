@@ -107,6 +107,10 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 	if err != nil {
 		return Info{}, err
 	}
+	info, err = runDolbyVisionRPUProbe(ctx, p.FFmpegPath, file, stat.Size(), info)
+	if err != nil {
+		return Info{}, err
+	}
 	if audioOnly, reason := audioTimingSupport(info); audioOnly {
 		info.AudioDurationReason = reason
 		if reason == "" {
@@ -122,7 +126,7 @@ func (p Prober) ProbeFile(ctx context.Context, file *os.File) (Info, error) {
 		}
 	}
 	if p.AnalyzeVideoSeek && strings.TrimSpace(p.FFmpegPath) != "" {
-		info.VideoSeekIndexes, err = AnalyzeVideoSeekIndexes(ctx, p.FFmpegPath, file, info)
+		info.VideoSeekIndexes, err = AnalyzeVideoSeekIndexes(ctx, p.FFmpegPath, file, info, p.FFprobePath)
 		if err != nil {
 			return Info{}, fmt.Errorf("analyze video seek evidence: %w", err)
 		}
@@ -289,9 +293,11 @@ type probeDocument struct {
 		DurationTS     scalar            `json:"duration_ts"`
 		TimeBase       scalar            `json:"time_base"`
 		Tags           map[string]string `json:"tags"`
+		SideData       []json.RawMessage `json:"side_data_list"`
 		Disposition    struct {
 			Default         scalar `json:"default"`
 			Forced          scalar `json:"forced"`
+			HearingImpaired scalar `json:"hearing_impaired"`
 			AttachedPicture scalar `json:"attached_pic"`
 		} `json:"disposition"`
 	} `json:"streams"`
@@ -374,6 +380,14 @@ func parseProbe(data []byte) (Info, error) {
 			IsTextSubtitleStream: source.CodecType == "subtitle" && isTextSubtitle(source.Codec),
 		}
 		if stream.CodecType == "video" {
+			metadata, present, err := parseDolbyVisionSideData(source.SideData)
+			if err != nil {
+				return Info{}, invalidField(fmt.Sprintf("stream[%d].side_data_list", position), err)
+			}
+			stream.DolbyVision = metadata
+			if present {
+				stream.VideoRange, stream.VideoRangeKnown = "DOVI", true
+			}
 			switch stream.FieldOrder {
 			case "progressive":
 				stream.InterlaceKnown = true
@@ -428,6 +442,11 @@ func parseProbe(data []byte) (Info, error) {
 		}
 		stream.IsDefault = defaultValue == 1
 		stream.IsForced = forcedValue == 1
+		hearingImpaired, err := source.Disposition.HearingImpaired.integer()
+		if err != nil || (hearingImpaired != 0 && hearingImpaired != 1) {
+			return Info{}, invalidField(fmt.Sprintf("stream[%d].disposition.hearing_impaired", position), err)
+		}
+		stream.IsHearingImpaired = hearingImpaired == 1
 		attachedPicture, err := source.Disposition.AttachedPicture.integer()
 		if err != nil || (attachedPicture != 0 && attachedPicture != 1) {
 			return Info{}, invalidField(fmt.Sprintf("stream[%d].disposition.attached_pic", position), err)
@@ -464,6 +483,97 @@ func parseProbe(data []byte) (Info, error) {
 		info.EmbeddedMusic = &music
 	}
 	return info, nil
+}
+
+// A recognized configuration proves the video range even when its fields are
+// incomplete. Do not combine partial or conflicting records into a fact.
+func parseDolbyVisionSideData(records []json.RawMessage) (*DolbyVisionMetadata, bool, error) {
+	var metadata *DolbyVisionMetadata
+	present, complete := false, true
+	for index, raw := range records {
+		var header struct {
+			Type string `json:"side_data_type"`
+		}
+		if err := json.Unmarshal(raw, &header); err != nil {
+			return nil, false, invalidField(fmt.Sprintf("[%d]", index), err)
+		}
+		if header.Type != "DOVI configuration record" {
+			continue
+		}
+		present = true
+		record, err := parseDolbyVisionRecord(raw)
+		if err != nil {
+			return nil, false, invalidField(fmt.Sprintf("[%d]", index), err)
+		}
+		if record == nil {
+			complete = false
+			continue
+		}
+		if metadata != nil && *metadata != *record {
+			complete = false
+		}
+		metadata = record
+	}
+	if !complete {
+		metadata = nil
+	}
+	return metadata, present, nil
+}
+
+func parseDolbyVisionRecord(raw json.RawMessage) (*DolbyVisionMetadata, error) {
+	var source struct {
+		Profile         scalar `json:"dv_profile"`
+		Level           scalar `json:"dv_level"`
+		RPUPresent      scalar `json:"rpu_present_flag"`
+		ELPresent       scalar `json:"el_present_flag"`
+		BLPresent       scalar `json:"bl_present_flag"`
+		CompatibilityID scalar `json:"dv_bl_signal_compatibility_id"`
+		Compression     string `json:"dv_md_compression"`
+	}
+	if err := json.Unmarshal(raw, &source); err != nil {
+		return nil, err
+	}
+	var metadata DolbyVisionMetadata
+	var rpu, el, bl int
+	complete := true
+	// These bounds follow the configuration record's 7/6/1/1/1/4 bit fields.
+	for _, field := range []struct {
+		name    string
+		source  scalar
+		maximum int64
+		target  *int
+	}{
+		{"dv_profile", source.Profile, 127, &metadata.Profile},
+		{"dv_level", source.Level, 63, &metadata.Level},
+		{"rpu_present_flag", source.RPUPresent, 1, &rpu},
+		{"el_present_flag", source.ELPresent, 1, &el},
+		{"bl_present_flag", source.BLPresent, 1, &bl},
+		{"dv_bl_signal_compatibility_id", source.CompatibilityID, 15, &metadata.CompatibilityID},
+	} {
+		if field.source.missing() || strings.EqualFold(string(field.source), "unknown") {
+			complete = false
+			continue
+		}
+		value, err := field.source.integer()
+		if err != nil || value < 0 || value > field.maximum {
+			return nil, invalidField(field.name, err)
+		}
+		*field.target = int(value)
+	}
+	if !complete {
+		return nil, nil
+	}
+	metadata.RPUPresent, metadata.ELPresent, metadata.BLPresent = rpu == 1, el == 1, bl == 1
+	switch source.Compression {
+	case "", "unknown":
+		// Older probes do not publish this configuration fact. Preserve its
+		// absence instead of assuming uncompressed metadata for validation.
+	case "none", "limited", "extended", "reserved":
+		metadata.MetadataCompression = source.Compression
+	default:
+		return nil, invalidField("dv_md_compression", nil)
+	}
+	return &metadata, nil
 }
 
 func invalidField(field string, err error) error {

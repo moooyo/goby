@@ -6,7 +6,7 @@ import (
 	"github.com/moooyo/goby/internal/transcode"
 )
 
-func TestHLSVideoProcessingProjectsSDRAfterRealSoftwareFilters(t *testing.T) {
+func TestHLSVideoProcessingProjectsSDRAfterAMDProcessing(t *testing.T) {
 	for _, container := range []string{"ts", "mp4"} {
 		t.Run(container, func(t *testing.T) {
 			source, request := conversionTestSource(), conversionTestRequest()
@@ -20,8 +20,8 @@ func TestHLSVideoProcessingProjectsSDRAfterRealSoftwareFilters(t *testing.T) {
 			limits.Hardware = transcode.Hardware{Decode: "vaapi", Encode: "vaapi"}
 			decision := conversionTestPlan(t, source, request, limits)
 			plan, output := decision.Plan, decision.OutputSource.Info.Streams[0]
-			if plan.VideoCodec != "h264" || plan.VideoFilters.ToneMap != "hdr10" || plan.VideoFilters.Deinterlace != "bff" || plan.Hardware != (transcode.Hardware{}) {
-				t.Fatalf("HLS did not select the software source transform: %+v", plan)
+			if plan.VideoCodec != "h264" || plan.VideoFilters.ToneMap != "hdr10" || plan.VideoFilters.Deinterlace != "bff" || plan.VideoFilters.Backend != "vulkan" || plan.Hardware != limits.Hardware {
+				t.Fatalf("HLS did not select the configured AMD source transform: %+v", plan)
 			}
 			if output.VideoRange != "SDR" || !output.VideoRangeKnown || output.ColorTransfer != "bt709" || output.ColorPrimaries != "bt709" || output.ColorSpace != "bt709" || output.ColorRange != "tv" || output.IsInterlaced || !output.InterlaceKnown {
 				t.Fatalf("HLS projected source HDR or interlace metadata after conversion: %+v", output)

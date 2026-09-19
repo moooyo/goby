@@ -193,6 +193,162 @@ func TestHTTPApplicationKeyCatalogIndependentScopeAndExplicitState(t *testing.T)
 	}
 }
 
+func TestHTTPApplicationKeyCatalogDefaultsDoNotAcquireTargetPreferences(t *testing.T) {
+	a := newApplicationKeyCatalogFixture(t)
+	f := a.f
+	global, total := responseItems(t, f.request(t, http.MethodGet, "/emby/Items?Recursive=true&IncludeItemTypes=Movie", nil, a.headers))
+	if total != 3 || len(global) != 3 {
+		t.Fatal("application preference fixture does not contain all three movies")
+	}
+	allMovies, unplayedMovies := make(map[string]bool), make(map[string]bool)
+	for _, item := range global {
+		id := stringValue(t, item, "Id")
+		allMovies[id] = true
+		if id != a.movieID {
+			unplayedMovies[id] = true
+		}
+	}
+	assertSet := func(items []map[string]any, want map[string]bool) {
+		t.Helper()
+		seen := make(map[string]bool, len(items))
+		for _, item := range items {
+			id := stringValue(t, item, "Id")
+			if !want[id] || seen[id] {
+				t.Fatal("application catalog changed its exact item set or introduced a duplicate")
+			}
+			seen[id] = true
+		}
+		if len(seen) != len(want) {
+			t.Fatal("application catalog omitted an expected item")
+		}
+	}
+	preferences, err := json.Marshal(map[string]any{
+		"HidePlayedInLatest": true, "LatestItemsExcludes": []string{a.visibleID, a.hiddenID},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET configuration=$2::jsonb WHERE id=$1", a.targetID, preferences); err != nil {
+		t.Fatal(err)
+	}
+	latestPath := "/emby/Users/" + a.targetID + "/Items/Latest?IncludeItemTypes=Movie&GroupItems=false"
+	latest := responseArray(t, f.request(t, http.MethodGet, latestPath, nil, a.headers))
+	assertSet(latest, allMovies)
+	for _, item := range latest {
+		if item["Id"] == a.movieID {
+			data := objectValue(t, item, "UserData")
+			if data["Played"] != true || data["PlayCount"] != float64(3) {
+				t.Fatal("skipping personal defaults also lost the explicit target's state projection")
+			}
+		}
+	}
+	assertSet(responseArray(t, f.request(t, http.MethodGet, latestPath+"&IsPlayed=true", nil, a.headers)), map[string]bool{a.movieID: true})
+	assertSet(responseArray(t, f.request(t, http.MethodGet, latestPath+"&IsPlayed=false", nil, a.headers)), unplayedMovies)
+	viewsPath := "/emby/Users/" + a.targetID + "/Views"
+	baselineViews, count := responseItems(t, f.request(t, http.MethodGet, viewsPath, nil, a.headers))
+	if count != 3 || len(baselineViews) != 3 {
+		t.Fatal("application Views baseline is incomplete")
+	}
+	baselineOrder, reversedOrder := make([]string, len(baselineViews)), make([]string, len(baselineViews))
+	for index, item := range baselineViews {
+		id := stringValue(t, item, "Id")
+		baselineOrder[index], reversedOrder[len(baselineViews)-index-1] = id, id
+	}
+	assertViewOrder := func(want []string) {
+		t.Helper()
+		items, count := responseItems(t, f.request(t, http.MethodGet, viewsPath, nil, a.headers))
+		if count != len(want) || len(items) != len(want) {
+			t.Fatal("application Views inherited target media exclusions or lost its library scope")
+		}
+		for index, item := range items {
+			if item["Id"] != want[index] {
+				t.Fatal("application Views inherited a target's personal view order")
+			}
+		}
+	}
+	ordered, err := json.Marshal(map[string]any{"OrderedViews": reversedOrder})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET configuration=configuration || $2::jsonb WHERE id=$1", a.targetID, ordered); err != nil {
+		t.Fatal(err)
+	}
+	assertViewOrder(baselineOrder)
+	excluded, err := json.Marshal(map[string]any{"MyMediaExcludes": baselineOrder, "HidePlayedInMoreLikeThis": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET configuration=configuration || $2::jsonb WHERE id=$1", a.targetID, excluded); err != nil {
+		t.Fatal(err)
+	}
+	assertViewOrder(baselineOrder)
+	// The third caller of the shared catalog helper is Similar. A played
+	// candidate with two shared facets must survive the target's personal hide
+	// preference while an explicit IsPlayed filter retains its usual meaning.
+	var similarSeed string
+	for _, item := range global {
+		if item["Name"] == "Other Movie" {
+			similarSeed = stringValue(t, item, "Id")
+		}
+	}
+	if similarSeed == "" {
+		t.Fatal("application Similar seed is missing")
+	}
+	if _, err := f.pool.Exec(f.ctx, `SELECT sync_catalog_item_entities($1,'{"Genres":["Private Genre"],"Tags":["Private Tag"]}'::jsonb)`, similarSeed); err != nil {
+		t.Fatal(err)
+	}
+	similarPath := "/emby/Items/" + similarSeed + "/Similar?UserId=" + a.targetID + "&SortBy=SortName"
+	similar, count := responseItems(t, f.request(t, http.MethodGet, similarPath, nil, a.headers))
+	if count != 1 {
+		t.Fatal("application Similar applied a personal played preference")
+	}
+	assertSet(similar, map[string]bool{a.movieID: true})
+	similar, count = responseItems(t, f.request(t, http.MethodGet, similarPath+"&IsPlayed=false", nil, a.headers))
+	if count != 0 || len(similar) != 0 {
+		t.Fatal("application Similar ignored an explicit played filter")
+	}
+	// DisplayPreferences already uses the same user-login boundary. Naming a
+	// target and client on an application list must not silently borrow them.
+	if _, err := f.pool.Exec(f.ctx, `INSERT INTO display_preferences(user_id,client,preferences_id,preferences)
+		VALUES($1,'web',$2,'{"SortBy":"SortName","SortOrder":"Descending","CustomPrefs":{"layout":"poster"}}'::jsonb)`, a.targetID, a.hiddenID); err != nil {
+		t.Fatal(err)
+	}
+	listPath := "/emby/Items?ParentId=" + a.hiddenID + "&Recursive=true&IsFolder=false&Client=web&DisplayPreferencesId=" + a.hiddenID
+	for _, suffix := range []string{"", "&UserId=" + a.targetID} {
+		items, count := responseItems(t, f.request(t, http.MethodGet, listPath+suffix, nil, a.headers))
+		if count != 2 || len(items) != 2 || items[0]["Id"] != a.movieID {
+			t.Fatal("application list inherited a target's saved display sort")
+		}
+		if suffix == "" {
+			for _, item := range items {
+				if _, exists := item["UserData"]; exists {
+					t.Fatal("userless list invented preference-owner user data")
+				}
+			}
+		}
+		items, count = responseItems(t, f.request(t, http.MethodGet, listPath+suffix+"&SortBy=SortName&SortOrder=Descending", nil, a.headers))
+		if count != 2 || len(items) != 2 || items[1]["Id"] != a.movieID {
+			t.Fatal("skipping personal defaults disabled an explicit application sort")
+		}
+	}
+	displayPath := "/emby/DisplayPreferences/" + a.hiddenID + "?UserId=" + a.targetID + "&Client=web"
+	expectStatus(t, f.request(t, http.MethodGet, displayPath, nil, a.headers, a.adminCookie), http.StatusUnauthorized)
+	// The fix must not turn the target into an inert label: its current folder
+	// ACL still limits Latest independently of its stored display preferences.
+	policy, err := json.Marshal(map[string]any{"EnableAllFolders": false, "EnabledFolders": []string{a.visibleID}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET policy=$2::jsonb WHERE id=$1", a.targetID, policy); err != nil {
+		t.Fatal(err)
+	}
+	latest = responseArray(t, f.request(t, http.MethodGet, latestPath, nil, a.headers))
+	if len(latest) != 1 || latest[0]["Name"] != "Visible Movie" {
+		t.Fatal("application Latest lost current target library authorization")
+	}
+	assertViewOrder([]string{a.visibleID})
+}
+
 func TestHTTPApplicationKeyCatalogExplicitTargetLibraryACL(t *testing.T) {
 	a := newApplicationKeyCatalogFixture(t)
 	f := a.f

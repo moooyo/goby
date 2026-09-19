@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"time"
 	"unicode"
 )
 
@@ -19,11 +20,18 @@ const (
 
 // musicMetadataSource records accepted embedded facts separately from local NFOs.
 type musicMetadataSource struct {
-	Version      int      `json:"Version"`
-	Name         string   `json:"Name,omitempty"`
-	Album        string   `json:"Album,omitempty"`
-	Artists      []string `json:"Artists"`
-	AlbumArtists []string `json:"AlbumArtists"`
+	Version           int               `json:"Version"`
+	Name              string            `json:"Name,omitempty"`
+	Album             string            `json:"Album,omitempty"`
+	Artists           []string          `json:"Artists"`
+	AlbumArtists      []string          `json:"AlbumArtists"`
+	Composers         []string          `json:"Composers,omitempty"`
+	Genres            []string          `json:"Genres,omitempty"`
+	ProductionYear    *int              `json:"ProductionYear,omitempty"`
+	PremiereDate      *time.Time        `json:"PremiereDate,omitempty"`
+	IndexNumber       *int              `json:"IndexNumber,omitempty"`
+	ParentIndexNumber *int              `json:"ParentIndexNumber,omitempty"`
+	ProviderIDs       map[string]string `json:"ProviderIDs,omitempty"`
 }
 
 // mergeAcceptedMusicSource retains sparse local fields while accepted music
@@ -65,6 +73,9 @@ func mergeAcceptedMusicSource(localSource, musicSource []byte) ([]byte, error) {
 	local["AlbumArtists"], err = json.Marshal(music.AlbumArtists)
 	if err != nil {
 		return nil, fmt.Errorf("encode accepted album artists: %w", err)
+	}
+	if err := mergeExtendedMusicFields(local, music); err != nil {
+		return nil, err
 	}
 	merged, err := json.Marshal(local)
 	if err != nil {
@@ -131,7 +142,8 @@ func decodeAcceptedMusicSource(raw []byte) (musicMetadataSource, bool, error) {
 	}
 	for field := range object {
 		switch field {
-		case "Version", "Name", "Album", "Artists", "AlbumArtists":
+		case "Version", "Name", "Album", "Artists", "AlbumArtists", "Composers", "Genres",
+			"ProductionYear", "PremiereDate", "IndexNumber", "ParentIndexNumber", "ProviderIDs":
 		default:
 			return musicMetadataSource{}, false, fmt.Errorf("accepted music source contains an unknown field")
 		}
@@ -160,6 +172,8 @@ func decodeAcceptedMusicSource(raw []byte) (musicMetadataSource, bool, error) {
 	}{
 		{name: "Artists", values: &music.Artists},
 		{name: "AlbumArtists", values: &music.AlbumArtists},
+		{name: "Composers", values: &music.Composers},
+		{name: "Genres", values: &music.Genres},
 	} {
 		if value, exists := object[field.name]; exists {
 			*field.values, err = acceptedMusicStrings(value)
@@ -167,6 +181,9 @@ func decodeAcceptedMusicSource(raw []byte) (musicMetadataSource, bool, error) {
 				return musicMetadataSource{}, false, fmt.Errorf("read accepted music %s: %w", field.name, err)
 			}
 		}
+	}
+	if err := decodeExtendedMusicFields(object, &music); err != nil {
+		return musicMetadataSource{}, false, err
 	}
 	return music, true, nil
 }

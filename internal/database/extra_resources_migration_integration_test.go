@@ -198,7 +198,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				expected[table.name] = extraSnapshot(t, ctx, pool, table, true)
 			}
 			identities, sequences := themeReservedTableIdentities(t, ctx, pool, names), themeOwnersSequences(t, ctx, pool)
-			expectedSequences := make(map[string]string, len(sequences)+1)
+			expectedSequences := make(map[string]string, len(sequences)+2)
 			for name, snapshot := range sequences {
 				expectedSequences[name] = snapshot
 			}
@@ -237,6 +237,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 						t.Fatalf("complete normal extra migration: %v", err)
 					}
 					assertStorageBindingMigrationDefaults(t, ctx, pool)
+					assertPhase3MigrationDefaults(t, ctx, pool)
 				} else {
 					themeOwnersMigrateTo(t, ctx, pool, 27)
 				}
@@ -250,9 +251,9 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				}
 				actualSequences := themeOwnersSequences(t, ctx, pool)
 				if runner == "normal" && attempt == 0 {
-					// Schema30 adds exactly one independent, unconsumed identity.
-					// Retain every historical snapshot and admit only this declared
-					// sequence after checking its ownership, definition and state.
+					// Schema30 and schema38 add independent, unconsumed identities.
+					// Retain every historical snapshot and admit only these named
+					// additions after checking ownership, definition, and state.
 					var validCollectionIdentity bool
 					if err := pool.QueryRow(ctx, `SELECT
 						pg_get_serial_sequence('media_collection_entries','id')::regclass='media_collection_entries_id_seq'::regclass
@@ -271,6 +272,14 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 						t.Fatal("collection sequence was not an independent addition to schema26")
 					}
 					expectedSequences[name] = added
+					const artworkSequence = "artwork_state_id_seq"
+					artworkAdded, artworkExists := actualSequences[artworkSequence]
+					if _, previouslyExisted := sequences[artworkSequence]; previouslyExisted || !artworkExists {
+						t.Fatal("artwork sequence was not an independent addition to schema26")
+					}
+					// assertPhase3MigrationDefaults above verifies its exact owned
+					// bigint identity definition and unused initial sequence state.
+					expectedSequences[artworkSequence] = artworkAdded
 				}
 				if themeReservedTableIdentities(t, ctx, pool, names) != identities {
 					t.Fatal("extra migration changed a historical table identity")

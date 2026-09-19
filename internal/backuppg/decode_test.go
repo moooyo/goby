@@ -377,7 +377,7 @@ func TestDecodeEnforcesStreamingSizeLimits(t *testing.T) {
 	if err := Decode(t.Context(), strings.NewReader(archive), decodeTestCatalog(), &decodeTestSink{}, DecodeOptions{}); !errors.Is(err, ErrLimit) {
 		t.Fatalf("unbounded SQL/comment line accepted: %v", err)
 	}
-	for _, options := range []DecodeOptions{{MaxBytes: -1}, {MaxRowBytes: -1}, {MaxBytes: (64 << 30) + 1}, {MaxRowBytes: (32 << 20) + 1}} {
+	for _, options := range []DecodeOptions{{MaxBytes: -1}, {MaxRowBytes: -1}, {MaxBytes: defaultDecodeMaxBytes + 1}, {MaxRowBytes: defaultDecodeMaxRowBytes + 1}} {
 		if err := Decode(t.Context(), strings.NewReader(decodeTestArchive()), decodeTestCatalog(), &decodeTestSink{}, options); !errors.Is(err, ErrLimit) {
 			t.Fatalf("accepted invalid limits %#v: %v", options, err)
 		}

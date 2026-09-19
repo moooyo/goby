@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/moooyo/goby/internal/dynamicsource"
 )
 
 const maxDynamicSourceConfigBytes = 1 << 20
@@ -17,12 +19,13 @@ const maxDynamicSourceConfigBytes = 1 << 20
 // existing catalog item. URLs and headers may contain credentials and must
 // never be returned in a public media-source description.
 type DynamicSourceDefinition struct {
-	ItemID        string            `json:"itemId"`
-	Name          string            `json:"name,omitempty"`
-	URL           string            `json:"url"`
-	Headers       map[string]string `json:"headers,omitempty"`
-	Infinite      bool              `json:"infinite,omitempty"`
-	MaxReconnects int               `json:"maxReconnects,omitempty"`
+	ItemID        string                             `json:"itemId"`
+	Name          string                             `json:"name,omitempty"`
+	URL           string                             `json:"url"`
+	Headers       map[string]string                  `json:"headers,omitempty"`
+	Infinite      bool                               `json:"infinite,omitempty"`
+	MaxReconnects int                                `json:"maxReconnects,omitempty"`
+	Subtitles     []dynamicsource.SubtitleDefinition `json:"subtitles,omitempty"`
 }
 
 func (DynamicSourceDefinition) String() string   { return "<dynamic-source configuration>" }
@@ -79,25 +82,43 @@ func validateDynamicSources(definitions []DynamicSourceDefinition) error {
 		if !utf8.ValidString(definition.Name) || len(definition.Name) > 256 || strings.TrimSpace(definition.Name) != definition.Name || !validPrivateSetting(definition.Name) {
 			return errors.New("dynamic source names must be bounded single-line values")
 		}
-		address, err := url.Parse(definition.URL)
-		if err != nil || len(definition.URL) > 8192 || address.Hostname() == "" || address.User != nil ||
-			(address.Scheme != "http" && address.Scheme != "https") || address.Fragment != "" || !validPrivateSetting(definition.URL) {
-			return errors.New("dynamic source URLs must be bounded HTTP(S) URLs without user information or fragments")
-		}
-		if definition.MaxReconnects < 0 || definition.MaxReconnects > 3 || len(definition.Headers) > 16 {
+		if definition.MaxReconnects < 0 || definition.MaxReconnects > 3 {
 			return errors.New("dynamic source reconnect and header limits are exceeded")
 		}
-		headerBytes := 0
-		headerNames := make(map[string]bool, len(definition.Headers))
-		for key, value := range definition.Headers {
-			name := strings.ToLower(key)
-			headerBytes += len(key) + len(value)
-			allowed := name == "authorization" || name == "cookie" || name == "user-agent" || name == "accept" || strings.HasPrefix(name, "x-")
-			if !allowed || len(key) > 128 || strings.Trim(name, "abcdefghijklmnopqrstuvwxyz0123456789-") != "" || len(value) > 4096 || !validPrivateSetting(value) || headerNames[name] || headerBytes > 16384 {
-				return errors.New("dynamic source headers must be bounded allowed request headers")
-			}
-			headerNames[name] = true
+		if err := validateDynamicRequest(definition.URL, definition.Headers); err != nil {
+			return err
 		}
+		if err := dynamicsource.ValidateSubtitleDefinitions(definition.Subtitles); err != nil {
+			return errors.New("dynamic subtitles require unique bounded identities, supported formats, explicit clocks, and private HTTP(S) requests")
+		}
+		for _, subtitle := range definition.Subtitles {
+			if err := validateDynamicRequest(subtitle.URL, subtitle.Headers); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateDynamicRequest(rawURL string, headers map[string]string) error {
+	address, err := url.Parse(rawURL)
+	if err != nil || len(rawURL) > 8192 || address.Hostname() == "" || address.User != nil || address.Opaque != "" ||
+		(address.Scheme != "http" && address.Scheme != "https") || address.Fragment != "" || !validPrivateSetting(rawURL) {
+		return errors.New("dynamic source URLs must be bounded HTTP(S) URLs without user information or fragments")
+	}
+	if len(headers) > 16 {
+		return errors.New("dynamic source header count is exceeded")
+	}
+	headerBytes := 0
+	headerNames := make(map[string]bool, len(headers))
+	for key, value := range headers {
+		name := strings.ToLower(key)
+		headerBytes += len(key) + len(value)
+		allowed := name == "authorization" || name == "cookie" || name == "user-agent" || name == "accept" || strings.HasPrefix(name, "x-")
+		if !allowed || len(key) > 128 || strings.Trim(name, "abcdefghijklmnopqrstuvwxyz0123456789-") != "" || len(value) > 4096 || !validPrivateSetting(value) || headerNames[name] || headerBytes > 16384 {
+			return errors.New("dynamic source headers must be bounded allowed request headers")
+		}
+		headerNames[name] = true
 	}
 	return nil
 }

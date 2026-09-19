@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -78,22 +79,34 @@ func (s *Store) CreateLibraryAsAdministrator(ctx context.Context, actor identity
 	return s.createLibrary(ctx, &catalogAdministrator{actor: actor, audience: audience}, name, collectionType, paths)
 }
 
+func (s *Store) CreateLibraryWithOptionsAsAdministrator(ctx context.Context, actor identity.Principal, audience identity.AdministratorAudience, name, collectionType string, paths []string, options LibraryOptions) (Library, error) {
+	return s.createLibraryWithCapture(ctx, &catalogAdministrator{actor: actor, audience: audience}, name, collectionType, paths, captureRootBindingRegistrationTopology, options)
+}
+
 func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string) (Library, error) {
 	return s.createLibraryWithCapture(ctx, administrator, name, collectionType, paths, captureRootBindingRegistrationTopology)
 }
 
-func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string, captureRoot rootBindingRegistrationCaptureFactory) (Library, error) {
+func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string, captureRoot rootBindingRegistrationCaptureFactory, configuredOptions ...LibraryOptions) (Library, error) {
 	if ctx == nil || captureRoot == nil {
 		return Library{}, ErrInvalidInput
 	}
 	if s == nil {
 		return Library{}, ErrUnavailable
 	}
+	options := DefaultLibraryOptions()
+	if len(configuredOptions) > 0 {
+		options = configuredOptions[0]
+	}
+	encodedOptions, err := json.Marshal(options)
+	if err != nil {
+		return Library{}, err
+	}
 	name = strings.TrimSpace(name)
 	if !utf8.ValidString(name) || utf8.RuneCountInString(name) < 1 || utf8.RuneCountInString(name) > 128 || strings.IndexFunc(name, unicode.IsControl) >= 0 {
 		return Library{}, fmt.Errorf("%w: library name must contain 1 to 128 printable characters", ErrInvalidInput)
 	}
-	collectionType, err := normalizeCollectionType(collectionType)
+	collectionType, err = normalizeCollectionType(collectionType)
 	if err != nil {
 		return Library{}, err
 	}
@@ -173,8 +186,8 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		return Library{}, err
 	}
 	var createdAt time.Time
-	if err := tx.QueryRow(protected, `INSERT INTO libraries (id, name, collection_type)
-		VALUES ($1, $2, $3) RETURNING created_at`, id, name, collectionType).Scan(&createdAt); err != nil {
+	if err := tx.QueryRow(protected, `INSERT INTO libraries (id, name, collection_type, options)
+		VALUES ($1, $2, $3, $4) RETURNING created_at`, id, name, collectionType, encodedOptions).Scan(&createdAt); err != nil {
 		return Library{}, fmt.Errorf("create library: %w", err)
 	}
 	if _, err := tx.Exec(protected, `INSERT INTO items (id, library_id, name, sort_name, type, is_folder)
@@ -197,6 +210,10 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		}
 		library.Paths = append(library.Paths, root.path)
 	}
+	if err := tx.QueryRow(protected, `SELECT revision::text FROM libraries WHERE id=$1`, id).Scan(&library.Revision); err != nil {
+		return Library{}, fmt.Errorf("read created library revision: %w", err)
+	}
+	library.Options = &options
 	event := administrator.event(activity.ActionLibraryCreated, activity.Resource{Kind: activity.ResourceLibrary, ID: id})
 	event.Count = int64(len(roots))
 	if err := activity.RecordOwned(catalogActivityTx{tx: tx}, event); err != nil {

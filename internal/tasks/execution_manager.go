@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 type workerExecution struct {
@@ -106,7 +108,7 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		}
 		return false, err
 	}
-	workCtx, cancel := context.WithCancel(m.ctx)
+	workCtx, cancel := context.WithCancel(systemevents.WithDerived(m.ctx))
 	execution := &workerExecution{runID: run.ID, token: token, cancel: cancel, done: make(chan struct{})}
 	m.executions[child.ID] = execution
 	entry, registered := m.store.executors.lookup(run.TaskKey)

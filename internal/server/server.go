@@ -25,36 +25,38 @@ import (
 )
 
 type Server struct {
-	cfg              config.Config
-	db               *pgxpool.Pool
-	identity         *identity.Store
-	log              *slog.Logger
-	version          string
-	serverID         string
-	limiter          *loginLimiter
-	library          *library.Store
-	images           *imageCache
-	streamSlots      chan struct{}
-	originals        *originalStreamRuntime
-	subtitleSlots    chan struct{}
-	eventHub         *events.Hub
-	sockets          *socketRuntime
-	notifier         *userDataNotifier
-	catalogNotifier  *libraryNotifier
-	hls              *hlsRuntime
-	dynamicSources   *dynamicsource.Manager
-	dynamicStreams   *dynamicStreamRuntime
-	mediaPolicyOnce  sync.Once
-	mediaPolicy      *mediaPolicyRuntime
-	taskStore        *tasks.Store
-	taskManager      *tasks.Manager
-	settings         *settings.Store
-	diagnostics      *diagnostics.Store
-	mediaDiagnostics *mediaDiagnosticRuntime
-	dashboardFiles   fs.FS
-	recovery         adminRecoveryManager
-	activityCancel   context.CancelFunc
-	activityDone     chan struct{}
+	cfg                  config.Config
+	db                   *pgxpool.Pool
+	identity             *identity.Store
+	log                  *slog.Logger
+	version              string
+	serverID             string
+	limiter              *loginLimiter
+	library              *library.Store
+	images               *imageCache
+	streamSlots          chan struct{}
+	originals            *originalStreamRuntime
+	subtitleSlots        chan struct{}
+	eventHub             *events.Hub
+	sockets              *socketRuntime
+	notifier             *userDataNotifier
+	catalogNotifier      *libraryNotifier
+	hls                  *hlsRuntime
+	dynamicSources       *dynamicsource.Manager
+	dynamicStreams       *dynamicStreamRuntime
+	mediaPolicyOnce      sync.Once
+	mediaPolicy          *mediaPolicyRuntime
+	hardwareEncodingOnce sync.Once
+	hardwareEncoding     *hardwareEncodingRuntime
+	taskStore            *tasks.Store
+	taskManager          *tasks.Manager
+	settings             *settings.Store
+	diagnostics          *diagnostics.Store
+	mediaDiagnostics     *mediaDiagnosticRuntime
+	dashboardFiles       fs.FS
+	recovery             adminRecoveryManager
+	activityCancel       context.CancelFunc
+	activityDone         chan struct{}
 }
 
 // Option attaches dependencies whose lifetime is owned by the process entry
@@ -173,6 +175,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 
 func (s *Server) Close(ctx context.Context) error {
 	s.stopMediaPolicy()
+	s.hardwareEncodingRuntime().cancel()
 	s.mediaDiagnostics.BeginClose()
 	s.catalogNotifier.Close()
 	s.cancelActivityRetention()
@@ -209,13 +212,18 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminMetadataRoutes(mux)
 	s.registerLibraryRoutes(mux)
 	s.registerEntityRoutes(mux)
+	s.registerMusicEntityRoutes(mux)
+	s.registerNavigationRoutes(mux)
 	s.registerImageRoutes(mux)
+	s.registerArtworkManagementRoutes(mux)
+	s.registerAvatarRoutes(mux)
 	s.registerStreamRoutes(mux)
 	s.registerPlaybackRoutes(mux)
 	s.registerClientSessionRoutes(mux)
 	s.registerSubtitleRoutes(mux)
 	s.registerRemoteCommandRoutes(mux)
 	s.registerHLSRoutes(mux)
+	s.registerHLSSubtitleRoutes(mux)
 	s.registerLiveStreamRoutes(mux)
 	s.registerCollectionRoutes(mux)
 	s.registerProviderRoutes(mux)

@@ -20,6 +20,9 @@ type UserData struct {
 	IsFavorite, Played    bool
 	LastPlayedDate        *time.Time
 	UnplayedItemCount     *int
+	Rating                *float64
+	Likes                 *bool
+	HideFromResume        bool
 }
 
 // playbackAllowed is shared by source opening and event handling. Playback
@@ -110,11 +113,12 @@ func lockStateItem(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID 
 	return item, nil
 }
 
-const userDataColumns = `item_id, playback_position_ticks, play_count, is_favorite, played, last_played_at`
+const userDataColumns = `item_id, playback_position_ticks, play_count, is_favorite, played, last_played_at, rating, likes, hide_from_resume`
 
 func scanUserData(row rowScanner) (UserData, error) {
 	var data UserData
-	err := row.Scan(&data.ItemID, &data.PlaybackPositionTicks, &data.PlayCount, &data.IsFavorite, &data.Played, &data.LastPlayedDate)
+	err := row.Scan(&data.ItemID, &data.PlaybackPositionTicks, &data.PlayCount, &data.IsFavorite, &data.Played, &data.LastPlayedDate,
+		&data.Rating, &data.Likes, &data.HideFromResume)
 	if data.LastPlayedDate != nil {
 		utc := data.LastPlayedDate.UTC()
 		data.LastPlayedDate = &utc
@@ -174,7 +178,8 @@ func (s *Store) GetUserDataBatchFor(ctx context.Context, subject Subject, itemID
 	}
 	defer rollback(tx)
 	rows, err := tx.Query(ctx, `SELECT i.id, COALESCE(data.playback_position_ticks, 0),
-		COALESCE(data.play_count, 0), COALESCE(data.is_favorite, false), COALESCE(data.played, false), data.last_played_at
+		COALESCE(data.play_count, 0), COALESCE(data.is_favorite, false), COALESCE(data.played, false), data.last_played_at,
+		data.rating, data.likes, COALESCE(data.hide_from_resume, false)
 		FROM items i LEFT JOIN user_item_data data ON data.item_id = i.id AND data.user_id = $1
 		WHERE i.id = ANY($2::text[])
 		AND i.type IN (`+userDataFolderTypesSQL+`) AND `+access.directSQL("i"),

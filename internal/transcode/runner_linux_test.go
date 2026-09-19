@@ -55,16 +55,64 @@ func TestProgressWriterBoundsIndividualLinesWithoutLifetimeLimit(t *testing.T) {
 }
 
 func TestProgressWriterAcceptsChunkedLinesAndClampsNegativeStart(t *testing.T) {
-	var last Progress
-	w := &progressWriter{callback: func(p Progress) { last = p }}
-	for _, part := range []string{"out_time_", "us=-1234\r", "\nprogress=", "end"} {
-		if _, err := w.Write([]byte(part)); err != nil {
-			t.Fatal(err)
-		}
+	for _, live := range []bool{false, true} {
+		t.Run(fmt.Sprintf("live_%t", live), func(t *testing.T) {
+			var last Progress
+			w := &progressWriter{liveTimeline: live, callback: func(p Progress) { last = p }}
+			for _, part := range []string{"out_time_", "us=-1234\r", "\nprogress=", "end"} {
+				if _, err := w.Write([]byte(part)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			w.finish()
+			if w.err != nil || !last.Ended || last.OutputTicks != 0 {
+				t.Fatalf("unexpected progress: %+v, %v", last, w.err)
+			}
+		})
 	}
-	w.finish()
-	if w.err != nil || !last.Ended || last.OutputTicks != 0 {
-		t.Fatalf("unexpected progress: %+v, %v", last, w.err)
+}
+
+func TestProgressWriterLiveClockUsesSafeIntegerBoundary(t *testing.T) {
+	const finiteLimit = int64(maxDurationTicks/10 + 10_000_000)
+	const fortyFiveDays = int64(45 * 24 * 60 * 60 * 1_000_000)
+	for _, test := range []struct {
+		name      string
+		live      bool
+		value     string
+		wantTicks int64
+		invalid   bool
+	}{
+		{name: "finite_boundary", value: strconv.FormatInt(finiteLimit, 10), wantTicks: finiteLimit * 10},
+		{name: "finite_above_boundary", value: strconv.FormatInt(finiteLimit+1, 10), invalid: true},
+		{name: "finite_forty_five_days", value: strconv.FormatInt(fortyFiveDays, 10), invalid: true},
+		{name: "live_forty_five_days", live: true, value: strconv.FormatInt(fortyFiveDays, 10), wantTicks: fortyFiveDays * 10},
+		{name: "live_largest_safe_microsecond", live: true, value: strconv.FormatInt(math.MaxInt64/10, 10), wantTicks: math.MaxInt64 / 10 * 10},
+		{name: "live_tick_overflow", live: true, value: strconv.FormatInt(math.MaxInt64/10+1, 10), invalid: true},
+		{name: "live_microsecond_overflow", live: true, value: "9223372036854775808", invalid: true},
+		{name: "live_negative_overflow", live: true, value: "-9223372036854775809", invalid: true},
+		{name: "live_fractional_time", live: true, value: "1.5", invalid: true},
+		{name: "live_exponent_time", live: true, value: "1e6", invalid: true},
+		{name: "live_whitespace_time", live: true, value: "1234 ", invalid: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			canceled, callbacks := false, 0
+			var last Progress
+			writer := &progressWriter{liveTimeline: test.live, cancel: func() { canceled = true },
+				callback: func(p Progress) { callbacks++; last = p }}
+			_, err := writer.Write([]byte("out_time_us=" + test.value + "\nprogress=continue\n"))
+			if test.invalid {
+				if !errors.Is(err, ErrProgress) || !canceled || callbacks != 0 {
+					t.Fatalf("invalid clock was not rejected before publication: err=%v canceled=%t callbacks=%d", err, canceled, callbacks)
+				}
+				return
+			}
+			if err != nil || canceled || callbacks != 1 || last.OutputTicks != test.wantTicks || last.OutputTicks < 0 {
+				t.Fatalf("valid integer clock changed: err=%v canceled=%t callbacks=%d progress=%+v", err, canceled, callbacks, last)
+			}
+			if _, err := writer.Write([]byte("out_time_us=N/A\nprogress=end\n")); err != nil || !last.Ended || last.OutputTicks != test.wantTicks {
+				t.Fatalf("unknown clock lost the last valid progress: err=%v progress=%+v", err, last)
+			}
+		})
 	}
 }
 
@@ -134,6 +182,51 @@ func TestRunCancelsMalformedProgress(t *testing.T) {
 	_, err := Run(ctx, helperExecutable(t, "bad-progress"), t.TempDir(), helperInput(t), commandPlan(), 1, nil)
 	if !errors.Is(err, ErrProgress) || time.Since(start) > 5*time.Second {
 		t.Fatalf("malformed progress: %v after %s", err, time.Since(start))
+	}
+}
+
+// A short process exercises Run's source-mode wiring. Its transport packets are
+// observer fixtures; actual media decoding is covered by the live media gates.
+func TestRunProgressTimeLimitFollowsSourceMode(t *testing.T) {
+	const reportedTicks = int64(45*24*60*60) * ticksPerSecond
+	for _, live := range []bool{false, true} {
+		t.Run(fmt.Sprintf("live_%t", live), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+			defer cancel()
+			plan, input := commandPlan(), helperInput(t)
+			published := 0
+			if live {
+				reader, writer, err := os.Pipe()
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer reader.Close()
+				_ = writer.Close()
+				plan, input = liveTestPlan(), reader
+				ctx = withLiveRuntime(ctx, liveRuntime{inputs: StreamInputs{Media: input}, maxBytes: 1 << 20, timeout: 3 * time.Second,
+					publish: func(_ context.Context, _ Spec, _ string, segment LiveSegment) error {
+						if segment.Sequence != 0 || segment.StartTicks != reportedTicks || segment.DurationTicks != ticksPerSecond {
+							return ErrInvalidTimeline
+						}
+						published++
+						return nil
+					}})
+			}
+			reported, ended := false, false
+			result, err := Run(ctx, helperExecutable(t, "long-progress"), t.TempDir(), input, plan, 1, func(p Progress) {
+				reported = reported || p.OutputTicks == reportedTicks
+				ended = ended || p.Ended
+			})
+			if !live {
+				if !errors.Is(err, ErrProgress) || reported || ended {
+					t.Fatalf("finite source accepted a live clock: err=%v reported=%t ended=%t", err, reported, ended)
+				}
+				return
+			}
+			if err != nil || result.ExitCode != 0 || !reported || !ended || published != 1 {
+				t.Fatalf("Run retained the finite clock limit for a stream: result=%+v err=%v reported=%t ended=%t published=%d", result, err, reported, ended, published)
+			}
+		})
 	}
 }
 
@@ -401,6 +494,25 @@ func runTranscodeTestHelper(mode string) int {
 		for {
 			time.Sleep(time.Second)
 		}
+	case "long-progress":
+		const seconds = int64(45 * 24 * 60 * 60)
+		fmt.Fprintf(os.Stdout, "out_time_us=%d\nprogress=end\n", seconds*1_000_000)
+		if !hasArgumentPair(os.Args, "-i", "pipe:3") {
+			return 0
+		}
+		clock, journal := os.NewFile(4, "packet-clock"), os.NewFile(5, "segment-journal")
+		defer clock.Close()
+		defer journal.Close()
+		if err := os.WriteFile("segment-000000.ts.tmp", liveTestTransportPackets(), 0600); err != nil {
+			return 96
+		}
+		if _, err := fmt.Fprintf(clock, "GOBY 0 0 1/1 %d\n", seconds); err != nil {
+			return 97
+		}
+		if _, err := fmt.Fprintf(journal, "segment-000000.ts.tmp,0.000000,%d.000000\n", seconds+1); err != nil {
+			return 98
+		}
+		return 0
 	case "parent", "exit-parent", "child-parent":
 		signal.Ignore(syscall.SIGTERM)
 		child := exec.Command("/proc/self/exe")

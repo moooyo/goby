@@ -209,11 +209,11 @@ func (s *Server) closeLiveStream(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(context.WithValue(r.Context(), principalKey, principal))
 	owner := dynamicSourceOwner(principal)
 	lease, _ := s.dynamicSources.Info(r.Context(), owner, id)
+	s.cancelDynamicLease(owner, id)
 	if err := s.dynamicSources.CloseLease(r.Context(), owner, id); err != nil {
 		s.liveStreamError(w, r, err)
 		return
 	}
-	s.cancelDynamicLease(owner, id)
 	if lease.PlaySessionID != "" {
 		s.cancelPlaybackResources(principal.SessionID, lease.PlaySessionID)
 	}

@@ -23,6 +23,7 @@ func taskOptionalTime(value *time.Time) any {
 
 func taskTriggerDTO(trigger tasks.Trigger) map[string]any {
 	return map[string]any{"Id": trigger.ID, "Kind": trigger.Kind,
+		"SystemEvent":   trigger.SystemEvent,
 		"IntervalTicks": taskTickString(trigger.IntervalTicks), "TimeOfDayTicks": taskTickString(trigger.TimeOfDayTicks),
 		"MaxRuntimeTicks": taskTickString(trigger.MaxRuntimeTicks), "DayOfWeek": trigger.DayOfWeek, "NextFireAt": taskOptionalTime(trigger.NextFireAt),
 		"CalculationError": trigger.CalculationError}

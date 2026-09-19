@@ -10,6 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/systemevents"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -55,7 +56,7 @@ func decodeAdminTaskTriggers(w http.ResponseWriter, r *http.Request, withRevisio
 		result.Triggers = make([]tasks.ScheduleRule, 0, len(encoded))
 		for index, raw := range encoded {
 			path := fmt.Sprintf("Triggers.%d", index)
-			fields, fieldErrors := adminTaskObject(raw, []string{"Kind", "IntervalTicks", "TimeOfDayTicks", "DayOfWeek", "MaxRuntimeTicks"}, []string{"Kind"}, path)
+			fields, fieldErrors := adminTaskObject(raw, []string{"Kind", "IntervalTicks", "TimeOfDayTicks", "DayOfWeek", "MaxRuntimeTicks", "SystemEvent"}, []string{"Kind"}, path)
 			if fieldErrors != nil {
 				for field, message := range fieldErrors {
 					invalid[field] = message
@@ -74,6 +75,14 @@ func decodeAdminTaskTriggers(w http.ResponseWriter, r *http.Request, withRevisio
 					invalid[path+".DayOfWeek"] = "Supply an integer from Sunday 0 through Saturday 6, or null."
 				} else {
 					rule.DayOfWeek = &value
+				}
+			}
+			if event, exists := fields["SystemEvent"]; exists && !bytes.Equal(bytes.TrimSpace(event), []byte("null")) {
+				var name string
+				if json.Unmarshal(event, &name) != nil || !systemevents.Valid(systemevents.Event(name)) {
+					invalid[path+".SystemEvent"] = "Supply a supported system event name."
+				} else {
+					rule.SystemEvent = systemevents.Event(name)
 				}
 			}
 			result.Triggers = append(result.Triggers, rule)

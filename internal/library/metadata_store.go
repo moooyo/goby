@@ -87,9 +87,14 @@ func editableMetadataFields(itemType string) []string {
 	}
 	fields := make([]string, 0, len(metadataValueFieldNames))
 	for _, field := range metadataValueFieldNames {
+		music := itemType == "Audio" || itemType == "MusicAlbum" || itemType == "MusicArtist"
+		if (field == "Album" || field == "Artists" || field == "AlbumArtists") && !music {
+			continue
+		}
 		// Structural season numbers are scanner facts. Editing an episode's
 		// own number does not change its physical parent or season membership.
-		if field == "ParentIndexNumber" || (field == "IndexNumber" && itemType != "Episode") {
+		if field == "ParentIndexNumber" && itemType != "Audio" ||
+			field == "IndexNumber" && itemType != "Episode" && itemType != "Audio" {
 			continue
 		}
 		fields = append(fields, field)
@@ -412,9 +417,10 @@ func (s *Store) UpdateItemMetadata(ctx context.Context, actor identity.Principal
 
 func applyEffectiveMetadata(ctx context.Context, tx pgx.Tx, itemID string, effective MetadataValues, projection []byte, synchronize ...bool) error {
 	_, err := tx.Exec(ctx, `UPDATE items SET name = $2, sort_name = $3, overview = $4,
-		index_number = CASE WHEN type = 'Episode' THEN COALESCE($5::integer, 0) ELSE index_number END,
+		index_number = CASE WHEN type IN ('Episode', 'Audio') THEN COALESCE($5::integer, 0) ELSE index_number END,
+		parent_index_number = CASE WHEN type = 'Audio' THEN COALESCE($6::integer, 0) ELSE parent_index_number END,
 		updated_at = clock_timestamp() WHERE id = $1`, itemID, effective.Name, effective.SortName,
-		effective.Overview, effective.IndexNumber)
+		effective.Overview, effective.IndexNumber, effective.ParentIndexNumber)
 	if err != nil {
 		return fmt.Errorf("apply effective metadata values: %w", err)
 	}

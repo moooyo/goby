@@ -109,6 +109,9 @@ export interface MetadataValues {
   People: MetadataPerson[];
   IndexNumber: number | null;
   ParentIndexNumber: number | null;
+  Album: string;
+  Artists: string[];
+  AlbumArtists: string[];
 }
 
 export type MetadataFieldName = keyof MetadataValues;
@@ -466,10 +469,12 @@ export interface JobResponse {
 
 export type TaskRunState = "pending" | "running" | "stopping" | "completed" | "failed" | "cancelled" | "interrupted";
 export type TaskChildState = "waiting" | "queued" | "running" | "completed" | "failed" | "cancelled" | "unavailable" | "interrupted";
-export type TaskTriggerKind = "interval" | "daily" | "weekly" | "startup";
+export type TaskTriggerKind = "interval" | "daily" | "weekly" | "startup" | "system_event";
+export type TaskSystemEvent = "ServerStarted" | "LibraryChanged" | "ConfigurationChanged";
 
 export interface TaskTriggerInput {
   Kind: TaskTriggerKind;
+  SystemEvent?: TaskSystemEvent | null;
   IntervalTicks?: string | null;
   TimeOfDayTicks?: string | null;
   DayOfWeek?: number | null;
@@ -479,6 +484,7 @@ export interface TaskTriggerInput {
 export interface TaskTrigger {
   Id: string;
   Kind: TaskTriggerKind;
+  SystemEvent?: TaskSystemEvent | null;
   IntervalTicks: string | null;
   TimeOfDayTicks: string | null;
   DayOfWeek: number | null;
@@ -870,7 +876,7 @@ function invalidResponse(status = 200): ApiError {
 }
 
 interface InternalRequestOptions extends RequestOptions {
-  method?: "GET" | "HEAD" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   rawBody?: File;
   headers?: Record<string, string>;
@@ -883,7 +889,7 @@ async function request<T>(path: string, options: InternalRequestOptions = {}): P
   const revision = sessionRevision;
   const headers = new Headers({ Accept: "application/json", ...options.headers });
   if (options.body !== undefined) headers.set("Content-Type", "application/json");
-  if (options.rawBody !== undefined) headers.set("Content-Type", "application/octet-stream");
+  if (options.rawBody !== undefined && !headers.has("Content-Type")) headers.set("Content-Type", "application/octet-stream");
   if (method !== "GET" && method !== "HEAD" && !options.public && csrfToken) {
     headers.set("X-CSRF-Token", csrfToken);
   }
@@ -950,7 +956,7 @@ async function getSession(options: RequestOptions = {}): Promise<SessionResponse
 
 async function mutate<T>(
   path: string,
-  method: "POST" | "PUT" | "DELETE",
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
   body: unknown,
   options: InternalRequestOptions,
 ): Promise<T> {
@@ -977,7 +983,7 @@ async function mutate<T>(
 }
 
 export interface AuthenticatedRequestOptions extends RequestOptions {
-  method?: "GET" | "HEAD" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   rawBody?: File;
   headers?: Record<string, string>;
@@ -995,7 +1001,7 @@ export async function authenticatedRequest<T>(
       ? await request<T>(path, options)
       : await mutate<T>(path, method, options.body, options);
   } catch (error) {
-    if (error instanceof ApiError && error.status === 403) expireSession(revision);
+    if (error instanceof ApiError && error.status === 403 && error.code === "administrator_required") expireSession(revision);
     throw error;
   }
   if (revision !== sessionRevision) throw sessionChanged();
@@ -1141,7 +1147,7 @@ async function mutateUser(
 const metadataFieldNames: MetadataFieldName[] = [
   "Name", "SortName", "Overview", "OriginalTitle", "OfficialRating", "ProductionYear",
   "PremiereDate", "CommunityRating", "ProviderIds", "Genres", "Tags", "Studios", "People",
-  "IndexNumber", "ParentIndexNumber",
+  "IndexNumber", "ParentIndexNumber", "Album", "Artists", "AlbumArtists",
 ];
 const metadataFieldSet = new Set<string>(metadataFieldNames);
 
@@ -1157,7 +1163,7 @@ function validMetadataTimestamp(value: unknown): boolean {
 
 function validMetadataValue(field: string, value: unknown): boolean {
   switch (field) {
-    case "Name": case "SortName": case "Overview": case "OriginalTitle": case "OfficialRating":
+    case "Name": case "SortName": case "Overview": case "OriginalTitle": case "OfficialRating": case "Album":
       return typeof value === "string";
     case "ProductionYear":
       return validMetadataInteger(value, 1, 9999);
@@ -1169,7 +1175,7 @@ function validMetadataValue(field: string, value: unknown): boolean {
       return value === null || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10);
     case "ProviderIds":
       return isRecord(value) && Object.values(value).every((identifier) => typeof identifier === "string");
-    case "Genres": case "Tags": case "Studios":
+    case "Genres": case "Tags": case "Studios": case "Artists": case "AlbumArtists":
       return Array.isArray(value) && value.every((name) => typeof name === "string");
     case "People":
       return Array.isArray(value) && value.every((person) => isRecord(person)
@@ -1261,7 +1267,8 @@ function validTaskDefinition(value: unknown): value is TaskDefinition {
   const ids = new Set<string>();
   return value.Triggers.every((trigger: unknown) => {
     if (!isRecord(trigger) || !nonemptyString(trigger.Id) || ids.has(trigger.Id as string)
-      || typeof trigger.Kind !== "string" || !["interval", "daily", "weekly", "startup"].includes(trigger.Kind)
+      || typeof trigger.Kind !== "string" || !["interval", "daily", "weekly", "startup", "system_event"].includes(trigger.Kind)
+      || (trigger.Kind === "system_event" ? !["ServerStarted", "LibraryChanged", "ConfigurationChanged"].includes(String(trigger.SystemEvent)) : trigger.SystemEvent != null)
       || ![trigger.IntervalTicks, trigger.TimeOfDayTicks, trigger.MaxRuntimeTicks].every(validTaskTicks)
       || (trigger.DayOfWeek !== null && (!Number.isInteger(trigger.DayOfWeek) || (trigger.DayOfWeek as number) < 0 || (trigger.DayOfWeek as number) > 6))
       || !validTaskTimestamp(trigger.NextFireAt) || typeof trigger.CalculationError !== "string") return false;

@@ -81,6 +81,22 @@ func (s *Server) entityDTO(entity library.Entity, fields []string, detail bool) 
 		"Name": entity.Name, "Id": strconv.FormatInt(entity.ID, 10), "Type": entity.Type, "ServerId": s.serverID,
 		"ImageTags": map[string]string{}, "BackdropImageTags": []string{},
 	}
+	tags := make(map[string]string)
+	backdrops := make([]string, 0)
+	for _, image := range entity.Images {
+		if image.ImageType == "Backdrop" {
+			backdrops = append(backdrops, image.Tag)
+		} else if _, exists := tags[image.ImageType]; !exists {
+			tags[image.ImageType] = image.Tag
+			if image.ImageType == "Primary" && image.Height > 0 && (detail || hasField(fields, "PrimaryImageAspectRatio")) {
+				dto["PrimaryImageAspectRatio"] = float64(image.Width) / float64(image.Height)
+			}
+		}
+	}
+	dto["ImageTags"], dto["BackdropImageTags"] = tags, backdrops
+	if entity.UserData != nil {
+		dto["UserData"] = userDataDTO(*entity.UserData, false)
+	}
 	if detail || hasField(fields, "SortName") {
 		dto["SortName"] = entity.Name
 	}

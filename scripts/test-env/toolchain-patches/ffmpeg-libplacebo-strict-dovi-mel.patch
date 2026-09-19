@@ -1,0 +1,310 @@
+From: Goby private toolchain maintainers
+Subject: [PRIVATE PATCH] avfilter/libplacebo: require audited per-frame Dolby Vision
+Upstream-base: FFmpeg n9.0.1 (bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa)
+Upstream-source: https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavfilter/vf_libplacebo.c
+License: LGPL-2.1-or-later; the upstream source license header is unchanged.
+
+Add opt-in strict Dolby Vision processing for HEVC profiles 5, 7 and 8.
+Fail closed on missing/unsupported frame metadata, profile mismatches and FEL.
+Normalize a private metadata copy only for verified zero-residual profile 7
+MEL, preserving every original reshaping curve, color matrix and extension.
+Require libplacebo to report that it actually mapped the validated metadata.
+
+This private patch is pinned to FFmpeg n9.0.1 and libplacebo 7.351.0.
+See README.md in this patch directory for provenance and verification scope.
+
+diff --git a/libavfilter/vf_libplacebo.c b/libavfilter/vf_libplacebo.c
+index 4ee8c36..dba91e0 100644
+--- a/libavfilter/vf_libplacebo.c
++++ b/libavfilter/vf_libplacebo.c
+@@ -20,6 +20,8 @@
+ 
+ #include "libavutil/avassert.h"
+ #include "libavutil/avstring.h"
++#include "libavutil/buffer.h"
++#include "libavutil/dovi_meta.h"
+ #include "libavutil/eval.h"
+ #include "libavutil/fifo.h"
+ #include "libavutil/file.h"
+@@ -190,6 +192,8 @@ typedef struct LibplaceboContext {
+     int fit_sense;
+     int apply_filmgrain;
+     int apply_dovi;
++    int strict_dovi;
++    int strict_dovi_profile;
+     int colorspace;
+     int color_range;
+     int color_primaries;
+@@ -388,6 +392,14 @@ static int update_settings(AVFilterContext *ctx)
+     pl_options opts = s->opts;
+     int gamut_mode = s->gamut_mode;
+ 
++    if (s->strict_dovi && (!s->apply_dovi ||
++        (s->strict_dovi_profile != 5 && s->strict_dovi_profile != 7 &&
++         s->strict_dovi_profile != 8))) {
++        av_log(ctx, AV_LOG_ERROR, "strict_dolbyvision requires "
++               "apply_dolbyvision=1 and strict_dolbyvision_profile=5, 7 or 8\n");
++        return AVERROR(EINVAL);
++    }
++
+     opts->deinterlace_params = *pl_deinterlace_params(
+         .algo = s->deinterlace,
+         .skip_spatial_check = s->skip_spatial_check,
+@@ -1087,6 +1099,223 @@ fail:
+     return err;
+ }
+ 
++static int dovi_region_valid(const AVFrameSideData *sd, size_t offset,
++                             size_t size, size_t alignment)
++{
++    return offset >= sizeof(AVDOVIMetadata) && offset <= sd->size &&
++           size <= sd->size - offset &&
++           !((uintptr_t) (sd->data + offset) % alignment);
++}
++
++static int dovi_metadata_valid(const AVFrameSideData *sd)
++{
++    const AVDOVIMetadata *metadata;
++    const AVDOVIRpuDataHeader *header;
++    const AVDOVIDataMapping *mapping;
++    const AVDOVIColorMetadata *color;
++
++    if (!sd || !sd->buf || !sd->data || sd->data != sd->buf->data ||
++        sd->size != sd->buf->size || sd->size < sizeof(*metadata) ||
++        (uintptr_t) sd->data % _Alignof(AVDOVIMetadata))
++        return 0;
++    metadata = (const AVDOVIMetadata *) sd->data;
++
++    /* Validate the complete native layout before using the offset accessors.
++     * Ordered, non-overlapping regions also keep normalization from aliasing
++     * the original curves, color metadata or display-management blocks. */
++    if (!dovi_region_valid(sd, metadata->header_offset, sizeof(*header),
++                           _Alignof(AVDOVIRpuDataHeader)) ||
++        !dovi_region_valid(sd, metadata->mapping_offset, sizeof(*mapping),
++                           _Alignof(AVDOVIDataMapping)) ||
++        !dovi_region_valid(sd, metadata->color_offset, sizeof(*color),
++                           _Alignof(AVDOVIColorMetadata)) ||
++        metadata->mapping_offset < metadata->header_offset + sizeof(*header) ||
++        metadata->color_offset < metadata->mapping_offset + sizeof(*mapping) ||
++        metadata->ext_block_offset < metadata->color_offset + sizeof(*color) ||
++        metadata->ext_block_offset > sd->size ||
++        metadata->ext_block_size < sizeof(AVDOVIDmData) ||
++        metadata->ext_block_size % _Alignof(AVDOVIDmData) ||
++        (uintptr_t) (sd->data + metadata->ext_block_offset) % _Alignof(AVDOVIDmData) ||
++        metadata->num_ext_blocks < 0 ||
++        metadata->num_ext_blocks > AV_DOVI_MAX_EXT_BLOCKS ||
++        metadata->num_ext_blocks >
++            (sd->size - metadata->ext_block_offset) / metadata->ext_block_size)
++        return 0;
++
++    header = av_dovi_get_header(metadata);
++    mapping = av_dovi_get_mapping(metadata);
++    color = av_dovi_get_color(metadata);
++
++    /* This private path supports the ordinary HEVC P5/P7/P8 RPU layout.
++     * libplacebo 7.351 uses a signed 32-bit shift for coefficient scaling,
++     * so reject denominators 31/32 instead of passing undefined arithmetic. */
++    if (header->rpu_type != 2 || header->rpu_format != 18 ||
++        header->vdr_rpu_level != 0 || header->coef_data_type != 0 ||
++        header->coef_log2_denom < 13 || header->coef_log2_denom > 30 ||
++        header->bl_bit_depth != 10 || header->el_bit_depth != 10 ||
++        header->vdr_bit_depth < 8 || header->vdr_bit_depth > 14 ||
++        header->vdr_rpu_normalized_idc != 1 ||
++        header->chroma_resampling_explicit_filter_flag ||
++        header->bl_video_full_range_flag > 1 ||
++        header->spatial_resampling_filter_flag > 1 ||
++        header->el_spatial_resampling_filter_flag > 1 ||
++        header->disable_residual_flag > 1 ||
++        header->ext_mapping_idc_0_4 || header->ext_mapping_idc_5_7 ||
++        mapping->mapping_color_space || mapping->mapping_chroma_format_idc ||
++        !mapping->num_x_partitions || !mapping->num_y_partitions ||
++        mapping->num_x_partitions > 0xffff || mapping->num_y_partitions > 0xffff)
++        return 0;
++
++    for (int c = 0; c < 3; c++) {
++        const AVDOVIReshapingCurve *curve = &mapping->curves[c];
++        if (curve->num_pivots < 2 || curve->num_pivots > AV_DOVI_MAX_PIECES + 1)
++            return 0;
++        for (int i = 0; i < curve->num_pivots; i++) {
++            if (curve->pivots[i] > 1023 ||
++                (i && curve->pivots[i] <= curve->pivots[i - 1]))
++                return 0;
++        }
++        for (int i = 0; i < curve->num_pivots - 1; i++) {
++            switch (curve->mapping_idc[i]) {
++            case AV_DOVI_MAPPING_POLYNOMIAL:
++                if (curve->poly_order[i] < 1 || curve->poly_order[i] > 2)
++                    return 0;
++                break;
++            case AV_DOVI_MAPPING_MMR:
++                if (curve->mmr_order[i] < 1 || curve->mmr_order[i] > 3)
++                    return 0;
++                break;
++            default:
++                return 0;
++            }
++        }
++        if (color->ycc_to_rgb_offset[c].den <= 0)
++            return 0;
++    }
++    for (int i = 0; i < 9; i++) {
++        if (color->ycc_to_rgb_matrix[i].den <= 0 ||
++            color->rgb_to_lms_matrix[i].den <= 0)
++            return 0;
++    }
++    if (color->signal_bit_depth < 8 || color->signal_bit_depth > 16 ||
++        color->source_max_pq > 4095 || color->source_min_pq > color->source_max_pq)
++        return 0;
++    for (int i = 0; i < metadata->num_ext_blocks; i++) {
++        const AVDOVIDmData *ext = av_dovi_get_ext(metadata, i);
++        if (!ext->level || (ext->level == 1 &&
++            (ext->l1.min_pq > ext->l1.max_pq || ext->l1.max_pq > 4095 ||
++             ext->l1.avg_pq > 4095)))
++            return 0;
++    }
++
++    return 1;
++}
++
++static int dovi_hevc_profile(const AVDOVIRpuDataHeader *header)
++{
++    /* Match ff_dovi_guess_profile_hevc() without linking lavc internals. */
++    switch (header->vdr_rpu_profile) {
++    case 0:
++        return header->bl_video_full_range_flag ? 5 : 0;
++    case 1:
++        if (header->el_spatial_resampling_filter_flag && !header->disable_residual_flag)
++            return header->vdr_bit_depth == 12 ? 7 : 4;
++        return 8;
++    default:
++        return 0;
++    }
++}
++
++static int prepare_dovi_frame(AVFilterContext *ctx, AVFrame *frame)
++{
++    LibplaceboContext *s = ctx->priv;
++    AVFrameSideData *sd, *rpu;
++    AVDOVIMetadata *metadata;
++    AVDOVIRpuDataHeader *header;
++    AVDOVIDataMapping *mapping;
++    AVBufferRef *private_buf;
++    int profile;
++
++    if (!s->strict_dovi)
++        return 0;
++    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DOVI_METADATA);
++    rpu = av_frame_get_side_data(frame, AV_FRAME_DATA_DOVI_RPU_BUFFER);
++
++    /* Parsed metadata can survive a missing AU RPU in the HEVC decoder.
++     * Require its raw per-frame counterpart, including the supported type.
++     * Format 18 has no emulation-prevention byte in these first five bytes. */
++    if (!s->apply_dovi || !rpu || !rpu->buf || !rpu->data ||
++        rpu->data != rpu->buf->data || rpu->size != rpu->buf->size || rpu->size < 5 ||
++        rpu->data[0] != 25 || (rpu->data[1] >> 2) != 2 ||
++        (((rpu->data[1] & 3) << 9) | (rpu->data[2] << 1) |
++         (rpu->data[3] >> 7)) != 18 || !(rpu->data[4] & 0x40) ||
++        !dovi_metadata_valid(sd)) {
++        av_log(ctx, AV_LOG_ERROR, "strict_dolbyvision: missing, invalid or "
++               "unsupported per-frame RPU metadata\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    metadata = (AVDOVIMetadata *) sd->data;
++    header = av_dovi_get_header(metadata);
++    mapping = av_dovi_get_mapping(metadata);
++    profile = dovi_hevc_profile(header);
++    if (profile != s->strict_dovi_profile ||
++        ((rpu->data[3] >> 3) & 15) != header->vdr_rpu_profile ||
++        (((rpu->data[3] & 7) << 1) | (rpu->data[4] >> 7)) != header->vdr_rpu_level) {
++        av_log(ctx, AV_LOG_ERROR, "strict_dolbyvision: RPU profile does not "
++               "match the declared profile %d\n", s->strict_dovi_profile);
++        return AVERROR_INVALIDDATA;
++    }
++
++    if (profile == 5 || profile == 8) {
++        if (header->disable_residual_flag && mapping->nlq_method_idc == AV_DOVI_NLQ_NONE)
++            return 0;
++        av_log(ctx, AV_LOG_ERROR, "strict_dolbyvision: profile %d requires "
++               "unsupported residual processing\n", profile);
++        return AVERROR_INVALIDDATA;
++    }
++
++    /* A real P7 MEL still signals an EL. Accept it only when every decoded
++     * fixed-point NLQ component is the exact zero-residual identity. */
++    if (profile != 7 || header->disable_residual_flag ||
++        !header->el_spatial_resampling_filter_flag || header->vdr_bit_depth != 12 ||
++        mapping->nlq_method_idc != AV_DOVI_NLQ_LINEAR_DZ)
++        goto unsupported_residual;
++    for (int c = 0; c < 3; c++) {
++        const AVDOVINLQParams *nlq = &mapping->nlq[c];
++        if (nlq->nlq_offset ||
++            nlq->vdr_in_max != (UINT64_C(1) << header->coef_log2_denom) ||
++            nlq->linear_deadzone_slope || nlq->linear_deadzone_threshold)
++            goto unsupported_residual;
++    }
++
++    /* The filter owns this AVFrame, but its side-data buffer can be shared
++     * with other frame references. Copy the complete allocation, including
++     * all extension blocks, before changing only the redundant EL fields. */
++    private_buf = av_buffer_alloc(sd->size);
++    if (!private_buf)
++        return AVERROR(ENOMEM);
++    memcpy(private_buf->data, sd->data, sd->size);
++    av_buffer_unref(&sd->buf);
++    sd->buf = private_buf;
++    sd->data = private_buf->data;
++    metadata = (AVDOVIMetadata *) sd->data;
++    header = av_dovi_get_header(metadata);
++    mapping = av_dovi_get_mapping(metadata);
++    header->disable_residual_flag = 1;
++    header->el_spatial_resampling_filter_flag = 0;
++    mapping->nlq_method_idc = AV_DOVI_NLQ_NONE;
++    mapping->num_x_partitions = mapping->num_y_partitions = 1;
++    memset(mapping->nlq, 0, sizeof(mapping->nlq));
++    memset(mapping->nlq_pivots, 0, sizeof(mapping->nlq_pivots));
++    return 0;
++
++unsupported_residual:
++    av_log(ctx, AV_LOG_ERROR, "strict_dolbyvision: profile 7 is not a "
++           "verified zero-residual MEL; FEL and unknown residuals are unsupported\n");
++    return AVERROR_INVALIDDATA;
++}
++
+ static bool map_frame(pl_gpu gpu, pl_tex *tex,
+                       const struct pl_source_frame *src,
+                       struct pl_frame *out)
+@@ -1098,6 +1327,13 @@ static bool map_frame(pl_gpu gpu, pl_tex *tex,
+         .tex        = tex,
+         .map_dovi   = s->apply_dovi,
+     ));
++    if (ok && s->strict_dovi &&
++        (out->repr.sys != PL_COLOR_SYSTEM_DOLBYVISION || !out->repr.dovi)) {
++        av_log(s, AV_LOG_ERROR, "strict_dolbyvision: libplacebo did not apply "
++               "the validated Dolby Vision metadata\n");
++        pl_unmap_avframe(gpu, out);
++        ok = false;
++    }
+     out->lut = s->lut;
+     out->lut_type = s->lut_type;
+     out->rotation += s->rotation;
+@@ -1131,6 +1367,10 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
+     int64_t pts;
+ 
+     while ((ret = ff_inlink_consume_frame(inlink, &in)) > 0) {
++        if ((ret = prepare_dovi_frame(ctx, in)) < 0) {
++            av_frame_free(&in);
++            return ret;
++        }
+         struct pl_source_frame src = {
+             .pts         = TS2T(in->pts, inlink->time_base),
+             .duration    = TS2T(in->duration, inlink->time_base),
+@@ -1660,6 +1900,8 @@ static const AVOption libplacebo_options[] = {
+     { "sigmoid", "Enable sigmoid upscaling", OFFSET(sigmoid), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
+     { "apply_filmgrain", "Apply film grain metadata", OFFSET(apply_filmgrain), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
+     { "apply_dolbyvision", "Apply Dolby Vision metadata", OFFSET(apply_dovi), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
++    { "strict_dolbyvision", "Require per-frame Dolby Vision and normalize only verified zero-residual MEL", OFFSET(strict_dovi), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
++    { "strict_dolbyvision_profile", "Declared HEVC Dolby Vision profile (5, 7 or 8), required in strict mode", OFFSET(strict_dovi_profile), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 8, STATIC },
+ 
+     { "deinterlace", "Deinterlacing mode", OFFSET(deinterlace), AV_OPT_TYPE_INT, {.i64 = PL_DEINTERLACE_WEAVE}, 0, PL_DEINTERLACE_ALGORITHM_COUNT - 1, DYNAMIC, .unit = "deinterlace" },
+         { "weave", "Weave fields together (no-op)",    0, AV_OPT_TYPE_CONST, {.i64 = PL_DEINTERLACE_WEAVE}, 0, 0, STATIC, .unit = "deinterlace" },

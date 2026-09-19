@@ -368,7 +368,7 @@ func TestPlanProgressiveVideoEncodingDoesNotInventUnknownCodecFacts(t *testing.T
 	limits.Hardware = transcode.Hardware{Decode: "vaapi", Encode: "vaapi", Device: "/dev/dri/renderD128"}
 	decision := progressiveVideoTestPlan(t, source, request, limits)
 	video, audio := decision.OutputSource.Info.Streams[0], decision.OutputSource.Info.Streams[1]
-	if decision.Plan.Hardware != limits.Hardware || video.BitDepth != 8 || video.Profile != "" || video.Level != 0 || video.RefFrames != 0 ||
+	if decision.Plan.Hardware != limits.Hardware || video.BitDepth != 8 || video.Profile != "High" || video.Level != 0 || video.RefFrames != 0 ||
 		!video.IsAVC || !video.IsAVCKnown || !video.InterlaceKnown || video.IsInterlaced || video.CodecTag != "avc1" || video.AverageFrameRate != "" ||
 		audio.Profile != "LC" || audio.BitDepth != 0 || audio.CodecTag != "mp4a" {
 		t.Fatalf("encoded facts do not reflect explicit runner guarantees: %+v", decision)
@@ -442,7 +442,7 @@ func TestPlanProgressiveVideoMalformedTargetsReturnSyntaxErrors(t *testing.T) {
 	}
 	for _, mutate := range []func(*ProgressiveVideoRequest){
 		func(r *ProgressiveVideoRequest) { r.OutputContainer = "mkv" },
-		func(r *ProgressiveVideoRequest) { r.VideoCodec = "hevc" },
+		func(r *ProgressiveVideoRequest) { r.VideoCodec = "vp9" },
 		func(r *ProgressiveVideoRequest) { r.AudioCodec = "mp3" },
 	} {
 		request := progressiveVideoTestRequest()

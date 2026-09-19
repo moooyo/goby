@@ -141,13 +141,17 @@ func TestHTTPHLSSubtitleRenditionsMatchActualMediaPresentationClock(t *testing.T
 						hlsAssertSubtitleCueClock(t, unchanged.body, "English", .25, framePTS)
 					}
 				}
-				// A new selected track gets its own immutable rendition, while an
-				// attempted in-place track change on an existing URL is rejected.
+				// A view edit selects another bound rendition without replacing
+				// the shared A/V producer or changing the original URL's meaning.
 				mutated, _ := url.Parse(vttPath)
 				values := mutated.Query()
 				values.Set("SubtitleStreamIndex", strconv.Itoa(indexes["fr"]))
 				mutated.RawQuery = values.Encode()
-				expectHLSHTTPStatus(t, h.request(t, http.MethodGet, mutated.String(), nil, nil), http.StatusBadRequest)
+				changed := h.request(t, http.MethodGet, mutated.String(), nil, nil)
+				expectHLSHTTPStatus(t, changed, http.StatusOK)
+				for _, framePTS := range variantFrames {
+					hlsAssertSubtitleCueClock(t, changed.body, "French", .25, framePTS)
+				}
 				query.Set("SubtitleStreamIndex", strconv.Itoa(indexes["fr"]))
 				query.Set("SubtitleOffsetTicks", "-2500000")
 				switched := h.request(t, http.MethodGet, masterPath+query.Encode(), nil, nil)
@@ -164,8 +168,8 @@ func TestHTTPHLSSubtitleRenditionsMatchActualMediaPresentationClock(t *testing.T
 				query.Del("SubtitleOffsetTicks")
 				off := h.request(t, http.MethodGet, masterPath+query.Encode(), nil, nil)
 				expectHLSHTTPStatus(t, off, http.StatusOK)
-				if bytes.Contains(off.body, []byte("TYPE=SUBTITLES")) || bytes.Contains(off.body, []byte("SUBTITLES=")) {
-					t.Fatal("the disabled subtitle selection still advertised a rendition")
+				if bytes.Count(off.body, []byte("TYPE=SUBTITLES")) != 2 || bytes.Contains(off.body, []byte("DEFAULT=YES")) || bytes.Contains(off.body, []byte("AUTOSELECT=YES")) {
+					t.Fatal("subtitle off removed available tracks or retained automatic selection")
 				}
 			})
 		}
@@ -176,7 +180,7 @@ func hlsSubtitleClockDocument(t *testing.T, h *hlsHTTPFixture, master []byte) (s
 	t.Helper()
 	child := ""
 	for _, line := range strings.Split(string(master), "\n") {
-		if strings.HasPrefix(line, "#EXT-X-MEDIA:TYPE=SUBTITLES,") {
+		if strings.HasPrefix(line, "#EXT-X-MEDIA:TYPE=SUBTITLES,") && strings.Contains(line, "DEFAULT=YES") {
 			_, value, found := strings.Cut(line, "URI=\"")
 			if found {
 				child, _, _ = strings.Cut(value, "\"")
@@ -189,12 +193,19 @@ func hlsSubtitleClockDocument(t *testing.T, h *hlsHTTPFixture, master []byte) (s
 	playlist := h.request(t, http.MethodGet, child, nil, nil)
 	expectHLSHTTPStatus(t, playlist, http.StatusOK)
 	children := hlsHTTPManifestChildren(playlist.body)
-	if len(children) != 1 {
-		t.Fatal("expected the bounded full-source WebVTT segment")
+	if len(children) < 2 {
+		t.Fatal("expected actual media-aligned WebVTT segments")
 	}
-	vtt := h.request(t, http.MethodGet, children[0], nil, nil)
+	// Keep the full-document alias as the independent transport-clock check;
+	// the rendition itself now publishes one resource per actual media segment.
+	parsed, err := url.Parse(child)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed.Path = parsed.Path[:strings.LastIndex(parsed.Path, "/")+1] + "subtitles.vtt"
+	vtt := h.request(t, http.MethodGet, parsed.String(), nil, nil)
 	expectHLSHTTPStatus(t, vtt, http.StatusOK)
-	return children[0], vtt.body
+	return parsed.String(), vtt.body
 }
 
 func hlsSubtitleActualFramePTS(t *testing.T, h *hlsHTTPFixture, playlist []byte, container string) []float64 {

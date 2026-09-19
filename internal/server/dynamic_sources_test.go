@@ -3,11 +3,13 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -18,6 +20,7 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
+	"github.com/moooyo/goby/internal/timeshift"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -54,7 +57,21 @@ func (jobs *dynamicTestJobs) Ensure(_ context.Context, spec transcode.Spec, inpu
 	jobs.mu.Lock()
 	defer jobs.mu.Unlock()
 	jobs.specs, jobs.bytes = append(jobs.specs, spec), append(jobs.bytes, string(data))
-	return transcode.Record{ID: "dynamic_test_job", Spec: spec, State: "running"}, nil
+	jobs.state = "running"
+	return transcode.Record{ID: fmt.Sprintf("dynamic_test_job_%d", len(jobs.specs)), Spec: spec, State: "running"}, nil
+}
+func (jobs *dynamicTestJobs) EnsureStreamInputs(ctx context.Context, spec transcode.Spec, inputs transcode.StreamInputs) (transcode.Record, error) {
+	var done chan struct{}
+	if inputs.Bitmap != nil {
+		done = make(chan struct{})
+		go func() { defer close(done); _, _ = io.Copy(io.Discard, inputs.Bitmap) }()
+	}
+	record, err := jobs.Ensure(ctx, spec, inputs.Media)
+	if inputs.Bitmap != nil {
+		_ = inputs.Bitmap.Close()
+		<-done
+	}
+	return record, err
 }
 func (jobs *dynamicTestJobs) Snapshot(scope transcode.Scope, id string) (transcode.Record, error) {
 	jobs.mu.Lock()
@@ -96,11 +113,22 @@ func dynamicServerFixture(t *testing.T) (*Server, identity.Principal, dynamicsou
 	}
 	jobs := &dynamicTestJobs{}
 	lifetime, cancel := context.WithCancel(context.Background())
-	server := &Server{cfg: config.Config{Transcoding: config.TranscodingConfig{Enabled: true, MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8}},
-		dynamicSources: manager, dynamicStreams: &dynamicStreamRuntime{sessions: make(map[string]*dynamicStreamSession), byKey: make(map[dynamicStreamKey]*dynamicStreamSession), revalidate: func(_ context.Context, principal identity.Principal) (identity.Principal, error) {
+	timeshiftConfig := config.DefaultTimeshiftConfig()
+	timeshiftConfig.CacheDirectory = filepath.Join(t.TempDir(), "timeshift")
+	store, err := timeshift.New(timeshiftConfig.Options())
+	if err != nil {
+		cancel()
+		_ = manager.Close(context.Background())
+		if errors.Is(err, timeshift.ErrUnsupported) {
+			t.Skip("dynamic retained-media fixture requires Linux")
+		}
+		t.Fatal(err)
+	}
+	server := &Server{cfg: config.Config{Timeshift: timeshiftConfig, Transcoding: config.TranscodingConfig{Enabled: true, MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8}},
+		dynamicSources: manager, dynamicStreams: &dynamicStreamRuntime{store: store, sessions: make(map[string]*dynamicStreamSession), byKey: make(map[dynamicStreamKey]*dynamicStreamSession), revalidate: func(_ context.Context, principal identity.Principal) (identity.Principal, error) {
 			return principal, nil
 		}},
-		hls: &hlsRuntime{ctx: lifetime, cancel: cancel, manager: jobs, slots: make(chan struct{}, 8)}}
+		hls: &hlsRuntime{ctx: lifetime, cancel: cancel, manager: jobs, slots: make(chan struct{}, 8), probes: make(chan struct{}, 2)}}
 	t.Cleanup(func() {
 		cancel()
 		ctx, done := context.WithTimeout(context.Background(), time.Second)
@@ -148,7 +176,7 @@ func TestDynamicNegotiationAndHeadDoNotStartAnEncoder(t *testing.T) {
 	}
 }
 
-func TestDynamicJobConsumesOnlyAuthorizedPipeAndRetiresFailedRevision(t *testing.T) {
+func TestDynamicJobConsumesOnlyAuthorizedPipeAndReconnectsWithinPresentation(t *testing.T) {
 	server, principal, lease, request, jobs := dynamicServerFixture(t)
 	httpRequest := dynamicTestRequest(principal, http.MethodPost, "/emby/LiveStreams/Open?api_key=owned-token")
 	dto, err := server.dynamicPlaybackDTO(httpRequest, principal, lease, request)
@@ -172,18 +200,23 @@ func TestDynamicJobConsumesOnlyAuthorizedPipeAndRetiresFailedRevision(t *testing
 	jobs.mu.Lock()
 	jobs.state = "completed"
 	jobs.mu.Unlock()
-	if _, err := server.ensureDynamicJob(get.Context(), get, session); !errors.Is(err, dynamicsource.ErrUnavailable) {
-		t.Fatal("ended ongoing input reused a cached presentation")
-	}
-	if !session.closed || jobs.cancelled == 0 {
-		t.Fatal("ended ongoing output revision was not retired")
+	firstWindow := session.windowID
+	waitDynamicTestGeneration(t, session, 2)
+	session.mu.Lock()
+	closed, window, generation, jobID := session.closed, session.windowID, session.generation, session.jobID
+	session.mu.Unlock()
+	jobs.mu.Lock()
+	count, second, original := len(jobs.specs), jobs.specs[len(jobs.specs)-1], jobs.specs[0]
+	jobs.mu.Unlock()
+	if closed || window != firstWindow || generation != 2 || jobID != "dynamic_test_job_2" || count != 2 || second.SourceStamp == lease.Stamp || second.Scope != original.Scope {
+		t.Fatal("reconnect changed presentation ownership or reused the old input generation")
 	}
 	next, err := server.dynamicMediaInfoDTO(httpRequest, principal, lease)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if next["TranscodingUrl"] == dto["TranscodingUrl"] {
-		t.Fatal("reconnection reused old segment URLs")
+	if next["TranscodingUrl"] != dto["TranscodingUrl"] {
+		t.Fatal("reconnection replaced the retained presentation URL")
 	}
 }
 
@@ -210,7 +243,7 @@ func TestDynamicOutputOwnershipCannotBeChangedByURL(t *testing.T) {
 	}
 }
 
-func TestDynamicMediaInfoReplacesEndedOutputBeforeAnotherArtifactRequest(t *testing.T) {
+func TestDynamicMediaInfoRetainsPresentationWhileProducerReconnects(t *testing.T) {
 	server, principal, lease, request, jobs := dynamicServerFixture(t)
 	httpRequest := dynamicTestRequest(principal, http.MethodPost, "/emby/LiveStreams/MediaInfo")
 	dto, err := server.dynamicPlaybackDTO(httpRequest, principal, lease, request)
@@ -230,8 +263,34 @@ func TestDynamicMediaInfoReplacesEndedOutputBeforeAnotherArtifactRequest(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if next["TranscodingUrl"] == dto["TranscodingUrl"] || !session.closed {
-		t.Fatal("explicit media refresh retained the completed ongoing output revision")
+	session.mu.Lock()
+	closed := session.closed
+	session.mu.Unlock()
+	if next["TranscodingUrl"] != dto["TranscodingUrl"] || closed {
+		t.Fatal("media refresh replaced the retained presentation during reconnect")
+	}
+	waitDynamicTestGeneration(t, session, 2)
+}
+
+func waitDynamicTestGeneration(t *testing.T, session *dynamicStreamSession, generation uint64) {
+	t.Helper()
+	deadline := time.NewTimer(4 * time.Second)
+	defer deadline.Stop()
+	for {
+		session.mu.Lock()
+		current, changed, closed := session.generation, session.changed, session.closed
+		session.mu.Unlock()
+		if current >= generation && !closed {
+			return
+		}
+		if closed {
+			t.Fatal("presentation closed before its bounded reconnect")
+		}
+		select {
+		case <-changed:
+		case <-deadline.C:
+			t.Fatal("presentation did not start its next input generation")
+		}
 	}
 }
 

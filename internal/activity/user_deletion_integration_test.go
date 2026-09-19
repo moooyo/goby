@@ -62,12 +62,13 @@ func TestUserDeletionMigrationPreservesEveryPublishedActionAndHistory(t *testing
 	if after := snapshotActivityRows(t, ctx, pool); after != before {
 		t.Fatal("user deletion migration rewrote existing activity history")
 	}
-	// The full upgrade adds user deletion in schema 29 and the two explicit
-	// media deletion actions in schema 34, while preserving every prior action.
-	want := append(slices.Clone(published), "'user.deleted'", "'item.deleted'", "'subtitle.deleted'")
+	// The full upgrade adds user deletion in schema 29, the two media deletion
+	// actions in schema 34, and library editing in schema 36. Every earlier
+	// action and historical activity row must remain unchanged.
+	want := append(slices.Clone(published), "'user.deleted'", "'item.deleted'", "'subtitle.deleted'", "'library.updated'")
 	slices.Sort(want)
 	if !slices.Equal(readActions(), want) {
-		t.Fatal("activity upgrade did not preserve the original actions and add exactly the supported deletion actions")
+		t.Fatal("activity upgrade did not preserve the original actions and add exactly the declared actions")
 	}
 	insertActivityEvent(t, ctx, pool, event)
 	page := queryActivityPage(t, ctx, pool, activity.QueryOptions{Action: activity.ActionUserDeleted, ActorID: event.Actor.ID})
@@ -77,5 +78,23 @@ func TestUserDeletionMigrationPreservesEveryPublishedActionAndHistory(t *testing
 	}
 	if legacy := queryActivityPage(t, ctx, pool, activity.QueryOptions{Action: activity.ActionUserUpdated}); legacy.TotalRecordCount != 1 {
 		t.Fatal("deletion action filtering changed the existing update action")
+	}
+	libraryEvent := activityTestEvent("edited-library")
+	libraryEvent.Action = activity.ActionLibraryUpdated
+	libraryEvent.Resource = activity.Resource{Kind: activity.ResourceLibrary, ID: "edited-library"}
+	libraryEvent.Revision, libraryEvent.Count = 8, 2
+	insertActivityEvent(t, ctx, pool, libraryEvent)
+	libraryPage := queryActivityPage(t, ctx, pool, activity.QueryOptions{Action: activity.ActionLibraryUpdated})
+	if libraryPage.TotalRecordCount != 1 || len(libraryPage.Items) != 1 ||
+		libraryPage.Items[0].Resource != libraryEvent.Resource || libraryPage.Items[0].Revision != 8 {
+		t.Fatal("the declared library edit action did not preserve its resource and revision")
+	}
+	bad := beginActivityTransaction(t, ctx, pool)
+	libraryEvent.Resource.Kind = activity.ResourceUser
+	if err := activity.Record(ctx, bad, libraryEvent); err == nil {
+		t.Fatal("the library edit action accepted a user resource")
+	}
+	if err := bad.Rollback(ctx); err != nil {
+		t.Fatal(err)
 	}
 }

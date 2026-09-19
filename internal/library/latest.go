@@ -12,10 +12,15 @@ type LatestItem struct {
 	ChildCount int
 }
 
+type LatestPreferences struct{ ExcludedLibraryIDs []string }
+
 // QueryLatest filters accessible media before grouping and paging by newest media.
 // Parent scopes always include descendants. A visible same-library container may
 // be returned outside that scope to represent matching episodes or audio tracks.
-func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]LatestItem, error) {
+func (s *Store) QueryLatest(ctx context.Context, query Query, group bool, preferences ...LatestPreferences) ([]LatestItem, error) {
+	if len(preferences) > 1 || len(preferences) == 1 && len(preferences[0].ExcludedLibraryIDs) > 1024 {
+		return nil, ErrInvalidInput
+	}
 	query.Recursive = true
 	query, err := normalizeItemQuery(query)
 	if err != nil {
@@ -31,6 +36,10 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool) ([]Lat
 		return nil, err
 	}
 	prefix, filter, args := itemQuerySQL(query, access, parentLibraryID)
+	if len(preferences) == 1 && len(preferences[0].ExcludedLibraryIDs) > 0 {
+		args = append(args, preferences[0].ExcludedLibraryIDs)
+		filter += fmt.Sprintf(" AND NOT i.library_id=ANY($%d::text[])", len(args))
+	}
 	filter += " AND NOT i.is_folder AND i.type <> 'CollectionFolder'"
 	args = append(args, query.Limit, query.StartIndex)
 	pagination := fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))

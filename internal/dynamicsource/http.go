@@ -27,17 +27,27 @@ func cloneHeaders(headers map[string]string) map[string]string {
 }
 
 func validateDefinition(definition Definition) error {
-	if !validID(definition.ItemID, false) || !validID(definition.Name, true) || definition.MaxReconnects < 0 || definition.MaxReconnects > 3 || len(definition.URL) > 8192 || len(definition.Headers) > 32 {
+	if !validID(definition.ItemID, false) || !validID(definition.Name, true) || definition.MaxReconnects < 0 || definition.MaxReconnects > 3 {
 		return ErrInvalid
 	}
-	target, err := url.Parse(definition.URL)
+	if err := ValidateSubtitleDefinitions(definition.Subtitles); err != nil {
+		return err
+	}
+	return validateHTTPRequest(definition.URL, definition.Headers)
+}
+
+func validateHTTPRequest(address string, headers map[string]string) error {
+	if len(address) > 8192 || len(headers) > 32 {
+		return ErrInvalid
+	}
+	target, err := url.Parse(address)
 	if err != nil || target.Hostname() == "" || target.User != nil || target.Fragment != "" || target.Opaque != "" ||
-		(target.Scheme != "http" && target.Scheme != "https") || strings.ContainsAny(definition.URL, "\r\n\x00") {
+		(target.Scheme != "http" && target.Scheme != "https") || strings.ContainsAny(address, "\r\n\x00") {
 		return ErrInvalid
 	}
 	total := 0
-	seen := make(map[string]bool, len(definition.Headers))
-	for name, value := range definition.Headers {
+	seen := make(map[string]bool, len(headers))
+	for name, value := range headers {
 		if name == "" || len(name) > 128 || len(value) > 4096 || !utf8.ValidString(value) || strings.ContainsAny(value, "\r\n\x00") {
 			return ErrInvalid
 		}

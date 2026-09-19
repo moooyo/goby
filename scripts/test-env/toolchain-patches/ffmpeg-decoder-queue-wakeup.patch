@@ -1,0 +1,120 @@
+diff --git a/fftools/thread_queue.h b/fftools/thread_queue.h
+index 756545d..e4abb70 100644
+--- a/fftools/thread_queue.h
++++ b/fftools/thread_queue.h
+@@ -85,12 +85,22 @@ void tq_choke(ThreadQueue *tq, int choked);
+  * @return
+  * - 0 a data item was successfully read; *stream_idx contains a non-negative
+  *   stream index
++ * - AVERROR(EINTR) a receive interruption was requested; *stream_idx is -1,
++ *   data is unchanged, and no data item or EOF state was consumed
+  * - AVERROR_EOF When *stream_idx is non-negative, this signals that the sending
+  *   side has marked the given stream as finished. This will happen at most once
+  *   for each stream. When *stream_idx is -1, all streams are done.
+  */
+ int tq_receive(ThreadQueue *tq, int *stream_idx, void *data, int flags);
+ 
++/**
++ * Interrupt the current or next receive so its caller can recheck external
++ * state. Requests are coalesced and retained until a receive observes them,
++ * including when no receiver is currently waiting. This does not enqueue a
++ * data item, change choke or EOF state, or interrupt a sender.
++ */
++void tq_receive_interrupt(ThreadQueue *tq);
++
+ /**
+  * Mark the given stream finished from the receiving side.
+  */
+diff --git a/fftools/thread_queue.c b/fftools/thread_queue.c
+index 9fa8a46..0d4280b 100644
+--- a/fftools/thread_queue.c
++++ b/fftools/thread_queue.c
+@@ -39,6 +39,7 @@ enum {
+ 
+ struct ThreadQueue {
+     int             choked;
++    int             receive_interrupted;
+     int              *finished;
+     unsigned int    nb_streams;
+ 
+@@ -205,6 +206,12 @@ int tq_receive(ThreadQueue *tq, int *stream_idx, void *data, int flags)
+     while (1) {
+         size_t can_read = av_container_fifo_can_read(tq->fifo);
+ 
++        if (tq->receive_interrupted) {
++            tq->receive_interrupted = 0;
++            ret = AVERROR(EINTR);
++            break;
++        }
++
+         ret = receive_locked(tq, stream_idx, data);
+ 
+         // signal other threads if the fifo state changed
+@@ -224,6 +231,16 @@ int tq_receive(ThreadQueue *tq, int *stream_idx, void *data, int flags)
+     return ret;
+ }
+ 
++void tq_receive_interrupt(ThreadQueue *tq)
++{
++    pthread_mutex_lock(&tq->lock);
++
++    tq->receive_interrupted = 1;
++    pthread_cond_broadcast(&tq->cond);
++
++    pthread_mutex_unlock(&tq->lock);
++}
++
+ void tq_send_finish(ThreadQueue *tq, unsigned int stream_idx)
+ {
+     av_assert0(stream_idx < tq->nb_streams);
+diff --git a/fftools/ffmpeg_sched.c b/fftools/ffmpeg_sched.c
+index 8ec3bda..2e811cb 100644
+--- a/fftools/ffmpeg_sched.c
++++ b/fftools/ffmpeg_sched.c
+@@ -351,6 +351,16 @@ static void waiter_set(SchWaiter *w, int choked)
+     pthread_mutex_unlock(&w->lock);
+ }
+ 
++static void dec_waiter_set(SchDec *dec, int choked)
++{
++    waiter_set(&dec->waiter, choked);
++    // A choked decoder may have buffered packets in overflow while waiting
++    // for another packet on its input queue. Wake that receive explicitly so
++    // it can retry overflow even if its demuxer sends no more packets.
++    if (!choked)
++        tq_receive_interrupt(dec->queue);
++}
++
+ static int waiter_init(SchWaiter *w)
+ {
+     int ret;
+@@ -1529,7 +1539,10 @@ static void schedule_update_locked(Scheduler *sch)
+         for (unsigned i = 0; i < sch->nb_##field; i++) {                       \
+             SchWaiter *w = &sch->field[i].waiter;                              \
+             if (w->choked_prev != w->choked_next) {                            \
+-                waiter_set(w, w->choked_next);                                 \
++                if (offsetof(Scheduler, field) == offsetof(Scheduler, dec))    \
++                    dec_waiter_set(&sch->dec[i], w->choked_next);               \
++                else                                                          \
++                    waiter_set(w, w->choked_next);                             \
+                 if (offsetof(Scheduler, field) == offsetof(Scheduler, demux))  \
+                     choke_demux(sch, i, w->choked_next);                       \
+             }                                                                  \
+@@ -2359,6 +2372,8 @@ retry:
+ 
+     ret = tq_receive(dec->queue, &dummy, pkt, 0);
+     av_assert0(dummy <= 0);
++    if (ret == AVERROR(EINTR))
++        goto retry;
+ 
+     // drain packets from overflow queue before returning EOF
+     if (ret == AVERROR_EOF && av_container_fifo_can_read(dec->overflow)) {
+@@ -2839,7 +2854,7 @@ int sch_stop(Scheduler *sch, int64_t *finish_ts)
+         }
+ 
+     for (unsigned i = 0; i < sch->nb_dec; i++)
+-        waiter_set(&sch->dec[i].waiter, 0); // unfreeze to allow draining
++        dec_waiter_set(&sch->dec[i], 0); // unfreeze to allow draining
+ 
+     pthread_mutex_unlock(&sch->schedule_lock);
+ 

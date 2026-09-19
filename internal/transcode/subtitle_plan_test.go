@@ -100,13 +100,13 @@ func TestSubtitleBurnFiltersPreserveTimelineAndBitmapCanvas(t *testing.T) {
 	plan := Plan{VideoCodec: "h264", VideoStreamIndex: 0, AudioStreamIndex: 1, StartTicks: 10 * ticksPerSecond,
 		Subtitle: SubtitlePlan{Mode: "burn", Codec: "ass", StreamIndex: 2, OffsetTicks: 2 * ticksPerSecond}}
 	filter, err := TextSubtitleFilter(plan)
-	if err != nil || !strings.Contains(filter, "setpts=PTS+(8.0000000)/TB") || !strings.HasSuffix(filter, "setpts=PTS-(8.0000000)/TB") || !strings.Contains(filter, "filename='subtitle.ass':fontsdir='.'") {
+	if err != nil || !strings.Contains(filter, "setpts=PTS+(8.0000000)/TB") || !strings.HasSuffix(filter, "setpts=PTS-(8.0000000)/TB") || !strings.Contains(filter, "filename='subtitle.ass'") || strings.Contains(filter, "fontsdir=") {
 		t.Fatalf("text subtitle timeline filter = %q, %v", filter, err)
 	}
 	plan.Subtitle.Codec = "hdmv_pgs_subtitle"
 	plan.Width, plan.Height = 640, 360
 	graph, label, err := BitmapSubtitleGraph(plan, "scale=640:360,format=yuv420p")
-	if err != nil || label != "[goby_video]" || !strings.Contains(graph, "[0:2]setpts=PTS+(2.0000000)/TB") || !strings.Contains(graph, "overlay=eof_action=pass:shortest=0:repeatlast=0,scale=640:360") {
+	if err != nil || label != "[goby_video]" || !strings.Contains(graph, "[1:2]settb=AVTB,setpts=PTS+(2.0000000)/TB") || !strings.Contains(graph, "overlay=eof_action=pass:shortest=0:repeatlast=0,scale=640:360") {
 		t.Fatalf("bitmap subtitle graph = %q, %q, %v", graph, label, err)
 	}
 	plan.Subtitle = SubtitlePlan{}

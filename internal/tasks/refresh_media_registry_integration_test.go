@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/moooyo/goby/internal/identity"
 )
 
 func TestRefreshMediaRegistryPreservesScanStateAndDefaultsToNativeManualUse(t *testing.T) {
@@ -60,7 +59,7 @@ func TestRefreshMediaRegistryPreservesScanStateAndDefaultsToNativeManualUse(t *t
 		}
 		fresh, err := store.GetByKey(ctx, LibraryRefreshMediaKey)
 		if err != nil || len(fresh.ID) != 32 || fresh.ID == scan.ID || fresh.Key != "library.refresh_media" ||
-			fresh.EmbyKey != "" || !fresh.Enabled || fresh.IsHidden || fresh.Revision != 1 || fresh.ScheduleTimezone != "UTC" ||
+			fresh.EmbyKey != CompatibilityKey(LibraryRefreshMediaKey) || !fresh.Enabled || fresh.IsHidden || fresh.Revision != 1 || fresh.ScheduleTimezone != "UTC" ||
 			len(fresh.Triggers) != 0 || fresh.CurrentRun != nil || fresh.LastRun != nil {
 			t.Fatalf("refresh media did not retain its native manual-only defaults: %v", err)
 		}
@@ -80,19 +79,18 @@ func TestRefreshMediaRegistryPreservesScanStateAndDefaultsToNativeManualUse(t *t
 		t.Fatalf("the default registry admitted automatic work: changed=%t error=%v", changed, err)
 	}
 	emby := taskCompatibilityActor(t, ctx, pool, actor)
-	if _, err := store.Start(ctx, emby, StartRequest{TaskID: refresh.ID, RequestID: "forbidden-refresh"}); !errors.Is(err, identity.ErrClientSessionForbidden) {
-		t.Fatalf("compatibility audience admitted the native refresh task: %v", err)
+	if err := store.checkTaskExecutor(refresh.Key, emby); err != nil {
+		t.Fatalf("registered refresh capability is unavailable: %v", err)
 	}
-	if _, err := store.ReplaceTriggers(ctx, emby, ReplaceTriggersRequest{TaskID: refresh.ID,
-		Revision: refresh.Revision, ScheduleTimezone: "UTC", Triggers: []ScheduleRule{{Kind: ScheduleStartup}}}); !errors.Is(err, identity.ErrClientSessionForbidden) {
-		t.Fatalf("compatibility audience scheduled the native refresh task: %v", err)
+	if err := store.checkTaskExecutor("unsupported.executor", emby); !errors.Is(err, ErrUnavailable) {
+		t.Fatal("unregistered executor crossed compatibility boundary")
 	}
 	if refreshRegistrySnapshot(t, ctx, pool, refresh.ID) != refreshBefore || refreshRegistrySnapshot(t, ctx, pool, scan.ID) != before {
 		t.Fatal("default scheduler processing or rejected compatibility requests changed task state")
 	}
 	manual, err := store.Start(ctx, actor, StartRequest{TaskID: refresh.ID, RequestID: "native-refresh"})
 	if err != nil || !manual.Admitted || manual.Run.State != RunCompleted || manual.Run.Source != "manual" ||
-		manual.Run.TaskID != refresh.ID || manual.Run.TaskKey != LibraryRefreshMediaKey || manual.Run.TaskEmbyKey != "" ||
+		manual.Run.TaskID != refresh.ID || manual.Run.TaskKey != LibraryRefreshMediaKey || manual.Run.TaskEmbyKey != CompatibilityKey(LibraryRefreshMediaKey) ||
 		manual.Run.TotalChildren != 0 || manual.Run.TriggerID != nil || manual.Run.TriggerRevision != nil || manual.Run.ScheduledFor != nil {
 		t.Fatalf("native manual refresh did not complete its empty-library snapshot: state=%s error=%v", manual.Run.State, err)
 	}

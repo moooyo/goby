@@ -170,7 +170,7 @@ func actionResource(action Action) ResourceKind {
 		return ResourceApplicationKey
 	case ActionDeviceUpdated, ActionDeviceRemoved:
 		return ResourceDevice
-	case ActionLibraryCreated, ActionLibraryRemoved:
+	case ActionLibraryCreated, ActionLibraryUpdated, ActionLibraryRemoved:
 		return ResourceLibrary
 	case ActionLibraryRootBindingUpdated:
 		return ResourceLibraryRoot
@@ -211,7 +211,7 @@ func fieldAllowed(action Action, field Field) bool {
 		case FieldName, FieldSortName, FieldOverview, FieldOriginalTitle, FieldOfficialRating,
 			FieldProductionYear, FieldIndexNumber, FieldParentIndexNumber, FieldPremiereDate,
 			FieldCommunityRating, FieldProviderIDs, FieldGenres, FieldTags, FieldStudios,
-			FieldPeople, FieldLockedFields, FieldOverrides:
+			FieldPeople, FieldAlbum, FieldArtists, FieldAlbumArtists, FieldLockedFields, FieldOverrides:
 			return true
 		}
 	case ActionSettingsUpdated:

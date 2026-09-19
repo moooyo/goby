@@ -27,14 +27,21 @@ type Plan struct {
 	Subtitle         SubtitlePlan `json:"Subtitle,omitempty"`
 	Container        string       `json:"Container"`
 	VideoCodec       string       `json:"VideoCodec,omitempty"`
+	VideoCopyCodec   string       `json:"VideoCopyCodec,omitempty"`
+	VideoProfile     string       `json:"VideoProfile,omitempty"`
+	VideoBitDepth    int          `json:"VideoBitDepth,omitempty"`
 	AudioCodec       string       `json:"AudioCodec,omitempty"`
 	VideoStreamIndex int          `json:"VideoStreamIndex"`
 	AudioStreamIndex int          `json:"AudioStreamIndex"`
 	StartTicks       int64        `json:"StartTicks"`
 	DurationTicks    int64        `json:"DurationTicks"`
-	// Progressive video uses the probed container clock even when a track is
-	// disabled. The explicit known bit distinguishes an actual zero origin from
-	// a missing timestamp; neither field is populated from client arguments.
+	// Progressive video may retain the normalized source presentation clock so
+	// standard clients can interpret an explicitly aligned random-access start.
+	CopyTimestamps bool `json:"CopyTimestamps,omitempty"`
+	// Progressive video and nonseekable streams use the probed container clock
+	// even when a track is disabled. Streaming media, bitmap, and text outputs
+	// share this origin. The explicit known bit distinguishes an actual zero
+	// origin from a missing timestamp; neither field comes from client arguments.
 	SourceFormatStartKnown bool  `json:"SourceFormatStartKnown,omitempty"`
 	SourceFormatStartTicks int64 `json:"SourceFormatStartTicks,omitempty"`
 	// This bounded private candidate is comparable preparation data, never a
