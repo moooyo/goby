@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
+import http from 'node:http';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 
@@ -14,12 +15,14 @@ const CHECKS = ['AdminCredentials', 'AdminPreferences', 'AdminIntro', 'OriginalL
   'RestartPersisted', 'CredentialsCleared', 'Cleanup'];
 const result = { Marker: 'goby-selected-phase1-browser-result-v1', RunId: '', Complete: false,
   Stages: [], Checks: Object.fromEntries(CHECKS.map(name => [name, false])), PageErrors: 0,
-  ForeignRequests: 0, BlockedEntitlementRequests: 0, BlockedStages: [], Playback: [], Authentication: [], Screenshots: [], FailurePhase: null };
+  ForeignRequests: 0, BlockedEntitlementRequests: 0, BlockedStages: [], Playback: [], Authentication: [], Screenshots: [], FailurePhase: null,
+  NetworkGuard: { Started: false, Closed: false, BlockedHTTP: 0, BlockedConnect: 0, BlockedUpgrade: 0, UnexpectedTargetRequests: 0 } };
 const fail = code => { const error = new Error(code); error.safeCode = code; throw error; };
 const check = (condition, code) => { if (!condition) fail(code); };
 const sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 const hash = value => createHash('sha256').update(value).digest('hex');
-let fixture, browser, admin, client, currentPhase = 'admission', privateContextPath;
+let fixture, browser, admin, client, currentPhase = 'admission', privateContextPath, networkGuard, networkGuardOrigin;
+const networkGuardSockets = new Set();
 let deadline;
 
 async function privateDirectory(directory) {
@@ -76,16 +79,72 @@ async function responseFor(page, method, pathname, action, expected = 200, readJ
   check(response.status === expected, 'unexpected_http_status');
   return response.body;
 }
-async function guardedContext() {
+function isOwnedNetworkURL(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'ws:') url.protocol = 'http:';
+    return !url.username && !url.password && url.origin === fixture.BaseURL;
+  } catch { return false; }
+}
+function blockedNetwork(value, authorityOnly = false) {
+  result.ForeignRequests += 1;
+  try {
+    const url = new URL(value);
+    if (url.origin === 'https://mb3admin.com' &&
+      (authorityOnly || url.pathname === '/admin/service/registration/validateDevice') &&
+      ['intro-show-button', 'intro-auto-skip'].includes(currentPhase)) result.BlockedEntitlementRequests += 1;
+  } catch { /* An invalid external address is still denied. */ }
+}
+async function startNetworkGuard() {
+  // Service workers can issue traffic outside page-route interception. This
+  // deny-only proxy opens no upstream connection, and the Chromium bypass list
+  // permits only the exact owned HTTP/WebSocket authority.
+  const reject = (request, socket, tunnel = false) => {
+    const value = tunnel ? `https://${request.url}/` : request.url ?? '';
+    if (isOwnedNetworkURL(value)) result.NetworkGuard.UnexpectedTargetRequests += 1;
+    else blockedNetwork(value, tunnel);
+    result.NetworkGuard[tunnel ? 'BlockedConnect' : 'BlockedUpgrade'] += 1;
+    socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+  };
+  networkGuard = http.createServer({ maxHeaderSize: 16384 }, (request, response) => {
+    if (isOwnedNetworkURL(request.url ?? '')) result.NetworkGuard.UnexpectedTargetRequests += 1;
+    else blockedNetwork(request.url ?? '');
+    result.NetworkGuard.BlockedHTTP += 1;
+    response.writeHead(403, { Connection: 'close', 'Content-Length': '0' }); response.end();
+  });
+  networkGuard.maxConnections = 32; networkGuard.maxHeadersCount = 64;
+  networkGuard.headersTimeout = 5000; networkGuard.requestTimeout = 5000;
+  networkGuard.on('connect', (request, socket) => reject(request, socket, true));
+  networkGuard.on('upgrade', (request, socket) => reject(request, socket));
+  networkGuard.on('clientError', (_error, socket) => socket.destroy());
+  networkGuard.on('connection', socket => {
+    networkGuardSockets.add(socket);
+    socket.on('error', () => {});
+    socket.on('close', () => networkGuardSockets.delete(socket));
+  });
+  await new Promise((resolve, reject) => { networkGuard.once('error', reject); networkGuard.listen(0, '127.0.0.1', resolve); });
+  networkGuardOrigin = `http://127.0.0.1:${networkGuard.address().port}`;
+  result.NetworkGuard.Started = true;
+}
+async function closeNetworkGuard() {
+  if (!networkGuard) return;
+  const closed = new Promise((resolve, reject) => networkGuard.close(error => error ? reject(error) : resolve()));
+  for (const socket of networkGuardSockets) socket.destroy();
+  await closed;
+  const remaining = await new Promise((resolve, reject) => networkGuard.getConnections((error, count) => error ? reject(error) : resolve(count)));
+  check(remaining === 0, 'browser_network_guard_connections_remain');
+  result.NetworkGuard.Closed = true;
+}
+async function guardedContext(originalClient = false) {
+  const authority = new URL(fixture.BaseURL).host;
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'en-US',
-    serviceWorkers: 'block', acceptDownloads: false });
+    serviceWorkers: originalClient ? 'allow' : 'block', acceptDownloads: false,
+    proxy: { server: networkGuardOrigin, bypass: `<-loopback>,http://${authority},ws://${authority}` } });
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
     if (url.origin === fixture.BaseURL || ['data:', 'blob:'].includes(url.protocol)) await route.continue();
     else {
-      result.ForeignRequests += 1;
-      if (url.origin === 'https://mb3admin.com' && url.pathname === '/admin/service/registration/validateDevice' &&
-        ['intro-show-button', 'intro-auto-skip'].includes(currentPhase)) result.BlockedEntitlementRequests += 1;
+      blockedNetwork(url.toString());
       await route.abort('blockedbyclient');
     }
   });
@@ -93,7 +152,7 @@ async function guardedContext() {
     const url = new URL(socket.url());
     if (url.protocol === 'ws:') url.protocol = 'http:';
     if (url.origin === fixture.BaseURL) socket.connectToServer();
-    else { result.ForeignRequests += 1; socket.close(); }
+    else { blockedNetwork(url.toString()); socket.close(); }
   });
   context.on('page', page => page.on('pageerror', () => { result.PageErrors += 1; }));
   return context;
@@ -213,7 +272,7 @@ function observePlayback(page) {
 }
 async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = false) {
   const diagnostic = { Phase: currentPhase, Operation: 'create-context', Document: null,
-    StartupResponses: [], AssetFailures: [], RequestFailures: [], ConsoleErrorKinds: [] };
+    StartupResponses: [], AssetFailures: [], RequestFailures: [], ConsoleErrorKinds: [], ConsoleWarningKinds: [], ServiceWorkers: [] };
   (result.OriginalClientAttempts ??= []).push(diagnostic);
   async function operation(name, action) {
     diagnostic.Operation = name;
@@ -225,7 +284,12 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
       throw error;
     }
   }
-  const context = await guardedContext();
+  const context = await guardedContext(true);
+  context.on('serviceworker', worker => {
+    const url = new URL(worker.url());
+    if (diagnostic.ServiceWorkers.length < 8) diagnostic.ServiceWorkers.push({ OwnedOrigin: url.origin === fixture.BaseURL,
+      Path: url.origin === fixture.BaseURL ? url.pathname : '{external}' });
+  });
   await installMediaObserver(context);
   const page = await context.newPage();
   const reports = observePlayback(page);
@@ -249,6 +313,10 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
     if (asset && diagnostic.RequestFailures.length < 40) diagnostic.RequestFailures.push({ Path: asset });
   });
   page.on('console', message => {
+    if (message.type() === 'warning' && diagnostic.ConsoleWarningKinds.length < 40) {
+      diagnostic.ConsoleWarningKinds.push(/Service Worker registration blocked by Playwright/i.test(message.text()) ? 'ServiceWorkerBlockedByPlaywright' : 'Other');
+      return;
+    }
     if (message.type() !== 'error' || diagnostic.ConsoleErrorKinds.length >= 40) return;
     const text = message.text();
     diagnostic.ConsoleErrorKinds.push(/Content Security Policy|content-security-policy|Refused to execute inline/i.test(text) ? 'ContentSecurityPolicy' :
@@ -262,6 +330,22 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
   diagnostic.Document = { Status: document?.status() ?? null, Path: new URL(page.url()).pathname,
     ContentType: (document?.headers()['content-type'] ?? '').split(';', 1)[0] };
   check(document?.status() === 200 && diagnostic.Document.ContentType === 'text/html', 'original_client_document_failed');
+  await operation('service-worker-ready', async () => {
+    diagnostic.ServiceWorkerReady = await page.evaluate(() => {
+      if (!navigator.serviceWorker) return { Ready: false, Reason: 'Unavailable' };
+      return Promise.race([
+        navigator.serviceWorker.ready.then(registration => ({ Ready: true,
+          OwnedOrigin: new URL(registration.scope).origin === location.origin,
+          ScopePath: new URL(registration.scope).pathname, ActiveState: registration.active?.state ?? null,
+          ScriptPath: registration.active ? new URL(registration.active.scriptURL).pathname : null,
+          ControlsCurrentPage: Boolean(navigator.serviceWorker.controller) })),
+        new Promise(resolve => setTimeout(() => resolve({ Ready: false, Reason: 'Timeout' }), 10000)),
+      ]);
+    });
+    check(diagnostic.ServiceWorkerReady.Ready === true && diagnostic.ServiceWorkerReady.OwnedOrigin === true &&
+      diagnostic.ServiceWorkerReady.ScopePath === '/web/' && diagnostic.ServiceWorkerReady.ActiveState === 'activated',
+    'original_client_service_worker_not_ready');
+  });
   const form = page.locator('form:has(input[type="password"]:visible)');
   const manual = page.getByText('Manual Login', { exact: true });
   await operation('login-controls', () => Promise.any([form.waitFor({ state: 'visible', timeout: 15000 }), manual.waitFor({ state: 'visible', timeout: 15000 })]));
@@ -482,7 +566,8 @@ async function main() {
   const modulePath = process.env.GOBY_TEST_PLAYWRIGHT_MODULE;
   check(typeof modulePath === 'string' && path.isAbsolute(modulePath), 'playwright_module_required');
   const { chromium } = createRequire(import.meta.url)(modulePath);
-  browser = await chromium.launch({ headless: true, args: ['--autoplay-policy=no-user-gesture-required'] });
+  await startNetworkGuard();
+  browser = await chromium.launch({ headless: true, args: ['--autoplay-policy=no-user-gesture-required', '--disable-background-networking'] });
   deadline = setTimeout(() => { currentPhase = `${currentPhase}-deadline`; void browser.close(); }, 480000);
   const adminContext = await guardedContext();
   admin = await adminContext.newPage();
@@ -518,7 +603,8 @@ async function main() {
   await admin.getByRole('heading', { name: 'Sign in to Goby', exact: true }).waitFor();
   await adminContext.close();
   result.Checks.Cleanup = true; await stage(currentPhase);
-  check(result.PageErrors === 0 && result.ForeignRequests === result.BlockedEntitlementRequests, 'browser_or_network_errors');
+  check(result.PageErrors === 0 && result.ForeignRequests === result.BlockedEntitlementRequests &&
+    result.NetworkGuard.UnexpectedTargetRequests === 0, 'browser_or_network_errors');
   result.Complete = result.BlockedStages.length === 0 && CHECKS.every(name => result.Checks[name]);
   if (!result.Complete) { result.FailureCode = 'original_client_entitlement'; process.exitCode = 1; }
 }
@@ -532,6 +618,7 @@ catch (error) {
 } finally {
   clearTimeout(deadline);
   if (browser) await browser.close().catch(() => { result.Complete = false; process.exitCode = 1; });
+  await closeNetworkGuard().catch(() => { result.Complete = false; result.FailureCode ??= 'browser_network_guard_cleanup_failed'; process.exitCode = 1; });
   if (fixture?.ResultPath) await writeJSON(fixture.ResultPath, result).catch(() => { result.Complete = false; process.exitCode = 1; });
   // Results intentionally omit raw exceptions, request URLs, credential values,
   // authentication bodies, client source, screenshots of PIN prompts, and traces.

@@ -8,6 +8,13 @@ serve that entry point. The failed receipts remain unchanged. The revised
 fixture admits the complete original asset host explicitly and reports entry
 document and asset failures separately from credential failures.
 
+The retained r03 attempt confirmed that the index, loader, and logo were
+proxied successfully with complete matching hashes. Startup then waited before
+loading the application because Playwright's blocked-service-worker mode
+resolved `register()` without registering a worker, while the original loader
+waited for `navigator.serviceWorker.ready`. The revised original-client context
+allows its real worker; the native administrator context still blocks workers.
+
 A context file, saved preference, returned
 chapter interval, screenshot, or successful media response is not a passing
 browser journey. The coordinator must freeze the integrated phase 1 source and
@@ -182,8 +189,15 @@ loopback `BaseURL`, real server/user/item/library IDs, fixture names, disposable
 normal/local passwords and profile PIN, and the bounded output paths.
 
 Only the private input contains those passwords and PIN. The driver disables
-service workers and tracing, records no authentication response bodies, and
-permits requests only to the fixture's `127.0.0.1` origin. Foreign HTTP or
+tracing, records no authentication response bodies, and permits requests only
+to the fixture's `127.0.0.1` origin. The original client requires a real Service
+Worker to complete startup; the driver observes its actual ready registration,
+scope, active state, and script path without modifying registration or readiness.
+A deny-only HTTP/CONNECT proxy covers each browser context, including worker
+traffic that page routing cannot intercept. Its exact-origin bypass permits
+only the fixture's HTTP/WebSocket authority. It opens no upstream connection for
+denied traffic and proves its sockets and listener closed after browser exit.
+Foreign HTTP or
 WebSocket requests are denied and make the full journey fail. It never supplies
 a synthetic success response to a denied request. Result files retain safe
 scenario names, media event facts, HTTP status, fixture item IDs, and hashed
@@ -196,6 +210,11 @@ request-failure paths, and coarse console-error categories. Each sign-in records
 the current safe operation name. A missing or non-HTML entry document fails
 immediately, before a login-control timeout, without retaining credentials or
 raw browser exceptions.
+
+Coarse warning categories distinguish Playwright's blocked-worker warning from
+other warnings. `ServiceWorkerReady` describes the actual activated registration;
+`ControlsCurrentPage` may initially be false because readiness does not require
+the first page to have been claimed by that worker.
 
 The native screenshots show the open intro dialog after its saved state is
 visible, and the local-credential dialog before any secret fields are filled.
