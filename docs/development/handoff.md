@@ -6,8 +6,9 @@ On September 20, after the completed publication below, the user selected the
 next account/playback, subtitle, artwork, music, management configuration,
 search and client-protocol increment and requested its execution table. The
 [new four-phase plan](../planning/selected-compatibility-plan-20260920.md) is the
-current next-work scope. The user approved execution, with phase 1 implementation
-in progress on `codex/selected-client-compatibility` and phases 2-4 not started.
+current next-work scope. Phase 1 code is implemented on
+`codex/selected-client-compatibility`; consolidated verification and actual
+client-fixture repairs are in progress. Phases 2-4 have not started implementation.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 Each phase implements all delivery code before consolidated verification.
 Local compilation and unit tests are now authorized; actual integration/E2E
@@ -34,14 +35,17 @@ from the tested product snapshot. No deployment was performed.
 For a new session:
 
 1. Read this section, [current status](current-status.md), and the
-   [phase 3 execution record](amd-media-phase3-20260919.md) with its
-   [results ledger](amd-media-phase3-results-20260919.json). The selected
-   three-phase work has no unfinished implementation or verification gate.
+   [active selected-compatibility record](selected-compatibility-phase1-20260920.md).
+   The prior [AMD phase 3 execution record](amd-media-phase3-20260919.md) and
+   [results ledger](amd-media-phase3-results-20260919.json) describe a completed
+   increment, not the current four-phase work.
 2. Inspect `git status --short`, `git log -5 --oneline`, and
    `git log -1 -- docs/development/handoff.md`. The last command identifies
    the documentation follow-up without embedding a self-referential commit ID.
    Fetch `origin` before starting new integration work. The current workspace
-   branch is `main`; the development branch remains as provenance.
+   original checkout remains on `main`; active work is in the isolated
+   `codex/selected-client-compatibility` checkout. Preserve unrelated changes in
+   the original checkout.
 3. Preserve the unrelated local drafts listed below. Their presence does not
    mean the accepted increment is uncommitted or requires another test run.
 4. Continue only the next requested scope. OCI, non-AMD hardware, provider-online

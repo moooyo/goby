@@ -22,7 +22,7 @@ must be handed off, merged to `main` and pushed.
 
 | Requirement | Implementation | Evidence |
 | --- | --- | --- |
-| A1 PIN and local password | Implemented | Identity and HTTP scopes passed; original-client profile journey pending |
+| A1 PIN and local password | Implemented | Identity/HTTP scopes and original-client local-password/profile PIN journey passed; integrated restart/revocation closeout pending |
 | A2 Source-bound intro intervals | Implemented | Source/HTTP repairs passed; real native administrator journey passed |
 | A3 Actual intro skip behavior | Implemented | Item/PlaybackInfo and explicit-start contracts passed; original-client seek journey pending |
 | A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts passed; original-client transition journey pending |
@@ -119,6 +119,7 @@ authentication, catalog, playback and WebSockets still target Goby.
 | r03 | Go and driver `2de476d` | Native administration passed. Official assets were served and hashed, but blocking service workers prevented the unmodified client from reaching authentication. |
 | r04 | Driver `38e67dc`; unchanged Go fixture `2de476d` | Native administration passed. The real service worker reached `activating`; the fixture incorrectly required immediate activation. |
 | r05 | Driver `9470400`; unchanged Go fixture `2de476d` | Native administration and actual original-client local-password login passed with database acknowledgements. The worker reached `activated`. The PIN journey then failed because same-tab reload retained the client's `sessionStorage` validation state. |
+| r06 | Driver `afc6b6d`; unchanged Go fixture `2de476d` | Local-password login and the fresh-tab PIN gate passed, including wrong-PIN rejection, correct-PIN unlock and no replacement authentication. Actual E1-to-E2 autoplay reached both natural endings with two distinct starts/stops, but its database terminal-state predicate failed; that playback stage is not accepted. |
 
 The driver now allows the original client's real service worker behind a
 deny-only egress proxy and waits for its actual activation. It neither changes
@@ -131,6 +132,14 @@ open a new tab without an opener in the same browser context. The browser
 naturally retains authentication while starting fresh tab-local validation;
 the fixture must not write client storage.
 
-The r03-r05 workers terminated and closed their process groups. These are
-fixture repair results only; next-episode, intro-skip and final restart/revocation
-journeys are still pending.
+The r06 diagnostics recorded three denied requests to the external
+`mb3admin.com` device-registration endpoint, one each during login, PIN return
+and the next-episode scenario. Three owned WebSocket routes were allowed, no
+page error occurred, and the deny-only proxy closed without an unexpected
+target request. This new evidence does not reclassify r05's unknown requests.
+
+The r03-r06 workers terminated and closed their process groups. r06 removed
+its private credential context, owned schema and media root and closed its
+application workers/listener. One administrator session required the documented
+failure cleanup. Next-episode database acceptance, intro-skip and final
+restart/revocation journeys remain pending; the phase is not complete.

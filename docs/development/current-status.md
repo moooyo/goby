@@ -3,10 +3,12 @@
 On September 20, 2026, the user selected the next account/playback, subtitle,
 artwork, music, management configuration, search and client-protocol work.
 Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md)
-is approved; phase 1 implementation is in progress on
+is approved; phase 1 code is implemented on
 `codex/selected-client-compatibility`, and phases 2-4 are not started.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
-implementation from its not-yet-started consolidated verification.
+implementation from ongoing consolidated verification and actual client-fixture
+repairs. Backend repair scopes, mocked administration and the original-client
+local-password/PIN journey have passed; playback closeout remains pending.
 Live TV/EPG/DVR/tuners, DLNA, external
 channels and group playback are now explicitly excluded. Offline sync and other
 unselected work remain deferred. Local compilation and unit tests are authorized;
