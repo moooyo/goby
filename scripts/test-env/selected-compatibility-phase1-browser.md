@@ -43,6 +43,15 @@ playback predicate counts, and current authentication/expiry facts before
 cleanup. Database failure acknowledgements fail the browser immediately instead
 of leaving it to wait for the acknowledgement deadline.
 
+The retained r07 attempt confirmed both next-episode stages with database
+acknowledgements, the `None` intro behavior, restart persistence, and credential
+revocation. ShowButton and AutoSkip remained blocked by observed external
+registration checks. The final native sign-out was obstructed by its still-open
+saved credential dialog. Revised cleanup navigates the real administrator app
+to its overview, requires the real `DELETE /admin/v1/session` response and the
+sign-in page, then closes the context and obtains the database cleanup receipt.
+The four r07 page exceptions lacked classification and remain unknown.
+
 A context file, saved preference, returned
 chapter interval, screenshot, or successful media response is not a passing
 browser journey. The coordinator must freeze the integrated phase 1 source and
@@ -266,6 +275,15 @@ other warnings. `ServiceWorkerReady` describes the actual activated registration
 `ControlsCurrentPage` may initially be false because readiness does not require
 the first page to have been claimed by that worker.
 
+Page exceptions retain their actual phase, page-creation phase, native/original
+surface, a known error-name category, and up to eight safe static resource stack
+locations. Queries, user-info, raw messages, raw stack text, and arguments are
+excluded. Empty, literal undefined, and literal null messages have fixed value
+categories; other messages are redacted. At most 64 exceptions are detailed,
+with an overflow count, while every exception still increments the failing
+`PageErrors` total. Resource location does not automatically attribute an
+exception to licensing or exempt it from acceptance.
+
 The native screenshots show the open intro dialog after its saved state is
 visible, and the local-credential dialog before any secret fields are filled.
 CSS animations are disabled for these native snapshots so a modal fade does not
@@ -282,6 +300,9 @@ replace the original operation error or prevent browser and proxy cleanup.
 The same named-operation diagnostics cover PIN entry, item navigation, playback,
 next-episode behavior, and sign-out. They preserve the innermost error and the
 last bounded set of credential-free playback reports.
+Native cleanup separately records its current operation and attempts an equally
+bounded, masked private screenshot if it fails. Diagnostic failure cannot
+replace the original cleanup error.
 
 For each ordered stage the browser writes `stage-<phase>-request.json` with
 `{RunId, Phase, State:"complete"}`. Go independently checks its database and source files, or

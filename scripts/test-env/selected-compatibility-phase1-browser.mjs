@@ -15,6 +15,7 @@ const CHECKS = ['AdminCredentials', 'AdminPreferences', 'AdminIntro', 'OriginalL
   'RestartPersisted', 'CredentialsCleared', 'Cleanup'];
 const result = { Marker: 'goby-selected-phase1-browser-result-v1', RunId: '', Complete: false,
   Stages: [], Checks: Object.fromEntries(CHECKS.map(name => [name, false])), PageErrors: 0,
+  PageErrorDetails: [], PageErrorDetailsOverflow: 0,
   ForeignRequests: 0, ExpectedExternalRegistrationRequests: 0, BlockedEntitlementRequests: 0, BlockedStages: [], Playback: [], Authentication: [], Screenshots: [], FailurePhase: null,
   ExternalRegistration: { Disposition: 'DeniedWithoutUpstreamConnection', AuthorizationVerified: false },
   BlockedNetwork: [], BlockedNetworkOverflow: 0, OwnedWebSocketRoutes: 0,
@@ -156,6 +157,40 @@ async function closeNetworkGuard() {
   check(remaining === 0, 'browser_network_guard_connections_remain');
   result.NetworkGuard.Closed = true;
 }
+function recordPageError(error, originalClient, pageCreatedPhase) {
+  result.PageErrors += 1;
+  if (result.PageErrorDetails.length >= 64) { result.PageErrorDetailsOverflow += 1; return; }
+  const names = new Set(['Error', 'TypeError', 'ReferenceError', 'RangeError', 'SyntaxError', 'URIError',
+    'EvalError', 'AggregateError', 'AbortError', 'NetworkError', 'SecurityError', 'DOMException']);
+  const resources = [], seen = new Set();
+  let otherResourceFrames = 0;
+  // Discard the message line and retain only bounded static resource locations.
+  // Query strings, user-info, raw stack text, and function arguments are omitted.
+  for (const line of String(error?.stack ?? '').split(/\r?\n/).slice(1, 17)) {
+    for (const match of line.matchAll(/https?:\/\/[^\s)<>"']+/g)) {
+      const position = /:(\d{1,7}):(\d{1,7})$/.exec(match[0]);
+      const value = position ? match[0].slice(0, position.index) : match[0];
+      try {
+        const url = new URL(value);
+        if (url.origin !== fixture.BaseURL || url.username || url.password ||
+          !/^\/(?:web\/|admin\/assets\/)[A-Za-z0-9_./-]{1,220}$/.test(url.pathname) ||
+          url.pathname.split('/').some(part => part.length > 64 || /^[a-f0-9]{24,}$/i.test(part))) {
+          otherResourceFrames += 1; continue;
+        }
+        const key = `${url.pathname}:${position?.[1] ?? ''}:${position?.[2] ?? ''}`;
+        if (seen.has(key) || resources.length >= 8) continue;
+        seen.add(key);
+        resources.push({ Path: url.pathname, ...(position ? { Line: Number(position[1]), Column: Number(position[2]) } : {}) });
+      } catch { otherResourceFrames += 1; }
+    }
+  }
+  const message = error?.message;
+  result.PageErrorDetails.push({ Phase: currentPhase, PageCreatedPhase: pageCreatedPhase,
+    Surface: originalClient ? 'OriginalClient' : 'NativeAdministration',
+    Name: names.has(error?.name) ? error.name : 'UnknownError',
+    MessageKind: message === '' ? 'Empty' : message === 'undefined' ? 'UndefinedValue' : message === 'null' ? 'NullValue' : 'Redacted',
+    Resources: resources, OtherResourceFrames: otherResourceFrames });
+}
 async function guardedContext(originalClient = false) {
   const authority = new URL(fixture.BaseURL).host;
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'en-US',
@@ -173,7 +208,10 @@ async function guardedContext(originalClient = false) {
     if (isOwnedNetworkURL(socket.url())) { result.OwnedWebSocketRoutes += 1; socket.connectToServer(); }
     else { blockedNetwork(socket.url(), false, 'websocket-route'); socket.close(); }
   });
-  context.on('page', page => page.on('pageerror', () => { result.PageErrors += 1; }));
+  context.on('page', page => {
+    const pageCreatedPhase = currentPhase;
+    page.on('pageerror', error => recordPageError(error, originalClient, pageCreatedPhase));
+  });
   return context;
 }
 async function administratorLogin() {
@@ -708,10 +746,51 @@ async function main() {
   result.CredentialRevocation = { PreviouslyActiveLocalSessionRejected: true, AdministratorSessionRetained: true };
   result.Checks.CredentialsCleared = true; await stage(currentPhase);
   currentPhase = 'cleanup';
-  await admin.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await admin.getByRole('heading', { name: 'Sign in to Goby', exact: true }).waitFor();
-  await adminContext.close();
-  result.Checks.Cleanup = true; await stage(currentPhase);
+  const cleanup = result.NativeCleanup = { Operation: 'navigate-to-overview', Complete: false };
+  try {
+    // Saving credentials leaves the real management dialogs open. Navigate
+    // through the actual application before using its unobstructed sign-out.
+    await admin.goto(`${fixture.BaseURL}/admin/`, { waitUntil: 'domcontentloaded' });
+    await admin.getByRole('navigation', { name: 'Administration', exact: true }).waitFor();
+    cleanup.Operation = 'administrator-sign-out';
+    await responseFor(admin, 'DELETE', '/admin/v1/session', () =>
+      admin.getByRole('button', { name: 'Sign out', exact: true }).click(), 204, false);
+    cleanup.LogoutStatus = 204;
+    cleanup.Operation = 'signed-out-page';
+    await admin.getByRole('heading', { name: 'Sign in to Goby', exact: true }).waitFor();
+    cleanup.Operation = 'close-administrator-context';
+    await adminContext.close();
+    cleanup.ContextClosed = true;
+    cleanup.Operation = 'database-cleanup-acknowledgement';
+    await stage(currentPhase);
+    result.Checks.Cleanup = true;
+    cleanup.Complete = true;
+  } catch (error) {
+    cleanup.ErrorKind = ['TimeoutError', 'Error', 'AggregateError'].includes(error.name) ? error.name : 'BrowserError';
+    if (!error.safeCode) error.safeCode = `native_cleanup_${cleanup.Operation.replaceAll('-', '_')}_failed`;
+    cleanup.FailureCode = error.safeCode;
+    try {
+      const url = new URL(admin.url());
+      if (admin.isClosed() || url.origin !== fixture.BaseURL || !url.pathname.startsWith('/admin/')) {
+        cleanup.FailureScreenshotState = 'PageUnavailable';
+      } else {
+        const masks = [admin.locator('input,textarea,[contenteditable="true"]')];
+        for (const value of [fixture.AdminPassword, fixture.UserPassword, fixture.LocalPassword, fixture.ProfilePin])
+          masks.push(admin.getByText(value, { exact: false }));
+        const bytes = await admin.screenshot({ fullPage: false, mask: masks, timeout: 2500 });
+        if (bytes.length > (8 << 20)) cleanup.FailureScreenshotState = 'SizeLimit';
+        else {
+          const filename = 'native-cleanup-failure.png';
+          await fs.writeFile(path.join(fixture.ArtifactsDir, filename), bytes,
+            { mode: 0o600, flag: 'wx', signal: AbortSignal.timeout(1000) });
+          cleanup.FailureScreenshot = filename;
+          cleanup.FailureScreenshotState = 'CapturedWithSecretsMasked';
+          result.Screenshots.push(filename);
+        }
+      }
+    } catch { cleanup.FailureScreenshotState = 'CaptureUnavailable'; }
+    throw error;
+  }
   check(result.PageErrors === 0 && result.ForeignRequests === result.ExpectedExternalRegistrationRequests &&
     result.BlockedNetworkOverflow === 0 && result.NetworkGuard.UnexpectedTargetRequests === 0, 'browser_or_network_errors');
   result.Complete = result.BlockedStages.length === 0 && CHECKS.every(name => result.Checks[name]);
