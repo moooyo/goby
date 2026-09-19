@@ -163,6 +163,7 @@ async function openCredentials(page: Page, visit = true): Promise<Locator> {
   const user = visit ? await openUser(page) : page.getByRole('dialog', { name: 'Manage user', exact: true });
   await user.getByRole('button', { name: 'Manage local credentials', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Local credentials', exact: true });
+  await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('checkbox', { name: 'Enable local password', exact: true })).toBeVisible();
   return dialog;
 }
@@ -206,6 +207,7 @@ async function openIntro(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Edit metadata for Selected playback movie', exact: true }).click();
   await page.getByRole('dialog', { name: /^Edit metadata/ }).getByRole('button', { name: 'Manage intro', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Intro interval', exact: true });
+  await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('Intro start (seconds)', { exact: true })).toBeVisible();
   return dialog;
 }

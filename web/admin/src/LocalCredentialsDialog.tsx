@@ -90,8 +90,8 @@ export function LocalCredentialsDialog({ userId, userName, hasPassword, isCurren
 
   return <>
     <Dialog open fullWidth maxWidth="sm" onClose={close} aria-labelledby="local-credentials-title">
-      <Box component="form" noValidate onSubmit={submit}>
-        <DialogTitle><Typography component="span" variant="h3" id="local-credentials-title">Local credentials</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{userName}</Typography></DialogTitle>
+      <Box component="form" noValidate onSubmit={submit} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+        <DialogTitle id="local-credentials-heading"><Typography component="span" variant="h3" id="local-credentials-title">Local credentials</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{userName}</Typography></DialogTitle>
         <DialogContent aria-busy={loading || busy}><Stack spacing={2.5} sx={{ pt: 0.5 }}>
           {error != null && <ErrorNotice error={error} />}
           {review && <Alert severity="warning" action={<Button color="inherit" onClick={reload}>Reload</Button>}>The account changed or the save response could not be confirmed. Credentials may already have changed. Reload and review the saved status before saving again.</Alert>}

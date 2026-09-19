@@ -113,8 +113,8 @@ export function IntroEditorDialog({ itemId, itemName, onClose, onNavigationGuard
 
   return <>
     <Dialog open fullWidth maxWidth="sm" onClose={close} aria-labelledby="intro-editor-title">
-      <Box component="form" noValidate onSubmit={submit}>
-        <DialogTitle><Typography component="span" variant="h3" id="intro-editor-title">Intro interval</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{itemName}</Typography></DialogTitle>
+      <Box component="form" noValidate onSubmit={submit} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+        <DialogTitle id="intro-editor-heading"><Typography component="span" variant="h3" id="intro-editor-title">Intro interval</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{itemName}</Typography></DialogTitle>
         <DialogContent aria-busy={loading || busy || importing}><Stack spacing={2.5} sx={{ pt: 0.5 }}>
           {error != null && <ErrorNotice error={error} />}
           {review && <Alert severity="warning" action={<Button color="inherit" onClick={reload}>Reload</Button>}>The intro or media source changed, or the save response could not be confirmed. Your draft is kept. Reload the current source and review its interval before saving again.</Alert>}
