@@ -23,6 +23,16 @@ deadline. It records the observed states and distinguishes activation,
 redundancy, a missing active worker, readiness rejection, and timeout. No worker
 state, registration result, or readiness promise is replaced.
 
+The retained r05 attempt passed real local-password sign-in and its database
+check. Its same-tab reload did not show a PIN prompt because the original Web
+router retains PIN validation in `sessionStorage`. The revised journey closes
+that tab and opens a new tab without an opener in the same browser context.
+This naturally preserves the saved token and device preference in
+`localStorage`, while starting fresh per-tab storage. All observers are attached
+to the new page, and no storage values are edited. The two denied requests in
+the old r05 report remain unclassified because that report did not retain their
+addresses or intercepting transport.
+
 A context file, saved preference, returned
 chapter interval, screenshot, or successful media response is not a passing
 browser journey. The coordinator must freeze the integrated phase 1 source and
@@ -212,6 +222,12 @@ scenario names, media event facts, HTTP status, fixture item IDs, and hashed
 play-session identities. Raw errors, token-bearing URLs, browser storage,
 headers, and proprietary source are not copied into the report.
 
+HTTP and WebSocket guards use the same exact host and port check, mapping only
+`ws` to `http` and `wss` to `https`. Denied requests retain a bounded scheme,
+hostname, port, safe path class, phase, and intercepting transport, never a
+query string or user-info value. This distinguishes a genuine external request
+from a guard classification error without rewriting historical evidence.
+
 Original-client entry diagnostics retain the navigation HTTP status, final path
 without query parameters, MIME type, bounded failed asset paths/statuses,
 request-failure paths, and coarse console-error categories. Each sign-in records
@@ -232,6 +248,8 @@ the first page to have been claimed by that worker.
 
 The native screenshots show the open intro dialog after its saved state is
 visible, and the local-credential dialog before any secret fields are filled.
+CSS animations are disabled for these native snapshots so a modal fade does not
+obscure the final UI. Media playback time is not changed.
 Screenshots supplement the real UI mutations and independent database checks;
 they do not establish acceptance on their own.
 
@@ -241,6 +259,9 @@ content, and any visible fixture secret text. Capture is limited to 2.5 seconds
 and 8 MiB, with a one-second abortable file write to a new `0600` file. The result
 records the filename or a safe unavailability reason. Screenshot failure cannot
 replace the original operation error or prevent browser and proxy cleanup.
+The same named-operation diagnostics cover PIN entry, item navigation, playback,
+next-episode behavior, and sign-out. They preserve the innermost error and the
+last bounded set of credential-free playback reports.
 
 For each ordered stage the browser writes `stage-<phase>-request.json` with
 `{RunId, Phase, State:"complete"}`. Go independently checks its database and source files, or
@@ -290,10 +311,12 @@ prompt, reject a wrong PIN, and accept the saved PIN. A successful fresh passwor
 login normally validates the profile and therefore does not itself prove a PIN
 prompt. After that login, the original router asks whether to prompt for a PIN
 when returning to the app. The driver clicks Yes in that actual confirmation,
-reloads the page, then enters a wrong and correct value in the original four
-input fields. Reloading restores the real saved session while discarding the
-router's in-memory validation. No new authentication request may replace the
-PIN check. Subsequent fresh contexts select No in the same device prompt.
+closes the current tab, opens a new tab without an opener in the same context,
+then enters a wrong and correct value in the original four input fields.
+The new tab restores the real saved session and starts fresh per-tab PIN
+validation. Reloading the same tab would preserve that validation. No new
+authentication request may replace the PIN check. Subsequent fresh contexts
+select No in the same device prompt.
 It is not acceptable to write a fake device preference, invoke an
 internal client function, or compare the PIN in harness code instead.
 

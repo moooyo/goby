@@ -107,3 +107,30 @@ Private execution material is under
 `D:/Code/goby/.git/selected-compatibility-20260920/checkpoint.json`. These are
 private operator/evidence paths, not portable clone prerequisites. The current
 phase is not complete and phases 2-4 have not started implementation.
+
+## Original-client fixture repairs
+
+These attempts preserve the preceding failures and do not count as completed
+playback acceptance. The pinned host serves only official `/web/` assets;
+authentication, catalog, playback and WebSockets still target Goby.
+
+| Attempt | Source | Observed result |
+| --- | --- | --- |
+| r03 | Go and driver `2de476d` | Native administration passed. Official assets were served and hashed, but blocking service workers prevented the unmodified client from reaching authentication. |
+| r04 | Driver `38e67dc`; unchanged Go fixture `2de476d` | Native administration passed. The real service worker reached `activating`; the fixture incorrectly required immediate activation. |
+| r05 | Driver `9470400`; unchanged Go fixture `2de476d` | Native administration and actual original-client local-password login passed with database acknowledgements. The worker reached `activated`. The PIN journey then failed because same-tab reload retained the client's `sessionStorage` validation state. |
+
+The driver now allows the original client's real service worker behind a
+deny-only egress proxy and waits for its actual activation. It neither changes
+third-party JavaScript nor manufactures feature entitlement. r05 observed zero
+page errors and two blocked foreign requests; their destinations were not
+recorded in that scope and remain unclassified. New diagnostics must not
+retroactively classify those requests. The next repair uses the actual profile
+lock lifecycle: accept the original client's PIN opt-in, close that tab, and
+open a new tab without an opener in the same browser context. The browser
+naturally retains authentication while starting fresh tab-local validation;
+the fixture must not write client storage.
+
+The r03-r05 workers terminated and closed their process groups. These are
+fixture repair results only; next-episode, intro-skip and final restart/revocation
+journeys are still pending.

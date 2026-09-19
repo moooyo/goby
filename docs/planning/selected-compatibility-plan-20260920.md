@@ -1,6 +1,6 @@
 # Selected playback and client compatibility execution plan
 
-Status: **execution approved; phase 1 implementation in progress**.
+Status: **execution approved; phase 1 implemented, verification and client-fixture repairs in progress**.
 Recorded on September 20, 2026. The implementation baseline is product commit
 `80198b6`, with the completed increment documented at `f6f2d16` on `main`.
 This plan records the next work; it does not reopen the completed AMD/media
@@ -47,7 +47,7 @@ contracts and cannot be used to postpone an earlier phase's acceptance.
 
 | Phase | Deliverable | Main dependency | Required acceptance | Status |
 | --- | --- | --- | --- | --- |
-| 1. Accounts and playback behavior | PIN/local-password authentication, intro markers and skipping, next-episode behavior and their real preference consumers | Existing identity, preferences, playback reporting and NextUp | Login/revocation and actual movie/episode playback journeys; source-bound timing, permissions, restart and recovery | Implementing; verification not started |
+| 1. Accounts and playback behavior | PIN/local-password authentication, intro markers and skipping, next-episode behavior and their real preference consumers | Existing identity, preferences, playback reporting and NextUp | Login/revocation and actual movie/episode playback journeys; source-bound timing, permissions, restart and recovery | Implemented; backend and mocked UI accepted, real client journeys in progress |
 | 2. Subtitle and artwork processing | Embedded subtitle removal, bitmap OCR, embedded audio covers, generated collages and missing image transformations | Phase 1 baseline; existing media jobs, indexed streams, artwork and backup | Real modified media, OCR cues and rendered images; cancellation, source replacement, cache invalidation and restore | Not started |
 | 3. Music, search and discovery | Artist prefixes/Similar/InstantMix, Search/Hints, selected missing query contracts, missing-episode and suggestion preferences | Phase 2 covers/artwork; current catalog, user state and preference stores | Authorized music/search/discovery journeys, exact filtering/counting/paging and restart persistence | Not started |
 | 4. Management configuration and client protocols | Backed configuration fields, policy/library/device projections, remaining aliases/events and external notification transport | Closed phases 1-3 | Real settings consumers, client event/command/notification journeys and final cross-phase regression/build/upgrade/recovery | Not started |

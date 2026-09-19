@@ -16,6 +16,7 @@ const CHECKS = ['AdminCredentials', 'AdminPreferences', 'AdminIntro', 'OriginalL
 const result = { Marker: 'goby-selected-phase1-browser-result-v1', RunId: '', Complete: false,
   Stages: [], Checks: Object.fromEntries(CHECKS.map(name => [name, false])), PageErrors: 0,
   ForeignRequests: 0, BlockedEntitlementRequests: 0, BlockedStages: [], Playback: [], Authentication: [], Screenshots: [], FailurePhase: null,
+  BlockedNetwork: [], BlockedNetworkOverflow: 0, OwnedWebSocketRoutes: 0,
   NetworkGuard: { Started: false, Closed: false, BlockedHTTP: 0, BlockedConnect: 0, BlockedUpgrade: 0, UnexpectedTargetRequests: 0 } };
 const fail = code => { const error = new Error(code); error.safeCode = code; throw error; };
 const check = (condition, code) => { if (!condition) fail(code); };
@@ -83,13 +84,21 @@ function isOwnedNetworkURL(value) {
   try {
     const url = new URL(value);
     if (url.protocol === 'ws:') url.protocol = 'http:';
+    if (url.protocol === 'wss:') url.protocol = 'https:';
     return !url.username && !url.password && url.origin === fixture.BaseURL;
   } catch { return false; }
 }
-function blockedNetwork(value, authorityOnly = false) {
+function blockedNetwork(value, authorityOnly = false, transport = 'request-route') {
   result.ForeignRequests += 1;
   try {
     const url = new URL(value);
+    const safePaths = new Set(['/socket', '/emby/socket', '/embywebsocket', '/admin/service/registration/validateDevice']);
+    const record = { Phase: currentPhase, Transport: transport, Scheme: url.protocol,
+      Host: url.hostname.split('.').map(part => part.length > 48 ? '{opaque}' : part).join('.').slice(0, 200),
+      Port: url.port, Path: authorityOnly ? '{authority-only}' : safePaths.has(url.pathname) ? url.pathname : '{other}',
+      NormalizedOwnedOrigin: isOwnedNetworkURL(value), HasUserInfo: Boolean(url.username || url.password) };
+    if (result.BlockedNetwork.length < 64) result.BlockedNetwork.push(record);
+    else result.BlockedNetworkOverflow += 1;
     if (url.origin === 'https://mb3admin.com' &&
       (authorityOnly || url.pathname === '/admin/service/registration/validateDevice') &&
       ['intro-show-button', 'intro-auto-skip'].includes(currentPhase)) result.BlockedEntitlementRequests += 1;
@@ -102,13 +111,13 @@ async function startNetworkGuard() {
   const reject = (request, socket, tunnel = false) => {
     const value = tunnel ? `https://${request.url}/` : request.url ?? '';
     if (isOwnedNetworkURL(value)) result.NetworkGuard.UnexpectedTargetRequests += 1;
-    else blockedNetwork(value, tunnel);
+    else blockedNetwork(value, tunnel, tunnel ? 'deny-only-connect-proxy' : 'deny-only-upgrade-proxy');
     result.NetworkGuard[tunnel ? 'BlockedConnect' : 'BlockedUpgrade'] += 1;
     socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
   };
   networkGuard = http.createServer({ maxHeaderSize: 16384 }, (request, response) => {
     if (isOwnedNetworkURL(request.url ?? '')) result.NetworkGuard.UnexpectedTargetRequests += 1;
-    else blockedNetwork(request.url ?? '');
+    else blockedNetwork(request.url ?? '', false, 'deny-only-http-proxy');
     result.NetworkGuard.BlockedHTTP += 1;
     response.writeHead(403, { Connection: 'close', 'Content-Length': '0' }); response.end();
   });
@@ -142,17 +151,15 @@ async function guardedContext(originalClient = false) {
     proxy: { server: networkGuardOrigin, bypass: `<-loopback>,http://${authority},ws://${authority}` } });
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
-    if (url.origin === fixture.BaseURL || ['data:', 'blob:'].includes(url.protocol)) await route.continue();
+    if (isOwnedNetworkURL(url.toString()) || ['data:', 'blob:'].includes(url.protocol)) await route.continue();
     else {
       blockedNetwork(url.toString());
       await route.abort('blockedbyclient');
     }
   });
   await context.routeWebSocket('**/*', socket => {
-    const url = new URL(socket.url());
-    if (url.protocol === 'ws:') url.protocol = 'http:';
-    if (url.origin === fixture.BaseURL) socket.connectToServer();
-    else { blockedNetwork(url.toString()); socket.close(); }
+    if (isOwnedNetworkURL(socket.url())) { result.OwnedWebSocketRoutes += 1; socket.connectToServer(); }
+    else { blockedNetwork(socket.url(), false, 'websocket-route'); socket.close(); }
   });
   context.on('page', page => page.on('pageerror', () => { result.PageErrors += 1; }));
   return context;
@@ -179,7 +186,7 @@ async function credentials(clear = false) {
     await dialog.getByLabel('New local password', { exact: true }).waitFor();
     check(await dialog.getByLabel('New local password', { exact: true }).inputValue() === '' &&
       await dialog.getByLabel('New profile PIN', { exact: true }).inputValue() === '', 'credential_screenshot_fields_not_empty');
-    await admin.screenshot({ path: path.join(fixture.ArtifactsDir, 'native-credentials-empty-desktop.png') });
+    await admin.screenshot({ path: path.join(fixture.ArtifactsDir, 'native-credentials-empty-desktop.png'), animations: 'disabled' });
     result.Screenshots.push('native-credentials-empty-desktop.png');
   }
   await dialog.getByRole('checkbox', { name: 'Enable local password', exact: true }).setChecked(!clear);
@@ -234,7 +241,7 @@ async function introEditor() {
     saved.OverrideSource === 'Manual' && saved.SourceRevision && saved.Revision !== '0', 'intro_not_persisted');
   result.IntroAdministration = { InvalidIntervalRejected: true, ImportSaved: true, ResetCleared: true, ManualSaved: true };
   await dialog.getByText('Intro interval saved for this media source.', { exact: true }).waitFor();
-  await admin.screenshot({ path: path.join(fixture.ArtifactsDir, 'native-intro-desktop.png') });
+  await admin.screenshot({ path: path.join(fixture.ArtifactsDir, 'native-intro-desktop.png'), animations: 'disabled' });
   result.Screenshots.push('native-intro-desktop.png');
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 }
@@ -274,7 +281,7 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
   const diagnostic = { Phase: currentPhase, Operation: 'create-context', Document: null,
     StartupResponses: [], AssetFailures: [], RequestFailures: [], ConsoleErrorKinds: [], ConsoleWarningKinds: [], ServiceWorkers: [] };
   (result.OriginalClientAttempts ??= []).push(diagnostic);
-  let originalPage = null;
+  let originalPage = null, currentSession = null;
   async function failureScreenshot(name) {
     if (!originalPage || originalPage.isClosed()) { diagnostic.FailureScreenshotState = 'PageUnavailable'; return; }
     try {
@@ -310,14 +317,18 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
   };
   async function operation(name, action) {
     diagnostic.Operation = name;
+    diagnostic.OperationPhase = currentPhase;
     try { return await action(); }
     catch (error) {
+      if (error.operationCaptured) throw error;
       diagnostic.FailureOperation = name;
       diagnostic.ErrorKind = ['TimeoutError', 'Error', 'AggregateError'].includes(error.name) ? error.name : 'BrowserError';
       diagnostic.Cause = errorCause(error);
+      diagnostic.PlaybackReportsAtFailure = currentSession?.reports.slice(-64) ?? [];
       if (error instanceof AggregateError) diagnostic.AlternativeCauses = error.errors.slice(0, 4).map(errorCause);
       if (!error.safeCode) error.safeCode = `original_client_${name.replaceAll('-', '_')}_failed`;
       await failureScreenshot(name);
+      error.operationCaptured = true;
       throw error;
     }
   }
@@ -331,11 +342,13 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
   const page = await operation('create-page', () => context.newPage());
   originalPage = page;
   const reports = observePlayback(page);
-  const session = { context, page, reports, AuthenticationRequests: 0 };
+  const session = { context, page, reports, AuthenticationRequests: 0, operation };
+  currentSession = session;
   const safeAssetPath = value => {
     const url = new URL(value);
     return url.origin === fixture.BaseURL && /^\/web\/[A-Za-z0-9_./-]{0,240}$/.test(url.pathname) ? url.pathname : null;
   };
+  function watchPage(page) {
   page.on('response', response => {
     const url = new URL(response.url());
     const pathname = url.pathname.replace(/^\/emby(?=\/)/i, '').toLowerCase();
@@ -364,6 +377,16 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
     if (request.method() === 'POST' && /\/(?:Users\/AuthenticateByName|Users\/[^/]+\/Authenticate)\/?$/i.test(new URL(request.url()).pathname))
       session.AuthenticationRequests += 1;
   });
+  }
+  watchPage(page);
+  session.openFreshPage = async () => {
+    await operation('profile-pin-close-validated-tab', () => session.page.close());
+    const freshPage = await operation('profile-pin-create-fresh-tab', () => context.newPage());
+    originalPage = freshPage; session.page = freshPage;
+    session.reports = observePlayback(freshPage);
+    watchPage(freshPage);
+    return freshPage;
+  };
   const document = await operation('document-navigation', () => page.goto(`${fixture.BaseURL}/web/index.html`, { waitUntil: 'domcontentloaded' }));
   diagnostic.Document = { Status: document?.status() ?? null, Path: new URL(page.url()).pathname,
     ContentType: (document?.headers()['content-type'] ?? '').split(';', 1)[0] };
@@ -431,8 +454,9 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
 }
 async function originalLogout(session, reload = false) {
   if (!session) return;
+  return session.operation('logout', async () => {
   const page = session.page;
-  await page.goto(`${fixture.BaseURL}/web/index.html#!/home?serverId=${encodeURIComponent(fixture.ServerId)}`);
+  await session.operation('logout-navigation', () => page.goto(`${fixture.BaseURL}/web/index.html#!/home?serverId=${encodeURIComponent(fixture.ServerId)}`));
   if (reload) await page.reload({ waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Settings', exact: true }).filter({ visible: true }).click();
   const waiting = page.waitForResponse(response => response.request().method() === 'POST' &&
@@ -441,18 +465,20 @@ async function originalLogout(session, reload = false) {
   await page.getByRole('button', { name: /\bSign Out\b/i }).filter({ visible: true }).click();
   check((await waiting).status() === 204, 'original_client_logout_rejected');
   await session.context.close();
+  });
 }
 async function openItem(session, id) {
+  return session.operation('open-item-and-play', async () => {
   // The real detail route triggers normal item loading and queue construction.
   const url = new URL(session.page.url());
   url.hash = `!/item?id=${encodeURIComponent(id)}&serverId=${encodeURIComponent(fixture.ServerId)}`;
-  await session.page.goto(url.toString());
+  await session.operation('item-navigation', () => session.page.goto(url.toString()));
   const play = session.page.locator('.btnPlay.btnMainPlay[data-mode="play"]:visible');
-  await play.waitFor();
-  await play.click();
-  await session.page.waitForFunction(() => [...document.querySelectorAll('video')].some(video =>
-    !video.paused && video.readyState >= 2 && video.videoWidth > 0 && video.currentTime > 0), null, { timeout: 30000 });
-  await waitReports(session, reports => reports.some(report => report.Event === 'Started' && report.ItemId === id && report.Status === 204));
+  await session.operation('play-control', async () => { await play.waitFor(); await play.click(); });
+  await session.operation('decoded-video-start', () => session.page.waitForFunction(() => [...document.querySelectorAll('video')].some(video =>
+    !video.paused && video.readyState >= 2 && video.videoWidth > 0 && video.currentTime > 0), null, { timeout: 30000 }));
+  await session.operation('started-report', () => waitReports(session, reports => reports.some(report => report.Event === 'Started' && report.ItemId === id && report.Status === 204)));
+  });
 }
 async function waitReports(session, predicate, timeout = 30000) {
   const until = Date.now() + timeout;
@@ -472,6 +498,7 @@ async function videoState(session) {
   });
 }
 async function stopPlayback(session, itemId) {
+  return session.operation('stop-playback', async () => {
   const video = session.page.locator('video:visible');
   if (await video.count()) {
     const box = await video.boundingBox();
@@ -482,11 +509,13 @@ async function stopPlayback(session, itemId) {
   else await session.page.locator('.headerBackButton:visible').click();
   await waitReports(session, reports => reports.some(report => report.Event === 'Stopped' && report.ItemId === itemId && report.Status === 204));
   await session.page.waitForFunction(() => [...document.querySelectorAll('video,audio')].every(media => media.paused), null, { timeout: 10000 });
+  });
 }
 async function introJourney(mode) {
   currentPhase = { ShowButton: 'intro-show-button', None: 'intro-none', AutoSkip: 'intro-auto-skip' }[mode];
   await preferences(mode, false);
   client = await originalLogin();
+  await client.operation('intro-playback-journey', async () => {
   await openItem(client, fixture.MovieId);
   const first = await videoState(client);
   check(first && first.Seconds < 3 && first.DecodedFrames > 0, 'intro_beginning_not_observed');
@@ -535,6 +564,7 @@ async function introJourney(mode) {
   result.Checks[{ ShowButton: 'IntroShowButton', None: 'IntroNone', AutoSkip: 'IntroAutoSkip' }[mode]] = !entitlementBlocked;
   if (entitlementBlocked) result.BlockedStages.push({ Phase: currentPhase, Reason: 'original_client_entitlement' });
   await stage(currentPhase, entitlementBlocked ? 'blocked' : 'complete');
+  });
 }
 function verifyLifecycle(rows, expectedIds) {
   check(rows.length > 0 && rows.every(row => row.Status === 204 && row.PlayIdHash), 'playback_report_failed_or_unscoped');
@@ -552,6 +582,7 @@ async function nextJourney(enabled) {
   currentPhase = enabled ? 'next-enabled' : 'next-disabled';
   await preferences('None', enabled);
   client = await originalLogin();
+  await client.operation('next-episode-journey', async () => {
   await openItem(client, fixture.EpisodeOneId);
   if (enabled) {
     await waitReports(client, rows => rows.some(row => row.Event === 'Started' && row.ItemId === fixture.EpisodeTwoId && row.Status === 204), 45000);
@@ -575,17 +606,22 @@ async function nextJourney(enabled) {
   await originalLogout(client); client = null;
   result.Checks[enabled ? 'NextEnabled' : 'NextDisabled'] = true;
   await stage(currentPhase);
+  });
 }
 
 async function profilePinJourney(session) {
   // A profile PIN protects reuse of an already authenticated device profile.
   // The real UI navigation is deliberately required; storage edits, direct
   // module calls, or synthetic PIN comparisons are not acceptance substitutes.
-  const page = session.page;
+  return session.operation('profile-pin-journey', async () => {
   const authentications = session.AuthenticationRequests;
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  // Web AppRouter stores validated PINs in sessionStorage. A real new tab has
+  // fresh sessionStorage while the context naturally retains its login token
+  // and per-device preference in localStorage. No storage values are edited.
+  const page = await session.openFreshPage();
+  await session.operation('profile-pin-fresh-tab-navigation', () => page.goto(`${fixture.BaseURL}/web/index.html`, { waitUntil: 'domcontentloaded' }));
   const prompt = page.locator('.profilePinDialogContentInner:visible');
-  await prompt.waitFor({ timeout: 15000 });
+  await session.operation('profile-pin-prompt', () => prompt.waitFor({ timeout: 15000 }));
   const inputs = prompt.locator('.txtProfilePinInput');
   check(await inputs.count() === 4, 'profile_pin_prompt_shape_mismatch');
   async function enterPin(value) {
@@ -594,15 +630,16 @@ async function profilePinJourney(session) {
       await inputs.nth(index).pressSequentially(value[index]);
     }
   }
-  await enterPin(fixture.ProfilePin === '0000' ? '1111' : '0000');
-  await prompt.locator('.invalidHeader:not(.hide)').waitFor();
+  await session.operation('profile-pin-wrong-input', () => enterPin(fixture.ProfilePin === '0000' ? '1111' : '0000'));
+  await session.operation('profile-pin-wrong-rejected', () => prompt.locator('.invalidHeader:not(.hide)').waitFor());
   check(await prompt.isVisible(), 'wrong_profile_pin_dismissed_prompt');
-  await enterPin(fixture.ProfilePin);
-  await prompt.waitFor({ state: 'hidden' });
+  await session.operation('profile-pin-correct-input', () => enterPin(fixture.ProfilePin));
+  await session.operation('profile-pin-unlocked', () => prompt.waitFor({ state: 'hidden' }));
   check(session.AuthenticationRequests === authentications, 'profile_pin_replaced_server_authentication');
   await page.getByRole('button', { name: 'Settings', exact: true }).filter({ visible: true }).waitFor();
-  result.ProfileLock = { EnabledByOriginalLoginPrompt: true, StoredSessionReload: true,
+  result.ProfileLock = { EnabledByOriginalLoginPrompt: true, StoredSessionFreshTab: true, FreshTabWithoutOpener: true,
     WrongPinRejected: true, CorrectPinAccepted: true, NoReplacementAuthentication: true };
+  });
 }
 
 async function main() {
