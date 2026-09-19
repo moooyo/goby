@@ -124,6 +124,11 @@ func applyPreferredStreams(configuration identity.UserConfiguration, info media.
 }
 
 func (s *Server) applyStaticPlaybackPreferences(ctx context.Context, r *http.Request, principal identity.Principal, source library.MediaFile, request *playback.Request) error {
+	// IntroSkipMode is consumed by the compatible client together with chapter
+	// markers. Never seek here: changing the start would race the client's seek,
+	// defeat an explicit replay, and make reported progress disagree with playback.
+	// EnableNextEpisodeAutoPlay likewise controls the client's queue transition,
+	// not a server-created session or a synthetic completion report.
 	// Userless application requests do not acquire another user's remembered
 	// state merely because their profile contains a UserId parameter.
 	if principal.IsApplicationKey() {

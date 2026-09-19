@@ -196,6 +196,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/v1/users", s.requireAdmin(s.users))
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))
 	s.registerAdminUserRoutes(mux)
+	s.registerLocalCredentialRoutes(mux)
 	s.registerAdminSessionRoutes(mux)
 	s.registerAdminDeviceRoutes(mux)
 	s.registerAdminTaskRoutes(mux)
@@ -210,6 +211,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerDeviceRoutes(mux)
 	s.registerApplicationKeyRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
+	s.registerIntroMarkerRoutes(mux)
 	s.registerLibraryRoutes(mux)
 	s.registerEntityRoutes(mux)
 	s.registerMusicEntityRoutes(mux)
@@ -231,6 +233,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerMediaDownloadRoutes(mux)
 	s.registerMediaManagementRoutes(mux)
 	s.registerFeatureRoutes(mux)
+	s.registerFeatureLicensingRoutes(mux)
 	mux.HandleFunc("/admin/v1/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 404, "not_found", "The requested administrator API is not available.")
 	})

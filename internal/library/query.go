@@ -23,7 +23,7 @@ var itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	` + itemMetadataColumn + `, ` + itemEntitiesColumn + `,
 	CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN
 		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id AND ` + ordinaryItemSQL("child") + `)
-	END, ` + itemAlbumColumn + `, ` + itemTVParentsColumn
+	END, ` + itemAlbumColumn + `, ` + itemTVParentsColumn + `, ` + itemIntroColumn
 
 var itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (
 		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
@@ -680,10 +680,10 @@ func escapeLikeLiteral(value string) string {
 
 func scanItem(row rowScanner, additional ...any) (Item, error) {
 	var item Item
-	var encoded, encodedMetadata, encodedEntities, encodedAlbum, encodedTVParents []byte
+	var encoded, encodedMetadata, encodedEntities, encodedAlbum, encodedTVParents, encodedIntro []byte
 	destinations := []any{&item.ID, &item.LibraryID, &item.ParentID, &item.Name, &item.SortName,
 		&item.Type, &item.Path, &item.Overview, &item.IsFolder, &item.IndexNumber,
-		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities, &item.ChildCount, &encodedAlbum, &encodedTVParents}
+		&item.ParentIndexNumber, &item.CreatedAt, &encoded, &encodedMetadata, &encodedEntities, &item.ChildCount, &encodedAlbum, &encodedTVParents, &encodedIntro}
 	err := row.Scan(append(destinations, additional...)...)
 	if err != nil {
 		return Item{}, err
@@ -715,6 +715,9 @@ func scanItem(row rowScanner, additional ...any) (Item, error) {
 			return Item{}, fmt.Errorf("decode item television parents: %w", err)
 		}
 		item.Series, item.Season = parents.Series, parents.Season
+	}
+	if err := projectItemIntro(&item, encodedIntro); err != nil {
+		return Item{}, err
 	}
 	return item, nil
 }

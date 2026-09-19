@@ -21,6 +21,7 @@ func (s *Server) registerUserPreferenceRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /admin/v1/users/{id}/preferences", s.requireAdmin(s.updateNativeUserPreferences))
 	mux.HandleFunc("GET /emby/Users/{Id}/Configuration", s.requireEmby(s.getEmbyUserConfiguration))
 	mux.HandleFunc("POST /emby/Users/{Id}/Configuration", s.requireEmby(s.updateEmbyUserConfiguration))
+	mux.HandleFunc("POST /emby/Users/{Id}/Configuration/Partial", s.requireEmby(s.updateEmbyUserConfiguration))
 	mux.HandleFunc("GET /emby/DisplayPreferences/{Id}", s.requireEmby(s.getEmbyDisplayPreferences))
 	mux.HandleFunc("POST /emby/DisplayPreferences/{Id}", s.requireEmby(s.updateEmbyDisplayPreferences))
 }
@@ -146,8 +147,13 @@ func (s *Server) getEmbyUserConfiguration(w http.ResponseWriter, r *http.Request
 		s.preferenceError(w, r, err)
 		return
 	}
+	configuration, err := s.attachOwnProfilePin(r, actor, id, result.Configuration)
+	if err != nil {
+		s.localCredentialError(w, r, err)
+		return
+	}
 	w.Header().Set("Cache-Control", "no-store")
-	jsonResponse(w, http.StatusOK, result.Configuration)
+	jsonResponse(w, http.StatusOK, configuration)
 }
 
 func (s *Server) updateEmbyUserConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +170,7 @@ func (s *Server) updateEmbyUserConfiguration(w http.ResponseWriter, r *http.Requ
 	}
 	actor := r.Context().Value(principalKey).(identity.Principal)
 	if _, err := s.identity.UpdateUserPreferences(r.Context(), actor, id, nil, identity.UserConfigurationPatch(values)); err != nil {
-		s.preferenceError(w, r, err)
+		s.localCredentialError(w, r, err)
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")

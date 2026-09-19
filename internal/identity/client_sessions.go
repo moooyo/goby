@@ -399,8 +399,8 @@ func lockClientSession(ctx context.Context, tx pgx.Tx, principal Principal, muta
 	var active bool
 	var deviceID string
 	var observedAt time.Time
-	if err := tx.QueryRow(ctx, `SELECT revoked_at IS NULL AND expires_at > clock_timestamp(), device_id, clock_timestamp()
-		FROM sessions WHERE id = $1`, sessionID).Scan(&active, &deviceID, &observedAt); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT revoked_at IS NULL AND expires_at > clock_timestamp() AND (NOT local_auth OR $2), device_id, clock_timestamp()
+		FROM sessions WHERE id = $1`, sessionID, IsLocalPeer(principal.PeerIP)).Scan(&active, &deviceID, &observedAt); err != nil {
 		return false, fmt.Errorf("revalidate locked client session: %w", err)
 	}
 	if !active {

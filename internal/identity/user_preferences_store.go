@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/activity"
 )
 
 type UserPreferences struct {
@@ -40,7 +41,7 @@ func authorizeUserPreferences(ctx context.Context, tx pgx.Tx, actor Principal, u
 		err := tx.QueryRow(ctx, `SELECT u.is_administrator,u.policy,s.device_id,clock_timestamp()
 			FROM users u JOIN sessions s ON s.user_id=u.id
 			WHERE u.id=$1 AND s.id=$2 AND s.kind='emby' AND NOT u.is_disabled
-			AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp()`, actor.User.ID, actor.SessionID).
+			AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND (NOT s.local_auth OR $3)`, actor.User.ID, actor.SessionID, IsLocalPeer(actor.PeerIP)).
 			Scan(&administrator, &policyJSON, &deviceID, &observedAt)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrUnauthorized
@@ -142,11 +143,20 @@ func (s *Store) UpdateUserPreferences(ctx context.Context, actor Principal, user
 	if revision != nil && *revision < 1 {
 		return UserPreferences{}, ErrInvalidInput
 	}
+	patch, pin, err := splitProfilePinPatch(patch)
+	if err != nil {
+		return UserPreferences{}, err
+	}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return UserPreferences{}, err
 	}
 	defer rollback(tx)
+	if pin != nil {
+		if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", managedUsersLockID); err != nil {
+			return UserPreferences{}, err
+		}
+	}
 	if err := authorizeUserPreferences(ctx, tx, actor, userID, true, true); err != nil {
 		return UserPreferences{}, err
 	}
@@ -173,7 +183,14 @@ func (s *Store) UpdateUserPreferences(ctx context.Context, actor Principal, user
 			changed[field] = afterFields[field]
 		}
 	}
-	if len(changed) != 0 {
+	pinChanged := false
+	if pin != nil {
+		pinChanged, err = s.updateProfilePinPreference(ctx, tx, userID, *pin)
+		if err != nil {
+			return UserPreferences{}, err
+		}
+	}
+	if len(changed) != 0 || pinChanged {
 		current.Revision, err = nextPreferenceRevision(current.Revision)
 		if err != nil {
 			return UserPreferences{}, err
@@ -192,6 +209,17 @@ func (s *Store) UpdateUserPreferences(ctx context.Context, actor Principal, user
 			return UserPreferences{}, ErrStoredUserSettings
 		}
 		current.Configuration = updated
+	}
+	if pinChanged {
+		auditActor, err := identityActivityActor(actor)
+		if err != nil {
+			return UserPreferences{}, err
+		}
+		if err := activity.Record(ctx, tx, activity.Event{Action: activity.ActionUserUpdated,
+			Source: identityActivitySource(actor.Kind), Actor: auditActor,
+			Resource: activity.Resource{Kind: activity.ResourceUser, ID: userID}, Revision: current.Revision, Count: 1}); err != nil {
+			return UserPreferences{}, err
+		}
 	}
 	if err := authorizeUserPreferences(ctx, tx, actor, userID, false, false); err != nil {
 		return UserPreferences{}, err

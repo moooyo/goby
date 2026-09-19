@@ -65,6 +65,7 @@ type Item struct {
 	Series, Season                                                *TVParentRef
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
+	Intro                                                         *IntroInterval
 	Metadata                                                      *metadata.Metadata
 	Entities                                                      ItemEntities
 	UserData                                                      *UserData

@@ -21,16 +21,18 @@ var (
 	ErrApplicationKeyBackupUnavailable = errors.New("application key backup state unavailable")
 )
 
-// ApplicationKeyBackupWitness describes authenticated application-key history.
-// SealedKeyCount includes revoked keys. HasMasterKey reports whether the caller
+// ApplicationKeyBackupWitness describes authenticated credential history.
+// SealedKeyCount includes revoked application keys; SealedProfilePinCount counts
+// encrypted client profile locks. HasMasterKey reports whether the caller
 // received or supplied an exact master key; an all-zero output buffer when it
 // is false must never be archived as a master key.
 type ApplicationKeyBackupWitness struct {
-	SealedKeyCount int64
-	HasMasterKey   bool
+	SealedKeyCount        int64
+	SealedProfilePinCount int64
+	HasMasterKey          bool
 }
 
-// WitnessBackup authenticates every sealed application key using one safely
+// WitnessBackup authenticates every sealed application key and profile PIN using one safely
 // opened master file and copies that exact key into masterKey only on success.
 // masterKey must be a caller-owned 32-byte buffer, and the caller must clear it
 // after use. A missing master is accepted only when no sealed keys exist; this
@@ -73,8 +75,8 @@ func (v *ApplicationKeyVault) WitnessBackup(ctx context.Context, tx pgx.Tx, mast
 	return witness, nil
 }
 
-// ValidateApplicationKeyRecovery authenticates every sealed application key in
-// the caller's transaction, including revoked history. masterKey must be nil
+// ValidateApplicationKeyRecovery authenticates every sealed application key and
+// profile PIN in the caller's transaction, including revoked key history. masterKey must be nil
 // when absent or an exact 32-byte key read from protected extracted storage.
 // The function neither reads the active vault nor returns plaintext tokens.
 // It does not mutate the supplied key; the caller owns and must clear it.
@@ -135,6 +137,11 @@ func ValidateApplicationKeyRecovery(ctx context.Context, tx pgx.Tx, masterKey []
 	}
 	if err := rows.Err(); err != nil {
 		return ApplicationKeyBackupWitness{}, applicationKeyBackupDatabaseError(ctx)
+	}
+	rows.Close()
+	witness.SealedProfilePinCount, err = validateProfilePinRecovery(ctx, tx, gcm)
+	if err != nil {
+		return ApplicationKeyBackupWitness{}, err
 	}
 	if err := ctx.Err(); err != nil {
 		return ApplicationKeyBackupWitness{}, err

@@ -10,6 +10,7 @@ import type { DeleteUserResponse, Library, ManagedUser, UpdateUserInput, UserMut
 import { ErrorNotice } from './components';
 import { UserPolicyFields } from './UserPolicyFields';
 import { UserPreferencesDialog } from './UserPreferencesDialog';
+import { LocalCredentialsDialog } from './LocalCredentialsDialog';
 import { ArtworkManagerDialog } from './ArtworkManagerDialog';
 import { draftFromUserPolicy, parseUserPolicyDraft } from './userPolicy';
 import type { UserPolicyDraft } from './userPolicy';
@@ -247,6 +248,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   const [resettingPassword, setResettingPassword] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
   const [editingPreferences, setEditingPreferences] = useState(false);
+  const [editingCredentials, setEditingCredentials] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [passwordDraftState, setPasswordDraftState] = useState({ dirty: false, busy: false });
@@ -294,7 +296,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
   }
 
   function requestAction(action: 'close' | 'reload') {
-    if (inFlight.current || deleteBusy || editingPreferences || editingAvatar) return;
+    if (inFlight.current || deleteBusy || editingPreferences || editingAvatar || editingCredentials) return;
     if (dirty) setPendingAction(action);
     else if (action === 'reload') reload();
     else onClose();
@@ -325,7 +327,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlight.current || !draft || !parsedPolicy?.policy || !dirty || blocked || disabled || deletingUser || resettingPassword || !draft.Name.trim()) return;
+    if (inFlight.current || !draft || !parsedPolicy?.policy || !dirty || blocked || disabled || deletingUser || resettingPassword || editingCredentials || !draft.Name.trim()) return;
     inFlight.current = true;
     setBusy(true);
     setError(null);
@@ -414,6 +416,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                       {!user.IsDisabled && draft.IsDisabled && <Alert severity="warning">{user.Id === currentUserId ? 'Saving will end your current sign-in and disable this account.' : 'Saving will end existing sign-ins for this account and prevent it from signing in.'}</Alert>}
                       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, pt: 1 }}><Box><Typography variant="body2" sx={{ fontWeight: 650 }}>Password {user.HasPassword ? 'is set' : 'is not set'}</Typography><Typography variant="body2" color="text.secondary">A reset ends existing sign-ins for this account.</Typography></Box><Button variant="outlined" onClick={() => setResettingPassword(true)} disabled={disabled || dirty || blocked} startIcon={<LockResetRounded />} sx={{ flexShrink: 0 }}>Reset password</Button></Stack>
                       {dirty && <Typography variant="caption" color="text.secondary">Save or discard your account changes before resetting the password.</Typography>}
+                      <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}><Box><Typography variant="body2" sx={{ fontWeight: 650 }}>Local password and profile PIN</Typography><Typography variant="body2" color="text.secondary">Manage local-network sign-in and the separate client profile lock.</Typography></Box><Button variant="outlined" onClick={() => setEditingCredentials(true)} disabled={disabled || dirty || blocked} sx={{ flexShrink: 0 }}>Manage local credentials</Button></Stack>
                       <Divider />
                       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}><Box><Typography variant="body2" sx={{ fontWeight: 650 }}>Delete account</Typography><Typography variant="body2" color="text.secondary">Permanently remove this user and their personal playback history. Media files are kept.</Typography></Box><Button variant="outlined" color="error" onClick={() => setDeletingUser(true)} disabled={disabled || dirty || blocked || resettingPassword} startIcon={<DeleteOutlineRounded />} sx={{ flexShrink: 0 }}>Delete user</Button></Stack>
                       {dirty && <Typography variant="caption" color="text.secondary">Save or discard your account changes before deleting this user.</Typography>}
@@ -434,6 +437,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
       {resettingPassword && user && <ResetPasswordDialog user={user} isCurrentUser={user.Id === currentUserId} onClose={() => setResettingPassword(false)} onReload={reload} onReset={(result) => saved(result, true)} onReviewRequired={(cause) => { setError(cause); setPasswordReviewRequired(true); }} onDraftStateChange={setPasswordDraftState} />}
       {deletingUser && user && <DeleteUserDialog user={user} isCurrentUser={user.Id === currentUserId} onClose={() => setDeletingUser(false)} onReload={() => requestAction('reload')} onDeleted={(result) => { if (!result.CurrentSessionRevoked) onRemoved(user.Id, `User ${user.Name} deleted.`, 'success'); }} onReviewRequired={(cause) => { setError(cause); setDeleteReviewRequired(true); setNotice(''); }} onBusyChange={setDeleteBusy} />}
       {editingPreferences && user && <UserPreferencesDialog userId={user.Id} userName={user.Name} onClose={() => setEditingPreferences(false)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {editingCredentials && user && <LocalCredentialsDialog userId={user.Id} userName={user.Name} hasPassword={user.HasPassword} isCurrentUser={user.Id === currentUserId} onClose={() => { setEditingCredentials(false); reload(); }} onChanged={() => setReloadRevision((value) => value + 1)} onNavigationGuardChange={onNavigationGuardChange} />}
       {editingAvatar && user && <ArtworkManagerDialog target={{ kind: 'users', id: user.Id, name: user.Name }} onClose={() => setEditingAvatar(false)} onNavigationGuardChange={onNavigationGuardChange} />}
     </>
   );

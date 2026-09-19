@@ -148,17 +148,9 @@ func (s *Store) CreateApplicationKey(ctx context.Context, actor Principal, appNa
 	}
 	// A loaded or replaced master file must decrypt an existing row before it
 	// can issue another key. Revoked history also proves a master key exists.
-	var existingID string
-	var existingCiphertext []byte
-	err = tx.QueryRow(ctx, `SELECT credential_id, secret_ciphertext FROM application_keys ORDER BY id LIMIT 1`).Scan(&existingID, &existingCiphertext)
-	allowCreate := errors.Is(err, pgx.ErrNoRows)
-	if err != nil && !allowCreate {
-		return ApplicationKey{}, fmt.Errorf("read application key vault witness: %w", err)
-	}
-	if !allowCreate {
-		if _, err := s.applicationKeyVault.Open(ctx, existingID, existingCiphertext); err != nil {
-			return ApplicationKey{}, err
-		}
+	allowCreate, err := s.allowVaultMasterCreation(ctx, tx)
+	if err != nil {
+		return ApplicationKey{}, err
 	}
 	credentialID, err := randomID()
 	if err != nil {

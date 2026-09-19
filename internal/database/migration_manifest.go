@@ -65,6 +65,8 @@ var publishedMigrations = [...]publishedMigration{
 	{39, "0039_music_metadata.sql", "c05fa509d6966c4bddae7d432c7ccfe7d9e14bb755d6e4a3f1ff249fbd500a09"},
 	{40, "0040_management_events.sql", "b79c5bbdf0244c8124eb14fb7679ce94bc2d5c4ca9d01acad9bc049ee69f2ac0"},
 	{41, "0041_music_activity.sql", "e6bd647e9d45a3c8ce79bf94123fdd7f91abcf7a89157677868e2da09e8ed6e5"},
+	{42, "0042_local_credentials.sql", "7286b64e80458df90b77d8b695744506eef13e12b57cef6cb16eb520355fbf95"},
+	{43, "0043_intro_markers.sql", "a59e9d9fc44ffbbe4b727d2a86b6508138dcc9ec68aa4bdda74ec3be57476d78"},
 }
 
 func validatePublishedMigrations(available []migration) error {

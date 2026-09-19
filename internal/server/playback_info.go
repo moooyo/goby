@@ -367,11 +367,9 @@ func originalSourceDTO(item library.Item) map[string]any {
 	if audio != nil {
 		dto["DefaultAudioStreamIndex"] = audio.Index
 	}
-	chapters := make([]map[string]any, 0, len(info.Chapters))
-	for _, chapter := range info.Chapters {
-		chapters = append(chapters, map[string]any{"StartPositionTicks": chapter.StartTicks, "Name": chapter.Title})
-	}
-	dto["Chapters"] = chapters
+	// The same source-bound markers reach both item-detail and PlaybackInfo
+	// consumers. The client owns any skip; media delivery retains its timeline.
+	dto["Chapters"] = itemChaptersDTO(item)
 	return dto
 }
 

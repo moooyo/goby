@@ -234,6 +234,7 @@ func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 	t.Helper()
 	columns := itemColumns
 	if legacy {
+		columns = strings.Replace(columns, itemIntroColumn, "NULL::jsonb", 1)
 		columns = strings.Replace(columns,
 			"COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)",
 			"i.local_metadata", 1)

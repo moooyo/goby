@@ -7,7 +7,7 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
 import { fieldError } from './formFields';
-import { subtitleModes, userPreferencesApi } from './userPreferencesApi';
+import { introSkipModes, subtitleModes, userPreferencesApi } from './userPreferencesApi';
 import type { UserConfiguration, UserPreferences, WritableUserConfiguration } from './userPreferencesApi';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
@@ -18,6 +18,7 @@ const booleanLabels: Record<typeof audioPreferenceBooleans[number] | typeof disc
   PlayDefaultAudioTrack: 'Use the default audio track', RememberAudioSelections: 'Remember audio track selections', RememberSubtitleSelections: 'Remember subtitle selections', HidePlayedInLatest: 'Hide played items from Latest', HidePlayedInMoreLikeThis: 'Hide played items from More Like This',
 };
 const modeLabels = { Default: 'Default', Always: 'Always', OnlyForced: 'Forced subtitles only', None: 'Off', Smart: 'Smart', HearingImpaired: 'Hearing impaired' };
+const introModeLabels = { None: 'Off', ShowButton: 'Show skip button', AutoSkip: 'Skip automatically' };
 export function UserPreferencesDialog({ userId, userName, onClose, onNavigationGuardChange }: { userId: string; userName: string; onClose: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [saved, setSaved] = useState<UserPreferences>();
   const [draft, setDraft] = useState<UserConfiguration>();
@@ -56,6 +57,7 @@ export function UserPreferencesDialog({ userId, userName, onClose, onNavigationG
         AudioLanguagePreference: draft.AudioLanguagePreference, SubtitleLanguagePreference: draft.SubtitleLanguagePreference,
         PlayDefaultAudioTrack: draft.PlayDefaultAudioTrack, RememberAudioSelections: draft.RememberAudioSelections, RememberSubtitleSelections: draft.RememberSubtitleSelections,
         SubtitleMode: draft.SubtitleMode, HidePlayedInLatest: draft.HidePlayedInLatest, HidePlayedInMoreLikeThis: draft.HidePlayedInMoreLikeThis,
+        IntroSkipMode: draft.IntroSkipMode, EnableNextEpisodeAutoPlay: draft.EnableNextEpisodeAutoPlay,
         OrderedViews: draft.OrderedViews, LatestItemsExcludes: draft.LatestItemsExcludes, MyMediaExcludes: draft.MyMediaExcludes,
       };
       const result = await userPreferencesApi.update(userId, saved.Revision, { ...configuration, ResumeRewindSeconds: Number(rewind) });
@@ -84,6 +86,8 @@ export function UserPreferencesDialog({ userId, userName, onClose, onNavigationG
         </Stack></Box>
         <Divider /><Box component="section" aria-label="Playback and discovery"><Typography component="h3" variant="h4" sx={{ mb: 2 }}>Playback and discovery</Typography><Stack spacing={2}>
           <TextField label="Rewind on resume (seconds)" value={rewind} disabled={disabled} onChange={(event) => { setRewind(event.target.value); setNotice(''); }} error={invalidRewind || Boolean(fieldError(error, 'Configuration.ResumeRewindSeconds'))} helperText={fieldError(error, 'Configuration.ResumeRewindSeconds') ?? 'Use a whole number from 0 to 300.'} slotProps={{ htmlInput: { inputMode: 'numeric' } }} />
+          <TextField select label="Intro skipping" value={draft.IntroSkipMode} disabled={disabled} onChange={(event) => change('IntroSkipMode', event.target.value as UserConfiguration['IntroSkipMode'])} error={Boolean(fieldError(error, 'Configuration.IntroSkipMode'))} helperText={fieldError(error, 'Configuration.IntroSkipMode') ?? 'Uses an intro interval for the current media source. Skip controls and automatic skipping require a compatible client.'}>{introSkipModes.map((mode) => <MenuItem key={mode} value={mode}>{introModeLabels[mode]}</MenuItem>)}</TextField>
+          <Box><FormControlLabel control={<Checkbox checked={draft.EnableNextEpisodeAutoPlay} disabled={disabled} onChange={(event) => change('EnableNextEpisodeAutoPlay', event.target.checked)} slotProps={{ input: { 'aria-describedby': 'next-episode-help' } }} />} label="Automatically play the next episode" /><Typography id="next-episode-help" variant="body2" color={fieldError(error, 'Configuration.EnableNextEpisodeAutoPlay') ? 'error.main' : 'text.secondary'}>{fieldError(error, 'Configuration.EnableNextEpisodeAutoPlay') ?? 'Compatible clients can continue to the next available episode that this user may play.'}</Typography></Box>
           {discoveryPreferenceBooleans.map((field) => <FormControlLabel key={field} control={<Checkbox checked={draft[field]} disabled={disabled} onChange={(event) => change(field, event.target.checked)} />} label={booleanLabels[field]} />)}
         </Stack></Box>
         <Divider /><Box component="section" aria-label="Library display"><Typography component="h3" variant="h4" sx={{ mb: 1 }}>Library display</Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>These choices affect display only. They do not grant access to a library.</Typography>

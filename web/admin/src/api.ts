@@ -86,6 +86,26 @@ export interface ResetUserPasswordInput {
   Password: string;
 }
 
+export interface LocalCredentials {
+  UserId: string;
+  Revision: string;
+  HasLocalPassword: boolean;
+  HasProfilePin: boolean;
+  EnableLocalPassword: boolean;
+}
+
+export interface LocalCredentialsInput {
+  Revision: string;
+  EnableLocalPassword: boolean;
+  LocalPassword?: string;
+  ProfilePin?: string;
+}
+
+export interface LocalCredentialsResponse {
+  Credentials: LocalCredentials;
+  CurrentSessionRevoked: boolean;
+}
+
 export interface MetadataPerson {
   Name: string;
   Role: string;
@@ -1026,6 +1046,15 @@ function validateManagedUser(result: ManagedUserResponse): void {
   user.Policy = normalizeUserPolicy(user.Policy as unknown as UserPolicy);
 }
 
+function validateLocalCredentials(result: LocalCredentials, userId: string): void {
+  if (!isRecord(result) || result.UserId !== userId || typeof result.Revision !== "string"
+    || !/^[1-9]\d*$/.test(result.Revision) || result.Revision.length > 19
+    || (result.Revision.length === 19 && result.Revision > "9223372036854775807")
+    || ![result.HasLocalPassword, result.HasProfilePin, result.EnableLocalPassword].every((value) => typeof value === "boolean")
+    || (result.EnableLocalPassword && !result.HasLocalPassword)
+    || Object.keys(result).some((field) => !["UserId", "Revision", "HasLocalPassword", "HasProfilePin", "EnableLocalPassword"].includes(field))) throw invalidResponse();
+}
+
 function validSessionTimestamp(value: unknown): value is string {
   return typeof value === "string"
     && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value)
@@ -1919,6 +1948,22 @@ export const adminApi = {
 
   resetUserPassword(userId: string, input: ResetUserPasswordInput, options: RequestOptions = {}): Promise<UserMutationResponse> {
     return mutateUser(`/users/${encodeURIComponent(userId)}/password`, "POST", input, options);
+  },
+
+  async getLocalCredentials(userId: string, options: RequestOptions = {}): Promise<LocalCredentials> {
+    const result = await authenticatedRequest<LocalCredentials>(`/users/${encodeURIComponent(userId)}/local-credentials`, options);
+    validateLocalCredentials(result, userId);
+    return result;
+  },
+
+  async updateLocalCredentials(userId: string, input: LocalCredentialsInput, options: RequestOptions = {}): Promise<LocalCredentialsResponse> {
+    const revision = sessionRevision;
+    const result = await authenticatedRequest<LocalCredentialsResponse>(`/users/${encodeURIComponent(userId)}/local-credentials`, { ...options, method: "PUT", body: input });
+    if (!isRecord(result) || typeof result.CurrentSessionRevoked !== "boolean"
+      || Object.keys(result).some((field) => !["Credentials", "CurrentSessionRevoked"].includes(field))) throw invalidResponse();
+    validateLocalCredentials(result.Credentials, userId);
+    if (result.CurrentSessionRevoked) expireSession(revision);
+    return result;
   },
 
   async deleteUser(userId: string, input: DeleteUserInput, options: RequestOptions = {}): Promise<DeleteUserResponse> {

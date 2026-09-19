@@ -259,6 +259,13 @@ func (s *Store) ResetManagedUserPassword(ctx context.Context, actor Principal, i
 	}
 	updated, err := scanManagedUser(tx.QueryRow(ctx, `UPDATE users SET password_hash = $2,
 		has_password = $3, management_revision = management_revision + 1,
+		local_credentials_revision=local_credentials_revision+1,
+		configuration_revision=configuration_revision+CASE WHEN local_password_hash IS NOT NULL OR profile_pin_ciphertext IS NOT NULL
+			OR configuration @> '{"EnableLocalPassword":true}'::jsonb THEN 1 ELSE 0 END,
+		configuration=CASE WHEN local_password_hash IS NOT NULL OR profile_pin_ciphertext IS NOT NULL
+			OR configuration @> '{"EnableLocalPassword":true}'::jsonb
+			THEN (configuration-'ProfilePin') || '{"EnableLocalPassword":false}'::jsonb ELSE configuration END,
+		local_password_hash=NULL,profile_pin_ciphertext=NULL,local_password_failures=0,local_password_blocked_until=NULL,
 		policy = CASE WHEN jsonb_typeof(policy) = 'object' THEN policy
 			|| jsonb_build_object('IsAdministrator', is_administrator, 'IsDisabled', is_disabled) ELSE policy END,
 		updated_at = clock_timestamp() WHERE id = $1 RETURNING `+userColumns+", management_revision",

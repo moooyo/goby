@@ -12,6 +12,7 @@ func TestCompatibilityNamespacePreservesIdentifiersAndEncodedNames(t *testing.T)
 		{"/videos/AbC123/original.mp4?api_key=opaque", "/emby/Videos/AbC123/original.mp4"},
 		{"/EMBY/users/AbC/items/ReS123", "/emby/Users/AbC/Items/ReS123"},
 		{"/users/authenticatebyname", "/emby/Users/AuthenticateByName"},
+		{"/users/AbC/configuration/partial", "/emby/Users/AbC/Configuration/Partial"},
 		{"/features?FeatureType=User", "/emby/Features"},
 		{"/playlists/AbC/items/9007199254740993/move/0", "/emby/Playlists/AbC/Items/9007199254740993/Move/0"},
 		{"/collections/AbC/items/delete", "/emby/Collections/AbC/Items/Delete"},

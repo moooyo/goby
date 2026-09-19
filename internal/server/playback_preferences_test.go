@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/moooyo/goby/internal/identity"
@@ -116,5 +117,35 @@ func TestDynamicPreferencesUseOnlyTheCurrentGenerationFactsAndExplicitChoices(t 
 	ApplyDynamicUserPreferences(principal, second, &request)
 	if *request.AudioStreamIndex != 3 || *request.SubtitleStreamIndex != -1 {
 		t.Fatal("dynamic defaults replaced explicit selections")
+	}
+}
+
+func TestPlaybackSourceProjectsTheSameIntroMarkersAsTheItem(t *testing.T) {
+	item := library.Item{ID: "source-bound-item", Type: "Episode", Path: "/media/episode.mp4", CanPlay: true,
+		Media: &media.Info{ProbeVersion: media.CurrentProbeVersion, FileChangeTimeNs: 1, DurationTicks: 600 * media.TicksPerSecond,
+			Chapters: []media.Chapter{{StartTicks: 0, EndTicks: 100 * media.TicksPerSecond, Title: "Chapter one"}}},
+		Intro: &library.IntroInterval{StartTicks: 10 * media.TicksPerSecond, EndTicks: 45 * media.TicksPerSecond, Provenance: "Manual"}}
+	dto := originalSourceDTO(item)
+	chapters, ok := dto["Chapters"].([]map[string]any)
+	if !ok || !reflect.DeepEqual(chapters, itemChaptersDTO(item)) {
+		t.Fatal("the selected media source overrode the item's source-bound intro markers")
+	}
+	markers := make(map[string]int64)
+	for _, chapter := range chapters {
+		if kind, _ := chapter["MarkerType"].(string); kind == "IntroStart" || kind == "IntroEnd" {
+			markers[kind], _ = chapter["StartPositionTicks"].(int64)
+		}
+	}
+	if len(markers) != 2 || markers["IntroStart"] != item.Intro.StartTicks || markers["IntroEnd"] != item.Intro.EndTicks {
+		t.Fatal("playback source omitted or changed the intro interval")
+	}
+	if _, exists := dto["StartTimeTicks"]; exists {
+		t.Fatal("marker projection added a second server-owned seek")
+	}
+	item.Intro = nil
+	for _, chapter := range originalSourceDTO(item)["Chapters"].([]map[string]any) {
+		if chapter["MarkerType"] == "IntroStart" || chapter["MarkerType"] == "IntroEnd" {
+			t.Fatal("ordinary chapter presence invented an intro interval")
+		}
 	}
 }

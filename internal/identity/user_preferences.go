@@ -156,8 +156,10 @@ func applyConfigurationField(result *UserConfiguration, name string, raw json.Ra
 		if json.Unmarshal(raw, &value) != nil {
 			return invalid()
 		}
-		if writable && value != *flag && (name == "DisplayMissingEpisodes" || name == "EnableLocalPassword" ||
-			name == "EnableNextEpisodeAutoPlay" || name == "HidePlayedInSuggestions") {
+		if writable && value != *flag && name == "EnableLocalPassword" {
+			return fmt.Errorf("Use the local-credentials operation to change local-password authentication.")
+		}
+		if writable && value != *flag && (name == "DisplayMissingEpisodes" || name == "HidePlayedInSuggestions") {
 			return fmt.Errorf("This compatibility preference has no implemented consumer and is read-only.")
 		}
 		*flag = value
@@ -215,14 +217,11 @@ func applyConfigurationField(result *UserConfiguration, name string, raw json.Ra
 		if json.Unmarshal(raw, &value) != nil || value != "None" && value != "ShowButton" && value != "AutoSkip" {
 			return invalid()
 		}
-		if writable && value != result.IntroSkipMode {
-			return fmt.Errorf("Intro skipping is not implemented; this preference is read-only.")
-		}
 		result.IntroSkipMode = value
 	case "ProfilePin":
 		var value string
 		if json.Unmarshal(raw, &value) != nil || value != "" {
-			return fmt.Errorf("Profile PIN authentication is not implemented.")
+			return fmt.Errorf("Use the local-credentials operation to change the profile PIN.")
 		}
 	default:
 		return invalid()

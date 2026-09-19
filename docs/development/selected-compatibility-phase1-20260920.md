@@ -48,3 +48,10 @@ movie/episode playback, administrator, persistence and recovery journeys.
 - Client episode queue requests omit pagination. The implementation must handle
   series longer than the existing default page without losing the current or
   subsequent episodes, and must retain current authorization and explicit paging.
+- The user selected a free-license policy for Goby: its feature-registration
+  compatibility queries return valid/registered status without a Premiere
+  requirement. This does not grant user/device/library access or advertise
+  excluded features. A separate adapter implements this policy. Static research
+  found that the retained original Web intro control calls a hardcoded external
+  device-registration service; the local adapter does not redirect that request.
+  Actual consumer evidence must distinguish those paths.

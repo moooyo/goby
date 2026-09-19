@@ -37,7 +37,7 @@ const (
 	embyLifetime              = 30 * 24 * time.Hour
 	passwordCost              = bcrypt.DefaultCost
 	maxClientFieldBytes       = 256
-	userColumns               = "id, name, is_administrator, is_disabled, has_password, created_at, policy, configuration"
+	userColumns               = "id, name, is_administrator, is_disabled, has_password, created_at, policy, configuration, local_password_hash IS NOT NULL, profile_pin_ciphertext IS NOT NULL"
 	// The fixed cost matches stored hashes so unknown users still perform bcrypt.
 	fakePasswordHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 )
@@ -46,14 +46,16 @@ const (
 // configuration snapshots. Password hashes never leave Store, and the snapshots
 // are excluded from JSON encoding.
 type User struct {
-	ID              string
-	Name            string
-	IsAdministrator bool
-	IsDisabled      bool
-	HasPassword     bool
-	CreatedAt       time.Time
-	Policy          json.RawMessage `json:"-"`
-	Configuration   json.RawMessage `json:"-"`
+	ID               string
+	Name             string
+	IsAdministrator  bool
+	IsDisabled       bool
+	HasPassword      bool
+	HasLocalPassword bool `json:"-"`
+	HasProfilePin    bool `json:"-"`
+	CreatedAt        time.Time
+	Policy           json.RawMessage `json:"-"`
+	Configuration    json.RawMessage `json:"-"`
 }
 
 // Client describes the application and device that requested a session.
@@ -103,8 +105,8 @@ func New(pool *pgxpool.Pool) *Store {
 	return &Store{pool: pool}
 }
 
-// NewWithApplicationKeyVault enables recoverable application-key management.
-// Ordinary authentication does not depend on the vault being available.
+// NewWithApplicationKeyVault enables recoverable application-key management and
+// encrypted client profile PINs. Password authentication does not use the vault.
 func NewWithApplicationKeyVault(pool *pgxpool.Pool, vault *ApplicationKeyVault) *Store {
 	return &Store{pool: pool, applicationKeyVault: vault}
 }
@@ -113,7 +115,7 @@ func NewWithApplicationKeyVault(pool *pgxpool.Pool, vault *ApplicationKeyVault) 
 func (p Principal) IsApplicationKey() bool {
 	return p.Kind == ApplicationKeyKind && p.ApplicationKeyID > 0 && p.SessionID != "" && p.ClientSessionID != "" &&
 		p.User.ID == "" && p.User.Name == "" && !p.User.IsAdministrator && !p.User.IsDisabled &&
-		!p.User.HasPassword && p.User.CreatedAt.IsZero() && len(p.User.Policy) == 0 && len(p.User.Configuration) == 0
+		!p.User.HasPassword && !p.User.HasLocalPassword && !p.User.HasProfilePin && p.User.CreatedAt.IsZero() && len(p.User.Policy) == 0 && len(p.User.Configuration) == 0
 }
 
 // CanManageServer describes the authenticated snapshot. Mutations must still
@@ -234,8 +236,19 @@ func (s *Store) AuthenticateWithPeer(ctx context.Context, name, password string,
 		return Credentials{}, fmt.Errorf("read authentication account: %w", err)
 	}
 	passwordErr := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if passwordErr != nil || user.IsDisabled || (kind == "admin" && !user.IsAdministrator) {
+	if user.IsDisabled || (kind == "admin" && !user.IsAdministrator) {
 		return Credentials{}, ErrInvalidCredentials
+	}
+	localPassword := false
+	if passwordErr != nil {
+		if kind != "emby" {
+			return Credentials{}, ErrInvalidCredentials
+		}
+		hash, err = s.authenticateLocalPassword(ctx, user.ID, password, peerIP)
+		if err != nil {
+			return Credentials{}, err
+		}
+		localPassword = true
 	}
 	token, digest, err := randomToken()
 	if err != nil {
@@ -245,7 +258,7 @@ func (s *Store) AuthenticateWithPeer(ctx context.Context, name, password string,
 	if err != nil {
 		return Credentials{}, err
 	}
-	return s.issueLogin(ctx, loginIssue{userID: user.ID, passwordHash: hash, token: token, digest: digest[:],
+	return s.issueLogin(ctx, loginIssue{userID: user.ID, passwordHash: hash, localPassword: localPassword, token: token, digest: digest[:],
 		sessionID: sessionID, client: client, kind: kind, lifetime: lifetime, peerIP: peerIP})
 }
 
@@ -267,16 +280,17 @@ func (s *Store) ResolveWithPeer(ctx context.Context, token, kind, peerIP string)
 	var principal Principal
 	var observedAt time.Time
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, u.policy, u.configuration, s.id, s.client_name, s.device_id, COALESCE(d.custom_name, s.device_name),
+		u.has_password, u.created_at, u.policy, u.configuration, u.local_password_hash IS NOT NULL, u.profile_pin_ciphertext IS NOT NULL, s.id, s.client_name, s.device_id, COALESCE(d.custom_name, s.device_name),
 		s.client_version, s.kind, s.expires_at, s.last_seen_at, clock_timestamp()
 		FROM sessions s JOIN users u ON u.id = s.user_id
 		LEFT JOIN devices d ON d.id = s.device_registry_id AND d.deleted_at IS NULL
 		WHERE s.token_hash = $1 AND s.kind = $2 AND s.revoked_at IS NULL
 		AND s.expires_at > clock_timestamp() AND NOT u.is_disabled
-		AND ($2 <> 'admin' OR u.is_administrator)`, digest[:], kind).
+		AND ($2 <> 'admin' OR u.is_administrator) AND (NOT s.local_auth OR $3)`, digest[:], kind, IsLocalPeer(peerIP)).
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt, &principal.User.Policy,
 			&principal.User.Configuration,
+			&principal.User.HasLocalPassword, &principal.User.HasProfilePin,
 			&principal.SessionID, &principal.Client.Name, &principal.Client.DeviceID,
 			&principal.Client.Device, &principal.Client.Version, &principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt, &observedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -431,7 +445,7 @@ type rowScanner interface {
 
 func scanUser(row rowScanner, extra ...any) (User, error) {
 	var user User
-	columns := []any{&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt, &user.Policy, &user.Configuration}
+	columns := []any{&user.ID, &user.Name, &user.IsAdministrator, &user.IsDisabled, &user.HasPassword, &user.CreatedAt, &user.Policy, &user.Configuration, &user.HasLocalPassword, &user.HasProfilePin}
 	err := row.Scan(append(columns, extra...)...)
 	return user, err
 }

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/playback"
 )
@@ -103,7 +104,7 @@ func TestHTTPPlaybackRemembersServableSidecarsAndInvalidatesReplacedTrackIdentit
 
 func TestPersistedResumePreferenceOnlyChangesImplicitPlaybackStarts(t *testing.T) {
 	p := newPlaybackHTTPFixture(t)
-	updateConfigurationHTTP(t, p, map[string]any{"ResumeRewindSeconds": 10})
+	updateConfigurationHTTP(t, p, map[string]any{"ResumeRewindSeconds": 10, "IntroSkipMode": "AutoSkip"})
 	path := "/emby/Users/" + p.s.viewerID + "/Items/" + p.s.video.id + "/UserData"
 	expectStatus(t, p.s.f.request(t, http.MethodPost, path, map[string]any{"PlaybackPositionTicks": 120 * media.TicksPerSecond}, p.headers), http.StatusOK)
 	principal, err := p.s.f.users.Resolve(p.s.f.ctx, p.s.token, "emby")
@@ -115,6 +116,7 @@ func TestPersistedResumePreferenceOnlyChangesImplicitPlaybackStarts(t *testing.T
 		t.Fatal(err)
 	}
 	defer file.Close()
+	source.Item.Intro = &library.IntroInterval{StartTicks: 0, EndTicks: 60 * media.TicksPerSecond, Provenance: "Manual"}
 	isPlayback := true
 	for _, test := range []struct {
 		name  string
@@ -124,6 +126,8 @@ func TestPersistedResumePreferenceOnlyChangesImplicitPlaybackStarts(t *testing.T
 	}{
 		{"implicit playback", nil, &isPlayback, preferenceTicks(110 * media.TicksPerSecond)},
 		{"explicit start", preferenceTicks(40 * media.TicksPerSecond), &isPlayback, preferenceTicks(40 * media.TicksPerSecond)},
+		{"explicit intro start", preferenceTicks(0), &isPlayback, preferenceTicks(0)},
+		{"explicit intro end", preferenceTicks(60 * media.TicksPerSecond), &isPlayback, preferenceTicks(60 * media.TicksPerSecond)},
 		{"capability lookup", nil, nil, nil},
 	} {
 		t.Run(test.name, func(t *testing.T) {

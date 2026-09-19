@@ -467,6 +467,9 @@ func (s *Server) embyEpisodes(w http.ResponseWriter, r *http.Request) {
 		apiError(w, r, 400, "invalid_input", "The item is not a television series.")
 		return
 	}
+	if s.tryEpisodePlaybackQueue(w, r, userID, series.ID) {
+		return
+	}
 	query, ok := readItemQuery(w, r, userID)
 	if !ok {
 		return
@@ -556,6 +559,9 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 		}
 		dto["MediaType"] = mediaType
 		dto["RunTimeTicks"] = item.Media.DurationTicks
+		if detail || hasField(fields, "Container") {
+			dto["Container"] = media.CanonicalContainer(*item.Media, item.Path)
+		}
 		if mediaType == "Video" {
 			dto["VideoType"] = "VideoFile"
 		}
@@ -566,11 +572,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 			dto["MediaSources"] = []map[string]any{originalSourceDTO(item)}
 		}
 		if detail || hasField(fields, "Chapters") {
-			chapters := make([]map[string]any, 0, len(item.Media.Chapters))
-			for _, chapter := range item.Media.Chapters {
-				chapters = append(chapters, map[string]any{"StartPositionTicks": chapter.StartTicks, "Name": chapter.Title})
-			}
-			dto["Chapters"] = chapters
+			dto["Chapters"] = itemChaptersDTO(item)
 		}
 	}
 	applyExtraItemDTO(dto, item, fields, detail)

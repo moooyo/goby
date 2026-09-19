@@ -7,6 +7,7 @@ import { adminApi, ApiError, isAbortError } from './api';
 import type { MetadataDetail, MetadataFieldName } from './api';
 import { ErrorNotice } from './components';
 import { ArtworkManagerDialog } from './ArtworkManagerDialog';
+import { IntroEditorDialog } from './IntroEditorDialog';
 import { fieldError } from './formFields';
 import { InactiveMetadataField, MetadataField, MetadataSection } from './MetadataField';
 import { MetadataPeopleList, MetadataProviderList, MetadataStringList } from './MetadataCollections';
@@ -96,6 +97,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
   const [notice, setNotice] = useState('');
   const [tab, setTab] = useState(0);
   const [editingArtwork, setEditingArtwork] = useState(false);
+  const [editingIntro, setEditingIntro] = useState(false);
   const inFlight = useRef(false);
   const mounted = useRef(true);
   const validation = useMemo(() => metadataInput(detail?.Revision ?? '', overrides, lockedFields, detail), [detail, overrides, lockedFields]);
@@ -135,7 +137,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
   }
 
   function requestAction(action: 'close' | 'reload') {
-    if (inFlight.current || editingArtwork) return;
+    if (inFlight.current || editingArtwork || editingIntro) return;
     if (dirty) setPendingAction(action);
     else if (action === 'reload') reload();
     else onClose();
@@ -319,7 +321,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
                 <Typography component="span" variant="h3">Edit metadata</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{detail?.Effective.Name ?? 'Loading item details...'}</Typography>
               </Box>
-              {detail && <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}><Chip label={detail.Item.Type} size="small" variant="outlined" /><Button type="button" onClick={() => setEditingArtwork(true)} disabled={disabled || dirty || Boolean(review)}>Manage artwork</Button></Stack>}
+              {detail && <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}><Chip label={detail.Item.Type} size="small" variant="outlined" /><Button type="button" onClick={() => setEditingArtwork(true)} disabled={disabled || dirty || Boolean(review)}>Manage artwork</Button>{['Movie', 'Episode'].includes(detail.Item.Type) && <Button type="button" onClick={() => setEditingIntro(true)} disabled={disabled || dirty || Boolean(review)}>Manage intro</Button>}</Stack>}
             </Stack>
           </DialogTitle>
           {detail && <Tabs value={tab} onChange={(_, next: number) => setTab(next)} variant="scrollable" scrollButtons="auto" aria-label="Metadata sections" sx={{ px: { xs: 1, sm: 1.5 }, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
@@ -419,6 +421,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
       </Dialog>
       {pendingAction && <MetadataDiscardDialog reload={pendingAction === 'reload'} onKeep={() => setPendingAction(undefined)} onDiscard={() => { if (pendingAction === 'reload') reload(); else onClose(); }} />}
       {editingArtwork && detail && <ArtworkManagerDialog target={{ kind: 'items', id: itemId, name: detail.Effective.Name }} onClose={() => setEditingArtwork(false)} onNavigationGuardChange={onNavigationGuardChange} />}
+      {editingIntro && detail && <IntroEditorDialog itemId={itemId} itemName={detail.Effective.Name} onClose={() => setEditingIntro(false)} onNavigationGuardChange={onNavigationGuardChange} />}
     </>
   );
 }

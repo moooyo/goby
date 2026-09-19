@@ -43,7 +43,7 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 	var principal Principal
 	var observedAt time.Time
 	err := s.pool.QueryRow(ctx, `SELECT u.id, u.name, u.is_administrator, u.is_disabled,
-		u.has_password, u.created_at, u.policy, u.configuration, authentication.id,
+		u.has_password, u.created_at, u.policy, u.configuration, u.local_password_hash IS NOT NULL, u.profile_pin_ciphertext IS NOT NULL, authentication.id,
 		authentication.client_name, authentication.device_id, COALESCE(d.custom_name, authentication.device_name),
 		authentication.client_version, authentication.kind, authentication.expires_at,
 		authentication.last_seen_at, clock_timestamp()
@@ -51,11 +51,12 @@ func (s *Store) RevalidateSession(ctx context.Context, previouslyAuthenticated P
 		LEFT JOIN devices d ON d.id = authentication.device_registry_id AND d.deleted_at IS NULL
 		WHERE authentication.id = $1 AND authentication.user_id = $2
 		AND authentication.kind = 'emby' AND authentication.revoked_at IS NULL
-		AND authentication.expires_at > clock_timestamp() AND NOT u.is_disabled`,
-		previouslyAuthenticated.SessionID, previouslyAuthenticated.User.ID).
+		AND authentication.expires_at > clock_timestamp() AND NOT u.is_disabled
+		AND (NOT authentication.local_auth OR $3)`,
+		previouslyAuthenticated.SessionID, previouslyAuthenticated.User.ID, IsLocalPeer(previouslyAuthenticated.PeerIP)).
 		Scan(&principal.User.ID, &principal.User.Name, &principal.User.IsAdministrator,
 			&principal.User.IsDisabled, &principal.User.HasPassword, &principal.User.CreatedAt,
-			&principal.User.Policy, &principal.User.Configuration, &principal.SessionID, &principal.Client.Name,
+			&principal.User.Policy, &principal.User.Configuration, &principal.User.HasLocalPassword, &principal.User.HasProfilePin, &principal.SessionID, &principal.Client.Name,
 			&principal.Client.DeviceID, &principal.Client.Device, &principal.Client.Version,
 			&principal.Kind, &principal.ExpiresAt, &principal.LastSeenAt, &observedAt)
 	if errors.Is(err, pgx.ErrNoRows) {

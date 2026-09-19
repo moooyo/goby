@@ -225,7 +225,7 @@ func copyUserConfiguration(raw json.RawMessage) ([]byte, error) {
 		return fail()
 	}
 	result := make(map[string]json.RawMessage)
-	flags := []string{"DisplayMissingEpisodes", "EnableLocalPassword", "EnableNextEpisodeAutoPlay", "HidePlayedInLatest",
+	flags := []string{"DisplayMissingEpisodes", "EnableNextEpisodeAutoPlay", "HidePlayedInLatest",
 		"HidePlayedInMoreLikeThis", "HidePlayedInSuggestions", "PlayDefaultAudioTrack", "RememberAudioSelections", "RememberSubtitleSelections"}
 	lists := []string{"LatestItemsExcludes", "MyMediaExcludes", "OrderedViews"}
 	known := append(append([]string{}, flags...), lists...)

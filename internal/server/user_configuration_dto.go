@@ -11,9 +11,9 @@ import (
 
 // These are client preferences, never permissions or server capability claims.
 // Field presence and baseline defaults follow the fresh Emby 4.9.5.0 viewer in
-// m3e-reference-client-initialization.json. Goby disables intro skipping by
-// default because it does not provide that feature. Valid stored preferences
-// remain intact. Unobserved language and PIN fields stay omitted; this
+// m3e-reference-client-initialization.json. Intro skipping remains opt-in;
+// compatible clients consume its mode together with source-bound chapter
+// markers and own the seek. Profile PIN secrets stay omitted; this
 // projection is never accepted as an account mutation. Separate preference
 // endpoints persist validated changes with their own revision and authority.
 type embyUserConfiguration struct {

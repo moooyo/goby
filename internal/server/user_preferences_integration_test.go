@@ -33,7 +33,8 @@ func TestHTTPUserPreferencesPersistWithIndependentCASAndCurrentAuthority(t *test
 		t.Fatal(err)
 	}
 	headers := http.Header{"X-CSRF-Token": {csrfToken(accounts.cookie.Value)}}
-	patch := map[string]any{"Revision": "1", "Configuration": map[string]any{"AudioLanguagePreference": "eng", "SubtitleMode": "Always", "ResumeRewindSeconds": 10}}
+	patch := map[string]any{"Revision": "1", "Configuration": map[string]any{"AudioLanguagePreference": "eng", "SubtitleMode": "Always", "ResumeRewindSeconds": 10,
+		"IntroSkipMode": "AutoSkip", "EnableNextEpisodeAutoPlay": false}}
 	expectStatus(t, f.request(t, http.MethodPut, path, patch, nil, accounts.cookie), http.StatusForbidden)
 	written := f.request(t, http.MethodPut, path, patch, headers, accounts.cookie)
 	expectStatus(t, written, http.StatusOK)
@@ -46,8 +47,13 @@ func TestHTTPUserPreferencesPersistWithIndependentCASAndCurrentAuthority(t *test
 	compat := "/Users/" + accounts.viewer.userID + "/configuration"
 	read := f.request(t, http.MethodGet, compat, nil, accounts.second.headers)
 	expectStatus(t, read, http.StatusOK)
-	if got := jsonObject(t, read); got["AudioLanguagePreference"] != "eng" || got["SubtitleMode"] != "Always" || got["ResumeRewindSeconds"] != float64(10) {
+	if got := jsonObject(t, read); got["AudioLanguagePreference"] != "eng" || got["SubtitleMode"] != "Always" || got["ResumeRewindSeconds"] != float64(10) ||
+		got["IntroSkipMode"] != "AutoSkip" || got["EnableNextEpisodeAutoPlay"] != false {
 		t.Fatal("another authenticated device did not read the persisted account configuration")
+	}
+	other := jsonObject(t, f.request(t, http.MethodGet, "/emby/Users/"+accounts.other.userID+"/Configuration", nil, accounts.other.headers))
+	if other["IntroSkipMode"] != "None" || other["EnableNextEpisodeAutoPlay"] != true {
+		t.Fatal("another user inherited playback behavior preferences")
 	}
 	response := f.request(t, http.MethodPost, compat, map[string]any{"SubtitleLanguagePreference": "fra"}, accounts.viewer.headers)
 	expectStatus(t, response, http.StatusOK)

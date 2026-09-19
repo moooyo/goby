@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
@@ -169,8 +170,18 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 		}
 		return
 	}
+	actor := identity.Principal{User: credentials.User, Kind: "emby", SessionID: credentials.SessionID,
+		Client: credentials.Client, PeerIP: s.policyClientAddress(r)}
+	user := s.userDTO(credentials.User)
+	user["Configuration"], err = s.attachOwnProfilePin(r, actor, credentials.User.ID, user["Configuration"])
+	if err != nil {
+		_ = s.identity.Revoke(r.Context(), credentials.Token)
+		s.localCredentialError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
 	jsonResponse(w, 200, map[string]any{
-		"User": s.avatarUserDTO(r.Context(), s.userDTO(credentials.User)), "AccessToken": credentials.Token, "ServerId": s.serverID,
+		"User": s.avatarUserDTO(r.Context(), user), "AccessToken": credentials.Token, "ServerId": s.serverID,
 		"SessionInfo": s.clientSessionDTO(identity.ClientSession{SessionID: credentials.SessionID,
 			UserID: credentials.User.ID, UserName: credentials.User.Name, Client: credentials.Client,
 			CreatedAt: credentials.CreatedAt, LastSeenAt: credentials.CreatedAt, ExpiresAt: credentials.ExpiresAt}),
@@ -180,6 +191,9 @@ func (s *Server) authenticateEmby(w http.ResponseWriter, r *http.Request, name, 
 func (s *Server) embyUser(w http.ResponseWriter, r *http.Request) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	id := r.PathValue("Id")
+	if strings.EqualFold(id, "Me") {
+		id = principal.User.ID
+	}
 	if id != principal.User.ID && !principal.CanManageServer() {
 		apiError(w, r, 403, "access_denied", "The requested user is not accessible.")
 		return
@@ -189,7 +203,14 @@ func (s *Server) embyUser(w http.ResponseWriter, r *http.Request) {
 		s.identityError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, s.avatarUserDTO(r.Context(), s.userDTO(user)))
+	dto := s.userDTO(user)
+	dto["Configuration"], err = s.attachOwnProfilePin(r, principal, id, dto["Configuration"])
+	if err != nil {
+		s.localCredentialError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	jsonResponse(w, 200, s.avatarUserDTO(r.Context(), dto))
 }
 
 func (s *Server) embyUsers(w http.ResponseWriter, r *http.Request) {

@@ -11,15 +11,16 @@ import (
 )
 
 type loginIssue struct {
-	userID       string
-	passwordHash string
-	token        string
-	digest       []byte
-	sessionID    string
-	client       Client
-	kind         string
-	lifetime     time.Duration
-	peerIP       string
+	userID        string
+	passwordHash  string
+	localPassword bool
+	token         string
+	digest        []byte
+	sessionID     string
+	client        Client
+	kind          string
+	lifetime      time.Duration
+	peerIP        string
 }
 
 func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, error) {
@@ -36,8 +37,18 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 			return Credentials{}, err
 		}
 	}
+	credentialCondition := "password_hash = $2"
+	lockClause := " FOR SHARE"
+	if issue.localPassword {
+		if issue.kind != "emby" || !IsLocalPeer(issue.peerIP) {
+			return Credentials{}, ErrInvalidCredentials
+		}
+		credentialCondition = `local_password_hash=$2 AND configuration @> '{"EnableLocalPassword":true}'::jsonb
+			AND (local_password_blocked_until IS NULL OR local_password_blocked_until<=clock_timestamp())`
+		lockClause = " FOR UPDATE"
+	}
 	user, err := scanUser(tx.QueryRow(ctx, `SELECT `+userColumns+` FROM users
-		WHERE id = $1 AND password_hash = $2 AND NOT is_disabled AND ($3 <> 'admin' OR is_administrator) FOR SHARE`,
+		WHERE id = $1 AND `+credentialCondition+` AND NOT is_disabled AND ($3 <> 'admin' OR is_administrator)`+lockClause,
 		issue.userID, issue.passwordHash, issue.kind))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Credentials{}, ErrInvalidCredentials
@@ -54,6 +65,11 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 		if err != nil || !loginPolicyAllows(user.Policy, issue.client.DeviceID, observedAt) ||
 			(!policy.EnableRemoteAccess && !IsLocalPeer(issue.peerIP)) {
 			return Credentials{}, ErrInvalidCredentials
+		}
+	}
+	if issue.localPassword {
+		if _, err := tx.Exec(ctx, "UPDATE users SET local_password_failures=0,local_password_blocked_until=NULL WHERE id=$1", user.ID); err != nil {
+			return Credentials{}, fmt.Errorf("reset local authentication attempts: %w", err)
 		}
 	}
 	var generation *int64
@@ -77,11 +93,11 @@ func (s *Store) issueLogin(ctx context.Context, issue loginIssue) (Credentials, 
 	var createdAt, expiresAt time.Time
 	err = tx.QueryRow(ctx, `WITH issued_at AS MATERIALIZED (SELECT clock_timestamp() AS instant)
 		INSERT INTO sessions (id, user_id, token_hash, kind, client_name, device_id, device_name, client_version,
-			created_at, last_seen_at, expires_at, device_registry_id)
+			created_at, last_seen_at, expires_at, device_registry_id, local_auth)
 		SELECT $1, $2, $3, $4, $5, $6, $7, $8, instant, instant,
-			instant + ($9::bigint * interval '1 second'), $10 FROM issued_at RETURNING created_at, expires_at`,
+			instant + ($9::bigint * interval '1 second'), $10, $11 FROM issued_at RETURNING created_at, expires_at`,
 		issue.sessionID, user.ID, issue.digest, issue.kind, issue.client.Name, issue.client.DeviceID,
-		issue.client.Device, issue.client.Version, int64(issue.lifetime/time.Second), generation).Scan(&createdAt, &expiresAt)
+		issue.client.Device, issue.client.Version, int64(issue.lifetime/time.Second), generation, issue.localPassword).Scan(&createdAt, &expiresAt)
 	if err != nil {
 		return Credentials{}, fmt.Errorf("create authentication session: %w", err)
 	}
