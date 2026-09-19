@@ -1,5 +1,14 @@
 # Support and delivery matrix
 
+The September 20 [selected compatibility plan](selected-compatibility-plan-20260920.md)
+is the next implementation scope, with phase 1 being implemented and phases 2-4
+not started. No new acceptance is claimed. It covers
+account/playback behavior, subtitles/artwork, music/search, management settings
+and client protocols. The user explicitly excludes Live TV/EPG/DVR/tuners, DLNA,
+external channels and group playback. Offline sync and other unselected work
+remain deferred. This decision supersedes the older blanket M7/deferred
+descriptions below; it does not change any historical acceptance result.
+
 The completed [AMD media and compatibility plan](amd-media-compatibility-plan-20260919.md)
 is a separate three-phase increment with recorded scope boundaries. Phase 1 source adds HEVC/AV1 output,
 supported Dolby Vision conversion, AMD processing and broader copy seeking;

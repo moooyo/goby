@@ -2,6 +2,25 @@
 
 ## Resume here
 
+On September 20, after the completed publication below, the user selected the
+next account/playback, subtitle, artwork, music, management configuration,
+search and client-protocol increment and requested its execution table. The
+[new four-phase plan](../planning/selected-compatibility-plan-20260920.md) is the
+current next-work scope. The user approved execution, with phase 1 implementation
+in progress on `codex/selected-client-compatibility` and phases 2-4 not started.
+See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
+Each phase implements all delivery code before consolidated verification.
+Local compilation and unit tests are now authorized; actual integration/E2E
+runs on `test-env`, never locally. After all four phases complete, the user
+authorized updating this handoff, merging to `main` and pushing.
+
+The user now explicitly excludes Live TV, EPG, DVR/scheduled recording, tuners,
+DLNA, external channels and group/synchronized playback. These are no longer a
+deferred queue. Offline sync and all other unselected work remain deferred as
+specified in the new plan. Existing generic dynamic sources and time shifting
+remain supported; no removal was requested. This decision supersedes older
+M7/P2 scope statements below without changing historical acceptance records.
+
 The approved three-phase AMD/media and library/client-management increment is
 complete, verified, and merged into `main`. On September 20, 2026, the user
 authorized publication. Code commit
@@ -54,7 +73,7 @@ historical handoff deletions, Programs/session-resumption notes, and related
 test-environment utilities/testdata. They remain outside the published increment;
 inspect the actual working tree before selecting any of them for future work.
 
-## Approved execution decision
+## Completed AMD/media execution decision
 
 The user prioritizes advanced media and AMD GPU support and also selects the
 remaining library, preference, user-state, artwork, music, navigation/event and
@@ -251,9 +270,10 @@ See [implemented API surface](../api/implemented.md),
 5. Broader Emby preference, event, query, alias and client-behavior coverage
    outside the completed three-phase increment's declared functional scope.
 
-M7/P2 decisions remain separate: Live TV/EPG/DVR/tuners, DLNA, offline sync,
-external channels/provider extensions beyond the integrated adapters, group
-playback and optional extensions are deferred.
+The September 20 next-scope decision excludes Live TV/EPG/DVR/tuners, DLNA,
+external channels and group playback. Offline sync and optional extensions
+remain deferred. The selected next implementation is tracked in the
+[four-phase plan](../planning/selected-compatibility-plan-20260920.md).
 An Emby consumer web application, Emby Connect/cloud identity and proprietary
 binary-plugin compatibility are outside the current scope. Goby's website is
 an administrator dashboard, not a missing consumer-player implementation.

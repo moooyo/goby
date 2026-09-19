@@ -1,5 +1,34 @@
 # Current execution plan
 
+## Selected next increment: September 20, 2026
+
+The user selected the remaining account/playback, subtitle, artwork, music,
+management configuration, search and client-protocol functionality. The
+[four-phase execution table](selected-compatibility-plan-20260920.md) groups it as:
+
+1. Accounts and playback behavior.
+2. Subtitle and artwork processing.
+3. Music, search and discovery.
+4. Management configuration and client protocols, including final cross-phase
+   regression and closeout.
+
+Each phase includes implementation, remote verification, relevant builds and
+documentation before the next begins. Execution is approved and phase 1 is being
+implemented on `codex/selected-client-compatibility`; phases 2-4 are not started.
+The user requires all delivery code for a phase before consolidated verification.
+Local compilation/unit tests are authorized, actual integration/E2E uses
+`test-env`, and final merge to `main` plus push is authorized after all four
+phases finish. The completed increment below remains the accepted baseline.
+
+Live TV, EPG, DVR/scheduled recording, tuners, DLNA, external channels and
+group/synchronized playback are explicitly excluded by the user's new decision,
+not deferred. Existing dynamic sources and time shifting are retained. Offline
+sync and the other unselected delivery/platform/provider work remain deferred;
+the new plan owns the exact distinction. Older scope/queue statements below
+retain their historical meaning and do not override this decision.
+
+## Completed AMD/media increment
+
 The approved increment prioritized advanced media and AMD acceleration,
 alongside library, user, artwork, music and client/management compatibility.
 Product commit `80198b6aa8a163b696ceaff64da831847d82e496` was fast-forward merged

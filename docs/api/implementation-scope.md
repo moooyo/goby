@@ -2,6 +2,14 @@
 
 Status: **delivery scope**. See the [implemented surface](implemented.md) for current code and test evidence. No real media client has yet been verified against the full planned backend.
 
+The September 20, 2026 user decision selects the next account/playback,
+subtitle/artwork, music/search and management/client-protocol work in the
+[four-phase execution plan](../planning/selected-compatibility-plan-20260920.md).
+Phase 1 implementation is in progress; its consolidated verification has not
+started. Live TV, EPG, DVR/scheduled recording, tuners,
+DLNA, external channels and group playback are explicitly excluded, replacing
+their earlier deferred disposition. Other unselected work remains deferred.
+
 The objective is an independent open-source Linux media backend that existing Emby-compatible clients can connect to. This includes browsing and playback APIs even though Goby's own React/MUI website is exclusively an administrator dashboard.
 
 The full upstream inventory is [535 operations](catalog.md), with [local request/response models](models.md). That count describes the fixed SDK export, not the complete behavior of every Emby release. The newer baseline is **SDK 4.9.5.0 Release**; see [source provenance](../sources/README.md).
@@ -21,8 +29,8 @@ Common protocol flows guide implementation now; a user-provided client shortlist
 | P0 | Server setup, users/policy, library ingestion, client login/browse, direct video/audio playback, basic subtitles, progress, administrator operations | The tested direct-play workflows and media profiles only |
 | P1 | Remux/transcode/HLS, full playback lifecycle, broader music/TV experience, richer user data, metadata management, client aliases/events | The exact tested client versions and feature/media profiles |
 | P2 | Additional upstream features needed for broader feature coverage | Only each feature that passes its acceptance matrix |
-| Deferred | Live TV/DVR, DLNA, sync/offline packages, channels, synchronized parties, optional plugin ecosystem | No support claim until scheduled and implemented |
-| Excluded | Emby consumer web application, Emby Connect/cloud identity, Emby package distribution and proprietary binary plugin compatibility | Explicitly outside this project's current scope |
+| Deferred | Sync/offline packages, unselected optional extensions and separate platform/provider/delivery work | No support claim until scheduled and implemented |
+| Excluded | Live TV/EPG/DVR/tuners, DLNA, external channels, synchronized parties, Emby consumer web application, Emby Connect/cloud identity, Emby package distribution and proprietary binary plugin compatibility | Explicitly outside the user-selected product scope |
 
 P0 and P1 are implementation order, not a redefinition of the final goal. A direct-play MVP does not constitute a general Emby replacement. Revisit deferred features as compatibility coverage expands. Do not return successful empty results merely to inflate endpoint coverage.
 
@@ -100,18 +108,20 @@ P1 transcoding starts with software profiles, then adds individually tested hard
 
 These behaviors do not appear as a complete set of operations in Swagger. They must be tracked in addition to endpoint counts.
 
-## Deferred and excluded families
+## Selected, deferred and excluded families
 
 | Family | Decision and rationale |
 | --- | --- |
-| Live TV, EPG, DVR, tuner management | Deferred: substantial scheduling/source-lifecycle domain; do not confuse with local-file transcoding or generic live-stream opening |
-| DLNA profiles, discovery and SOAP services | Deferred: separate interoperability stack and Linux networking coverage |
+| Live TV, EPG, DVR, tuner management | Explicitly excluded by the September 20 user decision; existing generic dynamic-source opening and time shifting are retained |
+| DLNA profiles, discovery and SOAP services | Explicitly excluded by the September 20 user decision; this does not remove ordinary server discovery |
 | Sync/offline downloads | Deferred: transfer/job/package semantics exceed simple authorized file download |
-| Channels and external content providers | Deferred: provider integration, availability, and security requirements |
-| Party/group synchronization | Deferred: synchronized playback protocol and clock/state reconciliation |
+| External channels | Explicitly excluded by the September 20 user decision; integrated metadata/image/subtitle providers are a separate capability |
+| Metadata/image/subtitle provider online acceptance | Deferred; existing integrated adapters are retained |
+| Party/group synchronization | Explicitly excluded by the September 20 user decision; ordinary remote session commands are retained |
 | BackupApi | Evaluate for P2 only after confirming upstream plugin/core provenance and supported archive format; build native Goby backup first |
 | PluginService | Optional future Goby extension registry; no implied compatibility with Emby binary plugins |
-| Notifications, recommendations, instant mixes, BIF previews, themes, intros, game/book media | P2 or deferred according to client demand and domain coverage |
+| External notifications, local music Similar/InstantMix, intro skipping | Selected in the new four-phase plan; supported transports, clients and sourced intro intervals require their own implementation and acceptance |
+| General recommendations, automatic intro detection, BIF previews, themes, game/book media | Deferred; not implied by the selected music and intro-skip work |
 | WebAppService and consumer web player | Excluded: Goby provides only its own administrator dashboard |
 | ConnectService and Emby cloud registration | Excluded: use Goby local accounts and configured server URLs |
 | PackageService / Emby package installation | Excluded: Goby releases and extensions need their own distribution mechanism |

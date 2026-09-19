@@ -1,5 +1,18 @@
 # Current implementation and delivery status
 
+On September 20, 2026, the user selected the next account/playback, subtitle,
+artwork, music, management configuration, search and client-protocol work.
+Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md)
+is approved; phase 1 implementation is in progress on
+`codex/selected-client-compatibility`, and phases 2-4 are not started.
+The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
+implementation from its not-yet-started consolidated verification.
+Live TV/EPG/DVR/tuners, DLNA, external
+channels and group playback are now explicitly excluded. Offline sync and other
+unselected work remain deferred. Local compilation and unit tests are authorized;
+actual integration/E2E runs on `test-env`. The user authorized final merge and
+push after all four phases complete. The completed baseline below is unchanged.
+
 The approved [AMD media and client compatibility increment](../planning/amd-media-compatibility-plan-20260919.md)
 is complete within its recorded boundaries. Implementation used
 `codex/amd-media-compatibility` from `b15de9a`; the current branch is `main`.
