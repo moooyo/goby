@@ -1,5 +1,25 @@
 # Configuration compatibility implementation
 
+## Current phase 3 additions
+
+The [current API contract](../api/configuration.md) now includes the backed
+`EnableInternetProviders`, metadata language/country, `subtitles`, and Goby
+`tasks` fields. These changes passed the selected
+[phase 3 verification and closeout](amd-media-phase3-20260919.md).
+Total replacement resets omitted metadata fields, Partial
+preserves omitted fields, and named sections replace only themselves using
+the same defaults as native reset. Snapshot publication occurs after commit;
+new admissions or task children consume the updated values, while already
+started children retain their captured settings. See
+[managed settings](settings.md#current-phase-3-management-contract) and the
+[task event contract](../api/tasks.md#durable-system-event-behavior).
+
+The remaining-consumer table and source-specific results below describe the
+historical M5h checkpoint. They do not override the selected current contract
+or establish acceptance for later management, media or task additions.
+
+## Historical M5h implementation
+
 **M5h increment complete and deployed: schema 21/probe 6.** The accepted source
 implements the [five ConfigurationService routes](../api/configuration.md),
 schema-21 name/encoding state, and the corresponding native Settings UI changes.

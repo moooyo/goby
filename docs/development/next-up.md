@@ -1,4 +1,59 @@
-# Next-up episode queries
+# Catalog navigation and next-up episode queries
+
+## Phase 3 selected navigation contract
+
+The navigation routes, additional filters and revised global partial-playback
+selection passed the selected [phase 3 protocol scopes](amd-media-phase3-20260919.md).
+Historical reference studies below remain their original observations;
+recorded product coverage does not establish full original-client parity.
+
+| Route relative to `/emby` | Contract |
+| --- | --- |
+| `GET /Items/{Id}/Ancestors` | Bare array, nearest parent first; only UserId is accepted as a business query |
+| `GET /Items/Counts` | ItemCounts object; UserId and optional IsFavorite |
+| `GET /Videos/{Id}/AdditionalParts` | `{Items, TotalRecordCount}`; UserId and standard Fields/images/UserData projection controls |
+
+These routes require current token authority and reject unknown or repeated
+business query parameters with `400`. Ancestors stay in the seed's library,
+use a single current-policy snapshot and stop at cycles or the 128-level bound.
+Missing and unauthorized seeds share not-found behavior. Counts apply current
+authorization and optional selected-user favorites before grouping. ItemCount
+is the actual recursive ordinary catalog count, including visible containers;
+kind counts are not a disjoint sum of it. ArtistCount includes visible real
+Artist and AlbumArtist relationships and their independent entity favorite
+state; TrailerCount includes actual active extras.
+
+Additional parts require explicit consecutive `part`/`cd` ordinals from 1
+through 16 within the same root, directory, parent and type. The response returns
+parts after the addressed seed. Duplicate ordinals or conflicting provider
+identities reject grouping; a missing or hidden middle part is not skipped.
+Pending media deletions are excluded. Safe source opening rechecks root,
+symlink and source identity without reading media contents. This does not join
+arbitrary versions or promise multipart playback assembly.
+
+Items queries additionally support ExcludeItemTypes; up to 256 Years from
+1 through 9999; RFC3339 Min/MaxPremiereDate and Min/MaxDateCreated; finite
+MinCommunityRating from 0 through 10; NameStartsWith,
+NameStartsWithOrGreater and NameLessThan; Boolean HasOverview, HasSubtitles and
+IsHD. Invalid, empty or repeated supported selectors are rejected. The new sort
+keys are CommunityRating, Runtime and ParentIndexNumber. Existing authorization,
+filter conjunction, count and pagination behavior still applies.
+`Filters=IsFavoriteOrLikes` and the same-named Boolean selector now evaluate
+favorite OR likes. Music and generic entity lists use independent entity state;
+the selector is not an alias for favorite alone.
+
+Unimplemented item-query hints remain inert and unimplemented Fields remain
+omitted; neither is advertised as a supported predicate or projection. Unknown
+SortBy and Filters selectors remain errors. SearchTerm is the selected search
+path. No retained client request established a need for a new Search/Hints
+adapter, so that upstream family remains unsupported in this increment.
+
+Source: [navigation handlers](../../internal/server/navigation.go),
+[authorized queries](../../internal/library/navigation.go),
+[additional parts](../../internal/library/additional_parts.go), and
+[query validation](../../internal/server/navigation_query.go).
+
+## NextUp contract
 
 `GET /emby/Shows/NextUp` returns an Items/TotalRecordCount envelope. Supported
 filters are UserId, SeriesId, ParentId, StartIndex, and Limit. UserId defaults to
@@ -63,12 +118,15 @@ covered by Goby's query and authorization tests.
 ## Global behavior and evidence boundary
 
 Without SeriesId, Goby returns one continuation per series with playback history:
-the first unplayed episode after its highest watched episode. When only incomplete
-playback history exists, it returns the first unplayed episode. Favorite-only
+the first unplayed episode after its highest watched episode. When no watched
+cursor exists, phase 3 selects the most recent partial-playback cursor using
+the same rule as SeriesId-directed queries; count/date-only history falls back
+to the first unplayed episode. Favorite-only
 state does not create playback history. Series are ordered by most recent
 playback activity, then stable series/item ordering.
 
-This is an explicit Goby design and a remaining reference-compatibility gap.
+This is an explicit Goby design with selected phase 3 protocol acceptance and
+a retained reference-compatibility boundary.
 The reference global query returned no entries throughout the synthetic samples,
 including after actual Started/Stopped events, after a 30-second wait, with
 ParentId, with ten-minute episodes, and after explicitly declaring Video/Audio

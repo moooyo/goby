@@ -1,5 +1,32 @@
 # Library change notifications
 
+## Current phase 3 integration boundary
+
+Phase 3 library edits, selected artwork/entity changes, music relationships and
+client refresh work share the existing post-commit catalog notification path.
+Their selected HTTP/WebSocket and administrator workflows passed in the
+[phase 3 record](amd-media-phase3-20260919.md). Client LibraryChanged
+delivery is separate from the new durable task SystemEventTrigger consumer;
+task-owned work suppresses recursive task signals without suppressing client
+notifications. ConfigurationChanged is a task signal, not a claim that every
+upstream client refresh message exists. See the [task contract](../api/tasks.md).
+
+A committed change, accepted WebSocket frame and client refresh are distinct
+observations. Automatic refresh acceptance requires a subsequent relevant read
+and updated rendered content under current authority. The original-client v7
+failure and its cleanup below remain unchanged; neither a new route nor new
+unit coverage retroactively closes that journey. The
+[phase 3 record](amd-media-phase3-20260919.md) owns the current acceptance gate.
+
+UserDataChanged delivery reads its visible state in one current snapshot.
+Numeric entity IDs use independent entity state rather than an associated track;
+hidden, unassociated and unknown IDs are removed before delivery. This source
+behavior and the selected HTTP/WebSocket requery journeys have recorded server
+coverage. This does not change the historical original-client failure below or
+claim full Emby Web refresh parity.
+
+## Historical source35 through source55 checkpoints
+
 Committed library creation/deletion, native metadata edits and ordinary scan/move
 changes reach the bounded notifier and outbound permission filter. Source37
 passed its 80 targeted PostgreSQL/HTTP/WebSocket checks and full remote suite:

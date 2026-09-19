@@ -2,9 +2,41 @@
 
 Current implementation and verification boundaries: [current status](development/current-status.md). Historical verification records below retain their original dates. Reference research retains its recorded capture dates.
 
-Implementation status: **service foundation, catalog ingestion, local metadata, entities, indexed artwork, original playback, user state, initial events/remote control, authenticated HLS VOD with seeking, Universal/progressive audio, progressive MP4 video, ordered audio/video PlaybackInfo profiles, native user management, persistent administrator metadata editing, login-session administration, application keys with independent client contexts, device administration, durable library-wide tasks and scheduling, native managed settings, the bounded ConfigurationService adapter, and explicit media refresh are implemented; the M5i activity/log and M5j native backup/recovery increments are complete and deployed; full compatibility remains in progress**. The required stack is Go, PostgreSQL with pgx/v5, FFmpeg, and a React/MUI administrator dashboard. Linux is the deployment target; the dashboard contains no consumer playback page. Current stable Go/FFmpeg pins and verification permissions are recorded in the toolchain document below. Broader configuration fields/sections, additional task executors, nonzero video-copy seeking, efficient long-source seeking, additional input/timing profiles, packed-audio HLS, broader subtitle/output support, hard resource isolation, and actual GPU execution remain work.
+The [AMD media and client compatibility plan](planning/amd-media-compatibility-plan-20260919.md)
+records the user's selected scope in three functional phases: media
+processing and AMD, subtitles and dynamic playback, then library and
+client/management compatibility. Each phase closes implementation, remote
+verification and documentation before the next begins. OCI and other GPU
+profiles remain deferred. The plan is approved and
+[phase 1 implementation and verification](development/amd-media-phase1-20260919.md)
+are complete within the recorded `source11` profiles.
+[Phase 2 implementation, selected remote verification and final builds](development/amd-media-phase2-20260919.md)
+are complete, and owned PostgreSQL/worker/documentation closeout is accepted.
+Phase 2 is verified and closed.
+[Phase 3 implementation, verification and closeout](development/amd-media-phase3-20260919.md)
+are complete within the recorded boundaries. The product changes were
+fast-forward merged into `main` and pushed to `origin/main` on September 20,
+2026 as `80198b6aa8a163b696ceaff64da831847d82e496`. The development branch
+`codex/amd-media-compatibility` remains implementation provenance. This is a
+follow-up documentation update, not a production deployment or a new runtime
+verification result. Historical failures and scoped acceptance remain recorded.
 
-The official reference corpus contains **2462 records**. The [activity/log study](research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one connection-refused readiness record, and one audit; all 76 capture HTTP exchanges are complete. Its [reference report](development/m5i-observability-reference.json) is not Goby product acceptance. The earlier [4K encoding-width study](research/encoding-width-reference.md) added 61 records to the preceding 2305. The [fresh configuration mutation study](research/configuration-mutation-reference.md) added 254 at that earlier checkpoint: 17 setup and 237 capture records. The [configuration read study](research/configuration-reference.md) previously brought the corpus from 1965 to 2051 with 86 records. The [fresh ScheduledTasks mutation study](research/scheduled-tasks-mutation-reference.md), earlier [task read study](research/scheduled-tasks-reference.md), [key-device](research/key-devices-reference.md), [ordinary user-device](research/devices-reference.md), [application-key management](research/api-key-reference.md), [playback](research/api-key-playback-reference.md), [client-context](research/api-key-context-reference.md), and [target-scope](research/api-key-scope-reference.md) evidence remain intact. Records include supporting probes and preserved incomplete responses; they are not counts of implemented endpoints or successful client workflows. The historical M5j deployment used schema **23**, through `0023_backup_activity.sql`, preserves the 29 existing tables and adds the initial local recovery binding; the earlier schema-22 activity migration remains part of the ledger. Probe cache version remains **6**.
+Implementation status: the service, catalog, basic playback, user state,
+administration and native backup/recovery foundations are implemented. The
+September 19 feature wave added advanced subtitles, adaptive/fMP4/packed-audio
+HLS, software HDR/deinterlacing, bounded H.264 copy seeking, dynamic sources,
+playlists/collections and expanded management features, with recorded software
+acceptance. Provider-specific online acceptance remains deferred. User
+Configuration writes were missing from that historical wave despite its original
+P3 completion wording. The later phase 3 added and separately verified the
+persistent Configuration adapter and selected consumers; the historical
+correction remains in the feature-wave record.
+Implementation, accepted profiles and deployment remain distinct. The required
+stack is Go, PostgreSQL with pgx/v5, FFmpeg and a React/MUI administrator dashboard
+on Linux. The dashboard contains no consumer playback page. See current status
+and the toolchain policy for exact source, verification and support boundaries.
+
+The official reference corpus contains **2462 records**. The [activity/log study](research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one connection-refused readiness record, and one audit; all 76 capture HTTP exchanges are complete. Its [reference report](development/m5i-observability-reference.json) is not Goby product acceptance. The earlier [4K encoding-width study](research/encoding-width-reference.md) added 61 records to the preceding 2305. The [fresh configuration mutation study](research/configuration-mutation-reference.md) added 254 at that earlier checkpoint: 17 setup and 237 capture records. The [configuration read study](research/configuration-reference.md) previously brought the corpus from 1965 to 2051 with 86 records. The [fresh ScheduledTasks mutation study](research/scheduled-tasks-mutation-reference.md), earlier [task read study](research/scheduled-tasks-reference.md), [key-device](research/key-devices-reference.md), [ordinary user-device](research/devices-reference.md), [application-key management](research/api-key-reference.md), [playback](research/api-key-playback-reference.md), [client-context](research/api-key-context-reference.md), and [target-scope](research/api-key-scope-reference.md) evidence remain intact. Records include supporting probes and preserved incomplete responses; they are not counts of implemented endpoints or successful client workflows. The historical M5j deployment used schema **23**, through `0023_backup_activity.sql`, preserves the 29 existing tables and adds the initial local recovery binding; the earlier schema-22 activity migration remains part of the ledger. That historical snapshot used technical probe version **6**, and phase 1 used **7**. The accepted phase 3 implementation uses schema **41**, `CurrentProbeVersion = 8`, and independent `CurrentMusicMetadataVersion = 3`; repository integration did not upgrade a production database.
 
 The completed M5i increment adds four [native and four Emby activity/log routes](api/observability.md), transactional activity storage, private bounded JSONL logs, and the React/MUI `/admin/observability` page. The [full remote race suite](development/m5i-full-race-summary.json) passed **1380 top-level tests across 17 tested packages**, with zero skips or race findings. [Browser acceptance](development/m5i-observability-browser.json) passed 11 scenario checks in 12.400443 seconds plus two exact 29-table restarts. [Protected deployment](development/m5i-deployment-evidence.json) and the [0.776-second live workflow](development/m5i-deployed-observability.json) passed, with original settings restored and both owned credentials independently revoked. That earlier M5i deployment used schema 22/probe 6, PID **3668655**, and 54 assets. [Implementation and acceptance evidence](development/observability.md) keeps the full suite, browser, upgrade, live workflow, and reference study within their recorded scopes; M4, M5, M6, and full client compatibility remain unfinished.
 
@@ -85,6 +117,7 @@ The target is for general-purpose Emby-compatible clients to connect and play su
 | [WebSocket events](development/websocket-events.md) | Authenticated connections, user-state notifications, remote commands, authorization and resource limits |
 | [Conversion engine](development/transcode-engine.md) | Planners, PostgreSQL jobs, bounded FFmpeg execution, progressive audio/video, hardware selection and HLS VOD production |
 | [HLS playback](development/hls-playback.md) | Full VOD manifests, global segment addressing, seek production, authentication and cleanup |
+| [AMD media phase 2](development/amd-media-phase2-20260919.md) | Closed subtitle-rendition and dynamic time-shift scope, frozen sources, v3 verification/build results and resource closure |
 | [Transcoding configuration](development/transcoding-configuration.md) | Startup settings, hardware choices, cache ownership and Linux service deployment |
 | [Next-up queries](development/next-up.md) | Series-directed continuation, pagination, and the explicit global-query evidence gap |
 | [External subtitles](development/external-subtitles.md) | Sidecar indexing, SRT/WebVTT delivery, time semantics, authorization and resource limits |

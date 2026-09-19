@@ -1,9 +1,50 @@
 # Current implementation and delivery status
 
-The [media, collections, and management implementation wave](feature-wave-20260919.md)
-has completed its selected functional acceptance, builds and resource closeout.
+The approved [AMD media and client compatibility increment](../planning/amd-media-compatibility-plan-20260919.md)
+is complete within its recorded boundaries. Implementation used
+`codex/amd-media-compatibility` from `b15de9a`; the current branch is `main`.
+Product commit `80198b6aa8a163b696ceaff64da831847d82e496` was fast-forward merged
+and pushed to `origin/main` on September 20, 2026. Phase 1 has
+completed its selected-profile verification, both builds and resource/documentation
+closeout at `source11`. Phase 2 is verified and closed through the recorded
+`source18`/`source19` and v3 runtime scopes, final builds, owned PostgreSQL/worker
+closure and documentation. Phase 3 verification, both application builds,
+resource closure and documentation are complete. Ordinary verification ran
+on `test-env`; the user-approved AMD exception uses PVE CT 104. The
+[phase 1 record](amd-media-phase1-20260919.md) retains its closed source-bound
+results. The [phase 2 record](amd-media-phase2-20260919.md) tracks the active
+subtitle/time-shift contracts, preserved failures and the completed closeout boundary.
+The [phase 3 record](amd-media-phase3-20260919.md) tracks selected sources,
+preserved failures, scoped repair results and final closeout.
+This follow-up documentation update is separate from the published product
+commit. No production deployment occurred, and repository integration does not
+add runtime acceptance or inherit the historical wave's acceptance.
+
+Final phase 3 source16 is `f9b57d3d99d5b9c22fea0a4b511298a914804e06`, with
+schema41 and 1,625 selected files. Composed ordinary server coverage accounts for
+812 unique passing parent cases and one explicit AMD skip, with zero remaining;
+it is not a single full passing run. Latest UI build/mock/real scopes passed,
+including 10 mocked checks and 12/12 real stages with one restart and natural
+cleanup. Maximum-image backup and recovery passed at the recorded 1 GiB
+PostgreSQL profile; the original 512 MiB OOM is not erased. Both CGO-disabled
+application builds actually used source14 and remain applicable through
+unchanged production inputs. The 42 workers and owned PostgreSQL runtime are
+closed, all selected files/receipts unchanged, and twenty protected services
+preserved. PGDATA/six database directories and the hashed 172-file evidence
+handoff are retained. See the
+[phase 3 results ledger](amd-media-phase3-results-20260919.json).
+The prior wave's missing Configuration-write correction below remains historical;
+the later phase 3 adapter has its separate accepted scope. Full original Emby Web,
+OCI, non-AMD GPU, provider-online and broader capacity/platform delivery remain
+outside this completed increment.
+
+## Previous completed wave
+
+The implemented functionality in the
+[media, collections, and management implementation wave](feature-wave-20260919.md)
+has completed its recorded functional acceptance, builds and resource closeout.
 Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was fast-forward merged
-into `main` and pushed to `origin/main`; the current local branch is `main`.
+into `main` and pushed to `origin/main`; that was the branch at its closeout.
 Documentation-only changes are separate from the tested product snapshot. Provider-specific
 acceptance and OCI work remain user-deferred.
 Use the [current handoff](handoff.md) for earlier evidence and retained stop
@@ -11,11 +52,21 @@ points. Canonical 116 full/build and native software diagnostics retain their
 historical scoped acceptance; M2-M6 delivery is still incomplete. No new H1 live
 continuation has run.
 
-## Current wave checkpoint
+Scope correction: the wave's original P3 row incorrectly marked user-configuration
+writes as complete. User creation, update, password, policy and deletion remain
+implemented with their recorded acceptance, but at that baseline
+`POST /emby/Users/{Id}/Configuration` was not implemented. The corrected P3b was
+assigned to phase 3 of the
+[AMD media and compatibility plan](../planning/amd-media-compatibility-plan-20260919.md).
+The original verification records remain unchanged and do not establish support
+for the later API implementation.
+
+## Historical feature-wave checkpoint
 
 | Area | Current result | Scope boundary |
 | --- | --- | --- |
-| Source | All three selected areas are complete: advanced subtitles/media, playlists/collections, and supported policy/management APIs and UI | Provider-specific acceptance remains deferred; unsupported profiles and fields are not implied |
+| Source | Implemented advanced subtitles/media, playlists/collections, and supported policy/management APIs and UI completed their recorded scoped acceptance | P3b user-configuration writes were absent at this baseline; provider-specific acceptance remains deferred; unsupported profiles and fields are not implied |
+| User configuration | Creation/update/password/policy/deletion compatibility was implemented; `POST /emby/Users/{Id}/Configuration` was absent at this baseline | Original P3 is corrected to P3a/P3b; the later phase 3 implementation has the separate acceptance above |
 | Server | 692-test scope covered through 676 original passes and 127 targeted rerun passes, including new, failed and previously unfinished cases | These overlapping counts are not additive |
 | Other packages | Ten core packages: 5,136 passes and one existing `TestRootBindingFullScanMountNamespaceHelper` skip; identity: 181 passes; backuppg: 497; recoverydb: 177; full recovery-manager `recovery-accept04`: 73 passes, zero failures/skips | The old opt-in mount profile remains unexecuted; no zero-skip claim is made for the core run |
 | Browser | Seven real browser phases, five new mocked checks and four existing mocked checks passed | These named scenarios do not establish every third-party-client journey |

@@ -1,8 +1,20 @@
 # Media, collections, and management implementation wave
 
-## User decision and execution order
+Historical scope correction: the original P3 completion label incorrectly
+included the user-configuration write API. This wave implemented account,
+password, policy and deletion compatibility, but
+`POST /emby/Users/{Id}/Configuration` was absent at its closeout. P3a and P3b
+remain separate below so that the omission stays traceable. The later
+[AMD media phase 3](amd-media-phase3-20260919.md) implemented and separately
+verified P3b; its product commit `80198b6aa8a163b696ceaff64da831847d82e496` was
+merged into `main` and pushed on September 20, 2026. This later result does not
+rewrite the original wave's verification or imply production deployment.
 
-The user resumed development on September 19, 2026 with the following order:
+## Historical user decision and execution order
+
+For this earlier wave, the user resumed development on September 19, 2026 with
+the following order. The new three-phase plan instead closes implementation,
+remote verification and documentation within each phase before the next starts.
 
 1. Complete the code for subtitles/media processing, playlists/collections,
    and permissions/administration.
@@ -15,7 +27,7 @@ accepted evidence is retained; old consumed execution scopes are not resumed.
 Live TV channels, tuners, EPG, DVR, DLNA, offline sync, and group playback remain
 outside this wave. Generic dynamic media-source conversion is included.
 
-Development is on `codex/media-library-management`, starting from `a8e525b` with
+Development for this historical wave used `codex/media-library-management`, starting from `a8e525b` with
 the existing uncommitted work preserved. Existing changes were copied to a local
 Git-private baseline before edits. Related inherited changes must be reviewed
 explicitly before integration; unrelated OCI and utility changes remain separate.
@@ -46,7 +58,8 @@ establish runtime support. Unfinished requirements remain open.
 | C5 | Media/user deletion and access changes preserve consistent collection state | Implemented and verified |
 | P1 | Subfolder, parental rating/unrated/tag, and user/device/access policies with actual consumers | Implemented and verified |
 | P2 | Shared policy enforcement for queries/counts/details/images/subtitles/playback and mutations | Implemented and verified |
-| P3 | User creation/update/password/policy/configuration/deletion compatibility with revocation and last-admin protection | Implemented and verified |
+| P3a | User creation/update/password/policy/deletion compatibility with revocation and last-admin protection; implemented portion of original P3 | Implemented and verified |
+| P3b | User-configuration write compatibility through `POST /emby/Users/{Id}/Configuration`; missing portion of original P3 | Not implemented in this historical wave; subsequently implemented and separately accepted in [AMD media phase 3](amd-media-phase3-20260919.md) |
 | P4 | Playback, remux/transcode, download/delete, remote-control, preference, bitrate, and concurrent-session policy consumers | Implemented and verified |
 | A1 | Typed additional configuration, validation/default/reset and explicit reload semantics | Implemented and verified |
 | A2 | Real scheduled metadata/subtitle/maintenance executors with durable progress, cancellation and restart handling | Lifecycle and cache execution verified; online execution deferred |
@@ -99,7 +112,10 @@ failures before merging. Rechecks must cover the impact of the final changes.
 
 ## Current checkpoint
 
-The implementation and scoped consolidated acceptance are complete. Actual
+The implemented rows completed their scoped consolidated acceptance. At this
+wave's closeout, P3b was unimplemented and was assigned to the later phase 3;
+the original P3 completion label did not establish support for that API. The
+later phase 3 acceptance is linked above and does not change this checkpoint. Actual
 media, core/database, identity, archive/recovery, and browser checks passed;
 both native builds completed, the intended source matched the remote copy,
 and all owned workers and PostgreSQL closed with protected identities intact.

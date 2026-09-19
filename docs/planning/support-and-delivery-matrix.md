@@ -1,5 +1,52 @@
 # Support and delivery matrix
 
+The completed [AMD media and compatibility plan](amd-media-compatibility-plan-20260919.md)
+is a separate three-phase increment with recorded scope boundaries. Phase 1 source adds HEVC/AV1 output,
+supported Dolby Vision conversion, AMD processing and broader copy seeking;
+its [execution record](../development/amd-media-phase1-20260919.md) tracks
+completed selected-profile verification, builds and closeout. CT 104 is the user-approved AMD worker;
+ordinary checks remain on `test-env`. No old client, deployment, non-AMD or
+OCI acceptance is inherited from this work. Phase 2 subtitles/time shifting has
+completed its selected v3 CPU/GPU/browser verification, final builds and owned
+PostgreSQL/worker/documentation closeout. It is verified and closed within those
+boundaries. Phase 3 library/client/management verification and closeout are also complete. The
+[phase 2 record](../development/amd-media-phase2-20260919.md) owns exact results.
+The [phase 3 record](../development/amd-media-phase3-20260919.md) binds final
+source16 to actual execution sources, composed server coverage, selected
+package/media scopes, the real twelve-stage administrator journey, application
+builds and closed resources. Its final source contains 1,625 selected files.
+Original failures remain retained rather than relabeled as passing runs.
+
+The current branch is `main`. Product commit
+`80198b6aa8a163b696ceaff64da831847d82e496` was fast-forward merged and pushed to
+`origin/main` on September 20, 2026, after development on
+`codex/amd-media-compatibility`. This follow-up documentation commit is separate
+from the verified product snapshot and does not establish production deployment.
+
+Phase 3 completes selected library editing/directory browsing, persistent
+preferences and state, protected artwork/avatars, music tags and core entity APIs,
+navigation/events, management fields and native task adapters. The ordinary
+server inventory has 812 unique parent passes and one explicit AMD skip, not
+a single full-pass run. The maximum-size artwork backup profile uses 1 GiB
+PostgreSQL; the earlier 512 MiB OOM remains a failed profile. Source16/ui09 passed
+10 mocked checks, 12/12 real stages and final desktop/mobile visual review.
+Both application artifacts actually use source14 and are accepted through
+unchanged production inputs. All 42 workers and the owned PostgreSQL runtime
+closed with twenty protected services unchanged and a 172-file hashed evidence
+handoff. This does not accept full original Emby Web, provider-online, OCI,
+non-AMD, broader capacity/platform or deployment scope.
+
+Phase 2 source distinguishes the internal live-media clock from external caption
+protocols: cumulative internal clocks use nonnegative signed 64-bit ticks, while
+the explicitly declared external clock/watermark contract remains limited to
+30 days within one generation. Neither limit is the replay window. Default replay
+has a 600-second upper horizon with 512 MiB per-window and 2 GiB global budgets;
+actual visible duration may be shorter because advertised grace and readers stay
+charged. The recorded media and native-video/HLS.js harness scopes passed; they
+do not claim full original Emby Web compatibility. Phase 2 resource closeout is
+recorded separately. The existing mount-helper skip remains an explicitly separate opt-in
+profile, not a passing test.
+
 Initially recorded on 2026-09-15 from committed plans and saved evidence. This is a
 delivery decision map, not a worker or runtime-status ledger. The user selected
 the [media, collections, and management wave](../development/feature-wave-20260919.md),
@@ -13,10 +60,10 @@ older queue entries are historical. The
 M2-M6 requirements. The M2-M6 scope remains incomplete, M7 remains deferred, and the
 project license and final distribution payload remain pending.
 
-## September 19 source and acceptance scope
+## Historical September 19 feature-wave scope
 
 The [wave verification record](../development/feature-wave-verification-20260919.md)
-owns the current results. The server scope covers 692 tests: 676 original passes
+owns its historical results. The server scope covers 692 tests: 676 original passes
 and 127 targeted rerun passes overlap and must not be added together. The core
 10-package run recorded 5136 passes and one existing mount-helper skip,
 `TestRootBindingFullScanMountNamespaceHelper`. Separate

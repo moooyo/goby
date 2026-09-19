@@ -1,5 +1,28 @@
 # HLS VOD playback
 
+The [advanced-media contract](advanced-media.md) adds generated fMP4/packed-audio
+HLS, adaptive renditions and selected subtitles to the MPEG-TS baseline below.
+The closed [AMD increment](amd-media-phase1-20260919.md) also adds HEVC and AV1
+encoding and GPU processing; AV1 requires fMP4. Its acceptance remains separate.
+Generated artifacts use `/Videos/{Id}/hls2/{PlaylistId}/{Artifact}` and the Audio
+equivalent. [Phase 2](amd-media-phase2-20260919.md) adds source implementations for
+multiple/rolling text subtitle renditions and bounded dynamic time shifting.
+Its selected unit/media, formal AMD and v3 browser scopes and final builds passed;
+owned PostgreSQL/worker/documentation closeout is complete within the recorded scope.
+
+The text rendition set is fixed at no more than eight tracks. Selection, off and
+signed offsets change the subtitle view without changing the audio/video plan.
+Each subtitle segment repeats the complete cues overlapping the actual media
+interval. The standard `subtitles.m3u8` and `live_subtitles.m3u8` routes require
+an owned revision/presentation and an explicit supported view.
+
+Dynamic playlists fix their target duration and use actual published intervals.
+Removed advertised resources keep their promised, charged grace; the visible
+window can be shorter than the configured duration because of byte limits.
+See [continuous publication](live-publication.md), the
+[Store contract](../../internal/timeshift/README.md) and the phase 2 record for
+caption completeness, replay, reconnect and the recorded acceptance boundaries.
+
 Goby connects its Linux conversion engine to authenticated Emby playback
 negotiation and a complete MPEG-TS HLS URL graph. The administrator dashboard
 remains an administration interface without a consumer player. Configuration is
@@ -8,15 +31,18 @@ documented in [transcoding configuration](transcoding-configuration.md).
 ## Negotiation and routes
 
 `POST /Items/{Id}/PlaybackInfo` evaluates the original source and the requested
-Streaming/HLS/TS TranscodingProfiles. A supported HLS result includes
-`SupportsTranscoding=true`, `TranscodingUrl`, `TranscodingContainer=ts`, and
-`TranscodingSubProtocol=hls`. Pure remux is a physical DirectStream operation but
+Streaming/HLS TranscodingProfiles. A supported HLS result includes
+`SupportsTranscoding=true`, `TranscodingUrl`, the selected `TranscodingContainer`,
+and `TranscodingSubProtocol=hls`. Video supports MPEG-TS and fMP4 output within
+the codec contract; AV1 requires fMP4. Pure remux is a physical DirectStream operation but
 may use the transcoding delivery URL, as captured in the reference. Explicit
 copy restrictions and current user permissions still control which streams may
 be encoded or copied. If transcoding delivery is disabled, an allowed remux may
 instead provide a DirectStreamUrl when original-file direct streaming is unavailable.
 
-Negotiation opens and validates the source but does not start an encoder. It
+Negotiation opens and validates the source but does not start a producer for
+user media. New VAAPI output may run bounded synthetic encoder and capability
+checks through [hardware admission](hardware-encoding-admission.md). Negotiation
 registers an immutable output revision and a full-duration playback-session
 identity. Registry capacity cannot remove an otherwise valid original-file option.
 A new bitrate/track/profile decision receives its own revision when its plan
@@ -26,7 +52,7 @@ Routes below use the usual optional `/emby` base and case-normalized literals:
 
 | Method and route | Behavior |
 | --- | --- |
-| GET/HEAD `/Videos/{Id}/master.m3u8` | One HLS variant with truthful bandwidth/dimensions and an authorized media URL |
+| GET/HEAD `/Videos/{Id}/master.m3u8` | A source-timeline variant or supported generated/adaptive variants with truthful bandwidth/dimensions and authorized media URLs |
 | GET/HEAD `/Videos/{Id}/main.m3u8` | Complete source VOD timeline, stable global numbers, ENDLIST, optional starting hint |
 | GET/HEAD `/Videos/{Id}/hls1/{PlaylistId}/{SegmentId}.ts` | Authorized finalized MPEG-TS output, including ranges and conditional requests |
 | The same three routes under `/Audio/{Id}` | Audio-only HLS for Audio catalog items |
@@ -35,8 +61,9 @@ Routes below use the usual optional `/emby` base and case-normalized literals:
 
 The existing original-file stream endpoints retain their own contract; HLS does
 not turn progressive `Static=false` requests or universal-audio routes into
-implemented conversion endpoints. Live playlists, adaptive multi-variant output,
-fMP4, HLS subtitles, and richer delivery formats remain separate work.
+implemented conversion endpoints. The generated formats and adaptive/subtitle
+paths have the separate contract linked above. The MPEG-TS route and clock
+details below are not a claim about every generated or dynamic format.
 
 ## Full timeline and seek
 
@@ -154,14 +181,21 @@ Periodic storage checks are not hard filesystem/cgroup ceilings.
 
 Manually constructed master requests without GobyHlsId require an owned active
 PlaySessionId and use a bounded query-to-plan adapter. Supported fields include
-TS container selectors, H.264/AAC/MP3 codec choices, segment length, selected audio,
+MPEG-TS/fMP4 and audio-only packed container selectors, H.264/HEVC/AV1 video and
+AAC/MP3 audio choices, segment length, selected audio/subtitles,
 bitrate/channel/sample-rate/dimension/frame-rate limits, and stream-copy switches.
-H.264/AAC are Goby's default HLS output choices for that manual form. Registered
-revisions accept position hints; changing transform parameters requires a fresh
-negotiation. Unsupported explicit burn-in, HDR/tone mapping, timestamp copying,
-and manual positive subtitle selection are rejected rather than silently ignored.
+The adapter also accepts the supported output profile/depth/range, deinterlacing,
+tone-mapping and subtitle-delivery/burn-in selectors, including bounded subtitle
+offsets. Container, source, codec and current-permission restrictions still apply;
+AV1 requires fMP4 and burn-in requires encoded video. H.264/AAC remain Goby's
+default HLS output choices for that manual form. Registered revisions accept
+position hints; changing transform parameters requires a fresh negotiation.
+Unsupported explicit transformations are rejected rather than silently ignored.
 
-The service does not silently fall back from requested hardware to unbudgeted
-software. Hardware configuration and implementation flags are separate from the
-administrator API's `Hardware.Verified=false`. Actual device-specific execution,
-additional client/profile cases and complete client acceptance remain required.
+Before registering a new VAAPI plan, bounded exact encoder admission can select
+an available authorized software encoder while preserving the requested output
+and rechecking client constraints. This does not retry a failed running hardware
+job. Hardware configuration and implementation flags remain separate from the
+administrator API's `Hardware.Verified=false`. The recorded phase 1 and formal
+phase 2 AMD profiles passed their selected gates. Broader client/profile coverage
+is separate; phase 2 PostgreSQL/worker/documentation closeout is complete.

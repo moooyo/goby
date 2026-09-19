@@ -1,6 +1,12 @@
 # Configuration compatibility API
 
-**M5h increment complete and deployed: schema 21/probe 6.** The complete
+**The selected phase 3 configuration contract is verified and closed within its
+recorded boundaries.** The current server fields, named management sections,
+consumers and restart behavior below are covered by the
+[phase 3 record](../development/amd-media-phase3-20260919.md), not by a claim of
+full upstream configuration parity.
+
+**Historical M5h increment complete and deployed: schema 21/probe 6.** The complete
 [remote race run](../development/m5h-full-race.json),
 [browser/restarts](../development/m5h-configuration-browser.json), bounded
 [reference execution study](../development/m5h-encoding-width-reference.json),
@@ -21,10 +27,10 @@ filesystem paths.
 | Method and route | Allowed body | Success |
 | --- | --- | --- |
 | `GET /emby/System/Configuration` | None | `200`, backed server fields for an administrator/key; exactly `{}` for an ordinary viewer |
-| `GET /emby/System/Configuration/{key}` | None | `200 {TranscodingMaxWidth}` for `encoding`; administrator/key required |
-| `POST /emby/System/Configuration` | Object containing only optional `ServerName`, `IsStartupWizardCompleted` | Empty `204`; replaces the supported server-name section |
-| `POST /emby/System/Configuration/Partial` | Same supported fields | Empty `204`; changes the name only when present |
-| `POST /emby/System/Configuration/{key}` | Object containing only optional `TranscodingMaxWidth` for `encoding` | Empty `204`; replaces the supported encoding section |
+| `GET /emby/System/Configuration/{key}` | None | Administrator/key: `encoding`, `subtitles`, or the Goby `tasks` section |
+| `POST /emby/System/Configuration` | Supported server fields below | Empty `204`; replaces supported name and metadata settings; preserves other sections |
+| `POST /emby/System/Configuration/Partial` | Same supported fields | Empty `204`; applies only supplied writable fields |
+| `POST /emby/System/Configuration/{key}` | Supported fields of exactly one named section | Empty `204`; replaces that section, with omitted fields taking its defaults |
 
 These use Emby token authority: an ordinary administrator login or a complete
 application-key principal can manage configuration. A native administrator
@@ -47,16 +53,35 @@ All five routes set `Cache-Control: no-store` and `Pragma: no-cache`.
 
 ## Closed projections
 
-Administrator/key total GET exposes only `IsStartupWizardCompleted` and, when
-configured, `ServerName`. The initialization Boolean is read from the actual
+Administrator/key total GET exposes `IsStartupWizardCompleted`,
+`PreferredMetadataLanguage`, `MetadataCountryCode`, `EnableInternetProviders`
+and, when configured, `ServerName`. The initialization Boolean is read from the actual
 setup-completed marker or surviving users; it is not a writable placeholder.
 An unset name is omitted, never emitted as null. No native revision, defaults,
 override map, or deployment structure is added to this compatibility DTO.
 
-The only implemented named section is `encoding`, whose complete projection is
+The `encoding` section's complete projection is
 `{"TranscodingMaxWidth":0}` at its initial value. This is a JSON integer from
 `0` through `8192`. Native `MaxWidth` is a different setting and is not exposed
 under this field name.
+
+The current named management sections share the native persisted Management
+object. They are closed projections, not arbitrary upstream configuration bags:
+
+| Section | Fields and defaults | Validation |
+| --- | --- | --- |
+| `subtitles` | `DownloadLanguages: ["en"]`, `DownloadMovieSubtitles: true`, `DownloadEpisodeSubtitles: true` | At most eight distinct language codes; two lowercase letters with an optional uppercase two-letter region; actual JSON booleans |
+| `tasks` (Goby extension) | `MaxConcurrent: 2`, `CacheRetentionDays: 30`, `CacheMaxEntries: 10000` | Integers `1..16`, `1..3650`, and `1..1000000`, respectively |
+
+Total configuration accepts a lowercase two- or three-letter metadata language
+with an optional uppercase two-letter region, an uppercase two-letter country,
+and a non-null internet-provider Boolean.
+Full POST resets omitted metadata fields to `en`, `US`, and `false`; Partial
+POST preserves omitted fields. Named POST replaces its selected section;
+`{}` restores that section's defaults. Nulls, mixed-section fields, unknown
+fields and duplicate aliases reject the whole mutation. Native reset uses the
+same defaults. No deployment path, provider credential or process budget is
+exposed by these fields.
 
 For authorized named reads/writes, `devices` and `dlna` return `501` with
 `This configuration section is not implemented.` An unknown section returns
@@ -64,7 +89,7 @@ For authorized named reads/writes, `devices` and `dlna` return `501` with
 take precedence over these section errors. The reference's unknown-key `500`
 is recorded separately and is not copied into Goby's registry behavior.
 
-Fields such as case-sensitive-ID policy, ports, metadata options, hardware
+Fields such as case-sensitive-ID policy, ports, undeclared metadata options, hardware
 flags, threads, CRF, and tone mapping are omitted until their semantics and
 consumers are implemented. A write containing any unsupported field is rejected
 as a whole, even if its value resembles a current deployment value. The adapter
@@ -88,11 +113,11 @@ values and unknown query parameters are rejected.
 
 | Request | Server-name effect | Other settings |
 | --- | --- | --- |
-| Full POST with absent `ServerName` | Store `unset` | Preserve all native numeric overrides and compatibility encoding width |
-| Partial POST with absent `ServerName` | Preserve current mode and raw name | Preserve all other settings |
-| Full/Partial with `ServerName: null` | Store `unset` | Preserve all other settings |
-| Full/Partial with `ServerName: ""` | Store `empty` | Preserve all other settings |
-| Full/Partial with a valid nonempty name | Store `custom` with the exact text | Preserve all other settings |
+| Full POST with absent `ServerName` | Store `unset` | Apply metadata replacement/default rules; preserve numeric overrides, encoding, subtitles and task settings |
+| Partial POST with absent `ServerName` | Preserve current mode and raw name | Apply only supplied metadata fields; preserve unrelated settings |
+| Full/Partial with `ServerName: null` | Store `unset` | Apply the selected full/partial metadata rules |
+| Full/Partial with `ServerName: ""` | Store `empty` | Apply the selected full/partial metadata rules |
+| Full/Partial with a valid nonempty name | Store `custom` with the exact text | Apply the selected full/partial metadata rules |
 | Encoding POST with absent `TranscodingMaxWidth` | Preserve name | Set the independent compatibility width to `0`; preserve all native numeric overrides |
 | Encoding POST with an integer width | Preserve name | Replace only the compatibility width |
 
@@ -112,6 +137,15 @@ atomically to the latest locked record, preserving unrelated native fields.
 A real change advances the shared native revision once; a persisted no-op
 leaves revision and UpdatedAt unchanged. A subsequent native write using an
 older revision receives the existing `409` conflict.
+
+After commit, settings are published through the shared runtime snapshot and
+survive reload. Task concurrency is read before dispatch; cache retention/count
+and subtitle-download options are captured when their task child starts.
+Already running work retains its captured settings. Internet-provider execution
+requires both the deployment provider gate and the runtime setting; enabling
+this HTTP field cannot override a disabled deployment. A changed configuration
+also produces a durable `ConfigurationChanged` signal; rejected writes, rolled
+back transactions and no-ops do not. See the [task contract](tasks.md).
 
 Not every GET-clone/POST is a database no-op. In `deployment` mode, total GET
 includes the deployment name. Explicitly posting that string establishes a

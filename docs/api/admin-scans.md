@@ -1,8 +1,100 @@
-# Administrator media scans
+# Administrator libraries and media scans
 
 This is a Goby-owned API. It does not add an Emby query parameter or claim
 equivalence to Emby's metadata replacement operations. The dashboard is for
 administration only; it contains no media player.
+
+## Phase 3 library editing and directory contract
+
+The library-editing and directory operations in this section passed the selected
+library/server and real administrator UI scopes. The
+[phase 3 record](../development/amd-media-phase3-20260919.md) owns their acceptance
+and closed resources; earlier scan evidence remains independently scoped.
+
+| Method and route | Input | Success |
+| --- | --- | --- |
+| `GET /admin/v1/libraries/{id}` | No query | `200 {Library}` with saved edit state |
+| `PATCH /admin/v1/libraries/{id}` | Required `Revision`; optional fields below | `200 {Library, Job?, ScanError?}` |
+| `GET /admin/v1/storage/directories` | Optional `Path`, `StartIndex`, `Limit` | `200 {Path, ParentPath?, Items, TotalRecordCount, StartIndex, Limit}` |
+| `POST /admin/v1/storage/directories/validate` | `{Path}` | `200 {Path, Available: true}` with canonical path |
+
+These routes require a current native administrator cookie; mutations also
+require same-origin and CSRF checks. Unknown input fields are rejected.
+Library detail extends the existing Library DTO with opaque decimal-string
+`Revision`, `LibraryOptions: {EnableLocalMetadata, EnableLocalImages}` and
+`RegisteredPaths: [{Id, Path, ItemCount}]`.
+
+An edit accepts `Name`, a complete replacement `Paths` array of 1 through 32
+approved directories, explicit `PathReplacements: [{From, To}]`, a partial
+`LibraryOptions` object containing either supported Boolean, Boolean
+`AcknowledgePathRemoval`, and Boolean `Scan`. Omitted fields preserve current
+values. The revision is mandatory; stale revisions return `409 library_conflict`.
+An active scan or pending deletion returns `409 scan_busy`; a path outside
+approved roots is denied with `403`. Root changes, including separate binding
+approval, advance the library revision; callers must not assume an increment
+of exactly one. A no-op does not advance it.
+
+Unchanged roots retain their root identity. An explicit `From`/`To` replacement
+declares a filesystem move already performed by the administrator, with the
+same relative media tree. It preserves registered root/item identities, user
+state, metadata controls and access rules. The API does not move files and does
+not infer moves from an arbitrary delete/add pair. Removing a root without a
+replacement requires `AcknowledgePathRemoval: true`; it removes that root's
+catalog records and dependent user state, while retaining all media files.
+
+Saving does not scan by default. Only `Scan: true` requests subsequent admission;
+a returned `ScanError` does not roll back a committed library edit. Follow the
+returned job independently. Both local import options default to true and are
+also accepted during native creation. Disabling an option stops later NFO or
+directory-artwork imports and retains previously accepted source data and
+manual overrides. Re-enabling requires a scan to refresh those sources.
+
+Directory browsing is bounded to configured approved roots. Empty `Path`
+lists those roots. Child rows contain `Name` and canonical `Path`; `ParentPath`
+never escapes the approved root. Paging defaults to 100 and caps at 200;
+enumeration is bounded to 10,000 entries, four workers and ten seconds.
+Validation is read-only: it neither creates a directory nor writes a probe file.
+Neither surface accepts network credentials or arbitrary unrestricted paths.
+
+### Compatibility library and directory adapters
+
+Current Emby administrator logins and permitted application keys can use these
+bounded adapters. They recheck authority; native cookies are a separate surface.
+Paths below are relative to `/emby` and retain normal namespace aliases.
+
+| Route | Supported contract |
+| --- | --- |
+| `POST /Library/VirtualFolders/Name` | `{Id, NewName}` |
+| `POST /Library/VirtualFolders/Paths` | `{Id, Path}` or `{Id, PathInfo: {Path}}`, with optional `RefreshLibrary` |
+| `POST /Library/VirtualFolders/Paths/Delete` | `{Id, Path}`, with optional `RefreshLibrary` |
+| `POST /Library/VirtualFolders/LibraryOptions` | `{Id, LibraryOptions: {DisabledLocalMetadataReaders}}`; exact `[]` or `["Nfo"]` |
+| `GET /Environment/DefaultDirectoryBrowser` | `{Path: ""}` |
+| `GET /Environment/DirectoryContents` | `Path`, `IncludeDirectories=true`, `IncludeFiles=false`; bare directory rows `{Name, Path, Type: "Directory"}` |
+| `GET /Environment/ParentPath` | JSON string, empty at an approved root |
+| `POST /Environment/ValidatePath` | `Path` query and `{}` body; `204` for a valid directory |
+
+Library writes return `204` and a revision ETag; optional `If-Match` enables
+revision checking. Virtual-folder query results include Revision and the
+supported LibraryOptions projection, and compatibility creation accepts that
+same narrow options object. Unsupported options and NetworkPath/credentials
+are rejected. `/Paths/Update` is not a native move adapter: its upstream
+network-path contract does not identify the original root. Use the native
+explicit replacement for identity-preserving moves. DirectoryContents is
+limited to 200 results and rejects larger directories with `422` rather than
+silently returning an incomplete list. File browsing, `IsFile`,
+`ValidateWriteable` and writeability probes are unsupported.
+
+The administrator editor loads the saved revision, preserves drafts on errors,
+requires explicit root-removal acknowledgement and offers approved-directory
+selection. A conflict or unknown network outcome requires reload before another
+save; a successful edit and its optional scan remain separate outcomes.
+Source: [library transactions](../../internal/library/library_editing.go),
+[native handlers](../../internal/server/library_editing.go),
+[compatibility handlers](../../internal/server/library_editing_emby.go), and
+[directory service](../../internal/library/server_directories.go).
+Migration [0036](../../internal/database/migrations/0036_library_editing.sql)
+adds edit revisions and selected options without rewriting earlier migrations.
+Old-row preservation and native recovery compatibility remain phase 3 gates.
 
 ## Starting work
 

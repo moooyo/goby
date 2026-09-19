@@ -6,6 +6,11 @@ catalog; they do not modify media files or write NFO files. Reads use the latest
 source snapshot already accepted by a library scan, without reading the source
 files again.
 
+Phase 3 adds selected music metadata controls and the linked
+[artwork management contract](../development/local-artwork.md). These source
+additions passed the selected [phase 3 scopes](../development/amd-media-phase3-20260919.md);
+historical M5b acceptance below does not cover them by itself.
+
 These routes and durable field locks are a Goby-owned contract. They do not
 establish compatibility with Emby metadata mutation, refresh, or reset routes.
 The differences, including `SortName` versus `ForcedSortName`, are documented in
@@ -151,8 +156,10 @@ the entire projection into `Overrides`.
 | `Tags` | Array of at most 1,024 nonempty strings. Use `[]` to clear; rules below. |
 | `Studios` | Array of at most 1,024 nonempty strings. Use `[]` to clear; rules below. Native studios are names, not `{Name, Id}` objects. |
 | `People` | Array of at most 1,024 credit objects. Use `[]` to clear; rules below. |
-| `IndexNumber` | Editable and lockable only for an Episode: a non-null integer from `0` to `2147483647`. A Season's number and Audio numbering are read-only. |
-| `ParentIndexNumber` | Read-only for every type. Represents an Episode's structural season number when available; otherwise `null`. |
+| `Album` | Audio, MusicAlbum or MusicArtist only: trimmed string up to 1,024 UTF-8 bytes; empty clears the saved tag, without changing physical album identity or display Name. |
+| `Artists`, `AlbumArtists` | Audio, MusicAlbum or MusicArtist only: at most 1,024 nonempty names, each at most 1,024 UTF-8 bytes without controls; `[]` clears the role. |
+| `IndexNumber` | Editable and lockable for Episode and Audio: a non-null integer from `0` to `2147483647`; Audio uses this as track number. A Season's number remains read-only. |
+| `ParentIndexNumber` | Editable and lockable only for Audio: integer from `0` to `2147483647` or null, representing disc number. Episode structural season remains read-only. |
 
 All supplied text must be valid UTF-8 and contain no NUL character. JSON null
 is not accepted for string or collection fields. Numeric strings are not
@@ -175,6 +182,13 @@ and is limited to 65,536 UTF-8 bytes. Exact duplicates after trimming are
 removed while retaining first occurrence order. Names containing punctuation
 or commas remain single entries; these fields are JSON arrays, not delimited
 strings.
+
+Artists and AlbumArtists use the tighter music-name limits above, retain ordered
+explicit names and never split scalar punctuation. Manual input is trimmed;
+locking accepted automatic music credits retains their original whitespace.
+MusicBrainz provider aliases normalize case, and conflicting identifiers reject
+the update. Editing Album does not rename the physical MusicAlbum; edit that
+item's Name separately.
 
 Provider keys are trimmed ASCII letters/digits, 1 to 64 bytes. Provider values
 are trimmed, nonempty ASCII letters/digits with optional `._:-` separators,
@@ -271,10 +285,12 @@ lock, if any, or the automatic value. A lock can also pin a valid empty value.
 
 ## Type-specific and inactive controls
 
-The current supported types share the ordinary descriptive fields. Only an
-Episode adds editable `IndexNumber`. Changing an Episode number does not move
-the item, change its physical parent, or change its season membership. Season
-numbering, `ParentIndexNumber`, and Audio indexes cannot be edited or locked.
+The current supported types share the ordinary descriptive fields. An
+Episode adds editable `IndexNumber`; Audio adds track `IndexNumber` and disc
+`ParentIndexNumber`. Audio, MusicAlbum and MusicArtist add the selected music
+fields above. Changing these values does not move an item or rewrite its file
+tags. An Episode number does not change physical parent or season membership.
+Season numbering and an Episode's structural `ParentIndexNumber` remain read-only.
 Type, IDs, media stream indexes, paths, and parent relationships are not writable
 metadata fields.
 

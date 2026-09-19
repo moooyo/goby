@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "phase": 1,
+  "status": "complete-with-recorded-profile-boundaries",
+  "all_three_phases_complete": false,
+  "base_commit": "b15de9a1dc7205aebd8ff0eea53326618233b983",
+  "branch": "codex/amd-media-compatibility",
+  "verified_source_tree": "276caa836657e743609e31a81b73c41c03e55a13",
+  "matched_source_files": 1244,
+  "ordinary_environment": "test-env",
+  "gpu_environment": "pve CT104, non-root goby-worker",
+  "source_record": "amd-media-phase1-20260919.md",
+  "counts_overlap_and_are_not_additive": true,
+  "ordinary_results": {
+    "regression01": {"exit": 1, "pass_events": 10458, "fail_events": 78, "skip_events": 14, "original_failure_preserved": true},
+    "cache-repair01": {"exit": 0, "pass_events": 3, "fail_events": 0, "skip_events": 0},
+    "transcode-repair01": {"exit": 1, "pass_events": 1050, "fail_events": 1, "skip_events": 9, "original_failure_preserved": true},
+    "bitmap-software02": {"exit": 0, "pass_events": 4, "fail_events": 0, "skip_events": 0},
+    "server-tail01": {"exit": 1, "pass_events": 1189, "fail_events": 2, "skip_events": 0, "original_failure_preserved": true},
+    "seek-recorder02": {"exit": 0, "pass_events": 11, "fail_events": 0, "skip_events": 0},
+    "archive-repair01": {"exit": 0, "pass_events": 497, "fail_events": 0, "skip_events": 0},
+    "recovery-store02": {"exit": 0, "pass_events": 177, "fail_events": 0, "skip_events": 0},
+    "recovery-manager02": {"exit": 0, "pass_events": 73, "fail_events": 0, "skip_events": 0}
+  },
+  "composed_server_inventory": {
+    "top_level_passes": 725,
+    "ordinary_gpu_only_skips": 1,
+    "current_compiled_names": 726,
+    "single_whole_server_success_claimed": false
+  },
+  "selected_physical_evidence": {
+    "copy_repair03": "passed actual source-bound copied seek and AAC proof cases",
+    "browser02": "passed native H.264 copy-clock/report journey and actual AV1 playback",
+    "gpu03": "HEVC VAAPI framing repair, modern-codec A/V seek timing and actual HTTP software fallback passed; aggregate original failure preserved",
+    "gpu04": "actual GPU cancellation and P8.1/P7 MEL SDR/HDR10 chart checks passed; original bitmap failure preserved",
+    "gpu10": "strict progressive/HLS bitmap clock, 40-frame count, display/clear pixels and related command cases passed"
+  },
+  "builds": [
+    {"variant": "ordinary", "bytes": 34525334, "sha256": "984bf934ec267bdef5a25f220399dfa3a2de3f01a5deed1cc502baaa35c99745"},
+    {"variant": "embedded-dashboard", "bytes": 35755346, "sha256": "e4b3ebf490b591c6fa466edccdd42b04c67d23c3e87a7e802f37cdbea5c96b5a"}
+  ],
+  "closure": {
+    "vm_worker_invocations_terminal": 26,
+    "owned_postgres_stopped": true,
+    "owned_database_port_no_response": true,
+    "gpu_closure_first_attempt_passed": false,
+    "gpu_closure_second_attempt_passed": true,
+    "gpu_live_owned_processes": 0,
+    "gpu_waiters_retired": 3,
+    "worker_toolchains_source_and_evidence_retained": true
+  },
+  "remaining_boundaries": [
+    "Phase 2 subtitles and dynamic time shifting remain required",
+    "Phase 3 library, preferences, user state and client/management compatibility remain required",
+    "Dolby Vision physical chart acceptance covers P8.1 and complete P7 MEL; FEL residual reconstruction is unsupported",
+    "P5, other P8 compatibility variants, HEVC Chromium playback and arbitrary hardware/client profiles are not verified here",
+    "OCI, non-AMD GPUs and provider-specific online acceptance remain deferred",
+    "No deployment, commit, push or full-project completion is claimed"
+  ]
+}

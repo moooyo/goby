@@ -1,10 +1,41 @@
 # Implementation progress
 
+The approved [three-phase AMD/media compatibility plan](../planning/amd-media-compatibility-plan-20260919.md)
+is complete within its recorded boundaries. Implementation used
+`codex/amd-media-compatibility`; the current branch is `main`, following the
+September 20, 2026 fast-forward merge and push of product commit
+`80198b6aa8a163b696ceaff64da831847d82e496`. Phase 1 implementation,
+selected-profile remote verification, both builds and closeout are complete;
+phase 2 selected implementation, remote verification, final builds, owned-resource
+closure and documentation are complete. Phase 3 is verified and closed;
+its [execution record](amd-media-phase3-20260919.md) and
+[results ledger](amd-media-phase3-results-20260919.json) retain the
+source03/source06 failures and separate repair results. Final source16 has schema41
+and 1,625 selected files. Composed server coverage is 812 unique parent passes
+plus one explicit AMD skip, remaining 0; no single-full-pass claim is made.
+Source16/ui09 passed the UI build, ten mocked checks, twelve real stages and final
+desktop/mobile review. Backup/recovery passed in the recorded 1 GiB profile;
+the original 512 MiB OOM remains failed. Actual source14 ordinary/embedded builds
+are accepted through unchanged production inputs. All 42 workers and owned
+PostgreSQL runtime are closed, twenty protected services preserved and the
+172-file hashed evidence handoff retained. Counts from overlapping original and
+repair runs are not added. Full-project, original Emby Web, OCI, non-AMD,
+provider-online and broader capacity/platform goals remain separate.
+The [phase 1 execution record](amd-media-phase1-20260919.md)
+retains its closed `source11` results and profile boundaries. The
+[phase 2 implementation record](amd-media-phase2-20260919.md) records the new
+subtitle/time-shift contracts, final v3 CPU/GPU/browser and build results, preserved
+failures and completed PostgreSQL/worker closure. The product integration is
+recorded above; this is a follow-up documentation update, with no production
+deployment or additional runtime verification claim.
+
+## Previous completed wave
+
 The [media, collections, and management wave](feature-wave-20260919.md) has
 completed its selected implementation, functional acceptance, builds and
 resource closeout. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was
 fast-forward merged into `main` and pushed to `origin/main`; the local branch
-is now `main`. See the
+was `main` at that closeout. See the
 [wave verification record](feature-wave-verification-20260919.md).
 
 At this checkpoint, the 692-test server scope is covered through 676 original

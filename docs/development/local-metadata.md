@@ -2,6 +2,15 @@
 
 This document describes Goby's local ingestion contract. It is not a claim that every Emby or Kodi NFO option is implemented. The scanner reads descriptive metadata from bounded, local XML files; it never follows an NFO URL or downloads a referenced image, subtitle, or media source.
 
+Phase 3 additions passed their selected [remote scopes](amd-media-phase3-20260919.md).
+Per-library `EnableLocalMetadata` defaults to true. Disabling it stops later
+NFO import without deleting the accepted source or administrator controls;
+re-enabling takes effect on a subsequent scan. See
+[library editing](../api/admin-scans.md#phase-3-library-editing-and-directory-contract).
+Extended embedded music tags, composer relationships and supported artist/genre
+routes have their separate [music contract](music-metadata.md#current-phase-3-music-contract).
+They do not add artist/track NFO discovery or remote URL following.
+
 ## File selection
 
 | Catalog item | Candidate relative to the media directory | Required XML root |
@@ -14,7 +23,7 @@ This document describes Goby's local ingestion contract. It is not a claim that 
 
 Names are case-sensitive on Linux. For example, `Film (2026).mkv` uses `Film (2026).nfo` before `movie.nfo`. The fallback is shared by movies in the same directory, so use a matching basename for each movie when several movies share a directory. An invalid preferred file does not fall through to a less specific candidate.
 
-Folders and media types are established by the scanner's existing movie, television, and music hierarchy. NFO files describe those records; they do not create a different hierarchy. The parser also recognizes an `artist` document, but artist ingestion and artist catalog endpoints are not implemented by this increment. Individual audio tracks do not yet read track NFO files.
+Folders and media types are established by the scanner's existing movie, television, and music hierarchy. NFO files describe those records; they do not create a different hierarchy. The parser also recognizes an `artist` document, but artist NFO ingestion is not implemented by this increment. Current artist catalog endpoints use the music relationship contract above. Individual audio tracks do not yet read track NFO files.
 
 ## Values
 
@@ -49,7 +58,7 @@ Every scan checks sidecars, including when media size and modification time allo
 - An inaccessible media root retains existing catalog records and their metadata. It is not interpreted as removal of every sidecar.
 - Removing a library removes catalog records while retaining media and sidecars on disk.
 
-The task UI displays scan warnings. [Native metadata editing and field locks](../api/admin-metadata.md) now save a separate administrator layer over the latest accepted source snapshot. Normal NFO updates and removal continue to update that source; manual overrides and locked values remain until explicitly removed. Online providers and automatic watch-based refresh remain planned work. The entity filters below do not add parental-rating or other access policies.
+The task UI displays scan warnings. [Native metadata editing and field locks](../api/admin-metadata.md) save a separate administrator layer over the latest accepted source snapshot. When local import is enabled, normal NFO updates and removal continue to update that source; manual overrides and locked values remain until explicitly removed. Online provider adapters have a separate implementation and user-deferred acceptance boundary; this local contract does not add automatic watch-based refresh. Entity filters below use the current catalog access rules without defining additional policy fields.
 
 Migration `0014` initializes metadata state without rewriting existing catalog or NFO rows. It retains the original sparse projection when no administrator controls apply. Updating an unrelated source field preserves unknown extensions in unchanged fields, including existing person credits. Only effective metadata drives the current entity associations, and those changes commit with the item update. Identical file rescans compare against automatic values rather than manual display values, so an existing title or episode-number override alone does not falsely report the file as updated.
 
@@ -60,6 +69,18 @@ Migration `0004` assigns stable catalog identities to genres, tags, studios, and
 Genre, tag, and studio references inside item DTOs use numeric 64-bit IDs. People inside item DTOs use decimal string IDs. Entity list/detail IDs are strings, including the minimal `{Name, Id}` objects returned by `/Tags`; this distinction matches the reference. Roles, credit types, and ordering belong to the item/person association, so one person can have several credits. Names normalize consistently in PostgreSQL; a fixed-size SHA-256 key permits long entity names, with the complete normalized value checked to prevent merging different names on a hash collision.
 
 `/Genres`, `/Tags`, `/Studios`, and `/Persons` expose only entities associated with the requesting user's visible library items. Genre, studio, and person names have detail routes; positive decimal entity IDs can also be read through `/Users/{UserId}/Items/{Id}`. Removing a sidecar or library removes the corresponding associations. Orphaned entity rows retain their identity for future reuse but are not returned by these browsing routes.
+
+Phase 3 adds independent entity images and per-user state with recorded selected
+acceptance. Entity UserData is stored independently from associated
+media and is visible only while a current authorized association exists.
+Supported updates include favorite/played flags, play count, LastPlayedDate,
+nullable Rating from 0 through 10, and nullable Likes. Entities are not playable:
+a nonzero position or HideFromResume=true is invalid; zero/false may clear those
+fields. An entity update never marks all associated media watched or rated.
+There is no shared userless application-key state. Current subject authorization
+and the generic UserDataChanged path apply. See
+[entity state](../../internal/library/entity_user_data.go) and
+[artwork management](local-artwork.md).
 
 Item queries support `GenreIds`, `TagIds`, `StudioIds`, `PersonIds`, `Genres`, `Tags`, `Studios`, `Person`, and `PersonTypes`. Name lists use `|`; ID lists accept `|` or commas. Values within a dimension use OR and separate dimensions use AND. Person identifiers/names and credit types must match the same credit association. Authorization is applied before filtering, counting, grouping, or pagination. These filters do not implement parental ratings, subfolder exclusions, or the rest of the upstream query surface.
 

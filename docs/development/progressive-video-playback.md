@@ -1,9 +1,18 @@
 # Progressive video playback
 
-M4e connects Video PlaybackInfo profiles and the standard video stream routes to
-bounded H.264/AAC fragmented MP4 delivery. This document describes the contract
-implemented in the current source tree. The separate [acceptance report](verification-m4e-video-and-users.md)
-records the complete Linux suite and deployed workflow verified through
+The closed [AMD media increment](amd-media-phase1-20260919.md) extends this
+contract with HEVC Main/Main 10 and AV1 Main 8/10-bit MP4 encoding, supported
+Dolby Vision conversion, GPU processing, progressive subtitle burn-in and
+broader copy seeking. Its completed selected-profile acceptance is recorded separately.
+Historical M4e evidence below describes that earlier accepted increment;
+use [advanced media](advanced-media.md), [AMD processing](amd-video-processing.md),
+[hardware admission](hardware-encoding-admission.md) and
+[copy seeking](copy-seek-compatibility.md) for the current added source contract.
+
+M4e originally connected Video PlaybackInfo profiles and the standard video stream
+routes to bounded H.264/AAC fragmented MP4 delivery. Its separate
+[acceptance report](verification-m4e-video-and-users.md) records the complete Linux
+suite and deployed workflow for that historical source, verified through
 `ssh test-env`. Neither these endpoints nor the bounded
 [Emby 4.9.5.0 reference study](../research/video-progressive-reference.md) establish
 complete compatibility with arbitrary clients, sources, or GPU configurations.
@@ -53,9 +62,9 @@ An omitted or empty video profile `Protocol` is treated as HTTP, and an omitted
 or empty `Context` as Streaming. Goby emits `TranscodingSubProtocol=http` for a
 selected progressive result. `Context=Static` does not select a streaming
 conversion. A progressive profile must explicitly offer `Container=mp4` and
-`VideoCodec=h264`, plus `AudioCodec=aac` when the source has audio. Missing profile
-selectors do not inherit the manual stream URL's defaults. HLS profiles retain
-the existing [MPEG-TS HLS contract](hls-playback.md).
+a supported `VideoCodec` (`h264`, `hevc`, or `av1`), plus `AudioCodec=aac` when the source has audio. Missing profile
+selectors do not inherit the manual stream URL's defaults. HLS profiles use the
+separate [HLS contract](hls-playback.md), including supported MPEG-TS and fMP4 output.
 
 This example illustrates Goby's implemented profile vocabulary:
 
@@ -90,8 +99,10 @@ delivery-flag contract can expose a permitted remux as `DirectStreamUrl` when
 transcoding delivery is disabled and original direct streaming is unavailable.
 These URL/flag names do not determine which tracks were physically copied.
 
-PlaybackInfo prepares the canonical play session but does not start FFmpeg or
-reserve a progressive job. A supported negotiation does not promise that source
+PlaybackInfo prepares the canonical play session but does not start a producer
+for user media or reserve a progressive job. New VAAPI output may run the bounded
+synthetic encoder and capability checks described in [hardware admission](hardware-encoding-admission.md).
+A supported negotiation does not promise that source
 facts, permission, or capacity will remain available when the media request arrives.
 
 ## Stream query parameters
@@ -109,6 +120,11 @@ and a source without audio does not acquire an invented track.
 | `StartTimeTicks` | Nonnegative presentation position in 100 ns ticks, before the source end |
 | `VideoStreamIndex`, `AudioStreamIndex` | Actual indexed source tracks, not projected output indexes |
 | `VideoCodec`, `AudioCodec` | Supported codec candidates or explicit `copy`; existing audio cannot be removed with `none` |
+| `VideoProfile`, `VideoBitDepth` | Supported codec profile and exact 8/10-bit encoding; H.264 is 8-bit only |
+| `VideoRange`, `VideoRangeType` | Consistent SDR or HDR10 output selectors; HDR10 encoding requires a supported 10-bit codec |
+| `SubtitleStreamIndex`, `SubtitleMethod=Encode`, `BurnSubtitles=true` | Select an authorized indexed subtitle for burn-in; incompatible selectors and copied video are rejected |
+| `SubtitleOffsetTicks` | Signed subtitle offset in 100 ns ticks, bounded to 24 hours in either direction; requires burn-in |
+| `CopyTimestamps` | Preserve the normalized source clock for an admitted copied seek; emitted for standard aligned-copy negotiation |
 | `Width`, `Height` | Exact encoded dimensions; a single supplied dimension preserves the aspect ratio with bounded even rounding |
 | `MaxWidth`, `MaxHeight` | Independent output ceilings, further limited by server configuration |
 | `Framerate` | Exact frame conversion, from 1 through 240 fps with at most six fractional decimal digits |
@@ -146,8 +162,9 @@ device identifiers, and `api_key`. Encoded video carries its dimensions and
 bitrate; an explicit frame rate is included only when the plan actually converts
 frame pacing. Encoded audio carries its bitrate, channels, and sample rate.
 Copied streams do not receive fabricated encoding parameters. A video-only plan
-does not emit audio parameters. Progressive output disables embedded subtitle
-selection with `SubtitleStreamIndex=-1`.
+does not emit audio parameters. A burn plan publishes its selected subtitle and
+offset; an output without burn-in uses `SubtitleStreamIndex=-1`. External text
+delivery remains separate from MP4 composition.
 
 A media request rebuilds the plan from current source facts and concrete output
 settings. It does not accept `SourceFormatStartKnown`, `SourceFormatStartTicks`,
@@ -156,11 +173,13 @@ progressive revision identifier. Changing `StartTimeTicks` on an encoded URL can
 request another position while retaining its concrete output settings; current
 policy and source validation still apply.
 
-Compatible H.264/AAC tracks can be copied at `StartTimeTicks=0`, including bounded
-mixed copy/encode combinations. Nonzero video-copy seeks are explicitly rejected:
-changing a generated `VideoCodec=copy` URL to a nonzero start does not authorize
-an automatic encoder substitution. Renegotiate a supported encoded result, or
-request a permitted H.264 conversion, for that seek. A normal codec request may
+Compatible H.264/HEVC/AV1 video and AAC audio can be copied, including bounded
+mixed copy/encode combinations. Nonzero copied starts require a source-bound
+random-access proof. Standard profile negotiation may align to a proven earlier
+point within ten seconds and publishes the actual start with
+`CopyTimestamps=true`; exact/manual requests retain their explicit contract.
+See [copy seeking](copy-seek-compatibility.md). Editing a URL does not authorize
+an unproven restart or grant encoding permission. An ordinary codec request may
 fall back to encoding only when the current user permits it.
 
 The fallback encoded seek path decodes from the beginning, retaining one common
@@ -182,8 +201,9 @@ origins are distinct from an absent origin. This fact is independent of the
 first audible sample, an individual stream's first packet, and the audio-only
 `PresentationOriginTicks` measurement.
 
-Current probe version 6 retains those facts and adds optional private H.264
-restart indexes. The [M4f operating contract](video-fast-seek.md) describes the
+Current probe version 7 retains those facts and extends optional private
+restart evidence to the supported HEVC/AV1 and AAC-copy combinations, alongside
+actual Dolby Vision RPU facts. The [M4f operating contract](video-fast-seek.md) describes the
 verified software-decoder input seek and independent linear audio input. Missing
 or unproven evidence keeps the preceding linear path; hardware decoding still
 uses that path. A normal scan upgrades older probe caches. These additions do
@@ -197,7 +217,7 @@ field from the reference's omission of that property.
 
 Run a normal library rescan after upgrading older probe caches, including version
 4. Existing snapshot guards block indexed media and external-subtitle delivery
-until those old snapshots are refreshed. A current version-5 source whose format
+until those old snapshots are refreshed. A current source whose format
 origin remains unknown can still be served as an authorized original; it cannot
 promise progressive video conversion. Video conversion does not reuse the
 audio-only exact-sample gate as proof of its shared A/V clock.
@@ -251,7 +271,7 @@ DTO values. Goby also omits the reference's estimated HEAD length.
 The reference's successful mixed seek to 6.37 seconds copied video beginning at
 the preceding 6.0-second keyframe without an edit list hiding that pre-roll.
 Other copy retries were truncated despite a 200 status. These observations explain
-the explicit nonzero video-copy rejection and do not justify advertising an
+M4e's historical nonzero video-copy rejection and do not justify advertising an
 earlier keyframe or incomplete output as precise successful playback.
 
 The independent [copied-video seek diagnostics](../research/video-copy-seek/README.md)
@@ -260,15 +280,16 @@ default FFmpeg consumer suppress retained video pre-roll. Explicit presentation
 filtering recovered the intended frames, but arbitrary clients cannot be assumed
 to apply that filter. Buffered nonfragmented MP4 was viable in bounded controls;
 it is a separate future delivery path with finalization, resource, source-clock,
-and client requirements, not an implemented exception to the current rejection.
+and client requirements. The current source-clock copy path is separately
+verified; it does not rely on consumers hiding arbitrary pre-roll with an edit list.
 
-Current limits include MP4/H.264/AAC output, indexed internal video/audio sources,
-no live-stream conversion, no HDR tone mapping or deinterlacing, and no arbitrary
-filters. Progressive profile negotiation rejects a selected subtitle; embedded
-extraction and subtitle burning are unavailable. Existing indexed external text
-subtitles retain their separate [delivery service](external-subtitles.md).
-Additional formats, richer profiles and timings, client-independent copy seek,
-and broad real-client acceptance remain open. Hardware decode/encode settings
-exist in the bounded plan, but actual GPU execution is not verified by this
-increment. The React/MUI dashboard remains an administrator interface with no
+Current output remains MP4 with the supported video codecs and AAC, using
+indexed media and explicitly supported color, deinterlace and subtitle operations.
+Arbitrary filters and progressive live-stream conversion are unavailable.
+Selected indexed text or bitmap subtitles can be burned while video is encoded;
+text extraction and separate [subtitle delivery](external-subtitles.md) retain
+their own routes. Exact source, codec, clock and permission checks still apply.
+The [phase 1 record](amd-media-phase1-20260919.md) owns actual AMD and browser
+evidence; it does not imply broad real-client acceptance. The React/MUI
+dashboard remains an administrator interface with no
 consumer player, watch page, or playback UI.

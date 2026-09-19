@@ -1,7 +1,148 @@
-# Goby handoff — September 19, 2026
+# Goby handoff — September 20, 2026
+
+## Resume here
+
+The approved three-phase AMD/media and library/client-management increment is
+complete, verified, and merged into `main`. On September 20, 2026, the user
+authorized publication. Code commit
+`80198b6aa8a163b696ceaff64da831847d82e496` was fast-forward merged from
+`codex/amd-media-compatibility` and pushed to `origin/main`; the remote ref was
+read back at that exact commit. Its complete Git tree is the accepted source16
+tree `f9b57d3d99d5b9c22fea0a4b511298a914804e06`, including all 1,625 selected
+source entries. This documentation follow-up records the publication separately
+from the tested product snapshot. No deployment was performed.
+
+For a new session:
+
+1. Read this section, [current status](current-status.md), and the
+   [phase 3 execution record](amd-media-phase3-20260919.md) with its
+   [results ledger](amd-media-phase3-results-20260919.json). The selected
+   three-phase work has no unfinished implementation or verification gate.
+2. Inspect `git status --short`, `git log -5 --oneline`, and
+   `git log -1 -- docs/development/handoff.md`. The last command identifies
+   the documentation follow-up without embedding a self-referential commit ID.
+   Fetch `origin` before starting new integration work. The current workspace
+   branch is `main`; the development branch remains as provenance.
+3. Preserve the unrelated local drafts listed below. Their presence does not
+   mean the accepted increment is uncommitted or requires another test run.
+4. Continue only the next requested scope. OCI, non-AMD hardware, provider-online
+   acceptance, full original-client parity, and broader capacity/platform work
+   retain their separate boundaries; old failed scopes are not a work queue.
+
+The latest verification includes 812 unique passing ordinary-server parent cases
+and one explicit AMD skip, a real twelve-stage administrator journey with one
+restart, maximum-size 20 MiB artwork backup/recovery at the recorded 1 GiB
+PostgreSQL profile, and both application builds. Original failures and repair
+runs remain separate. Ordinary execution used `ssh test-env`; AMD execution used
+the approved non-root worker in PVE CT 104 through `ssh pve`. VM 101 is now
+154 GiB. All 42 phase 3 workers and its dedicated PostgreSQL runtime are closed;
+six database directories and the evidence remain retained. No live command
+session needs resuming. This merge reused the accepted source and did not rerun
+tests or reopen either verification environment.
+
+Private evidence and the current machine-readable checkpoint remain under
+`D:/Code/goby/.git/amd-media-compatibility-20260919/`; publication records are in
+its `publish-main-20260920` directory. The retained remote root is
+`/opt/goby-amd-media-20260919-50f45177f297` on `test-env`. These private artifacts
+are not part of a fresh clone. A new verification run needs fresh environment
+admission and must account for the stopped cluster and populated retained
+databases; do not reuse consumed run names or erase earlier results.
+
+The publication deliberately preserves pre-existing local changes to the OCI
+recipe, release/notice packaging, audited-client helpers, native-capacity notes,
+historical handoff deletions, Programs/session-resumption notes, and related
+test-environment utilities/testdata. They remain outside the published increment;
+inspect the actual working tree before selecting any of them for future work.
+
+## Approved execution decision
+
+The user prioritizes advanced media and AMD GPU support and also selects the
+remaining library, preference, user-state, artwork, music, navigation/event and
+management compatibility work. The
+[three-phase plan](../planning/amd-media-compatibility-plan-20260919.md) records the
+approved order and completion gates. Phase 1 is verified and closed within its
+recorded `source11` profiles. Phase 2 is verified and closed, including selected
+remote verification, final builds, owned PostgreSQL/worker closure and
+documentation. Phase 3 is also verified and closed within its recorded boundaries.
+The approved three-phase increment is complete:
+
+1. **Media processing and AMD:** HEVC/AV1 output, Dolby Vision input conversion,
+   GPU filters and subtitle burn-in, progressive MP4 burn-in, and broader
+   video-copy seek support.
+2. **Subtitles and dynamic playback:** multiple and rolling HLS subtitle tracks,
+   standard subtitle playlist routes, and dynamic-source subtitles, replay and
+   time shifting.
+3. **Library and client/management compatibility:** library editing, user
+   preferences and state, images and avatars, music, client navigation and
+   events, and management protocols.
+
+Each phase completes implementation, remote verification through `ssh test-env`,
+and documentation closeout before the next phase starts. Phase 3 also includes
+the final cross-phase regression; there is no separate fourth acceptance phase.
+Documentation closeout updates the API and support contracts, records the exact
+verification scope and limitations, and leaves a current handoff.
+
+OCI and other GPU profiles remain deferred. Actual inventory found the AMD GPU
+on `pve`, with no render device in VM 101 (`test-env`). The user approved a
+dedicated AMD-verification LXC, CT 104 (`goby-amd-worker`). Non-root VAAPI/Vulkan
+enumeration and selected actual-media scopes passed there. HEVC framing,
+8/10-bit HEVC/AV1 A/V seek timing, exact-format software fallback and selected
+Dolby Vision conversions have actual-device evidence. Bitmap subtitle timing
+is repaired and verified. Composed regression coverage, both builds and owned
+process/database closure are complete in the phase 1 record.
+Ordinary verification remains on `test-env`. See the
+[phase 1 execution record](amd-media-phase1-20260919.md) for its closed scope.
+The [phase 2 implementation record](amd-media-phase2-20260919.md) is the current
+subtitle/time-shift checkpoint. It records a fixed maximum of eight HLS text
+tracks, independent subtitle views, and bounded retention of actual published
+output. Final v3 CT GPU and VM CPU-media/browser scopes passed, and both ordinary
+and embedded artifacts were built from `source18`; `source19` changes only browser
+verification material. The latest browser acceptance is the native-video/HLS.js
+harness scope, not full original Emby Web compatibility. The record preserves
+all earlier failures and exact artifact/runtime identities.
+
+The final phase 2 closure receipt is accepted: 27 workers are terminal with no
+remaining worker PIDs, source19 matches all 1,322 entries, and the owned PostgreSQL
+unit, process, listener and socket/pidfile are closed. Its stopped cluster is
+retained in the verified private local cold archive, and its original evidence
+remains retained. The approved phase 3 scope has completed
+source-bound verification and closeout. Its [execution record](amd-media-phase3-20260919.md)
+and [results ledger](amd-media-phase3-results-20260919.json) preserve every failed
+run and separate repair scopes. Final source16 is
+`f9b57d3d99d5b9c22fea0a4b511298a914804e06`, with 1,625 selected files and schema41.
+Composed ordinary server coverage is 812 unique parent passes plus one explicit
+AMD skip, remaining 0; it is not a single full passing run. Source16/ui09 passed
+its build, ten mocked checks, all twelve real stages and desktop/mobile review.
+Source10's eight-package cross-media scope passed 3,690 events with thirteen
+skips. Maximum-image backup/recovery passed at 1 GiB; the failed 512 MiB profile
+and every UI/aggregate failure remain retained. Actual source14 ordinary and
+embedded artifacts are accepted only through unchanged production inputs.
+No overlapping counts are added. Final closeout stopped the 42 workers and
+owned PostgreSQL runtime, removed listener/socket/pidfile and private transient
+contexts, preserved twenty protected services and all selected source/receipts,
+and retained PGDATA/six database directories. The 172-file local evidence handoff
+is hash-checked. Final closure SHA-256:
+`c81400f7dea32562549e293515ec8e8f78c4329cf76945064b9874b5af1dbb59`.
+Reversible source/artifact archiving supplied capacity for the final checks.
+The user subsequently approved expanding VM 101 to 154 GiB online. That
+maintenance is complete, with unchanged boot/device identity and all 21 running
+service process identities preserved. Phase 3 records its source-bound
+maintenance receipts; the phase 2 closeout did not include a resize.
+
+The prior P3 completion wording overstated user configuration support:
+`POST /Users/{Id}/Configuration` was not implemented in that wave. The historical
+correction and successful records retain their exact scope. Phase 3 subsequently
+adds the selected persistent adapter and consumers with its own acceptance.
+This does not retroactively correct the older implementation
+or change an original result. Phase 2 remains closed within its recorded
+boundaries; phase 3 is complete within its selected scope and deployment is not
+claimed. Full original Emby Web, provider-online, OCI, non-AMD and broader
+capacity/platform delivery remain separate obligations.
+
+## Previous implementation checkpoint
 
 The [media, collections, and management wave](feature-wave-20260919.md) has
-completed its selected implementation, functional acceptance, builds and
+completed its recorded implementation, functional acceptance, builds and
 resource closeout. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was
 fast-forward merged into `main` and pushed to `origin/main`. Provider-specific
 acceptance and OCI work remain deferred by the user. This is completion of the
@@ -18,13 +159,16 @@ failed attempts and independent reviews remain preserved.
 ## Repository and closeout
 
 - Workspace: `D:/Code/goby`; current branch `main`.
-- Integrated code commit: `39893aa195553d501ba0ffb56ce618066f2cb5e1`,
+- Current integrated code: `80198b6aa8a163b696ceaff64da831847d82e496`,
+  fast-forward merged and pushed to `origin/main` on September 20, 2026.
+  Development provenance: `codex/amd-media-compatibility`.
+- Previous wave's integrated code commit: `39893aa195553d501ba0ffb56ce618066f2cb5e1`,
   fast-forward merged and pushed to `origin/main`.
 - Remote: `git@github.com:moooyo/goby.git`.
 - The historical accepted canonical full/build source is
   `1162808afafacdc9ab9a4d6c037263764b1afd7a`. Do not describe the current dirty
   checkout as that exact tested source without an explicit source comparison.
-- The wave code is integrated. Final documentation changes are recorded
+- The current three-phase code is integrated. Documentation changes are recorded
   separately from the tested product snapshot. Unrelated OCI, packaging,
   client/helper and historical-draft changes remain outside the selected work.
 - The pre-wave uncommitted product/tooling inventory included diagnostic
@@ -41,7 +185,7 @@ failed attempts and independent reviews remain preserved.
 - No local test, build, candidate execution or verification suite was run.
   A public index was downloaded on Windows as unverified transfer data only.
 
-## Current wave verification closeout
+## Previous feature-wave verification closeout
 
 - The 692-test server scope is covered by 676 original passes and 127 targeted
   rerun passes, including new, failed and previously unfinished cases. The
@@ -72,12 +216,13 @@ Emby compatibility or completion of every milestone.
 | Area | Implemented functionality | Remaining boundary |
 | --- | --- | --- |
 | Service and authentication | Linux Go service, PostgreSQL migrations/persistence, first-admin setup, users, tokens, sessions, application keys and library policies | Full upstream policy/configuration and client-wire behavior are not complete |
-| Media catalog | Movie/TV/music scanning, ffprobe, stable identities, local NFO metadata, artwork, search/filtering, hierarchy and library ACLs | Representative native scan/HTTP concurrency, broader storage faults and durability remain unaccepted |
-| Basic client playback | Login/browse, PlaybackInfo, original-file HTTP/ranges, external SRT/WebVTT, progress/resume, watched/favorite state, sessions and initial events/control | Complete current-version real-client journeys and broader event/NextUp/refresh behavior remain open |
-| Software media pipeline | Remux/progressive audio/video, embedded/external text and ASS subtitles, bounded fonts and HLS burn-in, TS/fMP4/packed-audio and adaptive HLS, generic dynamic-source conversion, software HDR/deinterlacing, and proof-gated nonzero copy seeks | The selected functional contract and consolidated closeout are complete; arbitrary format/timing combinations, actual hardware and full client profiles remain open |
+| Media catalog | Movie/TV/music scanning, library/path editing, approved-directory browsing, stable identities, local metadata, managed artwork/avatars, music credits and core entity APIs, hierarchy and library ACLs | Broader native scan/HTTP capacity, storage faults, durability and complete upstream music APIs retain separate gates |
+| Client state and navigation | Persistent Configuration/DisplayPreferences with real consumers, progress/resume, ratings/likes/HideFromResume, session subscriptions, ancestors/counts/additional parts, selected global NextUp and event-driven refresh | Selected phase 3 contracts passed; complete original-client journeys and upstream preference/query/event parity remain outside that acceptance |
+| Basic client playback | Login/browse, PlaybackInfo, original-file HTTP/ranges, external SRT/WebVTT and current-authority playback state | Exact media/profile/client boundaries remain in the phase 1 and 2 records |
+| Software and AMD media pipeline | H.264/HEVC/AV1 output, remux/progressive audio/video, text/ASS/bitmap subtitle delivery and supported burn-in, TS/fMP4/packed-audio and adaptive HLS, bounded dynamic replay, multiple text renditions, supported HDR/Dolby Vision/deinterlacing and proven copy seeks | Recorded phase 1 and 2 media, selected AMD, native-video/HLS.js browser, build and closure scopes passed; arbitrary format/timing combinations, other hardware and full original-client profiles remain open |
 | Playlists and collections | Persistent Playlist/BoxSet containers, membership, ordered duplicate playlist entries, sharing/ownership, catalog queries and user-state behavior | Current member authorization and the documented playlist/BoxSet distinctions apply; full upstream parity is not claimed |
-| Administrator dashboard | Users and supported expanded policies, metadata/locks, sessions, keys, devices, tasks/schedules, typed management settings, activity/logs, media diagnostics, and integrated provider controls | Selected functional acceptance is complete; provider-specific acceptance remains user-deferred and unsupported upstream fields remain outside the contract |
-| Native backup/recovery | Encrypted backup, import/restore planning, activation/rollback, administrator UI and offline CLI | Acceptance belongs to recorded native scopes; OCI upgrade/restore and final delivery still need their own evidence |
+| Administrator dashboard | Library editing, user preferences/state, artwork/avatars, music metadata/locks, sessions, keys, devices, tasks and supported system-event triggers, typed settings, activity/logs and diagnostics | The twelve-stage phase 3 journey passed; provider-specific acceptance and unsupported upstream fields remain separate |
+| Native backup/recovery | Encrypted backup, import/restore planning, activation/rollback, administrator UI and offline CLI, including schema41 state and a valid 20 MiB managed-image round trip | Large-image acceptance used a 1 GiB PostgreSQL limit; the failed 512 MiB profile and OCI upgrade/restore boundaries remain explicit |
 | Packaging | Embedded assets, native systemd package work, OCI recipe/build/import and internal notices assembly | Final architecture/hardware/deployment matrix, licensing and external release are not complete |
 
 See [implemented API surface](../api/implemented.md),
@@ -86,16 +231,17 @@ See [implemented API surface](../api/implemented.md),
 
 ## Functionality still missing or intentionally limited
 
-1. Advanced text extraction, font delivery, HLS subtitles and burn-in are now
-   implemented within the [advanced-media contract](advanced-media.md).
-   Standalone upstream subtitle-playlist aliases and rolling live subtitle
-   windows are not registered; embedded subtitle deletion and bitmap OCR are
-   not supported. Provider code is integrated, with its acceptance deferred.
-2. Adaptive/fMP4/packed-audio HLS, generic dynamic-source conversion and
-   software HDR/deinterlacing are implemented. Dynamic conversion is
-   nonseekable TS/fMP4 without selected subtitles; copy seek requires exact
-   proof-backed H.264 boundaries and absent or encoded AAC audio. Arbitrary
-   timing/codec combinations and actual GPU profiles remain unaccepted.
+1. Text extraction, fonts, supported HLS/progressive burn-in, fixed multiple text
+   renditions, standard subtitle-playlist adapters and rolling windows are
+   implemented and accepted within the [recorded media contracts](advanced-media.md).
+   Embedded subtitle deletion and bitmap OCR remain unsupported. Provider code
+   is integrated, with provider-specific acceptance deferred.
+2. Modern-codec output, selected AMD processing and bounded dynamic replay are
+   implemented. Replay covers only actual retained output under duration/byte
+   limits; bitmap changes cannot rewrite burned history. Copy seeking requires
+   its codec-specific source/packet proof, including separate AAC-copy admission.
+   Arbitrary timing/codec combinations, other hardware profiles and full original
+   client compatibility remain outside the accepted scope.
 3. Playlist/BoxSet membership, mutation, ordering and sharing are implemented;
    their bounded access, entry identity and user-state rules do not establish
    every upstream collection behavior.
@@ -103,7 +249,7 @@ See [implemented API surface](../api/implemented.md),
    and task executors are implemented. Complete upstream policy/configuration
    coverage is not claimed; online provider-specific acceptance is deferred.
 5. Broader Emby preference, event, query, alias and client-behavior coverage
-   outside the completed wave's declared functional scope.
+   outside the completed three-phase increment's declared functional scope.
 
 M7/P2 decisions remain separate: Live TV/EPG/DVR/tuners, DLNA, offline sync,
 external channels/provider extensions beyond the integrated adapters, group
@@ -290,8 +436,8 @@ They do not reopen its closed checks or authorize a deferred historical queue.
 - H1 actual playback, OCI upgrade/backup-restore/public HTTPS and remaining
   packaging/deployment profiles.
 - Native scan/HTTP overlap and throughput, broader storage faults and host
-  durability, actual GPU and native arm64 acceptance.
-- The bounded limitations listed above, final source integration, support profile,
+  durability, additional GPU profiles and native arm64 acceptance.
+- The bounded limitations listed above, future source integration, support profile,
   license decision and external-release selection.
 
 No completion percentage is assigned: these obligations have different scopes,
@@ -309,25 +455,29 @@ restart its deferred OCI/H1 alternatives.
 | Prioritize user-facing functionality | Select a bounded feature such as playlist membership or advanced subtitles, implement it and verify its exact scope | Expands capability while the existing delivery gaps remain open |
 | Consolidate the release first | Review/integrate the dirty source, decide the first supported profiles and license/distribution boundary | Clarifies what can ship; it does not retroactively pass missing runtime evidence |
 
-The user selected functionality first, with code development preceding combined
-acceptance; see the active wave above. An internal release with limited supported
+The user selected functionality first, then completed the approved three-phase
+increment and authorized its merge and push. The earlier decision table is
+historical. An internal release with limited supported
 profiles must not be renamed completion of the full M2–M6 goal.
 
 ## Rules for the next session
 
 Use Chinese for conversation and English for code/comments/documentation.
-Use Windows PowerShell locally. All tests, builds and runtime/browser probes
-remain serialized through `ssh test-env`; local verification is not authorized.
-Read the actual original terminal and preserve every yielded chunk before
-advancing. A consumed failed scope is not an automatic retry opportunity.
+Use Windows PowerShell locally. Ordinary tests, builds and runtime/browser probes
+remain serialized through `ssh test-env`; approved AMD checks use CT 104 through
+`ssh pve`. Local verification is not authorized. No live command handle remains
+from this increment. Preserve original evidence before starting a new run; a
+consumed failed scope is not an automatic retry opportunity.
 
 Keep private credentials, request bodies, raw database snapshots, environment
 contents, keys and backing bodies out of local/public output. Use the scoped
 remote safe projections. Preserve original false/null fields and keep component,
 business, physical-closure and complete-delivery acceptance separate.
 
-The mutable machine-readable checkpoint is
-`D:/Code/goby/.git/resumption-runtime-checkpoint-20260917.json`. Original evidence
+The current mutable machine-readable checkpoint is
+`D:/Code/goby/.git/amd-media-compatibility-20260919/checkpoint.json`.
+The older `D:/Code/goby/.git/resumption-runtime-checkpoint-20260917.json` belongs
+to historical work and does not override this completed increment. Original evidence
 and preparation directories are under `.git`; they are not all committed or
 portable with a plain source checkout. This handoff governs current disposition;
 old queue statements in historical logs do not authorize new execution.

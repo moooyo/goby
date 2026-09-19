@@ -1,12 +1,17 @@
 # Linux transcoding configuration
 
+Updated: **2026-09-19**. Phase 1 codec and AMD configuration are implemented;
+selected-profile acceptance, builds and closeout are complete in the phase 1 record.
+Phase 2's formal v3 runtime, selected CPU/GPU/browser scopes and final builds
+also passed; owned PostgreSQL/worker/documentation closeout is complete.
+
 `Config.Load` enables the configured conversion service by default. Set
 `GOBY_TRANSCODING_ENABLED=false` to disable conversion while retaining the
 configured resource policy for a later restart. A directly constructed, entirely
 zero `TranscodingConfig` remains disabled. Explicit malformed settings fail
 configuration loading even when conversion is disabled.
 
-The same manager serves MPEG-TS HLS, [progressive audio](audio-playback.md), and
+The same manager serves MPEG-TS/fMP4 HLS, [progressive audio](audio-playback.md), and
 [progressive MP4 video](progressive-video-playback.md). Universal/legacy audio
 and progressive video need no separate worker pool. Original-file delivery
 remains available when conversion is disabled and current source/access checks
@@ -30,6 +35,8 @@ concrete settings.
 
 | Environment variable | Default | Accepted range or meaning |
 | --- | --- | --- |
+| `GOBY_FFMPEG` | `ffmpeg` | FFmpeg executable; select the private phase 1 binary for its required encoders and strict Dolby Vision filter |
+| `GOBY_FFPROBE` | `ffprobe` | ffprobe executable from the same FFmpeg build |
 | `GOBY_TRANSCODING_ENABLED` | `true` | Boolean |
 | `GOBY_TRANSCODE_CACHE` | `/var/cache/goby/transcodes` | Canonical absolute Linux directory, excluding `/` |
 | `GOBY_TRANSCODE_THREADS` | `2` | 1–64 per FFmpeg thread setting |
@@ -88,31 +95,133 @@ any supported encoder; hardware decode can feed the corresponding hardware
 encoder or software. VAAPI, QSV, and CUDA backends cannot be mixed in one plan.
 VAAPI/QSV devices accept `/dev/dri/renderD128` through `/dev/dri/renderD255` and
 default to `/dev/dri/renderD128`; CUDA/NVENC accepts decimal device indexes 0–31
-and defaults to `0`. A device is invalid when both decode and encode use software.
+and defaults to `0`. Startup configuration rejects a device when both codec
+selections use software. A subsequently planned Vulkan operation may retain
+its render node when only the encoder falls back to software.
 
-Configuration validation checks selections without probing a GPU or launching
-FFmpeg. Hardware settings require the matching driver, FFmpeg support, and actual
-Linux device access by `goby`. Grant only the required render/video group or
-device permissions in the deployment; the service does not make devices writable
-or silently change user groups. An unavailable hardware backend is not treated
-as successful conversion, and software fallback is not automatic.
+Startup configuration validation checks selections without probing a GPU or
+launching FFmpeg. Hardware settings require the matching driver, FFmpeg support,
+and actual Linux device access by the service account. Grant only the required
+render/video group or device permissions in the deployment; the service does
+not make devices writable or silently change user groups.
+
+Before registering a new authorized VAAPI output, the server performs bounded
+[exact hardware encoding admission](hardware-encoding-admission.md) for its
+codec, profile, bit depth, dimensions, frame rate and bitrate, including every
+adaptive rendition. Rejection selects the same codec's software encoder only
+when that implementation is compiled into the selected toolchain; otherwise
+the output is declined. The requested format and geometry remain unchanged.
+This is planning-time admission, not automatic retry of an FFmpeg job that
+fails after starting. Decoder, filter and full client acceptance are separate.
 
 These hardware selections concern video decoding and encoding. Audio-only
 progressive output uses software audio codecs; selecting a video GPU does not
-make that audio path hardware-accelerated. Actual device-specific video execution
-remains unverified on the current GPU-free test host.
+make that audio path hardware-accelerated. Ordinary `test-env` remains GPU-free;
+the user-approved AMD worker is described below. Non-AMD GPU execution remains
+deferred.
+
+## Phase 1 codecs and AMD processing
+
+The current output implementation maps codecs as follows. These are executable
+planning paths, not a claim that every device accepts every listed format.
+
+| Codec | Software encoder | AMD encoder | Output depth/profile |
+| --- | --- | --- | --- |
+| H.264 | `libx264` | `h264_vaapi` | 8-bit Baseline, Main or High |
+| HEVC | `libx265` | `hevc_vaapi` | 8-bit Main or 10-bit Main 10 |
+| AV1 | `libaom-av1` | `av1_vaapi` | 8-bit or 10-bit Main |
+
+Client requests and playback profiles select the codec, profile and bit depth
+within current source facts and limits. There is no separate startup variable
+that selects HEVC, AV1, HDR output or a Vulkan filter. An omitted encoded-video
+codec retains the H.264 planning default. HEVC supports TS and MP4 output; AV1
+requires MP4, including fMP4 HLS. Intel QSV and NVIDIA NVENC retain their existing H.264 engine
+paths and do not gain HEVC/AV1 acceptance from the AMD implementation.
+
+For the isolated AMD worker, the verified phase 2 v3 toolchain can be selected with
+the existing service variables:
+
+```dotenv
+GOBY_FFMPEG=/opt/goby-amd-media-20260919/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456/bin/ffmpeg
+GOBY_FFPROBE=/opt/goby-amd-media-20260919/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456/bin/ffprobe
+GOBY_HW_DECODER=software
+GOBY_HW_ENCODER=vaapi
+GOBY_HW_DEVICE=/dev/dri/renderD128
+```
+
+Use the actual selected render node and both binaries from the same installed
+prefix. `GOBY_HW_DECODER=vaapi` independently requests hardware video decoding
+for eligible ordinary sources; Dolby Vision processing explicitly retains
+software HEVC decoding so per-frame RPU metadata reaches the renderer. This
+example selects a pipeline and does not assert completed device acceptance or
+change any existing service configuration.
+
+The planner selects Vulkan/libplacebo for AMD HDR conversion, deinterlacing and
+subtitle composition. VAAPI and Vulkan descend from the same DRM device.
+Ordinary VAAPI decoding downloads NV12/P010 frames for exact CPU resizing;
+processing/composition can use Vulkan, and an explicit upload supplies VAAPI
+encoding. Text subtitles are rasterized by CPU libass into an alpha plane;
+Vulkan composites that plane. Bitmap decoding and the final resize also remain
+distinct from GPU composition. These mixed paths include CPU/GPU transfers and
+are not zero-copy or entirely GPU-resident. Deinterlacing uses Vulkan YADIF on
+the selected AMD path; enumerated VAAPI VPP modes are not proof of execution.
+
+Dolby Vision conversion requires the private `strict_dolbyvision` patch and
+verified RPU-bearing source facts. Supported profile 5/8 inputs and the strict
+zero-residual profile 7 MEL subset can target SDR or 10-bit HEVC/AV1 HDR10.
+FEL residual reconstruction and newly authored Dolby Vision output are outside
+the implementation. Software codec selection alone does not imply CPU-only
+processing when Vulkan is required. See [AMD video processing](amd-video-processing.md)
+for source admission, metadata preservation, color processing, subtitle clocks
+and the remaining acceptance gates, and [the toolchain policy](toolchain.md)
+for build identities and portable runtime dependencies.
+
+## Dynamic time-shift configuration
+
+Phase 2 wires a separate bounded retained-output Store for configured dynamic
+sources. These settings are read at startup and require a restart to change.
+Their selected remote CPU/GPU/browser contracts and final builds have passed;
+original failed attempts and completed PostgreSQL/worker/documentation closeout
+are recorded in the
+[phase 2 record](amd-media-phase2-20260919.md).
+
+| Environment variable | Default | Meaning |
+| --- | --- | --- |
+| `GOBY_TIMESHIFT_ENABLED` | `true` | Enable bounded retention when conversion and configured dynamic sources are also available |
+| `GOBY_TIMESHIFT_CACHE` | `/var/cache/goby/timeshift` | Private canonical Linux directory, separate from and not overlapping conversion scratch storage |
+| `GOBY_TIMESHIFT_WINDOW_SECONDS` | `600` | Configured upper retention horizon; byte pressure can shorten the actual window |
+| `GOBY_TIMESHIFT_MAX_WINDOW_BYTES` | `536870912` | 512 MiB hard per-presentation budget, including advertised grace, temporary copies and retained readers |
+| `GOBY_TIMESHIFT_MAX_CACHE_BYTES` | `2147483648` | 2 GiB aggregate Store budget |
+| `GOBY_TIMESHIFT_MAX_WINDOWS` | `32` | Concurrent retained presentations |
+| `GOBY_TIMESHIFT_MAX_USER_WINDOWS` | `4` | Per-user or application-credential presentation limit |
+
+After advertisement, current visible media and required live initialization use
+at most one third of the per-window byte budget; the remainder provides room for
+promised grace and publication work. The Store continues charging removed but
+advertised media until its promise expires, and cannot evict that grace to satisfy
+new admission. A fixed target duration and actual segment durations govern the
+playlist. The default 600-second horizon is not a guaranteed ten minutes of
+replay. See [retention and lifecycle](../../internal/timeshift/README.md).
+
+Only already published output is replayable. Restart discards the temporary
+history and old presentation identities. A directly constructed zero-valued
+configuration remains disabled; disabling retention does not authorize an
+unbounded dynamic cache. Deployment must provision access to this separate cache
+directory; this source change does not assert installed service/OCI acceptance.
 
 ## Media upgrade and response limits
 
 Migration `0012` introduced scoped client playback references. The current
-probe cache version is **6**; run a normal library scan to upgrade older cached
-probe facts. [M4f acceptance](verification-m4f-video-seek.md) includes the deployed
-probe-5-to-6 upgrade, preserved metadata/user state, and actual verified video
-seeking. The current [M5g deployment](m5g-deployment-evidence.json) retains probe 6
-at database schema 20. These versions describe different stores; a database
-migration alone does not refresh old media facts.
+source uses probe cache version **7**; run a normal library scan to upgrade
+older cached probe facts. [M4f acceptance](verification-m4f-video-seek.md)
+records its earlier deployed probe-5-to-6 upgrade, preserved metadata/user
+state, and verified video seeking. The historical
+[M5g deployment](m5g-deployment-evidence.json) records probe 6 at database schema
+20; it does not establish deployment of the phase 1 source. These versions
+describe different stores; a database migration alone does not refresh old
+media facts.
 
-An unchanged source with a current probe-6 snapshot is not re-probed merely
+An unchanged source with a current probe-version snapshot is not re-probed merely
 because its optional seek index is absent or FFmpeg changed. Use
 [Refresh media details](../api/admin-scans.md) to request fresh probing of such
 sources; the [video-seeking contract](video-fast-seek.md) describes eligibility
@@ -142,22 +251,39 @@ channel ceilings remain distinct, including `TranscodingMaxAudioChannels`, which
 only constrains Universal/legacy selection after an original file has been ruled
 out.
 
-[Progressive video](progressive-video-playback.md) supports bounded H.264/AAC
-fragmented MP4, ordered HTTP/HLS profile selection, compatible stream copy at
-zero start, and supported encoded seeks using the verified source format clock.
-Eligible H.264 software-decoded seeks can use
-[verified private restart evidence](verification-m4f-video-seek.md) to skip
+[Progressive video](progressive-video-playback.md) implements bounded
+H.264/HEVC/AV1 fragmented MP4, ordered HTTP/HLS profile selection, compatible
+stream copy, subtitle burn-in and supported encoded seeks using the verified
+source format clock. Source-bound copy seeking has additional packet and
+random-access requirements in the [copy-seeking contract](copy-seek-compatibility.md).
+Eligible H.264/HEVC software-decoded seeks can use verified private restart
+evidence to skip
 prefix video decoding while selected audio retains its independent linear
 history. Unsupported or stale optional evidence retains the linear path;
-hardware decoding does not borrow the software proof.
+hardware decoding does not borrow the software proof. The
+[M4f verification](verification-m4f-video-seek.md) retains its earlier H.264
+acceptance; current additions belong to the phase 1 record.
 
-Nonzero copied-video seeks, efficient long-source audio I/O, additional
-input/timing/profile cases, packed-audio HLS, richer subtitle/output support,
-actual GPU execution, and aggregate resource isolation remain unfinished.
-Startup settings and an available encoder do not establish complete
-third-party-client compatibility or universal constant-time seeking.
+The phase 1 record binds codec, copied-video seek and AMD processing results
+to their final source. Efficient long-source audio I/O,
+additional input/timing/profile cases and aggregate resource
+isolation remain separate work. Startup settings and an available encoder do
+not establish complete third-party-client compatibility or universal
+constant-time seeking. Bounded finite-source packed AAC/MP3 HLS is already
+implemented under the [advanced-media contract](advanced-media.md); it is not
+an unbounded dynamic or adaptive audio path.
 
 ## Dedicated test deployment
+
+Ordinary verification remains on `ssh test-env`, PVE VM 101. Because that VM
+has no render device, the user approved the separate unprivileged PVE CT 104
+`goby-amd-worker` for isolated AMD/toolchain verification, reached through
+`ssh pve` and `pct exec 104`. It exposes the selected AMD render node to the
+non-root `goby-worker` account. This is a task-specific remote exception, not
+local verification authorization or OCI playback acceptance. See the
+[phase 1 execution record](amd-media-phase1-20260919.md) for worker and result
+identities; the successful private toolchain build does not close the latest
+GPU media regression gates by itself; the phase 1 record supplies the results.
 
 `scripts/test-env/run-foundation.sh` provisions `/dev/shm/goby-transcodes-test`
 with owner `goby:goby` and mode `0700`. Its deployment ownership record lives at
@@ -180,4 +306,5 @@ settings workflow. That live workflow updates and restores settings without
 launching media or planning requests.
 Actual converted-video and fast-seek evidence remains separately recorded in
 [M4f's deployed workflow](m4f-deployed-video-fast-seek.json). These reports establish
-their own bounded workflows; GPU execution and full client acceptance remain pending.
+their own bounded workflows. Selected AMD execution was subsequently accepted
+in phase 1; full client acceptance remains separate.

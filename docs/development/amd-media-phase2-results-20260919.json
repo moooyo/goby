@@ -1,0 +1,602 @@
+{
+  "version": 1,
+  "phase": 2,
+  "status": "verified-and-closed-with-recorded-profile-boundaries",
+  "phase_complete": true,
+  "documentation_closeout_complete": true,
+  "next_phase": 3,
+  "phase3_started": false,
+  "phase3_state_boundary": "At this phase 2 closeout checkpoint",
+  "all_three_phases_complete": false,
+  "branch": "codex/amd-media-compatibility",
+  "source_record": "amd-media-phase2-20260919.md",
+  "evidence_root": "/opt/goby-amd-media-20260919-50f45177f297/evidence",
+  "counts_overlap_and_are_not_additive": true,
+  "latest_frozen_source": {
+    "label": "source19",
+    "git_tree": "8f1de3f4509b36b06a5e1a331166d1e1c6a64fd7",
+    "selected_source_files": 1322,
+    "remote_formatting_changed_files": 0,
+    "change": "Browser spec and scripts/test-env/phase2-hls-browser.md only",
+    "go_production_frontend_and_toolchain_inputs_unchanged_from": "source18",
+    "complete_phase_acceptance": true
+  },
+  "frozen_sources": {
+    "source01": {
+      "git_tree": "40b0fee24ea256a56ed4ec35869a7278874dce58",
+      "kind": "raw-selected-source"
+    },
+    "source02": {
+      "git_tree": "19be81741a52a0644bd6523ed7aa9b2bd9e208e4",
+      "remote_formatting_changed_files": 69
+    },
+    "source03": {
+      "git_tree": "4ee63f5c3c965edb5f7a1e8de53175ac1d4b740d",
+      "selected_source_files": 1314,
+      "remote_formatting_changed_files": 0,
+      "change": "Rename the conflicting renderer to dynamicRenderedSubtitlePlaylist",
+      "original_failed_receipts_preserved": true
+    },
+    "source11": {
+      "git_tree": "172b45b48c06cff370e49acc84ccfdcacc76015b",
+      "change": "Use segment_time_delta=0.000001 for both AV and caption segmentation",
+      "same_as_phase1_source11": false
+    },
+    "source12": {
+      "git_tree": "697b970957e25ef68a3f791d6d18f68c4fbfc43a",
+      "selected_source_files": 1316,
+      "remote_formatting_changed_files": 0,
+      "change": "Latest subtitle-offset fixture contract repair only"
+    },
+    "source13": {
+      "git_tree": "3421672ccf651107b245ab4ea36a086061e007a1",
+      "kind": "raw-live-progress-repair-source",
+      "remote_formatting_changed_files": 1,
+      "formatted_file_kind": "test"
+    },
+    "source14": {
+      "git_tree": "36af019a8ec6e3cc92b09a4e36d7c4a8518cb666",
+      "selected_source_files": 1316,
+      "kind": "formatted-live-progress-repair-source",
+      "change": "Separate live progress from finite-media limits and safely convert microseconds to 100 ns ticks"
+    },
+    "source15": {
+      "git_tree": "4287b12736f690bd7755df6d37511760224165d6",
+      "remote_formatting_changed_files": 0,
+      "change": "Browser harness seeked plus three-new-frame barrier and actual backward replay seek",
+      "clock_tolerance_seconds": 0.3
+    },
+    "source16": {
+      "git_tree": "da2c7792289ea948bd3c72923833420bda1b2e54",
+      "kind": "raw-reconnect-cleanup-repair-source",
+      "remote_formatting_changed_files": 2
+    },
+    "source17": {
+      "git_tree": "5aead247d22261a73658e56d3363d7fce0ff723f",
+      "selected_source_files": 1317,
+      "kind": "formatted-reconnect-cleanup-repair-source",
+      "change": "Cancel terminal old job scratch before session.jobID replacement while preserving independent Store copies"
+    },
+    "source18": {
+      "git_tree": "e416723dcdeee9fe8512e23a94ca8c74b5d8f9af",
+      "selected_source_files": 1322,
+      "remote_formatting_changed_files": 0,
+      "change": "Toolchain and scripts only",
+      "go_source_unchanged_from": "source17"
+    },
+    "source19": {
+      "git_tree": "8f1de3f4509b36b06a5e1a331166d1e1c6a64fd7",
+      "selected_source_files": 1322,
+      "remote_formatting_changed_files": 0,
+      "change": "Browser spec and scripts/test-env/phase2-hls-browser.md only",
+      "go_production_frontend_and_toolchain_inputs_unchanged_from": "source18"
+    }
+  },
+  "compilation": {
+    "compile01": {
+      "other_packages_passed": 7,
+      "server_passed": false,
+      "failure": "Server function/type name collision",
+      "original_failure_preserved": true
+    },
+    "compile02": {
+      "server_passed": true,
+      "browser_build_tag_passed": true,
+      "browser_executed": false,
+      "final_production_builds_claimed": false
+    }
+  },
+  "ordinary_results": {
+    "phase2-unit01": {
+      "packages": ["timeshift", "subtitle", "dynamicsource", "config", "playback"],
+      "race_enabled": true,
+      "pass_events": 1469,
+      "fail_events": 0,
+      "skip_events": 0,
+      "scope_passed": true
+    },
+    "phase2-media01": {
+      "packages": ["media", "transcode"],
+      "race_enabled": true,
+      "pass_events": 2142,
+      "fail_events": 7,
+      "skip_events": 12,
+      "scope_passed": false,
+      "original_failure_preserved": true,
+      "failures": [
+        "Continuous single/dual-rendition TS strict concatenation decoding reported a corrupt packet",
+        "Single/dual-rendition fMP4 initialization changed within one producer",
+        "bitmapcue_true fixture omitted -copyts and rebased a six-to-seven-second SUP cue to zero-to-one seconds"
+      ]
+    },
+    "media-repair02": {
+      "source": "source05",
+      "pass_events": 48,
+      "fail_events": 0,
+      "skip_events": 1,
+      "scope_passed": true,
+      "skip_boundary": "One AMD-dependent case; not hardware execution acceptance"
+    },
+    "server02": {
+      "source": "source07",
+      "pass_events": 84,
+      "fail_events": 3,
+      "skip_events": 0,
+      "scope_passed": false,
+      "failure_boundary": "Dynamic-metadata fixtures",
+      "original_failure_preserved": true
+    },
+    "server03": {
+      "source": "source08",
+      "pass_events": 1,
+      "fail_events": 2,
+      "skip_events": 0,
+      "scope_passed": false,
+      "original_failure_preserved": true
+    },
+    "clock-repair03": {
+      "source": "source11",
+      "pass_events": 4,
+      "fail_events": 1,
+      "skip_events": 0,
+      "scope_passed": false,
+      "passed_boundaries": [
+        "Actual 24 fps TS and fMP4 strict decoding",
+        "Dynamic pause, reconnect, seek, live-edge return and ownership"
+      ],
+      "failure_boundary": "Positive subtitle-offset boundary fixture",
+      "original_failure_preserved": true
+    },
+    "phase2-subtitle-repair04": {
+      "source": "source12",
+      "packages": ["transcode", "server"],
+      "pass_events": 9,
+      "fail_events": 0,
+      "skip_events": 0,
+      "scope_passed": true,
+      "passed_boundaries": [
+        "Corrected caption-prefix regex scope",
+        "Dynamic eight-track switching, off, offset and retained-epoch HTTP behavior"
+      ],
+      "unit": {
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "main_pid": 0,
+        "result": "success"
+      }
+    },
+    "phase2-hls-regression01": {
+      "source": "source12",
+      "pass_events": 73,
+      "fail_events": 0,
+      "skip_events": 0,
+      "scope_passed": true,
+      "unit_closed": true
+    },
+    "phase2-progress-repair01": {
+      "source": "source14",
+      "pass_events": 24,
+      "fail_events": 0,
+      "skip_events": 0,
+      "scope_passed": true,
+      "unit_closed": true
+    },
+    "phase2-reconnect-cleanup01": {
+      "source": "source17",
+      "pass_events": 5,
+      "fail_events": 0,
+      "skip_events": 0,
+      "scope_passed": true,
+      "unit_closed": true,
+      "boundary": "Focused real-HTTP cleanup and affected dynamic playback/subtitle paths"
+    },
+    "phase2-library-regression01": {
+      "source": "source17",
+      "package": "library",
+      "full_package_scope": true,
+      "pass_events": 2417,
+      "fail_events": 0,
+      "skip_events": 1,
+      "scope_passed": true,
+      "unit_closed": true,
+      "skipped_test": "TestRootBindingFullScanMountNamespaceHelper",
+      "skip_requires_reviewed_opt_in_mount_scope": true,
+      "source18_related_go_changes": false,
+      "new_runtime_acceptance_inherited": false
+    },
+    "phase2-media-v3-regression01": {
+      "source": "source18",
+      "runtime": "amd-media-v3",
+      "pass_events": 2169,
+      "fail_events": 0,
+      "skip_events": 13,
+      "scope_passed": true,
+      "unit_closed": true,
+      "skip_boundary": "Environment-specific GPU and Dolby Vision scopes retain their separate CT104 evidence; skips are not passes"
+    }
+  },
+  "live_progress_contract": {
+    "source": "source14",
+    "live_inherits_finite_30_day_cap": false,
+    "erroneous_live_10_second_cap_removed": true,
+    "maximum_progress_microseconds": "MaxInt64 / 10",
+    "microseconds_to_ticks_multiplier": 10,
+    "finite_media_limits_preserved": true,
+    "negative_start_clamped_to_zero": true,
+    "external_subtitle_clock_limit_days_per_generation": 30
+  },
+  "browser_results": {
+    "phase2-browser01": {
+      "source": "source12",
+      "actual_browser_execution": true,
+      "scope_passed": false,
+      "original_failure_preserved": true,
+      "completed_observations": [
+        "Finite subtitle selection, off and offset",
+        "Dynamic play, pause, resume and replay"
+      ],
+      "failed_live_observation": {
+        "current_time_seconds": 9.738708,
+        "stale_presented_seconds": 11,
+        "presented_frames": 19,
+        "new_presented_frame_observed": false,
+        "boundary": "Harness seek/frame observation race; not a complete browser pass"
+      },
+      "owned_scope_closed": true,
+      "source_unchanged": true,
+      "remaining_owned_pids": 0,
+      "minfree_bytes": 749748224
+    },
+    "phase2-browser02": {
+      "source": "source15",
+      "status": "failed-strict-fixture-resource-close",
+      "terminal_result_recorded": true,
+      "client_journey_passed": true,
+      "client_duration_seconds": 31.6,
+      "strict_fixture_resource_close_passed": false,
+      "scope_passed": false,
+      "original_failure_preserved": true,
+      "corrections": [
+        "Wait for seeked plus three newly presented frames before clock comparison",
+        "Keep the 0.3-second comparison tolerance",
+        "Use an actual backward replay seek instead of the earlier forward target"
+      ],
+      "complete_browser_acceptance_claimed": false
+    },
+    "phase2-browser03": {
+      "source": "source17",
+      "status": "accepted-with-recorded-harness-boundary",
+      "terminal_result_recorded": true,
+      "overall_accepted": true,
+      "scope_passed": true,
+      "browser_exit": 0,
+      "fixture_exit": 0,
+      "go_result": {
+        "pass_events": 1,
+        "fail_events": 0,
+        "skip_events": 0
+      },
+      "reported_duration_seconds": 51.781,
+      "minfree_bytes": 675704832,
+      "harness": "Native HTML video plus HLS.js 1.6.0 beta 2",
+      "full_original_emby_web_acceptance": false,
+      "evidence_directory": "/opt/goby-amd-media-20260919-50f45177f297/evidence/phase2-browser03",
+      "source_unchanged": true,
+      "private_context_removed": true,
+      "process_groups_closed": true,
+      "main_pid": 0,
+      "cgroup_pids": [],
+      "cleanup_before_global_close": {
+        "observed_cache_directories": 3,
+        "all_observed_cache_directories_absent": true,
+        "finite_sessions": 0,
+        "dynamic_sessions": 0,
+        "active_jobs": 0,
+        "store_all_usage_counters_zero": true,
+        "stream_slots": 0,
+        "active_upstreams": 0,
+        "manager_ready": true,
+        "global_shutdown_used_to_satisfy_cleanup": false
+      }
+    },
+    "phase2-browser04": {
+      "runtime": "amd-media-v3",
+      "status": "failed-browser-replay-harness-assumption",
+      "scope_passed": false,
+      "original_failure_preserved": true,
+      "cached_client_resume_seconds": 4.98,
+      "server_retained_window_seconds": [6, 18],
+      "failure_boundary": "The cached client position made the nominal rewind target a forward seek"
+    },
+    "phase2-browser05": {
+      "source": "source19",
+      "runtime": "amd-media-v3",
+      "status": "accepted-with-recorded-harness-boundary",
+      "overall_accepted": true,
+      "scope_passed": true,
+      "browser_exit": 0,
+      "fixture_exit": 0,
+      "go_result": {"pass_events": 1, "fail_events": 0, "skip_events": 0},
+      "reported_duration_seconds": 41.201,
+      "minfree_bytes": 714891264,
+      "harness": "Native HTML video plus HLS.js 1.6.0 beta 2",
+      "correction": "Return to Live, record ReplayOrigin and seek backward by one second without weakening the retained-window boundary",
+      "warm_profile_memory_mib": 704,
+      "accepted_cache_and_input_hashes_matched": true,
+      "low_watermark_mib": 576,
+      "acceptance_assertions_unchanged": true,
+      "source_unchanged": true,
+      "private_context_removed": true,
+      "process_groups_closed": true,
+      "cgroup_pids": [],
+      "strict_before_global_close_resource_predicate_passed": true,
+      "owned_scope_closed": true,
+      "full_original_emby_web_acceptance": false,
+      "general_cold_start_capacity_claimed": false
+    }
+  },
+  "clock_diagnosis": {
+    "scopes": ["diagnostic05", "diagnostic06"],
+    "observed_segment_seconds": "6.0000003",
+    "store_target_rejection_correct": true,
+    "first_reference_clock_seconds": "1.041666...",
+    "input_frame_rate": 24,
+    "cause": "Microsecond rounding missed the three-second GOP boundary",
+    "source11_repair": "Common segment_time_delta=0.000001 for AV and caption segmentation",
+    "store_target_contract_weakened": false
+  },
+  "gpu_results": {
+    "phase2-gpu01": {
+      "environment": "pve CT104",
+      "source": "source08",
+      "binary_sha256": "04a8abe7cc9164bcd52acb7d1ee0f6d97bc5daf0fea3c43ceb664245fa44f784",
+      "pass_events": 5,
+      "fail_events": 3,
+      "skip_events": 0,
+      "scope_passed": false,
+      "original_failure_preserved": true,
+      "passed_boundaries": [
+        "Finite bitmap output in both tested formats",
+        "GPU cancellation",
+        "Empty-live cancellation"
+      ],
+      "failure_boundary_at_source08": "Quiet live input with a later PGS cue stalled at the first gate in both tested formats; original failure preserved"
+    },
+    "topology01": {
+      "environment": "pve CT104",
+      "topology": "one input without null",
+      "subcases": 3,
+      "first_gate_stalled_subcases": 3,
+      "published_segments_at_first_gate": 1,
+      "published_end_seconds": 2,
+      "adopted": false,
+      "null_root_cause_established": false,
+      "native_stack_localization_status_at_topology_checkpoint": "preparation",
+      "additional_parameter_sweep_requested": false
+    },
+    "private_ffmpeg_candidate": {
+      "static_finding": "Decoder queue wake-up gap in FFmpeg",
+      "candidate_build_location": "private directory",
+      "candidate_build_status": "accepted-selected-gates-before-formal-rebuild",
+      "concurrency_gate_status": "passed",
+      "prior_published_prefix_modified": false,
+      "selected_quiet_live_gpu_gate_passed": true,
+      "arbitrary_runtime_profile_acceptance_claimed": false
+    },
+    "phase2-gpu-formal01": {
+      "source": "source18",
+      "source_tree": "e416723dcdeee9fe8512e23a94ca8c74b5d8f9af",
+      "packages": ["media", "transcode"],
+      "race_enabled": true,
+      "overlay_used": false,
+      "formal_runtime_prefix": "/opt/goby-amd-media-20260919/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456",
+      "test_binary_sha256": "2c8f537a1d1a4443c3b0b0e3086fee4ff1735a13fc2289bd4091fec50b48b167",
+      "groups": {
+        "live": {"pass_events": 4, "fail_events": 0, "skip_events": 0, "accepted": true},
+        "finite": {"pass_events": 10, "fail_events": 0, "skip_events": 0, "accepted": true},
+        "dolby81": {"pass_events": 4, "fail_events": 0, "skip_events": 0, "accepted": true},
+        "dolby7": {"pass_events": 3, "fail_events": 0, "skip_events": 0, "accepted": true}
+      },
+      "pass_events": 21,
+      "fail_events": 0,
+      "skip_events": 0,
+      "scope_passed": true,
+      "all_requested_completed": true,
+      "passed_boundaries": [
+        "Quiet live TS/fMP4 bitmap publication and empty-stream cancellation",
+        "Existing HDR, deinterlacing, finite bitmap, text burn-in and cancellation",
+        "P8.1 and complete P7 MEL SDR/HDR10 conversion",
+        "Rejection of the tested nonzero residual"
+      ],
+      "all_units_main_pid_zero": true,
+      "all_units_inactive": true,
+      "test_temporary_directories_empty": true,
+      "no_owned_processes": true,
+      "published_prefix_checksums_unchanged": true,
+      "system_and_original_runtime_unchanged": true
+    },
+    "earlier_actual_diagnostic_processes_terminal": true,
+    "diagnostic_termination_is_media_acceptance": false
+  },
+  "formal_toolchain": {
+    "recipe": "amd-media-v3",
+    "scope": "phase2-toolchain-successor02",
+    "source": "source18",
+    "status": "accepted-with-recorded-CT104-native-and-GPU-boundaries",
+    "prefix": "/opt/goby-amd-media-20260919/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456",
+    "rebuilt_from_source": ["libplacebo", "FFmpeg"],
+    "package_install_skipped": true,
+    "exit_code": 0,
+    "elapsed_seconds": 252.842,
+    "native_gate": {
+      "accepted": true,
+      "baseline_cases": 7,
+      "baseline_expected_deadlocks_reproduced": 4,
+      "candidate_cases": 8,
+      "candidate_deadlocks": 0,
+      "immutable_inputs_unchanged": true
+    },
+    "binary_sha256": {
+      "ffmpeg": "c8887f1a2b5a6777c1285fd7514049ec175947048d82e4b3700e44115da34843",
+      "ffprobe": "fddc50127245a7a836b5fb6789e1606ebe9e12bcf3c9e2fab5b32bfb7a0b703f"
+    },
+    "archive": {
+      "name": "ffmpeg-9.0.1-goby-cb8b6d298456.tar.gz",
+      "sha256": "c49fe996ace971f9b8ce2c7f9b784ed5d9497f3aed8d8bbaf6c8306f6affd2b2",
+      "bytes": 48303898
+    },
+    "preservation": {
+      "previous_prefix_bytes_unchanged": true,
+      "system_gpu_libraries_recorded": 27,
+      "system_gpu_library_bytes_unchanged": true,
+      "all_dpkg_package_inventory_and_versions_unchanged": true
+    },
+    "unit": {"main_pid": 0, "active_state": "inactive", "result": "success"},
+    "local_git_private_retention": ".git/amd-media-compatibility-20260919/phase2-formal-successor01",
+    "evidence_archive": "evidence.tar.gz",
+    "earlier_attempts": {
+      "native-evidence01": {
+        "accepted": false,
+        "failure": "Incorrect harness expectation for the cancellation branch",
+        "original_failure_preserved": true
+      },
+      "phase2-toolchain-successor01": {
+        "accepted": false,
+        "outcome": "Stopped by a monitoring false positive for a transient du file disappearance",
+        "original_stopped_scope_preserved": true
+      }
+    },
+    "first_attempt_success_claimed": false,
+    "vm101_runtime_admission": {
+      "receipt": "software-environment-v3.json",
+      "matched_installed_files": 146,
+      "version_probes_passed": true
+    },
+    "vm101_recorded_new_runtime_verification_complete": true
+  },
+  "final_builds": {
+    "scope": "phase2-final-build01",
+    "source": "source18",
+    "CGO_ENABLED": "0",
+    "source_unchanged": true,
+    "scope_passed": true,
+    "source19_production_build_inputs_unchanged": true,
+    "artifacts": [
+      {"variant": "ordinary", "bytes": 35393841, "sha256": "68801cc8a156e88b16fac480c48fda9ee1067dbf1f3d56535762b6e69f6b157f"},
+      {"variant": "embedded-dashboard", "bytes": 36620733, "sha256": "207ef8f84b7bdd1674fd11929dae4bd467794c1c5c3e1415adcbd9ab42e13074"}
+    ],
+    "production_promotion_claimed": false
+  },
+  "resources": {
+    "latest_ordinary_browser_scope": "phase2-browser05",
+    "latest_ordinary_browser_scope_closed": true,
+    "owned_postgres_unit": "goby-amd-media-phase2-postgres",
+    "owned_postgres_port": 54919,
+    "owned_postgres_stopped": true,
+    "final_owned_postgres_closure_receipt_received": true,
+    "complete_phase_resource_closure": true,
+    "final_vm_closure": {
+      "receipt": "/opt/goby-amd-media-20260919-50f45177f297/evidence/phase2-vm-closure.json",
+      "receipt_sha256": "c73ccd190165d1e57db3c7c374236ccba606b05727d9b9c2fcd1bf1bb82b95ed",
+      "intent_sha256": "c9b5d44b0a99c19703a02b3666b56bd2103bc339fd275bf1e57b76bc60dd282e",
+      "closed": true,
+      "workers_terminal": 27,
+      "all_worker_main_pids_zero": true,
+      "all_worker_cgroups_empty": true,
+      "source_tree": "8f1de3f4509b36b06a5e1a331166d1e1c6a64fd7",
+      "source_entries": 1322,
+      "matched_before_and_after": 1322,
+      "source_failures": [],
+      "source_manifest_sha256": "8f291f5828b4e0c91fb6ca5edff8a5c76d199fe987070febd464d8f01eaeb294",
+      "all_original_receipts_unchanged": true,
+      "postgres_identity_matched_before_stop": true,
+      "successful_postgres_transport": "passwordless owned Unix socket",
+      "successful_postgres_role": "amd_admin",
+      "environment_password_fallback_used": false,
+      "earlier_auxiliary_postgres_role_check_failed": true,
+      "postgres_other_clients_before_stop": 0,
+      "postgres_noninfra_backends_before_stop": 0,
+      "only_owned_postgres_unit_stopped": true,
+      "postgres_after": {"main_pid": 0, "active_state": "inactive", "sub_state": "dead", "load_state": "not-found"},
+      "original_postgres_pid_absent": true,
+      "listener_absent": true,
+      "owned_socket_and_lock_absent": true,
+      "pidfile_absent": true,
+      "stopped_postgres_cluster_retained": true,
+      "separate_CT_closure_passed": true
+    },
+    "formal_toolchain_unit_closed": true,
+    "formal_gpu_units_closed": true,
+    "formal_gpu_scratch_empty": true,
+    "vm_runtime_transfer_status": "completed-and-recorded",
+    "vm_disk_expansion": {
+      "current_gib": 122,
+      "requested_gib": 154,
+      "user_permission_requested": true,
+      "user_permission_received": false,
+      "disk_resized": false,
+      "recorded_verification_completed_without_resize": true,
+      "capacity_recovered_through": "Reversible archive and artifact relocation"
+    },
+    "older_test_binaries_gzip_preserved": 7,
+    "original_binary_hashes_preserved": true,
+    "gzip_bytes_saved": 109516600,
+    "archive_relocation": {
+      "archives": ["source01.tar.gz", "ffmpeg02.tar.gz"],
+      "hashes_matched": true,
+      "local_git_private_destination": ".git/amd-media-compatibility-20260919/retained-remote-archives",
+      "remote_copies_removed": true,
+      "remote_bytes_released": 78400403,
+      "receipt": "/opt/goby-amd-media-20260919-50f45177f297/evidence/phase2-archive-relocation.json",
+      "phase1_source_and_formal_artifacts_unchanged": true
+    },
+    "accepted_raw_binary_retention": {
+      "local_git_private_destination": ".git/amd-media-compatibility-20260919/retained-remote-artifacts",
+      "hashes_preserved": true,
+      "remote_copies_removed": true
+    },
+    "phase1_source_retention": {
+      "entries": 6149,
+      "source_bytes": 125925229,
+      "local_git_private_archive": ".git/amd-media-compatibility-20260919/retained-remote-archives/phase1-source-retained-20260919T114335Z-eebe171d.tar.gz",
+      "archive_sha256": "6adf0a32971a9c131b31e166e62ee8bdda599c53737724a2ee1b1dbe01032204",
+      "complete_source_archived": true,
+      "old_remote_source_directory_removed": true,
+      "historical_source_identity_preserved": true,
+      "phase2_source_retained": true
+    }
+  },
+  "closeout_pending": [],
+  "remaining_boundaries": [
+    "The selected quiet live GPU bitmap and existing AMD/Dolby Vision gates passed on the formal v3 runtime; arbitrary profiles are not implied",
+    "Browser01, browser02 and browser04 remain failed original scopes; browser05 accepted only the recorded v3 native-video/HLS.js warm-profile harness and strict cleanup boundary",
+    "CT topology01 was not adopted and does not establish null as the root cause",
+    "The recorded v3 VM CPU-media/browser scopes, final builds and PostgreSQL/resource/documentation closeout passed within their exact boundaries",
+    "The library mount helper remains skipped and requires a separately reviewed opt-in scope before execution",
+    "VM disk expansion remains awaiting user permission; the recorded verification completed through reversible archiving without a resize",
+    "Phase 3 had not started at this phase 2 closeout checkpoint",
+    "Counts overlap across parent/subtests and repair scopes and must not be summed as independent tests",
+    "Phase 1 historical source identities, results and closure remain unchanged",
+    "No full original Emby Web, arbitrary-client, deployment or full-project acceptance is claimed"
+  ]
+}

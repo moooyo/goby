@@ -3,14 +3,21 @@
 This is a Goby-owned administrator contract. It does not describe Emby user
 mutation routes. The M5a increment has passed its complete Linux and browser
 acceptance, recorded in [the verification report](../development/verification-m4e-video-and-users.md).
-The complete administrator milestone remains in progress.
+This M5a evidence does not complete the broader administrator delivery milestone.
 
-Native deletion is a separate M5 increment. Its implementation and tests are
-prepared, but Go, database, HTTP, and browser verification have not been run.
+Phase 3 user-preference and avatar workflows passed the selected
+[remote acceptance and closeout](../development/amd-media-phase3-20260919.md).
+Their contracts remain separate from historical M5a policy/password evidence.
 
-All routes require the existing administrator cookie. Writes also require
-`X-CSRF-Token`, an accepted same-origin request, and `application/json`. Request
-bodies are bounded to 1 MiB. The detail and mutation contracts reject unknown
+Native deletion was prepared as a separate M5 increment. Its initial
+implementation-only checkpoint is distinct from the later feature-wave
+acceptance recorded in the [current inventory](implemented.md); neither accepts
+the new phase 3 preference/avatar workflows.
+
+All native routes require the existing administrator cookie. Writes also require
+`X-CSRF-Token` and an accepted same-origin request. The user-management JSON
+bodies are bounded to 1 MiB; the separately documented preference and raw-avatar
+contracts have their own media types and limits. The detail and mutation contracts reject unknown
 write fields, duplicate JSON keys, null values, and missing required fields.
 
 ## Routes
@@ -23,11 +30,23 @@ write fields, duplicate JSON keys, null values, and missing required fields.
 | `PUT /admin/v1/users/{id}` | Complete `ManagedUserUpdate` | `200 {User: ManagedUser, CurrentSessionRevoked: boolean}` |
 | `DELETE /admin/v1/users/{id}` | `{Revision: string}` | `200 {CurrentSessionRevoked: boolean}` |
 | `POST /admin/v1/users/{id}/password` | `{Revision: string, Password: string}` | `200 {User: ManagedUser, CurrentSessionRevoked: boolean}` |
+| `GET /admin/v1/users/{id}/preferences` | No query | `200 {UserId, Revision, Configuration}` |
+| `PUT /admin/v1/users/{id}/preferences` | `{Revision, Configuration}`; partial Configuration | Updated preference snapshot; independent configuration revision and CAS |
+| `GET /admin/v1/users/{id}/image`; `GET .../image/content` | Cookie; content uses supported image query options | Revisioned avatar collection or protected preview |
+| `PUT`, `DELETE /admin/v1/users/{id}/image` | Cookie, CSRF, quoted If-Match; PUT raw JPEG/PNG/GIF up to 20 MiB | Updated `{Revision, Items}` with revision ETag; Primary index 0 only |
 
 The existing `User` shape stays `{Id, Name, IsAdministrator, IsDisabled,
 HasPassword, CreatedAt}`. List, creation, bootstrap, and session responses do not
 become editable detail snapshots. Fetch the detail endpoint before updating a
 user.
+
+Preferences use their own saved revision and do not mutate policy, management
+revision or the separate UserSettings dictionary. They take effect without
+re-authentication through their actual playback and navigation consumers. The
+[selected preference contract](../development/client-preferences-plan.md#selected-configuration-and-display-preference-contract)
+lists writable fields, defaults, limits and read-only compatibility echoes.
+The editor preserves a dirty draft, exposes loading/error states and requires
+reload after a conflict or unknown save outcome instead of replaying a mutation.
 
 ## Editable detail and policy
 
@@ -211,10 +230,11 @@ casing, for example `Name`, `Password`, and `Policy.EnabledFolders`.
 | `409 last_administrator` | The requested change would remove the last enabled administrator. |
 | `415 unsupported_media_type` | The mutation body is not `application/json`. |
 
-## Remaining administrator scope
+## Historical M5a scope boundary
 
-This increment does not implement unsupported user policies,
-Emby user mutation adapters, device/application-key management, metadata editing,
-general task scheduling, settings/diagnostic pages, audit/log browsing, or
-backup/restore. They remain part of the full administrator delivery plan. The
-dashboard has no consumer playback page.
+The original M5a increment did not include the wider policy, Emby mutation,
+device/key, metadata, task, settings, diagnostics or backup surfaces. Their later
+contracts and source-bound results are tracked separately in the
+[current implementation inventory](implemented.md). Phase 3 source additions
+on this page have the separately recorded selected acceptance. The dashboard has no
+consumer playback page.

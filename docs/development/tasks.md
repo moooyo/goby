@@ -1,5 +1,50 @@
 # Task Execution and Scheduling
 
+## Current phase 3 contract
+
+The five fixed executors now have the explicit compatibility mappings in the
+[current API](../api/tasks.md), including Goby-prefixed keys for forced media
+refresh, online metadata refresh and provider-cache maintenance. These additions
+and system-event triggers passed the selected
+[phase 3 verification and closeout](amd-media-phase3-20260919.md).
+Earlier results below cover only their recorded sources.
+Registration preserves stable identities and creates no default schedules.
+
+System-event rules accept only `ServerStarted`, `LibraryChanged` and
+`ConfigurationChanged`. Library and configuration signals are written in the
+same transaction as an actual source change. Committed event sequences are
+durable; trigger cursors and receipts bind consumed ranges to a run/disposition.
+Saving a rule starts at the current sequence rather than replaying history.
+Undispatched ranges survive restart; completed or cancelled consumption does
+not retry. A manager startup has one fixed lifecycle identity for deduplication.
+
+The manager polls committed signals and coalesces ranges into one active run
+per definition. Overlap does not extend an existing runtime deadline. Task-owned
+scan children and provider work suppress recursive task signals, while ordinary
+client LibraryChanged notifications remain enabled. Shutdown uses existing
+ownership fencing, cancellation and drain behavior. No separate public emitter
+or arbitrary event name is supported. The schedule editor exposes the closed
+event list and previews an event name with no timed occurrences.
+
+Management task concurrency is consumed before dispatch; provider/cache children
+capture their settings on start. A new manual provider run without usable
+configuration returns unavailable rather than a success placeholder. Exact
+defaults and reset/reload behavior are in [managed settings](settings.md).
+Provider-specific online acceptance remains deferred.
+
+Source: [signals](../../internal/systemevents/events.go),
+[event admission](../../internal/tasks/system_events.go),
+[manager lifecycle](../../internal/tasks/manager.go),
+[compatibility adapter](../../internal/server/scheduled_tasks.go), and
+[settings publication](../../internal/settings/store.go).
+Migration [0040](../../internal/database/migrations/0040_management_events.sql)
+adds durable event counters, per-trigger cursors and consumption receipts.
+Historical task identities/history and current native recovery compatibility
+were covered by the recorded migration/backup/recovery scopes. The original
+failed aggregates and separate repair results remain visible in the phase 3 ledger.
+
+## Historical fixed media-refresh increment
+
 **The fixed native media-refresh increment is implemented and verified.** Its
 [focused/browser acceptance](task-media-refresh-verification.json) and
 [final ordinary regression](m5-final-regression-verification.json) passed
@@ -301,10 +346,11 @@ backup/recovery evidence remains separate and is not queued again here.
 The [reference read](../research/scheduled-tasks-reference.md) and
 [fresh mutation](../research/scheduled-tasks-mutation-reference.md) studies
 cover their stated definitions, manual operations, and trigger payloads.
-Goby deliberately rejects unsupported `SystemEventTrigger` despite the
-reference accepting its JSON. Weekly/numeric-weekday tolerance, DST, missed
+The historical M5f implementation rejected `SystemEventTrigger`. Phase 3 now
+accepts `ServerStarted`, `LibraryChanged`, and `ConfigurationChanged`; other
+system-event names remain unsupported. Weekly/numeric-weekday tolerance, DST, missed
 work, monotonic runtime, and durable native receipts require Goby's own evidence;
-reference readback does not prove timer execution. Real-client and broader
-release acceptance remain pending; see the
+reference readback does not prove timer execution. Full original-client scheduling
+parity and broader release acceptance remain outside this phase 3 scope; see the
 [M5f verification report](verification-m5f-tasks.md) for its historical gates
 and the [media-refresh plan](task-media-refresh-plan.md) for the new checks.

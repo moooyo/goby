@@ -3,6 +3,40 @@
 Client sessions are Emby token sessions. Administrator browser-cookie sessions
 are a separate authentication domain and are not included in this API.
 
+## Phase 3 Sessions subscriptions
+
+Per-WebSocket session-list subscriptions passed the selected
+[phase 3 protocol coverage](amd-media-phase3-20260919.md). They use the same current snapshot
+builder as `GET /emby/Sessions`, rather than a second authority/projection model.
+
+Send `SessionsStart` with Data as the SDK string `"delayMs,intervalMs"`.
+Initial delay is 0 through 60,000 ms; interval is 1,000 through 60,000 ms.
+Omitted Data or an empty string selects `"0,1000"`. After the delay, the server
+sends a `Sessions` envelope containing the currently authorized session array,
+then obtains fresh snapshots at the chosen interval. Restarting the subscription
+replaces this socket's schedule. `SessionsStop` accepts omitted/empty-string Data
+and stops only this socket; another socket using the same token is independent.
+Null, other Data shapes and invalid ranges close the connection with code 1008.
+
+Each snapshot checks current identity and catalog access, and the output path
+rechecks the authority snapshot before delivery, dropping a snapshot if authority
+changed. Session frames contain no token, media path or UserData. Logout, revocation and socket
+closure stop the existing ownership path and its subscription timers. Reads are
+bounded to 64 KiB and 64 messages per second, session payloads to 128 KiB, with
+bounded timer/queue behavior. No session subscription survives as an autonomous
+background subscription after its socket closes.
+
+LibraryChanged, UserDataChanged and remote commands retain their existing paths.
+No unobserved RefreshProgress message is fabricated. A client must requery the
+relevant current-authority API after invalidation; event receipt by itself does
+not prove a visible refresh. See [library refresh evidence](library-change-notifications.md)
+and [global NextUp policy](next-up.md). Original-client negative observations
+remain historical facts until a later source-bound client run establishes more.
+
+Source: [subscription parser/lifecycle](../../internal/server/session_subscriptions.go),
+[WebSocket output](../../internal/server/websocket.go), and
+[shared session snapshot](../../internal/server/client_sessions.go).
+
 ## Routes and ownership
 
 | Route | Behavior |

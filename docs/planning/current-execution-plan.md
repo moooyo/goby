@@ -1,19 +1,78 @@
 # Current execution plan
 
+The approved increment prioritized advanced media and AMD acceleration,
+alongside library, user, artwork, music and client/management compatibility.
+Product commit `80198b6aa8a163b696ceaff64da831847d82e496` was fast-forward merged
+into `main` and pushed to `origin/main` on September 20, 2026. The development
+branch `codex/amd-media-compatibility` remains provenance; the current branch is
+`main`. This follow-up documentation update does not deploy the product or
+authorize replay of completed verification.
+The [three-phase AMD media and compatibility plan](amd-media-compatibility-plan-20260919.md)
+is approved. Phase 1 has completed its recorded verification, builds and
+documentation closeout. Phase 2 is verified and closed, including selected remote
+verification, final builds, owned PostgreSQL/worker closure and documentation.
+Phase 3 is verified and closed within its recorded boundaries. The approved
+three-phase increment is complete:
+
+1. **Media processing and AMD:** HEVC/AV1 output, Dolby Vision input conversion,
+   GPU filters and subtitle burn-in, progressive MP4 burn-in, and broader
+   video-copy seek support.
+2. **Subtitles and dynamic playback:** multiple and rolling HLS subtitle tracks,
+   standard subtitle playlist routes, and dynamic-source subtitles, replay and
+   time shifting.
+3. **Library and client/management compatibility:** library editing, user
+   preferences and state, images and avatars, music, client navigation and
+   events, and management protocols.
+
+Each phase must complete implementation, remote verification through
+`ssh test-env`, and documentation closeout before the next phase starts.
+Phase 3 includes the final cross-phase regression; there is no separate fourth
+acceptance phase. Documentation closeout records implemented behavior, exact
+verification scope, remaining limits and the next handoff.
+
+OCI and non-AMD GPU work remain deferred. The
+[phase 1 execution record](../development/amd-media-phase1-20260919.md) tracks
+source changes and the user-approved dedicated AMD worker, PVE CT 104. Ordinary
+verification remains on `test-env`; AMD-specific checks may use CT 104 through
+`ssh pve`. Selected actual-media, browser and regression acceptance is complete
+for phase 1; its profile and client limits remain explicit.
+The [phase 2 implementation record](../development/amd-media-phase2-20260919.md)
+records the subtitle/time-shift contracts, final v3 CPU/GPU/browser and build
+results, preserved failures and completed closeout. The
+[phase 3 record](../development/amd-media-phase3-20260919.md) and
+[results ledger](../development/amd-media-phase3-results-20260919.json) track
+final source16/schema41 acceptance and all preserved failures. The selected
+package/media scopes, composed 813-case server inventory, maximum-image backup
+and recovery at 1 GiB, latest twelve-stage UI journey and both actual source14
+application builds passed within their evidence boundaries. The 512 MiB OOM is
+not erased. Final source/input reconciliation, 42-worker/PostgreSQL runtime
+closure, protected-service preservation, evidence handoff and documentation are
+complete. Broader original-client, capacity/platform, provider-online, OCI and
+non-AMD work is outside this completed increment and is not a new execution queue.
+Phase 1's closed `source11` result retains its separate boundary.
+
+The previous P3 completion claim remains corrected: that wave implemented
+account/password/policy mutations but omitted `Users/{Id}/Configuration` writes.
+Phase 3 delivered and separately verified the later adapter and its consumers.
+The historical wave's test/build results retain their original scope and are
+not reused as proof for that later implementation.
+
 The selected [media, collections, and management implementation
-wave](../development/feature-wave-20260919.md) has completed all three source
+wave](../development/feature-wave-20260919.md) delivered its recorded source
 areas, scoped functional acceptance, ordinary/embedded builds and owned-resource
 closure. Code commit `39893aa195553d501ba0ffb56ce618066f2cb5e1` was fast-forward
-merged into `main` and pushed to `origin/main`; the current local branch is
-`main`. The [current status](../development/current-status.md#current-wave-checkpoint)
+merged into `main` and pushed to `origin/main`; the local branch was `main` at
+that closeout. The [current status](../development/current-status.md#historical-feature-wave-checkpoint)
 records the 692-test server scope without adding overlapping reruns, the one
 existing core mount-helper skip, and the completed package/browser results.
 
 The final recovery-manager scope passed 73 tests with zero failures/skips, and
 all four existing mocked browser checks passed. The 1,178-source-file match is
 recorded; all 33 recorded worker invocations closed, owned PostgreSQL stopped, and five
-protected PID/start/executable identities remained unchanged. No functional
-wave gate or code merge/push remains pending. Documentation changes are separate
+protected PID/start/executable identities remained unchanged. The recorded
+acceptance scopes and code merge/push are closed. The corrected P3 configuration
+gap was subsequently closed by the separately accepted phase 3 implementation.
+Documentation changes are separate
 from the tested product snapshot. Provider-specific acceptance and OCI work remain
 user-deferred. The [current handoff](../development/handoff.md) retains earlier
 evidence and stop points. The full M2-M6 scope remains incomplete and M7 remains

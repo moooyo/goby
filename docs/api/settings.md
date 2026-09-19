@@ -1,5 +1,9 @@
 # Native settings API
 
+The current Management sections and phase 3 consumers below passed the selected
+[remote phase 3 scope](../development/amd-media-phase3-20260919.md). Historical M5h
+acceptance remains limited to the name/width/settings scope recorded there.
+
 **M5h increment complete and deployed: schema 21/probe 6.**
 Schema 21 adds explicit name modes and an independent encoding-width setting
 to the three native routes. The [configuration adapter](configuration.md),
@@ -30,7 +34,7 @@ inside the owned database transaction. Responses use JSON,
 | Method and path | Input | Success |
 | --- | --- | --- |
 | `GET /admin/v1/settings` | No query | `200`, complete settings object |
-| `PUT /admin/v1/settings` | Required `{Revision, Overrides}`; optional `ServerNameMode`, `Encoding` | `200`, committed settings object |
+| `PUT /admin/v1/settings` | Required `{Revision, Overrides}`; optional `ServerNameMode`, `Encoding`, complete `Management` | `200`, committed settings object |
 | `POST /admin/v1/settings/reset` | `{Revision, Fields}` | `200`, committed settings object |
 
 No query is accepted, including an empty trailing `?`. A mutation body must be
@@ -76,7 +80,7 @@ is an explicit state, not a blank custom name. Null alone does not identify the
 name's source. The [compatibility DTO](configuration.md#name-modes-and-width-behavior)
 emits an empty string for empty mode and omits the name for unset mode.
 
-The complete response has exactly these nine top-level fields:
+The complete response has these twelve top-level fields:
 
 | Field | Meaning |
 | --- | --- |
@@ -87,6 +91,9 @@ The complete response has exactly these nine top-level fields:
 | `Effective` | All five non-null native values; `MaxWidth` is the native width, not the combined runtime ceiling |
 | `Sources` | All five fields, each `"database"` or `"deployment"` |
 | `Encoding` | Exact object `{TranscodingMaxWidth: integer}` |
+| `Management` | Closed Metadata, Subtitles and Tasks sections with current persisted values |
+| `ManagementDefaults` | Built-in defaults for the same three sections |
+| `ManagementEffects` | `{Metadata: "next_work_item", Subtitles: "next_work_item", Tasks: "next_admission", RestartRequired: false}` |
 | `UpdatedAt` | UTC RFC 3339 timestamp of the stored settings row |
 | `Deployment` | Eight explicitly allowed, read-only startup values listed below |
 
@@ -128,9 +135,21 @@ deployment. A supplied mode must match its raw value in the table above.
 Omitting `Encoding` preserves its current value. Supplying it requires the
 sole `TranscodingMaxWidth` field; null, an empty object, and extra fields fail.
 
-Reset changes only the selected state. `Fields` must contain one to six unique
+Omitting `Management` preserves its current value. Supplying it requires all
+three sections and all fields, with actual non-null types and no extra fields.
+Metadata contains EnableInternetProviders, PreferredMetadataLanguage and
+MetadataCountryCode; Subtitles contains DownloadLanguages,
+DownloadMovieSubtitles and DownloadEpisodeSubtitles; Tasks contains
+MaxConcurrent, CacheRetentionDays and CacheMaxEntries. The
+[configuration field table](configuration.md#closed-projections) gives their
+defaults and limits. Compatibility named writes are partial-section operations;
+they do not change this complete native Management-object rule.
+
+Reset changes only the selected state. `Fields` must contain one to ten unique
 names: `ServerName`, `MaxBitrate`, `MaxWidth`, `MaxHeight`, `MaxAudioChannels`,
-or `TranscodingMaxWidth`. Empty, null, duplicate, or unknown selections fail.
+`TranscodingMaxWidth`, `Management`, `Management.Metadata`,
+`Management.Subtitles`, or `Management.Tasks`. Empty, null, duplicate, or
+unknown selections fail.
 `ServerNameMode` and `Encoding.TranscodingMaxWidth` are not reset selectors.
 This example restores the deployment name and removes the extra width ceiling:
 
@@ -141,9 +160,11 @@ This example restores the deployment name and removes the extra width ceiling:
 Name reset sets mode to deployment with a null raw name. Numeric reset clears
 the selected native override. Extra-width reset sets only its independent value
 to zero. Resetting native `MaxWidth` preserves the extra width, and the reverse
-also holds. Select all six explicitly to reset all managed state.
+also holds. Management reset uses the corresponding built-in section defaults.
+Select the six name/output fields plus Management to reset all persisted managed
+state; it does not change deployment configuration.
 
-A changed raw override, name mode, or encoding width increments `Revision` once
+A changed raw override, name mode, encoding width or Management section increments `Revision` once
 and updates `UpdatedAt`. Unchanged managed state returns `200` without changing
 either value, but still requires the current revision and authority. Saving a
 value equal to its deployment
@@ -159,6 +180,13 @@ the new startup host name. Reset uses the current process's defaults. Revision
 identifies persisted managed state, not all effective deployment values across
 restarts. Successful section writes through the compatibility API
 share this revision and can make a previously loaded native revision stale.
+
+The manager reads concurrency before dispatch and task children capture provider,
+subtitle and cache values at work start. Already running work retains its
+snapshot. Provider execution also requires configured deployment capability;
+the managed switch cannot override that gate. A committed real configuration
+change signals ConfigurationChanged in the same transaction. No-op, invalid or
+rolled-back changes do not emit it. See [task events](tasks.md#durable-system-event-behavior).
 
 ## Runtime and errors
 

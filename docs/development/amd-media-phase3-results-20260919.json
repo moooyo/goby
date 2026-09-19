@@ -1,0 +1,765 @@
+{
+  "version": 1,
+  "phase": 3,
+  "status": "complete-with-recorded-boundaries",
+  "functional_verification_complete": true,
+  "phase_complete": true,
+  "all_three_phases_complete": true,
+  "completion_scope": "The approved three-phase increment only, not the full project or full Emby compatibility",
+  "documentation_closeout_complete": true,
+  "deployment_complete": false,
+  "commit_or_push_authorized": true,
+  "commit_or_push_authorized_at_verification_closeout": false,
+  "branch": "main",
+  "development_branch": "codex/amd-media-compatibility",
+  "repository_integration": {
+    "date": "2026-09-20",
+    "user_authorized_merge_and_push": true,
+    "base_commit": "b15de9a1dc7205aebd8ff0eea53326618233b983",
+    "product_commit": "80198b6aa8a163b696ceaff64da831847d82e496",
+    "development_branch": "codex/amd-media-compatibility",
+    "target_branch": "main",
+    "merge_method": "fast-forward",
+    "remote": "origin",
+    "remote_ref": "refs/heads/main",
+    "product_push_confirmed": true,
+    "remote_ref_readback_at_product_push": "80198b6aa8a163b696ceaff64da831847d82e496",
+    "verified_source_tree": "f9b57d3d99d5b9c22fea0a4b511298a914804e06",
+    "product_commit_git_tree": "f9b57d3d99d5b9c22fea0a4b511298a914804e06",
+    "complete_product_tree_matches_verified_source": true,
+    "selected_manifest_entries_matching_product_commit": 1625,
+    "comparison_provenance": "Coordinator confirmed the complete product-commit Git tree equals verified source16 and every selected manifest entry matches",
+    "documentation_update": "Follow-up documentation commit; its future SHA is not self-referenced",
+    "new_runtime_verification_performed_for_git_integration": false,
+    "production_deployment_performed": false,
+    "original_runtime_and_closeout_evidence_unchanged": true,
+    "unrelated_preexisting_changes_excluded": true
+  },
+  "source_record": "amd-media-phase3-20260919.md",
+  "ordinary_environment": "ssh test-env",
+  "evidence_root": "/opt/goby-amd-media-20260919-50f45177f297/evidence",
+  "prior_phase_records_unchanged": true,
+  "counts_overlap_and_are_not_additive": true,
+  "go_counts_include_parent_and_subtest_events": true,
+  "documentation_changes_are_separate_from_product_snapshots": true,
+  "latest_frozen_source": {
+    "label": "source16",
+    "git_tree": "f9b57d3d99d5b9c22fea0a4b511298a914804e06",
+    "selected_source_files": 1625,
+    "changed_files_from_phase2": 232,
+    "manifest_sha256": "a181dffb33e1bec035afd9b7231b45b3c1c3fc129046b28b956ed53374511135",
+    "schema_version": 41,
+    "functional_acceptance": true,
+    "complete_phase_acceptance": true
+  },
+  "frozen_sources": {
+    "source01": {
+      "git_tree": "740f999dcb2bb51441aceb67427bbde769ab2e0c",
+      "selected_source_files": 1427,
+      "kind": "initial-selected-implementation"
+    },
+    "source02": {
+      "git_tree": "6439683b48ecf942e730f088bba19c20c5681721",
+      "selected_source_files": 1427,
+      "remote_formatting_changed_files": 116,
+      "change": "Remote formatting reflected into the selected source"
+    },
+    "source03": {
+      "git_tree": "f7579ec5c7adeeb0e88bdd0f3bb4a423374c768e",
+      "selected_source_files": 1428,
+      "change": "Adds the real schema40 PostgreSQL catalog"
+    },
+    "source04": {
+      "git_tree": "22161a1e4652dce025ba9794a81de8fb449dfa57",
+      "selected_source_files": 1433,
+      "change": "AdditionalParts SQL and music activity repairs, exact historical-oracle updates, UI diagnostics and duplicate-ID repairs, forward migration 0041"
+    },
+    "source05": {
+      "git_tree": "b2c8a06edbde17072dd28d39b29c7b11c098a113",
+      "selected_source_files": 1433,
+      "remote_formatting_changed_files": 5,
+      "change": "Formatted repair source used to export schema41"
+    },
+    "source06": {
+      "git_tree": "8ed99151d2999f670794ed2648b72ef13066419b",
+      "selected_source_files": 1434,
+      "change": "Adds the real schema41 PostgreSQL catalog"
+    },
+    "source07": {
+      "git_tree": "b8d6901e0662d6420da6b922195c29b4b46819cf",
+      "selected_source_files": 1434,
+      "kind": "local-prepared-only-not-run",
+      "change": "First real UI login-locator repair"
+    },
+    "source08": {
+      "git_tree": "0ffe928773db2d790d36f04bbdec2b101c292338",
+      "selected_source_files": 1434,
+      "kind": "local-prepared-only-not-run",
+      "change": "Server regression and fixture repairs before selected-capture inventory repair"
+    },
+    "source09": {
+      "git_tree": "0ffe928773db2d790d36f04bbdec2b101c292338",
+      "selected_source_files": 1624,
+      "change": "Adds 190 unchanged scheduled-tasks-fresh-m5f and subtitle-m3c captures to the selected overlay",
+      "same_git_tree_different_selected_manifest_from": "source08"
+    },
+    "source10": {
+      "git_tree": "f4e59dc9992bf0006d372283740936c8b668506c",
+      "selected_source_files": 1624,
+      "remote_formatting_changed_files": 4,
+      "change": "Formatted server/UI repair and corrected capture selection"
+    },
+    "source11": {
+      "git_tree": "42402bff653b69fe6fba5d9b1ee817c481271272",
+      "selected_source_files": 1625,
+      "change": "Single-evaluation row fingerprint query, byte-exact/hash test source and README, immediate UI response capture repair"
+    },
+    "source12": {
+      "git_tree": "acd9a2288eedf7e2b8edbf4b9aa8bb567affc849",
+      "selected_source_files": 1625,
+      "remote_formatting_changed_files": 1,
+      "change": "Formatted fingerprint/UI repair source; actual backup02 and recovery verification source"
+    },
+    "source13": {
+      "git_tree": "db5fd608093a8e0cdaff8ce40df317e92c2eb719",
+      "selected_source_files": 1625,
+      "change": "Historical-theme UserData oracle and memory-backed FilePayload repair; actual server-repair02 and backup-repair01 source"
+    },
+    "source14": {
+      "git_tree": "5f68975b3ae9bda8786a362a51f2c33c437eeb0a",
+      "selected_source_files": 1625,
+      "change": "Live browser specification only; actual final-build01 and server-coverage01 source",
+      "production_inputs_unchanged_from": "source13"
+    },
+    "source15": {
+      "git_tree": "9fb1b79e26f4a2eeb4c8bcebd6289876e7e76fbd",
+      "selected_source_files": 1625,
+      "change": "Live browser locators and schedule loading wait only; real06 passed",
+      "production_inputs_unchanged_from": "source13"
+    },
+    "source16": {
+      "git_tree": "f9b57d3d99d5b9c22fea0a4b511298a914804e06",
+      "selected_source_files": 1625,
+      "change": "Live browser screenshot readiness only; latest build09/mock08/real07 passed",
+      "production_inputs_unchanged_from": "source13"
+    }
+  },
+  "catalogs": {
+    "schema40": {
+      "generation_source": "source02",
+      "postgresql_major": 17,
+      "path": "internal/backuppg/catalogs/schema-40-postgresql-17.json",
+      "file_sha256": "af5c0dc1e7a410a940e66b844e0573701a78b314f71cacb9c9b8298b4d91a388",
+      "schema_sha256": "6ca7746d8fc4eaeb0e7c02ebae13293b2060ae36fbca441fa969cccca9cb546c",
+      "retained_as_historical_baseline": true
+    },
+    "schema41": {
+      "generation_source": "source05",
+      "postgresql_major": 17,
+      "path": "internal/backuppg/catalogs/schema-41-postgresql-17.json",
+      "file_sha256": "4f7edd90ec7c6ab5b9378444e82e7e858a8060b295940f18d4ed5fd6709c2632",
+      "schema_sha256": "a3906c2b4f06e0d9e8c028a2437368c5fcaf55a2d354bad6cf2d82c3550c875d",
+      "tables": 48,
+      "sequences": 7,
+      "foreign_keys": 74,
+      "generated_in_new_empty_database": true,
+      "backup_restore_acceptance": true,
+      "acceptance_boundary": "Recorded source12 backup02 and source13 theme-repair scope; owned PostgreSQL 1 GiB profile, not the failed 512 MiB profile"
+    },
+    "forward_repair": {
+      "migration": "0041_music_activity.sql",
+      "frozen_migrations_0036_through_0040_unchanged": true,
+      "changed_field_names": [
+        "Album",
+        "Artists",
+        "AlbumArtists"
+      ],
+      "metadata_values_exposed_in_activity": false
+    }
+  },
+  "runs": {
+    "compile01": {
+      "source": "source02",
+      "status": "passed-compilation-only",
+      "race_enabled": true,
+      "run_selector": "^$",
+      "package_entries": 29,
+      "test_events_selected": 0,
+      "source_unchanged": true,
+      "local_receipt_inspected": "phase3-compile01-result.json",
+      "receipt_sha256": "8f88d8334c225c6d2b9505a3802a05422cfbca4526e4bef7086097cc6ef546ce",
+      "not_functional_acceptance": true
+    },
+    "core01": {
+      "source": "source03",
+      "status": "failed-preserved",
+      "passed_events": 1571,
+      "failed_events": 12,
+      "skipped_events": 0,
+      "complete_passing_package_scopes": [
+        "identity",
+        "artwork",
+        "settings",
+        "tasks"
+      ],
+      "accepted_package_subset": {
+        "passed_events": 898,
+        "failed_events": 0,
+        "skipped_events": 0,
+        "package_passed_events": {
+          "identity": 555,
+          "artwork": 64,
+          "settings": 121,
+          "tasks": 158
+        },
+        "raw_go_json_bytes": 1713048,
+        "raw_go_json_sha256": "0a5d545bae96516165afe32049f5ef75a63cb2ca20dde6ce61d1056e1871b09e",
+        "does_not_change_failed_aggregate": true
+      },
+      "failing_package_events": {
+        "database": 11,
+        "activity": 1
+      },
+      "failure_classification": "Old exact projections, table inventories and activity-action expectations",
+      "repair_boundary": "Preserve original columns and assert new defaults explicitly",
+      "source_unchanged": true,
+      "local_receipt_inspected": "phase3-core01-result.json",
+      "receipt_sha256": "4677e5869c858e542dfadf320891862b685aee5d7cd9fd5694d283ebe686b2e2"
+    },
+    "library01": {
+      "source": "source03",
+      "status": "failed-preserved",
+      "passed_events": 2443,
+      "failed_events": 9,
+      "skipped_events": 1,
+      "skip": "TestRootBindingFullScanMountNamespaceHelper",
+      "production_defects": [
+        "AdditionalParts raw-SQL escaping",
+        "Music metadata activity field mapping and allowlist"
+      ],
+      "other_repairs": [
+        "Expanded metadata projection expectations",
+        "Current-probe fixtures and legacy oracles"
+      ],
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "c1949d7cb392796d91c9fc03e54d2ee9e00a79dcc4f578a5157e7224f5ee6d99",
+      "receipt_reference": "evidence/phase3-library01-result.json"
+    },
+    "schemaRepair01": {
+      "source": "source06",
+      "status": "passed-in-recorded-scope",
+      "packages": [
+        "database",
+        "activity"
+      ],
+      "complete_package_scope": true,
+      "passed_events": 688,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "overlaps_original_run": "core01",
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "ccfc0d0225f74f1fe403c1335019ad439defcf67b1ac845e14a6628bab42e11f",
+      "receipt_reference": "evidence/phase3-schema-repair01-result.json"
+    },
+    "libraryRepair01": {
+      "source": "source06",
+      "status": "passed-in-recorded-scope",
+      "scope": "All recorded failed and related selected music/navigation cases",
+      "full_library_rerun": false,
+      "passed_events": 51,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "overlaps_original_run": "library01",
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "cc8cac6e9f6f56c3312050fee1942fc084db927eb02cd2e4339bae14e9a4817a",
+      "receipt_reference": "evidence/phase3-library-repair01-result.json"
+    },
+    "uiBuild01": {
+      "selected_source": "source03",
+      "status": "failed-before-node",
+      "failure": "Helper raw-manifest hash preflight",
+      "node_executed": false,
+      "repair": "Copy raw manifest bytes without parse and re-serialization",
+      "repaired_helper_sha256": "09fe70b5a31a02035146a3a825569fbfae760bfe76a1dd3d86cff1e9466247fb"
+    },
+    "uiBuild02": {
+      "source": "source03",
+      "status": "passed-ui-build",
+      "bundle_sha256": "d470a960b3d28f7c007ea692cc5c5b07a8d4bf06d08415c52567e24b19ec44cb",
+      "source_unchanged": true,
+      "local_receipt_inspected": "phase3-ui-build02-result.json",
+      "receipt_sha256": "23917e63729ca0dcaa6e261fca53afd974157b4a0ed30a0e7fe32fa3468412c4"
+    },
+    "uiMock01": {
+      "source": "source03",
+      "status": "failed-preserved",
+      "passed": 7,
+      "failed": 3,
+      "failure_kind": "timeout",
+      "skipped": 0,
+      "failure_scope": "Permission/library-dialog/Library-name locator chains",
+      "production_library_editor_changed_for_locator_repair": false,
+      "repairs": [
+        "ARIA diagnostics",
+        "Textbox-role selector",
+        "Separate Artwork and Preferences duplicate IDs"
+      ],
+      "local_receipt_inspected": "phase3-ui-mock01-result.json",
+      "receipt_sha256": "12527b1fb44ff54bbc9da19feefb6bb642fb16ebb541abf9c9c21b977686e5c7"
+    },
+    "uiBuild03": {
+      "source": "source06",
+      "status": "passed-ui-build",
+      "result_provenance": "coordinator-confirmed",
+      "bundle_sha256": "72dd3d2a112ab31325a66993a671825e92d3e2d466534e359ea9d5f7153f4b30",
+      "receipt_sha256": "0a04adfe3a4d0bd48f980360c27d2e9026e6f958d891ddef56b286f0f78997ea",
+      "not_final_application_builds": true,
+      "receipt_reference": "evidence/phase3-ui-build03-result.json"
+    },
+    "uiMock02": {
+      "source": "source06",
+      "status": "passed-in-recorded-scope",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "86009fe421abbd025563d7622037e5806a218e4da5c68a18759a828b934dfe68",
+      "not_real_browser_journey_acceptance": true,
+      "receipt_reference": "evidence/phase3-ui-mock02-result.json"
+    },
+    "uiReal01": {
+      "source": "source06",
+      "ui_bundle_label": "ui03",
+      "status": "failed-before-login-preserved",
+      "scope": "Real twelve-stage administrator browser journey",
+      "failure": "Exact Username getByLabel lookup did not match the required-field label",
+      "classification": "Harness locator failure before authentication, not a product workflow result",
+      "authenticated": false,
+      "database_stages_completed": 0,
+      "database_stages_planned": 12,
+      "passed": null,
+      "failed": null,
+      "skipped": null,
+      "receipt_sha256": "6f3d6dbd9837c94407b6e064c683eb23c8b64b08630596d9910f43a8fcc3eec8",
+      "result_provenance": "coordinator-confirmed",
+      "source_unchanged": true,
+      "owned_attempt_cleanup": {
+        "application_pid": 0,
+        "private_context_removed": true,
+        "private_schema_removed": true,
+        "private_media_removed": true,
+        "fallback_revocations": 1,
+        "http_and_workers_closed": true,
+        "not_final_phase_resource_closeout": true
+      },
+      "repair_followup": "Subsequent source10 real attempt completed authentication; the original failed receipt remains unchanged",
+      "receipt_reference": "evidence/phase3-ui-real01-result.json"
+    },
+    "server01": {
+      "source": "source06",
+      "status": "failed-closed-preserved",
+      "passed_events": 2812,
+      "failed_events": 22,
+      "skipped_events": 1,
+      "top_level_failures": 13,
+      "skip": "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+      "source_unchanged": true,
+      "local_receipt_inspected": "phase3-server01-result.json",
+      "receipt_sha256": "6b18a961408d026203b91323d83c7289b6bb1bb01b85e55699f1cc331b09b6fa",
+      "production_regression": "Application-key catalog requests incorrectly inherited target-user personal preferences",
+      "production_repair": "Neutral preferences for application-key Views, Latest and Similar; preserve target ACL/UserData and explicit filters",
+      "other_failure_or_repair_areas": [
+        "Complete music metadata shape and editable Audio numbering expectations",
+        "Artwork/avatar Header fixtures",
+        "Obsolete unimplemented-image and Live TV root-alias expectations",
+        "Retaining the old ended window after hardware recovery",
+        "Rebinding notifier fixtures after replacing their Store"
+      ],
+      "missing_selected_reference_capture_failure_events": 10,
+      "selected_capture_repair_source": "source09"
+    },
+    "serverRepair01": {
+      "source": "source10",
+      "status": "passed-in-recorded-scope",
+      "passed_events": 84,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "source_unchanged": true,
+      "scope": "Selected server failures and related regression cases",
+      "full_server_rerun": false,
+      "overlaps_original_run": "server01",
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "2f7adc6ef7eb2624ad9d66b311b211ffb7f531856798cf7d32fe995c12cdbc41",
+      "receipt_reference": "evidence/phase3-server-repair01-result.json"
+    },
+    "uiBuild04": {
+      "source": "source10",
+      "ui_bundle_label": "ui04",
+      "status": "passed-ui-build",
+      "bundle_sha256": "72dd3d2a112ab31325a66993a671825e92d3e2d466534e359ea9d5f7153f4b30",
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "9854bcf2a99dbf8fca35ff58e560bba5d69c995dc4a6e2e67be785778a8cba31",
+      "not_final_application_builds": true,
+      "receipt_reference": "evidence/phase3-ui-build04-result.json"
+    },
+    "uiMock03": {
+      "source": "source10",
+      "ui_bundle_label": "ui04",
+      "status": "passed-in-recorded-scope",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "b8c17009c8d72d9147a13c9f0b9457a0cccb57b2dfbb85d15d89950ae788ddfa",
+      "receipt_reference": "evidence/phase3-ui-mock03-result.json"
+    },
+    "uiReal02": {
+      "source": "source10",
+      "ui_bundle_label": "ui04",
+      "status": "failed-harness-response-capture-preserved",
+      "database_stages_completed": 4,
+      "database_stages_planned": 12,
+      "completed_stages": [
+        "auth",
+        "library-conflict",
+        "library",
+        "prefs"
+      ],
+      "failed_stage": "artwork",
+      "observed_before_capture_failure": "First entity upload showed a saved 16x16 image in the UI",
+      "failure": "Chromium CDP response body was evicted before the recorder retrieved it",
+      "not_complete_artwork_stage_acceptance": true,
+      "source_unchanged": true,
+      "owned_attempt_resources_closed": true,
+      "not_final_phase_resource_closeout": true,
+      "repair": "Capture original response bytes immediately and assert no navigation; no product change",
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "12a28b4b862f9ec0565a4e6200a0ad02984199e8e365bb77f646df6b68aa4da9",
+      "receipt_reference": "evidence/phase3-ui-real02-result.json"
+    },
+    "backup01": {
+      "source": "source10",
+      "status": "failed-closed-preserved",
+      "passed_events": 460,
+      "failed_events": 39,
+      "skipped_events": 0,
+      "first_failure": "Exact 20 MiB managed-image row fingerprint exhausted the owned PostgreSQL 512 MiB cgroup",
+      "subsequent_failure_boundary": "Later schema/connection failures were consequential to PostgreSQL termination",
+      "postgresql_result": "oom-kill",
+      "postgresql_memory_peak_bytes": 537595904,
+      "postgresql_memory_limit_bytes": 536870912,
+      "fixture_bytes_unchanged": 20971520,
+      "repair_source": "source12",
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "c2ea3b590596eca52e5826a2b1526277ee0eeb847773ae51a412b8b9dbdaa107",
+      "receipt_reference": "evidence/phase3-backup01-result.json"
+    },
+    "crossMedia01": {
+      "source": "source10",
+      "status": "passed-in-recorded-scope-with-skips",
+      "packages": [
+        "config",
+        "media",
+        "playback",
+        "transcode",
+        "dynamicsource",
+        "subtitle",
+        "timeshift",
+        "events"
+      ],
+      "passed_events": 3690,
+      "failed_events": 0,
+      "skipped_events": 13,
+      "not_acceptance_of_skipped_profiles": true,
+      "result_provenance": "coordinator-confirmed",
+      "receipt_sha256": "9448389ddb1c1ed83ad93136cbaacac353b825e72eacb822862d5bf15d984a99",
+      "receipt_reference": "evidence/phase3-cross-media01-result.json",
+      "skip_count_retained_from_original_receipt": true
+    },
+    "backup02": {
+      "source": "source12",
+      "status": "failed-aggregate-preserved-with-passing-maximum-image-scope",
+      "scope": "Native backup/restore and unchanged exact 20 MiB valid PNG after single-evaluation fingerprint repair",
+      "postgresql_memory_limit_bytes": 1073741824,
+      "postgresql_memory_peak_bytes": 756084736,
+      "passed_events": 499,
+      "failed_events": 4,
+      "skipped_events": 0,
+      "exact_20_mib_dump_validate_restore_passed": true,
+      "canonical_fingerprint_witness_passed": true,
+      "failure_scope": "Historical schema26 theme parent/child whole-row UserData expectations after added columns",
+      "repair": "Explicit complete original schema26 UserData columns plus new defaults; owners/items/resources/parent remain full-row comparisons",
+      "receipt_sha256": "56414f668ba78770e744e9c02484c738bfda28b838933743a9d7cad9a033a559",
+      "not_a_512_mib_verification_pass": true
+    },
+    "backupRepair01": {
+      "source": "source13",
+      "status": "passed-related-theme-repair-scope",
+      "passed_events": 15,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "overlaps_original_run": "backup02",
+      "receipt_sha256": "6f86d612e08baa6bf0ed1eec0709c8e949b96ab491821f5abf49b23d12eb5de4"
+    },
+    "recovery01": {
+      "source": "source12",
+      "status": "failed-aggregate-preserved-with-passing-manager-package",
+      "passed_events": 203,
+      "failed_events": 1,
+      "skipped_events": 0,
+      "failure": "Recovery database preflight omitted GOBY_TEST_RECOVERY_PORT; database was not opened",
+      "accepted_package_subset": {
+        "package": "internal/recovery",
+        "passed_events": 73,
+        "failed_events": 0,
+        "skipped_events": 0,
+        "raw_go_json_bytes": 210314,
+        "raw_go_json_sha256": "59ecf5de24e218008826dd2b0ac6c7abc6e92b2be00ce19838fd8782851d3f69"
+      },
+      "receipt_sha256": "9005e68532fda0bcf3ffd4fdb2bef892911f2ccbdc7d83aff97b10e85841c4b8"
+    },
+    "recoverydb02": {
+      "source": "source12",
+      "status": "passed-complete-package",
+      "package": "internal/recoverydb",
+      "explicit_recovery_port": 54919,
+      "passed_events": 181,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "receipt_sha256": "039bde42b433d2e14e8a9562c69e895f092aaaaa807c0e6d3fd9e1e196d68cfa"
+    },
+    "serverRepair02": {
+      "source": "source13",
+      "status": "passed-in-recorded-scope",
+      "passed_events": 84,
+      "failed_events": 0,
+      "skipped_events": 0,
+      "receipt_sha256": "15d2185a87de8b34a249f5228d3ce50e023ca73cf4b663b10a2f22100bc9d28d"
+    },
+    "serverCoverage01": {
+      "source": "source14",
+      "status": "composed-case-coverage-complete",
+      "compiled_parent_cases": 813,
+      "unique_parent_passes": 812,
+      "unique_allowed_parent_skips": 1,
+      "remaining_cases": 0,
+      "allowed_skip": "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+      "single_full_pass_claimed": false,
+      "test_cases_executed_by_helper": false,
+      "original_22_failure_events_preserved": true,
+      "later_repair_actual_execution_source": "source13",
+      "ordinary_input_equivalence_rule": "Only web/admin/e2e/*.spec.ts changes are permitted; Go/module/runtime helpers/reference fixtures/production frontend inputs must remain identical",
+      "coverage_report_sha256": "0bc3ce9b24224c43d9e88e4d381ac66ead2bd00452e41c92d2a9d4eb5fa0f776",
+      "runner_receipt_sha256": "bfd6e107c6c59f6117dfb3e11f6e241d7a658c7d4f58696be344974084140645"
+    },
+    "uiReal03": {
+      "source": "source12",
+      "ui_bundle_label": "ui05",
+      "status": "failed-response-capture-preserved",
+      "database_stages_completed": 4,
+      "database_stages_planned": 12,
+      "failure": "The same CDP body eviction as real02",
+      "receipt_sha256": "b27771257e1f35823fc75f227eaa51c3e141b67ebb2278713d04664576bbd6ac"
+    },
+    "uiReal04": {
+      "source": "source13",
+      "ui_bundle_label": "ui06",
+      "status": "failed-music-locator-preserved",
+      "database_stages_completed": 5,
+      "database_stages_planned": 12,
+      "artwork_and_avatar_stage_passed": true,
+      "failure": "Album tag label matched both section and input",
+      "receipt_sha256": "3b9fd3fd4b1af92ec738366bfb0fa0c61ff7eaf07b74341a68c246773651c392"
+    },
+    "uiReal05": {
+      "source": "source14",
+      "ui_bundle_label": "ui07",
+      "status": "failed-close-locator-preserved",
+      "database_stages_completed": 5,
+      "database_stages_planned": 12,
+      "observed_before_failure": "Music metadata and artwork saved",
+      "failure": "Success-alert Close and footer Close both matched",
+      "repair": "Scope textbox/rowheader/footer actions and wait for schedule loading",
+      "receipt_sha256": "22d425e4b5733ba96086e693fcc45cb420d03b396389c783d50c9fa3209f953e"
+    },
+    "uiReal06": {
+      "source": "source15",
+      "ui_bundle_label": "ui08",
+      "status": "passed-real-twelve-stage-journey",
+      "database_stages_completed": 12,
+      "database_stages_planned": 12,
+      "page_errors": 0,
+      "foreign_requests": 0,
+      "restarts": 1,
+      "fallback_revocations": 0,
+      "forced_cleanup": false,
+      "owned_attempt_resources_closed": true,
+      "receipt_sha256": "85403cfd917e5a9fc2890129921a4ecef8ada51335a1b0f226775dff49568fb7"
+    },
+    "uiBuild09": {
+      "source": "source16",
+      "ui_bundle_label": "ui09",
+      "status": "passed-ui-build",
+      "bundle_sha256": "72dd3d2a112ab31325a66993a671825e92d3e2d466534e359ea9d5f7153f4b30",
+      "receipt_sha256": "2d719d7df3a82e416f9f1b9de44aa675c7135eb378685ea9e7165d0529e2560f"
+    },
+    "uiMock08": {
+      "source": "source16",
+      "status": "passed-in-recorded-scope",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "receipt_sha256": "457a0196c5abec2e65b281babc43debcd300584cfd4229057b08cfbce8f8f2da"
+    },
+    "uiReal07": {
+      "source": "source16",
+      "ui_bundle_label": "ui09",
+      "status": "passed-real-twelve-stage-journey-and-visual-review",
+      "artifact_directory": "phase3-ui09/artifacts/phase3-browser-913096410",
+      "database_stages_completed": 12,
+      "database_stages_planned": 12,
+      "page_errors": 0,
+      "foreign_requests": 0,
+      "restarts": 1,
+      "active_sessions_before_fallback": 0,
+      "fallback_revocations": 0,
+      "forced_cleanup": false,
+      "source_unchanged": true,
+      "owned_context_schema_media_sessions_listener_workers_closed": true,
+      "media_playback_exercised_by_ui_journey": false,
+      "online_providers_exercised_by_ui_journey": false,
+      "receipt_sha256": "53ee905dbe4bdfd26103e6f5728e764960b87ac7f1ce0a9e6d0375e2f55e9cd5",
+      "driver_sha256": "208840119be9f2bf0ab1ec784701db01bba84b9e896be441f0627f518db378c9",
+      "browser_sha256": "ffac7aaf4de17e45b702304f4a3ceca4905d080ce2903fac1ad5eb13be989e11",
+      "visual_review": {
+        "desktop_music_fields_visible": true,
+        "mobile_width": 390,
+        "mobile_menu_obstruction": false,
+        "crop_or_overlap_issue_observed": false,
+        "desktop_png_sha256": "6617a14c27ccecf95b2be39fa5ca7c105b3fc6358018f357f8d9eda1f8153f76",
+        "mobile_png_sha256": "29199f2bce498c57d7d85cf398611d9b3c434faff9af1936a83f949012eecb38"
+      }
+    },
+    "finalBuild01": {
+      "actual_source": "source14",
+      "status": "passed-both-application-builds",
+      "cgo_enabled": false,
+      "ordinary": {
+        "bytes": 37642055,
+        "sha256": "f0520129d6d55997efdb158884a851da1ce1ff0f3b7f94c04a2a94702374fa0b"
+      },
+      "embedded": {
+        "bytes": 38918723,
+        "sha256": "2d2668a1606a867dbc1295836e580fdced4a175d4fa6b728b8c22fd9ea9d9e30"
+      },
+      "frontend_bundle_sha256": "72dd3d2a112ab31325a66993a671825e92d3e2d466534e359ea9d5f7153f4b30",
+      "accepted_for_source16_reason": "Only the live browser specification changed after the actual source14 builds; all Go/module/runtime and production frontend inputs are unchanged",
+      "not_claimed_as_rebuilt_on_source16": true,
+      "receipt_sha256": "09b8d2295d0fd4fb1aed2a4118e781192558bd07353e4b9af063bffcda4f68dc"
+    }
+  },
+  "completion_gates": {
+    "full_server": "composed-case-coverage-complete: 812 unique parent passes and one explicit AMD skip; original failed run retained",
+    "repaired_real_twelve_stage_ui": "passed-source16-ui09-all-12-stages",
+    "backuppg_with_exact_20_mib_valid_png": "accepted-source12-maximum-image-and-source13-theme-repair-scopes-at-1-gib",
+    "recovery": "accepted-complete-manager-subset-and-recoverydb02-package",
+    "cross_phase_media_regression": "passed-in-source10-recorded-scope-with-13-skips",
+    "final_ordinary_build": "passed-actual-source14-with-explicit-source16-input-equivalence",
+    "final_embedded_build": "passed-actual-source14-with-explicit-source16-input-equivalence",
+    "final_source_reconciliation": "passed-source16-all-1625-selected-files-unchanged",
+    "owned_worker_and_postgresql_closeout": "closed-with-pgdata-and-original-evidence-retained",
+    "final_documentation_closeout": "complete-with-recorded-boundaries"
+  },
+  "resources": {
+    "postgresql_version": "17.11",
+    "owned_postgresql_unit": "goby-amd-media-phase3-postgres.service",
+    "postgresql_state": "stopped-owned-resources-closed-pgdata-retained",
+    "disposable_databases": 6,
+    "new_catalog41_database_included": true,
+    "environment_preparation_receipt_sha256": "e644480ccfaa6e500833be1b722766bfa84911bb0a54cbbb9cfcd9eb0af8eac3",
+    "postgresql_oom_and_recovery": {
+      "failed_run": "backup01",
+      "original_memory_limit_bytes": 536870912,
+      "observed_memory_peak_bytes": 537595904,
+      "inspection_receipt_sha256": "9f042ca019adb28de13748740d21f35150f4bde90f5a61d776496970361ec809",
+      "recovery_status": "completed-environment-recovery-only",
+      "recovery_receipt_sha256": "b9e457593cfa81afd7b2c2402abc0f84c179664b07d186c3a0a6da67317fc656",
+      "wal_recovery": "normal",
+      "recovered_memory_limit_bytes": 1073741824,
+      "swap_limit_bytes": 0,
+      "cpu_quota_percent": 150,
+      "recovered_pid": 3136363,
+      "recovered_start_ticks": 54971786,
+      "six_database_oids_and_owners_preserved": true,
+      "other_protected_process_identities_preserved": 20,
+      "test_orphans_retained": true,
+      "raw_sql_journal_remains_private": true,
+      "original_512_mib_verification_passed": false,
+      "one_gib_backup_verification": "maximum-image-round-trip-and-canonical-fingerprint-passed; related-historical-oracle-repair-passed",
+      "one_gib_verification_peak_bytes": 756084736,
+      "fingerprint_repair_boundary": "Serialize each row once through LATERAL with OFFSET 0; retain JSON, ordering, digest semantics, 64 MiB row ceiling and exact 20 MiB fixture"
+    },
+    "phase2_cold_archive": {
+      "bytes": 96459344,
+      "sha256": "ce66e2a6ef3e7ffdb63e4c50d7c6d233130f891a3665c03b41852007098182a0",
+      "original_phase2_closeout_unchanged": true
+    },
+    "vm101_capacity": {
+      "user_authorized": true,
+      "status": "completed",
+      "absolute_disk_gib": 154,
+      "reboot_or_service_stop": false,
+      "original_running_services_preserved": 21,
+      "guest_result_sha256": "f379a851c7966007a9f331259b4f925616de8461d55330b8859358423da6da09",
+      "host_result_sha256": "972a6c66ed6553de7ef1e2d37e06418160f861f82da64711dd62c368e333320f"
+    }
+  },
+  "closeout_preflight": {
+    "status": "passed; final closeout recorded separately",
+    "receipt_sha256": "0d11a015b29e7fc19b71a500114f638c74c34c282c352fce8f5c1e779f140e53",
+    "terminal_workers": 42,
+    "protected_process_identities_unchanged": 20,
+    "private_contexts_remaining": 0,
+    "transient_environment_configs_remaining": 0,
+    "six_database_identity_check_passed": true,
+    "postgresql_stopped_at_preflight": false,
+    "raw_receipts_planned_for_local_handoff": 143,
+    "final_closeout_receipt_sha256": "c81400f7dea32562549e293515ec8e8f78c4329cf76945064b9874b5af1dbb59"
+  },
+  "resource_closeout": {
+    "closed": true,
+    "receipt_bytes": 126583,
+    "receipt_sha256": "c81400f7dea32562549e293515ec8e8f78c4329cf76945064b9874b5af1dbb59",
+    "intent_sha256": "d0ec692dd47f8278aff7fa0735884fed21b921a9e046da07e103b8e72a0a085f",
+    "local_remote_receipt_hashes_match": true,
+    "terminal_workers_with_pid_zero": 42,
+    "postgresql": {"active_state": "inactive", "sub_state": "dead", "result": "success", "exec_main_status": 0, "main_pid": 0},
+    "original_postmaster_pid_absent": true,
+    "port_54919_listener_absent": true,
+    "owned_socket_and_pidfile_absent": true,
+    "pgdata_and_six_database_directories_retained": true,
+    "protected_process_identities_unchanged": 20,
+    "selected_source16_files_unchanged": 1625,
+    "original_passing_and_failing_receipts_unchanged": true,
+    "private_contexts_remaining": 0,
+    "transient_environment_configs_remaining": 0,
+    "local_evidence_handoff": {
+      "files": 172,
+      "required_files": 143,
+      "supplemental_files": 29,
+      "each_file_size_and_sha256_checked": true,
+      "ledger_sha256": "927216c842aa9d238eb3995fc8aa7736e47b52d7d1570cd80b1a4408b231bd99",
+      "archive_bytes": 388464,
+      "archive_sha256": "aefe171fd3185a98d67ec3b00cfff17fb50525543ce0b87a93f2e398c59990d1"
+    }
+  },
+  "deferred": [
+    "OCI delivery",
+    "Non-AMD GPU execution",
+    "Provider-specific online acceptance",
+    "Full original Emby Web compatibility",
+    "Broader capacity and platform delivery"
+  ],
+  "recording_boundary": "This ledger retains actual execution sources, original failed aggregates, separately accepted package/repair scopes, explicit input equivalence and final resource closure. No test, formatter, build or product probe was executed to author this documentation, and no unsupported profile inherits acceptance.",
+  "receipt_hash_provenance": "Existing receipt bytes or the final closure preflight receipt_identity map; no product rerun for a receipt."
+}

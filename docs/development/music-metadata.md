@@ -1,5 +1,88 @@
 # Embedded music metadata and artist identities
 
+## Current phase 3 music contract
+
+The current music additions passed the selected
+[phase 3 scopes and closeout](amd-media-phase3-20260919.md).
+Music tag facts use `CurrentMusicMetadataVersion = 3`,
+independently of the technical media-probe version. Existing persisted
+`music_source` remains Version 1 with optional extension fields; old source
+hashes, identities and manual controls are preserved rather than relabeled as
+newly extracted facts. A scan refreshes older music facts before using the new
+fields. Historical source15/18/20 evidence below does not verify these additions.
+
+| Embedded format tag | Accepted meaning |
+| --- | --- |
+| `title`, `album`, `artist`, `album_artist` | Existing bounded scalar values; album-artist aliases remain supported |
+| `artists`, `album_artists`/`albumartists`, `composers`, `genres` | Explicit plural credits: a JSON-array-valued string or semicolon-separated list |
+| `composer`, `genre` | Single literal credit; used when the corresponding plural tag is absent |
+| `track`/`tracknumber`, `disc`/`discnumber` | Positive `N` or `N/Total`; total cannot be smaller than the number |
+| `year`, `date` | Four-digit year; date accepts `YYYY`, `YYYY-MM` or `YYYY-MM-DD`; supplied year and date must agree |
+| MusicBrainz recording/track, album, release-group and artist identifier tags | Valid UUID-shaped identifiers, stored under the corresponding supported provider keys |
+
+Tag matching is case-insensitive with deterministic alias-collision rejection.
+Scalar artist, album-artist and composer punctuation is never guessed to separate
+people. Explicit plural lists retain first occurrence order, remove exact
+duplicates, reject empty members and allow at most 64 entries. Accepted text is
+bounded to 1,024 UTF-8 bytes per value and 4,096 bytes across supported text;
+invalid facts do not become partial accepted metadata. This remains an
+audio-only extraction path; an attached cover is not an ordinary video stream.
+Only a complete date produces PremiereDate; partial dates do not invent a
+missing month or day.
+
+Composers create persistent Person relationships with `Type: "Composer"`;
+DTOs use real stored IDs. Album publication still requires a complete accepted
+member snapshot. Explicit album-artist groups require exact member consensus;
+all-missing album artists may use the existing uniform-track-artist fallback.
+Genre and composer values form an ordered member union. Album dates and
+MusicBrainz album identifiers require consensus instead of selecting an
+arbitrary member. Source precedence, manual overrides/locks and failure
+preservation remain the existing metadata contract.
+
+| Route relative to `/emby` | Current scope |
+| --- | --- |
+| `GET /Artists`, `/Artists/{Name}` | Current authorized music-artist associations; name detail also resolves an album-artist-only identity |
+| `GET /Artists/AlbumArtists`, `/Artists/AlbumArtists/{Name}` | Album-artist role; `/AlbumArtists` and its name detail are aliases |
+| `GET /MusicGenres`, `/MusicGenres/{Name}` | Authorized music genre relationships, existing Genre identity with `Type: "MusicGenre"` |
+
+Lists return `{Items, TotalRecordCount}`, apply current source visibility and
+supported filters before counting/paging, and use independent entity favorites.
+The native administrator artwork browser uses `GET /admin/v1/music/artists`
+with `Role=Artist|AlbumArtist`, and `GET /admin/v1/music/genres`; both return
+`{Items, TotalRecordCount, StartIndex, Limit}`. Native list options are
+`SearchTerm`, `ParentId`, `IsFavorite`, `StartIndex`, and `Limit` (default 25,
+maximum 200). This does not expose arbitrary upstream artist families such as
+Prefixes, InstantMix or artist Similar.
+
+Native metadata editing adds Album, Artists and AlbumArtists for supported
+music items, plus Audio track/disc numbers, within the existing revision,
+override, lock and reset model. It does not edit embedded file tags. See the
+[metadata API](../api/admin-metadata.md). Album edits change the saved album tag,
+not an Audio item's physical AlbumId/AlbumRef or the effective album name;
+edit the MusicAlbum Name to change that display name. MusicBrainz provider keys
+normalize case and reject conflicting aliases. Accepted recording/release-group
+IDs feed the existing provider path's known-ID lookup. Online MusicBrainz integration and
+local tag extraction have distinct evidence; provider-specific online acceptance
+remains deferred.
+
+Source: [tag extraction](../../internal/media/music_metadata_extended.go),
+[source preservation](../../internal/library/metadata_music_source.go),
+[music entity queries](../../internal/library/music_entities.go), and
+[route adapters](../../internal/server/music_entities.go).
+Migration [0039](../../internal/database/migrations/0039_music_metadata.sql)
+updates automatic metadata composition for Audio numbering while preserving
+historical rows and manual controls. The selected upgrade/recovery scopes passed
+within the phase 3 evidence and PostgreSQL profile boundaries.
+The first source03 library run exposed missing music activity field mapping and
+allowlist support. The repair adds typed Album/Artists/AlbumArtists activity
+fields and forward [migration 0041](../../internal/database/migrations/0041_music_activity.sql),
+preserving frozen 0036 through 0040 and the schema40 baseline. Source06's selected
+database/activity and music/navigation repair scopes passed; later composed
+server, real UI, backup/recovery and resource closeout are recorded separately
+in the [phase 3 record](amd-media-phase3-20260919.md).
+
+## Historical music probe 2 contract and evidence
+
 This increment indexes the observed audio format tags `title`, `album`,
 `artist`, and `album_artist`. It addresses the original client's album initialization path with
 real source metadata and persistent relationships. It does not establish

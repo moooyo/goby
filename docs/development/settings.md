@@ -1,5 +1,37 @@
 # Managed settings persistence and operation
 
+## Current phase 3 management contract
+
+Selected management fields and task consumers passed the
+[phase 3 verification and closeout](amd-media-phase3-20260919.md). The historical M5h evidence
+below remains limited to its original name, width and native-settings contract.
+
+`Management.Metadata` contains the provider enable switch, preferred metadata
+language and country. `Management.Subtitles` contains download languages and
+movie/episode enable switches. `Management.Tasks` contains concurrency and
+provider-cache retention/count limits. The [current configuration API](../api/configuration.md)
+lists their exact defaults, limits and replacement behavior. Native updates use
+the shared settings revision; native reset can target `Management` or one of
+its three named sections. Compatibility named writes replace only their section
+against the latest locked record. Changes publish after commit and remain
+persisted after restart; rejected or unchanged writes produce no change event.
+
+The task manager reads concurrency before dispatch. A provider/cache task child
+captures its settings when it starts, so an active child retains its snapshot.
+Cache settings feed actual provider-cache pruning; subtitle settings feed the
+configured download executor. Provider availability requires both deployment
+configuration and the runtime enable flag. The UI cannot enable an unavailable
+deployment provider or save its credentials. No process restart is required
+for these managed fields; deployment paths, secrets and resource budgets remain
+outside this editor. Provider-specific online acceptance remains deferred.
+
+Source: [typed management values](../../internal/settings/management.go),
+[configuration transactions](../../internal/settings/configuration.go),
+[task executors](../../internal/server/task_executors.go), and
+[phase 3 integration gate](amd-media-phase3-20260919.md).
+
+## Historical M5h implementation and evidence
+
 **M5h increment complete and deployed: schema 21/probe 6.**
 The [three native settings APIs](../api/settings.md) now share schema-21 state
 with the [ConfigurationService adapter](../api/configuration.md).
