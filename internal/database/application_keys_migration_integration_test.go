@@ -43,15 +43,18 @@ func requireApplicationKeyConstraint(t *testing.T, err error, code string) {
 }
 
 // Version 15 already contains management revisions and all login metadata.
-// Exclude only later device, playback, storage-binding, and phase 3 columns;
-// every schema15 field, including secrets and timestamps, remains compared.
+// Exclude only later device, playback, storage-binding, phase 3, and local
+// credential columns; every schema15 field, including secrets and timestamps,
+// remains compared.
 func applicationKeyLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
-		'users', (SELECT jsonb_agg(to_jsonb(t) - 'configuration_revision' ORDER BY id) FROM users t),
-		'credentials', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
+		'users', (SELECT jsonb_agg(to_jsonb(t) - 'configuration_revision'
+			- ARRAY['local_password_hash','profile_pin_ciphertext','local_credentials_revision',
+				'local_password_failures','local_password_blocked_until'] ORDER BY id) FROM users t),
+		'credentials', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' - 'local_auth' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) - 'revision' - 'options' ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
@@ -114,6 +117,7 @@ func TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints(t *
 		t.Fatal("application key migration changed historical rows or credential material")
 	}
 	assertPhase3MigrationDefaults(t, ctx, pool)
+	assertSelectedClientMigrationDefaults(t, ctx, pool)
 	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	var registeredLogins int
 	var registryMatches bool

@@ -75,8 +75,10 @@ func encodingVODDataSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Po
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
-		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' - 'configuration_revision' ORDER BY id) FROM users t),
-		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
+		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' - 'configuration_revision'
+			- ARRAY['local_password_hash','profile_pin_ciphertext','local_credentials_revision',
+				'local_password_failures','local_password_blocked_until'] ORDER BY id) FROM users t),
+		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' - 'local_auth' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) - 'revision' - 'options' ORDER BY id) FROM libraries t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
 		'play', (SELECT jsonb_agg(to_jsonb(t) - 'client_correlated' - 'application_client_id' - 'is_dynamic' ORDER BY id) FROM play_sessions t),
@@ -183,6 +185,7 @@ func TestMigrateEncodingVODPlansPreservesVersion10DataAndJSONBounds(t *testing.T
 		t.Error("encoding plan migration changed existing jobs or related data")
 	}
 	assertPhase3MigrationDefaults(t, ctx, pool)
+	assertSelectedClientMigrationDefaults(t, ctx, pool)
 	var oldHistory, latestName string
 	var count int
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(m) ORDER BY version)::text

@@ -238,6 +238,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 					}
 					assertStorageBindingMigrationDefaults(t, ctx, pool)
 					assertPhase3MigrationDefaults(t, ctx, pool)
+					assertSelectedClientMigrationDefaults(t, ctx, pool)
 				} else {
 					themeOwnersMigrateTo(t, ctx, pool, 27)
 				}

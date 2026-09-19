@@ -81,9 +81,9 @@ func currentMigrationVersion(t *testing.T) int64 {
 	return migrations[len(migrations)-1].Version
 }
 
-// The inventory matches the exported schema-40 PostgreSQL-17 recovery catalog.
+// The inventory includes schema_migrations and every current application table.
 // Historical fixture counts remain pinned to their original schema versions.
-const currentMigrationTableCount = 48
+const currentMigrationTableCount = 49
 
 // Original-column snapshots prove row preservation; these checks account for
 // every binding column added by the current migration without inferring approval.
@@ -156,7 +156,7 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		t.Errorf("schema version after repeated migration = %d, want current, error = %v", version, err)
 	}
 	// Successful history entries must correspond to the actual application tables.
-	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources"} {
+	for _, table := range []string{"users", "sessions", "server_settings", "libraries", "library_roots", "items", "scan_jobs", "catalog_entities", "item_entities", "item_images", "user_item_data", "play_sessions", "item_subtitles", "encoding_jobs", "client_playback_references", "item_metadata_state", "application_keys", "application_key_clients", "devices", "application_key_devices", "managed_settings", "activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources", "extra_reserved_paths", "item_extra_resources", "item_intro_state"} {
 		var exists bool
 		if err := pool.QueryRow(ctx, "SELECT to_regclass($1) IS NOT NULL", table).Scan(&exists); err != nil || !exists {
 			t.Errorf("migrated table %s exists = %v, error = %v", table, exists, err)
@@ -166,6 +166,7 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 		t.Errorf("current schema table count = %d, want %d, error = %v", count, currentMigrationTableCount, err)
 	}
 	assertPhase3MigrationDefaults(t, ctx, pool)
+	assertSelectedClientMigrationDefaults(t, ctx, pool)
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated activity entries: count=%d error=%v", count, err)
 	}

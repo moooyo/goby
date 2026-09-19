@@ -177,6 +177,7 @@ func TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks(t *tes
 				wantTables = 35
 			} else {
 				assertPhase3MigrationDefaults(t, ctx, pool)
+				assertSelectedClientMigrationDefaults(t, ctx, pool)
 			}
 			var version int64
 			var count, boundRoots, changedLegacyActivity int

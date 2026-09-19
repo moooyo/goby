@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,7 +53,7 @@ func TestPostgreSQLSelectedPhase1ArchivePreservesCredentialsAndIntroState(t *tes
 	targetOptions := options
 	targetOptions.SourceURL = os.Getenv("GOBY_TEST_BACKUP_TARGET_DATABASE_URL")
 	got, targetSequences := unchangedSourceWitness(t, ctx, target, targetOptions)
-	if !equalJSON(got.Tables, facts.Tables) || !equalJSON(targetSequences, sequences) {
+	if !equalJSON(got.Tables, facts.Tables) || !reflect.DeepEqual(targetSequences, sequences) {
 		t.Fatal("the round trip changed durable rows or independent sequence state")
 	}
 	assertSourceWitness(t, ctx, source, options, before, sequences)

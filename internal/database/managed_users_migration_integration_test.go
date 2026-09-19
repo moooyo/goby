@@ -55,17 +55,19 @@ func managedUsersVersion12Baseline(t *testing.T, ctx context.Context, pool *pgxp
 	}
 }
 
-// Exclude only later management, device, playback, storage, and phase 3
-// columns; old fields, including password digests, token digests, timestamps,
-// policy, and configuration, remain in the exact comparison. Snapshot contents
-// are never printed on failure.
+// Exclude only later management, device, playback, storage, phase 3, and local
+// credential columns; old fields, including password digests, token digests,
+// timestamps, policy, and configuration, remain in the exact comparison.
+// Snapshot contents are never printed on failure.
 func managedUsersLegacySnapshot(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
 	t.Helper()
 	var snapshot string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'settings', (SELECT jsonb_agg(to_jsonb(t) ORDER BY key) FROM server_settings t),
-		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' - 'configuration_revision' ORDER BY id) FROM users t),
-		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' ORDER BY id) FROM sessions t),
+		'users', (SELECT jsonb_agg(to_jsonb(t) - 'management_revision' - 'configuration_revision'
+			- ARRAY['local_password_hash','profile_pin_ciphertext','local_credentials_revision',
+				'local_password_failures','local_password_blocked_until'] ORDER BY id) FROM users t),
+		'auth', (SELECT jsonb_agg(to_jsonb(t) - 'device_registry_id' - 'local_auth' ORDER BY id) FROM sessions t),
 		'libraries', (SELECT jsonb_agg(to_jsonb(t) - 'revision' - 'options' ORDER BY id) FROM libraries t),
 		'roots', (SELECT jsonb_agg(to_jsonb(t) - 'binding_revision' - 'storage_binding' - 'bound_at' - 'bound_by' ORDER BY id) FROM library_roots t),
 		'items', (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM items t),
@@ -149,6 +151,7 @@ func TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions(t *tes
 		t.Error("managed user migration changed historical identity, settings, catalog, or playback state")
 	}
 	assertPhase3MigrationDefaults(t, ctx, pool)
+	assertSelectedClientMigrationDefaults(t, ctx, pool)
 	assertStorageBindingMigrationDefaults(t, ctx, pool)
 	var preservedHistory, migrationName string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(t) ORDER BY version)::text
