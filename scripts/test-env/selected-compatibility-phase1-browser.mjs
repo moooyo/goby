@@ -274,24 +274,62 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
   const diagnostic = { Phase: currentPhase, Operation: 'create-context', Document: null,
     StartupResponses: [], AssetFailures: [], RequestFailures: [], ConsoleErrorKinds: [], ConsoleWarningKinds: [], ServiceWorkers: [] };
   (result.OriginalClientAttempts ??= []).push(diagnostic);
+  let originalPage = null;
+  async function failureScreenshot(name) {
+    if (!originalPage || originalPage.isClosed()) { diagnostic.FailureScreenshotState = 'PageUnavailable'; return; }
+    try {
+      const url = new URL(originalPage.url());
+      if (url.origin !== fixture.BaseURL || !url.pathname.startsWith('/web/')) {
+        diagnostic.FailureScreenshotState = 'OutsideOwnedOriginalClient'; return;
+      }
+      const masks = [originalPage.locator('input,textarea,[contenteditable="true"]')];
+      for (const value of [fixture.AdminPassword, fixture.UserPassword, fixture.LocalPassword, fixture.ProfilePin])
+        if (value) masks.push(originalPage.getByText(value, { exact: false }));
+      const bytes = await originalPage.screenshot({ fullPage: false, mask: masks, timeout: 2500 });
+      if (bytes.length > (8 << 20)) { diagnostic.FailureScreenshotState = 'SizeLimit'; return; }
+      const filename = `original-client-failure-${result.OriginalClientAttempts.length}-${name}.png`;
+      await fs.writeFile(path.join(fixture.ArtifactsDir, filename), bytes,
+        { mode: 0o600, flag: 'wx', signal: AbortSignal.timeout(1000) });
+      diagnostic.FailureScreenshot = filename;
+      diagnostic.FailureScreenshotState = 'CapturedWithSecretsMasked';
+      result.Screenshots.push(filename);
+    } catch { diagnostic.FailureScreenshotState = 'CaptureUnavailable'; }
+  }
+  const errorCause = error => {
+    const message = String(error?.message ?? '');
+    if (error?.safeCode) return error.safeCode;
+    if (/Browser needs to be launched with the global proxy/i.test(message)) return 'ContextProxyRequiresLaunchProxy';
+    if (/Target page, context or browser has been closed|Browser has been closed/i.test(message)) return 'BrowserTargetClosed';
+    if (/Executable doesn.t exist/i.test(message)) return 'BrowserExecutableMissing';
+    const network = /\bnet::(ERR_[A-Z_]+)\b/.exec(message);
+    if (network) return network[1];
+    const timeout = /Timeout (\d{1,6})ms exceeded/i.exec(message);
+    if (timeout) return `TimeoutAfter${timeout[1]}Milliseconds`;
+    if (error instanceof AggregateError) return 'AllRequiredAlternativesFailed';
+    return 'UnclassifiedBrowserOperationError';
+  };
   async function operation(name, action) {
     diagnostic.Operation = name;
     try { return await action(); }
     catch (error) {
       diagnostic.FailureOperation = name;
       diagnostic.ErrorKind = ['TimeoutError', 'Error', 'AggregateError'].includes(error.name) ? error.name : 'BrowserError';
+      diagnostic.Cause = errorCause(error);
+      if (error instanceof AggregateError) diagnostic.AlternativeCauses = error.errors.slice(0, 4).map(errorCause);
       if (!error.safeCode) error.safeCode = `original_client_${name.replaceAll('-', '_')}_failed`;
+      await failureScreenshot(name);
       throw error;
     }
   }
-  const context = await guardedContext(true);
+  const context = await operation('create-context', () => guardedContext(true));
   context.on('serviceworker', worker => {
     const url = new URL(worker.url());
     if (diagnostic.ServiceWorkers.length < 8) diagnostic.ServiceWorkers.push({ OwnedOrigin: url.origin === fixture.BaseURL,
       Path: url.origin === fixture.BaseURL ? url.pathname : '{external}' });
   });
-  await installMediaObserver(context);
-  const page = await context.newPage();
+  await operation('install-media-observer', () => installMediaObserver(context));
+  const page = await operation('create-page', () => context.newPage());
+  originalPage = page;
   const reports = observePlayback(page);
   const session = { context, page, reports, AuthenticationRequests: 0 };
   const safeAssetPath = value => {
@@ -333,14 +371,35 @@ async function originalLogin(secret = fixture.LocalPassword, enableProfilePin = 
   await operation('service-worker-ready', async () => {
     diagnostic.ServiceWorkerReady = await page.evaluate(() => {
       if (!navigator.serviceWorker) return { Ready: false, Reason: 'Unavailable' };
-      return Promise.race([
-        navigator.serviceWorker.ready.then(registration => ({ Ready: true,
-          OwnedOrigin: new URL(registration.scope).origin === location.origin,
-          ScopePath: new URL(registration.scope).pathname, ActiveState: registration.active?.state ?? null,
-          ScriptPath: registration.active ? new URL(registration.active.scriptURL).pathname : null,
-          ControlsCurrentPage: Boolean(navigator.serviceWorker.controller) })),
-        new Promise(resolve => setTimeout(() => resolve({ Ready: false, Reason: 'Timeout' }), 10000)),
-      ]);
+      return new Promise(resolve => {
+        let registration, worker, complete = false;
+        const states = [];
+        const snapshot = reason => ({ Ready: Boolean(registration), Reason: reason,
+          OwnedOrigin: registration ? new URL(registration.scope).origin === location.origin : false,
+          ScopePath: registration ? new URL(registration.scope).pathname : null, ActiveState: worker?.state ?? null,
+          ScriptPath: worker ? new URL(worker.scriptURL).pathname : null, ObservedStates: states.slice(),
+          ControlsCurrentPage: Boolean(navigator.serviceWorker.controller) });
+        const finish = reason => {
+          if (complete) return;
+          complete = true;
+          clearTimeout(timer);
+          worker?.removeEventListener('statechange', observeState);
+          resolve(snapshot(reason));
+        };
+        const observeState = () => {
+          if (worker && states[states.length - 1] !== worker.state) states.push(worker.state);
+          if (worker?.state === 'activated') finish('Activated');
+          else if (worker?.state === 'redundant') finish('Redundant');
+        };
+        const timer = setTimeout(() => finish('Timeout'), 10000);
+        navigator.serviceWorker.ready.then(value => {
+          if (complete) return;
+          registration = value; worker = registration.active;
+          if (!worker) { finish('NoActiveWorker'); return; }
+          worker.addEventListener('statechange', observeState);
+          observeState();
+        }, () => finish('ReadyRejected'));
+      });
     });
     check(diagnostic.ServiceWorkerReady.Ready === true && diagnostic.ServiceWorkerReady.OwnedOrigin === true &&
       diagnostic.ServiceWorkerReady.ScopePath === '/web/' && diagnostic.ServiceWorkerReady.ActiveState === 'activated',

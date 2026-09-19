@@ -15,6 +15,14 @@ resolved `register()` without registering a worker, while the original loader
 waited for `navigator.serviceWorker.ready`. The revised original-client context
 allows its real worker; the native administrator context still blocks workers.
 
+The retained r04 attempt registered the real worker and observed `ready` while
+its active worker was still `activating`. The immediate `activated` assertion
+was a fixture timing error. The revised observer keeps the final `activated`
+requirement and waits for the actual `statechange` event within one ten-second
+deadline. It records the observed states and distinguishes activation,
+redundancy, a missing active worker, readiness rejection, and timeout. No worker
+state, registration result, or readiness promise is replaced.
+
 A context file, saved preference, returned
 chapter interval, screenshot, or successful media response is not a passing
 browser journey. The coordinator must freeze the integrated phase 1 source and
@@ -211,6 +219,12 @@ the current safe operation name. A missing or non-HTML entry document fails
 immediately, before a login-control timeout, without retaining credentials or
 raw browser exceptions.
 
+Context creation, observer installation, page creation, proxy-sensitive
+navigation, and worker readiness each have their own safe operation name.
+Known proxy, closed-target, missing-executable, network, and timeout errors map
+to fixed cause labels; alternate-control failures retain those labels for each
+failed alternative without copying raw exception messages or credential data.
+
 Coarse warning categories distinguish Playwright's blocked-worker warning from
 other warnings. `ServiceWorkerReady` describes the actual activated registration;
 `ControlsCurrentPage` may initially be false because readiness does not require
@@ -220,6 +234,13 @@ The native screenshots show the open intro dialog after its saved state is
 visible, and the local-credential dialog before any secret fields are filled.
 Screenshots supplement the real UI mutations and independent database checks;
 they do not establish acceptance on their own.
+
+An original-client named-operation failure also attempts one private diagnostic
+screenshot of that same owned `/web/` page. It masks inputs, textareas, editable
+content, and any visible fixture secret text. Capture is limited to 2.5 seconds
+and 8 MiB, with a one-second abortable file write to a new `0600` file. The result
+records the filename or a safe unavailability reason. Screenshot failure cannot
+replace the original operation error or prevent browser and proxy cleanup.
 
 For each ordered stage the browser writes `stage-<phase>-request.json` with
 `{RunId, Phase, State:"complete"}`. Go independently checks its database and source files, or
