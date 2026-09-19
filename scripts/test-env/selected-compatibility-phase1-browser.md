@@ -33,6 +33,16 @@ to the new page, and no storage values are edited. The two denied requests in
 the old r05 report remain unclassified because that report did not retain their
 addresses or intercepting transport.
 
+The retained r06 attempt passed the real PIN journey. Its enabled next-episode
+browser journey also observed two eighteen-second episodes, 432 decoded frames
+per episode, two distinct Started/Stopped lifecycles, and two natural media-end
+events. The database observer did not acknowledge that stage, and the run remains
+failed. Its deleted schema cannot retrospectively establish the mismatched SQL
+predicate. Revised observer evidence preserves precheck and failure snapshots,
+playback predicate counts, and current authentication/expiry facts before
+cleanup. Database failure acknowledgements fail the browser immediately instead
+of leaving it to wait for the acknowledgement deadline.
+
 A context file, saved preference, returned
 chapter interval, screenshot, or successful media response is not a passing
 browser journey. The coordinator must freeze the integrated phase 1 source and
@@ -215,9 +225,12 @@ A deny-only HTTP/CONNECT proxy covers each browser context, including worker
 traffic that page routing cannot intercept. Its exact-origin bypass permits
 only the fixture's HTTP/WebSocket authority. It opens no upstream connection for
 denied traffic and proves its sockets and listener closed after browser exit.
-Foreign HTTP or
-WebSocket requests are denied and make the full journey fail. It never supplies
-a synthetic success response to a denied request. Result files retain safe
+Foreign HTTP or WebSocket requests remain denied. The exact observed original
+client registration endpoint at `https://mb3admin.com/admin/service/registration/validateDevice`
+is classified separately as expected external diagnostic traffic, including its
+TLS authority when a CONNECT denial cannot observe the encrypted path. Unknown
+external attempts fail acceptance. No denied request receives a synthetic
+success response. Result files retain safe
 scenario names, media event facts, HTTP status, fixture item IDs, and hashed
 play-session identities. Raw errors, token-bearing URLs, browser storage,
 headers, and proprietary source are not copied into the report.
@@ -227,6 +240,13 @@ HTTP and WebSocket guards use the same exact host and port check, mapping only
 hostname, port, safe path class, phase, and intercepting transport, never a
 query string or user-info value. This distinguishes a genuine external request
 from a guard classification error without rewriting historical evidence.
+The r06 receipts identify the registration endpoint during login, PIN return,
+and next-episode playback; the r05 counter-only requests remain unknown.
+`ExpectedExternalRegistrationRequests` counts denied attempts, and
+`ExternalRegistration.AuthorizationVerified` remains false. It is not proof
+that the external service authorized the client. Intro acceptance still requires
+the actual button or automatic seek; an absent seek plus an observed registration
+denial during that playback is a blocked consumer stage.
 
 Original-client entry diagnostics retain the navigation HTTP status, final path
 without query parameters, MIME type, bounded failed asset paths/statuses,
@@ -278,11 +298,21 @@ performs the owned restart, then writes `stage-<phase>-database.json` with:
 ```
 
 A stage is incomplete without this acknowledgement. Terminal play-session
-history is retained as evidence; session cleanup means no active authentication
-sessions, live playback sessions, encoding workers, or listeners remain, not
-that history has been deleted. Fallback cleanup is reported separately from a
+history is retained as evidence. A planning row named `Prepared` is not by itself
+proof of usable playback: the observer also records its started state, current
+authentication validity, and both lease expiries. Every session that actually
+started must still have its exact completed lifecycle and required terminal
+position. Cleanup requires no active authentication, usable playback sessions,
+encoding workers, or listeners, rather than deletion of historical planning
+rows. Fallback cleanup is reported separately from a
 successful UI sign-out. Go independently checks owned schema/media cleanup and
 removes the private context after browser shutdown.
+
+On a database assertion failure, the observer writes the same bound stage
+acknowledgement with `Complete:false, Observed:true, Failed:true` and
+`ErrorCode:"database_stage_verification_failed"`. It retains independent safe
+SQL snapshots and predicate facts, and the browser reports that exact failure
+without treating it as a completed or blocked-consumer stage.
 
 An observed original-client intro registration dependency may instead write
 `State:"blocked", Reason:"original_client_entitlement"`. Only the ShowButton and
@@ -384,13 +414,17 @@ a DTO test does not replace missing original intro behavior.
 
 `browser-result.json` has marker `goby-selected-phase1-browser-result-v1`.
 `Complete` is true only after every declared check, ordered database stage,
-successful cleanup acknowledgement, and zero browser/foreign-request errors.
+successful cleanup acknowledgement, and zero browser or unexpected external
+request errors. Expected denied external registration remains separately
+reported with authorization unverified; it never substitutes for a feature's
+real consumer evidence.
 Failures retain the last phase and a credential-free error code. The coordinator
 must also require the Go driver result to prove owned cleanup; browser success
 alone is insufficient.
 
-This browser profile covers actual direct playback of small H.264/AAC MP4
-fixtures. Its observed `PlayMethod` is retained; it does not claim every
+This browser profile uses small H.264/AAC MP4 playback fixtures. The retained
+r06 next-episode journey reported `PlayMethod=DirectStream`. Each actual
+`PlayMethod` is retained; the profile does not claim every
 direct/remux/transcode/HLS profile. The phase's separate media and integration
 checks own alternative playback methods, resume and explicit-start boundaries,
 wrong/empty credentials, trusted-local rules and spoofed proxy input, isolation,

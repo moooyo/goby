@@ -589,7 +589,44 @@ type selectedPhase1BrowserResult struct {
 	Checks          map[string]bool
 	PageErrors      *int
 	ForeignRequests *int
+	ExpectedExternalRegistrationRequests *int
+	BlockedNetworkOverflow *int
+	BlockedNetwork []struct {
+		Phase, Transport, Scheme, Host, Port, Path string
+		NormalizedOwnedOrigin, HasUserInfo bool
+	}
+	ExternalRegistration struct {
+		Disposition string
+		AuthorizationVerified *bool
+	}
 	Stages          []struct{ Phase, State string }
+}
+
+func selectedPhase1ExpectedExternalRequests(result selectedPhase1BrowserResult) bool {
+	if result.ForeignRequests == nil || result.ExpectedExternalRegistrationRequests == nil || result.BlockedNetworkOverflow == nil ||
+		*result.ForeignRequests < 0 || *result.ExpectedExternalRegistrationRequests < 0 || *result.BlockedNetworkOverflow != 0 ||
+		*result.ForeignRequests != *result.ExpectedExternalRegistrationRequests || len(result.BlockedNetwork) != *result.ExpectedExternalRegistrationRequests {
+		return false
+	}
+	if result.ExternalRegistration.Disposition != "DeniedWithoutUpstreamConnection" ||
+		result.ExternalRegistration.AuthorizationVerified == nil || *result.ExternalRegistration.AuthorizationVerified {
+		return false
+	}
+	for _, request := range result.BlockedNetwork {
+		knownPhase := false
+		for _, phase := range selectedPhase1BrowserPhases {
+			knownPhase = knownPhase || request.Phase == phase
+		}
+		if !knownPhase || request.Scheme != "https:" || request.Host != "mb3admin.com" || request.Port != "" || request.HasUserInfo || request.NormalizedOwnedOrigin {
+			return false
+		}
+		pathRequest := (request.Transport == "request-route" || request.Transport == "deny-only-http-proxy") && request.Path == "/admin/service/registration/validateDevice"
+		authorityRequest := request.Transport == "deny-only-connect-proxy" && request.Path == "{authority-only}"
+		if !pathRequest && !authorityRequest {
+			return false
+		}
+	}
+	return true
 }
 
 // The product serves its native administration at /admin/. This owned fixture
@@ -698,9 +735,13 @@ func selectedPhase1DatabaseSnapshot(ctx context.Context, f *serverFixture, fixtu
 			'ProbeVersion',media->'ProbeVersion','Chapters',media->'Chapters') ORDER BY id),'[]'::jsonb) FROM items WHERE id=ANY($2::text[])),
 		'UserData',(SELECT COALESCE(jsonb_agg(jsonb_build_object('ItemId',item_id,'PositionTicks',playback_position_ticks,
 			'PlayCount',play_count,'Played',played,'LastPlayedAt',last_played_at) ORDER BY item_id),'[]'::jsonb) FROM user_item_data WHERE user_id=$1 AND item_id=ANY($2::text[])),
-		'Playback',(SELECT COALESCE(jsonb_agg(jsonb_build_object('ItemId',item_id,'State',state,'PositionTicks',position_ticks,
-			'DurationTicks',duration_ticks,'Counted',counted,'Started',started_at IS NOT NULL,'Stopped',stopped_at IS NOT NULL) ORDER BY created_at,id),'[]'::jsonb)
-			FROM play_sessions WHERE user_id=$1),
+		'Playback',(SELECT COALESCE(jsonb_agg(jsonb_build_object('ItemId',p.item_id,'State',p.state,'PositionTicks',p.position_ticks,
+			'DurationTicks',p.duration_ticks,'Counted',p.counted,'Started',p.started_at IS NOT NULL,'Stopped',p.stopped_at IS NOT NULL,
+			'PlayUnexpired',p.expires_at>clock_timestamp(),'ClientCorrelated',p.client_correlated,
+			'AuthenticationRevoked',a.revoked_at IS NOT NULL,'AuthenticationUnexpired',a.expires_at>clock_timestamp(),
+			'AuthenticationOwnerMatches',a.user_id=p.user_id,'AuthenticationDeviceMatches',a.device_id=p.device_id,
+			'AuthenticationKind',a.kind,'UserDisabled',u.is_disabled) ORDER BY p.created_at,p.id),'[]'::jsonb)
+			FROM play_sessions p JOIN sessions a ON a.id=p.auth_session_id JOIN users u ON u.id=p.user_id WHERE p.user_id=$1),
 		'ActiveSessions',(SELECT count(*) FROM sessions WHERE revoked_at IS NULL),
 		'ActivePlayback',(SELECT count(*) FROM play_sessions WHERE state IN ('Prepared','Playing','Paused')),
 		'ActiveEncodings',(SELECT count(*) FROM encoding_jobs WHERE state IN ('queued','running')),
@@ -724,6 +765,50 @@ type selectedPhase1BrowserObserver struct {
 	playbackObserved bool
 	blocked          []string
 	completed        int
+	phase            string
+}
+
+func selectedPhase1RuntimeFacts(f *serverFixture) map[string]int {
+	f.app.originals.mu.Lock()
+	original := 0
+	for _, count := range f.app.originals.owners {
+		original += count
+	}
+	f.app.originals.mu.Unlock()
+	f.app.hls.mu.Lock()
+	hls := len(f.app.hls.sessions)
+	f.app.hls.mu.Unlock()
+	policy := f.app.playbackPolicyGate()
+	policy.mu.Lock()
+	leases := len(policy.leases)
+	policy.mu.Unlock()
+	return map[string]int{"OriginalRequests": original, "HLSSessions": hls, "MediaPolicyLeases": leases, "StreamSlots": len(f.app.streamSlots)}
+}
+
+// Observations are written before assertions and again on failure. They contain
+// safe state predicates rather than tokens, raw authentication IDs, or secrets.
+func (observer *selectedPhase1BrowserObserver) observation(ctx context.Context, label string, facts map[string]any) (map[string]any, error) {
+	database, databaseErr := selectedPhase1DatabaseSnapshot(ctx, observer.runtime.f, observer.fixture)
+	sources, sourceErr := selectedPhase1SourceFacts(observer.paths)
+	value := map[string]any{"Marker": "goby-selected-phase1-stage-observation-v1", "RunId": observer.fixture.RunID,
+		"Phase": observer.phase, "Observation": label, "Observed": databaseErr == nil, "Complete": false,
+		"SourcesUnchanged": sourceErr == nil && reflect.DeepEqual(sources, observer.sources), "Facts": facts,
+		"Runtime": selectedPhase1RuntimeFacts(observer.runtime.f)}
+	if databaseErr == nil {
+		value["Database"] = database
+	} else {
+		value["DatabaseErrorCode"] = "database_snapshot_failed"
+	}
+	if sourceErr == nil {
+		value["Sources"] = sources
+	}
+	if err := featureWaveWriteCheckpoint(filepath.Join(observer.fixture.ArtifactsDir, "stage-"+observer.phase+"-"+label+"-observation.json"), value); err != nil {
+		return value, errors.New("selected phase 1 independent observation could not be preserved")
+	}
+	if databaseErr != nil {
+		return value, errors.New("selected phase 1 independent database observation failed")
+	}
+	return value, nil
 }
 
 func (observer *selectedPhase1BrowserObserver) credentials(ctx context.Context, enabled bool) error {
@@ -756,7 +841,17 @@ func (observer *selectedPhase1BrowserObserver) intro(ctx context.Context) error 
 	return nil
 }
 
-func (observer *selectedPhase1BrowserObserver) playback(ctx context.Context, itemID string, previous int, minimumPosition int64, requireEnded bool) (int, error) {
+func (observer *selectedPhase1BrowserObserver) playback(ctx context.Context, itemID string, previous int, minimumPosition int64, requireEnded bool) (result int, resultErr error) {
+	var facts map[string]any
+	defer func() {
+		if resultErr != nil {
+			evidenceCtx, evidenceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer evidenceCancel()
+			if _, err := observer.observation(evidenceCtx, "playback-failed-"+itemID, facts); err != nil {
+				resultErr = errors.Join(resultErr, err)
+			}
+		}
+	}()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	ticker := time.NewTicker(50 * time.Millisecond)
@@ -765,23 +860,63 @@ func (observer *selectedPhase1BrowserObserver) playback(ctx context.Context, ite
 	if previousIDs == nil {
 		previousIDs = []string{}
 	}
+	first := true
 	for {
+		// The product's active view checks the play expiry, authentication
+		// expiry/revocation, owner/device binding, current user and library ACL.
+		// An unstarted historical plan is not active after its authority ends.
+		live, err := observer.runtime.f.app.library.ListPlaybackSessions(ctx, observer.fixture.UserID, false)
+		if err != nil {
+			return 0, errors.New("selected phase 1 effective playback observation failed")
+		}
+		liveIDs := []string{}
+		for _, session := range live {
+			if session.ItemID == itemID {
+				liveIDs = append(liveIDs, session.ID)
+			}
+		}
 		var ids []string
-		var started, stopped, advanced, ended, active int
-		err := observer.runtime.f.pool.QueryRow(ctx, `SELECT COALESCE(array_agg(id ORDER BY id) FILTER(WHERE started_at IS NOT NULL),'{}'::text[]),
+		var started, stopped, advanced, ended, nominalActive, prepared, inactivePrepared, unterminatedStarted, unexplainedInactive int
+		err = observer.runtime.f.pool.QueryRow(ctx, `SELECT COALESCE(array_agg(id ORDER BY id) FILTER(WHERE started_at IS NOT NULL),'{}'::text[]),
 			count(*) FILTER(WHERE started_at IS NOT NULL AND NOT(id=ANY($3::text[]))),
-			count(*) FILTER(WHERE started_at IS NOT NULL AND NOT(id=ANY($3::text[])) AND stopped_at IS NOT NULL AND state='Stopped'),
+			count(*) FILTER(WHERE started_at IS NOT NULL AND NOT(id=ANY($3::text[])) AND stopped_at IS NOT NULL AND state='Stopped' AND counted),
 			count(*) FILTER(WHERE started_at IS NOT NULL AND NOT(id=ANY($3::text[])) AND position_ticks>=$4),
 			count(*) FILTER(WHERE started_at IS NOT NULL AND NOT(id=ANY($3::text[])) AND position_ticks>=150000000 AND state='Stopped'),
-			count(*) FILTER(WHERE state IN ('Prepared','Playing','Paused')) FROM play_sessions WHERE user_id=$1 AND item_id=$2`,
-			observer.fixture.UserID, itemID, previousIDs, minimumPosition).Scan(&ids, &started, &stopped, &advanced, &ended, &active)
+			count(*) FILTER(WHERE state IN ('Prepared','Playing','Paused')),
+			count(*) FILTER(WHERE state='Prepared' AND started_at IS NULL),
+			count(*) FILTER(WHERE state='Prepared' AND started_at IS NULL AND NOT(id=ANY($5::text[]))
+				AND (expires_at<=clock_timestamp() OR EXISTS(SELECT 1 FROM sessions a WHERE a.id=play_sessions.auth_session_id AND (a.revoked_at IS NOT NULL OR a.expires_at<=clock_timestamp())))),
+			count(*) FILTER(WHERE started_at IS NOT NULL AND (state<>'Stopped' OR stopped_at IS NULL OR NOT counted)),
+			count(*) FILTER(WHERE state IN ('Prepared','Playing','Paused') AND NOT(id=ANY($5::text[]))
+				AND NOT(state='Prepared' AND started_at IS NULL AND (expires_at<=clock_timestamp() OR EXISTS(SELECT 1 FROM sessions a WHERE a.id=play_sessions.auth_session_id AND (a.revoked_at IS NOT NULL OR a.expires_at<=clock_timestamp())))))
+			FROM play_sessions WHERE user_id=$1 AND item_id=$2`,
+			observer.fixture.UserID, itemID, previousIDs, minimumPosition, liveIDs).
+			Scan(&ids, &started, &stopped, &advanced, &ended, &nominalActive, &prepared, &inactivePrepared, &unterminatedStarted, &unexplainedInactive)
 		if err != nil {
 			return 0, errors.New("selected phase 1 playback observation failed")
 		}
-		if len(ids) > previous && started > 0 && stopped == started && active == 0 && advanced == started && (!requireEnded || ended == started) {
+		facts = map[string]any{"ItemId": itemID, "PreviouslyObservedStarts": previous, "TotalStarts": len(ids),
+			"NewStarts": started, "NewCountedStops": stopped, "NewAdvanced": advanced, "NewEnded": ended,
+			"MinimumPositionTicks": minimumPosition, "RequireEnded": requireEnded, "NominalActive": nominalActive,
+			"NominalPrepared": prepared, "EffectiveActive": len(liveIDs), "InactiveUnstartedPrepared": inactivePrepared,
+			"UnterminatedStarted": unterminatedStarted, "UnexplainedInactive": unexplainedInactive}
+		resources := selectedPhase1RuntimeFacts(observer.runtime.f)
+		facts["Runtime"] = resources
+		runtimeClosed := true
+		for _, count := range resources {
+			runtimeClosed = runtimeClosed && count == 0
+		}
+		if first {
+			if _, err := observer.observation(ctx, "playback-first-"+itemID, facts); err != nil {
+				return 0, err
+			}
+			first = false
+		}
+		if len(ids) == previous+1 && started == 1 && stopped == 1 && len(liveIDs) == 0 && unterminatedStarted == 0 && unexplainedInactive == 0 && runtimeClosed &&
+			advanced == 1 && (!requireEnded || ended == 1) {
 			var counted bool
-			if observer.runtime.f.pool.QueryRow(ctx, `SELECT play_count>0 AND last_played_at IS NOT NULL FROM user_item_data
-				WHERE user_id=$1 AND item_id=$2`, observer.fixture.UserID, itemID).Scan(&counted) != nil || !counted {
+			if observer.runtime.f.pool.QueryRow(ctx, `SELECT play_count=$3 AND last_played_at IS NOT NULL AND (NOT $4::boolean OR played) FROM user_item_data
+				WHERE user_id=$1 AND item_id=$2`, observer.fixture.UserID, itemID, len(ids), requireEnded).Scan(&counted) != nil || !counted {
 				return 0, errors.New("selected phase 1 playback did not persist real user data")
 			}
 			if observer.startedSessions == nil {
@@ -891,13 +1026,25 @@ func (observer *selectedPhase1BrowserObserver) stage(ctx context.Context, phase 
 			return errors.New("selected phase 1 credential reset retained an active user session")
 		}
 	case "cleanup":
-		var active, playback, encodings, tasks, scans int
-		err := f.pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM sessions WHERE revoked_at IS NULL),
-			(SELECT count(*) FROM play_sessions WHERE state IN ('Prepared','Playing','Paused')),
+		live, err := f.app.library.ListPlaybackSessions(ctx, fixture.AdminID, true)
+		if err != nil {
+			return errors.New("selected phase 1 could not observe effective playback closure")
+		}
+		var active, unterminated, unexplained, encodings, tasks, scans int
+		err = f.pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM sessions WHERE revoked_at IS NULL),
+			(SELECT count(*) FROM play_sessions WHERE started_at IS NOT NULL AND (state<>'Stopped' OR stopped_at IS NULL OR NOT counted)),
+			(SELECT count(*) FROM play_sessions p WHERE state IN ('Prepared','Playing','Paused')
+				AND NOT(state='Prepared' AND started_at IS NULL AND (expires_at<=clock_timestamp() OR EXISTS(
+					SELECT 1 FROM sessions a WHERE a.id=p.auth_session_id AND (a.revoked_at IS NOT NULL OR a.expires_at<=clock_timestamp()))))),
 			(SELECT count(*) FROM encoding_jobs WHERE state IN ('queued','running')),
 			(SELECT count(*) FROM task_runs WHERE state IN ('pending','running','stopping')),
-			(SELECT count(*) FROM scan_jobs WHERE status IN ('Queued','Running'))`).Scan(&active, &playback, &encodings, &tasks, &scans)
-		if err != nil || active != 0 || playback != 0 || encodings != 0 || tasks != 0 || scans != 0 {
+			(SELECT count(*) FROM scan_jobs WHERE status IN ('Queued','Running'))`).Scan(&active, &unterminated, &unexplained, &encodings, &tasks, &scans)
+		resources := selectedPhase1RuntimeFacts(f)
+		runtimeClosed := true
+		for _, count := range resources {
+			runtimeClosed = runtimeClosed && count == 0
+		}
+		if err != nil || active != 0 || len(live) != 0 || unterminated != 0 || unexplained != 0 || encodings != 0 || tasks != 0 || scans != 0 || !runtimeClosed {
 			return errors.New("selected phase 1 browser did not retire its sessions and active work")
 		}
 	}
@@ -950,8 +1097,19 @@ func (observer *selectedPhase1BrowserObserver) run(ctx context.Context) error {
 		} else if state.State != "complete" || state.Reason != "" {
 			return errors.New("selected phase 1 stage state is invalid")
 		}
-		if err := observer.stage(ctx, phase, blocked); err != nil {
-			return err
+		observer.phase = phase
+		_, stageErr := observer.observation(ctx, "before", nil)
+		if stageErr == nil {
+			stageErr = observer.stage(ctx, phase, blocked)
+		}
+		if stageErr != nil {
+			evidenceCtx, evidenceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			failure, evidenceErr := observer.observation(evidenceCtx, "failed", map[string]any{"FailureDetail": stageErr.Error()})
+			evidenceCancel()
+			failure["Marker"], failure["Failed"], failure["Blocked"] = "goby-selected-phase1-stage-database-v1", true, false
+			failure["ErrorCode"], failure["FailureDetail"] = "database_stage_verification_failed", stageErr.Error()
+			ackErr := featureWaveWriteCheckpoint(filepath.Join(observer.fixture.ArtifactsDir, "stage-"+phase+"-database.json"), failure)
+			return errors.Join(stageErr, evidenceErr, ackErr)
 		}
 		if blocked {
 			observer.blocked = append(observer.blocked, phase)
@@ -1300,6 +1458,13 @@ func TestSelectedCompatibilityPhase1BrowserIntegration(t *testing.T) {
 	}
 	var result selectedPhase1BrowserResult
 	readErr := featureWavePrivateJSON(fixture.ResultPath, 1<<20, &result)
+	if readErr == nil {
+		driver["ExternalRegistrationEvidenceValid"] = selectedPhase1ExpectedExternalRequests(result)
+		driver["ExternalRegistrationAuthorizationVerified"] = false
+		if result.ExpectedExternalRegistrationRequests != nil {
+			driver["ExpectedExternalRegistrationRequests"] = *result.ExpectedExternalRegistrationRequests
+		}
+	}
 	if commandErr != nil || observerErr != nil || readErr != nil || observer.completed != len(selectedPhase1BrowserPhases) || len(observer.blocked) != 0 {
 		t.Fatal("selected phase 1 browser or database observer failed; inspect retained private artifacts")
 	}
@@ -1307,7 +1472,7 @@ func TestSelectedCompatibilityPhase1BrowserIntegration(t *testing.T) {
 		"IntroShowButton", "IntroNone", "IntroAutoSkip", "NextEnabled", "NextDisabled", "RestartPersisted", "CredentialsCleared", "Cleanup"}
 	if result.Marker != "goby-selected-phase1-browser-result-v1" || result.RunID != runID || !result.Complete ||
 		len(result.Checks) != len(checks) || len(result.Stages) != len(selectedPhase1BrowserPhases) ||
-		result.PageErrors == nil || *result.PageErrors != 0 || result.ForeignRequests == nil || *result.ForeignRequests != 0 {
+		result.PageErrors == nil || *result.PageErrors != 0 || !selectedPhase1ExpectedExternalRequests(result) {
 		t.Fatal("selected phase 1 browser result does not bind the complete owned scenario")
 	}
 	for index, phase := range selectedPhase1BrowserPhases {

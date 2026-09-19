@@ -15,7 +15,8 @@ const CHECKS = ['AdminCredentials', 'AdminPreferences', 'AdminIntro', 'OriginalL
   'RestartPersisted', 'CredentialsCleared', 'Cleanup'];
 const result = { Marker: 'goby-selected-phase1-browser-result-v1', RunId: '', Complete: false,
   Stages: [], Checks: Object.fromEntries(CHECKS.map(name => [name, false])), PageErrors: 0,
-  ForeignRequests: 0, BlockedEntitlementRequests: 0, BlockedStages: [], Playback: [], Authentication: [], Screenshots: [], FailurePhase: null,
+  ForeignRequests: 0, ExpectedExternalRegistrationRequests: 0, BlockedEntitlementRequests: 0, BlockedStages: [], Playback: [], Authentication: [], Screenshots: [], FailurePhase: null,
+  ExternalRegistration: { Disposition: 'DeniedWithoutUpstreamConnection', AuthorizationVerified: false },
   BlockedNetwork: [], BlockedNetworkOverflow: 0, OwnedWebSocketRoutes: 0,
   NetworkGuard: { Started: false, Closed: false, BlockedHTTP: 0, BlockedConnect: 0, BlockedUpgrade: 0, UnexpectedTargetRequests: 0 } };
 const fail = code => { const error = new Error(code); error.safeCode = code; throw error; };
@@ -60,7 +61,13 @@ async function stage(phase, state = 'complete') {
     try { acknowledgement = await privateJSON(path.join(fixture.ArtifactsDir, `stage-${phase}-database.json`)); }
     catch (error) { if (error.code !== 'ENOENT') throw error; await sleep(100); continue; }
     check(acknowledgement.Marker === 'goby-selected-phase1-stage-database-v1' &&
-      acknowledgement.RunId === fixture.RunId && acknowledgement.Phase === phase &&
+      acknowledgement.RunId === fixture.RunId && acknowledgement.Phase === phase, 'database_acknowledgement_binding_failed');
+    if (acknowledgement.Failed === true) {
+      result.DatabaseFailure = { Phase: phase, Code: 'database_stage_verification_failed',
+        SourcesUnchanged: acknowledgement.SourcesUnchanged === true };
+      fail('database_stage_verification_failed');
+    }
+    check(
       acknowledgement.SourcesUnchanged === true && (state === 'complete' ? acknowledgement.Complete === true :
         acknowledgement.Complete === false && acknowledgement.Observed === true && acknowledgement.Blocked === true), 'database_acknowledgement_failed');
     result.Stages.push({ Phase: phase, State: state });
@@ -99,9 +106,14 @@ function blockedNetwork(value, authorityOnly = false, transport = 'request-route
       NormalizedOwnedOrigin: isOwnedNetworkURL(value), HasUserInfo: Boolean(url.username || url.password) };
     if (result.BlockedNetwork.length < 64) result.BlockedNetwork.push(record);
     else result.BlockedNetworkOverflow += 1;
-    if (url.origin === 'https://mb3admin.com' &&
-      (authorityOnly || url.pathname === '/admin/service/registration/validateDevice') &&
-      ['intro-show-button', 'intro-auto-skip'].includes(currentPhase)) result.BlockedEntitlementRequests += 1;
+    const registration = !url.username && !url.password && url.origin === 'https://mb3admin.com' &&
+      (authorityOnly && transport === 'deny-only-connect-proxy' ||
+        !authorityOnly && url.pathname === '/admin/service/registration/validateDevice' &&
+        ['request-route', 'deny-only-http-proxy'].includes(transport));
+    if (registration) {
+      result.ExpectedExternalRegistrationRequests += 1;
+      if (['intro-show-button', 'intro-auto-skip'].includes(currentPhase)) result.BlockedEntitlementRequests += 1;
+    }
   } catch { /* An invalid external address is still denied. */ }
 }
 async function startNetworkGuard() {
@@ -537,7 +549,8 @@ async function introJourney(mode) {
   const after = await videoState(client);
   const meaningfulSeeks = events.filter(event => event.Event === 'seeking' && event.Seconds > 1);
   const seeks = events.filter(event => event.Event === 'seeking' && event.Seconds >= 7.8 && event.Seconds <= 8.5);
-  const entitlementBlocked = mode !== 'None' && result.BlockedEntitlementRequests > entitlementAttempts;
+  const entitlementBlocked = mode !== 'None' && meaningfulSeeks.length === 0 &&
+    result.BlockedEntitlementRequests > entitlementAttempts;
   if (mode === 'None') {
     check(meaningfulSeeks.length === 0 && !await skip.count(), 'disabled_intro_seek_or_button');
     check(events.some(event => event.Event === 'timeupdate' && event.Seconds > 4 && event.Seconds < 7), 'disabled_intro_not_played');
@@ -699,8 +712,8 @@ async function main() {
   await admin.getByRole('heading', { name: 'Sign in to Goby', exact: true }).waitFor();
   await adminContext.close();
   result.Checks.Cleanup = true; await stage(currentPhase);
-  check(result.PageErrors === 0 && result.ForeignRequests === result.BlockedEntitlementRequests &&
-    result.NetworkGuard.UnexpectedTargetRequests === 0, 'browser_or_network_errors');
+  check(result.PageErrors === 0 && result.ForeignRequests === result.ExpectedExternalRegistrationRequests &&
+    result.BlockedNetworkOverflow === 0 && result.NetworkGuard.UnexpectedTargetRequests === 0, 'browser_or_network_errors');
   result.Complete = result.BlockedStages.length === 0 && CHECKS.every(name => result.Checks[name]);
   if (!result.Complete) { result.FailureCode = 'original_client_entitlement'; process.exitCode = 1; }
 }
