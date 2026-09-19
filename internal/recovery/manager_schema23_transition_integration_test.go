@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/backupformat"
 	"github.com/moooyo/goby/internal/backuppg"
@@ -366,6 +367,16 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	if err != nil {
 		t.Fatalf("issue a real historical player credential: %v", err)
 	}
+	// The adapter permits only credentials representable by the historical
+	// schema. A current local-auth request must fail before reaching its table.
+	_, err = identityPool.Exec(ctx, `INSERT INTO sessions(id,user_id,token_hash,kind,expires_at,local_auth)
+		SELECT id || '-unsupported-local-auth',user_id,token_hash,kind,expires_at,true
+		FROM public.sessions WHERE id=$1`, legacy.embyLogin.SessionID)
+	var rejectedLocalAuth *pgconn.PgError
+	if !errors.As(err, &rejectedLocalAuth) || rejectedLocalAuth.Code != "23514" ||
+		rejectedLocalAuth.Message != "Historical identity sessions require local_auth=false" {
+		t.Fatal("the historical identity fixture accepted or misclassified nonneutral local authentication")
+	}
 	serverID, err := legacy.identities.ServerID(ctx)
 	if err != nil {
 		t.Fatalf("retain the historical server identity: %v", err)
@@ -390,7 +401,7 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	}
 	localFacts := recoveryEngineTestFacts(t, ctx, pool, legacy.engine.options)
 	state := historicalManagerArchiveState{schemaVersion: version, preferences: "[]"}
-	state.users = recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u)-'configuration_revision' ORDER BY id)::text FROM users u")
+	state.users = historicalManagerUserState(t, ctx, pool)
 	if version >= 24 {
 		state.preferences = recoveryEnginePreferenceState(t, ctx, pool)
 	}
@@ -434,15 +445,46 @@ func createHistoricalManagerArchive(t *testing.T, f *managerIntegrationFixture, 
 	return legacy, metadata, state
 }
 
-// Current identity operations add neutral schema28 audit fields. A private
-// fixture view projects those writes onto the unchanged historical table, and
-// is removed before the real catalog inspection and encrypted archive export.
+// Current identity operations also read schema42 credential fields and insert
+// an explicit neutral local_auth flag. Private fixture views project those
+// defaults and schema28 audit fields onto the unchanged historical tables.
+// Every adapter is removed before catalog inspection and archive export. This
+// does not make production identity operations support partially migrated DBs.
 func historicalManagerIdentityPool(t *testing.T, ctx context.Context, pool *pgxpool.Pool) (*pgxpool.Pool, func()) {
 	t.Helper()
 	schema := pgx.Identifier{"goby_historical_identity_" + recoveryEngineTestID(t)}.Sanitize()
 	view := schema + ".activity_entries"
 	function := schema + ".record_activity"
+	users := schema + ".users"
+	sessions := schema + ".sessions"
+	insertSession := schema + ".insert_session"
 	if _, err := pool.Exec(ctx, `CREATE SCHEMA `+schema+`;
+		CREATE VIEW `+users+` AS SELECT account.*,NULL::text AS local_password_hash,
+			NULL::bytea AS profile_pin_ciphertext FROM public.users account;
+		CREATE VIEW `+sessions+` AS SELECT authentication.*,false AS local_auth FROM public.sessions authentication;
+		ALTER VIEW `+sessions+` ALTER COLUMN client_name SET DEFAULT '';
+		ALTER VIEW `+sessions+` ALTER COLUMN device_id SET DEFAULT '';
+		ALTER VIEW `+sessions+` ALTER COLUMN device_name SET DEFAULT '';
+		ALTER VIEW `+sessions+` ALTER COLUMN client_version SET DEFAULT '';
+		ALTER VIEW `+sessions+` ALTER COLUMN created_at SET DEFAULT now();
+		ALTER VIEW `+sessions+` ALTER COLUMN last_seen_at SET DEFAULT now();
+		ALTER VIEW `+sessions+` ALTER COLUMN client_capabilities SET DEFAULT '{}'::jsonb;
+		ALTER VIEW `+sessions+` ALTER COLUMN local_auth SET DEFAULT false;
+		CREATE FUNCTION `+insertSession+`() RETURNS trigger LANGUAGE plpgsql AS $$
+		BEGIN
+			IF NEW.local_auth IS DISTINCT FROM false THEN
+				RAISE EXCEPTION 'Historical identity sessions require local_auth=false' USING ERRCODE='23514';
+			END IF;
+			INSERT INTO public.sessions(id,user_id,token_hash,kind,client_name,device_id,device_name,client_version,
+				created_at,expires_at,last_seen_at,revoked_at,client_capabilities,device_registry_id)
+			VALUES(NEW.id,NEW.user_id,NEW.token_hash,NEW.kind,NEW.client_name,NEW.device_id,NEW.device_name,NEW.client_version,
+				NEW.created_at,NEW.expires_at,NEW.last_seen_at,NEW.revoked_at,NEW.client_capabilities,NEW.device_registry_id)
+			RETURNING created_at,expires_at,last_seen_at INTO NEW.created_at,NEW.expires_at,NEW.last_seen_at;
+			RETURN NEW;
+		END;
+		$$;
+		CREATE TRIGGER historical_identity_session_insert INSTEAD OF INSERT ON `+sessions+`
+			FOR EACH ROW EXECUTE FUNCTION `+insertSession+`();
 		CREATE VIEW `+view+` AS SELECT entry.*,0::bigint AS previous_revision,
 			''::text AS observation_fingerprint FROM public.activity_entries entry;
 		CREATE FUNCTION `+function+`() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -459,7 +501,7 @@ func historicalManagerIdentityPool(t *testing.T, ctx context.Context, pool *pgxp
 		$$;
 		CREATE TRIGGER historical_identity_activity_insert INSTEAD OF INSERT ON `+view+`
 			FOR EACH ROW EXECUTE FUNCTION `+function+`()`); err != nil {
-		t.Fatalf("create the historical identity audit fixture adapter: %v", err)
+		t.Fatalf("create the historical identity fixture adapters: %v", err)
 	}
 	var identityPool *pgxpool.Pool
 	closed := false
@@ -473,8 +515,10 @@ func historicalManagerIdentityPool(t *testing.T, ctx context.Context, pool *pgxp
 		}
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if _, err := pool.Exec(cleanupCtx, "DROP VIEW "+view+" RESTRICT; DROP FUNCTION "+function+"() RESTRICT; DROP SCHEMA "+schema+" RESTRICT"); err != nil {
-			t.Fatalf("remove the owned historical identity audit fixture adapter: %v", err)
+		if _, err := pool.Exec(cleanupCtx, "DROP VIEW "+view+" RESTRICT; DROP FUNCTION "+function+"() RESTRICT; "+
+			"DROP VIEW "+sessions+" RESTRICT; DROP FUNCTION "+insertSession+"() RESTRICT; "+
+			"DROP VIEW "+users+" RESTRICT; DROP SCHEMA "+schema+" RESTRICT"); err != nil {
+			t.Fatalf("remove the owned historical identity fixture adapters: %v", err)
 		}
 		closed = true
 	}
@@ -487,6 +531,15 @@ func historicalManagerIdentityPool(t *testing.T, ctx context.Context, pool *pgxp
 		t.Fatalf("open the historical identity fixture pool: %v", err)
 	}
 	return identityPool, cleanup
+}
+
+// Compare all historical account fields exactly. Later migration-owned fields
+// are asserted separately after upgrade instead of weakening old-data checks.
+func historicalManagerUserState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) string {
+	t.Helper()
+	return recoveryEngineJSONState(t, ctx, pool, `SELECT jsonb_agg(to_jsonb(u)-'configuration_revision'
+		-'local_password_hash'-'profile_pin_ciphertext'-'local_credentials_revision'
+		-'local_password_failures'-'local_password_blocked_until' ORDER BY id)::text FROM users u`)
 }
 
 func seedHistoricalManagerCatalog(t *testing.T, ctx context.Context, pool *pgxpool.Pool, editorID string) {
@@ -563,7 +616,7 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 		FROM schema_migrations`).Scan(&migrationCount, &deletionMigration); err != nil || migrationCount != len(currentFacts.MigrationChecksums) || deletionMigration != "0029_user_deletion_activity.sql" {
 		t.Fatalf("historical restoration missed the exact current migration suffix: %v", err)
 	}
-	actualUsers := recoveryEngineJSONState(t, ctx, pool, "SELECT jsonb_agg(to_jsonb(u)-'configuration_revision' ORDER BY id)::text FROM users u")
+	actualUsers := historicalManagerUserState(t, ctx, pool)
 	if actualUsers != state.users {
 		t.Fatalf("native historical restoration changed schema%d accounts", state.schemaVersion)
 	}
@@ -583,6 +636,15 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 		AND NOT EXISTS(SELECT 1 FROM activity_entries WHERE previous_revision IS DISTINCT FROM 0
 			OR observation_fingerprint IS DISTINCT FROM '')`).Scan(&bindingDefaults); err != nil || !bindingDefaults {
 		t.Fatalf("historical manager restoration inferred root, library-edit, or audit state: %v", err)
+	}
+	var selectedDefaults bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM users WHERE local_password_hash IS NOT NULL OR profile_pin_ciphertext IS NOT NULL
+			OR local_credentials_revision IS DISTINCT FROM 1 OR local_password_failures IS DISTINCT FROM 0
+			OR local_password_blocked_until IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM sessions WHERE local_auth IS DISTINCT FROM false)
+		AND NOT EXISTS(SELECT 1 FROM item_intro_state)`).Scan(&selectedDefaults); err != nil || !selectedDefaults {
+		t.Fatalf("historical restoration inferred local credentials, local-only sessions, or intro markers: %v", err)
 	}
 	var phase3Defaults bool
 	if err := pool.QueryRow(ctx, `SELECT

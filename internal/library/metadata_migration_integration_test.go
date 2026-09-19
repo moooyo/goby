@@ -141,9 +141,10 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'force_probe' - 'task_child_id' ORDER BY id), '[]'::jsonb)::text FROM scan_jobs original`
 		}
 		if table == "sessions" {
-			// Device registration adds a foreign key without changing login data.
-			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'device_registry_id'
-				ORDER BY (to_jsonb(original) - 'device_registry_id')::text), '[]'::jsonb)::text FROM sessions original`
+			// Device registration and local authentication add columns without
+			// changing historical login data. Their defaults are checked separately.
+			projection := `to_jsonb(original) - ARRAY['device_registry_id','local_auth']`
+			statement = `SELECT COALESCE(jsonb_agg(` + projection + ` ORDER BY (` + projection + `)::text), '[]'::jsonb)::text FROM sessions original`
 		}
 		if table == "library_roots" {
 			// Storage binding defaults are checked separately; compare every old field.
@@ -156,9 +157,11 @@ func metadataMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 				ORDER BY (to_jsonb(original) - 'revision' - 'options')::text), '[]'::jsonb)::text FROM libraries original`
 		}
 		if table == "users" {
-			// Management revisions already existed and remain in this comparison.
-			statement = `SELECT COALESCE(jsonb_agg(to_jsonb(original) - 'configuration_revision'
-				ORDER BY (to_jsonb(original) - 'configuration_revision')::text), '[]'::jsonb)::text FROM users original`
+			// Exclude only columns added after schema 13. Every original field,
+			// including configuration and management_revision, remains compared.
+			projection := `to_jsonb(original) - ARRAY['configuration_revision','local_password_hash',
+				'profile_pin_ciphertext','local_credentials_revision','local_password_failures','local_password_blocked_until']`
+			statement = `SELECT COALESCE(jsonb_agg(` + projection + ` ORDER BY (` + projection + `)::text), '[]'::jsonb)::text FROM users original`
 		}
 		if table == "user_item_data" {
 			// Only the seven schema37 columns are excluded from old user state.
@@ -227,6 +230,19 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 		AND last_value=1 AND log_cnt=0 AND NOT is_called
 		FROM artwork_state_id_seq`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("metadata migration changed the unused managed-artwork identity default: %v", err)
+	}
+}
+
+func metadataMigrationPlaybackCompatibilityDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM users WHERE local_password_hash IS NOT NULL
+			OR profile_pin_ciphertext IS NOT NULL OR local_credentials_revision IS DISTINCT FROM 1
+			OR local_password_failures IS DISTINCT FROM 0 OR local_password_blocked_until IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM sessions WHERE local_auth IS DISTINCT FROM false)
+		AND NOT EXISTS(SELECT 1 FROM item_intro_state)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("metadata migration inferred local credentials, local authentication, or intro overrides: %v", err)
 	}
 }
 
@@ -411,6 +427,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 			t.Errorf("metadata migration populated online source facts for historical rows: count=%d error=%v", onlineMetadata, err)
 		}
 		metadataMigrationPhase3Defaults(t, ctx, pool)
+		metadataMigrationPlaybackCompatibilityDefaults(t, ctx, pool)
 	}
 	assertOldTables()
 	for _, id := range projectionIDs {
@@ -459,7 +476,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	expectedAdditions = append(expectedAdditions, "media_collections", "media_collection_entries", "media_collection_shares",
 		"item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations")
 	expectedAdditions = append(expectedAdditions, "display_preferences", "artwork_state", "artwork_images", "entity_user_data",
-		"task_system_events", "task_system_event_receipts")
+		"task_system_events", "task_system_event_receipts", "item_intro_state")
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)

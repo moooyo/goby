@@ -1,3 +1,5 @@
+//go:build linux
+
 package library
 
 import (
@@ -22,7 +24,10 @@ func (introFixtureProber) ProbeFile(ctx context.Context, file *os.File) (media.I
 }
 
 func TestStoreIntroLifecycle(t *testing.T) {
-	ctx, pool, store, root, viewerID := libraryIntegrationStore(t, introFixtureProber{})
+	// Intro administration opens the indexed source, so opt into the same real
+	// file snapshot contract as playback rather than the legacy catalog fixture.
+	prober := mediaSourceTestProber{inner: introFixtureProber{}}
+	ctx, pool, store, root, viewerID := libraryIntegrationStore(t, prober)
 	path := libraryIntegrationFile(t, root, "movies/Intro.mp4", "intro-source")
 	collection := libraryIntegrationCreate(t, ctx, store, "Intro movies", "movies", filepath.Dir(path))
 	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
@@ -89,7 +94,7 @@ func TestStoreIntroLifecycle(t *testing.T) {
 	if err := store.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := New(pool, introFixtureProber{}, []string{root})
+	reopened, err := New(pool, prober, []string{root})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +124,7 @@ func TestStoreIntroLifecycle(t *testing.T) {
 }
 
 func TestStoreIntroConcurrentCompareAndSwap(t *testing.T) {
-	ctx, pool, store, root, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+	ctx, pool, store, root, _ := libraryIntegrationStore(t, mediaSourceTestProber{inner: &libraryFixtureProber{}})
 	path := libraryIntegrationFile(t, root, "movies/CAS.mp4", "intro-source")
 	collection := libraryIntegrationCreate(t, ctx, store, "Intro CAS", "movies", filepath.Dir(path))
 	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")

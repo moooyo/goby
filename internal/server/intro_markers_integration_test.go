@@ -3,12 +3,53 @@
 package server
 
 import (
+	"context"
 	"net/http"
+	"os"
 	"testing"
+
+	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 )
 
-func TestAdminIntroMarkersLifecycle(t *testing.T) {
+// Keep the catalog fixture's duration and ordinary chapters while supplying the
+// real file snapshot required by intro administration and original playback.
+type introHTTPProber struct{}
+
+func (introHTTPProber) CacheVersion() int { return media.CurrentProbeVersion }
+
+func (introHTTPProber) ProbeFile(ctx context.Context, file *os.File) (media.Info, error) {
+	info, err := (apiMediaProber{}).ProbeFile(ctx, file)
+	if err != nil {
+		return media.Info{}, err
+	}
+	stat, err := file.Stat()
+	if err != nil {
+		return media.Info{}, err
+	}
+	info.ProbeVersion = media.CurrentProbeVersion
+	info.FileChangeTimeNs = media.FileChangeTime(stat)
+	return info, nil
+}
+
+func newAdminIntroHTTPFixture(t *testing.T) *adminMetadataHTTPFixture {
+	t.Helper()
 	f := newAdminMetadataHTTPFixture(t)
+	closeFixtureCatalogForReplacement(t, f.serverFixture)
+	catalog, err := library.New(f.pool, introHTTPProber{}, []string{f.root})
+	if err != nil {
+		t.Fatalf("create current-source intro catalog: %v", err)
+	}
+	installFixtureCatalog(t, f.serverFixture, catalog)
+	f.handler = f.app.Handler()
+	// The versioned prober refreshes the old catalog-only media snapshots.
+	// Replacement helpers retain ownership and cleanup for both generations.
+	f.rescan(t, adminMetadataAutomaticNFO)
+	return f
+}
+
+func TestAdminIntroMarkersLifecycle(t *testing.T) {
+	f := newAdminIntroHTTPFixture(t)
 	path := "/admin/v1/items/" + f.itemID + "/intro"
 	response := f.request(t, http.MethodGet, path, nil, nil, f.cookie)
 	expectStatus(t, response, http.StatusOK)
