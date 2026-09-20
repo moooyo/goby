@@ -53,6 +53,7 @@ type storedFile struct {
 	media                                                                                  *media.Info
 	local                                                                                  localMetadata
 	automatic                                                                              *MetadataValues
+	scanSortName                                                                           *string
 }
 
 func (s *Store) scanLibrary(task *scanTask) (string, error) {
@@ -396,8 +397,17 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	}
 	// Compare accepted automatic facts, not the overlaid display fields. A
 	// manual title or episode number must not make every cached scan a write.
+	// The existing stored-file query captures the generated or retained explicit
+	// key with the same snapshot as automatic metadata and settings. Compare it
+	// only when the source Name is unchanged and has no explicit NFO sort title.
+	// Publication still derives from the complete incoming name under the current
+	// owner transaction.
+	comparisonSortName := sortName
+	if previousName == name && (local.value == nil || local.value.SortName == "") && stored.scanSortName != nil {
+		comparisonSortName = *stored.scanSortName
+	}
 	changed := !unchanged || stored.path != fullPath || stored.parentID != parentID || previousName != name || stored.itemType != itemType ||
-		previousSort != sortName || previousOverview != overview || previousIndex != indexNumber || previousParentIndex != parentIndex ||
+		previousSort != comparisonSortName || previousOverview != overview || previousIndex != indexNumber || previousParentIndex != parentIndex ||
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
 		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
@@ -623,7 +633,11 @@ const storedFileColumns = `id, root_id, relative_path, file_identity, file_size,
 	sort_name, overview, index_number, parent_index_number, local_metadata, local_metadata_hash, local_metadata_path,
 	(SELECT jsonb_build_object('Name', ms.automatic->'Name', 'SortName', ms.automatic->'SortName',
 		'Overview', ms.automatic->'Overview', 'IndexNumber', ms.automatic->'IndexNumber',
-		'ParentIndexNumber', ms.automatic->'ParentIndexNumber') FROM item_metadata_state ms WHERE ms.item_id = items.id)`
+		'ParentIndexNumber', ms.automatic->'ParentIndexNumber',
+		'ScanSortName',CASE WHEN ms.automatic_sort_name_explicit THEN COALESCE(ms.automatic->>'SortName','')
+		ELSE (SELECT CASE WHEN cardinality(sort_remove_words)>0
+			THEN goby_generated_sort_name(ms.automatic->>'Name',sort_remove_words) END FROM managed_settings WHERE id=1) END)
+		FROM item_metadata_state ms WHERE ms.item_id = items.id)`
 
 func readStoredFile(row rowScanner) (storedFile, error) {
 	var item storedFile
@@ -648,6 +662,11 @@ func readStoredFile(row rowScanner) (storedFile, error) {
 			return storedFile{}, err
 		}
 		item.automatic = &automatic
+		var sorting struct{ ScanSortName *string }
+		if err := json.Unmarshal(automaticRaw, &sorting); err != nil {
+			return storedFile{}, err
+		}
+		item.scanSortName = sorting.ScanSortName
 	}
 	return item, nil
 }

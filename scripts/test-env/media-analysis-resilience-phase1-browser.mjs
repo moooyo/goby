@@ -252,9 +252,9 @@ async function saveUser() {
   await page.goto(`${fixture.BaseURL}/admin/users`);
   await page.getByRole('button', { name: `Manage ${fixture.EditedUserName}`, exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
-  const hidden = dialog.getByRole('checkbox', { name: 'Hide from sign-in screens', exact: true });
+  const hidden = dialog.getByRole('switch', { name: 'Hide from sign-in screens', exact: true });
   await hidden.waitFor(); await hidden.check();
-  await dialog.getByRole('checkbox', { name: 'Disable account', exact: true }).check();
+  await dialog.getByRole('switch', { name: 'Disable account', exact: true }).check();
   const saved = await responseFor('PUT', `/admin/v1/users/${fixture.EditedUserId}`, () => dialog.getByRole('button', { name: 'Save changes', exact: true }).click());
   requireThat(saved.Submitted.IsDisabled === true && saved.Submitted.Policy.IsHidden === true && typeof saved.Submitted.Revision === 'string', 'user_save_not_bound');
   await waitDisabled(dialog.getByRole('button', { name: 'Save changes', exact: true }), 'user_save_not_settled');

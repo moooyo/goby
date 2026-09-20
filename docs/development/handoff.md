@@ -8,10 +8,11 @@ on September 20, 2026. The user authorized execution, consolidated verification
 only after each phase's complete code, then merge to `main` and push.
 Implementation uses `codex/media-analysis-resilience` at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`, based on
-`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Phase 1 product and test source is
-complete; use its [execution record](media-analysis-resilience-phase1-20260920.md)
-for the remote artifact-generation and verification checkpoint. No passing
-result is claimed; tests/builds/runtime checks are remote-only for this
+`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Phase 1 is in consolidated remote
+verification and regression repair; use its
+[execution record](media-analysis-resilience-phase1-20260920.md) for source-bound
+component results, original failures and remaining gates. Phase 1 is not yet
+accepted; tests/builds/runtime checks are remote-only for this
 increment. The original `D:/Code/goby` changes remain unrelated and preserved.
 Do not start phase 2 or 3 product changes before phase 1 is accepted. The earlier
 completed records below retain their historical scope and authorization.

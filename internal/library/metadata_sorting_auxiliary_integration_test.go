@@ -16,7 +16,7 @@ func TestAuxiliarySortingRulesPreserveSourceCaseControlsAndCachedScans(t *testin
 	prober := &metadataMusicScanProber{}
 	prober.set("theme.mp3", &media.MusicMetadata{Version: media.CurrentMusicMetadataVersion, Title: "The Theme Song"}, false)
 	ctx, pool, store, root, userID := libraryIntegrationStore(t, prober)
-	libraryIntegrationFile(t, root, "movies/Film/The Main.mp4", "video:sort-owner")
+	ownerPath := libraryIntegrationFile(t, root, "movies/Film/The Main.mp4", "video:sort-owner")
 	paths := map[string]string{}
 	for name, relative := range map[string]string{"The Trailer": "trailers/The Trailer.mp4", "the trailer": "trailers/the trailer.mp4", "The Clip": "featurettes/The Clip.mp4", "The Backdrop": "backdrops/The Backdrop.mp4", "The Theme Song": "theme.mp3"} {
 		content := "video:sort-" + name
@@ -27,6 +27,7 @@ func TestAuxiliarySortingRulesPreserveSourceCaseControlsAndCachedScans(t *testin
 	}
 	collection := libraryIntegrationCreate(t, ctx, store, "Auxiliary sorting", "movies", filepath.Join(root, "movies"))
 	libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
+	owner := nfoCatalogItem(t, ctx, store, userID, collection.ID, ownerPath)
 	resources := append(extraScanTestResources(t, ctx, pool, collection.ID), themeScanTestResources(t, ctx, pool, collection.ID)...)
 	if len(resources) != len(paths) {
 		t.Fatal("fixture omitted an independent theme or extra source")
@@ -87,11 +88,17 @@ func TestAuxiliarySortingRulesPreserveSourceCaseControlsAndCachedScans(t *testin
 			}
 		}
 		themesBefore, extrasBefore := themeScanTestSnapshot(t, ctx, pool, collection.ID), extraScanTestSnapshot(t, ctx, pool, collection.ID)
+		ownerBefore := metadataEditTestSnapshot(t, ctx, pool, owner.ID)
 		calls := len(prober.calls())
+		notifications := catalogChangesTestListener(t, store)
 		cached := libraryIntegrationScan(t, ctx, store, collection.ID, "Completed")
-		if cached.Error != "" || cached.Added != 0 || cached.Updated != 0 || len(prober.calls()) != calls || themeScanTestSnapshot(t, ctx, pool, collection.ID) != themesBefore || extraScanTestSnapshot(t, ctx, pool, collection.ID) != extrasBefore {
-			t.Fatalf("step%d cached scan rewrote or reprobed auxiliary sources: %+v", step, cached)
+		store.SetCatalogChangeListener(nil)
+		ownerChanged := metadataEditTestSnapshot(t, ctx, pool, owner.ID) != ownerBefore
+		themesChanged, extrasChanged := themeScanTestSnapshot(t, ctx, pool, collection.ID) != themesBefore, extraScanTestSnapshot(t, ctx, pool, collection.ID) != extrasBefore
+		if cached.Error != "" || cached.Added != 0 || cached.Updated != 0 || len(prober.calls()) != calls || ownerChanged || themesChanged || extrasChanged {
+			t.Fatalf("step%d cached scan changed owner=%t themes=%t extras=%t probes=%d notifications=%d: %+v", step, ownerChanged, themesChanged, extrasChanged, len(prober.calls())-calls, len(notifications), cached)
 		}
+		assertNoCatalogTestNotification(t, notifications)
 		beforeForced := map[string]ItemMetadataDetail{}
 		for _, id := range ids {
 			beforeForced[id] = metadataEditTestDetail(t, ctx, store, actor, id)

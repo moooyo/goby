@@ -1,6 +1,6 @@
 # Compatibility long-tail phase 1 execution record
 
-Status: **product and test source complete; entering consolidated remote verification**.
+Status: **consolidated remote verification and regression repairs in progress; not accepted**.
 
 The [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md)
 starts from `2fd9182` on `codex/media-analysis-resilience`. The original checkout
@@ -21,7 +21,7 @@ static source review are implementation work, not passing verification evidence.
 | Sort removal configuration | Source complete: persisted word list, explicit-sort provenance, real catalog rebuild, bounded statements, final authority recheck and settings/native adapters | Unicode/default/explicit/manual/locked sorting, concurrency/CAS, source refresh, native browser and recovery |
 | Library options | Source complete: `EnableEmbeddedArtwork` and the advertised Audio `Goby Embedded Artwork` fetcher select real embedded-cover extraction independently from directory sidecars | Native/compatibility writes and discovery agree; actual subsequent scans consume options; disabled/re-enabled and partial/reset behavior |
 | Schema and durable state | Source complete: schema49 sorting/provenance and audit additions, raw metadata/sorting validation and real encrypted restore checks; actual schema49 catalog generated from the frozen source | Historical migration and catalog preservation, actual exported schema49 baseline, archive integrity, restored settings/facts and credential normalization |
-| Integrated administration/client journey | New twenty-stage Go fixture, browser driver and execution guide integrated | `TestMediaAnalysisResiliencePhase1BrowserIntegration`, real HTTP/PG/media scan/native controls, restart and owned-resource closure |
+| Integrated administration/client journey | New twenty-four-stage Go fixture, browser driver and execution guide integrated | `TestMediaAnalysisResiliencePhase1BrowserIntegration`, real HTTP/PG/media scan/native controls, restart and owned-resource closure |
 
 The retained original-client request corpus establishes the field and UI-language
 gaps. It does not make the new code tested or prove proprietary-server parity.
@@ -104,6 +104,52 @@ omitted Sorting. The repaired expectation now also protects a nonempty retained
 rule list. The two new Node source-test files passed all seven cases remotely.
 The final affected backend, mock repair and expanded browser results remain
 pending; these component results do not close phase 1.
+
+The corrected catalog and expanded browser inputs were frozen at
+`3251a354b62018661c752062282c8df104400c94`. Its archive SHA-256 is
+`c62243dfb6d0ececbbf5dd9ba7c9ca023db60acc61f54259dadd312fc18dbebb`.
+`product-build-02` passed the frontend, twelve test binaries and ordinary/embedded
+applications, with all build process groups closed. `mocked-browser-02` passed
+the repaired management-save case with the nonempty retained Sorting rules;
+the earlier 54 unchanged passing cases retain their original source boundary.
+The repaired case has no unexpected, flaky or skipped result, and its server,
+process group, dependency link and temporary profiles are closed.
+
+`verification-02` is terminal with **493 passing parents, three failed parents
+and no skips**, across eight closed process groups. Settings (55), database
+(65), affected server (74), backuppg (120) and recovery (33) passed on this
+source. All original auxiliary and standalone library failures passed, but the
+new sorting/cache witness failed: an ordinary owner movie was repeatedly counted
+as updated after a sorting-rule change. The candidate scanner compared its raw
+folded title with the already generated key. This requires a product repair and
+renewed ordinary-scan coverage, including the actual 10,000-file case.
+
+The scanner repair adds its comparison key to the existing stored-file read,
+using the same MVCC snapshot as accepted metadata and settings without another
+per-item SQL round trip. Generated keys use the configured rules; explicit
+online or conservative historical keys retain their recorded provenance. New
+source/probe/type/hash changes still require publication under the current owner
+transaction. The strengthened cache witness separately checks the ordinary
+owner, auxiliary snapshots, probe count and notification silence. A new
+`TestCachedOrdinaryScanPreservesExplicitOnlineAndHistoricalSortProvenance`
+protects repeated cached visits both with rules and after clearing them.
+These repairs require new remote build and execution evidence; the schema49
+migration and recovery catalog are unchanged.
+
+The actual browser reached authentication, then timed out before submitting an
+account change because two MUI switches were incorrectly selected as checkboxes.
+Only those driver locators are corrected; the remaining checkbox selectors were
+checked against their actual components. The failed run's observer, workers,
+HTTP requests/listener, private context, media root and schema all closed. Its
+two remaining sessions required recorded fallback revocation; that cleanup is
+not a successful normal client logout journey.
+
+The recovery-store fixture correctly rejected the already consumed initial
+database pair because its public namespace was not empty. The old pair and
+rejection remain evidence. `verification-03` passed all twelve recovery-store
+parents on a fresh independently owned pair in 30.19 seconds; its process group
+and worker closed. This is an environment repair, not a weakened emptiness guard.
+No current source is accepted or published by these partial results.
 
 Private admission, setup, compilation and generation receipts are retained under
 `D:/Code/goby/.git/media-analysis-resilience-20260920/phase1` and the owned remote
