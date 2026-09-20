@@ -299,7 +299,7 @@ func seedSelectedPhase2Recovery(t *testing.T, f *engineRecoveryFixture) selected
 			media_source_id,source_revision,stream_index,parameters,source_snapshot,execution_snapshot,state,worker_token,
 			progress_stage,processed,total,cancel_requested_at,result_summary,result_hash,publication_phase,journal,
 			apply_actor_id,apply_credential_id,apply_request_id,apply_fingerprint,apply_revision,created_at,updated_at)
-			SELECT $1,$2,$3,i.id,i.library_id,i.root_id,i.id,i.library_id,i.root_id,$4,$5,'archived-request-'||$1,decode(repeat('ab',32),'hex'),
+			SELECT $1,$2,$3::bigint,i.id,i.library_id,i.root_id,i.id,i.library_id,i.root_id,$4,$5,'archived-request-'||$1,decode(repeat('ab',32),'hex'),
 			$6,`+library.MediaOperationSourceRevisionSQL+`,7,
 			CASE WHEN $2='subtitle_ocr' THEN '{"ModelIds":["eng"],"OutputFormat":"vtt","Language":"eng","Title":"Retained OCR"}'::jsonb ELSE '{}'::jsonb END,
 			jsonb_build_object('Media',i.media),'{}',$7,CASE WHEN $7 IN ('running','applying') THEN repeat('c',32) ELSE '' END,
@@ -308,7 +308,7 @@ func seedSelectedPhase2Recovery(t *testing.T, f *engineRecoveryFixture) selected
 			CASE WHEN $7='applying' THEN $4 ELSE '' END,CASE WHEN $7='applying' THEN $5 ELSE '' END,
 			CASE WHEN $7='applying' THEN 'archived-apply-'||$1 ELSE '' END,
 			CASE WHEN $7='applying' THEN decode(repeat('ef',32),'hex') ELSE NULL END,
-			CASE WHEN $7='applying' THEN $3-1 ELSE NULL END,'2026-09-01T00:00:00Z','2026-09-02T00:00:00Z'
+			CASE WHEN $7='applying' THEN $3::bigint-1 ELSE NULL END,'2026-09-01T00:00:00Z','2026-09-02T00:00:00Z'
 			FROM items i WHERE i.id=$11`, op.id, op.kind, selectedPhase2RecoveryRevision, f.actor.User.ID, f.actor.SessionID,
 			media.SourceID(op.itemID), op.state, checkpoint.cancelled, op.phase, journal, op.itemID); err != nil {
 			t.Fatalf("seed a durable media operation checkpoint: %v", err)

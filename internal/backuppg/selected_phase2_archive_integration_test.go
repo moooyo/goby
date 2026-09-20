@@ -16,14 +16,25 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type selectedPhase2Query interface {
-	QueryRow(context.Context, string, ...any) pgx.Row
+type selectedPhase2TransactionSource interface {
+	Begin(context.Context) (pgx.Tx, error)
 }
 
-func selectedPhase2ArchiveWitness(t *testing.T, ctx context.Context, query selectedPhase2Query) string {
+func selectedPhase2ArchiveWitness(t *testing.T, ctx context.Context, source selectedPhase2TransactionSource, schema string) string {
 	t.Helper()
+	// JSON renders timestamptz and bytea using transaction-local settings. Match
+	// archive fingerprints without changing the caller's session or finalizer.
+	// An existing restore transaction opens a savepoint here, not a new snapshot.
+	tx, err := source.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin the canonical media archive witness: %v", err)
+	}
+	defer rollback(tx)
+	if err := configureTransaction(ctx, tx, schema); err != nil {
+		t.Fatalf("configure the canonical media archive witness: %v", err)
+	}
 	var snapshot string
-	if err := query.QueryRow(ctx, `SELECT jsonb_build_object(
+	if err := tx.QueryRow(ctx, `SELECT jsonb_build_object(
 		'operations',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM media_operations o),
 		'cues',(SELECT jsonb_agg(to_jsonb(c) ORDER BY operation_id,ordinal) FROM media_operation_cues c),
 		'owned',(SELECT jsonb_agg(to_jsonb(s) ORDER BY item_id,stream_index) FROM item_owned_subtitles s),
@@ -116,7 +127,7 @@ func seedSelectedPhase2ArchiveWitness(t *testing.T, ctx context.Context, pool *p
 func TestPostgreSQLSelectedPhase2ArchivePreservesReviewPublicationAndDerivativeState(t *testing.T) {
 	ctx, source, target, options := recoveryFixture(t)
 	seedSelectedPhase2ArchiveWitness(t, ctx, source)
-	want := selectedPhase2ArchiveWitness(t, ctx, source)
+	want := selectedPhase2ArchiveWitness(t, ctx, source, options.Schema)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
 	counts := make(map[string]int64)
@@ -135,7 +146,7 @@ func TestPostgreSQLSelectedPhase2ArchivePreservesReviewPublicationAndDerivativeS
 	if err != nil || result.CurrentVersion != currentRecoveryVersion(t) || !equalJSON(result.Tables, facts.Tables) {
 		t.Fatalf("restore the complete raw phase2 archive: %v", err)
 	}
-	if selectedPhase2ArchiveWitness(t, ctx, target) != want {
+	if selectedPhase2ArchiveWitness(t, ctx, target, options.Schema) != want {
 		t.Fatal("raw restoration changed OCR originals or edits, publication evidence, derivative bytes, or CAS stamps")
 	}
 	targetOptions := options
@@ -145,6 +156,42 @@ func TestPostgreSQLSelectedPhase2ArchivePreservesReviewPublicationAndDerivativeS
 		t.Fatal("raw phase2 restoration changed complete archived fingerprints or sequence state")
 	}
 	assertSourceWitness(t, ctx, source, options, before, sequences)
+}
+
+func TestPostgreSQLSelectedPhase2ArchiveWitnessPreservesExactValuesAcrossSessionFormatting(t *testing.T) {
+	ctx, source, _, options := recoveryFixture(t)
+	seedSelectedPhase2ArchiveWitness(t, ctx, source)
+	want := selectedPhase2ArchiveWitness(t, ctx, source, options.Schema)
+	tx, err := source.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin differently formatted witness transaction: %v", err)
+	}
+	defer rollback(tx)
+	if _, err := tx.Exec(ctx, `SELECT set_config('TimeZone','Pacific/Chatham',true),
+		set_config('DateStyle','SQL, DMY',true),set_config('bytea_output','escape',true),
+		set_config('extra_float_digits','0',true)`); err != nil {
+		t.Fatalf("set distinct witness rendering settings: %v", err)
+	}
+	if selectedPhase2ArchiveWitness(t, ctx, tx, options.Schema) != want {
+		t.Fatal("session formatting changed the complete media archive witness")
+	}
+	var timezone, dateStyle, byteaOutput, floatDigits string
+	if err := tx.QueryRow(ctx, `SELECT current_setting('TimeZone'),current_setting('DateStyle'),
+		current_setting('bytea_output'),current_setting('extra_float_digits')`).Scan(
+		&timezone, &dateStyle, &byteaOutput, &floatDigits); err != nil {
+		t.Fatalf("read caller settings after nested witness rollback: %v", err)
+	}
+	if timezone != "Pacific/Chatham" || dateStyle != "SQL, DMY" || byteaOutput != "escape" || floatDigits != "0" {
+		t.Fatal("the canonical witness changed its caller's transaction settings")
+	}
+	tag, err := tx.Exec(ctx, `UPDATE media_operations SET updated_at=updated_at+interval '1 microsecond'
+		WHERE id=repeat('a',32)`)
+	if err != nil || tag.RowsAffected() != 1 {
+		t.Fatalf("change one archived timestamp by exactly one microsecond: %v", err)
+	}
+	if selectedPhase2ArchiveWitness(t, ctx, tx, options.Schema) == want {
+		t.Fatal("canonical formatting concealed a changed archived timestamp")
+	}
 }
 
 func TestPostgreSQLSelectedPhase2Schema43UpgradeDoesNotInferMediaWork(t *testing.T) {
@@ -185,7 +232,7 @@ func TestPostgreSQLSelectedPhase2Schema43UpgradeDoesNotInferMediaWork(t *testing
 func TestPostgreSQLSelectedPhase2RestoreRejectsCorruptDerivativeFinalizerAndRetries(t *testing.T) {
 	ctx, source, target, options := recoveryFixture(t)
 	seedSelectedPhase2ArchiveWitness(t, ctx, source)
-	want := selectedPhase2ArchiveWitness(t, ctx, source)
+	want := selectedPhase2ArchiveWitness(t, ctx, source, options.Schema)
 	archive, facts := sourceArchive(t, ctx, source, options)
 	before, sequences := unchangedSourceWitness(t, ctx, source, options)
 	offline := options
@@ -201,7 +248,7 @@ func TestPostgreSQLSelectedPhase2RestoreRejectsCorruptDerivativeFinalizerAndRetr
 			failed, err := RestoreOfflineFinalized(ctx, target, archive, facts, offline,
 				func(ctx context.Context, tx pgx.Tx, raw RestoreResult) error {
 					called = true
-					if !equalJSON(raw.Tables, facts.Tables) || selectedPhase2ArchiveWitness(t, ctx, tx) != want {
+					if !equalJSON(raw.Tables, facts.Tables) || selectedPhase2ArchiveWitness(t, ctx, tx, options.Schema) != want {
 						return errors.New("the finalizer did not receive the exact archived media state")
 					}
 					tag, err := tx.Exec(ctx, fixture.mutation)
@@ -223,7 +270,7 @@ func TestPostgreSQLSelectedPhase2RestoreRejectsCorruptDerivativeFinalizerAndRetr
 	if _, err := RestoreOffline(ctx, target, archive, facts, offline); err != nil {
 		t.Fatalf("retry the unchanged phase2 archive after every rollback: %v", err)
 	}
-	if selectedPhase2ArchiveWitness(t, ctx, target) != want {
+	if selectedPhase2ArchiveWitness(t, ctx, target, options.Schema) != want {
 		t.Fatal("retry changed the original media operation or derivative rows")
 	}
 	assertSourceWitness(t, ctx, source, options, before, sequences)
