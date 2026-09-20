@@ -13,7 +13,7 @@ import (
 	"os"
 )
 
-const PreviewAnalysisProfile = "source-pts-display-preceding-hold-jpeg-v3"
+const PreviewAnalysisProfile = "source-pts-display-preceding-hold-jpeg-v3;geometry=" + AnalysisGeometryProfile
 
 // PreviewAnalysisOptions creates fixed nominal slots across the complete
 // source timeline. Width is one of the admitted cache variants, not an HTTP

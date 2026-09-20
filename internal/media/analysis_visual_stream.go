@@ -53,6 +53,7 @@ type analysisVisualLog struct {
 	origin                       int64
 	stream                       Stream
 	sarNumerator, sarDenominator int64
+	sourceSARUnknown             bool
 	packets                      *analysisPacketPTS
 	source                       analysisShowInfoState
 	sample                       analysisShowInfoState
@@ -78,7 +79,8 @@ func newAnalysisVisualLog(info Info, stream Stream, plan analysisVisualPlan, lim
 	stream.Width, stream.Height = geometry.width, geometry.height
 	return &analysisVisualLog{plan: plan, limits: limits, origin: info.FormatStartTicks,
 		stream: stream, sarNumerator: geometry.sarNumerator, sarDenominator: geometry.sarDenominator,
-		packets: packets, frames: make(chan analysisVisualFrame, plan.frames),
+		sourceSARUnknown: geometry.sourceSARUnknown,
+		packets:          packets, frames: make(chan analysisVisualFrame, plan.frames),
 		done: make(chan struct{})}, nil
 }
 
@@ -238,8 +240,14 @@ func (log *analysisVisualLog) sourceFrame(fields []string) error {
 		state.count > 0 && pts <= state.lastPTS {
 		return fmt.Errorf("%w: missing, duplicate, or unordered visual PTS", ErrAnalysisUnproven)
 	}
-	if sarNumErr != nil || sarDenErr != nil || sarNum <= 0 || sarDen <= 0 ||
-		sarNum*log.sarDenominator != sarDen*log.sarNumerator {
+	matchedSAR := sarNumErr == nil && sarDenErr == nil && sarNum > 0 && sarDen > 0 &&
+		sarNum*log.sarDenominator == sarDen*log.sarNumerator
+	if log.sourceSARUnknown {
+		// Unknown source proof must remain canonical 0/1 on every decoded frame.
+		// Do not replace the raw fields: preview trace comparison also uses them.
+		matchedSAR = fields[4] == "0" && fields[5] == "1"
+	}
+	if !matchedSAR {
 		return fmt.Errorf("%w: source display pixel ratio differs from its geometry proof", ErrAnalysisUnproven)
 	}
 	ticks, err := analysisVisualTicks(pts, state.timeBase, log.origin)

@@ -115,10 +115,17 @@ async function configure() {
   requireThat(conflict.Submitted.Revision === first.Body.Revision, 'native_conflict_draft_rebased_silently');
   await page.getByRole('button', { name: 'Reload latest and keep draft', exact: true }).click();
   await page.getByRole('button', { name: 'Save analysis configuration', exact: true }).waitFor();
+  const quality = page.getByRole('textbox', { name: 'Preview image quality', exact: true });
+  requireThat(await quality.inputValue() === String(first.Body.Profile.PreviewQuality), 'native_conflict_lost_quality_draft');
+  // Freeze the encoder quality used by the independent RGB calibration after
+  // proving that reloading the concurrent revision preserved the user's draft.
+  await quality.fill('81');
   const saved = await responseFor('PUT', '/admin/v1/media-analysis/configuration', () => page.getByRole('button', { name: 'Save analysis configuration', exact: true }).click());
-  requireThat(saved.Submitted.Revision === concurrent.Body.Revision && saved.Body.Profile.AutoPublishIntros === true && saved.Body.Profile.PreviewIntervalSeconds === fixture.PreviewIntervalSeconds, 'native_conflict_reload_lost_profile');
+  requireThat(saved.Submitted.Revision === concurrent.Body.Revision && saved.Body.Profile.AutoPublishIntros === true && saved.Body.Profile.PreviewIntervalSeconds === fixture.PreviewIntervalSeconds && saved.Body.Profile.PreviewQuality === 81, 'native_conflict_reload_lost_profile');
+  const readback = (await native('/admin/v1/media-analysis')).Body;
+  requireThat(readback.Configuration.Revision === saved.Body.Revision && readback.Configuration.Profile.PreviewQuality === 81, 'native_preview_quality_readback_mismatch');
   result.Mechanics.NativeConfiguration = true; result.Mechanics.ConfigurationCAS = true;
-  await evidence('native-configuration-http.json', { Initial: initial, First: first, Concurrent: concurrent, Conflict: conflict, Saved: saved }); await screenshot(page, 'native-configuration.png');
+  await evidence('native-configuration-http.json', { Initial: initial, First: first, Concurrent: concurrent, Conflict: conflict, Saved: saved, Readback: readback }); await screenshot(page, 'native-configuration.png');
 }
 function parseBIF(bytes) {
   requireThat(bytes.length >= 72 && bytes.length <= (128 << 20) && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x42, 0x49, 0x46, 13, 10, 26, 10])) && bytes.readUInt32LE(8) === 0, 'actual_bif_header_invalid');

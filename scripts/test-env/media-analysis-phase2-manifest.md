@@ -464,7 +464,8 @@ claim a complete packet-position-to-frame identity proof or eliminate every
 possible decoder repair. Tick mapping is exact rational arithmetic:
 `floor(pts * time_base * TicksPerSecond - format_start_ticks)`. Selection itself
 compares exact rational source timestamps before that flooring. Under
-`source-pts-display-preceding-hold-jpeg-v3`, binary search selects the greatest
+the `source-pts-display-preceding-hold-jpeg-v3;geometry=orthogonal-display-sar-v2`
+verification profile, binary search selects the greatest
 decoded source PTS at or before the nominal slot, proving its presentation
 interval `[sourcePTS, nextSourcePTS)`. A long VFR frame may therefore serve
 multiple nominal slots, and `ActualTicks` can repeat or be less than nominal.
@@ -489,8 +490,18 @@ guessed frame rate, `fps`, `tpad`, seek rebasing, or nominal-to-actual timestamp
 copying is used. Orthogonal display matrices and
 sample aspect ratio are independently checked; output geometry follows the
 actual rotated display ratio and square output pixels.
+The geometry policy is `orthogonal-display-sar-v2`. A missing ffprobe SAR field,
+`N/A`, or `0:1` retains an **unknown source SAR** and selects a declared 1:1
+display fallback. It does not infer SAR from display-aspect-ratio metadata.
+Explicit null, empty strings, slash-form probe values, negative values, and zero
+denominators remain invalid. Every decoded frame must retain the source's known
+or unknown classification; known ratios must match exactly as rational numbers.
+The report records the original stream report, all decoded-frame SAR report
+counts, the effective rotated display ratio, and the fallback policy separately.
 The separate source RGB decode must also emit exactly one matching
-`showinfo@phase2_source` PTS/time-base record; merely asking a filter for a PTS
+`showinfo@phase2_source` PTS/time-base/SAR record before scaling or `setsar`.
+Unknown sources must still report `sar:0/1`; known sources must report the exact
+post-rotation ratio. Merely asking a filter for a PTS
 does not constitute successful timestamp verification.
 
 Decoder runs have bounded output, diagnostics, source pixels, source frames,
@@ -549,7 +560,8 @@ The independent wire parser follows the pinned
 Uniform timestamps are required for the pinned
 [Video.js BIF consumer](https://github.com/samueleastdev/videojs-bif-updated/tree/69989cee2f5ffed5151042cc9aef2280ea9ce5f6).
 Source-relative PTS and display transforms align with Goby's
-`source-pts-display-preceding-hold-jpeg-v3` and `orthogonal-display-sar-v1` profiles in
+`source-pts-display-preceding-hold-jpeg-v3;geometry=orthogonal-display-sar-v2`
+preview profile and `orthogonal-display-sar-v2` geometry profile in
 `internal/media/analysis_preview.go`, `analysis_preview_hold.go`, `analysis_preview_hold_log.go`,
 `analysis_visual_pts.go`, and `analysis_geometry.go`. These references specify
 the implemented contract; they are not records of a successful corpus run.

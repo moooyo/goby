@@ -109,6 +109,94 @@ func TestAnalysisVisualRequiresExactSourceToOutputPTSEquality(t *testing.T) {
 	}
 }
 
+func TestAnalysisVisualAuditsUnknownAndKnownSourceSARWithoutMixingThem(t *testing.T) {
+	for _, fixture := range []struct {
+		name, probe, first, later string
+		accepted                  bool
+	}{
+		{"unknown_stays_unknown", "0:1", "0/1", "0/1", true},
+		{"unknown_becomes_known", "0:1", "0/1", "1/1", false},
+		{"unknown_proof_known_frames", "0:1", "1/1", "1/1", false},
+		{"known_becomes_unknown", "1:1", "1/1", "0/1", false},
+		{"known_proof_unknown_frames", "1:1", "0/1", "0/1", false},
+		{"known_equivalent_rational", "4:3", "8/6", "4/3", true},
+		{"known_changes_ratio", "4:3", "4/3", "1/1", false},
+		{"unknown_zero_denominator", "0:1", "0/0", "0/1", false},
+		{"unknown_noncanonical_denominator", "0:1", "0/2", "0/1", false},
+		{"unknown_noncanonical_numerator", "0:1", "00/1", "0/1", false},
+		{"unknown_negative", "0:1", "-1/1", "0/1", false},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			info, stream := visualAnalysisTestInfo()
+			limits := DefaultAnalysisLimits()
+			geometry, err := parseAnalysisGeometry(bytes.NewReader(analysisGeometryTestDocument(t, stream, fixture.probe, -1)), stream, limits)
+			if err != nil {
+				t.Fatal(err)
+			}
+			plan, err := analysisVisualOptions(info, VisualAnalysisOptions{}, limits)
+			if err != nil {
+				t.Fatal(err)
+			}
+			plan.geometry = geometry
+			log, err := newAnalysisVisualLog(info, stream, plan, limits)
+			if err != nil {
+				t.Fatal(err)
+			}
+			text := strings.ReplaceAll(visualAnalysisTestTranscript(), "sar:1/1", "sar:"+fixture.later)
+			text = strings.Replace(text, "sar:"+fixture.later, "sar:"+fixture.first, 1)
+			_, err = log.Write([]byte(text))
+			log.Close(nil)
+			if !fixture.accepted {
+				if !errors.Is(err, ErrAnalysisUnproven) {
+					t.Fatalf("source SAR proof mismatch returned %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := readAnalysisVisualFrames(context.Background(), bytes.NewReader(make([]byte, 3*32*32)), log,
+				func(analysisVisualFrame, []byte) error { return nil }); err != nil || log.result() != nil {
+				t.Fatalf("consistent source SAR audit failed: %v / %v", err, log.result())
+			}
+			args := strings.Join(buildAnalysisVisualArgs(info, stream, plan, limits), " ")
+			if audit, normalized := strings.Index(args, "showinfo@analysis_source"), strings.Index(args, "setsar=1"); audit < 0 || normalized <= audit {
+				t.Fatal("display fallback hid the original frame SAR before its audit")
+			}
+		})
+	}
+}
+
+func TestAnalysisVisualAuditsUnknownSARAfterOrthogonalTranspose(t *testing.T) {
+	for _, rotation := range []int{90, 270} {
+		info, stream := visualAnalysisTestInfo()
+		limits := DefaultAnalysisLimits()
+		geometry, err := parseAnalysisGeometry(bytes.NewReader(analysisGeometryTestDocument(t, stream, "0:1", rotation)), stream, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		plan, err := analysisVisualOptions(info, VisualAnalysisOptions{}, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		plan.geometry = geometry
+		log, err := newAnalysisVisualLog(info, stream, plan, limits)
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := strings.ReplaceAll(visualAnalysisTestTranscript(), "sar:1/1", "sar:0/1")
+		text = strings.ReplaceAll(text, "s:1920x1080", "s:1080x1920")
+		if _, err := log.Write([]byte(text)); err != nil {
+			t.Fatalf("unknown SAR after %d-degree transpose: %v", rotation, err)
+		}
+		log.Close(nil)
+		if err := readAnalysisVisualFrames(context.Background(), bytes.NewReader(make([]byte, 3*32*32)), log,
+			func(analysisVisualFrame, []byte) error { return nil }); err != nil || log.result() != nil {
+			t.Fatalf("rotated unknown-SAR audit failed: %v / %v", err, log.result())
+		}
+	}
+}
+
 func TestAnalysisVisualRejectsUnprovenAndMalformedEvidence(t *testing.T) {
 	valid := visualAnalysisTestTranscript()
 	for _, fixture := range []struct{ name, text string }{

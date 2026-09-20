@@ -15,10 +15,12 @@ import (
 
 // AnalysisGeometryProfile admits exact orthogonal display matrices without
 // reflection, scaling, translation, or perspective. Rotation is applied before
-// source frame auditing. SAR is verified on that rotated raster and normalized
-// to square output pixels only after sampling, avoiding a full-frame rescale
-// for every discarded source picture. Final dimensions use the exact DAR.
-const AnalysisGeometryProfile = "orthogonal-display-sar-v1"
+// source frame auditing. Known SAR is verified on that rotated raster. An
+// explicitly unknown source SAR remains unknown in the audit and uses a square
+// pixel display fallback, following FFplay n8.0 calculate_display_rect. Output
+// pixels are normalized only after sampling; final dimensions use the exact
+// effective display ratio without claiming an unknown source SAR was observed.
+const AnalysisGeometryProfile = "orthogonal-display-sar-v2"
 
 const (
 	maxAnalysisGeometryJSON     = 64 << 10
@@ -27,8 +29,10 @@ const (
 )
 
 type analysisDisplayGeometry struct {
-	width, height                int
+	width, height int
+	// SAR describes the effective display ratio; the flag retains source proof.
 	sarNumerator, sarDenominator int64
+	sourceSARUnknown             bool
 	clockwise                    int
 	ffprobeSHA                   string
 }
@@ -45,7 +49,7 @@ type analysisGeometryStream struct {
 	Width             int                        `json:"width"`
 	Height            int                        `json:"height"`
 	TimeBase          string                     `json:"time_base"`
-	SampleAspectRatio string                     `json:"sample_aspect_ratio"`
+	SampleAspectRatio json.RawMessage            `json:"sample_aspect_ratio,omitempty"`
 	SideData          []analysisGeometrySideData `json:"side_data_list"`
 	Tags              struct {
 		Rotate string `json:"rotate"`
@@ -132,12 +136,12 @@ func parseAnalysisGeometry(reader io.Reader, expected Stream, limits AnalysisLim
 	if int64(stream.Width) > limits.MaxSourcePixels/int64(stream.Height) || len(stream.SideData) > maxAnalysisGeometrySideData {
 		return analysisDisplayGeometry{}, fmt.Errorf("%w: display geometry dimensions or side data", ErrAnalysisBudget)
 	}
-	sar, err := analysisTimeBase(strings.ReplaceAll(stream.SampleAspectRatio, ":", "/"))
-	if err != nil || strings.Count(stream.SampleAspectRatio, ":") != 1 {
-		return analysisDisplayGeometry{}, fmt.Errorf("%w: unknown display sample aspect ratio", ErrAnalysisUnproven)
+	sar, sourceSARUnknown, err := analysisGeometrySAR(stream.SampleAspectRatio)
+	if err != nil {
+		return analysisDisplayGeometry{}, err
 	}
 	geometry := analysisDisplayGeometry{width: stream.Width, height: stream.Height,
-		sarNumerator: sar.Num().Int64(), sarDenominator: sar.Denom().Int64()}
+		sarNumerator: sar.Num().Int64(), sarDenominator: sar.Denom().Int64(), sourceSARUnknown: sourceSARUnknown}
 	matrixSeen := false
 	for _, side := range stream.SideData {
 		if len(side.Type) > 128 || len(side.Matrix) > maxAnalysisGeometryMatrix {
@@ -166,9 +170,31 @@ func parseAnalysisGeometry(reader io.Reader, expected Stream, limits AnalysisLim
 	}
 	if geometry.clockwise == 90 || geometry.clockwise == 270 {
 		geometry.width, geometry.height = geometry.height, geometry.width
+		// Invert the effective display ratio. FFmpeg's transpose preserves a
+		// decoded unknown 0/1 SAR; sourceSARUnknown keeps that separate audit.
 		geometry.sarNumerator, geometry.sarDenominator = geometry.sarDenominator, geometry.sarNumerator
 	}
 	return geometry, nil
+}
+
+func analysisGeometrySAR(raw json.RawMessage) (*big.Rat, bool, error) {
+	if len(raw) == 0 {
+		return big.NewRat(1, 1), true, nil
+	}
+	var text string
+	if err := json.Unmarshal(raw, &text); err != nil {
+		return nil, false, fmt.Errorf("%w: malformed display sample aspect ratio", ErrAnalysisUnproven)
+	}
+	if text == "N/A" || text == "0:1" {
+		return big.NewRat(1, 1), true, nil
+	}
+	// A present null/empty value or a malformed rational is not an absent SAR.
+	// Keep the positive time-base parser strict; only SAR has a display fallback.
+	sar, err := analysisTimeBase(strings.ReplaceAll(text, ":", "/"))
+	if err != nil || strings.Count(text, ":") != 1 {
+		return nil, false, fmt.Errorf("%w: invalid display sample aspect ratio", ErrAnalysisUnproven)
+	}
+	return sar, false, nil
 }
 
 func analysisGeometryTagRotation(text string) (int, error) {

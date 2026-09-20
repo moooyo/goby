@@ -1,6 +1,6 @@
 # Analysis display geometry profile
 
-`orthogonal-display-sar-v1` reads private geometry facts from an authorized open
+`orthogonal-display-sar-v2` reads private geometry facts from an authorized open
 descriptor. It does not alter the general media probe version or persist new
 fields in `Info`. The selected stream index, coded dimensions, and time base
 must agree with the caller's indexed stream facts.
@@ -23,11 +23,17 @@ four exact fixed-point orthogonal rotation matrices. It rejects reflections,
 scaling, shear, translation, perspective, damaged matrices, duplicate matrices,
 inconsistent derived rotation values, and unproven legacy rotation tags.
 Positive, finite sample aspect ratios are retained as exact rationals, including
-common 16:15 and 64:45 sources. Unknown or zero ratios are not assumed square.
+common 16:15 and 64:45 sources. A missing ratio, `N/A`, or `0:1` remains an
+explicitly unknown source ratio. The display policy uses square pixels for these
+cases, following FFplay's [unknown-ratio display fallback](https://github.com/FFmpeg/FFmpeg/blob/n8.0/fftools/ffplay.c#L860).
+This is a rendering default, not a claim that the source declared `1:1`.
+Null, empty, malformed, negative, and zero-denominator values remain invalid.
 
 Automatic rotation is disabled. Proven rotation is applied explicitly using
 `transpose=clock`, `hflip,vflip`, or `transpose=cclock`. The source-frame audit
-checks the resulting raster dimensions and SAR on every observed frame. A
+checks the resulting raster dimensions and SAR on every observed frame. An
+unknown source ratio must remain `0/1` throughout that audit; a transition to
+a declared ratio is rejected. A
 quarter turn swaps both coded dimensions and the SAR numerator/denominator.
 Decoded and rotated intermediate rasters use `MaxSourcePixels`; final visual
 and preview rasters use `MaxFramePixels`.

@@ -42,7 +42,9 @@ MAX_PROBE = 192 << 20
 MAX_DIAGNOSTICS = 8 << 20
 PROCESS_SECONDS = 600
 CASE_SECONDS = 1800
-PREVIEW_PROFILE = "source-pts-display-preceding-hold-jpeg-v3"
+PREVIEW_PROFILE = "source-pts-display-preceding-hold-jpeg-v3;geometry=orthogonal-display-sar-v2"
+GEOMETRY_PROFILE = "orthogonal-display-sar-v2"
+UNREPORTED_SAR = object()
 MAGIC = b"\x89BIF\r\n\x1a\n"
 SHA = re.compile(r"[0-9a-f]{64}\Z")
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
@@ -589,6 +591,18 @@ def rational(value, separator="/"):
     return Fraction(numerator, denominator)
 
 
+def source_sample_aspect_ratio(value=UNREPORTED_SAR):
+    """Keep unknown source facts separate from a square-pixel display policy."""
+    if value is UNREPORTED_SAR:
+        return Fraction(1), True, "absent"
+    if value in ("N/A", "0:1"):
+        return Fraction(1), True, value
+    try:
+        return rational(value, ":"), False, value
+    except Invalid as error:
+        raise Invalid("invalid_source_sample_aspect_ratio") from error
+
+
 def decimal_fraction(value):
     require(isinstance(value, str) and len(value) <= 64 and re.fullmatch(r"-?[0-9]+(?:\.[0-9]+)?", value),
             "unknown_source_time")
@@ -640,7 +654,7 @@ def probe_source(tool, source, case, deadline):
             "-select_streams", str(index), "-show_frames", "-show_packets", "-show_entries",
             "format=start_time,duration:stream=index,codec_type,width,height,time_base,sample_aspect_ratio:"
             "stream_disposition=attached_pic:stream_tags=rotate:stream_side_data=side_data_type,displaymatrix,rotation:"
-            "frame=stream_index,pts,width,height:packet=stream_index,pts", "-of", "json", "-i", source.proc_path()]
+            "frame=stream_index,pts,width,height,sample_aspect_ratio:packet=stream_index,pts", "-of", "json", "-i", source.proc_path()]
     document = decode_json(run_tool(tool, args, source, deadline=deadline))
     streams = document.get("streams")
     require(isinstance(streams, list) and len(streams) == 1, "ambiguous_video_stream")
@@ -651,7 +665,8 @@ def probe_source(tool, source, case, deadline):
     height = integer(stream.get("height"), 1, MAX_SOURCE_PIXELS)
     require(width * height <= MAX_SOURCE_PIXELS, "source_pixel_budget")
     base = rational(stream.get("time_base"))
-    sar = rational(stream.get("sample_aspect_ratio"), ":")
+    source_sar, source_sar_unknown, source_sar_report = source_sample_aspect_ratio(stream.get("sample_aspect_ratio", UNREPORTED_SAR))
+    sar = source_sar
     clockwise, filters = rotation(stream)
     if clockwise in (90, 270):
         width, height, sar = height, width, 1 / sar
@@ -682,12 +697,17 @@ def probe_source(tool, source, case, deadline):
         pts = integer(packet.get("pts"), -(1 << 63) + 1)
         require(pts not in packet_pts, "duplicate_original_pts")
         packet_pts.add(pts)
-    timeline, last_pts = [], None
+    timeline, last_pts, frame_sar_reports = [], None, {}
     for number, frame in enumerate(frames):
         if number % 1024 == 0:
             check_cancelled()
         require(frame.get("stream_index") == index and frame.get("width") == stream["width"] and
                 frame.get("height") == stream["height"], "source_frame_geometry_changed")
+        frame_sar, frame_sar_unknown, frame_sar_report = source_sample_aspect_ratio(frame.get("sample_aspect_ratio", UNREPORTED_SAR))
+        require(frame_sar_unknown == source_sar_unknown and
+                (source_sar_unknown or frame_sar == source_sar), "source_frame_sar_changed")
+        frame_sar_reports[frame_sar_report] = frame_sar_reports.get(frame_sar_report, 0) + 1
+        require(len(frame_sar_reports) <= 16, "source_frame_sar_report_budget")
         pts = integer(frame.get("pts"), -(1 << 63) + 1)
         require(pts in packet_pts and (last_pts is None or pts > last_pts), "unproven_or_unordered_frame_pts")
         relative = pts * base * TICKS - origin
@@ -698,7 +718,11 @@ def probe_source(tool, source, case, deadline):
         last_pts = pts
     return {"width": target_width, "height": target_height, "filters": filters, "base": base,
             "timeline": timeline, "origin_ticks": origin, "complete_decoded_eof": True,
-            "source_pts": [pts for pts, _ in timeline]}
+            "source_pts": [pts for pts, _ in timeline], "geometry_profile": GEOMETRY_PROFILE,
+            "source_sar_unknown": source_sar_unknown, "source_sar_report": source_sar_report,
+            "source_frame_sar_reports": frame_sar_reports,
+            "display_sar": f"{sar.numerator}/{sar.denominator}",
+            "display_sar_policy": "unknown_source_square_pixel_display" if source_sar_unknown else "known_source_ratio"}
 
 
 def selected_frames(probe, nominal, duration):
@@ -796,6 +820,17 @@ def source_rgb(ffmpeg, source, case, probe, selected, deadline):
         frames = re.findall(prefix + r"n:\s*([0-9]+)\s+pts:\s*(-?[0-9]+)\s+pts_time:", log)
         require(len(bases) == 1 and rational(bases[0]) == probe["base"] and frames == [("0", str(pts))],
                 "source_rgb_pts_not_proven")
+        # showinfo observes the selected frame after the declared orthogonal
+        # transform and before scale/setsar. An unknown source remains 0/1;
+        # square pixels are a display choice, not invented source metadata.
+        frame_lines = [line for line in log.splitlines() if re.search(prefix + r"n:\s*[0-9]+\s+pts:", line)]
+        require(len(frame_lines) == 1, "source_rgb_sar_not_proven")
+        reported = re.findall(r"(?:^|\s)sar:([^\s]+)", frame_lines[0])
+        require(len(reported) == 1, "source_rgb_sar_not_proven")
+        if probe["source_sar_unknown"]:
+            require(reported[0] == "0/1", "source_rgb_sar_not_proven")
+        else:
+            require(rational(reported[0]) == rational(probe["display_sar"]), "source_rgb_sar_not_proven")
     pixels = run_tool(ffmpeg, args, source, stdout_limit=expected + 1, deadline=deadline, audit_stderr=audit)
     require(len(pixels) == expected, "incomplete_source_rgb_frame")
     return pixels
@@ -932,6 +967,9 @@ def evaluate_preview(case, observation, source, artifacts, ffmpeg, ffprobe, thre
             equivalent_indexes.setdefault(frame["sha256"], []).append(index)
         result = {"state": "passed", "bif_sha256": bif.sha256, "frame_count": len(frames),
                   "verification_profile": PREVIEW_PROFILE, "complete_source_decode_observed": probe["complete_decoded_eof"],
+                  "geometry_profile": probe["geometry_profile"], "source_sar_unknown": probe["source_sar_unknown"],
+                  "source_sar_report": probe["source_sar_report"], "source_frame_sar_reports": probe["source_frame_sar_reports"],
+                  "display_sar": probe["display_sar"], "display_sar_policy": probe["display_sar_policy"],
                   "multiplier_millis": multiplier, "interval_ticks": actual_interval,
                   "interval_observed": len(frames) > 1,
                   "selection_policy_counts": {policy: sum(point["selection_policy"] == policy for point in selected)

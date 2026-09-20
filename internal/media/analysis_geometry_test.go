@@ -28,8 +28,12 @@ func analysisGeometryTestMatrix(clockwise int) string {
 func analysisGeometryTestDocument(t *testing.T, expected Stream, sar string, clockwise int) []byte {
 	t.Helper()
 	index := expected.Index
+	ratio, err := json.Marshal(sar)
+	if err != nil {
+		t.Fatal(err)
+	}
 	stream := analysisGeometryStream{Index: &index, CodecType: "video", Width: expected.Width, Height: expected.Height,
-		TimeBase: expected.TimeBase, SampleAspectRatio: sar}
+		TimeBase: expected.TimeBase, SampleAspectRatio: ratio}
 	if clockwise >= 0 {
 		rotation := -clockwise
 		if rotation < -180 {
@@ -59,7 +63,7 @@ func TestAnalysisGeometryPreservesExactDARAcrossRotationsAndSAR(t *testing.T) {
 	} {
 		t.Run(fmt.Sprint(fixture.clockwise), func(t *testing.T) {
 			geometry, err := parseAnalysisGeometry(bytes.NewReader(analysisGeometryTestDocument(t, stream, "4:3", fixture.clockwise)), stream, DefaultAnalysisLimits())
-			if err != nil || geometry.width != fixture.width || geometry.height != fixture.height || geometry.sarNumerator != fixture.sarN || geometry.sarDenominator != fixture.sarD || geometry.filter() != fixture.filter {
+			if err != nil || geometry.sourceSARUnknown || geometry.width != fixture.width || geometry.height != fixture.height || geometry.sarNumerator != fixture.sarN || geometry.sarDenominator != fixture.sarD || geometry.filter() != fixture.filter {
 				t.Fatalf("geometry = %+v, %v", geometry, err)
 			}
 			height, err := geometry.previewHeight(320, DefaultAnalysisLimits())
@@ -113,8 +117,8 @@ func TestAnalysisGeometryRejectsUnprovenMatricesAndStreamChanges(t *testing.T) {
 		}},
 		{"wrong_side_data", func(doc *analysisGeometryDocument) { doc.Streams[0].SideData[0].Type = "unknown" }},
 		{"unproven_legacy_tag", func(doc *analysisGeometryDocument) { doc.Streams[0].SideData = nil; doc.Streams[0].Tags.Rotate = "90" }},
-		{"unknown_sar", func(doc *analysisGeometryDocument) { doc.Streams[0].SampleAspectRatio = "N/A" }},
-		{"zero_sar", func(doc *analysisGeometryDocument) { doc.Streams[0].SampleAspectRatio = "0:1" }},
+		{"zero_denominator", func(doc *analysisGeometryDocument) { doc.Streams[0].SampleAspectRatio = json.RawMessage(`"1:0"`) }},
+		{"negative_sar", func(doc *analysisGeometryDocument) { doc.Streams[0].SampleAspectRatio = json.RawMessage(`"-1:1"`) }},
 		{"wrong_dimensions", func(doc *analysisGeometryDocument) { doc.Streams[0].Width++ }},
 		{"wrong_time_base", func(doc *analysisGeometryDocument) { doc.Streams[0].TimeBase = "1/90000" }},
 		{"wrong_index", func(doc *analysisGeometryDocument) { index := 1; doc.Streams[0].Index = &index }},
@@ -137,6 +141,61 @@ func TestAnalysisGeometryRejectsUnprovenMatricesAndStreamChanges(t *testing.T) {
 	}
 	if _, err := parseAnalysisGeometry(bytes.NewReader(append(valid, []byte("{}")...)), stream, DefaultAnalysisLimits()); err == nil {
 		t.Fatal("trailing geometry document was accepted")
+	}
+}
+
+func TestAnalysisGeometryUnknownSARHasAnExplicitDisplayFallback(t *testing.T) {
+	_, stream := visualAnalysisTestInfo()
+	stream.Width, stream.Height = 320, 240
+	for _, raw := range []json.RawMessage{nil, json.RawMessage(`"N/A"`), json.RawMessage(`"0:1"`)} {
+		for _, rotation := range []int{0, 90, 180, 270} {
+			var document analysisGeometryDocument
+			if err := json.Unmarshal(analysisGeometryTestDocument(t, stream, "1:1", rotation), &document); err != nil {
+				t.Fatal(err)
+			}
+			document.Streams[0].SampleAspectRatio = raw
+			data, err := json.Marshal(document)
+			if err != nil {
+				t.Fatal(err)
+			}
+			geometry, err := parseAnalysisGeometry(bytes.NewReader(data), stream, DefaultAnalysisLimits())
+			if err != nil || !geometry.sourceSARUnknown || geometry.sarNumerator != 1 || geometry.sarDenominator != 1 {
+				t.Fatalf("unknown SAR %s rotation %d lost its source/display distinction: %+v, %v", raw, rotation, geometry, err)
+			}
+			want := 180
+			if rotation == 90 || rotation == 270 {
+				want = 320
+			}
+			if height, err := geometry.previewHeight(240, DefaultAnalysisLimits()); err != nil || height != want {
+				t.Fatalf("unknown SAR %s rotation %d height=%d want=%d: %v", raw, rotation, height, want, err)
+			}
+		}
+	}
+	if analysisSquareGeometry(stream).sourceSARUnknown {
+		t.Fatal("known square geometry was reclassified as an unknown source")
+	}
+}
+
+func TestAnalysisGeometrySARFallbackRejectsMalformedEvidence(t *testing.T) {
+	_, stream := visualAnalysisTestInfo()
+	for _, raw := range []json.RawMessage{
+		json.RawMessage(`null`), json.RawMessage(`""`), json.RawMessage(`0`), json.RawMessage(`true`), json.RawMessage(`{}`), json.RawMessage(`[]`),
+		json.RawMessage(`"0/1"`), json.RawMessage(`"0:0"`), json.RawMessage(`"0:2"`), json.RawMessage(`"1:0"`),
+		json.RawMessage(`"-1:1"`), json.RawMessage(`"1:-1"`), json.RawMessage(`"0:-1"`), json.RawMessage(`"-0:1"`),
+		json.RawMessage(`"N/A "`), json.RawMessage(`" 0:1"`), json.RawMessage(`"1:2:3"`), json.RawMessage(`"2147483648:1"`),
+	} {
+		var document analysisGeometryDocument
+		if err := json.Unmarshal(analysisGeometryTestDocument(t, stream, "1:1", 0), &document); err != nil {
+			t.Fatal(err)
+		}
+		document.Streams[0].SampleAspectRatio = raw
+		data, err := json.Marshal(document)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := parseAnalysisGeometry(bytes.NewReader(data), stream, DefaultAnalysisLimits()); !errors.Is(err, ErrAnalysisUnproven) {
+			t.Fatalf("malformed SAR %s returned %v", raw, err)
+		}
 	}
 }
 

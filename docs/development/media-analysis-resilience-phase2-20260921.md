@@ -1,10 +1,11 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **initial consolidated verification completed; targeted repairs await verification**.
+Status: **initial failures repaired and verified; actual-source geometry repair and consumer acceptance pending**.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
-The initial regression failed and is not accepted. Targeted repair verification,
-native browser coverage and real-media accuracy/consumer acceptance remain pending.
+The initial failed attempt remains retained. Targeted repair verification has
+passed; a newly observed source-geometry compatibility repair, native browser
+coverage and real-media accuracy/consumer acceptance remain pending.
 
 This phase implements the second delivery in the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -128,7 +129,21 @@ procfs `ESRCH` observation, a moving-window fixture race, explicit new-table,
 sequence and task-count expectations, a recovery test's fixed migration target,
 and a missing OCR fixture environment variable. Published SQL and the actual
 schema-50 catalog remain unchanged. Original failed outputs remain retained;
-the repaired code has not yet been rebuilt or tested.
+the initial repair was frozen at `c3d3e7ab88eb68871378d4da91fd358fe376773e`.
+Its second full product build passed all 20 steps. The affected full media,
+server and command packages and three failed migration parents then passed:
+1,563 parent tests, no failures and five explicit hardware-profile skips. All
+five test process groups closed normally. The fingerprint binary is identical
+to the previously verified helper. Unchanged package results retain their
+original scope; the initial failures are not erased.
+
+Actual source review then identified a separate compatibility gap: all six
+historical episode sources omit the stream sample aspect ratio, and their
+decoded frames report `0/1`. The previous geometry policy rejected them. The
+new versioned display policy retains this unknown-source fact while using the
+square-pixel display fallback documented by FFplay; it does not fabricate a
+declared source ratio. Strict per-frame consistency, rotation, timestamps and
+resource bounds remain required. This further repair has not yet been executed.
 
 The six skips are the existing Dolby Vision, VAAPI/AMD and mount-helper profiles.
 They are not passes, real preview-client evidence or phase-3 fault acceptance.

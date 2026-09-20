@@ -78,7 +78,9 @@ normalization. Preview dimensions follow the exact displayed aspect ratio,
 including anamorphic inputs. See [GEOMETRY.md](GEOMETRY.md) for the independent
 matrix/SAR proof, admitted transforms and malformed-input boundaries.
 
-Previews use the separate `source-pts-display-preceding-hold-jpeg-v3` policy.
+Previews use the separate `source-pts-display-preceding-hold-jpeg-v3` sampling
+policy. The complete profile also binds `;geometry=orthogonal-display-sar-v2`
+so a changed display policy cannot reuse an earlier derivative profile.
 They cover the admitted full duration with uniform nominal slots and retain
 each selected frame's original actual ticks separately. At a nominal slot, the
 selected frame is the latest source frame whose PTS is at or before that slot.
