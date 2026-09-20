@@ -62,12 +62,26 @@ func TestNotificationCapacityAfterMediaExchangeRetainsPreparedRecoveryBarrier(t 
 		t.Fatal(err)
 	}
 	owner := playSessionOwnerFixture(t, f.ctx, f.pool, f.userID, "notification-media-capacity")
-	if _, err = f.pool.Exec(f.ctx, `UPDATE notification_transport SET enabled=true,endpoint='https://receiver.invalid/events',credential_ciphertext=$1 WHERE id=1;
-	INSERT INTO notification_registrations(id,session_id,user_id,device_id,peer_ip,event_ids,token_ciphertext) VALUES($2,$3,$4,$5,'',ARRAY['CatalogInvalidated'],$1)`, make([]byte, 48), strings.Repeat("c", 32), owner.SessionID, owner.UserID, owner.DeviceID); err != nil {
+	seed, err := f.store.beginOwnedTx(f.ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = f.pool.Exec(f.ctx, `UPDATE notification_journal_state SET sequence=512;
-	INSERT INTO notification_source_events(id,sequence,kind,refs) SELECT md5('notification-media-capacity-'||n::text),n,'CatalogInvalidated',jsonb_build_array(jsonb_build_object('Kind','Item','Id',$1::text,'LibraryId',$2::text)) FROM generate_series(1,512)n`, op.ItemID, op.LibraryID); err != nil {
+	defer rollback(seed)
+	// pgx prepares parameterized statements individually. Keep the admission
+	// state atomic without combining multiple SQL commands in one prepared call.
+	if _, err = seed.Exec(f.ctx, `UPDATE notification_transport SET enabled=true,endpoint='https://receiver.invalid/events',credential_ciphertext=$1 WHERE id=1`, make([]byte, 48)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = seed.Exec(f.ctx, `INSERT INTO notification_registrations(id,session_id,user_id,device_id,peer_ip,event_ids,token_ciphertext) VALUES($1,$2,$3,$4,'',ARRAY['CatalogInvalidated'],$5)`, strings.Repeat("c", 32), owner.SessionID, owner.UserID, owner.DeviceID, make([]byte, 48)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = seed.Exec(f.ctx, `UPDATE notification_journal_state SET sequence=512`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = seed.Exec(f.ctx, `INSERT INTO notification_source_events(id,sequence,kind,refs) SELECT md5('notification-media-capacity-'||n::text),n,'CatalogInvalidated',jsonb_build_array(jsonb_build_object('Kind','Item','Id',$1::text,'LibraryId',$2::text)) FROM generate_series(1,512)n`, op.ItemID, op.LibraryID); err != nil {
+		t.Fatal(err)
+	}
+	if err = seed.Commit(f.ctx); err != nil {
 		t.Fatal(err)
 	}
 	var before string
