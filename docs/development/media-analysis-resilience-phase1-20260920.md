@@ -1,6 +1,11 @@
 # Compatibility long-tail phase 1 execution record
 
-Status: **consolidated remote verification and regression repairs in progress; not accepted**.
+Status: **verified and resources closed on September 21, 2026; publication pending**.
+
+The [delivery results](media-analysis-resilience-phase1-results-20260921.json)
+record the composed source boundaries, original failures, three explicit skips
+and actual resource closure. The final acceptance section below closes phase 1.
+Earlier entries are chronological evidence of consumed attempts, not open work.
 
 The [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md)
 starts from `2fd9182` on `codex/media-analysis-resilience`. The original checkout
@@ -221,5 +226,51 @@ selected native frontend checks and the actual browser journey. Preserve all
 failures and skips; repair and repeat affected scopes. Record tool/client/source
 identities, state/artifact evidence and closure of owned resources.
 
-No merge, push or deployment has occurred for this increment. Phases 2 and 3
-remain required and have not started.
+## Final phase 1 acceptance
+
+The final ordinary scanner and application source is `398756d`; later source
+changes affect only the browser driver and this execution record. The accepted
+browser source is `2c11c6641869ea3cf112595a42dc31b1a46e7cad`, whose source archive
+SHA-256 is `7e5b855e8d3174351053f5fd21ae90306838404df5bf401fca22676f93ac5472`.
+`browser-build-06` passed and `verification-06` completed all 24 real browser
+stages in 28.40 seconds, with independent PostgreSQL acknowledgements. Six
+actual scans completed, one runtime restart preserved catalog/settings/users/
+images, and eight actual image decodes agreed with independent bytes, hashes,
+dimensions and pixel observations. Conflict, selective reset and committed
+response-loss recovery were exercised through real mutations. Normal native
+and compatible logout completed with zero fallback session revocations.
+
+Both runtime generations joined successfully, and all observed active resources
+returned to zero. Their three retained immutable image-cache entries total
+1,536 bytes and are recorded separately. The fixture had no configured HLS
+runtime; absent components are not represented by invented zero counters.
+No arbitrary third-party or original-client parity is inferred.
+
+The composed Go inventory has **2,328 unique passing parents**, **zero pending or
+failed current parents**, and the three original explicit mount/AMD skips.
+Retries are not added to this count. The complete repaired library scope owns
+817 passes and the mount skip. Corrected settings/database/catalog/backup and
+recovery scopes retain their exact sources; unrelated unchanged cases retain
+the original full-run source. The delivery JSON maps every selected requirement
+and binds the complete private ledger by hash. All original failures remain.
+
+The six selected mocked UI suites compose **55 passing cases**: 54 unchanged
+cases and the repaired save case. All 71 frontend artifact files are byte-
+identical between the two full builds. Seven frontend source tests also passed
+in the recorded bounded remote command; no standalone TAP file is invented.
+The final ordinary and embedded application builds passed at `398756d`.
+
+Final inspection and closure verified all **17 owned worker units** terminal,
+their process groups gone, and the exact admitted PostgreSQL incarnation closed
+cleanly. Independent readback found no process, listener, socket, lock or pidfile.
+All nine database directories and the original evidence remain preserved; the
+three unrelated service PIDs, start times, invocation IDs and executable hashes
+are unchanged. No directory or database was deleted by closeout. The resource
+receipts are `phase1-resource-closure-01.json` and
+`phase1-resource-readback-01.json` in the retained remote logs directory.
+
+Phase 1 is accepted within the selected matrix. Main publication is the next
+step; no deployment occurred. Automatic intro detection/BIF previews and the
+large-library concurrency/storage/guest-restart phase remain required and have
+not started product implementation. This acceptance does not complete the
+three-phase goal.

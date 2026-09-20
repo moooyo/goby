@@ -1,0 +1,1144 @@
+{
+  "marker": "goby-media-analysis-resilience-phase1-delivery-v1",
+  "phase": 1,
+  "status": "verified and resources closed; publication recorded separately",
+  "phase_accepted": true,
+  "full_three_phase_goal_complete": false,
+  "product_source": "398756d07be4b6814724aa8acb20518ec033c8f8",
+  "browser_source": "2c11c6641869ea3cf112595a42dc31b1a46e7cad",
+  "schema49_catalog_sha256": "672687e280b656a05e7a9cd920455641e3dcb376dc10bec3a6d34a619af36b84",
+  "composition": {
+    "unique_parents": 2331,
+    "passed": 2328,
+    "pending_or_failed": 0,
+    "deferred_skips": 3,
+    "historical_failure_events": 36,
+    "historical_skip_events": 4
+  },
+  "package_counts": {
+    "cmd/goby": {
+      "pass": 24
+    },
+    "internal/activity": {
+      "pass": 29
+    },
+    "internal/backuppg": {
+      "pass": 120
+    },
+    "internal/database": {
+      "pass": 65
+    },
+    "internal/identity": {
+      "pass": 197
+    },
+    "internal/library": {
+      "pass": 817,
+      "deferred_skip": 1
+    },
+    "internal/metadata": {
+      "pass": 22
+    },
+    "internal/recovery": {
+      "pass": 33
+    },
+    "internal/recoverydb": {
+      "pass": 12
+    },
+    "internal/server": {
+      "pass": 954,
+      "deferred_skip": 2
+    },
+    "internal/settings": {
+      "pass": 55
+    }
+  },
+  "requirements": [
+    {
+      "id": "users-query",
+      "description": "Current administrator/application authority, exact filters, deterministic pagination, and bounded user query input.",
+      "status": "pass",
+      "parents": [
+        "internal/identity::TestUserQueryNameFoldingMatchesAccountUniqueness",
+        "internal/identity::TestUserQueryRejectsInvalidBoundsBeforeDatabaseAccess",
+        "internal/server::TestEmbyUserQueryRejectsUnprivilegedCallerBeforeParsingOrReading",
+        "internal/server::TestHTTPEmbyUserQueryFiltersBeforeCountSortAndPagination",
+        "internal/server::TestHTTPEmbyUserQueryRequiresCurrentAdministratorOrApplicationAuthority",
+        "internal/server::TestParseEmbyUserQueryPreservesOptionalFiltersAndCompatibilityMetadata",
+        "internal/server::TestParseEmbyUserQueryRejectsAmbiguousOrUnboundedInput"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "television-source-and-placement",
+      "description": "Explicit NFO status/date/placement, independent automatic/effective metadata and typed standalone filtering.",
+      "status": "pass",
+      "parents": [
+        "internal/library::TestQueryStandaloneSpecialPlacementCountsAndMetadataEdits",
+        "internal/metadata::TestParseNFOTelevisionRejectsConflictsAndMalformedFacts",
+        "internal/metadata::TestParseNFOTelevisionStatusDatesAndPlacement",
+        "internal/server::TestHTTPTVFiltersScannedCatalog",
+        "internal/server::TestTelevisionMetadataDTOProjectsOnlyRequestedFacts"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "item-projection-and-language",
+      "description": "Field casing, exclusions including nested sources, unchanged membership, bounded language carriers and complete episode queue.",
+      "status": "pass",
+      "parents": [
+        "internal/server::TestCompatibilityQueryPreservesBusinessRulesAndHeaderConflicts",
+        "internal/server::TestCompatibilityQuerySeparatesOnlyDeclaredAuthenticationCarriers",
+        "internal/server::TestHTTPCompatibilityQueryCarriersPreserveAuthorityAcrossManagementEndpoints",
+        "internal/server::TestHTTPItemProjectionClientCasingAndExclusions",
+        "internal/server::TestHTTPOriginalClientEpisodeQueueIsCompleteAndDoesNotOwnAutoplay",
+        "internal/server::TestItemProjectionExclusionWinsAndCoversNestedSourceFacts",
+        "internal/server::TestItemProjectionNormalizesOnlyDeclaredOptions",
+        "internal/server::TestItemProjectionRejectsAmbiguousOrUnboundedInputs"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "actor-item-capabilities",
+      "description": "Current actor authority and indexed source eligibility; no filesystem probe or inferred collection ownership.",
+      "status": "pass",
+      "parents": [
+        "internal/library::TestItemCapabilitiesReflectCurrentPermissionsWithoutOpeningMedia",
+        "internal/library::TestItemCapabilitiesRequireIndependentBoundSourceForPhysicalDeletion",
+        "internal/library::TestItemCapabilitiesRetainIndependentApplicationCredentialAuthority",
+        "internal/library::TestItemCapabilitiesSeparateCollectionOwnershipFromEditingShares",
+        "internal/server::TestHTTPItemCapabilitiesFollowProjectionAndCurrentDownloadPolicy"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "sorting-atomicity-and-authority",
+      "description": "Current SQL rules, CAS/rollback, notification bounds, final credential recheck, and protected connection budget.",
+      "status": "pass",
+      "parents": [
+        "internal/library::TestSortRebuildRefreshesRemainingBudgetBeforeJournalLock",
+        "internal/settings::TestSortRemoveWordsRetainsLiteralTokensAndRejectsAmbiguousRules",
+        "internal/settings::TestSortRemoveWordsSQLMatchesGoUnicodeAndRejectsNoncanonicalArrays",
+        "internal/settings::TestSortingCASRebuildPreservesControlsAndRollsBackAtomically",
+        "internal/settings::TestSortingConfigurationReplacementPartialOmissionAndFullReset",
+        "internal/settings::TestSortingLibraryEventWaitPrecedesFinalAdministratorLifetimeCheck",
+        "internal/settings::TestSortingPolicyNotificationScopesAreIndependentOfChangedKeysAndCapacityIsAtomic",
+        "internal/settings::TestSortingStatementTimeoutRollsBackWithoutLosingCatalogOwner"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "auxiliary-sorting-and-notification-repair",
+      "description": "New auxiliary case-preservation regression plus original failed lifecycle, controls, scan and current-ACL notifications.",
+      "status": "pass",
+      "parents": [
+        "internal/library::TestAuxiliaryCatalogChangesLifecyclePreservesIdentityAndUserData",
+        "internal/library::TestAuxiliaryCatalogChangesTrackTrailerOwnerNamesAndIndependentControls",
+        "internal/library::TestAuxiliarySortingRulesPreserveSourceCaseControlsAndCachedScans",
+        "internal/library::TestCachedOrdinaryScanPreservesExplicitOnlineAndHistoricalSortProvenance",
+        "internal/library::TestExtraScanPublishesRealMovieResourcesAndReservesNestedContents",
+        "internal/library::TestExtraScanTrailerNativeMetadataControlsSurviveForcedRescan",
+        "internal/library::TestGeneratedSortingFollowsCurrentRulesAcrossScanProviderAndContainerRename",
+        "internal/server::TestHTTPLibraryNotifierNativeAuxiliaryScansRespectMovieOwnershipAndCurrentACL"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "native-settings-dto-repair",
+      "description": "The eight formerly failing settings parents and the new independent configured-sorting assertion.",
+      "status": "pass",
+      "parents": [
+        "internal/server::TestAdminSettingsRuntimeDTOSeparatesObservedBindingAndSafeInventory",
+        "internal/server::TestHTTPAdminRuntimeSettingsAtomicUpdatesOmissionsResetsAndCAS",
+        "internal/server::TestHTTPAdminSettingsConcurrentRevisionConflictReturnsCommittedWinner",
+        "internal/server::TestHTTPAdminSettingsDefaultsExplicitOverridesNoopAndSelectiveReset",
+        "internal/server::TestHTTPAdminSettingsExpiredActorWaitingForBusinessRowCannotCommit",
+        "internal/server::TestHTTPAdminSettingsFourNameModesAndIndependentEncodingRoundTrip",
+        "internal/server::TestHTTPAdminSettingsRequestSnapshotRemainsConsistentAcrossConcurrentCommit",
+        "internal/server::TestSettingsDTOProjectsConfiguredSortingSeparatelyFromDefaults",
+        "internal/server::TestSettingsDTOProjectsFourNameModesAndIndependentEncoding"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "library-options-consumer",
+      "description": "Advertised provider, strict selectors, retained importer state, and actual extraction disable/re-enable.",
+      "status": "pass",
+      "parents": [
+        "internal/library::TestEmbeddedArtworkOptionControlsNewExtractionAndPreservesAcceptedImages",
+        "internal/server::TestHTTPImageFetcherDuplicateAliasesRejectWithoutChangingLibrary",
+        "internal/server::TestImageFetcherSelectorUsesAdvertisedDynamicProviderAndPreservesOtherOptions"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "schema49-and-settings-migration",
+      "description": "Corrected migration manifest and exact historical settings/provenance preservation.",
+      "status": "pass",
+      "parents": [
+        "internal/database::TestPublishedMigrationManifestMatchesEmbeddedRelease",
+        "internal/database::TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys",
+        "internal/settings::TestConfigurationCompatibilityMigrationEnforcesNameStatesAndWidthBounds",
+        "internal/settings::TestConfigurationCompatibilityMigrationPreservesEverySchema20Field"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "schema49-archive-and-recovery",
+      "description": "The corrected catalog and all current backup/recovery package cases, not just the earlier catalog's passes.",
+      "status": "pass",
+      "parents": [
+        "internal/backuppg::TestBackupCommandCancellationKillsOwnedDescendants",
+        "internal/backuppg::TestBackupCommandChecksActualPostgreSQL17ToolVersions",
+        "internal/backuppg::TestBackupCommandConfigurationAndPrecancelledContextNeverLaunch",
+        "internal/backuppg::TestBackupCommandConnectionPreservesLibpqEncodingAndTLSPolicy",
+        "internal/backuppg::TestBackupCommandConnectionRejectsAmbiguousOrUnsupportedParameters",
+        "internal/backuppg::TestBackupCommandConsumerFailureClosesAnOutstandingCopyReader",
+        "internal/backuppg::TestBackupCommandConsumerPanicStillReapsOwnedChild",
+        "internal/backuppg::TestBackupCommandDecoderHasNoDatabaseConnectionOrInheritedCredentials",
+        "internal/backuppg::TestBackupCommandDecoderRejectsOverrunPartialConsumptionAndUnsafeErrors",
+        "internal/backuppg::TestBackupCommandDecoderTimeoutClosesBlockedPipeAndWaitsAfterEOF",
+        "internal/backuppg::TestBackupCommandDumpOutputAndStderrAreIndependentlyBounded",
+        "internal/backuppg::TestBackupCommandDumpUsesExactArgumentsAndIsolatedCredentials",
+        "internal/backuppg::TestBackupCommandOutputFileFailureCancelsWithoutDisclosingItsPath",
+        "internal/backuppg::TestBackupCommandOwnedFilesPreserveBytesAndCurrentInputPosition",
+        "internal/backuppg::TestBackupCommandRejectsUnownedBlockingStreams",
+        "internal/backuppg::TestBackupCommandSuccessfulLeaderRetiresDescendantHoldingPipes",
+        "internal/backuppg::TestCatalogCanonicalJSONPreservesEscapesAndInt64",
+        "internal/backuppg::TestCompatibilityLongTailCatalogRetainsSortPolicyAndProvenance",
+        "internal/backuppg::TestCompatibilityLongTailStateVersionAndCancellationGuards",
+        "internal/backuppg::TestCompatibilityMetadataFactsPreserveUnknownAndRejectInvalidRetainedValues",
+        "internal/backuppg::TestCurrentRecoveryCatalogIncludesFeatureWaveMetadata",
+        "internal/backuppg::TestDecodeAcceptsPG17WithoutRestrictedMode",
+        "internal/backuppg::TestDecodeCancellationStopsReadsAndSinkOperations",
+        "internal/backuppg::TestDecodeEnforcesSequenceBoundsWithoutPrecisionLoss",
+        "internal/backuppg::TestDecodeEnforcesStreamingSizeLimits",
+        "internal/backuppg::TestDecodeHandlesSinkTransportFailureBeforeReaderExits",
+        "internal/backuppg::TestDecodeInvalidatesRetainedCOPYReaders",
+        "internal/backuppg::TestDecodeKeepsInputErrorsPrivateAndPreservesSinkSentinels",
+        "internal/backuppg::TestDecodeKeepsSQLAndEscapedTerminatorsInsideCOPY",
+        "internal/backuppg::TestDecodePreservesAllCanonicalCOPYEscapesAndControlBytes",
+        "internal/backuppg::TestDecodePreservesCOPYBytesAndTrustedDestinations",
+        "internal/backuppg::TestDecodeRejectsEveryTruncatedRequiredSuffix",
+        "internal/backuppg::TestDecodeRejectsIncompleteAndDuplicateSections",
+        "internal/backuppg::TestDecodeRejectsNoncanonicalCOPYBeforeSendingTheRow",
+        "internal/backuppg::TestDecodeRejectsNoncanonicalLineEndingsAndNUL",
+        "internal/backuppg::TestDecodeRejectsUnknownSQLAndObjects",
+        "internal/backuppg::TestDecodeRejectsUnsafeOrAmbiguousTrustedCatalog",
+        "internal/backuppg::TestDecodeRequiresSinkToConsumeEOFAndCorrectRowCount",
+        "internal/backuppg::TestDecodeRestrictedModeAndVersionBoundaries",
+        "internal/backuppg::TestOfflineSourceIdentityAcceptsNamesAtDecodedByteBoundary",
+        "internal/backuppg::TestOfflineSourceIdentityCollapsesEquivalentURIsOnly",
+        "internal/backuppg::TestOfflineSourceIdentityDoesNotInspectSourceOrRuntimeDependencies",
+        "internal/backuppg::TestOfflineSourceIdentityDoesNotNormalizeDistinctPostgreSQLNames",
+        "internal/backuppg::TestOfflineSourceIdentityPreservesExplicitDecodedNames",
+        "internal/backuppg::TestOfflineSourceIdentityRejectsImplicitOrAmbiguousURIs",
+        "internal/backuppg::TestOfflineSourceIdentityRejectsIndirectConnectionOverrides",
+        "internal/backuppg::TestOfflineSourceIdentityRejectsRawSpaceAndAuthorityDelimiterDivergence",
+        "internal/backuppg::TestOfflineSourceIdentityRejectsTruncatedAndUnsafeNames",
+        "internal/backuppg::TestOfflineSourceIdentityRequiresUnambiguousQueryPlusEncoding",
+        "internal/backuppg::TestPhase3CurrentRecoveryCatalogContainsDurableState",
+        "internal/backuppg::TestPhase3RetainsPublishedSchema35RecoveryCatalog",
+        "internal/backuppg::TestPostgreSQLBackupConsistentSnapshotAndRestore",
+        "internal/backuppg::TestPostgreSQLCompatibilityLongTailRejectsInvalidMetadataInEveryRetainedLayer",
+        "internal/backuppg::TestPostgreSQLCompatibilityLongTailRestoresPublishedSchema48WithExactOptionDefaults",
+        "internal/backuppg::TestPostgreSQLExtraArchivePreservesAllRolesAndRetriesSemanticFinalizer",
+        "internal/backuppg::TestPostgreSQLExtraInactiveHistorySurvivesOwnerEligibilityChanges",
+        "internal/backuppg::TestPostgreSQLExtraSnapshotAndRestoreRejectSemanticCorruption",
+        "internal/backuppg::TestPostgreSQLFeatureWaveArchivePreservesNonemptyStateAndRecoveryConstraints",
+        "internal/backuppg::TestPostgreSQLGeneratedDumpRejectsUnsupportedExpansionBeforePublication",
+        "internal/backuppg::TestPostgreSQLOfflineRestoreRejectsIdentityAndOverrides",
+        "internal/backuppg::TestPostgreSQLOfflineRestoreWithUnavailableSource",
+        "internal/backuppg::TestPostgreSQLOfflineSchema23RestoreFinalizerFailureRollsBackAndRetries",
+        "internal/backuppg::TestPostgreSQLOfflineSchema24RestorePreservesDataAndRetriesFinalizer",
+        "internal/backuppg::TestPostgreSQLOfflineSchema25ArchivePreservesMusicAndBackfillsThemeOwners",
+        "internal/backuppg::TestPostgreSQLPhase3CurrentArchivePreservesNativeState",
+        "internal/backuppg::TestPostgreSQLPhase3FingerprintQueryRetainsCanonicalRows",
+        "internal/backuppg::TestPostgreSQLPhase3MaximumManagedArtworkDumpValidatesAndRestores",
+        "internal/backuppg::TestPostgreSQLPhase3Schema35ArchivePreservesHistoricalRows",
+        "internal/backuppg::TestPostgreSQLRestoreFingerprintFailureLeavesEmptyTarget",
+        "internal/backuppg::TestPostgreSQLRestoreRejectsPopulatedTarget",
+        "internal/backuppg::TestPostgreSQLRestoreSchema23ArchivePreservesDataAndMigratesToCurrent",
+        "internal/backuppg::TestPostgreSQLRootBindingArchiveMigratesSchema27WithoutInferringApproval",
+        "internal/backuppg::TestPostgreSQLRootBindingArchiveRejectsInvalidFinalizersAndRetries",
+        "internal/backuppg::TestPostgreSQLRootBindingArchiveRoundTripsCompleteOfflineState",
+        "internal/backuppg::TestPostgreSQLSchema26ArchiveAuthenticatesBeforeSelectiveExtraMigration",
+        "internal/backuppg::TestPostgreSQLSchema28ArchiveRejectsLaterUserDeletedAction",
+        "internal/backuppg::TestPostgreSQLSchema29ArchivePreservesCommittedUserDeletion",
+        "internal/backuppg::TestPostgreSQLSelectedPhase1ArchivePreservesCredentialsAndIntroState",
+        "internal/backuppg::TestPostgreSQLSelectedPhase1Schema41UpgradeHasNoInferredCredentialsOrIntros",
+        "internal/backuppg::TestPostgreSQLSelectedPhase2ArchivePreservesReviewPublicationAndDerivativeState",
+        "internal/backuppg::TestPostgreSQLSelectedPhase2ArchiveWitnessPreservesExactValuesAcrossSessionFormatting",
+        "internal/backuppg::TestPostgreSQLSelectedPhase2RestoreRejectsCorruptDerivativeFinalizerAndRetries",
+        "internal/backuppg::TestPostgreSQLSelectedPhase2Schema43UpgradeDoesNotInferMediaWork",
+        "internal/backuppg::TestPostgreSQLSelectedPhase3ArchivePreservesHistoryAndRejectsInvalidFinalization",
+        "internal/backuppg::TestPostgreSQLSelectedPhase3Schema45UpgradeDoesNotInferEpisodes",
+        "internal/backuppg::TestPostgreSQLSelectedPhase3StateRejectsSQLValidInconsistency",
+        "internal/backuppg::TestPostgreSQLSelectedPhase4StateValidatesNotificationLinkageAndHistoricalEvidence",
+        "internal/backuppg::TestPostgreSQLSnapshotCancellationAndSettingsIsolation",
+        "internal/backuppg::TestPostgreSQLSnapshotRejectsSchemaDrift",
+        "internal/backuppg::TestPostgreSQLThemeInactiveHistorySurvivesOwnerRootAndRoleChanges",
+        "internal/backuppg::TestPostgreSQLThemeRestorePreservesInactiveClassificationAndRetriesSemanticFinalizer",
+        "internal/backuppg::TestPostgreSQLThemeRestoreRejectsSemanticallyInvalidRealArchives",
+        "internal/backuppg::TestPostgreSQLThemeSnapshotRejectsMissingCoverageAndInvalidInactiveOwners",
+        "internal/backuppg::TestPublishedRecoveryCatalogsRetainHistoricalMigrationPrefixes",
+        "internal/backuppg::TestSelectedPhase1RecoveryCatalogPreservesCredentialAndIntroState",
+        "internal/backuppg::TestSelectedPhase3ImportBindsCanonicalSourceAndExactFacts",
+        "internal/backuppg::TestSelectedPhase3RecoveryCatalogPreservesRosterAuthorityAndHistory",
+        "internal/backuppg::TestSelectedPhase4RecoveryCatalogContainsRuntimeAndNotificationEvidence",
+        "internal/backuppg::TestSourceTLSRejectsChangedPoliciesAndAmbiguousQuery",
+        "internal/backuppg::TestSourceTLSRejectsOpaqueCallbacks",
+        "internal/backuppg::TestValidateDumpPreservesOwnedFileAndRejectsPrecancelledWork",
+        "internal/backuppg::TestValidateDumpRejectsIncompleteGrammarCountsAndChildFailure",
+        "internal/backuppg::TestValidateDumpRejectsUnsupportedFactsBeforeCommands",
+        "internal/backuppg::TestValidateDumpUsesRestorationExpandedByteBoundary",
+        "internal/backuppg::TestValidateDumpUsesRestorationRowLimit",
+        "internal/backuppg::TestValidateExtraStatePreservesContextAndErrorClassification",
+        "internal/backuppg::TestValidateResourceStateAddsRootBindingsOnlyAtSchema28",
+        "internal/backuppg::TestValidateResourceStateIncludesSelectedPhase2AfterRootBindings",
+        "internal/backuppg::TestValidateResourceStatePreservesHistoricalSchemaBoundaries",
+        "internal/backuppg::TestValidateResourceStateRejectsEitherInvalidClassification",
+        "internal/backuppg::TestValidateResourceStateStopsAtTheFirstInvalidSchema28Population",
+        "internal/backuppg::TestValidateRootBindingStatePreservesContextAndErrorClassification",
+        "internal/backuppg::TestValidateSelectedPhase2StateClassifiesReadResults",
+        "internal/backuppg::TestValidateSelectedPhase2StatePreservesContextBeforeValidation",
+        "internal/backuppg::TestValidateSelectedPhase2StatePreservesMigrationBoundaries",
+        "internal/backuppg::TestValidateSelectedPhase3StatePreservesVersionAndFailureBoundaries",
+        "internal/backuppg::TestValidateSelectedPhase4StatePreservesVersionAndStrictRuntimeBoundary",
+        "internal/backuppg::TestValidateThemeStateClassifiesSemanticAndDatabaseErrors",
+        "internal/backuppg::TestValidateThemeStatePreservesCallerContextBeforeValidation",
+        "internal/backuppg::TestValidateThemeStatePreservesCancellationDuringValidation",
+        "internal/recovery::TestControlAdmissionUsesBytesWithoutConsumingRejectedRequest",
+        "internal/recovery::TestControlApplyRejectsExpansionBeforeChangingAuthority",
+        "internal/recovery::TestControlCapacityRestoresDurableMemoryAndAllowsTerminalCompletion",
+        "internal/recovery::TestControlCompactionPreservesReplayAndUnsettledProofs",
+        "internal/recovery::TestControlPrunesOldHistoryWithoutDiscardingPendingReceiptsOrSlotOwners",
+        "internal/recovery::TestControlTransitionReservesAllSevenProofsWithoutChangingEvidence",
+        "internal/recovery::TestControlUsesSerializedBytesAtTheExactBoundary",
+        "internal/recovery::TestEngineBackupRestoreRoundTrip",
+        "internal/recovery::TestEngineCompatibilityLongTailArchivePreservesTelevisionSourceOverridesAndLocks",
+        "internal/recovery::TestEngineRejectsUnsupportedDumpExpansionBeforeEncryptedPublication",
+        "internal/recovery::TestEngineRestoreRejectsWrongMasterBeforeCredentialRevocation",
+        "internal/recovery::TestEngineSelectedPhase1EncryptedProfilePinBackupRestore",
+        "internal/recovery::TestEngineSelectedPhase2ArchiveRestoreClearsExecutionAuthority",
+        "internal/recovery::TestEngineSelectedPhase3ArchiveRestorePreservesExplicitRosterAuthority",
+        "internal/recovery::TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificationReplay",
+        "internal/recovery::TestHostSettingsCaptureRejectsMixedAuthorityAndNoncanonicalRevision",
+        "internal/recovery::TestOpenArchiveRetainsScratchUntilCallerCloses",
+        "internal/recovery::TestPassphrasePolicyPreservesExactUTF8Bytes",
+        "internal/recovery::TestRecoveryManagerApplyRestartAndRollback",
+        "internal/recovery::TestRecoveryManagerCancellationReceiptSurvivesRestart",
+        "internal/recovery::TestRecoveryManagerLatePlanCancellationClosesSuccessfulWorker",
+        "internal/recovery::TestRecoveryManagerLatePlanCancellationFailsClosedOnJournalConflict",
+        "internal/recovery::TestRecoveryManagerNativeWorkflow",
+        "internal/recovery::TestRecoveryManagerPublicationCrashRecovery",
+        "internal/recovery::TestRecoveryManagerRejectsChangedCandidateBeforeActivation",
+        "internal/recovery::TestRecoveryManagerReturnsUnacceptedTargetAfterRestart",
+        "internal/recovery::TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+        "internal/recovery::TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback",
+        "internal/recovery::TestRecoveryOperatorUsesOnlyTrustedOfflineAuthority",
+        "internal/recovery::TestRecoverySelectedPhase4RejectsHostChangesDuringApplyAndDrain",
+        "internal/recovery::TestRestoredRootMustMatchApprovedIdentityAndExactRelativePath",
+        "internal/recovery::TestRuntimeRejectsLostRecoverySlotAndCancelledResolution",
+        "internal/recovery::TestRuntimeResolvesAndRetainsPublishedGeneration",
+        "internal/recoverydb::TestMarkerBoundsCountUTF8BytesAndAcceptExactLimit",
+        "internal/recoverydb::TestMarkerDecodeAcceptsEquivalentOrderWhitespaceAndEscapes",
+        "internal/recoverydb::TestMarkerDecodeDoesNotAuthorizeForeignClaims",
+        "internal/recoverydb::TestMarkerDecodeRejectsIncompleteAndTrailingDocuments",
+        "internal/recoverydb::TestMarkerDecodeRejectsMalformedUnicodeWithoutReplacement",
+        "internal/recoverydb::TestMarkerDecodeRejectsWrongTypesAndNonintegerVersions",
+        "internal/recoverydb::TestMarkerDecodeRequiresEveryFieldExactlyOnce",
+        "internal/recoverydb::TestMarkerRejectsInvalidBindingClaims",
+        "internal/recoverydb::TestMarkerRoundTripIncludesInitialEmptyGeneration",
+        "internal/recoverydb::TestRawMarkerKeepsAbsentEmptyNullAndForeignBytesDistinct",
+        "internal/recoverydb::TestRecoveryDatabaseStoreIntegration",
+        "internal/recoverydb::TestRecoveryFixturePortEnvironmentParsing"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "ordinary-scan-capacity-on-repaired-source",
+      "description": "The later ordinary cached-scanner repair invalidates reuse of every earlier library result, including the 10,000-file cold/cached profile. Require the full library scope and this actual passing parent after the repair.",
+      "status": "pass",
+      "parents": [
+        "internal/library::TestCatalogRealMediaCapacityScanAndCachedRescan"
+      ],
+      "pending_parents": [],
+      "reason": null
+    },
+    {
+      "id": "integrated-24-stage-browser",
+      "description": "Actual browser journey, independent observations, conflict/reset/response-loss, restart and normal closure.",
+      "status": "pass",
+      "parents": [
+        "internal/server::TestMediaAnalysisResiliencePhase1BrowserIntegration"
+      ],
+      "pending_parents": [],
+      "reason": null
+    }
+  ],
+  "required_scope_runs": [
+    {
+      "id": "settings-complete-package",
+      "package": "internal/settings",
+      "selector": "all",
+      "minimum_order": 2,
+      "status": "pass",
+      "selected_scope_id": "verification-02:settings:1"
+    },
+    {
+      "id": "database-complete-package",
+      "package": "internal/database",
+      "selector": "all",
+      "minimum_order": 2,
+      "status": "pass",
+      "selected_scope_id": "verification-02:database:2"
+    },
+    {
+      "id": "backuppg-complete-package",
+      "package": "internal/backuppg",
+      "selector": "all",
+      "minimum_order": 2,
+      "status": "pass",
+      "selected_scope_id": "verification-02:backuppg:5"
+    },
+    {
+      "id": "fresh-pair-recoverydb-complete-package",
+      "package": "internal/recoverydb",
+      "selector": "all",
+      "minimum_order": 3,
+      "status": "pass",
+      "selected_scope_id": "verification-03:recoverydb:0"
+    },
+    {
+      "id": "recovery-complete-package",
+      "package": "internal/recovery",
+      "selector": "all",
+      "minimum_order": 2,
+      "status": "pass",
+      "selected_scope_id": "verification-02:recovery:7"
+    },
+    {
+      "id": "ordinary-scanner-repair-complete-library",
+      "package": "internal/library",
+      "selector": "all",
+      "minimum_order": 4,
+      "status": "pass",
+      "selected_scope_id": "verification-04:library:1"
+    }
+  ],
+  "deferred_profiles": [
+    "internal/library::TestRootBindingFullScanMountNamespaceHelper",
+    "internal/server::TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+    "internal/server::TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+  ],
+  "source_reuse": [
+    "Original unchanged metadata, activity, identity, command and ordinary HTTP cases retain their d49f6e2 source boundary.",
+    "Corrected schema49 settings, database, backup and recovery scopes use 3251a35, including a fresh recovery-store pair.",
+    "The ordinary scanner repair requires the complete 398756d library package, including actual 10000-file acceptance, and affected HTTP families.",
+    "Subsequent changes are browser-driver and documentation only. The actual 24-stage journey uses 2c11c66; no unchanged backend suite is falsely described as rerun.",
+    "All 71 frontend artifacts are byte-identical across the original and repaired product builds; 54 unchanged mocked cases plus one repaired case compose 55 passes."
+  ],
+  "browser": {
+    "stages": [
+      {
+        "Phase": "authentication",
+        "State": "complete"
+      },
+      {
+        "Phase": "user-saved",
+        "State": "complete"
+      },
+      {
+        "Phase": "user-query",
+        "State": "complete"
+      },
+      {
+        "Phase": "specials-before",
+        "State": "complete"
+      },
+      {
+        "Phase": "metadata-saved",
+        "State": "complete"
+      },
+      {
+        "Phase": "specials-after",
+        "State": "complete"
+      },
+      {
+        "Phase": "sorting-saved",
+        "State": "complete"
+      },
+      {
+        "Phase": "sorting-conflict",
+        "State": "complete"
+      },
+      {
+        "Phase": "sorting-selective-reset",
+        "State": "complete"
+      },
+      {
+        "Phase": "sorting-response-loss",
+        "State": "complete"
+      },
+      {
+        "Phase": "sorting-restored",
+        "State": "complete"
+      },
+      {
+        "Phase": "sorting-consumed",
+        "State": "complete"
+      },
+      {
+        "Phase": "imports-disabled",
+        "State": "complete"
+      },
+      {
+        "Phase": "imports-retained",
+        "State": "complete"
+      },
+      {
+        "Phase": "imports-enabled",
+        "State": "complete"
+      },
+      {
+        "Phase": "imports-consumed",
+        "State": "complete"
+      },
+      {
+        "Phase": "embedded-disabled",
+        "State": "complete"
+      },
+      {
+        "Phase": "embedded-absent",
+        "State": "complete"
+      },
+      {
+        "Phase": "embedded-enabled",
+        "State": "complete"
+      },
+      {
+        "Phase": "embedded-present",
+        "State": "complete"
+      },
+      {
+        "Phase": "fields",
+        "State": "complete"
+      },
+      {
+        "Phase": "restart",
+        "State": "complete"
+      },
+      {
+        "Phase": "persisted",
+        "State": "complete"
+      },
+      {
+        "Phase": "cleanup",
+        "State": "complete"
+      }
+    ],
+    "completed_independent_stages": 24,
+    "actual_scans": 6,
+    "runtime_restarts": 1,
+    "page_errors": 0,
+    "foreign_requests": 0,
+    "fallback_session_revocations": 0,
+    "closed_runtime_generations": 2,
+    "active_resources_after_close": {
+      "DynamicSessions": 0,
+      "ImageRenderSlots": 0,
+      "ImageTransferBytes": 0,
+      "ImageTransfers": 0,
+      "MediaDiagnosticRuns": 0,
+      "MediaOperationWorkers": 0,
+      "MediaPolicyLeases": 0,
+      "OriginalRequests": 0,
+      "OriginalSourceLeases": 0,
+      "ReadyWebSockets": 0,
+      "StreamSlots": 0,
+      "SubtitleSlots": 0
+    },
+    "original_client_used": false,
+    "arbitrary_third_party_parity_claimed": false
+  },
+  "frontend": {
+    "composed_mocked_passes": 55,
+    "source_test_passes": 7,
+    "source_test_evidence": "The bounded goby-mar-p1-node-tests-20260920-01 command returned seven TAP passes; no standalone TAP file or invented PID receipt is claimed.",
+    "unchanged_tracked_inputs": 96,
+    "built_assets": 71
+  },
+  "application_builds": [
+    {
+      "name": "goby",
+      "filename": "goby-398756d07be4b6814724aa8acb20518ec033c8f8",
+      "bytes": 45511218,
+      "sha256": "bfb534debbe497e72a65ae07e1a477a3fbee3ee63ae69bfa82d150151678dc13"
+    },
+    {
+      "name": "goby-embedded",
+      "filename": "goby-embedded-398756d07be4b6814724aa8acb20518ec033c8f8",
+      "bytes": 46912134,
+      "sha256": "683a69da6d12e3d1ac32826ab1a6755bc749d8804bf5479baeaedec1614ae7c7"
+    }
+  ],
+  "capacity_case": {
+    "media_files": 10000,
+    "catalog_items": 10688,
+    "elapsed_seconds": 441.06,
+    "scope": "Actual cold/cached scan and reopen regression, not compound-load or phase 3 capacity acceptance."
+  },
+  "resources": {
+    "work_units_closed": 17,
+    "owned_postgresql_closed": true,
+    "database_directories_retained": 9,
+    "protected_services_preserved": 3,
+    "clean_cluster_shutdown": true,
+    "directories_deleted_by_closure": 0,
+    "databases_deleted_by_closure": 0
+  },
+  "scope_history": [
+    {
+      "package": "internal/metadata",
+      "scope": "metadata",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "e33d09fbee8af834a69166f8602d53824f841a570ea933116bb5c815f0ae679a",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 22
+    },
+    {
+      "package": "internal/activity",
+      "scope": "activity",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "cc88e7f7f39c7996348eb2e3ea3f26bfaf72b8097ba8356882d50792a0d16ce5",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 29
+    },
+    {
+      "package": "internal/identity",
+      "scope": "identity",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "adf6741023dadad307e7f21068d55e90555275fbfe0f72550b761b6c4f51517a",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 197
+    },
+    {
+      "package": "internal/settings",
+      "scope": "settings",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "c4f024f6c9815cebecc7276fdd15f16735271fd0207aa4a8489bcb3edc9d0a8a",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestConfigurationCompatibilityMigrationPreservesEverySchema20Field/deployment_name",
+        "TestConfigurationCompatibilityMigrationPreservesEverySchema20Field/custom_name",
+        "TestConfigurationCompatibilityMigrationPreservesEverySchema20Field"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 54
+    },
+    {
+      "package": "internal/database",
+      "scope": "database",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "f3670ca8860d7e736a4da75c73228e0d55aee2b8a29af374c0e8fab9ba0e011a",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 65
+    },
+    {
+      "package": "internal/library",
+      "scope": "library",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "ac42037c03f8f7c31e99c3946e99dbba2567888c69d5667a13b0ab9dc15cf748",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestAuxiliaryCatalogChangesLifecyclePreservesIdentityAndUserData/extra",
+        "TestAuxiliaryCatalogChangesLifecyclePreservesIdentityAndUserData",
+        "TestAuxiliaryCatalogChangesTrackTrailerOwnerNamesAndIndependentControls",
+        "TestExtraScanTrailerNativeMetadataControlsSurviveForcedRescan",
+        "TestExtraScanPublishesRealMovieResourcesAndReservesNestedContents",
+        "TestQueryStandaloneSpecialPlacementCountsAndMetadataEdits"
+      ],
+      "reported_parent_skips": [
+        "TestRootBindingFullScanMountNamespaceHelper"
+      ],
+      "reported_parent_passes": 810
+    },
+    {
+      "package": "internal/server",
+      "scope": "server",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "fdf698f080e7ab51ecd205db07530bd74a6531aec542f1a6ad610cdcd9c70976",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestHTTPAdminSettingsDefaultsExplicitOverridesNoopAndSelectiveReset",
+        "TestHTTPAdminSettingsFourNameModesAndIndependentEncodingRoundTrip",
+        "TestHTTPAdminSettingsConcurrentRevisionConflictReturnsCommittedWinner",
+        "TestHTTPAdminSettingsRequestSnapshotRemainsConsistentAcrossConcurrentCommit",
+        "TestHTTPAdminSettingsExpiredActorWaitingForBusinessRowCannotCommit",
+        "TestHTTPAdminRuntimeSettingsAtomicUpdatesOmissionsResetsAndCAS",
+        "TestAdminSettingsRuntimeDTOSeparatesObservedBindingAndSafeInventory",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/deployment/encoding=0",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/deployment/encoding=1",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/deployment/encoding=8192",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/custom/encoding=0",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/custom/encoding=1",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/custom/encoding=8192",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/empty/encoding=0",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/empty/encoding=1",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/empty/encoding=8192",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/unset/encoding=0",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/unset/encoding=1",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding/unset/encoding=8192",
+        "TestSettingsDTOProjectsFourNameModesAndIndependentEncoding",
+        "TestHTTPLibraryNotifierNativeAuxiliaryScansRespectMovieOwnershipAndCurrentACL"
+      ],
+      "reported_parent_skips": [
+        "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+        "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+      ],
+      "reported_parent_passes": 943
+    },
+    {
+      "package": "internal/backuppg",
+      "scope": "backuppg",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "4171cf321690ab0c8e3cccf51655cfcf7cb8cbfe99366f4b4045c2e2ce742847",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 120
+    },
+    {
+      "package": "internal/recoverydb",
+      "scope": "recoverydb",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "71f427d5c581b84ad4a5b5d45f4bb63001233733b013b63327cb9d3096681ff0",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 12
+    },
+    {
+      "package": "internal/recovery",
+      "scope": "recovery",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "be1daafed87aee44f0cd847bf29d6e8e96bf5a1bb6764283c93bbe3ff56f37e4",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 33
+    },
+    {
+      "package": "cmd/goby",
+      "scope": "cmd-goby",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "71bbebc930a2014b0dc6cc65c8b20e98f3c88c6474cbfd0e45c62dc4c6c55204",
+      "selector": "all",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 24
+    },
+    {
+      "package": "internal/server",
+      "scope": "server-browser",
+      "run": "verification-01",
+      "run_order": 1,
+      "source": "d49f6e224a22b43de006e1f80d116db54c4bdbcf",
+      "binary_sha256": "f29057206c5b911124f25d7db0b397a431d218f3740ebee49509d5445788cc11",
+      "selector": "^TestMediaAnalysisResiliencePhase1BrowserIntegration$",
+      "build_receipt": "product-build-01",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestMediaAnalysisResiliencePhase1BrowserIntegration"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 0
+    },
+    {
+      "package": "internal/server",
+      "scope": "server-browser",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "2b2d3ed1c1882d6eab2777965d0884a5f15117e8da49f87636270c7ee7122c1f",
+      "selector": "^TestMediaAnalysisResiliencePhase1BrowserIntegration$",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestMediaAnalysisResiliencePhase1BrowserIntegration"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 0
+    },
+    {
+      "package": "internal/settings",
+      "scope": "settings",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "f534b688c182d6f0edf9c46057fb92b6a64aceaf543311d3264b5287ac2dd5b7",
+      "selector": "all",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 55
+    },
+    {
+      "package": "internal/database",
+      "scope": "database",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "085b577b00becdbd4aef2815ad0e3ca128091a9b6ce696f73d077f0cdf00f6ce",
+      "selector": "all",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 65
+    },
+    {
+      "package": "internal/library",
+      "scope": "library",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "37b75797b2f9671d47b08bcf7338e29e636a17f09c64e107a72f74851c3f46ae",
+      "selector": "^(TestAuxiliary|TestExtra|TestTheme|TestStore(Theme|Extra|ExplicitExtra|SpecialFeatures|AlbumArtist|Music|CachedFileScan|Metadata)|TestQueryTheme|TestGeneratedSorting|TestSortRebuild|TestQueryStandaloneSpecial|TestStandaloneSpecial|TestTelevisionMetadata|TestMusicAlbum|TestOnlineMetadata|TestStore.*NFO|TestScanCatalogChanges)",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestAuxiliarySortingRulesPreserveSourceCaseControlsAndCachedScans"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 135
+    },
+    {
+      "package": "internal/server",
+      "scope": "server",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "f2f7af06a2473206603c26fb47668279d70678a6604f4d794c67058b70fade4a",
+      "selector": "^(TestHTTPAdminSettings|TestHTTPAdminRuntime|TestAdminSettingsRuntimeDTO|TestSettingsDTO|TestSettingsRuntimeDTO|TestSorting|TestImageFetcher|TestHTTPImageFetcher|TestHTTPConfiguration|TestConfiguration|TestHTTPNamedManagementConfiguration|TestNamedManagement|TestHTTPExtra|TestHTTPExplicitExtra|TestHTTPTheme|TestHTTPLibraryNotifier|TestHTTPAdminMetadata|TestHTTPMusic|TestHTTPTV|TestHTTPItemCapabilities|TestHTTPItemProjection|TestItemProjection)",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 74
+    },
+    {
+      "package": "internal/backuppg",
+      "scope": "backuppg",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "6e569a1599b9f96975113ecc596205214701a145d9f9a7b19ada736cec73e4f5",
+      "selector": "all",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 120
+    },
+    {
+      "package": "internal/recoverydb",
+      "scope": "recoverydb",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "1e04f67d90249b3deaee983a43a65f5c4a3b2bf3c759871de61b119207350775",
+      "selector": "all",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestRecoveryDatabaseStoreIntegration"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 11
+    },
+    {
+      "package": "internal/recovery",
+      "scope": "recovery",
+      "run": "verification-02",
+      "run_order": 2,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "fa2c386d19bfde19c453bb08bd057de6105bc4e40b4f5d375011b27de7a049eb",
+      "selector": "all",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 33
+    },
+    {
+      "package": "internal/recoverydb",
+      "scope": "recoverydb",
+      "run": "verification-03",
+      "run_order": 3,
+      "source": "3251a354b62018661c752062282c8df104400c94",
+      "binary_sha256": "1e04f67d90249b3deaee983a43a65f5c4a3b2bf3c759871de61b119207350775",
+      "selector": "all",
+      "build_receipt": "product-build-02",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 12
+    },
+    {
+      "package": "internal/server",
+      "scope": "server-browser",
+      "run": "verification-04",
+      "run_order": 4,
+      "source": "398756d07be4b6814724aa8acb20518ec033c8f8",
+      "binary_sha256": "ec4a40c72c78e8c8f9db42e3abd5044b1e290bf42470397c1db847bdc3037ea9",
+      "selector": "^TestMediaAnalysisResiliencePhase1BrowserIntegration$",
+      "build_receipt": "product-build-04",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestMediaAnalysisResiliencePhase1BrowserIntegration"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 0
+    },
+    {
+      "package": "internal/library",
+      "scope": "library",
+      "run": "verification-04",
+      "run_order": 4,
+      "source": "398756d07be4b6814724aa8acb20518ec033c8f8",
+      "binary_sha256": "2c3d56a5fe69bb2668e65941cc839961dbfaeaf7fb1a9dfab47bd120a56b3695",
+      "selector": "all",
+      "build_receipt": "product-build-04",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [
+        "TestRootBindingFullScanMountNamespaceHelper"
+      ],
+      "reported_parent_passes": 817
+    },
+    {
+      "package": "internal/server",
+      "scope": "server",
+      "run": "verification-04",
+      "run_order": 4,
+      "source": "398756d07be4b6814724aa8acb20518ec033c8f8",
+      "binary_sha256": "894c326ab670db9533dd1339c5484882c1738e376b35469399bee9312ccc719c",
+      "selector": "^(TestHTTPAdminSettings|TestHTTPAdminRuntime|TestAdminSettingsRuntimeDTO|TestSettingsDTO|TestSettingsRuntimeDTO|TestSorting|TestImageFetcher|TestHTTPImageFetcher|TestHTTPConfiguration|TestConfiguration|TestHTTPNamedManagementConfiguration|TestNamedManagement|TestHTTPExtra|TestHTTPExplicitExtra|TestHTTPTheme|TestHTTPLibraryNotifier|TestHTTPAdminMetadata|TestHTTPMusic|TestHTTPTV|TestHTTPItemCapabilities|TestHTTPItemProjection|TestItemProjection)",
+      "build_receipt": "product-build-04",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 74
+    },
+    {
+      "package": "internal/server",
+      "scope": "server-browser",
+      "run": "verification-05",
+      "run_order": 5,
+      "source": "8d10acfbb2b95e2b464448eb48dd93d05165a960",
+      "binary_sha256": "5dbd0f4a105cc3754836cb13691d779f65b507256b6d721e8a1cccae86791a67",
+      "selector": "^TestMediaAnalysisResiliencePhase1BrowserIntegration$",
+      "build_receipt": "browser-build-05",
+      "state": "terminal",
+      "exit_code": 1,
+      "process_group_closed": true,
+      "reported_failed_tests": [
+        "TestMediaAnalysisResiliencePhase1BrowserIntegration"
+      ],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 0
+    },
+    {
+      "package": "internal/server",
+      "scope": "server-browser",
+      "run": "verification-06",
+      "run_order": 6,
+      "source": "2c11c6641869ea3cf112595a42dc31b1a46e7cad",
+      "binary_sha256": "97f509b58f3335969203b78dfdf0bdd824c462240fb8db3249ebe52186fedef1",
+      "selector": "^TestMediaAnalysisResiliencePhase1BrowserIntegration$",
+      "build_receipt": "browser-build-06",
+      "state": "terminal",
+      "exit_code": 0,
+      "process_group_closed": true,
+      "reported_failed_tests": [],
+      "reported_parent_skips": [],
+      "reported_parent_passes": 1
+    }
+  ],
+  "evidence_root": "/opt/goby-media-analysis-resilience-20260920-p1a",
+  "evidence": [
+    {
+      "path": "logs/ledger-review-01/results-ledger.json",
+      "sha256": "a3198ee63a4599e28c648066cb8ac69e8c2f7bd4f2e7453267ae6618bbdaec67",
+      "bytes": 5333306
+    },
+    {
+      "path": "logs/product-build-04.json",
+      "sha256": "b77ecaa7bbc3f3d3769070c72fbf8b32a7a9ba32bbcd5bcd46df336ac59c7514",
+      "bytes": 15133
+    },
+    {
+      "path": "logs/browser-build-06.json",
+      "sha256": "47592da6f8119db54e9e56eac076885e1091d974955ec4059258b0f5fe1cf8ba",
+      "bytes": 13305
+    },
+    {
+      "path": "logs/verification-04.json",
+      "sha256": "9734e6855a5b9897953e880452cf0ebc8b6f76e29f68d27c94ec1a7970b9829c",
+      "bytes": 2329
+    },
+    {
+      "path": "logs/verification-06.json",
+      "sha256": "7144f9b7992a923ddeddb899eecb488d8a8ac335a1c6b3b9a1f528b3769b0bfc",
+      "bytes": 896
+    },
+    {
+      "path": "browser-results/media-analysis-phase1-browser-3762250884/driver-result.json",
+      "sha256": "4b436dc44e87a38e1823979247af5c407723beb0b6674b4b52e5d5e2105af7f2",
+      "bytes": 8414
+    },
+    {
+      "path": "browser-results/media-analysis-phase1-browser-3762250884/browser-result.json",
+      "sha256": "91acd3cf2a4f960cfd33bf2d09db210050073f04c91d617690a4a0af05cbf911",
+      "bytes": 22114
+    },
+    {
+      "path": "mocked-browser-01/receipt.json",
+      "sha256": "c6ade1e1752395b85a1b369f0324874340e8fe0989cd13ac2e1c18f9c5c426a6",
+      "bytes": 1937
+    },
+    {
+      "path": "mocked-browser-02/receipt.json",
+      "sha256": "83b679180182385b4939ac45e5ad4821c3c0a4279a681d518dbb13f15aafa4d6",
+      "bytes": 1764
+    },
+    {
+      "path": "logs/phase1-resource-closure-01.json",
+      "sha256": "2183885dbd0d9b226ad6633409f9acbc2f7f50a4cc41de6369b41cdb0750cd93",
+      "bytes": 24422
+    },
+    {
+      "path": "logs/phase1-resource-readback-01.json",
+      "sha256": "a5ad15b31df992ab713fdbd3566159e6aa7386d103a93bf1095c19ba001c767f",
+      "bytes": 7532
+    }
+  ],
+  "limits": [
+    "PresentationUniqueKey grouping remains explicitly unimplemented; BasicSyncInfo belongs to deferred offline sync.",
+    "Original commercial client gating is outside the accepted server-adapter boundary.",
+    "The original mount-helper and two AMD profiles remain skips, not passes.",
+    "Automatic intro detection, BIF previews, compound load, storage fault injection and guest restart remain required phases 2 and 3."
+  ]
+}

@@ -9,10 +9,12 @@ Implementation is active on `codex/media-analysis-resilience` from `2fd9182`.
 Complete each phase's code before consolidated remote verification, then merge
 the verified delivery to `main` and push. Local verification is not authorized
 for this increment. Dedicated guest reboot coverage is required; shared hosts
-remain outside reboot scope. Phase 1 consolidated verification and regression
-repair are in progress; acceptance and publication remain pending. Its
+remain outside reboot scope. Phase 1 is verified and resources are closed;
+main publication remains pending. Its
 [execution record](../development/media-analysis-resilience-phase1-20260920.md)
-binds passing component evidence and retained failures to their actual sources.
+binds the composed regression, complete 24-stage actual browser, both application
+builds and retained failures to their actual sources. Phase 2 is next after
+publication; phase 3 remains required.
 Historical completed increments below remain closed.
 
 ## Completed selected increment: September 20, 2026

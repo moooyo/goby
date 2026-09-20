@@ -8,13 +8,18 @@ on September 20, 2026. The user authorized execution, consolidated verification
 only after each phase's complete code, then merge to `main` and push.
 Implementation uses `codex/media-analysis-resilience` at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`, based on
-`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Phase 1 is in consolidated remote
-verification and regression repair; use its
-[execution record](media-analysis-resilience-phase1-20260920.md) for source-bound
-component results, original failures and remaining gates. Phase 1 is not yet
-accepted; tests/builds/runtime checks are remote-only for this
+`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Phase 1 is verified and its resources
+are closed. Its [execution record](media-analysis-resilience-phase1-20260920.md)
+and [delivery results](media-analysis-resilience-phase1-results-20260921.json)
+bind the accepted scanner/application source `398756d` and final browser source
+`2c11c66`, all original failures, the 2,328 composed Go passes and three skips,
+and the complete 24-stage actual browser journey. All 17 owned workers and the
+admitted PostgreSQL are closed, nine databases/evidence are preserved, and three
+unrelated services retain their identities. No runtime needs resuming.
+Main publication remains pending; finish that step before starting phase 2.
+Tests/builds/runtime checks are remote-only for this
 increment. The original `D:/Code/goby` changes remain unrelated and preserved.
-Do not start phase 2 or 3 product changes before phase 1 is accepted. The earlier
+Phases 2 and 3 remain required; no product work has started for them. The earlier
 completed records below retain their historical scope and authorization.
 
 ## Previous selected-compatibility publication

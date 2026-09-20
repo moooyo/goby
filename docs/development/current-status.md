@@ -6,10 +6,15 @@ The user authorized the [three-phase plan](../planning/media-analysis-resilience
 on September 20, 2026, including consolidated tests after each phase's complete
 implementation and verified merge/push to `main`. Development starts at
 `2fd9182` on `codex/media-analysis-resilience` in an isolated checkout. Phase 1
-implementation is in consolidated remote verification and regression repair;
-phases 2 and 3 have not started product changes. Phase 1 is not yet accepted;
-its [execution record](media-analysis-resilience-phase1-20260920.md) separates
-passing component evidence from remaining requirements. Tests, builds and runtime checks
+is verified and its resources are closed; main publication is pending.
+Phases 2 and 3 have not started product changes. The phase 1
+[execution record](media-analysis-resilience-phase1-20260920.md) and
+[delivery results](media-analysis-resilience-phase1-results-20260921.json)
+bind 2,328 unique Go passes, three explicit skips, 55 composed mocked UI cases,
+seven frontend source tests, the complete 24-stage actual journey and both
+application builds. Original failures and source reuse remain explicit. All 17
+owned workers and PostgreSQL are closed, nine databases/evidence are preserved,
+and three unrelated services retain their identities. Tests, builds and runtime checks
 use remote environments; earlier local-test authorization is historical.
 Unrelated original-checkout changes are preserved. The completed delivery
 records below describe the previous increment and do not close this new scope.
