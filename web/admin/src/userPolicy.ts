@@ -2,6 +2,7 @@ import type { UserPolicy } from './api';
 
 export const accessDays = ['Everyday', 'Weekday', 'Weekend', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 export const unratedCategories = ['Movie', 'Trailer', 'Series', 'Music', 'Game', 'Book', 'LiveTvChannel', 'LiveTvProgram', 'ChannelContent', 'Other'] as const;
+export const editableUnratedCategories = ['Movie', 'Trailer', 'Series', 'Music', 'Other'] as const;
 export const policyBooleanDefaults = {
   IsHidden: false, IsHiddenRemotely: false, IsHiddenFromUnusedDevices: false,
   AllowTagOrRating: false, IsTagBlockingModeInclusive: false, EnableUserPreferenceAccess: true,

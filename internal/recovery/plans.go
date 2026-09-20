@@ -70,6 +70,11 @@ func (m *Manager) Plan(ctx context.Context, actor identity.Principal, request Pl
 		m.data.Operations = m.data.Operations[:len(m.data.Operations)-1]
 		return OperationView{}, err
 	}
+	op.TargetHost, err = m.captureHostSettings(ctx)
+	if err != nil {
+		m.data.Operations = m.data.Operations[:len(m.data.Operations)-1]
+		return OperationView{}, err
+	}
 	if err := m.persistLocked(ctx); err != nil {
 		return OperationView{}, err
 	}
@@ -209,7 +214,10 @@ func (m *Manager) planJob(ctx context.Context, id string, passphrase []byte) err
 		_, err = binding.StampTx(ctx, tx, desired, expected)
 		return err
 	}
-	if _, err := archive.RestoreInto(ctx, pool, lease, targetCfg, stamp); err != nil {
+	if !op.TargetHost.valid(m.operator) {
+		return ErrConflict
+	}
+	if _, err := archive.restoreIntoWithHost(ctx, pool, lease, targetCfg, op.TargetHost.Settings, stamp); err != nil {
 		m.captureFailedStage(binding, op, targetCfg.ServerName)
 		return err
 	}
@@ -370,6 +378,11 @@ func (m *Manager) Rollback(ctx context.Context, actor identity.Principal, reques
 		return OperationView{}, err
 	}
 	op.TargetSlot, op.GenerationID, op.Target = slot.Slot, slot.ImageID, slot.Retained
+	op.TargetHost, err = m.captureHostSettings(ctx)
+	if err != nil {
+		m.data.Operations = m.data.Operations[:len(m.data.Operations)-1]
+		return OperationView{}, err
+	}
 	if err := m.checkApplyCapacityLocked(op); err != nil {
 		return OperationView{}, err
 	}

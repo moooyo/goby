@@ -301,6 +301,9 @@ func readCollection(ctx context.Context, tx pgx.Tx, access libraryAccess, id, ki
 		return CollectionInfo{}, fmt.Errorf("read collection: %w", err)
 	}
 	result.Shares = []CollectionShare{}
+	if owned, ok := tx.(*ownedTx); ok && lock {
+		owned.rememberNotificationScope(collectionLibraryID, result.ID, result.ParentID)
+	}
 	return result, nil
 }
 
@@ -432,6 +435,7 @@ func (s *Store) CreateCollection(ctx context.Context, subject Subject, kind stri
 	if err := fillCollectionInfo(protected, tx, access, &collection); err != nil {
 		return CollectionInfo{}, err
 	}
+	tx.(*ownedTx).rememberNotificationScope(collectionLibraryID, collection.ID, collection.ParentID)
 	tx.(*ownedTx).catalogChanges.requireResync()
 	if err := commitCollectionWrite(ctx, tx); err != nil {
 		return CollectionInfo{}, err

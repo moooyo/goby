@@ -30,6 +30,7 @@ func TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput(t *testing.T) {
 		t.Fatalf("the configured hardware fixture is invalid: %v", err)
 	}
 	fixture.f.cfg = fixture.f.app.cfg
+	fixture.f.app.managedHardware = newManagedHardwareInventory(fixture.f.app.cfg.Transcoding)
 	initializeFixtureSettings(t, fixture.f)
 	// Keep the production identity, encoder enumeration, and hardware probe
 	// functions intact. This test must observe the actual driver rejection.

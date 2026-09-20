@@ -82,7 +82,7 @@ func (s *Server) publishDynamicSegment(ctx context.Context, spec transcode.Spec,
 		return library.ErrForbidden
 	}
 	request := (&http.Request{Method: http.MethodGet}).WithContext(context.WithValue(work, principalKey, principal))
-	limits, err := s.dynamicLimits(work, principal, session.request, request)
+	limits, err := s.dynamicRevisionLimits(work, principal, session.request, request, session.key.plan)
 	if err != nil {
 		return err
 	}

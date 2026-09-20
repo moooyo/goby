@@ -60,6 +60,10 @@ type Options struct {
 	NoProgressTimeout   time.Duration
 	MaxRuntime          time.Duration
 	Repository          Repository
+	// ValidateHardware rechecks the captured device against the process's
+	// startup-authorized inventory after queue waits and before execution. It
+	// must be bounded and must not execute a hardware capability probe.
+	ValidateHardware func(context.Context, Plan) error
 	// SubtitleSource reauthorizes an external track immediately before burn-in.
 	// It returns bounded ASS bytes bound to Spec.Plan.Subtitle.ExternalTag.
 	SubtitleSource func(context.Context, Spec) ([]byte, error)
@@ -285,6 +289,13 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 	}
 	if !validScope(spec.Scope) || !validManagerIdentifier(spec.SourceStamp, 256, false) {
 		return Record{}, ErrInvalidScope
+	}
+	if spec.Plan.ExecutionVersion == 0 && spec.Plan.Execution == (ExecutionOptions{}) {
+		var err error
+		spec.Plan, err = CaptureExecution(spec.Plan, DefaultExecutionOptions(m.options.Threads))
+		if err != nil {
+			return Record{}, err
+		}
 	}
 	if err := ValidatePlan(spec.Plan); err != nil {
 		return Record{}, err
@@ -971,12 +982,22 @@ func (m *Manager) runJob(j *managedJob) {
 		m.finish(j, err)
 		return
 	}
+	if m.options.ValidateHardware != nil {
+		checkContext, cancelCheck := context.WithTimeout(j.ctx, 5*time.Second)
+		err := m.options.ValidateHardware(checkContext, j.record.Spec.Plan)
+		cancelCheck()
+		if err != nil {
+			m.fail(j, "hardware_unavailable")
+			m.finish(j, err)
+			return
+		}
+	}
 	runContext := withSubtitleSource(j.ctx, j.record.Spec, m.options.SubtitleSource)
 	if j.record.Spec.Plan.SourceMode == "stream" {
 		runContext = withLiveRuntime(runContext, liveRuntime{spec: j.record.Spec, jobID: j.record.ID, inputs: StreamInputs{Media: j.input, Bitmap: j.bitmap},
 			maxBytes: min(MaxLiveScratchBytes, m.options.MaxJobBytes), timeout: m.options.NoProgressTimeout, publish: m.options.LivePublish, subtitle: m.options.LiveSubtitle, caption: m.options.LiveCaption})
 	}
-	_, err = m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, m.options.Threads, func(p Progress) {
+	_, err = m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, j.record.Spec.Plan.Execution.Threads, func(p Progress) {
 		m.mu.Lock()
 		if clock := p.HLSClock; clock != nil && needsHLSClock(j.record.Spec.Plan) && clock.Rendition >= 0 && clock.Rendition < max(1, j.record.Spec.Plan.HLS.RenditionCount) {
 			if _, err := clock.ticks(j.record.Spec.Plan.SourceMode != "stream"); err == nil && !j.hlsClockKnown[clock.Rendition] {

@@ -114,7 +114,7 @@ func (s *Store) allowVaultMasterCreation(ctx context.Context, tx pgx.Tx) (bool, 
 	}
 	err = tx.QueryRow(ctx, `SELECT id,profile_pin_ciphertext FROM users WHERE profile_pin_ciphertext IS NOT NULL ORDER BY id LIMIT 1`).Scan(&id, &sealed)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return true, nil
+		return s.allowNotificationMasterCreation(ctx, tx)
 	}
 	if err != nil {
 		return false, fmt.Errorf("read profile credential vault witness: %w", err)

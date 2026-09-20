@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/notificationjournal"
 )
 
 type UserData struct {
@@ -240,6 +241,9 @@ func (s *Store) SetFavoriteFor(ctx context.Context, subject Subject, itemID stri
 		return UserData{}, err
 	}
 	data = derived[itemID]
+	if err := notificationjournal.RecordUserData(ctx, tx, userID, notificationjournal.Reference{Kind: "Item", ID: itemID}, false); err != nil {
+		return UserData{}, err
+	}
 	if _, err := checkSubjectStateWrite(ctx, tx, subject, false, false); err != nil {
 		return UserData{}, err
 	}
@@ -311,6 +315,9 @@ func (s *Store) SetPlayedFor(ctx context.Context, subject Subject, itemID string
 		return UserData{}, err
 	}
 	data = derived[itemID]
+	if err := notificationjournal.RecordUserData(ctx, tx, userID, notificationjournal.Reference{Kind: "Item", ID: itemID}, true); err != nil {
+		return UserData{}, err
+	}
 	if _, err := checkSubjectStateWrite(ctx, tx, subject, false, false); err != nil {
 		return UserData{}, err
 	}

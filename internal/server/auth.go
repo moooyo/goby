@@ -27,13 +27,20 @@ func csrfToken(token string) string {
 }
 
 func (s *Server) sameOrigin(w http.ResponseWriter, r *http.Request) bool {
-	if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+	for _, value := range r.Header.Values("Sec-Fetch-Site") {
+		if strings.EqualFold(value, "cross-site") {
+			apiError(w, r, 403, "origin_denied", "The request origin is not allowed.")
+			return false
+		}
+	}
+	origins := r.Header.Values("Origin")
+	if len(origins) > 1 {
 		apiError(w, r, 403, "origin_denied", "The request origin is not allowed.")
 		return false
 	}
 	if origin := r.Header.Get("Origin"); origin != "" {
 		u, err := url.Parse(origin)
-		if err != nil || origin != s.cfg.PublicURL || u.User != nil {
+		if err != nil || u.User != nil || origin != s.cfg.PublicURL && !s.directHTTPOriginAllowed(r, origin) {
 			apiError(w, r, 403, "origin_denied", "The request origin is not allowed.")
 			return false
 		}

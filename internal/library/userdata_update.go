@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"fmt"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"strings"
 	"time"
 )
@@ -95,6 +96,9 @@ func (s *Store) UpdateUserDataFor(ctx context.Context, subject Subject, itemID s
 	}
 	derived := map[string]UserData{itemID: data}
 	if err := deriveUserDataFolders(ctx, tx, subject.UserID, derived, access); err != nil {
+		return UserData{}, err
+	}
+	if err := notificationjournal.RecordUserData(ctx, tx, subject.UserID, notificationjournal.Reference{Kind: "Item", ID: itemID}, false); err != nil {
 		return UserData{}, err
 	}
 	if _, err := checkSubjectStateWrite(ctx, tx, subject, false, false); err != nil {

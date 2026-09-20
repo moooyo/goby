@@ -113,6 +113,19 @@ func (s *Server) libraryChangedSocketPayload(ctx context.Context, principal iden
 	if err != nil {
 		return nil, err
 	}
+	// A committed collection-root removal has no surviving parent that can be
+	// safely projected. Its trusted publication scope still permits a current
+	// recipient-specific reconnect/refresh, without disclosing historical IDs.
+	// An ordinary event filtered to no visible items must remain silent instead.
+	removed := make(map[string]bool, len(data.ItemsRemoved))
+	for _, id := range data.ItemsRemoved {
+		removed[id] = true
+	}
+	for _, scope := range scopes {
+		if scope.ItemID == scope.LibraryID && removed[scope.ItemID] && allowedLibraries[scope.LibraryID] {
+			return nil, events.ErrResyncRequired
+		}
+	}
 	candidates := make([]string, 0, len(scopes))
 	seenItems := make(map[string]bool, len(scopes))
 	for _, scope := range scopes {

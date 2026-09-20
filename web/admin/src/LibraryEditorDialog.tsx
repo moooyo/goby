@@ -84,7 +84,7 @@ export function LibraryEditorDialog({ libraryId, onClose, onSaved, onNavigationG
           <Box component="section" aria-label="Library options"><Typography component="h3" variant="h4" sx={{ mb: 2 }}>Library options</Typography><Stack spacing={2}>
             <FormControlLabel control={<Checkbox checked={options.EnableLocalMetadata} disabled={disabled} onChange={(event) => setOptions({ ...options, EnableLocalMetadata: event.target.checked })} />} label="Import local metadata files" />
             <FormControlLabel control={<Checkbox checked={options.EnableLocalImages} disabled={disabled} onChange={(event) => setOptions({ ...options, EnableLocalImages: event.target.checked })} />} label="Import images from media directories" />
-            <Typography variant="body2" color="text.secondary">These options control future scans. Turning one off keeps previously imported information and manual changes. Scan after re-enabling it to refresh local sources.</Typography>
+            <Typography variant="body2" color="text.secondary">Local images include directory artwork and embedded audio covers. These options control future scans. Turning one off keeps previously imported information and manual changes. Scan after re-enabling it to refresh local sources.</Typography>
           </Stack></Box>
           <FormControlLabel control={<Checkbox checked={scan} disabled={disabled} onChange={(event) => setScan(event.target.checked)} />} label="Scan after saving" />
         </>}

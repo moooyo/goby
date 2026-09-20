@@ -193,7 +193,7 @@ func (s *Server) videoError(w http.ResponseWriter, r *http.Request, err error) {
 		s.identityError(w, r, err)
 	case errors.Is(err, errVideoRequestInvalid), errors.Is(err, playback.ErrInvalidRequest), errors.Is(err, library.ErrInvalidInput):
 		apiError(w, r, http.StatusBadRequest, "invalid_video_request", "Check video parameters and stream identifiers.")
-	case errors.Is(err, errVideoRequestUnsupported), errors.Is(err, transcode.ErrInvalidPlan), errors.Is(err, transcode.ErrUnsupportedTimeline):
+	case errors.Is(err, errVideoRequestUnsupported), errors.Is(err, errHLSRequestUnsupported), errors.Is(err, transcode.ErrInvalidPlan), errors.Is(err, transcode.ErrUnsupportedTimeline):
 		apiError(w, r, http.StatusUnsupportedMediaType, "NoCompatibleStream", "This source does not support the requested video output.")
 	case errors.Is(err, transcode.ErrBusy), errors.Is(err, transcode.ErrQuota), errors.Is(err, library.ErrBusy):
 		w.Header().Set("Retry-After", "2")

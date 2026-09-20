@@ -159,6 +159,7 @@ const (
 	FieldMaxAudioChannels               Field = "MaxAudioChannels"
 	FieldTranscodingMaxWidth            Field = "TranscodingMaxWidth"
 	FieldManagement                     Field = "Management"
+	FieldRuntime                        Field = "Runtime"
 	FieldSortName                       Field = "SortName"
 	FieldOverview                       Field = "Overview"
 	FieldOriginalTitle                  Field = "OriginalTitle"

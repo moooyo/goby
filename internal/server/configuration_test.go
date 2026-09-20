@@ -131,7 +131,7 @@ func TestConfigurationClosedQueriesAndNamedRegistry(t *testing.T) {
 		}
 	}
 	data, err := json.Marshal(encodingConfigurationDTO(settings.Snapshot{Encoding: settings.Encoding{TranscodingMaxWidth: 96}}))
-	if err != nil || string(data) != `{"TranscodingMaxWidth":96}` {
+	if err != nil || string(data) != `{"EnableHardwareToneMapping":false,"EnableSoftwareToneMapping":false,"TranscodingMaxWidth":96}` {
 		t.Fatal("named encoding DTO exposed an unrelated native setting")
 	}
 }

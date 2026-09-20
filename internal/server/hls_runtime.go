@@ -129,6 +129,15 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 		return nil, errors.New("the configured FFprobe executable is unavailable")
 	}
 	managerOptions := server.cfg.Transcoding.ManagerOptions(server.cfg.FFmpegPath, transcode.NewRepository(server.db))
+	managerOptions.ValidateHardware = func(ctx context.Context, plan transcode.Plan) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if !server.plannedHardwareAvailable(plan) {
+			return errHLSRequestUnsupported
+		}
+		return ctx.Err()
+	}
 	managerOptions.SubtitleSource = server.readBurnSubtitleAsset
 	managerOptions.LivePublish = server.publishDynamicSegment
 	managerOptions.LiveSubtitle = server.receiveDynamicSubtitles
@@ -401,8 +410,9 @@ func hlsPrincipalLimits(cfg config.TranscodingConfig, principal identity.Princip
 func hlsServerLimits(cfg config.TranscodingConfig) playback.ConversionLimits {
 	return playback.ConversionLimits{
 		MaxBitrate: cfg.MaxBitrate, MaxWidth: cfg.MaxWidth, MaxHeight: cfg.MaxHeight,
-		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware,
-		AllowRemux: cfg.Enabled, AllowAudioTranscode: cfg.Enabled, AllowVideoTranscode: cfg.Enabled,
+		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware, Execution: cfg.Execution,
+		HardwareUnavailable: cfg.HardwareUnavailable,
+		AllowRemux:          cfg.Enabled, AllowAudioTranscode: cfg.Enabled, AllowVideoTranscode: cfg.Enabled,
 	}
 }
 

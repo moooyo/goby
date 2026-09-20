@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/notificationjournal"
 )
 
 type PlaybackOwner struct {
@@ -736,6 +737,9 @@ func (s *Store) ReportPlayback(ctx context.Context, owner PlaybackOwner, report 
 			return PlaySession{}, UserData{}, fmt.Errorf("persist playback user data: %w", err)
 		}
 		if err := rememberPlaybackSelections(ctx, tx, owner, item.id, session.MediaSourceID, report.PlayerState); err != nil {
+			return PlaySession{}, UserData{}, err
+		}
+		if err := notificationjournal.RecordUserData(ctx, tx, owner.UserID, notificationjournal.Reference{Kind: "Item", ID: item.id}, false); err != nil {
 			return PlaySession{}, UserData{}, err
 		}
 	}

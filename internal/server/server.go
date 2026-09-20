@@ -20,8 +20,10 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/notifications"
 	"github.com/moooyo/goby/internal/settings"
 	"github.com/moooyo/goby/internal/tasks"
+	"github.com/moooyo/goby/internal/transcode"
 )
 
 type Server struct {
@@ -48,12 +50,17 @@ type Server struct {
 	mediaPolicy          *mediaPolicyRuntime
 	hardwareEncodingOnce sync.Once
 	hardwareEncoding     *hardwareEncodingRuntime
+	managedHardware      *managedHardwareInventory
+	httpBinding          runtimeHTTPBinding
 	taskStore            *tasks.Store
 	taskManager          *tasks.Manager
 	settings             *settings.Store
 	diagnostics          *diagnostics.Store
 	mediaDiagnostics     *mediaDiagnosticRuntime
 	mediaOperations      *mediaOperationsRuntime
+	notificationStore    *notifications.Store
+	notificationRuntime  *notifications.Runtime
+	notificationOptions  notifications.RuntimeOptions
 	dashboardFiles       fs.FS
 	recovery             adminRecoveryManager
 	activityCancel       context.CancelFunc
@@ -87,6 +94,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), library: catalog, images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), eventHub: hub, sockets: newSocketRuntime()}
+	app.managedHardware = newManagedHardwareInventory(cfg.Transcoding)
 	for _, option := range options {
 		if option != nil {
 			option(app)
@@ -126,6 +134,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app.startActivityRetention()
+	app.initializeNotifications()
 	return app, nil
 }
 
@@ -143,11 +152,29 @@ func (s *Server) initializeSettings(ctx context.Context) error {
 		limits.MaxHeight = config.DefaultMaxHeight
 		limits.MaxAudioChannels = config.DefaultMaxAudioChannels
 	}
+	binding, err := config.HTTPBindingDefaults(s.cfg.ListenAddress)
+	if err != nil {
+		return err
+	}
+	if s.managedHardware == nil {
+		s.managedHardware = newManagedHardwareInventory(s.cfg.Transcoding)
+	}
+	execution := limits.Execution
+	if execution == (transcode.ExecutionOptions{}) {
+		execution = transcode.DefaultExecutionOptions(limits.Threads)
+	}
+	runtimeDefaults := settings.RuntimeOptions{
+		Network:  settings.NetworkValues{BindHost: binding.BindHost, HttpPort: binding.HttpPort},
+		Hardware: s.managedHardware.defaultSelection(), Execution: execution,
+		AuthorizedDeviceIDs:   s.managedHardware.authorizedDeviceIDs(),
+		AvailableDeviceIDs:    s.managedHardware.availableDeviceIDs(),
+		LegacyHardwareDefault: s.managedHardware.legacyDefault(),
+	}
 	store, err := settings.New(ctx, s.db, s.library, settings.Values{
 		ServerName: s.cfg.ServerName, MaxBitrate: limits.MaxBitrate,
 		MaxWidth: limits.MaxWidth, MaxHeight: limits.MaxHeight,
 		MaxAudioChannels: limits.MaxAudioChannels,
-	}, hostName)
+	}, hostName, runtimeDefaults)
 	if err != nil {
 		return err
 	}
@@ -180,6 +207,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	s.notificationRuntime.BeginClose()
 	if s.mediaOperations != nil {
 		s.mediaOperations.BeginClose()
 	}
@@ -223,6 +251,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminMetadataRoutes(mux)
 	s.registerIntroMarkerRoutes(mux)
 	s.registerLibraryRoutes(mux)
+	s.registerSelectedManagementRoutes(mux)
 	s.registerEntityRoutes(mux)
 	s.registerMusicEntityRoutes(mux)
 	s.registerMusicDiscoveryRoutes(mux)
@@ -236,6 +265,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerStreamRoutes(mux)
 	s.registerPlaybackRoutes(mux)
 	s.registerClientSessionRoutes(mux)
+	s.registerNotificationRoutes(mux)
 	s.registerSubtitleRoutes(mux)
 	s.registerRemoteCommandRoutes(mux)
 	s.registerHLSRoutes(mux)

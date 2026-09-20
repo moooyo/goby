@@ -18,6 +18,10 @@ type ConversionLimits struct {
 	MaxWidth, MaxHeight, MaxAudioChannels                int
 	AllowRemux, AllowAudioTranscode, AllowVideoTranscode bool
 	Hardware                                             transcode.Hardware
+	Execution                                            transcode.ExecutionOptions
+	// HardwareUnavailable records a requested managed device that cannot be
+	// resolved in the startup-authorized inventory. Copy/audio remain usable.
+	HardwareUnavailable bool
 }
 
 // ConversionDecision keeps original-file evaluation separate from the projected
@@ -171,6 +175,11 @@ func PlanConversion(source Source, request Request, limits ConversionLimits) (Co
 }
 
 func normalizeConversionLimits(limits ConversionLimits) (ConversionLimits, error) {
+	if limits.Execution != (transcode.ExecutionOptions{}) {
+		if err := transcode.ValidateExecutionOptions(limits.Execution); err != nil {
+			return limits, fmt.Errorf("%w: invalid execution settings", ErrInvalidRequest)
+		}
+	}
 	if limits.MaxBitrate < 0 || limits.MaxBitrate > 1_000_000_000 || limits.MaxWidth < 0 || limits.MaxWidth > 8192 ||
 		limits.MaxHeight < 0 || limits.MaxHeight > 8192 || limits.MaxAudioChannels < 0 || limits.MaxAudioChannels > 8 {
 		return limits, fmt.Errorf("%w: invalid server conversion limits", ErrInvalidRequest)
@@ -584,6 +593,9 @@ func conversionCandidate(source Source, request Request, limits ConversionLimits
 				if reason := configureHLSRenditions(&plan, request, profile, projected, kind); reason != nil {
 					return plan, projected, reason
 				}
+			}
+			if reason := captureConversionExecution(&plan, limits); reason != nil {
+				return plan, projected, reason
 			}
 			return plan, projected, nil
 		}

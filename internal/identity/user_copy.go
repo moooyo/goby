@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/activity"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -95,7 +96,10 @@ func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name
 		if err := validateManagedLibraries(ctx, tx, policy.EnabledFolders); err != nil {
 			return User{}, err
 		}
-		if err := validateManagedLibraries(ctx, tx, policy.EnableContentDeletionFromFolders); err != nil {
+		if err := validateManagedDeletionFolders(ctx, tx, policy.EnableContentDeletionFromFolders, nil); err != nil {
+			return User{}, err
+		}
+		if err := validateSelectedUnratedCategories(policy.BlockUnratedItems, nil); err != nil {
 			return User{}, err
 		}
 		// Marshaling the typed allowlist strips opaque stored values, role mirrors
@@ -139,6 +143,9 @@ func (s *Store) CreateManagedUserCopy(ctx context.Context, actor Principal, name
 			SELECT $1,entity_id,playback_position_ticks,play_count,is_favorite,played,last_played_at,rating,likes
 			FROM entity_user_data WHERE user_id=$2 ORDER BY entity_id`, id, sourceID); err != nil {
 			return User{}, fmt.Errorf("copy user entity state: %w", err)
+		}
+		if err := notificationjournal.RecordUserResync(ctx, tx, user.ID); err != nil {
+			return User{}, err
 		}
 	}
 	auditActor, err := identityActivityActor(actor)

@@ -1,5 +1,9 @@
 # Native settings API
 
+The selected Phase 4 Runtime extension below is implemented in source and awaits
+the phase's consolidated verification. Historical acceptance links on this page
+do not establish acceptance of that new extension.
+
 The current Management sections and phase 3 consumers below passed the selected
 [remote phase 3 scope](../development/amd-media-phase3-20260919.md). Historical M5h
 acceptance remains limited to the name/width/settings scope recorded there.
@@ -34,7 +38,7 @@ inside the owned database transaction. Responses use JSON,
 | Method and path | Input | Success |
 | --- | --- | --- |
 | `GET /admin/v1/settings` | No query | `200`, complete settings object |
-| `PUT /admin/v1/settings` | Required `{Revision, Overrides}`; optional `ServerNameMode`, `Encoding`, complete `Management` | `200`, committed settings object |
+| `PUT /admin/v1/settings` | Required `{Revision, Overrides}`; optional `ServerNameMode`, `Encoding`, complete `Management`, presence-aware `Runtime` | `200`, committed settings object |
 | `POST /admin/v1/settings/reset` | `{Revision, Fields}` | `200`, committed settings object |
 
 No query is accepted, including an empty trailing `?`. A mutation body must be
@@ -80,7 +84,7 @@ is an explicit state, not a blank custom name. Null alone does not identify the
 name's source. The [compatibility DTO](configuration.md#name-modes-and-width-behavior)
 emits an empty string for empty mode and omits the name for unset mode.
 
-The complete response has these twelve top-level fields:
+The complete response has these thirteen top-level fields:
 
 | Field | Meaning |
 | --- | --- |
@@ -96,6 +100,7 @@ The complete response has these twelve top-level fields:
 | `ManagementEffects` | `{Metadata: "next_work_item", Subtitles: "next_work_item", Tasks: "next_admission", RestartRequired: false}` |
 | `UpdatedAt` | UTC RFC 3339 timestamp of the stored settings row |
 | `Deployment` | Eight explicitly allowed, read-only startup values listed below |
+| `Runtime` | Managed network, hardware and execution defaults, overrides, sources, new-admission choices and observed availability, described below |
 
 `Deployment` contains string `HostName`, Boolean `TranscodingEnabled`, strings
 `HardwareDecoder` and `HardwareEncoder`, and integer `Threads`, `MaxJobs`,
@@ -105,6 +110,85 @@ option in this API. The other values retain their startup-configuration source.
 Connection strings, tokens, master-key paths, media/cache/web paths, and hardware
 device paths remain excluded. No Deployment field can be supplied in an update.
 Saved output limits do not enable a disabled transcoder.
+
+## Managed network and execution settings
+
+`Runtime` is separate from the legacy `Encoding.TranscodingMaxWidth` ceiling.
+It has seven managed keys. Values derive from the frozen settings domain; HTTP
+and the UI do not establish a second set of defaults.
+
+| Key | Explicit value | Effect |
+| --- | --- | --- |
+| `Network` | Complete `{BindHost, HttpPort}`; each field is a value or null | Next server generation |
+| `Hardware` | Complete `{Decode, Encode, DeviceId}`; Decode/Encode are `software` or `vaapi`, DeviceId is a startup-authorized opaque ID or the empty string for a device-free CPU selection | New admission |
+| `Threads` | Integer `1..64` | FFmpeg thread setting captured by each new admission |
+| `H264` | Complete `{Preset, RateControl, CRF}` for CPU H.264 output | New applicable admission |
+| `HEVC` | Complete `{Preset, RateControl, CRF}` for CPU HEVC output | New applicable admission |
+| `SoftwareToneMapping` | Boolean | New software filter admission |
+| `VulkanToneMapping` | Boolean | New Vulkan filter admission |
+
+Network BindHost is the empty wildcard string or a canonical IPv4/IPv6 literal;
+URLs, hostnames, ports, zones and lists are not managed inputs. An explicit
+HttpPort is `1..65535`. Deployment-owned defaults can retain an existing hostname
+or port zero; clients must not submit those as a new override. Network changes
+never rewrite PublicURL, proxy trust, cookies or the current listener. A managed
+hardware selection cannot introduce a path, a device outside the startup
+inventory, or an arbitrary FFmpeg option.
+
+CPU Preset is `veryfast`, `fast`, `medium` or `slow`. RateControl is `bitrate` or
+`capped_crf`; CRF is an integer `18..35`. CRF remains a stored, inactive preference
+in bitrate mode. Both modes keep existing bitrate and output-policy ceilings.
+These quality groups apply to software H.264/HEVC output, including a permitted
+CPU fallback. AV1 and successful VAAPI output retain their own encoding policy.
+Tone-map switches gate the actual filter backend and never authorize an
+unconverted HDR image to be labeled SDR. Disabling a required backend can reject
+an otherwise unsupported conversion.
+
+The Runtime response uses this exact structure:
+
+| Member | Meaning |
+| --- | --- |
+| `Defaults` | All seven keys, with concrete Network/Hardware and execution values |
+| `Overrides` | All seven keys; each is null or its complete group/scalar; Network leaves can also be null |
+| `Effective` | Hardware and the five execution keys for new admissions; deliberately no Network member |
+| `Sources` | `database` or `deployment` per key; Network has independent BindHost/HttpPort sources |
+| `Network.Desired` | Resolved `{BindHost, HttpPort}` for the next generation |
+| `Network.Active` | Null until a real reservation is published; otherwise `{Configured: {BindHost, HttpPort}, BoundHost, HttpPort, Revision}` with the actual port and decimal revision string |
+| `Network.RestartRequired` | Comparison of desired configuration with the published active configuration |
+| `Network.ReconnectURL` | A bounded literal-IP URL when available; empty when no safe URL can be derived |
+| `Hardware.Available`, `Hardware.Code` | Current availability and a fixed reason code for the selected tuple |
+| `Hardware.Devices` | Array of `{DeviceId, Label, Available, Code}`; opaque IDs and safe labels only |
+| `Effects` | Network is `restart`; every other managed key is `next_admission` |
+| `Applicability` | H264=`software_h264_output`, HEVC=`software_hevc_output`, SoftwareToneMapping=`software_filter`, VulkanToneMapping=`vulkan_filter` |
+
+Availability does not prove that every media tuple or encoder works. A missing
+or replaced authorized device remains an unavailable selection; the API does
+not silently claim AMD execution. Existing deployment-owned non-AMD selections
+can appear as defaults, but are not writable managed profiles. Already admitted
+work retains its captured execution choices while current authority and source
+checks continue.
+
+PUT may omit Runtime or any of its seven keys to preserve them. `Runtime: null`
+clears all seven overrides. A present key with null clears just that key; a
+present non-null group must contain its entire closed field set. Unknown,
+duplicate, mis-cased or missing nested fields reject the entire request. Explicit
+false is an override. For example, appended to a valid Revision/Overrides body:
+
+```json
+{
+  "Runtime": {
+    "Network": {"BindHost": "127.0.0.1", "HttpPort": 8097},
+    "Threads": 4,
+    "H264": {"Preset": "fast", "RateControl": "capped_crf", "CRF": 25},
+    "SoftwareToneMapping": false
+  }
+}
+```
+
+Field errors use fixed paths such as `Runtime.Network.HttpPort`,
+`Runtime.Hardware.DeviceId` and `Runtime.H264.CRF`. The existing revision, CSRF,
+current-administrator recheck and single-transaction event rules apply to all
+Runtime fields. Saving does not probe a port or start a hardware diagnostic.
 
 ## Replace, reset, and conflicts
 
@@ -145,10 +229,14 @@ MaxConcurrent, CacheRetentionDays and CacheMaxEntries. The
 defaults and limits. Compatibility named writes are partial-section operations;
 they do not change this complete native Management-object rule.
 
-Reset changes only the selected state. `Fields` must contain one to ten unique
+Reset changes only the selected state. `Fields` must contain one to eighteen unique
 names: `ServerName`, `MaxBitrate`, `MaxWidth`, `MaxHeight`, `MaxAudioChannels`,
 `TranscodingMaxWidth`, `Management`, `Management.Metadata`,
-`Management.Subtitles`, or `Management.Tasks`. Empty, null, duplicate, or
+`Management.Subtitles`, `Management.Tasks`, `Runtime`, `Runtime.Network`,
+`Runtime.Hardware`, `Runtime.Threads`, `Runtime.H264`, `Runtime.HEVC`,
+`Runtime.SoftwareToneMapping`, or `Runtime.VulkanToneMapping`. Runtime resets are
+whole-group operations; leaf selectors such as `Runtime.H264.CRF` are invalid.
+Empty, null, duplicate, or
 unknown selections fail.
 `ServerNameMode` and `Encoding.TranscodingMaxWidth` are not reset selectors.
 This example restores the deployment name and removes the extra width ceiling:
@@ -161,10 +249,10 @@ Name reset sets mode to deployment with a null raw name. Numeric reset clears
 the selected native override. Extra-width reset sets only its independent value
 to zero. Resetting native `MaxWidth` preserves the extra width, and the reverse
 also holds. Management reset uses the corresponding built-in section defaults.
-Select the six name/output fields plus Management to reset all persisted managed
+Select the six name/output fields plus Management and Runtime to reset all persisted managed
 state; it does not change deployment configuration.
 
-A changed raw override, name mode, encoding width or Management section increments `Revision` once
+A changed raw override, name mode, encoding width, Management section or Runtime group increments `Revision` once
 and updates `UpdatedAt`. Unchanged managed state returns `200` without changing
 either value, but still requires the current revision and authority. Saving a
 value equal to its deployment

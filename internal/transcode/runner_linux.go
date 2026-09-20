@@ -40,6 +40,11 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if err := ctx.Err(); err != nil {
 		return result, err
 	}
+	var err error
+	threads, err = ExecutionThreads(plan, threads)
+	if err != nil {
+		return result, err
+	}
 	args, err := BuildArgs(plan, threads)
 	if err != nil {
 		return result, err

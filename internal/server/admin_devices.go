@@ -223,6 +223,9 @@ func (s *Server) deleteAdminDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.retireDeviceLogins(result)
+	if !s.retireNotificationSessionsForRequest(w, r, result.RevokedSessionIDs...) {
+		return
+	}
 	s.log.Info("administrator device removed", "actor_id", actor.User.ID, "device_id", result.ID,
 		"revoked_login_count", result.RevokedLoginCount)
 	jsonResponse(w, http.StatusOK, map[string]any{
@@ -258,6 +261,8 @@ func (s *Server) deviceError(w http.ResponseWriter, r *http.Request, err error) 
 		apiError(w, r, http.StatusNotFound, "not_found", "The requested device was not found.")
 	case errors.Is(err, identity.ErrDeviceRevisionConflict):
 		apiError(w, r, http.StatusConflict, "revision_conflict", "The device changed. Refresh it before trying again.")
+	case errors.Is(err, identity.ErrDeviceEligibilityLimit):
+		apiError(w, r, http.StatusUnprocessableEntity, "device_projection_limit", "The device credential inventory exceeds the bounded projection budget. Narrow the device selection or retire old credentials.")
 	case errors.As(err, &validation) && !compatibility:
 		adminDeviceInputError(w, r, validation.Fields)
 	case errors.Is(err, identity.ErrInvalidInput):

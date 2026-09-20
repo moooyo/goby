@@ -118,6 +118,9 @@ func Load() (Config, error) {
 }
 
 func (c Config) Validate() error {
+	if _, err := HTTPBindingDefaults(c.ListenAddress); err != nil {
+		return err
+	}
 	u, err := url.Parse(c.DatabaseURL)
 	if err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") || u.Host == "" {
 		return fmt.Errorf("GOBY_DATABASE_URL must be a PostgreSQL connection URL")

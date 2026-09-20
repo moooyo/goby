@@ -163,6 +163,10 @@ func PlanProgressiveAudio(source Source, request ProgressiveAudioRequest, limits
 		if copyAllowed {
 			planned, known := progressiveCopyBitrate(source, audio)
 			if known && planned <= budget {
+				if reason := captureConversionExecution(&plan, limits); reason != nil {
+					result.Reasons = appendConversionReasons(result.Reasons, *reason)
+					return result, nil
+				}
 				if transcode.ValidatePlan(plan) == nil {
 					result.Plan, result.Method = &plan, "DirectStream"
 					result.OutputSource = progressiveAudioOutput(source, audio, container, remaining, planned)
@@ -242,6 +246,10 @@ func PlanProgressiveAudio(source Source, request ProgressiveAudioRequest, limits
 			planned, valid = bitrate, true
 		}
 		if !valid || planned > budget {
+			continue
+		}
+		if reason := captureConversionExecution(&plan, limits); reason != nil {
+			result.Reasons = appendConversionReasons(result.Reasons, *reason)
 			continue
 		}
 		if transcode.ValidatePlan(plan) != nil {

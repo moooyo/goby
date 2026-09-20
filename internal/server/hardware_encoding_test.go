@@ -34,6 +34,10 @@ func hardwareEncodingTestPlan(t *testing.T) transcode.Plan {
 	plan := transcode.Plan{OutputMode: "progressive", Container: "mp4", VideoCodec: "hevc", VideoProfile: "main10", VideoBitDepth: 10,
 		VideoStreamIndex: 2, AudioStreamIndex: -1, DurationTicks: 60 * media.TicksPerSecond, Width: 320, Height: 180,
 		SourceFormatStartKnown: true, FrameRate: 24, VideoBitrate: 1_000_000, Hardware: transcode.Hardware{Encode: "vaapi", Device: "/dev/dri/renderD128"}}
+	plan, err := transcode.CaptureExecution(plan, transcode.DefaultExecutionOptions(0))
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := transcode.ValidatePlan(plan); err != nil {
 		t.Fatalf("hardware admission fixture must start with a valid progressive plan: %v", err)
 	}

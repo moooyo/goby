@@ -53,6 +53,7 @@ type hardwareEncodingRuntime struct {
 	probe            func(context.Context, string, string, media.HardwareEncodingRequest) (media.HardwareEncodingResult, error)
 	toolIdentity     func(context.Context, string) (string, error)
 	encoders         func(context.Context, string) ([]string, error)
+	authorizeDevice  func(string) bool
 	softwareIdentity string
 	softwareExpires  time.Time
 	softwareEncoders map[string]bool
@@ -127,6 +128,12 @@ func (s *Server) hardwareEncodingRuntime() *hardwareEncodingRuntime {
 		if s.hardwareEncoding == nil {
 			s.hardwareEncoding = newHardwareEncodingRuntime()
 		}
+		if s.managedHardware != nil {
+			s.hardwareEncoding.authorizeDevice = func(device string) bool {
+				available, _ := s.managedHardware.checkHardware(transcode.Hardware{Decode: "vaapi", Encode: "vaapi", Device: device})
+				return available
+			}
+		}
 	})
 	return s.hardwareEncoding
 }
@@ -178,6 +185,9 @@ func (runtime *hardwareEncodingRuntime) check(ctx context.Context, ffmpeg, ffpro
 	if err := runtime.ctx.Err(); err != nil {
 		return media.HardwareEncodingResult{}, err
 	}
+	if runtime.authorizeDevice != nil && !runtime.authorizeDevice(request.Device) {
+		return media.HardwareEncodingResult{Code: "hardware_device_unavailable"}, nil
+	}
 	identity, err := runtime.identify(ctx, ffmpeg, ffprobe, request.Device)
 	if ctx.Err() != nil {
 		return media.HardwareEncodingResult{}, ctx.Err()
@@ -190,6 +200,9 @@ func (runtime *hardwareEncodingRuntime) check(ctx context.Context, ffmpeg, ffpro
 	}
 	key := hardwareEncodingKey{identity: identity, request: request}
 	if result, exists := runtime.cached(key); exists {
+		if runtime.authorizeDevice != nil && !runtime.authorizeDevice(request.Device) {
+			return media.HardwareEncodingResult{Code: "hardware_device_unavailable"}, nil
+		}
 		return result, nil
 	}
 	if !allowProbe {
@@ -209,7 +222,27 @@ func (runtime *hardwareEncodingRuntime) check(ctx context.Context, ffmpeg, ffpro
 	if err := runtime.ctx.Err(); err != nil {
 		return media.HardwareEncodingResult{}, err
 	}
+	if runtime.authorizeDevice != nil && !runtime.authorizeDevice(request.Device) {
+		return media.HardwareEncodingResult{Code: "hardware_device_unavailable"}, nil
+	}
+	// The single-flight slot may have been held while executables, libraries
+	// or device facts changed. Only evidence for the newly observed identity
+	// may be reused after the wait.
+	identity, err = runtime.identify(ctx, ffmpeg, ffprobe, request.Device)
+	if ctx.Err() != nil {
+		return media.HardwareEncodingResult{}, ctx.Err()
+	}
+	if runtime.ctx.Err() != nil {
+		return media.HardwareEncodingResult{}, runtime.ctx.Err()
+	}
+	if err != nil {
+		return media.HardwareEncodingResult{Code: "hardware_encoding_identity_unavailable"}, nil
+	}
+	key = hardwareEncodingKey{identity: identity, request: request}
 	if result, exists := runtime.cached(key); exists {
+		if runtime.authorizeDevice != nil && !runtime.authorizeDevice(request.Device) {
+			return media.HardwareEncodingResult{Code: "hardware_device_unavailable"}, nil
+		}
 		return result, nil
 	}
 	work, cancel := context.WithCancel(ctx)
@@ -233,7 +266,7 @@ func (runtime *hardwareEncodingRuntime) check(ctx context.Context, ffmpeg, ffpro
 	if ctx.Err() != nil {
 		return media.HardwareEncodingResult{}, ctx.Err()
 	}
-	if identityErr != nil || after != identity {
+	if identityErr != nil || after != identity || runtime.authorizeDevice != nil && !runtime.authorizeDevice(request.Device) {
 		return media.HardwareEncodingResult{Code: "hardware_encoding_identity_changed"}, nil
 	}
 	runtime.remember(key, result)
@@ -247,6 +280,9 @@ func (runtime *hardwareEncodingRuntime) check(ctx context.Context, ffmpeg, ffpro
 func (s *Server) resolveHardwareEncoding(ctx context.Context, limits playback.ConversionLimits, decision playback.ConversionDecision, allowProbe bool) (playback.ConversionDecision, error) {
 	if err := ctx.Err(); err != nil {
 		return decision, err
+	}
+	if decision.Plan != nil && (limits.HardwareUnavailable && transcode.VideoEncodingSupported(decision.Plan.VideoCodec) || !s.plannedHardwareAvailable(*decision.Plan)) {
+		return decision, errHLSRequestUnsupported
 	}
 	if decision.Plan == nil || !transcode.VideoEncodingSupported(decision.Plan.VideoCodec) || decision.Plan.Hardware.Encode != "vaapi" {
 		return decision, nil
@@ -299,6 +335,9 @@ func (s *Server) resolveHardwareEncoding(ctx context.Context, limits playback.Co
 	if s.hardwareEncodingRuntime().ctx.Err() != nil {
 		return decision, s.hardwareEncodingRuntime().ctx.Err()
 	}
+	if code == "hardware_device_unavailable" || !s.plannedHardwareAvailable(plan) {
+		return decision, errHLSRequestUnsupported
+	}
 	if code == "" {
 		return decision, nil
 	}
@@ -310,6 +349,13 @@ func (s *Server) resolveHardwareEncoding(ctx context.Context, limits playback.Co
 		return decision, errHLSRequestUnsupported
 	}
 	plan = softwareEncodingPlan(plan)
+	if limits.Execution != (transcode.ExecutionOptions{}) {
+		captured, err := transcode.CaptureExecution(plan, limits.Execution)
+		if err != nil {
+			return decision, errHLSRequestUnsupported
+		}
+		plan = captured
+	}
 	if err := transcode.ValidatePlan(plan); err != nil {
 		return decision, err
 	}
@@ -327,6 +373,29 @@ func (s *Server) resolveHardwareEncoding(ctx context.Context, limits playback.Co
 			"bit_depth", request.BitDepth, "width", request.Width, "height", request.Height)
 	}
 	return decision, nil
+}
+
+// Physical identity is distinct from both the requested policy and an exact
+// cached encoder proof. A missing or replaced approved node cannot take the
+// ordinary failed-tuple fallback route or silently select the default node.
+func (s *Server) plannedHardwareAvailable(plan transcode.Plan) bool {
+	if plan.VideoFilters.Backend == "vulkan" && plan.Hardware.Device == "" {
+		return false
+	}
+	if !planUsesHardware(plan) || s.managedHardware == nil {
+		return true
+	}
+	available, _ := s.managedHardware.checkHardware(plan.Hardware)
+	return available
+}
+
+func planUsesHardware(plan transcode.Plan) bool {
+	if plan.VideoCodec == "" || plan.VideoCodec == "copy" {
+		return false
+	}
+	return plan.Hardware.Decode != "" && plan.Hardware.Decode != "software" ||
+		plan.Hardware.Encode != "" && plan.Hardware.Encode != "software" ||
+		plan.VideoFilters.Backend == "vaapi" || plan.VideoFilters.Backend == "vulkan"
 }
 
 func softwareEncodingPlan(plan transcode.Plan) transcode.Plan {

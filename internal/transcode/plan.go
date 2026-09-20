@@ -18,6 +18,10 @@ type Hardware struct {
 // selects the source-time origin of this output. No token, input path, arbitrary
 // FFmpeg argument, or client-provided filter expression belongs in a plan.
 type Plan struct {
+	// Version zero means that historical execution settings were not recorded.
+	// The zero value is omitted on reserialization; it is not a claimed default.
+	ExecutionVersion int              `json:"ExecutionVersion,omitempty"`
+	Execution        ExecutionOptions `json:"Execution,omitzero"`
 	// Empty mode preserves HLS output. Progressive mode produces one append-only
 	// audio stream or fragmented MP4 video, subject to the closed runner matrix.
 	OutputMode       string       `json:"OutputMode,omitempty"`

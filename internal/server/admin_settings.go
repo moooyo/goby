@@ -168,12 +168,15 @@ func adminSettingsNumber(raw json.RawMessage, field string, invalid map[string]s
 }
 
 func decodeAdminSettingsUpdate(w http.ResponseWriter, r *http.Request) (settings.UpdateRequest, bool) {
-	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding", "Management"}, []string{"Revision", "Overrides"})
+	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding", "Management", "Runtime"}, []string{"Revision", "Overrides"})
 	if !ok {
 		return settings.UpdateRequest{}, false
 	}
 	invalid := make(map[string]string)
 	request := settings.UpdateRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
+	if raw, present := values["Runtime"]; present {
+		request.Runtime = decodeAdminRuntimeSettings(raw, invalid)
+	}
 	if raw, present := values["Management"]; present {
 		request.Management = decodeManagementSettings(raw, invalid)
 	}
@@ -249,13 +252,14 @@ func decodeAdminSettingsReset(w http.ResponseWriter, r *http.Request) (settings.
 	invalid := make(map[string]string)
 	request := settings.ResetRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
 	var fields []settings.Field
-	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+5 {
-		invalid["Fields"] = "Select between one and ten supported settings to reset."
+	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+13 {
+		invalid["Fields"] = "Select between one and eighteen supported settings to reset."
 	} else {
 		seen := make(map[settings.Field]bool, len(fields))
 		for _, field := range fields {
 			switch field {
-			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth, settings.FieldManagement, settings.FieldMetadata, settings.FieldSubtitles, settings.FieldTasks:
+			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth, settings.FieldManagement, settings.FieldMetadata, settings.FieldSubtitles, settings.FieldTasks,
+				settings.FieldRuntime, settings.FieldNetwork, settings.FieldHardware, settings.FieldThreads, settings.FieldH264, settings.FieldHEVC, settings.FieldSoftwareToneMapping, settings.FieldVulkanToneMapping:
 				if seen[field] {
 					invalid["Fields"] = "Select each supported setting at most once."
 				}
@@ -291,7 +295,7 @@ func (s *Server) adminSettings(w http.ResponseWriter, r *http.Request) {
 		s.settingsError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, settingsDTO(snapshot, s.cfg.Transcoding))
+	jsonResponse(w, http.StatusOK, s.adminSettingsDTO(snapshot))
 }
 
 func (s *Server) updateAdminSettings(w http.ResponseWriter, r *http.Request) {
@@ -309,7 +313,7 @@ func (s *Server) updateAdminSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// A request-entry snapshot predates this commit and is never a response.
-	jsonResponse(w, http.StatusOK, settingsDTO(committed, s.cfg.Transcoding))
+	jsonResponse(w, http.StatusOK, s.adminSettingsDTO(committed))
 }
 
 func (s *Server) resetAdminSettings(w http.ResponseWriter, r *http.Request) {
@@ -326,7 +330,7 @@ func (s *Server) resetAdminSettings(w http.ResponseWriter, r *http.Request) {
 		s.settingsError(w, r, err)
 		return
 	}
-	jsonResponse(w, http.StatusOK, settingsDTO(committed, s.cfg.Transcoding))
+	jsonResponse(w, http.StatusOK, s.adminSettingsDTO(committed))
 }
 
 func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error) {
@@ -343,7 +347,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 	case errors.As(err, &invalid):
 		fields := make(map[string]string)
 		for field := range invalid.Fields {
-			if strings.HasPrefix(field, "Management.") {
+			if strings.HasPrefix(field, "Management.") || adminRuntimeErrorField(field) {
 				fields[field] = invalid.Fields[field]
 				continue
 			}
@@ -363,7 +367,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 			case "Revision":
 				fields[field] = "Supply the current positive decimal revision string with room for its successor."
 			case "Fields":
-				fields[field] = "Select between one and ten unique supported settings."
+				fields[field] = "Select between one and eighteen unique supported settings."
 			default:
 				fields["Body"] = "Supply supported settings values."
 			}

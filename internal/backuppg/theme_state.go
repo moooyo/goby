@@ -24,7 +24,10 @@ func validateResourceState(ctx context.Context, tx pgx.Tx, version int64) error 
 	if err := validateSelectedPhase2State(ctx, tx, version); err != nil {
 		return err
 	}
-	return validateSelectedPhase3State(ctx, tx, version)
+	if err := validateSelectedPhase3State(ctx, tx, version); err != nil {
+		return err
+	}
+	return validateSelectedPhase4State(ctx, tx, version)
 }
 
 func validateThemeState(ctx context.Context, tx pgx.Tx, version int64) error {

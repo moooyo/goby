@@ -347,6 +347,7 @@ func mergeAuxiliaryCatalogChanges(tx pgx.Tx, changes []CatalogChange, resync boo
 		return fmt.Errorf("%w: auxiliary notifications require an active owned transaction", ErrInvalidInput)
 	}
 	if resync || owned.catalogChanges.resync {
+		owned.rememberNotificationChanges(changes)
 		owned.catalogChanges.requireResync()
 		return nil
 	}

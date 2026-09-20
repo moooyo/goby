@@ -56,13 +56,19 @@ The Device object contains exactly these safe fields:
 | `CreatedAt` | UTC timestamp string |
 | `LastSeenAt` | UTC timestamp string |
 | `IpAddress` | Recorded address string, possibly empty |
-| `ActiveLoginCount` | Nonnegative integer counting currently authorized ordinary Emby login credentials in this generation |
+| `ActiveLoginCount` | Nonnegative integer counting ordinary Emby credentials in this generation that are eligible under current stored login policy |
 
 No device response exposes a token, token hash, recoverable secret, or vault
-ciphertext. `ActiveLoginCount` excludes revoked or expired credentials and
-disabled accounts. It is an authorization count, not an online, connected,
-or currently playing indicator. A device remains listed with zero authorized
-logins until explicitly removed.
+ciphertext. `ActiveLoginCount` excludes revoked or expired credentials, disabled
+accounts, disallowed devices, closed access schedules and lockouts. It uses the
+same login-policy predicate as authentication and one observation time. It is
+not an online, connected or currently playing indicator, and does not predict
+whether a future network connection passes trusted-peer restrictions. A device
+remains listed with zero eligible credentials until explicitly removed.
+
+The [selected management contract](selected-management.md) defines the streamed
+projection budgets and `422 device_projection_limit` response. No partial list
+or truncated count is returned when the exact projection exceeds its budget.
 
 ### Listing and names
 

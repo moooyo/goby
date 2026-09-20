@@ -117,7 +117,7 @@ type catalogChangeBatch struct {
 // publishing. No SQL parsing or post-deletion lookup supplies these identities.
 // Programming errors involving an unowned/finished transaction are rejected;
 // invalid or excessive facts instead require resynchronization after commit.
-func recordCatalogChanges(tx pgx.Tx, changes ...CatalogChange) error {
+func recordCatalogChanges(tx pgx.Tx, changes ...CatalogChange) (resultErr error) {
 	owned, ok := tx.(*ownedTx)
 	if !ok || owned == nil {
 		return fmt.Errorf("%w: catalog notifications require an owned transaction", ErrInvalidInput)
@@ -125,6 +125,12 @@ func recordCatalogChanges(tx pgx.Tx, changes ...CatalogChange) error {
 	if owned.finished {
 		return pgx.ErrTxClosed
 	}
+	defer func() {
+		if resultErr == nil {
+			resultErr = owned.recordNotificationJournal()
+		}
+	}()
+	owned.rememberNotificationChanges(changes)
 	batch := &owned.catalogChanges
 	if batch.resync || len(changes) == 0 {
 		return nil

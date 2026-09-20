@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/activity"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -175,11 +176,10 @@ func (s *Store) UpdateManagedUser(ctx context.Context, actor Principal, id strin
 	if err := validateManagedLibraries(ctx, tx, policy.EnabledFolders); err != nil {
 		return ManagedUserMutation{}, err
 	}
-	if err := validateManagedLibraries(ctx, tx, policy.EnableContentDeletionFromFolders); err != nil {
-		var validation *ManagedUserValidationError
-		if errors.As(err, &validation) {
-			return ManagedUserMutation{}, managedUserFieldError("Policy.EnableContentDeletionFromFolders", "every deletion folder must identify an existing library")
-		}
+	if err := validateManagedDeletionFolders(ctx, tx, policy.EnableContentDeletionFromFolders, current.Policy.EnableContentDeletionFromFolders); err != nil {
+		return ManagedUserMutation{}, err
+	}
+	if err := validateSelectedUnratedCategories(policy.BlockUnratedItems, current.Policy.BlockUnratedItems); err != nil {
 		return ManagedUserMutation{}, err
 	}
 	encodedPolicy, err := json.Marshal(policy)
@@ -355,6 +355,13 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 		OR EXISTS (SELECT 1 FROM media_collection_shares WHERE user_id = $1)`, id).Scan(&result.CollectionsChanged); err != nil {
 		return ManagedUserDeletion{}, fmt.Errorf("read deleted user collection effects: %w", err)
 	}
+	var notificationReferences []notificationjournal.Reference
+	if result.CollectionsChanged {
+		notificationReferences, err = deletedUserCollectionNotificationReferences(ctx, tx, id)
+		if err != nil {
+			return ManagedUserDeletion{}, err
+		}
+	}
 	deleted, err := tx.Exec(ctx, "DELETE FROM users WHERE id = $1 AND management_revision = $2", id, revision)
 	if err != nil {
 		return ManagedUserDeletion{}, fmt.Errorf("delete managed user: %w", err)
@@ -371,6 +378,11 @@ func (s *Store) DeleteManagedUser(ctx context.Context, actor Principal, id strin
 		Resource: activity.Resource{Kind: activity.ResourceUser, ID: id}, Revision: revision, Count: 1,
 	}); err != nil {
 		return ManagedUserDeletion{}, err
+	}
+	if len(notificationReferences) != 0 {
+		if err := notificationjournal.RecordCatalog(ctx, tx, notificationjournal.NewID(), notificationReferences, false); err != nil {
+			return ManagedUserDeletion{}, err
+		}
 	}
 	if result.CurrentSessionRevoked {
 		// The locked account and session were removed by this exact DELETE. Their

@@ -196,7 +196,7 @@ func TestHTTPConfigurationRevalidatesStaleRolesKeysAndNativeAudience(t *testing.
 	}
 	row, published := adminSettingsHTTPRow(t, f.serverFixture), f.app.settings.Snapshot()
 	invoke := func(actor identity.Principal, handler http.HandlerFunc, path string) *httptest.ResponseRecorder {
-		r := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"ServerName":"Must not commit"}`))
+		r := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"ServerName":"Must not commit","HttpServerPortNumber":9090,"H264Crf":24}`))
 		r = r.WithContext(context.WithValue(f.ctx, principalKey, actor))
 		r.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
@@ -318,7 +318,7 @@ func TestHTTPConfigurationExpiredWriterWaitingForSettingsCannotCommit(t *testing
 	}
 	result := make(chan *httptest.ResponseRecorder, 1)
 	go func() {
-		result <- configurationHTTPRaw(f.serverFixture, http.MethodPost, "/emby/System/Configuration/Partial", `{"ServerName":"Expired write"}`, "application/json", f.admin.headers)
+		result <- configurationHTTPRaw(f.serverFixture, http.MethodPost, "/emby/System/Configuration/Partial", `{"ServerName":"Expired write","HttpServerPortNumber":9090,"H264Crf":24,"EnableSoftwareToneMapping":false}`, "application/json", f.admin.headers)
 	}()
 	waitCtx, cancel := context.WithTimeout(f.ctx, 10*time.Second)
 	defer cancel()

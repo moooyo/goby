@@ -62,20 +62,49 @@ func embyUserPolicy(user identity.User) map[string]any {
 }
 
 func (s *Server) publicSystemInfo(w http.ResponseWriter, r *http.Request) {
-	snapshot := s.requestSettings(r)
-	initialized, err := s.identity.Initialized(r.Context())
+	dto, err := s.systemInfoIdentity(r)
 	if err != nil {
 		s.identityError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, map[string]any{
+	jsonResponse(w, http.StatusOK, dto)
+}
+
+func (s *Server) systemInfoIdentity(r *http.Request) (map[string]any, error) {
+	snapshot := s.requestSettings(r)
+	initialized, err := s.identity.Initialized(r.Context())
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
 		"Id": s.serverID, "ServerName": snapshot.Effective.ServerName,
 		"Version": embyAPIVersion, "ProductName": "Goby", "GobyVersion": s.version,
 		"LocalAddress": s.cfg.PublicURL, "StartupWizardCompleted": initialized,
-	})
+	}, nil
 }
 
-func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) { s.publicSystemInfo(w, r) }
+func (s *Server) systemInfo(w http.ResponseWriter, r *http.Request) {
+	dto, err := s.systemInfoIdentity(r)
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	// Capability facts do not grant management authority. Deployment owns TLS
+	// and process supervision; a configured HTTPS PublicURL does not enable an
+	// in-process TLS listener or a self-restart/update implementation.
+	dto["CanSelfRestart"], dto["CanSelfUpdate"], dto["SupportsHttps"] = false, false, false
+	dto["SupportsLocalPortConfiguration"] = true
+	principal, _ := r.Context().Value(principalKey).(identity.Principal)
+	if principal.CanManageServer() {
+		binding := s.ManagedHTTPBindingState(s.requestSettings(r).DesiredNetwork)
+		dto["HasPendingRestart"] = binding.RestartRequired
+		if binding.Active != nil {
+			dto["HttpServerPortNumber"] = binding.Active.HttpPort
+		}
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	jsonResponse(w, http.StatusOK, dto)
+}
 
 func (s *Server) ping(w http.ResponseWriter, r *http.Request) {
 	// This wire identifier is confirmed by the Emby 4.9.5.0 reference captures.
@@ -274,6 +303,9 @@ func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {
 		s.eventHub.DisconnectSession(principal.SessionID)
 	}
 	s.cancelPlaybackResources(principal.SessionID, "")
+	if !s.retireNotificationSessionsForRequest(w, r, principal.SessionID) {
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 

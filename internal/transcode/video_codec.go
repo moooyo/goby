@@ -142,13 +142,41 @@ func VideoMP4Tag(p Plan) string {
 	}
 }
 
+func videoCPUQuality(p Plan) CPUQuality {
+	if p.ExecutionVersion == ExecutionVersion {
+		switch p.VideoCodec {
+		case "h264":
+			return p.Execution.H264
+		case "hevc":
+			return p.Execution.HEVC
+		}
+	}
+	return CPUQuality{Preset: "veryfast", RateControl: "bitrate"}
+}
+
+// appendVideoRateControl preserves each output's bitrate cap. Only the selected
+// software H.264 and HEVC encoders support the configured capped CRF mode.
+func appendVideoRateControl(args []string, p Plan, encode string) []string {
+	bitrate := p.VideoBitrate
+	if bitrate == 0 {
+		bitrate = 4_000_000
+	}
+	quality := videoCPUQuality(p)
+	if encode == "software" && (p.VideoCodec == "h264" || p.VideoCodec == "hevc") && quality.RateControl == "capped_crf" {
+		args = append(args, "-crf", strconv.Itoa(quality.CRF))
+	} else {
+		args = append(args, "-b:v", strconv.FormatInt(bitrate, 10))
+	}
+	return append(args, "-maxrate", strconv.FormatInt(bitrate, 10), "-bufsize", strconv.FormatInt(bitrate*2, 10))
+}
+
 func appendVideoEncoderOptions(args []string, p Plan, encode string, threads int) []string {
 	args = append(args, "-profile:v", VideoOutputProfile(p))
 	if encode == "software" {
 		args = append(args, "-pix_fmt", videoSoftwarePixelFormat(p))
 		switch p.VideoCodec {
 		case "h264":
-			return append(args, "-preset", "veryfast", "-sc_threshold", "0", "-flags", "+cgop")
+			return append(args, "-preset", videoCPUQuality(p).Preset, "-sc_threshold", "0", "-flags", "+cgop")
 		case "hevc":
 			// x265 creates its own pools unless explicitly constrained. Closed
 			// GOPs and forced IDRs make each advertised HLS cut independently
@@ -157,7 +185,7 @@ func appendVideoEncoderOptions(args []string, p Plan, encode string, threads int
 			if p.Container == "mp4" {
 				repeatHeaders = "0"
 			}
-			return append(args, "-preset", "veryfast", "-forced-idr", "1", "-flags", "+cgop",
+			return append(args, "-preset", videoCPUQuality(p).Preset, "-forced-idr", "1", "-flags", "+cgop",
 				"-x265-params", "pools=none:frame-threads="+strconv.Itoa(min(threads, 16))+":wpp=0:open-gop=0:scenecut=0:repeat-headers="+repeatHeaders)
 		case "av1":
 			// libaom honors arbitrary forced frame timestamps. libsvtav1 does

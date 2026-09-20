@@ -10,6 +10,7 @@ func serverConfigurationDTO(view settings.Configuration) map[string]any {
 	result["PreferredMetadataLanguage"] = snapshot.Management.Metadata.PreferredMetadataLanguage
 	result["MetadataCountryCode"] = snapshot.Management.Metadata.MetadataCountryCode
 	result["EnableInternetProviders"] = snapshot.Management.Metadata.EnableInternetProviders
+	result["HttpServerPortNumber"] = snapshot.Runtime.DesiredNetwork.HttpPort
 	switch snapshot.ServerNameMode {
 	case settings.ServerNameDeployment:
 		result["ServerName"] = snapshot.Defaults.ServerName
@@ -25,5 +26,13 @@ func serverConfigurationDTO(view settings.Configuration) map[string]any {
 }
 
 func encodingConfigurationDTO(snapshot settings.Snapshot) map[string]any {
-	return map[string]any{"TranscodingMaxWidth": snapshot.Encoding.TranscodingMaxWidth}
+	result := map[string]any{
+		"TranscodingMaxWidth":       snapshot.Encoding.TranscodingMaxWidth,
+		"EnableSoftwareToneMapping": snapshot.Runtime.Execution.SoftwareToneMapping,
+		"EnableHardwareToneMapping": snapshot.Runtime.Execution.VulkanToneMapping,
+	}
+	if snapshot.Runtime.Execution.H264.RateControl == "capped_crf" {
+		result["H264Crf"] = snapshot.Runtime.Execution.H264.CRF
+	}
+	return result
 }

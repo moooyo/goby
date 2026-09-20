@@ -198,6 +198,10 @@ func PlanProgressiveVideo(source Source, request ProgressiveVideoRequest, limits
 					continue
 				}
 			}
+			if reason := captureConversionExecution(&candidate, limits); reason != nil {
+				result.Reasons = appendConversionReasons(result.Reasons, *reason)
+				continue
+			}
 			if transcode.ValidatePlan(candidate) != nil {
 				continue
 			}

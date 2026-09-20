@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
+	"github.com/moooyo/goby/internal/notificationjournal"
 )
 
 // One visible association is sufficient, but a mutation retains both that
@@ -127,6 +128,9 @@ func (s *Store) UpdateEntityUserDataFor(ctx context.Context, subject Subject, id
 		last_played_at=$6,rating=$7,likes=$8,updated_at=clock_timestamp() WHERE user_id=$1 AND entity_id=$2 RETURNING `+entityUserDataColumns,
 		subject.UserID, id, current.PlayCount, current.IsFavorite, current.Played, current.LastPlayedDate, current.Rating, current.Likes))
 	if err != nil {
+		return UserData{}, err
+	}
+	if err := notificationjournal.RecordUserData(ctx, tx, subject.UserID, notificationjournal.Reference{Kind: "Entity", ID: strconv.FormatInt(id, 10)}, false); err != nil {
 		return UserData{}, err
 	}
 	if _, err := checkSubjectStateWrite(ctx, tx, subject, false, false); err != nil {

@@ -27,9 +27,10 @@ var (
 // received or supplied an exact master key; an all-zero output buffer when it
 // is false must never be archived as a master key.
 type ApplicationKeyBackupWitness struct {
-	SealedKeyCount        int64
-	SealedProfilePinCount int64
-	HasMasterKey          bool
+	SealedKeyCount          int64
+	SealedProfilePinCount   int64
+	SealedNotificationCount int64
+	HasMasterKey            bool
 }
 
 // WitnessBackup authenticates every sealed application key and profile PIN using one safely
@@ -140,6 +141,10 @@ func ValidateApplicationKeyRecovery(ctx context.Context, tx pgx.Tx, masterKey []
 	}
 	rows.Close()
 	witness.SealedProfilePinCount, err = validateProfilePinRecovery(ctx, tx, gcm)
+	if err != nil {
+		return ApplicationKeyBackupWitness{}, err
+	}
+	witness.SealedNotificationCount, err = validateNotificationRecovery(ctx, tx, gcm)
 	if err != nil {
 		return ApplicationKeyBackupWitness{}, err
 	}

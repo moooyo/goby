@@ -262,6 +262,11 @@ func (m *Manager) PrepareSwitch(ctx context.Context, id string) (_ *SwitchCandid
 			_ = j.abortBeforePublication(cleanup)
 		}
 	}()
+	// The caller has drained application writers. Recheck again after the
+	// admission transaction to close changes committed while ingress drained.
+	if err := m.checkHostSettings(ctx, op.TargetHost); err != nil {
+		return nil, err
+	}
 	if t.Phase == "requested" {
 		t.CanReturn = !m.operator
 		if t.CanReturn {
@@ -467,7 +472,11 @@ func (j *switchJournal) mutateCandidate(ctx context.Context, pool *pgxpool.Pool,
 		return ErrConflict
 	}
 	if normalize {
-		if _, err := normalizeRestoredIdentity(ctx, tx, master, cfg); err != nil {
+		op := j.operation()
+		if op == nil || !op.TargetHost.valid(op.Operator) {
+			return ErrConflict
+		}
+		if _, err := normalizeRestoredIdentityWithHost(ctx, tx, master, cfg, op.TargetHost.Settings); err != nil {
 			return err
 		}
 	} else if err := validateSwitchData(ctx, tx, master, cfg); err != nil {

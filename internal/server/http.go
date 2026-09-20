@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/notificationjournal"
 )
 
 const (
@@ -103,6 +104,10 @@ func (s *Server) identityError(w http.ResponseWriter, r *http.Request, err error
 		apiError(w, r, 400, "invalid_input", "Check the name and password. The name must be unique and the password must meet the account requirements.")
 	case errors.Is(err, identity.ErrNotFound):
 		apiError(w, r, 404, "not_found", "The requested user was not found.")
+	case errors.Is(err, notificationjournal.ErrCapacity):
+		apiError(w, r, 503, "notification_capacity", "The notification backlog is full. Retry after it drains.")
+	case errors.Is(err, notificationjournal.ErrJournal):
+		apiError(w, r, 503, "notification_unavailable", "The notification journal is unavailable. Retry the operation later.")
 	default:
 		s.log.Error("identity operation failed", "request_id", r.Context().Value(requestIDKey))
 		apiError(w, r, 500, "internal_error", "The request could not be completed.")

@@ -130,6 +130,20 @@ func (s *Server) dynamicLimits(ctx context.Context, principal identity.Principal
 	return applyPrincipalRemoteBitrateLimit(limits, principal), nil
 }
 
+// A retained revision is re-evaluated against current source facts, permissions
+// and output ceilings, but it keeps the execution choices already admitted for
+// that revision. A settings edit alone must not select another processing graph
+// or retire a producer while its old manifest is being read.
+func (s *Server) dynamicRevisionLimits(ctx context.Context, principal identity.Principal, request playback.Request, r *http.Request, revision transcode.Plan) (playback.ConversionLimits, error) {
+	limits, err := s.dynamicLimits(ctx, principal, request, r)
+	if err != nil {
+		return limits, err
+	}
+	limits.Hardware, limits.Execution = revision.Hardware, revision.Execution
+	limits.HardwareUnavailable = !s.plannedHardwareAvailable(revision)
+	return limits, nil
+}
+
 func dynamicPlaybackSource(lease dynamicsource.Lease) playback.Source {
 	return playback.Source{ItemID: lease.ItemID, MediaSourceID: lease.SourceID, ItemType: lease.ItemType, Info: lease.Info}
 }
@@ -407,7 +421,7 @@ func (s *Server) findDynamicSession(r *http.Request, values map[string]string) (
 		}
 		return nil, lease, err
 	}
-	limits, err := s.dynamicLimits(r.Context(), principal, session.request, r)
+	limits, err := s.dynamicRevisionLimits(r.Context(), principal, session.request, r, session.key.plan)
 	if err != nil {
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			s.retireDynamicSession(session)
@@ -506,7 +520,7 @@ func (s *Server) startDynamicEpochLocked(ctx context.Context, session *dynamicSt
 	}()
 	request := &http.Request{Method: http.MethodGet}
 	request = request.WithContext(context.WithValue(ctx, principalKey, principal))
-	limits, err := s.dynamicLimits(ctx, principal, session.request, request)
+	limits, err := s.dynamicRevisionLimits(ctx, principal, session.request, request, session.key.plan)
 	if err != nil {
 		return err
 	}

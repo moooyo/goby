@@ -248,6 +248,10 @@ type recordedProgressiveVideoSeek struct {
 }
 
 func runRecordedProgressiveVideoSeek(t *testing.T, ctx context.Context, recorder, ffmpeg, ffprobe string, input *os.File, plan Plan, threads int) recordedProgressiveVideoSeek {
+	return runRecordedProgressiveVideoSeekThreads(t, ctx, recorder, ffmpeg, ffprobe, input, plan, threads, threads)
+}
+
+func runRecordedProgressiveVideoSeekThreads(t *testing.T, ctx context.Context, recorder, ffmpeg, ffprobe string, input *os.File, plan Plan, threads, runnerThreads int) recordedProgressiveVideoSeek {
 	t.Helper()
 	directory := t.TempDir()
 	proofLog := filepath.Join(filepath.Dir(recorder), progressiveVideoSeekProofLogName)
@@ -255,7 +259,7 @@ func runRecordedProgressiveVideoSeek(t *testing.T, ctx context.Context, recorder
 		t.Fatal(err)
 	}
 	var ready, ended bool
-	result, err := Run(ctx, recorder, directory, input, plan, threads, func(progress Progress) {
+	result, err := Run(ctx, recorder, directory, input, plan, runnerThreads, func(progress Progress) {
 		ready = ready || progress.Ready && progress.Bytes > 0
 		ended = ended || progress.Ended
 	})

@@ -65,7 +65,9 @@ Known fields are type checked; unknown fields are discarded at every level.
 Input is limited to 64 KiB, bounded nesting/nodes, 128 entries per array, and
 2,048 bytes per string. Optional nulls are omitted, while null array entries and
 duplicate JSON keys are rejected. PushToken/PushTokenType are validated then
-discarded because external push-notification services are not implemented.
+discarded because their vendor transports are not implemented. The separate
+[GobyWebhookV1 registration API](../api/notifications.md) is explicit and does
+not reinterpret vendor tokens or create registrations from capabilities.
 
 Session responses expose declared media types and commands. They do not expose
 the raw capability object, stored device profile, or arbitrary remote icon URLs.

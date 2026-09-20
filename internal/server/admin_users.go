@@ -115,6 +115,9 @@ func (s *Server) deleteManagedUser(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", id, "action", "delete_user")
+	if !s.retireNotificationAuthorityForRequest(w, r, id, result.RevokedSessionIDs...) {
+		return
+	}
 	jsonResponse(w, http.StatusOK, map[string]any{"CurrentSessionRevoked": result.CurrentSessionRevoked})
 }
 
@@ -128,6 +131,9 @@ func (s *Server) managedUserMutation(w http.ResponseWriter, r *http.Request, act
 		http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", result.User.User.ID, "action", action)
+	if !s.retireNotificationAuthorityForRequest(w, r, result.User.User.ID, result.RevokedSessionIDs...) {
+		return
+	}
 	jsonResponse(w, http.StatusOK, map[string]any{"User": s.avatarUserDTO(r.Context(), nativeManagedUser(result.User)), "CurrentSessionRevoked": result.CurrentSessionRevoked})
 }
 

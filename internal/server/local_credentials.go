@@ -42,6 +42,9 @@ func (s *Server) getLocalCredentials(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
+	if !s.retireNotificationSessionsForRequest(w, r, result.RevokedSessionIDs...) {
+		return
+	}
 	jsonResponse(w, http.StatusOK, result)
 }
 

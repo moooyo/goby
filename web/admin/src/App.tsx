@@ -14,6 +14,7 @@ import BackupOutlined from '@mui/icons-material/BackupOutlined';
 import CloudOutlined from '@mui/icons-material/CloudOutlined';
 import QueueMusicRounded from '@mui/icons-material/QueueMusicRounded';
 import ImageOutlined from '@mui/icons-material/ImageOutlined';
+import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
@@ -38,8 +39,9 @@ const MetadataItemsPage = lazy(() => import('./MetadataItemsPage').then((module)
 const ProvidersPage = lazy(() => import('./ProvidersPage').then((module) => ({ default: module.ProvidersPage })));
 const CollectionsPage = lazy(() => import('./CollectionsPage').then((module) => ({ default: module.CollectionsPage })));
 const CatalogArtworkPage = lazy(() => import('./CatalogArtworkPage').then((module) => ({ default: module.CatalogArtworkPage })));
+const NotificationsPage = lazy(() => import('./NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork' | 'notifications';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -48,7 +50,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections', artwork: 'Catalog artwork' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections', artwork: 'Catalog artwork', notifications: 'Notifications' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -75,6 +77,7 @@ function pageFromLocation(): Page {
   if (path.endsWith('/providers')) return 'providers';
   if (path.endsWith('/collections')) return 'collections';
   if (path.endsWith('/artwork')) return 'artwork';
+  if (path.endsWith('/notifications')) return 'notifications';
   return 'overview';
 }
 
@@ -102,6 +105,7 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'devices' as const, label: 'Devices', icon: DevicesOutlined },
           { id: 'api-keys' as const, label: 'API keys', icon: KeyRounded },
           { id: 'observability' as const, label: 'Activity & logs', icon: HistoryRounded },
+          { id: 'notifications' as const, label: 'Notifications', icon: NotificationsOutlined },
           { id: 'backups' as const, label: 'Backups & recovery', icon: BackupOutlined },
           { id: 'settings' as const, label: 'Settings', icon: SettingsOutlined },
         ].map(({ id, label, icon: Icon }) => (
@@ -222,6 +226,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'providers' && <ProvidersPage />}
                 {page === 'collections' && <CollectionsPage onNavigationGuardChange={setNavigationGuard} />}
                 {page === 'artwork' && <CatalogArtworkPage onNavigationGuardChange={setNavigationGuard} />}
+                {page === 'notifications' && <NotificationsPage onNavigationGuardChange={setNavigationGuard} />}
           </Suspense>
         </Box>
       </Box>

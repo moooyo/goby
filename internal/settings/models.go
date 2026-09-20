@@ -65,6 +65,7 @@ type Snapshot struct {
 	HostName       string
 	Encoding       Encoding
 	Management     Management
+	Runtime        RuntimeSnapshot
 	UpdatedAt      time.Time
 }
 
@@ -82,6 +83,7 @@ type UpdateRequest struct {
 	NameMode   *ServerNameMode
 	Encoding   *Encoding
 	Management *Management
+	Runtime    *RuntimeUpdate
 }
 
 type Field string
@@ -123,17 +125,23 @@ const (
 // missing Partial name preserves the current state. Full omissions reset only
 // that configuration section, never unrelated native overrides.
 type ConfigurationMutation struct {
-	Section                    ConfigurationSection
-	ServerNamePresent          bool
-	ServerName                 *string
-	TranscodingMaxWidthPresent bool
-	TranscodingMaxWidth        int
-	StartupWizardCompleted     *bool
-	PreferredMetadataLanguage  *string
-	MetadataCountryCode        *string
-	EnableInternetProviders    *bool
-	Subtitles                  *SubtitleOptions
-	Tasks                      *TaskOptions
+	Section                     ConfigurationSection
+	ServerNamePresent           bool
+	ServerName                  *string
+	TranscodingMaxWidthPresent  bool
+	TranscodingMaxWidth         int
+	StartupWizardCompleted      *bool
+	PreferredMetadataLanguage   *string
+	MetadataCountryCode         *string
+	EnableInternetProviders     *bool
+	Subtitles                   *SubtitleOptions
+	Tasks                       *TaskOptions
+	HttpServerPortNumberPresent bool
+	HttpServerPortNumber        int
+	H264CrfPresent              bool
+	H264Crf                     int
+	EnableSoftwareToneMapping   *bool
+	EnableHardwareToneMapping   *bool
 }
 
 type ValidationError struct{ Fields map[string]string }
@@ -162,6 +170,7 @@ func cloneOverrides(value Overrides) Overrides {
 func cloneSnapshot(value Snapshot) Snapshot {
 	value.Overrides = cloneOverrides(value.Overrides)
 	value.Management = cloneManagement(value.Management)
+	value.Runtime = cloneRuntimeSnapshot(value.Runtime)
 	return value
 }
 

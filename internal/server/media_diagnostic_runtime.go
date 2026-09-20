@@ -63,6 +63,8 @@ type mediaDiagnosticRun struct {
 	cancel                context.CancelFunc
 	cancelRequested       bool
 	authorityCode         string
+	profile               media.DiagnosticProfile
+	settingsRevision      int64
 }
 
 // History is bounded to this generation and is not persisted in playback or
@@ -70,26 +72,27 @@ type mediaDiagnosticRun struct {
 // old request from being admitted after its retained result expires. Instance
 // identity rejects old requests after a process/generation restart.
 type mediaDiagnosticRuntime struct {
-	mu        sync.Mutex
-	ctx       context.Context
-	cancel    context.CancelFunc
-	instance  string
-	key       [32]byte
-	born      time.Time
-	now       func() time.Time
-	enabled   bool
-	profile   media.DiagnosticProfile
-	options   media.DiagnosticExecutionOptions
-	runs      map[string]*mediaDiagnosticRun
-	order     []string
-	active    string
-	closing   bool
-	wg        sync.WaitGroup
-	done      chan struct{}
-	once      sync.Once
-	authorize func(context.Context, identity.Principal) error
-	reserve   func() (func(), error)
-	open      func(context.Context, media.DiagnosticExecutionOptions) (mediaDiagnosticOwner, error)
+	mu              sync.Mutex
+	ctx             context.Context
+	cancel          context.CancelFunc
+	instance        string
+	key             [32]byte
+	born            time.Time
+	now             func() time.Time
+	enabled         bool
+	captureProfile  func() (media.DiagnosticProfile, int64, bool)
+	validateProfile func(media.DiagnosticProfile) bool
+	options         media.DiagnosticExecutionOptions
+	runs            map[string]*mediaDiagnosticRun
+	order           []string
+	active          string
+	closing         bool
+	wg              sync.WaitGroup
+	done            chan struct{}
+	once            sync.Once
+	authorize       func(context.Context, identity.Principal) error
+	reserve         func() (func(), error)
+	open            func(context.Context, media.DiagnosticExecutionOptions) (mediaDiagnosticOwner, error)
 }
 
 func newMediaDiagnosticRuntime(s *Server) (*mediaDiagnosticRuntime, error) {
@@ -100,8 +103,19 @@ func newMediaDiagnosticRuntime(s *Server) (*mediaDiagnosticRuntime, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	m := &mediaDiagnosticRuntime{ctx: ctx, cancel: cancel, instance: hex.EncodeToString(random[:16]), born: time.Now(), now: time.Now,
 		enabled: s.cfg.MediaDiagnostics.Enabled, options: s.cfg.MediaDiagnostics.ExecutionOptions(s.cfg.FFmpegPath),
-		profile: media.DiagnosticProfile{Decode: s.cfg.Transcoding.Hardware.Decode, Encode: s.cfg.Transcoding.Hardware.Encode, Device: s.cfg.Transcoding.Hardware.Device},
-		runs:    make(map[string]*mediaDiagnosticRun), done: make(chan struct{}), authorize: s.checkMediaDiagnosticActor, reserve: s.reserveMediaDiagnostic}
+		runs: make(map[string]*mediaDiagnosticRun), done: make(chan struct{}), authorize: s.checkMediaDiagnosticActor, reserve: s.reserveMediaDiagnostic}
+	m.captureProfile = func() (media.DiagnosticProfile, int64, bool) {
+		snapshot := s.currentSettingsSnapshot()
+		return media.DiagnosticProfile{Decode: snapshot.Hardware.Decode, Encode: snapshot.Hardware.Encode, Device: snapshot.Hardware.Device},
+			snapshot.Revision, !snapshot.HardwareUnavailable
+	}
+	m.validateProfile = func(profile media.DiagnosticProfile) bool {
+		if s.managedHardware == nil {
+			return true
+		}
+		available, _ := s.managedHardware.checkHardware(transcode.Hardware{Decode: profile.Decode, Encode: profile.Encode, Device: profile.Device})
+		return available
+	}
 	copy(m.key[:], random[16:])
 	m.open = func(ctx context.Context, options media.DiagnosticExecutionOptions) (mediaDiagnosticOwner, error) {
 		owner, err := media.NewDiagnosticExecution(ctx, options)
@@ -228,9 +242,6 @@ func (m *mediaDiagnosticRuntime) start(ctx context.Context, actor identity.Princ
 	if request.Mode != "software" && request.Mode != "configured" {
 		return nil, false, errMediaDiagnosticConflict
 	}
-	if request.Mode == "configured" && !m.hardwareConfigured() {
-		return nil, false, errMediaDiagnosticUnavailable
-	}
 	if m.active != "" {
 		return nil, false, errMediaDiagnosticBusy
 	}
@@ -256,9 +267,14 @@ func (m *mediaDiagnosticRuntime) start(ctx context.Context, actor identity.Princ
 		release()
 		return nil, false, errMediaDiagnosticExpired
 	}
+	profile, revision, available := m.captureProfile()
+	if request.Mode == "configured" && (!diagnosticHardwareConfigured(profile) || !available) {
+		release()
+		return nil, false, errMediaDiagnosticUnavailable
+	}
 	lifetime, cancel := context.WithTimeout(m.ctx, mediaDiagnosticRunLifetime)
 	run := &mediaDiagnosticRun{id: request.RequestId, mode: request.Mode, state: "queued", revision: 1, created: now, updated: now,
-		fingerprint: fingerprint, actor: actor, ctx: lifetime, cancel: cancel}
+		fingerprint: fingerprint, actor: actor, ctx: lifetime, cancel: cancel, profile: profile, settingsRevision: revision}
 	m.runs[run.id], m.active = run, run.id
 	m.order = append(m.order, run.id)
 	m.wg.Add(1)
@@ -267,8 +283,8 @@ func (m *mediaDiagnosticRuntime) start(ctx context.Context, actor identity.Princ
 	return initial, true, nil
 }
 
-func (m *mediaDiagnosticRuntime) hardwareConfigured() bool {
-	return m.profile.Decode != "" && m.profile.Decode != "software" || m.profile.Encode != "" && m.profile.Encode != "software"
+func diagnosticHardwareConfigured(profile media.DiagnosticProfile) bool {
+	return profile.Decode != "" && profile.Decode != "software" || profile.Encode != "" && profile.Encode != "software"
 }
 
 func (m *mediaDiagnosticRuntime) authority(ctx context.Context, run *mediaDiagnosticRun) error {
@@ -285,6 +301,16 @@ func (m *mediaDiagnosticRuntime) authority(ctx context.Context, run *mediaDiagno
 		}
 		m.mu.Lock()
 		run.authorityCode = code
+		m.mu.Unlock()
+		run.cancel()
+		return media.ErrDiagnosticAuthority
+	}
+	// The execution owner calls this before every command, including the
+	// configured stages after software checks. Recheck the captured device,
+	// not a later settings selection, before a replaced node can be opened.
+	if run.mode == "configured" && !m.validateProfile(run.profile) {
+		m.mu.Lock()
+		run.authorityCode = "diagnostic_hardware_unavailable"
 		m.mu.Unlock()
 		run.cancel()
 		return media.ErrDiagnosticAuthority
@@ -336,7 +362,7 @@ func (m *mediaDiagnosticRuntime) work(run *mediaDiagnosticRun, release func()) {
 	if err == nil {
 		selection := media.DiagnosticSelection{}
 		if run.mode == "configured" {
-			selection.IncludeConfiguredHardware, selection.ConfiguredProfile = true, m.profile
+			selection.IncludeConfiguredHardware, selection.ConfiguredProfile = true, run.profile
 		}
 		value, runErr := owner.Run(selection, func(ctx context.Context) error { return m.authority(ctx, run) }, func(value media.DiagnosticReport) {
 			// The pipeline supplies detached snapshots. Never mutate a published
@@ -431,7 +457,7 @@ func (m *mediaDiagnosticRuntime) summary(run *mediaDiagnosticRun) map[string]any
 		finished = run.finished.UTC()
 	}
 	return map[string]any{"Id": run.id, "InstanceId": m.instance, "Revision": strconv.FormatUint(run.revision, 10), "Mode": run.mode, "State": run.state, "Code": run.code,
-		"CreatedAt": run.created.UTC(), "UpdatedAt": run.updated.UTC(), "FinishedAt": finished}
+		"CreatedAt": run.created.UTC(), "UpdatedAt": run.updated.UTC(), "FinishedAt": finished, "SettingsRevision": strconv.FormatInt(run.settingsRevision, 10)}
 }
 
 func (m *mediaDiagnosticRuntime) detail(run *mediaDiagnosticRun) map[string]any {
@@ -456,8 +482,10 @@ func (m *mediaDiagnosticRuntime) status(actor identity.Principal) map[string]any
 	} else if m.closing {
 		reason = "server_closing"
 	}
+	profile, _, hardwareAvailable := m.captureProfile()
 	return map[string]any{"InstanceId": m.instance, "StartToken": token, "StartTokenExpiresAt": expires, "Available": m.enabled && !m.closing,
-		"UnavailableReason": reason, "HardwareConfigured": m.hardwareConfigured(), "RetentionSeconds": int(mediaDiagnosticRetention.Seconds()), "MaxRetainedRuns": mediaDiagnosticMaxRuns, "Items": items}
+		"UnavailableReason": reason, "HardwareConfigured": diagnosticHardwareConfigured(profile), "HardwareAvailable": hardwareAvailable,
+		"RetentionSeconds": int(mediaDiagnosticRetention.Seconds()), "MaxRetainedRuns": mediaDiagnosticMaxRuns, "Items": items}
 }
 
 func (m *mediaDiagnosticRuntime) get(instance, id string, cancel bool) (map[string]any, error) {

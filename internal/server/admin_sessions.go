@@ -146,6 +146,9 @@ func (s *Server) revokeAdminSession(w http.ResponseWriter, r *http.Request) {
 	}
 	s.log.Info("administrator session revocation", "actor_id", actor.User.ID,
 		"user_id", result.UserID, "session_id", result.SessionID, "kind", result.Kind)
+	if !s.retireNotificationSessionsForRequest(w, r, result.SessionID) {
+		return
+	}
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"SessionId": result.SessionID, "UserId": result.UserID, "Kind": result.Kind,
 		"RevokedAt": result.RevokedAt.UTC(), "CurrentSessionRevoked": result.CurrentSessionRevoked,

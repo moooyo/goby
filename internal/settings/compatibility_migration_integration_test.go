@@ -20,7 +20,7 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 	t.Helper()
 	projection := "to_jsonb(original)"
 	if table == "managed_settings" {
-		projection += " - 'server_name_mode' - 'compatibility_max_width' - 'management'"
+		projection += " - 'server_name_mode' - 'compatibility_max_width' - 'management' - 'runtime_overrides'"
 	}
 	if table == "item_metadata_state" {
 		projection += " - 'music_source' - 'online_source' - 'online_type' - 'online_base'"
@@ -41,7 +41,10 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 		projection += " - 'revision' - 'options'"
 	}
 	if table == "users" {
-		projection += " - 'configuration_revision'"
+		projection += " - 'configuration_revision' - 'local_password_hash' - 'profile_pin_ciphertext' - 'local_credentials_revision' - 'local_password_failures' - 'local_password_blocked_until'"
+	}
+	if table == "sessions" {
+		projection += " - 'local_auth'"
 	}
 	if table == "user_item_data" {
 		projection += " - 'hide_from_resume' - 'rating' - 'likes' - 'remembered_media_source_id' - 'remembered_media_stamp' - 'remembered_audio_stream_index' - 'remembered_subtitle_stream_index'"
@@ -114,7 +117,24 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 		AND NOT EXISTS(SELECT 1 FROM task_triggers WHERE system_event IS NOT NULL OR last_event_sequence IS DISTINCT FROM 0)
 		AND (SELECT count(*) FROM task_system_events)=3
 		AND NOT EXISTS(SELECT 1 FROM task_system_events WHERE sequence IS DISTINCT FROM 0 OR lifecycle_key IS DISTINCT FROM '')
-		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)`).Scan(&valid); err != nil || !valid {
+		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
+		AND NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM
+			'{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null}'::jsonb)
+		AND NOT EXISTS(SELECT 1 FROM users WHERE local_password_hash IS NOT NULL OR profile_pin_ciphertext IS NOT NULL
+			OR local_credentials_revision<>1 OR local_password_failures<>0 OR local_password_blocked_until IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM sessions WHERE local_auth)
+		AND NOT EXISTS(SELECT 1 FROM item_intro_state)
+		AND NOT EXISTS(SELECT 1 FROM media_operations) AND NOT EXISTS(SELECT 1 FROM media_operation_cues)
+		AND NOT EXISTS(SELECT 1 FROM item_owned_subtitles) AND NOT EXISTS(SELECT 1 FROM item_embedded_artwork)
+		AND NOT EXISTS(SELECT 1 FROM series_episode_rosters) AND NOT EXISTS(SELECT 1 FROM episode_roster_imports)
+		AND NOT EXISTS(SELECT 1 FROM expected_episodes)
+		AND (SELECT count(*) FROM notification_transport)=1
+		AND EXISTS(SELECT 1 FROM notification_transport WHERE id=1 AND revision=1 AND NOT enabled AND endpoint=''
+			AND allowed_networks='{}'::text[] AND credential_ciphertext IS NULL AND credential_generation=1)
+		AND (SELECT count(*) FROM notification_journal_state)=1
+		AND EXISTS(SELECT 1 FROM notification_journal_state WHERE id=1 AND sequence=0)
+		AND NOT EXISTS(SELECT 1 FROM notification_registrations) AND NOT EXISTS(SELECT 1 FROM notification_source_events)
+		AND NOT EXISTS(SELECT 1 FROM notification_deliveries)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("compatibility migration inferred phase 3 preferences, artwork, or system-event history: %v", err)
 	}
 }
@@ -163,13 +183,16 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			if len(columns) != 9 {
 				t.Fatalf("schema 20 managed settings has %d columns, want 9", len(columns))
 			}
-			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width", "management")
+			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width", "management", "runtime_overrides")
 			sort.Strings(wantColumns)
 			currentTables := append(append([]string(nil), tables...),
 				"activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources",
 				"extra_reserved_paths", "item_extra_resources", "media_collections", "media_collection_entries", "media_collection_shares",
 				"item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations",
-				"display_preferences", "artwork_state", "artwork_images", "entity_user_data", "task_system_events", "task_system_event_receipts")
+				"display_preferences", "artwork_state", "artwork_images", "entity_user_data", "task_system_events", "task_system_event_receipts",
+				"item_intro_state", "media_operations", "media_operation_cues", "item_owned_subtitles", "item_embedded_artwork",
+				"series_episode_rosters", "episode_roster_imports", "expected_episodes",
+				"notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries")
 			sort.Strings(currentTables)
 			var migratedSettings, migratedHistory string
 			for attempt := 1; attempt <= 2; attempt++ {

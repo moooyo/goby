@@ -82,11 +82,7 @@ func buildGeneratedHLSArgs(p Plan, threads int) ([]string, error) {
 			}
 			args = appendVideoEncoderOptions(args, rendition, encode, threads)
 			args = AppendVideoColorArgs(args, p)
-			bitrate := rendition.VideoBitrate
-			if bitrate == 0 {
-				bitrate = 4000000
-			}
-			args = append(args, "-b:v", strconv.FormatInt(bitrate, 10), "-maxrate", strconv.FormatInt(bitrate, 10), "-bufsize", strconv.FormatInt(bitrate*2, 10))
+			args = appendVideoRateControl(args, rendition, encode)
 		}
 		if p.AudioCodec == "copy" {
 			args = append(args, "-c:a", "copy")

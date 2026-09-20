@@ -121,11 +121,7 @@ func buildProgressiveVideoArgsWithSeek(p Plan, threads int, inputSeekTicks int64
 			"-fps_mode", "passthrough", "-enc_time_base:v", timeBase, "-force_key_frames", "expr:gte(t,n_forced)")
 		args = appendVideoEncoderOptions(args, p, encode, threads)
 		args = AppendVideoColorArgs(args, p)
-		bitrate := p.VideoBitrate
-		if bitrate == 0 {
-			bitrate = 4_000_000
-		}
-		args = append(args, "-b:v", strconv.FormatInt(bitrate, 10), "-maxrate", strconv.FormatInt(bitrate, 10), "-bufsize", strconv.FormatInt(bitrate*2, 10))
+		args = appendVideoRateControl(args, p, encode)
 	}
 	if p.AudioStreamIndex < 0 {
 		args = append(args, "-an")

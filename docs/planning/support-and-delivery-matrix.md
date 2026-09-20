@@ -7,8 +7,9 @@ remains recorded rather than blocking delivery. Phase 2 is closed within its
 [recorded media, artwork, browser and recovery scopes](../development/selected-compatibility-phase2-20260920.md),
 with owned workers and PostgreSQL stopped. [Phase 3 music/search/discovery](../development/selected-compatibility-phase3-20260920.md)
 is closed within its composed backend/recovery, native browser and administrator
-test scopes; its owned resources are also stopped. Phase 4 has not started
-implementation. The [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
+test scopes; its owned resources are also stopped. [Phase 4](../development/selected-compatibility-phase4-20260920.md)
+is in implementation, with consolidated verification not yet started. The
+[phase 1 record](../development/selected-compatibility-phase1-20260920.md)
 retains the exact accepted contracts and client limitations. It covers
 account/playback behavior, subtitles/artwork, music/search, management settings
 and client protocols. The user explicitly excludes Live TV/EPG/DVR/tuners, DLNA,

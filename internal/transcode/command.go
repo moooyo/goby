@@ -35,6 +35,9 @@ const (
 // select compatible, authorized streams and reject unsupported HDR conversions.
 func ValidatePlan(p Plan) error {
 	invalid := func(field string) error { return fmt.Errorf("%w: %s", ErrInvalidPlan, field) }
+	if err := validateExecutionPlan(p); err != nil {
+		return err
+	}
 	if err := validateVideoEncoding(p); err != nil {
 		return err
 	}
@@ -186,8 +189,10 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 	if err := ValidatePlan(p); err != nil {
 		return nil, err
 	}
-	if threads < 1 || threads > maxThreads {
-		return nil, ErrInvalidThreads
+	var err error
+	threads, err = ExecutionThreads(p, threads)
+	if err != nil {
+		return nil, err
 	}
 	if p.OutputMode == "progressive" {
 		return buildProgressiveArgs(p, threads), nil
@@ -244,11 +249,7 @@ func BuildArgs(p Plan, threads int) ([]string, error) {
 			args = append(args, "-r", strconv.FormatFloat(p.FrameRate, 'f', -1, 64), "-g", strconv.Itoa(int(math.Ceil(p.FrameRate*float64(p.SegmentSeconds)))))
 		}
 		args = appendVideoEncoderOptions(args, p, encode, threads)
-		bitrate := p.VideoBitrate
-		if bitrate == 0 {
-			bitrate = 4_000_000
-		}
-		args = append(args, "-b:v", strconv.FormatInt(bitrate, 10), "-maxrate", strconv.FormatInt(bitrate, 10), "-bufsize", strconv.FormatInt(bitrate*2, 10))
+		args = appendVideoRateControl(args, p, encode)
 	}
 	if p.AudioCodec == "copy" {
 		args = append(args, "-c:a", "copy")

@@ -65,6 +65,7 @@ func hardwareEncodingDynamicRouteFixture(t *testing.T) (*Server, identity.Princi
 	t.Helper()
 	server, principal, lease, request, jobs := dynamicServerFixture(t)
 	server.cfg.Transcoding.Hardware = transcode.Hardware{Decode: "software", Encode: "vaapi", Device: "/dev/dri/renderD128"}
+	server.cfg.Transcoding.Execution = transcode.DefaultExecutionOptions(server.cfg.Transcoding.Threads)
 	disabled := false
 	request.AllowVideoStreamCopy = &disabled
 	request.DeviceProfile.TranscodingProfiles[0].VideoCodec = "hevc"
@@ -292,6 +293,10 @@ func TestHTTPHardwareEncodingAuthorizationPrecedesCapabilityWork(t *testing.T) {
 	server := fixture.s.f.app
 	server.cfg.Transcoding = config.TranscodingConfig{Enabled: true, MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8,
 		Hardware: transcode.Hardware{Decode: "software", Encode: "vaapi", Device: "/dev/dri/renderD128"}}
+	// This route fixture proves authorization ordering, not a physical device.
+	// Its inventory and encoder evidence are both explicit controlled inputs.
+	server.managedHardware = newManagedHardwareInventoryWithInspector(server.cfg.Transcoding,
+		func(string) (managedHardwareIdentity, string) { return managedHardwareTestIdentity(20), "" })
 	fixture.s.f.cfg = server.cfg
 	initializeFixtureSettings(t, fixture.s.f)
 	ctx, cancel := context.WithCancel(context.Background())

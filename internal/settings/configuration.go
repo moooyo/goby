@@ -58,6 +58,8 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 	mutation.MetadataCountryCode = clonePointer(mutation.MetadataCountryCode)
 	mutation.StartupWizardCompleted = clonePointer(mutation.StartupWizardCompleted)
 	mutation.EnableInternetProviders = clonePointer(mutation.EnableInternetProviders)
+	mutation.EnableSoftwareToneMapping = clonePointer(mutation.EnableSoftwareToneMapping)
+	mutation.EnableHardwareToneMapping = clonePointer(mutation.EnableHardwareToneMapping)
 	mutation.Tasks = clonePointer(mutation.Tasks)
 	if mutation.Subtitles != nil {
 		copy := cloneManagement(Management{Subtitles: *mutation.Subtitles}).Subtitles
@@ -111,6 +113,7 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 		case ConfigurationTasks:
 			previous.Management.Tasks = *mutation.Tasks
 		}
+		previous.Runtime = s.applyRuntimeConfiguration(previous.Runtime, mutation)
 		return previous, nil
 	})
 }
@@ -128,6 +131,9 @@ func configurationNameMode(value *string) ServerNameMode {
 func validateConfigurationMutation(value ConfigurationMutation) error {
 	invalid := func(message string) error {
 		return &ValidationError{Fields: map[string]string{"Configuration": message}}
+	}
+	if err := validateRuntimeConfiguration(value); err != nil {
+		return err
 	}
 	if value.Section == ConfigurationSubtitles || value.Section == ConfigurationTasks {
 		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil ||

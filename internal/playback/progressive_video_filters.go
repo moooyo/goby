@@ -130,6 +130,17 @@ func selectVideoProcessingHardware(plan *transcode.Plan) {
 	}
 }
 
+// Finalize only after subtitle composition has selected its processing backend.
+// A retained administrator device choice can become necessary on that second
+// pass; an ordinary CPU output has no such dependency or device cache identity.
+func finalizeVideoProcessingHardware(plan *transcode.Plan) {
+	if transcode.VideoEncodingSupported(plan.VideoCodec) && plan.VideoFilters.Backend == "" &&
+		(plan.Hardware.Decode == "" || plan.Hardware.Decode == "software") &&
+		(plan.Hardware.Encode == "" || plan.Hardware.Encode == "software") {
+		plan.Hardware.Device = ""
+	}
+}
+
 // videoProcessingOutput describes actual processed output. Source HDR
 // tags must not leak into an SDR projection or remain in the encoded bitstream.
 func videoProcessingOutput(video *media.Stream, filters transcode.VideoFilters) {

@@ -337,6 +337,9 @@ func (s *Server) deleteEmbyUser(w http.ResponseWriter, r *http.Request) {
 		s.cancelPlaybackCredential(sessionID)
 	}
 	s.log.Info("administrator user mutation", "actor_id", actor.User.ID, "user_id", id, "action", "delete_user")
+	if !s.retireNotificationAuthorityForRequest(w, r, id, result.RevokedSessionIDs...) {
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -540,6 +543,9 @@ func (s *Server) finishEmbyUserMutation(w http.ResponseWriter, r *http.Request, 
 		s.cancelPlaybackCredential(actor.SessionID)
 	}
 	s.log.Info("user mutation", "actor_id", actor.User.ID, "user_id", result.User.User.ID, "action", action)
+	if !s.retireNotificationAuthorityForRequest(w, r, result.User.User.ID, result.RevokedSessionIDs...) {
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 

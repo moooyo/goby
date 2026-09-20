@@ -78,6 +78,9 @@ func (s *Server) adminLogout(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mediaDiagnostics.cancelActor("", r.Context().Value(principalKey).(identity.Principal).SessionID)
 	http.SetCookie(w, &http.Cookie{Name: sessionCookie, Path: "/admin", HttpOnly: true, Secure: s.cfg.CookieSecure, SameSite: http.SameSiteStrictMode, MaxAge: -1})
+	if !s.retireNotificationSessionsForRequest(w, r, r.Context().Value(principalKey).(identity.Principal).SessionID) {
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -139,7 +142,8 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	decode, encode := []string{}, []string{}
-	hardware := s.cfg.Transcoding.Hardware
+	snapshot := s.requestSettings(r)
+	hardware := snapshot.Hardware
 	if hardware.Decode != "" && hardware.Decode != "software" {
 		decode = append(decode, hardware.Decode)
 	}
@@ -150,7 +154,7 @@ func (s *Server) capabilities(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, 200, map[string]any{
 		"ServerVersion": s.version, "Features": featuresForTranscoding(transcoding),
 		"Toolchain":   map[string]string{"Go": config.GoVersion, "FFmpeg": config.FFmpegVersion},
-		"Hardware":    map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Decode": decode, "Encode": encode},
+		"Hardware":    map[string]any{"Verified": false, "Configured": len(decode)+len(encode) > 0, "Available": !snapshot.HardwareUnavailable, "Decode": decode, "Encode": encode},
 		"Transcoding": transcoding,
 	})
 }

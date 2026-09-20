@@ -15,22 +15,27 @@ import (
 // policy. Load enables conversion by default; an entirely zero value disables
 // it so callers constructing Config directly opt in explicitly.
 type TranscodingConfig struct {
-	Enabled          bool
-	CacheDirectory   string
-	Threads          int
-	MaxJobs          int
-	MaxUserJobs      int
-	MaxSessionJobs   int
-	MaxQueueJobs     int
-	MaxRetainedJobs  int
-	MaxCacheBytes    int64
-	MaxJobBytes      int64
-	MinFreeBytes     int64
-	MaxBitrate       int64
-	MaxWidth         int
-	MaxHeight        int
-	MaxAudioChannels int
-	Hardware         transcode.Hardware
+	Enabled               bool
+	CacheDirectory        string
+	Threads               int
+	MaxJobs               int
+	MaxUserJobs           int
+	MaxSessionJobs        int
+	MaxQueueJobs          int
+	MaxRetainedJobs       int
+	MaxCacheBytes         int64
+	MaxJobBytes           int64
+	MinFreeBytes          int64
+	MaxBitrate            int64
+	MaxWidth              int
+	MaxHeight             int
+	MaxAudioChannels      int
+	Hardware              transcode.Hardware
+	Execution             transcode.ExecutionOptions
+	AllowedAMDDevices     [8]string
+	AllowedAMDDeviceCount int
+	// HardwareUnavailable is set only on a private runtime planning copy.
+	HardwareUnavailable bool
 }
 
 const maxConfiguredCacheBytes = int64(1 << 50)
@@ -68,6 +73,15 @@ func loadTranscoding() (TranscodingConfig, error) {
 		if err != nil {
 			return TranscodingConfig{}, fmt.Errorf("%s must be a decimal integer", field.name)
 		}
+	}
+	c.Execution = transcode.DefaultExecutionOptions(c.Threads)
+	if value := env("GOBY_ALLOWED_AMD_DEVICES", ""); value != "" {
+		devices := strings.Split(value, ",")
+		if len(devices) > len(c.AllowedAMDDevices) {
+			return TranscodingConfig{}, fmt.Errorf("GOBY_ALLOWED_AMD_DEVICES must contain at most %d devices", len(c.AllowedAMDDevices))
+		}
+		copy(c.AllowedAMDDevices[:], devices)
+		c.AllowedAMDDeviceCount = len(devices)
 	}
 	for _, field := range []struct {
 		name     string
@@ -122,6 +136,14 @@ func (c TranscodingConfig) Validate() error {
 	if err := ValidateOutputPlanningLimits(c.MaxBitrate, c.MaxWidth, c.MaxHeight, c.MaxAudioChannels); err != nil {
 		return err
 	}
+	if c.Execution != (transcode.ExecutionOptions{}) {
+		if err := transcode.ValidateExecutionOptions(c.Execution); err != nil {
+			return fmt.Errorf("transcoding execution options are invalid: %w", err)
+		}
+	}
+	if _, err := c.AuthorizedAMDDevices(); err != nil {
+		return err
+	}
 	// A minimal encoded-video plan exercises the engine's single hardware
 	// validator while leaving source-specific planning to the playback layer.
 	if err := transcode.ValidatePlan(transcode.Plan{
@@ -132,6 +154,64 @@ func (c TranscodingConfig) Validate() error {
 		return fmt.Errorf("GOBY_HW_DECODER, GOBY_HW_ENCODER, or GOBY_HW_DEVICE is invalid: %w", err)
 	}
 	return nil
+}
+
+// ValidAMDDevicePath accepts only the closed set of Linux render node names.
+// This is a syntax check; the server separately verifies node and vendor identity.
+func ValidAMDDevicePath(device string) bool {
+	const prefix = "/dev/dri/renderD"
+	if !strings.HasPrefix(device, prefix) {
+		return false
+	}
+	number := strings.TrimPrefix(device, prefix)
+	value, err := strconv.Atoi(number)
+	return err == nil && value >= 128 && value <= 255 && strconv.Itoa(value) == number
+}
+
+// AuthorizedAMDDevices returns a private union of explicit startup authorization,
+// the existing VAAPI startup device, and an explicit software filter device from
+// directly constructed configurations. It never discovers devices by scanning.
+func (c TranscodingConfig) AuthorizedAMDDevices() ([]string, error) {
+	invalid := func() ([]string, error) {
+		return nil, fmt.Errorf("GOBY_ALLOWED_AMD_DEVICES must contain at most %d unique canonical /dev/dri/renderD128 through /dev/dri/renderD255 paths without whitespace or empty entries", len(c.AllowedAMDDevices))
+	}
+	if c.AllowedAMDDeviceCount < 0 || c.AllowedAMDDeviceCount > len(c.AllowedAMDDevices) {
+		return invalid()
+	}
+	devices := make([]string, 0, len(c.AllowedAMDDevices))
+	seen := make(map[string]bool, len(c.AllowedAMDDevices))
+	for index, device := range c.AllowedAMDDevices {
+		if index >= c.AllowedAMDDeviceCount {
+			if device != "" {
+				return invalid()
+			}
+			continue
+		}
+		if !ValidAMDDevicePath(device) || seen[device] {
+			return invalid()
+		}
+		seen[device] = true
+		devices = append(devices, device)
+	}
+	vaapi := c.Hardware.Decode == "vaapi" || c.Hardware.Encode == "vaapi"
+	softwareDevice := (c.Hardware.Decode == "" || c.Hardware.Decode == "software") &&
+		(c.Hardware.Encode == "" || c.Hardware.Encode == "software") && c.Hardware.Device != ""
+	if vaapi || softwareDevice {
+		device := c.Hardware.Device
+		if device == "" {
+			device = "/dev/dri/renderD128"
+		}
+		if !ValidAMDDevicePath(device) {
+			return nil, fmt.Errorf("GOBY_HW_DEVICE must be a canonical /dev/dri/renderD128 through /dev/dri/renderD255 path for AMD processing")
+		}
+		if !seen[device] {
+			if len(devices) == len(c.AllowedAMDDevices) {
+				return invalid()
+			}
+			devices = append(devices, device)
+		}
+	}
+	return devices, nil
 }
 
 // ManagerOptions passes explicit resource policy to the engine without opening

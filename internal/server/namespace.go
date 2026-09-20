@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Albums", "Songs", "Search", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features", "Registrations"}
+	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Libraries", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Albums", "Songs", "Search", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features", "Registrations"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -61,7 +61,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	case "Playlists", "Collections":
 		literal(2, "Items", "Delete", "Users")
 		if resource == "Playlists" {
-			literal(2, "InstantMix")
+			literal(2, "InstantMix", "AddToPlaylistInfo")
 		}
 		literal(3, "Delete")
 		literal(4, "Move", "Delete")
@@ -129,9 +129,17 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 			literal(3, "Delete")
 		}
 	case "System":
-		literal(1, "Info", "Ping", "Endpoint", "Configuration")
+		literal(1, "Info", "Ping", "Endpoint", "Configuration", "ActivityLog", "Logs")
 		if len(parts) > 1 && parts[1] == "Configuration" {
 			literal(2, "Partial", "encoding", "subtitles", "tasks")
+		} else if len(parts) > 1 && parts[1] == "ActivityLog" {
+			literal(2, "Entries")
+		} else if len(parts) > 1 && parts[1] == "Logs" {
+			// Log names are opaque. Only known operation positions are folded.
+			if len(parts) == 3 {
+				literal(2, "Query")
+			}
+			literal(3, "Lines")
 		} else {
 			literal(2, "Public")
 		}
@@ -172,12 +180,17 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(4, "Delete")
 		literal(5, "Stream")
 	case "Sessions":
-		literal(1, "Playing", "Logout", "Capabilities")
+		literal(1, "Playing", "Logout", "Capabilities", "Notifications")
+		if len(parts) > 1 && parts[1] == "Notifications" {
+			literal(2, "Test")
+		}
 		literal(2, "Playing", "Progress", "Ping", "Stopped", "Full", "Command")
 	case "Library":
 		literal(1, "VirtualFolders", "Refresh")
 		literal(2, "Query", "Delete", "LibraryOptions", "Name", "Paths")
 		literal(3, "Delete")
+	case "Libraries":
+		literal(1, "AvailableOptions")
 	case "Shows":
 		literal(1, "NextUp")
 		literal(2, "Seasons", "Episodes")

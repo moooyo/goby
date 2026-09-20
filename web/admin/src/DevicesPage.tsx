@@ -81,7 +81,7 @@ function DeviceHistory({ device }: { device: Device }) {
 }
 
 function DeviceLogins({ device }: { device: Device }) {
-  return <Chip size="small" variant="outlined" label={`${device.ActiveLoginCount.toLocaleString()} authorized ${device.ActiveLoginCount === 1 ? 'login' : 'logins'}`} sx={{ maxWidth: '100%', height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.4 } }} />;
+  return <Chip size="small" variant="outlined" label={`${device.ActiveLoginCount.toLocaleString()} policy-eligible ${device.ActiveLoginCount === 1 ? 'login' : 'logins'}`} sx={{ maxWidth: '100%', height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.4 } }} />;
 }
 
 function DeviceActions({ device, onRename, onRemove }: { device: Device; onRename: (device: Device) => void; onRemove: (device: Device) => void }) {
@@ -394,7 +394,7 @@ export function DevicesPage({ onNavigationGuardChange }: { onNavigationGuardChan
           sx={{ borderTop: 1, borderColor: 'divider', '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 2, sm: 3 }, py: 1, gap: 0.5 }, '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } }, '& .MuiTablePagination-actions': { ml: { xs: 1, sm: 2 } } }}
         />}
       </Paper>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Authorized logins can still access the server; this count does not show whether a device is online. Times use your local time zone.</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Policy-eligible logins satisfy the stored account, credential, device, schedule, and lockout rules at the time of this view. Actual requests also depend on their connection context. Times use your local time zone.</Typography>
       {renaming && <RenameDeviceDialog key={renaming.Id} device={renaming} onClose={() => setRenaming(undefined)} onSaved={(device) => { setNotice(`Device name saved as ${device.Name}.`); closeAndRefresh(); }} onRefresh={closeAndRefresh} onNavigationGuardChange={onNavigationGuardChange} />}
       {removing && <RemoveDeviceDialog key={removing.Id} device={removing} onClose={() => setRemoving(undefined)} onRemoved={(result) => { setNotice(`Device removed. ${result.RevokedLoginCount.toLocaleString()} client ${result.RevokedLoginCount === 1 ? 'login' : 'logins'} signed out.`); closeAndRefresh(); }} onRefresh={closeAndRefresh} onNavigationGuardChange={onNavigationGuardChange} />}
       <Snackbar open={Boolean(notice) && !renaming && !removing} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" onClose={() => setNotice('')} sx={{ width: '100%', overflowWrap: 'anywhere' }}>{notice}</Alert></Snackbar>

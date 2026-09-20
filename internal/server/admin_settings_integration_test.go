@@ -67,7 +67,7 @@ func adminSettingsHTTPWrite(t *testing.T, f *serverFixture, cookie *http.Cookie,
 
 func adminSettingsHTTPAssertSnapshot(t *testing.T, value map[string]any, revision string) {
 	t.Helper()
-	fields := []string{"Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", "Management", "ManagementDefaults", "ManagementEffects"}
+	fields := []string{"Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", "Management", "ManagementDefaults", "ManagementEffects", "Runtime"}
 	if len(value) != len(fields) || value["Revision"] != revision {
 		t.Fatal("settings response changed its exact top-level contract or revision")
 	}
@@ -360,6 +360,7 @@ func TestHTTPAdminSettingsNativeAuthorityCSRFAndDeploymentSecretBoundary(t *test
 	deniedUpdate := adminSettingsHTTPUpdate("1", "Denied", nil)
 	deniedUpdate["ServerNameMode"] = "custom"
 	deniedUpdate["Encoding"] = map[string]any{"TranscodingMaxWidth": 320}
+	deniedUpdate["Runtime"] = map[string]any{"Threads": 4, "SoftwareToneMapping": false}
 	for _, operation := range []struct {
 		method, path string
 		body         any
@@ -429,6 +430,7 @@ func TestHTTPAdminSettingsConcurrentRevisionConflictReturnsCommittedWinner(t *te
 		update := adminSettingsHTTPUpdate("1", proposal.name, 8_000_000)
 		update["ServerNameMode"] = "custom"
 		update["Encoding"] = map[string]any{"TranscodingMaxWidth": proposal.width}
+		update["Runtime"] = map[string]any{"Threads": proposal.width / 320}
 		body, err := json.Marshal(update)
 		if err != nil {
 			t.Fatal(err)
@@ -523,6 +525,8 @@ func TestHTTPAdminSettingsRequestSnapshotRemainsConsistentAcrossConcurrentCommit
 	update := adminSettingsHTTPUpdate("1", "A later committed server", 7_654_321)
 	update["ServerNameMode"] = "custom"
 	update["Encoding"] = map[string]any{"TranscodingMaxWidth": extraWidth}
+	newThreads := old.Execution.Threads%64 + 1
+	update["Runtime"] = map[string]any{"Threads": newThreads, "H264": map[string]any{"Preset": "fast", "RateControl": "capped_crf", "CRF": 25}}
 	updated := adminSettingsHTTPObject(t, adminSettingsHTTPWrite(t, f, cookie, csrf, http.MethodPut, "/admin/v1/settings",
 		update), http.StatusOK)
 	adminSettingsHTTPAssertSnapshot(t, updated, "2")
@@ -537,6 +541,8 @@ func TestHTTPAdminSettingsRequestSnapshotRemainsConsistentAcrossConcurrentCommit
 		wanted := f.app.cfg.Transcoding
 		wanted.MaxBitrate, wanted.MaxWidth = old.Effective.MaxBitrate, old.Effective.MaxWidth
 		wanted.MaxHeight, wanted.MaxAudioChannels = old.Effective.MaxHeight, old.Effective.MaxAudioChannels
+		wanted.Hardware, wanted.HardwareUnavailable = old.Hardware, old.HardwareUnavailable
+		wanted.Execution, wanted.Threads = old.Execution, old.Execution.Threads
 		if old.TranscodingMaxWidth > 0 {
 			wanted.MaxWidth = min(wanted.MaxWidth, old.TranscodingMaxWidth)
 		}
@@ -553,7 +559,9 @@ func TestHTTPAdminSettingsRequestSnapshotRemainsConsistentAcrossConcurrentCommit
 	})).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/request-settings-observer", nil).WithContext(f.ctx))
 	if fresh.Revision != 2 || fresh.Effective.ServerName != "A later committed server" || fresh.Effective.MaxBitrate != 7_654_321 ||
 		fresh.TranscodingMaxWidth != extraWidth || planning.MaxBitrate != fresh.Effective.MaxBitrate || planning.MaxWidth != min(fresh.Effective.MaxWidth, extraWidth) ||
-		planning.MaxHeight != fresh.Effective.MaxHeight || planning.MaxAudioChannels != fresh.Effective.MaxAudioChannels {
+		planning.MaxHeight != fresh.Effective.MaxHeight || planning.MaxAudioChannels != fresh.Effective.MaxAudioChannels ||
+		fresh.Execution.Threads != newThreads || planning.Threads != newThreads || planning.Execution != fresh.Execution ||
+		fresh.Execution.H264.Preset != "fast" || fresh.Execution.H264.RateControl != "capped_crf" || fresh.Execution.H264.CRF != 25 {
 		t.Fatal("a new request did not capture one consistent newly committed revision")
 	}
 }
@@ -583,6 +591,7 @@ func TestHTTPAdminSettingsExpiredActorWaitingForBusinessRowCannotCommit(t *testi
 	}
 	update := adminSettingsHTTPUpdate("1", "Must not commit", nil)
 	update["ServerNameMode"] = "custom"
+	update["Runtime"] = map[string]any{"Threads": 4, "SoftwareToneMapping": false}
 	update["Encoding"] = map[string]any{"TranscodingMaxWidth": 320}
 	encoded, err := json.Marshal(update)
 	if err != nil {

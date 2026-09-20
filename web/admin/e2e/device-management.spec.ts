@@ -500,7 +500,7 @@ test('isolated devices page, rename, recover concurrent changes, remove logins, 
     const dialog = page.getByRole('dialog', { name: 'Remove device?', exact: true });
     await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
     await expect(dialog.getByText(/sign out its associated client logins/)).toBeVisible();
-    await expect(dialog.getByText('2 authorized logins', { exact: true })).toBeVisible();
+    await expect(dialog.getByText('2 policy-eligible logins', { exact: true })).toBeVisible();
     const bounds = await dialog.boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds!.x).toBeGreaterThanOrEqual(0);

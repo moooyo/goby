@@ -32,17 +32,20 @@ func recordCollectionSourceRemovals(tx pgx.Tx, changes []CatalogChange) error {
 		owned.catalogChanges.requireResync()
 		return nil
 	}
-	var affected bool
+	var affectedIDs []string
 	err := tx.QueryRow(owned.ctx, `WITH RECURSIVE affected_ancestors AS (
 		SELECT i.id,i.parent_id,i.library_id FROM items i WHERE i.id=ANY($1::text[])
 		UNION SELECT parent.id,parent.parent_id,parent.library_id FROM items parent
 		JOIN affected_ancestors child ON parent.id=child.parent_id AND parent.library_id=child.library_id
-	) SELECT EXISTS (SELECT 1 FROM media_collection_entries entry JOIN items member ON member.id=entry.item_id
-		WHERE member.id IN (SELECT id FROM affected_ancestors) OR member.library_id=ANY($2::text[]))`, itemIDs, libraryIDs).Scan(&affected)
+	) SELECT ARRAY(SELECT DISTINCT entry.collection_id FROM media_collection_entries entry JOIN items member ON member.id=entry.item_id
+		WHERE member.id IN (SELECT id FROM affected_ancestors) OR member.library_id=ANY($2::text[]) LIMIT 4097)`, itemIDs, libraryIDs).Scan(&affectedIDs)
 	if err != nil {
 		return err
 	}
-	if affected {
+	if len(affectedIDs) > 0 {
+		for _, id := range affectedIDs {
+			owned.rememberNotificationScope(collectionLibraryID, id)
+		}
 		owned.catalogChanges.requireResync()
 	}
 	return nil

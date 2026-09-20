@@ -63,11 +63,12 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
   const [type, setType] = useState<LibraryInput['CollectionType']>('movies');
   const [pathsText, setPathsText] = useState('');
   const [scan, setScan] = useState(true);
+  const [options, setOptions] = useState({ EnableLocalMetadata: true, EnableLocalImages: true });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const [browsing, setBrowsing] = useState(false);
-  const dirty = Boolean(name || pathsText || type !== 'movies' || !scan);
+  const dirty = Boolean(name || pathsText || type !== 'movies' || !scan || !options.EnableLocalMetadata || !options.EnableLocalImages);
   useUserDraftNavigation(dirty && !outcomeUnknown, busy, onNavigationGuardChange, 'Discard the new library draft and leave this page?');
   function close() { if (!busy && (outcomeUnknown || !dirty || window.confirm('Discard the new library draft?'))) onClose(); }
   const paths = [...new Set(pathsText.split(/\r?\n/).map((path) => path.trim()).filter(Boolean))];
@@ -80,7 +81,7 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
     setBusy(true);
     setError(null);
     try {
-      const result = await adminApi.createLibrary({ Name: name.trim(), CollectionType: type, Paths: paths, Scan: scan });
+      const result = await adminApi.createLibrary({ Name: name.trim(), CollectionType: type, Paths: paths, Scan: scan, LibraryOptions: options });
       onCreated(result);
     } catch (cause) {
       if (cause instanceof ApiError && ['network_error', 'invalid_response'].includes(cause.code)) setOutcomeUnknown(true);
@@ -106,6 +107,12 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
             <TextField id="library-paths" name="Paths" required fullWidth multiline minRows={3} maxRows={6} label="Media directories" value={pathsText} onChange={(event) => setPathsText(event.target.value)} disabled={busy} error={invalidPaths || Boolean(fieldError(error, 'Paths'))} helperText={pathsMessage} slotProps={{ htmlInput: { spellCheck: false, autoCapitalize: 'none' } }} sx={{ '& textarea': { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13 } }} />
             <Button type="button" startIcon={<FolderOpenOutlined />} onClick={() => setBrowsing(true)} disabled={busy || outcomeUnknown} sx={{ alignSelf: 'flex-start' }}>Browse directories</Button>
             <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}><StorageRoots roots={roots} /></Paper>
+            <Box component="section" aria-label="Library options"><Stack spacing={1}>
+              <FormControlLabel control={<Checkbox checked={options.EnableLocalMetadata} disabled={busy || outcomeUnknown} onChange={(event) => setOptions({ ...options, EnableLocalMetadata: event.target.checked })} />} label="Import local metadata files" />
+              <FormControlLabel control={<Checkbox checked={options.EnableLocalImages} disabled={busy || outcomeUnknown} onChange={(event) => setOptions({ ...options, EnableLocalImages: event.target.checked })} />} label="Import local artwork" />
+              <Typography variant="caption" color="text.secondary">Local artwork includes images in media directories and embedded audio covers. These options are used by scans. Disabling an option keeps information already imported.</Typography>
+              {fieldError(error, 'LibraryOptions') && <Typography variant="body2" color="error.main">{fieldError(error, 'LibraryOptions')}</Typography>}
+            </Stack></Box>
             <FormControlLabel control={<Checkbox checked={scan} onChange={(event) => setScan(event.target.checked)} disabled={busy} />} label={<Box><Typography variant="body2" sx={{ fontWeight: 600 }}>Scan after creating</Typography><Typography variant="caption" color="text.secondary">Find media files and add them to the catalog.</Typography></Box>} />
           </Stack>
         </DialogContent>

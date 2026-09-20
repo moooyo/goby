@@ -226,12 +226,17 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 	if err := g.checkStartup(startup); err != nil {
 		return nil, err
 	}
-	g.server = newHTTPServer(cfg.ListenAddress, g.app.Handler(), logger)
-	g.server.BaseContext = func(net.Listener) context.Context { return g.ctx }
-	listen := net.ListenConfig{}
-	g.listener, err = listen.Listen(startup, "tcp", cfg.ListenAddress)
+	binding, err := g.app.StartupHTTPBinding()
 	if err != nil {
-		return nil, generationError("HTTP listener reservation failed", err)
+		return nil, generationError("HTTP startup binding is unavailable", err)
+	}
+	g.server = newHTTPServer(binding.Address(), g.app.Handler(), logger)
+	g.server.BaseContext = func(net.Listener) context.Context { return g.ctx }
+	g.server.ConnContext = g.app.HTTPConnectionContext
+	listen := net.ListenConfig{}
+	g.listener, err = reserveGenerationHTTPBinding(startup, binding, listen.Listen, g.app.PublishHTTPBinding)
+	if err != nil {
+		return nil, err
 	}
 	if err := g.checkStartup(startup); err != nil {
 		return nil, err
@@ -241,6 +246,25 @@ func prepareGeneration(ctx context.Context, runtime *recovery.Runtime, logger *s
 		return nil, err
 	}
 	return g, nil
+}
+
+// Every non-nil listener transfers to the generation, including publication
+// failure. Its existing joined cleanup pipeline owns closing that reservation;
+// a bounded startup failure never loses or silently replaces the listener.
+func reserveGenerationHTTPBinding(ctx context.Context, binding server.HTTPBindingStartup,
+	listen func(context.Context, string, string) (net.Listener, error),
+	publish func(net.Addr, server.HTTPBindingStartup) error) (net.Listener, error) {
+	listener, err := listen(ctx, "tcp", binding.Address())
+	if err != nil {
+		return listener, generationError("HTTP listener reservation failed", err)
+	}
+	if listener == nil {
+		return nil, generationError("HTTP listener reservation failed", errors.New("HTTP reservation is unavailable"))
+	}
+	if err := publish(listener.Addr(), binding); err != nil {
+		return listener, generationError("HTTP listener publication failed", err)
+	}
+	return listener, nil
 }
 
 func (g *generation) watchLease() {
@@ -384,6 +408,9 @@ func (g *generation) StopServing(ctx context.Context) error {
 			if started {
 				<-serveDone
 			}
+			if g.app != nil {
+				g.app.WithdrawHTTPBinding()
+			}
 			g.stopErr = errors.Join(g.stopGraceErr, g.stopResourceErr)
 		}()
 	})
@@ -502,7 +529,7 @@ func generationError(stage string, err error) error {
 	}
 	if class == "unclassified" {
 		switch stage {
-		case "HTTP listener reservation failed":
+		case "HTTP listener reservation failed", "HTTP listener publication failed":
 			class = "listener_start_failed"
 		case "HTTP generation listener failed":
 			class = "listener_failed"

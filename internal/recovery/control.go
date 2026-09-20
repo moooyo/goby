@@ -61,6 +61,7 @@ type operationRecord struct {
 	GenerationID       string                 `json:"generationId"`
 	TargetSlot         lifecycle.DatabaseSlot `json:"targetSlot"`
 	Target             *recoverydb.Retained   `json:"target,omitempty"`
+	TargetHost         *hostSettingsCapture   `json:"targetHost,omitempty"`
 	ApplyAuthorized    bool                   `json:"applyAuthorized"`
 	CancelAuthorized   bool                   `json:"cancelAuthorized"`
 	ActivationAccepted bool                   `json:"activationAccepted"`
@@ -202,6 +203,7 @@ func compactControl(data *controlData) {
 		op := &data.Operations[index]
 		if settledOperation(*data, *op) {
 			op.Manifest, op.Target = nil, nil
+			op.TargetHost = nil
 		}
 	}
 }
@@ -330,6 +332,9 @@ func validateControl(data controlData, deployment string) error {
 			op.FailureGeneration != "" && !hexID(op.FailureGeneration, 64) ||
 			!validOperationError(op.ErrorCode) || op.Operator && (op.ActorID != "" || op.CredentialID != "") ||
 			!op.Operator && (op.ActorID == "" || op.CredentialID == "") {
+			return ErrInvalid
+		}
+		if op.TargetHost != nil && ((op.Kind != "restore" && op.Kind != "rollback") || !op.TargetHost.valid(op.Operator)) {
 			return ErrInvalid
 		}
 		seen[op.ID], requests[op.RequestID] = true, true

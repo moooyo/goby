@@ -68,9 +68,11 @@ ordinary registry ordering, returns all current rows, and supplies a coherent
 total. Both lists omit the shared application-key server record.
 
 `ActiveLoginCount` counts nonrevoked, unexpired ordinary credentials whose
-accounts are enabled, evaluated against one observation timestamp. It does
-not measure sockets, recent presence, or active playback. Revoked and expired
-login history can leave a listed device with zero authorized logins. A last
+accounts are enabled and whose current stored device, schedule and lockout
+policy allows login, evaluated against one observation timestamp. It does not
+predict future trusted-peer checks or measure sockets, recent presence, or active
+playback. Historical credentials can leave a listed device with zero eligible
+logins. A last
 user reference can become null after account deletion without removing the
 registry history.
 

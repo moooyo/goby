@@ -43,6 +43,8 @@ type ManagedDevice struct {
 	CreatedAt        time.Time
 	LastSeenAt       time.Time
 	IPAddress        string
+	// ActiveLoginCount counts currently policy-eligible ordinary credentials.
+	// It does not promise online presence or eligibility on a future network peer.
 	ActiveLoginCount int64
 }
 
@@ -271,26 +273,17 @@ func (s *Store) beginDeviceRead(ctx context.Context, actor Principal, native boo
 
 const deviceColumns = `d.id, d.revision, d.reported_device_id, d.reported_name, d.custom_name,
 	d.app_name, d.app_version, d.last_user_id, last_user.name AS last_user_name,
-	d.created_at, d.last_seen_at, d.ip_address,
-	(SELECT count(*) FROM sessions authentication JOIN users account ON account.id = authentication.user_id
-	 WHERE authentication.device_registry_id = d.id AND authentication.kind = 'emby'
-	 AND authentication.revoked_at IS NULL AND authentication.expires_at > observation.observed_at
-	 AND NOT account.is_disabled) AS active_login_count`
+	d.created_at, d.last_seen_at, d.ip_address`
 
 func readManagedDevice(ctx context.Context, tx pgx.Tx, id int64) (ManagedDevice, error) {
-	var row deviceRecord
-	err := tx.QueryRow(ctx, `WITH observation AS MATERIALIZED (SELECT clock_timestamp() AS observed_at)
-		SELECT `+deviceColumns+` FROM devices d LEFT JOIN users last_user ON last_user.id = d.last_user_id
-		CROSS JOIN observation WHERE d.id = $1 AND d.id > 1 AND d.deleted_at IS NULL`, id).
-		Scan(&row.ID, &row.Revision, &row.ReportedDeviceID, &row.ReportedName, &row.CustomName, &row.AppName,
-			&row.AppVersion, &row.LastUserID, &row.LastUserName, &row.CreatedAt, &row.LastSeenAt, &row.IPAddress, &row.ActiveLoginCount)
-	if errors.Is(err, pgx.ErrNoRows) {
+	page, err := readDeviceEligibility(ctx, tx, ManagedDeviceFilter{Limit: 1}, id)
+	if err != nil {
+		return ManagedDevice{}, err
+	}
+	if len(page.Items) == 0 {
 		return ManagedDevice{}, ErrDeviceNotFound
 	}
-	if err != nil {
-		return ManagedDevice{}, fmt.Errorf("read ordinary device: %w", err)
-	}
-	return row.device(), nil
+	return page.Items[0], nil
 }
 
 func (s *Store) ListManagedDevices(ctx context.Context, actor Principal, filter ManagedDeviceFilter) (ManagedDevicesPage, error) {
@@ -307,27 +300,9 @@ func (s *Store) listManagedDevices(ctx context.Context, actor Principal, filter 
 		return ManagedDevicesPage{}, err
 	}
 	defer rollback(tx)
-	result := ManagedDevicesPage{Items: make([]ManagedDevice, 0), StartIndex: filter.StartIndex, Limit: filter.Limit}
-	var encoded []byte
-	err = tx.QueryRow(ctx, `WITH observation AS MATERIALIZED (SELECT clock_timestamp() AS observed_at),
-		filtered AS MATERIALIZED (
-		 SELECT `+deviceColumns+` FROM devices d LEFT JOIN users last_user ON last_user.id = d.last_user_id
-		 CROSS JOIN observation WHERE d.id > 1 AND d.deleted_at IS NULL AND ($1 = ''
-		 OR strpos(lower(COALESCE(d.custom_name, d.reported_name)), lower($1)) > 0
-		 OR strpos(lower(d.reported_name), lower($1)) > 0 OR strpos(lower(d.reported_device_id), lower($1)) > 0
-		 OR strpos(lower(d.app_name), lower($1)) > 0 OR strpos(lower(COALESCE(last_user.name, '')), lower($1)) > 0)
-		), page AS (SELECT * FROM filtered ORDER BY last_seen_at DESC, id DESC LIMIT $2 OFFSET $3)
-		SELECT (SELECT count(*) FROM filtered), COALESCE(jsonb_agg(to_jsonb(page) ORDER BY last_seen_at DESC, id DESC), '[]'::jsonb)
-		FROM page`, filter.SearchTerm, filter.Limit, filter.StartIndex).Scan(&result.TotalRecordCount, &encoded)
+	result, err := readDeviceEligibility(ctx, tx, filter, 0)
 	if err != nil {
-		return ManagedDevicesPage{}, fmt.Errorf("list ordinary devices: %w", err)
-	}
-	var rows []deviceRecord
-	if err := json.Unmarshal(encoded, &rows); err != nil {
-		return ManagedDevicesPage{}, fmt.Errorf("decode ordinary device page: %w", err)
-	}
-	for _, row := range rows {
-		result.Items = append(result.Items, row.device())
+		return ManagedDevicesPage{}, err
 	}
 	if err := authorizeDeviceActor(ctx, tx, actor, native, nil); err != nil {
 		return ManagedDevicesPage{}, err
@@ -338,33 +313,18 @@ func (s *Store) listManagedDevices(ctx context.Context, actor Principal, filter 
 	return result, nil
 }
 
-// ListEmbyDevices returns all ordinary current generations from one statement.
-// The shared application-key server identity has its own separate lifecycle.
+// ListEmbyDevices returns ordinary current generations from one statement, or a
+// projection-limit error rather than a partial list. Shared application-key
+// server identity has its own separate lifecycle and is not counted here.
 func (s *Store) ListEmbyDevices(ctx context.Context, actor Principal) ([]ManagedDevice, error) {
 	tx, err := s.beginDeviceRead(ctx, actor, false)
 	if err != nil {
 		return nil, err
 	}
 	defer rollback(tx)
-	rows, err := tx.Query(ctx, `WITH observation AS MATERIALIZED (SELECT clock_timestamp() AS observed_at)
-		SELECT `+deviceColumns+` FROM devices d LEFT JOIN users last_user ON last_user.id = d.last_user_id
-		CROSS JOIN observation WHERE d.id > 1 AND d.deleted_at IS NULL ORDER BY d.last_seen_at DESC, d.id DESC`)
+	result, err := readDeviceEligibility(ctx, tx, ManagedDeviceFilter{Limit: maxDeviceEligibilityDevices + 1}, 0)
 	if err != nil {
-		return nil, fmt.Errorf("list compatibility devices: %w", err)
-	}
-	result := make([]ManagedDevice, 0)
-	for rows.Next() {
-		var row deviceRecord
-		if err := rows.Scan(&row.ID, &row.Revision, &row.ReportedDeviceID, &row.ReportedName, &row.CustomName, &row.AppName,
-			&row.AppVersion, &row.LastUserID, &row.LastUserName, &row.CreatedAt, &row.LastSeenAt, &row.IPAddress, &row.ActiveLoginCount); err != nil {
-			rows.Close()
-			return nil, fmt.Errorf("read compatibility device: %w", err)
-		}
-		result = append(result, row.device())
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("read compatibility device list: %w", err)
+		return nil, err
 	}
 	if err := authorizeDeviceActor(ctx, tx, actor, false, nil); err != nil {
 		return nil, err
@@ -372,7 +332,7 @@ func (s *Store) ListEmbyDevices(ctx context.Context, actor Principal) ([]Managed
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit compatibility device list: %w", err)
 	}
-	return result, nil
+	return result.Items, nil
 }
 
 func findDeviceGeneration(ctx context.Context, tx pgx.Tx, reference deviceReference) (int64, string, error) {

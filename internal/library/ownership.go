@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -167,12 +168,16 @@ func (s *Store) beginOwnedTx(ctx context.Context) (pgx.Tx, error) {
 
 type ownedTx struct {
 	pgx.Tx
-	store               *Store
-	ctx                 context.Context
-	cancel              context.CancelFunc
-	finished            bool
-	catalogChanges      catalogChangeBatch
-	systemEventRecorded bool
+	store                       *Store
+	ctx                         context.Context
+	cancel                      context.CancelFunc
+	finished                    bool
+	catalogChanges              catalogChangeBatch
+	systemEventRecorded         bool
+	notificationMutationID      string
+	notificationJournalStamp    [32]byte
+	notificationJournalRecorded bool
+	notificationReferences      []notificationjournal.Reference
 }
 
 func (tx *ownedTx) Exec(_ context.Context, statement string, args ...any) (pgconn.CommandTag, error) {
@@ -236,6 +241,9 @@ func (tx *ownedTx) Commit(_ context.Context) error {
 // after the event write. Unauthenticated/internal transactions may instead
 // flush at commit. One signal covers all catalog facts in this transaction.
 func (tx *ownedTx) flushSystemEvent() error {
+	if err := tx.recordNotificationJournal(); err != nil {
+		return err
+	}
 	if tx.systemEventRecorded || (!tx.catalogChanges.resync && len(tx.catalogChanges.changes) == 0) || systemevents.IsDerived(tx.ctx) {
 		return nil
 	}

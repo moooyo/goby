@@ -259,6 +259,18 @@ func metadataMigrationEpisodeRosterDefaults(t *testing.T, ctx context.Context, p
 		AND NOT EXISTS(SELECT 1 FROM expected_episodes)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("metadata migration inferred episode roster authority, source history, or expected facts: %v", err)
 	}
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM managed_settings WHERE runtime_overrides IS DISTINCT FROM
+		'{"Network":null,"Hardware":null,"Threads":null,"H264":null,"HEVC":null,"SoftwareToneMapping":null,"VulkanToneMapping":null}'::jsonb)
+		AND (SELECT count(*) FROM notification_transport)=1
+		AND EXISTS(SELECT 1 FROM notification_transport WHERE id=1 AND revision=1 AND NOT enabled AND endpoint=''
+			AND allowed_networks='{}'::text[] AND credential_ciphertext IS NULL AND credential_generation=1)
+		AND (SELECT count(*) FROM notification_journal_state)=1
+		AND EXISTS(SELECT 1 FROM notification_journal_state WHERE id=1 AND sequence=0)
+		AND NOT EXISTS(SELECT 1 FROM notification_registrations) AND NOT EXISTS(SELECT 1 FROM notification_source_events)
+		AND NOT EXISTS(SELECT 1 FROM notification_deliveries)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("metadata migration inferred runtime overrides or external notification work: %v", err)
+	}
 }
 
 func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool, itemID string, legacy bool) Item {
@@ -495,6 +507,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		"task_system_events", "task_system_event_receipts", "item_intro_state")
 	expectedAdditions = append(expectedAdditions, "media_operations", "media_operation_cues", "item_owned_subtitles", "item_embedded_artwork")
 	expectedAdditions = append(expectedAdditions, "series_episode_rosters", "episode_roster_imports", "expected_episodes")
+	expectedAdditions = append(expectedAdditions, "notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries")
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)

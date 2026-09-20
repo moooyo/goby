@@ -16,6 +16,7 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/settings"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -23,16 +24,20 @@ import (
 // The raw restore was verified before any normalization reported here. No
 // network listener, scheduled task manager, media scan, or encoder was started.
 type RestoredDatabase struct {
-	SourceVersion             int64
-	CurrentVersion            int64
-	RevokedCredentials        int64
-	ExpiredPlayback           int64
-	InterruptedEncodings      int64
-	InterruptedScans          int64
-	InterruptedTasks          int64
-	NormalizedMediaOperations int64
-	RegisteredRoots           int64
-	Administrators            int64
+	SourceVersion                     int64
+	CurrentVersion                    int64
+	RevokedCredentials                int64
+	ExpiredPlayback                   int64
+	InterruptedEncodings              int64
+	InterruptedScans                  int64
+	InterruptedTasks                  int64
+	NormalizedMediaOperations         int64
+	NormalizedHostSettings            bool
+	DisabledNotificationTransports    int64
+	DisabledNotificationRegistrations int64
+	CancelledNotificationDeliveries   int64
+	RegisteredRoots                   int64
+	Administrators                    int64
 }
 
 // RestoreInto requires an exclusively leased, separately configured empty
@@ -42,6 +47,12 @@ type RestoredDatabase struct {
 // scan/task normalization can leave a locally bound incomplete inactive stage;
 // it must never be activated or silently cleared after failure.
 func (a *Archive) RestoreInto(ctx context.Context, target *pgxpool.Pool, lease *database.Lease, targetConfig config.Config, binding ...func(context.Context, pgx.Tx) error) (RestoredDatabase, error) {
+	return a.restoreIntoWithHost(ctx, target, lease, targetConfig, settings.TargetHostSettings{}, binding...)
+}
+
+// The coordinator supplies this capture from its protected active target. A
+// direct or offline restore has no such authority and uses deployment defaults.
+func (a *Archive) restoreIntoWithHost(ctx context.Context, target *pgxpool.Pool, lease *database.Lease, targetConfig config.Config, host settings.TargetHostSettings, binding ...func(context.Context, pgx.Tx) error) (RestoredDatabase, error) {
 	var result RestoredDatabase
 	if a == nil || target == nil || !lease.Protects(target) || target.Config().ConnString() != targetConfig.DatabaseURL || len(binding) > 1 || len(binding) == 1 && binding[0] == nil {
 		return result, ErrInvalid
@@ -73,7 +84,7 @@ func (a *Archive) RestoreInto(ctx context.Context, target *pgxpool.Pool, lease *
 		if !lease.ProtectsTransaction(target, tx) {
 			return ErrUnavailable
 		}
-		normalized, err := normalizeRestoredIdentity(work, tx, a.Master, targetConfig)
+		normalized, err := normalizeRestoredIdentityWithHost(work, tx, a.Master, targetConfig, host)
 		if err != nil {
 			return err
 		}
@@ -109,6 +120,10 @@ func (a *Archive) RestoreInto(ctx context.Context, target *pgxpool.Pool, lease *
 }
 
 func normalizeRestoredIdentity(ctx context.Context, tx pgx.Tx, master []byte, targetConfig config.Config) (RestoredDatabase, error) {
+	return normalizeRestoredIdentityWithHost(ctx, tx, master, targetConfig, settings.TargetHostSettings{})
+}
+
+func normalizeRestoredIdentityWithHost(ctx context.Context, tx pgx.Tx, master []byte, targetConfig config.Config, host settings.TargetHostSettings) (RestoredDatabase, error) {
 	var result RestoredDatabase
 	if _, err := identity.ValidateApplicationKeyRecovery(ctx, tx, master); err != nil {
 		return result, err
@@ -123,6 +138,20 @@ func normalizeRestoredIdentity(ctx context.Context, tx pgx.Tx, master []byte, ta
 	}
 	result.RevokedCredentials, err = identity.RevokeRecoveredCredentials(ctx, tx)
 	if err != nil {
+		return RestoredDatabase{}, err
+	}
+	result.NormalizedHostSettings, err = settings.NormalizeRestoredHostSettings(ctx, tx, host)
+	if err != nil {
+		return RestoredDatabase{}, err
+	}
+	if err := tx.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM notification_transport WHERE enabled),
+		(SELECT count(*) FROM notification_registrations WHERE enabled),
+		(SELECT count(*) FROM notification_deliveries WHERE state IN ('pending','sending'))`).Scan(
+		&result.DisabledNotificationTransports, &result.DisabledNotificationRegistrations, &result.CancelledNotificationDeliveries); err != nil {
+		return RestoredDatabase{}, ErrUnavailable
+	}
+	if err := identity.NormalizeNotificationRestore(ctx, tx); err != nil {
 		return RestoredDatabase{}, err
 	}
 	tag, err := tx.Exec(ctx, `UPDATE play_sessions SET state='Expired',

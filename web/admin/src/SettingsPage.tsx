@@ -10,6 +10,7 @@ import type { ServerSettings, SettingsResetField } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { MediaDiagnosticsPanel } from './MediaDiagnosticsPanel';
 import { ManagementSettingsFields } from './ManagementSettingsFields';
+import { RuntimeSettingsFields } from './RuntimeSettingsFields';
 import { fieldError } from './formFields';
 import { draftFromSettings, formatMbps, formatSettingValue, outputSettingsFields, parseSettingsDraft, settingLabels, settingsDraftKey, settingsResetFields } from './settingsDraft';
 import type { OutputSettingField, ServerNameDraft, SettingDraft, SettingsDraft } from './settingsDraft';
@@ -170,7 +171,7 @@ function DeploymentSettings({ settings }: { settings: ServerSettings }) {
   ];
   return <Paper component="section" aria-labelledby="deployment-settings-heading" variant="outlined" sx={{ p: { xs: 2.5, sm: 3 } }}>
     <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1.2 }}><LockOutlined sx={{ fontSize: 20, color: 'text.secondary' }} /><Typography id="deployment-settings-heading" variant="h3" component="h2">Deployment configuration</Typography><Chip label="Read only" size="small" variant="outlined" /></Stack>
-    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 760 }}>The host name and these hardware and resource settings are read at server startup. Change the host or deployment configuration and restart the service to update them.</Typography>
+    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 760 }}>These are the startup deployment values. Saved runtime overrides shown above apply to new playback jobs. Host identity, transcoding availability, and concurrency limits remain deployment settings.</Typography>
     <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' }, gap: 2.5, m: 0, mt: 3 }}>
       {entries.map(([label, value]) => <Box key={label} sx={{ minWidth: 0 }}><Typography component="dt" variant="caption" color="text.secondary">{label}</Typography><Typography component="dd" variant="body2" sx={{ m: 0, mt: 0.4, fontWeight: 600, overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}>{value}</Typography></Box>)}
     </Box>
@@ -314,7 +315,7 @@ export function SettingsPage({ currentUserId, onNavigationGuardChange }: { curre
   }
 
   return <Box aria-busy={loading || Boolean(busy) || diagnosticBusy}>
-    <PageHeading title="Settings" description="Manage server identity and output limits. Database overrides take precedence over deployment defaults." action={<Button variant="outlined" startIcon={<RefreshRounded />} onClick={requestReload} disabled={loading || Boolean(busy) || diagnosticBusy}>Reload settings</Button>} />
+    <PageHeading title="Settings" description="Manage server identity, playback configuration, and output limits. Database overrides take precedence over deployment defaults." action={<Button variant="outlined" startIcon={<RefreshRounded />} onClick={requestReload} disabled={loading || Boolean(busy) || diagnosticBusy}>Reload settings</Button>} />
     {loadError != null && <ErrorNotice error={loadError} retry={reload} />}
     {loading && <Stack spacing={2.5} role="status" aria-label="Loading settings"><Skeleton variant="rounded" height={250} /><Skeleton variant="rounded" height={420} /></Stack>}
     {settings && draft && <Stack spacing={3}>
@@ -338,6 +339,7 @@ export function SettingsPage({ currentUserId, onNavigationGuardChange }: { curre
                 onChange={(value) => change('TranscodingMaxWidth', value)} />
             </Box>
           </Paper>
+          {settings.Runtime && draft.Runtime && <RuntimeSettingsFields settings={settings.Runtime} draft={draft.Runtime} disabled={disabled} stale={blocked} errors={parsed?.errors ?? {}} mutationError={mutationError} onChange={(value) => change('Runtime', value)} />}
           {draft.Management && <ManagementSettingsFields draft={draft.Management} defaults={settings.ManagementDefaults} disabled={disabled} errors={parsed?.errors ?? {}} mutationError={mutationError} onChange={(value) => change('Management', value)} />}
           {resetFields === undefined && mutationError != null && <MutationNotice error={mutationError} reload={requestReload} />}
           {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}
@@ -346,7 +348,7 @@ export function SettingsPage({ currentUserId, onNavigationGuardChange }: { curre
               <Box><Typography variant="body2" sx={{ fontWeight: 650 }}>{dirty ? 'Unsaved changes' : 'No unsaved changes'}</Typography><Typography variant="caption" color="text.secondary">{blocked ? 'Reload the latest settings to continue.' : 'Save applies the complete set of override choices.'}</Typography></Box>
               <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button type="submit" variant="contained" startIcon={busy === 'save' ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />} disabled={disabled || !dirty || !parsed?.input}>{busy === 'save' ? 'Saving settings...' : 'Save settings'}</Button><Button color="secondary" onClick={() => setPendingAction('discard')} disabled={loading || Boolean(busy) || diagnosticBusy || !dirty}>Discard changes</Button></Stack>
             </Stack>
-            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}><Button color="secondary" startIcon={<RestartAltRounded />} onClick={openReset} disabled={disabled || savedOverrides.length === 0}>Reset saved overrides</Button><Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 0, mt: 0.5 }}>Restore selected deployment defaults or remove the additional width limit.</Typography></Box>
+            <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}><Button color="secondary" startIcon={<RestartAltRounded />} onClick={openReset} disabled={disabled || savedOverrides.length === 0}>Reset saved overrides</Button><Typography variant="caption" color="text.secondary" component="p" sx={{ mb: 0, mt: 0.5 }}>Restore selected identity and output defaults or remove the additional width limit. Choose runtime deployment defaults in their respective sections above.</Typography></Box>
           </Paper>
         </Stack>
       </Box>

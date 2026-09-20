@@ -70,6 +70,8 @@ var publishedMigrations = [...]publishedMigration{
 	{44, "0044_media_operations.sql", "d579e1699c2cc1c263cd02b671bb3df28368071c0d34db771526ea06a8895453"},
 	{45, "0045_embedded_artwork.sql", "d4406391ac884dac31eef84b75b4f4cb73390b29f162b31821a55765dba6ca5c"},
 	{46, "0046_expected_episodes.sql", "1b1336f5c43dedd3969a1ca0bd86df6acab0c9b2b2715513cd9987c6ebdce838"},
+	{47, "0047_managed_execution_settings.sql", "33863c8d0d095b76772d40cb982791643242725b1d55d5b8cb7eb0042fed4365"},
+	{48, "0048_notifications.sql", "f2e67f5e47e61634c4f407d417a0e54464ad1294da932c2ffbc34b439bcd558c"},
 }
 
 func validatePublishedMigrations(available []migration) error {

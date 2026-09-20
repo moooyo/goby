@@ -1,6 +1,8 @@
 import type { ServerNameMode, ServerSettings, SettingsField, SettingsOverrides, SettingsResetField, SettingsUpdateInput, SettingsValues } from './api';
 import { managementDraft, managementDraftKey, parseManagementDraft } from './managementDraft';
 import type { ManagementDraft } from './managementDraft';
+import { parseRuntimeDraft, runtimeDraft, runtimeDraftKey } from './runtimeSettingsDraft';
+import type { RuntimeDraft } from './runtimeSettingsDraft';
 
 export const settingsFields: readonly SettingsField[] = [
   'ServerName', 'MaxBitrate', 'MaxWidth', 'MaxHeight', 'MaxAudioChannels',
@@ -33,6 +35,7 @@ export type SettingsDraft = Record<OutputSettingField, SettingDraft> & {
   ServerName: ServerNameDraft;
   TranscodingMaxWidth: string;
   Management?: ManagementDraft;
+  Runtime?: RuntimeDraft;
 };
 type SettingsDraftErrors = Partial<Record<SettingsResetField, string>> & Record<string, string | undefined>;
 type SettingsDraftInput = Omit<SettingsUpdateInput, 'Revision'>;
@@ -80,6 +83,7 @@ export function draftFromSettings(value: ServerSettings): SettingsDraft {
     MaxAudioChannels: create('MaxAudioChannels'),
     TranscodingMaxWidth: String(value.Encoding.TranscodingMaxWidth),
     ...(value.Management ? { Management: managementDraft(value.Management) } : {}),
+    ...(value.Runtime ? { Runtime: runtimeDraft(value.Runtime) } : {}),
   };
 }
 
@@ -138,7 +142,9 @@ function parseDraft(draft: SettingsDraft): { input: SettingsDraftInput; errors: 
   if (additionalWidth === undefined) errors.TranscodingMaxWidth = 'Enter a whole number from 0 to 8192.';
   const management = draft.Management ? parseManagementDraft(draft.Management) : undefined;
   Object.assign(errors, management?.errors);
-  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 }, ...(management?.value ? { Management: management.value } : {}) }, errors };
+  const runtime = draft.Runtime ? parseRuntimeDraft(draft.Runtime) : undefined;
+  Object.assign(errors, runtime?.errors);
+  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 }, ...(management?.value ? { Management: management.value } : {}), ...(runtime?.value && Object.keys(runtime.value).length ? { Runtime: runtime.value } : {}) }, errors };
 }
 
 export function parseSettingsDraft(draft: SettingsDraft): {
@@ -164,5 +170,6 @@ export function settingsDraftKey(draft: SettingsDraft): string {
     ...output,
     ['TranscodingMaxWidth', errors.TranscodingMaxWidth ? ['invalid', draft.TranscodingMaxWidth] : input.Encoding.TranscodingMaxWidth],
     ['Management', draft.Management ? managementDraftKey(draft.Management) : undefined],
+    ['Runtime', draft.Runtime ? runtimeDraftKey(draft.Runtime) : undefined],
   ]);
 }

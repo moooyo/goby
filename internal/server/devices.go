@@ -271,6 +271,9 @@ func (s *Server) deleteEmbyDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.retireDeviceLogins(result)
+	if !s.retireNotificationSessionsForRequest(w, r, result.RevokedSessionIDs...) {
+		return
+	}
 	s.log.Info("compatibility device removed", "actor_credential_id", actor.SessionID, "device_id", result.ID,
 		"revoked_login_count", result.RevokedLoginCount)
 	w.WriteHeader(http.StatusNoContent)

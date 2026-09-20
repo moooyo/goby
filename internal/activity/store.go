@@ -217,7 +217,7 @@ func fieldAllowed(action Action, field Field) bool {
 	case ActionSettingsUpdated:
 		switch field {
 		case FieldServerName, FieldServerNameMode, FieldMaxBitrate, FieldMaxWidth,
-			FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement:
+			FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement, FieldRuntime:
 			return true
 		}
 	case ActionTaskScheduleUpdated:

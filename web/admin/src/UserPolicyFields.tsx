@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { Box, Button, Checkbox, Divider, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
 import { fieldError } from './formFields';
 import { FeatureAccessFields } from './FeatureAccessFields';
-import { accessDays, unratedCategories } from './userPolicy';
+import { accessDays, editableUnratedCategories } from './userPolicy';
+import { DeletionFoldersField } from './DeletionFoldersField';
 import type { UserPolicyDraft } from './userPolicy';
 
 type BooleanField = { [K in keyof UserPolicyDraft]: UserPolicyDraft[K] extends boolean ? K : never }[keyof UserPolicyDraft];
@@ -27,13 +28,13 @@ export function UserPolicyFields({ policy, disabled, error, errors, onChange }: 
       <TextField label="Maximum parental rating" value={policy.MaxParentalRating} disabled={disabled} onChange={(event) => onChange('MaxParentalRating', event.target.value)} helperText={issue('MaxParentalRating') ?? 'Leave blank for no rating limit. Use the numeric rating level supported by your library.'} error={Boolean(issue('MaxParentalRating'))} slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 64 } }} />
       {list('BlockedTags', 'Blocked tags')}{list('IncludeTags', 'Included tags')}
       {boolean('IsTagBlockingModeInclusive', 'Use blocked tags as an allow list (legacy)')}{boolean('AllowTagOrRating', 'Allow a matching tag or rating')}
-      <Box><Typography variant="body2" sx={{ fontWeight: 650, mb: 1 }}>Block unrated content</Typography><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>{unratedCategories.map((category) => <FormControlLabel key={category} label={category} control={<Checkbox disabled={disabled} checked={policy.BlockUnratedItems.includes(category)} onChange={(event) => onChange('BlockUnratedItems', event.target.checked ? [...policy.BlockUnratedItems, category] : policy.BlockUnratedItems.filter((value) => value !== category))} />} />)}</Box>{issue('BlockUnratedItems') && <Typography color="error" variant="body2">{issue('BlockUnratedItems')}</Typography>}</Box>
+      <Box><Typography variant="body2" sx={{ fontWeight: 650, mb: 1 }}>Block unrated content</Typography><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' } }}>{editableUnratedCategories.map((category) => <FormControlLabel key={category} label={category} control={<Checkbox disabled={disabled} checked={policy.BlockUnratedItems.includes(category)} onChange={(event) => onChange('BlockUnratedItems', event.target.checked ? [...policy.BlockUnratedItems, category] : policy.BlockUnratedItems.filter((value) => value !== category))} />} />)}</Box>{policy.BlockUnratedItems.filter((category) => !editableUnratedCategories.includes(category as typeof editableUnratedCategories[number])).map((category) => <Stack key={category} direction="row" sx={{ alignItems: 'center', gap: 1 }}><Typography variant="body2" color="text.secondary">{category} · Inactive saved category</Typography><Button disabled={disabled} color="error" aria-label={`Remove inactive unrated category ${category}`} onClick={() => onChange('BlockUnratedItems', policy.BlockUnratedItems.filter((value) => value !== category))}>Remove</Button></Stack>)}{issue('BlockUnratedItems') && <Typography color="error" variant="body2">{issue('BlockUnratedItems')}</Typography>}</Box>
       {list('ExcludedSubFolders', 'Excluded folder identifiers')}
     </>)}
     <FeatureAccessFields restricted={policy.RestrictedFeatures} disabled={disabled} error={issue('RestrictedFeatures')} onChange={(value) => onChange('RestrictedFeatures', value)} />
     {section('Downloads and media changes', 'Grant download, subtitle, and deletion permissions separately.', <>
       {boolean('EnableContentDownloading', 'Download media')}{boolean('EnableSubtitleDownloading', 'Download subtitles')}{boolean('EnableSubtitleManagement', 'Manage subtitles')}
-      {boolean('EnableContentDeletion', 'Delete media')}{list('EnableContentDeletionFromFolders', 'Folders allowing media deletion', 'Enter one library or folder identifier per line. These choices are retained when media deletion is disabled.')}
+      {boolean('EnableContentDeletion', 'Delete media')}<DeletionFoldersField value={policy.EnableContentDeletionFromFolders} disabled={disabled} error={issue('EnableContentDeletionFromFolders')} onChange={(value) => onChange('EnableContentDeletionFromFolders', value)} />
     </>)}
     {section('Playback limits and quality', 'Configure account playback limits and the compatible client quality preference.', <>
       {numeric('RemoteClientBitrateLimit', 'Remote bitrate limit (bits per second)', 'Set 0 for no account-specific bitrate limit.')}

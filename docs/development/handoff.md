@@ -19,7 +19,9 @@ are stopped, with data and evidence preserved. [Phase 3 music/search/discovery](
 is also closed: the recorded backend/recovery scopes, 16-stage actual browser
 journey and 24 composed administrator cases passed, with test-only repairs and
 all earlier failures retained. Its workers and PostgreSQL are stopped. Phase 4
-management configuration, protocols and external notifications are next.
+management configuration, protocols and external notifications are in
+implementation. Its [execution record](selected-compatibility-phase4-20260920.md)
+distinguishes the current source from verification, which has not started.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 The [phase 2 execution record](selected-compatibility-phase2-20260920.md) tracks
 the accepted contracts, retained failures, final repair results and resource closure.

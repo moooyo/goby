@@ -96,6 +96,30 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 				configurationInputError(w, r)
 				return settings.ConfigurationMutation{}, false
 			}
+		case section != settings.ConfigurationEncoding && field == "httpserverportnumber":
+			var port *int
+			if json.Unmarshal(raw, &port) != nil || port == nil || *port < 1 || *port > 65535 {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.HttpServerPortNumberPresent, mutation.HttpServerPortNumber = true, *port
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "h264crf":
+			var crf *int
+			if json.Unmarshal(raw, &crf) != nil || crf == nil || *crf < 18 || *crf > 35 {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.H264CrfPresent, mutation.H264Crf = true, *crf
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablesoftwaretonemapping":
+			if json.Unmarshal(raw, &mutation.EnableSoftwareToneMapping) != nil || mutation.EnableSoftwareToneMapping == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+		case (section == settings.ConfigurationEncoding || section == settings.ConfigurationPartial) && field == "enablehardwaretonemapping":
+			if json.Unmarshal(raw, &mutation.EnableHardwareToneMapping) != nil || mutation.EnableHardwareToneMapping == nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
 		case section == settings.ConfigurationEncoding && field == "transcodingmaxwidth":
 			var width *int
 			if json.Unmarshal(raw, &width) != nil || width == nil || *width < 0 || *width > 8192 {

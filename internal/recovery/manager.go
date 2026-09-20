@@ -331,6 +331,11 @@ func (m *Manager) grantLocked(ctx context.Context, actor identity.Principal, op 
 	if err := identity.CheckAdministrator(ctx, tx, actor, identity.AdministratorNative, true); err != nil {
 		return err
 	}
+	if action == activity.ActionRestoreApplyRequested || action == activity.ActionRestoreRollbackRequested {
+		if err := checkHostSettingsTx(ctx, tx, op.TargetHost); err != nil {
+			return err
+		}
+	}
 	event := activity.Event{Action: action, Source: activity.SourceNative,
 		Actor:    activity.Actor{Kind: activity.ActorUser, ID: actor.User.ID, CredentialID: actor.SessionID},
 		Resource: activity.Resource{Kind: operationResource(op.Kind), ID: op.ID}}

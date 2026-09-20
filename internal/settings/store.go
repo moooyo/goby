@@ -19,16 +19,20 @@ import (
 // Store is one server's settings publisher. Its defaults never change during
 // that server lifetime. Direct SQL edits are not a supported hot-reload path.
 type Store struct {
-	owner         library.OwnedTransactions
-	defaults      Values
-	hostName      string
-	publicationMu sync.Mutex
-	current       atomic.Pointer[Snapshot]
+	owner                 library.OwnedTransactions
+	defaults              Values
+	hostName              string
+	runtimeDefaults       RuntimeValues
+	authorizedDevices     map[string]bool
+	availableDevices      map[string]bool
+	legacyHardwareDefault bool
+	publicationMu         sync.Mutex
+	current               atomic.Pointer[Snapshot]
 }
 
 // New loads the migration-created singleton after catalog ownership has been
 // acquired. It never copies startup defaults into persisted overrides.
-func New(ctx context.Context, pool *pgxpool.Pool, owner library.OwnedTransactions, defaults Values, hostName string) (*Store, error) {
+func New(ctx context.Context, pool *pgxpool.Pool, owner library.OwnedTransactions, defaults Values, hostName string, options ...RuntimeOptions) (*Store, error) {
 	if pool == nil || owner == nil {
 		return nil, fmt.Errorf("%w: settings pool and transaction owner are required", ErrInvalidInput)
 	}
@@ -38,9 +42,14 @@ func New(ctx context.Context, pool *pgxpool.Pool, owner library.OwnedTransaction
 	if err := validateName(ServerNameCustom, &hostName); err != nil {
 		return nil, &ValidationError{Fields: map[string]string{"HostName": "supply a valid public host-name fallback"}}
 	}
-	store := &Store{owner: owner, defaults: defaults, hostName: hostName}
+	runtimeDefaults, authorized, available, legacy, err := prepareRuntimeOptions(options)
+	if err != nil {
+		return nil, err
+	}
+	store := &Store{owner: owner, defaults: defaults, hostName: hostName, runtimeDefaults: runtimeDefaults,
+		authorizedDevices: authorized, availableDevices: available, legacyHardwareDefault: legacy}
 	var initial Snapshot
-	err := owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
+	err = owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		record, err := readRecord(tx.QueryRow("SELECT " + recordColumns + " FROM managed_settings WHERE id = 1"))
 		if err != nil {
 			return err
@@ -112,6 +121,14 @@ func (s *Store) Update(ctx context.Context, actor Actor, request UpdateRequest) 
 		}
 		management = &copy
 	}
+	var runtimeChange *RuntimeUpdate
+	if request.Runtime != nil {
+		copy := cloneRuntimeUpdate(*request.Runtime)
+		if err := ValidateRuntimeUpdate(copy); err != nil {
+			return Snapshot{}, err
+		}
+		runtimeChange = &copy
+	}
 	return s.change(ctx, actor, &request.Revision, func(_ library.OwnedTx, previous settingsRecord) (settingsRecord, error) {
 		previous.Overrides, previous.ServerNameMode = overrides, mode
 		if management != nil {
@@ -119,6 +136,9 @@ func (s *Store) Update(ctx context.Context, actor Actor, request UpdateRequest) 
 		}
 		if encoding != nil {
 			previous.Encoding = *encoding
+		}
+		if runtimeChange != nil {
+			previous.Runtime = applyRuntimeUpdate(previous.Runtime, *runtimeChange)
 		}
 		return previous, nil
 	})
@@ -137,6 +157,7 @@ func (s *Store) Reset(ctx context.Context, actor Actor, request ResetRequest) (S
 	return s.change(ctx, actor, &request.Revision, func(_ library.OwnedTx, previous settingsRecord) (settingsRecord, error) {
 		previous.Overrides = clearFields(previous.Overrides, fields)
 		previous.Management = resetManagement(previous.Management, fields)
+		previous.Runtime = clearRuntimeFields(previous.Runtime, fields)
 		for _, field := range fields {
 			if field == FieldServerName {
 				previous.ServerNameMode = ServerNameDeployment
@@ -170,21 +191,27 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 		}
 		current := s.current.Load()
 		if current == nil || previous.Revision != current.Revision || !equalOverrides(previous.Overrides, current.Overrides) ||
-			previous.ServerNameMode != current.ServerNameMode || previous.Encoding != current.Encoding || !equalManagement(previous.Management, current.Management) {
+			previous.ServerNameMode != current.ServerNameMode || previous.Encoding != current.Encoding || !equalManagement(previous.Management, current.Management) ||
+			!equalRuntimeOverrides(previous.Runtime, current.Runtime.Overrides) {
 			return fmt.Errorf("%w: persisted state differs from the published application state", ErrStoredSettings)
 		}
 		next := previous
 		next.Overrides = cloneOverrides(previous.Overrides)
 		next.Management = cloneManagement(previous.Management)
+		next.Runtime = cloneRuntimeOverrides(previous.Runtime)
 		next, err = replacement(tx, next)
 		if err != nil {
 			return err
 		}
 		next.Overrides = cloneOverrides(next.Overrides)
+		next.Runtime = cloneRuntimeOverrides(next.Runtime)
 		if err := s.validateRecordValues(next); err != nil {
 			return err
 		}
-		if equalOverrides(previous.Overrides, next.Overrides) && previous.ServerNameMode == next.ServerNameMode && previous.Encoding == next.Encoding && equalManagement(previous.Management, next.Management) {
+		if err := s.authorizeHardwareChange(previous.Runtime, next.Runtime); err != nil {
+			return err
+		}
+		if equalOverrides(previous.Overrides, next.Overrides) && previous.ServerNameMode == next.ServerNameMode && previous.Encoding == next.Encoding && equalManagement(previous.Management, next.Management) && equalRuntimeOverrides(previous.Runtime, next.Runtime) {
 			// A no-op still validates the caller's revision and live authority.
 			committed, err = s.materialize(previous)
 			if err != nil {
@@ -198,14 +225,18 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 			if err != nil {
 				return err
 			}
+			runtimeJSON, err := json.Marshal(next.Runtime)
+			if err != nil {
+				return err
+			}
 			changed, err := readRecord(tx.QueryRow(`UPDATE managed_settings SET
 				revision = revision + 1, server_name = $2, max_bitrate = $3,
 				max_width = $4, max_height = $5, max_audio_channels = $6,
-				server_name_mode = $7, compatibility_max_width = $8, management = $9,
+				server_name_mode = $7, compatibility_max_width = $8, management = $9, runtime_overrides = $10,
 				updated_at = clock_timestamp() WHERE id = 1 AND revision = $1
 				RETURNING `+recordColumns, previous.Revision, next.Overrides.ServerName, next.Overrides.MaxBitrate,
 				next.Overrides.MaxWidth, next.Overrides.MaxHeight, next.Overrides.MaxAudioChannels,
-				next.ServerNameMode, next.Encoding.TranscodingMaxWidth, managementJSON))
+				next.ServerNameMode, next.Encoding.TranscodingMaxWidth, managementJSON, runtimeJSON))
 			if err != nil {
 				return err
 			}
@@ -246,7 +277,7 @@ func (s *Store) publish(value Snapshot) Snapshot {
 	}
 }
 
-const recordColumns = "revision, server_name, max_bitrate, max_width, max_height, max_audio_channels, updated_at, server_name_mode, compatibility_max_width, management"
+const recordColumns = "revision, server_name, max_bitrate, max_width, max_height, max_audio_channels, updated_at, server_name_mode, compatibility_max_width, management, runtime_overrides"
 
 type settingsRecord struct {
 	Revision       int64
@@ -255,16 +286,17 @@ type settingsRecord struct {
 	ServerNameMode ServerNameMode
 	Encoding       Encoding
 	Management     Management
+	Runtime        RuntimeOverrides
 }
 
 type rowScanner interface{ Scan(...any) error }
 
 func readRecord(row rowScanner) (settingsRecord, error) {
 	var record settingsRecord
-	var managementJSON []byte
+	var managementJSON, runtimeJSON []byte
 	err := row.Scan(&record.Revision, &record.Overrides.ServerName, &record.Overrides.MaxBitrate,
 		&record.Overrides.MaxWidth, &record.Overrides.MaxHeight, &record.Overrides.MaxAudioChannels, &record.UpdatedAt,
-		&record.ServerNameMode, &record.Encoding.TranscodingMaxWidth, &managementJSON)
+		&record.ServerNameMode, &record.Encoding.TranscodingMaxWidth, &managementJSON, &runtimeJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return settingsRecord{}, fmt.Errorf("%w: managed settings singleton is missing", ErrStoredSettings)
 	}
@@ -272,6 +304,10 @@ func readRecord(row rowScanner) (settingsRecord, error) {
 		return settingsRecord{}, fmt.Errorf("read managed settings: %w", err)
 	}
 	record.Management, err = decodeStoredManagement(managementJSON)
+	if err != nil {
+		return settingsRecord{}, err
+	}
+	record.Runtime, err = decodeStoredRuntime(runtimeJSON)
 	if err != nil {
 		return settingsRecord{}, err
 	}
@@ -290,7 +326,8 @@ func (s *Store) materialize(record settingsRecord) (Snapshot, error) {
 	}
 	return Snapshot{Revision: record.Revision, Defaults: s.defaults,
 		Overrides: cloneOverrides(record.Overrides), Effective: effectiveValues(s.defaults, record.Overrides, record.ServerNameMode, s.hostName),
-		ServerNameMode: record.ServerNameMode, HostName: s.hostName, Encoding: record.Encoding, Management: cloneManagement(record.Management), UpdatedAt: record.UpdatedAt.UTC()}, nil
+		ServerNameMode: record.ServerNameMode, HostName: s.hostName, Encoding: record.Encoding, Management: cloneManagement(record.Management),
+		Runtime: s.runtimeSnapshot(record.Runtime), UpdatedAt: record.UpdatedAt.UTC()}, nil
 }
 
 func (s *Store) validateRecordValues(record settingsRecord) error {
@@ -301,6 +338,9 @@ func (s *Store) validateRecordValues(record settingsRecord) error {
 		return err
 	}
 	if err := ValidateManagement(record.Management); err != nil {
+		return err
+	}
+	if err := validateRuntimeOverrides(record.Runtime); err != nil {
 		return err
 	}
 	return validateValues(effectiveValues(s.defaults, record.Overrides, record.ServerNameMode, s.hostName))

@@ -1,4 +1,6 @@
 import { normalizeUserPolicy, validExpandedPolicy } from './userPolicy';
+import { validRuntimeSettings } from './runtimeSettings';
+import type { RuntimeSettings, RuntimeUpdate } from './runtimeSettings';
 
 export interface User {
   Id: string;
@@ -641,6 +643,7 @@ export interface ServerSettings {
   Management?: ManagementSettings;
   ManagementDefaults?: ManagementSettings;
   ManagementEffects?: unknown;
+  Runtime?: RuntimeSettings;
 }
 
 export interface SettingsUpdateInput {
@@ -649,6 +652,7 @@ export interface SettingsUpdateInput {
   ServerNameMode: ServerNameMode;
   Encoding: SettingsEncoding;
   Management?: ManagementSettings;
+  Runtime?: RuntimeUpdate | null;
 }
 export interface SettingsResetInput { Revision: string; Fields: SettingsResetField[] }
 
@@ -741,6 +745,7 @@ export interface LibraryInput {
   CollectionType: "movies" | "tvshows" | "music" | "mixed";
   Paths: string[];
   Scan: boolean;
+  LibraryOptions?: { EnableLocalMetadata: boolean; EnableLocalImages: boolean };
 }
 
 export interface RequestOptions {
@@ -1523,7 +1528,7 @@ function validSettingValue(field: SettingsField, value: unknown): boolean {
 
 function validateSettings(value: ServerSettings): void {
   if (!isRecord(value)) throw invalidResponse();
-  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", ...["Management", "ManagementDefaults", "ManagementEffects"].filter((field) => Object.prototype.hasOwnProperty.call(value, field))])
+  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", ...["Management", "ManagementDefaults", "ManagementEffects", "Runtime"].filter((field) => Object.prototype.hasOwnProperty.call(value, field))])
     || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
     || value.Revision.length > 19 || BigInt(value.Revision) > 9223372036854775807n
     || !validSessionTimestamp(value.UpdatedAt)
@@ -1532,7 +1537,7 @@ function validateSettings(value: ServerSettings): void {
     || !validSettingsRecord(value.Effective, managedSettingFields)
     || !validSettingsRecord(value.Sources, managedSettingFields)
     || !validSettingsRecord(value.Deployment, ["HostName", "TranscodingEnabled", "HardwareDecoder", "HardwareEncoder", "Threads", "MaxJobs", "MaxUserJobs", "MaxSessionJobs"])
-    || !validSettingsRecord(value.Encoding, ["TranscodingMaxWidth"])) throw invalidResponse();
+    || !validSettingsRecord(value.Encoding, ["TranscodingMaxWidth"]) || (value.Runtime !== undefined && !validRuntimeSettings(value.Runtime))) throw invalidResponse();
   for (const field of managedSettingFields) {
     if (field === "ServerName") continue;
     const override = value.Overrides[field];

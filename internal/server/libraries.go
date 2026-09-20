@@ -9,6 +9,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -74,6 +75,10 @@ func libraryErrorInfo(err error) (int, string, string) {
 		return http.StatusNotImplemented, "unsupported_filter", "List membership cannot be evaluated for this result set."
 	case errors.Is(err, library.ErrBusy):
 		return 409, "scan_busy", "A scan or media deletion is active, or the scan queue is full."
+	case errors.Is(err, notificationjournal.ErrCapacity):
+		return 503, "notification_capacity", "The notification backlog is full. Retry after it drains."
+	case errors.Is(err, notificationjournal.ErrJournal):
+		return 503, "notification_unavailable", "The notification journal is unavailable. Retry the operation later."
 	case errors.Is(err, library.ErrUnavailable):
 		return 503, "library_unavailable", "The configured media directory or scanner is unavailable."
 	default:

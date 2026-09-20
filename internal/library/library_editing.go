@@ -370,6 +370,7 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 			}
 		}
 		if changedPaths {
+			tx.(*ownedTx).rememberNotificationScope(id, id)
 			// Large root removals/moves invalidate private collection membership
 			// and all catalog projections without retaining an unbounded ID list.
 			tx.(*ownedTx).catalogChanges.requireResync()

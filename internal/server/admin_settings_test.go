@@ -67,7 +67,9 @@ func assertAdminSettingsInputError(t *testing.T, response *httptest.ResponseReco
 		switch key {
 		case "Body", "Query", "Revision", "Overrides", "Fields", "Overrides.ServerName", "Overrides.MaxBitrate", "Overrides.MaxWidth", "Overrides.MaxHeight", "Overrides.MaxAudioChannels", "ServerNameMode", "Encoding", "Encoding.TranscodingMaxWidth":
 		default:
-			t.Fatal("native settings error used a request-controlled field name")
+			if !adminRuntimeErrorField(key) {
+				t.Fatal("native settings error used a request-controlled field name")
+			}
 		}
 	}
 	if strings.Contains(response.Body.String(), "private-marker") {

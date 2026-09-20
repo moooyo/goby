@@ -1,5 +1,9 @@
 # Configuration compatibility API
 
+The selected Phase 4 port, CPU H.264 CRF and tone-mapping extensions below are
+implemented in source and await consolidated Phase 4 verification. Earlier
+acceptance records do not establish acceptance of these extensions.
+
 **The selected phase 3 configuration contract is verified and closed within its
 recorded boundaries.** The current server fields, named management sections,
 consumers and restart behavior below are covered by the
@@ -28,9 +32,9 @@ filesystem paths.
 | --- | --- | --- |
 | `GET /emby/System/Configuration` | None | `200`, backed server fields for an administrator/key; exactly `{}` for an ordinary viewer |
 | `GET /emby/System/Configuration/{key}` | None | Administrator/key: `encoding`, `subtitles`, or the Goby `tasks` section |
-| `POST /emby/System/Configuration` | Supported server fields below | Empty `204`; replaces supported name and metadata settings; preserves other sections |
-| `POST /emby/System/Configuration/Partial` | Same supported fields | Empty `204`; applies only supplied writable fields |
-| `POST /emby/System/Configuration/{key}` | Supported fields of exactly one named section | Empty `204`; replaces that section, with omitted fields taking its defaults |
+| `POST /emby/System/Configuration` | Supported server fields below | Empty `204`; replaces supported name, metadata and desired-port settings; preserves other sections |
+| `POST /emby/System/Configuration/Partial` | Supported server fields plus H264Crf and the two tone-mapping flags | Empty `204`; applies only supplied writable fields |
+| `POST /emby/System/Configuration/{key}` | Supported fields of exactly one named section | Empty `204`; replaces that section using its documented omission rules |
 
 These use Emby token authority: an ordinary administrator login or a complete
 application-key principal can manage configuration. A native administrator
@@ -55,15 +59,38 @@ All five routes set `Cache-Control: no-store` and `Pragma: no-cache`.
 
 Administrator/key total GET exposes `IsStartupWizardCompleted`,
 `PreferredMetadataLanguage`, `MetadataCountryCode`, `EnableInternetProviders`
-and, when configured, `ServerName`. The initialization Boolean is read from the actual
+and `HttpServerPortNumber`, plus `ServerName` when configured. The port is the
+resolved desired HTTP configuration, not an assertion that a new socket is
+already active. Authenticated SystemInfo separately reports the actual running
+port and pending restart. The initialization Boolean is read from the actual
 setup-completed marker or surviving users; it is not a writable placeholder.
 An unset name is omitted, never emitted as null. No native revision, defaults,
 override map, or deployment structure is added to this compatibility DTO.
 
-The `encoding` section's complete projection is
-`{"TranscodingMaxWidth":0}` at its initial value. This is a JSON integer from
-`0` through `8192`. Native `MaxWidth` is a different setting and is not exposed
-under this field name.
+The `encoding` section contains `TranscodingMaxWidth`,
+`EnableSoftwareToneMapping` and `EnableHardwareToneMapping`. It also contains
+`H264Crf` only when the effective CPU H.264 rate-control mode is `capped_crf`.
+TranscodingMaxWidth is an integer `0..8192`; native MaxWidth is independent.
+H264Crf is an integer `18..35`. The two non-null booleans gate the actual software
+and Vulkan filter backends, respectively; the latter is not a universal hardware
+encoder or device switch. Native controls expose the complete CPU preset,
+rate-control, HEVC, thread and authorized hardware choices.
+
+| Compatibility field | Writable surface | Complete-object omission | Partial omission |
+| --- | --- | --- | --- |
+| `HttpServerPortNumber` | Full server and Partial | Clear only the port override to the deployment default; preserve native BindHost | Preserve |
+| `H264Crf` | Named encoding and Partial | If currently capped_crf, return to bitrate with CRF 23 while preserving the preset; if already bitrate, preserve the entire quality group including its inactive CRF | Preserve |
+| `EnableSoftwareToneMapping` | Named encoding and Partial | Clear the override to the deployment software-tone default | Preserve |
+| `EnableHardwareToneMapping` | Named encoding and Partial | Clear the override to the deployment Vulkan-tone default | Preserve |
+
+An explicit H264Crf selects capped_crf and preserves the currently resolved CPU
+H.264 preset. It never widens the source, client, server or user bitrate ceilings.
+An explicit port must be an integer `1..65535`; deployment-owned port zero may
+appear in GET before a private ephemeral reservation, but is not writable.
+Null, fractions and exponent notation are invalid for these compatibility
+numbers, and null is invalid for the two booleans. Native group-null/reset is
+the explicit reset interface. Full server objects reject the encoding fields;
+named encoding objects reject the port.
 
 The current named management sections share the native persisted Management
 object. They are closed projections, not arbitrary upstream configuration bags:
@@ -89,9 +116,9 @@ For authorized named reads/writes, `devices` and `dlna` return `501` with
 take precedence over these section errors. The reference's unknown-key `500`
 is recorded separately and is not copied into Goby's registry behavior.
 
-Fields such as case-sensitive-ID policy, ports, undeclared metadata options, hardware
-flags, threads, CRF, and tone mapping are omitted until their semantics and
-consumers are implemented. A write containing any unsupported field is rejected
+Fields such as case-sensitive-ID policy, undeclared metadata options,
+`EnableHardwareEncoding`, `EncodingThreadCount`, arbitrary codec parameters,
+and device paths remain unsupported. A write containing any unsupported field is rejected
 as a whole, even if its value resembles a current deployment value. The adapter
 does not accept an arbitrary upstream object and pretend to save it.
 
@@ -113,13 +140,13 @@ values and unknown query parameters are rejected.
 
 | Request | Server-name effect | Other settings |
 | --- | --- | --- |
-| Full POST with absent `ServerName` | Store `unset` | Apply metadata replacement/default rules; preserve numeric overrides, encoding, subtitles and task settings |
-| Partial POST with absent `ServerName` | Preserve current mode and raw name | Apply only supplied metadata fields; preserve unrelated settings |
+| Full POST with absent `ServerName` | Store `unset` | Apply metadata and port replacement/default rules; preserve numeric overrides, encoding, subtitles and task settings |
+| Partial POST with absent `ServerName` | Preserve current mode and raw name | Apply only supplied metadata, port and supported runtime encoding fields; preserve unrelated settings |
 | Full/Partial with `ServerName: null` | Store `unset` | Apply the selected full/partial metadata rules |
 | Full/Partial with `ServerName: ""` | Store `empty` | Apply the selected full/partial metadata rules |
 | Full/Partial with a valid nonempty name | Store `custom` with the exact text | Apply the selected full/partial metadata rules |
 | Encoding POST with absent `TranscodingMaxWidth` | Preserve name | Set the independent compatibility width to `0`; preserve all native numeric overrides |
-| Encoding POST with an integer width | Preserve name | Replace only the compatibility width |
+| Encoding POST with an integer width | Preserve name | Replace the compatibility width and apply the public CRF/tone-map omission rules above |
 
 A custom name must contain non-whitespace text, be valid UTF-8, contain no NUL,
 and use at most 128 bytes. Valid surrounding whitespace is retained. Width

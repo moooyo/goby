@@ -31,7 +31,8 @@ const (
 func hlsUserLimits(cfg config.TranscodingConfig, user identity.User) playback.ConversionLimits {
 	limits := playback.ConversionLimits{
 		MaxBitrate: cfg.MaxBitrate, MaxWidth: cfg.MaxWidth, MaxHeight: cfg.MaxHeight,
-		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware,
+		MaxAudioChannels: cfg.MaxAudioChannels, Hardware: cfg.Hardware, Execution: cfg.Execution,
+		HardwareUnavailable: cfg.HardwareUnavailable,
 	}
 	if !cfg.Enabled || user.IsDisabled || !utf8.Valid(user.Policy) {
 		return limits
