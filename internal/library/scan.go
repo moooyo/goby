@@ -406,8 +406,10 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if err := state.scanImages(stored.id, itemType, path, false); err != nil {
 			return err
 		}
-		if err := state.scanEmbeddedArtwork(stored.id, itemType, path, input.file, probe); err != nil {
-			return err
+		if probe != nil {
+			if err := state.scanEmbeddedArtwork(stored.id, itemType, path, input.file, *probe); err != nil {
+				return err
+			}
 		}
 		state.recordThemePrimary(path, stored.id, itemType)
 		state.recordScanSeen(stored.id)
@@ -498,8 +500,10 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := state.scanImages(id, itemType, path, false); err != nil {
 		return err
 	}
-	if err := state.scanEmbeddedArtwork(id, itemType, path, input.file, probe); err != nil {
-		return err
+	if probe != nil {
+		if err := state.scanEmbeddedArtwork(id, itemType, path, input.file, *probe); err != nil {
+			return err
+		}
 	}
 	state.recordThemePrimary(path, id, itemType)
 	state.recordScanSeen(id)
