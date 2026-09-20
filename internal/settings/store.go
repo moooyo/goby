@@ -122,6 +122,14 @@ func (s *Store) Update(ctx context.Context, actor Actor, request UpdateRequest) 
 		management = &copy
 	}
 	var runtimeChange *RuntimeUpdate
+	var sorting *Sorting
+	if request.Sorting != nil {
+		copy := cloneSorting(*request.Sorting)
+		if err := ValidateStoredSorting(copy); err != nil {
+			return Snapshot{}, err
+		}
+		sorting = &copy
+	}
 	if request.Runtime != nil {
 		copy := cloneRuntimeUpdate(*request.Runtime)
 		if err := ValidateRuntimeUpdate(copy); err != nil {
@@ -133,6 +141,9 @@ func (s *Store) Update(ctx context.Context, actor Actor, request UpdateRequest) 
 		previous.Overrides, previous.ServerNameMode = overrides, mode
 		if management != nil {
 			previous.Management = cloneManagement(*management)
+		}
+		if sorting != nil {
+			previous.Sorting = cloneSorting(*sorting)
 		}
 		if encoding != nil {
 			previous.Encoding = *encoding
@@ -159,6 +170,9 @@ func (s *Store) Reset(ctx context.Context, actor Actor, request ResetRequest) (S
 		previous.Management = resetManagement(previous.Management, fields)
 		previous.Runtime = clearRuntimeFields(previous.Runtime, fields)
 		for _, field := range fields {
+			if field == FieldSorting {
+				previous.Sorting = DefaultSorting()
+			}
 			if field == FieldServerName {
 				previous.ServerNameMode = ServerNameDeployment
 			} else if field == FieldTranscodingMaxWidth {
@@ -192,12 +206,14 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 		current := s.current.Load()
 		if current == nil || previous.Revision != current.Revision || !equalOverrides(previous.Overrides, current.Overrides) ||
 			previous.ServerNameMode != current.ServerNameMode || previous.Encoding != current.Encoding || !equalManagement(previous.Management, current.Management) ||
+			!equalSorting(previous.Sorting, current.Sorting) ||
 			!equalRuntimeOverrides(previous.Runtime, current.Runtime.Overrides) {
 			return fmt.Errorf("%w: persisted state differs from the published application state", ErrStoredSettings)
 		}
 		next := previous
 		next.Overrides = cloneOverrides(previous.Overrides)
 		next.Management = cloneManagement(previous.Management)
+		next.Sorting = cloneSorting(previous.Sorting)
 		next.Runtime = cloneRuntimeOverrides(previous.Runtime)
 		next, err = replacement(tx, next)
 		if err != nil {
@@ -211,7 +227,7 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 		if err := s.authorizeHardwareChange(previous.Runtime, next.Runtime); err != nil {
 			return err
 		}
-		if equalOverrides(previous.Overrides, next.Overrides) && previous.ServerNameMode == next.ServerNameMode && previous.Encoding == next.Encoding && equalManagement(previous.Management, next.Management) && equalRuntimeOverrides(previous.Runtime, next.Runtime) {
+		if equalOverrides(previous.Overrides, next.Overrides) && previous.ServerNameMode == next.ServerNameMode && previous.Encoding == next.Encoding && equalManagement(previous.Management, next.Management) && equalSorting(previous.Sorting, next.Sorting) && equalRuntimeOverrides(previous.Runtime, next.Runtime) {
 			// A no-op still validates the caller's revision and live authority.
 			committed, err = s.materialize(previous)
 			if err != nil {
@@ -232,13 +248,18 @@ func (s *Store) change(ctx context.Context, actor Actor, revision *int64, replac
 			changed, err := readRecord(tx.QueryRow(`UPDATE managed_settings SET
 				revision = revision + 1, server_name = $2, max_bitrate = $3,
 				max_width = $4, max_height = $5, max_audio_channels = $6,
-				server_name_mode = $7, compatibility_max_width = $8, management = $9, runtime_overrides = $10,
+				server_name_mode = $7, compatibility_max_width = $8, management = $9, runtime_overrides = $10, sort_remove_words=$11,
 				updated_at = clock_timestamp() WHERE id = 1 AND revision = $1
 				RETURNING `+recordColumns, previous.Revision, next.Overrides.ServerName, next.Overrides.MaxBitrate,
 				next.Overrides.MaxWidth, next.Overrides.MaxHeight, next.Overrides.MaxAudioChannels,
-				next.ServerNameMode, next.Encoding.TranscodingMaxWidth, managementJSON, runtimeJSON))
+				next.ServerNameMode, next.Encoding.TranscodingMaxWidth, managementJSON, runtimeJSON, next.Sorting.SortRemoveWords))
 			if err != nil {
 				return err
+			}
+			if !equalSorting(previous.Sorting, changed.Sorting) {
+				if err := library.RebuildGeneratedSortNames(tx); err != nil {
+					return err
+				}
 			}
 			committed, err = s.materialize(changed)
 			if err != nil {
@@ -277,7 +298,7 @@ func (s *Store) publish(value Snapshot) Snapshot {
 	}
 }
 
-const recordColumns = "revision, server_name, max_bitrate, max_width, max_height, max_audio_channels, updated_at, server_name_mode, compatibility_max_width, management, runtime_overrides"
+const recordColumns = "revision, server_name, max_bitrate, max_width, max_height, max_audio_channels, updated_at, server_name_mode, compatibility_max_width, management, runtime_overrides, sort_remove_words"
 
 type settingsRecord struct {
 	Revision       int64
@@ -286,6 +307,7 @@ type settingsRecord struct {
 	ServerNameMode ServerNameMode
 	Encoding       Encoding
 	Management     Management
+	Sorting        Sorting
 	Runtime        RuntimeOverrides
 }
 
@@ -296,7 +318,7 @@ func readRecord(row rowScanner) (settingsRecord, error) {
 	var managementJSON, runtimeJSON []byte
 	err := row.Scan(&record.Revision, &record.Overrides.ServerName, &record.Overrides.MaxBitrate,
 		&record.Overrides.MaxWidth, &record.Overrides.MaxHeight, &record.Overrides.MaxAudioChannels, &record.UpdatedAt,
-		&record.ServerNameMode, &record.Encoding.TranscodingMaxWidth, &managementJSON, &runtimeJSON)
+		&record.ServerNameMode, &record.Encoding.TranscodingMaxWidth, &managementJSON, &runtimeJSON, &record.Sorting.SortRemoveWords)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return settingsRecord{}, fmt.Errorf("%w: managed settings singleton is missing", ErrStoredSettings)
 	}
@@ -326,11 +348,14 @@ func (s *Store) materialize(record settingsRecord) (Snapshot, error) {
 	}
 	return Snapshot{Revision: record.Revision, Defaults: s.defaults,
 		Overrides: cloneOverrides(record.Overrides), Effective: effectiveValues(s.defaults, record.Overrides, record.ServerNameMode, s.hostName),
-		ServerNameMode: record.ServerNameMode, HostName: s.hostName, Encoding: record.Encoding, Management: cloneManagement(record.Management),
+		ServerNameMode: record.ServerNameMode, HostName: s.hostName, Encoding: record.Encoding, Management: cloneManagement(record.Management), Sorting: cloneSorting(record.Sorting),
 		Runtime: s.runtimeSnapshot(record.Runtime), UpdatedAt: record.UpdatedAt.UTC()}, nil
 }
 
 func (s *Store) validateRecordValues(record settingsRecord) error {
+	if err := ValidateStoredSorting(record.Sorting); err != nil {
+		return err
+	}
 	if err := validateName(record.ServerNameMode, record.Overrides.ServerName); err != nil {
 		return err
 	}

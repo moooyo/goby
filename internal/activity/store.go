@@ -210,6 +210,7 @@ func fieldAllowed(action Action, field Field) bool {
 		switch field {
 		case FieldName, FieldSortName, FieldOverview, FieldOriginalTitle, FieldOfficialRating,
 			FieldProductionYear, FieldIndexNumber, FieldParentIndexNumber, FieldPremiereDate,
+			FieldStatus, FieldEndDate, FieldAirsBeforeSeasonNumber, FieldAirsAfterSeasonNumber, FieldAirsBeforeEpisodeNumber,
 			FieldCommunityRating, FieldProviderIDs, FieldGenres, FieldTags, FieldStudios,
 			FieldPeople, FieldAlbum, FieldArtists, FieldAlbumArtists, FieldLockedFields, FieldOverrides:
 			return true
@@ -217,7 +218,7 @@ func fieldAllowed(action Action, field Field) bool {
 	case ActionSettingsUpdated:
 		switch field {
 		case FieldServerName, FieldServerNameMode, FieldMaxBitrate, FieldMaxWidth,
-			FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement, FieldRuntime:
+			FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement, FieldRuntime, FieldSorting:
 			return true
 		}
 	case ActionTaskScheduleUpdated:

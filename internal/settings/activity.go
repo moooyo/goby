@@ -49,6 +49,9 @@ func recordSettingsActivity(tx library.OwnedTx, actor Actor, previous, changed s
 	if !equalRuntimeOverrides(previous.Runtime, changed.Runtime) {
 		fields = append(fields, activity.FieldRuntime)
 	}
+	if !equalSorting(previous.Sorting, changed.Sorting) {
+		fields = append(fields, activity.FieldSorting)
+	}
 	return activity.RecordOwned(tx, activity.Event{
 		Action: activity.ActionSettingsUpdated, Severity: activity.SeverityInfo,
 		Source: source, Actor: identityActor,

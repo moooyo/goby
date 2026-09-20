@@ -19,24 +19,29 @@ import (
 // MetadataValues is the complete administrator-facing value projection.
 // Nullable scalars retain absence; collections always encode as arrays or maps.
 type MetadataValues struct {
-	Name              string            `json:"Name"`
-	SortName          string            `json:"SortName"`
-	Overview          string            `json:"Overview"`
-	OriginalTitle     string            `json:"OriginalTitle"`
-	OfficialRating    string            `json:"OfficialRating"`
-	ProductionYear    *int              `json:"ProductionYear"`
-	PremiereDate      *time.Time        `json:"PremiereDate"`
-	CommunityRating   *float64          `json:"CommunityRating"`
-	ProviderIDs       map[string]string `json:"ProviderIds"`
-	Genres            []string          `json:"Genres"`
-	Tags              []string          `json:"Tags"`
-	Studios           []string          `json:"Studios"`
-	People            []metadata.Person `json:"People"`
-	IndexNumber       *int              `json:"IndexNumber"`
-	ParentIndexNumber *int              `json:"ParentIndexNumber"`
-	Album             string            `json:"Album"`
-	Artists           []string          `json:"Artists"`
-	AlbumArtists      []string          `json:"AlbumArtists"`
+	Name                    string            `json:"Name"`
+	SortName                string            `json:"SortName"`
+	Overview                string            `json:"Overview"`
+	OriginalTitle           string            `json:"OriginalTitle"`
+	OfficialRating          string            `json:"OfficialRating"`
+	ProductionYear          *int              `json:"ProductionYear"`
+	PremiereDate            *time.Time        `json:"PremiereDate"`
+	EndDate                 *time.Time        `json:"EndDate"`
+	Status                  *string           `json:"Status"`
+	CommunityRating         *float64          `json:"CommunityRating"`
+	ProviderIDs             map[string]string `json:"ProviderIds"`
+	Genres                  []string          `json:"Genres"`
+	Tags                    []string          `json:"Tags"`
+	Studios                 []string          `json:"Studios"`
+	People                  []metadata.Person `json:"People"`
+	IndexNumber             *int              `json:"IndexNumber"`
+	ParentIndexNumber       *int              `json:"ParentIndexNumber"`
+	AirsBeforeSeasonNumber  *int              `json:"AirsBeforeSeasonNumber"`
+	AirsAfterSeasonNumber   *int              `json:"AirsAfterSeasonNumber"`
+	AirsBeforeEpisodeNumber *int              `json:"AirsBeforeEpisodeNumber"`
+	Album                   string            `json:"Album"`
+	Artists                 []string          `json:"Artists"`
+	AlbumArtists            []string          `json:"AlbumArtists"`
 }
 
 func (values MetadataValues) MarshalJSON() ([]byte, error) {
@@ -97,6 +102,7 @@ var metadataValueFieldNames = []string{
 	"ProductionYear", "PremiereDate", "CommunityRating", "ProviderIds",
 	"Genres", "Tags", "Studios", "People", "IndexNumber", "ParentIndexNumber",
 	"Album", "Artists", "AlbumArtists",
+	"Status", "EndDate", "AirsBeforeSeasonNumber", "AirsAfterSeasonNumber", "AirsBeforeEpisodeNumber",
 }
 
 func normalizeMetadataEdit(edit MetadataEdit, editable []string) (MetadataEdit, error) {
@@ -196,12 +202,27 @@ func decodeMetadataValues(raw []byte) (MetadataValues, error) {
 		return MetadataValues{}, fmt.Errorf("decode metadata values: %w", err)
 	}
 	values = completeMetadataCollections(values)
-	if values.PremiereDate != nil {
-		utc := values.PremiereDate.UTC()
-		if utc.Year() < 1 || utc.Year() > 9999 {
-			return MetadataValues{}, fmt.Errorf("metadata premiere date is outside the UTC year range")
+	for _, date := range []**time.Time{&values.PremiereDate, &values.EndDate} {
+		if *date == nil {
+			continue
 		}
-		values.PremiereDate = &utc
+		utc := (*date).UTC()
+		if utc.Year() < 1 || utc.Year() > 9999 {
+			return MetadataValues{}, fmt.Errorf("metadata date is outside the UTC year range")
+		}
+		*date = &utc
+	}
+	if values.Status != nil {
+		normalized, valid := metadata.NormalizeSeriesStatus(*values.Status)
+		if !valid {
+			return MetadataValues{}, fmt.Errorf("metadata series status is invalid")
+		}
+		values.Status = &normalized
+	}
+	for _, number := range []*int{values.AirsBeforeSeasonNumber, values.AirsAfterSeasonNumber, values.AirsBeforeEpisodeNumber} {
+		if number != nil && (*number < 0 || *number > math.MaxInt32) {
+			return MetadataValues{}, fmt.Errorf("metadata episode placement is outside the allowed range")
+		}
 	}
 	return values, nil
 }
@@ -338,6 +359,10 @@ func metadataValueObject(values MetadataValues) (map[string]json.RawMessage, err
 		utc := values.PremiereDate.UTC()
 		values.PremiereDate = &utc
 	}
+	if values.EndDate != nil {
+		utc := values.EndDate.UTC()
+		values.EndDate = &utc
+	}
 	encoded, err := json.Marshal(values)
 	if err != nil {
 		return nil, fmt.Errorf("encode complete metadata values: %w", err)
@@ -439,18 +464,31 @@ func normalizeMetadataValue(field string, raw json.RawMessage) (json.RawMessage,
 			return nil, fmt.Errorf("Must be an integer from 0 to 2147483647.")
 		}
 		value = number
-	case "ParentIndexNumber":
+	case "ParentIndexNumber", "AirsBeforeSeasonNumber", "AirsAfterSeasonNumber", "AirsBeforeEpisodeNumber":
 		number, err := metadataIntegerValue(raw, 0, math.MaxInt32)
 		if err != nil {
 			return nil, err
 		}
 		value = number
-	case "PremiereDate":
+	case "PremiereDate", "EndDate":
 		date, err := metadataDateValue(raw)
 		if err != nil {
 			return nil, err
 		}
 		value = date
+	case "Status":
+		var status *string
+		if err := json.Unmarshal(raw, &status); err != nil {
+			return nil, fmt.Errorf("Must be Continuing, Ended, or null.")
+		}
+		if status != nil {
+			normalized, valid := metadata.NormalizeSeriesStatus(*status)
+			if !valid {
+				return nil, fmt.Errorf("Must be Continuing, Ended, or null.")
+			}
+			status = &normalized
+		}
+		value = status
 	case "CommunityRating":
 		var rating *float64
 		if err := json.Unmarshal(raw, &rating); err != nil || (rating != nil && (math.IsNaN(*rating) || math.IsInf(*rating, 0) || *rating < 0 || *rating > 10)) {

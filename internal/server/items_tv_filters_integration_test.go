@@ -143,6 +143,8 @@ func TestHTTPTVFiltersScannedCatalog(t *testing.T) {
 			{"special_season", "IsSpecialSeason=true", []string{season0}},
 			{"exclude_special_season_preserves_episodes", "IsSpecialSeason=false", []string{season1, season2, episode0, episode11, episode12, episode21}},
 			{"special_episode", "IsSpecialEpisode=true", []string{episode0}},
+			{"standalone_special", "IsStandaloneSpecial=true", []string{episode0}},
+			{"exclude_standalone_preserves_other_types", "IsStandaloneSpecial=false", []string{season0, season1, season2, episode11, episode12, episode21}},
 			{"exclude_special_episode_preserves_seasons", "IsSpecialEpisode=false", []string{season0, season1, season2, episode11, episode12, episode21}},
 			{"combined_regular_episodes", "IsFolder=false&IsSpecialSeason=false&IsSpecialEpisode=false", regularEpisodes},
 			{"combined_regular_seasons", "IsFolder=true&IsSpecialSeason=false&IsSpecialEpisode=false", []string{season1, season2}},
@@ -185,6 +187,8 @@ func TestHTTPTVFiltersScannedCatalog(t *testing.T) {
 			{"root_regular_seasons", "/Shows/" + special.id + "/Seasons?IsSpecialSeason=false", []string{season1, season2}},
 			{"seasons_folder_conflict", seasonsPath + "IsFolder=false", nil},
 			{"special_episodes", episodesPath + "IsFolder=false&IsSpecialEpisode=true", []string{episode0}},
+			{"standalone_episodes", episodesPath + "IsStandaloneSpecial=true", []string{episode0}},
+			{"without_standalone_episodes", episodesPath + "IsStandaloneSpecial=false", regularEpisodes},
 			{"mixed_case_special_episodes", "/EMBY/shows/" + special.id + "/episodes?IsSpecialEpisode=true", []string{episode0}},
 			{"regular_episodes", episodesPath + "IsSpecialEpisode=false", regularEpisodes},
 			{"season_number_intersection", episodesPath + "Season=1&IsSpecialEpisode=true", nil},
@@ -201,16 +205,20 @@ func TestHTTPTVFiltersScannedCatalog(t *testing.T) {
 	t.Run("observed_client_without_specials", func(t *testing.T) {
 		path := "/emby/Users/" + viewer.ID + "/Items?ParentId=" + regular.id + "&Recursive=true&IsFolder=false"
 		want := []string{regular.episodes[[2]int{1, 1}], regular.episodes[[2]int{1, 2}], regular.episodes[[2]int{2, 1}]}
-		// IsStandaloneSpecial remains unmodeled. This fixture establishes only
-		// folder exclusion and an empty Specials section for a regular series.
+		// A regular series has no standalone specials. Positive placement cases
+		// are covered by the source-bound metadata and native browser fixtures.
 		assertTVFilterItems(t, f.request(t, http.MethodGet, path+"&IsStandaloneSpecial=false", nil, headers), want, 3, false)
 		assertTVFilterItems(t, f.request(t, http.MethodGet, path+"&IsSpecialEpisode=true", nil, headers), nil, 0, false)
 		assertTVFilterItems(t, f.request(t, http.MethodGet, "/emby/Shows/"+regular.id+"/Seasons?IsSpecialSeason=false", nil, headers), []string{regular.seasons[1], regular.seasons[2]}, 2, true)
 	})
 
 	t.Run("invalid_values_and_authorized_scope", func(t *testing.T) {
-		for _, name := range []string{"IsFolder", "IsSpecialSeason", "IsSpecialEpisode"} {
-			expectAPIError(t, f.request(t, http.MethodGet, itemsPath+"&"+name+"=invalid", nil, headers), http.StatusBadRequest, "invalid_input", true)
+		for _, name := range []string{"IsFolder", "IsSpecialSeason", "IsSpecialEpisode", "IsStandaloneSpecial"} {
+			code := "invalid_input"
+			if name == "IsStandaloneSpecial" {
+				code = "invalid_navigation_filter"
+			}
+			expectAPIError(t, f.request(t, http.MethodGet, itemsPath+"&"+name+"=invalid", nil, headers), http.StatusBadRequest, code, true)
 		}
 		expectAPIError(t, f.request(t, http.MethodGet, seasonsPath+"IsSpecialSeason=invalid", nil, headers), http.StatusBadRequest, "invalid_input", true)
 		expectAPIError(t, f.request(t, http.MethodGet, episodesPath+"IsSpecialEpisode=invalid", nil, headers), http.StatusBadRequest, "invalid_input", true)

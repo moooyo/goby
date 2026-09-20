@@ -1,5 +1,19 @@
 # Current implementation and delivery status
 
+## Active increment: compatibility, media analysis and resilience
+
+The user authorized the [three-phase plan](../planning/media-analysis-resilience-plan-20260920.md)
+on September 20, 2026, including consolidated tests after each phase's complete
+implementation and verified merge/push to `main`. Development starts at
+`2fd9182` on `codex/media-analysis-resilience` in an isolated checkout. Phase 1
+product/test source is complete and entering consolidated remote verification;
+phases 2 and 3 have not started. No passing result is claimed. Tests, builds and runtime checks
+use remote environments; earlier local-test authorization is historical.
+Unrelated original-checkout changes are preserved. The completed delivery
+records below describe the previous increment and do not close this new scope.
+
+## Completed selected compatibility increment
+
 On September 20, 2026, the user selected the next account/playback, subtitle,
 artwork, music, management configuration, search and client-protocol work.
 Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md)

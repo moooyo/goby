@@ -87,7 +87,7 @@ func assertPhase3HistoricalLibraryDefaults(t *testing.T, ctx context.Context, po
 	var valid bool
 	if err := pool.QueryRow(ctx, `SELECT NOT EXISTS(SELECT 1 FROM libraries
 		WHERE revision IS DISTINCT FROM 1
-		OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb)`).Scan(&valid); err != nil || !valid {
+		OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true}'::jsonb)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("historical restoration changed neutral library edit defaults: %v", err)
 	}
 }
@@ -95,10 +95,10 @@ func assertPhase3HistoricalLibraryDefaults(t *testing.T, ctx context.Context, po
 func seedPhase3LibrarySnapshotWitness(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	if _, err := pool.Exec(ctx, `UPDATE libraries SET revision=9007199254740993,
-		options='{"EnableLocalMetadata":false,"EnableLocalImages":true}'::jsonb
+		options='{"EnableLocalMetadata":false,"EnableLocalImages":true,"EnableEmbeddedArtwork":false}'::jsonb
 		WHERE id='theme-library';
 		UPDATE libraries SET revision=9007199254740995,
-		options='{"EnableLocalMetadata":true,"EnableLocalImages":false}'::jsonb
+		options='{"EnableLocalMetadata":true,"EnableLocalImages":false,"EnableEmbeddedArtwork":true}'::jsonb
 		WHERE id='music-snapshot-library'`); err != nil {
 		t.Fatalf("seed independent library edit revisions and local-resource options: %v", err)
 	}
@@ -110,9 +110,9 @@ func assertPhase3LibrarySnapshotWitness(t *testing.T, ctx context.Context, pool 
 	var valid bool
 	if err := pool.QueryRow(ctx, `SELECT
 		EXISTS(SELECT 1 FROM libraries WHERE id='theme-library' AND revision=9007199254740993
-			AND options='{"EnableLocalMetadata":false,"EnableLocalImages":true}'::jsonb)
+			AND options='{"EnableLocalMetadata":false,"EnableLocalImages":true,"EnableEmbeddedArtwork":false}'::jsonb)
 		AND EXISTS(SELECT 1 FROM libraries WHERE id='music-snapshot-library' AND revision=9007199254740995
-			AND options='{"EnableLocalMetadata":true,"EnableLocalImages":false}'::jsonb)`).Scan(&valid); err != nil || !valid {
+			AND options='{"EnableLocalMetadata":true,"EnableLocalImages":false,"EnableEmbeddedArtwork":true}'::jsonb)`).Scan(&valid); err != nil || !valid {
 		t.Fatalf("restoration changed exact library edit state or replayed root revision triggers during COPY: %v", err)
 	}
 	// Exercise the restored trigger in a rollback-only transaction. The raw

@@ -50,6 +50,21 @@ func TestHTTPCollectionLifecyclePreservesPlaylistEntriesAndBoxSetMembership(t *t
 	if firstEntry == secondEntry {
 		t.Fatal("duplicate playlist items share their mutable entry identity")
 	}
+	selected, selectedTotal := responseItems(t, f.request(t, http.MethodGet, playlistPath+"/Items?fields=Path,MediaStreams&enableimages=false&X-Emby-Language=en-US", nil, headers))
+	if selectedTotal != 2 || len(selected) != 2 || selected[0]["Path"] == nil || selected[0]["MediaStreams"] == nil {
+		t.Fatal("playlist entries ignored ordinary client field casing")
+	}
+	excluded, excludedTotal := responseItems(t, f.request(t, http.MethodGet, playlistPath+"/Items?fields=Path,MediaStreams&excludefields=Path,MediaStreams&enableimages=false", nil, headers))
+	if excludedTotal != 2 || len(excluded) != 2 || excluded[0]["PlaylistItemId"] != firstEntry || excluded[1]["PlaylistItemId"] != secondEntry {
+		t.Fatal("playlist field exclusions changed entry identity or membership")
+	}
+	for _, entry := range excluded {
+		for _, field := range []string{"Path", "MediaStreams"} {
+			if _, present := entry[field]; present {
+				t.Fatalf("playlist entry retained excluded %s", field)
+			}
+		}
+	}
 	zeroEntries, zeroTotal := responseItems(t, f.request(t, http.MethodGet, playlistPath+"/Items?Limit=0&EnableImages=false", nil, headers))
 	if len(zeroEntries) != 0 || zeroTotal != 2 {
 		t.Fatal("zero-limit playlist page did not preserve its authorized entry count")

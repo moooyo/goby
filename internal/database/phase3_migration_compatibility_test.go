@@ -14,7 +14,9 @@ func assertPhase3MigrationDefaults(t *testing.T, ctx context.Context, pool *pgxp
 	var valid bool
 	if err := pool.QueryRow(ctx, `SELECT
 		NOT EXISTS(SELECT 1 FROM libraries WHERE revision IS DISTINCT FROM 1
-			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb)
+			OR options IS DISTINCT FROM CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=49)
+				THEN '{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true}'::jsonb
+				ELSE '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb END)
 		AND NOT EXISTS(SELECT 1 FROM users WHERE configuration_revision IS DISTINCT FROM 1)
 		AND NOT EXISTS(SELECT 1 FROM user_item_data WHERE hide_from_resume IS DISTINCT FROM false
 			OR rating IS NOT NULL OR likes IS NOT NULL OR remembered_media_source_id IS DISTINCT FROM ''

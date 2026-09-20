@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,22 +21,85 @@ func (s *Server) registerEmbyLibraryEditingRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /emby/Environment/ValidatePath", s.requireEmby(s.embyValidateDirectory))
 }
 
-// DisabledLocalMetadataReaders is the supported standard LibraryOptions field.
-// The native API separately exposes the local artwork importer switch.
+const embeddedArtworkFetcherName = "Goby Embedded Artwork"
+
+// TypeOptions selects the advertised dynamic Audio image provider. Directory
+// sidecars are local image providers and deliberately do not use this selector.
 type embyLibraryOptionsUpdate struct {
-	DisabledLocalMetadataReaders *[]string
+	DisabledLocalMetadataReaders json.RawMessage
+	TypeOptions                  json.RawMessage
+}
+
+func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
+	fields, err := remoteCommandObject(data, true)
+	if err != nil {
+		return library.ErrInvalidInput
+	}
+	*value = embyLibraryOptionsUpdate{}
+	for name, raw := range fields {
+		switch name {
+		case "disabledlocalmetadatareaders":
+			value.DisabledLocalMetadataReaders = raw
+		case "typeoptions":
+			value.TypeOptions = raw
+		default:
+			return library.ErrInvalidInput
+		}
+	}
+	return nil
 }
 
 func (value *embyLibraryOptionsUpdate) native() (*library.LibraryOptionsUpdate, error) {
-	if value == nil || value.DisabledLocalMetadataReaders == nil {
+	if value == nil || len(value.DisabledLocalMetadataReaders) == 0 && len(value.TypeOptions) == 0 {
 		return nil, library.ErrInvalidInput
 	}
-	readers := *value.DisabledLocalMetadataReaders
-	if len(readers) > 1 || len(readers) == 1 && !strings.EqualFold(readers[0], "Nfo") {
-		return nil, library.ErrInvalidInput
+	result := &library.LibraryOptionsUpdate{}
+	if len(value.DisabledLocalMetadataReaders) != 0 {
+		var readers []string
+		if json.Unmarshal(value.DisabledLocalMetadataReaders, &readers) != nil || readers == nil || len(readers) > 1 || len(readers) == 1 && !strings.EqualFold(readers[0], "Nfo") {
+			return nil, library.ErrInvalidInput
+		}
+		enabled := len(readers) == 0
+		result.EnableLocalMetadata = &enabled
 	}
-	enabled := len(readers) == 0
-	return &library.LibraryOptionsUpdate{EnableLocalMetadata: &enabled}, nil
+	if len(value.TypeOptions) != 0 {
+		var entries []json.RawMessage
+		if json.Unmarshal(value.TypeOptions, &entries) != nil || entries == nil || len(entries) > 1 {
+			return nil, library.ErrInvalidInput
+		}
+		enabled := true
+		if len(entries) == 1 {
+			fields, err := remoteCommandObject(entries[0], true)
+			if err != nil {
+				return nil, library.ErrInvalidInput
+			}
+			for name := range fields {
+				if name != "type" && name != "imagefetchers" && name != "imagefetcherorder" {
+					return nil, library.ErrInvalidInput
+				}
+			}
+			var itemType string
+			var fetchers, order []string
+			if json.Unmarshal(fields["type"], &itemType) != nil || json.Unmarshal(fields["imagefetchers"], &fetchers) != nil || itemType != "Audio" || fetchers == nil || len(fetchers) > 1 {
+				return nil, library.ErrInvalidInput
+			}
+			if raw, present := fields["imagefetcherorder"]; present {
+				if json.Unmarshal(raw, &order) != nil || order == nil || len(order) > 1 {
+					return nil, library.ErrInvalidInput
+				}
+			}
+			for _, list := range [][]string{fetchers, order} {
+				for _, name := range list {
+					if name != embeddedArtworkFetcherName {
+						return nil, library.ErrInvalidInput
+					}
+				}
+			}
+			enabled = len(fetchers) == 1
+		}
+		result.EnableEmbeddedArtwork = &enabled
+	}
+	return result, nil
 }
 
 func embyEditableLibraryOptions(value library.Library) map[string]any {
@@ -43,7 +107,11 @@ func embyEditableLibraryOptions(value library.Library) map[string]any {
 	if !library.EffectiveLibraryOptions(value).EnableLocalMetadata {
 		disabled = append(disabled, "Nfo")
 	}
-	return map[string]any{"DisabledLocalMetadataReaders": disabled}
+	fetchers := []string{}
+	if library.EffectiveLibraryOptions(value).EnableEmbeddedArtwork {
+		fetchers = append(fetchers, embeddedArtworkFetcherName)
+	}
+	return map[string]any{"DisabledLocalMetadataReaders": disabled, "TypeOptions": []map[string]any{{"Type": "Audio", "ImageFetchers": fetchers, "ImageFetcherOrder": []string{embeddedArtworkFetcherName}}}}
 }
 
 func (s *Server) embyLibraryEditing(w http.ResponseWriter, r *http.Request, id string) (library.LibraryEditing, bool) {

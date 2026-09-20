@@ -14,6 +14,9 @@ import (
 )
 
 func (s *Server) itemUser(w http.ResponseWriter, r *http.Request) (string, bool) {
+	if !normalizeItemProjectionQuery(w, r) {
+		return "", false
+	}
 	for _, name := range []string{"EnableImages", "EnableUserData"} {
 		if raw := r.URL.Query().Get(name); raw != "" {
 			if _, err := strconv.ParseBool(raw); err != nil {
@@ -140,7 +143,10 @@ func (s *Server) embyRoot(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
-	jsonResponse(w, 200, map[string]any{"Id": virtualRootID(), "Name": "Media libraries", "Type": "Folder", "IsFolder": true, "ServerId": s.serverID, "ChildCount": len(libraries)})
+	dto := map[string]any{"Id": virtualRootID(), "Name": "Media libraries", "Type": "Folder", "IsFolder": true,
+		"ServerId": s.serverID, "ChildCount": len(libraries), "CanDelete": false, "CanDownload": false}
+	applyItemSwitches(dto, r)
+	jsonResponse(w, 200, dto)
 }
 
 func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (library.Query, bool) {
@@ -568,6 +574,23 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 	}
 	if item.Type == "Episode" {
 		dto["ParentIndexNumber"] = item.ParentIndexNumber
+		if detail || hasField(fields, "IsStandaloneSpecial") {
+			dto["IsStandaloneSpecial"] = item.IsStandaloneSpecial()
+		}
+		if item.Metadata != nil {
+			for _, field := range []struct {
+				name  string
+				value *int
+			}{
+				{"AirsBeforeSeasonNumber", item.Metadata.AirsBeforeSeasonNumber},
+				{"AirsAfterSeasonNumber", item.Metadata.AirsAfterSeasonNumber},
+				{"AirsBeforeEpisodeNumber", item.Metadata.AirsBeforeEpisodeNumber},
+			} {
+				if field.value != nil && (detail || hasField(fields, field.name)) {
+					dto[field.name] = *field.value
+				}
+			}
+		}
 	}
 	if detail || hasField(fields, "Overview") {
 		dto["Overview"] = item.Overview
@@ -622,6 +645,12 @@ func addLocalMetadata(dto map[string]any, source *metadata.Metadata, entities li
 	}
 	if local.PremiereDate != nil && (detail || hasField(fields, "PremiereDate")) {
 		dto["PremiereDate"] = local.PremiereDate.UTC()
+	}
+	if local.EndDate != nil && (detail || hasField(fields, "EndDate")) {
+		dto["EndDate"] = local.EndDate.UTC()
+	}
+	if local.Status != nil && (detail || hasField(fields, "Status")) {
+		dto["Status"] = *local.Status
 	}
 	if local.OriginalTitle != "" && (detail || hasField(fields, "OriginalTitle")) {
 		dto["OriginalTitle"] = local.OriginalTitle
@@ -717,6 +746,7 @@ func metadataEntityDTOs(entities []library.EntityRef) []map[string]any {
 }
 
 func applyItemSwitches(item map[string]any, r *http.Request) {
+	applyItemFieldExclusions(item, r)
 	if value := r.URL.Query().Get("EnableImages"); value != "" {
 		enabled, _ := strconv.ParseBool(value)
 		if !enabled {

@@ -202,7 +202,7 @@ func metadataMigrationPhase3Defaults(t *testing.T, ctx context.Context, pool *pg
 	var valid bool
 	if err := pool.QueryRow(ctx, `SELECT
 		NOT EXISTS(SELECT 1 FROM libraries WHERE revision IS DISTINCT FROM 1
-			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb)
+			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true}'::jsonb)
 		AND NOT EXISTS(SELECT 1 FROM users WHERE configuration_revision IS DISTINCT FROM 1)
 		AND NOT EXISTS(SELECT 1 FROM user_item_data WHERE hide_from_resume IS DISTINCT FROM false
 			OR rating IS NOT NULL OR likes IS NOT NULL OR remembered_media_source_id IS DISTINCT FROM ''

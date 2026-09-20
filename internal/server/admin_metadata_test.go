@@ -225,7 +225,8 @@ func assertNativeMetadataCompleteValueFields(t *testing.T, values map[string]any
 	t.Helper()
 	fields := []string{"Name", "SortName", "Overview", "OriginalTitle", "OfficialRating",
 		"ProductionYear", "PremiereDate", "CommunityRating", "ProviderIds", "Genres", "Tags", "Studios", "People",
-		"IndexNumber", "ParentIndexNumber", "Album", "Artists", "AlbumArtists"}
+		"IndexNumber", "ParentIndexNumber", "Album", "Artists", "AlbumArtists",
+		"Status", "EndDate", "AirsBeforeSeasonNumber", "AirsAfterSeasonNumber", "AirsBeforeEpisodeNumber"}
 	if len(values) != len(fields) {
 		t.Fatal("complete metadata value field set changed")
 	}

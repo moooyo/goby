@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Paper, Skeleton, Stack, Tab, Tabs, TextField, Typography, useMediaQuery } from '@mui/material';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, MenuItem, Paper, Skeleton, Stack, Tab, Tabs, TextField, Typography, useMediaQuery } from '@mui/material';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
@@ -34,6 +34,8 @@ const labels: Record<MetadataFieldName, string> = {
   OfficialRating: 'Content rating',
   ProductionYear: 'Production year',
   PremiereDate: 'Premiere date',
+  EndDate: 'End date',
+  Status: 'Series status',
   CommunityRating: 'Community rating',
   Genres: 'Genres',
   Tags: 'Tags',
@@ -42,6 +44,9 @@ const labels: Record<MetadataFieldName, string> = {
   ProviderIds: 'Provider identifiers',
   IndexNumber: 'Episode number',
   ParentIndexNumber: 'Season number',
+  AirsBeforeSeasonNumber: 'Airs before season',
+  AirsAfterSeasonNumber: 'Airs after season',
+  AirsBeforeEpisodeNumber: 'Airs before episode',
   Album: 'Album tag',
   Artists: 'Artists',
   AlbumArtists: 'Album artists',
@@ -248,7 +253,7 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
     ));
   }
 
-  function numberField(field: 'ProductionYear' | 'CommunityRating' | 'IndexNumber' | 'ParentIndexNumber', label = labels[field]) {
+  function numberField(field: 'ProductionYear' | 'CommunityRating' | 'IndexNumber' | 'ParentIndexNumber' | 'AirsBeforeSeasonNumber' | 'AirsAfterSeasonNumber' | 'AirsBeforeEpisodeNumber', label = labels[field]) {
     if (!values) return null;
     return frame(field, (
       <TextField
@@ -357,6 +362,8 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
                       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 3 }}>
                         {numberField('ProductionYear')}
                         {frame('PremiereDate', <TextField id="metadata-PremiereDate-input" name="PremiereDate" fullWidth type="date" label="Premiere date" value={values.PremiereDate.slice(0, 10)} disabled={disabled || !editable('PremiereDate')} onChange={(event) => change('PremiereDate', event.target.value ? `${event.target.value}T00:00:00Z` : '')} error={Boolean(errorFor('PremiereDate'))} helperText="Dates use UTC. Leave empty to clear." slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: '0001-01-01', max: '9999-12-31', 'aria-describedby': 'metadata-PremiereDate-help' } }} />)}
+                        {frame('EndDate', <TextField id="metadata-EndDate-input" name="EndDate" fullWidth type="date" label="End date" value={values.EndDate.slice(0, 10)} disabled={disabled || !editable('EndDate')} onChange={(event) => change('EndDate', event.target.value ? `${event.target.value}T00:00:00Z` : '')} error={Boolean(errorFor('EndDate'))} helperText="Dates use UTC. Leave empty for unknown." slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: '0001-01-01', max: '9999-12-31', 'aria-describedby': 'metadata-EndDate-help' } }} />)}
+                        {detail.Item.Type === 'Series' && frame('Status', <TextField id="metadata-Status-input" name="Status" select fullWidth label="Series status" value={values.Status} disabled={disabled || !editable('Status')} onChange={(event) => change('Status', event.target.value)} error={Boolean(errorFor('Status'))} helperText="Unknown keeps the status unspecified."><MenuItem value="">Unknown</MenuItem><MenuItem value="Continuing">Continuing</MenuItem><MenuItem value="Ended">Ended</MenuItem></TextField>)}
                         {textField('OfficialRating')}
                         {numberField('CommunityRating')}
                       </Box>
@@ -367,6 +374,16 @@ export function MetadataEditorDialog({ itemId, onClose, onSaved, onNavigationGua
                         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 3 }}>
                           {showIndexNumber && numberField('IndexNumber', indexLabel)}
                           {showParentIndexNumber && numberField('ParentIndexNumber', parentIndexLabel)}
+                        </Box>
+                      </MetadataSection>
+                    </>}
+                    {detail.Item.Type === 'Episode' && <>
+                      <Divider />
+                      <MetadataSection title="Special episode placement" description="Set the regular season associated with a season-zero special. Leave both seasons empty or zero to keep it standalone. Its physical season and episode numbers stay unchanged.">
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 3 }}>
+                          {numberField('AirsBeforeSeasonNumber')}
+                          {numberField('AirsAfterSeasonNumber')}
+                          {numberField('AirsBeforeEpisodeNumber')}
                         </Box>
                       </MetadataSection>
                     </>}

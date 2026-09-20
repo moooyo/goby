@@ -25,7 +25,8 @@ type embeddedArtworkExtractor interface {
 // Source replacement invalidates visibility immediately through the projection
 // predicate, before a later scan can replace or remove the persisted row.
 func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, file *os.File, probe media.Info) error {
-	if itemType != "Audio" || !EffectiveLibraryOptions(state.library).EnableLocalImages {
+	options := EffectiveLibraryOptions(state.library)
+	if itemType != "Audio" || !options.EnableLocalImages || !options.EnableEmbeddedArtwork {
 		return nil
 	}
 	extractor, enabled := state.store.prober.(embeddedArtworkExtractor)

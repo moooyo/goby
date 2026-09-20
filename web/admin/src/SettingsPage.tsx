@@ -11,6 +11,7 @@ import { ErrorNotice, PageHeading } from './components';
 import { MediaDiagnosticsPanel } from './MediaDiagnosticsPanel';
 import { ManagementSettingsFields } from './ManagementSettingsFields';
 import { RuntimeSettingsFields } from './RuntimeSettingsFields';
+import { SortingSettingsFields } from './SortingSettingsFields';
 import { fieldError } from './formFields';
 import { draftFromSettings, formatMbps, formatSettingValue, outputSettingsFields, parseSettingsDraft, settingLabels, settingsDraftKey, settingsResetFields } from './settingsDraft';
 import type { OutputSettingField, ServerNameDraft, SettingDraft, SettingsDraft } from './settingsDraft';
@@ -340,6 +341,9 @@ export function SettingsPage({ currentUserId, onNavigationGuardChange }: { curre
             </Box>
           </Paper>
           {settings.Runtime && draft.Runtime && <RuntimeSettingsFields settings={settings.Runtime} draft={draft.Runtime} disabled={disabled} stale={blocked} errors={parsed?.errors ?? {}} mutationError={mutationError} onChange={(value) => change('Runtime', value)} />}
+          <SortingSettingsFields settings={settings.Sorting} draft={draft.Sorting} disabled={disabled} stale={blocked}
+            error={parsed?.errors['Sorting.SortRemoveWords'] ?? fieldError(mutationError, 'Sorting.SortRemoveWords') ?? fieldError(mutationError, 'Sorting')}
+            onChange={(value) => change('Sorting', value)} />
           {draft.Management && <ManagementSettingsFields draft={draft.Management} defaults={settings.ManagementDefaults} disabled={disabled} errors={parsed?.errors ?? {}} mutationError={mutationError} onChange={(value) => change('Management', value)} />}
           {resetFields === undefined && mutationError != null && <MutationNotice error={mutationError} reload={requestReload} />}
           {notice && <Alert severity="success" onClose={() => setNotice('')}>{notice}</Alert>}

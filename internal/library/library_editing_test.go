@@ -19,12 +19,12 @@ func TestLibraryEditRevisionRejectsLossyAndNoncanonicalValues(t *testing.T) {
 }
 
 func TestLibraryImportOptionsPreserveHistoricalDefaults(t *testing.T) {
-	if got := EffectiveLibraryOptions(Library{}); got != (LibraryOptions{EnableLocalMetadata: true, EnableLocalImages: true}) {
+	if got := EffectiveLibraryOptions(Library{}); got != (LibraryOptions{EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true}) {
 		t.Fatalf("zero-value caller lost historical import defaults: %+v", got)
 	}
 	disabled := false
 	options := applyLibraryOptions(DefaultLibraryOptions(), &LibraryOptionsUpdate{EnableLocalImages: &disabled})
-	if !options.EnableLocalMetadata || options.EnableLocalImages {
+	if !options.EnableLocalMetadata || options.EnableLocalImages || !options.EnableEmbeddedArtwork {
 		t.Fatalf("partial update reset another importer: %+v", options)
 	}
 	previous := localMetadata{hash: "existing-source", path: "Film.nfo"}

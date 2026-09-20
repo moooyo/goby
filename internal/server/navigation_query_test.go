@@ -8,13 +8,13 @@ import (
 )
 
 func TestNavigationQueryParsesActualSelectorsAndRejectsMalformedValues(t *testing.T) {
-	for _, raw := range []string{"Years=2025,2026&MinCommunityRating=8.5&IsHD=true&HasSubtitles=false", "ExcludeItemTypes=Folder,Season&NameStartsWith=100%25_", "MinPremiereDate=2025-01-01T00:00:00Z&MaxPremiereDate=2026-01-01T00:00:00Z"} {
+	for _, raw := range []string{"Years=2025,2026&MinCommunityRating=8.5&IsHD=true&HasSubtitles=false", "ExcludeItemTypes=Folder,Season&NameStartsWith=100%25_", "MinPremiereDate=2025-01-01T00:00:00Z&MaxPremiereDate=2026-01-01T00:00:00Z", "isstandalonespecial=true"} {
 		query := library.Query{}
 		if !readNavigationFilters(httptest.NewRecorder(), httptest.NewRequest("GET", "/emby/Items?"+raw, nil), &query) || !hasNavigationFilters(query) {
 			t.Fatalf("valid selector was not parsed: %q", raw)
 		}
 	}
-	for _, raw := range []string{"Years=", "Years=2025,,2026", "Years=0", "Years=10000", "Years=2025&years=2026", "MinCommunityRating=NaN", "MinCommunityRating=11", "IsHD=perhaps", "ExcludeItemTypes=Movie,", "MinDateCreated=yesterday", "MinPremiereDate=2026-01-01T00:00:00Z&MaxPremiereDate=2025-01-01T00:00:00Z", "Years=%zz"} {
+	for _, raw := range []string{"Years=", "Years=2025,,2026", "Years=0", "Years=10000", "Years=2025&years=2026", "MinCommunityRating=NaN", "MinCommunityRating=11", "IsHD=perhaps", "ExcludeItemTypes=Movie,", "MinDateCreated=yesterday", "MinPremiereDate=2026-01-01T00:00:00Z&MaxPremiereDate=2025-01-01T00:00:00Z", "Years=%zz", "IsStandaloneSpecial=true&isstandalonespecial=false", "IsStandaloneSpecial="} {
 		query := library.Query{}
 		request := httptest.NewRequest("GET", "/emby/Items", nil)
 		request.URL.RawQuery = raw

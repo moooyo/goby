@@ -122,7 +122,7 @@ func collectionQuery(w http.ResponseWriter, r *http.Request, allowed ...string) 
 			return nil, false
 		}
 		seen[lower] = true
-		if lower == "x-emby-language" && collectionText(entries[0], 256, true) || lower == "reqformat" && entries[0] == "json" {
+		if lower == "reqformat" && entries[0] == "json" {
 			delete(values, name)
 			continue
 		}
@@ -579,7 +579,10 @@ func (s *Server) deleteCollection(w http.ResponseWriter, r *http.Request, kind s
 }
 
 func (s *Server) collectionItems(w http.ResponseWriter, r *http.Request, kind string) {
-	subject, values, ok := s.collectionRequestSubject(w, r, "StartIndex", "Limit", "Fields", "EnableImages", "EnableUserData", "ImageTypeLimit", "EnableImageTypes")
+	if !strings.HasPrefix(r.URL.Path, "/admin/v1/") && !normalizeItemProjectionQuery(w, r) {
+		return
+	}
+	subject, values, ok := s.collectionRequestSubject(w, r, "StartIndex", "Limit", "Fields", "ExcludeFields", "EnableImages", "EnableUserData", "ImageTypeLimit", "EnableImageTypes")
 	if !ok {
 		return
 	}
@@ -599,7 +602,7 @@ func (s *Server) collectionItems(w http.ResponseWriter, r *http.Request, kind st
 			return
 		}
 	}
-	for _, name := range []string{"Fields", "EnableImageTypes"} {
+	for _, name := range []string{"Fields", "ExcludeFields", "EnableImageTypes"} {
 		if !collectionText(values.Get(name), 4096, true) {
 			collectionInputError(w, r)
 			return

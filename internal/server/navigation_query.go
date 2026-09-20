@@ -18,7 +18,7 @@ func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *librar
 	names := map[string]string{}
 	for _, name := range []string{"ExcludeItemTypes", "Years", "MinPremiereDate", "MaxPremiereDate", "MinDateCreated", "MaxDateCreated", "MinCommunityRating",
 		"NameStartsWith", "NameStartsWithOrGreater", "NameLessThan", "HasOverview", "HasSubtitles", "IsHD",
-		"ArtistStartsWithOrGreater", "AlbumArtistStartsWithOrGreater", "IsMissing", "IsVirtualUnaired", "IsPlaceHolder", "IsUnaired"} {
+		"ArtistStartsWithOrGreater", "AlbumArtistStartsWithOrGreater", "IsMissing", "IsVirtualUnaired", "IsPlaceHolder", "IsUnaired", "IsStandaloneSpecial"} {
 		names[strings.ToLower(name)] = name
 	}
 	values := make(map[string]string)
@@ -102,7 +102,8 @@ func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *librar
 		name   string
 		target **bool
 	}{{"HasOverview", &query.HasOverview}, {"HasSubtitles", &query.HasSubtitles}, {"IsHD", &query.IsHD},
-		{"IsMissing", &query.IsMissing}, {"IsVirtualUnaired", &query.IsVirtualUnaired}, {"IsPlaceHolder", &query.IsPlaceHolder}, {"IsUnaired", &query.IsUnaired}} {
+		{"IsMissing", &query.IsMissing}, {"IsVirtualUnaired", &query.IsVirtualUnaired}, {"IsPlaceHolder", &query.IsPlaceHolder}, {"IsUnaired", &query.IsUnaired},
+		{"IsStandaloneSpecial", &query.IsStandaloneSpecial}} {
 		if raw := values[field.name]; raw != "" {
 			value, err := strconv.ParseBool(raw)
 			if err != nil {
@@ -119,5 +120,5 @@ func hasNavigationFilters(query library.Query) bool {
 		query.MinDateCreated != nil || query.MaxDateCreated != nil || query.MinCommunityRating != nil || query.NameStartsWith != "" ||
 		query.NameStartsWithOrGreater != "" || query.NameLessThan != "" || query.HasOverview != nil || query.HasSubtitles != nil || query.IsHD != nil ||
 		query.ArtistStartsWithOrGreater != "" || query.AlbumArtistStartsWithOrGreater != "" || query.IsMissing != nil || query.IsVirtualUnaired != nil ||
-		query.IsPlaceHolder != nil || query.IsUnaired != nil
+		query.IsPlaceHolder != nil || query.IsUnaired != nil || query.IsStandaloneSpecial != nil
 }

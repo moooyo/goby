@@ -1,6 +1,9 @@
 import { normalizeUserPolicy, validExpandedPolicy } from './userPolicy';
 import { validRuntimeSettings } from './runtimeSettings';
 import type { RuntimeSettings, RuntimeUpdate } from './runtimeSettings';
+import { validSortingSettings } from './sortingSettings';
+import type { SortingSettings } from './sortingSettings';
+import type { LibraryOptions } from './libraryOptions';
 
 export interface User {
   Id: string;
@@ -123,6 +126,8 @@ export interface MetadataValues {
   OfficialRating: string;
   ProductionYear: number | null;
   PremiereDate: string | null;
+  EndDate: string | null;
+  Status: 'Continuing' | 'Ended' | null;
   CommunityRating: number | null;
   ProviderIds: Record<string, string>;
   Genres: string[];
@@ -131,6 +136,9 @@ export interface MetadataValues {
   People: MetadataPerson[];
   IndexNumber: number | null;
   ParentIndexNumber: number | null;
+  AirsBeforeSeasonNumber: number | null;
+  AirsAfterSeasonNumber: number | null;
+  AirsBeforeEpisodeNumber: number | null;
   Album: string;
   Artists: string[];
   AlbumArtists: string[];
@@ -644,6 +652,8 @@ export interface ServerSettings {
   ManagementDefaults?: ManagementSettings;
   ManagementEffects?: unknown;
   Runtime?: RuntimeSettings;
+  Sorting?: SortingSettings;
+  SortingDefaults?: SortingSettings;
 }
 
 export interface SettingsUpdateInput {
@@ -653,6 +663,7 @@ export interface SettingsUpdateInput {
   Encoding: SettingsEncoding;
   Management?: ManagementSettings;
   Runtime?: RuntimeUpdate | null;
+  Sorting?: SortingSettings;
 }
 export interface SettingsResetInput { Revision: string; Fields: SettingsResetField[] }
 
@@ -745,7 +756,7 @@ export interface LibraryInput {
   CollectionType: "movies" | "tvshows" | "music" | "mixed";
   Paths: string[];
   Scan: boolean;
-  LibraryOptions?: { EnableLocalMetadata: boolean; EnableLocalImages: boolean };
+  LibraryOptions?: LibraryOptions;
 }
 
 export interface RequestOptions {
@@ -1182,6 +1193,7 @@ const metadataFieldNames: MetadataFieldName[] = [
   "Name", "SortName", "Overview", "OriginalTitle", "OfficialRating", "ProductionYear",
   "PremiereDate", "CommunityRating", "ProviderIds", "Genres", "Tags", "Studios", "People",
   "IndexNumber", "ParentIndexNumber", "Album", "Artists", "AlbumArtists",
+  "Status", "EndDate", "AirsBeforeSeasonNumber", "AirsAfterSeasonNumber", "AirsBeforeEpisodeNumber",
 ];
 const metadataFieldSet = new Set<string>(metadataFieldNames);
 
@@ -1201,10 +1213,12 @@ function validMetadataValue(field: string, value: unknown): boolean {
       return typeof value === "string";
     case "ProductionYear":
       return validMetadataInteger(value, 1, 9999);
-    case "IndexNumber": case "ParentIndexNumber":
+    case "IndexNumber": case "ParentIndexNumber": case "AirsBeforeSeasonNumber": case "AirsAfterSeasonNumber": case "AirsBeforeEpisodeNumber":
       return validMetadataInteger(value);
-    case "PremiereDate":
+    case "PremiereDate": case "EndDate":
       return validMetadataTimestamp(value);
+    case "Status":
+      return value === null || value === "Continuing" || value === "Ended";
     case "CommunityRating":
       return value === null || (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10);
     case "ProviderIds":
@@ -1528,7 +1542,7 @@ function validSettingValue(field: SettingsField, value: unknown): boolean {
 
 function validateSettings(value: ServerSettings): void {
   if (!isRecord(value)) throw invalidResponse();
-  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", ...["Management", "ManagementDefaults", "ManagementEffects", "Runtime"].filter((field) => Object.prototype.hasOwnProperty.call(value, field))])
+  if (!validSettingsRecord(value, ["Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", ...["Management", "ManagementDefaults", "ManagementEffects", "Runtime", "Sorting", "SortingDefaults"].filter((field) => Object.prototype.hasOwnProperty.call(value, field))])
     || typeof value.Revision !== "string" || !/^[1-9]\d*$/.test(value.Revision)
     || value.Revision.length > 19 || BigInt(value.Revision) > 9223372036854775807n
     || !validSessionTimestamp(value.UpdatedAt)
@@ -1537,7 +1551,9 @@ function validateSettings(value: ServerSettings): void {
     || !validSettingsRecord(value.Effective, managedSettingFields)
     || !validSettingsRecord(value.Sources, managedSettingFields)
     || !validSettingsRecord(value.Deployment, ["HostName", "TranscodingEnabled", "HardwareDecoder", "HardwareEncoder", "Threads", "MaxJobs", "MaxUserJobs", "MaxSessionJobs"])
-    || !validSettingsRecord(value.Encoding, ["TranscodingMaxWidth"]) || (value.Runtime !== undefined && !validRuntimeSettings(value.Runtime))) throw invalidResponse();
+    || !validSettingsRecord(value.Encoding, ["TranscodingMaxWidth"]) || (value.Runtime !== undefined && !validRuntimeSettings(value.Runtime))
+    || (value.Sorting !== undefined && !validSortingSettings(value.Sorting))
+    || (value.SortingDefaults !== undefined && !validSortingSettings(value.SortingDefaults))) throw invalidResponse();
   for (const field of managedSettingFields) {
     if (field === "ServerName") continue;
     const override = value.Overrides[field];

@@ -243,41 +243,32 @@ func (s *Server) embyUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) embyUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	principal := r.Context().Value(principalKey).(identity.Principal)
 	if !principal.CanManageServer() {
 		apiError(w, r, 403, "administrator_required", "Administrator access is required.")
 		return
 	}
-	start, limit := 0, 100
-	for name, target := range map[string]*int{"StartIndex": &start, "Limit": &limit} {
-		if value := r.URL.Query().Get(name); value != "" {
-			number, err := strconv.Atoi(value)
-			if err != nil || number < 0 {
-				apiError(w, r, 400, "invalid_input", "Pagination must use non-negative integers.")
-				return
-			}
-			*target = number
-		}
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	users, err := s.identity.ListUsers(r.Context())
+	query, err := parseEmbyUserQuery(r)
 	if err != nil {
+		apiError(w, r, http.StatusBadRequest, "invalid_input", "Supply supported user filters and non-negative 32-bit pagination values exactly once.")
+		return
+	}
+	page, err := s.identity.QueryUsers(r.Context(), principal, query)
+	if err != nil {
+		if errors.Is(err, identity.ErrClientSessionForbidden) {
+			apiError(w, r, http.StatusForbidden, "administrator_required", "Administrator access is required.")
+			return
+		}
 		s.identityError(w, r, err)
 		return
 	}
-	total := len(users)
-	if start > total {
-		start = total
-	}
-	end := start + min(limit, total-start)
-	items := make([]map[string]any, 0, end-start)
-	for _, user := range users[start:end] {
+	items := make([]map[string]any, 0, len(page.Items))
+	for _, user := range page.Items {
 		items = append(items, s.userDTO(user))
 	}
 	s.attachAvatarDTOs(r.Context(), items)
-	jsonResponse(w, 200, map[string]any{"Items": items, "TotalRecordCount": total})
+	jsonResponse(w, http.StatusOK, map[string]any{"Items": items, "TotalRecordCount": page.TotalRecordCount})
 }
 
 func (s *Server) embyLogout(w http.ResponseWriter, r *http.Request) {

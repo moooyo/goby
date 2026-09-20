@@ -58,11 +58,11 @@ func TestLiveTVProgramsQueryObservedRequest(t *testing.T) {
 		t.Fatal("Programs parsing modified the original query")
 	}
 	business, err := embyBusinessQuery(r)
-	if err != nil || business.Get("X-Emby-Language") != "en-us" {
-		t.Fatal("the endpoint's locale hint escaped into shared transport handling")
+	if err != nil || business.Has("X-Emby-Language") {
+		t.Fatal("the shared UI language hint remained a Programs business selector")
 	}
-	if configurationQuery(httptest.NewRecorder(), liveTVTestRequest("X-Emby-Language=en-us", liveTVTestViewer())) {
-		t.Fatal("an unrelated endpoint inherited the Programs query allowlist")
+	if !configurationQuery(httptest.NewRecorder(), liveTVTestRequest("X-Emby-Language=en-us", liveTVTestViewer())) {
+		t.Fatal("a compatibility endpoint rejected the shared UI language hint")
 	}
 }
 

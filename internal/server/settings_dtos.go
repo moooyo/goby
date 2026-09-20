@@ -53,6 +53,8 @@ func settingsDTO(snapshot settings.Snapshot, deployment config.TranscodingConfig
 		"Encoding":           map[string]any{"TranscodingMaxWidth": snapshot.Encoding.TranscodingMaxWidth},
 		"UpdatedAt":          snapshot.UpdatedAt.UTC(),
 		"Management":         snapshot.Management,
+		"Sorting":            snapshot.Sorting,
+		"SortingDefaults":    settings.DefaultSorting(),
 		"ManagementDefaults": settings.DefaultManagement(),
 		"ManagementEffects":  map[string]any{"Metadata": "next_work_item", "Subtitles": "next_work_item", "Tasks": "next_admission", "RestartRequired": false},
 		"Deployment": map[string]any{

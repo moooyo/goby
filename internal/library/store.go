@@ -194,6 +194,9 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		VALUES ($1, $1, $2, $3, 'CollectionFolder', true)`, id, name, strings.ToLower(name)); err != nil {
 		return Library{}, fmt.Errorf("create library root item: %w", err)
 	}
+	if err := syncScannedMetadata(protected, tx, id); err != nil {
+		return Library{}, err
+	}
 	library := Library{ID: id, Name: name, CollectionType: collectionType, CreatedAt: createdAt, Paths: make([]string, 0, len(roots))}
 	for _, registration := range roots {
 		root := registration.root

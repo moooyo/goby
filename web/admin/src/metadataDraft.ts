@@ -6,6 +6,7 @@ export const metadataFields: MetadataFieldName[] = [
   'Name', 'SortName', 'Overview', 'OriginalTitle', 'OfficialRating', 'ProductionYear',
   'PremiereDate', 'CommunityRating', 'Genres', 'Tags', 'Studios', 'People',
   'ProviderIds', 'IndexNumber', 'ParentIndexNumber', 'Album', 'Artists', 'AlbumArtists',
+  'Status', 'EndDate', 'AirsBeforeSeasonNumber', 'AirsAfterSeasonNumber', 'AirsBeforeEpisodeNumber',
 ];
 
 export interface MetadataDraftValues {
@@ -16,6 +17,8 @@ export interface MetadataDraftValues {
   OfficialRating: string;
   ProductionYear: string;
   PremiereDate: string;
+  EndDate: string;
+  Status: string;
   CommunityRating: string;
   Genres: StringEntry[];
   Tags: StringEntry[];
@@ -24,6 +27,9 @@ export interface MetadataDraftValues {
   ProviderIds: ProviderEntry[];
   IndexNumber: string;
   ParentIndexNumber: string;
+  AirsBeforeSeasonNumber: string;
+  AirsAfterSeasonNumber: string;
+  AirsBeforeEpisodeNumber: string;
   Album: string;
   Artists: StringEntry[];
   AlbumArtists: StringEntry[];
@@ -71,6 +77,8 @@ export function draftValues(values: MetadataValues): MetadataDraftValues {
     OfficialRating: values.OfficialRating,
     ProductionYear: values.ProductionYear === null ? '' : String(values.ProductionYear),
     PremiereDate: values.PremiereDate ?? '',
+    EndDate: values.EndDate ?? '',
+    Status: values.Status ?? '',
     CommunityRating: values.CommunityRating === null ? '' : String(values.CommunityRating),
     Genres: entries('Genres'),
     Tags: entries('Tags'),
@@ -79,6 +87,9 @@ export function draftValues(values: MetadataValues): MetadataDraftValues {
     ProviderIds: Object.entries(values.ProviderIds).map(([Key, Value], index) => ({ id: `ProviderIds-${index}`, Key, Value })),
     IndexNumber: values.IndexNumber === null ? '' : String(values.IndexNumber),
     ParentIndexNumber: values.ParentIndexNumber === null ? '' : String(values.ParentIndexNumber),
+    AirsBeforeSeasonNumber: values.AirsBeforeSeasonNumber === null ? '' : String(values.AirsBeforeSeasonNumber),
+    AirsAfterSeasonNumber: values.AirsAfterSeasonNumber === null ? '' : String(values.AirsAfterSeasonNumber),
+    AirsBeforeEpisodeNumber: values.AirsBeforeEpisodeNumber === null ? '' : String(values.AirsBeforeEpisodeNumber),
     Album: values.Album,
     Artists: entries('Artists'),
     AlbumArtists: entries('AlbumArtists'),
@@ -152,7 +163,7 @@ export function metadataInput(revision: string, overrides: MetadataDraftOverride
   }
   if (hasActiveOverride('ProductionYear')) values.ProductionYear = nullableNumber(overrides.ProductionYear ?? '', 'ProductionYear', errors, { integer: true, min: 1, max: 9999 });
   if (hasActiveOverride('CommunityRating')) values.CommunityRating = nullableNumber(overrides.CommunityRating ?? '', 'CommunityRating', errors, { min: 0, max: 10 });
-  for (const field of ['IndexNumber', 'ParentIndexNumber'] as const) {
+  for (const field of ['IndexNumber', 'ParentIndexNumber', 'AirsBeforeSeasonNumber', 'AirsAfterSeasonNumber', 'AirsBeforeEpisodeNumber'] as const) {
     if (!hasActiveOverride(field)) continue;
     const raw = overrides[field] ?? '';
     if (field === 'IndexNumber' && source?.EditableFields.includes(field) && !raw.trim()) {
@@ -161,10 +172,16 @@ export function metadataInput(revision: string, overrides: MetadataDraftOverride
     }
     values[field] = nullableNumber(raw, field, errors, { integer: true, min: 0, max: 2147483647 });
   }
-  if (hasActiveOverride('PremiereDate')) {
-    const value = overrides.PremiereDate?.trim() ?? '';
-    values.PremiereDate = value || null;
-    if (value && !validUTCDate(value)) errors.PremiereDate = 'Enter a valid premiere date or leave this empty.';
+  for (const field of ['PremiereDate', 'EndDate'] as const) {
+    if (!hasActiveOverride(field)) continue;
+    const value = overrides[field]?.trim() ?? '';
+    values[field] = value || null;
+    if (value && !validUTCDate(value)) errors[field] = 'Enter a valid date or leave this empty.';
+  }
+  if (hasActiveOverride('Status')) {
+    const value = overrides.Status ?? '';
+    if (value === '' || value === 'Continuing' || value === 'Ended') values.Status = value || null;
+    else errors.Status = 'Choose Continuing, Ended, or Unknown.';
   }
   for (const field of ['Genres', 'Tags', 'Studios', 'Artists', 'AlbumArtists'] as const) {
     if (!hasActiveOverride(field)) continue;

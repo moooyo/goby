@@ -32,7 +32,7 @@ func TestHTTPLibraryEditingCASDirectoryBrowserAndSelectedOptions(t *testing.T) {
 		t.Fatalf("edit did not persist: %#v", updated)
 	}
 	options := objectValue(t, updated, "LibraryOptions")
-	if options["EnableLocalMetadata"] != false || options["EnableLocalImages"] != true {
+	if options["EnableLocalMetadata"] != false || options["EnableLocalImages"] != true || options["EnableEmbeddedArtwork"] != true {
 		t.Fatalf("partial options reset unrelated fields: %#v", options)
 	}
 	if _, exists := jsonObject(t, response)["Job"]; exists {

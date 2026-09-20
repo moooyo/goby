@@ -413,6 +413,9 @@ func (s *Store) CreateCollection(ctx context.Context, subject Subject, kind stri
 	if _, err = tx.Exec(protected, `INSERT INTO items (id,library_id,parent_id,name,sort_name,type,is_folder) VALUES ($1,$2,$3,$4,$5,$6,true)`, id, libraryID, parent, name, strings.ToLower(name), kind); err != nil {
 		return CollectionInfo{}, err
 	}
+	if err := syncScannedMetadata(protected, tx, id); err != nil {
+		return CollectionInfo{}, err
+	}
 	if _, err = tx.Exec(protected, `INSERT INTO media_collections (item_id,owner_id,kind,media_type,is_public,is_locked) VALUES ($1,$2,$3,$4,$5,$6)`, id, subject.UserID, kind, input.MediaType, input.IsPublic, input.IsLocked); err != nil {
 		return CollectionInfo{}, err
 	}
@@ -519,6 +522,9 @@ func (s *Store) UpdateCollection(ctx context.Context, subject Subject, id, kind 
 		result.IsLocked = *patch.IsLocked
 	}
 	if _, err := tx.Exec(protected, `UPDATE items SET name=$2,sort_name=$3,updated_at=clock_timestamp() WHERE id=$1`, id, result.Name, strings.ToLower(result.Name)); err != nil {
+		return CollectionInfo{}, err
+	}
+	if err := syncScannedMetadata(protected, tx, id); err != nil {
 		return CollectionInfo{}, err
 	}
 	if _, err := tx.Exec(protected, `UPDATE media_collections SET is_public=$2,is_locked=$3,updated_at=clock_timestamp() WHERE item_id=$1`, id, result.IsPublic, result.IsLocked); err != nil {

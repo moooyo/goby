@@ -10,6 +10,7 @@ func serverConfigurationDTO(view settings.Configuration) map[string]any {
 	result["PreferredMetadataLanguage"] = snapshot.Management.Metadata.PreferredMetadataLanguage
 	result["MetadataCountryCode"] = snapshot.Management.Metadata.MetadataCountryCode
 	result["EnableInternetProviders"] = snapshot.Management.Metadata.EnableInternetProviders
+	result["SortRemoveWords"] = append([]string{}, snapshot.Sorting.SortRemoveWords...)
 	result["HttpServerPortNumber"] = snapshot.Runtime.DesiredNetwork.HttpPort
 	switch snapshot.ServerNameMode {
 	case settings.ServerNameDeployment:

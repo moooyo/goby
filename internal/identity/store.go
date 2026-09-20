@@ -458,11 +458,17 @@ func normalizeName(name string) (string, string, error) {
 	if count := utf8.RuneCountInString(name); count < 1 || count > 128 {
 		return "", "", fmt.Errorf("%w: username must contain between 1 and 128 characters", ErrInvalidInput)
 	}
-	var normalized strings.Builder
 	for _, r := range name {
 		if unicode.IsControl(r) {
 			return "", "", fmt.Errorf("%w: username must not contain control characters", ErrInvalidInput)
 		}
+	}
+	return name, foldedUserName(name), nil
+}
+
+func foldedUserName(name string) string {
+	var normalized strings.Builder
+	for _, r := range name {
 		// Use the lowest rune in each simple-fold cycle so equivalent forms such
 		// as Greek sigma and final sigma have the same database uniqueness key.
 		canonical := r
@@ -473,7 +479,7 @@ func normalizeName(name string) (string, string, error) {
 		}
 		normalized.WriteRune(unicode.ToLower(canonical))
 	}
-	return name, normalized.String(), nil
+	return normalized.String()
 }
 
 func validatePassword(password string, requirePassword bool) error {

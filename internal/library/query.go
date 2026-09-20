@@ -616,6 +616,7 @@ func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID
 		{query.IsFolder, "i.is_folder"},
 		{query.IsSpecialSeason, "(i.type = 'Season' AND i.index_number = 0)"},
 		{query.IsSpecialEpisode, "(i.type = 'Episode' AND i.parent_index_number = 0)"},
+		{query.IsStandaloneSpecial, standaloneSpecialSQL()},
 	} {
 		if flag.value != nil {
 			args = append(args, *flag.value)

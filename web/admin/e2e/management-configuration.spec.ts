@@ -74,7 +74,7 @@ test('new libraries explicitly save both local import choices before any scan', 
   await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill('Local import choices'); await dialog.getByRole('textbox', { name: 'Media directories', exact: true }).fill('/synthetic/media/choice');
   await dialog.getByRole('checkbox', { name: 'Import local metadata files', exact: true }).uncheck(); await dialog.getByRole('checkbox', { name: 'Import local artwork', exact: true }).uncheck(); await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).uncheck();
   await dialog.getByRole('button', { name: 'Create library', exact: true }).click(); await expect(dialog).not.toBeVisible();
-  expect(api.writes).toHaveLength(1); expect(api.writes[0].body).toEqual({ Name: 'Local import choices', CollectionType: 'movies', Paths: ['/synthetic/media/choice'], Scan: false, LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: false } });
+  expect(api.writes).toHaveLength(1); expect(api.writes[0].body).toEqual({ Name: 'Local import choices', CollectionType: 'movies', Paths: ['/synthetic/media/choice'], Scan: false, LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: true } });
 });
 
 test('deletion grants come from current folder choices while legacy values and inactive categories survive unrelated edits', async ({ page, api }) => {

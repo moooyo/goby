@@ -65,6 +65,7 @@ type Snapshot struct {
 	HostName       string
 	Encoding       Encoding
 	Management     Management
+	Sorting        Sorting
 	Runtime        RuntimeSnapshot
 	UpdatedAt      time.Time
 }
@@ -83,6 +84,7 @@ type UpdateRequest struct {
 	NameMode   *ServerNameMode
 	Encoding   *Encoding
 	Management *Management
+	Sorting    *Sorting
 	Runtime    *RuntimeUpdate
 }
 
@@ -142,6 +144,7 @@ type ConfigurationMutation struct {
 	H264Crf                     int
 	EnableSoftwareToneMapping   *bool
 	EnableHardwareToneMapping   *bool
+	SortRemoveWords             *[]string
 }
 
 type ValidationError struct{ Fields map[string]string }
@@ -170,6 +173,7 @@ func cloneOverrides(value Overrides) Overrides {
 func cloneSnapshot(value Snapshot) Snapshot {
 	value.Overrides = cloneOverrides(value.Overrides)
 	value.Management = cloneManagement(value.Management)
+	value.Sorting = cloneSorting(value.Sorting)
 	value.Runtime = cloneRuntimeSnapshot(value.Runtime)
 	return value
 }

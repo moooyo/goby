@@ -38,21 +38,11 @@ func parseLiveTVProgramsQuery(r *http.Request) (liveTVProgramsQuery, error) {
 	if err != nil {
 		return query, err
 	}
-	languageSeen := false
 	for name, entries := range values {
 		if len(entries) != 1 {
 			return query, identity.ErrInvalidInput
 		}
 		value := entries[0]
-		if strings.EqualFold(name, "X-Emby-Language") {
-			// This observed locale hint is local to Programs. Do not broaden the
-			// shared transport allowlist or turn a hint into user authority.
-			if languageSeen || !liveTVScalar(value, true) {
-				return query, identity.ErrInvalidInput
-			}
-			languageSeen = true
-			continue
-		}
 		switch name {
 		case "UserId", "LibrarySeriesId":
 			if !liveTVScalar(value, true) {

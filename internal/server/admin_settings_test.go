@@ -65,7 +65,7 @@ func assertAdminSettingsInputError(t *testing.T, response *httptest.ResponseReco
 	}
 	for key := range body.Error.Fields {
 		switch key {
-		case "Body", "Query", "Revision", "Overrides", "Fields", "Overrides.ServerName", "Overrides.MaxBitrate", "Overrides.MaxWidth", "Overrides.MaxHeight", "Overrides.MaxAudioChannels", "ServerNameMode", "Encoding", "Encoding.TranscodingMaxWidth":
+		case "Body", "Query", "Revision", "Overrides", "Fields", "Overrides.ServerName", "Overrides.MaxBitrate", "Overrides.MaxWidth", "Overrides.MaxHeight", "Overrides.MaxAudioChannels", "ServerNameMode", "Encoding", "Encoding.TranscodingMaxWidth", "Sorting", "Sorting.SortRemoveWords":
 		default:
 			if !adminRuntimeErrorField(key) {
 				t.Fatal("native settings error used a request-controlled field name")
@@ -124,6 +124,7 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 					source = "database"
 				}
 				snapshot.Management = settings.DefaultManagement()
+				snapshot.Sorting = settings.DefaultSorting()
 				encoded, err := json.Marshal(settingsDTO(snapshot, deployment))
 				if err != nil {
 					t.Fatal(err)
@@ -149,6 +150,7 @@ func TestSettingsDTOExactContractPreservesRevisionSourcesAndUTC(t *testing.T) {
 					"Tasks":     map[string]any{"MaxConcurrent": float64(2), "CacheRetentionDays": float64(30), "CacheMaxEntries": float64(10000)},
 				}
 				want["Management"], want["ManagementDefaults"] = expectedManagement, expectedManagement
+				want["Sorting"], want["SortingDefaults"] = map[string]any{"SortRemoveWords": []any{}}, map[string]any{"SortRemoveWords": []any{}}
 				want["ManagementEffects"] = map[string]any{"Metadata": "next_work_item", "Subtitles": "next_work_item", "Tasks": "next_admission", "RestartRequired": false}
 				if !reflect.DeepEqual(got, want) {
 					t.Fatal("settings DTO changed its exact safe fields, value types, null overrides, explicit sources, revision precision, or UTC timestamp")

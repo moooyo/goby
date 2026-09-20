@@ -35,6 +35,9 @@ func nativeLibraryCreationOptions(update *library.LibraryOptionsUpdate) library.
 		if update.EnableLocalImages != nil {
 			options.EnableLocalImages = *update.EnableLocalImages
 		}
+		if update.EnableEmbeddedArtwork != nil {
+			options.EnableEmbeddedArtwork = *update.EnableEmbeddedArtwork
+		}
 	}
 	return options
 }

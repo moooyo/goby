@@ -2,6 +2,22 @@
 
 ## Resume here
 
+The active objective is the [three-phase compatibility, media-analysis and
+resilience plan](../planning/media-analysis-resilience-plan-20260920.md), approved
+on September 20, 2026. The user authorized execution, consolidated verification
+only after each phase's complete code, then merge to `main` and push.
+Implementation uses `codex/media-analysis-resilience` at
+`C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`, based on
+`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Phase 1 product and test source is
+complete; use its [execution record](media-analysis-resilience-phase1-20260920.md)
+for the remote artifact-generation and verification checkpoint. No passing
+result is claimed; tests/builds/runtime checks are remote-only for this
+increment. The original `D:/Code/goby` changes remain unrelated and preserved.
+Do not start phase 2 or 3 product changes before phase 1 is accepted. The earlier
+completed records below retain their historical scope and authorization.
+
+## Previous selected-compatibility publication
+
 The selected four-phase increment was fast-forward merged into `main` and pushed
 to `origin/main` on September 20, 2026, at
 `d3d043e19b9233e5d0b373ae42145f5189bda08d`. The remote ref was read back at that

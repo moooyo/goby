@@ -142,8 +142,24 @@ func deviceLegacyTableSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 
 func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *pgxpool.Pool, tables []deviceLegacyTable) {
 	t.Helper()
+	var expandedArtworkOptions bool
+	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=49)`).Scan(&expandedArtworkOptions); err != nil {
+		t.Fatal("read the selected library-option migration boundary")
+	}
 	for _, table := range tables {
-		if after := deviceLegacyTableSnapshot(t, ctx, pool, table); after != table.snapshot {
+		expected := table.snapshot
+		if expandedArtworkOptions && table.name == "libraries" {
+			// Predict the one specified JSON addition on the old expectation.
+			// Read actual target bytes unchanged: a missing/false added flag or
+			// any modification of the two historical flags must still fail.
+			if err := pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(projected ORDER BY projected::text),'[]'::jsonb)::text
+				FROM (SELECT CASE WHEN source_row ? 'options' AND NOT (source_row->'options' ? 'EnableEmbeddedArtwork')
+					THEN jsonb_set(source_row,'{options}',(source_row->'options')||'{"EnableEmbeddedArtwork":true}'::jsonb) ELSE source_row END AS projected
+					FROM jsonb_array_elements($1::jsonb) retained(source_row)) expected`, table.snapshot).Scan(&expected); err != nil {
+				t.Fatal("derive the exact specified library-option migration")
+			}
+		}
+		if after := deviceLegacyTableSnapshot(t, ctx, pool, table); after != expected {
 			// Do not print snapshots: they intentionally include secret storage.
 			t.Errorf("device migration changed original rows or fields in %s", table.name)
 		}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -31,6 +32,11 @@ func TestHTTPOriginalClientEpisodeQueueIsCompleteAndDoesNotOwnAutoplay(t *testin
 		t.Fatal("the original client's unpaged queue cannot locate episodes after the first hundred")
 	}
 	first := stringValue(t, items[0], "Id")
+	clientPath := strings.Replace(path, "&Fields=", "&fields=", 1) + "&ExcludeFields=MediaStreams&X-Emby-Language=en-US"
+	clientItems, clientCount := responseItems(t, f.request(t, http.MethodGet, clientPath, nil, p.headers))
+	if clientCount != 105 || len(clientItems) != 105 || clientItems[100]["Id"] != items[100]["Id"] {
+		t.Fatal("ordinary client projection or UI language changed complete episode queue selection")
+	}
 	expectStatus(t, f.request(t, http.MethodPost, "/emby/Users/"+p.s.viewerID+"/PlayedItems/"+first, nil, p.headers), http.StatusOK)
 	for _, autoplay := range []bool{false, true} {
 		response := f.request(t, http.MethodPost, "/users/"+p.s.viewerID+"/configuration/partial", map[string]any{"EnableNextEpisodeAutoPlay": autoplay, "IntroSkipMode": "AutoSkip"}, p.headers)

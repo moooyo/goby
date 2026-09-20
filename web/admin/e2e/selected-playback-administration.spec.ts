@@ -35,6 +35,7 @@ interface CapturedRequest { method: string; path: string; body: unknown; csrf: s
 
 function metadata(): MetadataDetail {
   const values: MetadataValues = {
+    Status: null, EndDate: null, AirsBeforeSeasonNumber: null, AirsAfterSeasonNumber: null, AirsBeforeEpisodeNumber: null,
     Name: 'Selected playback movie', SortName: '', Overview: '', OriginalTitle: '', OfficialRating: '', ProductionYear: 2026,
     PremiereDate: null, CommunityRating: null, ProviderIds: {}, Genres: [], Tags: [], Studios: [], People: [],
     IndexNumber: null, ParentIndexNumber: null, Album: '', Artists: [], AlbumArtists: [],

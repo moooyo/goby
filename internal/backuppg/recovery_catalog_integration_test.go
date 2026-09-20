@@ -44,7 +44,21 @@ func assertHistoricalRecoveryFacts(t *testing.T, ctx context.Context, source, ta
 		if !exists || !hasFact {
 			t.Fatalf("current target lost historical table %s", table.Name)
 		}
-		if table.Name != "schema_migrations" && equalJSON(table, currentTable) {
+		if table.Name == "libraries" && expected.SchemaVersion >= 36 && expected.SchemaVersion < 49 && actual.SchemaVersion >= 49 {
+			// Predict only the specified default on the historical expectation.
+			// Compare target rows unchanged, including every original option and
+			// the exact new true value; never strip arbitrary target JSON keys.
+			before := historicalArchiveRows(t, ctx, source, table.Name, expected.SchemaVersion)
+			var migrated string
+			if err := source.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(projected ORDER BY projected::text),'[]'::jsonb)::text
+				FROM (SELECT jsonb_set(source_row,'{options}',(source_row->'options')||'{"EnableEmbeddedArtwork":true}'::jsonb) projected
+				FROM jsonb_array_elements($1::jsonb) retained(source_row)) expected`, before).Scan(&migrated); err != nil {
+				t.Fatal("derive the exact historical library-option transition")
+			}
+			if historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion) != migrated {
+				t.Error("migration changed historical library rows beyond the declared embedded-artwork default")
+			}
+		} else if table.Name != "schema_migrations" && equalJSON(table, currentTable) {
 			if !equalJSON(fact, targetFact) {
 				t.Errorf("migration changed original table fingerprint for %s", table.Name)
 			}

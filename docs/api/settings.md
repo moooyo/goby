@@ -1,5 +1,10 @@
 # Native settings API
 
+The schema49 [sorting settings extension](sorting-library-options.md) adds
+`Sorting`, `SortingDefaults`, atomic generated-key rebuilding and a Sorting reset
+selector. Source implementation is complete; consolidated phase 1 verification
+is pending.
+
 The selected Phase 4 Runtime extension below is implemented in source and awaits
 the phase's consolidated verification. Historical acceptance links on this page
 do not establish acceptance of that new extension.
@@ -229,12 +234,17 @@ MaxConcurrent, CacheRetentionDays and CacheMaxEntries. The
 defaults and limits. Compatibility named writes are partial-section operations;
 they do not change this complete native Management-object rule.
 
-Reset changes only the selected state. `Fields` must contain one to eighteen unique
+`Sorting` is optional on PUT and otherwise preserves its current value. When
+supplied, its sole required field is the non-null `SortRemoveWords` array; `[]`
+restores the historical complete-name sort behavior. The linked sorting contract
+defines token limits, Unicode handling, immediate effects and queue backpressure.
+
+Reset changes only the selected state. `Fields` must contain one to nineteen unique
 names: `ServerName`, `MaxBitrate`, `MaxWidth`, `MaxHeight`, `MaxAudioChannels`,
 `TranscodingMaxWidth`, `Management`, `Management.Metadata`,
 `Management.Subtitles`, `Management.Tasks`, `Runtime`, `Runtime.Network`,
 `Runtime.Hardware`, `Runtime.Threads`, `Runtime.H264`, `Runtime.HEVC`,
-`Runtime.SoftwareToneMapping`, or `Runtime.VulkanToneMapping`. Runtime resets are
+`Runtime.SoftwareToneMapping`, `Runtime.VulkanToneMapping`, or `Sorting`. Runtime resets are
 whole-group operations; leaf selectors such as `Runtime.H264.CRF` are invalid.
 Empty, null, duplicate, or
 unknown selections fail.

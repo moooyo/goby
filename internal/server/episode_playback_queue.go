@@ -39,7 +39,7 @@ func (s *Server) tryEpisodePlaybackQueue(w http.ResponseWriter, r *http.Request,
 	}
 	for name := range values {
 		switch name {
-		case "IsMissing", "IsVirtualUnaired", "UserId", "Fields", "EnableImages", "EnableUserData", "ImageTypeLimit", "EnableImageTypes":
+		case "IsMissing", "IsVirtualUnaired", "UserId", "Fields", "ExcludeFields", "EnableImages", "EnableUserData", "ImageTypeLimit", "EnableImageTypes":
 		default:
 			return false
 		}

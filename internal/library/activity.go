@@ -168,6 +168,16 @@ func metadataActivityField(name string) (activity.Field, bool) {
 		return activity.FieldParentIndexNumber, true
 	case "PremiereDate":
 		return activity.FieldPremiereDate, true
+	case "EndDate":
+		return activity.FieldEndDate, true
+	case "Status":
+		return activity.FieldStatus, true
+	case "AirsBeforeSeasonNumber":
+		return activity.FieldAirsBeforeSeasonNumber, true
+	case "AirsAfterSeasonNumber":
+		return activity.FieldAirsAfterSeasonNumber, true
+	case "AirsBeforeEpisodeNumber":
+		return activity.FieldAirsBeforeEpisodeNumber, true
 	case "CommunityRating":
 		return activity.FieldCommunityRating, true
 	case "ProviderIds":

@@ -437,7 +437,7 @@ func TestHTTPConfigurationInvalidRequestsRollbackWithoutEchoingInput(t *testing.
 		status           int
 	}{
 		{"/emby/System/Configuration/Partial", `{"ServerName":"Must not commit","ImageExtractionTimeoutMs":"private-marker"}`, "application/json", 400},
-		{"/emby/System/Configuration", `{"ServerName":"Must not commit","SortRemoveWords":["private-marker"]}`, "application/json", 400},
+		{"/emby/System/Configuration", `{"ServerName":"Must not commit","SortRemoveWords":["private-marker","PRIVATE-MARKER"]}`, "application/json", 400},
 		{"/emby/System/Configuration/Partial", `{"ServerName":"first","SERVERNAME":"private-marker"}`, "application/json", 400},
 		{"/emby/System/Configuration/Partial", `{"ServerName":"\ud800private-marker"}`, "application/json", 400},
 		{"/emby/System/Configuration/Partial", `{"ServerName":"` + strings.Repeat("x", 129) + `"}`, "application/json", 400},

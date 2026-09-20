@@ -46,13 +46,13 @@ func validateRevision(revision int64) error {
 }
 
 func validateReset(fields []Field) error {
-	if len(fields) < 1 || len(fields) > 18 {
-		return &ValidationError{Fields: map[string]string{"Fields": "select between one and eighteen settings to reset"}}
+	if len(fields) < 1 || len(fields) > 19 {
+		return &ValidationError{Fields: map[string]string{"Fields": "select between one and nineteen settings to reset"}}
 	}
 	seen := make(map[Field]struct{}, len(fields))
 	for _, field := range fields {
 		switch field {
-		case FieldServerName, FieldMaxBitrate, FieldMaxWidth, FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement, FieldMetadata, FieldSubtitles, FieldTasks:
+		case FieldServerName, FieldMaxBitrate, FieldMaxWidth, FieldMaxHeight, FieldMaxAudioChannels, FieldTranscodingMaxWidth, FieldManagement, FieldMetadata, FieldSubtitles, FieldTasks, FieldSorting:
 		case FieldRuntime, FieldNetwork, FieldHardware, FieldThreads, FieldH264, FieldHEVC, FieldSoftwareToneMapping, FieldVulkanToneMapping:
 		default:
 			return &ValidationError{Fields: map[string]string{"Fields": "reset contains an unsupported setting"}}

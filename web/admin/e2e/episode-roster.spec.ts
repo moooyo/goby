@@ -18,7 +18,7 @@ const first: EpisodeRosterEntryInput = { Key: 'pilot', SeasonNumber: 1, EpisodeN
 const second: EpisodeRosterEntryInput = { Key: 'later', SeasonNumber: 1, EpisodeNumber: 3, Name: 'Later episode' };
 
 function metadata(type = 'Series'): MetadataDetail {
-  const values: MetadataValues = { Name: seriesName, SortName: '', Overview: '', OriginalTitle: '', OfficialRating: '', ProductionYear: 2026, PremiereDate: null, CommunityRating: null, ProviderIds: {}, Genres: [], Tags: [], Studios: [], People: [], IndexNumber: null, ParentIndexNumber: null, Album: '', Artists: [], AlbumArtists: [] };
+  const values: MetadataValues = { Name: seriesName, SortName: '', Overview: '', OriginalTitle: '', OfficialRating: '', ProductionYear: 2026, PremiereDate: null, CommunityRating: null, ProviderIds: {}, Genres: [], Tags: [], Studios: [], People: [], IndexNumber: null, ParentIndexNumber: null, Album: '', Artists: [], AlbumArtists: [], Status: null, EndDate: null, AirsBeforeSeasonNumber: null, AirsAfterSeasonNumber: null, AirsBeforeEpisodeNumber: null };
   return { Item: { Id: seriesId, LibraryId: library.Id, ParentId: '', ParentName: '', Name: seriesName, Type: type, Path: '/synthetic/roster/series', IsFolder: type === 'Series' }, Revision: '1', Automatic: { ...values }, Effective: { ...values }, Overrides: {}, LockedValues: {}, LockedFields: [], EditableFields: ['Name', 'Overview'], InactiveFields: [], LastEditedBy: '', LastEditedAt: null };
 }
 

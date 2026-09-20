@@ -13,6 +13,9 @@ func (s *Server) registerNavigationRoutes(mux *http.ServeMux) {
 }
 
 func navigationQuery(w http.ResponseWriter, r *http.Request, allowed ...string) bool {
+	if !normalizeItemProjectionQuery(w, r) {
+		return false
+	}
 	values, err := embyBusinessQuery(r)
 	if err != nil {
 		apiError(w, r, 400, "invalid_navigation_query", "The navigation query is invalid.")
@@ -89,7 +92,7 @@ func (s *Server) itemCounts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) additionalParts(w http.ResponseWriter, r *http.Request) {
-	if !navigationQuery(w, r, "UserId", "Fields", "EnableImages", "ImageTypeLimit", "EnableImageTypes", "EnableUserData") {
+	if !navigationQuery(w, r, "UserId", "Fields", "ExcludeFields", "EnableImages", "ImageTypeLimit", "EnableImageTypes", "EnableUserData") {
 		return
 	}
 	userID, ok := s.itemUser(w, r)

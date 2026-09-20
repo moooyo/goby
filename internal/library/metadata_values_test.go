@@ -60,8 +60,8 @@ func TestMetadataValuesAlwaysEncodeCompleteCollections(t *testing.T) {
 	}
 	encoded := metadataTestRaw(t, MetadataValues{})
 	object := metadataTestObject(t, encoded)
-	if len(object) != 18 {
-		t.Errorf("complete value projection has %d fields, want 18: %s", len(object), encoded)
+	if len(object) != 23 {
+		t.Errorf("complete value projection has %d fields, want 23: %s", len(object), encoded)
 	}
 	for _, field := range []string{"Genres", "Tags", "Studios", "People", "Artists", "AlbumArtists"} {
 		if string(object[field]) != "[]" {

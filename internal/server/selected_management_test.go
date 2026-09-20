@@ -22,11 +22,12 @@ func TestSelectedManagementDeletionFolderQueryIsClosedAndPresenceAware(t *testin
 	}
 }
 
-func TestSelectedManagementLibraryOptionsDescribeOnlyActualNfoDefaults(t *testing.T) {
+func TestSelectedManagementLibraryOptionsDescribeActualLocalConsumers(t *testing.T) {
 	defaults := library.DefaultLibraryOptions()
 	want := map[string]any{
 		"MetadataSavers": []any{}, "MetadataReaders": []map[string]any{{"Name": "Nfo", "DefaultEnabled": defaults.EnableLocalMetadata, "Features": []string{}}},
-		"SubtitleFetchers": []any{}, "LyricsFetchers": []any{}, "TypeOptions": []any{},
+		"SubtitleFetchers": []any{}, "LyricsFetchers": []any{},
+		"TypeOptions":           []map[string]any{{"Type": "Audio", "MetadataFetchers": []any{}, "ImageFetchers": []map[string]any{{"Name": "Goby Embedded Artwork", "DefaultEnabled": true, "Features": []string{}}}, "SupportedImageTypes": []string{"Primary"}, "DefaultImageOptions": []any{}}},
 		"DefaultLibraryOptions": embyEditableLibraryOptions(library.Library{Options: &defaults}),
 	}
 	if !reflect.DeepEqual(supportedLibraryOptionsDTO(), want) {

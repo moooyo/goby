@@ -3,21 +3,23 @@ package library
 // LibraryOptions contains only settings with a scanner consumer. Disabling an
 // importer retains previously accepted source facts and administrator overrides.
 type LibraryOptions struct {
-	EnableLocalMetadata bool
-	EnableLocalImages   bool
+	EnableLocalMetadata   bool
+	EnableLocalImages     bool
+	EnableEmbeddedArtwork bool
 }
 
 type LibraryOptionsUpdate struct {
-	EnableLocalMetadata *bool
-	EnableLocalImages   *bool
+	EnableLocalMetadata   *bool
+	EnableLocalImages     *bool
+	EnableEmbeddedArtwork *bool
 }
 
 func DefaultLibraryOptions() LibraryOptions {
-	return LibraryOptions{EnableLocalMetadata: true, EnableLocalImages: true}
+	return LibraryOptions{EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true}
 }
 
 // A nil options pointer represents the historical scanner defaults. This also
-// keeps in-memory callers from silently disabling both importers.
+// keeps in-memory callers from silently disabling the importers.
 func EffectiveLibraryOptions(value Library) LibraryOptions {
 	if value.Options == nil {
 		return DefaultLibraryOptions()
@@ -32,6 +34,9 @@ func applyLibraryOptions(previous LibraryOptions, update *LibraryOptionsUpdate) 
 		}
 		if update.EnableLocalImages != nil {
 			previous.EnableLocalImages = *update.EnableLocalImages
+		}
+		if update.EnableEmbeddedArtwork != nil {
+			previous.EnableEmbeddedArtwork = *update.EnableEmbeddedArtwork
 		}
 	}
 	return previous

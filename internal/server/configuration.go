@@ -11,6 +11,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"github.com/moooyo/goby/internal/settings"
 )
 
@@ -153,6 +154,10 @@ func (s *Server) configurationError(w http.ResponseWriter, r *http.Request, err 
 		embyTextError(w, r, http.StatusForbidden, fmt.Sprintf("User %s does not have access to %s feature.", actor.User.Name, feature))
 	case errors.Is(err, settings.ErrInvalidInput):
 		configurationInputError(w, r)
+	case errors.Is(err, notificationjournal.ErrCapacity):
+		embyTextError(w, r, http.StatusServiceUnavailable, "The notification backlog is full. Retry after it drains.")
+	case errors.Is(err, notificationjournal.ErrJournal):
+		embyTextError(w, r, http.StatusServiceUnavailable, "The notification journal is unavailable. Retry the operation later.")
 	case errors.Is(err, settings.ErrStoredSettings), errors.Is(err, settings.ErrUnavailable), errors.Is(err, library.ErrUnavailable), errors.Is(err, context.DeadlineExceeded):
 		embyTextError(w, r, http.StatusServiceUnavailable, "Server configuration is currently unavailable.")
 	case errors.Is(err, context.Canceled) && r.Context().Err() != nil:

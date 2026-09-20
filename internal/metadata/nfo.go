@@ -29,7 +29,11 @@ type Metadata struct {
 	Kind, Name, SortName, OriginalTitle, Overview, OfficialRating string
 	ProductionYear                                                *int
 	PremiereDate                                                  *time.Time
+	EndDate                                                       *time.Time
+	Status                                                        *string
 	IndexNumber, ParentIndexNumber                                *int
+	AirsBeforeSeasonNumber, AirsAfterSeasonNumber                 *int
+	AirsBeforeEpisodeNumber                                       *int
 	CommunityRating                                               *float64
 	ProviderIDs                                                   map[string]string
 	Genres, Tags, Studios                                         []string
@@ -250,9 +254,25 @@ func extract(root *element) (Metadata, error) {
 		}
 		name := strings.ToLower(child.name.Local)
 		switch name {
-		case "title", "sorttitle", "originaltitle", "plot", "year", "premiered", "aired", "season", "episode", "rating", "mpaa":
+		case "title", "sorttitle", "originaltitle", "plot", "year", "premiered", "aired", "enddate", "season", "episode", "rating", "mpaa":
 			if err := collectScalar(fields, name, child); err != nil {
 				return Metadata{}, err
+			}
+		case "status":
+			if result.Kind == "tvshow" {
+				if err := collectScalar(fields, name, child); err != nil {
+					return Metadata{}, err
+				}
+			}
+		case "airsbefore_season", "airsafter_season", "airsbefore_episode", "displayseason", "displayafterseason", "displayepisode":
+			if result.Kind == "episodedetails" {
+				canonical := map[string]string{"displayseason": "airsbefore_season", "displayafterseason": "airsafter_season", "displayepisode": "airsbefore_episode"}[name]
+				if canonical != "" {
+					name = canonical
+				}
+				if err := collectScalar(fields, name, child); err != nil {
+					return Metadata{}, err
+				}
 			}
 		case "name":
 			if result.Kind == "album" || result.Kind == "artist" {
@@ -320,6 +340,25 @@ func extract(root *element) (Metadata, error) {
 		result.IndexNumber = season
 	} else if result.Kind == "episodedetails" {
 		result.IndexNumber, result.ParentIndexNumber = episode, season
+		for _, field := range []struct {
+			name   string
+			target **int
+		}{
+			{"airsbefore_season", &result.AirsBeforeSeasonNumber},
+			{"airsafter_season", &result.AirsAfterSeasonNumber},
+			{"airsbefore_episode", &result.AirsBeforeEpisodeNumber},
+		} {
+			if *field.target, err = parseInteger(fields[field.name], field.name, 0, math.MaxInt32); err != nil {
+				return Metadata{}, err
+			}
+		}
+	}
+	if fields["status"] != "" {
+		status, valid := NormalizeSeriesStatus(fields["status"])
+		if !valid {
+			return Metadata{}, fmt.Errorf("NFO status must be Continuing or Ended")
+		}
+		result.Status = &status
 	}
 	if result.CommunityRating, err = parseRating(fields["rating"]); err != nil {
 		return Metadata{}, err
@@ -336,7 +375,23 @@ func extract(root *element) (Metadata, error) {
 	if premiered == nil {
 		result.PremiereDate = aired
 	}
+	if result.EndDate, err = parseDate(fields["enddate"], "enddate"); err != nil {
+		return Metadata{}, err
+	}
 	return result, nil
+}
+
+// NormalizeSeriesStatus uses the two values declared by the pinned Emby SDK.
+// Absence is represented separately by a nil pointer, never by a guessed state.
+func NormalizeSeriesStatus(value string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "continuing":
+		return "Continuing", true
+	case "ended":
+		return "Ended", true
+	default:
+		return "", false
+	}
 }
 
 func scalarText(node *element) (string, error) {

@@ -14,6 +14,7 @@ func compatibilityQueryCarrierCases() []string {
 		"api_key=token&api_key=token", "X-Emby-Token=token&x-emby-token=token",
 		"X-Emby-Client=Browser&X-Emby-Client-Version=1.0&X-Emby-Device-Id=device&X-Emby-Device-Name=Linux",
 		"X-Emby-Client=Browser&x-emby-client=Browser&X-Emby-Token=token",
+		"X-Emby-Language=en-US", "x-emby-language=zh-CN&api_key=token",
 	}
 }
 
@@ -49,7 +50,9 @@ func TestCompatibilityQuerySeparatesOnlyDeclaredAuthenticationCarriers(t *testin
 		"X-Emby-Device-Id=%ff", "X-Emby-Device-Name=%00",
 		"X-Emby-Client=" + url.QueryEscape(strings.Repeat("x", 257)),
 		"X-Emby-Unknown=ignored", "X-Emby-UserId=administrator", "UserId=administrator",
-		"X-Emby-Language=en-US", "ReqFormat=json",
+		"X-Emby-Language=en-US&x-emby-language=en-US", "X-Emby-Language=%ff",
+		"X-Emby-Language=%00", "X-Emby-Language=%0a", "X-Emby-Language=%20en-US",
+		"X-Emby-Language=" + strings.Repeat("x", 257), "ReqFormat=json",
 	} {
 		request := httptest.NewRequest(http.MethodGet, "/emby/System/Configuration?"+query, nil)
 		if configurationQuery(httptest.NewRecorder(), request) {

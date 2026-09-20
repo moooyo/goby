@@ -87,6 +87,10 @@ func editableMetadataFields(itemType string) []string {
 	}
 	fields := make([]string, 0, len(metadataValueFieldNames))
 	for _, field := range metadataValueFieldNames {
+		if field == "Status" && itemType != "Series" ||
+			(field == "AirsBeforeSeasonNumber" || field == "AirsAfterSeasonNumber" || field == "AirsBeforeEpisodeNumber") && itemType != "Episode" {
+			continue
+		}
 		music := itemType == "Audio" || itemType == "MusicAlbum" || itemType == "MusicArtist"
 		if (field == "Album" || field == "Artists" || field == "AlbumArtists") && !music {
 			continue

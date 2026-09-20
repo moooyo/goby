@@ -103,9 +103,15 @@ func (s *Server) entityDTO(entity library.Entity, fields []string, detail bool) 
 	if detail || hasField(fields, "ProviderIds") {
 		dto["ProviderIds"] = map[string]string{}
 	}
-	if detail {
+	// Typed metadata entities have no original downloadable file and no item
+	// deletion operation. Their numeric IDs never select physical catalog IDs.
+	if detail || hasField(fields, "CanDelete") {
 		dto["CanDelete"] = false
+	}
+	if detail || hasField(fields, "CanDownload") {
 		dto["CanDownload"] = false
+	}
+	if detail {
 		dto["ExternalUrls"] = []map[string]string{}
 		dto["Taglines"] = []string{}
 		dto["RemoteTrailers"] = []map[string]string{}

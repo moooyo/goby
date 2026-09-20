@@ -23,7 +23,7 @@ query selection failure, not evidence that the catalog needed different rows.
 
 ## Implemented selection
 
-`library.Query` retains three optional booleans. An absent flag adds no
+`library.Query` retains four optional booleans. An absent flag adds no
 predicate, and an explicit `false` compares against the entire classification:
 
 | Field | Catalog classification |
@@ -31,6 +31,7 @@ predicate, and an explicit `false` compares against the entire classification:
 | `IsFolder` | `i.is_folder` |
 | `IsSpecialSeason` | `i.type = 'Season' AND i.index_number = 0` |
 | `IsSpecialEpisode` | `i.type = 'Episode' AND i.parent_index_number = 0` |
+| `IsStandaloneSpecial` | A season-zero Episode with neither a positive `AirsBeforeSeasonNumber` nor a positive `AirsAfterSeasonNumber` in its effective metadata |
 
 Each present classification is compared with its parameterized boolean value.
 All predicates combine with the existing parent scope, item types, current
@@ -63,14 +64,20 @@ matrix for every special-episode arrangement. Store and HTTP regression
 fixtures include nonempty zero-season results to exercise the actual catalog
 selection on both boolean branches.
 
-`IsStandaloneSpecial` remains unmodeled. The pinned schema provides its type
-but no rule that proves equivalence with `IsSpecialEpisode`; the existing
-metadata model also has no independently established standalone-special or
-episode-placement facts. This change does not add a guessed predicate,
-reinterpret that field, or claim its compatibility. The observed `false`
-requests over the ordinary-only fixture do not establish its behavior on
-positive special-item cases. That requires additional reference evidence and,
-if necessary, explicit catalog facts.
+The original source12 increment left `IsStandaloneSpecial` unmodeled. The
+subsequent television metadata increment adds independent placement facts;
+it does not equate standalone with season zero. A special placed before or
+after a positive regular season remains in a query with
+`IsStandaloneSpecial=false`. An episode number without a season, or an explicit
+zero season placement, leaves a special standalone. Mixed-type false queries
+retain unrelated videos and folders. Physical parent and season identities do
+not change when placement is edited.
+
+See [television metadata facts](tv-metadata-facts.md) for pinned first-party
+source evidence, the documented Goby classification, and the remaining
+reference-parity boundary. Existing source12 captures establish only the
+historical ordinary-episode journey; they do not prove the new positive
+standalone or placement cases.
 
 ## Verification handoff
 

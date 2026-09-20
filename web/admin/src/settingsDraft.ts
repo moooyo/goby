@@ -3,6 +3,7 @@ import { managementDraft, managementDraftKey, parseManagementDraft } from './man
 import type { ManagementDraft } from './managementDraft';
 import { parseRuntimeDraft, runtimeDraft, runtimeDraftKey } from './runtimeSettingsDraft';
 import type { RuntimeDraft } from './runtimeSettingsDraft';
+import { parseSortingDraft, sortingDraft, sortingDraftKey } from './sortingSettings';
 
 export const settingsFields: readonly SettingsField[] = [
   'ServerName', 'MaxBitrate', 'MaxWidth', 'MaxHeight', 'MaxAudioChannels',
@@ -36,6 +37,7 @@ export type SettingsDraft = Record<OutputSettingField, SettingDraft> & {
   TranscodingMaxWidth: string;
   Management?: ManagementDraft;
   Runtime?: RuntimeDraft;
+  Sorting: string;
 };
 type SettingsDraftErrors = Partial<Record<SettingsResetField, string>> & Record<string, string | undefined>;
 type SettingsDraftInput = Omit<SettingsUpdateInput, 'Revision'>;
@@ -82,6 +84,7 @@ export function draftFromSettings(value: ServerSettings): SettingsDraft {
     MaxHeight: create('MaxHeight'),
     MaxAudioChannels: create('MaxAudioChannels'),
     TranscodingMaxWidth: String(value.Encoding.TranscodingMaxWidth),
+    Sorting: sortingDraft(value.Sorting),
     ...(value.Management ? { Management: managementDraft(value.Management) } : {}),
     ...(value.Runtime ? { Runtime: runtimeDraft(value.Runtime) } : {}),
   };
@@ -144,7 +147,9 @@ function parseDraft(draft: SettingsDraft): { input: SettingsDraftInput; errors: 
   Object.assign(errors, management?.errors);
   const runtime = draft.Runtime ? parseRuntimeDraft(draft.Runtime) : undefined;
   Object.assign(errors, runtime?.errors);
-  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 }, ...(management?.value ? { Management: management.value } : {}), ...(runtime?.value && Object.keys(runtime.value).length ? { Runtime: runtime.value } : {}) }, errors };
+  const sorting = parseSortingDraft(draft.Sorting);
+  if (sorting.error) errors['Sorting.SortRemoveWords'] = sorting.error;
+  return { input: { Overrides: overrides, ServerNameMode: name.mode, Encoding: { TranscodingMaxWidth: additionalWidth ?? 0 }, ...(management?.value ? { Management: management.value } : {}), ...(runtime?.value && Object.keys(runtime.value).length ? { Runtime: runtime.value } : {}), ...(sorting.value ? { Sorting: sorting.value } : {}) }, errors };
 }
 
 export function parseSettingsDraft(draft: SettingsDraft): {
@@ -171,5 +176,6 @@ export function settingsDraftKey(draft: SettingsDraft): string {
     ['TranscodingMaxWidth', errors.TranscodingMaxWidth ? ['invalid', draft.TranscodingMaxWidth] : input.Encoding.TranscodingMaxWidth],
     ['Management', draft.Management ? managementDraftKey(draft.Management) : undefined],
     ['Runtime', draft.Runtime ? runtimeDraftKey(draft.Runtime) : undefined],
+    ['Sorting', sortingDraftKey(draft.Sorting)],
   ]);
 }

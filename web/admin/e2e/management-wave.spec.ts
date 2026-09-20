@@ -35,6 +35,7 @@ function settings(): ServerSettings {
 
 function metadata(): MetadataDetail {
   const values: MetadataValues = {
+    Status: null, EndDate: null, AirsBeforeSeasonNumber: null, AirsAfterSeasonNumber: null, AirsBeforeEpisodeNumber: null,
     Name: 'Catalog feature', SortName: '', Overview: '', OriginalTitle: '', OfficialRating: '', ProductionYear: 2020,
     PremiereDate: null, CommunityRating: null, ProviderIds: {}, Genres: [], Tags: [], Studios: [], People: [], IndexNumber: null, ParentIndexNumber: null,
     Album: '', Artists: [], AlbumArtists: [],

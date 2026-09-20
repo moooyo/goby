@@ -1,5 +1,18 @@
 # Current execution plan
 
+## Active media-analysis and resilience increment: September 20, 2026
+
+The user approved the [three-phase execution plan](media-analysis-resilience-plan-20260920.md):
+compatibility API long tail; automatic intro analysis with BIF previews; and
+large-library concurrency with storage faults and host restart recovery.
+Implementation is active on `codex/media-analysis-resilience` from `2fd9182`.
+Complete each phase's code before consolidated remote verification, then merge
+the verified delivery to `main` and push. Local verification is not authorized
+for this increment. Dedicated guest reboot coverage is required; shared hosts
+remain outside reboot scope. Phase 1 source is complete and entering remote
+artifact generation and consolidated verification; no passing result is claimed.
+Historical completed increments below remain closed.
+
 ## Completed selected increment: September 20, 2026
 
 The user selected the remaining account/playback, subtitle, artwork, music,

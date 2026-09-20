@@ -1,10 +1,9 @@
 import { ApiError, authenticatedRequest } from './api';
 import type { Library, LibraryResponse, RequestOptions } from './api';
+import { completeLibraryOptions, validLibraryOptions } from './libraryOptions';
+import type { LibraryOptions } from './libraryOptions';
+export type { LibraryOptions } from './libraryOptions';
 
-export interface LibraryOptions {
-  EnableLocalMetadata: boolean;
-  EnableLocalImages: boolean;
-}
 export interface EditableLibrary extends Library {
   Revision: string;
   LibraryOptions: LibraryOptions;
@@ -25,8 +24,8 @@ function editable(result: { Library: EditableLibrary }, id: string): EditableLib
   if (!library || library.Id !== id || typeof library.Name !== 'string' || typeof library.Revision !== 'string' || !/^[1-9]\d*$/.test(library.Revision)
     || !Array.isArray(library.Paths) || !library.Paths.every((path) => typeof path === 'string')
     || !Array.isArray(library.RegisteredPaths) || !library.RegisteredPaths.every((path) => typeof path.Id === 'string' && typeof path.Path === 'string' && Number.isSafeInteger(path.ItemCount) && path.ItemCount >= 0)
-    || !library.LibraryOptions || typeof library.LibraryOptions.EnableLocalMetadata !== 'boolean' || typeof library.LibraryOptions.EnableLocalImages !== 'boolean') throw new ApiError('The library response is incomplete. Reload before editing.', { code: 'invalid_response' });
-  return library;
+    || !validLibraryOptions(library.LibraryOptions)) throw new ApiError('The library response is incomplete. Reload before editing.', { code: 'invalid_response' });
+  return { ...library, LibraryOptions: completeLibraryOptions(library.LibraryOptions) };
 }
 export const libraryManagementApi = {
   async get(id: string, options: RequestOptions = {}): Promise<EditableLibrary> {

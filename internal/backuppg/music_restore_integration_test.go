@@ -65,7 +65,7 @@ func musicSnapshotState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) s
 	var state string
 	if err := pool.QueryRow(ctx, `SELECT jsonb_build_object(
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i WHERE library_id='music-snapshot-library'),
-		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'online_source'-'online_type'-'online_base' ORDER BY item_id) FROM item_metadata_state m WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
+		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'online_source'-'online_type'-'online_base'-'automatic_sort_name_explicit' ORDER BY item_id) FROM item_metadata_state m WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
 		'associations',(SELECT jsonb_agg(to_jsonb(a) ORDER BY item_id,entity_id,credit_group,position) FROM item_entities a WHERE item_id IN ('music-snapshot-track','music-snapshot-album')),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e WHERE id IN
 			(SELECT entity_id FROM item_entities WHERE item_id IN ('music-snapshot-track','music-snapshot-album'))))::text`).Scan(&state); err != nil {

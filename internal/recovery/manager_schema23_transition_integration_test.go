@@ -602,7 +602,7 @@ func historicalManagerCatalogState(t *testing.T, ctx context.Context, pool *pgxp
 		'items',(SELECT jsonb_agg(to_jsonb(i) ORDER BY id) FROM items i),
 		'entities',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM catalog_entities e),
 		'credits',(SELECT jsonb_agg(to_jsonb(c)-'credit_group' ORDER BY item_id,entity_id,position) FROM item_entities c),
-		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'music_source'-'online_source'-'online_type'-'online_base' ORDER BY item_id) FROM item_metadata_state m))::text`)
+		'metadata',(SELECT jsonb_agg(to_jsonb(m)-'music_source'-'online_source'-'online_type'-'online_base'-'automatic_sort_name_explicit' ORDER BY item_id) FROM item_metadata_state m))::text`)
 }
 
 func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool, state historicalManagerArchiveState, currentFacts backupformat.SourceFacts) {
@@ -631,7 +631,7 @@ func assertHistoricalManagerTarget(t *testing.T, ctx context.Context, pool *pgxp
 		NOT EXISTS(SELECT 1 FROM library_roots WHERE binding_revision IS DISTINCT FROM 1
 			OR storage_binding IS NOT NULL OR bound_at IS NOT NULL OR bound_by IS NOT NULL)
 		AND NOT EXISTS(SELECT 1 FROM libraries WHERE revision IS DISTINCT FROM 1
-			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true}'::jsonb)
+			OR options IS DISTINCT FROM '{"EnableLocalMetadata":true,"EnableLocalImages":true,"EnableEmbeddedArtwork":true}'::jsonb)
 		AND NOT EXISTS(SELECT 1 FROM users WHERE configuration_revision IS DISTINCT FROM 1)
 		AND NOT EXISTS(SELECT 1 FROM activity_entries WHERE previous_revision IS DISTINCT FROM 0
 			OR observation_fingerprint IS DISTINCT FROM '')`).Scan(&bindingDefaults); err != nil || !bindingDefaults {

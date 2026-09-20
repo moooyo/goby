@@ -54,7 +54,7 @@ func userSettingsQuery(w http.ResponseWriter, r *http.Request) bool {
 		case "x-emby-language":
 			// The original Web Client sends its UI language on every request.
 			// It does not select another user or a preference partition.
-			if len(values[0]) > 256 || !utf8.ValidString(values[0]) || strings.ContainsRune(values[0], '\x00') {
+			if !validEmbyLanguageHint(values[0]) {
 				userSettingsInputError(w, r)
 				return false
 			}

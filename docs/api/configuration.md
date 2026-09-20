@@ -1,5 +1,10 @@
 # Configuration compatibility API
 
+The schema49 [sorting and dynamic artwork increment](sorting-library-options.md)
+adds persisted `SortRemoveWords` with an immediate atomic catalog rebuild and
+the real Audio embedded-image selector. Its source is complete; consolidated
+phase 1 verification remains pending.
+
 The selected Phase 4 port, CPU H.264 CRF and tone-mapping extensions below are
 implemented in source and await consolidated Phase 4 verification. Earlier
 acceptance records do not establish acceptance of these extensions.
@@ -58,8 +63,8 @@ All five routes set `Cache-Control: no-store` and `Pragma: no-cache`.
 ## Closed projections
 
 Administrator/key total GET exposes `IsStartupWizardCompleted`,
-`PreferredMetadataLanguage`, `MetadataCountryCode`, `EnableInternetProviders`
-and `HttpServerPortNumber`, plus `ServerName` when configured. The port is the
+`PreferredMetadataLanguage`, `MetadataCountryCode`, `EnableInternetProviders`,
+`SortRemoveWords` and `HttpServerPortNumber`, plus `ServerName` when configured. The port is the
 resolved desired HTTP configuration, not an assertion that a new socket is
 already active. Authenticated SystemInfo separately reports the actual running
 port and pending restart. The initialization Boolean is read from the actual
@@ -79,6 +84,7 @@ rate-control, HEVC, thread and authorized hardware choices.
 | Compatibility field | Writable surface | Complete-object omission | Partial omission |
 | --- | --- | --- | --- |
 | `HttpServerPortNumber` | Full server and Partial | Clear only the port override to the deployment default; preserve native BindHost | Preserve |
+| `SortRemoveWords` | Full server and Partial | Reset to `[]`; an explicit array replaces all rules | Preserve |
 | `H264Crf` | Named encoding and Partial | If currently capped_crf, return to bitrate with CRF 23 while preserving the preset; if already bitrate, preserve the entire quality group including its inactive CRF | Preserve |
 | `EnableSoftwareToneMapping` | Named encoding and Partial | Clear the override to the deployment software-tone default | Preserve |
 | `EnableHardwareToneMapping` | Named encoding and Partial | Clear the override to the deployment Vulkan-tone default | Preserve |

@@ -105,6 +105,7 @@ type Query struct {
 	IsFavoriteOrLikes                                         *bool
 	Likes                                                     *bool
 	IsFolder, IsSpecialSeason, IsSpecialEpisode               *bool
+	IsStandaloneSpecial                                       *bool
 	IsMissing, IsVirtualUnaired, IsPlaceHolder, IsUnaired     *bool
 	DisplayMissingEpisodes                                    bool
 	expectedEpisodePopulation                                 bool

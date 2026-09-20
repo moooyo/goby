@@ -111,6 +111,10 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	}
 	activeOverrides := activeMetadataControls(itemType, overrides)
 	activeLocks := activeMetadataControls(itemType, locks)
+	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, mergedSource)
+	if err != nil {
+		return err
+	}
 	effective, _, err := composeMetadataValues(automatic, activeOverrides, activeLocks)
 	if err != nil {
 		return err

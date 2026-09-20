@@ -118,7 +118,7 @@ async function settingsPayload(response: APIResponse | Response, secrets: string
   const raw = await response.text();
   expect(secrets.some((secret) => raw.includes(secret)), 'Settings responses must not expose credentials.').toBe(false);
   const value = JSON.parse(raw) as ServerSettings;
-  expect(Object.keys(value).sort()).toEqual(['Revision', 'Defaults', 'Overrides', 'Effective', 'Sources', 'UpdatedAt', 'Deployment', 'ServerNameMode', 'Encoding'].sort());
+  expect(Object.keys(value).sort()).toEqual(['Revision', 'Defaults', 'Overrides', 'Effective', 'Sources', 'UpdatedAt', 'Deployment', 'ServerNameMode', 'Encoding', 'Management', 'ManagementDefaults', 'ManagementEffects', 'Runtime', 'Sorting', 'SortingDefaults'].sort());
   expect(value.Revision).toMatch(/^[1-9][0-9]*$/);
   expect(value.UpdatedAt).toMatch(/Z$/);
   for (const group of [value.Defaults, value.Overrides, value.Effective, value.Sources]) expect(Object.keys(group).sort()).toEqual([...fields].sort());
@@ -180,7 +180,8 @@ async function saveSettings(page: Page, previous: ServerSettings, overrides: Set
   const saved = await response;
   const mode = changes.mode ?? previous.ServerNameMode;
   const encoding = { TranscodingMaxWidth: changes.additionalWidth ?? previous.Encoding.TranscodingMaxWidth };
-  expect(saved.request().postDataJSON()).toEqual({ Revision: previous.Revision, Overrides: overrides, ServerNameMode: mode, Encoding: encoding });
+  expect(saved.request().postDataJSON()).toEqual({ Revision: previous.Revision, Overrides: overrides, ServerNameMode: mode, Encoding: encoding,
+    ...(previous.Management ? { Management: previous.Management } : {}), Sorting: previous.Sorting ?? { SortRemoveWords: [] } });
   const value = await settingsPayload(saved, secrets);
   expect(value.Overrides).toEqual(overrides);
   expect(value.ServerNameMode).toBe(mode);

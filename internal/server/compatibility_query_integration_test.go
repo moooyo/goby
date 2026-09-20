@@ -19,6 +19,7 @@ func TestHTTPCompatibilityQueryCarriersPreserveAuthorityAcrossManagementEndpoint
 			"X-Emby-Token": {token}, "API_KEY": {token},
 			"X-Emby-Client": {"Query Browser"}, "X-Emby-Client-Version": {"1.0"},
 			"X-Emby-Device-Id": {"query-management-device"}, "X-Emby-Device-Name": {"Linux"},
+			"X-Emby-Language": {"zh-CN"},
 		}
 	}
 	for _, path := range []string{

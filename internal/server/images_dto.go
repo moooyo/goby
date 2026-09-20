@@ -11,8 +11,14 @@ import (
 // applyIndexedImages batches the authorized catalog reads after item projection.
 // It does not expose image paths or make filesystem requests while listing items.
 func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, userID string, items []map[string]any, detail bool) bool {
+	if !s.applyItemCapabilities(w, r, items, detail) {
+		return false
+	}
 	if raw := r.URL.Query().Get("EnableImages"); raw != "" {
 		if enabled, _ := strconv.ParseBool(raw); !enabled {
+			for _, item := range items {
+				applyItemFieldExclusions(item, r)
+			}
 			return true
 		}
 	}
@@ -72,6 +78,7 @@ func (s *Server) applyIndexedImages(w http.ResponseWriter, r *http.Request, user
 		}
 		item["ImageTags"] = tags
 		item["BackdropImageTags"] = backdrops
+		applyItemFieldExclusions(item, r)
 	}
 	return true
 }

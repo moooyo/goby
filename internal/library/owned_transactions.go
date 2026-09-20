@@ -74,7 +74,7 @@ func (s *Store) WithOwnedTx(ctx context.Context, callback func(OwnedTx) error) e
 // Scanner admission may hold Store.mu; this helper never acquires that mutex.
 func (s *Store) withOwnedTxCallback(raw pgx.Tx, callback func(OwnedTx) error) error {
 	transaction := raw.(*ownedTx)
-	view := &ownedCallbackTx{driver: transaction.Tx, ctx: transaction.ctx, classify: s.ownershipErrorLocked,
+	view := &ownedCallbackTx{driver: transaction.Tx, catalog: transaction, ctx: transaction.ctx, classify: s.ownershipErrorLocked,
 		commit:   func() error { return transaction.Commit(context.Background()) },
 		rollback: func() error { return transaction.Rollback(context.Background()) },
 		rows:     make(map[*ownedCallbackRows]struct{})}
@@ -96,6 +96,7 @@ func (s *Store) withOwnedTxCallback(raw pgx.Tx, callback func(OwnedTx) error) er
 type ownedCallbackTx struct {
 	mu       sync.Mutex
 	driver   pgx.Tx
+	catalog  *ownedTx
 	ctx      context.Context
 	classify func(error) error
 	commit   func() error

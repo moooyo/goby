@@ -61,6 +61,10 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 	mutation.EnableSoftwareToneMapping = clonePointer(mutation.EnableSoftwareToneMapping)
 	mutation.EnableHardwareToneMapping = clonePointer(mutation.EnableHardwareToneMapping)
 	mutation.Tasks = clonePointer(mutation.Tasks)
+	if mutation.SortRemoveWords != nil {
+		copy := cloneSorting(Sorting{SortRemoveWords: *mutation.SortRemoveWords}).SortRemoveWords
+		mutation.SortRemoveWords = &copy
+	}
 	if mutation.Subtitles != nil {
 		copy := cloneManagement(Management{Subtitles: *mutation.Subtitles}).Subtitles
 		mutation.Subtitles = &copy
@@ -81,6 +85,7 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 			}
 		}
 		if mutation.Section == ConfigurationFull {
+			previous.Sorting = DefaultSorting()
 			defaults := DefaultManagement()
 			previous.Management.Metadata.PreferredMetadataLanguage = defaults.Metadata.PreferredMetadataLanguage
 			previous.Management.Metadata.MetadataCountryCode = defaults.Metadata.MetadataCountryCode
@@ -94,6 +99,9 @@ func (s *Store) ApplyConfiguration(ctx context.Context, actor Actor, mutation Co
 		}
 		if mutation.EnableInternetProviders != nil {
 			previous.Management.Metadata.EnableInternetProviders = *mutation.EnableInternetProviders
+		}
+		if mutation.SortRemoveWords != nil {
+			previous.Sorting = Sorting{SortRemoveWords: append([]string{}, (*mutation.SortRemoveWords)...)}
 		}
 		switch mutation.Section {
 		case ConfigurationFull:
@@ -134,6 +142,14 @@ func validateConfigurationMutation(value ConfigurationMutation) error {
 	}
 	if err := validateRuntimeConfiguration(value); err != nil {
 		return err
+	}
+	if value.SortRemoveWords != nil {
+		if value.Section != ConfigurationFull && value.Section != ConfigurationPartial {
+			return invalid("sorting belongs to server configuration")
+		}
+		if err := ValidateStoredSorting(Sorting{SortRemoveWords: *value.SortRemoveWords}); err != nil {
+			return err
+		}
 	}
 	if value.Section == ConfigurationSubtitles || value.Section == ConfigurationTasks {
 		if value.ServerNamePresent || value.ServerName != nil || value.StartupWizardCompleted != nil ||

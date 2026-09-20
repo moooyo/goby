@@ -14,6 +14,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/notificationjournal"
 	"github.com/moooyo/goby/internal/settings"
 )
 
@@ -168,12 +169,15 @@ func adminSettingsNumber(raw json.RawMessage, field string, invalid map[string]s
 }
 
 func decodeAdminSettingsUpdate(w http.ResponseWriter, r *http.Request) (settings.UpdateRequest, bool) {
-	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding", "Management", "Runtime"}, []string{"Revision", "Overrides"})
+	values, ok := adminSettingsBody(w, r, []string{"Revision", "Overrides", "ServerNameMode", "Encoding", "Management", "Runtime", "Sorting"}, []string{"Revision", "Overrides"})
 	if !ok {
 		return settings.UpdateRequest{}, false
 	}
 	invalid := make(map[string]string)
 	request := settings.UpdateRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
+	if raw, present := values["Sorting"]; present {
+		request.Sorting = decodeSortingSettings(raw, invalid)
+	}
 	if raw, present := values["Runtime"]; present {
 		request.Runtime = decodeAdminRuntimeSettings(raw, invalid)
 	}
@@ -252,14 +256,14 @@ func decodeAdminSettingsReset(w http.ResponseWriter, r *http.Request) (settings.
 	invalid := make(map[string]string)
 	request := settings.ResetRequest{Revision: adminSettingsRevision(values["Revision"], invalid)}
 	var fields []settings.Field
-	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+13 {
-		invalid["Fields"] = "Select between one and eighteen supported settings to reset."
+	if json.Unmarshal(values["Fields"], &fields) != nil || len(fields) < 1 || len(fields) > len(adminSettingsValueFields)+14 {
+		invalid["Fields"] = "Select between one and nineteen supported settings to reset."
 	} else {
 		seen := make(map[settings.Field]bool, len(fields))
 		for _, field := range fields {
 			switch field {
 			case settings.FieldServerName, settings.FieldMaxBitrate, settings.FieldMaxWidth, settings.FieldMaxHeight, settings.FieldMaxAudioChannels, settings.FieldTranscodingMaxWidth, settings.FieldManagement, settings.FieldMetadata, settings.FieldSubtitles, settings.FieldTasks,
-				settings.FieldRuntime, settings.FieldNetwork, settings.FieldHardware, settings.FieldThreads, settings.FieldH264, settings.FieldHEVC, settings.FieldSoftwareToneMapping, settings.FieldVulkanToneMapping:
+				settings.FieldRuntime, settings.FieldNetwork, settings.FieldHardware, settings.FieldThreads, settings.FieldH264, settings.FieldHEVC, settings.FieldSoftwareToneMapping, settings.FieldVulkanToneMapping, settings.FieldSorting:
 				if seen[field] {
 					invalid["Fields"] = "Select each supported setting at most once."
 				}
@@ -340,6 +344,10 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 		s.identityError(w, r, err)
 	case errors.Is(err, identity.ErrClientSessionForbidden):
 		apiError(w, r, http.StatusForbidden, "administrator_required", "Administrator access is required.")
+	case errors.Is(err, notificationjournal.ErrCapacity):
+		apiError(w, r, http.StatusServiceUnavailable, "notification_capacity", "The notification backlog is full. Retry after it drains.")
+	case errors.Is(err, notificationjournal.ErrJournal):
+		apiError(w, r, http.StatusServiceUnavailable, "notification_unavailable", "The notification journal is unavailable. Retry the operation later.")
 	case errors.Is(err, settings.ErrUnavailable), errors.Is(err, settings.ErrStoredSettings), errors.Is(err, library.ErrUnavailable), errors.Is(err, context.DeadlineExceeded):
 		apiError(w, r, http.StatusServiceUnavailable, "settings_unavailable", "Server settings are currently unavailable.")
 	case errors.Is(err, settings.ErrRevisionConflict):
@@ -347,7 +355,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 	case errors.As(err, &invalid):
 		fields := make(map[string]string)
 		for field := range invalid.Fields {
-			if strings.HasPrefix(field, "Management.") || adminRuntimeErrorField(field) {
+			if strings.HasPrefix(field, "Management.") || field == "Sorting.SortRemoveWords" || adminRuntimeErrorField(field) {
 				fields[field] = invalid.Fields[field]
 				continue
 			}
@@ -367,7 +375,7 @@ func (s *Server) settingsError(w http.ResponseWriter, r *http.Request, err error
 			case "Revision":
 				fields[field] = "Supply the current positive decimal revision string with room for its successor."
 			case "Fields":
-				fields[field] = "Select between one and eighteen unique supported settings."
+				fields[field] = "Select between one and nineteen unique supported settings."
 			default:
 				fields["Body"] = "Supply supported settings values."
 			}

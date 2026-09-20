@@ -95,10 +95,19 @@ func TestHTTPSelectedManagementAvailableOptionsAndNativeCreateShareDefaults(t *t
 		if !ok || reader["Name"] != "Nfo" || reader["DefaultEnabled"] != true {
 			t.Fatal("Nfo default diverged")
 		}
-		for _, name := range []string{"MetadataSavers", "SubtitleFetchers", "LyricsFetchers", "TypeOptions"} {
+		for _, name := range []string{"MetadataSavers", "SubtitleFetchers", "LyricsFetchers"} {
 			if entries, ok := value[name].([]any); !ok || len(entries) != 0 {
 				t.Fatalf("unselected capability advertised: %s", name)
 			}
+		}
+		types, ok := value["TypeOptions"].([]any)
+		if !ok || len(types) != 1 {
+			t.Fatal("missing implemented Audio image provider")
+		}
+		audio := types[0].(map[string]any)
+		fetchers := audio["ImageFetchers"].([]any)
+		if audio["Type"] != "Audio" || len(fetchers) != 1 || fetchers[0].(map[string]any)["Name"] != "Goby Embedded Artwork" {
+			t.Fatal("dynamic provider discovery did not match its consumer")
 		}
 	}
 	expectStatus(t, f.request(t, http.MethodGet, "/emby/Libraries/AvailableOptions?EnableRealtimeMonitor=true", nil, headers), http.StatusBadRequest)
@@ -112,7 +121,7 @@ func TestHTTPSelectedManagementAvailableOptionsAndNativeCreateShareDefaults(t *t
 		expectStatus(t, created, http.StatusCreated)
 		library := objectValue(t, jsonObject(t, created), "Library")
 		saved := objectValue(t, library, "LibraryOptions")
-		if saved["EnableLocalMetadata"] != (index == 0) || saved["EnableLocalImages"] != (index == 0) {
+		if saved["EnableLocalMetadata"] != (index == 0) || saved["EnableLocalImages"] != (index == 0) || saved["EnableEmbeddedArtwork"] != true {
 			t.Fatal("native create did not preserve explicit scanner switches/defaults")
 		}
 		id := stringValue(t, library, "Id")
@@ -120,7 +129,7 @@ func TestHTTPSelectedManagementAvailableOptionsAndNativeCreateShareDefaults(t *t
 		expectStatus(t, f.request(t, http.MethodPost, "/emby/Library/VirtualFolders/LibraryOptions", map[string]any{"Id": id, "LibraryOptions": map[string]any{"DisabledLocalMetadataReaders": []string{}}}, adminHeaders), http.StatusNoContent)
 		detail := objectValue(t, jsonObject(t, f.request(t, http.MethodGet, "/admin/v1/libraries/"+id, nil, nil, cookie)), "Library")
 		current := objectValue(t, detail, "LibraryOptions")
-		if current["EnableLocalMetadata"] != true || current["EnableLocalImages"] != (index == 0) {
+		if current["EnableLocalMetadata"] != true || current["EnableLocalImages"] != (index == 0) || current["EnableEmbeddedArtwork"] != true {
 			t.Fatal("compatibility Nfo reset changed the native-only image switch")
 		}
 	}

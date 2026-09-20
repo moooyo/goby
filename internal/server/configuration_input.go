@@ -96,6 +96,13 @@ func decodeConfiguration(w http.ResponseWriter, r *http.Request, section setting
 				configurationInputError(w, r)
 				return settings.ConfigurationMutation{}, false
 			}
+		case section != settings.ConfigurationEncoding && field == "sortremovewords":
+			var words []string
+			if json.Unmarshal(raw, &words) != nil || words == nil || settings.ValidateStoredSorting(settings.Sorting{SortRemoveWords: words}) != nil {
+				configurationInputError(w, r)
+				return settings.ConfigurationMutation{}, false
+			}
+			mutation.SortRemoveWords = &words
 		case section != settings.ConfigurationEncoding && field == "httpserverportnumber":
 			var port *int
 			if json.Unmarshal(raw, &port) != nil || port == nil || *port < 1 || *port > 65535 {
