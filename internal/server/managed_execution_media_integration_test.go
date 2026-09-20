@@ -101,6 +101,8 @@ func TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan(t *testi
 	videoHTTPVerifyMP4(t, fixture, response.body, want)
 	session, record := videoHTTPRecord(t, fixture, prepared.playID, "h264", 0)
 	admitted := record.Spec.Plan
+	t.Logf("stage=managed_gpu state=%s decode=%s encode=%s device_present=%t execution_version=%d threads=%d",
+		record.State, admitted.Hardware.Decode, admitted.Hardware.Encode, admitted.Hardware.Device != "", admitted.ExecutionVersion, admitted.Execution.Threads)
 	if record.State != "completed" || admitted.Hardware != (transcode.Hardware{Decode: "software", Encode: "vaapi", Device: device}) ||
 		admitted.ExecutionVersion != transcode.ExecutionVersion || admitted.Execution.Threads != 3 {
 		t.Fatal("real media execution did not consume the admitted AMD device and thread capture")
@@ -126,10 +128,22 @@ func TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan(t *testi
 	response = fixture.request(t, http.MethodGet, cpu.uri.String(), nil, nil)
 	expectHLSHTTPStatus(t, response, http.StatusOK)
 	videoHTTPVerifyMP4(t, fixture, response.body, want)
-	cpuSession, cpuRecord := videoHTTPRecord(t, fixture, cpu.playID, "h264", 0)
+	// Negotiating the same source can legitimately reuse its Prepared play ID.
+	// Both immutable encoding revisions then match the generic codec/start
+	// helper; identify the new producer independently of its expected settings.
+	cpuSession, cpuRecord := managedExecutionNewHTTPRecord(t, fixture, cpu.playID, record.ID)
+	t.Logf("stage=managed_cpu state=%s decode=%s encode=%s device_present=%t execution_version=%d threads=%d job_reused=%t play_reused=%t",
+		cpuRecord.State, cpuRecord.Spec.Plan.Hardware.Decode, cpuRecord.Spec.Plan.Hardware.Encode,
+		cpuRecord.Spec.Plan.Hardware.Device != "", cpuRecord.Spec.Plan.ExecutionVersion, cpuRecord.Spec.Plan.Execution.Threads,
+		cpuRecord.ID == record.ID, cpu.playID == prepared.playID)
 	if cpuRecord.State != "completed" || cpuRecord.Spec.Plan.Hardware != (transcode.Hardware{Decode: "software", Encode: "software"}) ||
-		cpuRecord.Spec.Plan.Execution.Threads != 5 || cpuRecord.ID == record.ID {
+		cpuRecord.Spec.Plan.ExecutionVersion != transcode.ExecutionVersion || cpuRecord.Spec.Plan.Execution.Threads != 5 || cpuRecord.ID == record.ID {
 		t.Fatal("new CPU admission retained an inactive device or reused old execution settings")
+	}
+	var cpuPersisted transcode.Plan
+	if fixture.f.pool.QueryRow(fixture.f.ctx, "SELECT plan FROM encoding_jobs WHERE id=$1", cpuRecord.ID).Scan(&persisted) != nil ||
+		json.Unmarshal(persisted, &cpuPersisted) != nil || cpuPersisted != cpuRecord.Spec.Plan {
+		t.Fatal("the new CPU producer did not persist its actual admitted plan")
 	}
 	if app.cfg.Transcoding.Hardware != cfg.Transcoding.Hardware {
 		t.Fatal("managed execution mutated the CPU deployment defaults")
@@ -142,4 +156,31 @@ func TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan(t *testi
 		videoHTTPWaitRetired(t, fixture, played.id, []*hlsSession{played.session})
 	}
 	expectHLSHTTPStatus(t, fixture.request(t, http.MethodDelete, "/admin/v1/session", nil, headers), http.StatusNoContent)
+}
+
+func managedExecutionNewHTTPRecord(t *testing.T, fixture *hlsHTTPFixture, playID, previousJobID string) (*hlsSession, transcode.Record) {
+	t.Helper()
+	var selectedSession *hlsSession
+	var selectedRecord transcode.Record
+	newProducers := 0
+	for _, session := range videoHTTPSessions(fixture, playID) {
+		session.mu.Lock()
+		producers := append([]hlsProducer(nil), session.producers...)
+		session.mu.Unlock()
+		for _, producer := range producers {
+			if producer.id == previousJobID {
+				continue
+			}
+			newProducers++
+			record, err := fixture.f.app.hls.manager.Snapshot(session.key.scope, producer.id)
+			if err != nil {
+				t.Fatalf("inspect the new scoped managed producer (%T)", err)
+			}
+			selectedSession, selectedRecord = session, record
+		}
+	}
+	if newProducers != 1 {
+		t.Fatalf("new managed HTTP admission must own exactly one distinct producer: count=%d", newProducers)
+	}
+	return selectedSession, selectedRecord
 }
