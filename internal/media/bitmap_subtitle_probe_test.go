@@ -56,9 +56,30 @@ func TestBitmapSubtitleProbePreservesAbsoluteIndexAndSourceClock(t *testing.T) {
 		t.Fatal("missing PTS accepted")
 	}
 	source.FormatStartTicks++
-	source.FormatStartTicks++
 	if _, _, err := parseBitmapSubtitleProbe(bitmapProbeDocument(t, 180000, 2), stream, source); err == nil {
 		t.Fatal("changed source origin accepted")
+	}
+}
+
+func TestBitmapSubtitleProbeUnknownOriginRetainsContainerPacketTime(t *testing.T) {
+	stream := Stream{Index: 2, Codec: "hdmv_pgs_subtitle", CodecType: "subtitle"}
+	for _, reported := range []any{nil, "N/A", "0.000000", "1.500000"} {
+		var document map[string]any
+		if err := json.Unmarshal(bitmapProbeDocument(t, 180000, 2), &document); err != nil {
+			t.Fatal(err)
+		}
+		document["format"] = map[string]any{"start_time": reported}
+		data, err := json.Marshal(document)
+		if err != nil {
+			t.Fatal(err)
+		}
+		packets, _, err := parseBitmapSubtitleProbe(data, stream, Info{})
+		if err != nil || len(packets) != 1 || packets[0].PTS != 20_000_000 {
+			t.Fatalf("unknown indexed origin shifted raw PTS for fresh start %v: %+v %v", reported, packets, err)
+		}
+	}
+	if _, _, err := parseBitmapSubtitleProbe(bitmapProbeDocument(t, 180000, 2), stream, Info{FormatStartTicks: 1}); err == nil {
+		t.Fatal("unknown origin with a contradictory numeric value was accepted")
 	}
 }
 

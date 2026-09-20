@@ -21,8 +21,13 @@ accepted only when the implementation can prove all retained semantics:
   are rejected.
 - MP4 is limited to ordinary, self-contained `avc1`, `mp4a`, and `tx3g` tracks.
   Fragmentation, encryption, external references, alternate sample descriptions,
-  private atoms, sample groups, chapter references, and nontrivial edit lists are
-  rejected. Sample counts and duration declarations must describe complete
+  private atoms, unknown sample groups, chapter references, and nontrivial edit
+  lists are rejected. AAC requires an explicit `roll` sample-group pair declaring
+  exactly one preceding access unit for every sample. Its description and mapping
+  are read directly from `sgpd`/`sbgp`; their normalized meaning must match after
+  remuxing and their sample counts must equal the bound stream's actual packet
+  counts. Other recovery distances, `prol` or unknown group types, and missing AAC
+  preroll declarations remain outside the profile. Sample counts and duration declarations must describe complete
   sample-table timelines. Typical AAC files with priming edits may be outside
   this profile; their clocks are never silently shifted to make an edit pass.
 - DOVI/HDR10+ Matroska files that use advanced block-addition mappings are outside
@@ -50,9 +55,27 @@ the independent packet and chapter clocks still must match exactly. Only global
 change appears as an explicit before/after record in `WriterChanges`. Creation
 time, title, comment, and per-stream encoder tags have no such exception.
 
+Matroska chapter display title, language, display presence, and exact nanosecond
+interval are also compared directly from the container. An absent `ChapLanguage`
+means `eng`; it is not equivalent to `und`. FFmpeg emits `und` when it writes
+chapters, while ffprobe does not expose this language. Therefore `eng` or `fra`
+must never silently become `und`, even when their ffprobe chapter titles match.
+The direct proof accepts ordinary three-letter languages and rejects changes.
+BCP47 overrides, country fields, and multiple chapter displays remain outside
+this profile. These behaviors follow the [Matroska element definition](https://github.com/ietf-wg-cellar/matroska-specification/blob/master/ebml_matroska.xml)
+and [FFmpeg's chapter writer](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavformat/matroskaenc.c).
+
+FFmpeg reconstructs AAC's all-sample, one-access-unit `roll` mapping rather than
+copying arbitrary original sample-group boxes. Its demuxer does not expose those
+groups through ffprobe. The source/candidate comparison therefore uses direct
+structural evidence instead of treating matching packet bytes as sufficient.
+See the [pinned FFmpeg preroll writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/movenc.c#L3305)
+and [sample-group reader](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/mov.c#L3922).
+
 Source SHA-256, candidate SHA-256, candidate byte length, a canonical metadata
-digest, retained stream mapping, packet digests, and writer changes are returned
-as `SubtitleRemovalEvidence`. The candidate is hashed twice around verification.
+digest, a `ContainerSHA256` digest of retained structural semantics, retained stream
+mapping, packet digests, and writer changes are returned as
+`SubtitleRemovalEvidence`. The candidate is hashed twice around verification.
 Source and candidate identities, lengths, modification times, and Linux change
 times are rechecked. This evidence authorizes no publication on its own.
 
@@ -83,8 +106,12 @@ operations. The caller retains responsibility for cleaning up failed candidates.
 
 ## Verification status
 
-Implementation and tests were added in the phase-two code-first pass. They have
-not yet been run; the parent phase will perform consolidated verification.
+The first consolidated Linux media verification run reached all three actual
+subtitle-removal profiles and failed during structural admission: MKV/MKA on
+the unexposed chapter display language, and MP4 on AAC's standard `sgpd` preroll
+group. That failed evidence is retained. Direct chapter-language and AAC
+sample-group preservation proofs were added in response; targeted re-verification
+is pending. The repairs have not yet established a passing actual remux result.
 
 Unit coverage includes exact rational clocks, payload tampering, reordered and
 missing packets, duplicate JSON keys, malformed metadata, chapter and attachment

@@ -16,8 +16,20 @@ import (
 // This exercises actual TCP cancellation and descriptor closure. The separate
 // media-edit fixtures prove container preservation and the publication commit.
 func TestHTTPMediaPublicationJoinsBlockedOriginalTransport(t *testing.T) {
+	mediaPublicationBlockedTransport(t, false)
+}
+
+func TestHTTPMediaPublicationJoinsBlockedDownloadTransport(t *testing.T) {
+	mediaPublicationBlockedTransport(t, true)
+}
+
+func mediaPublicationBlockedTransport(t *testing.T, download bool) {
+	t.Helper()
 	fixture := newStreamHTTPFixture(t)
 	target := originalRevocationSparseSource(t, fixture)
+	if download {
+		target = "/emby/Items/" + fixture.video.id + "/Download"
+	}
 	opened := originalRevocationOpen(t, fixture, target, fixture.token)
 	originalRevocationWaitSlots(t, fixture, 1)
 	ctx, cancel := context.WithTimeout(fixture.f.ctx, 10*time.Second)

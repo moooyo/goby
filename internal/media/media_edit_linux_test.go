@@ -200,7 +200,7 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 			if err != nil {
 				t.Fatalf("remove subtitle with complete preservation evidence: %v", err)
 			}
-			if evidence.Version != mediaEditProofVersion || evidence.RemovedIndex != removedIndex || len(evidence.RetainedStreams) != retainedStreams || evidence.CandidateBytes <= 0 || len(evidence.MetadataSHA256) != 64 || len(evidence.SourceSHA256) != 64 || len(evidence.CandidateSHA256) != 64 {
+			if evidence.Version != mediaEditProofVersion || evidence.RemovedIndex != removedIndex || len(evidence.RetainedStreams) != retainedStreams || evidence.CandidateBytes <= 0 || len(evidence.MetadataSHA256) != 64 || len(evidence.ContainerSHA256) != 64 || len(evidence.SourceSHA256) != 64 || len(evidence.CandidateSHA256) != 64 {
 				t.Fatalf("incomplete preservation evidence: %+v", evidence)
 			}
 			for _, stream := range evidence.RetainedStreams {

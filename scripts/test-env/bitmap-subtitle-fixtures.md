@@ -69,11 +69,21 @@ no DVD equivalent because that format cannot assign distinct forced bits to
 simultaneous objects. The manifest records this limitation explicitly. Its
 single Chinese forced case verifies DVD's actual forced control command.
 
-Each DVD-only container's demuxer origin is its first packet PTS. The manifest
-records that nonzero origin and keeps authored intervals in the original clock.
-Acceptance first verifies the actual probed origin and then subtracts it from
-the expected intervals. PGS containers include the clear at zero and therefore
-have an origin of zero.
+The admitted demuxer reports an unknown format origin for these DVD-only
+containers. Their first SPU packets still have exact nonzero PTS in the Matroska
+segment clock. The version-two manifest records those facts separately:
+`dvd_format_start_known` is false, `dvd_container_origin_ticks` is zero, and
+`dvd_first_packet_pts_ticks` retains the authored first packet timestamp.
+Acceptance requires the unknown origin explicitly and checks the exact original
+cue times, including the initial caption-free interval. It never subtracts the
+first subtitle PTS as an invented format origin. PGS containers include a clear
+at zero; their explicit format origin remains known and zero.
+
+Production OCR follows the indexed playback clock: it subtracts only an
+explicit known `FormatStartTicks` and otherwise retains container packet time.
+A later exhaustive packet scan cannot silently introduce a different origin.
+The original version-one corpus and its failed precondition receipt remain
+historical evidence; regenerate into a fresh directory for version-two checks.
 
 The manifest contains source text, exact intervals, forced flags, coordinates,
 dimensions, binary and RGBA pixel digests, file digests, and rasterizer versions.

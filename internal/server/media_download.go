@@ -148,7 +148,7 @@ func (s *Server) authorizeDownload(ctx context.Context, principal identity.Princ
 // a retriable GET must not retain an older policy during catalog unavailability.
 func (s *Server) guardDownloadMedia(_ http.ResponseWriter, r *http.Request, file *os.File, source library.MediaFile) (context.Context, func(), error) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	lifetime, leave, err := s.originals.enter(principal)
+	lifetime, leave, err := s.originals.enterSource(principal, source.Item.ID, source.SourceID)
 	if err != nil {
 		return nil, nil, err
 	}

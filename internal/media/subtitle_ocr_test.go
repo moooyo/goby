@@ -164,8 +164,32 @@ func TestSubtitleOCRImageBudgetsRejectOversizedAndTruncatedEvidence(t *testing.T
 	if exact, err := encodeSubtitleOCRPNG(original, len(data)); err != nil || !bytes.Equal(exact, data) {
 		t.Fatalf("exact evidence budget changed its bytes: %v", err)
 	}
-	if data, err := encodeSubtitleOCRPNG(original, len(data)-1); !errors.Is(err, ErrOutputLimit) || data != nil {
-		t.Fatalf("oversized evidence was truncated into success: %v", err)
+	// Include signature-only and near-complete budgets: PNG writes its header
+	// through io.WriteString, which must share the same bound as chunk writes.
+	for limit := 1; limit < len(data); limit++ {
+		if encoded, err := encodeSubtitleOCRPNG(original, limit); !errors.Is(err, ErrOutputLimit) || encoded != nil {
+			t.Fatalf("oversized evidence was accepted with budget %d: %v", limit, err)
+		}
+	}
+}
+
+func TestSubtitleOCRImageWriterFastPathsCannotBypassTheBudget(t *testing.T) {
+	writer := &subtitleOCRImageBuffer{remaining: 4}
+	if n, err := io.WriteString(writer, "ab"); err != nil || n != 2 {
+		t.Fatalf("string write failed within budget: %d, %v", n, err)
+	}
+	// LimitedReader omits WriterTo, allowing io.Copy to use an exposed ReadFrom.
+	if n, err := io.Copy(writer, io.LimitReader(strings.NewReader("cd"), 2)); err != nil || n != 2 {
+		t.Fatalf("reader copy failed within budget: %d, %v", n, err)
+	}
+	if n, err := io.WriteString(writer, "x"); !errors.Is(err, ErrOutputLimit) || n != 0 {
+		t.Fatalf("string writer bypassed the exhausted budget: %d, %v", n, err)
+	}
+	if n, err := io.Copy(writer, io.LimitReader(strings.NewReader("y"), 1)); !errors.Is(err, ErrOutputLimit) || n != 0 {
+		t.Fatalf("reader copy bypassed the exhausted budget: %d, %v", n, err)
+	}
+	if writer.buffer.String() != "abcd" || writer.remaining != 0 {
+		t.Fatal("rejected write modified retained evidence or its budget")
 	}
 }
 

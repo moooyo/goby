@@ -927,7 +927,7 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 		t.Fatal("read bounded phase 2 authored bitmap manifest")
 	}
 	var manifest selectedPhase2BitmapManifest
-	if json.Unmarshal(manifestRaw, &manifest) != nil || manifest.Format != "goby-bitmap-subtitle-fixtures-v1" || manifest.DurationTicks != 97_280_000 {
+	if json.Unmarshal(manifestRaw, &manifest) != nil || manifest.Format != "goby-bitmap-subtitle-fixtures-v2" || manifest.DurationTicks != 97_280_000 {
 		t.Fatal("phase 2 bitmap authoring manifest identity differs")
 	}
 	var expected []selectedPhase2ExpectedCue

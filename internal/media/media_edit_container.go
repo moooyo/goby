@@ -27,11 +27,19 @@ const (
 // Container instance IDs, indexes, padding and writer provenance may be
 // regenerated. The latter is returned for explicit before/after evidence.
 func mediaEditContainerAdmission(ctx context.Context, file *os.File, size int64, container string) (map[string]string, error) {
-	if err := ctx.Err(); err != nil {
+	proof, err := mediaEditReadContainerProof(ctx, file, size, container)
+	if err != nil {
 		return nil, err
 	}
+	return proof.Writer, nil
+}
+
+func mediaEditReadContainerProof(ctx context.Context, file *os.File, size int64, container string) (mediaEditContainerProof, error) {
+	if err := ctx.Err(); err != nil {
+		return mediaEditContainerProof{}, err
+	}
 	if file == nil || size <= 0 || size > MaxSubtitleRemovalInputBytes+mediaEditOutputAllowance {
-		return nil, mediaEditContainerError("invalid descriptor extent")
+		return mediaEditContainerProof{}, mediaEditContainerError("invalid descriptor extent")
 	}
 	s := mediaEditContainerScanner{ctx: ctx, file: file, size: size, writer: map[string]string{},
 		trackNumbers: map[uint64]bool{}, uids: map[string]map[uint64]bool{"track": {}, "chapter": {}, "attachment": {}},
@@ -62,9 +70,21 @@ func mediaEditContainerAdmission(ctx context.Context, file *os.File, size int64,
 		err = mediaEditContainerError("unsupported container")
 	}
 	if err != nil {
-		return nil, err
+		return mediaEditContainerProof{}, err
 	}
-	return s.writer, nil
+	proof := mediaEditContainerProof{Writer: s.writer, Chapters: s.chapterDisplays}
+	for _, track := range s.mp4Tracks {
+		roll, err := s.mp4RollProof(track)
+		if err != nil {
+			return mediaEditContainerProof{}, err
+		}
+		idOffset := 12 + int(track.header[0])*8
+		proof.MP4Tracks = append(proof.MP4Tracks, mediaEditMP4TrackProof{
+			ID: uint64(binary.BigEndian.Uint32(track.header[idOffset : idOffset+4])), Codec: track.codec,
+			Samples: track.tableSamples, Roll: roll,
+		})
+	}
+	return proof, nil
 }
 
 type mediaEditContainerScanner struct {
@@ -89,6 +109,7 @@ type mediaEditContainerScanner struct {
 	segmentStart    int64
 	segmentElements map[int64]uint64
 	seekTargets     []mediaEditEBMLSeek
+	chapterDisplays []mediaEditChapterDisplayProof
 }
 
 type mediaEditEBMLSeek struct {
@@ -196,12 +217,13 @@ type mediaEditEBMLTarget struct {
 }
 
 type mediaEditEBMLScope struct {
-	count  map[uint64]int
-	uints  map[uint64]uint64
-	texts  map[uint64]string
-	floats map[uint64]float64
-	names  []string
-	target mediaEditEBMLTarget
+	count   map[uint64]int
+	uints   map[uint64]uint64
+	texts   map[uint64]string
+	floats  map[uint64]float64
+	names   []string
+	target  mediaEditEBMLTarget
+	display *mediaEditChapterDisplayProof
 }
 
 func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth int) (mediaEditEBMLScope, error) {
@@ -271,6 +293,13 @@ func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth 
 			}
 			if parent == "tag" && rule.kind == "targets" {
 				r.target = child.target
+			}
+			if parent == "chapter" && rule.kind == "display" {
+				language := "eng"
+				if child.count[0x437C] != 0 {
+					language = child.texts[0x437C]
+				}
+				r.display = &mediaEditChapterDisplayProof{HasDisplay: true, Title: child.texts[0x85], Language: language}
 			}
 		} else if err := s.ebmlLeaf(&r, rule.kind, id, body, int64(length)); err != nil {
 			return r, err
@@ -573,6 +602,11 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 		if err := s.ebmlUID("chapter", r.uints[0x73C4]); err != nil {
 			return err
 		}
+		chapter := mediaEditChapterDisplayProof{StartNanoseconds: r.uints[0x91], EndNanoseconds: r.uints[0x92]}
+		if r.display != nil {
+			chapter.HasDisplay, chapter.Title, chapter.Language = r.display.HasDisplay, r.display.Title, r.display.Language
+		}
+		s.chapterDisplays = append(s.chapterDisplays, chapter)
 		if r.count[0x80] > 0 {
 			return s.ebmlProjection("chapter", r.uints[0x73C4], "title")
 		}
@@ -581,8 +615,8 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 			return mediaEditContainerError("invalid Matroska default edition flag")
 		}
 	case "display":
-		if r.count[0x437C] > 0 && r.texts[0x437C] != "eng" {
-			return mediaEditContainerError("chapter display language is not exposed by ffprobe")
+		if r.count[0x437C] > 0 && !mediaEditChapterLanguage(r.texts[0x437C]) {
+			return mediaEditContainerError("chapter display language is outside the proven three-letter profile")
 		}
 	case "simpletag":
 		if r.texts[0x45A3] == "" || r.count[0x447A] != 0 && r.texts[0x447A] != "und" {
@@ -634,21 +668,25 @@ type mediaEditMP4Box struct {
 }
 
 type mediaEditMP4Track struct {
-	header        []byte
-	handler       string
-	codec         string
-	mediaHeader   string
-	duration      uint64
-	mediaScale    uint64
-	mediaDuration uint64
-	tableDuration uint64
-	tableSamples  uint64
-	sizeSamples   uint64
-	width         uint16
-	height        uint16
-	edit          []byte
-	creation      uint64
-	creationSet   bool
+	header           []byte
+	handler          string
+	codec            string
+	mediaHeader      string
+	duration         uint64
+	mediaScale       uint64
+	mediaDuration    uint64
+	tableDuration    uint64
+	tableSamples     uint64
+	sizeSamples      uint64
+	width            uint16
+	height           uint16
+	edit             []byte
+	creation         uint64
+	creationSet      bool
+	rollDistance     *int16
+	rollSamples      uint64
+	rollDescriptions bool
+	rollMapping      bool
 }
 
 func (s *mediaEditContainerScanner) mp4Box(offset, end int64, depth int) (mediaEditMP4Box, error) {
@@ -687,12 +725,13 @@ var mediaEditMP4Children = map[string]map[string]bool{
 	"mdia": {"mdhd": true, "hdlr": true, "minf": true},
 	"minf": {"vmhd": true, "smhd": true, "nmhd": true, "dinf": true, "stbl": true},
 	"dinf": {"dref": true}, "edts": {"elst": true}, "udta": {"meta": true},
-	"stbl": {"stsd": true, "stts": true, "ctts": true, "stsc": true, "stsz": true, "stco": true, "co64": true, "stss": true},
+	"stbl": {"stsd": true, "stts": true, "ctts": true, "stsc": true, "stsz": true, "stco": true, "co64": true, "stss": true, "sgpd": true, "sbgp": true},
 }
 
 // MP4 is limited to ordinary self-contained avc1/mp4a/tx3g tracks. Fragmented,
-// encrypted, chapter-reference, alternate-sample-description, sample-group,
-// private, external-data and nontrivial edit-list structures are rejected.
+// encrypted, chapter-reference, alternate-sample-description, private,
+// external-data and nontrivial edit-list structures are rejected. AAC roll
+// groups are admitted only with separately proven one-sample preroll semantics.
 func (s *mediaEditContainerScanner) mp4(parent string, start, end int64, depth int, track *mediaEditMP4Track) error {
 	counts := map[string]int{}
 	for offset := start; offset < end; {
@@ -774,6 +813,9 @@ func (s *mediaEditContainerScanner) mp4Leaf(box mediaEditMP4Box, depth int, trac
 	}
 	if box.kind == "stsd" {
 		return s.mp4SampleDescription(box, depth+1, track)
+	}
+	if box.kind == "sgpd" || box.kind == "sbgp" {
+		return s.mp4SampleGroup(box, track)
 	}
 	if box.kind == "stts" || box.kind == "ctts" || box.kind == "stsc" || box.kind == "stsz" || box.kind == "stco" || box.kind == "co64" || box.kind == "stss" {
 		return s.mp4Table(box, track)
@@ -974,7 +1016,74 @@ func (s *mediaEditContainerScanner) mp4TrackFinish(track *mediaEditMP4Track) err
 			return mediaEditContainerError("MP4 edit duration differs from its track duration")
 		}
 	}
+	if _, err := s.mp4RollProof(track); err != nil {
+		return err
+	}
 	return nil
+}
+
+// FFmpeg reconstructs AAC preroll groups instead of copying opaque sample
+// group boxes. The admitted profile is precisely one preceding access unit
+// for every sample. Other recovery semantics would not survive that remux.
+// See FFmpeg n9.0.1 mov_preroll_write_stbl_atoms (movenc.c:3305).
+func (s *mediaEditContainerScanner) mp4SampleGroup(box mediaEditMP4Box, track *mediaEditMP4Track) error {
+	if track == nil {
+		return mediaEditContainerError("MP4 sample group has no track")
+	}
+	data, err := s.mp4Bytes(box, 12+65536*8)
+	if err != nil {
+		return err
+	}
+	if len(data) < 12 || !mediaEditZero(data[1:4]) || string(data[4:8]) != "roll" {
+		return mediaEditContainerError("unsupported MP4 sample group type or flags")
+	}
+	switch box.kind {
+	case "sgpd":
+		if track.rollDescriptions || len(data) != 18 || data[0] != 1 || binary.BigEndian.Uint32(data[8:12]) != 2 || binary.BigEndian.Uint32(data[12:16]) != 1 {
+			return mediaEditContainerError("unsupported MP4 roll description layout")
+		}
+		distance := int16(binary.BigEndian.Uint16(data[16:18]))
+		if distance != -1 {
+			return mediaEditContainerError("MP4 AAC preroll must be exactly one preceding sample")
+		}
+		track.rollDistance, track.rollDescriptions = &distance, true
+	case "sbgp":
+		count := uint64(binary.BigEndian.Uint32(data[8:12]))
+		if track.rollMapping || data[0] != 0 || count == 0 || count > 65536 || uint64(len(data)-12) != count*8 {
+			return mediaEditContainerError("unsupported MP4 roll mapping layout")
+		}
+		var total uint64
+		for offset := 12; offset < len(data); offset += 8 {
+			if err := s.ctx.Err(); err != nil {
+				return err
+			}
+			samples := uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
+			if samples == 0 || samples > uint64(mediaEditMaxPackets)-total || binary.BigEndian.Uint32(data[offset+4:offset+8]) != 1 {
+				return mediaEditContainerError("MP4 roll mapping has an unproven group or sample count")
+			}
+			total += samples
+		}
+		track.rollSamples, track.rollMapping = total, true
+	default:
+		return mediaEditContainerError("unknown MP4 sample group box")
+	}
+	return nil
+}
+
+func (s *mediaEditContainerScanner) mp4RollProof(track *mediaEditMP4Track) (mediaEditMP4RollProof, error) {
+	if track == nil {
+		return mediaEditMP4RollProof{}, mediaEditContainerError("MP4 preroll has no track")
+	}
+	if track.codec != "mp4a" || track.handler != "soun" {
+		if track.rollDescriptions || track.rollMapping || track.rollDistance != nil || track.rollSamples != 0 {
+			return mediaEditMP4RollProof{}, mediaEditContainerError("MP4 roll groups are supported only for AAC audio")
+		}
+		return mediaEditMP4RollProof{}, nil
+	}
+	if !track.rollDescriptions || !track.rollMapping || track.rollDistance == nil || *track.rollDistance != -1 || track.tableSamples == 0 || track.tableSamples != track.sizeSamples || track.rollSamples != track.tableSamples {
+		return mediaEditMP4RollProof{}, mediaEditContainerError("MP4 AAC requires a complete one-sample preroll mapping")
+	}
+	return mediaEditMP4RollProof{Samples: track.rollSamples, Distance: *track.rollDistance}, nil
 }
 
 func (s *mediaEditContainerScanner) mp4Timeline() error {

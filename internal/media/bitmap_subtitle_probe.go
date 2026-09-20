@@ -220,21 +220,27 @@ func parseBitmapSubtitleProbe(data []byte, stream Stream, source Info) ([]bitmap
 	if err != nil || base.Sign() <= 0 {
 		return nil, nil, fmt.Errorf("invalid subtitle time base")
 	}
-	origin := int64(0)
+	// Packet scanning may reveal facts after the ordinary catalog probe ended.
+	// It must not replace the catalog's playback clock with a subtitle's first
+	// PTS or a newly inferred start. Without an indexed explicit origin, retain
+	// the container packet clock, including its initial caption-free interval.
+	origin, reportedOrigin := int64(0), int64(0)
 	if !document.Format.StartTime.missing() {
-		reported, err := bitmapScalarTicks(document.Format.StartTime, big.NewRat(1, 1))
+		reported, err := secondsToTicks(document.Format.StartTime)
 		if err != nil {
 			return nil, nil, err
 		}
-		origin = reported
+		reportedOrigin = reported
 	}
 	if source.FormatStartKnown {
-		if document.Format.StartTime.missing() || origin < source.FormatStartTicks-1 || origin > source.FormatStartTicks+1 {
+		if document.Format.StartTime.missing() || reportedOrigin != source.FormatStartTicks {
 			return nil, nil, fmt.Errorf("subtitle presentation origin changed")
 		}
 		origin = source.FormatStartTicks
+	} else if source.FormatStartTicks != 0 {
+		return nil, nil, fmt.Errorf("unknown subtitle presentation origin contains a value")
 	}
-	if origin < -7*24*60*60*TicksPerSecond || origin > 7*24*60*60*TicksPerSecond {
+	if reportedOrigin < -7*24*60*60*TicksPerSecond || reportedOrigin > 7*24*60*60*TicksPerSecond {
 		return nil, nil, fmt.Errorf("subtitle origin out of range")
 	}
 	extra, err := decodeSubtitleHexDump(facts.ExtraData, -1, 64<<10)

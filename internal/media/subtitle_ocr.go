@@ -543,7 +543,8 @@ func prepareSubtitleOCRImage(source *image.NRGBA) (*image.Gray, error) {
 }
 
 type subtitleOCRImageBuffer struct {
-	bytes.Buffer
+	// A named field prevents WriteString and ReadFrom from bypassing Write.
+	buffer    bytes.Buffer
 	remaining int
 }
 
@@ -552,7 +553,7 @@ func (buffer *subtitleOCRImageBuffer) Write(data []byte) (int, error) {
 		return 0, ErrOutputLimit
 	}
 	buffer.remaining -= len(data)
-	return buffer.Buffer.Write(data)
+	return buffer.buffer.Write(data)
 }
 
 func encodeSubtitleOCRPNG(source image.Image, limit int) ([]byte, error) {
@@ -563,7 +564,7 @@ func encodeSubtitleOCRPNG(source image.Image, limit int) ([]byte, error) {
 	if err := png.Encode(buffer, source); err != nil {
 		return nil, fmt.Errorf("%w: bitmap encoding: %w", ErrSubtitleOCR, err)
 	}
-	return buffer.Bytes(), nil
+	return buffer.buffer.Bytes(), nil
 }
 
 func parseSubtitleOCRTSV(data []byte, width, height int, modelID string) (string, float64, error) {

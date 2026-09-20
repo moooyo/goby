@@ -384,7 +384,8 @@ def main() -> None:
         models = (["eng"] if name == "english" else ["chi_sim"] if name == "chinese-forced"
                   else ["chi_tra"] if name == "chinese-traditional" else ["eng", "chi_sim"])
         record = {"name": name, "sup_file": f"{name}.sup", "pgs_matroska_file": f"{name}-pgs.mks",
-                  "pgs_container_origin_ticks": 0, "ocr_models": models, "authored_cues": [],
+                  "pgs_container_origin_ticks": 0, "pgs_format_start_known": True,
+                  "ocr_models": models, "authored_cues": [],
                   "pgs_intervals": [], "dvd_intervals": [], "clear_events_ms": []}
         for cue in cues:
             record["authored_cues"].append({"start_ticks": cue.start_ms * TICKS_PER_MS,
@@ -425,13 +426,16 @@ def main() -> None:
         if dvd_packets:
             write(f"{name}-dvd.mks", encode_matroska(dvd_packets, name))
             record["dvd_matroska_file"] = f"{name}-dvd.mks"
-            # A subtitle-only Matroska file begins at its first SPU packet;
-            # the production reader subtracts that explicit demuxer origin.
-            record["dvd_container_origin_ticks"] = dvd_packets[0][0] * TICKS_PER_MS
+            # The admitted demuxer leaves the DVD-only format origin unknown.
+            # Packet PTS belongs to the segment clock and is independently
+            # known; the first caption must not become the presentation origin.
+            record["dvd_format_start_known"] = False
+            record["dvd_container_origin_ticks"] = 0
+            record["dvd_first_packet_pts_ticks"] = dvd_packets[0][0] * TICKS_PER_MS
         else:
             record["dvd_omission_reason"] = "DVD SPU cannot represent forced and optional objects in the same display interval."
         records.append(record)
-    manifest = {"format": "goby-bitmap-subtitle-fixtures-v1",
+    manifest = {"format": "goby-bitmap-subtitle-fixtures-v2",
                 "canvas_width": CANVAS_WIDTH, "canvas_height": CANVAS_HEIGHT,
                 "duration_ticks": DURATION_MS * TICKS_PER_MS,
                 "font": {"source": f"{FONT_BASE}/{FONT_PATH}", "sha256": font_digest,

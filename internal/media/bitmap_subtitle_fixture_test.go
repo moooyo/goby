@@ -283,9 +283,12 @@ type subtitleOCRFixtureManifest struct {
 	Cases []struct {
 		Name                    string                       `json:"name"`
 		PGSMatroskaFile         string                       `json:"pgs_matroska_file"`
+		PGSFormatStartKnown     *bool                        `json:"pgs_format_start_known"`
 		PGSContainerOriginTicks int64                        `json:"pgs_container_origin_ticks"`
 		DVDMatroskaFile         string                       `json:"dvd_matroska_file"`
+		DVDFormatStartKnown     *bool                        `json:"dvd_format_start_known"`
 		DVDContainerOriginTicks int64                        `json:"dvd_container_origin_ticks"`
+		DVDFirstPacketPTSTicks  int64                        `json:"dvd_first_packet_pts_ticks"`
 		Models                  []string                     `json:"ocr_models"`
 		PGSIntervals            []subtitleOCRFixtureInterval `json:"pgs_intervals"`
 		DVDIntervals            []subtitleOCRFixtureInterval `json:"dvd_intervals"`
@@ -330,7 +333,7 @@ func TestRecognizeBitmapSubtitlesActualFixtures(t *testing.T) {
 	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if manifest.Format != "goby-bitmap-subtitle-fixtures-v1" || manifest.DurationTicks != 97280000 ||
+	if manifest.Format != "goby-bitmap-subtitle-fixtures-v2" || manifest.DurationTicks != 97280000 ||
 		manifest.Font.GitBlobSHA1 != "dc15562470b4f842321894787a0d066879ccff8b" ||
 		manifest.Font.License != "SIL-OFL-1.1" || len(manifest.Font.SHA256) != 64 {
 		t.Fatal("fixture manifest does not describe the pinned real-text corpus")
@@ -390,10 +393,12 @@ func TestRecognizeBitmapSubtitlesActualFixtures(t *testing.T) {
 		for _, test := range []struct {
 			name, path, codec string
 			origin            int64
+			originKnown       *bool
+			firstPacketPTS    int64
 			intervals         []subtitleOCRFixtureInterval
 		}{
-			{"PGS", fixture.PGSMatroskaFile, "hdmv_pgs_subtitle", fixture.PGSContainerOriginTicks, fixture.PGSIntervals},
-			{"DVD", fixture.DVDMatroskaFile, "dvd_subtitle", fixture.DVDContainerOriginTicks, fixture.DVDIntervals},
+			{"PGS", fixture.PGSMatroskaFile, "hdmv_pgs_subtitle", fixture.PGSContainerOriginTicks, fixture.PGSFormatStartKnown, 0, fixture.PGSIntervals},
+			{"DVD", fixture.DVDMatroskaFile, "dvd_subtitle", fixture.DVDContainerOriginTicks, fixture.DVDFormatStartKnown, fixture.DVDFirstPacketPTSTicks, fixture.DVDIntervals},
 		} {
 			if test.path == "" {
 				if fixture.Name != "mixed-forced" || test.name != "DVD" || len(test.intervals) != 0 {
@@ -402,7 +407,7 @@ func TestRecognizeBitmapSubtitlesActualFixtures(t *testing.T) {
 				continue // DVD's one forced bit cannot encode mixed forced objects.
 			}
 			t.Run(fixture.Name+"/"+test.name, func(t *testing.T) {
-				subtitleFixtureRequireCorpusTimeline(t, fixture.Name, test.name, test.origin, test.intervals)
+				subtitleFixtureRequireCorpusTimeline(t, fixture.Name, test.name, test.origin, test.originKnown, test.firstPacketPTS, test.intervals)
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 				defer cancel()
 				if filepath.Base(test.path) != test.path || len(test.intervals) == 0 {
@@ -435,7 +440,7 @@ func TestRecognizeBitmapSubtitlesActualFixtures(t *testing.T) {
 				}
 				if info.Container != "matroska,webm" || len(info.Streams) != 1 || info.Streams[0].CodecType != "subtitle" ||
 					info.Streams[0].Codec != test.codec || info.DurationTicks != manifest.DurationTicks ||
-					!info.FormatStartKnown || info.FormatStartTicks != test.origin {
+					info.FormatStartKnown != *test.originKnown || info.FormatStartTicks != test.origin {
 					t.Fatalf("authored container facts changed: %+v", info)
 				}
 				result, err := RecognizeBitmapSubtitles(ctx, config, file, info.Streams[0], info, models)
@@ -507,7 +512,7 @@ func subtitleFixtureReadBounded(t *testing.T, file *os.File, limit int64) []byte
 	return data
 }
 
-func subtitleFixtureRequireCorpusTimeline(t *testing.T, name, codec string, origin int64, intervals []subtitleOCRFixtureInterval) {
+func subtitleFixtureRequireCorpusTimeline(t *testing.T, name, codec string, origin int64, originKnown *bool, firstPacketPTS int64, intervals []subtitleOCRFixtureInterval) {
 	t.Helper()
 	type requiredCue struct {
 		startMS, endMS int64
@@ -538,12 +543,15 @@ func subtitleFixtureRequireCorpusTimeline(t *testing.T, name, codec string, orig
 	if !exists || len(intervals) != len(required) {
 		t.Fatal("manifest removed a required real text/display scenario")
 	}
-	wantOrigin := int64(0)
+	wantFirstPTS := int64(0)
 	if codec == "DVD" {
-		wantOrigin = required[0].startMS * 10000
+		wantFirstPTS = required[0].startMS * 10000
 	}
-	if origin != wantOrigin {
-		t.Fatal("manifest changed the authored single-track container origin")
+	// The actual admitted demuxer reports no format origin for the DVD-only
+	// files, even though their SPU packets have exact nonzero PTS. Unknown is
+	// not equivalent to the first caption's PTS: its initial gap must survive.
+	if originKnown == nil || *originKnown != (codec == "PGS") || origin != 0 || firstPacketPTS != wantFirstPTS {
+		t.Fatal("manifest changed the distinct format-origin and packet-clock facts")
 	}
 	for index, want := range required {
 		got := intervals[index]
