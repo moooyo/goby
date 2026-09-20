@@ -6,13 +6,14 @@ On September 20, after the completed publication below, the user selected the
 next account/playback, subtitle, artwork, music, management configuration,
 search and client-protocol increment and requested its execution table. The
 [new four-phase plan](../planning/selected-compatibility-plan-20260920.md) is the
-current next-work scope. Phase 1 code is implemented on
-`codex/selected-client-compatibility`. Backend, administration, original-client
-PIN/local-password, next-episode, restart and cleanup journeys have passed in
-their recorded scopes. The original Web client's two enabled intro modes are
-blocked by its external entitlement service. A client-adapter versus explicit
-original-client-limitation decision is pending; phase 1 is not closed and phases
-2-4 have not started implementation. The owned verification PostgreSQL service
+current next-work scope on `codex/selected-client-compatibility`. Phase 1 is
+closed under the user's explicit third-party-client adapter boundary. Backend,
+administration, original-client PIN/local-password, next-episode, restart and
+cleanup journeys passed in their recorded scopes. The user accepted delivery of
+the compatibility adapter without treating original Web commercial licensing
+as a blocking gate. Its two blocked intro modes and four client errors remain
+recorded failures, not successful third-party-client evidence. Phase 2 is next;
+phases 3-4 have not started implementation. The owned phase 1 PostgreSQL service
 is stopped, with data and evidence preserved.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 Each phase implements all delivery code before consolidated verification.

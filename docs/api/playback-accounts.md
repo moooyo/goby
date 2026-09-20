@@ -1,8 +1,10 @@
 # Account credentials and playback behavior
 
 The selected phase 1 implementation uses schema 43. Its backend, migration,
-recovery and administrator checks have composed results; original-client browser
-acceptance is still in progress. See the
+recovery, administrator and supported original-client journeys have composed
+results. The user accepted adapter delivery for third-party clients without
+requiring resolution of original Web commercial licensing. Its blocked enabled
+intro modes remain recorded limitations. See the
 [execution record](../development/selected-compatibility-phase1-20260920.md).
 This contract does not claim deployment or full original-client parity.
 

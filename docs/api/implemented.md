@@ -5,8 +5,10 @@ native local credentials, encrypted owner-only ProfilePin, Configuration/Partial
 writable intro/next preferences, source-bound intro administration and chapter
 projections, bounded complete episode queues, and free server-local feature
 registration. The [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
-separates backend/administrator results from ongoing original-client acceptance.
-The phase is not yet closed and no deployment is claimed.
+separates passing backend/administrator/client journeys from the original Web
+client's blocked enabled intro modes. The user accepted the compatibility
+adapter boundary for third-party clients and phase 1 is closed under that
+boundary. No untested client parity or deployment is claimed.
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 

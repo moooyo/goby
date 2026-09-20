@@ -1,6 +1,6 @@
 # Selected compatibility phase 1 execution record
 
-Status: **implementation complete; browser cleanup verified; original-client intro entitlement boundary unresolved**.
+Status: **closed under the user-approved third-party-client adapter boundary**.
 
 The user authorized execution of the [four-phase plan](../planning/selected-compatibility-plan-20260920.md),
 with all delivery code implemented before each phase's consolidated verification.
@@ -24,7 +24,7 @@ must be handed off, merged to `main` and pushed.
 | --- | --- | --- |
 | A1 PIN and local password | Implemented | Identity/HTTP, original-client local-password/profile PIN and integrated restart/revocation journeys passed |
 | A2 Source-bound intro intervals | Implemented | Source/HTTP repairs passed; real native administrator journey passed |
-| A3 Actual intro skip behavior | Implemented | Item/PlaybackInfo, explicit-start and original-client None contracts passed; ShowButton/AutoSkip are blocked by the original client's external entitlement |
+| A3 Intro skip compatibility adapter | Implemented and accepted by the user within the adjusted client boundary | Item/PlaybackInfo, explicit-start and original-client None contracts passed; original Web ShowButton/AutoSkip retain their externally blocked results |
 | A4 Next-episode preference and consumer | Implemented | Authorized complete-queue contracts and original-client enabled/disabled/natural final-episode journeys passed |
 | A5 Administration, migrations and recovery | Implemented | Historical migration repairs, real encrypted PIN archive/restore, mocked UI, application-runtime restart and native sign-out/owned cleanup passed |
 
@@ -167,7 +167,7 @@ private credential context. The owned PostgreSQL cluster remains available for
 the cleanup repair. Phase 1 cannot close until the client entitlement boundary
 and remaining browser failures are resolved.
 
-## Current closeout boundary
+## Original-client closeout evidence
 
 r08 used the real native overview navigation before sign-out because saving
 credentials intentionally leaves management dialogs open. Its administrator
@@ -185,12 +185,8 @@ external registration calls were denied and separately classified; no external
 entitlement was obtained or manufactured. The global page-error and actual-seek
 requirements remain unmet, so r08 is not a passing full browser result.
 
-The user was asked to choose between a deliverable client adapter using Goby's
-local free-registration policy and retaining the original client with an
-explicit limitation for its two enabled intro modes. That choice is pending;
-neither a modified client nor a reduced acceptance boundary has been assumed.
-Phase 1 is not closed, phases 2-4 have not started implementation, and merge/push
-has not occurred.
+At the end of r08, a user decision about the original-client restriction was
+pending. The overall browser receipt remains failed and unchanged.
 
 After preserving r08 evidence, the owned PostgreSQL unit
 `goby-selected-p1-pg-20260920-a` was stopped. The observed terminal state was
@@ -198,3 +194,22 @@ After preserving r08 evidence, the owned PostgreSQL unit
 Its data directory and all failed/accepted evidence were preserved. Resumption
 must explicitly restart the owned database environment before remote checks;
 it must not reuse an old worker invocation or alter the retained reference host.
+
+## User-approved phase closure
+
+The user subsequently selected delivery of the compatibility adapter, stated
+that original-client restrictions do not need to block third-party-client use,
+and instructed work to continue. The phase is therefore closed under that
+explicit boundary. The delivered adapter comprises authenticated free feature
+registration, source-bound chapter/PlaybackInfo projections and writable intro
+preferences; no commercial entitlement is required by Goby. Authentication,
+library authority and excluded-feature boundaries remain enforced.
+
+Account credentials, native management, enabled/disabled autoplay, persistence,
+revocation, migration/recovery and owned resource closure retain the actual
+passing evidence above. The original Web client's two blocked intro modes and
+four page errors remain limitations of that recorded client scope. No actual
+third-party intro seek or universal client compatibility is inferred from the
+user's choice or from successful protocol tests. No modified original Web
+distribution is added. Phase 2 may now begin; merge, push and deployment have
+not occurred for this four-phase increment.

@@ -7,9 +7,10 @@ phase 3 baseline below. IntroSkipMode and EnableNextEpisodeAutoPlay have writabl
 consumers; ProfilePin uses encrypted state and owner-only authenticated
 projection, while local-password enablement belongs to credential management.
 Configuration/Partial is supported. DisplayMissingEpisodes and
-HidePlayedInSuggestions remain phase 3 of the next plan. Original-client
-acceptance is in progress; earlier successful records do not validate this
-extension by implication.
+HidePlayedInSuggestions remain phase 3 of the next plan. The extension is closed
+under the user's third-party-client adapter boundary. Original Web enabled intro
+modes retain their external-license limitation; no untested third-party seek is
+claimed. Earlier successful records do not validate this extension by implication.
 
 ## Current phase 3 integration boundary
 

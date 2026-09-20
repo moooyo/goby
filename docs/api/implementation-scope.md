@@ -5,8 +5,10 @@ Status: **delivery scope**. See the [implemented surface](implemented.md) for cu
 The September 20, 2026 user decision selects the next account/playback,
 subtitle/artwork, music/search and management/client-protocol work in the
 [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md).
-Phase 1 code is implemented; consolidated verification and actual client-fixture
-repairs are in progress. Live TV, EPG, DVR/scheduled recording, tuners,
+Phase 1 is closed under the user's compatibility-adapter boundary: original Web
+commercial licensing restrictions are retained as client limitations and do not
+block third-party-client delivery. Actual results remain scoped to tested
+contracts and journeys. Live TV, EPG, DVR/scheduled recording, tuners,
 DLNA, external channels and group playback are explicitly excluded, replacing
 their earlier deferred disposition. Other unselected work remains deferred.
 
