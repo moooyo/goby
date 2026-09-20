@@ -30,14 +30,24 @@ const selectedPhase4RawSQL = `SELECT jsonb_build_object(
 	'sources',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM notification_source_events e),
 	'deliveries',(SELECT jsonb_agg(to_jsonb(d) ORDER BY id) FROM notification_deliveries d))::text`
 
-const selectedPhase4RetainedSQL = `SELECT jsonb_build_object(
+func selectedPhase4RetainedStateSQL(normalizeSource bool) string {
+	delivery := "to_jsonb(d)"
+	if normalizeSource {
+		// Predict the allowed cleanup only in the source expectation. The
+		// restored witness below reads actual refs unchanged, so unexpected
+		// retained or rewritten delivery references still fail exact equality.
+		delivery = `CASE WHEN d.state IN ('pending','sending')
+			THEN jsonb_set(to_jsonb(d),'{refs}','[]'::jsonb) ELSE to_jsonb(d) END`
+	}
+	return `SELECT jsonb_build_object(
 	'settings',(SELECT to_jsonb(s)-ARRAY['runtime_overrides','revision','updated_at'] FROM managed_settings s WHERE id=1),
 	'transport',(SELECT to_jsonb(t)-ARRAY['enabled','revision'] FROM notification_transport t WHERE id=1),
 	'journal',(SELECT to_jsonb(j) FROM notification_journal_state j WHERE id=1),
 	'registrations',(SELECT jsonb_agg(to_jsonb(r)-ARRAY['enabled','revision','last_outcome','updated_at'] ORDER BY id) FROM notification_registrations r),
 	'sources',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM notification_source_events e),
 	'deliveries',(SELECT jsonb_agg(CASE WHEN id=repeat('c',32) THEN to_jsonb(d)
-		ELSE to_jsonb(d)-ARRAY['state','lease_id','lease_until','outcome','updated_at'] END ORDER BY id) FROM notification_deliveries d))::text`
+		ELSE (` + delivery + `)-ARRAY['state','lease_id','lease_until','outcome','updated_at'] END ORDER BY id) FROM notification_deliveries d))::text`
+}
 
 func phase4Pointer[T any](value T) *T { return &value }
 
@@ -102,7 +112,7 @@ func TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificatio
 			f := newEngineRecoveryFixture(t)
 			source := seedSelectedPhase4EngineState(t, f)
 			before := recoveryEngineJSONState(t, f.ctx, f.source, selectedPhase4RawSQL)
-			retained := recoveryEngineJSONState(t, f.ctx, f.source, selectedPhase4RetainedSQL)
+			retained := recoveryEngineJSONState(t, f.ctx, f.source, selectedPhase4RetainedStateSQL(true))
 			manifest, metadata := f.create(t)
 			reader, err := f.objects.Snapshot(f.ctx, metadata.ID)
 			if err != nil {
@@ -208,10 +218,11 @@ func TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificatio
 			if err := f.target.QueryRow(f.ctx, `SELECT (SELECT NOT enabled AND revision=3 FROM notification_transport WHERE id=1)
 			AND NOT EXISTS(SELECT 1 FROM notification_registrations WHERE enabled OR revision<>2 OR last_outcome<>'backup_restored')
 			AND NOT EXISTS(SELECT 1 FROM notification_deliveries WHERE state IN ('pending','sending') OR lease_id<>'' OR lease_until IS NOT NULL)
+			AND NOT EXISTS(SELECT 1 FROM notification_deliveries WHERE id IN (repeat('a',32),repeat('b',32)) AND refs IS DISTINCT FROM '[]'::jsonb)
 			AND (SELECT count(*) FROM notification_deliveries WHERE state='cancelled' AND outcome='backup_restored')=2`).Scan(&safe); err != nil || !safe {
 				t.Fatalf("restoration retained notification replay authority: %v", err)
 			}
-			if got := recoveryEngineJSONState(t, f.ctx, f.target, selectedPhase4RetainedSQL); got != retained {
+			if got := recoveryEngineJSONState(t, f.ctx, f.target, selectedPhase4RetainedStateSQL(false)); got != retained {
 				t.Fatal("normalization changed ciphertext, terminal delivery history, source journal or portable unrelated state")
 			}
 			normalized := recoveryEngineJSONState(t, f.ctx, f.target, selectedPhase4RawSQL)
