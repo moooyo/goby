@@ -109,14 +109,16 @@ func TestAnalysisGeometryActualOrthogonalRotationAndSAR(t *testing.T) {
 
 func TestAnalysisGeometryActualUnknownSARUsesSquareDisplayFallback(t *testing.T) {
 	ffprobe, ffmpeg := audioProbeIntegrationTools(t)
-	path := filepath.Join(t.TempDir(), "unknown-sar.avi")
-	// Author an FFV1/AVI candidate with an unspecified encoder SAR. The
-	// independent observations below must prove the resulting file;
-	// the generation arguments alone do not establish an unknown-SAR fixture.
+	path := filepath.Join(t.TempDir(), "unknown-sar.mp4")
+	// MP4 retains explicit packet PTS under nofillin. Independently prove both
+	// those stored timestamps and the unspecified SAR before testing geometry;
+	// the generation arguments alone do not establish either source fact.
 	audioProbeRunFFmpeg(t, ffmpeg, "-f", "lavfi", "-i", "testsrc2=size=96x64:rate=5", "-t", "2",
-		"-vf", "setsar=0", "-an", "-c:v", "ffv1", "-level", "3", "-threads:v", "1", "-f", "avi", path)
+		"-vf", "setsar=0", "-an", "-c:v", "libx264", "-threads:v", "1", "-preset", "ultrafast",
+		"-bf", "0", "-g", "1", "-pix_fmt", "yuv420p", path)
 	probeBytes, err := runLimited(context.Background(), 20*time.Second, maxAnalysisGeometryJSON, ffprobe,
-		"-v", "error", "-select_streams", "v:0", "-show_entries", "stream=sample_aspect_ratio", "-of", "json", path)
+		"-v", "error", "-fflags", "+nofillin", "-select_streams", "v:0", "-show_packets",
+		"-show_entries", "stream=sample_aspect_ratio:packet=pts", "-of", "json", path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,12 +126,23 @@ func TestAnalysisGeometryActualUnknownSARUsesSquareDisplayFallback(t *testing.T)
 		Streams []struct {
 			SAR json.RawMessage `json:"sample_aspect_ratio"`
 		} `json:"streams"`
+		Packets []struct {
+			PTS *int64 `json:"pts"`
+		} `json:"packets"`
 	}
 	if err := json.Unmarshal(probeBytes, &probe); err != nil || len(probe.Streams) != 1 {
 		t.Fatalf("independent unknown-SAR probe: %s, %v", probeBytes, err)
 	}
 	if raw := probe.Streams[0].SAR; len(raw) != 0 && string(raw) != `"0:1"` {
 		t.Fatalf("authored fixture does not actually omit SAR or expose 0:1: %s", raw)
+	}
+	if len(probe.Packets) != 10 {
+		t.Fatalf("authored fixture has %d stored video packets, want 10", len(probe.Packets))
+	}
+	for index, packet := range probe.Packets {
+		if packet.PTS == nil || index > 0 && *packet.PTS <= *probe.Packets[index-1].PTS {
+			t.Fatal("authored fixture lacks actual ordered packet PTS under nofillin")
+		}
 	}
 	for _, audit := range []struct {
 		filter        string
@@ -142,7 +155,7 @@ func TestAnalysisGeometryActualUnknownSARUsesSquareDisplayFallback(t *testing.T)
 		// Check the actual filter's unknown-SAR behavior before any setsar=1.
 		// FFmpeg n8.0 vf_transpose.c preserves numerator-zero SAR unchanged.
 		decoded, err := runLimitedFilesOutput(context.Background(), 20*time.Second, 1024, ffmpeg, nil,
-			"-v", "info", "-nostdin", "-threads", "1", "-noautorotate", "-i", path,
+			"-v", "info", "-nostdin", "-threads", "1", "-fflags", "+nofillin", "-copyts", "-noautorotate", "-i", path,
 			"-map", "0:v:0", "-vf", audit.filter, "-an", "-f", "null", "-")
 		if err != nil {
 			t.Fatal(err)
@@ -151,9 +164,13 @@ func TestAnalysisGeometryActualUnknownSARUsesSquareDisplayFallback(t *testing.T)
 		if len(frames) != 10 {
 			t.Fatalf("independent %s source audit saw %d frames, want 10", audit.filter, len(frames))
 		}
-		for _, frame := range frames {
+		for index, frame := range frames {
 			if frame[4] != "0" || frame[5] != "1" || frame[6] != strconv.Itoa(audit.width) || frame[7] != strconv.Itoa(audit.height) {
 				t.Fatalf("%s did not preserve unknown 0/1 SAR and its rotated raster: %s", audit.filter, frame[0])
+			}
+			pts, err := strconv.ParseInt(frame[2], 10, 64)
+			if err != nil || pts != *probe.Packets[index].PTS {
+				t.Fatalf("%s lost the stored packet PTS for source frame %d", audit.filter, index)
 			}
 		}
 	}
