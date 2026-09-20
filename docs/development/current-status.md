@@ -4,9 +4,9 @@ On September 20, 2026, the user selected the next account/playback, subtitle,
 artwork, music, management configuration, search and client-protocol work.
 Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md)
 is approved; phase 1 is closed on `codex/selected-client-compatibility` under
-the user's third-party-client adapter boundary. [Phase 2 implementation and
-integration](selected-compatibility-phase2-20260920.md) are in progress; its
-consolidated verification has not started. Phases 3-4 are not started.
+the user's third-party-client adapter boundary. [Phase 2 delivery code](selected-compatibility-phase2-20260920.md)
+is implemented; consolidated verification and scoped repairs are in progress.
+Phases 3-4 have not started implementation.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
 implementation from scoped acceptance. Backend repair scopes, administration,
 original-client local-password/PIN, enabled/disabled autoplay, runtime restart,
@@ -14,8 +14,9 @@ credential revocation and cleanup passed. The original Web client's ShowButton
 and AutoSkip intro modes remain blocked by external entitlement, with page errors
 confined to those phases. The user accepted adapter delivery and removed that
 original-client restriction as a blocking gate; no third-party seek result or
-full client parity is inferred. Owned test workers and PostgreSQL are stopped, with
-evidence and database files preserved.
+full client parity is inferred. Phase 1 owned test workers and PostgreSQL are
+stopped, with evidence and database files preserved. The separate phase 2
+verification worker and PostgreSQL runtime are currently active.
 Live TV/EPG/DVR/tuners, DLNA, external
 channels and group playback are now explicitly excluded. Offline sync and other
 unselected work remain deferred. Local compilation and unit tests are authorized;

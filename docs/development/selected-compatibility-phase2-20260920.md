@@ -73,9 +73,9 @@ database and browser execution remains remote-only.
 
 The first remote batch uses frozen source `a8ff413` and records the binary
 revision and hash separately for each scope. Config (53 parent tests), transcode
-(301), database (62) and library (760) have passed. Hardware-specific skips and
+(301), database (62), library (760) and server (861) have passed. Hardware-specific skips and
 the mount-namespace helper skip are retained in the private receipt; these counts
-do not claim those profiles were executed. Server, backup, recovery and native
+do not claim those profiles were executed. Backup, recovery and native
 browser results remain pending at this checkpoint.
 
 The first media scope failed three parent tests. Actual PGS OCR passed its five
