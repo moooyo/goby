@@ -150,6 +150,7 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 	for _, container := range []string{"mkv", "mka", "mp4"} {
 		t.Run(container, func(t *testing.T) {
 			directory := t.TempDir()
+			record := retainMediaEditTestEvidence(t, directory, container)
 			for name, data := range map[string][]byte{
 				"remove.srt":     []byte("1\n00:00:00,200 --> 00:00:01,100\nRemove exactly this track\n"),
 				"keep.srt":       []byte("1\n00:00:00,400 --> 00:00:01,300\nRetain this track\n"),
@@ -181,6 +182,7 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 			}
 			args = append(args, path)
 			if _, err := runLimited(context.Background(), 30*time.Second, 4096, ffmpeg, args...); err != nil {
+				record.Failure = err.Error()
 				t.Fatalf("generate %s source: %v", container, err)
 			}
 			input, err := os.Open(path)
@@ -196,8 +198,11 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer candidate.Close()
+			record.Stage = "remux_and_proof"
 			evidence, err := RemuxSubtitleRemoval(context.Background(), input, candidate, SubtitleRemovalOptions{FFmpegPath: ffmpeg, FFprobePath: ffprobe, Container: container, StreamIndex: removedIndex, Timeout: 90 * time.Second})
+			record.Result = &evidence
 			if err != nil {
+				record.Failure = err.Error()
 				t.Fatalf("remove subtitle with complete preservation evidence: %v", err)
 			}
 			if evidence.Version != mediaEditProofVersion || evidence.RemovedIndex != removedIndex || len(evidence.RetainedStreams) != retainedStreams || evidence.CandidateBytes <= 0 || len(evidence.MetadataSHA256) != 64 || len(evidence.ContainerSHA256) != 64 || len(evidence.SourceSHA256) != 64 || len(evidence.CandidateSHA256) != 64 {
@@ -212,7 +217,9 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 			if err != nil || position != 13 {
 				t.Fatalf("borrowed source offset changed: %d, %v", position, err)
 			}
+			record.Stage = "candidate_probe"
 			info, err := (Prober{FFmpegPath: ffmpeg, FFprobePath: ffprobe, Timeout: 30 * time.Second}).ProbeFile(context.Background(), candidate)
+			record.CandidateInfo = &info
 			if err != nil || len(info.Streams) != retainedStreams {
 				t.Fatalf("published facts are unavailable: %+v, %v", info, err)
 			}
@@ -228,6 +235,7 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 			if subtitles != 1 || container != "mp4" && len(info.Chapters) != 2 {
 				t.Fatalf("chapter or subtitle preservation failed: %+v", info)
 			}
+			record.Stage = "complete"
 		})
 	}
 }

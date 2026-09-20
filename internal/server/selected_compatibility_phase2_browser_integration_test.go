@@ -14,9 +14,12 @@ import (
 	"image/png"
 	"io"
 	"math"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -33,19 +36,22 @@ import (
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/subtitle"
+	"github.com/moooyo/goby/internal/transcode"
 	adminassets "github.com/moooyo/goby/web/admin"
 )
 
 var selectedPhase2Phases = []string{"authentication", "removal-ready", "removal-applied", "ocr-ready", "ocr-reviewed",
-	"ocr-applied", "cancel-ready", "cancelled", "artwork", "restart", "persisted", "cleanup"}
+	"ocr-applied", "subtitle-selected", "subtitle-off", "subtitle-reselected", "subtitle-stopped",
+	"cancel-ready", "cancelled", "artwork", "restart", "persisted", "cleanup"}
 
 type selectedPhase2Execution struct {
-	Marker                     string
-	FFmpegPath, FFmpegSHA256   string
-	FFprobePath, FFprobeSHA256 string
-	PythonPath, PythonSHA256   string
-	FontPath, FontSHA256       string
-	OCR                        config.MediaOperationsOCRConfig
+	Marker                         string
+	FFmpegPath, FFmpegSHA256       string
+	FFprobePath, FFprobeSHA256     string
+	PythonPath, PythonSHA256       string
+	FontPath, FontSHA256           string
+	HlsBundlePath, HlsBundleSHA256 string
+	OCR                            config.MediaOperationsOCRConfig
 }
 
 type selectedPhase2FileFact struct {
@@ -109,17 +115,25 @@ type selectedPhase2Context struct {
 	OCRLanguage, OCRTitle, ExpectedOCRPhrase           string
 	OCRExpectedCues                                    []selectedPhase2ExpectedCue
 	ReviewEdits                                        []library.MediaOperationCueEdit
+	HlsBundlePath, HlsBundleSHA256                     string
 	ArtifactsDir, ResultPath                           string
 }
 
 type selectedPhase2Request struct {
-	RunID       string `json:"RunId"`
-	Phase       string
-	OperationID string `json:"OperationId"`
-	Revision    string
-	ResultHash  string
-	CueEdits    []library.MediaOperationCueEdit
-	HistoryIDs  []string `json:"HistoryIds"`
+	RunID                                    string `json:"RunId"`
+	Phase                                    string
+	OperationID                              string `json:"OperationId"`
+	Revision                                 string
+	ResultHash                               string
+	CueEdits                                 []library.MediaOperationCueEdit
+	HistoryIDs                               []string `json:"HistoryIds"`
+	PlaySessionID                            string   `json:"PlaySessionId"`
+	DeviceID                                 string   `json:"DeviceId"`
+	MediaSourceID                            string   `json:"MediaSourceId"`
+	StreamIndex                              int
+	HlsID                                    string `json:"HlsId"`
+	EngineSHA256, EngineVersion              string
+	AuthenticationStatus, PlaybackInfoStatus int
 }
 
 type selectedPhase2Result struct {
@@ -129,6 +143,65 @@ type selectedPhase2Result struct {
 	Checks                      map[string]bool
 	PageErrors, ForeignRequests *int
 	Stages                      []struct{ Phase, State string }
+}
+
+// These two private fixture routes host only a fixed test document and the
+// unchanged pinned open-source HLS engine. Every business route remains Goby.
+type selectedPhase2Runtime struct {
+	*phase3BrowserRuntime
+	bundle []byte
+}
+
+func (runtime *selectedPhase2Runtime) listen() error {
+	listener, err := net.Listen("tcp4", runtime.addr)
+	if err != nil {
+		return err
+	}
+	runtime.addr = listener.Addr().String()
+	origin := "http://" + runtime.addr
+	runtime.f.cfg.PublicURL, runtime.f.cfg.CookieSecure = origin, false
+	runtime.f.app.cfg.PublicURL, runtime.f.app.cfg.CookieSecure = origin, false
+	WithDashboardAssets(runtime.assets)(runtime.f.app)
+	application := runtime.f.app.Handler()
+	runtime.f.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/__selected-phase2-media" && r.URL.Path != "/__selected-phase2-hls.js" {
+			application.ServeHTTP(w, r)
+			return
+		}
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", "GET")
+			http.Error(w, "Use GET for the owned media fixture.", http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if r.URL.Path == "/__selected-phase2-hls.js" {
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+			_, _ = w.Write(runtime.bundle)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; media-src 'self' blob:; connect-src 'self'; img-src 'self' data:")
+		_, _ = io.WriteString(w, `<!doctype html><html><head><title>Owned subtitle consumption</title></head><body><video id="phase2-media" muted playsinline controls width="640"></video><canvas id="phase2-pixel" width="1" height="1"></canvas></body></html>`)
+	})
+	actual := httptest.NewUnstartedServer(runtime.f.handler)
+	actual.Listener.Close()
+	actual.Listener = listener
+	actual.Start()
+	runtime.server = actual
+	return nil
+}
+
+func (runtime *selectedPhase2Runtime) restart(ctx context.Context) error {
+	if err := runtime.close(ctx); err != nil {
+		return err
+	}
+	app, err := New(runtime.f.ctx, runtime.f.cfg, runtime.f.pool, runtime.f.users, runtime.f.log, "selected-phase2-browser-integration", WithDashboardAssets(runtime.assets))
+	if err != nil {
+		return err
+	}
+	runtime.f.app = app
+	return runtime.listen()
 }
 
 func selectedPhase2Fact(path string, maximum int64) (selectedPhase2FileFact, error) {
@@ -178,12 +251,16 @@ func selectedPhase2ReadExecution(t *testing.T) (selectedPhase2Execution, []selec
 	if configuration.Validate() != nil {
 		t.Fatal("phase 2 execution inventory does not contain a supported OCR configuration")
 	}
-	checks := []struct{ path, digest string }{{execution.FFmpegPath, execution.FFmpegSHA256}, {execution.FFprobePath, execution.FFprobeSHA256},
-		{execution.PythonPath, execution.PythonSHA256}, {execution.FontPath, execution.FontSHA256}, {execution.OCR.Executable, execution.OCR.ToolSHA256}}
+	if execution.HlsBundleSHA256 != phase2BrowserBundleSHA256 {
+		t.Fatal("phase 2 HLS bundle digest does not identify the reviewed engine")
+	}
+	checks := []struct{ role, path, digest string }{{"ffmpeg", execution.FFmpegPath, execution.FFmpegSHA256}, {"ffprobe", execution.FFprobePath, execution.FFprobeSHA256},
+		{"python", execution.PythonPath, execution.PythonSHA256}, {"font", execution.FontPath, execution.FontSHA256}, {"tesseract", execution.OCR.Executable, execution.OCR.ToolSHA256},
+		{"hls-bundle", execution.HlsBundlePath, execution.HlsBundleSHA256}}
 	models := map[string]bool{}
 	for _, model := range execution.OCR.Models {
 		models[model.ID] = true
-		checks = append(checks, struct{ path, digest string }{filepath.Join(execution.OCR.TessdataDirectory, model.Filename), model.SHA256})
+		checks = append(checks, struct{ role, path, digest string }{"model-" + model.ID, filepath.Join(execution.OCR.TessdataDirectory, model.Filename), model.SHA256})
 	}
 	if !models["eng"] || !models["chi_sim"] {
 		t.Fatal("phase 2 overlap OCR requires the explicit eng and chi_sim models")
@@ -191,8 +268,11 @@ func selectedPhase2ReadExecution(t *testing.T) (selectedPhase2Execution, []selec
 	facts := make([]selectedPhase2FileFact, 0, len(checks))
 	for _, input := range checks {
 		fact, err := selectedPhase2Fact(input.path, 256<<20)
-		if err != nil || len(input.digest) != 64 || fact.SHA256 != input.digest {
-			t.Fatal("phase 2 pinned tool, model, or font identity differs")
+		if err != nil {
+			t.Fatalf("phase 2 inventory %s: %v", input.role, err)
+		}
+		if len(input.digest) != 64 || fact.SHA256 != input.digest {
+			t.Fatalf("phase 2 inventory %s: pinned SHA-256 mismatch", input.role)
 		}
 		facts = append(facts, fact)
 	}
@@ -280,6 +360,8 @@ func selectedPhase2Database(ctx context.Context, f *serverFixture) (json.RawMess
 		'OwnedSubtitles',(SELECT COALESCE(jsonb_agg(jsonb_build_object('OperationId',operation_id,'ItemId',item_id,'StreamIndex',stream_index,
 			'Codec',codec,'Language',language,'Title',title,'Active',active,'ContentSHA256',content_sha256,'Bytes',octet_length(content)) ORDER BY item_id,stream_index),'[]'::jsonb) FROM item_owned_subtitles),
 		'EmbeddedArtwork',(SELECT COALESCE(jsonb_agg(jsonb_build_object('ItemId',item_id,'Status',status,'SourceHash',source_hash,'Width',width,'Height',height) ORDER BY item_id),'[]'::jsonb) FROM item_embedded_artwork),
+		'PlaybackHistory',(SELECT COALESCE(jsonb_agg(jsonb_build_object('PlaySessionId',p.id,'ItemId',p.item_id,'State',p.state,'Started',p.started_at IS NOT NULL,'Counted',p.counted,'AuthenticationRevoked',a.revoked_at IS NOT NULL) ORDER BY p.id),'[]'::jsonb) FROM play_sessions p JOIN sessions a ON a.id=p.auth_session_id),
+		'EncodingHistory',(SELECT COALESCE(jsonb_agg(jsonb_build_object('Id',id,'PlaySessionId',play_session_id,'State',state,'OutputBytes',output_bytes,'ErrorCode',error_code) ORDER BY id),'[]'::jsonb) FROM encoding_jobs),
 		'ActiveSessions',(SELECT count(*) FROM sessions WHERE revoked_at IS NULL),
 		'ActiveOperations',(SELECT count(*) FROM media_operations WHERE state IN ('queued','running','applying') OR worker_token<>'' OR publication_phase IN ('prepared','catalog_committed') OR state='recovery_required')
 	)::text`).Scan(&raw)
@@ -287,25 +369,99 @@ func selectedPhase2Database(ctx context.Context, f *serverFixture) (json.RawMess
 }
 
 type selectedPhase2Observer struct {
-	runtime                      *phase3BrowserRuntime
-	fixture                      selectedPhase2Context
-	execution                    selectedPhase2Execution
-	actor                        identity.Principal
-	actorToken                   string
-	files                        map[string]selectedPhase2FileFact
-	removePath, ocrPath, scratch string
-	originalRemove               selectedPhase2FileFact
-	removeMedia                  media.Info
-	coverBytes                   [][]byte
-	preservation                 json.RawMessage
-	removal, ocr, cancelled      string
-	removeReady                  library.MediaOperation
-	originalCues, reviewedCues   []library.MediaOperationCue
-	reviewHash                   string
-	reviewRevision               int64
-	durable                      json.RawMessage
-	imageObservations            []map[string]any
-	completed                    int
+	runtime                                                     *selectedPhase2Runtime
+	fixture                                                     selectedPhase2Context
+	execution                                                   selectedPhase2Execution
+	actor                                                       identity.Principal
+	actorToken                                                  string
+	files                                                       map[string]selectedPhase2FileFact
+	removePath, ocrPath, scratch                                string
+	originalRemove                                              selectedPhase2FileFact
+	removeMedia                                                 media.Info
+	coverBytes                                                  [][]byte
+	preservation                                                json.RawMessage
+	removal, ocr, cancelled                                     string
+	removeReady                                                 library.MediaOperation
+	originalCues, reviewedCues                                  []library.MediaOperationCue
+	reviewHash                                                  string
+	reviewRevision                                              int64
+	durable                                                     json.RawMessage
+	imageObservations                                           []map[string]any
+	completed                                                   int
+	hlsPlayID, hlsAuthID, hlsDeviceID, hlsSourceID, hlsRevision string
+	hlsStreamIndex                                              int
+	hlsSessions                                                 []*hlsSession
+	hlsProducerIDs                                              []string
+	hlsObservation                                              map[string]any
+}
+
+type selectedPhase2CommandOutput struct {
+	buffer  bytes.Buffer
+	maximum int
+}
+
+func (output *selectedPhase2CommandOutput) Len() int       { return output.buffer.Len() }
+func (output *selectedPhase2CommandOutput) String() string { return output.buffer.String() }
+
+func (output *selectedPhase2CommandOutput) Write(data []byte) (int, error) {
+	if output.Len()+len(data) > output.maximum {
+		return 0, errors.New("phase 2 media command output exceeded its bound")
+	}
+	return output.buffer.Write(data)
+}
+
+func (observer *selectedPhase2Observer) decodePublishedRemoval(ctx context.Context, source selectedPhase2FileFact) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	tool, toolErr := selectedPhase2Fact(observer.execution.FFmpegPath, 256<<20)
+	if toolErr != nil || tool.SHA256 != observer.execution.FFmpegSHA256 {
+		return errors.New("phase 2 published decode FFmpeg identity differs")
+	}
+	stdout, stderr := &selectedPhase2CommandOutput{maximum: 64 << 10}, &selectedPhase2CommandOutput{maximum: 64 << 10}
+	command := exec.CommandContext(ctx, observer.execution.FFmpegPath, "-hide_banner", "-nostdin", "-v", "error", "-xerror", "-err_detect", "explode",
+		"-threads", "1", "-filter_threads", "1", "-i", observer.removePath, "-map", "0:v:0", "-map", "0:a:0", "-sn", "-dn",
+		"-c:v", "wrapped_avframe", "-c:a", "pcm_s16le", "-threads:v", "1", "-threads:a", "1", "-fps_mode", "passthrough",
+		"-progress", "pipe:1", "-nostats", "-f", "null", "-")
+	command.Env = []string{"PATH=/usr/bin:/bin", "LANG=C.UTF-8", "LC_ALL=C.UTF-8", "TZ=UTC"}
+	command.Stdout, command.Stderr = stdout, stderr
+	command.WaitDelay = 3 * time.Second
+	runErr := command.Run()
+	progress := map[string]string{}
+	for _, line := range strings.Split(stdout.String(), "\n") {
+		if key, value, found := strings.Cut(strings.TrimSpace(line), "="); found {
+			progress[key] = value
+		}
+	}
+	frames, frameErr := strconv.Atoi(progress["frame"])
+	micros, timeErr := strconv.ParseInt(progress["out_time_us"], 10, 64)
+	exitCode := -1
+	if command.ProcessState != nil {
+		exitCode = command.ProcessState.ExitCode()
+	}
+	after, fileErr := selectedPhase2Fact(observer.removePath, 32<<20)
+	complete := runErr == nil && exitCode == 0 && stderr.Len() == 0 && frameErr == nil && frames == 288 && timeErr == nil && micros >= 11_900_000 && micros <= 12_200_000 && progress["progress"] == "end" && fileErr == nil && after == source
+	evidence := map[string]any{"RunId": observer.fixture.RunID, "Complete": complete, "SourceSHA256": source.SHA256, "FFmpegSHA256": observer.execution.FFmpegSHA256,
+		"ExitCode": exitCode, "DecodedVideoFrames": frames, "OutputTimeMicroseconds": micros, "ExpectedVideoFrames": 288, "ExpectedSeconds": 12,
+		"MappedAudioStreams": 1, "MappedVideoStreams": 1, "ProgressEnded": progress["progress"] == "end", "StderrBytes": stderr.Len(), "SourceUnchanged": fileErr == nil && after == source}
+	if err := featureWaveWriteCheckpoint(filepath.Join(observer.fixture.ArtifactsDir, "published-removal-decode.json"), evidence); err != nil {
+		return errors.New("phase 2 full decode evidence could not be preserved")
+	}
+	if !complete {
+		return errors.New("phase 2 published removal did not fully decode its actual twelve-second audio and video")
+	}
+	return observer.viewerHTTP(ctx, func(token string, client *http.Client) error {
+		path := "/emby/Videos/" + observer.fixture.RemoveItemID + "/" + media.SourceID(observer.fixture.RemoveItemID) + "/Subtitles/" + strconv.Itoa(observer.fixture.KeepStreamIndex) + "/0/Stream.vtt"
+		data, header, err := selectedPhase2HTTP(ctx, client, observer.fixture.BaseURL, path, token)
+		if err != nil || !strings.HasPrefix(header.Get("Content-Type"), "text/vtt") {
+			return errors.New("phase 2 retained French subtitle HTTP read failed")
+		}
+		document, err := subtitle.Parse(data, subtitle.FormatWebVTT)
+		if err != nil || len(document.Cues) != 1 || document.Cues[0].Text != "Conserver cette piste" || document.Cues[0].StartTicks != 20_000_000 || document.Cues[0].EndTicks != 40_000_000 {
+			return errors.New("phase 2 retained French subtitle lost its authored text or timing")
+		}
+		digest := sha256.Sum256(data)
+		return featureWaveWriteCheckpoint(filepath.Join(observer.fixture.ArtifactsDir, "retained-subtitle-http.json"), map[string]any{"RunId": observer.fixture.RunID, "Complete": true, "Status": 200, "SHA256": hex.EncodeToString(digest[:]), "Bytes": len(data), "CueCount": 1, "StreamIndex": observer.fixture.KeepStreamIndex, "TokenInURL": false})
+	})
 }
 
 func (observer *selectedPhase2Observer) idle(ctx context.Context) error {
@@ -323,6 +479,159 @@ func (observer *selectedPhase2Observer) idle(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return errors.New("phase 2 execution workers did not close")
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
+func (observer *selectedPhase2Observer) hlsScope(request selectedPhase2Request) bool {
+	return regexp.MustCompile(`^play_[0-9a-f]{32}$`).MatchString(request.PlaySessionID) &&
+		request.DeviceID == "phase2-subtitles-"+observer.fixture.RunID && request.MediaSourceID == media.SourceID(observer.fixture.OCRItemID) &&
+		request.EngineSHA256 == phase2BrowserBundleSHA256 && request.EngineVersion == "1.6.0-beta.2" && request.AuthenticationStatus == 200 && request.PlaybackInfoStatus == 200 &&
+		(observer.hlsPlayID == "" || request.PlaySessionID == observer.hlsPlayID && request.DeviceID == observer.hlsDeviceID && request.MediaSourceID == observer.hlsSourceID && request.StreamIndex == observer.hlsStreamIndex && request.HlsID == observer.hlsRevision)
+}
+
+func (observer *selectedPhase2Observer) hlsLive(ctx context.Context, request selectedPhase2Request) error {
+	if !observer.hlsScope(request) {
+		return errors.New("phase 2 browser HLS scope or pinned engine differs")
+	}
+	f := observer.runtime.f
+	var authID, state, subtitleHash string
+	var started, counted, revoked, authUnexpired, playUnexpired bool
+	err := f.pool.QueryRow(ctx, `SELECT p.auth_session_id,p.state,p.started_at IS NOT NULL,p.counted,a.revoked_at IS NOT NULL,a.expires_at>clock_timestamp(),p.expires_at>clock_timestamp()
+		FROM play_sessions p JOIN sessions a ON a.id=p.auth_session_id WHERE p.id=$1 AND p.user_id=$2 AND p.device_id=$3 AND p.item_id=$4 AND p.media_source_id=$5
+		AND a.user_id=$2 AND a.device_id=$3 AND a.kind='emby'`, request.PlaySessionID, observer.fixture.ViewerID, request.DeviceID, observer.fixture.OCRItemID, request.MediaSourceID).
+		Scan(&authID, &state, &started, &counted, &revoked, &authUnexpired, &playUnexpired)
+	if err != nil || state != "Prepared" || started || counted || revoked || !authUnexpired || !playUnexpired {
+		return errors.New("phase 2 HLS playback is not the live authorized unreported owned preparation")
+	}
+	owner := library.PlaybackOwner{UserID: observer.fixture.ViewerID, SessionID: authID, DeviceID: request.DeviceID, PeerIP: "127.0.0.1"}
+	play, err := f.app.library.GetPlaybackSession(ctx, owner, request.PlaySessionID)
+	if err != nil || play.ItemID != observer.fixture.OCRItemID || play.MediaSourceID != request.MediaSourceID {
+		return errors.New("phase 2 product playback authorization rejected the browser HLS scope")
+	}
+	if f.pool.QueryRow(ctx, `SELECT content_sha256 FROM item_owned_subtitles WHERE item_id=$1 AND operation_id=$2 AND stream_index=$3 AND active`, observer.fixture.OCRItemID, observer.ocr, request.StreamIndex).Scan(&subtitleHash) != nil {
+		return errors.New("phase 2 HLS does not select the actually published OCR subtitle")
+	}
+	if f.app.hls == nil {
+		return errors.New("phase 2 actual HLS runtime is unavailable")
+	}
+	f.app.hls.mu.Lock()
+	sessions := []*hlsSession{}
+	for _, session := range f.app.hls.sessions {
+		if session.key.scope.AuthSessionID == authID && session.key.scope.PlaySessionID == request.PlaySessionID {
+			sessions = append(sessions, session)
+		}
+	}
+	f.app.hls.mu.Unlock()
+	if len(sessions) != 1 {
+		return errors.New("phase 2 browser did not retain exactly one actual HLS revision")
+	}
+	session := sessions[0]
+	if session.id != request.HlsID || session.key.scope.UserID != observer.fixture.ViewerID || session.key.scope.DeviceID != request.DeviceID || session.key.scope.ItemID != observer.fixture.OCRItemID || session.key.scope.SourceID != request.MediaSourceID || session.key.plan.StartTicks != 0 || session.key.plan.OutputMode == "progressive" {
+		return errors.New("phase 2 HLS runtime revision has a different source or owner")
+	}
+	tracks := transcode.PlanHLSSubtitles(session.key.plan)
+	bound := false
+	for slot := 0; slot < tracks.Count; slot++ {
+		track := tracks.Tracks[slot]
+		bound = bound || track.StreamIndex == request.StreamIndex && track.ExternalTag == subtitleHash
+	}
+	if !bound {
+		return errors.New("phase 2 HLS producer does not bind the published subtitle content digest")
+	}
+	session.mu.Lock()
+	closed := session.closed
+	producers := append([]hlsProducer(nil), session.producers...)
+	readers := session.progressiveReaders
+	session.mu.Unlock()
+	if closed || session.ctx.Err() != nil || len(producers) != 1 {
+		return errors.New("phase 2 HLS producer is absent, retired, or duplicated")
+	}
+	ids := []string{}
+	states := []string{}
+	bytesWritten := int64(0)
+	for _, producer := range producers {
+		record, err := f.app.hls.manager.Snapshot(session.key.scope, producer.id)
+		cache, cacheErr := os.Lstat(filepath.Join(f.cfg.Transcoding.CacheDirectory, producer.id))
+		if err != nil || (record.State != "running" && record.State != "completed") || record.OutputBytes <= 0 || record.ErrorCode != "" || cacheErr != nil || !cache.IsDir() {
+			return errors.New("phase 2 actual HLS job or retained output is not usable")
+		}
+		ids = append(ids, record.ID)
+		states = append(states, record.State)
+		bytesWritten += record.OutputBytes
+	}
+	var jobCount int
+	if f.pool.QueryRow(ctx, `SELECT count(*) FROM encoding_jobs WHERE play_session_id=$1 AND auth_session_id=$2 AND user_id=$3 AND device_id=$4 AND item_id=$5`, request.PlaySessionID, authID, observer.fixture.ViewerID, request.DeviceID, observer.fixture.OCRItemID).Scan(&jobCount) != nil || jobCount != 1 {
+		return errors.New("phase 2 HLS created an unexpected durable producer count")
+	}
+	if observer.hlsPlayID != "" && !reflect.DeepEqual(ids, observer.hlsProducerIDs) {
+		return errors.New("phase 2 subtitle selection replaced its audio/video producer")
+	}
+	observer.hlsPlayID, observer.hlsAuthID, observer.hlsDeviceID, observer.hlsSourceID, observer.hlsRevision = request.PlaySessionID, authID, request.DeviceID, request.MediaSourceID, request.HlsID
+	observer.hlsStreamIndex, observer.hlsSessions, observer.hlsProducerIDs = request.StreamIndex, sessions, ids
+	observer.hlsObservation = map[string]any{"Complete": true, "Phase": request.Phase, "ProducerIds": ids, "ProducerStates": states, "HlsId": request.HlsID,
+		"OutputBytes": bytesWritten, "Authorized": true, "HlsSessions": 1, "ProgressiveReaders": readers, "CachePresent": true, "PlaybackReportsSent": false, "SubtitleContentSHA256": subtitleHash}
+	return nil
+}
+
+func (observer *selectedPhase2Observer) hlsStopped(ctx context.Context, request selectedPhase2Request) error {
+	if observer.hlsPlayID == "" || !observer.hlsScope(request) {
+		return errors.New("phase 2 HLS stop does not bind the observed producer")
+	}
+	f := observer.runtime.f
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	for {
+		f.app.hls.mu.Lock()
+		registered := 0
+		for _, session := range f.app.hls.sessions {
+			if session.key.scope.AuthSessionID == observer.hlsAuthID && session.key.scope.PlaySessionID == observer.hlsPlayID {
+				registered++
+			}
+		}
+		f.app.hls.mu.Unlock()
+		closed := true
+		readers := 0
+		for _, session := range observer.hlsSessions {
+			session.mu.Lock()
+			closed = closed && session.closed && session.ctx.Err() != nil
+			readers += session.progressiveReaders
+			session.mu.Unlock()
+		}
+		cacheRetired := true
+		for _, id := range observer.hlsProducerIDs {
+			if _, err := os.Lstat(filepath.Join(f.cfg.Transcoding.CacheDirectory, id)); !errors.Is(err, os.ErrNotExist) {
+				cacheRetired = false
+			}
+		}
+		var activeAuth, plays, jobs, activeJobs, invalidJobs int
+		err := f.pool.QueryRow(ctx, `SELECT
+			(SELECT count(*) FROM sessions WHERE user_id=$1 AND revoked_at IS NULL),
+			(SELECT count(*) FROM play_sessions p JOIN sessions a ON a.id=p.auth_session_id WHERE p.id=$2 AND p.user_id=$1 AND p.auth_session_id=$3 AND p.device_id=$4 AND p.item_id=$5 AND p.media_source_id=$6 AND p.state='Prepared' AND p.started_at IS NULL AND NOT p.counted AND a.revoked_at IS NOT NULL),
+			(SELECT count(*) FROM encoding_jobs WHERE play_session_id=$2 AND auth_session_id=$3),
+			(SELECT count(*) FROM encoding_jobs WHERE play_session_id=$2 AND state IN ('queued','running')),
+			(SELECT count(*) FROM encoding_jobs WHERE play_session_id=$2 AND state NOT IN ('completed','cancelled'))`, observer.fixture.ViewerID, observer.hlsPlayID, observer.hlsAuthID, observer.hlsDeviceID, observer.fixture.OCRItemID, observer.hlsSourceID).
+			Scan(&activeAuth, &plays, &jobs, &activeJobs, &invalidJobs)
+		if err != nil {
+			return errors.New("phase 2 HLS retirement database observation failed")
+		}
+		resources := selectedPhase1RuntimeFacts(f)
+		runtimeClosed := true
+		for _, count := range resources {
+			runtimeClosed = runtimeClosed && count == 0
+		}
+		observer.hlsObservation = map[string]any{"Complete": false, "Phase": request.Phase, "ProducerIds": observer.hlsProducerIDs, "HlsId": observer.hlsRevision,
+			"HlsSessions": registered, "SessionContextsClosed": closed, "ProgressiveReaders": readers, "CacheRetired": cacheRetired,
+			"ActiveViewerSessions": activeAuth, "PreservedPreparedPlays": plays, "PreservedJobRows": jobs, "ActiveJobs": activeJobs, "InvalidTerminalJobs": invalidJobs,
+			"Runtime": resources, "ReaderClosureEvidence": "retired producer caches are removed only after processes and owned readers close"}
+		if registered == 0 && closed && readers == 0 && cacheRetired && activeAuth == 0 && plays == 1 && jobs == len(observer.hlsProducerIDs) && activeJobs == 0 && invalidJobs == 0 && runtimeClosed {
+			observer.hlsObservation["Complete"] = true
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return errors.New("phase 2 browser stop did not retire its actual HLS resources before fixture shutdown")
 		case <-time.After(50 * time.Millisecond):
 		}
 	}
@@ -350,6 +659,9 @@ func (observer *selectedPhase2Observer) snapshot(ctx context.Context, phase, suf
 	facts, fileErr := observer.filesVerified()
 	value := map[string]any{"Marker": "goby-selected-phase2-stage-database-v1", "RunId": observer.fixture.RunID, "Phase": phase,
 		"Complete": false, "Observed": dbErr == nil, "ExpectedFilesVerified": fileErr == nil, "Files": facts}
+	if strings.HasPrefix(phase, "subtitle-") && observer.hlsObservation != nil {
+		value["HLSObservation"] = observer.hlsObservation
+	}
 	if dbErr == nil {
 		value["Database"] = database
 	}
@@ -437,7 +749,7 @@ func (observer *selectedPhase2Observer) removalApplied(ctx context.Context, op l
 		return errors.New("phase 2 removed or retained the wrong actual media stream")
 	}
 	observer.files[observer.removePath], observer.files[backup] = current, original
-	return nil
+	return observer.decodePublishedRemoval(ctx, current)
 }
 
 func (observer *selectedPhase2Observer) ocrReady(ctx context.Context, op library.MediaOperation) error {
@@ -711,6 +1023,14 @@ func (observer *selectedPhase2Observer) stage(ctx context.Context, request selec
 		if err := observer.ocrApplied(ctx, op); err != nil {
 			return err
 		}
+	case "subtitle-selected", "subtitle-off", "subtitle-reselected":
+		if err := observer.hlsLive(ctx, request); err != nil {
+			return err
+		}
+	case "subtitle-stopped":
+		if err := observer.hlsStopped(ctx, request); err != nil {
+			return err
+		}
 	case "cancel-ready":
 		op, err := observer.operation(ctx, request.OperationID, "", fixture.RemoveItemID, library.MediaOperationRemoveSubtitle, "ready")
 		if err != nil {
@@ -762,11 +1082,19 @@ func (observer *selectedPhase2Observer) stage(ctx context.Context, request selec
 		if err := f.users.Revoke(ctx, observer.actorToken); err != nil {
 			return errors.New("phase 2 fixture observer session could not be retired")
 		}
-		var sessions, playback, encodings, scans, tasks int
+		var sessions, playback, encodings, scans, tasks, unsafePlays, activeJobs int
 		if f.pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM sessions WHERE revoked_at IS NULL),(SELECT count(*) FROM play_sessions),
 			(SELECT count(*) FROM encoding_jobs),(SELECT count(*) FROM scan_jobs WHERE status IN ('Queued','Running')),
-			(SELECT count(*) FROM task_runs WHERE state IN ('pending','running','stopping'))`).Scan(&sessions, &playback, &encodings, &scans, &tasks) != nil || sessions != 0 || playback != 0 || encodings != 0 || scans != 0 || tasks != 0 {
+			(SELECT count(*) FROM task_runs WHERE state IN ('pending','running','stopping')),
+			(SELECT count(*) FROM play_sessions p JOIN sessions a ON a.id=p.auth_session_id WHERE p.id<>$1 OR p.started_at IS NOT NULL OR p.counted OR p.state NOT IN ('Prepared','Expired') OR a.revoked_at IS NULL),
+			(SELECT count(*) FROM encoding_jobs WHERE state IN ('queued','running'))`, observer.hlsPlayID).
+			Scan(&sessions, &playback, &encodings, &scans, &tasks, &unsafePlays, &activeJobs) != nil || sessions != 0 || playback != 1 || encodings != len(observer.hlsProducerIDs) || scans != 0 || tasks != 0 || unsafePlays != 0 || activeJobs != 0 {
 			return errors.New("phase 2 left authentication or runtime work after cleanup")
+		}
+		for _, count := range selectedPhase1RuntimeFacts(f) {
+			if count != 0 {
+				return errors.New("phase 2 left actual playback resources after cleanup")
+			}
 		}
 	}
 	if _, err := observer.filesVerified(); err != nil {
@@ -834,6 +1162,11 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	artifacts := refreshBrowserPath(t, "GOBY_TEST_BROWSER_ARTIFACTS_DIR", true)
 	browserCache := refreshBrowserPath(t, "PLAYWRIGHT_BROWSERS_PATH", true)
 	execution, inventory := selectedPhase2ReadExecution(t)
+	hlsBundle, bundleErr := os.ReadFile(execution.HlsBundlePath)
+	bundleDigest := sha256.Sum256(hlsBundle)
+	if bundleErr != nil || len(hlsBundle) > 8<<20 || hex.EncodeToString(bundleDigest[:]) != phase2BrowserBundleSHA256 {
+		t.Fatal("phase 2 HLS bundle changed after pinned inventory admission")
+	}
 	runID := os.Getenv("GOBY_SELECTED_PHASE2_RUN_ID")
 	if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$`).MatchString(runID) {
 		t.Fatal("an explicit phase 2 browser run identity is required")
@@ -957,8 +1290,11 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 			t.Fatal("phase 2 authored fixture file escaped its directory")
 		}
 		fact, err := selectedPhase2Fact(filepath.Join(bitmapDir, name), 32<<20)
-		if err != nil || fact.Bytes != recorded.Bytes || fact.SHA256 != recorded.SHA256 {
-			t.Fatal("phase 2 authored fixture file differs from its manifest")
+		if err != nil {
+			t.Fatalf("phase 2 authored bitmap %s: %v", name, err)
+		}
+		if fact.Bytes != recorded.Bytes || fact.SHA256 != recorded.SHA256 {
+			t.Fatalf("phase 2 authored bitmap %s: manifest size or SHA-256 mismatch", name)
 		}
 	}
 	if refreshBrowserWriteJSON(filepath.Join(output, "bitmap-authoring-manifest.json"), json.RawMessage(manifestRaw)) != nil {
@@ -1001,6 +1337,8 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	}
 	scratch := t.TempDir()
 	f.cfg.FFmpegPath, f.cfg.FFprobePath, f.cfg.MediaRoots = execution.FFmpegPath, execution.FFprobePath, []string{mediaRoot}
+	f.cfg.Transcoding = config.TranscodingConfig{Enabled: true, CacheDirectory: t.TempDir(), Threads: 1, MaxJobs: 2, MaxUserJobs: 2, MaxSessionJobs: 2, MaxQueueJobs: 8, MaxRetainedJobs: 32,
+		MaxCacheBytes: 64 << 20, MaxJobBytes: 16 << 20, MinFreeBytes: 1 << 20, MaxBitrate: 2_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 2}
 	f.cfg.MediaOperations = config.MediaOperationsConfig{Enabled: true, MaxConcurrent: 1, MaxQueued: 4, MaxRuntimeSeconds: 90, MaxScratchBytes: 512 << 20, ScratchDirectory: scratch, WritableProfiles: []string{"matroska-v1"}, OCR: execution.OCR}
 	assets, err := adminassets.Files()
 	if err != nil {
@@ -1011,7 +1349,7 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 		t.Fatal("construct phase 2 actual media operation application")
 	}
 	f.app, f.handler = app, app.Handler()
-	runtime := &phase3BrowserRuntime{f: f, assets: assets, addr: "127.0.0.1:0"}
+	runtime := &selectedPhase2Runtime{phase3BrowserRuntime: &phase3BrowserRuntime{f: f, assets: assets, addr: "127.0.0.1:0"}, bundle: hlsBundle}
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
@@ -1062,6 +1400,11 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	music, err := app.library.CreateLibrary(f.ctx, "Selected Phase Two Music", "music", []string{musicDir})
 	if err != nil {
 		t.Fatal("create phase 2 real music library")
+	}
+	policy, _ := json.Marshal(map[string]any{"EnableAllFolders": false, "EnabledFolders": []string{movies.ID, music.ID}, "EnableMediaPlayback": true,
+		"EnableVideoPlaybackTranscoding": true, "EnableAudioPlaybackTranscoding": true, "EnablePlaybackRemuxing": true})
+	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET policy=$2::jsonb WHERE id=$1", viewer.ID, policy); err != nil {
+		t.Fatal("set phase 2 owned viewer media execution policy")
 	}
 	selectedPhase1Scan(t, f, movies.ID, 2)
 	selectedPhase1Scan(t, f, music.ID, 2)
@@ -1138,7 +1481,8 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 		OCRItemID: ocrItem.ID, OCRItemName: ocrItem.Name, AudioItemID: firstAudio.ID, AudioItemName: firstAudio.Name, SecondAudioItemID: secondAudio.ID,
 		RemoveStreamIndex: removeIndex, KeepStreamIndex: keepIndex, OCRStreamIndex: ocrIndex, RemoveSubtitleTitle: "Remove English", KeepSubtitleTitle: "Keep French",
 		OCRModelIDs: []string{"eng", "chi_sim"}, OCRLanguage: "eng", OCRTitle: "Phase 2 reviewed subtitles", ExpectedOCRPhrase: "Hello world", OCRExpectedCues: expected,
-		ReviewEdits:  []library.MediaOperationCueEdit{{Ordinal: 0, StartTicks: 12_500_000, EndTicks: 24_000_000, Text: "Phase 2 reviewed subtitle", Included: true}},
+		ReviewEdits:   []library.MediaOperationCueEdit{{Ordinal: 0, StartTicks: 12_500_000, EndTicks: 24_000_000, Text: "Phase 2 reviewed subtitle", Included: true}},
+		HlsBundlePath: execution.HlsBundlePath, HlsBundleSHA256: execution.HlsBundleSHA256,
 		ArtifactsDir: output, ResultPath: filepath.Join(output, "browser-result.json")}
 	contextPath := filepath.Join(output, "private-context.json")
 	t.Cleanup(func() {
@@ -1181,7 +1525,7 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	if commandErr != nil || observerErr != nil || readErr != nil || observer.completed != len(selectedPhase2Phases) {
 		t.Fatal("phase 2 browser or independent observer failed; inspect retained private artifacts")
 	}
-	checks := []string{"Authentication", "RemovalPrepared", "RemovalApplied", "OCRRecognized", "OCRReviewed", "OCRApplied", "CancelPrepared", "Cancelled", "ArtworkObserved", "RestartPersisted", "HistoryPersisted", "Cleanup"}
+	checks := []string{"Authentication", "RemovalPrepared", "RemovalApplied", "OCRRecognized", "OCRReviewed", "OCRApplied", "SubtitleSelected", "SubtitleOff", "SubtitleReselected", "SubtitleStopped", "CancelPrepared", "Cancelled", "ArtworkObserved", "RestartPersisted", "HistoryPersisted", "Cleanup"}
 	if result.Marker != "goby-selected-phase2-browser-result-v1" || result.RunID != runID || !result.Complete || len(result.Checks) != len(checks) || len(result.Stages) != len(selectedPhase2Phases) || result.PageErrors == nil || *result.PageErrors != 0 || result.ForeignRequests == nil || *result.ForeignRequests != 0 {
 		t.Fatal("phase 2 result does not bind the complete real scenario")
 	}
@@ -1197,5 +1541,5 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	}
 	driver["Complete"], driver["ExpectedFilesVerified"], driver["OwnedSessionsRetired"] = true, true, true
 	driver["BrowserChecks"], driver["ImageObservations"], driver["ServerRestarts"] = result.Checks, observer.imageObservations, 1
-	t.Log("selected_phase2_browser_verified=true stages=12 real_media_operations=3 real_ocr=true server_restarts=1")
+	t.Log("selected_phase2_browser_verified=true stages=16 real_media_operations=3 real_ocr=true actual_hls_subtitle_consumption=true server_restarts=1")
 }

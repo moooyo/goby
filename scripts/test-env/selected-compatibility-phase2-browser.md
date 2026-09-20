@@ -19,8 +19,10 @@ The removal movie contains two separately identified embedded text subtitle
 streams and explicit chapters. The browser prepares one selected stream for
 removal, reviews the ready result, and explicitly applies it. Go verifies the
 actual replacement, the byte-identical retained original, remaining streams,
-catalog identity, and unchanged seeded user data. A queued or ready result must
-leave the source unchanged.
+catalog identity, and unchanged seeded user data. It also fully decodes the
+published video and audio with the pinned FFmpeg executable and fetches the
+retained French subtitle as real WebVTT through the authorized product route.
+A queued or ready result must leave the source unchanged.
 
 The OCR movie contains the authored `overlap-pgs.mks` stream from
 `scripts/test-env/bitmap-subtitle-fixtures.py`, muxed with real audio and video.
@@ -72,6 +74,22 @@ uses the product inventory shape:
 }
 ```
 
+The same execution JSON also requires `HlsBundlePath` and `HlsBundleSHA256` for
+the retained HLS.js `1.6.0-beta.2` library. The exact reviewed AMD library is:
+
+```text
+/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-01/package/opt/emby-server/system/dashboard-ui/modules/hlsjs/hls.js
+04a55387b26d6becff5b87b470b9b19c3fe41d25c0cd3c1e6c3d885a56572fdb
+```
+
+The harness loads only this hash-checked library with its minimal AMD export
+adapter. It neither starts Emby Web nor calls its registration services. The
+bundle remains in its retained private installation and is not redistributed.
+All inventoried source and tool files must remain root-owned, canonical regular
+files with one link and no group/world write permission. A Windows archive
+extracted with mode `0664` must be hardened in a new execution scope before
+admission; do not alter a previous failed scope's metadata or receipt.
+
 These placeholders are not runnable defaults. The font must match the generator's
 fixed release blob and size in addition to the operator-supplied SHA-256. Python
 needs Pillow and FreeType. The runtime uses one media-operation worker, a bounded
@@ -116,6 +134,26 @@ and bounded error categories. Failure screenshots are limited, mask inputs and
 secret text, and cannot replace the underlying error or prevent cleanup.
 Native screenshots disable UI animation so a dialog fade does not obscure
 the review view.
+
+A separate browser context provides a private HTMLVideoElement test consumer
+for the published OCR subtitle at the fixture-only `/__selected-phase2-media`
+route. The companion `/__selected-phase2-hls.js` route serves the admitted
+library bytes unchanged; the browser independently checks the delivered hash.
+These two routes wrap only the owned test server. Every authentication, media,
+subtitle, and administrator request reaches the real application. The test
+page's explicit policy permits same-origin scripts and MSE blob media without
+bypassing or weakening the administrator application's content security policy.
+It signs in as the actual viewer and negotiates
+the actual PlaybackInfo route with an explicit zero start and owned subtitle
+index. HLS.js consumes the returned master and real audio/video/subtitle bytes.
+The consumer does not add a product player, inject text cues, fake media events,
+change the server clock, or replace any media response. It switches captions
+using only the library's public `subtitleTrack` API and ordinary media seeks.
+Every observation requires three new advancing video frame callbacks, a completed
+seek, actual playback clock advancement, and the matching native TextTrack
+active cues. The same HLS instance, playback scope, and producer must survive
+selection, off, and reselection. Tokens and full media URLs stay private; the
+safe result records only the playback/source/device/revision identities.
 
 Every stage writes `stage-<phase>-request.json` with `RunId` and `Phase`. Operation
 stages also provide the actual server-created `OperationId`; OCR review provides
@@ -163,22 +201,37 @@ for a success acknowledgement that will never arrive.
 6. `ocr-applied`: explicitly confirm publication of that reviewed result. Go
    reads the actual owned subtitle through an authorized HTTP consumer and
    verifies the published bytes, included/excluded cues, timing and properties.
-7. `cancel-ready`: prepare a second real removal against the remaining subtitle
+7. `subtitle-selected`: use the independent private consumer to play the actual
+   OCR item from zero and select the published track. Seek to 1.45 seconds and
+   require the revised text and 1.25–2.4 second interval in actual active cues,
+   accompanied by new decoded frames. Go binds the real HLS producer and its
+   authorized source/playback/session scope.
+8. `subtitle-off`: set the public subtitle selection to `-1`, repeat the real
+   seek, and require empty displayed active cues while decoded frames and the
+   playback clock advance. The actual original producer must remain unchanged.
+9. `subtitle-reselected`: select the same owned track again and repeat the real
+   frame-and-cue observation without reconstructing HLS or renegotiating playback.
+10. `subtitle-stopped`: destroy the consumer, detach its media element, call the
+    real ActiveEncodings DELETE for that exact device/playback identity, sign
+    out the viewer, and close its context. Go requires actual readers, runtime
+    sessions, producer resources, and cache leases to close. Terminal database
+    history is preserved; it is not deleted to manufacture empty tables.
+11. `cancel-ready`: prepare a second real removal against the remaining subtitle
    of the already edited movie. Wait for its actual ready candidate without
    applying it.
-8. `cancelled`: choose Cancel operation and Confirm cancellation; require the
+12. `cancelled`: choose Cancel operation and Confirm cancellation; require the
    recorded cancelled state, discarded unpublished candidate, and unchanged
    edited source. The earlier retained original remains preserved.
-9. `artwork`: independently fetch and decode the embedded cover and generated
+13. `artwork`: independently fetch and decode the embedded cover and generated
    library image using real authorization and owned image inputs. Browser
    acceptance requires the Go image observations rather than a placeholder URL.
-10. `restart`: close and rebuild the complete server runtime on the same owned
+14. `restart`: close and rebuild the complete server runtime on the same owned
     origin. No worker, catalog, resource lease, or publication task is reused.
-11. `persisted`: use the real Tasks → Media processing tab and open all three
+15. `persisted`: use the real Tasks → Media processing tab and open all three
     operation records. Published/cancelled states, source identities, revisions
     and result hashes must match; no new preparation or Apply is performed.
     Go verifies that restart did not silently rerun publication or rewrite media.
-12. `cleanup`: navigate out of dialogs, use real native Sign out, require DELETE
+16. `cleanup`: navigate out of dialogs, use real native Sign out, require DELETE
     `/admin/v1/session` to return 204 and the sign-in page, close the browser
     context, and obtain independent session/runtime cleanup acknowledgement.
 
@@ -192,7 +245,7 @@ admission response, a ready result, or a screenshot is not acceptance.
 
 This profile exercises native orchestration with small real media and one
 reviewed bilingual PGS source. Existing real backend tests must additionally
-cover subtitle GET conversion/HLS consumption, the admitted DVD/PGS language
+cover the wider subtitle conversion/HLS matrix, the admitted DVD/PGS language
 matrix, source replacement, publication interruption/recovery barriers, current
 authority changes, broader container preservation, cancellation races, artwork
 transforms and backup/restore. The browser fixture does not claim those cases

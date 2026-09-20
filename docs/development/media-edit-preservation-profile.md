@@ -27,7 +27,8 @@ accepted only when the implementation can prove all retained semantics:
   are read directly from `sgpd`/`sbgp`; their normalized meaning must match after
   remuxing and their sample counts must equal the bound stream's actual packet
   counts. Other recovery distances, `prol` or unknown group types, and missing AAC
-  preroll declarations remain outside the profile. Sample counts and duration declarations must describe complete
+  preroll declarations remain outside the profile. Sample counts and duration
+  declarations must describe complete
   sample-table timelines. Typical AAC files with priming edits may be outside
   this profile; their clocks are never silently shifted to make an edit pass.
 - DOVI/HDR10+ Matroska files that use advanced block-addition mappings are outside
@@ -65,12 +66,41 @@ BCP47 overrides, country fields, and multiple chapter displays remain outside
 this profile. These behaviors follow the [Matroska element definition](https://github.com/ietf-wg-cellar/matroska-specification/blob/master/ebml_matroska.xml)
 and [FFmpeg's chapter writer](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavformat/matroskaenc.c).
 
+EBML ASCII/UTF-8 values may include zero-byte padding after their text. The
+scanner removes only an entirely zero-filled suffix, validates the complete
+remaining value with its declared encoding, and rejects a nonzero hidden tail
+or interrupted UTF-8 character. This preserves the string semantics defined by
+[RFC 8794 section 13](https://www.rfc-editor.org/rfc/rfc8794.html#section-13).
+It also admits FFmpeg's ordinary `DURATION` tag: its writer reserves a fixed
+19-byte string payload and can write zero padding after the formatted duration.
+See [`DURATION_STRING_LENGTH` and the duration writer](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavformat/matroskaenc.c).
+
 FFmpeg reconstructs AAC's all-sample, one-access-unit `roll` mapping rather than
 copying arbitrary original sample-group boxes. Its demuxer does not expose those
 groups through ffprobe. The source/candidate comparison therefore uses direct
 structural evidence instead of treating matching packet bytes as sufficient.
 See the [pinned FFmpeg preroll writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/movenc.c#L3305)
 and [sample-group reader](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/mov.c#L3922).
+
+Track-level MP4 `trak/udta` has a separate admission rule from movie metadata.
+Only one nonempty UTF-8 `name` (up to 4 KiB, without hidden NUL bytes) and the
+complete standard `kind` pairs are accepted. `kind` requires version/flags zero,
+exactly two terminated strings, the exact `urn:mpeg:dash:role:2011` scheme, and
+one of `caption`, `commentary`, `description`, `dub`, or `forced-subtitle`.
+Unknown children, scheme/value prefixes with extra text, duplicates, ambiguous
+strings, and trailing data are rejected. The raw name presence/value and sorted
+kind pairs are compared for each retained track and included in `ContainerSHA256`.
+
+The raw name must match its complete ffprobe `tags.name` projection. FFmpeg
+reads that atom as `name` but writes it from `title`, so the remux command
+explicitly supplies the proven value as the output stream's `title` alias.
+The existing complete stream-tag comparison remains unchanged. Each kind also
+must match all of its disposition bits, including both hearing-impaired/captions
+and both visual-impaired/descriptions bits. This avoids trusting the demuxer's
+prefix matching or losing track names during a metadata-only copy. See the
+[track metadata writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/movenc.c#L4298),
+[string reader](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/mov.c#L490),
+and [complete disposition mapping](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/isom.c#L450).
 
 Source SHA-256, candidate SHA-256, candidate byte length, a canonical metadata
 digest, a `ContainerSHA256` digest of retained structural semantics, retained stream
@@ -109,9 +139,13 @@ operations. The caller retains responsibility for cleaning up failed candidates.
 The first consolidated Linux media verification run reached all three actual
 subtitle-removal profiles and failed during structural admission: MKV/MKA on
 the unexposed chapter display language, and MP4 on AAC's standard `sgpd` preroll
-group. That failed evidence is retained. Direct chapter-language and AAC
-sample-group preservation proofs were added in response; targeted re-verification
-is pending. The repairs have not yet established a passing actual remux result.
+group. Direct chapter-language and AAC sample-group preservation proofs were
+added in response. A second targeted run passed 66 parent tests but again failed
+the three actual-remux profiles at admission: MKV/MKA rejected legal EBML text
+padding, and MP4 rejected track-level `udta`. Both failed runs are retained.
+The corresponding text-padding and exact track-userdata proofs are now added;
+targeted re-verification is pending. These repairs have not yet established a
+passing actual remux result.
 
 Unit coverage includes exact rational clocks, payload tampering, reordered and
 missing packets, duplicate JSON keys, malformed metadata, chapter and attachment
@@ -127,3 +161,10 @@ edit lists to stay within the selected profile. It verifies complete returned
 evidence and independently probes the resulting stream/chapter inventory. These
 tests must run in the designated Linux verification environment; their presence
 alone is not evidence that actual remuxing has passed.
+
+The optional `GOBY_MEDIA_EDIT_EVIDENCE_DIR` setting retains actual-test evidence
+in a unique private run directory (0700), with source/candidate copies and a
+manifest (0600). Cleanup records the bytes present at the current test stage,
+their hashes, and the result, including failures. This diagnostic capture does
+not run another probe or change the fixtures. It permits the next repair to
+inspect the exact failed inputs and candidate instead of discarding them.

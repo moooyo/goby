@@ -147,7 +147,7 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	}()
 	sourceContainer, err := mediaEditReadContainerProof(operationContext, input, before.Size(), options.Container)
 	if err != nil {
-		return evidence, err
+		return evidence, fmt.Errorf("subtitle removal source profile: %w", err)
 	}
 	source, err := probeMediaEditDocument(operationContext, options.FFprobePath, input)
 	if err != nil {
@@ -155,6 +155,11 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	}
 	if err := source.admit(options.Container, options.StreamIndex); err != nil {
 		return evidence, err
+	}
+	if options.Container == "mp4" {
+		if err := mediaEditValidateMP4UserDataProjection(sourceContainer, source); err != nil {
+			return evidence, fmt.Errorf("subtitle removal source MP4 user data: %w", err)
+		}
 	}
 	sourceDigest, err := mediaEditFileDigest(operationContext, input, before.Size())
 	if err != nil {
@@ -189,6 +194,11 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	staged, err := probeMediaEditDocument(operationContext, options.FFprobePath, candidate)
 	if err != nil {
 		return evidence, err
+	}
+	if options.Container == "mp4" {
+		if err := mediaEditValidateMP4UserDataProjection(candidateContainer, staged); err != nil {
+			return evidence, fmt.Errorf("subtitle removal candidate MP4 user data: %w", err)
+		}
 	}
 	metadataDigest, pairs, err := compareMediaEditDocuments(source, staged, options.Container, options.StreamIndex)
 	if err != nil {

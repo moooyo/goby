@@ -75,8 +75,9 @@ The first remote batch uses frozen source `a8ff413` and records the binary
 revision and hash separately for each scope. Config (53 parent tests), transcode
 (301), database (62), library (760) and server (861) have passed. Hardware-specific skips and
 the mount-namespace helper skip are retained in the private receipt; these counts
-do not claim those profiles were executed. Backup, recovery and native
-browser results remain pending at this checkpoint.
+do not claim those profiles were executed. Recovery database tests (12 parents)
+also passed. All first-batch process groups closed; the batch is a retained
+failure, not a full passing run.
 
 The first media scope failed three parent tests. Actual PGS OCR passed its five
 English/Chinese display scenarios. Four DVD scenarios stopped at a fixture
@@ -88,6 +89,45 @@ test exposed an embedded `bytes.Buffer` fast path that bypassed the write limit;
 the wrapper now contains a named buffer. These are pending repairs, not passing
 results. Original logs and version 1 fixtures remain unchanged, and the repair
 batch will generate a separate version 2 fixture corpus.
+
+The backup scope passed 104 parents and failed one finalizer-corruption parent
+before its deliberate mutation: its complete-row JSON witness used different
+session timestamp formats outside and inside the restore transaction. The test
+repair applies the existing canonical archive settings in a nested savepoint,
+preserves exact values and adds a regression for formatting differences and a
+one-microsecond change. The recovery scope passed 27 parents and failed the new
+archive fixture while PostgreSQL inferred conflicting integer types for a
+revision parameter; explicit `bigint` casts retain the intended value above
+`2^53`. These test-only fixes were committed at `02f3da6`; product corruption
+validation and restore normalization were not relaxed. Fresh, separate database
+pairs are prepared for both repair scopes, preserving the earlier databases.
+
+The `02f3da6` scoped repair batch has finished. It used the unchanged `bef3c21`
+media/library/server binaries and newly compiled `02f3da6` backup/recovery
+binaries, with exact hashes in its receipt. All nine actual PGS/DVD OCR scenarios
+now pass, together with the PNG-budget regressions. Library (22 parents), server
+(22, including original/download reader retirement), backup (4) and recovery (1)
+repair scopes passed. Those overlap earlier package runs and are not additive
+coverage counts. All process groups closed. The batch remains failed because
+the B1 actual-container parent still rejects zero-padded Matroska text and MP4
+track `udta`; strict parsing and preservation of those real encodings is the
+remaining media repair. No earlier failure is relabeled.
+
+The initial native browser fixture stopped at input admission because Windows
+archive metadata produced group-writable script files. It did not exercise the
+browser. A separate immutable source extraction now records removal of group
+and world write permissions, with content hashes retained. The first mocked
+runner similarly stopped before testing on writable asset-directory metadata.
+After preparation, `mocked-browser-02` passed all 12 selected administrator tests
+against the unchanged `bef3c21` assets, with zero skipped/flaky/unexpected tests,
+zero report errors and no unhandled API requests. Its process group, listener,
+connections, dependency link and temporary browser profiles closed.
+
+The native acceptance extension adds post-publication A/V decoding and actual
+owned-subtitle selection/off/reselection in a private HTMLVideoElement/HLS.js
+test consumer. Existing real HLS/VTT HTTP tests alone are not described as
+observed playback switching. The extension adds no consumer product UI and has
+not yet run at this checkpoint.
 
 Tool/model/font inputs, actual source and binary identities, result counts,
 retained failures, targeted repairs and owned-resource closure must be recorded

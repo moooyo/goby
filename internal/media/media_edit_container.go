@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -81,7 +82,7 @@ func mediaEditReadContainerProof(ctx context.Context, file *os.File, size int64,
 		idOffset := 12 + int(track.header[0])*8
 		proof.MP4Tracks = append(proof.MP4Tracks, mediaEditMP4TrackProof{
 			ID: uint64(binary.BigEndian.Uint32(track.header[idOffset : idOffset+4])), Codec: track.codec,
-			Samples: track.tableSamples, Roll: roll,
+			Samples: track.tableSamples, Roll: roll, UserData: track.userData,
 		})
 	}
 	return proof, nil
@@ -147,7 +148,11 @@ func (s *mediaEditContainerScanner) read(offset int64, data []byte) error {
 		return mediaEditContainerError("truncated element")
 	}
 	if _, err := s.file.ReadAt(data, offset); err != nil {
-		return fmt.Errorf("%w: container read: %v", ErrSubtitleRemovalUnsupported, err)
+		var pathError *os.PathError
+		if errors.As(err, &pathError) {
+			err = pathError.Err
+		}
+		return fmt.Errorf("%w: container read: %w", ErrSubtitleRemovalUnsupported, err)
 	}
 	return nil
 }
@@ -302,11 +307,14 @@ func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth 
 				r.display = &mediaEditChapterDisplayProof{HasDisplay: true, Title: child.texts[0x85], Language: language}
 			}
 		} else if err := s.ebmlLeaf(&r, rule.kind, id, body, int64(length)); err != nil {
-			return r, err
+			return r, fmt.Errorf("%w: Matroska role=%s element=0x%X", err, parent, id)
 		}
 		offset = next
 	}
-	return r, s.ebmlFinish(parent, &r)
+	if err := s.ebmlFinish(parent, &r); err != nil {
+		return r, fmt.Errorf("%w: Matroska role=%s", err, parent)
+	}
+	return r, nil
 }
 
 func (s *mediaEditContainerScanner) vint(offset, end int64, identifier bool) (uint64, int, bool, error) {
@@ -419,16 +427,17 @@ func (s *mediaEditContainerScanner) ebmlLeaf(r *mediaEditEBMLScope, kind string,
 		if err := s.read(offset, data); err != nil {
 			return err
 		}
-		if !utf8.Valid(data) || bytes.IndexByte(data, 0) >= 0 {
-			return mediaEditContainerError("Matroska text is not an unambiguous UTF-8 string")
+		value, err := mediaEditEBMLText(data, id)
+		if err != nil {
+			return err
 		}
-		r.texts[id] = string(data)
+		r.texts[id] = value
 		if kind == "writer" {
 			name := "MuxingApp"
 			if id == 0x5741 {
 				name = "WritingApp"
 			}
-			s.writer[name] = string(data)
+			s.writer[name] = value
 		}
 	default:
 		return mediaEditContainerError("unknown Matroska profile rule")
@@ -687,6 +696,7 @@ type mediaEditMP4Track struct {
 	rollSamples      uint64
 	rollDescriptions bool
 	rollMapping      bool
+	userData         mediaEditMP4UserDataProof
 }
 
 func (s *mediaEditContainerScanner) mp4Box(offset, end int64, depth int) (mediaEditMP4Box, error) {
@@ -721,7 +731,7 @@ func (s *mediaEditContainerScanner) mp4Box(offset, end int64, depth int) (mediaE
 var mediaEditMP4Children = map[string]map[string]bool{
 	"root": {"ftyp": true, "moov": true, "mdat": true},
 	"moov": {"mvhd": true, "trak": true, "udta": true, "meta": true},
-	"trak": {"tkhd": true, "mdia": true, "edts": true},
+	"trak": {"tkhd": true, "mdia": true, "edts": true, "udta": true},
 	"mdia": {"mdhd": true, "hdlr": true, "minf": true},
 	"minf": {"vmhd": true, "smhd": true, "nmhd": true, "dinf": true, "stbl": true},
 	"dinf": {"dref": true}, "edts": {"elst": true}, "udta": {"meta": true},
@@ -766,6 +776,14 @@ func (s *mediaEditContainerScanner) mp4(parent string, start, end int64, depth i
 			s.mp4Tracks = append(s.mp4Tracks, child)
 		case "meta":
 			if err := s.mp4Metadata(box, depth+1); err != nil {
+				return err
+			}
+		case "udta":
+			if parent == "trak" {
+				if err := s.mp4TrackUserData(box, depth+1, track); err != nil {
+					return err
+				}
+			} else if err := s.mp4("udta", box.start, box.end, depth+1, track); err != nil {
 				return err
 			}
 		default:

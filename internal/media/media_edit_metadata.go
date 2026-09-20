@@ -159,6 +159,18 @@ func buildMediaEditRemuxArgs(source mediaEditDocument, options SubtitleRemovalOp
 			return nil, err
 		}
 		args = append(args, "-map_metadata:s:"+strconv.Itoa(outputIndex), "0:s:"+strconv.FormatInt(index, 10), "-disposition:"+strconv.Itoa(outputIndex), disposition)
+		if options.Container == "mp4" {
+			tags, err := mediaEditTags(stream["tags"])
+			if err != nil {
+				return nil, err
+			}
+			if name, present := tags["name"]; present {
+				// mov.c projects the track name as name, while movenc.c consumes
+				// title to regenerate it. The caller first binds name to the raw
+				// admitted atom; the completed candidate must retain both proofs.
+				args = append(args, "-metadata:s:"+strconv.Itoa(outputIndex), "title="+name)
+			}
+		}
 		outputIndex++
 	}
 	if options.Container == "mp4" {

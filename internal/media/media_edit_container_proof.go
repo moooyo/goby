@@ -22,16 +22,18 @@ type mediaEditMP4RollProof struct {
 }
 
 type mediaEditMP4TrackProof struct {
-	ID      uint64
-	Codec   string
-	Samples uint64
-	Roll    mediaEditMP4RollProof
+	ID       uint64
+	Codec    string
+	Samples  uint64
+	Roll     mediaEditMP4RollProof
+	UserData mediaEditMP4UserDataProof
 }
 
 type mediaEditMP4TrackSemantics struct {
-	Codec   string                `json:"codec"`
-	Samples uint64                `json:"samples"`
-	Roll    mediaEditMP4RollProof `json:"roll"`
+	Codec    string                    `json:"codec"`
+	Samples  uint64                    `json:"samples"`
+	Roll     mediaEditMP4RollProof     `json:"roll"`
+	UserData mediaEditMP4UserDataProof `json:"user_data"`
 }
 
 type mediaEditMP4StreamBinding struct {
@@ -107,6 +109,9 @@ func compareMediaEditContainerProofs(source, candidate mediaEditContainerProof, 
 				if proof.ID == 0 || proof.ID > math.MaxUint32 || proof.Samples == 0 || proof.Samples > uint64(mediaEditMaxPackets) {
 					return nil, mediaEditContainerError("invalid MP4 structural track identity")
 				}
+				if err := mediaEditMP4ValidateUserDataProof(proof.UserData); err != nil {
+					return nil, err
+				}
 				if proof.Codec == "mp4a" {
 					if proof.Roll.Samples != proof.Samples || proof.Roll.Distance != -1 {
 						return nil, mediaEditContainerError("incomplete MP4 AAC preroll proof")
@@ -133,12 +138,12 @@ func compareMediaEditContainerProofs(source, candidate mediaEditContainerProof, 
 			original, originalOK := before[binding.SourceID]
 			remuxed, remuxedOK := after[binding.CandidateID]
 			if binding.RemovedSourceID == 0 || binding.RemovedSourceID != bindings[0].RemovedSourceID || !originalOK || !remuxedOK || original.Samples != binding.SourcePackets || remuxed.Samples != binding.CandidatePackets ||
-				original.Codec != remuxed.Codec || original.Samples != remuxed.Samples || original.Roll != remuxed.Roll {
+				original.Codec != remuxed.Codec || original.Samples != remuxed.Samples || original.Roll != remuxed.Roll || !reflect.DeepEqual(original.UserData, remuxed.UserData) {
 				return "", mediaEditContainerError("retained MP4 sample-group or packet-binding semantics changed")
 			}
 			delete(before, binding.SourceID)
 			delete(after, binding.CandidateID)
-			tracks = append(tracks, mediaEditMP4TrackSemantics{original.Codec, original.Samples, original.Roll})
+			tracks = append(tracks, mediaEditMP4TrackSemantics{Codec: original.Codec, Samples: original.Samples, Roll: original.Roll, UserData: original.UserData})
 		}
 		if len(before) != 1 || len(after) != 0 {
 			return "", mediaEditContainerError("MP4 retained tracks were not completely bound")
