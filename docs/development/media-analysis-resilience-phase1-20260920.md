@@ -72,12 +72,38 @@ rebuild the same case-preserving rule. Manual controls and inactive permanent
 roles remain protected. Old failing assertions are retained. This unpublished
 schema49 DDL repair changes the migration digest to
 `fc32b3a69ab5d90dc9b6073714007d9de0376d9e5cac9cdf061469da740b03e3`.
-A replacement catalog must be exported from a new disposable database; the
-original remote database/catalog and all original results remain evidence.
+The repaired source was frozen at `d4b44e8a74f4650cd6f94e555390c75b4e082f6f`.
+Its exporter compiled remotely and generated the replacement catalog from a
+seventh, fresh disposable database. The replacement is 880,671 bytes with
+SHA-256 `672687e280b656a05e7a9cd920455641e3dcb376dc10bec3a6d34a619af36b84`.
+The original remote database/catalog and all original results remain evidence.
 
 Other source repairs correct the old settings migration/DTO fixture shapes and
 give the standalone metadata-edit test a real catalog owner. Their original
 protected-field comparisons are retained and extended for the new state.
+
+The first consolidated batch is terminal and failed: **2,309 passing parents,
+16 failed parents and three explicit skips**, with all twelve controller process
+groups closed. The failures comprise the settings migration fixture, four
+auxiliary library cases, the standalone write fixture, eight settings DTO/HTTP
+parents, the auxiliary HTTP notification case, and the initial browser fixture.
+The skips are the opt-in full mount helper and two AMD profiles; they are not
+passing executions. Initial backup, recovery-store and full recovery groups
+passed in their original source/catalog scope.
+
+The original twenty-stage browser binary panicked in its baseline observer
+before launching the browser. It borrowed an older playback helper that assumed
+a configured HLS runtime; this phase deliberately has no transcoder. The new
+observer records configured/present components and actual joined resources,
+without creating lazy state or inventing zero counts for absent components.
+This test-source repair does not alter the historical helper or product code.
+
+The first six-suite mocked UI run closed its server, process group and temporary
+profiles, with 54 passing cases and one failed management-save expectation that
+omitted Sorting. The repaired expectation now also protects a nonempty retained
+rule list. The two new Node source-test files passed all seven cases remotely.
+The final affected backend, mock repair and expanded browser results remain
+pending; these component results do not close phase 1.
 
 Private admission, setup, compilation and generation receipts are retained under
 `D:/Code/goby/.git/media-analysis-resilience-20260920/phase1` and the owned remote

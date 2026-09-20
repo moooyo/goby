@@ -245,7 +245,7 @@
     {
       "version": 49,
       "name": "0049_sorting_and_tv_audit.sql",
-      "sha256": "b6d18a70337488c81cf7317bd97f115a34ea466dd521692190b7b3225698ba2e"
+      "sha256": "fc32b3a69ab5d90dc9b6073714007d9de0376d9e5cac9cdf061469da740b03e3"
     }
   ],
   "catalog": {
@@ -1743,7 +1743,7 @@
         ]
       }
     ],
-    "SHA256": "d83b3d3ef21e87ebfb5e00d41457dd81006fcf899dbf56b2e8e6ced6a3251ff0",
+    "SHA256": "a5d118d854839b683027a7600d41c7d35b9ad6f43f692b2d0d4d059e0c3164fd",
     "Constraints": [
       {
         "Table": "application_key_clients",
@@ -24588,9 +24588,9 @@
     },
     {
       "kind": "function",
-      "name": "goby_generated_sort_name(name text, words text[])",
+      "name": "goby_generated_sort_name(name text, words text[], preserve_case boolean)",
       "value": {
-        "arguments": "name text, words text[]",
+        "arguments": "name text, words text[], preserve_case boolean DEFAULT false",
         "binary": null,
         "config": null,
         "cost": 100,
@@ -24602,7 +24602,7 @@
         "returns_set": false,
         "rows": 0,
         "security_definer": false,
-        "source": "\nDECLARE original text := goby_sort_fold(COALESCE(name,''));\n        candidate text;\n        word text;\n        remaining text;\n        whitespace text := U\u0026'\\0009\\000A\\000B\\000C\\000D\\0020\\0085\\00A0\\1680\\2000\\2001\\2002\\2003\\2004\\2005\\2006\\2007\\2008\\2009\\200A\\2028\\2029\\202F\\205F\\3000';\nBEGIN\n    candidate := btrim(original,whitespace);\n    FOREACH word IN ARRAY words LOOP\n        IF left(candidate,char_length(word))=goby_sort_fold(word)\n           AND char_length(candidate)\u003echar_length(word)\n           AND strpos(whitespace,substr(candidate,char_length(word)+1,1))\u003e0 THEN\n            remaining := btrim(substr(candidate,char_length(word)+1),whitespace);\n            IF remaining\u003c\u003e'' THEN RETURN remaining; END IF;\n        END IF;\n    END LOOP;\n    RETURN original;\nEND ",
+        "source": "\nDECLARE original text := CASE WHEN preserve_case THEN COALESCE(name,'') ELSE goby_sort_fold(COALESCE(name,'')) END;\n        candidate text;\n        word text;\n        remaining text;\n        whitespace text := U\u0026'\\0009\\000A\\000B\\000C\\000D\\0020\\0085\\00A0\\1680\\2000\\2001\\2002\\2003\\2004\\2005\\2006\\2007\\2008\\2009\\200A\\2028\\2029\\202F\\205F\\3000';\nBEGIN\n    candidate := btrim(original,whitespace);\n    FOREACH word IN ARRAY words LOOP\n        IF goby_sort_fold(left(candidate,char_length(word)))=goby_sort_fold(word)\n           AND char_length(candidate)\u003echar_length(word)\n           AND strpos(whitespace,substr(candidate,char_length(word)+1,1))\u003e0 THEN\n            remaining := btrim(substr(candidate,char_length(word)+1),whitespace);\n            IF remaining\u003c\u003e'' THEN RETURN remaining; END IF;\n        END IF;\n    END LOOP;\n    RETURN original;\nEND ",
         "strict": false,
         "support": null,
         "volatility": "i"
@@ -24624,7 +24624,7 @@
         "returns_set": true,
         "rows": 1000,
         "security_definer": false,
-        "source": "\n    WITH words AS MATERIALIZED(SELECT sort_remove_words FROM managed_settings WHERE id=1),\n    desired AS MATERIALIZED(\n        SELECT ms.item_id,\n            CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE COALESCE(ms.automatic-\u003e\u003e'Name','') END AS automatic_name,\n            CASE WHEN ms.automatic_sort_name_explicit THEN COALESCE(ms.automatic-\u003e\u003e'SortName','')\n                 ELSE goby_generated_sort_name(CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE ms.automatic-\u003e\u003e'Name' END,words.sort_remove_words) END AS generated,\n            CASE WHEN i.type IN ('Movie','Series','Season','Episode','Audio','Video','MusicAlbum','MusicArtist','Folder')\n                 THEN ms.overrides ELSE '{}'::jsonb END AS overrides,\n            CASE WHEN i.type IN ('Movie','Series','Season','Episode','Audio','Video','MusicAlbum','MusicArtist','Folder')\n                 THEN ms.locked_values ELSE '{}'::jsonb END AS locked\n        FROM item_metadata_state ms JOIN items i ON i.id=ms.item_id CROSS JOIN words\n    ), metadata_update AS (\n        UPDATE item_metadata_state ms SET automatic=jsonb_set(jsonb_set(ms.automatic,'{Name}',to_jsonb(desired.automatic_name)),'{SortName}',to_jsonb(desired.generated)),\n            revision=revision+1,updated_at=clock_timestamp()\n        FROM desired WHERE ms.item_id=desired.item_id AND (ms.automatic-\u003e\u003e'SortName' IS DISTINCT FROM desired.generated OR ms.automatic-\u003e\u003e'Name' IS DISTINCT FROM desired.automatic_name)\n        RETURNING ms.item_id\n    ), item_update AS (\n        UPDATE items i SET sort_name=CASE WHEN desired.overrides ? 'SortName' THEN COALESCE(desired.overrides-\u003e\u003e'SortName','')\n            WHEN desired.locked ? 'SortName' THEN COALESCE(desired.locked-\u003e\u003e'SortName','') ELSE desired.generated END,\n            updated_at=clock_timestamp()\n        FROM desired WHERE i.id=desired.item_id AND i.sort_name IS DISTINCT FROM\n            CASE WHEN desired.overrides ? 'SortName' THEN COALESCE(desired.overrides-\u003e\u003e'SortName','')\n            WHEN desired.locked ? 'SortName' THEN COALESCE(desired.locked-\u003e\u003e'SortName','') ELSE desired.generated END\n        RETURNING i.library_id\n    ) SELECT DISTINCT library_id FROM item_update ORDER BY library_id;\n",
+        "source": "\n    WITH words AS MATERIALIZED(SELECT sort_remove_words FROM managed_settings WHERE id=1),\n    desired AS MATERIALIZED(\n        SELECT ms.item_id,\n            CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE COALESCE(ms.automatic-\u003e\u003e'Name','') END AS automatic_name,\n            CASE WHEN ms.automatic_sort_name_explicit THEN COALESCE(ms.automatic-\u003e\u003e'SortName','')\n                 ELSE goby_generated_sort_name(CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE ms.automatic-\u003e\u003e'Name' END,words.sort_remove_words,\n                    EXISTS(SELECT 1 FROM item_theme_resources role WHERE role.resource_item_id=i.id)\n                    OR EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=i.id)) END AS generated,\n            CASE WHEN i.type IN ('Movie','Series','Season','Episode','Audio','Video','MusicAlbum','MusicArtist','Folder')\n                 THEN ms.overrides ELSE '{}'::jsonb END AS overrides,\n            CASE WHEN i.type IN ('Movie','Series','Season','Episode','Audio','Video','MusicAlbum','MusicArtist','Folder')\n                 THEN ms.locked_values ELSE '{}'::jsonb END AS locked\n        FROM item_metadata_state ms JOIN items i ON i.id=ms.item_id CROSS JOIN words\n    ), metadata_update AS (\n        UPDATE item_metadata_state ms SET automatic=jsonb_set(jsonb_set(ms.automatic,'{Name}',to_jsonb(desired.automatic_name)),'{SortName}',to_jsonb(desired.generated)),\n            revision=revision+1,updated_at=clock_timestamp()\n        FROM desired WHERE ms.item_id=desired.item_id AND (ms.automatic-\u003e\u003e'SortName' IS DISTINCT FROM desired.generated OR ms.automatic-\u003e\u003e'Name' IS DISTINCT FROM desired.automatic_name)\n        RETURNING ms.item_id\n    ), item_update AS (\n        UPDATE items i SET sort_name=CASE WHEN desired.overrides ? 'SortName' THEN COALESCE(desired.overrides-\u003e\u003e'SortName','')\n            WHEN desired.locked ? 'SortName' THEN COALESCE(desired.locked-\u003e\u003e'SortName','') ELSE desired.generated END,\n            updated_at=clock_timestamp()\n        FROM desired WHERE i.id=desired.item_id AND i.sort_name IS DISTINCT FROM\n            CASE WHEN desired.overrides ? 'SortName' THEN COALESCE(desired.overrides-\u003e\u003e'SortName','')\n            WHEN desired.locked ? 'SortName' THEN COALESCE(desired.locked-\u003e\u003e'SortName','') ELSE desired.generated END\n        RETURNING i.library_id\n    ) SELECT DISTINCT library_id FROM item_update ORDER BY library_id;\n",
         "strict": false,
         "support": null,
         "volatility": "v"

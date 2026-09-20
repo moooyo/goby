@@ -107,11 +107,216 @@ type mediaAnalysisPhase1Runtime struct {
 	settingsMutations []mediaAnalysisPhase1SettingsMutation
 	settingsInFlight  int
 	settingsOverflow  bool
+	closureMu         sync.Mutex
+	lastClosedServer  *Server
+	closedGenerations []mediaAnalysisPhase1RuntimeFacts
 }
 
 type mediaAnalysisPhase1SettingsMutation struct {
 	Method string
 	Status int
+}
+
+type mediaAnalysisPhase1RuntimeFacts struct {
+	ServerPresent  bool
+	CloseJoined    bool
+	CloseSucceeded bool
+	Components     map[string]map[string]any
+	ActiveCounts   map[string]int
+}
+
+func mediaAnalysisPhase1Done(done <-chan struct{}) bool {
+	if done == nil {
+		return false
+	}
+	select {
+	case <-done:
+		return true
+	default:
+		return false
+	}
+}
+
+// This catalog-only fixture deliberately does not configure a converter. An
+// absent optional runtime is evidence of that configuration, not a measured
+// zero-resource converter. Observations must not instantiate lazy playback
+// services just to obtain a counter.
+func (runtime *mediaAnalysisPhase1Runtime) resourceFacts() mediaAnalysisPhase1RuntimeFacts {
+	facts := mediaAnalysisPhase1RuntimeFacts{Components: map[string]map[string]any{}, ActiveCounts: map[string]int{}}
+	if runtime == nil || runtime.phase3BrowserRuntime == nil || runtime.f == nil || runtime.f.app == nil {
+		return facts
+	}
+	s := runtime.f.app
+	facts.ServerPresent = true
+	if s.sockets != nil {
+		// socketRuntime.done closes only after the normal Server.Close graph
+		// joins sockets, original readers, media workers, tasks and the catalog.
+		facts.CloseJoined = mediaAnalysisPhase1Done(s.sockets.done)
+		if facts.CloseJoined {
+			facts.CloseSucceeded = s.sockets.shutdownErr == nil
+		}
+		s.sockets.mu.Lock()
+		ready := 0
+		for _, count := range s.sockets.ready {
+			ready += count
+		}
+		facts.ActiveCounts["ReadyWebSockets"] = ready
+		facts.Components["WebSockets"] = map[string]any{"Present": true, "Closing": s.sockets.closed, "Joined": facts.CloseJoined}
+		s.sockets.mu.Unlock()
+	} else {
+		facts.Components["WebSockets"] = map[string]any{"Present": false, "State": "absent"}
+	}
+	if s.originals != nil {
+		s.originals.mu.Lock()
+		requests := 0
+		for _, count := range s.originals.owners {
+			requests += count
+		}
+		facts.ActiveCounts["OriginalRequests"], facts.ActiveCounts["OriginalSourceLeases"] = requests, len(s.originals.sources)
+		facts.Components["OriginalMedia"] = map[string]any{"Present": true, "Closing": s.originals.closing, "JoinedByServerClose": facts.CloseSucceeded}
+		s.originals.mu.Unlock()
+	} else {
+		facts.Components["OriginalMedia"] = map[string]any{"Present": false, "State": "absent"}
+	}
+	facts.Components["HLS"] = map[string]any{"Configured": s.cfg.Transcoding.Enabled, "Present": s.hls != nil, "State": "not_configured"}
+	if s.hls != nil {
+		s.hls.mu.Lock()
+		facts.ActiveCounts["HLSSessions"], facts.ActiveCounts["HLSExecutionSlots"], facts.ActiveCounts["HLSProbeSlots"] = len(s.hls.sessions), len(s.hls.slots), len(s.hls.probes)
+		facts.Components["HLS"] = map[string]any{"Configured": s.cfg.Transcoding.Enabled, "Present": true,
+			"ManagerPresent": s.hls.manager != nil, "Closing": s.hls.closing, "Joined": mediaAnalysisPhase1Done(s.hls.done)}
+		s.hls.mu.Unlock()
+	} else if s.cfg.Transcoding.Enabled {
+		facts.Components["HLS"]["State"] = "configured_runtime_missing"
+	}
+	if s.streamSlots != nil {
+		facts.ActiveCounts["StreamSlots"] = len(s.streamSlots)
+		facts.Components["StreamAdmission"] = map[string]any{"Present": true, "Capacity": cap(s.streamSlots)}
+	} else {
+		facts.Components["StreamAdmission"] = map[string]any{"Present": false, "State": "absent"}
+	}
+	if s.subtitleSlots != nil {
+		facts.ActiveCounts["SubtitleSlots"] = len(s.subtitleSlots)
+		facts.Components["SubtitleAdmission"] = map[string]any{"Present": true, "Capacity": cap(s.subtitleSlots)}
+	} else {
+		facts.Components["SubtitleAdmission"] = map[string]any{"Present": false, "State": "absent"}
+	}
+	if s.images != nil {
+		s.images.mu.Lock()
+		facts.ActiveCounts["ImageTransfers"], facts.ActiveCounts["ImageTransferBytes"], facts.ActiveCounts["ImageRenderSlots"] = s.images.activeTransfers, s.images.activeBytes, len(s.images.slots)
+		// Immutable cache entries may remain owned by the closed Server object;
+		// they are not active transfers and must not be reported as cleared.
+		facts.Components["Images"] = map[string]any{"Present": true, "RetainedCacheEntries": len(s.images.entries), "RetainedCacheBytes": s.images.bytes}
+		s.images.mu.Unlock()
+	} else {
+		facts.Components["Images"] = map[string]any{"Present": false, "State": "absent"}
+	}
+	if s.dynamicStreams != nil {
+		s.dynamicStreams.mu.Lock()
+		facts.ActiveCounts["DynamicSessions"] = len(s.dynamicStreams.sessions)
+		facts.Components["DynamicSources"] = map[string]any{"Present": true, "ConfiguredSources": len(s.cfg.DynamicSources),
+			"Closing": s.dynamicStreams.closing, "TimeshiftStorePresent": s.dynamicStreams.store != nil, "JoinedByServerClose": facts.CloseSucceeded}
+		s.dynamicStreams.mu.Unlock()
+	} else {
+		facts.Components["DynamicSources"] = map[string]any{"Present": false, "ConfiguredSources": len(s.cfg.DynamicSources), "State": "absent"}
+	}
+	// mediaPolicy is assigned by sync.Once without an observation lock. Reading
+	// it during admission could race lazy initialization. Normal Server.Close
+	// performs stopMediaPolicy before its join signal, making final inspection
+	// safe without calling the initializer from this observer.
+	facts.Components["MediaPolicy"] = map[string]any{"State": "lazy_state_not_observed_before_close"}
+	if facts.CloseJoined {
+		if s.mediaPolicy != nil {
+			s.mediaPolicy.mu.Lock()
+			facts.ActiveCounts["MediaPolicyLeases"] = len(s.mediaPolicy.leases)
+			facts.Components["MediaPolicy"] = map[string]any{"Present": true, "Closed": s.mediaPolicy.closed}
+			s.mediaPolicy.mu.Unlock()
+		} else {
+			facts.Components["MediaPolicy"] = map[string]any{"Present": false, "State": "absent_after_close"}
+		}
+	}
+	if s.mediaOperations != nil {
+		joined := mediaAnalysisPhase1Done(s.mediaOperations.done)
+		s.mediaOperations.mu.Lock()
+		facts.Components["MediaOperations"] = map[string]any{"Present": true, "Configured": s.cfg.MediaOperations.Enabled,
+			"ProcessingEnabled": s.mediaOperations.processingEnabled, "Closing": s.mediaOperations.closing, "Joined": joined}
+		s.mediaOperations.mu.Unlock()
+		// The coordinator exclusively owns this map until its done signal.
+		if joined {
+			facts.ActiveCounts["MediaOperationWorkers"] = len(s.mediaOperations.workers)
+		}
+	} else {
+		facts.Components["MediaOperations"] = map[string]any{"Present": false, "Configured": s.cfg.MediaOperations.Enabled, "State": "absent"}
+	}
+	if s.mediaDiagnostics != nil {
+		s.mediaDiagnostics.mu.Lock()
+		active := 0
+		if s.mediaDiagnostics.active != "" {
+			active = 1
+		}
+		facts.ActiveCounts["MediaDiagnosticRuns"] = active
+		facts.Components["MediaDiagnostics"] = map[string]any{"Present": true, "Configured": s.mediaDiagnostics.enabled,
+			"Closing": s.mediaDiagnostics.closing, "Joined": mediaAnalysisPhase1Done(s.mediaDiagnostics.done), "RetainedRuns": len(s.mediaDiagnostics.runs)}
+		s.mediaDiagnostics.mu.Unlock()
+	} else {
+		facts.Components["MediaDiagnostics"] = map[string]any{"Present": false, "State": "absent"}
+	}
+	for name, present := range map[string]bool{"Catalog": s.library != nil, "Tasks": s.taskManager != nil,
+		"Notifications": s.notificationRuntime != nil} {
+		facts.Components[name] = map[string]any{"Present": present, "JoinedByServerClose": present && facts.CloseSucceeded}
+	}
+	return facts
+}
+
+func (runtime *mediaAnalysisPhase1Runtime) requireResourcesClosed() error {
+	facts := runtime.resourceFacts()
+	if !facts.ServerPresent || !facts.CloseJoined || !facts.CloseSucceeded || runtime.active.Load() != 0 {
+		return errors.New("media analysis phase 1 runtime closure has not joined successfully")
+	}
+	for _, name := range []string{"OriginalMedia", "Images", "WebSockets", "StreamAdmission", "SubtitleAdmission", "DynamicSources", "MediaPolicy", "MediaOperations", "Catalog", "Tasks", "Notifications", "MediaDiagnostics"} {
+		if facts.Components[name]["Present"] != true {
+			return errors.New("media analysis phase 1 required runtime component is missing from closure evidence")
+		}
+	}
+	if (facts.Components["HLS"]["Configured"] == true || facts.Components["HLS"]["Present"] == true) &&
+		(facts.Components["HLS"]["Present"] != true || facts.Components["HLS"]["Joined"] != true) ||
+		facts.Components["MediaPolicy"]["Closed"] != true || facts.Components["MediaOperations"]["Joined"] != true ||
+		facts.Components["MediaDiagnostics"]["Joined"] != true {
+		return errors.New("media analysis phase 1 configured media runtime did not close")
+	}
+	for _, count := range facts.ActiveCounts {
+		if count != 0 {
+			return errors.New("media analysis phase 1 closed runtime retained an observed active resource")
+		}
+	}
+	return nil
+}
+
+func (runtime *mediaAnalysisPhase1Runtime) close(ctx context.Context) error {
+	if runtime == nil || runtime.phase3BrowserRuntime == nil || runtime.f == nil || runtime.f.app == nil {
+		return errors.New("media analysis phase 1 runtime closure has no application")
+	}
+	err := runtime.phase3BrowserRuntime.close(ctx)
+	facts := runtime.resourceFacts()
+	if err == nil {
+		err = runtime.requireResourcesClosed()
+	}
+	runtime.closureMu.Lock()
+	if runtime.lastClosedServer != runtime.f.app {
+		runtime.closedGenerations = append(runtime.closedGenerations, facts)
+		runtime.lastClosedServer = runtime.f.app
+	} else if len(runtime.closedGenerations) != 0 {
+		// A deadline may have ended the first wait. Retain the later observed
+		// disposition for the same generation without inventing another restart.
+		runtime.closedGenerations[len(runtime.closedGenerations)-1] = facts
+	}
+	runtime.closureMu.Unlock()
+	return err
+}
+
+func (runtime *mediaAnalysisPhase1Runtime) closureFacts() []mediaAnalysisPhase1RuntimeFacts {
+	runtime.closureMu.Lock()
+	defer runtime.closureMu.Unlock()
+	return append([]mediaAnalysisPhase1RuntimeFacts(nil), runtime.closedGenerations...)
 }
 
 type mediaAnalysisPhase1SettingsWriter struct {
@@ -417,7 +622,7 @@ func (observer *mediaAnalysisPhase1Observer) snapshot(ctx context.Context, phase
 	settingsHTTP, settingsPending, settingsOverflow := observer.runtime.settingsHTTP()
 	value := map[string]any{"Marker": "goby-media-analysis-phase1-stage-database-v1", "RunId": observer.fixture.RunId,
 		"Phase": phase, "Complete": false, "Observed": false, "Database": database, "Sources": files,
-		"Runtime": selectedPhase1RuntimeFacts(f), "ActiveHTTPRequests": observer.runtime.active.Load(),
+		"Runtime": observer.runtime.resourceFacts(), "ClosedRuntimeGenerations": observer.runtime.closureFacts(), "ActiveHTTPRequests": observer.runtime.active.Load(),
 		"NativeSettingsMutations": settingsHTTP, "NativeSettingsMutationsInFlight": settingsPending, "NativeSettingsMutationOverflow": settingsOverflow}
 	if err != nil {
 		return value, err
@@ -999,10 +1204,8 @@ func (observer *mediaAnalysisPhase1Observer) stage(ctx context.Context, request 
 		if observer.runtime.close(ctx) != nil || observer.runtime.active.Load() != 0 {
 			return errors.New("media analysis phase 1 actual runtime did not close its listener and workers")
 		}
-		for _, count := range selectedPhase1RuntimeFacts(f) {
-			if count != 0 {
-				return errors.New("media analysis phase 1 closed runtime retained playback resources")
-			}
+		if err := observer.runtime.requireResourcesClosed(); err != nil {
+			return err
 		}
 	}
 	var plays, jobs int
@@ -1183,6 +1386,7 @@ func TestMediaAnalysisResiliencePhase1BrowserIntegration(t *testing.T) {
 		} else {
 			driver["ServerWorkersClosed"], driver["HTTPListenerClosed"] = true, true
 		}
+		driver["RuntimeAfterClose"], driver["ClosedRuntimeGenerations"] = runtime.resourceFacts(), runtime.closureFacts()
 		driver["ActiveHTTPRequestsAfterClose"] = runtime.active.Load()
 		if runtime.active.Load() != 0 {
 			t.Error("media analysis HTTP requests remain after shutdown")

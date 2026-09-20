@@ -283,6 +283,9 @@ test('subtitle selection downloads the chosen provider file and normalized searc
 });
 
 test('management settings retain every draft field after a rejected save and submit the complete settings', async ({ page, api }) => {
+  const retainedSorting = { SortRemoveWords: ['The', 'An'] };
+  api.settings.Sorting = retainedSorting;
+  api.settings.SortingDefaults = { SortRemoveWords: [] };
   const expectedManagement: ManagementSettings = {
     Metadata: { EnableInternetProviders: false, PreferredMetadataLanguage: 'fr', MetadataCountryCode: 'FR' },
     Subtitles: { DownloadLanguages: ['fr', 'en'], DownloadMovieSubtitles: true, DownloadEpisodeSubtitles: true },
@@ -323,10 +326,11 @@ test('management settings retain every draft field after a rejected save and sub
   await expect(panel.getByRole('textbox', { name: 'Concurrent provider and cache workers', exact: true })).toHaveValue('4');
   await expect(panel.getByRole('textbox', { name: 'Cache retention (days)', exact: true })).toHaveValue('60');
   await expect(panel.getByRole('textbox', { name: 'Maximum cache entries', exact: true })).toHaveValue('2500');
+  await expect(page.getByRole('textbox', { name: 'Words removed from sort names', exact: true })).toHaveValue('The\nAn');
   await expect(save).toBeEnabled();
   expect(api.writes()).toHaveLength(1);
   const expectedInput: SettingsUpdateInput = {
-    Revision: '1', Overrides: api.settings.Overrides, ServerNameMode: 'deployment', Encoding: { TranscodingMaxWidth: 0 }, Management: expectedManagement,
+    Revision: '1', Overrides: api.settings.Overrides, ServerNameMode: 'deployment', Encoding: { TranscodingMaxWidth: 0 }, Management: expectedManagement, Sorting: retainedSorting,
   };
   expect(api.writes()[0].body).toEqual(expectedInput);
   await save.click();
@@ -334,6 +338,7 @@ test('management settings retain every draft field after a rejected save and sub
   await expect(page.getByText('No unsaved changes', { exact: true })).toBeVisible();
   await expect(save).toBeDisabled();
   await expect(panel.getByRole('textbox', { name: 'Subtitle download languages', exact: true })).toHaveValue('fr\nen');
+  await expect(page.getByRole('textbox', { name: 'Words removed from sort names', exact: true })).toHaveValue('The\nAn');
   expect(api.writes().map((request) => request.body)).toEqual([expectedInput, expectedInput]);
 });
 

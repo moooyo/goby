@@ -190,6 +190,25 @@ The driver separately records joined browser descendants, server listeners and
 workers, schema/media/private-context cleanup and immutable execution inputs.
 Root-owned browser success does not establish a non-root deployment profile.
 
+Runtime observations are specific to this catalog/settings/artwork fixture.
+HLS/conversion is not configured by the fixture: an absent HLS runtime is
+recorded as `Configured:false`, `Present:false`, `State:not_configured`, with no
+invented HLS-session counter. Instantiated original-response, image-transfer,
+socket, dynamic-source and media-operation components expose their actual
+available counters or lifecycle signals. The observer does not call a lazy
+playback initializer. Media-policy internals are inspected only after the normal
+server-close join makes that observation safe. Image cache entries and bytes
+remain explicitly reported as retained immutable data, separate from active
+transfers and render slots. Each closed server generation records its actual
+join outcome; success requires the configured close graph to join and every
+observed active-resource count to reach zero.
+
+The initial twenty-stage execution failed in its seeded snapshot because the
+historical playback fixture helper dereferenced its assumed non-nil HLS runtime.
+That original failure remains unchanged. The new fixture uses its own optional-
+runtime observation rather than enabling unrelated playback to satisfy an old
+helper's assumptions. This source repair is not a successful rerun receipt.
+
 The browser journey complements rather than replaces the affected identity,
 library, settings and HTTP matrices. Separate tests must cover migration from
 the published schema, exact current recovery catalogs, normal and recovery
