@@ -29,7 +29,7 @@ Implementation and scoped acceptance are closed in the
 test-only repairs and historical failed runs retained. Source-backed missing facts remain
 unplayable, and no numbering gap or new external provider call creates them.
 
-Phase 4 source is in implementation, with verification not yet started. It adds
+Phase 4 source is frozen and consolidated compilation and verification are in progress. It adds
 [managed runtime settings](managed-execution-settings.md), [encoding controls](encoding-controls.md),
 [selected management adapters](selected-management.md), actual desired/active
 HTTP binding projections and [GobyWebhookV1 notifications](notifications.md).

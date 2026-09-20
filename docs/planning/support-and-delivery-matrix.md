@@ -8,7 +8,7 @@ remains recorded rather than blocking delivery. Phase 2 is closed within its
 with owned workers and PostgreSQL stopped. [Phase 3 music/search/discovery](../development/selected-compatibility-phase3-20260920.md)
 is closed within its composed backend/recovery, native browser and administrator
 test scopes; its owned resources are also stopped. [Phase 4](../development/selected-compatibility-phase4-20260920.md)
-is in implementation, with consolidated verification not yet started. The
+has frozen its sources and started consolidated compilation and verification. The
 [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
 retains the exact accepted contracts and client limitations. It covers
 account/playback behavior, subtitles/artwork, music/search, management settings

@@ -3,9 +3,9 @@
 ## Status and authority
 
 Phase 4 implementation follows the closed phase 3 documentation at `84d5d74`
-on `codex/selected-client-compatibility`. Source, administrator UI, test fixtures
-and documentation are being integrated. No phase 4 compilation, tests, runtime
-probes or browser verification have run. Source presence is not acceptance.
+on `codex/selected-client-compatibility`. All product, administrator UI and
+acceptance sources were frozen together at `8ed6a7b`. Consolidated compilation
+and verification have started. Source presence is not acceptance.
 
 The user authorized local compilation and unit tests, remote integration/media
 and browser checks on `test-env`, and final merge to `main` plus push after all
@@ -44,7 +44,10 @@ unsupported and are discarded without creating a registration.
 
 Private contracts and the checkpoint are retained under
 `D:/Code/goby/.git/selected-compatibility-20260920/`; phase 4 evidence belongs in
-its `phase4` directory. No phase 4 remote verification runtime is initialized.
+its `phase4` directory. The owned phase 4 PostgreSQL 17 runtime is initialized
+under `/opt/goby-selected-compatibility-20260920-p4a` on `test-env`, port 55448,
+unit `goby-selected-p4-pg-20260920-a`. Its eight databases separate both catalog
+exports, ordinary application checks, the AMD worker and backup/recovery pairs.
 Earlier phase workers and PostgreSQL services remain stopped, with their
 evidence and databases retained. Preserve the unrelated original-client service.
 
@@ -52,3 +55,22 @@ Live TV, EPG, DVR/recording/tuners, DLNA, external channels and group playback
 remain explicitly excluded. Provider-online, OCI, non-AMD hardware, native arm64,
 broader capacity/platform delivery and other unselected work remain deferred.
 No deployment or publication is claimed by this implementation record.
+
+## Initial compilation and catalog preparation
+
+The native administrator build passed on local source `8ed6a7b`; the distinct
+ignored `dist` archive has SHA-256
+`a1911e46157131f7e7853d7a08caf50026efd86e68ac0a85537ee88c15a1fdff`.
+No local E2E or media execution was performed. A locally compiled Linux catalog
+exporter applied the exact embedded migration prefixes to two fresh remote
+PostgreSQL 17 databases and exported:
+
+| Catalog | Bytes | SHA-256 |
+| --- | --- | --- |
+| Schema 47 | 793851 | `8ae91ff4c23fda580c4f5ab0cbb525cff5be7a083689f1f877b7911a072e422b` |
+| Schema 48 | 852066 | `c46a8d7a4b3cbca05ae984a7b7e04e276c18b924fffeb99f9efad1003caf6451` |
+
+This preparation does not establish complete regression, backup/recovery or
+client acceptance. Backend/application compilation and the consolidated remote
+scopes remain pending. The unrelated original-client service was observed at
+its existing PID and invocation before setup and remains outside this scope.

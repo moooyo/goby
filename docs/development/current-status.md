@@ -11,8 +11,8 @@ is closed using the recorded `460c33a` backend/recovery/native browser scopes an
 affected test-only repairs. All 24 administrator cases have composed passing
 evidence. Phase 3 PostgreSQL and workers are stopped, with data and failures
 preserved. [Phase 4](selected-compatibility-phase4-20260920.md) management
-configuration, protocols and notifications are in implementation; consolidated
-verification has not started.
+configuration, protocols and notifications have frozen their sources; consolidated
+compilation and verification have started.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
 implementation from scoped acceptance. Backend repair scopes, administration,
 original-client local-password/PIN, enabled/disabled autoplay, runtime restart,
