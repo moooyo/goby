@@ -6,7 +6,9 @@ The user authorized the [three-phase plan](../planning/media-analysis-resilience
 on September 20, 2026, including consolidated tests after each phase's complete
 implementation and verified merge/push to `main`. Development starts at
 `2fd9182` on `codex/media-analysis-resilience` in an isolated checkout. Phase 1
-is verified and its resources are closed; main publication is pending.
+is verified, its resources are closed, and delivery commit
+`59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded into `main` and
+pushed to `origin/main`, with exact remote readback on September 21, 2026.
 Phases 2 and 3 have not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and
 [delivery results](media-analysis-resilience-phase1-results-20260921.json)

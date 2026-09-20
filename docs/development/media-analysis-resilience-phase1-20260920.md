@@ -1,6 +1,6 @@
 # Compatibility long-tail phase 1 execution record
 
-Status: **verified and resources closed on September 21, 2026; publication pending**.
+Status: **verified, resources closed, merged to main and pushed on September 21, 2026**.
 
 The [delivery results](media-analysis-resilience-phase1-results-20260921.json)
 record the composed source boundaries, original failures, three explicit skips
@@ -269,8 +269,12 @@ are unchanged. No directory or database was deleted by closeout. The resource
 receipts are `phase1-resource-closure-01.json` and
 `phase1-resource-readback-01.json` in the retained remote logs directory.
 
-Phase 1 is accepted within the selected matrix. Main publication is the next
-step; no deployment occurred. Automatic intro detection/BIF previews and the
+Phase 1 is accepted within the selected matrix. Delivery commit
+`59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded into `main` and
+pushed to `origin/main`; the remote ref was read back at that exact commit.
+The original checkout's unrelated change inventory is unchanged. This
+documentation follow-up records publication separately from tested sources;
+no deployment occurred. Automatic intro detection/BIF previews and the
 large-library concurrency/storage/guest-restart phase remain required and have
 not started product implementation. This acceptance does not complete the
 three-phase goal.

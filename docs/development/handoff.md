@@ -16,7 +16,11 @@ bind the accepted scanner/application source `398756d` and final browser source
 and the complete 24-stage actual browser journey. All 17 owned workers and the
 admitted PostgreSQL are closed, nine databases/evidence are preserved, and three
 unrelated services retain their identities. No runtime needs resuming.
-Main publication remains pending; finish that step before starting phase 2.
+Delivery commit `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded
+into `main` and pushed to `origin/main`, with exact remote readback on September
+21, 2026. No deployment occurred, and the original checkout's unrelated changes
+remain preserved. This follow-up records publication separately from the tested
+source snapshots. **Phase 2 automatic intro analysis and BIF previews is next.**
 Tests/builds/runtime checks are remote-only for this
 increment. The original `D:/Code/goby` changes remain unrelated and preserved.
 Phases 2 and 3 remain required; no product work has started for them. The earlier

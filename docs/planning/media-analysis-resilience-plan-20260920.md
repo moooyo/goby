@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phase 1 verified and closed, awaiting publication; phases 2 and 3 required**.
+Status: **active; phase 1 verified, closed and published; phases 2 and 3 required**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -97,6 +97,6 @@ read back the remote commit. Publication and deployment remain separate states.
 
 | Phase | Implementation | Verification | Main publication |
 | --- | --- | --- | --- |
-| 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Pending |
+| 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Not started | Not started | Pending |
 | 3. Concurrency and recovery | Not started | Not started | Pending |

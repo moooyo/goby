@@ -10,11 +10,12 @@ Complete each phase's code before consolidated remote verification, then merge
 the verified delivery to `main` and push. Local verification is not authorized
 for this increment. Dedicated guest reboot coverage is required; shared hosts
 remain outside reboot scope. Phase 1 is verified and resources are closed;
-main publication remains pending. Its
+delivery commit `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded
+to `main`, pushed, and read back from `origin/main` on September 21, 2026. Its
 [execution record](../development/media-analysis-resilience-phase1-20260920.md)
 binds the composed regression, complete 24-stage actual browser, both application
-builds and retained failures to their actual sources. Phase 2 is next after
-publication; phase 3 remains required.
+builds and retained failures to their actual sources. Phase 2 is next;
+phase 3 remains required.
 Historical completed increments below remain closed.
 
 ## Completed selected increment: September 20, 2026
