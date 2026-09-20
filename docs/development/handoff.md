@@ -2,6 +2,15 @@
 
 ## Resume here
 
+The selected four-phase increment was fast-forward merged into `main` and pushed
+to `origin/main` on September 20, 2026, at
+`d3d043e19b9233e5d0b373ae42145f5189bda08d`. The remote ref was read back at that
+exact commit. This documentation follow-up records that publication separately
+from the tested product and fixture sources. No production deployment occurred.
+Unrelated local OCI, packaging, helper and historical drafts remain outside the
+published increment. Earlier selected-scope planning drafts are superseded by
+the completed records, with their original bytes retained in a private backup.
+
 On September 20, after the completed publication below, the user selected the
 next account/playback, subtitle, artwork, music, management configuration,
 search and client-protocol increment and requested its execution table. The
@@ -31,8 +40,9 @@ the accepted contracts, retained failures, final repair results and resource clo
 Each phase implements all delivery code before consolidated verification.
 Local compilation and unit tests are now authorized; actual integration/E2E
 runs on `test-env`, never locally. All four phases are complete within their
-recorded boundaries. The remaining authorized action is final integration into
-`main` and push; this record does not claim a production deployment.
+recorded boundaries, and final `main` integration and push are recorded above.
+No verification environment needs resuming and no selected implementation task
+remains pending. Unselected work retains its explicit deferred/excluded status.
 
 The user now explicitly excludes Live TV, EPG, DVR/scheduled recording, tuners,
 DLNA, external channels and group/synchronized playback. These are no longer a
@@ -62,9 +72,10 @@ For a new session:
    `git log -1 -- docs/development/handoff.md`. The last command identifies
    the documentation follow-up without embedding a self-referential commit ID.
    Fetch `origin` before starting new integration work. The current workspace
-   original checkout remains on `main`; active work is in the isolated
-   `codex/selected-client-compatibility` checkout. Preserve unrelated changes in
-   the original checkout.
+   original checkout remains on `main`; the completed isolated checkout is
+   `codex/selected-client-compatibility`. Preserve unrelated changes in the
+   original checkout. Do not reopen closed verification scopes merely to create
+   fresh receipts.
 3. Preserve the unrelated local drafts listed below. Their presence does not
    mean the accepted increment is uncommitted or requires another test run.
 4. Continue only the next requested scope. OCI, non-AMD hardware, provider-online

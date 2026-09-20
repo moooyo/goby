@@ -6,6 +6,9 @@ Recorded on September 20, 2026. The implementation baseline is product commit
 This plan records the completed selected increment; it does not reopen the
 earlier AMD/media increment or claim untested client parity or deployment.
 Execution uses `codex/selected-client-compatibility` in an isolated checkout.
+The completed increment was fast-forward merged and pushed to `origin/main` at
+`d3d043e19b9233e5d0b373ae42145f5189bda08d`; the remote ref was read back. This
+publication record does not add client/platform coverage or imply deployment.
 The user authorized local compilation and unit tests, remote integration/E2E on
 `test-env`, and merge to `main` plus push after all four phases are complete.
 Within each phase, implement all delivery code before running the consolidated

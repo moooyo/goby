@@ -19,6 +19,11 @@ external channels and group playback. Offline sync and other unselected work
 remain deferred. This decision supersedes the older blanket M7/deferred
 descriptions below; it does not change any historical acceptance result.
 
+The selected increment was fast-forward merged and pushed to `origin/main` at
+`d3d043e19b9233e5d0b373ae42145f5189bda08d`, with the remote ref read back at that
+exact commit. This documentation follow-up records publication separately from
+the tested product and fixture snapshots. No deployment occurred.
+
 The completed [AMD media and compatibility plan](amd-media-compatibility-plan-20260919.md)
 is a separate three-phase increment with recorded scope boundaries. Phase 1 source adds HEVC/AV1 output,
 supported Dolby Vision conversion, AMD processing and broader copy seeking;

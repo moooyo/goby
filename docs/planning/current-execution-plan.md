@@ -20,7 +20,10 @@ the final settings, protocol, notification, recovery and selected AMD evidence.
 Owned verification resources are closed and original failures are retained.
 Local compilation/unit tests were authorized; actual integration/E2E used
 `test-env`, with the existing CT 104 exception for selected AMD execution.
-Final merge to `main` and push are authorized. No deployment is implied.
+Final integration was fast-forwarded into `main` and pushed to `origin/main` at
+`d3d043e19b9233e5d0b373ae42145f5189bda08d`; the remote ref was read back. See the
+[current handoff](../development/handoff.md) for publication and preservation
+details. No deployment occurred.
 
 Live TV, EPG, DVR/scheduled recording, tuners, DLNA, external channels and
 group/synchronized playback are explicitly excluded by the user's new decision,

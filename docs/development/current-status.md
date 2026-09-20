@@ -29,8 +29,11 @@ Live TV/EPG/DVR/tuners, DLNA, external
 channels and group playback are now explicitly excluded. Offline sync and other
 unselected work remain deferred. Local compilation and unit tests are authorized;
 actual integration/E2E runs on `test-env`. The user authorized final merge and
-push after all four phases complete; that integration is the remaining action.
-No deployment is claimed. The completed baseline below is unchanged.
+push after all four phases complete. Integration was fast-forwarded and pushed
+to `origin/main` at `d3d043e19b9233e5d0b373ae42145f5189bda08d`, with the remote ref
+read back at that exact commit. This documentation follow-up records publication
+without adding a runtime acceptance claim. No deployment occurred.
+The completed historical baseline below is unchanged.
 
 The approved [AMD media and client compatibility increment](../planning/amd-media-compatibility-plan-20260919.md)
 is complete within its recorded boundaries. Implementation used
