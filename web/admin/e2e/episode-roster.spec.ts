@@ -201,10 +201,16 @@ test('invalid and oversized imports preserve the existing draft and never write'
   const dialog = await openRoster(page);
   await importRoster(dialog, { Source: source, Entries: [first] });
   const before = await dialog.getByLabel('Episode entries JSON', { exact: true }).inputValue();
-  const invalid = ['{', JSON.stringify({ Source: source, Entries: [first], Revision: '123' }), '{"Source":{"Key":"first","Key":"last","Label":"","Revision":"v1"},"Entries":[]}', ' '.repeat(512 * 1024 + 1)];
-  for (const value of invalid) {
+  const invalid = [
+    { value: '{', message: 'Enter valid JSON before reviewing the roster.' },
+    { value: JSON.stringify({ Source: source, Entries: [first], Revision: '123' }), message: 'Import an object containing Source {Key, Label, Revision} and Entries. Source Key and Revision are required and limited to 128 UTF-8 bytes; Label is limited to 256. Text must have no surrounding whitespace or control characters.' },
+    { value: '{"Source":{"Key":"first","Key":"last","Label":"","Revision":"v1"},"Entries":[]}', message: 'The roster JSON repeats the property Key.' },
+    { value: ' '.repeat(512 * 1024 + 1), message: 'Choose a roster JSON file of at most 512 KiB.' },
+  ];
+  for (const { value, message } of invalid) {
     await importRoster(dialog, value);
-    await expect(dialog.getByRole('alert').filter({ hasText: /JSON|512 KiB/ }).last()).toBeVisible();
+    await expect(dialog.getByRole('alert')).toHaveText(message);
+    await expect(dialog.getByRole('alert')).toBeVisible();
     await expect(dialog.getByLabel('Episode entries JSON', { exact: true })).toHaveValue(before);
     await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue(source.Key);
   }
