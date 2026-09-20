@@ -1,6 +1,6 @@
 # Current execution plan
 
-## Selected next increment: September 20, 2026
+## Completed selected increment: September 20, 2026
 
 The user selected the remaining account/playback, subtitle, artwork, music,
 management configuration, search and client-protocol functionality. The
@@ -13,12 +13,14 @@ management configuration, search and client-protocol functionality. The
    regression and closeout.
 
 Each phase includes implementation, remote verification, relevant builds and
-documentation before the next begins. Execution is approved and phase 1 is being
-implemented on `codex/selected-client-compatibility`; phases 2-4 are not started.
-The user requires all delivery code for a phase before consolidated verification.
-Local compilation/unit tests are authorized, actual integration/E2E uses
-`test-env`, and final merge to `main` plus push is authorized after all four
-phases finish. The completed increment below remains the accepted baseline.
+documentation before the next begins. All four phases are closed within their
+recorded contract and composed acceptance boundaries. The
+[phase 4 record](../development/selected-compatibility-phase4-20260920.md) binds
+the final settings, protocol, notification, recovery and selected AMD evidence.
+Owned verification resources are closed and original failures are retained.
+Local compilation/unit tests were authorized; actual integration/E2E used
+`test-env`, with the existing CT 104 exception for selected AMD execution.
+Final merge to `main` and push are authorized. No deployment is implied.
 
 Live TV, EPG, DVR/scheduled recording, tuners, DLNA, external channels and
 group/synchronized playback are explicitly excluded by the user's new decision,
