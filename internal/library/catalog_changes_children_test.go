@@ -20,7 +20,7 @@ func TestCatalogChangesChildrenInvalidationRetainsIndependentFacts(t *testing.T)
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			input := []CatalogChange{test.change}
-			tx := &ownedTx{}
+			tx := newCatalogAggregationTestTx(t)
 			if err := recordCatalogChanges(tx, input...); err != nil {
 				t.Fatal(err)
 			}
@@ -67,7 +67,7 @@ func TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates(t *testing.T)
 			{"unknown kind", CatalogChangeKind(255), true},
 		} {
 			t.Run(flags.name+"/"+invalid.name, func(t *testing.T) {
-				tx := &ownedTx{}
+				tx := newCatalogAggregationTestTx(t)
 				valid := CatalogChange{Kind: CatalogUpdated, ItemID: "valid", LibraryID: "library"}
 				change := CatalogChange{Kind: invalid.kind, ItemID: "invalid", LibraryID: "library",
 					IsFolder: invalid.isFolder, ChildrenAdded: flags.added, ChildrenRemoved: flags.removed}
@@ -100,7 +100,7 @@ func TestCatalogChangesChildrenInvalidationPreservesByteAndCountLimits(t *testin
 	for index := range changes {
 		changes[index] = change
 	}
-	tx := &ownedTx{}
+	tx := newCatalogAggregationTestTx(t)
 	if err := recordCatalogChanges(tx, changes...); err != nil {
 		t.Fatal(err)
 	}

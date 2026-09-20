@@ -7,7 +7,7 @@ import (
 )
 
 func TestAuxiliaryCatalogChangesMergeOwnerMembershipWithCommittedMove(t *testing.T) {
-	tx := &ownedTx{}
+	tx := newCatalogAggregationTestTx(t)
 	moved := CatalogChange{Kind: CatalogUpdated, ItemID: "owner", LibraryID: "library", ParentID: "new-parent",
 		PreviousParentID: "old-parent", IsFolder: true}
 	if err := recordCatalogChanges(tx, moved); err != nil {
@@ -32,7 +32,7 @@ func TestAuxiliaryCatalogChangesPreserveNewOwnerAndRejectConflicts(t *testing.T)
 	initial := CatalogChange{Kind: CatalogAdded, ItemID: "owner", LibraryID: "library", ParentID: "parent", IsFolder: true}
 	updated := initial
 	updated.Kind, updated.ChildrenAdded = CatalogUpdated, true
-	tx := &ownedTx{}
+	tx := newCatalogAggregationTestTx(t)
 	if err := recordCatalogChanges(tx, initial); err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestAuxiliaryCatalogChangesPreserveNewOwnerAndRejectConflicts(t *testing.T)
 	}
 	for _, scenario := range []string{"library", "parent", "kind", "shape", "invalid flags"} {
 		t.Run(scenario, func(t *testing.T) {
-			tx := &ownedTx{}
+			tx := newCatalogAggregationTestTx(t)
 			if err := recordCatalogChanges(tx, initial); err != nil {
 				t.Fatal(err)
 			}
@@ -72,7 +72,7 @@ func TestAuxiliaryCatalogChangesPreserveNewOwnerAndRejectConflicts(t *testing.T)
 }
 
 func TestAuxiliaryCatalogChangesWholeBatchLimitAndPriorResync(t *testing.T) {
-	tx := &ownedTx{}
+	tx := newCatalogAggregationTestTx(t)
 	changes := make([]CatalogChange, maxCatalogChanges+1)
 	for index := range changes {
 		changes[index] = CatalogChange{Kind: CatalogUpdated, ItemID: fmt.Sprintf("item-%04d", index), LibraryID: "library"}

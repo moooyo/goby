@@ -25,7 +25,7 @@ func TestCatalogChangesRejectInvalidMoveParents(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			change := valid
 			test.edit(&change)
-			tx := &ownedTx{}
+			tx := newCatalogAggregationTestTx(t)
 			if err := recordCatalogChanges(tx, valid, change); err != nil {
 				t.Fatal(err)
 			}
