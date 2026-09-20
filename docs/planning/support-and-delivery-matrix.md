@@ -3,8 +3,9 @@
 The September 20 [selected compatibility plan](selected-compatibility-plan-20260920.md)
 is the current implementation scope. Phase 1 is closed under the user's
 third-party-client adapter boundary; its original Web licensing restriction
-remains recorded rather than blocking delivery. Phase 2 is next and phases 3-4
-have not started. The [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
+remains recorded rather than blocking delivery. Phase 2 implementation and
+integration are in progress; verification has not started. Phases 3-4 have not
+started. The [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
 retains the exact accepted contracts and client limitations. It covers
 account/playback behavior, subtitles/artwork, music/search, management settings
 and client protocols. The user explicitly excludes Live TV/EPG/DVR/tuners, DLNA,

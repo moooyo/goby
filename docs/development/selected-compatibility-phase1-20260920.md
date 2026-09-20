@@ -2,6 +2,9 @@
 
 Status: **closed under the user-approved third-party-client adapter boundary**.
 
+The [results ledger](selected-compatibility-phase1-results-20260920.json) records
+source/artifact identities, original failures, accepted repairs and closure.
+
 The user authorized execution of the [four-phase plan](../planning/selected-compatibility-plan-20260920.md),
 with all delivery code implemented before each phase's consolidated verification.
 Local compilation and unit tests are authorized; real integration/media/browser

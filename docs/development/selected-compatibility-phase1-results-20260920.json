@@ -1,0 +1,1129 @@
+{
+  "schema_version": 1,
+  "record_type": "selected-compatibility-phase1-evidence",
+  "recorded_on": "2026-09-20",
+  "timezone": "Asia/Shanghai",
+  "phase": 1,
+  "status": "compatibility-layer-evidence-closed-with-user-accepted-original-client-limitation",
+  "source_record": "selected-compatibility-phase1-20260920.md",
+  "acceptance_boundary": {
+    "user_selected_delivery": "Goby's compatibility adapter for third-party clients; the retained original client's external authorization limitation no longer blocks proceeding with the remaining phases.",
+    "user_accepted_client_limitation": true,
+    "acceptance_is_a_scope_decision_not_a_reclassified_test_result": true,
+    "backend_and_nonrestricted_journeys": "accepted from the recorded original and repair scopes",
+    "original_client_full_browser_result": "FAIL",
+    "original_client_full_browser_pass": false,
+    "all_third_party_clients_tested": false,
+    "external_entitlement_verified": false,
+    "original_client_assets_modified": false,
+    "synthetic_external_license_success_used": false,
+    "phase_2_through_4_completion_claimed": false,
+    "merge_push_or_deployment_claimed": false
+  },
+  "evidence_integrity": {
+    "original_receipts_modified": false,
+    "earlier_failures_preserved": true,
+    "overlapping_pass_counts_are_not_additive": true,
+    "parent_passes_exclude_subtest_pass_events": true,
+    "receipt_failed_test_arrays_may_include_parent_and_subtest_events": true,
+    "this_rollup_performed_new_tests_or_probes": false,
+    "database_restarted_for_this_rollup": false,
+    "credentials_or_dsn_copied": false,
+    "proprietary_client_bodies_copied": false,
+    "original_r08_complete_false_preserved": true,
+    "closure_receipt_phase_complete_false_is_its_historical_pre_decision_value": true,
+    "private_evidence_roots": {
+      "local_phase1_root": "D:/Code/goby/.git/selected-compatibility-20260920/phase1",
+      "remote_root": "/opt/goby-selected-compatibility-20260920-p1a"
+    }
+  },
+  "sources": {
+    "branch": "codex/selected-client-compatibility",
+    "baseline_commit": "f6f2d163eb913e4eaa545eea92980dfa4819589e",
+    "product_baseline_commit": "80198b6aa8a163b696ceaff64da831847d82e496",
+    "snapshots": [
+      {
+        "label": "bdadd88",
+        "commit": "bdadd88ef87ed19778eff8e2b825f5d08a46409c",
+        "git_tree": "21b2f12d4e3d3adb00e0cdc02518e122c2752c23",
+        "purpose": "implementation"
+      },
+      {
+        "label": "a5a56b7",
+        "commit": "a5a56b7482316ce318e072341d0eab250514096a",
+        "git_tree": "e74cd32e03635085cd00dc21e38d8e1053a9816d",
+        "purpose": "initial consolidated verification"
+      },
+      {
+        "label": "a99988f",
+        "commit": "a99988fa737c4e9f641a943c35d079643a266133",
+        "git_tree": "53e1e8c8d54f1c66c937aa0a1ba9ba7bbf3c09a8",
+        "purpose": "repaired backend and administrator UI"
+      },
+      {
+        "label": "2de476d",
+        "commit": "2de476d41bf2f07486ec619b09cb4edddae3c9bc",
+        "git_tree": "027570c3f5ac4f636267a851c6fdea43722eebed",
+        "purpose": "original asset proxy browser fixture"
+      },
+      {
+        "label": "e82bcee",
+        "commit": "e82bcee569e9019b75ac089adbeb011771fbf317",
+        "git_tree": "4094d180a35faa3fcfde7556e40d197f41fed9d5",
+        "purpose": "final Go browser fixture"
+      },
+      {
+        "label": "5052b36",
+        "commit": "5052b36778bc465b2bc5c00fb24c14baa95275f8",
+        "git_tree": "2bf4e17bb646f16e53da45a8a60fec94aae8d9a6",
+        "purpose": "final original-client browser driver"
+      },
+      {
+        "label": "43b930a",
+        "commit": "43b930a2c301deb9fdc704ad34d829fa565e899f",
+        "git_tree": "8d60cc5f02d2b6570446051ff16b658428319d25",
+        "purpose": "pre-closeout documentation checkpoint"
+      }
+    ],
+    "retained_archives": [
+      {
+        "name": "source-a5a56b7.tar",
+        "bytes": 135047168,
+        "sha256": "8ed6596481e4da69fd5ab27cb7961c55ad428d9885bf2f9e50687f41a2a1fedf"
+      },
+      {
+        "name": "source-a99988f.tar",
+        "bytes": 135071232,
+        "sha256": "c747ecddd0f0ae1832884f6a947f5e7047b51b7d3583343a364c4c5c72beee27"
+      },
+      {
+        "name": "source-2de476d.tar",
+        "bytes": 135113216,
+        "sha256": "280bcf1d397c8272b58fef187eedf01d19c7ce65cfc927f3329e89aaf1840ebb"
+      },
+      {
+        "name": "source-e82bcee.tar",
+        "bytes": 135144448,
+        "sha256": "08113abe8127f98babbc7b49840aeca587e690c7c2ea12fe6dbd98a8586c48cd"
+      },
+      {
+        "name": "source-5052b36.tar",
+        "bytes": 135152640,
+        "sha256": "1350dccb7747578f12e738b3a33b40ed2f8e46ad49b3745d5bfb84324634ccc2"
+      }
+    ],
+    "archive_hash_provenance": "Hashes of retained local archive bytes; runtime receipts independently record their source labels and exact executed test-binary hashes.",
+    "production_sources_unchanged_after_a99988f_through_5052b36": true,
+    "changed_path_classes_in_that_interval": [
+      "documentation",
+      "the selected browser Go fixture",
+      "the selected browser JavaScript driver and guide"
+    ],
+    "final_driver_file_sha256": "575d7054d90ee843a711263d25a98d12fde2c37e8a85380a0dc67789e84c4871",
+    "final_go_fixture_file_sha256": "1ce00245b22b8ff214e263eefcb132584e0d41a8382b1074ef25bb8e30f85973"
+  },
+  "local_build_and_unit_evidence": {
+    "frontend": {
+      "status": "passed",
+      "includes": [
+        "TypeScript typecheck",
+        "Vite production build"
+      ],
+      "repaired_source": "a99988f",
+      "retained_logs": [
+        "logs/frontend-build-01.txt",
+        "logs/frontend-build-02.txt"
+      ],
+      "nonfatal_warning": "Vite reported a future native-config-loader import-extension compatibility warning."
+    },
+    "linux_cross_builds": {
+      "status": "passed_compilation",
+      "ordinary_and_embedded": true,
+      "artifact_role": "Build outputs, not the executable used by the in-process browser integration test.",
+      "artifacts": [
+        {
+          "name": "goby-linux",
+          "bytes": 38547801,
+          "sha256": "a0eef913467233cbc1396ff7488b73c4c3a3f80bc1d28150ffe094c23f95abf1"
+        },
+        {
+          "name": "goby-embedded-linux",
+          "bytes": 39847741,
+          "sha256": "0d38b52954b6a8e3acfde23fd40d8fe8ee2049d7ecdeb54d8f2d8064014ba73e"
+        },
+        {
+          "name": "goby-a99988f-linux",
+          "bytes": 38547801,
+          "sha256": "bdadb9e4650582d013d7e379eb068f11c6445bc73daf7be0bbfa183353f516ba"
+        },
+        {
+          "name": "goby-a99988f-embedded-linux",
+          "bytes": 39847741,
+          "sha256": "1ce2d92d13d1ace5b7cd5c3ce6385d4c1526ec68ec2a0b68360d8298d6bb6a77"
+        }
+      ]
+    },
+    "windows_unit_attempt": {
+      "retained_result": "FAIL",
+      "passed_packages": [
+        "identity",
+        "database"
+      ],
+      "not_accepted_packages": [
+        "library",
+        "server"
+      ],
+      "reason": "Existing Linux-only helper/descriptor assumptions prevented a passing Windows library/server package result.",
+      "authoritative_replacement": "Recorded Linux package scopes; no Windows platform acceptance is claimed.",
+      "log": "logs/windows-units-01.txt"
+    },
+    "actual_local_e2e_claimed": false
+  },
+  "schema_and_recovery": {
+    "current_schema": 43,
+    "migrations": [
+      {
+        "version": 42,
+        "path": "internal/database/migrations/0042_local_credentials.sql",
+        "sha256": "7286b64e80458df90b77d8b695744506eef13e12b57cef6cb16eb520355fbf95"
+      },
+      {
+        "version": 43,
+        "path": "internal/database/migrations/0043_intro_markers.sql",
+        "sha256": "a59e9d9fc44ffbbe4b727d2a86b6508138dcc9ec68aa4bdda74ec3be57476d78"
+      }
+    ],
+    "catalog": {
+      "path": "internal/backuppg/catalogs/schema-43-postgresql-17.json",
+      "engine": "PostgreSQL 17",
+      "exit_code": 0,
+      "binary_sha256": "0f000433c4f013d49d831e90d39e2c91c5a438bca96f677249999ddebe9c4b88",
+      "catalog_sha256": "1dc5115fd00947b8beac7384bc16e0d393f9fca70e031a71f9ccec5846ad511c",
+      "catalog_bytes": 646963
+    },
+    "accepted_selected_parents": [
+      "TestMigrateLocalCredentialsClearsInertSchema41ConfigurationWithoutPromotingAuthority",
+      "TestPostgreSQLSelectedPhase1ArchivePreservesCredentialsAndIntroState",
+      "TestPostgreSQLSelectedPhase1Schema41UpgradeHasNoInferredCredentialsOrIntros",
+      "TestEngineSelectedPhase1EncryptedProfilePinBackupRestore"
+    ],
+    "recovery_repair": {
+      "status": "passed",
+      "parents": 6,
+      "source": "a99988f",
+      "fresh_pair": "repair01",
+      "old_failed_pair_preserved": true,
+      "scope": {
+        "scope": "recovery",
+        "binary_sha256": "608fd77bebe38149549f7b0edc0b0024f75520d03b555581700af22e4b41c3c1",
+        "exit_code": 0,
+        "parent_passes": 6,
+        "parent_skips": [],
+        "failed_tests": [],
+        "duration_seconds": 25.346555471420288,
+        "process_group_closed": true
+      }
+    },
+    "archive_repair": {
+      "status": "passed",
+      "parents": 2,
+      "source": "a99988f",
+      "scope": {
+        "scope": "backuppg",
+        "binary_sha256": "cd2460ebdddf60adfc392090114182087e1bdce4e6a22d9a989e1af74faf043c",
+        "exit_code": 0,
+        "parent_passes": 2,
+        "parent_skips": [],
+        "failed_tests": [],
+        "duration_seconds": 2.435377836227417,
+        "process_group_closed": true
+      }
+    },
+    "normal_password_and_encrypted_pin_archive_restore_restart_new_login": "covered by the selected passing recovery journey",
+    "original_failure_explanation": "A historical identity seed assertion failed, retained its recovery pair, and four later tests refused the nonempty target. The separately prepared repair pair passed the selected six-parent scope."
+  },
+  "backend_verification": {
+    "original_batch": {
+      "source": "a5a56b7",
+      "recorded_complete": false,
+      "scopes": [
+        {
+          "scope": "identity",
+          "binary_sha256": "612c8106628f3ddc3bf0c00f184252d75ba6278e7b6ba5bcbfc1a0882221d4ca",
+          "exit_code": 0,
+          "parent_passes": 182,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 130.52243089675903,
+          "process_group_closed": true
+        },
+        {
+          "scope": "database",
+          "binary_sha256": "8c1ee25c68d008582a2171c82f2c188756e05fe519ae526ef8d7e1554ee9869e",
+          "exit_code": 1,
+          "parent_passes": 51,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestMigrateApplicationKeyDevicesPreservesSchema16CredentialsAndProjection",
+            "TestMigrateApplicationKeysPreservesLoginsAndUserlessPlaybackConstraints",
+            "TestMigrateClientPlaybackReferencesPreservesDefaultsAndRetainsScopedTombstones",
+            "TestMigrateConcurrentAndIdempotent",
+            "TestMigrateEncodingVODPlansPreservesVersion10DataAndJSONBounds",
+            "TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes/normal",
+            "TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes",
+            "TestMigrateManagedUsersPreservesVersion12DataAndInitializesRevisions",
+            "TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks/recovery_false",
+            "TestStorageRootBindingMigrationPreservesSchema27RowsAndRenamedChecks",
+            "TestMigrateScheduledTasksPreservesSchema18AndLeavesLegacyScansUnlinked"
+          ],
+          "duration_seconds": 12.150574922561646,
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "binary_sha256": "5a30d9dc71212a353a910c49a3a1783a70e4a4cdc8ecef5b4acade3720c28ad4",
+          "exit_code": 1,
+          "parent_passes": 709,
+          "parent_skips": [
+            "TestRootBindingFullScanMountNamespaceHelper"
+          ],
+          "failed_tests": [
+            "TestStoreIntroLifecycle",
+            "TestStoreIntroConcurrentCompareAndSwap",
+            "TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection"
+          ],
+          "duration_seconds": 648.7677183151245,
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_sha256": "ccded2cf8a0a2338ea049d99464dd53991871f82723bff266017715e975fd1ac",
+          "exit_code": 1,
+          "parent_passes": 822,
+          "parent_skips": [
+            "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput"
+          ],
+          "failed_tests": [
+            "TestAdminIntroMarkersLifecycle"
+          ],
+          "duration_seconds": 506.33273673057556,
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "binary_sha256": "b63f9c2db5bd510f3bc7486c5458ad5cc968b6afc8ed3e5625296f8f5aad4942",
+          "exit_code": 0,
+          "parent_passes": 98,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 57.30971121788025,
+          "process_group_closed": true
+        },
+        {
+          "scope": "recoverydb",
+          "binary_sha256": "fff5cb678c1e9a84479af72eafb5fcc5f206badee642c7c0cc74cbdb1718885f",
+          "exit_code": 0,
+          "parent_passes": 12,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 16.16504216194153,
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "binary_sha256": "98b96ec58109267a165db63e007e3f47d65d07363459f9fef043adf2f14812d2",
+          "exit_code": 1,
+          "parent_passes": 21,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+            "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback",
+            "TestRecoveryManagerApplyRestartAndRollback",
+            "TestRecoveryManagerReturnsUnacceptedTargetAfterRestart",
+            "TestRecoveryManagerRejectsChangedCandidateBeforeActivation"
+          ],
+          "duration_seconds": 31.057494401931763,
+          "process_group_closed": true
+        }
+      ]
+    },
+    "repair_batch": {
+      "source": "a99988f",
+      "recorded_complete": false,
+      "aggregate_includes_failed_browser": true,
+      "nonbrowser_scopes": [
+        {
+          "scope": "database",
+          "binary_sha256": "64117482054641d82d1c8589335e8e3ebce18514442864ecaeaadd3319e66aac",
+          "exit_code": 0,
+          "parent_passes": 61,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 11.647351026535034,
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "binary_sha256": "c1343a23c54c548ff28bd89d558437281d91bc7f081c3c8d125a52f39c7ff1c1",
+          "exit_code": 0,
+          "parent_passes": 3,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 0.8827698230743408,
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_sha256": "03af0d6d6632d395a243074e404f22128714ba76203d7fde4c6032d90fe5f949",
+          "exit_code": 0,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 0.8403964042663574,
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "binary_sha256": "cd2460ebdddf60adfc392090114182087e1bdce4e6a22d9a989e1af74faf043c",
+          "exit_code": 0,
+          "parent_passes": 2,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 2.435377836227417,
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "binary_sha256": "608fd77bebe38149549f7b0edc0b0024f75520d03b555581700af22e4b41c3c1",
+          "exit_code": 0,
+          "parent_passes": 6,
+          "parent_skips": [],
+          "failed_tests": [],
+          "duration_seconds": 25.346555471420288,
+          "process_group_closed": true
+        }
+      ]
+    },
+    "accepted_coverage_rule": "Retain original passing parents and the separately passing affected repair scopes; do not sum overlapping counts or relabel failed aggregate batches.",
+    "selected_contract_tests_confirmed_passed": {
+      "identity": [
+        "TestProfilePinEnvelopeRejectsTamperingCrossAccountAndApplicationDomain",
+        "TestProfilePinPatchSeparatesNullClearFromAbsentAndRejectsAliases",
+        "TestStoreLocalPasswordAuthenticationIsolationThrottleAndRevocation",
+        "TestStoreLocalPasswordIssuanceRejectsCredentialClearedDuringAccountWait",
+        "TestStoreProfilePinEncryptionOwnerProjectionAndAtomicPatch",
+        "TestStoreProfilePinMasterLossCannotCreateReplacementOrExposeOtherUser"
+      ],
+      "library": [
+        "TestEpisodePlaybackQueueRetainsFullOrderedReplayableSeriesAndCurrentAuthority",
+        "TestEpisodePlaybackQueueRejectsOversizedSeriesWithoutTruncating",
+        "TestExplicitChapterIntro",
+        "TestProjectItemIntroRequiresMovieOrEpisodeAndValidOverride",
+        "TestStoreIntroLifecycle",
+        "TestStoreIntroConcurrentCompareAndSwap"
+      ],
+      "server": [
+        "TestHTTPOriginalClientEpisodeQueueIsCompleteAndDoesNotOwnAutoplay",
+        "TestHTTPProfilePinUsesOwnerOnlyCompatibleConfigurationAndNativeFlags",
+        "TestHTTPLocalPasswordRejectsSpoofedPeersAndRevokesTokensOnClear",
+        "TestPersistedResumePreferenceOnlyChangesImplicitPlaybackStarts",
+        "TestPlaybackSourceProjectsTheSameIntroMarkersAsTheItem",
+        "TestAdminIntroMarkersLifecycle",
+        "TestFeatureLicensingDescribesOnlyServerLocalLicenseState",
+        "TestFeatureLicensingAliasesRetainAuthentication",
+        "TestHTTPFeatureLicensingPreservesUserAndLibraryAuthority"
+      ]
+    },
+    "retained_skips": [
+      {
+        "test": "TestRootBindingFullScanMountNamespaceHelper",
+        "scope": "library",
+        "meaning": "Existing mount-namespace helper skip; not a passing execution."
+      },
+      {
+        "test": "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+        "scope": "server",
+        "meaning": "Explicit AMD hardware profile not executed by this ordinary phase-1 scope."
+      }
+    ]
+  },
+  "mocked_administrator_browser": {
+    "source": "a99988f",
+    "spec": "web/admin/e2e/selected-playback-administration.spec.ts",
+    "explicitly_synthetic_ui_regression": true,
+    "actual_backend_acceptance": false,
+    "original": {
+      "source": "a5a56b7",
+      "stats": {
+        "startTime": "2026-09-19T18:40:18.158Z",
+        "duration": 61900.191,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 9,
+        "flaky": 0
+      },
+      "exit_code": 1,
+      "complete": false,
+      "server_closed": true,
+      "failure": "Duplicate dialog title IDs caused nine failures; this attempt remains failed."
+    },
+    "repaired": {
+      "stats": {
+        "startTime": "2026-09-19T18:53:50.601Z",
+        "duration": 16778.095,
+        "expected": 10,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "exit_code": 0,
+      "complete": true,
+      "server_closed": true
+    },
+    "coverage": [
+      "credential omission/clear/CAS and secret non-refill",
+      "four-digit profile-PIN validation and normal-password prerequisite",
+      "writable intro and next-episode preferences",
+      "intro edits/import/reset/source-conflict handling"
+    ]
+  },
+  "original_client": {
+    "name": "Emby Web",
+    "version": "4.9.5.0",
+    "asset_host_executable_sha256": "c109c9817dea25cc516b9969a87aa1ffa48e41adcb5e3dbc87d686c7bcb28ac2",
+    "transport_boundary": "Only original /web assets came from the pinned retained host. Authentication, catalog, playback and WebSockets reached Goby.",
+    "node_runtime_sha256": "89af8424dd53e560b1933f87ba650d8bf57c83ca5a04600eefb31f416aabbae7",
+    "playwright_version": "1.63.0",
+    "chromium_cache_revision": "1243",
+    "history": [
+      {
+        "attempt": "r01",
+        "driver_source": "a5a56b7",
+        "go_binary_source": "a5a56b7",
+        "recorded_result": "failed_before_browser_launch",
+        "failure": "Selected Node executable did not satisfy root ownership admission.",
+        "scope": {
+          "scope": "server-browser",
+          "binary_sha256": "1dac104f34c071cd3b8c4ad967c3c5eb3e02a5a046753d079585032732f269db",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 0.0902717113494873,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r02",
+        "driver_source": "a99988f",
+        "go_binary_source": "a99988f",
+        "recorded_result": "failed",
+        "failure": "Three native stages passed; the fixture did not host /web and no original-client authentication was observed.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "99aa02d59b5bf1404f47de51e240d63841bbcd4b098f5f06f3e4d95b3f565325",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 22.791218519210815,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r03",
+        "driver_source": "2de476d",
+        "go_binary_source": "2de476d",
+        "recorded_result": "failed",
+        "failure": "Blocking the real service worker prevented the unmodified client loader from continuing.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "383aa184d18bb3cf90613212767eed1fd97d63dc91b6d464fbca20e7d78d13d9",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 22.744926691055298,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r04",
+        "driver_source": "38e67dc",
+        "go_binary_source": "2de476d",
+        "recorded_result": "failed",
+        "failure": "The fixture required immediate activation while the worker was still activating.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "383aa184d18bb3cf90613212767eed1fd97d63dc91b6d464fbca20e7d78d13d9",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 7.404359340667725,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r05",
+        "driver_source": "9470400",
+        "go_binary_source": "2de476d",
+        "recorded_result": "failed",
+        "failure": "Local-password authentication passed; same-tab reload retained sessionStorage PIN validation. Two denied requests remain historically unclassified.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "383aa184d18bb3cf90613212767eed1fd97d63dc91b6d464fbca20e7d78d13d9",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 24.703665256500244,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r06",
+        "driver_source": "afc6b6d",
+        "go_binary_source": "2de476d",
+        "recorded_result": "failed",
+        "failure": "Real profile PIN and two-episode autoplay browser behavior passed, but the next-enabled database predicate did not acknowledge; no failed SQL snapshot exists for this attempt.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "383aa184d18bb3cf90613212767eed1fd97d63dc91b6d464fbca20e7d78d13d9",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 100.98679208755493,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r07",
+        "driver_source": "e82bcee",
+        "go_binary_source": "e82bcee",
+        "recorded_result": "failed",
+        "failure": "Thirteen stages were observed; two enabled intro modes remained blocked. Native sign-out was obstructed and required one fallback administrator-session revocation. Four page errors remain historically unclassified.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "bda61638632450a55e215a458ce6aba507cbab1b7f4e5b2a04a94b82b3b44e41",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 196.13643431663513,
+          "process_group_closed": true
+        }
+      },
+      {
+        "attempt": "r08",
+        "driver_source": "5052b36",
+        "go_binary_source": "e82bcee",
+        "recorded_result": "failed",
+        "failure": "All fourteen database observations completed; two intro modes remained blocked and four undefined-valued original-client errors kept the global test failing after successful native cleanup.",
+        "scope": {
+          "scope": "server-e2e",
+          "binary_sha256": "bda61638632450a55e215a458ce6aba507cbab1b7f4e5b2a04a94b82b3b44e41",
+          "exit_code": 1,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase1BrowserIntegration"
+          ],
+          "duration_seconds": 158.42847061157227,
+          "process_group_closed": true
+        }
+      }
+    ],
+    "r08": {
+      "run_id": "selected-phase1-5052b36-browser08",
+      "driver_source": "5052b36",
+      "go_binary_source": "e82bcee",
+      "test_binary_sha256": "bda61638632450a55e215a458ce6aba507cbab1b7f4e5b2a04a94b82b3b44e41",
+      "go_exit_code": 1,
+      "browser_exit_code": 1,
+      "original_browser_complete": false,
+      "original_driver_complete": false,
+      "failure_code": "browser_or_network_errors",
+      "failure_phase_label": "cleanup",
+      "failure_phase_label_meaning": "The global page-error gate ran after successful native cleanup; the native cleanup operation itself passed.",
+      "database_observations_received": 14,
+      "completed_stages": 12,
+      "blocked_stages": 2,
+      "stages": [
+        {
+          "Phase": "admin-credentials",
+          "State": "complete"
+        },
+        {
+          "Phase": "admin-preferences",
+          "State": "complete"
+        },
+        {
+          "Phase": "admin-intro",
+          "State": "complete"
+        },
+        {
+          "Phase": "original-local-login",
+          "State": "complete"
+        },
+        {
+          "Phase": "profile-pin",
+          "State": "complete"
+        },
+        {
+          "Phase": "next-enabled",
+          "State": "complete"
+        },
+        {
+          "Phase": "next-disabled",
+          "State": "complete"
+        },
+        {
+          "Phase": "intro-show-button",
+          "State": "blocked"
+        },
+        {
+          "Phase": "intro-none",
+          "State": "complete"
+        },
+        {
+          "Phase": "intro-auto-skip",
+          "State": "blocked"
+        },
+        {
+          "Phase": "restart",
+          "State": "complete"
+        },
+        {
+          "Phase": "persisted",
+          "State": "complete"
+        },
+        {
+          "Phase": "credentials-cleared",
+          "State": "complete"
+        },
+        {
+          "Phase": "cleanup",
+          "State": "complete"
+        }
+      ],
+      "original_checks": {
+        "AdminCredentials": true,
+        "AdminPreferences": true,
+        "AdminIntro": true,
+        "OriginalLocalLogin": true,
+        "ProfilePin": true,
+        "IntroShowButton": false,
+        "IntroNone": true,
+        "IntroAutoSkip": false,
+        "NextEnabled": true,
+        "NextDisabled": true,
+        "RestartPersisted": true,
+        "CredentialsCleared": true,
+        "Cleanup": true
+      },
+      "page_errors": 4,
+      "page_error_details": [
+        {
+          "Phase": "intro-show-button",
+          "PageCreatedPhase": "intro-show-button",
+          "Surface": "OriginalClient",
+          "Name": "UnknownError",
+          "MessageKind": "UndefinedValue",
+          "Resources": [],
+          "OtherResourceFrames": 0
+        },
+        {
+          "Phase": "intro-show-button",
+          "PageCreatedPhase": "intro-show-button",
+          "Surface": "OriginalClient",
+          "Name": "UnknownError",
+          "MessageKind": "UndefinedValue",
+          "Resources": [],
+          "OtherResourceFrames": 0
+        },
+        {
+          "Phase": "intro-auto-skip",
+          "PageCreatedPhase": "intro-auto-skip",
+          "Surface": "OriginalClient",
+          "Name": "UnknownError",
+          "MessageKind": "UndefinedValue",
+          "Resources": [],
+          "OtherResourceFrames": 0
+        },
+        {
+          "Phase": "intro-auto-skip",
+          "PageCreatedPhase": "intro-auto-skip",
+          "Surface": "OriginalClient",
+          "Name": "UnknownError",
+          "MessageKind": "UndefinedValue",
+          "Resources": [],
+          "OtherResourceFrames": 0
+        }
+      ],
+      "page_error_cause": "Unverified. Phase correlation does not establish an exact exception cause.",
+      "external_registration": {
+        "foreign_requests": 16,
+        "expected_denied_registration_requests": 16,
+        "Disposition": "DeniedWithoutUpstreamConnection",
+        "AuthorizationVerified": false,
+        "receipt_classification_valid": true
+      },
+      "profile_pin": {
+        "EnabledByOriginalLoginPrompt": true,
+        "StoredSessionFreshTab": true,
+        "FreshTabWithoutOpener": true,
+        "WrongPinRejected": true,
+        "CorrectPinAccepted": true,
+        "NoReplacementAuthentication": true
+      },
+      "credential_revocation": {
+        "PreviouslyActiveLocalSessionRejected": true,
+        "AdministratorSessionRetained": true
+      },
+      "native_cleanup": {
+        "Operation": "database-cleanup-acknowledgement",
+        "Complete": true,
+        "LogoutStatus": 204,
+        "ContextClosed": true
+      },
+      "playback": [
+        {
+          "scenario": "next-enabled",
+          "autoplay_enabled": true,
+          "observed_play_methods": [
+            "DirectStream"
+          ],
+          "started_reports": 2,
+          "stopped_reports": 2,
+          "distinct_started_play_ids": 2,
+          "all_report_statuses_204": true,
+          "natural_ended_events": 2,
+          "ended_frame_counts": [
+            432,
+            432
+          ],
+          "terminal_report_positions_ticks": [
+            180000000,
+            180000000
+          ]
+        },
+        {
+          "scenario": "next-disabled",
+          "autoplay_enabled": false,
+          "observed_play_methods": [
+            "DirectStream"
+          ],
+          "started_reports": 1,
+          "stopped_reports": 1,
+          "distinct_started_play_ids": 1,
+          "all_report_statuses_204": true,
+          "natural_ended_events": 1,
+          "ended_frame_counts": [
+            432
+          ],
+          "terminal_report_positions_ticks": [
+            180000000
+          ]
+        },
+        {
+          "scenario": "intro-show-button",
+          "mode": "ShowButton",
+          "observed_play_methods": [
+            "DirectStream"
+          ],
+          "started_reports": 1,
+          "stopped_reports": 1,
+          "distinct_started_play_ids": 1,
+          "all_report_statuses_204": true,
+          "natural_ended_events": 1,
+          "ended_frame_counts": [
+            432
+          ],
+          "terminal_report_positions_ticks": [
+            180000000
+          ],
+          "intro_seek_count": 0,
+          "entitlement_blocked": true
+        },
+        {
+          "scenario": "intro-none",
+          "mode": "None",
+          "observed_play_methods": [
+            "DirectStream"
+          ],
+          "started_reports": 1,
+          "stopped_reports": 1,
+          "distinct_started_play_ids": 1,
+          "all_report_statuses_204": true,
+          "natural_ended_events": 0,
+          "ended_frame_counts": [],
+          "terminal_report_positions_ticks": [
+            81457350
+          ],
+          "intro_seek_count": 0,
+          "entitlement_blocked": false
+        },
+        {
+          "scenario": "intro-auto-skip",
+          "mode": "AutoSkip",
+          "observed_play_methods": [
+            "DirectStream"
+          ],
+          "started_reports": 1,
+          "stopped_reports": 1,
+          "distinct_started_play_ids": 1,
+          "all_report_statuses_204": true,
+          "natural_ended_events": 1,
+          "ended_frame_counts": [
+            432
+          ],
+          "terminal_report_positions_ticks": [
+            180000000
+          ],
+          "intro_seek_count": 0,
+          "entitlement_blocked": true
+        }
+      ],
+      "accepted_nonrestricted_stage_subset": [
+        "admin-credentials",
+        "admin-preferences",
+        "admin-intro",
+        "original-local-login",
+        "profile-pin",
+        "next-enabled",
+        "next-disabled",
+        "intro-none",
+        "restart",
+        "persisted",
+        "credentials-cleared",
+        "cleanup"
+      ],
+      "limited_stage_disposition": {
+        "stages": [
+          "intro-show-button",
+          "intro-auto-skip"
+        ],
+        "recorded_result": "blocked",
+        "reason": "original_client_entitlement",
+        "user_accepted_client_limitation": true,
+        "actual_enabled_intro_seek_observed": false,
+        "raw_test_result_reclassified": false
+      },
+      "assets": {
+        "count": 2502,
+        "total_bytes": 31582341,
+        "incomplete_responses": 0,
+        "failure_code": "",
+        "host_identity_pinned": true,
+        "body_bytes_unchanged": true,
+        "body_bytes_persisted_in_this_record": false,
+        "hash_ledger": "logs/browser-r08/asset-hashes.json",
+        "complete_meaning": "Each upstream response reached EOF with stable pinned host identity; browser/media assertions independently establish consumer behavior."
+      }
+    }
+  },
+  "resource_closure": {
+    "final_browser_process_group_closed": true,
+    "observed_browser_descendants_closed": true,
+    "forced_browser_cleanup_signals": 0,
+    "application_workers_closed": true,
+    "http_listener_closed": true,
+    "owned_schema_removed": true,
+    "owned_media_root_removed": true,
+    "private_credential_context_removed": true,
+    "active_authentication_sessions_before_fallback": 0,
+    "fallback_session_revocations": 0,
+    "network_guard": {
+      "Started": true,
+      "Closed": true,
+      "BlockedHTTP": 0,
+      "BlockedConnect": 0,
+      "BlockedUpgrade": 0,
+      "UnexpectedTargetRequests": 0
+    },
+    "runtime_resource_counts_at_cleanup_observation": {
+      "HLSSessions": 0,
+      "MediaPolicyLeases": 0,
+      "OriginalRequests": 0,
+      "StreamSlots": 0
+    },
+    "final_database": {
+      "active_authentication_sessions": 0,
+      "active_encoding_jobs": 0,
+      "active_tasks": 0,
+      "active_scans": 0,
+      "nominal_prepared_rows": 1,
+      "nominal_prepared_rows_all_unstarted_and_authentication_revoked": true,
+      "all_started_rows_counted_and_stopped": true,
+      "cleanup_acknowledgement_complete": true
+    },
+    "prepared_row_boundary": "One final unstarted Prepared planning row remained under revoked authentication. It is not a live playback worker or usable session; the observer retained strict started-play lifecycle and effective-authority checks.",
+    "original_asset_host_identity_preserved": true,
+    "original_asset_host_lifecycle_mutations": 0,
+    "postgresql_terminal_receipt": {
+      "observed_at": "2026-09-19T20:15:40.8754279Z",
+      "worker_unit": "goby-selected-p1-browser-20260920-h",
+      "worker_process_group_closed": true,
+      "database_unit": "goby-selected-p1-pg-20260920-a",
+      "database_main_pid": 0,
+      "database_active_state": "inactive",
+      "database_sub_state": "dead",
+      "database_control_group": "",
+      "data_and_evidence_preserved": true,
+      "original_client_host_lifecycle_mutations": 0,
+      "phase_complete": false,
+      "remaining_boundary": "Original-client enabled intro modes require a client delivery decision; both retain blocked results and unclassified undefined-valued page errors."
+    }
+  },
+  "coverage_limits": [
+    "The retained original client is Emby Web 4.9.5.0; no claim covers every third-party client.",
+    "Real enabled intro seeks were not observed in that unmodified client. Both modes retain blocked evidence under the user-accepted client limitation.",
+    "The four undefined-valued page errors remain unverified exceptions; they were not silently forgiven or relabelled as licensing success.",
+    "The real browser playback profile reported DirectStream using small H.264/AAC MP4 fixtures. This receipt does not establish a complete direct-play/remux/transcode/HLS and resume matrix for every client.",
+    "Backend tests cover source binding, authorization, explicit/implicit start contracts, queue bounds and recovery; they are not substitutes for an unrecorded additional client journey.",
+    "The recorded native browser is a root-owned test profile, not proof of a non-root deployment profile.",
+    "This is phase-1 evidence only. Remaining phase implementation, final handoff/merge/push and production deployment are separate."
+  ],
+  "closeout_assessment": {
+    "evidence_rollup_complete": true,
+    "backend_repairs_and_nonrestricted_real_journeys_have_retained_receipts": true,
+    "resource_closure_has_retained_receipts": true,
+    "original_client_limitation_is_nonblocking_under_latest_user_scope": true,
+    "original_full_browser_pass_has_not_been_obtained": true,
+    "material_receipt_gap_found_for_the_recorded_accepted_subset": false,
+    "broader_unmeasured_client_or_transport_coverage_is_not_promoted_to_pass": true
+  },
+  "evidence_references": [
+    {
+      "path": "logs/verification-01.json",
+      "sha256": "6ed11befcac6a42fe21a3d36f5a958495eeb21900d9c6d58cdd90c24848f1dc6",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/verification-r02.json",
+      "sha256": "2776644755a7bf576efecd1168e25d9fbf1421155f1aa62bf8118dc987d77a6a",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/verification-browser-r06.json",
+      "sha256": "315547cc8402bcbd2839016d795b1a86efb418ae3adedb5a383fae6d47ad15f2",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/verification-browser-r07.json",
+      "sha256": "c57a881c3e6c8ef37e423538f6171bfc17ed83263104e01fd1c0711e9f2c5e9e",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/verification-browser-r08.json",
+      "sha256": "4433fcaaac5d77828b7a4b04fbbe951d7ccff89ee3ce7e11b422492a372209be",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/resource-closure-r08.json",
+      "sha256": "06fc918fb3022f1ec41f75b6039cb1940dbc9ecfe6c6da77790f29e964b71050",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/mocked-browser-01.stdout.json",
+      "sha256": "fa0cb74cba7611109d882ca2f6945615a3d0c34e42821e643ad6d046921ba762",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/mocked-browser-02.stdout.json",
+      "sha256": "e8dd41441538117502c68adbe49548ec02aab9a1aca62fa1942dab02f4661b50",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/frontend-build-01.txt",
+      "sha256": "e5f5c6f91ff1026be962a4cb744d8428936ba1c5505f21ecdac04f85ef314052",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/frontend-build-02.txt",
+      "sha256": "f55cf91160a41878710c3179ca02548f9a728edd7d5ec81887be7c63c5cf08a6",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/windows-units-01.txt",
+      "sha256": "675df5ad558aeaeeae0d8063b87ec4278f91488c143acd4e2aed7e32c80940be",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/browser-r08/browser-result.json",
+      "sha256": "d1577cf95a8248cb9891083a545f515b566e53e88886bd9c419f96086c98f913",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/browser-r08/driver-result.json",
+      "sha256": "df4c98608ac2613b94a1f9c77c9540f87a92c2c148b20b2d706daeb025efff98",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/browser-r08/asset-hashes.json",
+      "sha256": "9c32ff37bff74668b660a31f9df27d1b3399ec3e741a2a04723cffbd15d5cfd9",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/browser-r08/stage-cleanup-database.json",
+      "sha256": "f3bcf4a5aaf0b86ffc4b8bb6e8623b8af283a4409f9c01e666351ef888f878b4",
+      "location": "local_private_phase1_root"
+    },
+    {
+      "path": "logs/verification-browser-r03.json",
+      "sha256": "60650cb6d85215f0276fe4647eeaca933c5e30be10aa2034c25d5cff796d3e89",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "logs/verification-browser-r04.json",
+      "sha256": "d23bd125e8dc16486983d2b2e5fa5d8e1bdaf82be17ad3fa53ec5a5a36956e7f",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "logs/verification-browser-r05.json",
+      "sha256": "9234da325ca59e1dda26161d53dd67783b2870b192a89dac5821b38dff28c253",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "logs/catalog-generation-01.json",
+      "sha256": "714375b1e30a69aeba563ed7a07c3f09953b24fbe723374aaebb1eff72183701",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "logs/mocked-browser-01.json",
+      "sha256": "e344b2c299ffb94c35bf377906f5d42828c38a01786f01fc82dfa2f40ddb1ef3",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "logs/mocked-browser-02.json",
+      "sha256": "fbd46d96e888fc9456949205086323ddf50b322d2a06f04bcb1bc68378453f6d",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "logs/repair-runtime-01.json",
+      "sha256": "b052c546aef868bc3993f40a21d5df7d81429deefc9c832287368fb4e282f942",
+      "location": "remote_private_root"
+    },
+    {
+      "path": "browser-results/selected-phase1-browser-220476604/stage-cleanup-before-observation.json",
+      "sha256": "cdaae7f3fe40937a2e5fedad0f23e75242ad8c9a4eff26b6e8a0d3c5fc23b039",
+      "location": "remote_private_root"
+    }
+  ]
+}

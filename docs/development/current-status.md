@@ -4,8 +4,9 @@ On September 20, 2026, the user selected the next account/playback, subtitle,
 artwork, music, management configuration, search and client-protocol work.
 Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md)
 is approved; phase 1 is closed on `codex/selected-client-compatibility` under
-the user's third-party-client adapter boundary. Phase 2 is next; phases 3-4 are
-not started.
+the user's third-party-client adapter boundary. [Phase 2 implementation and
+integration](selected-compatibility-phase2-20260920.md) are in progress; its
+consolidated verification has not started. Phases 3-4 are not started.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
 implementation from scoped acceptance. Backend repair scopes, administration,
 original-client local-password/PIN, enabled/disabled autoplay, runtime restart,
