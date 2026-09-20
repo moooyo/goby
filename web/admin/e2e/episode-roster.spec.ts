@@ -115,7 +115,9 @@ async function openRoster(page: Page): Promise<Locator> {
 }
 
 async function importRoster(dialog: Locator, value: EpisodeRosterImport | string): Promise<void> {
-  await dialog.getByLabel('Import roster JSON', { exact: true }).setInputFiles({ name: 'episode-roster.json', mimeType: 'application/json', buffer: Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)) });
+  const input = dialog.getByLabel('Import roster JSON', { exact: true });
+  await expect(input).toBeEnabled();
+  await input.setInputFiles({ name: 'episode-roster.json', mimeType: 'application/json', buffer: Buffer.from(typeof value === 'string' ? value : JSON.stringify(value)) });
 }
 
 async function save(page: Page, dialog: Locator, status = 200): Promise<void> {
@@ -200,6 +202,11 @@ test('entry validation rejects duplicate identities, invalid dates, unsupported 
 test('invalid and oversized imports preserve the existing draft and never write', async ({ page, api }) => {
   const dialog = await openRoster(page);
   await importRoster(dialog, { Source: source, Entries: [first] });
+  await expect(dialog.getByRole('alert')).toHaveText('Imported roster ready for review. Save roster to replace the current expected episode list.');
+  const preview = dialog.getByRole('table', { name: 'Episode roster preview', exact: true });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByRole('row')).toHaveCount(2);
+  await expect(preview).toContainText(first.Name);
   const before = await dialog.getByLabel('Episode entries JSON', { exact: true }).inputValue();
   const invalid = [
     { value: '{', message: 'Enter valid JSON before reviewing the roster.' },
@@ -214,6 +221,7 @@ test('invalid and oversized imports preserve the existing draft and never write'
     await expect(dialog.getByLabel('Episode entries JSON', { exact: true })).toHaveValue(before);
     await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue(source.Key);
   }
+  await expect(dialog.getByLabel('Import roster JSON', { exact: true })).toBeEnabled();
   await dialog.getByLabel('Import roster JSON', { exact: true }).setInputFiles({ name: 'invalid-utf8.json', mimeType: 'application/json', buffer: Buffer.from([0x7b, 0x22, 0x80, 0x22, 0x3a, 0x31, 0x7d]) });
   await expect(dialog).toContainText('encoded as valid UTF-8');
   await expect(dialog.getByLabel('Episode entries JSON', { exact: true })).toHaveValue(before);
