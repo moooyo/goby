@@ -20,10 +20,10 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 	t.Helper()
 	projection := "to_jsonb(original)"
 	if table == "managed_settings" {
-		projection += " - 'server_name_mode' - 'compatibility_max_width' - 'management' - 'runtime_overrides'"
+		projection += " - 'server_name_mode' - 'compatibility_max_width' - 'management' - 'runtime_overrides' - 'sort_remove_words'"
 	}
 	if table == "item_metadata_state" {
-		projection += " - 'music_source' - 'online_source' - 'online_type' - 'online_base'"
+		projection += " - 'music_source' - 'online_source' - 'online_type' - 'online_base' - 'automatic_sort_name_explicit'"
 	}
 	if table == "task_run_children" {
 		projection += " - 'executor_token'"
@@ -139,6 +139,43 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 	}
 }
 
+// These are schema-20 source facts, captured with every other historical field
+// before the upgrade. They independently distinguish the new provenance marker
+// from a blanket false default without rewriting the shared legacy fixture.
+func compatibilityMigrationSeedSortingFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	if _, err := pool.Exec(ctx, `INSERT INTO items(id,library_id,root_id,name,sort_name,type,path,relative_path,local_metadata)
+		VALUES('settings-migration-sort-unicode','settings-migration-library','settings-migration-root','Ä Σ Title','ä σ title','Movie',
+		'/synthetic/settings-library/sort-unicode.mp4','sort-unicode.mp4',NULL),
+		('settings-migration-sort-nfo','settings-migration-library','settings-migration-root','The NFO Title','the nfo title','Movie',
+		'/synthetic/settings-library/sort-nfo.mp4','sort-nfo.mp4','{"SortName":"The NFO Title"}'::jsonb),
+		('settings-migration-sort-custom','settings-migration-library','settings-migration-root','The Historical Title','archival custom order','Movie',
+		'/synthetic/settings-library/sort-custom.mp4','sort-custom.mp4',NULL)`); err != nil {
+		t.Fatalf("seed schema-20 sorting provenance witnesses: %v", err)
+	}
+}
+
+func compatibilityMigrationSortingDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT sort_remove_words IS NOT DISTINCT FROM '{}'::text[] FROM managed_settings WHERE id=1)
+		AND (SELECT count(*)=4 FROM (VALUES
+			('settings-migration-item',false),('settings-migration-sort-unicode',false),
+			('settings-migration-sort-nfo',true),('settings-migration-sort-custom',true)
+		) expected(item_id,is_explicit) JOIN item_metadata_state state ON state.item_id=expected.item_id
+		WHERE state.automatic_sort_name_explicit IS NOT DISTINCT FROM expected.is_explicit)
+		AND (SELECT count(*)=3 FROM (VALUES
+			('settings-migration-sort-unicode','ä σ title'),('settings-migration-sort-nfo','the nfo title'),
+			('settings-migration-sort-custom','archival custom order')
+		) expected(item_id,sort_name) JOIN items item ON item.id=expected.item_id
+		WHERE item.sort_name=expected.sort_name)
+		AND goby_generated_sort_name('Ä Σ Title',(SELECT sort_remove_words FROM managed_settings WHERE id=1))='ä σ title'
+		AND goby_generated_sort_name('The Complete Title',(SELECT sort_remove_words FROM managed_settings WHERE id=1))='the complete title'`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("schema49 sorting defaults or explicit/generated provenance changed historical semantics: %v", err)
+	}
+}
+
 func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testing.T) {
 	migrations, err := database.EmbeddedMigrations()
 	if err != nil || len(migrations) == 0 {
@@ -166,6 +203,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				WHERE id = 1`, test.rawName, test.explicitLimits); err != nil {
 				t.Fatalf("seed original schema-20 settings: %v", err)
 			}
+			compatibilityMigrationSeedSortingFacts(t, ctx, pool)
 			tables := settingsMigrationTables(t, ctx, pool)
 			wantTables := append(strings.Fields(settingsMigrationLegacyTables), "managed_settings")
 			sort.Strings(wantTables)
@@ -183,7 +221,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			if len(columns) != 9 {
 				t.Fatalf("schema 20 managed settings has %d columns, want 9", len(columns))
 			}
-			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width", "management", "runtime_overrides")
+			wantColumns := append(append([]string(nil), columns...), "server_name_mode", "compatibility_max_width", "management", "runtime_overrides", "sort_remove_words")
 			sort.Strings(wantColumns)
 			currentTables := append(append([]string(nil), tables...),
 				"activity_entries", "user_settings", "theme_owner_ids", "theme_reserved_paths", "item_theme_resources",
@@ -204,6 +242,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				compatibilityMigrationPhase3Defaults(t, ctx, pool)
+				compatibilityMigrationSortingDefaults(t, ctx, pool)
 				var dynamicSessions int
 				if err := pool.QueryRow(ctx, `SELECT count(*) FROM play_sessions WHERE is_dynamic IS DISTINCT FROM false`).Scan(&dynamicSessions); err != nil || dynamicSessions != 0 {
 					t.Errorf("current migration marked historical playback sessions as dynamic: count=%d error=%v", dynamicSessions, err)
@@ -274,6 +313,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 					t.Fatalf("repeat compatibility migration with mode %s: %v", state.mode, err)
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
+				compatibilityMigrationSortingDefaults(t, ctx, pool)
 				if after := settingsMigrationSnapshot(t, ctx, pool, "managed_settings"); after != persisted {
 					t.Errorf("repeated compatibility migration changed persisted mode %s, width, or original settings", state.mode)
 				}

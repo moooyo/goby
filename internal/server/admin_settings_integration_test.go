@@ -67,14 +67,10 @@ func adminSettingsHTTPWrite(t *testing.T, f *serverFixture, cookie *http.Cookie,
 
 func adminSettingsHTTPAssertSnapshot(t *testing.T, value map[string]any, revision string) {
 	t.Helper()
-	fields := []string{"Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", "Management", "ManagementDefaults", "ManagementEffects", "Runtime"}
-	if len(value) != len(fields) || value["Revision"] != revision {
-		t.Fatal("settings response changed its exact top-level contract or revision")
-	}
-	for _, field := range fields {
-		if _, present := value[field]; !present {
-			t.Fatalf("settings response omitted %s", field)
-		}
+	assertAdminSettingsDTOFields(t, value, true)
+	assertAdminSettingsSortingDTO(t, value, []string{})
+	if value["Revision"] != revision {
+		t.Fatal("settings response changed its exact revision")
 	}
 	for _, section := range []string{"Defaults", "Overrides", "Effective", "Sources"} {
 		object, ok := value[section].(map[string]any)

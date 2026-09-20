@@ -53,8 +53,31 @@ the exact embedded migration prefix to a fresh PostgreSQL 17 database. The
 generated `schema-49-postgresql-17.json` is 880,331 bytes with SHA-256
 `3d78ea7558a3323544858d16e00dce1abc03102c0d7183706053f1b97d28a633`.
 The exporter process group is closed. These are compiler/catalog-production
-results, not passing product, recovery or client suites. The exported catalog is
-now included for the final phase verification artifact build.
+results, not passing product, recovery or client suites. That initial catalog
+was committed at `d49f6e224a22b43de006e1f80d116db54c4bdbcf` and used for the first
+consolidated build and verification batch.
+
+The first build passed for frontend assets, twelve test binaries and both
+ordinary/embedded applications. The original `verification-01` batch retains
+its failures. Observed completed passing groups include metadata, activity,
+identity, database, backuppg and recoverydb; this is not a passing whole batch.
+The 10,000-file real-media scan/cache regression passed in 402.77 seconds on its
+admitted profile. It does not establish concurrent playback or phase 3 capacity.
+
+Verification exposed a product regression: ordinary lowercase key derivation
+changed the retained filename/embedded-title case of auxiliary media, causing
+cached/forced rescans and owner-derived notifications to rewrite accepted state.
+The repair gives auxiliary source generation, cache comparison and policy
+rebuild the same case-preserving rule. Manual controls and inactive permanent
+roles remain protected. Old failing assertions are retained. This unpublished
+schema49 DDL repair changes the migration digest to
+`fc32b3a69ab5d90dc9b6073714007d9de0376d9e5cac9cdf061469da740b03e3`.
+A replacement catalog must be exported from a new disposable database; the
+original remote database/catalog and all original results remain evidence.
+
+Other source repairs correct the old settings migration/DTO fixture shapes and
+give the standalone metadata-edit test a real catalog owner. Their original
+protected-field comparisons are retained and extended for the new state.
 
 Private admission, setup, compilation and generation receipts are retained under
 `D:/Code/goby/.git/media-analysis-resilience-20260920/phase1` and the owned remote
@@ -63,13 +86,17 @@ root. Credentials and DSNs remain only in the private runtime context.
 The dedicated browser sources are
 `internal/server/media_analysis_resilience_phase1_browser_integration_test.go`
 and `scripts/test-env/media-analysis-resilience-phase1-browser.mjs`, with the
-adjacent execution guide. Their current twenty-stage inventory covers native
+adjacent execution guide. Their current twenty-four-stage inventory covers native
 account changes and queried selection, source-backed TV facts, sorting/import
 consumers, field projection/exclusion, search navigation, a real runtime restart
 and normal cleanup, including dynamic embedded-artwork selection, new audio
 source arrival, disabled extraction, retained images, re-enabled extraction and
-actual decoded image evidence. Final controls and independent observations must match the
-integrated source before executing the batch.
+actual decoded image evidence. Four additional stages cover a real stale-CAS
+conflict, a selective reset with an unsaved sorting draft, an actually committed
+clear whose response is dropped, and explicit restoration after refresh. HTTP
+write counts, revisions and database/catalog state are independently observed.
+The initial `d49f6e2` binary contains twenty stages; the final expanded journey
+requires a new test artifact and separate source-bound result.
 
 After all phase product/test code is complete, freeze the source and use fresh
 owned remote resources. Build frontend assets, ordinary/embedded applications

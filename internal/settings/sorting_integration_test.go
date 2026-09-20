@@ -44,6 +44,20 @@ func TestSortRemoveWordsSQLMatchesGoUnicodeAndRejectsNoncanonicalArrays(t *testi
 			t.Fatalf("SQL/Go rule validation differs: %#v %v", words, err)
 		}
 	}
+	for _, test := range []struct {
+		name  string
+		words []string
+		want  string
+	}{
+		{"The Trailer", []string{}, "The Trailer"}, {"the trailer", []string{}, "the trailer"},
+		{"THE Ä Trailer", []string{"the"}, "Ä Trailer"}, {"Ä Amber", []string{"ä"}, "Amber"},
+		{"The Trailer", []string{"unmatched"}, "The Trailer"},
+	} {
+		var got string
+		if err := pool.QueryRow(ctx, `SELECT goby_generated_sort_name($1,$2,true)`, test.name, test.words).Scan(&got); err != nil || got != test.want {
+			t.Fatalf("auxiliary source case/prefix derivation=%q want%q: %v", got, test.want, err)
+		}
+	}
 	for _, expression := range []string{"ARRAY[['a','b'],['c','d']]::text[]", "'[0:1]={a,b}'::text[]", "ARRAY['a',NULL]::text[]", "NULL::text[]"} {
 		var accepted bool
 		if err := pool.QueryRow(ctx, `SELECT goby_valid_sort_remove_words(`+expression+`)`).Scan(&accepted); err != nil || accepted {

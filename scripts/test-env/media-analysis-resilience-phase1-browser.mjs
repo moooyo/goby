@@ -6,7 +6,8 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const phases = ['authentication', 'user-saved', 'user-query', 'specials-before', 'metadata-saved', 'specials-after',
-  'sorting-saved', 'sorting-consumed', 'imports-disabled', 'imports-retained', 'imports-enabled', 'imports-consumed',
+  'sorting-saved', 'sorting-conflict', 'sorting-selective-reset', 'sorting-response-loss', 'sorting-restored',
+  'sorting-consumed', 'imports-disabled', 'imports-retained', 'imports-enabled', 'imports-consumed',
   'embedded-disabled', 'embedded-absent', 'embedded-enabled', 'embedded-present', 'fields', 'restart', 'persisted', 'cleanup'];
 const result = { Marker: 'goby-media-analysis-phase1-browser-result-v1', RunId: '', Complete: false, Stages: [],
   Checks: Object.fromEntries(phases.map(phase => [phase, false])), PageErrors: 0, PageErrorDetails: [], ForeignRequests: 0,
@@ -21,6 +22,8 @@ let fixture, browser, context, page, deadline, diagnosticPage;
 let currentPhase = 'admission', currentOperation = 'read-context';
 const clients = [];
 let administrator, viewer, settingsRevision, seriesRevision, placementRevision, libraryRevision, musicLibraryRevision, newAudioId;
+let settingsState;
+const settingsWriteCounts = { PUT: 0, POST: 0 };
 async function privateJSON(filename, maximum = 1 << 20) {
   const handle = await fs.open(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
@@ -385,10 +388,150 @@ async function saveSorting() {
   requireThat(saved.Submitted.Revision === loaded.Body.Revision && saved.Submitted.Sorting.SortRemoveWords.length === 1 &&
     saved.Submitted.Sorting.SortRemoveWords[0].toLowerCase() === 'the', 'sorting_save_not_current_cas');
   settingsRevision = saved.Body.Revision;
+  settingsState = saved.Body;
   requireThat(saved.Body.Sorting.SortRemoveWords.length === 1 && saved.Body.Sorting.SortRemoveWords[0].toLowerCase() === 'the', 'sorting_save_response');
   await waitDisabled(page.getByRole('button', { name: 'Save settings', exact: true }), 'settings_save_not_settled');
   await inspectMovieOrder(false);
   await screenshot('native-sorting-configuration');
+}
+const sortingInput = () => page.getByRole('textbox', { name: 'Words removed from sort names', exact: true });
+const currentSettings = async () => page.evaluate(async () => {
+  const response = await fetch('/admin/v1/settings', { credentials: 'same-origin', redirect: 'error' });
+  if (response.status !== 200) throw new Error('actual_settings_read_failed');
+  return response.json();
+});
+function assertSettingsWrites(before, puts, resets) {
+  requireThat(settingsWriteCounts.PUT - before.PUT === puts && settingsWriteCounts.POST - before.POST === resets, 'settings_mutation_replayed');
+}
+async function refreshBlockedSettings() {
+  await page.getByRole('button', { name: 'Reload latest settings', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Discard unsaved settings changes?', exact: true });
+  await dialog.waitFor();
+  const loaded = await responseFor('GET', '/admin/v1/settings', () => dialog.getByRole('button', { name: 'Discard draft and reload', exact: true }).click());
+  await sortingInput().waitFor();
+  const until = Date.now() + 15000;
+  while (Date.now() < until) {
+    if (await sortingInput().isEnabled() && await sortingInput().inputValue() === loaded.Body.Sorting.SortRemoveWords.join('\n')) {
+      settingsState = loaded.Body; settingsRevision = loaded.Body.Revision; return loaded.Body;
+    }
+    await sleep(50);
+  }
+  fail('sorting_explicit_reload_not_settled');
+}
+async function sortingConflict() {
+  const before = { ...settingsWriteCounts }, base = settingsRevision;
+  await sortingInput().fill('The\na');
+  // This independent real HTTP request advances CAS while the form retains its
+  // older revision. It does not write through SQL or replace an API response.
+  const winner = await page.evaluate(async input => {
+    const session = await fetch('/admin/v1/session', { credentials: 'same-origin', redirect: 'error' });
+    if (session.status !== 200) throw new Error('control_session_unavailable');
+    const current = await session.json();
+    const response = await fetch('/admin/v1/settings', { method: 'PUT', credentials: 'same-origin', redirect: 'error',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': current.CSRFToken }, body: JSON.stringify(input) });
+    return { Status: response.status, Body: await response.json() };
+  }, { Revision: base, Overrides: settingsState.Overrides, ServerNameMode: settingsState.ServerNameMode,
+    Encoding: { TranscodingMaxWidth: 640 }, Sorting: { SortRemoveWords: ['The'] } });
+  requireThat(winner.Status === 200 && BigInt(winner.Body.Revision) === BigInt(base) + 1n &&
+    winner.Body.Encoding.TranscodingMaxWidth === 640 && JSON.stringify(winner.Body.Sorting.SortRemoveWords) === '["The"]', 'actual_settings_winner_failed');
+  const rejected = await responseFor('PUT', '/admin/v1/settings', () => page.getByRole('button', { name: 'Save settings', exact: true }).click(), 409);
+  requireThat(rejected.Submitted.Revision === base && JSON.stringify(rejected.Submitted.Sorting.SortRemoveWords) === '["The","a"]', 'conflict_did_not_submit_stale_sorting_draft');
+  await page.getByText(/These settings changed after you loaded them/).waitFor();
+  requireThat(await sortingInput().inputValue() === 'The\na' && !await sortingInput().isEnabled() &&
+    !await page.getByRole('button', { name: 'Save settings', exact: true }).isEnabled(), 'conflict_lost_or_unlocked_sorting_draft');
+  const stored = await currentSettings();
+  requireThat(stored.Revision === winner.Body.Revision && JSON.stringify(stored.Sorting.SortRemoveWords) === '["The"]', 'stale_sorting_overwrote_winner');
+  const reloaded = await refreshBlockedSettings();
+  requireThat(reloaded.Revision === winner.Body.Revision && await sortingInput().inputValue() === 'The', 'conflict_reload_lost_winner');
+  assertSettingsWrites(before, 2, 0); await inspectMovieOrder(false);
+  const evidence = { BaseRevision: base, SettingsRevision: reloaded.Revision,
+    NativeMutationCounts: [{ Method: 'PUT', Status: winner.Status }, { Method: 'PUT', Status: rejected.Status }] };
+  result.SortingConflict = evidence; return evidence;
+}
+async function sortingSelectiveReset() {
+  const before = { ...settingsWriteCounts }, base = settingsRevision;
+  await sortingInput().fill('The\na');
+  await page.getByRole('button', { name: 'Reset saved overrides', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Reset saved overrides', exact: true });
+  await dialog.getByRole('checkbox', { name: 'Select all saved overrides', exact: true }).uncheck();
+  await dialog.getByRole('checkbox', { name: /^Additional video width limit/ }).check();
+  const reset = await responseFor('POST', '/admin/v1/settings/reset', () => dialog.getByRole('button', { name: 'Reset selected settings', exact: true }).click());
+  requireThat(reset.Submitted.Revision === base && JSON.stringify(reset.Submitted.Fields) === '["TranscodingMaxWidth"]' &&
+    BigInt(reset.Body.Revision) === BigInt(base) + 1n && reset.Body.Encoding.TranscodingMaxWidth === 0 &&
+    JSON.stringify(reset.Body.Sorting.SortRemoveWords) === '["The"]', 'selective_reset_changed_saved_sorting');
+  await page.getByText('Selected settings reset. Other unsaved edits remain in the form.', { exact: true }).waitFor();
+  requireThat(await sortingInput().inputValue() === 'The\na' && await sortingInput().isEnabled() &&
+    await page.getByRole('button', { name: 'Save settings', exact: true }).isEnabled(), 'selective_reset_lost_dirty_sorting');
+  const stored = await currentSettings();
+  requireThat(stored.Revision === reset.Body.Revision && JSON.stringify(stored.Sorting.SortRemoveWords) === '["The"]', 'dirty_sorting_was_published_by_reset');
+  await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+  let discard = page.getByRole('dialog', { name: 'Discard unsaved settings changes?', exact: true });
+  await discard.getByRole('button', { name: 'Keep editing', exact: true }).click();
+  requireThat(await sortingInput().inputValue() === 'The\na', 'cancelled_discard_lost_sorting_draft');
+  await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+  discard = page.getByRole('dialog', { name: 'Discard unsaved settings changes?', exact: true });
+  await discard.getByRole('button', { name: 'Discard changes', exact: true }).click();
+  await waitDisabled(page.getByRole('button', { name: 'Save settings', exact: true }), 'sorting_discard_not_settled');
+  requireThat(await sortingInput().inputValue() === 'The', 'confirmed_discard_did_not_restore_saved_sorting');
+  settingsState = stored; settingsRevision = stored.Revision;
+  assertSettingsWrites(before, 0, 1); await inspectMovieOrder(false);
+  const evidence = { BaseRevision: base, SettingsRevision: stored.Revision, NativeMutationCounts: [{ Method: 'POST', Status: reset.Status }] };
+  result.SortingSelectiveReset = evidence; return evidence;
+}
+async function sortingResponseLoss() {
+  const before = { ...settingsWriteCounts }, base = settingsRevision;
+  await sortingInput().fill('');
+  const endpoint = `${fixture.BaseURL}/admin/v1/settings`;
+  let committed, forwarded = 0, failure = false, status;
+  const intercept = async route => {
+    if (route.request().method() !== 'PUT' || forwarded > 0) { await route.continue(); return; }
+    forwarded++;
+    const input = route.request().postDataJSON();
+    if (input.Revision !== base || JSON.stringify(input.Sorting?.SortRemoveWords) !== '[]') { failure = true; await route.abort('failed'); return; }
+    const response = await route.fetch({ maxRedirects: 0 });
+    status = response.status();
+    if (status !== 200) { failure = true; await route.fulfill({ response }); return; }
+    committed = await response.json();
+    await response.dispose();
+    // The backend has committed. Only delivery of this real response is lost.
+    await route.abort('failed');
+  };
+  await page.route(endpoint, intercept);
+  try {
+    await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+    const until = Date.now() + 20000;
+    while (!committed && !failure && Date.now() < until) await sleep(50);
+    requireThat(!failure && committed && forwarded === 1 && status === 200, 'real_sorting_commit_not_observed');
+    await page.getByText(/The result could not be confirmed/).waitFor();
+    requireThat(await sortingInput().inputValue() === '' && !await sortingInput().isEnabled() &&
+      !await page.getByRole('button', { name: 'Save settings', exact: true }).isEnabled(), 'lost_response_did_not_fence_sorting_draft');
+    const stored = await currentSettings();
+    requireThat(BigInt(stored.Revision) === BigInt(base) + 1n && stored.Revision === committed.Revision &&
+      Array.isArray(stored.Sorting.SortRemoveWords) && stored.Sorting.SortRemoveWords.length === 0, 'lost_response_sorting_not_committed_exactly_once');
+    const list = (await api(viewer, `/emby/Items?UserId=${fixture.ViewerId}&ParentId=${fixture.MovieLibraryId}&Recursive=true&IncludeItemTypes=Movie&SortBy=SortName`)).Body;
+    const QueryIds = list.Items.map(item => item.Id);
+    requireThat(list.TotalRecordCount === 2 && JSON.stringify(QueryIds) === JSON.stringify([fixture.MovieBId, fixture.MovieAId]), 'cleared_sorting_not_consumed');
+    assertSettingsWrites(before, 1, 0);
+    settingsState = stored; settingsRevision = stored.Revision;
+    const evidence = { BaseRevision: base, SettingsRevision: stored.Revision, CommittedRevision: committed.Revision,
+      QueryIds, NativeMutationCounts: [{ Method: 'PUT', Status: status }] };
+    result.SortingResponseLoss = evidence; return evidence;
+  } finally { await page.unroute(endpoint, intercept); }
+}
+async function restoreSortingAfterLoss() {
+  const before = { ...settingsWriteCounts }, base = settingsRevision;
+  const reloaded = await refreshBlockedSettings();
+  requireThat(reloaded.Revision === base && reloaded.Sorting.SortRemoveWords.length === 0 && await sortingInput().inputValue() === '', 'lost_response_reload_replayed_or_lost_clear');
+  assertSettingsWrites(before, 0, 0);
+  await sortingInput().fill('The');
+  const saved = await responseFor('PUT', '/admin/v1/settings', () => page.getByRole('button', { name: 'Save settings', exact: true }).click());
+  requireThat(saved.Submitted.Revision === base && BigInt(saved.Body.Revision) === BigInt(base) + 1n &&
+    JSON.stringify(saved.Body.Sorting.SortRemoveWords) === '["The"]', 'explicit_sorting_restore_failed');
+  settingsState = saved.Body; settingsRevision = saved.Body.Revision;
+  await waitDisabled(page.getByRole('button', { name: 'Save settings', exact: true }), 'restored_sorting_not_settled');
+  const QueryIds = await inspectMovieOrder(false); assertSettingsWrites(before, 1, 0);
+  const evidence = { BaseRevision: base, SettingsRevision: saved.Body.Revision, QueryIds, NativeMutationCounts: [{ Method: 'PUT', Status: saved.Status }] };
+  result.SortingRestored = evidence; return evidence;
 }
 async function setImports(enabled) {
   await page.goto(`${fixture.BaseURL}/admin/libraries`);
@@ -552,6 +695,12 @@ async function main() {
   deadline = setTimeout(() => { result.DeadlineExceeded = true; void browser.close(); }, 540000);
   result.RunId = fixture.RunId;
   context = await guardedContext(); page = await context.newPage(); diagnosticPage = page;
+  page.on('request', request => {
+    const url = new URL(request.url());
+    if (url.origin !== fixture.BaseURL) return;
+    if (url.pathname === '/admin/v1/settings' && request.method() === 'PUT') settingsWriteCounts.PUT++;
+    if (url.pathname === '/admin/v1/settings/reset' && request.method() === 'POST') settingsWriteCounts.POST++;
+  });
   currentPhase = 'authentication';
   await operation('native-sign-in', nativeLogin);
   administrator = await operation('administrator-consumer-login', () => consumer(fixture.AdminName, fixture.AdminPassword, fixture.AdminId, 'administrator'));
@@ -564,6 +713,10 @@ async function main() {
   currentPhase = 'specials-after'; let ScanJobId = await operation('scan-tv-with-manual-placement', () => scanLibrary(fixture.TelevisionLibraryId, fixture.TelevisionLibraryName));
   QueryIds = await operation('consume-edited-special-placement', () => inspectSpecials(true)); await acknowledge(currentPhase, { ScanJobId, QueryIds });
   currentPhase = 'sorting-saved'; await operation('save-live-sorting-policy', saveSorting); await acknowledge(currentPhase, { SettingsRevision: settingsRevision });
+  currentPhase = 'sorting-conflict'; await acknowledge(currentPhase, await operation('recover-real-sorting-cas-conflict', sortingConflict));
+  currentPhase = 'sorting-selective-reset'; await acknowledge(currentPhase, await operation('preserve-dirty-sorting-through-selective-reset', sortingSelectiveReset));
+  currentPhase = 'sorting-response-loss'; await acknowledge(currentPhase, await operation('observe-real-cleared-sorting-after-response-loss', sortingResponseLoss));
+  currentPhase = 'sorting-restored'; await acknowledge(currentPhase, await operation('reload-cleared-sorting-and-explicitly-restore', restoreSortingAfterLoss));
   currentPhase = 'sorting-consumed'; ScanJobId = await operation('scan-with-saved-sorting', () => scanLibrary(fixture.MovieLibraryId, fixture.MovieLibraryName));
   QueryIds = await inspectMovieOrder(false); await acknowledge(currentPhase, { ScanJobId, QueryIds });
   currentPhase = 'imports-disabled'; ScanJobId = await operation('disable-import-and-scan', () => setImports(false)); await acknowledge(currentPhase, { ScanJobId, LibraryRevision: libraryRevision });

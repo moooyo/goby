@@ -142,7 +142,7 @@ func TestSettingsRuntimeDTOUsesFrozenDefaultsSourcesAndIndependentValues(t *test
 func TestAdminSettingsRuntimeDTOSeparatesObservedBindingAndSafeInventory(t *testing.T) {
 	defaults := settings.DefaultRuntimeOptions()
 	selected := settings.HardwareSelection{Decode: "vaapi", Encode: "vaapi", DeviceID: "amd-fixture"}
-	snapshot := settings.Snapshot{Revision: 9007199254740994, Runtime: settings.RuntimeSnapshot{
+	snapshot := settings.Snapshot{Revision: 9007199254740994, Management: settings.DefaultManagement(), Sorting: settings.DefaultSorting(), Runtime: settings.RuntimeSnapshot{
 		Defaults:       settings.RuntimeValues{Network: defaults.Network, Hardware: defaults.Hardware, Execution: defaults.Execution},
 		DesiredNetwork: settings.NetworkValues{BindHost: "127.0.0.1", HttpPort: 9090},
 		Hardware:       selected, HardwareAvailable: true, Execution: defaults.Execution,
@@ -165,8 +165,10 @@ func TestAdminSettingsRuntimeDTOSeparatesObservedBindingAndSafeInventory(t *test
 	if json.Unmarshal(data, &value) != nil {
 		t.Fatal("runtime settings were not valid JSON")
 	}
+	assertAdminSettingsDTOFields(t, value, true)
+	assertAdminSettingsSortingDTO(t, value, []string{})
 	runtime := value["Runtime"].(map[string]any)
-	if len(value) != 13 || len(runtime) != 8 || len(runtime["Defaults"].(map[string]any)) != 7 ||
+	if len(runtime) != 8 || len(runtime["Defaults"].(map[string]any)) != 7 ||
 		len(runtime["Overrides"].(map[string]any)) != 7 || len(runtime["Effective"].(map[string]any)) != 6 || len(runtime["Sources"].(map[string]any)) != 7 {
 		t.Fatal("runtime settings changed their closed projection shape")
 	}

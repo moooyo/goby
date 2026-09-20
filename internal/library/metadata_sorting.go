@@ -16,7 +16,7 @@ import (
 // applyAutomaticSorting runs after source precedence is established and before
 // manual controls are applied. Raw source titles remain intact; each generated
 // key is derived from the full automatic Name so clearing rules is reversible.
-func applyAutomaticSorting(ctx context.Context, tx pgx.Tx, itemID string, automatic, source []byte) ([]byte, error) {
+func applyAutomaticSorting(ctx context.Context, tx pgx.Tx, itemID string, automatic, source []byte, auxiliary bool) ([]byte, error) {
 	fields, err := metadataSourceObject(source)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,12 @@ func applyAutomaticSorting(ctx context.Context, tx pgx.Tx, itemID string, automa
 		return automatic, nil
 	}
 	var result []byte
-	err = tx.QueryRow(ctx, `SELECT jsonb_set($1::jsonb,'{SortName}',to_jsonb(goby_generated_sort_name($1::jsonb->>'Name',sort_remove_words))) FROM managed_settings WHERE id=1`, automatic).Scan(&result)
+	// New auxiliary resources are persisted before their permanent role row.
+	// The scanner supplies that role explicitly; refreshes of retained active or
+	// inactive resources can also recover it from the permanent association.
+	err = tx.QueryRow(ctx, `SELECT jsonb_set($1::jsonb,'{SortName}',to_jsonb(goby_generated_sort_name($1::jsonb->>'Name',sort_remove_words,
+		$3 OR EXISTS(SELECT 1 FROM item_theme_resources role WHERE role.resource_item_id=$2)
+		OR EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=$2)))) FROM managed_settings WHERE id=1`, automatic, itemID, auxiliary).Scan(&result)
 	if err != nil {
 		return nil, fmt.Errorf("derive automatic sort key: %w", err)
 	}

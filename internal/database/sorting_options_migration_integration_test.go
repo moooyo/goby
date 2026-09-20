@@ -19,6 +19,18 @@ func TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys(t *testing
 			UPDATE libraries SET options='{"EnableLocalMetadata":false,"EnableLocalImages":true}' WHERE id='wave-library'`); err != nil {
 				t.Fatal(err)
 			}
+			if _, err := pool.Exec(ctx, `INSERT INTO items(id,library_id,root_id,parent_id,name,sort_name,type,path,relative_path) VALUES
+			('sort-extra-active','wave-library','wave-root','wave-movie','The Trailer','The Trailer','Video','/not-opened/wave/trailers/The Trailer.mp4','trailers/The Trailer.mp4'),
+			('sort-extra-inactive','wave-library','wave-root','wave-movie','the trailer','the trailer','Video','/not-opened/wave/trailers/the trailer.mp4','trailers/the trailer.mp4'),
+			('sort-theme-active','wave-library','wave-root','wave-movie','The Theme Song','The Theme Song','Audio','/not-opened/wave/theme-music/song.mp3','theme-music/song.mp3'),
+			('sort-theme-inactive','wave-library','wave-root','wave-movie','The Backdrop','The Backdrop','Video','/not-opened/wave/backdrops/The Backdrop.mp4','backdrops/The Backdrop.mp4'),
+			('sort-extra-custom','wave-library','wave-root','wave-movie','The Custom','historical custom order','Video','/not-opened/wave/trailers/The Custom.mp4','trailers/The Custom.mp4');
+			INSERT INTO extra_reserved_paths(root_id,relative_path,is_directory) VALUES('wave-root','trailers',true);
+			INSERT INTO theme_reserved_paths(root_id,relative_path,is_directory) VALUES('wave-root','theme-music',true),('wave-root','backdrops',true);
+			INSERT INTO item_extra_resources(resource_item_id,owner_item_id,kind,active) VALUES('sort-extra-active','wave-movie','trailer',true),('sort-extra-inactive','wave-movie','trailer',false),('sort-extra-custom','wave-movie','trailer',false);
+			INSERT INTO item_theme_resources(resource_item_id,owner_item_id,kind,active) VALUES('sort-theme-active','wave-movie','song',true),('sort-theme-inactive','wave-movie','video',false)`); err != nil {
+				t.Fatal(err)
+			}
 			var before, after string
 			if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(ms) ORDER BY item_id)::text FROM item_metadata_state ms`).Scan(&before); err != nil {
 				t.Fatal(err)
@@ -38,7 +50,8 @@ func TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys(t *testing
 			if err := pool.QueryRow(ctx, `SELECT COALESCE(jsonb_agg(to_jsonb(m) ORDER BY version),'[]'::jsonb)::text FROM schema_migrations m WHERE version<=48`).Scan(&retained); err != nil || retained != history {
 				t.Fatalf("migration rewrote published schema48 history: %v", err)
 			}
-			for id, want := range map[string]bool{"sort-generated": false, "sort-nfo": true, "sort-legacy-custom": true} {
+			for id, want := range map[string]bool{"sort-generated": false, "sort-nfo": true, "sort-legacy-custom": true,
+				"sort-extra-active": false, "sort-extra-inactive": false, "sort-theme-active": false, "sort-theme-inactive": false, "sort-extra-custom": true} {
 				var explicit bool
 				if err := pool.QueryRow(ctx, `SELECT automatic_sort_name_explicit FROM item_metadata_state WHERE item_id=$1`, id).Scan(&explicit); err != nil || explicit != want {
 					t.Fatalf("explicit provenance for%s=%v want%v: %v", id, explicit, want, err)
@@ -65,6 +78,32 @@ func TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys(t *testing
 			}
 			if migrationHistory(t, ctx, pool) != complete {
 				t.Fatal("repeated migration changed history")
+			}
+			for _, removed := range []bool{true, false} {
+				words := []string{}
+				if removed {
+					words = []string{"The"}
+				}
+				if _, err := pool.Exec(ctx, `UPDATE managed_settings SET sort_remove_words=$1`, words); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := pool.Exec(ctx, `SELECT goby_rebuild_generated_sort_names()`); err != nil {
+					t.Fatal(err)
+				}
+				for id, original := range map[string]string{"sort-extra-active": "The Trailer", "sort-extra-inactive": "the trailer", "sort-theme-active": "The Theme Song", "sort-theme-inactive": "The Backdrop", "sort-extra-custom": "historical custom order"} {
+					want := original
+					if removed && id != "sort-extra-custom" {
+						want = original[4:]
+					}
+					var name, sortName string
+					wantName := original
+					if id == "sort-extra-custom" {
+						wantName = "The Custom"
+					}
+					if err := pool.QueryRow(ctx, `SELECT name,sort_name FROM items WHERE id=$1`, id).Scan(&name, &sortName); err != nil || sortName != want || name != wantName {
+						t.Fatalf("retained auxiliary sorting mode changed: item%s key%q want%q error%v", id, sortName, want, err)
+					}
+				}
 			}
 		})
 	}

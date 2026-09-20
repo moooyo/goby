@@ -70,7 +70,9 @@ func TestTelevisionMetadataEditValidationAndControls(t *testing.T) {
 }
 
 func TestQueryStandaloneSpecialPlacementCountsAndMetadataEdits(t *testing.T) {
-	ctx, store := libraryQueryTestStore(t)
+	// This query scenario also writes administrator metadata. Use the real
+	// catalog owner lifecycle rather than the pool-only query fixture.
+	ctx, _, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	seedLibraryQueryFixture(t, ctx, store.pool)
 	if _, err := store.pool.Exec(ctx, `UPDATE items SET parent_index_number=1 WHERE id IN ('episode-b1','episode-b2');
 		INSERT INTO items (id,library_id,parent_id,name,sort_name,type,is_folder,index_number,parent_index_number,local_metadata) VALUES
@@ -106,14 +108,23 @@ func TestQueryStandaloneSpecialPlacementCountsAndMetadataEdits(t *testing.T) {
 	}
 	actor := metadataEditTestActor(t, ctx, store.pool, "tv-editor")
 	detail := metadataEditTestDetail(t, ctx, store, actor, "before-b")
+	if detail.Automatic.AirsBeforeSeasonNumber == nil || *detail.Automatic.AirsBeforeSeasonNumber != 1 {
+		t.Fatal("the editable fixture lost its automatic source placement")
+	}
 	detail = metadataEditTestUpdate(t, ctx, store, actor, detail, map[string]json.RawMessage{"AirsBeforeSeasonNumber": json.RawMessage("null")}, nil)
+	if detail.Effective.AirsBeforeSeasonNumber != nil || detail.Automatic.AirsBeforeSeasonNumber == nil || *detail.Automatic.AirsBeforeSeasonNumber != 1 {
+		t.Fatal("clearing effective placement changed the retained automatic source")
+	}
 	result, err := store.QueryItems(ctx, Query{UserID: "restricted", Recursive: true, Ids: []string{"before-b"}, IsStandaloneSpecial: tvFilterBool(true)})
 	if err != nil || result.TotalRecordCount != 1 {
 		t.Fatalf("manual null did not clear effective placement before querying: %#v, %v", result, err)
 	}
-	metadataEditTestUpdate(t, ctx, store, actor, detail, nil, nil)
+	detail = metadataEditTestUpdate(t, ctx, store, actor, detail, nil, nil)
+	if detail.Effective.AirsBeforeSeasonNumber == nil || *detail.Effective.AirsBeforeSeasonNumber != 1 || len(detail.Overrides) != 0 {
+		t.Fatal("removing the override did not restore the retained source placement")
+	}
 	result, err = store.QueryItems(ctx, Query{UserID: "restricted", Recursive: true, Ids: []string{"before-b"}, IsStandaloneSpecial: tvFilterBool(false)})
 	if err != nil || result.TotalRecordCount != 1 {
-		t.Fatalf("removing the override did not restore NFO placement: %#v, %v", result, err)
+		t.Fatalf("removing the override did not restore source placement: %#v, %v", result, err)
 	}
 }

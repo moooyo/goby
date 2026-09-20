@@ -180,6 +180,7 @@ type preparedThemeFile struct {
 	id        string
 	owner     themeDirectoryOwner
 	name      string
+	sortName  string
 	itemType  string
 	changed   bool
 }
@@ -640,6 +641,12 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 			input.probe.EmbeddedMusic.Version == media.CurrentMusicMetadataVersion && input.probe.EmbeddedMusic.Title != "" {
 			file.name = input.probe.EmbeddedMusic.Title
 		}
+		// Auxiliary sort keys historically preserve filename/title case. Use
+		// the same derivation as publication and configuration rebuilds so a
+		// configured prefix does not make every cached visit appear changed.
+		if err := state.store.pool.QueryRow(state.task.ctx, `SELECT goby_generated_sort_name($1,sort_remove_words,true) FROM managed_settings WHERE id=1`, file.name).Scan(&file.sortName); err != nil {
+			return nil, err
+		}
 		stored := input.stored
 		previousName, previousSort, previousOverview := stored.name, stored.sortName, stored.overview
 		if stored.automatic != nil {
@@ -654,7 +661,7 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 		}
 		file.changed = !input.unchanged || stored.id == "" || stored.rootID != state.root.id ||
 			stored.path != filepath.Join(state.root.path, filepath.FromSlash(candidate.relative)) || stored.parentID != group.owner.id ||
-			stored.itemType != itemType || previousName != file.name || previousSort != file.name || previousOverview != "" ||
+			stored.itemType != itemType || previousName != file.name || previousSort != file.sortName || previousOverview != "" ||
 			stored.indexNumber != 0 || stored.parentIndexNumber != 0 || !reflect.DeepEqual(stored.local, localMetadata{})
 	}
 	if err := state.verifyThemeDirectories(group.relative, false); err != nil {
@@ -849,14 +856,14 @@ func persistThemeFile(ctx context.Context, tx pgx.Tx, file *preparedThemeFile) e
 	}
 	_, err = tx.Exec(ctx, `INSERT INTO items(id,library_id,root_id,parent_id,name,sort_name,type,path,relative_path,
 		index_number,parent_index_number,media,file_identity,file_size,modified_at,overview,local_metadata,local_metadata_hash,local_metadata_path)
-		VALUES($1,$2,$3,$4,$5,$5,$6,$7,$8,0,0,$9,$10,$11,$12,'',NULL,'','')
+		VALUES($1,$2,$3,$4,$5,$13,$6,$7,$8,0,0,$9,$10,$11,$12,'',NULL,'','')
 		ON CONFLICT(id) DO UPDATE SET root_id=EXCLUDED.root_id,parent_id=EXCLUDED.parent_id,name=EXCLUDED.name,
 		sort_name=EXCLUDED.sort_name,type=EXCLUDED.type,path=EXCLUDED.path,relative_path=EXCLUDED.relative_path,is_folder=false,
 		index_number=0,parent_index_number=0,media=EXCLUDED.media,file_identity=EXCLUDED.file_identity,file_size=EXCLUDED.file_size,
 		modified_at=EXCLUDED.modified_at,overview='',local_metadata=NULL,local_metadata_hash='',local_metadata_path='',updated_at=now()`,
 		file.id, file.state.library.ID, file.state.root.id, file.owner.id, file.name, file.itemType,
 		filepath.Join(file.state.root.path, filepath.FromSlash(file.candidate.relative)), file.candidate.relative,
-		encoded, fileIdentity(file.input.info), file.input.info.Size(), catalogModifiedTime(file.input.info))
+		encoded, fileIdentity(file.input.info), file.input.info.Size(), catalogModifiedTime(file.input.info), file.sortName)
 	if err != nil {
 		return err
 	}
@@ -867,7 +874,7 @@ func persistThemeFile(ctx context.Context, tx pgx.Tx, file *preparedThemeFile) e
 	}
 	// Theme and extra files share the same successful-refresh repair contract;
 	// the projection still contains only this resource's own accepted metadata.
-	return syncScannedMetadata(ctx, tx, file.id, scannedMetadataOptions{ForceEntities: file.input.stored.id == "" || file.state.task.job.ForceProbe})
+	return syncScannedMetadata(ctx, tx, file.id, scannedMetadataOptions{ForceEntities: file.input.stored.id == "" || file.state.task.job.ForceProbe, Auxiliary: true})
 }
 
 func uniqueThemeIDs(values []string) []string {

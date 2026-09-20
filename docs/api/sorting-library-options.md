@@ -29,7 +29,7 @@ database also requires a one-dimensional, one-based array without null elements.
 Empty arrays use PostgreSQL's ordinary canonical empty-array representation.
 `settings.ValidateStoredSorting` is the shared strict runtime/archive validator.
 
-Generated keys use Go 1.27.1 / Unicode 17.0.0 simple lowercase, independent of
+Ordinary generated keys use Go 1.27.1 / Unicode 17.0.0 simple lowercase, independent of
 PostgreSQL locale. The SQL translation table and browser validation table are
 derived from that toolchain's `unicode.CaseRanges`; its `unicode/tables.go`
 SHA-256 is `AC0E5D5D1B58ED4B02D7CB4A0085BDEFBDB4F7AAE6FADDDBC9477F8463DA8BD8`.
@@ -37,7 +37,7 @@ This is simple lowercase, without normalization, transliteration or full case
 folding. A future Unicode-table upgrade must preserve the published migration
 and explicitly reconcile stored validation and derivation behavior.
 
-The default empty rule set preserves Goby's previous `strings.ToLower(Name)`
+For ordinary items, the default empty rule set preserves Goby's previous `strings.ToLower(Name)`
 key, including any retained surrounding whitespace. With rules, matching uses
 the trimmed lowercase name. One whole leading token may be removed when it is
 followed by Unicode whitespace and a nonempty remainder; the remainder is
@@ -46,6 +46,18 @@ trimmed. Tokens are literal strings, not regular expressions. `The Amber` become
 lowercase keys. `The The Amber` becomes `the amber`, without repeated stripping.
 The original-server fixture establishes array replacement, not this internal
 algorithm. The token-removal policy is an explicit Goby contract.
+
+Theme and extra resources have a different historical automatic baseline:
+their own filename or embedded song title, with its original case. The same
+literal-prefix matcher preserves that baseline and the remaining text's case.
+With `The`, a resource named `The Trailer` receives sort key `Trailer`; clearing
+rules restores `The Trailer`. An unmatched rule also preserves the original
+case. This mode covers permanent active and inactive auxiliary identities, and
+the scanner supplies the mode explicitly before a new role association exists.
+The auxiliary cache comparison uses that same SQL function, so prefix rules do
+not create repeated updates or probes. The owner-derived trailer Name/SortName
+wire projection remains read-only and independent of the resource's source
+metadata and per-field manual controls.
 
 A settings change rebuilds catalog keys immediately in the same owned database
 transaction as the settings CAS, activity record and configuration event. A scan
@@ -57,6 +69,10 @@ values remain explicit. Migration conservatively marks an unmatched historical
 automatic sort key as explicit until a later source scan/refresh establishes its
 current provenance. A Name-only manual edit retains the pre-existing independent
 SortName behavior.
+
+For retained auxiliary rows, the provenance comparison uses their own case-
+preserving baseline rather than mistaking every uppercase filename for an
+explicit custom key. A genuinely different historical key remains protected.
 
 `item_metadata_state.automatic` and `items.sort_name` hold the generated/effective
 keys. The sparse `effective` JSON remains the original source projection with

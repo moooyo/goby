@@ -23,9 +23,11 @@ BEGIN
     RETURN true;
 END $$;
 
-CREATE FUNCTION goby_generated_sort_name(name text, words text[]) RETURNS text
+-- Auxiliary automatic source keys retain filename/embedded-title case. Prefix
+-- matching is still case-insensitive and shares the ordinary literal rule.
+CREATE FUNCTION goby_generated_sort_name(name text, words text[], preserve_case boolean DEFAULT false) RETURNS text
 LANGUAGE plpgsql IMMUTABLE AS $$
-DECLARE original text := goby_sort_fold(COALESCE(name,''));
+DECLARE original text := CASE WHEN preserve_case THEN COALESCE(name,'') ELSE goby_sort_fold(COALESCE(name,'')) END;
         candidate text;
         word text;
         remaining text;
@@ -33,7 +35,7 @@ DECLARE original text := goby_sort_fold(COALESCE(name,''));
 BEGIN
     candidate := btrim(original,whitespace);
     FOREACH word IN ARRAY words LOOP
-        IF left(candidate,char_length(word))=goby_sort_fold(word)
+        IF goby_sort_fold(left(candidate,char_length(word)))=goby_sort_fold(word)
            AND char_length(candidate)>char_length(word)
            AND strpos(whitespace,substr(candidate,char_length(word)+1,1))>0 THEN
             remaining := btrim(substr(candidate,char_length(word)+1),whitespace);
@@ -47,10 +49,15 @@ ALTER TABLE managed_settings ADD COLUMN sort_remove_words text[] NOT NULL DEFAUL
     CHECK(goby_valid_sort_remove_words(sort_remove_words));
 
 ALTER TABLE item_metadata_state ADD COLUMN automatic_sort_name_explicit boolean NOT NULL DEFAULT false;
+-- Permanent auxiliary roles include inactive history. Their legacy baseline
+-- is the exact source Name, not its folded ordinary-item sort key.
 UPDATE item_metadata_state ms SET automatic_sort_name_explicit =
     COALESCE(i.local_metadata->>'SortName','')<>''
     OR (ms.online_type=i.type AND COALESCE(ms.online_source->>'SortName','')<>'')
-    OR COALESCE(ms.automatic->>'SortName','')<>goby_sort_fold(COALESCE(ms.automatic->>'Name',''))
+    OR COALESCE(ms.automatic->>'SortName','')<>CASE
+        WHEN EXISTS(SELECT 1 FROM item_theme_resources role WHERE role.resource_item_id=i.id)
+          OR EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=i.id)
+        THEN COALESCE(ms.automatic->>'Name','') ELSE goby_sort_fold(COALESCE(ms.automatic->>'Name','')) END
 FROM items i WHERE i.id=ms.item_id;
 
 CREATE OR REPLACE FUNCTION initialize_catalog_metadata_state() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -73,7 +80,9 @@ LANGUAGE sql VOLATILE AS $$
         SELECT ms.item_id,
             CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE COALESCE(ms.automatic->>'Name','') END AS automatic_name,
             CASE WHEN ms.automatic_sort_name_explicit THEN COALESCE(ms.automatic->>'SortName','')
-                 ELSE goby_generated_sort_name(CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE ms.automatic->>'Name' END,words.sort_remove_words) END AS generated,
+                 ELSE goby_generated_sort_name(CASE WHEN i.type IN ('CollectionFolder','BoxSet','Playlist') THEN i.name ELSE ms.automatic->>'Name' END,words.sort_remove_words,
+                    EXISTS(SELECT 1 FROM item_theme_resources role WHERE role.resource_item_id=i.id)
+                    OR EXISTS(SELECT 1 FROM item_extra_resources role WHERE role.resource_item_id=i.id)) END AS generated,
             CASE WHEN i.type IN ('Movie','Series','Season','Episode','Audio','Video','MusicAlbum','MusicArtist','Folder')
                  THEN ms.overrides ELSE '{}'::jsonb END AS overrides,
             CASE WHEN i.type IN ('Movie','Series','Season','Episode','Audio','Video','MusicAlbum','MusicArtist','Folder')

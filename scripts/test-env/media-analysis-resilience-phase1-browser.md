@@ -96,50 +96,83 @@ This guide does not authorize executing that command during implementation.
    The authored The Amber/Bravo order changes from Bravo/Amber to Amber/Bravo
    immediately through the real query consumer, not merely through a settings
    response. Defaults remain the declared empty list.
-8. `sorting-consumed`: a real native movie scan retains the configured order.
+8. `sorting-conflict`: keep an unsaved `The`/`a` sorting draft while an independent
+   real native Settings PUT changes only the additional width to 640. The stale
+   form PUT must return 409, preserve and lock its draft, and leave stored
+   Sorting at `The`. Explicit reload reads the actual winning revision without
+   submitting another mutation.
+9. `sorting-selective-reset`: recreate the dirty sorting draft and reset only
+   `TranscodingMaxWidth` through the native dialog. Stored Sorting remains
+   `The`; the unsaved sorting text remains in the form. Cancelled discard keeps
+   the draft, confirmed discard restores the saved sorting, and neither issues
+   an additional settings mutation.
+10. `sorting-response-loss`: clear the sorting textbox and forward its real PUT
+    with Playwright `route.fetch`. Only after the actual backend returns 200 is
+    that response withheld from the original UI request. No success response
+    or business state is fabricated. The UI must lock the unconfirmed draft,
+    actual GET and PostgreSQL must show the committed empty array, and the real
+    catalog consumer must observe Bravo/Amber. This stage has its own independent
+    acknowledgement before any restore.
+11. `sorting-restored`: explicitly reload the committed empty sorting value,
+    proving that refresh did not replay the lost-response write. Then make a new
+    deliberate native save of `The`; verify Amber/Bravo through the real catalog
+    consumer and a second independent PostgreSQL acknowledgement.
+12. `sorting-consumed`: a real native movie scan retains the configured order.
    Only after independent acknowledgement does the fixture change its owned
    Movie A NFO to the declared imported title and record the new source hash.
-9. `imports-disabled`: native library editing disables local metadata import
+13. `imports-disabled`: native library editing disables local metadata import
    and requests Scan after saving. Observe that specific real job completing.
-10. `imports-retained`: actual catalog consumption retains the previously
+14. `imports-retained`: actual catalog consumption retains the previously
     imported title and order despite the changed source NFO.
-11. `imports-enabled`: re-enable local metadata import and explicitly request
+15. `imports-enabled`: re-enable local metadata import and explicitly request
     another actual scan through the same native form.
-12. `imports-consumed`: the actual catalog now exposes the authored changed
+16. `imports-consumed`: the actual catalog now exposes the authored changed
     title and corresponding order, while item identity remains stable.
-13. `embedded-disabled`: turn off Extract embedded audio artwork in the native
+17. `embedded-disabled`: turn off Extract embedded audio artwork in the native
     music-library form, preserving the local-image and metadata master flags.
     The administrator consumer discovers Goby Embedded Artwork through
     `/Libraries/AvailableOptions` and reads its empty Audio `ImageFetchers` array
     through `/Library/VirtualFolders/Query`. After independent confirmation,
     copy the declared new audio source into its owned album directory.
-14. `embedded-absent`: run a real native music scan and discover the newly
+18. `embedded-absent`: run a real native music scan and discover the newly
     indexed Audio ID through Items. Its Primary image must return 404. The
     retained embedded cover and independent directory sidecar must both remain
     readable and actually decode in the browser, with independently verified
     bytes and pixel identities.
-15. `embedded-enabled`: post the discovered Audio `TypeOptions` provider to
+19. `embedded-enabled`: post the discovered Audio `TypeOptions` provider to
     `/Library/VirtualFolders/LibraryOptions` using the current quoted revision
     in `If-Match`. Require the real 204/new ETag, compatible readback, and a fresh
     native library form showing extraction enabled and the master flags intact.
-16. `embedded-present`: rescan the music library. The same new Audio ID now has
+20. `embedded-present`: rescan the music library. The same new Audio ID now has
     the authored embedded cover; browser decoding and independent HTTP/PG pixel
     and hash observations prove publication. Both pre-existing image sources
     remain unchanged. This is extraction admission, not deletion of older art.
-17. `fields`: consume mixed-case list `Fields`, navigate a detail with mixed-case
+21. `fields`: consume mixed-case list `Fields`, navigate a detail with mixed-case
     `ExcludeFields=MediaStreams`, and verify removal from both the top level and
     nested MediaSources while core identity remains. Query transport language
     `x-emby-language=zh-CN` must not change metadata. Follow the real Search/Hints
     navigation URL for the newly imported title into the same physical item.
-18. `restart`: close and rebuild the complete application/runtime over the same
+22. `restart`: close and rebuild the complete application/runtime over the same
     owned origin. This is application restart evidence, not an OS reboot.
-19. `persisted`: reload native settings/metadata/library controls and repeat
+23. `persisted`: reload native settings/metadata/library controls and repeat
     actual account, standalone, sorted-catalog, projected search and image
     consumption without replaying edits, imports or scans. Fresh native revisions
     must match the previously accepted values; cached JS revisions alone do not
     establish persistence.
-20. `cleanup`: real compatibility Logout and native Sign out, then independent
+24. `cleanup`: real compatibility Logout and native Sign out, then independent
     session/resource closure. Successful acceptance must need no fallback logout.
+
+The four settings recovery stages extend the original twenty-stage journey;
+earlier source identities and execution receipts remain unchanged. The fixture
+HTTP wrapper only observes actual completed Settings PUT and reset POST status
+codes. It does not replace their handler or inspect/mutate request bodies. Go
+compares those independently observed deltas with the browser observations:
+`PUT 200, PUT 409`; `POST 200`; `PUT 200`; `PUT 200`. Each stage must advance the
+durable revision by exactly one. In addition to the expected width/sorting
+values and actual catalog ordering, a complete managed-settings row comparison
+excludes only revision, update timestamp, additional width and sorting columns;
+all unrelated persisted values remain identical. No SQL mutation prepares these
+fault cases, and failed/stale writes cannot be reclassified as successful ones.
 
 Every phase writes a bound `stage-<phase>-request.json`. The observer returns
 `stage-<phase>-database.json` with marker
@@ -151,7 +184,7 @@ supplement the evidence; they cannot replace it.
 ## Composed acceptance and closure
 
 The browser result uses marker `goby-media-analysis-phase1-browser-result-v1`.
-It requires all twenty checks and acknowledgements, zero page errors and
+It requires all twenty-four checks and acknowledgements, zero page errors and
 foreign requests, real navigations, fresh source facts and normal logout.
 The driver separately records joined browser descendants, server listeners and
 workers, schema/media/private-context cleanup and immutable execution inputs.

@@ -19,7 +19,9 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -30,8 +32,10 @@ import (
 )
 
 var mediaAnalysisPhase1Phases = []string{"authentication", "user-saved", "user-query", "specials-before", "metadata-saved", "specials-after",
-	"sorting-saved", "sorting-consumed", "imports-disabled", "imports-retained", "imports-enabled", "imports-consumed",
+	"sorting-saved", "sorting-conflict", "sorting-selective-reset", "sorting-response-loss", "sorting-restored", "sorting-consumed", "imports-disabled", "imports-retained", "imports-enabled", "imports-consumed",
 	"embedded-disabled", "embedded-absent", "embedded-enabled", "embedded-present", "fields", "restart", "persisted", "cleanup"}
+
+const mediaAnalysisPhase1UnrelatedSettingsSQL = `encode(sha256(convert_to((to_jsonb(s)-ARRAY['revision','updated_at','compatibility_max_width','sort_remove_words'])::text,'UTF8')),'hex')`
 
 type mediaAnalysisPhase1User struct {
 	ID         string `json:"Id"`
@@ -72,6 +76,8 @@ type mediaAnalysisPhase1UserQuery struct {
 type mediaAnalysisPhase1Request struct {
 	RunId, Phase, SeriesRevision, PlacementRevision string
 	SettingsRevision, LibraryRevision, ScanJobId    string
+	BaseRevision, CommittedRevision                 string
+	NativeMutationCounts                            []mediaAnalysisPhase1SettingsMutation
 	MusicLibraryRevision, NewAudioId                string
 	Images                                          []mediaAnalysisPhase1Image
 	QueryIDs                                        []string `json:"QueryIds"`
@@ -96,7 +102,47 @@ type mediaAnalysisPhase1Image struct {
 
 type mediaAnalysisPhase1Runtime struct {
 	*phase3BrowserRuntime
-	active atomic.Int64
+	active            atomic.Int64
+	settingsMu        sync.Mutex
+	settingsMutations []mediaAnalysisPhase1SettingsMutation
+	settingsInFlight  int
+	settingsOverflow  bool
+}
+
+type mediaAnalysisPhase1SettingsMutation struct {
+	Method string
+	Status int
+}
+
+type mediaAnalysisPhase1SettingsWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (writer *mediaAnalysisPhase1SettingsWriter) Unwrap() http.ResponseWriter {
+	return writer.ResponseWriter
+}
+
+func (writer *mediaAnalysisPhase1SettingsWriter) WriteHeader(status int) {
+	if status >= 200 && writer.status == 0 {
+		writer.status = status
+	}
+	writer.ResponseWriter.WriteHeader(status)
+}
+
+func (writer *mediaAnalysisPhase1SettingsWriter) Write(data []byte) (int, error) {
+	if writer.status == 0 {
+		writer.WriteHeader(http.StatusOK)
+	}
+	return writer.ResponseWriter.Write(data)
+}
+
+// Observe completed native settings responses without replacing the handler,
+// reading request bodies, injecting business responses, or changing requests.
+func (runtime *mediaAnalysisPhase1Runtime) settingsHTTP() ([]mediaAnalysisPhase1SettingsMutation, int, bool) {
+	runtime.settingsMu.Lock()
+	defer runtime.settingsMu.Unlock()
+	return append([]mediaAnalysisPhase1SettingsMutation(nil), runtime.settingsMutations...), runtime.settingsInFlight, runtime.settingsOverflow
 }
 
 func (runtime *mediaAnalysisPhase1Runtime) listen() error {
@@ -113,6 +159,28 @@ func (runtime *mediaAnalysisPhase1Runtime) listen() error {
 		runtime.active.Add(1)
 		defer runtime.active.Add(-1)
 		if r.URL.Path != "/__media-analysis-phase1-consumer" {
+			if r.Method == http.MethodPut && r.URL.Path == "/admin/v1/settings" || r.Method == http.MethodPost && r.URL.Path == "/admin/v1/settings/reset" {
+				observed := &mediaAnalysisPhase1SettingsWriter{ResponseWriter: w}
+				runtime.settingsMu.Lock()
+				runtime.settingsInFlight++
+				runtime.settingsMu.Unlock()
+				defer func() {
+					runtime.settingsMu.Lock()
+					defer runtime.settingsMu.Unlock()
+					runtime.settingsInFlight--
+					status := observed.status
+					if status == 0 {
+						status = http.StatusOK
+					}
+					if len(runtime.settingsMutations) < 64 {
+						runtime.settingsMutations = append(runtime.settingsMutations, mediaAnalysisPhase1SettingsMutation{Method: r.Method, Status: status})
+					} else {
+						runtime.settingsOverflow = true
+					}
+				}()
+				application.ServeHTTP(observed, r)
+				return
+			}
 			application.ServeHTTP(w, r)
 			return
 		}
@@ -290,6 +358,9 @@ type mediaAnalysisPhase1Observer struct {
 	musicRevision, newAudioID, existingArtworkHash, sidecarArtworkHash   string
 	musicFiles                                                           mediaAnalysisPhase1MusicFiles
 	acceptedImages                                                       map[string]mediaAnalysisPhase1Image
+	settingsUnrelatedSHA                                                 string
+	savedSortWords                                                       []string
+	settingsHTTPSeen                                                     int
 	usedScans                                                            map[string]bool
 	initialScans                                                         []string
 	durable                                                              json.RawMessage
@@ -328,6 +399,8 @@ func (observer *mediaAnalysisPhase1Observer) snapshot(ctx context.Context, phase
 		'Items',(SELECT jsonb_agg(jsonb_build_object('Id',i.id,'Name',i.name,'Type',i.type,'ParentId',i.parent_id,'Season',i.parent_index_number,'SortName',i.sort_name,'LocalMetadata',i.local_metadata,'Revision',m.revision::text,'Overrides',m.overrides) ORDER BY i.id) FROM items i LEFT JOIN item_metadata_state m ON m.item_id=i.id),
 		'Libraries',(SELECT jsonb_agg(to_jsonb(l) ORDER BY id) FROM libraries l),
 		'Sorting',(SELECT jsonb_build_object('Revision',revision::text,'SortRemoveWords',sort_remove_words) FROM managed_settings WHERE id=1),
+		'Encoding',(SELECT jsonb_build_object('TranscodingMaxWidth',compatibility_max_width) FROM managed_settings WHERE id=1),
+		'UnrelatedSettingsSHA256',(SELECT `+mediaAnalysisPhase1UnrelatedSettingsSQL+` FROM managed_settings s WHERE id=1),
 		'EmbeddedArtwork',(SELECT COALESCE(jsonb_agg((to_jsonb(e)-'content')||jsonb_build_object('ContentSHA256',encode(sha256(e.content),'hex')) ORDER BY e.item_id),'[]') FROM item_embedded_artwork e),
 		'SidecarImages',(SELECT COALESCE(jsonb_agg(to_jsonb(i) ORDER BY i.item_id,i.image_type,i.image_index),'[]') FROM item_images i),
 		'SettingsSHA256',(SELECT encode(sha256(to_jsonb(s)::text::bytea),'hex') FROM managed_settings s WHERE id=1),
@@ -341,9 +414,11 @@ func (observer *mediaAnalysisPhase1Observer) snapshot(ctx context.Context, phase
 		return nil, errors.New("media analysis phase 1 database evidence could not be captured")
 	}
 	files, err := observer.filesVerified()
+	settingsHTTP, settingsPending, settingsOverflow := observer.runtime.settingsHTTP()
 	value := map[string]any{"Marker": "goby-media-analysis-phase1-stage-database-v1", "RunId": observer.fixture.RunId,
 		"Phase": phase, "Complete": false, "Observed": false, "Database": database, "Sources": files,
-		"Runtime": selectedPhase1RuntimeFacts(f), "ActiveHTTPRequests": observer.runtime.active.Load()}
+		"Runtime": selectedPhase1RuntimeFacts(f), "ActiveHTTPRequests": observer.runtime.active.Load(),
+		"NativeSettingsMutations": settingsHTTP, "NativeSettingsMutationsInFlight": settingsPending, "NativeSettingsMutationOverflow": settingsOverflow}
 	if err != nil {
 		return value, err
 	}
@@ -458,6 +533,90 @@ func (observer *mediaAnalysisPhase1Observer) movieState(ctx context.Context, imp
 	if ids != nil && !slices.Equal(ids, wantOrder) {
 		return errors.New("media analysis phase 1 browser sort order does not use its committed remove-word setting")
 	}
+	return nil
+}
+
+type mediaAnalysisPhase1SettingsWitness struct {
+	Revision        string
+	Width           int
+	Words           []string
+	UnrelatedSHA256 string
+}
+
+func (observer *mediaAnalysisPhase1Observer) settingsWitness(ctx context.Context) (mediaAnalysisPhase1SettingsWitness, error) {
+	var value mediaAnalysisPhase1SettingsWitness
+	err := observer.runtime.f.pool.QueryRow(ctx, `SELECT revision::text,compatibility_max_width,sort_remove_words,`+mediaAnalysisPhase1UnrelatedSettingsSQL+`
+		FROM managed_settings s WHERE id=1`).Scan(&value.Revision, &value.Width, &value.Words, &value.UnrelatedSHA256)
+	if err != nil {
+		return value, errors.New("media analysis phase 1 settings witness could not be read")
+	}
+	return value, nil
+}
+
+func (observer *mediaAnalysisPhase1Observer) settingsHTTPDelta(ctx context.Context, expected, browser []mediaAnalysisPhase1SettingsMutation, requireBrowser bool) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	for {
+		actual, pending, overflow := observer.runtime.settingsHTTP()
+		if overflow || observer.settingsHTTPSeen > len(actual) {
+			return errors.New("media analysis phase 1 native settings observation exceeded its bounded history")
+		}
+		if pending == 0 {
+			if !slices.Equal(actual[observer.settingsHTTPSeen:], expected) || requireBrowser && !slices.Equal(browser, expected) {
+				return errors.New("media analysis phase 1 native settings mutations differ from the exact requested transaction sequence")
+			}
+			observer.settingsHTTPSeen = len(actual)
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return errors.New("media analysis phase 1 native settings response did not finish before observation")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+}
+
+func (observer *mediaAnalysisPhase1Observer) settingsTransition(ctx context.Context, request mediaAnalysisPhase1Request, width int, cleared bool, expectedHTTP []mediaAnalysisPhase1SettingsMutation) error {
+	base, err := strconv.ParseInt(request.BaseRevision, 10, 64)
+	if err != nil || base < 1 || request.BaseRevision != observer.settingsRevision || request.SettingsRevision != strconv.FormatInt(base+1, 10) {
+		return errors.New("media analysis phase 1 settings transition did not bind its exact revision successor")
+	}
+	current, err := observer.settingsWitness(ctx)
+	if err != nil {
+		return err
+	}
+	wantWords := observer.savedSortWords
+	if cleared {
+		wantWords = []string{}
+	}
+	if current.Revision != request.SettingsRevision || current.Width != width || !slices.Equal(current.Words, wantWords) || current.UnrelatedSHA256 != observer.settingsUnrelatedSHA {
+		return errors.New("media analysis phase 1 settings transition changed unrelated state or lost its precise control values")
+	}
+	published := observer.runtime.f.app.settings.Snapshot()
+	if published.Revision != base+1 || published.Encoding.TranscodingMaxWidth != width || !slices.Equal(published.Sorting.SortRemoveWords, wantWords) {
+		return errors.New("media analysis phase 1 published settings differ from the committed transition")
+	}
+	if err := observer.settingsHTTPDelta(ctx, expectedHTTP, request.NativeMutationCounts, true); err != nil {
+		return err
+	}
+	wantOrder := []string{observer.fixture.MovieAId, observer.fixture.MovieBId}
+	if cleared {
+		wantOrder = []string{observer.fixture.MovieBId, observer.fixture.MovieAId}
+	}
+	var actualOrder []string
+	var retainedNames bool
+	if observer.runtime.f.pool.QueryRow(ctx, `SELECT array_agg(id ORDER BY sort_name COLLATE "C",id),bool_and(
+		(id=$1 AND name=$3 AND local_metadata->>'Name'=$3) OR (id=$2 AND name=$4 AND local_metadata->>'Name'=$4))
+		FROM items WHERE id=ANY($5::text[])`, observer.fixture.MovieAId, observer.fixture.MovieBId, observer.fixture.MovieAName, observer.fixture.MovieBName, wantOrder).
+		Scan(&actualOrder, &retainedNames) != nil || !retainedNames || !slices.Equal(actualOrder, wantOrder) {
+		return errors.New("media analysis phase 1 settings transition did not reach the exact unchanged-name catalog order")
+	}
+	if request.Phase == "sorting-response-loss" || request.Phase == "sorting-restored" {
+		if !slices.Equal(request.QueryIDs, wantOrder) {
+			return errors.New("media analysis phase 1 browser did not consume the committed sorting transition")
+		}
+	}
+	observer.settingsRevision = current.Revision
 	return nil
 }
 
@@ -639,16 +798,45 @@ func (observer *mediaAnalysisPhase1Observer) stage(ctx context.Context, request 
 		}
 		return observer.metadata(ctx, true)
 	case "sorting-saved":
-		if request.SettingsRevision == "" || request.SettingsRevision == observer.settingsRevision {
-			return errors.New("media analysis phase 1 native sorting save did not advance settings revision")
+		base, err := strconv.ParseInt(observer.settingsRevision, 10, 64)
+		if err != nil || base < 1 || request.SettingsRevision != strconv.FormatInt(base+1, 10) {
+			return errors.New("media analysis phase 1 native sorting save did not advance the exact settings revision")
 		}
-		var revision string
-		var words []string
-		if f.pool.QueryRow(ctx, "SELECT revision::text,sort_remove_words FROM managed_settings WHERE id=1").Scan(&revision, &words) != nil || revision != request.SettingsRevision || len(words) != 1 || !strings.EqualFold(words[0], "The") {
+		current, err := observer.settingsWitness(ctx)
+		if err != nil {
+			return err
+		}
+		if current.Revision != request.SettingsRevision || current.Width != 0 || len(current.Words) != 1 || !strings.EqualFold(current.Words[0], "The") {
 			return errors.New("media analysis phase 1 sorting save revision differs from its committed row")
 		}
-		observer.settingsRevision = revision
+		if err := observer.settingsHTTPDelta(ctx, []mediaAnalysisPhase1SettingsMutation{{Method: http.MethodPut, Status: http.StatusOK}}, nil, false); err != nil {
+			return err
+		}
+		observer.settingsRevision = current.Revision
+		observer.settingsUnrelatedSHA = current.UnrelatedSHA256
+		observer.savedSortWords = append([]string(nil), current.Words...)
 		if err := observer.movieState(ctx, false, nil); err != nil {
+			return err
+		}
+	case "sorting-conflict":
+		if err := observer.settingsTransition(ctx, request, 640, false, []mediaAnalysisPhase1SettingsMutation{
+			{Method: http.MethodPut, Status: http.StatusOK}, {Method: http.MethodPut, Status: http.StatusConflict},
+		}); err != nil {
+			return err
+		}
+	case "sorting-selective-reset":
+		if err := observer.settingsTransition(ctx, request, 0, false, []mediaAnalysisPhase1SettingsMutation{{Method: http.MethodPost, Status: http.StatusOK}}); err != nil {
+			return err
+		}
+	case "sorting-response-loss":
+		if request.CommittedRevision != request.SettingsRevision {
+			return errors.New("media analysis phase 1 lost response did not bind the actual committed backend revision")
+		}
+		if err := observer.settingsTransition(ctx, request, 0, true, []mediaAnalysisPhase1SettingsMutation{{Method: http.MethodPut, Status: http.StatusOK}}); err != nil {
+			return err
+		}
+	case "sorting-restored":
+		if err := observer.settingsTransition(ctx, request, 0, false, []mediaAnalysisPhase1SettingsMutation{{Method: http.MethodPut, Status: http.StatusOK}}); err != nil {
 			return err
 		}
 	case "sorting-consumed":
@@ -820,6 +1008,11 @@ func (observer *mediaAnalysisPhase1Observer) stage(ctx context.Context, request 
 	var plays, jobs int
 	if f.pool.QueryRow(ctx, "SELECT (SELECT count(*) FROM play_sessions),(SELECT count(*) FROM encoding_jobs)").Scan(&plays, &jobs) != nil || plays != 0 || jobs != 0 {
 		return errors.New("media analysis phase 1 catalog-only journeys started unrelated playback work")
+	}
+	if observer.settingsUnrelatedSHA != "" {
+		if err := observer.settingsHTTPDelta(ctx, nil, nil, false); err != nil {
+			return err
+		}
 	}
 	_, err := observer.filesVerified()
 	return err
@@ -1173,5 +1366,5 @@ func TestMediaAnalysisResiliencePhase1BrowserIntegration(t *testing.T) {
 	driver["ExecutionInputsUnchanged"], driver["ExpectedFilesVerified"], driver["OwnedSessionsRetired"] = true, true, true
 	driver["Complete"], driver["BrowserChecks"], driver["ServerRestarts"] = true, result.Checks, 1
 	driver["ObservedIndependentScans"] = len(observer.usedScans)
-	t.Log("media_analysis_phase1_browser_verified=true stages=20 source_nfo_changes=1 actual_audio_arrivals=1 server_restarts=1")
+	t.Log("media_analysis_phase1_browser_verified=true stages=24 source_nfo_changes=1 actual_audio_arrivals=1 server_restarts=1")
 }

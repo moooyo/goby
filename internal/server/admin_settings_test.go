@@ -38,6 +38,34 @@ func adminSettingsExtendedUpdateBodyForTest(extra string) string {
 	return strings.TrimSuffix(adminSettingsNullUpdateForTest, "}") + "," + extra + "}"
 }
 
+func assertAdminSettingsDTOFields(t *testing.T, value map[string]any, runtime bool) {
+	t.Helper()
+	fields := []string{"Revision", "Defaults", "Overrides", "Effective", "Sources", "UpdatedAt", "Deployment", "ServerNameMode", "Encoding", "Management", "ManagementDefaults", "ManagementEffects", "Sorting", "SortingDefaults"}
+	if runtime {
+		fields = append(fields, "Runtime")
+	}
+	if len(value) != len(fields) {
+		t.Fatal("settings response changed its exact top-level field set")
+	}
+	for _, field := range fields {
+		if _, present := value[field]; !present {
+			t.Fatalf("settings response omitted %s", field)
+		}
+	}
+}
+
+func assertAdminSettingsSortingDTO(t *testing.T, value map[string]any, words []string) {
+	t.Helper()
+	configured := make([]any, len(words))
+	for index, word := range words {
+		configured[index] = word
+	}
+	if !reflect.DeepEqual(value["Sorting"], map[string]any{"SortRemoveWords": configured}) ||
+		!reflect.DeepEqual(value["SortingDefaults"], map[string]any{"SortRemoveWords": []any{}}) {
+		t.Fatal("settings sorting must preserve its exact configured words and independent non-null empty defaults")
+	}
+}
+
 func assertAdminSettingsInputError(t *testing.T, response *httptest.ResponseRecorder, status int, field string) {
 	t.Helper()
 	if response.Code != status {
@@ -170,9 +198,10 @@ func TestSettingsDTOCopiesAllOverrideValuesAndKeepsMixedSources(t *testing.T) {
 	name, bitrate, width, height, channels := "Database Server", int64(12_000_000), 1280, 720, 2
 	snapshot := settings.Snapshot{
 		ServerNameMode: "custom", HostName: "fixture-host", Encoding: settings.Encoding{TranscodingMaxWidth: 3840},
-		Defaults:  settings.Values{ServerName: "Deployment Server", MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8},
-		Overrides: settings.Overrides{ServerName: &name, MaxBitrate: &bitrate, MaxWidth: &width, MaxHeight: &height, MaxAudioChannels: &channels},
-		Effective: settings.Values{ServerName: name, MaxBitrate: bitrate, MaxWidth: width, MaxHeight: height, MaxAudioChannels: channels},
+		Defaults:   settings.Values{ServerName: "Deployment Server", MaxBitrate: 20_000_000, MaxWidth: 1920, MaxHeight: 1080, MaxAudioChannels: 8},
+		Overrides:  settings.Overrides{ServerName: &name, MaxBitrate: &bitrate, MaxWidth: &width, MaxHeight: &height, MaxAudioChannels: &channels},
+		Effective:  settings.Values{ServerName: name, MaxBitrate: bitrate, MaxWidth: width, MaxHeight: height, MaxAudioChannels: channels},
+		Management: settings.DefaultManagement(), Sorting: settings.DefaultSorting(),
 	}
 	got := settingsDTO(snapshot, config.TranscodingConfig{})
 	want := map[string]any{"ServerName": name, "MaxBitrate": bitrate, "MaxWidth": width, "MaxHeight": height, "MaxAudioChannels": channels}
@@ -222,6 +251,7 @@ func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
 					ServerNameMode: test.mode, HostName: "fixture-host", Encoding: settings.Encoding{TranscodingMaxWidth: width},
 				}
 				snapshot.Management = settings.DefaultManagement()
+				snapshot.Sorting = settings.DefaultSorting()
 				encoded, err := json.Marshal(settingsDTO(snapshot, config.TranscodingConfig{MaxWidth: 4096}))
 				if err != nil {
 					t.Fatal(err)
@@ -230,6 +260,8 @@ func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
 				if err := json.Unmarshal(encoded, &got); err != nil {
 					t.Fatal(err)
 				}
+				assertAdminSettingsDTOFields(t, got, false)
+				assertAdminSettingsSortingDTO(t, got, []string{})
 				var wantOverride any
 				if test.override != nil {
 					wantOverride = *test.override
@@ -237,7 +269,7 @@ func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
 				overrides := got["Overrides"].(map[string]any)
 				sources := got["Sources"].(map[string]any)
 				deployment := got["Deployment"].(map[string]any)
-				if len(got) != 12 || got["ServerNameMode"] != string(test.mode) || overrides["ServerName"] != wantOverride ||
+				if got["ServerNameMode"] != string(test.mode) || overrides["ServerName"] != wantOverride ||
 					got["Defaults"].(map[string]any)["ServerName"] != defaults.ServerName ||
 					got["Effective"].(map[string]any)["ServerName"] != test.effective || sources["ServerName"] != test.source {
 					t.Fatal("settings DTO collapsed distinct name modes, nullable overrides, or hostname fallback")
@@ -255,6 +287,22 @@ func TestSettingsDTOProjectsFourNameModesAndIndependentEncoding(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestSettingsDTOProjectsConfiguredSortingSeparatelyFromDefaults(t *testing.T) {
+	snapshot := settings.Snapshot{
+		Management: settings.DefaultManagement(), Sorting: settings.Sorting{SortRemoveWords: []string{"The", "\u00c4", "a"}},
+	}
+	encoded, err := json.Marshal(settingsDTO(snapshot, config.TranscodingConfig{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var value map[string]any
+	if err := json.Unmarshal(encoded, &value); err != nil {
+		t.Fatal(err)
+	}
+	assertAdminSettingsDTOFields(t, value, false)
+	assertAdminSettingsSortingDTO(t, value, []string{"The", "\u00c4", "a"})
 }
 
 func TestDecodeAdminSettingsPreservesCanonicalRevisionPrecision(t *testing.T) {

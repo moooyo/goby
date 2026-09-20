@@ -16,6 +16,7 @@ type scannedMetadataBase struct {
 type scannedMetadataOptions struct {
 	Base          *scannedMetadataBase
 	ForceEntities bool
+	Auxiliary     bool
 }
 
 // syncScannedMetadata runs after the scanner has written its newly accepted
@@ -111,7 +112,7 @@ func syncScannedMetadata(ctx context.Context, tx pgx.Tx, itemID string, options 
 	}
 	activeOverrides := activeMetadataControls(itemType, overrides)
 	activeLocks := activeMetadataControls(itemType, locks)
-	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, mergedSource)
+	automatic, err = applyAutomaticSorting(ctx, tx, itemID, automatic, mergedSource, selected.Auxiliary)
 	if err != nil {
 		return err
 	}
