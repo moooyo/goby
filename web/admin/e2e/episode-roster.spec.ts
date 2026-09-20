@@ -206,7 +206,7 @@ test('invalid and oversized imports preserve the existing draft and never write'
     await importRoster(dialog, value);
     await expect(dialog.getByRole('alert').filter({ hasText: /JSON|512 KiB/ }).last()).toBeVisible();
     await expect(dialog.getByLabel('Episode entries JSON', { exact: true })).toHaveValue(before);
-    await expect(dialog.getByLabel('Source key', { exact: true })).toHaveValue(source.Key);
+    await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue(source.Key);
   }
   await dialog.getByLabel('Import roster JSON', { exact: true }).setInputFiles({ name: 'invalid-utf8.json', mimeType: 'application/json', buffer: Buffer.from([0x7b, 0x22, 0x80, 0x22, 0x3a, 0x31, 0x7d]) });
   await expect(dialog).toContainText('encoded as valid UTF-8');
@@ -218,14 +218,14 @@ test('source validation uses UTF-8 byte limits and empty names retain a readable
   const dialog = await openRoster(page);
   await importRoster(dialog, { Source: source, Entries: [{ ...first, Name: '' }] });
   await expect(dialog.getByRole('table', { name: 'Episode roster preview', exact: true })).toContainText('Episode 1');
-  await dialog.getByLabel('Source key', { exact: true }).fill('𐍈'.repeat(33));
-  await expect(dialog.getByLabel('Source key', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+  await dialog.getByRole('textbox', { name: 'Source key', exact: true }).fill('𐍈'.repeat(33));
+  await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveAttribute('aria-invalid', 'true');
   await expect(dialog.getByRole('button', { name: 'Save roster', exact: true })).toBeDisabled();
-  await dialog.getByLabel('Source key', { exact: true }).fill('series-世界');
+  await dialog.getByRole('textbox', { name: 'Source key', exact: true }).fill('series-世界');
   await dialog.getByLabel('Source label', { exact: true }).fill('');
-  await dialog.getByLabel('Source version', { exact: true }).fill('v2 ');
-  await expect(dialog.getByLabel('Source version', { exact: true })).toHaveAttribute('aria-invalid', 'true');
-  await dialog.getByLabel('Source version', { exact: true }).fill('v2');
+  await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('v2 ');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveAttribute('aria-invalid', 'true');
+  await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('v2');
   await save(page, dialog);
   expect((api.writes()[0].body as EpisodeRosterInput).Entries[0].Name).toBe('');
   expect((api.writes()[0].body as EpisodeRosterInput).Source).toEqual({ Key: 'series-世界', Label: '', Revision: 'v2' });
@@ -248,20 +248,20 @@ test('preview pagination is bounded while the save retains every declared entry'
 test('revision conflicts retain the draft and reload preserves a revision above the JavaScript safe integer limit', async ({ page, api }) => {
   api.roster = active();
   const dialog = await openRoster(page);
-  await dialog.getByLabel('Source version', { exact: true }).fill('guide-v2');
+  await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('guide-v2');
   await dialog.getByLabel('Episode entries JSON', { exact: true }).fill(JSON.stringify([first]));
   api.roster = { ...api.roster, Revision: '9007199254740993' };
   await save(page, dialog, 409);
-  await expect(dialog.getByLabel('Source version', { exact: true })).toHaveValue('guide-v2');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveValue('guide-v2');
   await expect(dialog.getByLabel('Episode entries JSON', { exact: true })).toHaveValue(JSON.stringify([first]));
-  await expect(dialog.getByLabel('Source version', { exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: 'Withdraw roster', exact: true })).toBeDisabled();
   await expect(dialog.getByRole('button', { name: 'Save roster', exact: true })).toBeDisabled();
   page.once('dialog', (prompt) => { void prompt.accept(); });
   await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
-  await expect(dialog.getByLabel('Source version', { exact: true })).toHaveValue('guide-v1');
-  await expect(dialog.getByLabel('Source version', { exact: true })).toBeEnabled();
-  await dialog.getByLabel('Source version', { exact: true }).fill('guide-v3');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveValue('guide-v1');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toBeEnabled();
+  await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('guide-v3');
   await save(page, dialog);
   expect((api.writes().at(-1)!.body as EpisodeRosterInput).Revision).toBe('9007199254740993');
   await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toContainText('Saved revision 9007199254740994');
@@ -274,7 +274,7 @@ test('a reused source version conflict requires review and does not silently ren
   await dialog.getByLabel('Episode entries JSON', { exact: true }).fill(JSON.stringify([first]));
   await save(page, dialog, 409);
   await expect(dialog).toContainText('source version conflicts');
-  await expect(dialog.getByLabel('Source version', { exact: true })).toHaveValue('guide-v1');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveValue('guide-v1');
   await expect(dialog.getByRole('button', { name: 'Save roster', exact: true })).toBeDisabled();
   expect(api.writes()).toHaveLength(1);
 });
@@ -290,20 +290,20 @@ test('an unconfirmed mutation response requires reload and never retries the wri
   page.once('dialog', (prompt) => { void prompt.accept(); });
   await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
   await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toContainText('1 expected episodes');
-  await expect(dialog.getByLabel('Source version', { exact: true })).toBeEnabled();
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toBeEnabled();
   expect(api.writes()).toHaveLength(1);
 });
 
 test('withdrawal is explicit, sends only the saved revision, and retains source provenance', async ({ page, api }) => {
   api.roster = active('9007199254740993');
   const dialog = await openRoster(page);
-  await dialog.getByLabel('Source version', { exact: true }).fill('unsaved-version');
+  await dialog.getByRole('textbox', { name: 'Source version', exact: true }).fill('unsaved-version');
   await dialog.getByRole('button', { name: 'Withdraw roster', exact: true }).click();
   const confirmation = page.getByRole('dialog', { name: 'Withdraw episode roster?', exact: true });
   await expect(confirmation).toContainText('unsaved roster draft will also be discarded');
   await confirmation.getByRole('button', { name: 'Keep roster', exact: true }).click();
   expect(api.writes()).toEqual([]);
-  await expect(dialog.getByLabel('Source version', { exact: true })).toHaveValue('unsaved-version');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveValue('unsaved-version');
   await dialog.getByRole('button', { name: 'Withdraw roster', exact: true }).click();
   const [response] = await Promise.all([
     page.waitForResponse((result) => result.request().method() === 'DELETE' && new URL(result.url()).pathname === rosterPath),
@@ -317,7 +317,7 @@ test('withdrawal is explicit, sends only the saved revision, and retains source 
   await expect(saved).toContainText('2 retired entries');
   await expect(saved).toContainText('Editorial guide');
   await expect(dialog.getByRole('button', { name: 'Withdraw roster', exact: true })).toBeDisabled();
-  await expect(dialog.getByLabel('Source version', { exact: true })).toHaveValue('guide-v1');
+  await expect(dialog.getByRole('textbox', { name: 'Source version', exact: true })).toHaveValue('guide-v1');
 });
 
 test('malformed roster reads cannot be edited and retry admits a complete response', async ({ page, api }) => {
@@ -340,11 +340,11 @@ test('closing a dirty roster keeps or discards the draft only after an explicit 
   page.once('dialog', (prompt) => { void prompt.dismiss(); });
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByLabel('Source key', { exact: true })).toHaveValue(source.Key);
+  await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue(source.Key);
   page.once('dialog', (prompt) => { void prompt.accept(); });
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole('button', { name: `Episode roster for ${seriesName}`, exact: true }).click();
-  await expect(dialog.getByLabel('Source key', { exact: true })).toHaveValue('');
+  await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue('');
   expect(api.writes()).toEqual([]);
 });
