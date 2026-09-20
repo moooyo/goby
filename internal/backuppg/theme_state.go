@@ -10,7 +10,7 @@ import (
 
 // Catalog constraints cannot establish total owner coverage or all cross-row
 // resource rules. Historical archives retain their version's theme semantics;
-// extra and root-binding state are checked only after their own migrations.
+// Additional resource state is checked only after its own migration.
 func validateResourceState(ctx context.Context, tx pgx.Tx, version int64) error {
 	if err := validateThemeState(ctx, tx, version); err != nil {
 		return err
@@ -18,7 +18,10 @@ func validateResourceState(ctx context.Context, tx pgx.Tx, version int64) error 
 	if err := validateExtraState(ctx, tx, version); err != nil {
 		return err
 	}
-	return validateRootBindingState(ctx, tx, version)
+	if err := validateRootBindingState(ctx, tx, version); err != nil {
+		return err
+	}
+	return validateSelectedPhase2State(ctx, tx, version)
 }
 
 func validateThemeState(ctx context.Context, tx pgx.Tx, version int64) error {

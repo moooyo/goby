@@ -624,6 +624,11 @@ func TestStoreEntityMigrationBackfillsLocalMetadataWithoutScanning(t *testing.T)
 		wantCount := 1
 		if kind == "Genre" {
 			wantCount = 2
+			images := entitiesNamed(t, listed, name).Images
+			if len(images) != 1 || images[0].Source != "generated" || images[0].ImageType != "Primary" || images[0].Width != 512 || images[0].Height != 512 || len(images[0].Tag) != 64 {
+				t.Fatalf("migrated genre did not expose its empty generated placeholder: %+v", images)
+			}
+			want.Images = images
 		}
 		if listed.TotalRecordCount != wantCount || len(listed.Items) != wantCount || !reflect.DeepEqual(entitiesNamed(t, listed, name), want) {
 			t.Fatalf("migrated %s listing = %+v, want %+v", kind, listed, want)

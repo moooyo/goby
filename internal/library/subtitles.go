@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,14 +18,17 @@ const (
 	maxSubtitleStreamIndex = 1<<31 - 1
 )
 
-// Subtitle is an indexed, validated SRT, WebVTT, ASS, or SSA external track. Its index shares the
-// media stream namespace, while the source file snapshot is stored separately.
+// Subtitle is an indexed, validated external caption track. Its index shares
+// the media stream namespace. Sidecar snapshots and owned bytes are persisted
+// separately from the primary media probe.
 type Subtitle struct {
 	Index                                           int
 	Codec, Language, Title, MIMEType, Tag, Filename string
 	IsDefault, IsForced, IsHearingImpaired          bool
 	Size                                            int64
 	ModifiedAt                                      time.Time
+	// Owned tracks are database-backed derivatives without a sidecar pathname.
+	Owned bool `json:"-"`
 }
 
 // SubtitleContent contains a validated source, before output conversion.
@@ -39,6 +43,7 @@ type storedSubtitle struct {
 	Subtitle
 	relativePath, identity, rootID string
 	changeTimeNs                   int64
+	ownedData                      []byte
 }
 
 const subtitleColumns = `s.stream_index, s.codec, s.language, s.title, s.mime_type,
@@ -101,6 +106,16 @@ func attachSubtitles(ctx context.Context, tx pgx.Tx, items []Item) error {
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("read item subtitle rows: %w", err)
+	}
+	rows.Close()
+	if err := attachOwnedSubtitles(ctx, tx, items, ids, positions); err != nil {
+		return err
+	}
+	for index := range items {
+		sort.Slice(items[index].Subtitles, func(a, b int) bool { return items[index].Subtitles[a].Index < items[index].Subtitles[b].Index })
+		if len(items[index].Subtitles) > maxActiveSubtitles {
+			items[index].Subtitles = items[index].Subtitles[:maxActiveSubtitles]
+		}
 	}
 	return nil
 }

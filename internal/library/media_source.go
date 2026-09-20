@@ -29,10 +29,11 @@ type MediaFile struct {
 }
 
 type indexedMediaSource struct {
-	mediaFile    MediaFile
-	root         libraryRoot
-	relativePath string
-	identity     string
+	mediaFile           MediaFile
+	root                libraryRoot
+	relativePath        string
+	identity            string
+	publicationRevision string
 }
 
 var mediaSourceWorkers = make(chan struct{}, 4)
@@ -118,7 +119,7 @@ func (s *Store) OpenMediaFor(ctx context.Context, subject Subject, itemID, media
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
-		file, err := s.openMediaSource(ctx, snapshot)
+		file, err := s.openPublicMediaSource(ctx, snapshot)
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
@@ -141,6 +142,9 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 	}
 	snapshot, err := readIndexedMediaSource(ctx, tx, access, itemID, sourceID)
 	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
 		return indexedMediaSource{}, err
 	}
 	// Release the policy snapshot before potentially blocking filesystem calls;

@@ -24,7 +24,7 @@ func (s *Server) deleteSubtitle(w http.ResponseWriter, r *http.Request) {
 	if err := s.library.DeleteSubtitleAsUser(ctx, actor, r.PathValue("Id"), int(index)); err != nil {
 		switch {
 		case errors.Is(err, library.ErrEmbeddedSubtitle):
-			apiError(w, r, http.StatusBadRequest, "embedded_subtitle_read_only", "An embedded subtitle cannot be deleted from its media container.")
+			apiError(w, r, http.StatusBadRequest, "embedded_subtitle_read_only", "Embedded subtitles require a reviewed media-processing operation in the administrator dashboard.")
 		case errors.Is(err, library.ErrMediaDeletionRecovery):
 			apiError(w, r, http.StatusServiceUnavailable, "subtitle_deletion_pending", "The subtitle deletion requires a recovery retry after its storage is available.")
 		case errors.Is(err, library.ErrSourceChanged):

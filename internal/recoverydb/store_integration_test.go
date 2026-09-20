@@ -585,6 +585,10 @@ func TestRecoveryDatabaseStoreIntegration(t *testing.T) {
 		assertRecoverySelectedPhase1ResetProtection(t, f, retained)
 	})
 
+	run("reset_preserves_selected_phase2_state_changes", func(t *testing.T) {
+		assertRecoverySelectedPhase2ResetProtection(t, f, retained)
+	})
+
 	run("reset_rechecks_a_writer_that_commits_during_its_lock_wait", func(t *testing.T) {
 		blocker, pid, relation := f.block(t, f.source, "users", "ACCESS SHARE")
 		defer recoveryRollback(blocker)

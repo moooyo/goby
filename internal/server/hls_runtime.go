@@ -157,11 +157,16 @@ func (h *hlsRuntime) enter() bool {
 }
 
 func (h *hlsRuntime) register(principal identity.Principal, source library.MediaFile, playID string, decision playback.ConversionDecision, start int64) (*hlsSession, error) {
+	session, _, err := h.registerWithStatus(principal, source, playID, decision, start)
+	return session, err
+}
+
+func (h *hlsRuntime) registerWithStatus(principal identity.Principal, source library.MediaFile, playID string, decision playback.ConversionDecision, start int64) (*hlsSession, bool, error) {
 	if decision.Plan == nil {
-		return nil, transcode.ErrInvalidPlan
+		return nil, false, transcode.ErrInvalidPlan
 	}
 	if !principalPlanBitrateAllowed(principal, source, *decision.Plan) {
-		return nil, library.ErrForbidden
+		return nil, false, library.ErrForbidden
 	}
 	plan := *decision.Plan
 	if plan.OutputMode == "" {
@@ -174,7 +179,7 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.closing {
-		return nil, transcode.ErrManagerClosed
+		return nil, false, transcode.ErrManagerClosed
 	}
 	if prior := h.byKey[key]; prior != nil {
 		prior.mu.Lock()
@@ -184,7 +189,7 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 		}
 		prior.mu.Unlock()
 		if !closed {
-			return prior, nil
+			return prior, false, nil
 		}
 	}
 	userCount, authCount := 0, 0
@@ -197,11 +202,11 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 		}
 	}
 	if len(h.sessions) >= maxHLSSessions || userCount >= maxHLSUserSessions || authCount >= maxHLSAuthSessions {
-		return nil, transcode.ErrBusy
+		return nil, false, transcode.ErrBusy
 	}
 	var random [16]byte
 	if _, err := rand.Read(random[:]); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	ctx, cancel := context.WithCancel(h.ctx)
 	session := &hlsSession{id: hex.EncodeToString(random[:]), key: key, principal: principal, output: decision.OutputSource,
@@ -215,7 +220,7 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 		view, err := playback.HLSSubtitleViewFor(plan, nil, session.subtitleView.OffsetTicks)
 		if err != nil {
 			cancel()
-			return nil, errHLSRequestInvalid
+			return nil, false, errHLSRequestInvalid
 		}
 		session.subtitleView = view
 	}
@@ -226,7 +231,7 @@ func (h *hlsRuntime) register(principal identity.Principal, source library.Media
 		}
 	}
 	h.sessions[session.id], h.byKey[key] = session, session
-	return session, nil
+	return session, true, nil
 }
 
 func (h *hlsRuntime) find(id string, principal identity.Principal, itemID string) (*hlsSession, error) {

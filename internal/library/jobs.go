@@ -48,7 +48,7 @@ func (s *Store) startScan(ctx context.Context, administrator *catalogAdministrat
 			return err
 		}
 		var existing string
-		if err := tx.QueryRow("SELECT id FROM libraries WHERE id = $1 FOR KEY SHARE", libraryID).Scan(&existing); err != nil {
+		if err := tx.QueryRow("SELECT id FROM libraries WHERE id = $1 FOR UPDATE", libraryID).Scan(&existing); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return ErrNotFound
 			}
@@ -63,6 +63,13 @@ func (s *Store) startScan(ctx context.Context, administrator *catalogAdministrat
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
+		}
+		var publicationActive bool
+		if err := tx.QueryRow(mediaPublicationLibraryActiveSQL, libraryID).Scan(&publicationActive); err != nil {
+			return err
+		}
+		if publicationActive {
+			return ErrBusy
 		}
 		// Determine duplicates before capacity so a full queue cannot hide an
 		// already active scan behind the generic legacy ErrBusy category.

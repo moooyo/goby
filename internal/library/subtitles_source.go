@@ -85,7 +85,7 @@ func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, me
 		if err != nil {
 			return SubtitleContent{}, err
 		}
-		file, err := s.openMediaSource(ctx, primary)
+		file, err := s.openPublicMediaSource(ctx, primary)
 		if err != nil {
 			return SubtitleContent{}, err
 		}
@@ -103,7 +103,7 @@ func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, me
 		if !primary.matches(after) {
 			return SubtitleContent{}, fmt.Errorf("%w: %w: primary media changed during subtitle reading", ErrUnavailable, ErrSourceChanged)
 		}
-		current, err := s.openMediaSource(ctx, primary)
+		current, err := s.openPublicMediaSource(ctx, primary)
 		if err != nil {
 			return SubtitleContent{}, err
 		}
@@ -161,6 +161,9 @@ func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, it
 	}
 	track, err := scanStoredSubtitle(tx.QueryRow(ctx, "SELECT "+subtitleColumns+` FROM item_subtitles s
 		WHERE s.item_id = $1 AND s.root_id = $2 AND s.stream_index = $3 AND s.active`, itemID, snapshot.root.id, index))
+	if errors.Is(err, pgx.ErrNoRows) {
+		track, err = readOwnedSubtitle(ctx, tx, itemID, snapshot.root.id, index)
+	}
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && track.Index <= highestEmbeddedStreamIndex(item.Media)) {
 		return indexedMediaSource{}, storedSubtitle{}, ErrNotFound
 	}
@@ -181,6 +184,9 @@ func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, it
 	if err := validateSubtitleSnapshot(snapshot, track); err != nil {
 		return indexedMediaSource{}, storedSubtitle{}, err
 	}
+	if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
+		return indexedMediaSource{}, storedSubtitle{}, err
+	}
 	// Authorization and both catalog sources share one repeatable read snapshot;
 	// release the database before touching potentially unavailable storage.
 	if err := tx.Commit(ctx); err != nil {
@@ -190,6 +196,12 @@ func (s *Store) readSubtitleSnapshotFor(ctx context.Context, subject Subject, it
 }
 
 func validateSubtitleSnapshot(primary indexedMediaSource, source storedSubtitle) error {
+	if source.Owned {
+		if source.rootID != primary.root.id {
+			return fmt.Errorf("%w: owned subtitle root differs from primary media", ErrUnavailable)
+		}
+		return validateOwnedSubtitle(source)
+	}
 	path := filepath.FromSlash(source.relativePath)
 	base := strings.ToLower(strings.TrimSuffix(filepath.Base(primary.relativePath), filepath.Ext(primary.relativePath)))
 	stem := strings.ToLower(strings.TrimSuffix(source.Filename, filepath.Ext(source.Filename)))
@@ -217,6 +229,12 @@ func (source storedSubtitle) matches(info os.FileInfo) bool {
 }
 
 func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSource, source storedSubtitle) ([]byte, error) {
+	if source.Owned {
+		if err := validateOwnedSubtitle(source); err != nil {
+			return nil, err
+		}
+		return source.ownedData, nil
+	}
 	root, err := s.openLibraryRoot(primary.root)
 	if err != nil {
 		return nil, err

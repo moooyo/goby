@@ -40,6 +40,17 @@ func externalSubtitleURL(itemID string, index int, format, token string) string 
 	return path
 }
 
+func withOwnedSubtitleTag(path, tag string) string {
+	parsed, err := url.Parse(path)
+	if err != nil || tag == "" {
+		return path
+	}
+	query := parsed.Query()
+	query.Set("GobySubtitleTag", tag)
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
+}
+
 func externalSubtitleDisplayLanguage(language string) string {
 	if strings.TrimSpace(language) == "" {
 		return ""
@@ -115,6 +126,12 @@ func itemMediaStreamsDTO(item library.Item) []map[string]any {
 			"Protocol": "File", "Path": filepath.Join(filepath.Dir(item.Path), source.Filename),
 			"DeliveryMethod": "External", "DeliveryUrl": externalSubtitleURL(item.ID, source.Index, source.Codec, ""),
 		}
+		if source.Owned {
+			// Database-backed captions have no path inside the media directory.
+			stream["Protocol"] = "Http"
+			delete(stream, "Path")
+			stream["DeliveryUrl"] = withOwnedSubtitleTag(externalSubtitleURL(item.ID, source.Index, source.Codec, ""), source.Tag)
+		}
 		if language != "" {
 			stream["DisplayLanguage"] = language
 		}
@@ -148,7 +165,13 @@ func addSubtitleDeliveryCredentials(dto map[string]any, itemID, token string, fo
 			if selected := formats[index]; selected != "" {
 				format = selected
 			}
-			stream["DeliveryUrl"] = externalSubtitleURL(itemID, index, format, token)
+			delivery := externalSubtitleURL(itemID, index, format, token)
+			if previous, ok := stream["DeliveryUrl"].(string); ok {
+				if parsed, err := url.Parse(previous); err == nil {
+					delivery = withOwnedSubtitleTag(delivery, parsed.Query().Get("GobySubtitleTag"))
+				}
+			}
+			stream["DeliveryUrl"] = delivery
 		}
 	}
 	if sources, ok := dto["MediaSources"].([]map[string]any); ok {

@@ -28,7 +28,7 @@ func (s *Store) OpenDownloadFor(ctx context.Context, subject Subject, itemID, so
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
-		file, err := s.openMediaSource(ctx, snapshot)
+		file, err := s.openPublicMediaSource(ctx, snapshot)
 		if err != nil {
 			return nil, MediaFile{}, err
 		}
@@ -49,6 +49,9 @@ func (s *Store) readDownloadSource(ctx context.Context, subject Subject, itemID,
 	}
 	snapshot, err := readIndexedMediaSource(ctx, tx, access, itemID, sourceID)
 	if err != nil {
+		return indexedMediaSource{}, err
+	}
+	if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
 		return indexedMediaSource{}, err
 	}
 	// Filesystem work starts only after releasing the database snapshot.

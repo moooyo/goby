@@ -51,7 +51,7 @@ func (s *Server) serveArtworkImage(w http.ResponseWriter, r *http.Request, open 
 			s.artworkManagementError(w, r, renderErr)
 			return
 		}
-		if rendered.Source.Tag != source.Tag {
+		if rendered.Source.Tag != source.ContentDigest() {
 			s.artworkManagementError(w, r, library.ErrUnavailable)
 			return
 		}
@@ -66,7 +66,7 @@ func (s *Server) serveArtworkImage(w http.ResponseWriter, r *http.Request, open 
 		return
 	}
 	_ = fresh.Close()
-	if source.Tag != current.Tag {
+	if source.Tag != current.Tag || source.ContentDigest() != current.ContentDigest() {
 		s.artworkManagementError(w, r, library.ErrRevisionConflict)
 		return
 	}

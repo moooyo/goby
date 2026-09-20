@@ -83,7 +83,7 @@ func currentMigrationVersion(t *testing.T) int64 {
 
 // The inventory includes schema_migrations and every current application table.
 // Historical fixture counts remain pinned to their original schema versions.
-const currentMigrationTableCount = 49
+const currentMigrationTableCount = 53
 
 // Original-column snapshots prove row preservation; these checks account for
 // every binding column added by the current migration without inferring approval.
@@ -167,6 +167,7 @@ func TestMigrateConcurrentAndIdempotent(t *testing.T) {
 	}
 	assertPhase3MigrationDefaults(t, ctx, pool)
 	assertSelectedClientMigrationDefaults(t, ctx, pool)
+	assertSelectedPhase2MigrationDefaults(t, ctx, pool)
 	if err := pool.QueryRow(ctx, "SELECT count(*) FROM activity_entries").Scan(&count); err != nil || count != 0 {
 		t.Errorf("fresh migration populated activity entries: count=%d error=%v", count, err)
 	}

@@ -162,7 +162,7 @@ func (s *Store) listEntities(ctx context.Context, kind string, query Query, acto
 		return EntityResult{}, fmt.Errorf("read visible catalog entities: %w", err)
 	}
 	rows.Close()
-	if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, result.Items); err != nil {
+	if err := populateEntityProjections(ctx, tx, Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}, access, result.Items); err != nil {
 		return EntityResult{}, err
 	}
 	if actor != nil {
@@ -226,7 +226,7 @@ func (s *Store) getEntity(ctx context.Context, subject Subject, condition string
 		return Entity{}, fmt.Errorf("get visible catalog entity: %w", err)
 	}
 	projected := []Entity{entity}
-	if err := populateEntityProjections(ctx, tx, subject, projected); err != nil {
+	if err := populateEntityProjections(ctx, tx, subject, access, projected); err != nil {
 		return Entity{}, err
 	}
 	entity = projected[0]

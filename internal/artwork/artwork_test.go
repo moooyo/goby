@@ -160,7 +160,7 @@ func TestRenderJPEGCompositesTransparencyOntoWhite(t *testing.T) {
 	}
 }
 
-func TestRenderGIFPreservesAnimationUntilTransformation(t *testing.T) {
+func TestRenderGIFPreservesAnimationAcrossTransformation(t *testing.T) {
 	palette := color.Palette{color.Black, color.RGBA{R: 255, A: 255}, color.RGBA{B: 255, A: 255}}
 	first := image.NewPaletted(image.Rect(0, 0, 8, 4), palette)
 	second := image.NewPaletted(first.Bounds(), palette)
@@ -184,10 +184,16 @@ func TestRenderGIFPreservesAnimationUntilTransformation(t *testing.T) {
 	result = renderImage(t, data, artwork.Options{Width: 4})
 	assertImageResult(t, result, "gif", 4, 2)
 	animation, err = gif.DecodeAll(bytes.NewReader(result.Bytes))
-	if err != nil || len(animation.Image) != 1 {
-		t.Fatalf("resized GIF must contain one frame: %+v, %v", animation, err)
+	if err != nil || len(animation.Image) != 2 || animation.LoopCount != 3 || animation.Delay[0] != 10 || animation.Delay[1] != 20 {
+		t.Fatalf("resized GIF must preserve frames, delays, and looping: %+v, %v", animation, err)
 	}
 	assertColorNear(t, animation.Image[0].At(1, 1), color.NRGBA{R: 255, A: 255}, 10)
+	assertColorNear(t, animation.Image[1].At(1, 1), color.NRGBA{B: 255, A: 255}, 10)
+	result = renderImage(t, data, artwork.Options{DisableAnimation: true})
+	animation, err = gif.DecodeAll(bytes.NewReader(result.Bytes))
+	if err != nil || len(animation.Image) != 1 {
+		t.Fatalf("explicitly disabled animation must contain one frame: %+v, %v", animation, err)
+	}
 
 	result = renderImage(t, data, artwork.Options{Format: "png"})
 	decoded := assertImageResult(t, result, "png", 8, 4)

@@ -107,6 +107,10 @@ func addNavigationConditions(query Query, conditions []string, args []any) ([]st
 		predicate := "(EXISTS(SELECT 1 FROM item_subtitles subtitle JOIN library_roots subtitle_root ON subtitle_root.id=subtitle.root_id AND subtitle_root.library_id=i.library_id " +
 			"WHERE subtitle.item_id=i.id AND subtitle.root_id=i.root_id AND subtitle.active AND NOT i.is_folder AND i.media IS NOT NULL " +
 			"AND subtitle.stream_index>COALESCE((SELECT max(" + navigationNumberSQL("embedded", "Index") + ") FROM " + streams + " embedded),-1)) " +
+			"OR EXISTS(SELECT 1 FROM item_owned_subtitles subtitle JOIN library_roots subtitle_root ON subtitle_root.id=subtitle.root_id AND subtitle_root.library_id=i.library_id " +
+			"WHERE subtitle.item_id=i.id AND subtitle.root_id=i.root_id AND subtitle.active AND NOT i.is_folder AND i.media IS NOT NULL " +
+			"AND subtitle.source_revision=" + ownedSubtitleSourceRevisionSQL + " " +
+			"AND subtitle.stream_index>COALESCE((SELECT max(" + navigationNumberSQL("embedded", "Index") + ") FROM " + streams + " embedded),-1)) " +
 			"OR EXISTS(SELECT 1 FROM " + streams + " stream WHERE stream->>'CodecType'='subtitle'))"
 		add(predicate, "=", "::boolean", *query.HasSubtitles)
 	}

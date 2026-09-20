@@ -255,6 +255,9 @@ func (s *Store) DeleteSubtitleAsUser(ctx context.Context, actor identity.Princip
 	if index < 0 {
 		return ErrInvalidInput
 	}
+	if handled, err := s.deleteOwnedSubtitleAsUser(ctx, actor, itemID, index); handled {
+		return err
+	}
 	return s.deleteManagedFile(ctx, actor, itemID, "subtitle", index)
 }
 
@@ -545,6 +548,12 @@ func lockDeletionLibrary(ctx context.Context, tx pgx.Tx, target fileDeletionTarg
 	}
 	var busy bool
 	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM scan_jobs WHERE library_id=$1 AND status IN ('Queued','Running'))`, target.LibraryID).Scan(&busy); err != nil {
+		return err
+	}
+	if busy {
+		return ErrBusy
+	}
+	if err := tx.QueryRow(ctx, mediaPublicationLibraryActiveSQL, target.LibraryID).Scan(&busy); err != nil {
 		return err
 	}
 	if busy {

@@ -151,6 +151,12 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	if active {
 		return RootBindingInfo{}, ErrScanAlreadyActive
 	}
+	if err := tx.QueryRow(protected, mediaPublicationLibraryActiveSQL, libraryID).Scan(&active); err != nil {
+		return RootBindingInfo{}, fmt.Errorf("read active root binding media publication: %w", err)
+	}
+	if active {
+		return RootBindingInfo{}, ErrBusy
+	}
 	successor := current
 	successor.revision++
 	successor.stored, successor.document = true, document

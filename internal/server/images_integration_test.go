@@ -272,8 +272,8 @@ func TestHTTPImagesAuthenticatedBodiesProjectionTransformsAndCacheValidators(t *
 	for _, query := range []string{
 		"Width=-1", "Width=4097", "Width=abc", "Width=1.5", "Height=4097", "MaxWidth=4097", "MaxHeight=-1",
 		"Quality=-1", "Quality=101", "Quality=NaN", "Format=webp", "Width=64&width=65", "Tag=one&tag=two",
-		"CropWhitespace=true", "AutoOrient=true", "KeepAnimation=true", "AddPlayedIndicator=true",
-		"BackgroundColor=red", "ForegroundLayer=one", "PercentPlayed=1", "UnplayedCount=1", "PercentPlayed=NaN",
+		"CropWhitespace=invalid", "AutoOrient=invalid", "KeepAnimation=invalid", "AddPlayedIndicator=invalid",
+		"BackgroundColor=red", "ForegroundLayer=one", "PercentPlayed=101", "UnplayedCount=-1", "PercentPlayed=NaN",
 		"Index=-1", "Index=32", "Index=invalid",
 	} {
 		t.Run("reject "+query, func(t *testing.T) {

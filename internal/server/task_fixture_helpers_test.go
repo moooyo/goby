@@ -14,6 +14,9 @@ import (
 // intact for tests that deliberately exercise shutdown or ownership loss.
 func closeFixtureCatalogForReplacement(t *testing.T, f *serverFixture) {
 	t.Helper()
+	if err := f.app.mediaOperations.Close(f.ctx); err != nil {
+		t.Fatalf("close media operations before replacing fixture catalog: %v", err)
+	}
 	if err := f.app.taskManager.Close(f.ctx); err != nil {
 		t.Fatalf("close task manager before replacing fixture catalog: %v", err)
 	}
@@ -30,11 +33,16 @@ func installFixtureCatalog(t *testing.T, f *serverFixture, catalog *library.Stor
 	t.Helper()
 	f.app.library = catalog
 	var manager *tasks.Manager
+	var operations *mediaOperationsRuntime
 	// Register before initialization so an initialization failure still retires
 	// the new catalog before its temporary media root is removed.
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+		if err := operations.Close(ctx); err != nil {
+			t.Errorf("close replacement fixture media operations: %v", err)
+			return
+		}
 		if err := manager.Close(ctx); err != nil {
 			t.Errorf("close replacement fixture task manager: %v", err)
 			return
@@ -44,6 +52,12 @@ func installFixtureCatalog(t *testing.T, f *serverFixture, catalog *library.Stor
 		}
 	})
 	initializeFixtureSettings(t, f)
+	var err error
+	operations, err = newMediaOperationsRuntime(f.ctx, f.app)
+	if err != nil {
+		t.Fatalf("initialize media operations for replacement fixture catalog: %v", err)
+	}
+	f.app.mediaOperations = operations
 	if err := f.app.initializeTasks(f.ctx); err != nil {
 		t.Fatalf("initialize tasks for replacement fixture catalog: %v", err)
 	}

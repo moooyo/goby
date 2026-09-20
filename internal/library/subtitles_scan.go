@@ -280,6 +280,12 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 	if err := json.Unmarshal(activeJSON, &active); err != nil {
 		return err
 	}
+	combinedTotal, combinedHighest, combinedActive, err := subtitleCatalogCapacity(ctx, tx, itemID)
+	if err != nil {
+		return err
+	}
+	total, highest = combinedTotal, combinedHighest
+	ownedActive := combinedActive - len(active)
 	embedded := highestEmbeddedStreamIndex(&probe)
 	if embedded > highest {
 		highest = embedded
@@ -314,7 +320,7 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 		entry := inspected[path].source
 		index, exists := retained[path]
 		if !exists {
-			if total >= maxSubtitleIdentities || highest >= maxSubtitleStreamIndex || len(retained) >= maxActiveSubtitles {
+			if total >= maxSubtitleIdentities || highest >= maxSubtitleStreamIndex || len(retained)+ownedActive >= maxActiveSubtitles {
 				state.warnings++
 				continue
 			}

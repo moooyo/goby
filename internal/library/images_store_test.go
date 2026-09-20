@@ -50,8 +50,9 @@ func TestImageListsEnforceUserPoliciesAndKeepBinaryPublic(t *testing.T) {
 			t.Errorf("image list for inaccessible item %q = %v, want ErrNotFound", id, err)
 		}
 	}
-	if images, err := store.ListImages(ctx, "image-restricted", visible.libraryID); err != nil || images == nil || len(images) != 0 {
-		t.Errorf("authorized item without images = %+v, %v, want an empty list", images, err)
+	libraryImages, err := store.ListImages(ctx, "image-restricted", visible.libraryID)
+	if err != nil || len(libraryImages) != 1 || libraryImages[0].Source != "generated" {
+		t.Errorf("authorized library did not project its generated primary: %+v, %v", libraryImages, err)
 	}
 	if _, err := store.ListImages(ctx, "image-none", "visible-item"); !errors.Is(err, ErrNotFound) {
 		t.Errorf("image list without folder permissions = %v, want ErrNotFound", err)
@@ -66,12 +67,12 @@ func TestImageListsEnforceUserPoliciesAndKeepBinaryPublic(t *testing.T) {
 	}
 	ids := []string{"hidden-item", "visible-item", "missing-item", "visible-item", visible.libraryID}
 	batch, err := store.ImagesForItems(ctx, "image-restricted", ids)
-	if err != nil || !reflect.DeepEqual(batch, map[string][]Image{"visible-item": {primary, backdrop}}) {
+	if err != nil || !reflect.DeepEqual(batch, map[string][]Image{"visible-item": {primary, backdrop}, visible.libraryID: libraryImages}) {
 		t.Fatalf("restricted image batch = %+v, %v, want only accessible images without duplicates", batch, err)
 	}
 	for _, user := range []string{unrestricted, "image-admin"} {
 		batch, err := store.ImagesForItems(ctx, user, ids)
-		if err != nil || len(batch) != 2 || !reflect.DeepEqual(batch["hidden-item"], []Image{secret}) {
+		if err != nil || len(batch) != 3 || !reflect.DeepEqual(batch["hidden-item"], []Image{secret}) || !reflect.DeepEqual(batch[visible.libraryID], libraryImages) {
 			t.Errorf("unrestricted image batch for %q = %+v, %v", user, batch, err)
 		}
 	}

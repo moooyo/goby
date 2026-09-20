@@ -320,6 +320,12 @@ func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdminis
 	if active {
 		return ErrBusy
 	}
+	if err := tx.QueryRow(ctx, mediaPublicationLibraryActiveSQL, id).Scan(&active); err != nil {
+		return fmt.Errorf("read active library media publication: %w", err)
+	}
+	if active {
+		return ErrBusy
+	}
 	var paths int64
 	if err := tx.QueryRow(ctx, "SELECT count(*) FROM library_roots WHERE library_id = $1", id).Scan(&paths); err != nil {
 		return fmt.Errorf("count removed library directories: %w", err)

@@ -22,6 +22,13 @@ type originalStreamRuntime struct {
 	closing  bool
 	requests sync.WaitGroup
 	owners   map[originalStreamOwner]int
+	sources  map[*originalSourceLease]struct{}
+}
+
+type originalSourceLease struct {
+	itemID, sourceID string
+	cancel           context.CancelFunc
+	done             chan struct{}
 }
 
 const maxOriginalOwnerStreams = 8
@@ -37,6 +44,12 @@ func newOriginalStreamRuntime() *originalStreamRuntime {
 }
 
 func (runtime *originalStreamRuntime) enter(principal identity.Principal) (context.Context, func(), error) {
+	return runtime.enterSource(principal, "", "")
+}
+
+// Source registration precedes the final catalog check. A publication either
+// cancels this lease or is observed by that check before any response headers.
+func (runtime *originalStreamRuntime) enterSource(principal identity.Principal, itemID, sourceID string) (context.Context, func(), error) {
 	if runtime == nil {
 		return nil, nil, context.Canceled
 	}
@@ -57,6 +70,12 @@ func (runtime *originalStreamRuntime) enter(principal identity.Principal) (conte
 	}
 	runtime.owners[owner]++
 	runtime.requests.Add(1)
+	lifetime, cancel := context.WithCancel(runtime.ctx)
+	lease := &originalSourceLease{itemID: itemID, sourceID: sourceID, cancel: cancel, done: make(chan struct{})}
+	if runtime.sources == nil {
+		runtime.sources = make(map[*originalSourceLease]struct{})
+	}
+	runtime.sources[lease] = struct{}{}
 	var once sync.Once
 	leave := func() {
 		once.Do(func() {
@@ -66,11 +85,30 @@ func (runtime *originalStreamRuntime) enter(principal identity.Principal) (conte
 			} else {
 				runtime.owners[owner]--
 			}
+			delete(runtime.sources, lease)
+			cancel()
+			close(lease.done)
 			runtime.mu.Unlock()
 			runtime.requests.Done()
 		})
 	}
-	return runtime.ctx, leave, nil
+	return lifetime, leave, nil
+}
+
+func (runtime *originalStreamRuntime) retireSource(itemID, sourceID string) []<-chan struct{} {
+	if runtime == nil {
+		return nil
+	}
+	runtime.mu.Lock()
+	defer runtime.mu.Unlock()
+	var pending []<-chan struct{}
+	for lease := range runtime.sources {
+		if lease.itemID == itemID && lease.sourceID == sourceID {
+			lease.cancel()
+			pending = append(pending, lease.done)
+		}
+	}
+	return pending
 }
 
 func (runtime *originalStreamRuntime) stop() {
@@ -125,7 +163,7 @@ func (s *Server) authorizeOriginalPolicy(ctx context.Context, principal identity
 // Cleanup joins the watcher before the connection can serve another request.
 func (s *Server) guardOriginalMedia(w http.ResponseWriter, r *http.Request, file *os.File, source library.MediaFile) (context.Context, func(), error) {
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	lifetime, leave, err := s.originals.enter(principal)
+	lifetime, leave, err := s.originals.enterSource(principal, source.Item.ID, source.SourceID)
 	if err != nil {
 		return nil, nil, err
 	}

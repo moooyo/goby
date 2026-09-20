@@ -342,7 +342,7 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 			return err
 		}
 		var libraryID string
-		err = tx.QueryRow("SELECT id FROM libraries WHERE id = $1 FOR KEY SHARE", child.libraryID).Scan(&libraryID)
+		err = tx.QueryRow("SELECT id FROM libraries WHERE id = $1 FOR UPDATE", child.libraryID).Scan(&libraryID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			_, err = tx.Exec(`UPDATE task_run_children SET state = 'unavailable', error_code = 'library_unavailable',
 				error_message = 'Library is unavailable', finished_at = clock_timestamp()
@@ -360,6 +360,13 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
+		}
+		var publicationActive bool
+		if err := tx.QueryRow(mediaPublicationLibraryActiveSQL, libraryID).Scan(&publicationActive); err != nil {
+			return err
+		}
+		if publicationActive {
+			return ErrBusy
 		}
 		if len(s.queue) == cap(s.queue) {
 			result.Kind = ScanQueueFull

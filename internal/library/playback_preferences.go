@@ -24,7 +24,11 @@ const playbackSelectionStampSQL = `md5(COALESCE(i.media::text,'null') || COALESC
 	SELECT jsonb_agg(jsonb_build_object('Index',s.stream_index,'Root',s.root_id,'Codec',s.codec,
 		'Hash',s.source_hash,'Identity',s.file_identity,'Size',s.file_size,'Modified',s.modified_at,'Changed',s.change_time_ns)
 		ORDER BY s.stream_index)::text FROM item_subtitles s
-	WHERE s.item_id=i.id AND s.root_id=i.root_id AND s.active),'[]'))`
+	WHERE s.item_id=i.id AND s.root_id=i.root_id AND s.active),'[]') || COALESCE((
+	SELECT jsonb_agg(jsonb_build_object('Index',s.stream_index,'Root',s.root_id,'Codec',s.codec,
+		'Hash',s.content_sha256,'Source',s.source_revision) ORDER BY s.stream_index)::text
+	FROM item_owned_subtitles s WHERE s.item_id=i.id AND s.root_id=i.root_id AND s.active
+		AND s.source_revision=` + ownedSubtitleSourceRevisionSQL + `),'[]'))`
 
 // GetPlaybackPreferencesFor reads only the currently visible item and current
 // media snapshot. The stamp is an invalidation key, not an authorization token.

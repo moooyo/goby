@@ -153,6 +153,9 @@ func imageQuery(values url.Values) (map[string]string, error) {
 
 func parseImageRequest(r *http.Request) (imageRequest, error) {
 	var request imageRequest
+	if strings.EqualFold(r.PathValue("Type"), "ClearArt") {
+		request.typeName = "Art"
+	}
 	for _, name := range []string{"Primary", "Backdrop", "Thumb", "Banner", "Logo", "Art", "Disc", "Box", "BoxRear", "Menu", "Screenshot"} {
 		if strings.EqualFold(name, r.PathValue("Type")) {
 			request.typeName = name
@@ -208,37 +211,103 @@ func parseImageRequest(r *http.Request) (imageRequest, error) {
 	default:
 		return request, fmt.Errorf("unsupported image format")
 	}
-	// Enhancers are an empty set in this implementation. Explicit transforms
-	// that the renderer cannot honor are rejected instead of returning a false
-	// approximation of requested crop, orientation, animation, or overlays.
-	for _, name := range []string{"cropwhitespace", "autoorient", "keepanimation", "addplayedindicator", "enableimageenhancers"} {
+	// Logos and clear art normally remove their transparent/white margins. An
+	// explicit false must survive parsing instead of being confused with absence.
+	request.options.CropWhitespace = request.typeName == "Logo" || request.typeName == "Art"
+	for name, target := range map[string]*bool{
+		"cropwhitespace": &request.options.CropWhitespace, "autoorient": &request.options.AutoOrient,
+		"disableanimation": &request.options.DisableAnimation, "addplayedindicator": &request.options.AddPlayedIndicator,
+	} {
 		if raw, exists := values[name]; exists {
 			value, parseErr := strconv.ParseBool(raw)
-			if parseErr != nil || (value && name != "enableimageenhancers") {
-				return request, fmt.Errorf("unsupported image transformation")
+			if parseErr != nil {
+				return request, fmt.Errorf("invalid image transformation switch")
 			}
+			*target = value
 		}
 	}
-	for _, name := range []string{"backgroundcolor", "foregroundlayer"} {
-		if values[name] != "" {
-			return request, fmt.Errorf("unsupported image transformation")
+	if raw, exists := values["keepanimation"]; exists {
+		value, parseErr := strconv.ParseBool(raw)
+		if parseErr != nil {
+			return request, fmt.Errorf("invalid animation switch")
+		}
+		if _, explicit := values["disableanimation"]; explicit && request.options.DisableAnimation == value {
+			return request, fmt.Errorf("conflicting animation switches")
+		}
+		request.options.DisableAnimation = !value
+	}
+	// No separately installed enhancer plugins exist; both values select the
+	// same empty plugin set. Built-in, explicitly requested effects remain active.
+	if raw, exists := values["enableimageenhancers"]; exists {
+		if _, err := strconv.ParseBool(raw); err != nil {
+			return request, fmt.Errorf("invalid enhancer switch")
 		}
 	}
-	for _, name := range []string{"percentplayed", "unplayedcount"} {
+	request.options.BackgroundColor = values["backgroundcolor"]
+	request.options.ForegroundLayer = values["foregroundlayer"]
+	if raw, exists := values["percentplayed"]; exists {
+		request.options.PercentPlayed, err = strconv.ParseFloat(raw, 64)
+		if err != nil {
+			return request, fmt.Errorf("invalid played percentage")
+		}
+	}
+	if raw, exists := values["unplayedcount"]; exists {
+		request.options.UnplayedCount, err = strconv.Atoi(raw)
+		if err != nil {
+			return request, fmt.Errorf("invalid unplayed count")
+		}
+	}
+	var cropParts [4]int
+	cropNames := []string{"cropx", "cropy", "cropwidth", "cropheight"}
+	coordinates := 0
+	for index, name := range cropNames {
 		if raw, exists := values[name]; exists {
-			value, parseErr := strconv.ParseFloat(raw, 64)
-			if parseErr != nil || value != 0 {
-				return request, fmt.Errorf("unsupported image transformation")
+			cropParts[index], err = strconv.Atoi(raw)
+			if err != nil {
+				return request, fmt.Errorf("invalid crop coordinate")
 			}
+			coordinates++
 		}
+	}
+	if coordinates != 0 && coordinates != len(cropParts) {
+		return request, fmt.Errorf("all four crop coordinates are required")
+	}
+	if raw, exists := values["crop"]; exists {
+		parts := strings.Split(raw, ",")
+		if len(parts) != len(cropParts) {
+			return request, fmt.Errorf("crop requires x,y,width,height")
+		}
+		for index, part := range parts {
+			value, parseErr := strconv.Atoi(part)
+			if parseErr != nil || coordinates != 0 && value != cropParts[index] {
+				return request, fmt.Errorf("invalid or conflicting crop coordinates")
+			}
+			cropParts[index] = value
+		}
+		coordinates = len(cropParts)
+	}
+	if coordinates != 0 {
+		if cropParts[2] <= 0 || cropParts[3] <= 0 {
+			return request, fmt.Errorf("crop dimensions must be positive")
+		}
+		request.options.Crop = artwork.CropRect{X: cropParts[0], Y: cropParts[1], Width: cropParts[2], Height: cropParts[3]}
+	}
+	request.options, err = artwork.CanonicalOptions(request.options)
+	if err != nil {
+		return request, err
 	}
 	request.tag = values["tag"]
 	return request, nil
 }
 
 func imageVariantKey(tag string, options artwork.Options) string {
-	return fmt.Sprintf("%s/%s/%d/%d/%d/%d/%d", tag, options.Format, options.Width, options.Height,
-		options.MaxWidth, options.MaxHeight, options.Quality)
+	key, err := artwork.OptionsKey(options)
+	if err != nil {
+		// Only canonical options reach handlers. Keep malformed internal options
+		// outside every valid cache namespace if a future caller breaks that rule.
+		return tag + "/invalid-options"
+	}
+	return tag + "/" + key
 }
 
 func imageETag(tag string, options artwork.Options) string {
@@ -302,12 +371,24 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 		}
 		// The open inode can still be modified in place. Only content matching
 		// the indexed source tag may populate the cache or reach the response.
-		if rendered.Source.Tag != source.Tag {
+		if rendered.Source.Tag != source.ContentDigest() {
 			s.imageError(w, r, library.ErrUnavailable)
 			return
 		}
 		result = cachedImage{key: key, contentType: rendered.MIMEType, etag: imageETag(source.Tag, request.options), data: rendered.Bytes}
 		s.images.put(result)
+	}
+	// Recompute current source selection and permissions before every response,
+	// including a generated-image cache hit or conditional 304.
+	fresh, current, err := s.library.OpenImageContentFor(ctx, requestLibrarySubject(r, userID), r.PathValue("Id"), request.typeName, request.index)
+	if err != nil {
+		s.imageError(w, r, err)
+		return
+	}
+	_ = fresh.Close()
+	if source.Tag != current.Tag || source.ContentDigest() != current.ContentDigest() {
+		s.imageError(w, r, library.ErrRevisionConflict)
+		return
 	}
 	if err := ctx.Err(); err != nil {
 		s.imageError(w, r, err)

@@ -111,7 +111,7 @@ func (s *Server) videoStream(w http.ResponseWriter, r *http.Request) {
 		s.videoError(w, r, err)
 		return
 	}
-	session, err := s.hls.register(principal, source, play.ID, decision.Conversion, decision.StartTicks)
+	session, err := s.hls.registerVerified(r.Context(), principal, source, play.ID, decision.Conversion, decision.StartTicks)
 	if err != nil {
 		s.videoError(w, r, err)
 		return

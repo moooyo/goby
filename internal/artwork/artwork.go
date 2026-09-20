@@ -5,7 +5,12 @@
 // Input is limited to 20 MiB, 25 Mi pixels, and 16384 pixels per side. GIF input
 // additionally allows at most 1000 frames and 32 Mi decoded pixels in total.
 // Unchanged output preserves the validated original bytes, including animation.
-// Resized or converted GIF output contains only the first composited frame.
+// GIF output preserves animation unless DisableAnimation is requested. Animated
+// transforms limit both full-canvas composition and accumulated output pixels to
+// 32 Mi pixels. Static formats use the first composited frame. GIF frame delays
+// and loop counts survive; disposal is normalized after frame composition.
+// Optional transforms run in a versioned order: EXIF orientation, explicit crop,
+// whitespace crop, downsize, background, foreground, badges, then progress.
 // Quality affects JPEG output only: zero selects 85, and 1 through 100 are valid.
 // JPEG output composites transparency onto white. Transformed GIF output uses
 // binary transparency, with alpha below 128 transparent and other pixels opaque.
@@ -58,12 +63,21 @@ type Info struct {
 }
 
 type Options struct {
-	Format    string
-	Width     int
-	Height    int
-	MaxWidth  int
-	MaxHeight int
-	Quality   int
+	Format             string
+	Width              int
+	Height             int
+	MaxWidth           int
+	MaxHeight          int
+	Quality            int
+	Crop               CropRect
+	CropWhitespace     bool
+	AutoOrient         bool
+	DisableAnimation   bool
+	BackgroundColor    string
+	ForegroundLayer    string
+	AddPlayedIndicator bool
+	PercentPlayed      float64
+	UnplayedCount      int
 }
 
 type Result struct {
@@ -80,6 +94,7 @@ type loadedImage struct {
 	data       []byte
 	image      image.Image
 	background color.Color
+	animation  *gif.GIF
 }
 
 type jobResult[T any] struct {
@@ -144,10 +159,11 @@ func Render(ctx context.Context, reader io.Reader, options Options) (Result, err
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
 	}
-	format, err := validateOptions(options)
+	options, err := CanonicalOptions(options)
 	if err != nil {
 		return Result{}, err
 	}
+	format := options.Format
 	return withSlot(ctx, func() (Result, error) {
 		source, err := loadImage(ctx, reader)
 		if err != nil {
@@ -159,32 +175,16 @@ func Render(ctx context.Context, reader io.Reader, options Options) (Result, err
 		width, height := outputSize(source.info.Width, source.info.Height, options)
 		result := Result{Source: source.info, MIMEType: mimeType(format), Width: width, Height: height}
 		if width == source.info.Width && height == source.info.Height && format == source.info.Format &&
-			(format != "jpeg" || options.Quality == 0) {
+			(format != "jpeg" || options.Quality == 0) && !hasTransform(options) {
 			result.Bytes = source.data
 			result.ETag = source.info.Tag
 			return result, nil
 		}
-		decoded := source.image
-		if source.info.Format == "gif" {
-			decoded, err = gifCanvas(ctx, source)
-			if err != nil {
-				return Result{}, err
-			}
-		}
-		if width != source.info.Width || height != source.info.Height {
-			decoded, err = resizeBilinear(ctx, decoded, width, height)
-			if err != nil {
-				return Result{}, err
-			}
-		}
-		quality := options.Quality
-		if quality == 0 {
-			quality = defaultQuality
-		}
-		encoded, err := encodeImage(ctx, decoded, format, quality)
+		encoded, width, height, err := renderLoaded(ctx, source, options, format)
 		if err != nil {
 			return Result{}, err
 		}
+		result.Width, result.Height = width, height
 		result.Bytes = encoded
 		result.ETag = contentHash(encoded)
 		return result, nil
@@ -265,7 +265,8 @@ func loadImage(ctx context.Context, reader io.Reader) (loadedImage, error) {
 		data: data,
 	}
 	if format == "gif" {
-		if err := checkGIFBudget(ctx, data, config.Width, config.Height); err != nil {
+		var disposals []byte
+		if err := checkGIFBudget(ctx, data, config.Width, config.Height, &disposals); err != nil {
 			return loadedImage{}, err
 		}
 		animation, err := gif.DecodeAll(bytes.NewReader(data))
@@ -275,7 +276,11 @@ func loadImage(ctx context.Context, reader io.Reader) (loadedImage, error) {
 		if len(animation.Image) == 0 {
 			return loadedImage{}, fmt.Errorf("%w: GIF contains no frames", ErrInvalidImage)
 		}
+		// Read disposal from the per-frame GCE scan. Some Go decoder versions
+		// retain the previous disposal when a later frame has no GCE.
+		animation.Disposal = disposals
 		source.image = animation.Image[0]
+		source.animation = animation
 		source.background = color.Transparent
 		if palette, ok := animation.Config.ColorModel.(color.Palette); ok && int(animation.BackgroundIndex) < len(palette) {
 			source.background = palette[animation.BackgroundIndex]

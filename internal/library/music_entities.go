@@ -157,7 +157,7 @@ func (s *Store) listMusicEntities(ctx context.Context, family string, query Quer
 		return EntityResult{}, fmt.Errorf("finish music entities: %w", err)
 	}
 	subject := Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID, Actor: actor}
-	if err := populateEntityProjections(ctx, tx, subject, result.Items); err != nil {
+	if err := populateEntityProjections(ctx, tx, subject, access, result.Items); err != nil {
 		return EntityResult{}, err
 	}
 	if actor != nil {
@@ -203,7 +203,7 @@ func (s *Store) GetMusicEntityFor(ctx context.Context, subject Subject, family, 
 		return Entity{}, fmt.Errorf("read music entity by name: %w", err)
 	}
 	entities := []Entity{entity}
-	if err := populateEntityProjections(ctx, tx, subject, entities); err != nil {
+	if err := populateEntityProjections(ctx, tx, subject, access, entities); err != nil {
 		return Entity{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

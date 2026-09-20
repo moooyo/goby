@@ -142,6 +142,18 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 		s.subtitleError(w, r, err)
 		return
 	}
+	values, err := streamValues(r)
+	if err != nil {
+		s.subtitleError(w, r, subtitle.ErrInvalidRange)
+		return
+	}
+	ownedTag, ownedRequested := values["gobysubtitletag"]
+	if ownedRequested {
+		if digest, err := hex.DecodeString(ownedTag); err != nil || len(digest) != sha256.Size || strings.ToLower(ownedTag) != ownedTag {
+			s.subtitleError(w, r, subtitle.ErrInvalidRange)
+			return
+		}
+	}
 	select {
 	case s.subtitleSlots <- struct{}{}:
 		defer func() { <-s.subtitleSlots }()
@@ -153,7 +165,17 @@ func (s *Server) subtitleStream(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
 	principal := r.Context().Value(principalKey).(identity.Principal)
-	content, err := s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), r.PathValue("Id"), r.PathValue("MediaSourceId"), index, options.Format)
+	var content library.SubtitleContent
+	if ownedRequested {
+		// A replaced source may introduce an embedded stream at an old external
+		// index. An issued owned-track URL must never select that new stream.
+		content, err = s.library.ReadSubtitleFor(ctx, librarySubject(principal, principal.User.ID), r.PathValue("Id"), r.PathValue("MediaSourceId"), index)
+		if err == nil && (!content.Info.Owned || content.Info.Tag != ownedTag) {
+			err = library.ErrNotFound
+		}
+	} else {
+		content, err = s.readSubtitleContentFor(ctx, librarySubject(principal, principal.User.ID), r.PathValue("Id"), r.PathValue("MediaSourceId"), index, options.Format)
+	}
 	if err != nil {
 		if errors.Is(err, subtitle.ErrUnsupportedFormat) || errors.Is(err, media.ErrSubtitleExtraction) {
 			s.subtitleError(w, r, err)

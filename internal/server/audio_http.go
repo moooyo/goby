@@ -158,7 +158,7 @@ func (s *Server) audioStream(w http.ResponseWriter, r *http.Request) {
 		s.audioError(w, r, errAudioRequestUnsupported)
 		return
 	}
-	session, err := s.hls.register(principal, source, play.ID, conversion, decision.StartTicks)
+	session, err := s.hls.registerVerified(r.Context(), principal, source, play.ID, conversion, decision.StartTicks)
 	if err != nil {
 		s.audioError(w, r, err)
 		return

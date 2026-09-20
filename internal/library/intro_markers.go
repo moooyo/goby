@@ -205,12 +205,15 @@ func (s *Store) GetItemIntro(ctx context.Context, actor identity.Principal, item
 	if err != nil {
 		return IntroDetail{}, err
 	}
+	if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
+		return IntroDetail{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return IntroDetail{}, err
 	}
 	// Do not hold a database connection while storage may be unavailable.
 	file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
-		file, err := s.openMediaSource(ctx, snapshot)
+		file, err := s.openPublicMediaSource(ctx, snapshot)
 		return file, snapshot.mediaFile, err
 	})
 	if err != nil {

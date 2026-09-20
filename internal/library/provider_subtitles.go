@@ -464,9 +464,8 @@ func (s *Store) publishProviderSubtitle(ctx context.Context, actor *identity.Pri
 	if err != nil {
 		return err
 	}
-	var total, highest, active int
-	if err := tx.QueryRow(ctx, `SELECT count(*), COALESCE(max(stream_index), -1), count(*) FILTER (WHERE active)
-		FROM item_subtitles WHERE item_id = $1`, itemID).Scan(&total, &highest, &active); err != nil {
+	total, highest, active, err := subtitleCatalogCapacity(ctx, tx, itemID)
+	if err != nil {
 		return fmt.Errorf("read subtitle catalog capacity: %w", err)
 	}
 	previous, previousErr := scanStoredSubtitle(tx.QueryRow(ctx, "SELECT "+subtitleColumns+`

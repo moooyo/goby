@@ -302,6 +302,13 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 	if currentRevision != revision {
 		return LibraryEditing{}, ErrLibraryConflict
 	}
+	var publishing bool
+	if err := tx.QueryRow(protected, mediaPublicationLibraryActiveSQL, id).Scan(&publishing); err != nil {
+		return LibraryEditing{}, err
+	}
+	if publishing {
+		return LibraryEditing{}, ErrBusy
+	}
 	var busy bool
 	if err := tx.QueryRow(protected, `SELECT EXISTS(SELECT 1 FROM scan_jobs WHERE library_id=$1 AND status IN ('Queued','Running'))
 		OR EXISTS(SELECT 1 FROM media_deletion_operations WHERE library_id=$1)`, id).Scan(&busy); err != nil {

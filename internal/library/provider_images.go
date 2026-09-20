@@ -135,7 +135,18 @@ func (s *Store) OpenImageContentFor(ctx context.Context, subject Subject, itemID
 	err = tx.QueryRow(ctx, `SELECT im.content,im.image_type,im.image_index,im.mime_type,im.width,im.height,im.source_hash,im.fetched_at FROM item_provider_images im JOIN items i ON i.id=im.item_id WHERE i.id=$1 AND im.image_type=$2 AND im.image_index=$3 AND ($4::boolean OR i.library_id=ANY($5::text[])) AND `+access.directSQL("i"), itemID, imageType, index, access.all, access.folders).Scan(&data, &source.ImageType, &source.ImageIndex, &source.MIMEType, &source.Width, &source.Height, &source.Tag, &source.ModifiedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		rollback(tx)
-		return s.OpenImageFor(ctx, subject, itemID, imageType, index)
+		file, image, err := s.OpenImageFor(ctx, subject, itemID, imageType, index)
+		if !errors.Is(err, ErrNotFound) {
+			return file, image, err
+		}
+		embedded, image, err := s.OpenEmbeddedImageFor(ctx, subject, itemID, imageType, index)
+		if !errors.Is(err, ErrNotFound) {
+			return embedded, image, err
+		}
+		if imageType == "Primary" && index == 0 {
+			return s.openCollageFor(ctx, subject, ArtworkTarget{ItemID: itemID})
+		}
+		return nil, Image{}, ErrNotFound
 	}
 	if err != nil {
 		return nil, Image{}, fmt.Errorf("%w: read selected artwork", ErrUnavailable)

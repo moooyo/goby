@@ -140,7 +140,7 @@ func (s *Store) UpdateEntityUserDataFor(ctx context.Context, subject Subject, id
 
 // The entity IDs have already passed the caller's same-transaction visibility
 // query. Userless application reads have no synthetic shared user preferences.
-func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, entities []Entity) error {
+func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, access libraryAccess, entities []Entity) error {
 	if len(entities) == 0 {
 		return nil
 	}
@@ -171,8 +171,24 @@ func populateEntityProjections(ctx context.Context, tx pgx.Tx, subject Subject, 
 	}
 	err = rows.Err()
 	rows.Close()
-	if err != nil || subject.UserID == "" {
+	if err != nil {
 		return err
+	}
+	for index := range entities {
+		entity := &entities[index]
+		if entity.Type != "Genre" || hasPrimaryImage(entity.Images) {
+			continue
+		}
+		manifest, err := readCollageManifest(ctx, tx, access, ArtworkTarget{EntityID: entity.ID})
+		if err != nil {
+			return err
+		}
+		if manifest != nil {
+			entity.Images = append([]Image{manifest.image()}, entity.Images...)
+		}
+	}
+	if subject.UserID == "" {
+		return nil
 	}
 	rows, err = tx.Query(ctx, "SELECT "+entityUserDataColumns+" FROM entity_user_data WHERE user_id=$1 AND entity_id=ANY($2::bigint[])", subject.UserID, ids)
 	if err != nil {

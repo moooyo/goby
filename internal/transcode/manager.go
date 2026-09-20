@@ -559,7 +559,7 @@ func jobError(j *managedJob) error {
 			code = j.record.ErrorCode
 		}
 		switch code {
-		case "cancelled", "session_cancelled", "idle_timeout", "manager_closed":
+		case "cancelled", "session_cancelled", "source_replaced", "idle_timeout", "manager_closed":
 			return ErrJobCancelled
 		case "cache_quota", "job_quota", "cache_space":
 			return ErrQuota
@@ -1063,7 +1063,7 @@ func (m *Manager) finish(j *managedJob, runErr error) {
 		j.record.State, j.ready = "completed", true
 	} else {
 		j.record.State = "failed"
-		if j.stopCode == "cancelled" || j.stopCode == "session_cancelled" || j.stopCode == "idle_timeout" || j.stopCode == "manager_closed" {
+		if j.stopCode == "cancelled" || j.stopCode == "session_cancelled" || j.stopCode == "source_replaced" || j.stopCode == "idle_timeout" || j.stopCode == "manager_closed" {
 			j.record.State = "cancelled"
 		}
 		j.record.ErrorCode = j.stopCode

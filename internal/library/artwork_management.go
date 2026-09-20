@@ -3,8 +3,11 @@ package library
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"io"
+	"math/big"
 	"sort"
 	"strconv"
 
@@ -105,12 +108,46 @@ func readArtworkCollection(ctx context.Context, tx pgx.Tx, target ArtworkTarget)
 			return ArtworkCollection{}, err
 		}
 	}
+	if !set.Manages("Primary") && !hasPrimaryImage(images) {
+		manifest, err := readCollageManifest(ctx, tx, unrestrictedLibraryAccess(), target)
+		if err != nil {
+			return ArtworkCollection{}, err
+		}
+		if manifest != nil {
+			images = append(images, manifest.image())
+		}
+	}
 	images = mergeArtworkSet(images, set)
 	metadata := make([]artwork.StoredImage, len(images))
 	for index, image := range images {
 		metadata[index] = managedImageMetadata(image)
 	}
-	return ArtworkCollection{Revision: artwork.RevisionToken(stored, set.Revision, metadata), Items: images}, nil
+	revision := artwork.RevisionToken(stored, set.Revision, metadata)
+	// A new media descriptor may contain identical embedded cover bytes. Editing
+	// must still reject a stale automatic-source snapshot in that case.
+	var sources []struct {
+		Type     string
+		Index    int
+		Revision string
+	}
+	for _, image := range images {
+		if image.SourceRevision != "" {
+			sources = append(sources, struct {
+				Type     string
+				Index    int
+				Revision string
+			}{image.ImageType, image.ImageIndex, image.SourceRevision})
+		}
+	}
+	if len(sources) != 0 {
+		encoded, err := json.Marshal(sources)
+		if err != nil {
+			return ArtworkCollection{}, err
+		}
+		digest := sha256.Sum256(append([]byte("artwork-source-revision-v1/"+revision+"/"), encoded...))
+		revision = new(big.Int).SetBytes(digest[:]).String()
+	}
+	return ArtworkCollection{Revision: revision, Items: images}, nil
 }
 
 func automaticItemImages(ctx context.Context, tx pgx.Tx, itemID string) ([]Image, error) {
@@ -132,6 +169,9 @@ func automaticItemImages(ctx context.Context, tx pgx.Tx, itemID string) ([]Image
 	}
 	rows.Close()
 	result := map[string][]Image{itemID: images}
+	if err := mergeEmbeddedImageListing(ctx, tx, unrestrictedLibraryAccess(), []string{itemID}, result); err != nil {
+		return nil, err
+	}
 	if err := mergeProviderImageListing(ctx, tx, unrestrictedLibraryAccess(), []string{itemID}, result); err != nil {
 		return nil, err
 	}
@@ -367,11 +407,14 @@ func (s *Store) OpenEntityImageFor(ctx context.Context, subject Subject, entityI
 	if err := visibleEntityForState(ctx, tx, access, entityID, false); err != nil {
 		return nil, Image{}, err
 	}
-	image, _, err := artwork.ReadManagedImage(ctx, tx, artwork.Target{Kind: "entity", ID: strconv.FormatInt(entityID, 10)}, imageType, index)
+	image, owned, err := artwork.ReadManagedImage(ctx, tx, artwork.Target{Kind: "entity", ID: strconv.FormatInt(entityID, 10)}, imageType, index)
 	if err != nil {
 		return nil, Image{}, err
 	}
 	if image.Tag == "" {
+		if !owned && imageType == "Primary" && index == 0 {
+			return s.openCollageInSnapshot(ctx, tx, access, ArtworkTarget{EntityID: entityID})
+		}
 		return nil, Image{}, ErrNotFound
 	}
 	if err := tx.Commit(ctx); err != nil {

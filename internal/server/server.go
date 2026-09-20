@@ -53,6 +53,7 @@ type Server struct {
 	settings             *settings.Store
 	diagnostics          *diagnostics.Store
 	mediaDiagnostics     *mediaDiagnosticRuntime
+	mediaOperations      *mediaOperationsRuntime
 	dashboardFiles       fs.FS
 	recovery             adminRecoveryManager
 	activityCancel       context.CancelFunc
@@ -103,6 +104,11 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	app.notifier = newUserDataNotifier(catalog, hub)
 	app.catalogNotifier = newLibraryNotifier(catalog, hub)
 	if err := app.initializeSettings(ctx); err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
+	app.mediaOperations, err = newMediaOperationsRuntime(ctx, app)
+	if err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
 	}
@@ -174,6 +180,9 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	if s.mediaOperations != nil {
+		s.mediaOperations.BeginClose()
+	}
 	s.stopMediaPolicy()
 	s.hardwareEncodingRuntime().cancel()
 	s.mediaDiagnostics.BeginClose()
@@ -201,6 +210,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminDeviceRoutes(mux)
 	s.registerAdminTaskRoutes(mux)
 	s.registerAdminMediaDiagnosticRoutes(mux)
+	s.registerAdminMediaOperationRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
 	s.registerAdminBackupRoutes(mux)
 	s.registerConfigurationRoutes(mux)

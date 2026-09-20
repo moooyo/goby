@@ -51,6 +51,11 @@ func (s *Server) closeSockets(ctx context.Context) error {
 		if err := s.mediaDiagnostics.Close(ctx); err != nil {
 			return err
 		}
+		if s.mediaOperations != nil {
+			if err := s.mediaOperations.Close(ctx); err != nil {
+				return err
+			}
+		}
 		s.taskManager.BeginClose()
 		if err := s.taskManager.Close(ctx); err != nil {
 			return err
@@ -82,7 +87,11 @@ func (s *Server) closeSockets(ctx context.Context) error {
 			// Cleanup continues even if an individual Close caller times out.
 			_ = s.waitActivityRetention(context.Background())
 			diagnosticErr := s.mediaDiagnostics.Close(context.Background())
-			runtime.shutdownErr = errors.Join(diagnosticErr, <-hlsDone, <-dynamicDone, s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
+			var operationErr error
+			if s.mediaOperations != nil {
+				operationErr = s.mediaOperations.Close(context.Background())
+			}
+			runtime.shutdownErr = errors.Join(diagnosticErr, operationErr, <-hlsDone, <-dynamicDone, s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
 			close(runtime.done)
 		}()
 	})

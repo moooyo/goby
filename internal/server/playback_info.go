@@ -301,7 +301,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 				s.hlsError(w, r, err)
 				return
 			}
-			hls, err := s.hls.register(principal, source, session.ID, conversion, start)
+			hls, err := s.hls.registerVerified(r.Context(), principal, source, session.ID, conversion, start)
 			if err != nil {
 				if !decision.DirectPlay && !decision.DirectStream {
 					s.hlsError(w, r, err)

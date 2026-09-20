@@ -152,6 +152,9 @@ func (s *Store) AdditionalParts(ctx context.Context, subject Subject, itemID str
 		if snapshot.root.id != rootID || path.Dir(snapshot.relativePath) != identity.directory {
 			return result, ErrUnavailable
 		}
+		if err := captureMediaPublicationRead(ctx, tx, &snapshot); err != nil {
+			return result, err
+		}
 		sources = append(sources, snapshot)
 		if index > identity.index {
 			result.Items = append(result.Items, item)
@@ -168,7 +171,7 @@ func (s *Store) AdditionalParts(ctx context.Context, subject Subject, itemID str
 	}
 	for _, source := range sources {
 		file, _, err := runMediaSourceWorker(ctx, mediaSourceWorkers, func() (*os.File, MediaFile, error) {
-			opened, err := s.openMediaSource(ctx, source)
+			opened, err := s.openPublicMediaSource(ctx, source)
 			return opened, source.mediaFile, err
 		})
 		if err != nil {

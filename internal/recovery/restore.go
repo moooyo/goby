@@ -23,15 +23,16 @@ import (
 // The raw restore was verified before any normalization reported here. No
 // network listener, scheduled task manager, media scan, or encoder was started.
 type RestoredDatabase struct {
-	SourceVersion        int64
-	CurrentVersion       int64
-	RevokedCredentials   int64
-	ExpiredPlayback      int64
-	InterruptedEncodings int64
-	InterruptedScans     int64
-	InterruptedTasks     int64
-	RegisteredRoots      int64
-	Administrators       int64
+	SourceVersion             int64
+	CurrentVersion            int64
+	RevokedCredentials        int64
+	ExpiredPlayback           int64
+	InterruptedEncodings      int64
+	InterruptedScans          int64
+	InterruptedTasks          int64
+	NormalizedMediaOperations int64
+	RegisteredRoots           int64
+	Administrators            int64
 }
 
 // RestoreInto requires an exclusively leased, separately configured empty
@@ -137,6 +138,12 @@ func normalizeRestoredIdentity(ctx context.Context, tx pgx.Tx, master []byte, ta
 		return RestoredDatabase{}, ErrUnavailable
 	}
 	result.InterruptedEncodings = tag.RowsAffected()
+	// The archive fingerprints have already been verified. Clear process-local
+	// claims and grants in this transaction without opening or changing media.
+	result.NormalizedMediaOperations, err = library.NormalizeMediaOperationRestoreState(ctx, tx)
+	if err != nil {
+		return RestoredDatabase{}, ErrUnavailable
+	}
 	if err := tx.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM scan_jobs WHERE status IN ('Queued','Running')),
 		(SELECT count(*) FROM task_runs WHERE state IN ('pending','running','stopping'))`).Scan(&result.InterruptedScans, &result.InterruptedTasks); err != nil {

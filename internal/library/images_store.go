@@ -86,6 +86,17 @@ type Image struct {
 	Size                int64
 	ModifiedAt          time.Time
 	Source              string
+	// Generated artwork uses a manifest tag for client/cache identity and a
+	// separate byte digest for decoder integrity. Ordinary sources leave it empty.
+	ContentTag     string
+	SourceRevision string
+}
+
+func (image Image) ContentDigest() string {
+	if image.ContentTag != "" {
+		return image.ContentTag
+	}
+	return image.Tag
 }
 
 type storedImage struct {
@@ -154,10 +165,16 @@ func (s *Store) ListImagesFor(ctx context.Context, subject Subject, itemID strin
 	}
 	rows.Close()
 	selected := map[string][]Image{itemID: images}
+	if err := mergeEmbeddedImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
+		return nil, err
+	}
 	if err := mergeProviderImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
 		return nil, err
 	}
 	if err := mergeManagedImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
+		return nil, err
+	}
+	if err := mergeCollageImageListing(ctx, tx, access, []string{itemID}, selected); err != nil {
 		return nil, err
 	}
 	images = selected[itemID]
@@ -211,6 +228,9 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 		}
 		rows.Close()
 	}
+	if err := mergeEmbeddedImageListing(ctx, tx, access, ids, result); err != nil {
+		return nil, err
+	}
 	if err := mergeProviderImageListing(ctx, tx, access, ids, result); err != nil {
 		return nil, err
 	}
@@ -218,6 +238,9 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 		return nil, err
 	}
 	if err := mergeEntityImageListing(ctx, tx, access, ids, result); err != nil {
+		return nil, err
+	}
+	if err := mergeCollageImageListing(ctx, tx, access, ids, result); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -387,7 +410,7 @@ func normalizeStoredImageType(value string, index int) (string, error) {
 		canonical = "Banner"
 	case "logo":
 		canonical = "Logo"
-	case "art":
+	case "art", "clearart":
 		canonical = "Art"
 	case "disc":
 		canonical = "Disc"

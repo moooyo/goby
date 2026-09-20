@@ -205,7 +205,7 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		_ = file.Close()
 		return nil, nil, library.MediaFile{}, err
 	}
-	session, err := s.hls.register(principal, source, play.ID, decision, start)
+	session, err := s.hls.registerVerified(ctx, principal, source, play.ID, decision, start)
 	if err != nil {
 		_ = file.Close()
 		return nil, nil, library.MediaFile{}, err
