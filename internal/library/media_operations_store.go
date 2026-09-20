@@ -687,6 +687,10 @@ func mediaOperationFailure(cause error) (string, string) {
 		return "runtime_limit", "The operation exceeded its execution time limit."
 	case errors.Is(cause, context.Canceled):
 		return "cancelled", "The operation was cancelled."
+	case errors.Is(cause, media.ErrSubtitleRemovalBudget):
+		return "resource_limit", "The selected media exceeds the configured processing limits."
+	case errors.Is(cause, media.ErrSubtitleRemovalUnsupported):
+		return "preservation_unproven", "This source cannot be edited while preserving all retained media information."
 	default:
 		return "execution_failed", "The media operation could not finish."
 	}

@@ -2,12 +2,36 @@ package library
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/moooyo/goby/internal/media"
 )
+
+func TestMediaOperationFailureClassifiesPreservationWithoutPrivateDetails(t *testing.T) {
+	private := "/private/media/source.mkv token=private-sentinel"
+	for _, test := range []struct {
+		name, code, message string
+		cause               error
+	}{
+		{"preservation", "preservation_unproven", "This source cannot be edited while preserving all retained media information.", media.ErrSubtitleRemovalUnsupported},
+		{"budget", "resource_limit", "The selected media exceeds the configured processing limits.", media.ErrSubtitleRemovalBudget},
+		{"cancelled", "cancelled", "The operation was cancelled.", errors.Join(media.ErrSubtitleRemovalUnsupported, context.Canceled)},
+		{"deadline", "runtime_limit", "The operation exceeded its execution time limit.", errors.Join(media.ErrSubtitleRemovalBudget, context.DeadlineExceeded)},
+		{"unknown", "execution_failed", "The media operation could not finish.", errors.New(private)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			code, message := mediaOperationFailure(fmt.Errorf("%s: %w", private, test.cause))
+			if code != test.code || message != test.message || strings.Contains(code+message, private) || strings.Contains(message, "private-sentinel") {
+				t.Fatal("media failure lost its safe category or exposed private diagnostics")
+			}
+		})
+	}
+}
 
 func TestMediaOperationReceiptBindsSelectionButNotDeploymentSnapshot(t *testing.T) {
 	request := MediaOperationRequest{RequestID: "retry-1", Kind: MediaOperationOCR, ItemID: strings.Repeat("a", 32), SourceRevision: "source-revision", StreamIndex: 3,

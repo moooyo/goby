@@ -11,10 +11,12 @@ import (
 // Container-local track IDs are used only to bind that projection to its
 // structural facts; they are excluded from the normalized preservation digest.
 type mediaEditContainerProof struct {
-	Writer    map[string]string
-	Chapters  []mediaEditChapterDisplayProof
-	MP4Tracks []mediaEditMP4TrackProof
-	MP4Layout *mediaEditMP4Layout
+	Writer                  map[string]string
+	Chapters                []mediaEditChapterDisplayProof
+	MP4Tracks               []mediaEditMP4TrackProof
+	MP4Layout               *mediaEditMP4Layout
+	MatroskaTracks          []mediaEditMatroskaTrackProof
+	MatroskaAttachmentCount int
 }
 
 type mediaEditMP4RollProof struct {

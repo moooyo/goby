@@ -141,6 +141,9 @@ States are `queued`, `running`, `ready`, `applying`, `completed`, `failed`,
 `cancelled`, `interrupted`, `stale`, and `recovery_required`. Use current action
 flags for the UI and still handle a rejected concurrent action. A changed source
 can leave a useful OCR review draft readable while making application invalid.
+Asynchronous removal failures use `preservation_unproven` when the retained media
+cannot be proven unchanged, or `resource_limit` when size or complexity limits
+reject the source. Their messages remain fixed and do not expose tool diagnostics.
 
 Removal summaries whitelist `ContainerProfile`, `RemovedStreamIndex`,
 `PreservedStreamCount`, `OriginalBytes`, `CandidateBytes`, and `BackupRetained`.

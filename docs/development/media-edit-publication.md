@@ -44,6 +44,14 @@ declaration, and a complete bounded extradata SHA-256. Each retained attachment'
 bytes and metadata are compared independently. This exception never admits an
 unknown ordinary audio, video, subtitle, or data stream.
 
+Nonzero Matroska `CodecDelay` has a separate AAC-only proof. Raw track identity,
+codec declaration, audio settings and codec-private bytes must bind to the
+probe's stream inventory and `initial_padding`. The integer sample/nanosecond
+conversion must round-trip to the original value, and each retained track must
+keep its exact delay in the candidate. Complete packet timing and `Skip Samples`
+side-data comparison remain required; permitting this declared AAC priming does
+not permit an unproven timestamp shift, Opus preroll, or arbitrary delay fields.
+
 The source owner, group, ordinary permission bits, and supported extended
 attributes are copied and checked. Content-bound `security.ima` and
 `security.evm` signatures, special permission bits, or failed attribute copying

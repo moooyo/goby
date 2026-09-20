@@ -167,6 +167,7 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 		return evidence, err
 	}
 	var mp4Plan mediaEditMP4RemovalPlan
+	var sourceMatroskaTracks, candidateMatroskaTracks map[int]mediaEditMatroskaTrackProof
 	if options.Container == "mp4" {
 		if err := mediaEditValidateMP4UserDataProjection(sourceContainer, source); err != nil {
 			return evidence, fmt.Errorf("subtitle removal source MP4 user data: %w", err)
@@ -174,6 +175,11 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 		mp4Plan, err = buildMediaEditMP4RemovalPlan(sourceContainer, source, options.StreamIndex)
 		if err != nil {
 			return evidence, err
+		}
+	} else if mediaEditHasMatroskaCodecDelay(sourceContainer) {
+		sourceMatroskaTracks, err = bindMediaEditMatroskaTracks(sourceContainer, source)
+		if err != nil {
+			return evidence, fmt.Errorf("subtitle removal source AAC CodecDelay proof: %w", err)
 		}
 	}
 	sourceDigest, err := mediaEditFileDigest(operationContext, input, before.Size())
@@ -223,6 +229,17 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 		if err := mediaEditValidateMP4UserDataProjection(candidateContainer, staged); err != nil {
 			return evidence, fmt.Errorf("subtitle removal candidate MP4 user data: %w", err)
 		}
+	} else if mediaEditHasMatroskaCodecDelay(sourceContainer) || mediaEditHasMatroskaCodecDelay(candidateContainer) {
+		if sourceMatroskaTracks == nil {
+			sourceMatroskaTracks, err = bindMediaEditMatroskaTracks(sourceContainer, source)
+			if err != nil {
+				return evidence, fmt.Errorf("subtitle removal source AAC CodecDelay proof: %w", err)
+			}
+		}
+		candidateMatroskaTracks, err = bindMediaEditMatroskaTracks(candidateContainer, staged)
+		if err != nil {
+			return evidence, fmt.Errorf("subtitle removal candidate AAC CodecDelay proof: %w", err)
+		}
 	}
 	metadataDigest, pairs, err := compareMediaEditDocuments(source, staged, options.Container, options.StreamIndex)
 	if err != nil {
@@ -258,6 +275,20 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	containerDigest, err := compareMediaEditContainerProofs(sourceContainer, candidateContainer, containerBindings)
 	if err != nil {
 		return evidence, err
+	}
+	if sourceMatroskaTracks != nil || candidateMatroskaTracks != nil {
+		delayDigest, err := compareMediaEditMatroskaDelays(sourceMatroskaTracks, candidateMatroskaTracks, options.StreamIndex, pairs)
+		if err != nil {
+			return evidence, err
+		}
+		containerDigest, err = mediaEditJSONDigest(struct {
+			Version          int    `json:"version"`
+			Container        string `json:"container_sha256"`
+			MatroskaAACDelay string `json:"matroska_aac_delay_sha256"`
+		}{mediaEditProofVersion, containerDigest, delayDigest})
+		if err != nil {
+			return evidence, err
+		}
 	}
 	if options.Container == "mp4" {
 		if err := verifyMediaEditMP4StructuralCandidate(operationContext, candidate, mp4Plan, preservedBytes); err != nil {

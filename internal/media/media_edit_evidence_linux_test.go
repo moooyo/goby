@@ -27,6 +27,9 @@ type mediaEditTestEvidence struct {
 	Result                          *SubtitleRemovalEvidence     `json:",omitempty"`
 	CandidateInfo                   *Info                        `json:",omitempty"`
 	CandidateDecode                 *mediaEditTestDecodeEvidence `json:",omitempty"`
+	SourceContainer                 *mediaEditContainerProof     `json:",omitempty"`
+	SourceDocument                  *mediaEditDocument           `json:",omitempty"`
+	CandidateContainer              *mediaEditContainerProof     `json:",omitempty"`
 	Files                           []mediaEditTestEvidenceFile
 }
 

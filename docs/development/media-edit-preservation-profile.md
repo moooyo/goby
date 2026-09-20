@@ -82,6 +82,37 @@ copies unrecognized-MIME attachment bytes into extradata, and its
 writes that complete payload back. In particular, `font/ttf` need not result in
 a recognized `codec_name` to retain the attachment exactly.
 
+Nonzero Matroska `CodecDelay` has an AAC-only admission path. It requires an
+audio TrackEntry with exact `A_AAC` CodecID, complete nonempty CodecPrivate,
+known integral base/output sampling frequencies and channel count, and zero
+`SeekPreRoll`. The raw delay remains an integer number of nanoseconds. With
+effective sample rate `F`, the implementation computes
+`S = roundNearInf(CodecDelay * F / 1,000,000,000)` using bounded integer
+arithmetic and requires the reverse rescale to reproduce the original
+nanoseconds exactly. `S` must fit a nonnegative signed 32-bit initial-padding
+count, and a nonzero delay must produce positive `S`. The ffprobe
+`initial_padding` must equal it. Only absent and explicitly zero delay are
+semantically equivalent; one-nanosecond differences are not normalized away.
+
+Matroska ffprobe IDs do not identify raw TrackNumber or TrackUID. For a delayed
+AAC source/candidate, the complete raw TrackEntry encounter order is bound to
+contiguous probe indexes, matching each known codec/type, CodecPrivate length
+and SHA-256, and audio sampling/channel facts. The complete attachment count
+must occupy the remaining probe inventory, with image attachments explicitly
+identified as attached pictures. Unsupported or transformed CodecPrivate
+projections are rejected rather than guessed. Track numbers/UIDs may be
+regenerated, but the selected subtitle and every retained stream still follow
+the verified source-to-candidate mapping.
+
+Both sides must preserve the exact AAC delay, base/output sample rates, channel
+count, and CodecPrivate. That proof is included in `ContainerSHA256`. The
+existing per-packet payload, rational timestamp, duration, flags, and complete
+`Skip Samples` comparison is unchanged. Nonzero delay for other codecs,
+including Opus, and all nonzero `SeekPreRoll` remain outside this profile.
+This follows the pinned FFmpeg [audio delay reader](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/matroskadec.c#L2879)
+and [delay writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/matroskaenc.c#L2090),
+which separately rescale padding samples and presentation timestamps.
+
 All retained user tags, stream tags, dispositions, rendered stream facts, and
 chapter metadata must match. Container-local track and chapter IDs, indexes,
 padding, size/bitrate statistics, and demuxer-derived clocks may be regenerated;
@@ -197,8 +228,20 @@ packets were identical. These differences are not accepted as normalization.
 
 The admitted MP4 profile now uses structural editing to preserve those original
 bytes and semantics. Matroska opaque attachments retain their independent full
-extradata proof. The next consolidated verification is pending; these repairs
-have not yet established a passing actual candidate result.
+extradata proof. Commit `a3b713d` subsequently passed the consolidated media
+scope: 79 parent tests without skips, including all three original profiles and
+their complete A/V decode. The 11 library `TestMediaEdit` parent tests also
+passed. That result establishes the earlier profile baseline, not the later
+native AAC regression.
+
+Native run `selected-phase2-680eeef-browser04` then recorded an explicit source
+admission failure for Matroska element `0x56AA`. Its preserved 12-second source
+has `CodecDelay=21333333` ns; the authorized read-only diagnostic bound its AAC
+track, 48 kHz rate, five codec-private bytes, probe `initial_padding=1024`, and
+the first packet's complete `Skip Samples` record. No candidate was produced.
+The AAC-only delay proof and the exact native-parameter regression below are
+new changes awaiting consolidated verification; source inspection does not
+prove that the edited candidate passes.
 
 Unit coverage includes exact rational clocks, payload tampering, reordered and
 missing packets, duplicate JSON keys, malformed metadata, chapter and attachment
@@ -229,3 +272,19 @@ their hashes, the engine/preservation result, probe facts, and the one complete
 decode result, including failures. This diagnostic capture does not itself run
 another probe or decode or change the fixtures. It permits the next repair to
 inspect the exact failed inputs and candidate instead of discarding them.
+
+The later native04 browser execution identified a specific additional admission
+failure: its Matroska AAC track carried `CodecDelay=21,333,333` nanoseconds, while
+the prior profile required zero. Authorized read-only diagnostics of the
+retained source bound that raw track to probe index 1, 48 kHz mono AAC,
+`initial_padding=1024`, five matching CodecPrivate bytes, and an initial
+`Skip Samples` record of 1024 samples. The source identity and bytes were
+unchanged by that diagnostic pass. The AAC-only extension above addresses this
+known precondition without weakening packet preservation.
+
+`TestSubtitleRemovalActualMatroskaAACCodecDelay24FPS` adds the same twelve-second
+720x576, 24 fps H.264/AAC source with both authored subtitles and chapters. It
+checks the raw and probe delay bindings before removal and preserves the full
+packet/metadata/structural chain plus complete A/V decoding afterward. The
+extension and this regression test are pending consolidated verification; no
+passing browser outcome is inferred from the source-only diagnostic evidence.

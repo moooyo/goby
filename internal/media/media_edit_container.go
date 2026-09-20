@@ -73,7 +73,17 @@ func mediaEditReadContainerProof(ctx context.Context, file *os.File, size int64,
 	if err != nil {
 		return mediaEditContainerProof{}, err
 	}
-	proof := mediaEditContainerProof{Writer: s.writer, Chapters: s.chapterDisplays}
+	proof := mediaEditContainerProof{Writer: s.writer, Chapters: s.chapterDisplays, MatroskaTracks: s.matroskaTracks, MatroskaAttachmentCount: len(s.uids["attachment"])}
+	for index := range proof.MatroskaTracks {
+		track := &proof.MatroskaTracks[index]
+		if track.CodecPrivateBytes != 0 {
+			digest, err := mediaEditMatroskaPrivateDigest(ctx, file, track.privateOffset, track.CodecPrivateBytes)
+			if err != nil {
+				return mediaEditContainerProof{}, err
+			}
+			track.CodecPrivateSHA256 = digest
+		}
+	}
 	if container == "mp4" {
 		proof.MP4Layout = &mediaEditMP4Layout{SourceBytes: size, MovieDuration: s.movieDuration}
 	}
@@ -117,6 +127,7 @@ type mediaEditContainerScanner struct {
 	segmentElements map[int64]uint64
 	seekTargets     []mediaEditEBMLSeek
 	chapterDisplays []mediaEditChapterDisplayProof
+	matroskaTracks  []mediaEditMatroskaTrackProof
 }
 
 type mediaEditEBMLSeek struct {
@@ -228,13 +239,16 @@ type mediaEditEBMLTarget struct {
 }
 
 type mediaEditEBMLScope struct {
-	count   map[uint64]int
-	uints   map[uint64]uint64
-	texts   map[uint64]string
-	floats  map[uint64]float64
-	names   []string
-	target  mediaEditEBMLTarget
-	display *mediaEditChapterDisplayProof
+	count         map[uint64]int
+	uints         map[uint64]uint64
+	texts         map[uint64]string
+	floats        map[uint64]float64
+	names         []string
+	target        mediaEditEBMLTarget
+	display       *mediaEditChapterDisplayProof
+	audio         *mediaEditMatroskaAudioProof
+	privateOffset int64
+	privateBytes  int64
 }
 
 func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth int) (mediaEditEBMLScope, error) {
@@ -311,6 +325,9 @@ func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth 
 					language = child.texts[0x437C]
 				}
 				r.display = &mediaEditChapterDisplayProof{HasDisplay: true, Title: child.texts[0x85], Language: language}
+			}
+			if parent == "track" && rule.kind == "audio" {
+				r.audio = mediaEditMatroskaAudioFromScope(child)
 			}
 		} else if err := s.ebmlLeaf(&r, rule.kind, id, body, int64(length)); err != nil {
 			return r, fmt.Errorf("%w: Matroska role=%s element=0x%X", err, parent, id)
@@ -394,6 +411,7 @@ func (s *mediaEditContainerScanner) ebmlLeaf(r *mediaEditEBMLScope, kind string,
 		if size > 16<<20 {
 			return fmt.Errorf("%w: Matroska codec private bytes", ErrSubtitleRemovalBudget)
 		}
+		r.privateOffset, r.privateBytes = offset, size
 		return nil // The independent codec extradata digest proves all bytes.
 	}
 	switch kind {
@@ -546,6 +564,15 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 		"chapter": {0x98: 0, 0x4598: 1}, "targets": {0x68CA: 50}, "simpletag": {0x4484: 1}}
 	for id, expected := range defaults[parent] {
 		if value, found := r.uints[id]; found && value != expected {
+			if parent == "track" && id == 0x56AA && r.uints[0x83] == 2 && r.texts[0x86] == "A_AAC" && r.audio != nil && r.audio.Known {
+				if r.privateBytes <= 0 {
+					return mediaEditContainerError("AAC CodecDelay requires complete CodecPrivate bytes")
+				}
+				if _, err := mediaEditAACDelaySamples(value, r.audio.SampleRate); err != nil {
+					return err
+				}
+				continue
+			}
 			return mediaEditContainerError(fmt.Sprintf("unproven nondefault Matroska %s element 0x%X", parent, id))
 		}
 	}
@@ -592,6 +619,13 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 		if err := s.ebmlUID("track", r.uints[0x73C5]); err != nil {
 			return err
 		}
+		track := mediaEditMatroskaTrackProof{Number: number, UID: r.uints[0x73C5], TrackType: r.uints[0x83], CodecID: r.texts[0x86],
+			CodecDelayNS: r.uints[0x56AA], SeekPreRollNS: r.uints[0x56BB], CodecPrivateBytes: r.privateBytes, privateOffset: r.privateOffset}
+		if r.audio != nil {
+			track.SamplingFrequency, track.OutputSamplingFrequency = r.audio.SamplingFrequency, r.audio.OutputSamplingFrequency
+			track.SampleRate, track.Channels, track.audioKnown = r.audio.SampleRate, r.audio.Channels, r.audio.Known
+		}
+		s.matroskaTracks = append(s.matroskaTracks, track)
 		if err := s.ebmlProjection("track", r.uints[0x73C5], "language"); err != nil {
 			return err
 		}
