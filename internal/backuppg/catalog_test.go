@@ -95,7 +95,7 @@ func TestCurrentRecoveryCatalogIncludesFeatureWaveMetadata(t *testing.T) {
 	}
 	for table, appended := range map[string][]string{
 		"item_metadata_state": {"online_source", "online_type", "online_base", "automatic_sort_name_explicit"},
-		"task_run_children":   {"executor_token"},
+		"task_run_children":   {"executor_token", "analysis_scope_key"},
 		"managed_settings":    {"management", "runtime_overrides", "sort_remove_words"},
 		"play_sessions":       {"is_dynamic"},
 	} {

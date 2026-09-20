@@ -1,7 +1,9 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **implementation source complete; awaiting consolidated remote verification**.
-No phase-2 build, test, media probe or environment admission has run yet.
+Status: **implementation source complete; actual schema catalog generated; consolidated verification in progress**.
+Fresh remote admission, independent PostgreSQL setup, the catalog exporter build
+and actual schema-50 export have completed. Full product builds, product tests and
+real-media accuracy/consumer acceptance remain pending.
 
 This phase implements the second delivery in the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -78,12 +80,30 @@ cache review also retained charges for unresolved trash directories, preserved
 missing ownership proof, and distinguished verified missing derivatives from
 unsafe cache state. There is no runtime proof of these authored checks yet.
 
-The next action is to freeze the candidate and admit a fresh remote profile for
-the consolidated builds and verification. No phase 1 worker or consumed profile
-is reused as if it were a new acceptance run.
+The source candidate was frozen at
+`6ab55e26b7c65aadfce11b60f07ff14526daf839`. The fresh remote profile admits a
+14 GiB free-disk reserve, at least 3,200 MiB available memory, one 2 GiB worker
+and a separate 1 GiB PostgreSQL service. Tool identities and three unrelated
+running services were captured before setup. PostgreSQL 17.11 owns six fresh
+databases on port 55450; no phase 1 database or consumed profile is reused.
 
-The actual PostgreSQL schema-50 catalog is still pending remote generation. No
-synthetic catalog or earlier schema's evidence can substitute for that artifact.
+The actual PostgreSQL schema-50 catalog was exported from that candidate into
+the fresh catalog database. Its 1,000,166 bytes have SHA-256
+`f71492625688ab99145ce82bd2dd04098091a58f55cb0576f707f7302091f1be`.
+The exporter and export process groups exited successfully without forced
+termination. This proves catalog generation, not product regression acceptance.
+The final product freeze includes these actual bytes and the schema-50 task-child
+column expectation; full builds and consolidated tests follow that freeze.
+
+Remote capacity was recovered by retiring one closed, reproducible Go build
+cache and preserving 130 historical artifact files in three operator-private
+archives. Every archived member was read and compared remotely; the copied
+archives were checked by whole-file SHA-256 before their remote originals and
+temporary transfer archives were released. Manifests, restoration instructions,
+the one-attempt retirement journal and original closure records are retained.
+Historical databases, logs, source trees, browser evidence and runtime
+dependencies remain intact. Independent readback found all four archival workers
+closed and the unrelated service identities unchanged.
 
 ## Required consolidated evidence
 
