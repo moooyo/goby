@@ -1,0 +1,1559 @@
+{
+  "schema_version": 1,
+  "record_type": "selected-compatibility-phase3-evidence",
+  "recorded_on": "2026-09-20",
+  "timezone": "Asia/Shanghai",
+  "phase": 3,
+  "status": "closed-from-recorded-consolidated-and-affected-repair-scopes",
+  "complete": true,
+  "pending": [],
+  "source_record": "selected-compatibility-phase3-20260920.md",
+  "acceptance_boundary": {
+    "delivery": "Goby music, search, explicit expected-episode discovery, Suggestions and native administrator adapters.",
+    "selected_requirements": [
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6"
+    ],
+    "original_client_external_license_gate": false,
+    "original_client_used": false,
+    "arbitrary_third_party_client_parity_claimed": false,
+    "audio_browser_graph_observed": true,
+    "physical_speaker_output_observed": false,
+    "client_correlated": false,
+    "client_correlation_deferred_to_phase_4_acceptance": true,
+    "online_provider_acceptance_claimed": false,
+    "final_revision_whole_suite_rerun_claimed": false,
+    "phase_4_completion_claimed": false,
+    "merge_push_or_deployment_claimed": false,
+    "ui_ux_pro_max_used": false
+  },
+  "evidence_integrity": {
+    "original_receipts_modified": false,
+    "earlier_failures_preserved": true,
+    "overlapping_pass_counts_are_not_additive": true,
+    "parent_passes_exclude_subtest_events": true,
+    "accepted_coverage_rule": "Retain earlier passing scopes and separately passing affected test repairs with their executed binary identities; do not relabel failed aggregates or claim a final whole-suite pass.",
+    "this_rollup_performed_new_tests_or_runtime_probes": false,
+    "actual_local_e2e": false,
+    "credentials_dsn_or_private_error_bodies_copied": false,
+    "local_private_evidence_root": "D:/Code/goby/.git/selected-compatibility-20260920/phase3",
+    "remote_private_evidence_root": "/opt/goby-selected-compatibility-20260920-p3a"
+  },
+  "sources": {
+    "branch": "codex/selected-client-compatibility",
+    "initial_all_delivery_code_freeze": "327aa3c",
+    "catalog_and_actual_verification_source": "460c33a",
+    "go_fixture_repair_source": "22ffb4b",
+    "mocked_required_field_locator_repair_source": "4ff431a",
+    "snapshots": [
+      {
+        "label": "327aa3c",
+        "commit": "327aa3cfd04c3a4f8df509412b9603fc1ff653bf",
+        "git_tree": "deff84ee28e0637c4b488cc3d5308c2fbb9a62d0"
+      },
+      {
+        "label": "460c33a",
+        "commit": "460c33a3a853521b6f946186e414351e8fd6a79e",
+        "git_tree": "16a9c8611bf3713bb5175e53a3b3f944347a3c22"
+      },
+      {
+        "label": "22ffb4b",
+        "commit": "22ffb4b72d491763928c130fff34fcfb0d3c2293",
+        "git_tree": "013a17d365d22d2f7363cfcdc71eef8a36a6a35f"
+      },
+      {
+        "label": "4ff431a",
+        "commit": "4ff431ac1272fda40baf677e3f752badb1cd3f81",
+        "git_tree": "e150419ac12d53b2d1afb4735ecbc697d574d179"
+      },
+      {
+        "label": "dff0172",
+        "commit": "dff01723e8dfc8ce3609d00025e35c53fe2764b0",
+        "git_tree": "4df0f0692427a56e897540d930c792263e26454f"
+      },
+      {
+        "label": "9362813",
+        "commit": "9362813650dfb9e76823783c1097ee6aa4f0a540",
+        "git_tree": "80c77e4221b63bf71d7f9d481d3854c1ef1be806"
+      }
+    ],
+    "retained_local_archives": [
+      {
+        "name": "source-22ffb4b.tar",
+        "bytes": 137799680,
+        "sha256": "0b6f804572047da5071a6b4ff64613fb6f65fce40d44b82c516796d6eab046e4"
+      },
+      {
+        "name": "source-460c33a.tar",
+        "bytes": 137799680,
+        "sha256": "453a81258608dd0835dd1a83ca5a26490279e320aaef73166a98db3b20fe718e"
+      },
+      {
+        "name": "source-4ff431a.tar",
+        "bytes": 137799680,
+        "sha256": "0203b3b6adacb66fd630a70dc654677cee3bc05bd9a8c037083d7f2516c4e900"
+      },
+      {
+        "name": "source-9362813.tar",
+        "bytes": 137799680,
+        "sha256": "88e6cc770a7e2b402e1ad90e8ebe57fc1a92eb25e33f26776c735998deb88779"
+      },
+      {
+        "name": "source-dff0172.tar",
+        "bytes": 137799680,
+        "sha256": "1a9043d009ff26003c71d7aff644b19b78cf249258d81655bad902c266887eb9"
+      }
+    ],
+    "frontend_dist_archive": {
+      "bytes": 1395712,
+      "sha256": "5fa6b04bf60ff48e6f5a53509152ae2b614d1109af0fe2b40ba51d058bf2e537"
+    },
+    "artifacts": [
+      {
+        "scope": "identity",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "identity-460c33a.test",
+        "bytes": 18830903,
+        "sha256": "a2a424f7d55f5ff675d30a997ccca7d1745c97fd7d3d474b6d99e8160c600ef1",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "database",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "database-460c33a.test",
+        "bytes": 17219807,
+        "sha256": "bbe0695b2cd1d6199c16adf05824a7b12bbf194f350ca555c0abdd973d76da62",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "library",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "library-460c33a.test",
+        "bytes": 35354210,
+        "sha256": "ce27ceaa73e38a1f822d9027e6bbac49b469020ac6792835ee301c949a6fa28d",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "server",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "server-460c33a.test",
+        "bytes": 42934102,
+        "sha256": "6d37d7a45ecc43961bf30a496902a1245fe4c4b0db74e3ede3d710f2d843b41c",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "backuppg",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "backuppg-460c33a.test",
+        "bytes": 25804768,
+        "sha256": "281b88248914d0da1d3120e8f2bac9ca604b5b446b48f042f9c4ac85bfe8d323",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "recoverydb",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "recoverydb-460c33a.test",
+        "bytes": 25112577,
+        "sha256": "2b800a001022ac6a636d98bec450e343c098c8e46f741168dd86b143e7abb9aa",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "recovery",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "recovery-460c33a.test",
+        "bytes": 30574405,
+        "sha256": "61265be90651fc44782e28d1f43133fdef131a7224e8d9d4d370eed58112120e",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "server-browser",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "server-browser-460c33a.test",
+        "bytes": 45629457,
+        "sha256": "401c879b45edb79919305f9c460c970fc3ccd829b90ff4df6daca07f120f96ad",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "ordinary",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "ordinary-460c33a.test",
+        "bytes": 42245792,
+        "sha256": "714ac4e7395b850338e03259b95a90594eb8b4ab846cd38845fb12f74cf8bb96",
+        "role": "Linux application build, not the in-process browser test executable"
+      },
+      {
+        "scope": "embedded",
+        "source": "460c33a",
+        "exit_code": 0,
+        "name": "embedded-460c33a.test",
+        "bytes": 43602108,
+        "sha256": "e46609fb2c51c6eb3b4c24bd317412a1fce8b6e6df946337e8afdc683463cfc0",
+        "role": "Linux application build, not the in-process browser test executable"
+      },
+      {
+        "scope": "library",
+        "source": "22ffb4b",
+        "exit_code": 0,
+        "name": "library-22ffb4b.test",
+        "bytes": 35353217,
+        "sha256": "cbfc53afd16807189d7fb75f198da0f32e938064c5d1470a7d8bd0c12ea747b4",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "server",
+        "source": "22ffb4b",
+        "exit_code": 0,
+        "name": "server-22ffb4b.test",
+        "bytes": 42937486,
+        "sha256": "e4af6e18a30d44690daf3f3c32752b048b67428fbe13db5834882399342268d3",
+        "role": "Executed Linux test binary"
+      }
+    ],
+    "product_sources_unchanged_after_460c33a_through_4ff431a": true,
+    "changed_paths_after_product_verification": [
+      "internal/library/metadata_migration_integration_test.go",
+      "internal/server/expected_episodes_integration_test.go",
+      "web/admin/e2e/episode-roster.spec.ts"
+    ],
+    "final_mocked_fixture_repair_source": "9362813",
+    "product_sources_unchanged_after_460c33a_through_9362813": true,
+    "reused_artifact_boundary": "Only three test files changed after 460c33a. Native test and ordinary/embedded applications retain source 460c33a; frontend assets retain source 327aa3c. No final whole-suite rerun is claimed."
+  },
+  "compilation": {
+    "frontend": {
+      "source": "327aa3c",
+      "scope": "frontend",
+      "exit_code": 0,
+      "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase3\\frontend-build-01.log"
+    },
+    "initial_go_artifact_count": 10,
+    "all_initial_go_artifacts_compiled": true,
+    "initial_go_source": "460c33a",
+    "repaired_go_test_binary_count": 2,
+    "actual_media_database_browser_execution_environment": "ssh test-env only"
+  },
+  "schema_and_recovery": {
+    "schema": 46,
+    "migration": {
+      "path": "internal/database/migrations/0046_expected_episodes.sql",
+      "sha256": "1b1336f5c43dedd3969a1ca0bd86df6acab0c9b2b2715513cd9987c6ebdce838",
+      "tables": [
+        "series_episode_rosters",
+        "episode_roster_imports",
+        "expected_episodes"
+      ]
+    },
+    "catalog": {
+      "path": "internal/backuppg/catalogs/schema-46-postgresql-17.json",
+      "engine": "PostgreSQL 17",
+      "committed_at": "460c33a",
+      "generation": {
+        "source": "327aa3c",
+        "exit_code": 0,
+        "binary_sha256": "2f48a8dfcef922fd9ed00f47fa8e764727bc867e617b1fbed374cfc368065cb6",
+        "catalog_sha256": "9cd74ea71f30e07473a7effd7a3831b0a36fba7e35d27464181e0dfeb22f2d59",
+        "catalog_bytes": 786506
+      },
+      "raw_export": true
+    },
+    "historical_catalogs_and_migration_digests_unchanged": true,
+    "expected_facts_are_physical_items": false,
+    "numbering_gaps_infer_expected_facts": false,
+    "unknown_dates_remain_unknown": true,
+    "source_replacement_withdrawal_and_retired_facts_are_durable": true,
+    "revisions_use_decimal_string_cas": true,
+    "accepted_backuppg_parents": 112,
+    "accepted_recoverydb_parents": 12,
+    "accepted_recovery_parents": 29,
+    "verification_source": "460c33a"
+  },
+  "backend_verification": {
+    "initial_batch_retained_result": "FAIL",
+    "initial_batch": {
+      "source": "460c33a",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "identity",
+          "binary_source": "460c33a",
+          "binary_sha256": "a2a424f7d55f5ff675d30a997ccca7d1745c97fd7d3d474b6d99e8160c600ef1",
+          "selector": "all",
+          "started_unix": 1789896056.5185971,
+          "state": "terminal",
+          "pid": 3310910,
+          "exit_code": 0,
+          "duration_seconds": 135.28088855743408,
+          "parent_passes": 182,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "database",
+          "binary_source": "460c33a",
+          "binary_sha256": "bbe0695b2cd1d6199c16adf05824a7b12bbf194f350ca555c0abdd973d76da62",
+          "selector": "all",
+          "started_unix": 1789896191.8028262,
+          "state": "terminal",
+          "pid": 3312354,
+          "exit_code": 0,
+          "duration_seconds": 14.30904746055603,
+          "parent_passes": 63,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "binary_source": "460c33a",
+          "binary_sha256": "ce27ceaa73e38a1f822d9027e6bbac49b469020ac6792835ee301c949a6fa28d",
+          "selector": "all",
+          "started_unix": 1789896206.1151335,
+          "state": "terminal",
+          "pid": 3312587,
+          "exit_code": 1,
+          "duration_seconds": 702.5754616260529,
+          "parent_passes": 796,
+          "parent_skips": [
+            "TestRootBindingFullScanMountNamespaceHelper"
+          ],
+          "failed_tests": [
+            "TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_source": "460c33a",
+          "binary_sha256": "6d37d7a45ecc43961bf30a496902a1245fe4c4b0db74e3ede3d710f2d843b41c",
+          "selector": "all",
+          "started_unix": 1789896908.7064233,
+          "state": "terminal",
+          "pid": 3328074,
+          "exit_code": 1,
+          "duration_seconds": 531.6645936965942,
+          "parent_passes": 882,
+          "parent_skips": [
+            "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput"
+          ],
+          "failed_tests": [
+            "TestHTTPExpectedEpisodeRosterUsesNativeAuthorityAndExcludesPlayback"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "binary_source": "460c33a",
+          "binary_sha256": "281b88248914d0da1d3120e8f2bac9ca604b5b446b48f042f9c4ac85bfe8d323",
+          "selector": "all",
+          "started_unix": 1789897440.387728,
+          "state": "terminal",
+          "pid": 3333761,
+          "exit_code": 0,
+          "duration_seconds": 84.37601447105408,
+          "parent_passes": 112,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recoverydb",
+          "binary_source": "460c33a",
+          "binary_sha256": "2b800a001022ac6a636d98bec450e343c098c8e46f741168dd86b143e7abb9aa",
+          "selector": "all",
+          "started_unix": 1789897524.7672126,
+          "state": "terminal",
+          "pid": 3334694,
+          "exit_code": 0,
+          "duration_seconds": 30.066160917282104,
+          "parent_passes": 12,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "binary_source": "460c33a",
+          "binary_sha256": "61265be90651fc44782e28d1f43133fdef131a7224e8d9d4d370eed58112120e",
+          "selector": "all",
+          "started_unix": 1789897554.835748,
+          "state": "terminal",
+          "pid": 3335108,
+          "exit_code": 0,
+          "duration_seconds": 96.7835943698883,
+          "parent_passes": 29,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server-browser",
+          "binary_source": "460c33a",
+          "binary_sha256": "401c879b45edb79919305f9c460c970fc3ccd829b90ff4df6daca07f120f96ad",
+          "selector": "^TestSelectedCompatibilityPhase3BrowserIntegration$",
+          "started_unix": 1789897651.6205015,
+          "state": "terminal",
+          "pid": 3335715,
+          "exit_code": 0,
+          "duration_seconds": 16.601916313171387,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        }
+      ],
+      "finished_unix": 1789897668.2227125
+    },
+    "repair_batch_selected_result": "PASS",
+    "repair_batch": {
+      "source": "22ffb4b",
+      "complete": true,
+      "scopes": [
+        {
+          "scope": "library",
+          "binary_source": "22ffb4b",
+          "binary_sha256": "cbfc53afd16807189d7fb75f198da0f32e938064c5d1470a7d8bd0c12ea747b4",
+          "selector": "^TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection$",
+          "started_unix": 1789898067.8518286,
+          "state": "terminal",
+          "pid": 3338560,
+          "exit_code": 0,
+          "duration_seconds": 0.3995084762573242,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_source": "22ffb4b",
+          "binary_sha256": "e4af6e18a30d44690daf3f3c32752b048b67428fbe13db5834882399342268d3",
+          "selector": "^TestHTTPExpectedEpisodeRosterUsesNativeAuthorityAndExcludesPlayback$",
+          "started_unix": 1789898068.2520201,
+          "state": "terminal",
+          "pid": 3338601,
+          "exit_code": 0,
+          "duration_seconds": 0.5883498191833496,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        }
+      ],
+      "finished_unix": 1789898068.8408031
+    },
+    "library_test_only_repair": "Add the schema-46 roster tables to the historical migration fixture table inventory and empty-table expectations.",
+    "server_test_only_repair": "Remove duplicate Content-Type request construction while preserving the native-authority and unplayable-missing-fact assertions.",
+    "product_validation_relaxed": false,
+    "retained_skips": [
+      {
+        "scope": "library",
+        "test": "TestRootBindingFullScanMountNamespaceHelper",
+        "meaning": "Existing mount-namespace helper skip, not an accepted execution."
+      },
+      {
+        "scope": "server",
+        "test": "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+        "meaning": "AMD-specific profile not executed by this phase scope."
+      }
+    ]
+  },
+  "mocked_administrator_browser": {
+    "explicitly_synthetic_ui_regression": true,
+    "actual_backend_acceptance": false,
+    "original_retained_result": "FAIL",
+    "original": {
+      "marker": "goby-selected-phase3-mocked-browser-v1",
+      "complete": false,
+      "scope": "mocked-browser-01",
+      "source_revision": "460c33a",
+      "source_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-460c33a",
+      "dist_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-460c33a/web/admin/dist",
+      "suites": [
+        "e2e/episode-roster.spec.ts",
+        "e2e/selected-playback-administration.spec.ts"
+      ],
+      "workers": 1,
+      "retries": 0,
+      "reporter": "json",
+      "timeout_seconds": 900,
+      "started_unix": 1789897745.6379936,
+      "exit_code": 1,
+      "server_closed": true,
+      "process_group_closed": true,
+      "dependency_link_removed": true,
+      "temporary_profiles_removed": true,
+      "base_url": "http://127.0.0.1:37829",
+      "command": [
+        "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "/opt/goby-selected-compatibility-20260920-p1a/dependencies/node_modules/@playwright/test/cli.js",
+        "test",
+        "e2e/episode-roster.spec.ts",
+        "e2e/selected-playback-administration.spec.ts",
+        "--workers=1",
+        "--retries=0",
+        "--reporter=json",
+        "--output=/opt/goby-selected-compatibility-20260920-p3a/mocked-browser-01/artifacts"
+      ],
+      "pid": 3336274,
+      "stats": {
+        "expected": 17,
+        "unexpected": 7,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 234573.212
+      },
+      "report_errors": 0,
+      "suite_passed": false,
+      "remaining_connections": 0,
+      "unhandled_api_requests": [],
+      "finished_unix": 1789897980.8926911
+    },
+    "original_suite_breakdown": [
+      {
+        "suite": "e2e/selected-playback-administration.spec.ts",
+        "passed": 12,
+        "failed": 0
+      },
+      {
+        "suite": "e2e/episode-roster.spec.ts",
+        "passed": 5,
+        "failed": 7
+      }
+    ],
+    "second_retained_result": "FAIL",
+    "second": {
+      "marker": "goby-selected-phase3-mocked-browser-v1",
+      "complete": false,
+      "scope": "mocked-browser-02",
+      "source_revision": "4ff431a",
+      "source_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-4ff431a",
+      "dist_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-460c33a/web/admin/dist",
+      "suites": [
+        "e2e/episode-roster.spec.ts"
+      ],
+      "workers": 1,
+      "retries": 0,
+      "reporter": "json",
+      "timeout_seconds": 900,
+      "started_unix": 1789898165.9155421,
+      "exit_code": 1,
+      "server_closed": true,
+      "process_group_closed": true,
+      "dependency_link_removed": true,
+      "temporary_profiles_removed": true,
+      "base_url": "http://127.0.0.1:40447",
+      "command": [
+        "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "/opt/goby-selected-compatibility-20260920-p1a/dependencies/node_modules/@playwright/test/cli.js",
+        "test",
+        "e2e/episode-roster.spec.ts",
+        "--workers=1",
+        "--retries=0",
+        "--reporter=json",
+        "--output=/opt/goby-selected-compatibility-20260920-p3a/mocked-browser-02/artifacts"
+      ],
+      "pid": 3338842,
+      "stats": {
+        "expected": 11,
+        "unexpected": 1,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 21500.201999999997
+      },
+      "report_errors": 0,
+      "suite_passed": false,
+      "remaining_connections": 0,
+      "unhandled_api_requests": [],
+      "finished_unix": 1789898188.2936063
+    },
+    "required_field_locator_repair": "Test-only accessible textbox-role locators replace required-label matching for two fields; product frontend assets are unchanged.",
+    "second_remaining_failure": "Invalid/oversized import test alert-text regular expression did not match; the failed receipt is preserved.",
+    "final_selected_roster_scope_result": "PASS by composition of recorded case outcomes, not a final 12-case rerun",
+    "third_retained_result": "FAIL",
+    "third": {
+      "marker": "goby-selected-phase3-mocked-browser-v1",
+      "complete": false,
+      "scope": "mocked-browser-03",
+      "source_revision": "dff0172",
+      "source_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-dff0172",
+      "dist_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-460c33a/web/admin/dist",
+      "suites": [
+        "e2e/episode-roster.spec.ts"
+      ],
+      "test_filter": "invalid and oversized imports preserve the existing draft and never write",
+      "workers": 1,
+      "retries": 0,
+      "reporter": "json",
+      "timeout_seconds": 900,
+      "started_unix": 1789898367.0327404,
+      "exit_code": 1,
+      "server_closed": true,
+      "process_group_closed": true,
+      "dependency_link_removed": true,
+      "temporary_profiles_removed": true,
+      "base_url": "http://127.0.0.1:40603",
+      "command": [
+        "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "/opt/goby-selected-compatibility-20260920-p1a/dependencies/node_modules/@playwright/test/cli.js",
+        "test",
+        "e2e/episode-roster.spec.ts",
+        "--grep",
+        "invalid and oversized imports preserve the existing draft and never write",
+        "--workers=1",
+        "--retries=0",
+        "--reporter=json",
+        "--output=/opt/goby-selected-compatibility-20260920-p3a/mocked-browser-03/artifacts"
+      ],
+      "pid": 3365853,
+      "stats": {
+        "expected": 0,
+        "unexpected": 1,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 6765.4619999999995
+      },
+      "report_errors": 0,
+      "suite_passed": false,
+      "remaining_connections": 0,
+      "unhandled_api_requests": [],
+      "finished_unix": 1789898374.7556098
+    },
+    "third_remaining_failure": "The draft baseline was captured before the valid import completed, producing an empty array. The specific validation-message assertions remained intact.",
+    "fourth_selected_result": "PASS",
+    "fourth": {
+      "marker": "goby-selected-phase3-mocked-browser-v1",
+      "complete": true,
+      "scope": "mocked-browser-04",
+      "source_revision": "9362813",
+      "source_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-9362813",
+      "dist_root": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-460c33a/web/admin/dist",
+      "suites": [
+        "e2e/episode-roster.spec.ts"
+      ],
+      "test_filter": "invalid and oversized imports preserve the existing draft and never write",
+      "workers": 1,
+      "retries": 0,
+      "reporter": "json",
+      "timeout_seconds": 900,
+      "started_unix": 1789898585.222442,
+      "exit_code": 0,
+      "server_closed": true,
+      "process_group_closed": true,
+      "dependency_link_removed": true,
+      "temporary_profiles_removed": true,
+      "base_url": "http://127.0.0.1:42489",
+      "command": [
+        "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "/opt/goby-selected-compatibility-20260920-p1a/dependencies/node_modules/@playwright/test/cli.js",
+        "test",
+        "e2e/episode-roster.spec.ts",
+        "--grep",
+        "invalid and oversized imports preserve the existing draft and never write",
+        "--workers=1",
+        "--retries=0",
+        "--reporter=json",
+        "--output=/opt/goby-selected-compatibility-20260920-p3a/mocked-browser-04/artifacts"
+      ],
+      "pid": 3491687,
+      "stats": {
+        "expected": 1,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 1873.1659999999997
+      },
+      "report_errors": 0,
+      "suite_passed": true,
+      "remaining_connections": 0,
+      "unhandled_api_requests": [],
+      "finished_unix": 1789898587.8121614
+    },
+    "final_test_only_repair": "Wait for the successful import notice and completed preview before reading the actual prior draft. Invalid-input, UTF-8 byte limit, preserved draft/source and never-write assertions remain unchanged.",
+    "composed_case_result": {
+      "unique_cases": 24,
+      "expected": 24,
+      "unexpected": 0,
+      "key": [
+        "file",
+        "title",
+        "project"
+      ],
+      "rule": "Take the latest recorded outcome per unique case across the four immutable reports; retain each original run result.",
+      "selected_playback_cases": 12,
+      "roster_cases": 12,
+      "all_receipts_have_zero_flaky_skipped_report_errors_and_unhandled_api_requests": true,
+      "final_complete_suite_rerun": false,
+      "provenance": "closure-01.json and the four retained mocked-browser reports"
+    }
+  },
+  "native_browser": {
+    "run_id": "selected-phase3-460c33a-browser01",
+    "source": "460c33a",
+    "result": "PASS",
+    "complete": true,
+    "consumer_kind": "owned adapter test consumer",
+    "original_client_used": false,
+    "arbitrary_third_party_parity_claimed": false,
+    "stages": [
+      {
+        "Phase": "authentication",
+        "State": "complete"
+      },
+      {
+        "Phase": "preferences",
+        "State": "complete"
+      },
+      {
+        "Phase": "roster-reviewed",
+        "State": "complete"
+      },
+      {
+        "Phase": "roster-saved",
+        "State": "complete"
+      },
+      {
+        "Phase": "missing-queries",
+        "State": "complete"
+      },
+      {
+        "Phase": "suggestions-played",
+        "State": "complete"
+      },
+      {
+        "Phase": "music-navigation",
+        "State": "complete"
+      },
+      {
+        "Phase": "music-mixes",
+        "State": "complete"
+      },
+      {
+        "Phase": "search-navigation",
+        "State": "complete"
+      },
+      {
+        "Phase": "audio-playing",
+        "State": "complete"
+      },
+      {
+        "Phase": "audio-stopped",
+        "State": "complete"
+      },
+      {
+        "Phase": "physical-arrival",
+        "State": "complete"
+      },
+      {
+        "Phase": "arrival-queries",
+        "State": "complete"
+      },
+      {
+        "Phase": "restart",
+        "State": "complete"
+      },
+      {
+        "Phase": "persisted",
+        "State": "complete"
+      },
+      {
+        "Phase": "cleanup",
+        "State": "complete"
+      }
+    ],
+    "independent_database_stage_count": 16,
+    "checks": {
+      "Authentication": true,
+      "Preferences": true,
+      "RosterReviewed": true,
+      "RosterSaved": true,
+      "MissingQueries": true,
+      "SuggestionsPlayed": true,
+      "MusicNavigation": true,
+      "MusicMixes": true,
+      "SearchNavigation": true,
+      "AudioPlaying": true,
+      "AudioStopped": true,
+      "PhysicalArrival": true,
+      "ArrivalQueries": true,
+      "Restart": true,
+      "Persisted": true,
+      "Cleanup": true
+    },
+    "page_errors": 0,
+    "page_error_details": [],
+    "foreign_requests": 0,
+    "native_controls_use_real_authenticated_routes": true,
+    "business_response_mocks": false,
+    "roster": {
+      "Revision": "1",
+      "SourceKey": "phase3-owned-manifest",
+      "SourceVersion": "v1",
+      "SourceSHA256": "90a7899fc7ae7dbff186718094aeb1444a8fa6121bea89d1b53b21e103fcd164",
+      "Entries": [
+        {
+          "Key": "owned-s01e02",
+          "SeasonNumber": 1,
+          "EpisodeNumber": 2,
+          "Name": "Phase Three roster past episode",
+          "PremiereDate": "2020-01-01",
+          "Id": "missing-f7dc5a28c8608eb71171c4832f8371e8",
+          "AvailableItemIds": [],
+          "AvailableItemCount": 0,
+          "Availability": "missing",
+          "Airing": "aired"
+        },
+        {
+          "Key": "owned-s01e03",
+          "SeasonNumber": 1,
+          "EpisodeNumber": 3,
+          "Name": "Phase Three roster unknown episode",
+          "Id": "missing-c9d0ff0bfb9507445c46076581f33c57",
+          "AvailableItemIds": [],
+          "AvailableItemCount": 0,
+          "Availability": "missing",
+          "Airing": "unknown"
+        },
+        {
+          "Key": "owned-s01e04",
+          "SeasonNumber": 1,
+          "EpisodeNumber": 4,
+          "Name": "Phase Three roster future episode",
+          "PremiereDate": "2099-01-01",
+          "Id": "missing-2a58ba6ac47de739422704847d89f44a",
+          "AvailableItemIds": [],
+          "AvailableItemCount": 0,
+          "Availability": "missing",
+          "Airing": "unaired"
+        }
+      ]
+    },
+    "missing_fact_transition": {
+      "before_arrival_count": 3,
+      "after_arrival_count": 2,
+      "physical_arrival_used_real_copy_and_scan": true,
+      "accepted_source_facts_preserved": true,
+      "missing_playback_info_status": 404,
+      "no_evidence_missing_count": 0,
+      "physical_queue_count_after_arrival": 2
+    },
+    "suggestions": {
+      "InitialIds": [
+        "4a2d991419f3907a3ccf87357c460979",
+        "541b68f7992a55667489eaf7d0fdf93c"
+      ],
+      "HiddenPlayedIds": [
+        "541b68f7992a55667489eaf7d0fdf93c"
+      ],
+      "RestoredIds": [
+        "4a2d991419f3907a3ccf87357c460979",
+        "541b68f7992a55667489eaf7d0fdf93c"
+      ],
+      "FinalPlayedItemId": "4a2d991419f3907a3ccf87357c460979",
+      "CountOnly": 1
+    },
+    "music_navigation": {
+      "ArtistId": "5",
+      "AlbumArtistId": "6",
+      "AlbumId": "4866dd96b76040391eec4fdcfec23c33",
+      "TrackId": "0e00a5b0848ae15d340a5d5bee096136",
+      "ArtistAlbumIds": [
+        "4866dd96b76040391eec4fdcfec23c33",
+        "a0f76b1769a109d28be70578f15985c0"
+      ],
+      "AlbumArtistAlbumIds": [
+        "4866dd96b76040391eec4fdcfec23c33",
+        "a0f76b1769a109d28be70578f15985c0"
+      ]
+    },
+    "music_mixes": [
+      {
+        "Kind": "item-audio",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "item-album",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "song",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "album",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "artist",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "playlist",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "genre-id",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      },
+      {
+        "Kind": "genre-name",
+        "ItemIds": [
+          "0e00a5b0848ae15d340a5d5bee096136",
+          "0c54dd7f481b15f51ab4c546e0f364ae",
+          "bd7aaa16b9ef598ef12683db289e95fc"
+        ],
+        "TotalRecordCount": 3
+      }
+    ],
+    "representative_mix_route_count": 8,
+    "exact_tracks_per_representative_mix": 3,
+    "search": {
+      "HintCount": 12,
+      "PhysicalDetailId": "0e00a5b0848ae15d340a5d5bee096136",
+      "EntityDetailId": "5",
+      "ReferenceKinds": [
+        "Item",
+        "Entity"
+      ],
+      "Image": {
+        "Complete": true,
+        "Status": 200,
+        "SHA256": "dd74e210752244f8123f0b397f205598e474a42f894ad1c55a1c1750b3586e62",
+        "Bytes": 144,
+        "Width": 64,
+        "Height": 64,
+        "Path": "/emby/Items/0e00a5b0848ae15d340a5d5bee096136/Images/Primary/0"
+      }
+    },
+    "actual_item_and_entity_detail_status": 200,
+    "audio_playing": {
+      "PlaySessionId": "play_fe6b4b025fcf67a42a6088d8e3039a2c",
+      "DeviceId": "phase3-adapter-selected-phase3-460c33a-browser01",
+      "MediaSourceId": "mediasource_0e00a5b0848ae15d340a5d5bee096136",
+      "AudioItemId": "0e00a5b0848ae15d340a5d5bee096136",
+      "PositionTicks": 20720000,
+      "Samples": [
+        {
+          "At": 3293.2999999523163,
+          "Seconds": 1.232,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 1.3612698412698412,
+          "RMS": 0.0399814466334919,
+          "Peak": 0.05638332664966583,
+          "SampleCount": 2048
+        },
+        {
+          "At": 3413.5,
+          "Seconds": 1.352,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 1.4802721088435373,
+          "RMS": 0.03998249819151819,
+          "Peak": 0.05638332664966583,
+          "SampleCount": 2048
+        },
+        {
+          "At": 3533.7999999523163,
+          "Seconds": 1.474667,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 1.6021768707482993,
+          "RMS": 0.03992165970299299,
+          "Peak": 0.056383322924375534,
+          "SampleCount": 2048
+        },
+        {
+          "At": 3654,
+          "Seconds": 1.592,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 1.7211791383219954,
+          "RMS": 0.03992342356234235,
+          "Peak": 0.056383319199085236,
+          "SampleCount": 2048
+        },
+        {
+          "At": 3774.2000000476837,
+          "Seconds": 1.712,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 1.8401814058956916,
+          "RMS": 0.03992517527355336,
+          "Peak": 0.056383319199085236,
+          "SampleCount": 2048
+        },
+        {
+          "At": 3894.399999976158,
+          "Seconds": 1.834667,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 1.9620861678004535,
+          "RMS": 0.039846623457673216,
+          "Peak": 0.05638331547379494,
+          "SampleCount": 2048
+        },
+        {
+          "At": 4014.600000023842,
+          "Seconds": 1.952,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 2.0810884353741494,
+          "RMS": 0.03984851277958806,
+          "Peak": 0.05638331174850464,
+          "SampleCount": 2048
+        },
+        {
+          "At": 4134.700000047684,
+          "Seconds": 2.072,
+          "ReadyState": 4,
+          "Paused": false,
+          "Ended": false,
+          "Seeking": false,
+          "ErrorCode": 0,
+          "AudioContextState": "running",
+          "AudioContextTime": 2.2000907029478456,
+          "RMS": 0.0398504091985391,
+          "Peak": 0.05638331174850464,
+          "SampleCount": 2048
+        }
+      ],
+      "ProgressStatus": 204,
+      "OutputConnectedToDestination": true,
+      "SyntheticSignalUsed": false
+    },
+    "audio_stopped": {
+      "PlaySessionId": "play_fe6b4b025fcf67a42a6088d8e3039a2c",
+      "DeviceId": "phase3-adapter-selected-phase3-460c33a-browser01",
+      "MediaSourceId": "mediasource_0e00a5b0848ae15d340a5d5bee096136",
+      "AudioItemId": "0e00a5b0848ae15d340a5d5bee096136",
+      "PositionTicks": 22346670,
+      "StoppedStatus": 204,
+      "EncodingsStatus": 204,
+      "Paused": true,
+      "MediaDetached": true,
+      "AudioContextState": "closed"
+    },
+    "source_backed_analyser_sample_count": 8,
+    "synthetic_signal_used": false,
+    "output_connected_to_audio_destination": true,
+    "physical_speaker_output_observed": false,
+    "playback_report_http": [
+      {
+        "Method": "POST",
+        "Path": "/emby/Sessions/Playing",
+        "Status": 204
+      },
+      {
+        "Method": "POST",
+        "Path": "/emby/Sessions/Playing/Progress",
+        "Status": 204
+      },
+      {
+        "Method": "POST",
+        "Path": "/emby/Sessions/Playing/Stopped",
+        "Status": 204
+      }
+    ],
+    "audio_playing_database_observation": {
+      "ActualSourcePlanVerified": true,
+      "ClientCorrelated": false,
+      "Complete": true,
+      "Counted": true,
+      "Phase": "audio-playing",
+      "PlaySessionId": "play_fe6b4b025fcf67a42a6088d8e3039a2c",
+      "PositionTicks": 20720000,
+      "ProducerIds": [
+        "63420c9b912559851fb05f95e9f908e9"
+      ],
+      "ProducerStates": [
+        "completed"
+      ],
+      "ProgressiveReaders": 0,
+      "State": "Playing"
+    },
+    "audio_stopped_database_observation": {
+      "ActiveViewerSessions": 1,
+      "CacheRetired": true,
+      "Complete": true,
+      "InvalidOrActiveJobs": 0,
+      "Phase": "audio-stopped",
+      "PlayCount": 1,
+      "PlaySessionId": "play_fe6b4b025fcf67a42a6088d8e3039a2c",
+      "PositionTicks": 22346670,
+      "PreservedProducerRows": 1,
+      "ProducerContextsClosed": true,
+      "Runtime": {
+        "HLSSessions": 0,
+        "MediaPolicyLeases": 0,
+        "OriginalRequests": 0,
+        "StreamSlots": 0
+      },
+      "TerminalPlayback": true
+    },
+    "client_correlation_boundary": "ClientCorrelated=false is retained; complete client-protocol correlation remains a phase-4 acceptance task.",
+    "intermediate_active_viewer_boundary": "The viewer remains authenticated at audio stop, then logs out during final cleanup. This is not an active playback/resource leak.",
+    "restart": {
+      "server_restarts": 1,
+      "before_snapshot": {
+        "bytes": 170823,
+        "sha256": "4d19be750d7ce565d1287f5e0c3ff8f3164fef8d1a678ac4d80d4f6900500923"
+      },
+      "after_snapshot": {
+        "bytes": 170823,
+        "sha256": "4d19be750d7ce565d1287f5e0c3ff8f3164fef8d1a678ac4d80d4f6900500923"
+      },
+      "complete_snapshot_and_retained_files_unchanged": true,
+      "expected_files_verified": true
+    },
+    "execution_inventory": [
+      {
+        "Path": "/opt/goby-amd-media-20260919-50f45177f297/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456/bin/ffmpeg",
+        "Device": 2049,
+        "Inode": 4521943,
+        "Bytes": 31886112,
+        "Modified": 1789817108216715097,
+        "Changed": 1789817600502659103,
+        "Mode": 493,
+        "SHA256": "c8887f1a2b5a6777c1285fd7514049ec175947048d82e4b3700e44115da34843"
+      },
+      {
+        "Path": "/opt/goby-amd-media-20260919-50f45177f297/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456/bin/ffprobe",
+        "Device": 2049,
+        "Inode": 4521944,
+        "Bytes": 31677088,
+        "Modified": 1789817108241714000,
+        "Changed": 1789817600614655333,
+        "Mode": 493,
+        "SHA256": "fddc50127245a7a836b5fb6789e1606ebe9e12bcf3c9e2fab5b32bfb7a0b703f"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "Device": 2049,
+        "Inode": 4730743,
+        "Bytes": 126458664,
+        "Modified": 1789843498012109112,
+        "Changed": 1789843498012109112,
+        "Mode": 448,
+        "SHA256": "89af8424dd53e560b1933f87ba650d8bf57c83ca5a04600eefb31f416aabbae7"
+      },
+      {
+        "Path": "/opt/goby-test/inactive-dependencies-m5h/node_modules/playwright/index.js",
+        "Device": 2049,
+        "Inode": 2414987,
+        "Bytes": 648,
+        "Modified": 1788903113121427920,
+        "Changed": 1789025724474195967,
+        "Mode": 420,
+        "SHA256": "4e98f65f0a9d9bcab8cffc0c5cfdd87fd3f5b0be74fc494ff166a466b204cd44"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p3a/sources/source-460c33a/scripts/test-env/selected-compatibility-phase3-browser.mjs",
+        "Device": 2049,
+        "Inode": 4907751,
+        "Bytes": 54347,
+        "Modified": 1789895929000000000,
+        "Changed": 1789896003287628186,
+        "Mode": 420,
+        "SHA256": "f72c452d60f958b3979c536d6363925d9d3ed73e021b3d019fad44ec44d54246"
+      }
+    ],
+    "screenshots": [
+      {
+        "name": "native-phase3-preferences.png",
+        "bytes": 103331,
+        "sha256": "fb41fd279e8613b26f21a7a6d0341a4575b94b66ca96ee7c8fd19ba910fa9173"
+      },
+      {
+        "name": "native-episode-roster-preview.png",
+        "bytes": 118934,
+        "sha256": "70f72a852234de007c08ecaa1af4c9b8e1bb2482c7ac96e547118af8304b4768"
+      },
+      {
+        "name": "native-episode-roster-saved.png",
+        "bytes": 126536,
+        "sha256": "78ef9f9bfc70a0c4ff8be6f67e6ccbaa257493d9c9894cabcd22f0a9246259ba"
+      },
+      {
+        "name": "adapter-search-actual-image.png",
+        "bytes": 26926,
+        "sha256": "821572feb562c693da3421c694346b74a301b5b4946f5bb4c4fbc2b0d1e8f524"
+      },
+      {
+        "name": "adapter-actual-audio-playback.png",
+        "bytes": 29325,
+        "sha256": "60ed118bfba5772927f2493b4bc8cc96a09534bd2747abc5173f73b525fdd656"
+      },
+      {
+        "name": "native-roster-physical-arrival.png",
+        "bytes": 122838,
+        "sha256": "72491c0d8b3ff04b9129cf838336f3ee6d1491ba58868a4e19c33630c5070f0c"
+      },
+      {
+        "name": "native-phase3-persisted-roster.png",
+        "bytes": 122838,
+        "sha256": "72491c0d8b3ff04b9129cf838336f3ee6d1491ba58868a4e19c33630c5070f0c"
+      }
+    ],
+    "screenshot_boundary": "All seven PNGs were inspected; native sensitive fields use masks. Layout, actual audio UI and decoded image evidence are visible; masked values were not visually reviewed.",
+    "cleanup": {
+      "active_http_requests_after_close": 0,
+      "active_sessions_before_fallback": 0,
+      "fallback_session_revocations": 0,
+      "browser_command": {
+        "ElapsedMilliseconds": 14007,
+        "ExitCode": 0,
+        "FailureCleanupSignals": 0,
+        "FinalClosureRequiresDedicatedWorkerCgroupEmpty": true,
+        "ObservedDescendantsClosed": true,
+        "ObservedProcessIdentities": 9,
+        "OutputFiles": [
+          "stdout.log",
+          "stderr.log"
+        ],
+        "PID": 3335992,
+        "ProcessGroup": 3335992,
+        "ProcessGroupClosed": true,
+        "Started": true
+      },
+      "embedded_assets_match_frozen_source": true,
+      "execution_inputs_unchanged": true,
+      "http_listener_closed": true,
+      "server_workers_closed": true,
+      "owned_sessions_retired": true,
+      "owned_media_root_removed": true,
+      "owned_schema_removed": true,
+      "private_context_removed": true,
+      "credentials_written_to_summary": false
+    }
+  },
+  "resource_closure": {
+    "complete": true,
+    "recorded_unix": 1789898625.2685168,
+    "product_source": "460c33a",
+    "go_fixture_repair_source": "22ffb4b",
+    "mock_fixture_repair_source": "9362813",
+    "first_batch_failed_result_preserved": true,
+    "postgres_before": {
+      "MainPID": "3310590",
+      "Result": "success",
+      "ControlGroup": "/system.slice/goby-selected-p3-pg-20260920-a.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "InvocationID": "56cb236fac7f431684add2f5031b1010"
+    },
+    "postgres_after": {
+      "MainPID": "0",
+      "Result": "success",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "InvocationID": ""
+    },
+    "workers": {
+      "goby-selected-p3-checks-20260920-a.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "8f3a233282c2416f91446feb461aa872"
+      },
+      "goby-selected-p3-repair-20260920-a.service": {
+        "MainPID": "0",
+        "Result": "success",
+        "ControlGroup": "",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": ""
+      },
+      "goby-selected-p3-mocked-20260920-a.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "febd2fa759b74e1b82c17456e33058f0"
+      },
+      "goby-selected-p3-mocked-20260920-b.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "3c18c800c2964f05a588b78d3d5d7e67"
+      },
+      "goby-selected-p3-mocked-20260920-c.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "e5dd6dc2bb3145469ee287a31d1e0b35"
+      },
+      "goby-selected-p3-mocked-20260920-d.service": {
+        "MainPID": "0",
+        "Result": "success",
+        "ControlGroup": "",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "InvocationID": ""
+      }
+    },
+    "mocked_ui_composed_cases": 24,
+    "mocked_ui_receipts": [
+      {
+        "scope": "mocked-browser-01",
+        "source": "460c33a",
+        "complete": false,
+        "stats": {
+          "expected": 17,
+          "unexpected": 7,
+          "flaky": 0,
+          "skipped": 0,
+          "duration": 234573.212
+        }
+      },
+      {
+        "scope": "mocked-browser-02",
+        "source": "4ff431a",
+        "complete": false,
+        "stats": {
+          "expected": 11,
+          "unexpected": 1,
+          "flaky": 0,
+          "skipped": 0,
+          "duration": 21500.201999999997
+        }
+      },
+      {
+        "scope": "mocked-browser-03",
+        "source": "dff0172",
+        "complete": false,
+        "stats": {
+          "expected": 0,
+          "unexpected": 1,
+          "flaky": 0,
+          "skipped": 0,
+          "duration": 6765.4619999999995
+        }
+      },
+      {
+        "scope": "mocked-browser-04",
+        "source": "9362813",
+        "complete": true,
+        "stats": {
+          "expected": 1,
+          "unexpected": 0,
+          "flaky": 0,
+          "skipped": 0,
+          "duration": 1873.1659999999997
+        }
+      }
+    ],
+    "original_client_service_unchanged": true,
+    "original_client_service": {
+      "MainPID": "366598",
+      "Result": "success",
+      "ControlGroup": "/system.slice/goby-core-av-original-client-01.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "InvocationID": "c883bdf04e2f4d7ea6526fcd858fc342"
+    },
+    "postgres_data_preserved": true,
+    "evidence_preserved": true,
+    "new_tests_executed": false
+  },
+  "private_receipt_index": [
+    {
+      "path": "verification-01.json",
+      "bytes": 4167,
+      "sha256": "5ad5451d59d20d9e3e9ad6831dff3f88eea427a5a3f9578a8d6714c3c656ac27"
+    },
+    {
+      "path": "verification-repair-01.json",
+      "bytes": 1162,
+      "sha256": "9deb1f42a5711dced8b5e2e78dcad8e0c901832527ef3b65f1297c6d0ebd25cb"
+    },
+    {
+      "path": "frontend-build-01.json",
+      "bytes": 170,
+      "sha256": "9de12bc3e7c252330022d9e2442e67818eb6dbae9303d8978500f6303a9c4acc"
+    },
+    {
+      "path": "compile-group-a-01.json",
+      "bytes": 1071,
+      "sha256": "0a1446515ae4114d677e2b8aa346290204bf87b99155b3bd6767e3955707968e"
+    },
+    {
+      "path": "compile-group-b-01.json",
+      "bytes": 1629,
+      "sha256": "5be4f8ebda519ce5816a52b91c0d28bea18a1b3341ac4acff2b0ae783cb86937"
+    },
+    {
+      "path": "compile-repair-01.json",
+      "bytes": 549,
+      "sha256": "c91563eb754c408d46e715a3ee8be616cc8b3f277740e5b9978553359d635519"
+    },
+    {
+      "path": "catalog-generation-01.json",
+      "bytes": 246,
+      "sha256": "84dcf80d70a50b50792c8619aaaf8cfc39a00bd1c840f6e9a4ee66fa052419dc"
+    },
+    {
+      "path": "mocked-browser-01-receipt.json",
+      "bytes": 1466,
+      "sha256": "8bd07bdabb4a01dd2311b9d46609cc19bfce00c85cd999bd0fdccbbbc92c3e4a"
+    },
+    {
+      "path": "mocked-browser-01-report.json",
+      "bytes": 60834,
+      "sha256": "e1c4790ed88910a47d9efcf38dbc857a32356ea15f68e2afb73028738fed7a03"
+    },
+    {
+      "path": "mocked-browser-02-receipt.json",
+      "bytes": 1370,
+      "sha256": "c5971d3a6b7a1d6323c26d6c7476b1b90b32b9a343c9dc00adf65df3f38495d3"
+    },
+    {
+      "path": "mocked-browser-02-report.json",
+      "bytes": 21403,
+      "sha256": "66ee5b6a550b1cc3e98aced3934e4dbdf9df910f66500d2e55175cf99ed9bda6"
+    },
+    {
+      "path": "browser01/browser-result.json",
+      "bytes": 36795,
+      "sha256": "210ccf67e63985cc2f8fa41ec7a29d4c25a671311b6a7422e13f585ee40927b0"
+    },
+    {
+      "path": "browser01/driver-result.json",
+      "bytes": 2202,
+      "sha256": "6ca9e883182fed40f307890c011f50cb0bb13f08049ecc8f9283afde1964fabe"
+    },
+    {
+      "path": "browser01/execution-inventory.json",
+      "bytes": 1748,
+      "sha256": "1a4e0bab1afc39e112398d5e13d1d590c82f096082980c01cc060588d31af622"
+    },
+    {
+      "path": "browser01/restart-before.json",
+      "bytes": 170823,
+      "sha256": "4d19be750d7ce565d1287f5e0c3ff8f3164fef8d1a678ac4d80d4f6900500923"
+    },
+    {
+      "path": "browser01/restart-after.json",
+      "bytes": 170823,
+      "sha256": "4d19be750d7ce565d1287f5e0c3ff8f3164fef8d1a678ac4d80d4f6900500923"
+    },
+    {
+      "path": "mocked-browser-03-receipt.json",
+      "bytes": 1558,
+      "sha256": "050700413f738fb22c92aa6b9c9af91cfa40fbd9b36d2d109af99885f747b4e2"
+    },
+    {
+      "path": "mocked-browser-03-report.json",
+      "bytes": 13512,
+      "sha256": "f74298980aaad2e1166a817cd6ef07e1b7088685f188a99ef7f3c51a9ca2c4a3"
+    },
+    {
+      "path": "mocked-browser-04-receipt.json",
+      "bytes": 1555,
+      "sha256": "5a1d581b403acebd1cddcf8528758e9ac0aeef424574c2783f4882a8d7d8e7f9"
+    },
+    {
+      "path": "mocked-browser-04-report.json",
+      "bytes": 3336,
+      "sha256": "da27929fd20f777987d863005ff5adbf3c13b0b90d3ce663a5115ea7790bff43"
+    },
+    {
+      "path": "closure-01.json",
+      "bytes": 3883,
+      "sha256": "043263b9d11bee990f5a58b336d5e6a7d3cd0e0519364689cb8b6e70981e1662"
+    }
+  ]
+}

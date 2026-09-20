@@ -16,8 +16,8 @@ connects DisplayMissingEpisodes to explicit, source-attributed expected episode
 discovery and HidePlayedInSuggestions to the actual Suggestions endpoint. Both
 are writable Booleans using the existing preference revision and authority.
 Explicit query selectors override defaults; application keys remain neutral.
-These new consumers are being implemented and have not yet completed phase 3
-consolidated verification. Missing facts do not become playable items, and the
+These consumers completed the recorded phase 3 backend and actual native/adapter
+browser checks, including persistence and recovery. Missing facts do not become playable items, and the
 Suggestions preference does not alter InstantMix.
 
 ## Current phase 3 integration boundary

@@ -164,9 +164,10 @@ not applied to an explicit mix; explicit requested state filters still apply.
 
 ## Verification boundary
 
-Phase 3 test sources cover typed namespaces and collisions, all seed adapters,
+Phase 3 checks cover typed namespaces and collisions, all seed adapters,
 authorized metadata ranking/fallback, deterministic pages, zero/distant counts,
 playlist privacy and deduplication, current playback policy, incomplete source
 snapshots, Unicode initials, independent artist roles/state, and the legacy
-album-artist name route. Consolidated phase 3 verification and actual playback
-evidence are recorded separately after the phase source freeze.
+album-artist name route. The [phase 3 execution record](../development/selected-compatibility-phase3-20260920.md)
+separately records the composed backend checks and actual browse/mix/audio
+consumer journey, including retained failures and the exact client boundary.

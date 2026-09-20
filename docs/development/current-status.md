@@ -7,8 +7,10 @@ is approved; phase 1 is closed on `codex/selected-client-compatibility` under
 the user's third-party-client adapter boundary. [Phase 2](selected-compatibility-phase2-20260920.md)
 is closed after composed regression, scoped repairs and the complete native
 browser journey at `bd20b23`. [Phase 3 music/search/discovery](selected-compatibility-phase3-20260920.md)
-implementation is in progress; consolidated verification has not started.
-Phase 4 has not started implementation.
+is closed using the recorded `460c33a` backend/recovery/native browser scopes and
+affected test-only repairs. All 24 administrator cases have composed passing
+evidence. Phase 3 PostgreSQL and workers are stopped, with data and failures
+preserved. Phase 4 management configuration, protocols and notifications are next.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
 implementation from scoped acceptance. Backend repair scopes, administration,
 original-client local-password/PIN, enabled/disabled autoplay, runtime restart,

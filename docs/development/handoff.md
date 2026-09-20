@@ -16,8 +16,10 @@ recorded failures, not successful third-party-client evidence. Phase 2 is closed
 after composed regression, scoped media repairs and the complete 16-stage native
 browser journey at `bd20b23`. Both phases' owned PostgreSQL services and workers
 are stopped, with data and evidence preserved. [Phase 3 music/search/discovery](selected-compatibility-phase3-20260920.md)
-implementation is in progress, with consolidated verification not yet started;
-phase 4 has not started implementation.
+is also closed: the recorded backend/recovery scopes, 16-stage actual browser
+journey and 24 composed administrator cases passed, with test-only repairs and
+all earlier failures retained. Its workers and PostgreSQL are stopped. Phase 4
+management configuration, protocols and external notifications are next.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 The [phase 2 execution record](selected-compatibility-phase2-20260920.md) tracks
 the accepted contracts, retained failures, final repair results and resource closure.

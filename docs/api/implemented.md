@@ -24,8 +24,9 @@ Selected phase 3 source now adds [music discovery](music-discovery.md),
 [discovery query/Suggestions consumers](discovery-queries.md). Schema 46 stores
 explicit administrator-imported expected episodes separately from physical
 items. Native roster management and the two discovery preferences are connected.
-Implementation is in progress; the [phase 3 record](../development/selected-compatibility-phase3-20260920.md)
-has no consolidated passing result yet. Source-backed missing facts remain
+Implementation and scoped acceptance are closed in the
+[phase 3 record](../development/selected-compatibility-phase3-20260920.md), with
+test-only repairs and historical failed runs retained. Source-backed missing facts remain
 unplayable, and no numbering gap or new external provider call creates them.
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
