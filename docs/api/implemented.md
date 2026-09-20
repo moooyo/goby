@@ -1,6 +1,6 @@
 # Implemented API surface: administration, catalog, and playback
 
-The next increment implements the [schema43 account/playback contract](playback-accounts.md):
+The selected increment implements the [schema43 account/playback contract](playback-accounts.md):
 native local credentials, encrypted owner-only ProfilePin, Configuration/Partial,
 writable intro/next preferences, source-bound intro administration and chapter
 projections, bounded complete episode queues, and free server-local feature
@@ -29,13 +29,14 @@ Implementation and scoped acceptance are closed in the
 test-only repairs and historical failed runs retained. Source-backed missing facts remain
 unplayable, and no numbering gap or new external provider call creates them.
 
-Phase 4 source is frozen and consolidated compilation and verification are in progress. It adds
+Phase 4 is closed within its recorded composed acceptance scopes. It adds
 [managed runtime settings](managed-execution-settings.md), [encoding controls](encoding-controls.md),
 [selected management adapters](selected-management.md), actual desired/active
 HTTP binding projections and [GobyWebhookV1 notifications](notifications.md).
 The [phase 4 execution record](../development/selected-compatibility-phase4-20260920.md)
-tracks the remaining integrated verification and closeout; the descriptions
-below identify implemented source rather than new passing evidence.
+records actual settings, playback, notification, restart, recovery and selected
+AMD evidence, retained failures, test-only repairs and owned-resource closure.
+Its explicit client and platform limits remain part of the delivery contract.
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 

@@ -11,8 +11,10 @@ is closed using the recorded `460c33a` backend/recovery/native browser scopes an
 affected test-only repairs. All 24 administrator cases have composed passing
 evidence. Phase 3 PostgreSQL and workers are stopped, with data and failures
 preserved. [Phase 4](selected-compatibility-phase4-20260920.md) management
-configuration, protocols and notifications have frozen their sources; consolidated
-compilation and verification have started.
+configuration, protocols and notifications are closed using composed backend
+and recovery checks, the 18-stage actual browser journey, 18 selected mocked
+administrator cases and two selected AMD cases. Its owned PostgreSQL, bridge
+and workers are closed, with evidence and original failed results retained.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
 implementation from scoped acceptance. Backend repair scopes, administration,
 original-client local-password/PIN, enabled/disabled autoplay, runtime restart,
@@ -27,7 +29,8 @@ Live TV/EPG/DVR/tuners, DLNA, external
 channels and group playback are now explicitly excluded. Offline sync and other
 unselected work remain deferred. Local compilation and unit tests are authorized;
 actual integration/E2E runs on `test-env`. The user authorized final merge and
-push after all four phases complete. The completed baseline below is unchanged.
+push after all four phases complete; that integration is the remaining action.
+No deployment is claimed. The completed baseline below is unchanged.
 
 The approved [AMD media and client compatibility increment](../planning/amd-media-compatibility-plan-20260919.md)
 is complete within its recorded boundaries. Implementation used

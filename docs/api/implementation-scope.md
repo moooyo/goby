@@ -2,10 +2,11 @@
 
 Status: **delivery scope**. See the [implemented surface](implemented.md) for current code and test evidence. No real media client has yet been verified against the full planned backend.
 
-The September 20, 2026 user decision selects the next account/playback,
+The September 20, 2026 user decision selected the account/playback,
 subtitle/artwork, music/search and management/client-protocol work in the
 [four-phase execution plan](../planning/selected-compatibility-plan-20260920.md).
-Phase 1 is closed under the user's compatibility-adapter boundary: original Web
+All four phases are closed within their recorded acceptance boundaries. Phase 1
+uses the user's compatibility-adapter boundary: original Web
 commercial licensing restrictions are retained as client limitations and do not
 block third-party-client delivery. Actual results remain scoped to tested
 contracts and journeys. Live TV, EPG, DVR/scheduled recording, tuners,
@@ -122,13 +123,17 @@ These behaviors do not appear as a complete set of operations in Swagger. They m
 | Party/group synchronization | Explicitly excluded by the September 20 user decision; ordinary remote session commands are retained |
 | BackupApi | Evaluate for P2 only after confirming upstream plugin/core provenance and supported archive format; build native Goby backup first |
 | PluginService | Optional future Goby extension registry; no implied compatibility with Emby binary plugins |
-| External notifications, local music Similar/InstantMix, intro skipping | Selected in the new four-phase plan; supported transports, clients and sourced intro intervals require their own implementation and acceptance |
+| External notifications, local music Similar/InstantMix, intro skipping | Delivered within the four-phase plan's recorded scopes: GobyWebhookV1, local metadata discovery and sourced intro intervals; no vendor push or arbitrary client parity is implied |
 | General recommendations, automatic intro detection, BIF previews, themes, game/book media | Deferred; not implied by the selected music and intro-skip work |
 | WebAppService and consumer web player | Excluded: Goby provides only its own administrator dashboard |
 | ConnectService and Emby cloud registration | Excluded: use Goby local accounts and configured server URLs |
 | PackageService / Emby package installation | Excluded: Goby releases and extensions need their own distribution mechanism |
 
-Unsupported features need an explicit capability decision and appropriate error behavior. Do not implement licensing or cloud endpoints with fabricated success responses. Do not substitute Jellyfin contracts for missing Emby evidence.
+Unsupported features need an explicit capability decision and appropriate error
+behavior. Supported Goby local features are free, and the authenticated feature
+registration adapter reports that policy. This does not implement Emby cloud
+identity or claim authorization from an external licensing service. Do not
+substitute Jellyfin contracts for missing Emby evidence.
 
 ## Legacy candidates from the historical export
 

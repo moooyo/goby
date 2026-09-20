@@ -6,7 +6,7 @@ On September 20, after the completed publication below, the user selected the
 next account/playback, subtitle, artwork, music, management configuration,
 search and client-protocol increment and requested its execution table. The
 [new four-phase plan](../planning/selected-compatibility-plan-20260920.md) is the
-current next-work scope on `codex/selected-client-compatibility`. Phase 1 is
+selected increment, now closed on `codex/selected-client-compatibility`. Phase 1 is
 closed under the user's explicit third-party-client adapter boundary. Backend,
 administration, original-client PIN/local-password, next-episode, restart and
 cleanup journeys passed in their recorded scopes. The user accepted delivery of
@@ -18,17 +18,21 @@ browser journey at `bd20b23`. Both phases' owned PostgreSQL services and workers
 are stopped, with data and evidence preserved. [Phase 3 music/search/discovery](selected-compatibility-phase3-20260920.md)
 is also closed: the recorded backend/recovery scopes, 16-stage actual browser
 journey and 24 composed administrator cases passed, with test-only repairs and
-all earlier failures retained. Its workers and PostgreSQL are stopped. Phase 4
-management configuration, protocols and external notifications are in
-consolidated verification. Its [execution record](selected-compatibility-phase4-20260920.md)
-distinguishes frozen source, actual results and remaining verification.
+all earlier failures retained. Its workers and PostgreSQL are stopped. [Phase 4](selected-compatibility-phase4-20260920.md)
+management configuration, protocols and external notifications are also closed:
+the composed backend/recovery scopes, 18-stage actual browser journey, 18 selected
+mocked administrator cases and two selected AMD cases passed. Original failures,
+the unrelated live-device UI skip and all source boundaries remain explicit.
+Its PostgreSQL, bridge and verification workers are closed; data and evidence
+are retained. The unrelated original-client service is unchanged.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 The [phase 2 execution record](selected-compatibility-phase2-20260920.md) tracks
 the accepted contracts, retained failures, final repair results and resource closure.
 Each phase implements all delivery code before consolidated verification.
 Local compilation and unit tests are now authorized; actual integration/E2E
-runs on `test-env`, never locally. After all four phases complete, the user
-authorized updating this handoff, merging to `main` and pushing.
+runs on `test-env`, never locally. All four phases are complete within their
+recorded boundaries. The remaining authorized action is final integration into
+`main` and push; this record does not claim a production deployment.
 
 The user now explicitly excludes Live TV, EPG, DVR/scheduled recording, tuners,
 DLNA, external channels and group/synchronized playback. These are no longer a
@@ -50,7 +54,7 @@ from the tested product snapshot. No deployment was performed.
 For a new session:
 
 1. Read this section, [current status](current-status.md), and the
-   [active selected-compatibility record](selected-compatibility-phase1-20260920.md).
+   [final selected-compatibility record](selected-compatibility-phase4-20260920.md).
    The prior [AMD phase 3 execution record](amd-media-phase3-20260919.md) and
    [results ledger](amd-media-phase3-results-20260919.json) describe a completed
    increment, not the current four-phase work.

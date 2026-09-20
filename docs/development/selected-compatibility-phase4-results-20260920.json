@@ -1,0 +1,1543 @@
+{
+  "schema_version": 1,
+  "record_type": "selected-compatibility-phase4-evidence",
+  "recorded_on": "2026-09-20",
+  "timezone": "Asia/Shanghai",
+  "phase": 4,
+  "status": "closed-within-recorded-selected-and-composed-scopes",
+  "complete": true,
+  "pending": [],
+  "source_record": "selected-compatibility-phase4-20260920.md",
+  "acceptance_boundary": {
+    "delivery": "Selected managed execution, management, client protocols and GobyWebhookV1 notification adapters.",
+    "selected_requirements": [
+      "D1",
+      "D2",
+      "D3",
+      "D4",
+      "D5",
+      "D6"
+    ],
+    "original_client_external_license_gate": false,
+    "original_client_used": false,
+    "arbitrary_third_party_client_parity_claimed": false,
+    "notification_transport": "GobyWebhookV1",
+    "apns_fcm_or_proprietary_emby_push_claimed": false,
+    "notification_consumer": "Independent HTTPS receiver and console consumer",
+    "os_toast_or_human_read_claimed": false,
+    "audio_browser_graph_observed": true,
+    "physical_speaker_output_observed": false,
+    "client_correlated": true,
+    "new_live_device_ui_acceptance_claimed": false,
+    "final_revision_whole_suite_rerun_claimed": false,
+    "merge_push_or_deployment_claimed": false,
+    "ui_ux_pro_max_used": false
+  },
+  "evidence_integrity": {
+    "original_receipts_modified": false,
+    "earlier_failures_preserved": true,
+    "overlapping_pass_counts_are_not_additive": true,
+    "parent_counts_exclude_subtests": true,
+    "accepted_coverage_rule": "Compose earlier passing scopes with separately passing affected repairs and original binary identities; never relabel a failed aggregate.",
+    "this_rollup_executed_tests_or_runtime_probes": false,
+    "actual_local_e2e": false,
+    "credentials_dsn_or_private_environment_contents_copied": false,
+    "local_private_evidence_root": "D:/Code/goby/.git/selected-compatibility-20260920/phase4",
+    "remote_private_evidence_root": "/opt/goby-selected-compatibility-20260920-p4a"
+  },
+  "sources": {
+    "branch": "codex/selected-client-compatibility",
+    "previous_phase_closure": "84d5d74",
+    "initial_complete_implementation_freeze": "8ed6a7b",
+    "initial_changed_files": 203,
+    "catalog_commit": "096d531",
+    "last_product_change": "daeef6a",
+    "frontend_source": "8ed6a7b",
+    "latest_test_only_repair": "27d862a",
+    "product_unchanged_after": "daeef6a",
+    "test_only_repairs": [
+      "1f1c891",
+      "f6ccaf4",
+      "c380fc7",
+      "df177f5",
+      "6962a8f",
+      "7783e1c",
+      "27d862a"
+    ],
+    "snapshots": [
+      {
+        "label": "8ed6a7b",
+        "commit": "8ed6a7bbe28f659b31e84307915ecd9047891abc",
+        "git_tree": "f9caf97370e31fcbaa9fcf319aba2a1a73937505"
+      },
+      {
+        "label": "096d531",
+        "commit": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "git_tree": "81f3e61ec7f701196d513611a150305b1208f74d"
+      },
+      {
+        "label": "daeef6a",
+        "commit": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "git_tree": "0a6a443939b288d71c33e8a9e7c1041bbc0e6062"
+      },
+      {
+        "label": "27d862a",
+        "commit": "27d862a4525ef735b8c54e8de3731cd189c0f4da",
+        "git_tree": "825246a1428f79ad6dc9c703920d82affe137d05"
+      }
+    ]
+  },
+  "compilation": {
+    "frontend": {
+      "source": "8ed6a7bbe28f659b31e84307915ecd9047891abc",
+      "exit_code": 0,
+      "dist_archive_sha256": "a1911e46157131f7e7853d7a08caf50026efd86e68ac0a85537ee88c15a1fdff"
+    },
+    "selected_go_artifact_count": 19,
+    "compiled_artifacts": [
+      {
+        "scope": "config",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "config-096d531.test",
+        "sha256": "25d8e71b1186b256268b55c142fb373bedb8ffe6ead74f33f614684747453db0"
+      },
+      {
+        "scope": "activity",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "activity-096d531.test",
+        "sha256": "f5fc60b04185bebb706bdfb5837d6dcf17724c3d89698a0fb98355bf807e12a9"
+      },
+      {
+        "scope": "settings",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "settings-096d531.test",
+        "sha256": "a6e15d348b004949f4dc7a2ce0b5e1438c6547e6da9becaa1f89a9991c0549a3"
+      },
+      {
+        "scope": "identity",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "identity-096d531.test",
+        "sha256": "38061f915c537766e3a97fbcaf153563f3cf0fd810b49f961371e653b2a9e6cc"
+      },
+      {
+        "scope": "database",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "database-096d531.test",
+        "sha256": "0f1cbc35b00de3492aa6fc346aa5e215d047d6f183182850771ed746175ccea6"
+      },
+      {
+        "scope": "playback",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "playback-096d531.test",
+        "sha256": "93f0bec669161bf7fc99c7bb1e796bc60a1e2a3663c2753b362e67eb442d59a2"
+      },
+      {
+        "scope": "transcode",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "transcode-096d531.test",
+        "sha256": "30fc0c753fad0861b50c2d57f25d65704da9c910e7963ffc9b10ca67c8bcc2f7"
+      },
+      {
+        "scope": "notificationjournal",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "notificationjournal-096d531.test",
+        "sha256": "8638559215b515b944236a31b70386327562919c4b02e3368bfceb1160ff4128"
+      },
+      {
+        "scope": "notifications",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "notifications-096d531.test",
+        "sha256": "0dd7c20d8a033d9f0aff7a49186515fc2937bdf2048e38b5cc12ea42fc230949"
+      },
+      {
+        "scope": "library",
+        "source": "096d531186cfdab42df54e65f5b6b972beab2712",
+        "filename": "library-096d531.test",
+        "sha256": "3c143981a3ac2704f9e6e65095a986c6888af5d702c706631049126b0c30bfd2"
+      },
+      {
+        "scope": "server",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "server-daeef6a.test",
+        "sha256": "549335002f7e3acf306a8d207ef809c18d3d4a10ddbf9387bf1bdc25024ba63c"
+      },
+      {
+        "scope": "backuppg",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "backuppg-daeef6a.test",
+        "sha256": "34164d0838715729af65f5b6ab3c6e1da3b34ae36115330c34ab76978ffa300c"
+      },
+      {
+        "scope": "recoverydb",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "recoverydb-daeef6a.test",
+        "sha256": "40a3fd561b3d08b41e12ead57483ac74018941032e8dd4b21faae9aecf76d7b4"
+      },
+      {
+        "scope": "recovery",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "recovery-daeef6a.test",
+        "sha256": "39e459b799dec5a50c447adb547d523edf97ae5baf19229c620715ef3276b354"
+      },
+      {
+        "scope": "cmd-goby",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "cmd-goby-daeef6a.test",
+        "sha256": "c9190c4a4e8b391ded70fdbbb0a5b0ac44323ea19a8f504185a9e218e4222260"
+      },
+      {
+        "scope": "server-browser",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "server-browser-daeef6a.test",
+        "sha256": "1aa378f094e192b1cd7f26e30d28a8a1a2795a1a7a3252d18b99bc552acec23a"
+      },
+      {
+        "scope": "ordinary",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "goby-daeef6a",
+        "sha256": "1bb535c5ca0dea3cb0933d60d7489903cdc4d05069c5dcf196566cadcf48010e"
+      },
+      {
+        "scope": "embedded",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "goby-embedded-daeef6a",
+        "sha256": "a6376780279f5822980245c25bb8b450d9fa220a1a7e7ea18287ac28a3dce116"
+      },
+      {
+        "scope": "notification-receiver",
+        "source": "daeef6a3658f761864b29dddeba16d962e52bb0d",
+        "filename": "notification-receiver-daeef6a",
+        "sha256": "216bf65d7fd8be2411e7b5d121b70012654901da4511b16b3addecc16dc3260f"
+      }
+    ],
+    "initial_server_compile": {
+      "source": "096d531",
+      "status": "failed",
+      "receipt": "compile-group-b-096d531.json",
+      "cause": "Notification fence referenced RevokedSessionIDs on the read-only LocalCredentials DTO.",
+      "product_repair": "daeef6a",
+      "repair": "Move fencing to the local-credential mutation result."
+    },
+    "tests_executed_by_compilation": false
+  },
+  "catalogs": {
+    "receipt": "catalog-generation-01.json",
+    "exporter_source": "8ed6a7b",
+    "exporter_sha256": "e83a23ce6b7d5ef9d8aa680988135dc76f6a01126d098e54569a49f3c7e85c09",
+    "complete": true,
+    "current_table_count": 61,
+    "exports": [
+      {
+        "version": 47,
+        "exit_code": 0,
+        "catalog_sha256": "8ae91ff4c23fda580c4f5ab0cbb525cff5be7a083689f1f877b7911a072e422b",
+        "catalog_bytes": 793851
+      },
+      {
+        "version": 48,
+        "exit_code": 0,
+        "catalog_sha256": "c46a8d7a4b3cbca05ae984a7b7e04e276c18b924fffeb99f9efad1003caf6451",
+        "catalog_bytes": 852066
+      }
+    ],
+    "historical_catalogs_changed": false
+  },
+  "consolidated": {
+    "pretest_attempt": {
+      "receipt": "verification-01.json",
+      "complete": false,
+      "scope_count": 16,
+      "credited_parent_passes": 0,
+      "process_groups_closed": 16,
+      "cause": "Go test2json lacked a configured build-cache location before tests began.",
+      "diagnostic_log": "config-01.jsonl",
+      "runner_repair_only": true
+    },
+    "first_executed_batch": {
+      "receipt": "verification-02.json",
+      "source": "daeef6a",
+      "complete": false,
+      "status": "failed",
+      "scope_count": 16,
+      "parent_passes": 2857,
+      "failed_parents": 10,
+      "parent_skips": 12,
+      "process_groups_closed": 16,
+      "scopes": [
+        {
+          "scope": "config",
+          "binary_source": "096d531",
+          "binary_sha256": "25d8e71b1186b256268b55c142fb373bedb8ffe6ead74f33f614684747453db0",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 60,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "activity",
+          "binary_source": "096d531",
+          "binary_sha256": "f5fc60b04185bebb706bdfb5837d6dcf17724c3d89698a0fb98355bf807e12a9",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 29,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "settings",
+          "binary_source": "096d531",
+          "binary_sha256": "a6e15d348b004949f4dc7a2ce0b5e1438c6547e6da9becaa1f89a9991c0549a3",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 48,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "identity",
+          "binary_source": "096d531",
+          "binary_sha256": "38061f915c537766e3a97fbcaf153563f3cf0fd810b49f961371e653b2a9e6cc",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 195,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "database",
+          "binary_source": "096d531",
+          "binary_sha256": "0f1cbc35b00de3492aa6fc346aa5e215d047d6f183182850771ed746175ccea6",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 64,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "playback",
+          "binary_source": "096d531",
+          "binary_sha256": "93f0bec669161bf7fc99c7bb1e796bc60a1e2a3663c2753b362e67eb442d59a2",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 228,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "transcode",
+          "binary_source": "096d531",
+          "binary_sha256": "30fc0c753fad0861b50c2d57f25d65704da9c910e7963ffc9b10ca67c8bcc2f7",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 313,
+          "parent_skips": [
+            "TestBitmapSubtitleActualGPUClockCanvasAndClear",
+            "TestGPUProducerCancellationRetiresActualFFmpegAndClosesOutput",
+            "TestLiveAMDActualBitmapPublicationClockAndCancellation",
+            "TestVideoCodecActualVAAPIAVSyncAfterSeek",
+            "TestVideoCodecActualVAAPIOutputs",
+            "TestVideoCodecActualVAAPIDecodeInputMatrix",
+            "TestAMDVideoProcessingActualHDRAndDeinterlace",
+            "TestDolbyVisionActualRPUChangesPixelsAndProducesSDRAndHDR10",
+            "TestDolbyVisionStrictRendererRejectsActualNonzeroResidual"
+          ],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "notificationjournal",
+          "binary_source": "096d531",
+          "binary_sha256": "8638559215b515b944236a31b70386327562919c4b02e3368bfceb1160ff4128",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 3,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "notifications",
+          "binary_source": "096d531",
+          "binary_sha256": "0dd7c20d8a033d9f0aff7a49186515fc2937bdf2048e38b5cc12ea42fc230949",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 4,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "binary_source": "096d531",
+          "binary_sha256": "3c143981a3ac2704f9e6e65095a986c6888af5d702c706631049126b0c30bfd2",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 1,
+          "parent_passes": 795,
+          "parent_skips": [
+            "TestRootBindingFullScanMountNamespaceHelper"
+          ],
+          "failed_parent_tests": [
+            "TestAuxiliaryCatalogChangesMergeOwnerMembershipWithCommittedMove",
+            "TestAuxiliaryCatalogChangesPreserveNewOwnerAndRejectConflicts",
+            "TestCatalogChangesChildrenInvalidationPreservesByteAndCountLimits",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts",
+            "TestCatalogChangesRejectInvalidMoveParents",
+            "TestNotificationCapacityAfterMediaExchangeRetainsPreparedRecoveryBarrier"
+          ],
+          "failed_tests": [
+            "TestAuxiliaryCatalogChangesMergeOwnerMembershipWithCommittedMove",
+            "TestAuxiliaryCatalogChangesPreserveNewOwnerAndRejectConflicts",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts/added_children",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts/removed_children",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts/both_directions",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts/collection_root",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts/moved_folder",
+            "TestCatalogChangesChildrenInvalidationRetainsIndependentFacts",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/added/added_folder",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/added/removed_folder",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/added/updated_leaf",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/added/unknown_kind",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/removed/added_folder",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/removed/removed_folder",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/removed/updated_leaf",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/removed/unknown_kind",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/both/added_folder",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/both/removed_folder",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/both/updated_leaf",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates/both/unknown_kind",
+            "TestCatalogChangesChildrenInvalidationRejectsNonFolderUpdates",
+            "TestCatalogChangesChildrenInvalidationPreservesByteAndCountLimits",
+            "TestCatalogChangesRejectInvalidMoveParents/added_item",
+            "TestCatalogChangesRejectInvalidMoveParents/removed_item",
+            "TestCatalogChangesRejectInvalidMoveParents/missing_destination",
+            "TestCatalogChangesRejectInvalidMoveParents/unchanged_parent",
+            "TestCatalogChangesRejectInvalidMoveParents/self_source",
+            "TestCatalogChangesRejectInvalidMoveParents/self_destination",
+            "TestCatalogChangesRejectInvalidMoveParents/invalid_old_parent",
+            "TestCatalogChangesRejectInvalidMoveParents/oversized_old_parent",
+            "TestCatalogChangesRejectInvalidMoveParents/collection_root",
+            "TestCatalogChangesRejectInvalidMoveParents",
+            "TestNotificationCapacityAfterMediaExchangeRetainsPreparedRecoveryBarrier"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_source": "daeef6a",
+          "binary_sha256": "549335002f7e3acf306a8d207ef809c18d3d4a10ddbf9387bf1bdc25024ba63c",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 1,
+          "parent_passes": 936,
+          "parent_skips": [
+            "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+            "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+          ],
+          "failed_parent_tests": [
+            "TestHTTPConfigurationFullPartialEncodingAndReadonlyState"
+          ],
+          "failed_tests": [
+            "TestHTTPConfigurationFullPartialEncodingAndReadonlyState"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "binary_source": "daeef6a",
+          "binary_sha256": "34164d0838715729af65f5b6ab3c6e1da3b34ae36115330c34ab76978ffa300c",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 1,
+          "parent_passes": 114,
+          "parent_skips": [],
+          "failed_parent_tests": [
+            "TestCurrentRecoveryCatalogIncludesFeatureWaveMetadata"
+          ],
+          "failed_tests": [
+            "TestCurrentRecoveryCatalogIncludesFeatureWaveMetadata"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recoverydb",
+          "binary_source": "daeef6a",
+          "binary_sha256": "40a3fd561b3d08b41e12ead57483ac74018941032e8dd4b21faae9aecf76d7b4",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 12,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "binary_source": "daeef6a",
+          "binary_sha256": "39e459b799dec5a50c447adb547d523edf97ae5baf19229c620715ef3276b354",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 1,
+          "parent_passes": 31,
+          "parent_skips": [],
+          "failed_parent_tests": [
+            "TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificationReplay"
+          ],
+          "failed_tests": [
+            "TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificationReplay/offline_deployment_defaults",
+            "TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificationReplay/trusted_target_capture",
+            "TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificationReplay"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "cmd-goby",
+          "binary_source": "daeef6a",
+          "binary_sha256": "c9190c4a4e8b391ded70fdbbb0a5b0ac44323ea19a8f504185a9e218e4222260",
+          "selector": "all",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 24,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server-browser",
+          "binary_source": "daeef6a",
+          "binary_sha256": "1aa378f094e192b1cd7f26e30d28a8a1a2795a1a7a3252d18b99bc552acec23a",
+          "selector": "^TestSelectedCompatibilityPhase4BrowserIntegration$",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        }
+      ]
+    },
+    "affected_repair": {
+      "receipt": "verification-repair-01.json",
+      "source": "7783e1c",
+      "complete": true,
+      "status": "passed-for-selected-scopes",
+      "scope_count": 4,
+      "parent_passes": 11,
+      "failed_parents": 0,
+      "parent_skips": 0,
+      "process_groups_closed": 4,
+      "includes_one_related_previously_passing_library_guard": true,
+      "scopes": [
+        {
+          "scope": "library",
+          "binary_source": "f6ccaf4",
+          "binary_sha256": "4541662575d6f94ac6ebf2596279a732e9a9a24d60b4730c7bef32d034fb862f",
+          "selector": "^Test(AuxiliaryCatalogChangesMergeOwnerMembershipWithCommittedMove|AuxiliaryCatalogChangesPreserveNewOwnerAndRejectConflicts|CatalogChangesChildrenInvalidationRetainsIndependentFacts|CatalogChangesChildrenInvalidationRejectsNonFolderUpdates|CatalogChangesChildrenInvalidationPreservesByteAndCountLimits|CatalogChangesRejectInvalidMoveParents|CatalogChangesPropagateJournalAdmissionFailure|NotificationCapacityAfterMediaExchangeRetainsPreparedRecoveryBarrier)$",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 8,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_source": "7783e1c",
+          "binary_sha256": "885171c3e7104ef22b8fd343d911eec39fe521effd40f6d7d39bb11492d18ec5",
+          "selector": "^TestHTTPConfigurationFullPartialEncodingAndReadonlyState$",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "binary_source": "df177f5",
+          "binary_sha256": "59a667cc0f9fa9af5e2287a09ec116bea22bf043670258a0a0e83eae3cb2158e",
+          "selector": "^TestCurrentRecoveryCatalogIncludesFeatureWaveMetadata$",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "binary_source": "6962a8f",
+          "binary_sha256": "41510a0474e84b7dd7a3aa74acdf1a04f80e9e222b27cba00a5d0e6ec94e8e73",
+          "selector": "^TestEngineSelectedPhase4RestorePreservesHostOwnershipAndPreventsNotificationReplay$",
+          "state": "terminal",
+          "exit_code": 0,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_parent_tests": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        }
+      ]
+    }
+  },
+  "retained_failure_diagnoses": [
+    {
+      "scope": "library",
+      "failed_parents": 7,
+      "classification": "test-fixture",
+      "repairs": [
+        "1f1c891",
+        "f6ccaf4"
+      ],
+      "description": "Aggregation fakes gained journal support; publication setup uses valid parameterized statements. Original publication, rollback, resync and prepared-barrier checks remain."
+    },
+    {
+      "scope": "server",
+      "failed_parents": 1,
+      "classification": "test-fixture",
+      "repairs": [
+        "c380fc7",
+        "7783e1c"
+      ],
+      "description": "Use a writable managed port and the complete nullable Network group without relaxing production validation."
+    },
+    {
+      "scope": "backuppg",
+      "failed_parents": 1,
+      "classification": "exact-test-inventory",
+      "repairs": [
+        "df177f5"
+      ],
+      "description": "Require the exact management,runtime_overrides suffix."
+    },
+    {
+      "scope": "recovery",
+      "failed_parents": 1,
+      "classification": "source-expectation",
+      "repairs": [
+        "6962a8f"
+      ],
+      "description": "Predict allowed pending/sending ref clearing only in the source expectation; target actual refs, raw archive, ciphertext, source journal and terminal history remain checked."
+    }
+  ],
+  "actual_browser": {
+    "evidence_directory": "browser01",
+    "run_id": "selected-phase4-daeef6a-browser02",
+    "complete": true,
+    "first_effective_actual_execution_passed": true,
+    "database_acknowledged_stages": 18,
+    "stages": [
+      {
+        "Phase": "account-pin",
+        "State": "complete"
+      },
+      {
+        "Phase": "runtime-saved",
+        "State": "complete"
+      },
+      {
+        "Phase": "client-capabilities",
+        "State": "complete"
+      },
+      {
+        "Phase": "audio-playing",
+        "State": "complete"
+      },
+      {
+        "Phase": "remote-paused",
+        "State": "complete"
+      },
+      {
+        "Phase": "session-reconnected",
+        "State": "complete"
+      },
+      {
+        "Phase": "audio-stopped",
+        "State": "complete"
+      },
+      {
+        "Phase": "notifications-configured",
+        "State": "complete"
+      },
+      {
+        "Phase": "notification-retried",
+        "State": "complete"
+      },
+      {
+        "Phase": "notification-offline",
+        "State": "complete"
+      },
+      {
+        "Phase": "notification-hidden",
+        "State": "complete"
+      },
+      {
+        "Phase": "notification-rotated",
+        "State": "complete"
+      },
+      {
+        "Phase": "notification-new-target",
+        "State": "complete"
+      },
+      {
+        "Phase": "notification-revoked",
+        "State": "complete"
+      },
+      {
+        "Phase": "notifications-disabled",
+        "State": "complete"
+      },
+      {
+        "Phase": "listener-restarted",
+        "State": "complete"
+      },
+      {
+        "Phase": "restarted-csrf",
+        "State": "complete"
+      },
+      {
+        "Phase": "cleanup",
+        "State": "complete"
+      }
+    ],
+    "checks": {
+      "AccountPin": true,
+      "RuntimeSaved": true,
+      "ClientCapabilities": true,
+      "AudioPlaying": true,
+      "RemotePaused": true,
+      "SessionReconnected": true,
+      "AudioStopped": true,
+      "NotificationsConfigured": true,
+      "NotificationRetried": true,
+      "NotificationOffline": true,
+      "NotificationHidden": true,
+      "NotificationRotated": true,
+      "NotificationNewTarget": true,
+      "NotificationRevoked": true,
+      "NotificationsDisabled": true,
+      "ListenerRestarted": true,
+      "RestartedCSRF": true,
+      "Cleanup": true
+    },
+    "page_errors": 0,
+    "foreign_requests": 0,
+    "retired_get_reads": 0,
+    "original_client_used": false,
+    "tls_verification_bypassed": false,
+    "embedded_assets_match_frozen_source": true,
+    "execution_inputs_unchanged": true,
+    "profile_lock": {
+      "Unlocked": true,
+      "WrongAttempts": 1,
+      "AuthenticatedFirst": true,
+      "ServerPinLoginAttempted": false
+    },
+    "audio": {
+      "sample_count": 8,
+      "first_seconds": 1.221333,
+      "last_seconds": 2.058667,
+      "nonzero_audio_graph_observed": true,
+      "synthetic_signal_used": false,
+      "connected_to_destination": true,
+      "client_correlated": true,
+      "play_count": 1,
+      "final_state": "Stopped",
+      "stopped_resources_closed": true,
+      "physical_speakers_observed": false
+    },
+    "remote_pause": {
+      "command": "Pause",
+      "before_seconds": 2.330041,
+      "after_seconds": 2.330054,
+      "after_paused": true,
+      "progress_status": 204,
+      "session_paused": true
+    },
+    "reconnect": {
+      "socket_generations": [
+        1,
+        2
+      ],
+      "fresh_snapshot_observed": true,
+      "missed_command_replay_claimed": false
+    },
+    "stop": {
+      "stopped_status": 204,
+      "encodings_status": 204,
+      "media_detached": true,
+      "audio_context_state": "closed"
+    },
+    "managed_video": {
+      "complete": true,
+      "output_bytes": 73469,
+      "output_sha256": "b5962e24648a05a281950148d2f15d8be9a2b10fac43fb2b25a4e8b7b18758d7",
+      "decoded_frames": 192,
+      "expected_frames": 192,
+      "output_microseconds": 8000000,
+      "video_streams": 1,
+      "audio_streams": 1,
+      "execution_version": 1,
+      "threads": 2,
+      "h264": {
+        "Preset": "fast",
+        "RateControl": "capped_crf",
+        "CRF": 23
+      },
+      "width": 96,
+      "height": 54,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "prepared_play_counted": false,
+      "probe": {
+        "ExitCode": 0,
+        "ProcessGroupClosed": true,
+        "StderrBytes": 0,
+        "StdoutBytes": 399
+      },
+      "decode": {
+        "ExitCode": 0,
+        "ProcessGroupClosed": true,
+        "StderrBytes": 0,
+        "StdoutBytes": 181
+      }
+    },
+    "listener": {
+      "actual_ipv4_restart": true,
+      "active_matches_desired": true,
+      "restart_required_after_restart": false,
+      "fresh_csrf_save_revision": "3",
+      "fresh_save_threads": 3
+    },
+    "visual_review": {
+      "reviewer": "coordinator",
+      "masked_screenshot_count": 5,
+      "files": [
+        "native-desired-and-active-listener.png",
+        "reference-client-remote-paused.png",
+        "native-notification-receiver-configured.png",
+        "native-notification-transport-disabled.png",
+        "native-restarted-settings.png"
+      ],
+      "settings_capture_scope": "Lower page portion only; not a full-panel visual review."
+    },
+    "cleanup": {
+      "browser_group_closed": true,
+      "receiver_group_closed": true,
+      "consumer_group_closed": true,
+      "observed_descendants_closed": true,
+      "http_listeners_closed": true,
+      "server_workers_closed": true,
+      "owned_schema_removed": true,
+      "owned_media_root_removed": true,
+      "private_context_removed": true,
+      "owned_sessions_retired": true,
+      "active_sessions_before_fallback": 0,
+      "fallback_session_revocations": 0,
+      "dedicated_worker_cgroup_final_receipt_required": true,
+      "dedicated_worker_cgroup_final_receipt_satisfied": true
+    }
+  },
+  "notifications": {
+    "transport": "GobyWebhookV1",
+    "independent_receiver_and_consumer_processes": true,
+    "tls_verification_bypassed": false,
+    "observations": [
+      {
+        "stage": "notification-retried",
+        "complete": true,
+        "attempts": 2,
+        "kind": "Test",
+        "generation": "1",
+        "receiver_accepted": true,
+        "client_consumed": true,
+        "no_websocket": false,
+        "receiver_receipt_sha256": "f735912773d45e29e88c44e485734dc1a7fb3cc0d3c2494b93f4f74fd5c2cfc6",
+        "hidden_evaluated": null,
+        "no_new_deliveries": null,
+        "no_new_receipts": null,
+        "last_outcome_unchanged": null,
+        "registration_updated_at_unchanged": null,
+        "old_deliveries_retired": null,
+        "private_generation_advanced": null,
+        "registration_revoked": null,
+        "transport_disabled": null
+      },
+      {
+        "stage": "notification-offline",
+        "complete": true,
+        "attempts": 1,
+        "kind": "UserDataInvalidated",
+        "generation": "1",
+        "receiver_accepted": true,
+        "client_consumed": true,
+        "no_websocket": true,
+        "receiver_receipt_sha256": "b7802cdb751a7d2628123795a7ddbd1e6e4da25aa2203855bc8609a735652d38",
+        "hidden_evaluated": null,
+        "no_new_deliveries": null,
+        "no_new_receipts": null,
+        "last_outcome_unchanged": null,
+        "registration_updated_at_unchanged": null,
+        "old_deliveries_retired": null,
+        "private_generation_advanced": null,
+        "registration_revoked": null,
+        "transport_disabled": null
+      },
+      {
+        "stage": "notification-hidden",
+        "complete": true,
+        "attempts": null,
+        "kind": null,
+        "generation": null,
+        "receiver_accepted": null,
+        "client_consumed": null,
+        "no_websocket": null,
+        "receiver_receipt_sha256": null,
+        "hidden_evaluated": true,
+        "no_new_deliveries": true,
+        "no_new_receipts": true,
+        "last_outcome_unchanged": true,
+        "registration_updated_at_unchanged": true,
+        "old_deliveries_retired": null,
+        "private_generation_advanced": null,
+        "registration_revoked": null,
+        "transport_disabled": null
+      },
+      {
+        "stage": "notification-rotated",
+        "complete": true,
+        "attempts": null,
+        "kind": null,
+        "generation": null,
+        "receiver_accepted": null,
+        "client_consumed": null,
+        "no_websocket": null,
+        "receiver_receipt_sha256": null,
+        "hidden_evaluated": null,
+        "no_new_deliveries": null,
+        "no_new_receipts": null,
+        "last_outcome_unchanged": null,
+        "registration_updated_at_unchanged": null,
+        "old_deliveries_retired": true,
+        "private_generation_advanced": true,
+        "registration_revoked": null,
+        "transport_disabled": null
+      },
+      {
+        "stage": "notification-new-target",
+        "complete": true,
+        "attempts": 1,
+        "kind": "UserDataInvalidated",
+        "generation": "2",
+        "receiver_accepted": true,
+        "client_consumed": true,
+        "no_websocket": true,
+        "receiver_receipt_sha256": "60edce176330a75e509d4d4bea22737c31f1780e0cf99091ec84b006df9ca9eb",
+        "hidden_evaluated": null,
+        "no_new_deliveries": null,
+        "no_new_receipts": null,
+        "last_outcome_unchanged": null,
+        "registration_updated_at_unchanged": null,
+        "old_deliveries_retired": null,
+        "private_generation_advanced": null,
+        "registration_revoked": null,
+        "transport_disabled": null
+      },
+      {
+        "stage": "notification-revoked",
+        "complete": true,
+        "attempts": null,
+        "kind": null,
+        "generation": null,
+        "receiver_accepted": null,
+        "client_consumed": null,
+        "no_websocket": null,
+        "receiver_receipt_sha256": null,
+        "hidden_evaluated": null,
+        "no_new_deliveries": true,
+        "no_new_receipts": true,
+        "last_outcome_unchanged": null,
+        "registration_updated_at_unchanged": null,
+        "old_deliveries_retired": null,
+        "private_generation_advanced": null,
+        "registration_revoked": true,
+        "transport_disabled": null
+      },
+      {
+        "stage": "notifications-disabled",
+        "complete": true,
+        "attempts": null,
+        "kind": null,
+        "generation": null,
+        "receiver_accepted": null,
+        "client_consumed": null,
+        "no_websocket": null,
+        "receiver_receipt_sha256": null,
+        "hidden_evaluated": null,
+        "no_new_deliveries": true,
+        "no_new_receipts": true,
+        "last_outcome_unchanged": null,
+        "registration_updated_at_unchanged": null,
+        "old_deliveries_retired": null,
+        "private_generation_advanced": null,
+        "registration_revoked": null,
+        "transport_disabled": true
+      }
+    ],
+    "vendor_push_claimed": false,
+    "os_toast_or_human_read_claimed": false
+  },
+  "mocked_ui": {
+    "source": "daeef6a",
+    "selected_acceptance_receipt": "mocked-browser-01-selected-acceptance.json",
+    "selected_scope_passed": true,
+    "selected_case_count": 18,
+    "suites": [
+      {
+        "file": "runtime-settings.spec.ts",
+        "passed": 8
+      },
+      {
+        "file": "notifications.spec.ts",
+        "passed": 6
+      },
+      {
+        "file": "management-configuration.spec.ts",
+        "passed": 4
+      }
+    ],
+    "selected_cases": [
+      {
+        "file": "management-configuration.spec.ts",
+        "title": "new libraries explicitly save both local import choices before any scan",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "management-configuration.spec.ts",
+        "title": "deletion grants come from current folder choices while legacy values and inactive categories survive unrelated edits",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "management-configuration.spec.ts",
+        "title": "legacy grants and inactive unrated categories can be removed explicitly",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "management-configuration.spec.ts",
+        "title": "a malformed folder response cannot introduce file grants and does not erase retained identifiers",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "notifications.spec.ts",
+        "title": "receiver enrollment uses exact CAS and never refills the saved credential",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "notifications.spec.ts",
+        "title": "keeping and clearing the receiver credential use distinct request shapes",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "notifications.spec.ts",
+        "title": "invalid receiver URLs, missing credentials, and oversized allowlists prevent writes",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "notifications.spec.ts",
+        "title": "a stale notification revision preserves the draft and reloads after confirmation",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "notifications.spec.ts",
+        "title": "an unconfirmed save requires readback without automatic write retries",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "notifications.spec.ts",
+        "title": "a response containing a credential cannot be displayed as editable settings",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "network changes retain the active listener and send a complete nullable group with exact CAS",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "codec choices, explicit false, and null reset preserve separate override meanings",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "only reported available AMD devices can be selected and no device path is submitted",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "legacy deployment hardware and an unavailable saved device are displayed without silent replacement",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "invalid ports, literal addresses, thread counts, and CRF values cannot be saved",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "runtime revision conflicts keep the draft and require an explicit reload before another save",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "an invalid mutation response locks runtime controls until the saved state is reloaded",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      },
+      {
+        "file": "runtime-settings.spec.ts",
+        "title": "an unrelated output limit edit omits Runtime and retains every runtime override",
+        "project": "chromium",
+        "status": "expected",
+        "expected_status": "passed",
+        "results": [
+          "passed"
+        ],
+        "annotations": []
+      }
+    ],
+    "raw_receipt": "mocked-browser-01-receipt.json",
+    "raw_complete": false,
+    "raw_exit_code": 0,
+    "raw_stats": {
+      "expected": 18,
+      "unexpected": 0,
+      "flaky": 0,
+      "skipped": 1,
+      "duration": 27888.452
+    },
+    "raw_report_errors": 0,
+    "raw_receipt_sha256": "eb2ef6436407b5d3c3aebf33a332e5b2bcaf5c68d8e0a561a176286aadef79ec",
+    "raw_report_sha256": "20351f4c9e96a59fdfe0e4939efb6dee17f57ee20b2df02fa2730c388b5c0b78",
+    "unhandled_api_requests": [],
+    "excluded_live_suite": [
+      {
+        "file": "device-management.spec.ts",
+        "title": "isolated devices page, rename, recover concurrent changes, remove logins, and register again",
+        "status": "skipped",
+        "expected_status": "skipped"
+      }
+    ],
+    "reason": "A pre-existing separately gated live-device journey was selected accidentally and correctly skipped. Original aggregate remains failed; intended 18 passing mocked cases were not rerun.",
+    "new_live_device_ui_acceptance_claimed": false,
+    "closure": {
+      "server_closed": true,
+      "process_group_closed": true,
+      "remaining_connections": 0,
+      "dependency_link_removed": true,
+      "temporary_profiles_removed": true
+    }
+  },
+  "amd": {
+    "status": "passed-for-two-selected-scopes-composed-across-original-and-affected-repair",
+    "environment": "CT 104 through the existing PVE AMD worker exception",
+    "toolchain": "Pinned FFmpeg 9.0.1 goby-cb8 toolchain",
+    "product_source": "daeef6a",
+    "repair_changes_test_only": true,
+    "repair_source": "27d862a",
+    "repair_reason": "The old generic helper could select the previous GPU job when a Prepared play session was legally reused. Select the unique new producer by excluding the known previous job, never by expected hardware/thread values.",
+    "repeated_previously_passing_av1_case": false,
+    "runs": [
+      {
+        "evidence_directory": "amd01",
+        "remote_owned_root": "/opt/goby-selected-compatibility-20260920-p4a",
+        "source": "daeef6a",
+        "run_id": "amd-daeef6a-01",
+        "binary_sha256": "549335002f7e3acf306a8d207ef809c18d3d4a10ddbf9387bf1bdc25024ba63c",
+        "uid": 1000,
+        "gid": 1000,
+        "groups": [
+          992,
+          1000
+        ],
+        "worker_complete": false,
+        "supervisor_complete": false,
+        "cgroup_closed": true,
+        "source_unchanged": true,
+        "scopes": [
+          {
+            "test": "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan",
+            "selector": "^TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan$",
+            "exit_code": 1,
+            "exact_test_passed": false,
+            "parent_passes": [],
+            "skipped_tests": [],
+            "failed_tests": [
+              "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan",
+              "{package}"
+            ],
+            "process_group_closed": true,
+            "log_sha256": "67eb8c1e6b6ad6400a352b5f7b2f6129e20feb69f8d9e50700065ea47d499da5"
+          },
+          {
+            "test": "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+            "selector": "^TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput$",
+            "exit_code": 0,
+            "exact_test_passed": true,
+            "parent_passes": [
+              "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput"
+            ],
+            "skipped_tests": [],
+            "failed_tests": [],
+            "process_group_closed": true,
+            "log_sha256": "39c3b7bdfa4a26a96f403f82e6efde2aeb3bddbdd9c4a4737bb578f497b82b5c"
+          }
+        ]
+      },
+      {
+        "evidence_directory": "amd02",
+        "remote_owned_root": "/opt/goby-selected-compatibility-20260920-p4b",
+        "source": "27d862a",
+        "run_id": "amd-27d862a-01",
+        "binary_sha256": "b1c01db3f39850a95c0cbdc22d70b5962a8c27b2b63a9e29b9de3d3396bce252",
+        "uid": 1000,
+        "gid": 1000,
+        "groups": [
+          992,
+          1000
+        ],
+        "worker_complete": true,
+        "supervisor_complete": true,
+        "cgroup_closed": true,
+        "source_unchanged": true,
+        "scopes": [
+          {
+            "test": "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan",
+            "selector": "^TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan$",
+            "exit_code": 0,
+            "exact_test_passed": true,
+            "parent_passes": [
+              "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+            ],
+            "skipped_tests": [],
+            "failed_tests": [],
+            "process_group_closed": true,
+            "log_sha256": "005d3218da828ac5330e49243308084ffe78eb3ef24b53f3b43d879aafe06378"
+          }
+        ]
+      }
+    ],
+    "managed_case_observations": {
+      "gpu_decode": "software",
+      "gpu_encode": "vaapi",
+      "gpu_threads": 3,
+      "cpu_decode": "software",
+      "cpu_encode": "software",
+      "cpu_threads": 5,
+      "new_cpu_job_reused": false,
+      "prepared_play_session_reused": true,
+      "execution_version": 1
+    },
+    "initial_failed_aggregate_preserved": true,
+    "shared_tunnel_and_final_resource_closure_pending": false
+  },
+  "final_resource_closure": {
+    "status": "closed-from-owned-resource-receipt",
+    "complete": true,
+    "closure_receipt": "closure-01.json",
+    "product_source": "daeef6a",
+    "amd_repair_test_source": "27d862a",
+    "known_batch_process_groups_closed": 16,
+    "known_affected_repair_process_groups_closed": 4,
+    "amd_supervisor_cgroups_closed": true,
+    "shared_postgresql_service_closed": true,
+    "postgres_before_pid": "3498052",
+    "postgres_before_invocation": "3316950b8821483bbdd07c37b0252f68",
+    "postgres_after_pid": "0",
+    "postgres_after_state": "inactive",
+    "vm_units": [
+      {
+        "unit": "goby-selected-p4-verification-20260920-a.service",
+        "main_pid": "0",
+        "result": "exit-code",
+        "exit_status": "1",
+        "active_state": "failed",
+        "sub_state": "failed",
+        "control_group": ""
+      },
+      {
+        "unit": "goby-selected-p4-verification-20260920-b.service",
+        "main_pid": "0",
+        "result": "exit-code",
+        "exit_status": "1",
+        "active_state": "failed",
+        "sub_state": "failed",
+        "control_group": ""
+      },
+      {
+        "unit": "goby-selected-p4-mocked-20260920-a.service",
+        "main_pid": "0",
+        "result": "exit-code",
+        "exit_status": "1",
+        "active_state": "failed",
+        "sub_state": "failed",
+        "control_group": ""
+      },
+      {
+        "unit": "goby-selected-p4-repair-20260920-a.service",
+        "main_pid": "0",
+        "result": "success",
+        "exit_status": "0",
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "control_group": ""
+      },
+      {
+        "unit": "goby-selected-p4-db-bridge-20260920-a.service",
+        "main_pid": "0",
+        "result": "success",
+        "exit_status": "0",
+        "active_state": "inactive",
+        "sub_state": "dead",
+        "control_group": ""
+      }
+    ],
+    "amd_bridge_closed": true,
+    "bridge_connections_closed": true,
+    "bridge_workers_joined": 13,
+    "final_worker_cgroup_closed": true,
+    "unrelated_original_client_service_unchanged": true,
+    "original_client_pid": "366598",
+    "original_client_invocation": "c883bdf04e2f4d7ea6526fcd858fc342",
+    "postgres_data_preserved": true,
+    "evidence_preserved": true,
+    "historical_failed_results_preserved": true,
+    "closure_executed_new_tests": false
+  },
+  "receipt_hashes": [
+    {
+      "name": "frontend-build-8ed6a7b.json",
+      "sha256": "0c25bfb7e98e97857682f83fdc797ddc0f693f053404a7a853c31014dc691d23"
+    },
+    {
+      "name": "catalog-generation-01.json",
+      "sha256": "5d6cd42506b6eb7a3b900c027b9c80052ceccd3c94a069e17862c03cb7634139"
+    },
+    {
+      "name": "compile-group-b-096d531.json",
+      "sha256": "92e1ed472b1037b3e1431d4a60cfcec9b18de32c545a62d218dfcc314de31c91"
+    },
+    {
+      "name": "compiled-inputs-01.json",
+      "sha256": "770ef4a2ee697e2d0f59ea66762f82c5554dedc36a39211ec8221d624f30628f"
+    },
+    {
+      "name": "config-01.jsonl",
+      "sha256": "13b87143b31255e321a4d0eec9fa6aab162097a8768a5bfbd9cca3499cc28f87"
+    },
+    {
+      "name": "verification-01.json",
+      "sha256": "37f3edd65aa54ae8930df746539c2c30d2955e4d88b4e41ce2a51597ab96dca2"
+    },
+    {
+      "name": "verification-02.json",
+      "sha256": "453f669ab4e86601976d79179062a4006310e0a60f738a19e805f9be396641e4"
+    },
+    {
+      "name": "verification-repair-01.json",
+      "sha256": "f368bf58101eb44f318cb912d27d84c0b22aee9b380f1f30ab15e81e6007a2ac"
+    },
+    {
+      "name": "browser01/driver-result.json",
+      "sha256": "5b21311ede0c4f3512949438616ce66d9018a423635389e448a4a9e95c993cff"
+    },
+    {
+      "name": "browser01/browser-result.json",
+      "sha256": "c179bf60623e615e402a1ea3a4b37a4216b241f240d582483556d31749d94ee6"
+    },
+    {
+      "name": "browser01/managed-video-evidence.json",
+      "sha256": "ac21567f068510a0d6b03bc8a4b1e868e60d9550e02d278f2ef398c868d93df5"
+    },
+    {
+      "name": "mocked-browser-01-receipt.json",
+      "sha256": "eb2ef6436407b5d3c3aebf33a332e5b2bcaf5c68d8e0a561a176286aadef79ec"
+    },
+    {
+      "name": "mocked-browser-01-selected-acceptance.json",
+      "sha256": "d9c53d92a6c03665966a164fc289cce7935d1d6c799afd1e83bb8313806958a9"
+    },
+    {
+      "name": "compile-library-repair-f6ccaf4.json",
+      "sha256": "32f4662ac882388e8cad470374912b3a83cc8e6081f747f9e7db18bfc80bd705"
+    },
+    {
+      "name": "compile-server-repair-7783e1c.json",
+      "sha256": "52b455c9a335b967ead9349f0819224d7d605df1b1ea4573c607e278a7a6c7cf"
+    },
+    {
+      "name": "compile-backuppg-repair-df177f5.json",
+      "sha256": "982541db8dfacc2f0029fd200ea3b6825a2ba2b014c57a01b8b8c43c263ec207"
+    },
+    {
+      "name": "compile-recovery-repair-6962a8f.json",
+      "sha256": "5b1cf54c24e499c4d694d962d22ebeff07527839316531eebcc2c17298fb74fc"
+    },
+    {
+      "name": "compile-server-amd-repair-27d862a.json",
+      "sha256": "070a6da225fa6a4d6edd96f875a28c24f860a78c4b9617493362e45abac5c0a3"
+    },
+    {
+      "name": "amd01/logs/amd-daeef6a-01-supervisor.json",
+      "sha256": "61045f6c4db96b0fd8712047d199b6ab0b45e7966a4c4ac957b3134230e1fea4"
+    },
+    {
+      "name": "amd01/worker-logs/amd-daeef6a-01-worker.json",
+      "sha256": "878a2654bdec7c3955f244cf59fcf3aedfb5788f81a7a08194979b037ef0e7f9"
+    },
+    {
+      "name": "amd02/logs/amd-27d862a-01-supervisor.json",
+      "sha256": "bb6f41d91fff3a1de9ad9a88c80559aaad3b75833c956e1b5347e5e3d23989e9"
+    },
+    {
+      "name": "amd02/worker-logs/amd-27d862a-01-worker.json",
+      "sha256": "7fda04f06964a93d6fa4536d7399196b540e9113df4a4a35bef79ebd5341b6be"
+    },
+    {
+      "name": "closure-01.json",
+      "sha256": "a21f48f18122c0194bf745d2c876f721fdbb9b080ef1bd3c72a1ef31ef961491"
+    }
+  ]
+}

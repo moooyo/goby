@@ -1,10 +1,10 @@
 # Selected playback and client compatibility execution plan
 
-Status: **phases 1-3 closed within their recorded boundaries; phase 4 sources are frozen and consolidated verification is in progress**.
+Status: **all four phases closed within their recorded contract and composed acceptance boundaries**.
 Recorded on September 20, 2026. The implementation baseline is product commit
 `80198b6`, with the completed increment documented at `f6f2d16` on `main`.
-This plan records the next work; it does not reopen the completed AMD/media
-three-phase increment or claim new verification or deployment.
+This plan records the completed selected increment; it does not reopen the
+earlier AMD/media increment or claim untested client parity or deployment.
 Execution uses `codex/selected-client-compatibility` in an isolated checkout.
 The user authorized local compilation and unit tests, remote integration/E2E on
 `test-env`, and merge to `main` plus push after all four phases are complete.
@@ -50,7 +50,7 @@ contracts and cannot be used to postpone an earlier phase's acceptance.
 | 1. Accounts and playback behavior | PIN/local-password authentication, intro markers and skipping, next-episode behavior and their real preference consumers | Existing identity, preferences, playback reporting and NextUp | Login/revocation and actual movie/episode playback journeys; source-bound timing, permissions, restart and recovery | Closed; adapter acceptance and successful client journeys retained, original-client entitlement limitation accepted by the user |
 | 2. Subtitle and artwork processing | Embedded subtitle removal, bitmap OCR, embedded audio covers, generated collages and missing image transformations | Phase 1 baseline; existing media jobs, indexed streams, artwork and backup | Real modified media, OCR cues and rendered images; cancellation, source replacement, cache invalidation and restore | Closed; composed regression, scoped repairs and 16-stage native browser journey passed; owned resources stopped |
 | 3. Music, search and discovery | Artist prefixes/Similar/InstantMix, Search/Hints, selected missing query contracts, missing-episode and suggestion preferences | Phase 2 covers/artwork; current catalog, user state and preference stores | Authorized music/search/discovery journeys, exact filtering/counting/paging and restart persistence | Closed; composed backend/recovery checks, 16-stage actual browser journey and 24 mocked administrator cases passed; owned resources stopped |
-| 4. Management configuration and client protocols | Backed configuration fields, policy/library/device projections, remaining aliases/events and external notification transport | Closed phases 1-3 | Real settings consumers, client event/command/notification journeys and final cross-phase regression/build/upgrade/recovery | Source frozen; consolidated compilation and verification in progress |
+| 4. Management configuration and client protocols | Backed configuration fields, policy/library/device projections, remaining aliases/events and external notification transport | Closed phases 1-3 | Real settings consumers, client event/command/notification journeys and final cross-phase regression/build/upgrade/recovery | Closed; composed backend/recovery, 18-stage actual browser, 18 selected mocked UI and two selected AMD cases passed; owned resources stopped |
 
 ### Phase 1: Accounts and playback behavior
 
