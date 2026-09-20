@@ -250,6 +250,17 @@ func metadataMigrationPlaybackCompatibilityDefaults(t *testing.T, ctx context.Co
 	}
 }
 
+func metadataMigrationEpisodeRosterDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM series_episode_rosters)
+		AND NOT EXISTS(SELECT 1 FROM episode_roster_imports)
+		AND NOT EXISTS(SELECT 1 FROM expected_episodes)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("metadata migration inferred episode roster authority, source history, or expected facts: %v", err)
+	}
+}
+
 func metadataMigrationItem(t *testing.T, ctx context.Context, pool *pgxpool.Pool, itemID string, legacy bool) Item {
 	t.Helper()
 	columns := itemColumns
@@ -432,6 +443,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		}
 		metadataMigrationPhase3Defaults(t, ctx, pool)
 		metadataMigrationPlaybackCompatibilityDefaults(t, ctx, pool)
+		metadataMigrationEpisodeRosterDefaults(t, ctx, pool)
 	}
 	assertOldTables()
 	for _, id := range projectionIDs {
@@ -482,6 +494,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	expectedAdditions = append(expectedAdditions, "display_preferences", "artwork_state", "artwork_images", "entity_user_data",
 		"task_system_events", "task_system_event_receipts", "item_intro_state")
 	expectedAdditions = append(expectedAdditions, "media_operations", "media_operation_cues", "item_owned_subtitles", "item_embedded_artwork")
+	expectedAdditions = append(expectedAdditions, "series_episode_rosters", "episode_roster_imports", "expected_episodes")
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)

@@ -68,7 +68,11 @@ func TestHTTPExpectedEpisodeRosterUsesNativeAuthorityAndExcludesPlayback(t *test
 	changed := strings.Replace(episodeRosterRequestJSON, `"Revision":"0"`, `"Revision":"1"`, 1)
 	changed = strings.Replace(changed, "Second episode", "Different payload", 1)
 	expectAPIError(t, adminMetadataHTTPRaw(t, f, http.MethodPut, base, changed, headers, cookie), http.StatusConflict, "source_revision_conflict", false)
-	withdraw := f.request(t, http.MethodDelete, base, map[string]any{"Revision": "1"}, headers, cookie)
+	// request supplies Content-Type for a structured body. Adding the raw-helper
+	// header again must be rejected without consuming the roster revision.
+	duplicateContentType := f.request(t, http.MethodDelete, base, map[string]any{"Revision": "1"}, headers, cookie)
+	expectAPIError(t, duplicateContentType, http.StatusUnsupportedMediaType, "unsupported_media_type", false)
+	withdraw := f.request(t, http.MethodDelete, base, map[string]any{"Revision": "1"}, http.Header{"X-CSRF-Token": {csrf}}, cookie)
 	expectStatus(t, withdraw, http.StatusOK)
 	if body := jsonObject(t, withdraw); body["Revision"] != "2" || body["State"] != "withdrawn" || body["RetiredCount"] != float64(1) {
 		t.Fatal("withdrawal tombstone lost")
