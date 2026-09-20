@@ -360,8 +360,9 @@ async function waitScan(id) {
       const job = body.Items.find(value => value.Id === jobId);
       return job ? { Status: job.Status, Error: job.Error } : null;
     }, id);
-    if (observed?.Status === 'Completed') { requireThat(!observed.Error, 'scan_completed_with_warning'); return id; }
-    if (observed && ['Failed', 'Cancelled', 'Interrupted'].includes(observed.Status)) fail('actual_scan_failed');
+    // The native job DTO uses lowercase states, unlike the database job model.
+    if (observed?.Status === 'completed') { requireThat(!observed.Error, 'scan_completed_with_warning'); return id; }
+    if (observed && ['failed', 'cancelled', 'interrupted'].includes(observed.Status)) fail('actual_scan_failed');
     await sleep(200);
   }
   fail('actual_scan_timeout');

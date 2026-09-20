@@ -170,6 +170,25 @@ affected account/metadata closures. The remaining control roles and dialog
 scopes were compared with the actual components and existing browser tests.
 This is a driver-only repair; complete browser acceptance is still pending.
 
+The complete `verification-04` library scope passed **817 parents** with the
+original opt-in mount-helper skip, in 756.99 seconds. Its actual 10,000-file
+case passed in 441.06 seconds. The strengthened auxiliary/cache witness and the
+new explicit online/historical provenance case passed. The affected HTTP scope
+passed all 74 parents in 50.74 seconds. Both scopes and their controller process
+groups closed. These are the current scanner repair results at `398756d`;
+the failed browser remains a separate unclosed acceptance requirement.
+
+The footer-locator driver repair was frozen at
+`8d10acfbb2b95e2b464448eb48dd93d05165a960`. Its browser-only build passed with
+the same verified frontend assets. `verification-05` completed five independent
+stages, including native user saving, compatible user queries and native TV
+metadata edits, then timed out while waiting for an actual scan. The driver
+incorrectly compared the native job DTO with capitalized database states;
+the native contract returns lowercase states. The shared browser wait now uses
+the exact native terminal values. No product code or business assertion changes
+in this driver repair. The failed run closed its processes and owned runtime
+resources; complete 24-stage acceptance remains pending.
+
 Private admission, setup, compilation and generation receipts are retained under
 `D:/Code/goby/.git/media-analysis-resilience-20260920/phase1` and the owned remote
 root. Credentials and DSNs remain only in the private runtime context.
