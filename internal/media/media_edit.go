@@ -69,19 +69,21 @@ type MediaEditWriterChange struct {
 // to replace a source; the library must revalidate its journal, root binding,
 // source identity and digest before atomically publishing the candidate.
 type SubtitleRemovalEvidence struct {
-	Version              int                       `json:"version"`
-	Engine               string                    `json:"engine"`
-	Container            string                    `json:"container"`
-	RemovedIndex         int                       `json:"removed_index"`
-	SourceBytes          int64                     `json:"source_bytes"`
-	CandidateBytes       int64                     `json:"candidate_bytes"`
-	SourceSHA256         string                    `json:"source_sha256"`
-	CandidateSHA256      string                    `json:"candidate_sha256"`
-	MetadataSHA256       string                    `json:"metadata_sha256"`
-	ContainerSHA256      string                    `json:"container_sha256"`
-	PreservedBytesSHA256 string                    `json:"preserved_bytes_sha256,omitempty"`
-	RetainedStreams      []MediaEditStreamEvidence `json:"retained_streams"`
-	WriterChanges        []MediaEditWriterChange   `json:"writer_changes,omitempty"`
+	Version                      int                       `json:"version"`
+	Engine                       string                    `json:"engine"`
+	Container                    string                    `json:"container"`
+	RemovedIndex                 int                       `json:"removed_index"`
+	SourceBytes                  int64                     `json:"source_bytes"`
+	CandidateBytes               int64                     `json:"candidate_bytes"`
+	SourceSHA256                 string                    `json:"source_sha256"`
+	CandidateSHA256              string                    `json:"candidate_sha256"`
+	MetadataSHA256               string                    `json:"metadata_sha256"`
+	ContainerSHA256              string                    `json:"container_sha256"`
+	PreservedBytesSHA256         string                    `json:"preserved_bytes_sha256,omitempty"`
+	RestoredDurationTags         int                       `json:"restored_duration_tags,omitempty"`
+	DurationPreservedBytesSHA256 string                    `json:"duration_preserved_bytes_sha256,omitempty"`
+	RetainedStreams              []MediaEditStreamEvidence `json:"retained_streams"`
+	WriterChanges                []MediaEditWriterChange   `json:"writer_changes,omitempty"`
 }
 
 // RemuxSubtitleRemoval borrows two distinct regular descriptors without
@@ -217,13 +219,39 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err != nil {
 		return evidence, fmt.Errorf("subtitle removal candidate profile: %w", err)
 	}
-	stagedDigest, err := mediaEditFileDigest(operationContext, candidate, outputAfter.Size())
-	if err != nil {
-		return evidence, err
-	}
 	staged, err := probeMediaEditDocument(operationContext, options.FFprobePath, candidate)
 	if err != nil {
 		return evidence, err
+	}
+	var durationRestoration *mediaEditDurationRestoration
+	stagedDigest := ""
+	if options.Container != "mp4" {
+		durationRestoration, err = restoreMediaEditMatroskaDurations(operationContext, input, candidate, sourceContainer, candidateContainer, source, staged, options.StreamIndex, outputAfter)
+		if err != nil {
+			return evidence, fmt.Errorf("subtitle removal candidate DURATION restoration: %w", err)
+		}
+		if durationRestoration != nil {
+			// Keep the helper's validated identity and full hash. A fresh Stat
+			// here could silently adopt unrelated padding or appended bytes.
+			outputAfter, stagedDigest = durationRestoration.Snapshot, durationRestoration.SHA256
+			if err := mediaEditCheckUnchanged(candidate, outputAfter); err != nil {
+				return evidence, err
+			}
+			candidateContainer, err = mediaEditReadContainerProof(operationContext, candidate, outputAfter.Size(), options.Container)
+			if err != nil {
+				return evidence, fmt.Errorf("subtitle removal restored candidate profile: %w", err)
+			}
+			staged, err = probeMediaEditDocument(operationContext, options.FFprobePath, candidate)
+			if err != nil {
+				return evidence, err
+			}
+		}
+	}
+	if stagedDigest == "" {
+		stagedDigest, err = mediaEditFileDigest(operationContext, candidate, outputAfter.Size())
+		if err != nil {
+			return evidence, err
+		}
 	}
 	if options.Container == "mp4" {
 		if err := mediaEditValidateMP4UserDataProjection(candidateContainer, staged); err != nil {
@@ -302,9 +330,14 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err := mediaEditCheckUnchanged(candidate, outputAfter); err != nil {
 		return evidence, err
 	}
+	restoredTags, durationPreservedBytes := 0, ""
+	if durationRestoration != nil {
+		restoredTags, durationPreservedBytes = durationRestoration.Tags, durationRestoration.PreservedSHA256
+	}
 	return SubtitleRemovalEvidence{Version: mediaEditProofVersion, Engine: engine, Container: options.Container, RemovedIndex: options.StreamIndex,
 		SourceBytes: before.Size(), CandidateBytes: outputAfter.Size(), SourceSHA256: sourceDigest,
-		CandidateSHA256: stagedDigest, MetadataSHA256: metadataDigest, ContainerSHA256: containerDigest, PreservedBytesSHA256: preservedBytes, RetainedStreams: pairs, WriterChanges: writerChanges}, nil
+		CandidateSHA256: stagedDigest, MetadataSHA256: metadataDigest, ContainerSHA256: containerDigest, PreservedBytesSHA256: preservedBytes,
+		RestoredDurationTags: restoredTags, DurationPreservedBytesSHA256: durationPreservedBytes, RetainedStreams: pairs, WriterChanges: writerChanges}, nil
 }
 
 func mediaEditCheckUnchanged(file *os.File, before os.FileInfo) error {

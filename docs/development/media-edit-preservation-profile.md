@@ -140,6 +140,39 @@ It also admits FFmpeg's ordinary `DURATION` tag: its writer reserves a fixed
 19-byte string payload and can write zero padding after the formatted duration.
 See [`DURATION_STRING_LENGTH` and the duration writer](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavformat/matroskaenc.c).
 
+The stream `DURATION` tag remains an exact metadata requirement. FFmpeg's
+pinned [trailer writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/matroskaenc.c#L3452)
+regenerates it from the largest packet end. With a fractional-millisecond video
+`DefaultDuration`, that can reduce an authored duration by one millisecond even
+when all retained packets are identical. The unpublished candidate has one
+narrow restoration path for this known case: both timestamp scales must be
+exactly one millisecond; the retained video must bind its raw TrackUID through
+the complete raw/probe track inventory, codec, and codec-private proof; and its
+nonzero fractional-millisecond `DefaultDuration` must match exactly. Both raw
+tag values must match their probe projections, use canonical
+`HH:MM:SS.fffffffff` text with two-digit hours in equal 19-byte payloads, and
+the candidate must be exactly one millisecond shorter. The implementation
+copies the source's exact text and zero padding into that same candidate
+extent. Missing tags, changes on audio or subtitles, and other differences
+are rejected. Files whose tags already match do not enter this narrower
+codec-private binding path.
+
+Before mutation, the implementation verifies every affected ancestor CRC in
+both containers. It requires the CRC to be the first child and uses the IEEE
+CRC-32 over the complete parent payload except the CRC element itself. It
+updates affected candidate checksums from inner to outer and verifies them
+again, following [RFC 8794 sections 11.3.1 and 14](https://www.rfc-editor.org/rfc/rfc8794.html#section-14).
+Root-level CRCs without a parent element are outside this restoration profile.
+CRC coverage is deduplicated, limited to 4,096 scopes, and read in 64 KiB
+chunks under the same operation deadline. A complete complement-range digest
+proves that only the tag payloads and the affected four-byte CRC values changed.
+The helper's validated file snapshot and complete SHA-256 remain the final
+proof baseline, so padding changes or appended Void bytes after restoration
+cannot be adopted by a later Stat. Container scanning, metadata probing, and
+all existing packet/metadata checks run again against that baseline; no
+packet timing or metadata comparison is relaxed. `RestoredDurationTags` and
+`DurationPreservedBytesSHA256` record this operation in the returned evidence.
+
 FFmpeg reconstructs AAC's all-sample, one-access-unit `roll` mapping rather than
 copying arbitrary original sample-group boxes. Its demuxer does not expose those
 groups through ffprobe. The MP4 structural path preserves the original group
@@ -239,9 +272,16 @@ admission failure for Matroska element `0x56AA`. Its preserved 12-second source
 has `CodecDelay=21333333` ns; the authorized read-only diagnostic bound its AAC
 track, 48 kHz rate, five codec-private bytes, probe `initial_padding=1024`, and
 the first packet's complete `Skip Samples` record. No candidate was produced.
-The AAC-only delay proof and the exact native-parameter regression below are
-new changes awaiting consolidated verification; source inspection does not
-prove that the edited candidate passes.
+The AAC-only delay proof was then included in the `b2ab29b` consolidated run:
+91 parent media tests passed without skips, while the exact native-parameter
+regression failed on the retained video `DURATION` metadata. One authorized
+read-only diagnostic of its retained source and candidate found the authored
+12-second tag had become 11.999 seconds. Every retained packet was identical
+apart from physical positions and the expected subtitle index mapping: 288
+video packets, 563 AAC packets, and one retained subtitle packet. AAC delay,
+Skip Samples, chapters, raw DefaultDuration, and all other semantic stream
+metadata also matched. The duration restoration above addresses that observed
+loss; it and its new unit cases await the next consolidated verification.
 
 Unit coverage includes exact rational clocks, payload tampering, reordered and
 missing packets, duplicate JSON keys, malformed metadata, chapter and attachment
@@ -286,5 +326,8 @@ known precondition without weakening packet preservation.
 720x576, 24 fps H.264/AAC source with both authored subtitles and chapters. It
 checks the raw and probe delay bindings before removal and preserves the full
 packet/metadata/structural chain plus complete A/V decoding afterward. The
-extension and this regression test are pending consolidated verification; no
-passing browser outcome is inferred from the source-only diagnostic evidence.
+regression exposed the duration loss documented above. Its source assertion
+continues to require the authored 12-second video tag, and its final metadata
+and complete-packet assertions remain unchanged. The restoration is pending
+consolidated verification; no passing media or browser outcome is inferred
+from diagnostic evidence or static review.

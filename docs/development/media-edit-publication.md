@@ -52,6 +52,17 @@ keep its exact delay in the candidate. Complete packet timing and `Skip Samples`
 side-data comparison remain required; permitting this declared AAC priming does
 not permit an unproven timestamp shift, Opus preroll, or arbitrary delay fields.
 
+Matroska stream `DURATION` tags remain metadata that must match exactly. The
+FFmpeg writer can replace a source tag with a value computed from demuxed packet
+clocks; a 24 FPS source can consequently lose one millisecond in that tag even
+when every packet is unchanged. A narrow repair restores an affected video's
+canonical source text only through independently bound track/tag identities,
+unchanged raw `DefaultDuration`, and an equal-size existing text extent. All
+covering CRC-32 values are verified before the edit and updated afterward. No
+other candidate byte may change during the repair. It never changes a packet
+to compensate for this rounding. The complete candidate metadata, packet, raw
+delay, and file-hash checks still run after preparation.
+
 The source owner, group, ordinary permission bits, and supported extended
 attributes are copied and checked. Content-bound `security.ima` and
 `security.evm` signatures, special permission bits, or failed attribute copying

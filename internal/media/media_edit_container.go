@@ -73,7 +73,8 @@ func mediaEditReadContainerProof(ctx context.Context, file *os.File, size int64,
 	if err != nil {
 		return mediaEditContainerProof{}, err
 	}
-	proof := mediaEditContainerProof{Writer: s.writer, Chapters: s.chapterDisplays, MatroskaTracks: s.matroskaTracks, MatroskaAttachmentCount: len(s.uids["attachment"])}
+	proof := mediaEditContainerProof{Writer: s.writer, Chapters: s.chapterDisplays, MatroskaTracks: s.matroskaTracks, MatroskaAttachmentCount: len(s.uids["attachment"]),
+		MatroskaTimestampScaleNS: s.matroskaTimestampScaleNS, MatroskaDurationTags: s.matroskaDurationTags, matroskaCRCs: s.matroskaCRCs}
 	for index := range proof.MatroskaTracks {
 		track := &proof.MatroskaTracks[index]
 		if track.CodecPrivateBytes != 0 {
@@ -105,29 +106,32 @@ func mediaEditReadContainerProof(ctx context.Context, file *os.File, size int64,
 }
 
 type mediaEditContainerScanner struct {
-	ctx             context.Context
-	file            *os.File
-	size            int64
-	headers         int
-	metadata        int64
-	attachment      int64
-	writer          map[string]string
-	trackNumbers    map[uint64]bool
-	uids            map[string]map[uint64]bool
-	tags            map[string]bool
-	projections     map[string]bool
-	tagTargets      []mediaEditEBMLTarget
-	globalMP4Tags   map[string]string
-	mp4Projections  map[string]string
-	mp4Tracks       []*mediaEditMP4Track
-	movieScale      uint64
-	movieDuration   uint64
-	movieCreation   uint64
-	segmentStart    int64
-	segmentElements map[int64]uint64
-	seekTargets     []mediaEditEBMLSeek
-	chapterDisplays []mediaEditChapterDisplayProof
-	matroskaTracks  []mediaEditMatroskaTrackProof
+	ctx                      context.Context
+	file                     *os.File
+	size                     int64
+	headers                  int
+	metadata                 int64
+	attachment               int64
+	writer                   map[string]string
+	trackNumbers             map[uint64]bool
+	uids                     map[string]map[uint64]bool
+	tags                     map[string]bool
+	projections              map[string]bool
+	tagTargets               []mediaEditEBMLTarget
+	globalMP4Tags            map[string]string
+	mp4Projections           map[string]string
+	mp4Tracks                []*mediaEditMP4Track
+	movieScale               uint64
+	movieDuration            uint64
+	movieCreation            uint64
+	segmentStart             int64
+	segmentElements          map[int64]uint64
+	seekTargets              []mediaEditEBMLSeek
+	chapterDisplays          []mediaEditChapterDisplayProof
+	matroskaTracks           []mediaEditMatroskaTrackProof
+	matroskaTimestampScaleNS uint64
+	matroskaDurationTags     []mediaEditMatroskaDurationTag
+	matroskaCRCs             []mediaEditMatroskaCRC
 }
 
 type mediaEditEBMLSeek struct {
@@ -249,10 +253,13 @@ type mediaEditEBMLScope struct {
 	audio         *mediaEditMatroskaAudioProof
 	privateOffset int64
 	privateBytes  int64
+	durationTags  []mediaEditMatroskaDurationTag
+	textOffsets   map[uint64]int64
+	textSizes     map[uint64]int64
 }
 
 func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth int) (mediaEditEBMLScope, error) {
-	r := mediaEditEBMLScope{count: map[uint64]int{}, uints: map[uint64]uint64{}, texts: map[uint64]string{}, floats: map[uint64]float64{}}
+	r := mediaEditEBMLScope{count: map[uint64]int{}, uints: map[uint64]uint64{}, texts: map[uint64]string{}, floats: map[uint64]float64{}, textOffsets: map[uint64]int64{}, textSizes: map[uint64]int64{}}
 	for offset := start; offset < end; {
 		if err := s.header(depth); err != nil {
 			return r, err
@@ -285,6 +292,10 @@ func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth 
 				return r, mediaEditContainerError("invalid Matroska CRC element")
 			}
 			r.count[id]++
+			switch parent {
+			case "root", "segment", "tags", "tag", "simpletag", "targets":
+				s.matroskaCRCs = append(s.matroskaCRCs, mediaEditMatroskaCRC{ParentStart: start, ParentEnd: end, ElementStart: offset, ElementEnd: next, ValueOffset: body, Depth: depth})
+			}
 			offset = next
 			continue
 		}
@@ -315,6 +326,9 @@ func (s *mediaEditContainerScanner) ebml(parent string, start, end int64, depth 
 			}
 			if parent == "tag" && rule.kind == "simpletag" {
 				r.names = append(r.names, child.texts[0x45A3])
+				if strings.EqualFold(child.texts[0x45A3], "DURATION") {
+					r.durationTags = append(r.durationTags, mediaEditMatroskaDurationTag{Value: child.texts[0x4487], Offset: child.textOffsets[0x4487], Bytes: child.textSizes[0x4487]})
+				}
 			}
 			if parent == "tag" && rule.kind == "targets" {
 				r.target = child.target
@@ -456,6 +470,10 @@ func (s *mediaEditContainerScanner) ebmlLeaf(r *mediaEditEBMLScope, kind string,
 			return err
 		}
 		r.texts[id] = value
+		if r.textOffsets == nil {
+			r.textOffsets, r.textSizes = map[uint64]int64{}, map[uint64]int64{}
+		}
+		r.textOffsets[id], r.textSizes[id] = offset, size
 		if kind == "writer" {
 			name := "MuxingApp"
 			if id == 0x5741 {
@@ -583,6 +601,10 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 		}
 		s.seekTargets = append(s.seekTargets, mediaEditEBMLSeek{id: r.uints[0x53AB], position: r.uints[0x53AC]})
 	case "info":
+		s.matroskaTimestampScaleNS = 1_000_000
+		if r.count[0x2AD7B1] != 0 {
+			s.matroskaTimestampScaleNS = r.uints[0x2AD7B1]
+		}
 		for id, key := range map[uint64]string{0x7BA9: "title", 0x4461: "creation_time"} {
 			if r.count[id] > 0 {
 				if err := s.ebmlProjection("", 0, key); err != nil {
@@ -619,7 +641,7 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 		if err := s.ebmlUID("track", r.uints[0x73C5]); err != nil {
 			return err
 		}
-		track := mediaEditMatroskaTrackProof{Number: number, UID: r.uints[0x73C5], TrackType: r.uints[0x83], CodecID: r.texts[0x86],
+		track := mediaEditMatroskaTrackProof{Number: number, UID: r.uints[0x73C5], TrackType: r.uints[0x83], CodecID: r.texts[0x86], DefaultDurationNS: r.uints[0x23E383],
 			CodecDelayNS: r.uints[0x56AA], SeekPreRollNS: r.uints[0x56BB], CodecPrivateBytes: r.privateBytes, privateOffset: r.privateOffset}
 		if r.audio != nil {
 			track.SamplingFrequency, track.OutputSamplingFrequency = r.audio.SamplingFrequency, r.audio.OutputSamplingFrequency
@@ -682,6 +704,12 @@ func (s *mediaEditContainerScanner) ebmlFinish(parent string, r *mediaEditEBMLSc
 			r.target = mediaEditEBMLTarget{kind: kind, uid: r.uints[id]}
 		}
 	case "tag":
+		if r.target.kind == "track" {
+			for _, duration := range r.durationTags {
+				duration.TrackUID = r.target.uid
+				s.matroskaDurationTags = append(s.matroskaDurationTags, duration)
+			}
+		}
 		for _, name := range r.names {
 			key := fmt.Sprintf("%s/%d/%s", r.target.kind, r.target.uid, strings.ToLower(name))
 			if s.tags[key] || s.projections[key] || len(s.tags) >= 16384 {

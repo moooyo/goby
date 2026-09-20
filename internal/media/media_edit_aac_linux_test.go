@@ -70,6 +70,10 @@ func TestSubtitleRemovalActualMatroskaAACCodecDelay24FPS(t *testing.T) {
 	if len(sourceContainer.MatroskaTracks) != 4 || len(sourceDocument.Streams) != 4 {
 		t.Fatal("native fixture did not retain its four source tracks")
 	}
+	videoTags, tagsErr := mediaEditTags(sourceDocument.Streams[0]["tags"])
+	if tagsErr != nil || videoTags["duration"] != "00:00:12.000000000" {
+		t.Fatalf("native 24 FPS duration-tag precondition was weakened: tags=%+v error=%v", videoTags, tagsErr)
+	}
 	audio := sourceContainer.MatroskaTracks[1]
 	padding, paddingErr := mediaEditInteger(sourceDocument.Streams[1]["initial_padding"])
 	if audio.TrackType != 2 || audio.CodecID != "A_AAC" || audio.CodecDelayNS != 21_333_333 || audio.SeekPreRollNS != 0 || audio.SampleRate != 48_000 || audio.Channels != 1 || audio.CodecPrivateBytes != 5 || paddingErr != nil || padding != 1024 {
@@ -92,6 +96,9 @@ func TestSubtitleRemovalActualMatroskaAACCodecDelay24FPS(t *testing.T) {
 	}
 	if evidence.Engine != "ffmpeg_remux" || evidence.RemovedIndex != 2 || len(evidence.RetainedStreams) != 3 || len(evidence.SourceSHA256) != 64 || len(evidence.CandidateSHA256) != 64 || len(evidence.ContainerSHA256) != 64 {
 		t.Fatalf("incomplete native AAC preservation evidence: %+v", evidence)
+	}
+	if evidence.RestoredDurationTags != 1 || len(evidence.DurationPreservedBytesSHA256) != 64 {
+		t.Fatalf("native 24 FPS duration restoration was not independently proven: %+v", evidence)
 	}
 	for _, stream := range evidence.RetainedStreams {
 		if stream.SourceIndex == 2 || stream.Packets <= 0 || len(stream.PayloadSHA256) != 64 || len(stream.TimingSHA256) != 64 {

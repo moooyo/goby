@@ -20,6 +20,7 @@ type mediaEditMatroskaTrackProof struct {
 	Number, UID, TrackType                     uint64
 	CodecID                                    string
 	CodecDelayNS, SeekPreRollNS                uint64
+	DefaultDurationNS                          uint64
 	SamplingFrequency, OutputSamplingFrequency uint64
 	SampleRate, Channels                       uint64
 	CodecPrivateBytes                          int64
