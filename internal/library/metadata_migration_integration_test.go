@@ -241,8 +241,12 @@ func metadataMigrationPlaybackCompatibilityDefaults(t *testing.T, ctx context.Co
 			OR profile_pin_ciphertext IS NOT NULL OR local_credentials_revision IS DISTINCT FROM 1
 			OR local_password_failures IS DISTINCT FROM 0 OR local_password_blocked_until IS NOT NULL)
 		AND NOT EXISTS(SELECT 1 FROM sessions WHERE local_auth IS DISTINCT FROM false)
-		AND NOT EXISTS(SELECT 1 FROM item_intro_state)`).Scan(&valid); err != nil || !valid {
-		t.Fatalf("metadata migration inferred local credentials, local authentication, or intro overrides: %v", err)
+		AND NOT EXISTS(SELECT 1 FROM item_intro_state)
+		AND NOT EXISTS(SELECT 1 FROM media_operations)
+		AND NOT EXISTS(SELECT 1 FROM media_operation_cues)
+		AND NOT EXISTS(SELECT 1 FROM item_owned_subtitles)
+		AND NOT EXISTS(SELECT 1 FROM item_embedded_artwork)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("metadata migration inferred credentials, playback overrides, media jobs, or derivatives: %v", err)
 	}
 }
 
@@ -477,6 +481,7 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		"item_provider_sources", "item_provider_images", "item_subtitle_provider_sources", "media_deletion_operations")
 	expectedAdditions = append(expectedAdditions, "display_preferences", "artwork_state", "artwork_images", "entity_user_data",
 		"task_system_events", "task_system_event_receipts", "item_intro_state")
+	expectedAdditions = append(expectedAdditions, "media_operations", "media_operation_cues", "item_owned_subtitles", "item_embedded_artwork")
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
