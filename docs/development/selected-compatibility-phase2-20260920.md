@@ -1,140 +1,199 @@
 # Selected compatibility phase 2 execution record
 
-Status: **delivery code implemented; consolidated verification and scoped repairs in progress**.
+Status: **closed from the recorded consolidated and affected repair scopes**.
+The final affected scopes passed at `bd20b23`: 114 media parents, 12 library
+parents and the native browser parent with all 16 independently acknowledged
+stages. Earlier passing scopes remain part of the evidence; earlier failed
+batches remain failed. This is not a claim that every package was rerun at the
+final revision. Counts from overlapping scopes must not be added.
 
-Phase 1 closed at `f02b81f` under the user's explicit third-party-client adapter
-boundary. Original Web commercial licensing remains a recorded client limitation
-and is not a gate for this increment. Work continues on
-`codex/selected-client-compatibility` in the isolated checkout. No merge, push or
-deployment of this four-phase increment has occurred.
+The machine-readable [result record](selected-compatibility-phase2-results-20260920.json)
+contains source commits, executed binary hashes, selectors, retained failures,
+tool identities and closure evidence. Private evidence is retained under
+`D:/Code/goby/.git/selected-compatibility-20260920/phase2` and
+`/opt/goby-selected-compatibility-20260920-p2a` on `test-env`.
 
-The user requires all phase delivery code before consolidated verification.
-Local compilation and unit tests are authorized, while actual media, database,
-browser and integration verification uses `test-env`. The first consolidated
-batch started after the complete phase implementation was frozen at `5f0cdc0`.
-The ui-ux-pro-max skill remains disabled for this task.
+Phase 1 closed at `f02b81f` under the user's third-party-client adapter boundary.
+Original Web commercial licensing remains a recorded client limitation, not an
+acceptance gate. This phase uses Goby's native administration interface and a
+private media test consumer; it does not claim arbitrary third-party clients
+were tested. Work remains on `codex/selected-client-compatibility`. This record
+does not claim completion of phases 3 and 4, or merge, push or deployment of the
+four-phase increment.
+
+All phase delivery code preceded consolidated verification, with the initial
+implementation frozen at `5f0cdc0`. Local compilation and unit tests were
+explicitly authorized. Actual media, database, browser and integration execution
+took place only on `test-env`. The ui-ux-pro-max skill remained disabled.
 
 ## Delivery inventory
 
-| Requirement | Implementation boundary | Verification requirement |
+| Requirement | Delivered boundary | Accepted evidence |
 | --- | --- | --- |
-| B1 Embedded subtitle removal | Prepare a remuxed candidate for explicit review/apply; preserve admitted stream, packet, metadata, chapter and attachment facts; atomic same-filesystem exchange retains the original file | Actual MKV/MKA and selected MP4, source/worker/authority races, cancellation, existing readers, stable item/user state and explicit interrupted-publication recovery |
-| B2 Bitmap subtitle OCR | Stream actual PGS/DVD display events to pinned Tesseract models; retain original/reviewed cues and images; atomically publish independent owned SRT/VTT tracks | English, Simplified and Traditional Chinese, combinations, exact event times/forced state, review/correction, real subtitle delivery and source replacement |
-| B3 Embedded audio covers | Automatic MP3/FLAC/M4A cover provenance and bounded bytes; ready/none/failed state; managed/provider/sidecar/embedded precedence | Real tagged containers, deterministic picture selection, cache/rescan/source changes, authority, tombstones and restore |
-| B4 Generated collages | Deterministic authorized library/genre members and source manifest; current authority/source checks precede cache and conditional responses | Empty/partial/multiple/deduplicated members, rendered pixels, concurrent reads, source changes and revoked access |
-| B5 Image transformations | Crop, EXIF orientation, fixed foreground shapes, backgrounds and user-state overlays; complete GIF frame composition and timing | Pixel/orientation fixtures, GIF disposal/loop/delay/transparency, budgets, cancellation and actual HTTP/cache semantics |
-| B6 Jobs and management | Independent parameterized operations, idempotency/CAS, review/apply/cancel/recover and native Tasks/item UI; durable derivative state | Actual native journeys, safe restart/restore, old-grant invalidation, runtime joining, API authority and historical migration |
+| B1 Embedded subtitle removal | Explicit prepare/review/apply; admitted MKV/MKA remux or selected MP4 structural edit; packet, metadata, chapter, role and attachment preservation; atomic exchange retains the original | Three actual container profiles and complete A/V decode; 12-second, 24 fps AAC regression; source/authority/publication races and native apply |
+| B2 Bitmap subtitle OCR | Actual PGS/DVD display-event decoding with pinned Tesseract models; original and reviewed cues/images; independent owned SRT/VTT publication | All nine real OCR scenarios; review/correction; actual subtitle on/off/on playback and owned-track HTTP/HLS/source checks |
+| B3 Embedded audio covers | Bounded MP3 APIC, FLAC PICTURE and M4A covr extraction with source provenance; ready/none/failed state and managed/provider/sidecar/embedded precedence | Actual tagged-container tests, rescan/cache/source/authority checks and native authorized cover HTTP observations |
+| B4 Generated collages | Deterministic authorized library/genre members and source manifest; current authority/source checks before cache and conditional responses | Empty/partial/multiple/deduplicated members, rendered pixels and revocation tests; native decoded generated artwork |
+| B5 Image transformations | Crop, EXIF orientation, fixed foreground shapes, backgrounds and user-state overlays; complete GIF composition and timing | 47 local artwork unit parents plus remote HTTP/cache, disposal/loop/delay/transparency, budget and cancellation coverage |
+| B6 Jobs and management | Parameterized operations, idempotency/CAS, review/apply/cancel/recover, native Tasks/item controls and durable derivative state | Native 16-stage journey, restart persistence, cancellation and worker closure; archive normalization, corruption rejection and old-grant invalidation |
 
 Schema 44 adds `media_operations`, `media_operation_cues` and
-`item_owned_subtitles`. Schema 45 adds `item_embedded_artwork`. The SQL manifest
-was appended without changing historical entries. A fresh PostgreSQL 17 export
-was committed at `93f052e`; its SHA-256 is
+`item_owned_subtitles`; schema 45 adds `item_embedded_artwork`. The SQL manifest
+was appended without changing historical entries. A fresh PostgreSQL 17 schema
+45 catalog was committed at `93f052e`: 742,656 bytes, SHA-256
 `e06dcea44b39804aea09c46891dfe93bfe881bf043802d2baec257d77d91332e`.
-Historical catalog files and existing migration digests remain immutable.
 
-## Important integration contracts
+## Preservation and lifecycle contracts
 
-- The operation coordinator uses the existing catalog owner and drains all
-  admitted worker/process/storage activity before releasing that owner.
-  Configuration comes from a strict operator-owned file, not request paths or
-  command arguments. Tool/model identities are captured and rechecked.
-- Ready results do not publish changes. Apply binds the reviewed revision,
-  source revision and result hash. Only an unresolved B1 `prepared` or
-  `catalog_committed` journal reserves its source against conflicting operations.
-- Public media/subtitle/download/image source opens recheck publication and the
-  complete source identity after opening. Internal publication reads retain a
-  separate path for the operation's own source checks.
-- Source replacement expires old playback identities in the catalog commit.
-  The server registers cancellation handles before its final source check,
-  retires the exact source, and joins its original readers and conversion jobs.
-  Unrelated sources remain active.
-- The original media file retained by B1 is outside database backup coverage.
-  Restart and database restore never automatically rename, purge or replay a
-  media publication. A current administrator must explicitly recover it.
-- OCR recognition is a stream of display events, not sampled video frames or
-  all uncompressed subtitle images retained at once. Initial model IDs are
-  `eng`, `chi_sim` and `chi_tra`, with one to three explicit selections. Review
-  preserves source evidence separately from editable text/times.
-- Owned subtitle indexes are not reused. Issued owned-track delivery URLs bind
-  their content tag so a later embedded-stream index collision cannot select
-  different bytes through an old owned URL.
-- Recovery verifies the raw archive fingerprints before trusted normalization.
-  It preserves clean ready review state and derivative bytes, clears old
-  execution/apply grants, and marks unfinished work interrupted or requiring
-  explicit recovery without touching original media.
+The coordinator shares the existing catalog owner and joins admitted worker,
+process and storage activity before releasing it. Strict operator-owned
+configuration binds tool/model identities to each execution. Ready results do
+not publish changes. Apply binds the reviewed revision, source revision and
+result hash; only unresolved B1 `prepared` or `catalog_committed` publication
+journals reserve their source. Disabled processing still permits bounded
+explicit cancel/discard without admitting new processing.
 
-## Consolidated verification in progress
+MKV/MKA use FFmpeg remux with explicit default-disposition passthrough. Strict
+proofs admit bounded opaque attachments and valid zero-padded Matroska strings.
+The nonzero `CodecDelay` exception is limited to AAC: raw track identity, codec
+private data, sample frequency, probe padding and exact sample-to-nanosecond
+conversion must agree. Source/candidate delay and all retained packet timing,
+side data and payloads remain checked; this does not extend admission to Opus.
 
-Local frontend compilation and 47 artwork unit tests passed. Ordinary and
-embedded Linux builds and the nine package test binaries compiled at `93f052e`.
-The library binary was rebuilt at `a8ff413` after correcting the historical
-migration fixture's table inventory and empty-table defaults. Actual media,
-database and browser execution remains remote-only.
+In the observed 24 fps case, FFmpeg rewrites video `DURATION` from 12.000 to
+11.999 seconds despite unchanged packets. The repair restores the exact source
+tag only within a narrowly proved same-width representation, with the same
+nonintegral `DefaultDuration` and millisecond timecode scale. It validates
+covering CRCs, updates them from inner to outer elements, verifies intended edits
+and unchanged ranges, and binds final bytes to a validated snapshot and whole
+file hash. Exact metadata comparison remains in force; `DURATION` is neither
+ignored nor compared using a blanket tolerance.
 
-The first remote batch uses frozen source `a8ff413` and records the binary
-revision and hash separately for each scope. Config (53 parent tests), transcode
-(301), database (62), library (760) and server (861) have passed. Hardware-specific skips and
-the mount-namespace helper skip are retained in the private receipt; these counts
-do not claim those profiles were executed. Recovery database tests (12 parents)
-also passed. All first-batch process groups closed; the batch is a retained
-failure, not a full passing run.
+The admitted nonfragmented, self-contained MP4 profile uses bounded descriptor
+streaming. It replaces only the selected `tx3g` track's `trak` with a same-size
+`free` box and zeroed body, preserving all other bytes including `mdat` and
+`mvhd`. Exact extent, track mapping, preserved-range digest and whole-candidate
+digest remain bound to source/candidate snapshots. Cross-track references and
+unproved profiles are rejected. Unreferenced subtitle bytes can remain in
+`mdat`; this operation does not promise forensic erasure.
 
-The first media scope failed three parent tests. Actual PGS OCR passed its five
-English/Chinese display scenarios. Four DVD scenarios stopped at a fixture
-format-origin assertion before recognition; the correction distinguishes an
-unknown format origin from the first subtitle packet timestamp and retains the
-initial blank interval. MKV/MKA chapter language and MP4 AAC sample-group
-admission required explicit container preservation proofs. A PNG encoder budget
-test exposed an embedded `bytes.Buffer` fast path that bypassed the write limit;
-the wrapper now contains a named buffer. These are pending repairs, not passing
-results. Original logs and version 1 fixtures remain unchanged, and the repair
-batch will generate a separate version 2 fixture corpus.
+B1 atomically exchanges files on the same Linux filesystem and retains the
+original inode/bytes in its private payload. That media backup is outside
+database backup coverage. Restart and restore do not automatically rename,
+purge or replay publication; uncertain publication needs explicit recovery by a
+current administrator. Public media, download, subtitle and image opens recheck
+publication and complete source identity after opening. Replacement expires old
+playback identities and joins the exact source's readers and conversion jobs
+while unrelated sources remain active.
 
-The backup scope passed 104 parents and failed one finalizer-corruption parent
-before its deliberate mutation: its complete-row JSON witness used different
-session timestamp formats outside and inside the restore transaction. The test
-repair applies the existing canonical archive settings in a nested savepoint,
-preserves exact values and adds a regression for formatting differences and a
-one-microsecond change. The recovery scope passed 27 parents and failed the new
-archive fixture while PostgreSQL inferred conflicting integer types for a
-revision parameter; explicit `bigint` casts retain the intended value above
-`2^53`. These test-only fixes were committed at `02f3da6`; product corruption
-validation and restore normalization were not relaxed. Fresh, separate database
-pairs are prepared for both repair scopes, preserving the earlier databases.
+OCR streams display events instead of sampling video frames. It preserves an
+unknown DVD format origin and the initial blank interval, and separates original
+evidence from editable text/times. One to three models may be chosen from
+`eng`, `chi_sim` and `chi_tra`. Owned subtitle indexes are not reused; delivery
+URLs bind their content tag. Restore verifies raw archive fingerprints before
+normalization, retains clean ready review/derivative data, clears old execution
+and apply grants, and marks unfinished work interrupted or requiring recovery
+without touching original media.
 
-The `02f3da6` scoped repair batch has finished. It used the unchanged `bef3c21`
-media/library/server binaries and newly compiled `02f3da6` backup/recovery
-binaries, with exact hashes in its receipt. All nine actual PGS/DVD OCR scenarios
-now pass, together with the PNG-budget regressions. Library (22 parents), server
-(22, including original/download reader retirement), backup (4) and recovery (1)
-repair scopes passed. Those overlap earlier package runs and are not additive
-coverage counts. All process groups closed. The batch remains failed because
-the B1 actual-container parent still rejects zero-padded Matroska text and MP4
-track `udta`; strict parsing and preservation of those real encodings is the
-remaining media repair. No earlier failure is relabeled.
+## Verification composition
 
-The initial native browser fixture stopped at input admission because Windows
-archive metadata produced group-writable script files. It did not exercise the
-browser. A separate immutable source extraction now records removal of group
-and world write permissions, with content hashes retained. The first mocked
-runner similarly stopped before testing on writable asset-directory metadata.
-After preparation, `mocked-browser-02` passed all 12 selected administrator tests
-against the unchanged `bef3c21` assets, with zero skipped/flaky/unexpected tests,
-zero report errors and no unhandled API requests. Its process group, listener,
-connections, dependency link and temporary browser profiles closed.
+Frontend compilation and 47 Windows artwork unit parents passed at `5f0cdc0`.
+Ordinary/embedded Linux builds and package test binaries compiled at `93f052e`;
+the library fixture inventory repair was rebuilt at `a8ff413`. Final media,
+library and tagged browser binaries plus ordinary/embedded Linux builds compiled
+at `bd20b23`. Compilation is separate from actual execution evidence.
 
-The native acceptance extension adds post-publication A/V decoding and actual
-owned-subtitle selection/off/reselection in a private HTMLVideoElement/HLS.js
-test consumer. Existing real HLS/VTT HTTP tests alone are not described as
-observed playback switching. The extension adds no consumer product UI and has
-not yet run at this checkpoint.
+| Receipt | Source and result | Accepted scope or retained failure |
+| --- | --- | --- |
+| `verification-01.json` | `a8ff413`, **FAIL**; default binaries `93f052e`, library `a8ff413` | Config 53, transcode 301, database 62, library 760, server 861 and recoverydb 12 parents passed. Media passed 378 parents and failed three; backuppg passed 104 and failed one; recovery passed 27 and failed one; native browser failed before admission. |
+| `verification-repair-01.json` | `02f3da6`, **FAIL**; media/library/server binaries `bef3c21` | All nine actual OCR cases and PNG budget repairs passed. Library 22, server 22, backup 4 and recovery 1 parents passed. B1 actual-container preservation still failed. |
+| `verification-final-01.json` | `b926449`, **FAIL** | Media passed 57 parents; B1 still rejected opaque Matroska attachment and MP4 preservation facts. Native execution was gated. |
+| `verification-final-02.json` | `a3b713d`, **FAIL** | Media 79 and library 11 parents passed, including three actual container profiles and full A/V decode. Native setup failed on the incomplete metadata fixture. |
+| `verification-native-03.json` | `0dae905`, **FAIL** | Corrected metadata fixture reached authentication; real subtitle-removal execution failed. |
+| `verification-native-04.json` (remote retained receipt) | `680eeef`, **FAIL** | Transparent real-executor diagnostics retained the same source inode and failed candidate; the AAC `CodecDelay` guard was identified. |
+| `verification-final-03.json` | `b2ab29b`, **FAIL** | Media passed 91 parents; the added 12-second AAC case exposed the one-millisecond `DURATION` rewrite. Later scopes were gated. |
+| `verification-final-04.json` | `bd20b23`, **PASS for selected scopes** | Media 114, library 12 and native browser 1 parent passed, with no skips or failures; all 16 browser stages completed. |
+| `mocked-browser-02-receipt.json` | `bef3c21`, **PASS for mocked UI** | All 12 selected administrator tests passed; zero skipped, flaky or unexpected tests, report errors or unhandled API requests. |
 
-Tool/model/font inputs, actual source and binary identities, result counts,
-retained failures, targeted repairs and owned-resource closure must be recorded
-before this phase can close. Phases 3 and 4 have not started implementation.
+The first media failures led to a separate version 2 OCR fixture corpus,
+preserving version 1 files and logs. The passing actual scenarios are English,
+Simplified Chinese forced, Traditional Chinese and overlap in both PGS and DVD,
+plus mixed forced PGS. Exact display times, forced state, recognized text and
+image evidence are checked. Pinned Tesseract 5.5.0, model digests, FFmpeg/FFprobe,
+Python, Noto font/license and generator identities are recorded in the result
+JSON. No earlier failure is relabeled.
+
+The first backup failure occurred before deliberate corruption because complete
+row witnesses used different timestamp formatting. Its test-only repair applies
+canonical archive settings in a nested savepoint, preserves exact values and
+checks a one-microsecond change. The recovery fixture uses explicit `bigint`
+casts and still exercises revision `9007199254740993`. Fresh repair database
+pairs passed corruption/finalizer and authority-normalization scopes without
+relaxing product validation; earlier databases remain retained.
+
+The final B1 scope decoded every retained A/V stream in MKV, MKA and MP4. The
+base MKV/MP4 cases contain 50 video frames and two audio streams; MKA contains
+two audio streams. The added 12-second, 24 fps case decoded 288 frames and AAC
+audio while retaining 1,024-sample priming and packet proofs. Independent native
+post-publication decode again completed 288 frames and one audio stream,
+reported 12.0105 seconds, and produced zero stderr bytes. The retained French
+subtitle was independently fetched as VTT with HTTP 200.
+
+Hardware-specific AMD/RPU skips and the mount-namespace helper skip from the
+first batch remain explicit skips. The final B1/library/native scope had none.
+Passing parent counts exclude subtest events, while original failed-test arrays
+can contain parents and subtests. They describe their recorded revisions, not a
+new whole-suite result for `bd20b23`.
+
+## Native browser acceptance
+
+Run `selected-phase2-bd20b23-browser06` passed authentication, removal prepare and
+apply, OCR recognition/review/apply, subtitle selected/off/reselected/stopped,
+cancel prepare/cancelled, artwork, restart, persisted history and cleanup. Every
+stage has independent database/file observations. Native controls use normal
+authentication and CSRF enforcement. No business-response mocks or CSP bypass
+were used. There were zero page errors and foreign requests.
+
+The private test consumer uses an actual `HTMLVideoElement`, pinned HLS.js
+1.6.0-beta.2 and real viewer authentication, `PlaybackInfo` and fMP4 HLS routes.
+Three actual seek/play transitions each observed at least three advancing
+frames. The reviewed cue appeared with selection, disappeared when off and
+reappeared after reselection, with expected text and a 1.25-2.4-second window.
+The same HLS identity and single producer were independently observed across
+changes. Active-encoding stop and viewer logout both returned 204; readers,
+producer cache, session contexts, stream slots and policy leases closed.
+
+The consumer sent no `Playing` or other playback reports. It does not establish
+play-count behavior: one unstarted, uncounted `Prepared` history row remains with
+authentication revoked, together with terminal encoding history. These history
+rows are not active resources. The real server restarted once and identical
+operation, subtitle, artwork and retained-file state was verified. Two embedded
+covers and the generated collage were independently fetched and decoded through
+authorized HTTP routes.
+
+All 16 checks passed with zero fallback session revocations. Browser process
+groups and observed descendants, HTTP listener, server workers and diagnostic
+descriptors closed; the owned browser schema/media root/private context were
+removed. Four retained PNGs provide masked native-layout and actual subtitle
+presentation evidence. Sensitive native fields are masked, so these captures
+do not claim unrestricted visual review of their contents.
+
+## Resource closure
+
+`closure-01.json` records phase-owned PostgreSQL stopping from PID `3251664`
+to `MainPID=0`, inactive/dead, with its data preserved. All recorded workers are
+terminal; failed unit statuses remain failed rather than being cleared. The
+successful final scope separately records every process group closed. Evidence
+and failed-run files remain retained. No new tests ran during closure.
+
+The unrelated `goby-core-av-original-client-01.service` remains active with the
+same PID `366598` and invocation identity. Original client service and assets
+were not changed. Phase-owned database and worker resources are closed, allowing
+phase 3 implementation to begin.
 
 ## Related contracts
 
+- [Machine-readable results](selected-compatibility-phase2-results-20260920.json)
 - [Native media processing API](../api/media-processing.md)
 - [Media publication and recovery](media-edit-publication.md)
 - [Admitted media preservation profiles](media-edit-preservation-profile.md)

@@ -13,8 +13,8 @@ boundary. No untested client parity or deployment is claimed.
 The selected phase 2 source adds the [native media-processing API](media-processing.md)
 for embedded-subtitle removal and reviewed bitmap OCR, owned subtitle delivery,
 MP3/FLAC/M4A embedded covers, authorized library/genre collages and additional
-image transformations. Schema 45 is current. Implementation is complete, while
-consolidated verification and repairs remain open in the
+image transformations. Schema 45 is current. Implementation, composed verification,
+scoped repairs and owned-resource closure are complete within the
 [phase 2 record](../development/selected-compatibility-phase2-20260920.md).
 This paragraph supersedes older unsupported labels for those selected features
 without changing historical acceptance records or claiming untested clients.

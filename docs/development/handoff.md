@@ -12,13 +12,14 @@ administration, original-client PIN/local-password, next-episode, restart and
 cleanup journeys passed in their recorded scopes. The user accepted delivery of
 the compatibility adapter without treating original Web commercial licensing
 as a blocking gate. Its two blocked intro modes and four client errors remain
-recorded failures, not successful third-party-client evidence. Phase 2 delivery
-code is implemented; consolidated verification and scoped repairs are in progress;
-phases 3-4 have not started implementation. The owned phase 1 PostgreSQL service
-is stopped, with data and evidence preserved.
+recorded failures, not successful third-party-client evidence. Phase 2 is closed
+after composed regression, scoped media repairs and the complete 16-stage native
+browser journey at `bd20b23`. Both phases' owned PostgreSQL services and workers
+are stopped, with data and evidence preserved. Phase 3 music/search/discovery is
+next; phase 4 has not started implementation.
 See the [phase 1 execution record](selected-compatibility-phase1-20260920.md).
 The [phase 2 execution record](selected-compatibility-phase2-20260920.md) tracks
-the current implementation, first-batch results and pending scoped repairs.
+the accepted contracts, retained failures, final repair results and resource closure.
 Each phase implements all delivery code before consolidated verification.
 Local compilation and unit tests are now authorized; actual integration/E2E
 runs on `test-env`, never locally. After all four phases complete, the user

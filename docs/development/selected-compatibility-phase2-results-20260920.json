@@ -1,0 +1,1753 @@
+{
+  "schema_version": 1,
+  "record_type": "selected-compatibility-phase2-evidence",
+  "recorded_on": "2026-09-20",
+  "timezone": "Asia/Shanghai",
+  "phase": 2,
+  "status": "closed-from-recorded-consolidated-and-affected-repair-scopes",
+  "source_record": "selected-compatibility-phase2-20260920.md",
+  "acceptance_boundary": {
+    "delivery": "Goby subtitle processing, artwork and native management adapters within the admitted profiles.",
+    "selected_requirements": [
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5",
+      "B6"
+    ],
+    "original_client_external_license_gate": false,
+    "native_administrator_browser_and_private_media_consumer": true,
+    "all_third_party_clients_tested": false,
+    "final_revision_whole_suite_rerun_claimed": false,
+    "phase_3_or_4_completion_claimed": false,
+    "merge_push_or_deployment_claimed": false,
+    "ui_ux_pro_max_used": false
+  },
+  "evidence_integrity": {
+    "original_receipts_modified": false,
+    "earlier_failures_preserved": true,
+    "overlapping_pass_counts_are_not_additive": true,
+    "parent_passes_exclude_subtest_events": true,
+    "failed_test_arrays_can_include_parents_and_subtests": true,
+    "accepted_coverage_rule": "Retain the earlier passing scopes and separately passing affected repairs, each tied to its executed binary; do not relabel failed aggregates or claim a final whole-suite pass.",
+    "this_rollup_performed_new_tests_or_runtime_probes": false,
+    "actual_local_e2e": false,
+    "credentials_dsn_or_private_error_bodies_copied": false,
+    "local_private_evidence_root": "D:/Code/goby/.git/selected-compatibility-20260920/phase2",
+    "remote_private_evidence_root": "/opt/goby-selected-compatibility-20260920-p2a"
+  },
+  "sources": {
+    "branch": "codex/selected-client-compatibility",
+    "initial_all_delivery_code_freeze": "5f0cdc0",
+    "final_affected_scopes_source": "bd20b23",
+    "snapshots": [
+      {
+        "label": "5f0cdc0",
+        "commit": "5f0cdc06bc91ec92630598d9a1eee5b456b298a8",
+        "git_tree": "dd7141f9f135abf8261e4444f0a842e1b3945384"
+      },
+      {
+        "label": "93f052e",
+        "commit": "93f052e27868cea3d01f534606bc65d094bfd31d",
+        "git_tree": "0eaa7ff7bde01ba2cd465c882e0578072549ea4b"
+      },
+      {
+        "label": "a8ff413",
+        "commit": "a8ff4137e884435d99375528678b1eaf7beaa9f8",
+        "git_tree": "19a1ec03d561db497efdf0c74d82ac7c7c002a3d"
+      },
+      {
+        "label": "bef3c21",
+        "commit": "bef3c217702e6ae810f9cc4e77dcfe38b8a426d3",
+        "git_tree": "e392d0c50c33d87056f3f4c296260e6bc63e919a"
+      },
+      {
+        "label": "02f3da6",
+        "commit": "02f3da606d57190bf62077da4e042752194063dd",
+        "git_tree": "4945bfd03d9f055a14cd58b0e2d0fa6ff21e2dd9"
+      },
+      {
+        "label": "b926449",
+        "commit": "b9264495ed162a65f6ba6e01bfe313eabea371f3",
+        "git_tree": "83f038c28fa4a3517bd524d81e6ea5f224a18670"
+      },
+      {
+        "label": "a3b713d",
+        "commit": "a3b713df2df4a310d711ba6a6361ea8395797fec",
+        "git_tree": "e06e4f0af7448ea4f3f1bc095923104ffb39ae4a"
+      },
+      {
+        "label": "0dae905",
+        "commit": "0dae905d5d0c7d7a9634b9a08a02b7e6a357ff5a",
+        "git_tree": "36370b12818ec22525b5572790c7e9f43e2a0c4b"
+      },
+      {
+        "label": "680eeef",
+        "commit": "680eeefb3bb4bcb4fd95a2ecedce074b9e131c22",
+        "git_tree": "37147abd5d99ccc5bc0050ee83f8139f84e8510b"
+      },
+      {
+        "label": "b2ab29b",
+        "commit": "b2ab29bc79a901fe56d084822f109be619458e6d",
+        "git_tree": "c172d1dd43f30166f9c306eedf43ff47d8f6ed25"
+      },
+      {
+        "label": "bd20b23",
+        "commit": "bd20b23682d4801c195241b5e57d9f5518f57941",
+        "git_tree": "1e3f5b27c617e89f125323ad6c321f50ed0f701b"
+      }
+    ],
+    "retained_local_archives": [
+      {
+        "name": "source-02f3da6.tar",
+        "bytes": 137473536,
+        "sha256": "eaf8eadac1d1daf9f4daecd17aa5f5aeccdcb50186f70fed487b21488d5889dd"
+      },
+      {
+        "name": "source-0dae905.tar",
+        "bytes": 137652736,
+        "sha256": "44586b1351745452f1b51a4e128df0dac981da79b76203ca9655caeafe739c22"
+      },
+      {
+        "name": "source-680eeef.tar",
+        "bytes": 137670144,
+        "sha256": "f16a3b6abfc95368e45d9bb683abc9a8fd1b4e57043da78b311cb083d9ada482"
+      },
+      {
+        "name": "source-a3b713d.tar",
+        "bytes": 137647616,
+        "sha256": "19766091ccbb9f6b2daef45c09e209080b1e3a0ed69fd665bb9f47a72eb90c54"
+      },
+      {
+        "name": "source-a8ff413.tar",
+        "bytes": 137423360,
+        "sha256": "405a5d5ee2a1b7d7408e7ccf80b8e07e739d9ddb7ec8bc5128d6041c571057e3"
+      },
+      {
+        "name": "source-b2ab29b.tar",
+        "bytes": 137730560,
+        "sha256": "541ba7672f289e76573e58a0b605a7fea1399b4f5d713c9943ecca49e845cd27"
+      },
+      {
+        "name": "source-b926449.tar",
+        "bytes": 137570304,
+        "sha256": "ed61906dc4e9ccf9da8093da0a511e102e8cf02b185280c3da2450eae2cb03ed"
+      },
+      {
+        "name": "source-bd20b23.tar",
+        "bytes": 137802240,
+        "sha256": "ca69676d9aaafe6545f1fd41c3e3140a31074b321ed1fd70c903687ba93eb117"
+      },
+      {
+        "name": "source-bef3c21.tar",
+        "bytes": 137470464,
+        "sha256": "6db81227f335ddb57dcd8b57e6d27fd366c29ea09a9a153e63d55fe8e8d0482f"
+      }
+    ],
+    "final_artifacts": [
+      {
+        "scope": "media",
+        "source": "bd20b23",
+        "exit_code": 0,
+        "name": "media-bd20b23.test",
+        "bytes": 17545436,
+        "sha256": "d4893fae9707085c765d0a696c31a21ccd2290beacd617cf06699c294c0cbe15",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "library",
+        "source": "bd20b23",
+        "exit_code": 0,
+        "name": "library-bd20b23.test",
+        "bytes": 34769324,
+        "sha256": "be41fe9d6d7a5cd377cb536ef74e1b90ab61eef9c14f2a5b0b7c35045f7b8890",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "server-browser",
+        "source": "bd20b23",
+        "exit_code": 0,
+        "name": "server-browser-bd20b23.test",
+        "bytes": 44953505,
+        "sha256": "0c4ca9313dbcb8653b8a68be7fcf803c3338c26cd92cd3c63b28a746d9304882",
+        "role": "Executed Linux test binary"
+      },
+      {
+        "scope": "ordinary",
+        "source": "bd20b23",
+        "exit_code": 0,
+        "name": "ordinary-bd20b23.test",
+        "bytes": 41271958,
+        "sha256": "a35b68095c0188e197ab81b08640dc7bc98a3ea27d28fd977ddddef8cd7714a1",
+        "role": "Linux application build, not the in-process browser test executable"
+      },
+      {
+        "scope": "embedded",
+        "source": "bd20b23",
+        "exit_code": 0,
+        "name": "embedded-bd20b23.test",
+        "bytes": 42603122,
+        "sha256": "3aa053b0f2f838de2af423bc1489ea97fcb3250432c6bb88d999d98db8160397",
+        "role": "Linux application build, not the in-process browser test executable"
+      }
+    ],
+    "final_browser_driver_sha256": "333debc7d23f48fcfb49b44c48a98d0dfc4a5578e27ccc9080b82c098c33c7e8",
+    "source_archive_permission_preparation": "Immutable extractions remove group/world write permission while recording unchanged file content hashes; the original failed input admission is retained."
+  },
+  "local_build_and_unit_evidence": {
+    "frontend_source": "5f0cdc0",
+    "frontend_build_passed": true,
+    "artwork": {
+      "source": "5f0cdc0",
+      "scope": "artwork",
+      "platform": "windows/amd64",
+      "parent_passes": 47,
+      "failed_tests": [],
+      "actual_local_e2e": false
+    },
+    "initial_compilation": [
+      {
+        "scope": "config",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-config-01.log",
+        "binary_sha256": "21f56eccafa6a65fcf37d46eeaf73cfd6532cb22506ffb882718f4e0d7284798"
+      },
+      {
+        "scope": "media",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-media-01.log",
+        "binary_sha256": "842e06dcdedff19c429aa40db7fa77026776d2a17659abb20313c08bf3d94499"
+      },
+      {
+        "scope": "database",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-database-01.log",
+        "binary_sha256": "ca535206a16311a947c0576e9189601765905b9e902ff860dbaa883cd125d8c1"
+      },
+      {
+        "scope": "library",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-library-01.log",
+        "binary_sha256": "4c7162d17a707d38132af23a0871d84b2e5460b39abe6be05506b6a4b5544701"
+      },
+      {
+        "scope": "server",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-server-01.log",
+        "binary_sha256": "8510fe3573ea7acbe9c519b7313027c822f85ab37e9ef7f7496d403b787bd4bf"
+      },
+      {
+        "scope": "backuppg",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-backuppg-01.log",
+        "binary_sha256": "f230267d55711aebc257d9ebc912328710bd73ef5216e1ac2f7aca01afc0ae1d"
+      },
+      {
+        "scope": "recoverydb",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-recoverydb-01.log",
+        "binary_sha256": "04f257dac747418c293954a935adcb7ff9f7768ad693d3a822b521ac618522ce"
+      },
+      {
+        "scope": "recovery",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-recovery-01.log",
+        "binary_sha256": "6443dbfcc129c2d68c6eec7e576e71a4c0bb8f4aa2fc7aea117d64aea53bdc0e"
+      },
+      {
+        "scope": "transcode",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-transcode-01.log",
+        "binary_sha256": "5f8531dc5740c3b249660a23ef99e41d0538a3aa32eede887f7ae5c8ecb19435"
+      },
+      {
+        "scope": "ordinary-build",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\ordinary-final-build-01.log",
+        "binary_sha256": "68d0c5edc9c1126a070c771813eef2cad5bd10051bc90ace5be3be847e2667f4"
+      },
+      {
+        "scope": "embedded-build",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\embedded-final-build-01.log",
+        "binary_sha256": "32fc9a4fb44917bf9ee73dc7c1a6fea5726648fecd9d73349e137e42a6915377"
+      },
+      {
+        "scope": "server-browser",
+        "source": "93f052e",
+        "exit_code": 0,
+        "log": "D:\\Code\\goby\\.git\\selected-compatibility-20260920\\phase2\\compile-server-browser-01.log",
+        "binary_sha256": "5572e838347fc8245de061b9227eb896c9654fd9dd81782063e2283708b26684"
+      }
+    ],
+    "library_fixture_compile_repair": {
+      "source": "a8ff413",
+      "scope": "library",
+      "exit_code": 0,
+      "binary_sha256": "25026c66b99fe1d7eac66729eb8bef5fc9a7fc8f2b786b707c642d3d951e916b"
+    },
+    "final_compilation_receipt": "compile-final-04.json",
+    "actual_media_database_browser_execution_environment": "ssh test-env only"
+  },
+  "schema_and_recovery": {
+    "schema": 45,
+    "migrations": [
+      {
+        "version": 44,
+        "path": "internal/database/migrations/0044_media_operations.sql",
+        "sha256": "d579e1699c2cc1c263cd02b671bb3df28368071c0d34db771526ea06a8895453"
+      },
+      {
+        "version": 45,
+        "path": "internal/database/migrations/0045_embedded_artwork.sql",
+        "sha256": "d4406391ac884dac31eef84b75b4f4cb73390b29f162b31821a55765dba6ca5c"
+      }
+    ],
+    "catalog": {
+      "path": "internal/backuppg/catalogs/schema-45-postgresql-17.json",
+      "source": "93f052e",
+      "engine": "PostgreSQL 17",
+      "bytes": 742656,
+      "sha256": "e06dcea44b39804aea09c46891dfe93bfe881bf043802d2baec257d77d91332e",
+      "historical_catalogs_and_migration_digests_unchanged": true
+    },
+    "test_only_repair_source": "02f3da6",
+    "backup_repair": "Canonical complete-row witnesses in a nested savepoint retain exact values and a one-microsecond negative regression; product corruption checks are unchanged.",
+    "recovery_repair": "Explicit bigint casts preserve revision 9007199254740993; execution/apply authority normalization is unchanged.",
+    "repair_database_pairs_fresh": true,
+    "earlier_failed_databases_preserved": true,
+    "product_validation_relaxed": false,
+    "original_media_in_database_backup": false,
+    "automatic_filesystem_publication_replay": false
+  },
+  "verification": {
+    "initial_batch_retained_result": "FAIL",
+    "initial_batch": {
+      "source": "a8ff413",
+      "default_binary_source": "93f052e",
+      "library_binary_source": "a8ff413",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "config",
+          "binary_source": "93f052e",
+          "binary_sha256": "21f56eccafa6a65fcf37d46eeaf73cfd6532cb22506ffb882718f4e0d7284798",
+          "started_unix": 1789884610.1610081,
+          "state": "terminal",
+          "pid": 3252530,
+          "exit_code": 0,
+          "duration_seconds": 3.48215389251709,
+          "parent_passes": 53,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "media",
+          "binary_source": "93f052e",
+          "binary_sha256": "842e06dcdedff19c429aa40db7fa77026776d2a17659abb20313c08bf3d94499",
+          "started_unix": 1789884613.6469924,
+          "state": "terminal",
+          "pid": 3253368,
+          "exit_code": 1,
+          "duration_seconds": 7.739619970321655,
+          "parent_passes": 378,
+          "parent_skips": [
+            "TestDolbyVisionActualRPUCoverageCRCAndNativeSyntax",
+            "TestHardwareEncodingActualVAAPIAdmission",
+            "TestHardwareEncodingActualAV1PaddingRejection"
+          ],
+          "failed_tests": [
+            "TestRecognizeBitmapSubtitlesActualFixtures/english/DVD",
+            "TestRecognizeBitmapSubtitlesActualFixtures/chinese-forced/DVD",
+            "TestRecognizeBitmapSubtitlesActualFixtures/chinese-traditional/DVD",
+            "TestRecognizeBitmapSubtitlesActualFixtures/overlap/DVD",
+            "TestRecognizeBitmapSubtitlesActualFixtures",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mkv",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mka",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mp4",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles",
+            "TestSubtitleOCRImageBudgetsRejectOversizedAndTruncatedEvidence"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "transcode",
+          "binary_source": "93f052e",
+          "binary_sha256": "5f8531dc5740c3b249660a23ef99e41d0538a3aa32eede887f7ae5c8ecb19435",
+          "started_unix": 1789884621.3939242,
+          "state": "terminal",
+          "pid": 3256470,
+          "exit_code": 0,
+          "duration_seconds": 79.11416149139404,
+          "parent_passes": 301,
+          "parent_skips": [
+            "TestBitmapSubtitleActualGPUClockCanvasAndClear",
+            "TestGPUProducerCancellationRetiresActualFFmpegAndClosesOutput",
+            "TestLiveAMDActualBitmapPublicationClockAndCancellation",
+            "TestVideoCodecActualVAAPIAVSyncAfterSeek",
+            "TestVideoCodecActualVAAPIOutputs",
+            "TestVideoCodecActualVAAPIDecodeInputMatrix",
+            "TestAMDVideoProcessingActualHDRAndDeinterlace",
+            "TestDolbyVisionActualRPUChangesPixelsAndProducesSDRAndHDR10",
+            "TestDolbyVisionStrictRendererRejectsActualNonzeroResidual"
+          ],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "database",
+          "binary_source": "93f052e",
+          "binary_sha256": "ca535206a16311a947c0576e9189601765905b9e902ff860dbaa883cd125d8c1",
+          "started_unix": 1789884700.5141335,
+          "state": "terminal",
+          "pid": 3272242,
+          "exit_code": 0,
+          "duration_seconds": 13.15781855583191,
+          "parent_passes": 62,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "binary_source": "a8ff413",
+          "binary_sha256": "25026c66b99fe1d7eac66729eb8bef5fc9a7fc8f2b786b707c642d3d951e916b",
+          "started_unix": 1789884713.6752925,
+          "state": "terminal",
+          "pid": 3272448,
+          "exit_code": 0,
+          "duration_seconds": 685.7213325500488,
+          "parent_passes": 760,
+          "parent_skips": [
+            "TestRootBindingFullScanMountNamespaceHelper"
+          ],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "binary_source": "93f052e",
+          "binary_sha256": "8510fe3573ea7acbe9c519b7313027c822f85ab37e9ef7f7496d403b787bd4bf",
+          "started_unix": 1789885399.4121063,
+          "state": "terminal",
+          "pid": 3287876,
+          "exit_code": 0,
+          "duration_seconds": 516.2995302677155,
+          "parent_passes": 861,
+          "parent_skips": [
+            "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput"
+          ],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "binary_source": "93f052e",
+          "binary_sha256": "f230267d55711aebc257d9ebc912328710bd73ef5216e1ac2f7aca01afc0ae1d",
+          "started_unix": 1789885915.725478,
+          "state": "terminal",
+          "pid": 3293630,
+          "exit_code": 1,
+          "duration_seconds": 73.96652817726135,
+          "parent_passes": 104,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestPostgreSQLSelectedPhase2RestoreRejectsCorruptDerivativeFinalizerAndRetries/cue_image",
+            "TestPostgreSQLSelectedPhase2RestoreRejectsCorruptDerivativeFinalizerAndRetries"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recoverydb",
+          "binary_source": "93f052e",
+          "binary_sha256": "04f257dac747418c293954a935adcb7ff9f7768ad693d3a822b521ac618522ce",
+          "started_unix": 1789885989.696375,
+          "state": "terminal",
+          "pid": 3294452,
+          "exit_code": 0,
+          "duration_seconds": 23.29368305206299,
+          "parent_passes": 12,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "binary_source": "93f052e",
+          "binary_sha256": "6443dbfcc129c2d68c6eec7e576e71a4c0bb8f4aa2fc7aea117d64aea53bdc0e",
+          "started_unix": 1789886012.9913692,
+          "state": "terminal",
+          "pid": 3294874,
+          "exit_code": 1,
+          "duration_seconds": 83.8509738445282,
+          "parent_passes": 27,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestEngineSelectedPhase2ArchiveRestoreClearsExecutionAuthority"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server-browser",
+          "binary_source": "93f052e",
+          "binary_sha256": "5572e838347fc8245de061b9227eb896c9654fd9dd81782063e2283708b26684",
+          "started_unix": 1789886096.8434212,
+          "state": "terminal",
+          "pid": 3295425,
+          "exit_code": 1,
+          "duration_seconds": 2.241121768951416,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase2BrowserIntegration"
+          ],
+          "process_group_closed": true
+        }
+      ],
+      "fixture_generation": {
+        "exit_code": 0,
+        "duration_seconds": 0.21429729461669922,
+        "generator_sha256": "cbebdd9f5acac5f0cad535c80063bd1d3fc8ed2da404b122ba8fe199189a9f6d",
+        "manifest_sha256": "bae4da8844ed75788fe765919970696536ec62d5f79ebdadf047fd872ae7fa3e"
+      },
+      "finished_unix": 1789886099.0849977
+    },
+    "repair_batch_retained_result": "FAIL",
+    "repair_batch": {
+      "source": "02f3da6",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "media",
+          "package": "media",
+          "selector": "^(TestBitmapSubtitle|TestRecognizeBitmapSubtitles|TestSubtitleOCR|TestSubtitleRemoval|TestMediaEdit)",
+          "binary_source": "bef3c21",
+          "binary_sha256": "81a395b38eeba63ea62f77ce7a490aae5f5d7c15dc9c327d6157b7bc7452ca26",
+          "started_unix": 1789886431.5512705,
+          "state": "terminal",
+          "pid": 3296761,
+          "exit_code": 1,
+          "duration_seconds": 2.7212274074554443,
+          "parent_passes": 66,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mkv",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mka",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mp4",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles"
+          ],
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "package": "library",
+          "selector": "^(TestMediaEdit|TestMediaOCR|TestRenderMediaOCR|TestOwnedSubtitle)",
+          "binary_source": "bef3c21",
+          "binary_sha256": "d180aadcaf9f0d02bd8a775333bb84272a5f87997cc7b1699906273eb254b97e",
+          "started_unix": 1789886434.3133733,
+          "state": "terminal",
+          "pid": 3297010,
+          "exit_code": 0,
+          "duration_seconds": 6.128726959228516,
+          "parent_passes": 22,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server",
+          "package": "server",
+          "selector": "^(TestHTTPMediaPublication|TestDownload|TestHTTP.*Download|TestOriginal|TestHLSRegistry)",
+          "binary_source": "bef3c21",
+          "binary_sha256": "c1b6486109809e085469bfe35c271bcfc0bb7b6ea284faff6d0af8c39eff1c54",
+          "started_unix": 1789886440.4840674,
+          "state": "terminal",
+          "pid": 3297123,
+          "exit_code": 0,
+          "duration_seconds": 68.64971804618835,
+          "parent_passes": 22,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "backuppg",
+          "package": "backuppg",
+          "selector": "^TestPostgreSQLSelectedPhase2",
+          "binary_source": "02f3da6",
+          "binary_sha256": "da757633d2329d2c0567b1f67fb8cced450c21a2de5d38d2b6bcfc20dffa9df3",
+          "started_unix": 1789886509.18163,
+          "state": "terminal",
+          "pid": 3297390,
+          "exit_code": 0,
+          "duration_seconds": 10.641599178314209,
+          "parent_passes": 4,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "recovery",
+          "package": "recovery",
+          "selector": "^TestEngineSelectedPhase2ArchiveRestoreClearsExecutionAuthority$",
+          "binary_source": "02f3da6",
+          "binary_sha256": "870b280c090bc03dc00ac870e0c3a8425258213752c059af161ddc27cf579d75",
+          "started_unix": 1789886519.878651,
+          "state": "terminal",
+          "pid": 3297498,
+          "exit_code": 0,
+          "duration_seconds": 3.3732011318206787,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        }
+      ],
+      "fixture_generation": {
+        "exit_code": 0,
+        "duration_seconds": 0.21425914764404297,
+        "generator_sha256": "c3bf51280a9a79f3aef08008523f248e66dbc47c7d3d38451a15019affe2acdd",
+        "manifest_sha256": "a0eb38dac648066bdd17ce794bcc7e7b0b30358bb41ad52b1dd3469d212ebf07"
+      },
+      "finished_unix": 1789886523.2523277
+    },
+    "final_01_retained_result": "FAIL",
+    "final_01": {
+      "source": "b926449",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "media",
+          "package": "media",
+          "selector": "^(TestSubtitleRemoval|TestMediaEdit)",
+          "binary_source": "b926449",
+          "binary_sha256": "be07d43e3d9bcf00314cbdc10f9ebf73e7290d3d0bd5a13197f4e2d9d0e9be11",
+          "started_unix": 1789887258.493801,
+          "state": "terminal",
+          "pid": 3298443,
+          "exit_code": 1,
+          "duration_seconds": 0.4153008460998535,
+          "parent_passes": 57,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mkv",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mka",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles/mp4",
+            "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles"
+          ],
+          "process_group_closed": true
+        }
+      ],
+      "native_browser_not_started_reason": "The actual media preservation prerequisite failed.",
+      "finished_unix": 1789887258.9125302
+    },
+    "final_02_retained_result": "FAIL",
+    "final_02": {
+      "source": "a3b713d",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "media",
+          "package": "media",
+          "selector": "^(TestSubtitleRemoval|TestMediaEdit)",
+          "binary_source": "a3b713d",
+          "binary_sha256": "ac1baf2914b90d8c728383dc7ce6b7ae2891097a9ef42380c411a604b718f676",
+          "started_unix": 1789889121.708013,
+          "state": "terminal",
+          "pid": 3300816,
+          "exit_code": 0,
+          "duration_seconds": 0.515211820602417,
+          "parent_passes": 79,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "package": "library",
+          "selector": "^TestMediaEdit",
+          "binary_source": "a3b713d",
+          "binary_sha256": "7196695975b1146e0f420261882da38111ef77c1beeb3d7e90a6da329eebd45d",
+          "started_unix": 1789889122.2439175,
+          "state": "terminal",
+          "pid": 3301080,
+          "exit_code": 0,
+          "duration_seconds": 2.9274463653564453,
+          "parent_passes": 11,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server-browser",
+          "package": "server",
+          "selector": "^TestSelectedCompatibilityPhase2BrowserIntegration$",
+          "binary_source": "a3b713d",
+          "binary_sha256": "a9966ade1b6668ace9b39c10aa51b3e7d24391d871c311d3f604e5e130452f96",
+          "started_unix": 1789889125.1954908,
+          "state": "terminal",
+          "pid": 3301156,
+          "exit_code": 1,
+          "duration_seconds": 1.8695182800292969,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase2BrowserIntegration"
+          ],
+          "process_group_closed": true
+        }
+      ],
+      "finished_unix": 1789889127.0655956
+    },
+    "native_03_retained_result": "FAIL",
+    "native_03": {
+      "source": "0dae905",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "server-browser",
+          "package": "server",
+          "selector": "^TestSelectedCompatibilityPhase2BrowserIntegration$",
+          "binary_source": "0dae905",
+          "binary_sha256": "86fdb4fa2304d3bd9e1b6629c55b2bfee762be06fa59180f386589e98321ab39",
+          "started_unix": 1789889517.6980474,
+          "state": "terminal",
+          "pid": 3301901,
+          "exit_code": 1,
+          "duration_seconds": 7.232123851776123,
+          "parent_passes": 0,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSelectedCompatibilityPhase2BrowserIntegration"
+          ],
+          "process_group_closed": true
+        }
+      ],
+      "finished_unix": 1789889524.930868
+    },
+    "native_04": {
+      "source": "680eeef",
+      "retained_result": "FAIL",
+      "complete": false,
+      "remote_receipt": "logs/verification-native-04.json",
+      "binary_sha256": "53300e2b57a0190ff9e3dc43f6134d6d6cbdd5e5aa3a2f113b153fcb3d70c49c",
+      "completed_stages": 1,
+      "failure": "Actual B1 preparation rejected the AAC CodecDelay element; the transparent executor wrapper retained the original source and candidate descriptor evidence.",
+      "earlier_private_error_evidence_retained": true
+    },
+    "final_03_retained_result": "FAIL",
+    "final_03": {
+      "source": "b2ab29b",
+      "complete": false,
+      "scopes": [
+        {
+          "scope": "media",
+          "package": "media",
+          "selector": "^(TestSubtitleRemoval|TestMediaEdit)",
+          "binary_source": "b2ab29b",
+          "binary_sha256": "e8c8a9c95f4f7bb460cb95388b8f637935f546ccca4f843d09dd77e42b2db1fb",
+          "started_unix": 1789892203.1982803,
+          "state": "terminal",
+          "pid": 3305495,
+          "exit_code": 1,
+          "duration_seconds": 0.7656404972076416,
+          "parent_passes": 91,
+          "parent_skips": [],
+          "failed_tests": [
+            "TestSubtitleRemovalActualMatroskaAACCodecDelay24FPS"
+          ],
+          "process_group_closed": true
+        }
+      ],
+      "native_browser_not_started_reason": "The actual media preservation prerequisite failed.",
+      "finished_unix": 1789892203.9679632
+    },
+    "final_04_selected_scopes_result": "PASS",
+    "final_04": {
+      "source": "bd20b23",
+      "complete": true,
+      "scopes": [
+        {
+          "scope": "media",
+          "package": "media",
+          "selector": "^(TestSubtitleRemoval|TestMediaEdit)",
+          "binary_source": "bd20b23",
+          "binary_sha256": "d4893fae9707085c765d0a696c31a21ccd2290beacd617cf06699c294c0cbe15",
+          "started_unix": 1789893750.2656326,
+          "state": "terminal",
+          "pid": 3307735,
+          "exit_code": 0,
+          "duration_seconds": 0.9666233062744141,
+          "parent_passes": 114,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "library",
+          "package": "library",
+          "selector": "^(TestMediaEdit|TestMediaOperationFailure)",
+          "binary_source": "bd20b23",
+          "binary_sha256": "be41fe9d6d7a5cd377cb536ef74e1b90ab61eef9c14f2a5b0b7c35045f7b8890",
+          "started_unix": 1789893751.2536907,
+          "state": "terminal",
+          "pid": 3308059,
+          "exit_code": 0,
+          "duration_seconds": 3.021329402923584,
+          "parent_passes": 12,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        },
+        {
+          "scope": "server-browser",
+          "package": "server",
+          "selector": "^TestSelectedCompatibilityPhase2BrowserIntegration$",
+          "binary_source": "bd20b23",
+          "binary_sha256": "0c4ca9313dbcb8653b8a68be7fcf803c3338c26cd92cd3c63b28a746d9304882",
+          "started_unix": 1789893754.297875,
+          "state": "terminal",
+          "pid": 3308139,
+          "exit_code": 0,
+          "duration_seconds": 22.920096158981323,
+          "parent_passes": 1,
+          "parent_skips": [],
+          "failed_tests": [],
+          "process_group_closed": true
+        }
+      ],
+      "finished_unix": 1789893777.2182994
+    },
+    "no_final_scope_skips": true,
+    "historical_hardware_and_namespace_skips_remain_skips": true
+  },
+  "media_acceptance": {
+    "ocr": {
+      "executed_binary_source": "bef3c21",
+      "fixture_version": 2,
+      "original_fixture_version_1_and_failed_results_preserved": true,
+      "passing_actual_scenarios": [
+        "TestRecognizeBitmapSubtitlesActualFixtures/english/PGS",
+        "TestRecognizeBitmapSubtitlesActualFixtures/english/DVD",
+        "TestRecognizeBitmapSubtitlesActualFixtures/chinese-forced/PGS",
+        "TestRecognizeBitmapSubtitlesActualFixtures/chinese-forced/DVD",
+        "TestRecognizeBitmapSubtitlesActualFixtures/chinese-traditional/PGS",
+        "TestRecognizeBitmapSubtitlesActualFixtures/chinese-traditional/DVD",
+        "TestRecognizeBitmapSubtitlesActualFixtures/overlap/PGS",
+        "TestRecognizeBitmapSubtitlesActualFixtures/overlap/DVD",
+        "TestRecognizeBitmapSubtitlesActualFixtures/mixed-forced/PGS"
+      ],
+      "passing_actual_scenario_count": 9,
+      "original_blank_interval_preserved": true,
+      "exact_event_time_forced_state_image_and_text_checks": true,
+      "repair_fixture_generator_sha256": "c3bf51280a9a79f3aef08008523f248e66dbc47c7d3d38451a15019affe2acdd",
+      "repair_fixture_manifest_sha256": "a0eb38dac648066bdd17ce794bcc7e7b0b30358bb41ad52b1dd3469d212ebf07"
+    },
+    "subtitle_removal": {
+      "actual_base_parent_current_name": "TestSubtitleRemovalActualMediaPreservesSelectedProfiles",
+      "actual_base_parent_historical_name": "TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles",
+      "original_fixtures_and_assertions_retained": true,
+      "base_profiles": [
+        {
+          "source": "a3b713d",
+          "test": "TestSubtitleRemovalActualMediaPreservesSelectedProfiles/mka",
+          "container": "mka",
+          "failed": false,
+          "stage": "complete",
+          "engine": "ffmpeg_remux",
+          "source_bytes": 386714,
+          "candidate_bytes": 386517,
+          "source_sha256": "cd57b0aa32e8683abc5828c325454b3754ebda106e05d6b444b501618eb2f014",
+          "candidate_sha256": "66828233241220f2b6ce8235b59a25fa0312df23eba5faee72605e039819caa3",
+          "metadata_sha256": "5ff44aa14e56e90dda8ef72b4cd6a5574ff89689cae7f147d7a63c869eae65fc",
+          "container_sha256": "f25451176435dcdf9d0fe089c123bf97aec741ae22156c6c51a414d412e96220",
+          "preserved_bytes_sha256": null,
+          "complete_av_decode": {
+            "Complete": true,
+            "ProgressEnd": true,
+            "OutTimeUS": 2000000,
+            "VideoFrames": 0,
+            "AudioStreams": 2,
+            "VideoStreams": 0,
+            "MappedIndexes": [
+              0,
+              1
+            ]
+          }
+        },
+        {
+          "source": "a3b713d",
+          "test": "TestSubtitleRemovalActualMediaPreservesSelectedProfiles/mkv",
+          "container": "mkv",
+          "failed": false,
+          "stage": "complete",
+          "engine": "ffmpeg_remux",
+          "source_bytes": 417121,
+          "candidate_bytes": 416932,
+          "source_sha256": "3e95e060f90b62d636013835935bbeb2c8e87a4a10c94a22f1ea20d332797ad2",
+          "candidate_sha256": "c6da108044f2c98513456ba547a0070fe975ffd191a2bca92c8d815f3b7e7e0f",
+          "metadata_sha256": "791bf9f0fa092b7a8a6d9583457fba73e277e171b13809a4af4ed236d5595f47",
+          "container_sha256": "f25451176435dcdf9d0fe089c123bf97aec741ae22156c6c51a414d412e96220",
+          "preserved_bytes_sha256": null,
+          "complete_av_decode": {
+            "Complete": true,
+            "ProgressEnd": true,
+            "OutTimeUS": 2000000,
+            "VideoFrames": 50,
+            "AudioStreams": 2,
+            "VideoStreams": 1,
+            "MappedIndexes": [
+              0,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "source": "a3b713d",
+          "test": "TestSubtitleRemovalActualMediaPreservesSelectedProfiles/mp4",
+          "container": "mp4",
+          "failed": false,
+          "stage": "complete",
+          "engine": "structural_edit",
+          "source_bytes": 70392,
+          "candidate_bytes": 70392,
+          "source_sha256": "ffde3df3b2fcb0b843d848f6db99768c6c5a58621fa5e9a0087661d99166694a",
+          "candidate_sha256": "b736ec20ae4f145bfa2db0c71766f0fad0e739947f63c01bc0d774de451d72b8",
+          "metadata_sha256": "8f1615a270b8ebeaca8b9f304f896c6033c4b135e98b2ffbcf08372971c1d83a",
+          "container_sha256": "e034109afeebcaf8ee1b61382d1db54b456dd88e0856f69a7c3650bf35045d29",
+          "preserved_bytes_sha256": "3fd42840b346570e53ca9fc08bca5aa62cfc98a8ac3571bc670b89d991d7dcc6",
+          "complete_av_decode": {
+            "Complete": true,
+            "ProgressEnd": true,
+            "OutTimeUS": 2040000,
+            "VideoFrames": 50,
+            "AudioStreams": 2,
+            "VideoStreams": 1,
+            "MappedIndexes": [
+              0,
+              1,
+              2
+            ]
+          }
+        }
+      ],
+      "same_three_profiles_passed_again_at": "bd20b23",
+      "final_actual_capture_remote_directory": "media-edit-evidence-06",
+      "aac_regression": {
+        "test": "TestSubtitleRemovalActualMatroskaAACCodecDelay24FPS",
+        "source": "bd20b23",
+        "passed": true,
+        "seconds": 12,
+        "frames_per_second": 24,
+        "decoded_video_frames": 288,
+        "audio_streams": 1,
+        "sample_rate": 48000,
+        "priming_samples": 1024,
+        "codec_delay_nanoseconds": 21333333,
+        "retained_packet_payload_timing_and_side_data_proved": true
+      },
+      "mp4_engine": "structural_edit",
+      "matroska_engine": "ffmpeg_remux",
+      "mp4_boundary": "Selected nonfragmented self-contained avc1/mp4a/tx3g profile; only selected trak replaced by same-size free box, other bytes preserved; no forensic erasure claim.",
+      "duration_repair": "Exact source DURATION literal restoration only for the proved one-millisecond nonintegral-frame-duration remux case; covering CRCs, intended edits, preserved ranges, final snapshot and full SHA remain verified.",
+      "metadata_equality_relaxed": false,
+      "duration_ignored": false,
+      "opus_delay_admission_claimed": false,
+      "original_media_retained_on_apply": true,
+      "full_native_published_decode": {
+        "Complete": true,
+        "DecodedVideoFrames": 288,
+        "ExitCode": 0,
+        "ExpectedSeconds": 12,
+        "ExpectedVideoFrames": 288,
+        "FFmpegSHA256": "c8887f1a2b5a6777c1285fd7514049ec175947048d82e4b3700e44115da34843",
+        "MappedAudioStreams": 1,
+        "MappedVideoStreams": 1,
+        "OutputTimeMicroseconds": 12010500,
+        "ProgressEnded": true,
+        "RunId": "selected-phase2-bd20b23-browser06",
+        "SourceSHA256": "6711c4bfcffdd4f6f054ed1a00e28aecc47ca3715e94f6e5e54e1de0d83712d3",
+        "SourceUnchanged": true,
+        "StderrBytes": 0
+      },
+      "retained_french_vtt_http": {
+        "Bytes": 54,
+        "Complete": true,
+        "CueCount": 1,
+        "RunId": "selected-phase2-bd20b23-browser06",
+        "SHA256": "066cd1f3bc7b4f6ec8fe02bc849f5eb74c322d2bdb08ebacaea93b05937615d9",
+        "Status": 200,
+        "StreamIndex": 2,
+        "TokenInURL": false
+      }
+    }
+  },
+  "runtime_inputs": {
+    "platform": "Linux amd64 on test-env",
+    "go_version": "1.27.1",
+    "ffmpeg_version": "9.0.1-goby-cb8b6d298456",
+    "tesseract_version": "5.5.0",
+    "postgres_major": 17,
+    "browser_execution_inventory": [
+      {
+        "Path": "/opt/goby-amd-media-20260919-50f45177f297/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456/bin/ffmpeg",
+        "Device": 2049,
+        "Inode": 4521943,
+        "Bytes": 31886112,
+        "Modified": 1789817108216715097,
+        "Changed": 1789817600502659103,
+        "Mode": 493,
+        "SHA256": "c8887f1a2b5a6777c1285fd7514049ec175947048d82e4b3700e44115da34843"
+      },
+      {
+        "Path": "/opt/goby-amd-media-20260919-50f45177f297/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456/bin/ffprobe",
+        "Device": 2049,
+        "Inode": 4521944,
+        "Bytes": 31677088,
+        "Modified": 1789817108241714000,
+        "Changed": 1789817600614655333,
+        "Mode": 493,
+        "SHA256": "fddc50127245a7a836b5fb6789e1606ebe9e12bcf3c9e2fab5b32bfb7a0b703f"
+      },
+      {
+        "Path": "/usr/bin/python3.13",
+        "Device": 2049,
+        "Inode": 368,
+        "Bytes": 6832784,
+        "Modified": 1786363619000000000,
+        "Changed": 1789253832934654380,
+        "Mode": 493,
+        "SHA256": "889c603f0d17cb54060951bcf4c4f9b8c9ebd9e52b392c70209bbb9755d797d9"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/tools/fonts/NotoSansCJKsc-Regular.otf",
+        "Device": 2049,
+        "Inode": 4777573,
+        "Bytes": 16437364,
+        "Modified": 1789882732238002206,
+        "Changed": 1789882732246001889,
+        "Mode": 384,
+        "SHA256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/tools/tesseract",
+        "Device": 2049,
+        "Inode": 4777623,
+        "Bytes": 51536,
+        "Modified": 1789882777180218763,
+        "Changed": 1789882777184218605,
+        "Mode": 448,
+        "SHA256": "74b76a5b994adcc18be362bf64ed5118082b2401d5d9a35242e92fc4c62e2b4b"
+      },
+      {
+        "Path": "/opt/goby-test/exec-work-m3e/core-av-original-client-hosting-01/package/opt/emby-server/system/dashboard-ui/modules/hlsjs/hls.js",
+        "Device": 2049,
+        "Inode": 2693598,
+        "Bytes": 754078,
+        "Modified": 1503355881000000000,
+        "Changed": 1789285390138648398,
+        "Mode": 420,
+        "SHA256": "04a55387b26d6becff5b87b470b9b19c3fe41d25c0cd3c1e6c3d885a56572fdb"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/models/eng.traineddata",
+        "Device": 2049,
+        "Inode": 4777624,
+        "Bytes": 4113088,
+        "Modified": 1789882777184218605,
+        "Changed": 1789882777192218287,
+        "Mode": 384,
+        "SHA256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/models/chi_sim.traineddata",
+        "Device": 2049,
+        "Inode": 4777625,
+        "Bytes": 2469156,
+        "Modified": 1789882777196218127,
+        "Changed": 1789882777200217968,
+        "Mode": 384,
+        "SHA256": "a5fcb6f0db1e1d6d8522f39db4e848f05984669172e584e8d76b6b3141e1f730"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/models/chi_tra.traineddata",
+        "Device": 2049,
+        "Inode": 4777626,
+        "Bytes": 2366642,
+        "Modified": 1789882777204217810,
+        "Changed": 1789882777208217650,
+        "Mode": 384,
+        "SHA256": "529c5b5797d64b126065cd55f2bb4c7fd7b15790798091b1ff259941a829330b"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "Device": 2049,
+        "Inode": 4730743,
+        "Bytes": 126458664,
+        "Modified": 1789843498012109112,
+        "Changed": 1789843498012109112,
+        "Mode": 448,
+        "SHA256": "89af8424dd53e560b1933f87ba650d8bf57c83ca5a04600eefb31f416aabbae7"
+      },
+      {
+        "Path": "/opt/goby-test/inactive-dependencies-m5h/node_modules/playwright/index.js",
+        "Device": 2049,
+        "Inode": 2414987,
+        "Bytes": 648,
+        "Modified": 1788903113121427920,
+        "Changed": 1789025724474195967,
+        "Mode": 420,
+        "SHA256": "4e98f65f0a9d9bcab8cffc0c5cfdd87fd3f5b0be74fc494ff166a466b204cd44"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/sources/source-bd20b23/scripts/test-env/bitmap-subtitle-fixtures.py",
+        "Device": 2049,
+        "Inode": 4899950,
+        "Bytes": 22402,
+        "Modified": 1789893665000000000,
+        "Changed": 1789893749564539759,
+        "Mode": 420,
+        "SHA256": "c3bf51280a9a79f3aef08008523f248e66dbc47c7d3d38451a15019affe2acdd"
+      },
+      {
+        "Path": "/opt/goby-selected-compatibility-20260920-p2a/sources/source-bd20b23/scripts/test-env/selected-compatibility-phase2-browser.mjs",
+        "Device": 2049,
+        "Inode": 4900162,
+        "Bytes": 47862,
+        "Modified": 1789893665000000000,
+        "Changed": 1789893749572539429,
+        "Mode": 420,
+        "SHA256": "333debc7d23f48fcfb49b44c48a98d0dfc4a5578e27ccc9080b82c098c33c7e8"
+      }
+    ],
+    "font_upstream_commit": "523d033d6cb47f4a80c58a35753646f5c3608a78",
+    "font_license": "SIL-OFL-1.1",
+    "font_license_sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+    "signed_debian_release_verified": true,
+    "new_dependency_package_count": 13,
+    "existing_dependency_package_changes": {},
+    "needrestart_reported_no_services_to_restart": true
+  },
+  "mocked_administrator_browser": {
+    "explicitly_synthetic_ui_regression": true,
+    "actual_backend_acceptance": false,
+    "first_attempt_retained_result": "FAIL before tests at writable asset-directory admission",
+    "passing_receipt": {
+      "marker": "goby-selected-phase2-mocked-browser-v1",
+      "complete": true,
+      "scope": "mocked-browser-02",
+      "source_revision": "bef3c21",
+      "source_root": "/opt/goby-selected-compatibility-20260920-p2a/sources/source-bef3c21",
+      "dist_root": "/opt/goby-selected-compatibility-20260920-p2a/sources/source-bef3c21/web/admin/dist",
+      "suite": "e2e/media-processing.spec.ts",
+      "workers": 1,
+      "retries": 0,
+      "reporter": "json",
+      "timeout_seconds": 900,
+      "started_unix": 1789886221.6866827,
+      "exit_code": 0,
+      "server_closed": true,
+      "process_group_closed": true,
+      "dependency_link_removed": true,
+      "temporary_profiles_removed": true,
+      "base_url": "http://127.0.0.1:38599",
+      "command": [
+        "/opt/goby-selected-compatibility-20260920-p1a/runtime/node",
+        "/opt/goby-selected-compatibility-20260920-p1a/dependencies/node_modules/@playwright/test/cli.js",
+        "test",
+        "e2e/media-processing.spec.ts",
+        "--workers=1",
+        "--retries=0",
+        "--reporter=json",
+        "--output=/opt/goby-selected-compatibility-20260920-p2a/mocked-browser-02/artifacts"
+      ],
+      "pid": 3295698,
+      "stats": {
+        "expected": 12,
+        "unexpected": 0,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 18919.490999999998
+      },
+      "report_errors": 0,
+      "suite_passed": true,
+      "remaining_connections": 0,
+      "unhandled_api_requests": [],
+      "finished_unix": 1789886241.2044835
+    },
+    "assets_unchanged_from_initial_frontend_freeze": true
+  },
+  "native_browser": {
+    "run_id": "selected-phase2-bd20b23-browser06",
+    "source": "bd20b23",
+    "result": "PASS",
+    "complete": true,
+    "stages": [
+      {
+        "Phase": "authentication",
+        "State": "complete"
+      },
+      {
+        "Phase": "removal-ready",
+        "State": "complete"
+      },
+      {
+        "Phase": "removal-applied",
+        "State": "complete"
+      },
+      {
+        "Phase": "ocr-ready",
+        "State": "complete"
+      },
+      {
+        "Phase": "ocr-reviewed",
+        "State": "complete"
+      },
+      {
+        "Phase": "ocr-applied",
+        "State": "complete"
+      },
+      {
+        "Phase": "subtitle-selected",
+        "State": "complete"
+      },
+      {
+        "Phase": "subtitle-off",
+        "State": "complete"
+      },
+      {
+        "Phase": "subtitle-reselected",
+        "State": "complete"
+      },
+      {
+        "Phase": "subtitle-stopped",
+        "State": "complete"
+      },
+      {
+        "Phase": "cancel-ready",
+        "State": "complete"
+      },
+      {
+        "Phase": "cancelled",
+        "State": "complete"
+      },
+      {
+        "Phase": "artwork",
+        "State": "complete"
+      },
+      {
+        "Phase": "restart",
+        "State": "complete"
+      },
+      {
+        "Phase": "persisted",
+        "State": "complete"
+      },
+      {
+        "Phase": "cleanup",
+        "State": "complete"
+      }
+    ],
+    "independent_database_stage_count": 16,
+    "checks": {
+      "Authentication": true,
+      "RemovalPrepared": true,
+      "RemovalApplied": true,
+      "OCRRecognized": true,
+      "OCRReviewed": true,
+      "OCRApplied": true,
+      "SubtitleSelected": true,
+      "SubtitleOff": true,
+      "SubtitleReselected": true,
+      "SubtitleStopped": true,
+      "CancelPrepared": true,
+      "Cancelled": true,
+      "ArtworkObserved": true,
+      "RestartPersisted": true,
+      "HistoryPersisted": true,
+      "Cleanup": true
+    },
+    "page_errors": 0,
+    "page_error_details": [],
+    "foreign_requests": 0,
+    "business_response_mocks": false,
+    "csp_bypass": false,
+    "original_client_used": false,
+    "ordinary_product_consumer_ui_added": false,
+    "private_test_consumer_engine_version": "1.6.0-beta.2",
+    "private_test_consumer_engine_sha256": "04a55387b26d6becff5b87b470b9b19c3fe41d25c0cd3c1e6c3d885a56572fdb",
+    "authentication_status": 200,
+    "playback_info_status": 200,
+    "subtitle_observations": [
+      {
+        "phase": "subtitle-selected",
+        "media_time": 1.499027,
+        "presented_time": 1.5,
+        "selected_track": 0,
+        "active_cues": [
+          {
+            "Text": "Phase 2 reviewed subtitle",
+            "Start": 1.2504111111111111,
+            "End": 2.400411111111111
+          }
+        ],
+        "completed": true,
+        "seeked": true,
+        "play_resolved": true,
+        "stable_advancing_frames": 3,
+        "fatal_errors": [],
+        "ready_state": 4
+      },
+      {
+        "phase": "subtitle-off",
+        "media_time": 1.552557,
+        "presented_time": 1.541666,
+        "selected_track": -1,
+        "active_cues": [],
+        "completed": true,
+        "seeked": true,
+        "play_resolved": true,
+        "stable_advancing_frames": 3,
+        "fatal_errors": [],
+        "ready_state": 4
+      },
+      {
+        "phase": "subtitle-reselected",
+        "media_time": 1.553359,
+        "presented_time": 1.541666,
+        "selected_track": 0,
+        "active_cues": [
+          {
+            "Text": "Phase 2 reviewed subtitle",
+            "Start": 1.2504111111111111,
+            "End": 2.400411111111111
+          }
+        ],
+        "completed": true,
+        "seeked": true,
+        "play_resolved": true,
+        "stable_advancing_frames": 3,
+        "fatal_errors": [],
+        "ready_state": 4
+      }
+    ],
+    "independent_hls_observations": [
+      {
+        "Authorized": true,
+        "CachePresent": true,
+        "Complete": true,
+        "HlsId": "296509996a939052684a13c3bd7b614b",
+        "HlsSessions": 1,
+        "OutputBytes": 143890,
+        "Phase": "subtitle-selected",
+        "PlaybackReportsSent": false,
+        "ProducerIds": [
+          "69cfb9844e42680e80a3726afd924607"
+        ],
+        "ProducerStates": [
+          "completed"
+        ],
+        "ProgressiveReaders": 0,
+        "SubtitleContentSHA256": "a4fa24f2e01c7ecbdbe62dd3c2ff586483fb10fc1796233f4edd76f3e1ae4529"
+      },
+      {
+        "Authorized": true,
+        "CachePresent": true,
+        "Complete": true,
+        "HlsId": "296509996a939052684a13c3bd7b614b",
+        "HlsSessions": 1,
+        "OutputBytes": 143890,
+        "Phase": "subtitle-off",
+        "PlaybackReportsSent": false,
+        "ProducerIds": [
+          "69cfb9844e42680e80a3726afd924607"
+        ],
+        "ProducerStates": [
+          "completed"
+        ],
+        "ProgressiveReaders": 0,
+        "SubtitleContentSHA256": "a4fa24f2e01c7ecbdbe62dd3c2ff586483fb10fc1796233f4edd76f3e1ae4529"
+      },
+      {
+        "Authorized": true,
+        "CachePresent": true,
+        "Complete": true,
+        "HlsId": "296509996a939052684a13c3bd7b614b",
+        "HlsSessions": 1,
+        "OutputBytes": 143890,
+        "Phase": "subtitle-reselected",
+        "PlaybackReportsSent": false,
+        "ProducerIds": [
+          "69cfb9844e42680e80a3726afd924607"
+        ],
+        "ProducerStates": [
+          "completed"
+        ],
+        "ProgressiveReaders": 0,
+        "SubtitleContentSHA256": "a4fa24f2e01c7ecbdbe62dd3c2ff586483fb10fc1796233f4edd76f3e1ae4529"
+      },
+      {
+        "ActiveJobs": 0,
+        "ActiveViewerSessions": 0,
+        "CacheRetired": true,
+        "Complete": true,
+        "HlsId": "296509996a939052684a13c3bd7b614b",
+        "HlsSessions": 0,
+        "InvalidTerminalJobs": 0,
+        "Phase": "subtitle-stopped",
+        "PreservedJobRows": 1,
+        "PreservedPreparedPlays": 1,
+        "ProducerIds": [
+          "69cfb9844e42680e80a3726afd924607"
+        ],
+        "ProgressiveReaders": 0,
+        "ReaderClosureEvidence": "retired producer caches are removed only after processes and owned readers close",
+        "Runtime": {
+          "HLSSessions": 0,
+          "MediaPolicyLeases": 0,
+          "OriginalRequests": 0,
+          "StreamSlots": 0
+        },
+        "SessionContextsClosed": true
+      }
+    ],
+    "playback_reports_sent": false,
+    "playing_or_playcount_acceptance_claimed": false,
+    "retained_history": "One unstarted, uncounted Prepared playback row has revoked authentication; terminal encoding history is retained. These are not active resource leaks.",
+    "stop": {
+      "EncodingsStatus": 204,
+      "LogoutStatus": 204,
+      "MediaDetached": true,
+      "Paused": true
+    },
+    "published_owned_subtitle_http": {
+      "Bytes": 150,
+      "ContentSHA256": "a4fa24f2e01c7ecbdbe62dd3c2ff586483fb10fc1796233f4edd76f3e1ae4529",
+      "CueCount": 3,
+      "RunId": "selected-phase2-bd20b23-browser06",
+      "Status": 200,
+      "TokenInURL": false
+    },
+    "authorized_decoded_artwork_http": [
+      {
+        "Complete": true,
+        "ContentSHA256": "230f43764bcc54dc261099492ca0e01789b26b80be534b3d4c62ad34409f051f",
+        "Decoded": true,
+        "ETag": "\"230f43764bcc54dc261099492ca0e01789b26b80be534b3d4c62ad34409f051f\"",
+        "Height": 64,
+        "Observation": "independent authorized HTTP",
+        "Path": "/emby/Items/93ed78216de72bde329f488caeb23aa9/Images/Primary",
+        "SHA256": "230f43764bcc54dc261099492ca0e01789b26b80be534b3d4c62ad34409f051f",
+        "Source": "embedded",
+        "Status": 200,
+        "Width": 64
+      },
+      {
+        "Complete": true,
+        "ContentSHA256": "ce43a5278572dbaa2a1b22c09aaa53bee2edc1d6e774ccc1644dfceb13b8d989",
+        "Decoded": true,
+        "ETag": "\"ce43a5278572dbaa2a1b22c09aaa53bee2edc1d6e774ccc1644dfceb13b8d989\"",
+        "Height": 64,
+        "Observation": "independent authorized HTTP",
+        "Path": "/emby/Items/61db1044196beb211356250ea75187c7/Images/Primary",
+        "SHA256": "ce43a5278572dbaa2a1b22c09aaa53bee2edc1d6e774ccc1644dfceb13b8d989",
+        "Source": "embedded",
+        "Status": 200,
+        "Width": 64
+      },
+      {
+        "Complete": true,
+        "ContentSHA256": "0f99877b1fea934724ad312e72c28fccbc709d517f543e2b589a89aee4a5fd0b",
+        "Decoded": true,
+        "ETag": "\"df3ca27f7741127d6f426a71687f89d763081056b69f3c8a26b74c6d40c4b944\"",
+        "Height": 512,
+        "Observation": "independent authorized HTTP",
+        "Path": "/emby/Items/cb1160ca37a96eb9a6e9c9b69fb7b400/Images/Primary",
+        "SHA256": "0f99877b1fea934724ad312e72c28fccbc709d517f543e2b589a89aee4a5fd0b",
+        "Source": "generated",
+        "Status": 200,
+        "Width": 512
+      }
+    ],
+    "server_restarts": 1,
+    "persisted_state_and_files_verified": true,
+    "screenshots": [
+      {
+        "name": "removal-ready.png",
+        "bytes": 104781,
+        "sha256": "b9a3ee6ff1caa5843be0eba2702526e44d587ec667bfb3fa4bab0af166caf78d"
+      },
+      {
+        "name": "ocr-recognition-review.png",
+        "bytes": 90337,
+        "sha256": "23f8c80f2bf45ae6e19657d3677036c0f42c550b1dde0c0798f334ed13c29f36"
+      },
+      {
+        "name": "reviewed-subtitle-actually-presented.png",
+        "bytes": 12866,
+        "sha256": "372f12f6b3cee3abc2e3c5b1f81bc49e887078e51e60e27c7ddbcbf7c99a1188"
+      },
+      {
+        "name": "persisted-media-operation-history.png",
+        "bytes": 118634,
+        "sha256": "f6e94545ed1dd468f45921f2ad30e546dd3f3de9ff4a1392a9fc6820606dafcc"
+      }
+    ],
+    "screenshot_boundary": "Four retained PNGs show masked native layout and actual subtitle presentation; sensitive fields are masked, not unrestricted visual review.",
+    "cleanup": {
+      "active_sessions_before_fallback": 0,
+      "fallback_session_revocations": 0,
+      "browser_command": {
+        "ElapsedMilliseconds": 20953,
+        "ExitCode": 0,
+        "FailureCleanupSignals": 0,
+        "FinalClosureRequiresDedicatedWorkerCgroupEmpty": true,
+        "ObservedDescendantsClosed": true,
+        "ObservedProcessIdentities": 9,
+        "OutputFiles": [
+          "stdout.log",
+          "stderr.log"
+        ],
+        "PID": 3308358,
+        "ProcessGroup": 3308358,
+        "ProcessGroupClosed": true,
+        "Started": true
+      },
+      "executor_diagnostics": {
+        "ActiveCallsAfterRuntimeClose": 0,
+        "Calls": 6,
+        "PrivateErrorMessagesExcluded": true,
+        "WriteOrCloseFailures": 0
+      },
+      "embedded_assets_match_frozen_source": true,
+      "http_listener_closed": true,
+      "server_workers_closed": true,
+      "owned_sessions_retired": true,
+      "owned_media_root_removed": true,
+      "owned_schema_removed": true,
+      "private_context_removed": true,
+      "credentials_written_to_summary": false
+    }
+  },
+  "resource_closure": {
+    "complete": true,
+    "recorded_unix": 1789893995.1201959,
+    "source": "bd20b23",
+    "postgres_before": {
+      "MainPID": "3251664",
+      "Result": "success",
+      "ControlGroup": "/system.slice/goby-selected-p2-pg-20260920-a.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "InvocationID": "0c9d53e55c2d4f459df49ecca87d384f"
+    },
+    "postgres_after": {
+      "MainPID": "0",
+      "Result": "success",
+      "ControlGroup": "",
+      "LoadState": "not-found",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "InvocationID": ""
+    },
+    "workers": {
+      "goby-selected-p2-checks-20260920-a.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "065052968d704c7bb8e8f5291e2e1468"
+      },
+      "goby-selected-p2-checks-20260920-b.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "57e660e34ebe453b90d9c192cec49feb"
+      },
+      "goby-selected-p2-checks-20260920-c.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "2530822ab2e04f9e85a57e8f88e9cf09"
+      },
+      "goby-selected-p2-checks-20260920-d.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "dbfe2392ae31425cad194260075d7035"
+      },
+      "goby-selected-p2-checks-20260920-g.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "71cee2dd908649a19d51bfab8f27885c"
+      },
+      "goby-selected-p2-native-20260920-e.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "f1f37324fae34975a670d20c309dd183"
+      },
+      "goby-selected-p2-native-20260920-f.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "03593d52f59f48fd96be2308b82d28b0"
+      },
+      "goby-selected-p2-mocked-20260920-a.service": {
+        "MainPID": "0",
+        "Result": "exit-code",
+        "ControlGroup": "",
+        "LoadState": "loaded",
+        "ActiveState": "failed",
+        "SubState": "failed",
+        "InvocationID": "7eff5f5bf6194543970f29c80df248f8"
+      }
+    },
+    "original_client_service_unchanged": true,
+    "original_client_service": {
+      "MainPID": "366598",
+      "Result": "success",
+      "ControlGroup": "/system.slice/goby-core-av-original-client-01.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "InvocationID": "c883bdf04e2f4d7ea6526fcd858fc342"
+    },
+    "postgres_data_preserved": true,
+    "evidence_preserved": true,
+    "new_tests_executed": false
+  },
+  "private_receipt_index": [
+    {
+      "path": "verification-01.json",
+      "bytes": 6735,
+      "sha256": "ffa1b25acf7e0157bfc1b8a911f067a4b965e7b1c14a4a8db0154945afbc072f"
+    },
+    {
+      "path": "verification-repair-01.json",
+      "bytes": 3445,
+      "sha256": "18050db75afa4647dd1d5c1fa2fa5694b8ba4d83e03d0db24af5c8554ff21d65"
+    },
+    {
+      "path": "verification-final-01.json",
+      "bytes": 1005,
+      "sha256": "9b074b7a10f89ab622cb87bafc5adb5fd66c950f793e55d6f0d407b84f315677"
+    },
+    {
+      "path": "verification-final-02.json",
+      "bytes": 1732,
+      "sha256": "b19323a5c118cf1d23c3194dfbdd638169556980fb9408a77eb9ee1b0c3ce265"
+    },
+    {
+      "path": "verification-native-03.json",
+      "bytes": 712,
+      "sha256": "93b7c1e0f082077d68d55ecc3da1cea3f11f8dcc496e12d8d7d066d07942fb10"
+    },
+    {
+      "path": "verification-final-03.json",
+      "bytes": 785,
+      "sha256": "0d8d326e6bea28e94d74802019d683e9e8cc96e0aff456012b36a293a476d5a7"
+    },
+    {
+      "path": "verification-final-04.json",
+      "bytes": 1693,
+      "sha256": "55d371cc700f150517f6502a953e69a5d8949dfd651c7e948d19ebe2eb791917"
+    },
+    {
+      "path": "mocked-browser-02-receipt.json",
+      "bytes": 1361,
+      "sha256": "da1298bc301da262ef9c26a90eb2a142bd4ee817dd00bf7a3a3b5fbcc3a6b69b"
+    },
+    {
+      "path": "mocked-browser-02-report.json",
+      "bytes": 15289,
+      "sha256": "2ce210bd2c6b86f92a328acd031e31b5be60b413def1bd2ad646a6962130b5f3"
+    },
+    {
+      "path": "local-verification-summary-01.json",
+      "bytes": 4028,
+      "sha256": "371f1773f50a0411e3f13b64334ea66feecb23314c140b8176b6d33e9c352689"
+    },
+    {
+      "path": "compile-final-04.json",
+      "bytes": 1379,
+      "sha256": "4c40aa22725683b4751b798418cf01817d49bf04b6e724dee66beb373184d968"
+    },
+    {
+      "path": "closure-01.json",
+      "bytes": 3291,
+      "sha256": "df0d551916884f157650d824b9f15089dc4d05ba671b383e1492dc949f43bdf0"
+    },
+    {
+      "path": "ocr-dependency-preparation.json",
+      "bytes": 21768,
+      "sha256": "68934cb8a14b30cd892b231132b4db84955cfbcd7cb9346aab08d31140833fc7"
+    },
+    {
+      "path": "browser06/browser-result.json",
+      "bytes": 20071,
+      "sha256": "790f296d2a1f077d1daf618ffb7c0693a7e714c9a55188ee17de0311de8b6d98"
+    },
+    {
+      "path": "browser06/driver-result.json",
+      "bytes": 3474,
+      "sha256": "9ca32a14a266e04fbe302d8b601bee5cbfd1beee965d47d4bb2f38ed2603ce61"
+    },
+    {
+      "path": "browser06/execution-inventory.json",
+      "bytes": 4436,
+      "sha256": "7672a0e4a1dd57acf4d50f4ab635839d731a36414afe7c41cd71f065bba335a2"
+    },
+    {
+      "path": "browser06/published-removal-decode.json",
+      "bytes": 508,
+      "sha256": "d2e35606559039c8ac70ac1c013ac0a6df9986dfa556b1a052b4c1deaf4e517b"
+    },
+    {
+      "path": "browser06/retained-subtitle-http.json",
+      "bytes": 243,
+      "sha256": "cf07c090d6fc538b04fe87177919b81c6efd8ac78f3bcf32491eb604399c39ce"
+    },
+    {
+      "path": "browser06/published-subtitle-http.json",
+      "bytes": 211,
+      "sha256": "1498a90a29a1f444a10ac0565f997961c2bedc1c036fd8c6f1ee54c36b3e9ee0"
+    }
+  ]
+}
