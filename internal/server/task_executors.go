@@ -90,9 +90,13 @@ func (executor managementTaskExecutor) Execute(ctx context.Context, work tasks.W
 }
 
 func (s *Server) managementTaskExecutors() (*tasks.ExecutorRegistry, error) {
+	intro := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskIntroAnalysisKey}
+	previews := mediaAnalysisTaskExecutor{s.mediaAnalysis, library.TaskPreviewGenerationKey}
 	return tasks.NewExecutorRegistry(
 		tasks.ExecutorRegistration{Key: tasks.MetadataRefreshKey, Name: "Refresh online metadata", Description: "Refresh supported metadata from configured providers for each library.", Category: "Metadata", Executor: managementTaskExecutor{s, tasks.MetadataRefreshKey}},
 		tasks.ExecutorRegistration{Key: tasks.SubtitleDownloadKey, Name: "Download missing subtitles", Description: "Download configured subtitle languages for supported movies and episodes.", Category: "Subtitles", Executor: managementTaskExecutor{s, tasks.SubtitleDownloadKey}},
 		tasks.ExecutorRegistration{Key: tasks.CacheMaintainKey, Name: "Maintain provider cache", Description: "Remove expired provider cache entries and enforce the configured entry limit.", Category: "Maintenance", Global: true, Executor: managementTaskExecutor{s, tasks.CacheMaintainKey}},
+		tasks.ExecutorRegistration{Key: library.TaskIntroAnalysisKey, Name: "Analyze episode introductions", Description: "Match repeated audiovisual introductions in bounded episode cohorts.", Category: "Media analysis", Executor: intro, AnalysisAdmission: intro.admission},
+		tasks.ExecutorRegistration{Key: library.TaskPreviewGenerationKey, Name: "Generate seek previews", Description: "Generate bounded BIF and thumbnail previews for local video sources.", Category: "Media analysis", Executor: previews, AnalysisAdmission: previews.admission},
 	)
 }

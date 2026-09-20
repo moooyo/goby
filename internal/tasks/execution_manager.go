@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
@@ -14,6 +15,7 @@ type workerExecution struct {
 	cancel context.CancelFunc
 	done   chan struct{}
 	err    error
+	group  string
 }
 
 // Fencing forbids further database writes, but does not transfer ownership of
@@ -84,6 +86,22 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 	if shutdown || run.State == RunStopping {
 		return false, nil
 	}
+	group := ""
+	if isAnalysisTask(run.TaskKey) {
+		group = analysisConcurrencyGroup
+		for _, execution := range m.executions {
+			if execution.group == group {
+				return false, nil
+			}
+		}
+		next, err := m.store.nextAnalysisRun(ctx, m.lastAnalysisRunID)
+		if err != nil {
+			return false, err
+		}
+		if next != run.ID {
+			return false, nil
+		}
+	}
 	limit := 2
 	if m.options.MaxConcurrent != nil {
 		limit = m.options.MaxConcurrent()
@@ -103,15 +121,19 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 		return false, err
 	}
 	if _, err := m.store.claimExecution(ctx, run.ID, child.ID, token); err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, errAnalysisGroupBusy) {
 			return false, nil
 		}
 		return false, err
 	}
 	workCtx, cancel := context.WithCancel(systemevents.WithDerived(m.ctx))
-	execution := &workerExecution{runID: run.ID, token: token, cancel: cancel, done: make(chan struct{})}
+	execution := &workerExecution{runID: run.ID, token: token, cancel: cancel, done: make(chan struct{}), group: group}
 	m.executions[child.ID] = execution
+	if group != "" {
+		m.lastAnalysisRunID = run.ID
+	}
 	entry, registered := m.store.executors.lookup(run.TaskKey)
+	work := executionWork(workCtx, run, child, token)
 	go func() {
 		defer func() {
 			if recover() != nil {
@@ -124,7 +146,13 @@ func (m *Manager) reconcileExecution(ctx context.Context, run Run, child Child, 
 			execution.err = ErrUnavailable
 			return
 		}
-		execution.err = entry.Executor.Execute(workCtx, Work{RunID: run.ID, ChildID: child.ID, LibraryID: child.LibraryID, TaskKey: run.TaskKey}, func(progress Progress) error {
+		if isAnalysisTask(run.TaskKey) {
+			if err := m.store.owner.WithOwnedTx(workCtx, func(tx library.OwnedTx) error { return work.Fence(tx) }); err != nil {
+				execution.err = err
+				return
+			}
+		}
+		execution.err = entry.Executor.Execute(workCtx, work, func(progress Progress) error {
 			if err := workCtx.Err(); err != nil {
 				return err
 			}

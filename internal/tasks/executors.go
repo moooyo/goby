@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/moooyo/goby/internal/library"
 )
 
 const (
@@ -27,6 +29,10 @@ func CompatibilityKey(key string) string {
 		return "DownloadSubtitles"
 	case CacheMaintainKey:
 		return "GobyMaintainProviderCache"
+	case library.TaskIntroAnalysisKey:
+		return "GobyAnalyzeIntroductions"
+	case library.TaskPreviewGenerationKey:
+		return "GobyGenerateSeekPreviews"
 	default:
 		return ""
 	}
@@ -36,10 +42,52 @@ func CompatibilityKey(key string) string {
 // Executors must honor cancellation and must not start background work after
 // Execute returns. Progress contains absolute counters, not increments.
 type Work struct {
-	RunID     string
-	ChildID   string
-	LibraryID string
-	TaskKey   string
+	RunID                     string
+	ChildID                   string
+	LibraryID                 string
+	TaskKey                   string
+	AnalysisInput             *library.AnalysisSelection
+	AnalysisScopeKey          string
+	AnalysisConfigFingerprint string
+	fence                     func(library.OwnedTx, Work) error
+	publicationContexts       []context.Context
+}
+
+// Fence must precede business locks and be called again after all publication
+// writes/events as the final database operation. Its captured capability is
+// process-local; marshaling or reconstructing Work never transfers authority.
+func (work Work) Fence(tx library.OwnedTx) error {
+	if work.fence == nil || tx == nil {
+		return ErrUnavailable
+	}
+	if err := work.publicationContextError(); err != nil {
+		return err
+	}
+	if err := work.fence(tx, work); err != nil {
+		return err
+	}
+	return work.publicationContextError()
+}
+
+// WithContext adds a publication deadline/cancellation boundary. It never
+// replaces an earlier context or the original sealed manager authority. A
+// background context cannot reopen cancelled work; nil closes the capability.
+func (work Work) WithContext(ctx context.Context) Work {
+	work.AnalysisInput = cloneAnalysisSelection(work.AnalysisInput)
+	work.publicationContexts = append(append([]context.Context{}, work.publicationContexts...), ctx)
+	return work
+}
+
+func (work Work) publicationContextError() error {
+	for _, ctx := range work.publicationContexts {
+		if ctx == nil {
+			return context.Canceled
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type Progress struct {
@@ -54,12 +102,13 @@ type Executor interface {
 }
 
 type ExecutorRegistration struct {
-	Key         string
-	Name        string
-	Description string
-	Category    string
-	Global      bool
-	Executor    Executor
+	Key               string
+	Name              string
+	Description       string
+	Category          string
+	Global            bool
+	Executor          Executor
+	AnalysisAdmission func(library.OwnedTx, AnalysisAdmissionRequest) (AnalysisAdmissionBinding, error)
 }
 
 // ExecutorRegistry is frozen during construction. Registration is explicit;
@@ -74,6 +123,9 @@ func NewExecutorRegistry(entries ...ExecutorRegistration) (*ExecutorRegistry, er
 		if entry.Executor == nil || entry.Key == "" || len(entry.Key) > 128 || entry.Key == LibraryScanKey || entry.Key == LibraryRefreshMediaKey ||
 			strings.TrimSpace(entry.Name) == "" || len(entry.Name) > 256 || len(entry.Description) > 2048 || len(entry.Category) > 128 {
 			return nil, fmt.Errorf("%w: invalid executor registration", ErrInvalidInput)
+		}
+		if isAnalysisTask(entry.Key) && (entry.Global || entry.AnalysisAdmission == nil) || !isAnalysisTask(entry.Key) && entry.AnalysisAdmission != nil {
+			return nil, fmt.Errorf("%w: analysis registration requires a scoped admission binding", ErrInvalidInput)
 		}
 		for _, character := range entry.Key {
 			if !(character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '.' || character == '_') {

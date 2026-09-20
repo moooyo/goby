@@ -253,6 +253,7 @@ func (s *Server) playbackInfo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	s.resolvePlaybackAnalysisIntro(ctx, librarySubject(principal, principal.User.ID), &source)
 	dto := originalSourceDTO(source.Item)
 	token, _, _ := parseEmbyCredentials(r)
 	addSubtitleDeliveryCredentials(dto, source.Item.ID, token, formats)

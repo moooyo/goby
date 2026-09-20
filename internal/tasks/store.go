@@ -286,6 +286,7 @@ func normalizeDefinition(value *Definition) {
 }
 
 func normalizeRun(value *Run) {
+	value.AnalysisInput = cloneAnalysisSelection(value.AnalysisInput)
 	value.CreatedAt = value.CreatedAt.UTC()
 	utcPointer(&value.ScheduledFor)
 	utcPointer(&value.StartedAt)

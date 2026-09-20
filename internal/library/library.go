@@ -66,6 +66,7 @@ type Item struct {
 	CreatedAt                                                     time.Time
 	Media                                                         *media.Info
 	Intro                                                         *IntroInterval
+	AnalysisSourceRevision                                        string `json:"-"`
 	Metadata                                                      *metadata.Metadata
 	Entities                                                      ItemEntities
 	UserData                                                      *UserData

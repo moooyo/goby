@@ -226,9 +226,10 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 		}
 		return item, nil
 	}
-	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+` FROM items i
+	var analysisSourceRevision string
+	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`, CASE WHEN i.type='Episode' AND NOT i.is_folder THEN `+introSourceRevisionSQL+` ELSE '' END FROM items i
 		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i"),
-		id, access.all, access.folders))
+		id, access.all, access.folders), &analysisSourceRevision)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Item{}, ErrNotFound
 	}
@@ -236,6 +237,7 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 		return Item{}, fmt.Errorf("read library item: %w", err)
 	}
 	item.CanPlay = access.canPlay
+	item.AnalysisSourceRevision = analysisSourceRevision
 	items := []Item{item}
 	if err := attachThemeItemAttributes(ctx, tx, items, access); err != nil {
 		return Item{}, err

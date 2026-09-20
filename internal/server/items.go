@@ -359,6 +359,7 @@ func (s *Server) embyItem(w http.ResponseWriter, r *http.Request) {
 		s.libraryError(w, r, err)
 		return
 	}
+	s.resolveItemAnalysisIntro(r.Context(), subject, &item, "")
 	dto := s.itemDTOForRequest(r, item, queryValues(r.URL.Query()["Fields"]), true)
 	if item.Type == "CollectionFolder" {
 		lib, err := s.library.GetLibrary(r.Context(), item.LibraryID)

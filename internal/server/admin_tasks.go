@@ -319,6 +319,8 @@ func (s *Server) taskError(w http.ResponseWriter, r *http.Request, err error) {
 		apiError(w, r, http.StatusNotFound, "not_found", "The requested task resource was not found.")
 	case errors.Is(err, tasks.ErrRequestConflict):
 		apiError(w, r, http.StatusConflict, "request_conflict", "The request identifier belongs to a different task request.")
+	case errors.Is(err, tasks.ErrActiveRunConflict):
+		apiError(w, r, http.StatusConflict, "active_run_conflict", "An active analysis run has a different selection or configuration. Wait for it to finish or cancel it before retrying.")
 	case errors.Is(err, tasks.ErrRevisionConflict):
 		apiError(w, r, http.StatusConflict, "revision_conflict", "The task changed. Refresh it before trying again.")
 	case errors.Is(err, tasks.ErrDisabled):

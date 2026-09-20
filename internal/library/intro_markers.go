@@ -16,7 +16,7 @@ import (
 )
 
 // IntroInterval is a single source-bound interval in 100 ns media ticks.
-// Only explicit chapter boundaries or an administrator-supplied interval qualify.
+// A detected interval additionally requires current independent source evidence.
 type IntroInterval struct {
 	StartTicks int64  `json:"StartTicks"`
 	EndTicks   int64  `json:"EndTicks"`
@@ -182,6 +182,9 @@ func (s *Store) GetIntroFor(ctx context.Context, subject Subject, itemID, source
 	if err := file.Close(); err != nil {
 		return nil, err
 	}
+	if source.Item.Intro == nil && source.Item.Type == "Episode" {
+		return s.ResolveAnalysisIntroFor(ctx, subject, itemID, sourceID)
+	}
 	return source.Item.Intro, nil
 }
 
@@ -268,23 +271,8 @@ func (s *Store) UpdateItemIntro(ctx context.Context, actor identity.Principal, i
 	if record.detail.Revision != edit.Revision || record.detail.SourceRevision != edit.SourceRevision {
 		return IntroDetail{}, ErrIntroRevisionConflict
 	}
-	var start, end any
-	source, provenance := "", ""
-	if !reset {
-		interval := &IntroInterval{StartTicks: edit.StartTicks, EndTicks: edit.EndTicks, Provenance: edit.Provenance}
-		if !validIntroInterval(interval, record.info.DurationTicks) {
-			return IntroDetail{}, ErrInvalidInput
-		}
-		start, end, source, provenance = edit.StartTicks, edit.EndTicks, edit.SourceRevision, edit.Provenance
-	}
-	_, err = tx.Exec(ctx, `INSERT INTO item_intro_state
-		(item_id,revision,source_revision,start_ticks,end_ticks,provenance,last_edited_by,last_edited_at)
-		VALUES ($1,1,$2,$3,$4,$5,$6,clock_timestamp()) ON CONFLICT (item_id) DO UPDATE SET
-		revision=item_intro_state.revision+1,source_revision=EXCLUDED.source_revision,start_ticks=EXCLUDED.start_ticks,
-		end_ticks=EXCLUDED.end_ticks,provenance=EXCLUDED.provenance,last_edited_by=EXCLUDED.last_edited_by,
-		last_edited_at=EXCLUDED.last_edited_at`, itemID, source, start, end, provenance, actor.User.ID)
-	if err != nil {
-		return IntroDetail{}, fmt.Errorf("write intro state: %w", err)
+	if err := writeItemIntroEditCAS(ctx, tx, actor, record, edit, reset); err != nil {
+		return IntroDetail{}, err
 	}
 	if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogUpdated, ItemID: itemID, LibraryID: record.libraryID, ParentID: record.parentID}); err != nil {
 		return IntroDetail{}, err

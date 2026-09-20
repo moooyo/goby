@@ -3,8 +3,6 @@ package tasks
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -18,6 +16,7 @@ import (
 // Start admits a durable built-in library task or returns the run already
 // associated with this request. A coalesced request receives its own receipt.
 func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (Admission, error) {
+	request.AnalysisInput = cloneAnalysisSelection(request.AnalysisInput)
 	if err := validateRequestID(request.RequestID); err != nil {
 		return Admission{}, err
 	}
@@ -45,10 +44,11 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 		if err := s.checkTaskExecutor(definition.Key, actor); err != nil {
 			return err
 		}
-		// Preserve the original ordinary-scan JSON field order and values. New
-		// modes bind the fingerprint to the locked definition's actual key.
-		encoded, _ := json.Marshal(struct{ TaskID, Executor, Source string }{request.TaskID, definition.Key, source})
-		fingerprint := sha256.Sum256(encoded)
+		input, err := normalizedTaskAnalysis(definition.Key, request.AnalysisInput)
+		if err != nil {
+			return err
+		}
+		fingerprint := taskRequestFingerprint(request, definition.Key, source, input)
 		if request.RequestID != "" {
 			var priorID string
 			var priorFingerprint []byte
@@ -73,8 +73,12 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 		if !definition.Enabled {
 			return ErrDisabled
 		}
+		binding, selectedLibraries, err := s.prepareAnalysisAdmission(tx, definition.Key, source, input, &actor)
+		if err != nil {
+			return err
+		}
 		var activeID string
-		err := tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
+		err = tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
             AND state IN ('pending','running','stopping') FOR UPDATE`, definition.ID).Scan(&activeID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("read active task run: %w", err)
@@ -86,6 +90,9 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 			run, err := readRun(tx, activeID, false)
 			if err != nil {
 				return err
+			}
+			if isAnalysisTask(definition.Key) && (!sameAnalysisInput(run.AnalysisInput, input) || run.AnalysisConfigFingerprint != binding.ConfigurationFingerprint) {
+				return ErrActiveRunConflict
 			}
 			result.Run = run
 		} else {
@@ -100,16 +107,18 @@ func (s *Store) Start(ctx context.Context, actor Actor, request StartRequest) (A
 				requestID, initialFingerprint = request.RequestID, fingerprint[:]
 			}
 			_, err := tx.Exec(`INSERT INTO task_runs (id,task_id,state,source,request_id,request_fingerprint,
-                actor_user_id,actor_session_id,actor_kind,task_key,task_emby_key,task_name)
-                VALUES ($1,$2,'pending',$3,$4,$5,$6,$7,$8,$9,$10,$11)`, id, definition.ID, source,
+                actor_user_id,actor_session_id,actor_kind,task_key,task_emby_key,task_name,
+				analysis_input,analysis_config_fingerprint,actor_application_key_id,actor_client_session_id,actor_peer_ip)
+                VALUES ($1,$2,'pending',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`, id, definition.ID, source,
 				requestID, initialFingerprint, actor.Principal.User.ID, actor.Principal.SessionID,
-				actor.Principal.Kind, definition.Key, definition.EmbyKey, definition.Name)
+				actor.Principal.Kind, definition.Key, definition.EmbyKey, definition.Name,
+				analysisDatabaseInput(input), binding.ConfigurationFingerprint, actor.Principal.ApplicationKeyID, actor.Principal.ClientSessionID, actor.Principal.PeerIP)
 			if err != nil {
 				return fmt.Errorf("admit task run: %w", err)
 			}
 			// A per-run random namespace and stable library IDs give every
 			// snapshot child an independent deterministic 32-hex identity.
-			childCount, err := s.snapshotChildren(tx, id, definition.Key)
+			childCount, err := s.bindAnalysisChildren(tx, id, definition.Key, input, binding, selectedLibraries)
 			if err != nil {
 				return fmt.Errorf("snapshot task libraries: %w", err)
 			}

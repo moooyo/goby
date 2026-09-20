@@ -58,6 +58,7 @@ type Server struct {
 	diagnostics          *diagnostics.Store
 	mediaDiagnostics     *mediaDiagnosticRuntime
 	mediaOperations      *mediaOperationsRuntime
+	mediaAnalysis        *mediaAnalysisRuntime
 	notificationStore    *notifications.Store
 	notificationRuntime  *notifications.Runtime
 	notificationOptions  notifications.RuntimeOptions
@@ -116,6 +117,11 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app.mediaOperations, err = newMediaOperationsRuntime(ctx, app)
+	if err != nil {
+		_ = app.Close(context.Background())
+		return nil, err
+	}
+	app.mediaAnalysis, err = newMediaAnalysisRuntime(ctx, app)
 	if err != nil {
 		_ = app.Close(context.Background())
 		return nil, err
@@ -208,6 +214,7 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 
 func (s *Server) Close(ctx context.Context) error {
 	s.notificationRuntime.BeginClose()
+	s.mediaAnalysis.BeginClose()
 	if s.mediaOperations != nil {
 		s.mediaOperations.BeginClose()
 	}
@@ -239,6 +246,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminTaskRoutes(mux)
 	s.registerAdminMediaDiagnosticRoutes(mux)
 	s.registerAdminMediaOperationRoutes(mux)
+	s.registerAdminMediaAnalysisRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
 	s.registerAdminBackupRoutes(mux)
 	s.registerConfigurationRoutes(mux)
@@ -250,6 +258,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerApplicationKeyRoutes(mux)
 	s.registerAdminMetadataRoutes(mux)
 	s.registerIntroMarkerRoutes(mux)
+	s.registerAnalysisPreviewRoutes(mux, s.mediaAnalysis)
 	s.registerLibraryRoutes(mux)
 	s.registerSelectedManagementRoutes(mux)
 	s.registerEntityRoutes(mux)

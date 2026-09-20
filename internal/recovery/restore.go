@@ -32,6 +32,10 @@ type RestoredDatabase struct {
 	InterruptedScans                  int64
 	InterruptedTasks                  int64
 	NormalizedMediaOperations         int64
+	AnalysisPublicationEpoch          int64
+	DisabledAnalysisDetections        int64
+	RemovedAnalysisPreviews           int64
+	RemovedAnalysisFeatures           int64
 	NormalizedHostSettings            bool
 	DisabledNotificationTransports    int64
 	DisabledNotificationRegistrations int64
@@ -173,6 +177,14 @@ func normalizeRestoredIdentityWithHost(ctx context.Context, tx pgx.Tx, master []
 	if err != nil {
 		return RestoredDatabase{}, ErrUnavailable
 	}
+	analysis, err := normalizeRestoredAnalysis(ctx, tx)
+	if err != nil {
+		return RestoredDatabase{}, err
+	}
+	result.AnalysisPublicationEpoch = analysis.PublicationEpoch
+	result.DisabledAnalysisDetections = analysis.DisabledDetections
+	result.RemovedAnalysisPreviews = analysis.RemovedPreviews
+	result.RemovedAnalysisFeatures = analysis.RemovedFeatures
 	if err := tx.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM scan_jobs WHERE status IN ('Queued','Running')),
 		(SELECT count(*) FROM task_runs WHERE state IN ('pending','running','stopping'))`).Scan(&result.InterruptedScans, &result.InterruptedTasks); err != nil {

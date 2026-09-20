@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -26,8 +27,8 @@ type scheduleDueRange struct {
 }
 
 // ScheduleClock lets a coordinator capture one database startup instant and
-// reuse it for every initialization retry. Wall-clock deadlines remain audit
-// data; active run limits must use the coordinator's monotonic elapsed time.
+// reuse it for every initialization retry. The coordinator retains monotonic
+// elapsed limits; publication also checks the persisted database deadline.
 func (s *Store) ScheduleClock(ctx context.Context) (time.Time, error) {
 	var now time.Time
 	if err := s.pool.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&now); err != nil {
@@ -50,7 +51,7 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 	}
 	// Both fixed library executors are runnable. Each active rule set is bounded
 	// by the schema's unique positions, independently of retained history.
-	rows, err := s.pool.Query(ctx, `SELECT t.id, d.key FROM task_triggers t
+	rows, err := s.pool.Query(ctx, `SELECT t.id, d.key, t.task_id, t.kind FROM task_triggers t
         JOIN task_definitions d ON d.id = t.task_id
         WHERE d.key = ANY($1::text[]) AND d.enabled AND t.retired_at IS NULL
             AND t.calculation_error = '' AND t.created_at <= $2
@@ -58,11 +59,11 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 	if err != nil {
 		return fmt.Errorf("list startup task rules: %w", err)
 	}
-	type startupRule struct{ id, key string }
+	type startupRule struct{ id, key, taskID, kind string }
 	rules := make([]startupRule, 0, 2*MaxTriggers)
 	for rows.Next() {
 		var rule startupRule
-		if err := rows.Scan(&rule.id, &rule.key); err != nil {
+		if err := rows.Scan(&rule.id, &rule.key, &rule.taskID, &rule.kind); err != nil {
 			rows.Close()
 			return fmt.Errorf("read startup task rule: %w", err)
 		}
@@ -73,12 +74,27 @@ func (s *Store) InitializeSchedules(ctx context.Context, startupAt time.Time) er
 	if err != nil {
 		return fmt.Errorf("read startup task rules: %w", err)
 	}
+	deferred := []AnalysisDeferral{}
+	blockedTasks := make(map[string]bool, 2)
 	for _, rule := range rules {
-		if err := s.initializeSchedule(ctx, rule.id, rule.key, startupAt); err != nil {
+		if rule.kind == string(ScheduleStartup) && blockedTasks[rule.taskID] {
+			deferred, err = addAnalysisDeferral(deferred, AnalysisDeferral{TaskID: rule.taskID, TaskKey: rule.key, TriggerID: rule.id, Source: "startup"})
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		err := s.initializeSchedule(ctx, rule.id, rule.key, startupAt)
+		var blocked *analysisAdmissionDeferred
+		if errors.As(err, &blocked) {
+			blockedTasks[blocked.TaskID] = true
+			deferred, err = addAnalysisDeferral(deferred, blocked.AnalysisDeferral)
+		}
+		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return analysisDeferralResult(deferred)
 }
 
 func (s *Store) initializeSchedule(ctx context.Context, id, key string, startupAt time.Time) error {
@@ -144,8 +160,22 @@ func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
 		return false, &ValidationError{Fields: map[string]string{"Limit": "dispatch limit must be between 1 and 200"}}
 	}
 	processed := false
-	for range limit {
-		changed, err := s.dispatchOneSchedule(ctx)
+	deferred := []AnalysisDeferral{}
+	excluded := []string{}
+	for handled := 0; handled < limit; {
+		changed, err := s.dispatchOneSchedule(ctx, excluded...)
+		var blocked *analysisAdmissionDeferred
+		if errors.As(err, &blocked) {
+			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= 2 {
+				return processed, ErrInconsistent
+			}
+			excluded = append(excluded, blocked.TaskID)
+			deferred, err = addAnalysisDeferral(deferred, blocked.AnalysisDeferral)
+			if err != nil {
+				return processed, err
+			}
+			continue
+		}
 		if err != nil {
 			return processed, err
 		}
@@ -153,11 +183,12 @@ func (s *Store) DispatchDue(ctx context.Context, limit int) (bool, error) {
 			break
 		}
 		processed = true
+		handled++
 	}
-	return processed, nil
+	return processed, analysisDeferralResult(deferred)
 }
 
-func (s *Store) dispatchOneSchedule(ctx context.Context) (bool, error) {
+func (s *Store) dispatchOneSchedule(ctx context.Context, excluded ...string) (bool, error) {
 	processed := false
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		// Lock every supported definition in the same fixed order as Reconcile,
@@ -172,6 +203,9 @@ func (s *Store) dispatchOneSchedule(ctx context.Context) (bool, error) {
 			}
 			if err != nil {
 				return err
+			}
+			if slices.Contains(excluded, definition.ID) {
+				continue
 			}
 			definitions[definition.ID] = definition
 			ids = append(ids, definition.ID)
@@ -369,28 +403,52 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 		// already completed (including an empty-library run).
 		return nil
 	}
+	input, err := normalizedTaskAnalysis(definition.Key, nil)
+	if err != nil {
+		return err
+	}
+	binding, selectedLibraries, err := s.prepareAnalysisAdmission(tx, definition.Key, source, input, nil)
+	if err != nil {
+		return err
+	}
 	var runID string
-	err := tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
+	err = tx.QueryRow(`SELECT id FROM task_runs WHERE task_id = $1
         AND state IN ('pending','running','stopping') FOR UPDATE`, definition.ID).Scan(&runID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("read overlapping scheduled run: %w", err)
 	}
 	disposition := "overlap"
+	if runID != "" && isAnalysisTask(definition.Key) {
+		active, err := readRun(tx, runID, false)
+		if err != nil {
+			return err
+		}
+		if !sameAnalysisInput(active.AnalysisInput, input) || active.AnalysisConfigFingerprint != binding.ConfigurationFingerprint {
+			// Retain this due occurrence for a later bounded scheduler retry;
+			// never claim that a differently scoped run consumed it.
+			return &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
+		}
+	}
 	if runID == "" {
 		disposition = "admitted"
 		runID, err = randomID()
 		if err != nil {
 			return err
 		}
+		actorKind := ""
+		if isAnalysisTask(definition.Key) {
+			actorKind = "system"
+		}
 		if _, err := tx.Exec(`INSERT INTO task_runs
             (id,task_id,state,source,task_key,task_emby_key,task_name,
+			 actor_kind,analysis_input,analysis_config_fingerprint,
              trigger_id,trigger_revision,scheduled_for,max_runtime_ticks)
-            VALUES ($1,$2,'pending',$3,$4,$5,$6,$7,$8,$9,$10)`, runID, definition.ID,
+            VALUES ($1,$2,'pending',$3,$4,$5,$6,$11,$12,$13,$7,$8,$9,$10)`, runID, definition.ID,
 			source, definition.Key, definition.EmbyKey, definition.Name, trigger.ID,
-			trigger.ScheduleRevision, due, trigger.MaxRuntimeTicks); err != nil {
+			trigger.ScheduleRevision, due, trigger.MaxRuntimeTicks, actorKind, analysisDatabaseInput(input), binding.ConfigurationFingerprint); err != nil {
 			return fmt.Errorf("admit scheduled task run: %w", err)
 		}
-		childCount, err := s.snapshotChildren(tx, runID, definition.Key)
+		childCount, err := s.bindAnalysisChildren(tx, runID, definition.Key, input, binding, selectedLibraries)
 		if err != nil {
 			return fmt.Errorf("snapshot scheduled task libraries: %w", err)
 		}

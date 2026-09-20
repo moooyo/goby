@@ -60,6 +60,9 @@ func (s *Server) closeSockets(ctx context.Context) error {
 		if err := s.taskManager.Close(ctx); err != nil {
 			return err
 		}
+		if err := s.mediaAnalysis.Close(ctx); err != nil {
+			return err
+		}
 		if err := s.waitActivityRetention(ctx); err != nil {
 			return err
 		}
@@ -95,7 +98,9 @@ func (s *Server) closeSockets(ctx context.Context) error {
 				operationErr = s.mediaOperations.Close(context.Background())
 			}
 			notificationErr := s.notificationRuntime.Close(context.Background())
-			runtime.shutdownErr = errors.Join(diagnosticErr, operationErr, notificationErr, <-hlsDone, <-dynamicDone, s.taskManager.Close(context.Background()), s.library.Close(context.Background()))
+			taskErr := s.taskManager.Close(context.Background())
+			analysisErr := s.mediaAnalysis.Close(context.Background())
+			runtime.shutdownErr = errors.Join(diagnosticErr, operationErr, notificationErr, <-hlsDone, <-dynamicDone, taskErr, analysisErr, s.library.Close(context.Background()))
 			close(runtime.done)
 		}()
 	})

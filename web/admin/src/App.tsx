@@ -40,8 +40,9 @@ const ProvidersPage = lazy(() => import('./ProvidersPage').then((module) => ({ d
 const CollectionsPage = lazy(() => import('./CollectionsPage').then((module) => ({ default: module.CollectionsPage })));
 const CatalogArtworkPage = lazy(() => import('./CatalogArtworkPage').then((module) => ({ default: module.CatalogArtworkPage })));
 const NotificationsPage = lazy(() => import('./NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
+const MediaAnalysisPage = lazy(() => import('./MediaAnalysisPage').then((module) => ({ default: module.MediaAnalysisPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork' | 'notifications';
+type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork' | 'notifications' | 'media-analysis';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
@@ -50,7 +51,7 @@ type AppState =
   | { mode: 'ready'; user: User };
 
 const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections', artwork: 'Catalog artwork', notifications: 'Notifications' };
+const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections', artwork: 'Catalog artwork', notifications: 'Notifications', 'media-analysis': 'Media analysis' };
 
 function metadataLibraryFromLocation(): string | undefined {
   const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
@@ -78,6 +79,7 @@ function pageFromLocation(): Page {
   if (path.endsWith('/collections')) return 'collections';
   if (path.endsWith('/artwork')) return 'artwork';
   if (path.endsWith('/notifications')) return 'notifications';
+  if (path.endsWith('/media-analysis')) return 'media-analysis';
   return 'overview';
 }
 
@@ -100,6 +102,7 @@ function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, eve
           { id: 'artwork' as const, label: 'Catalog artwork', icon: ImageOutlined },
           { id: 'collections' as const, label: 'Playlists & collections', icon: QueueMusicRounded },
           { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
+          { id: 'media-analysis' as const, label: 'Media analysis', icon: VideoLibraryOutlined },
           { id: 'providers' as const, label: 'Online providers', icon: CloudOutlined },
           { id: 'sessions' as const, label: 'Sessions', icon: SensorsRounded },
           { id: 'devices' as const, label: 'Devices', icon: DevicesOutlined },
@@ -217,6 +220,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
+            {page === 'media-analysis' && <MediaAnalysisPage key={user.Id} currentUserId={user.Id} onTasks={() => navigate('tasks')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}

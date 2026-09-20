@@ -50,24 +50,27 @@ type Manager struct {
 	loopDone chan struct{}
 	done     chan struct{}
 
-	mu            sync.Mutex
-	closing       bool
-	scheduleReady bool
-	closeErr      error
-	closeOnce     sync.Once
-	operations    sync.WaitGroup
+	mu                sync.Mutex
+	closing           bool
+	scheduleReady     bool
+	analysisDeferrals []AnalysisDeferral
+	closeErr          error
+	closeOnce         sync.Once
+	operations        sync.WaitGroup
 
 	// Only the coordinator loop, then its shutdown successor, uses cursors.
-	runOffset            int
-	childOffsets         map[string]int
-	lastErrorLog         time.Time
-	startupAt            time.Time
-	schedulesInitialized bool
-	nextScheduleAttempt  time.Time
-	nextDue              *time.Time
-	lastScheduleErrorLog time.Time
-	runtimeDeadlines     map[string]time.Time
-	executions           map[string]*workerExecution
+	runOffset               int
+	childOffsets            map[string]int
+	lastErrorLog            time.Time
+	startupAt               time.Time
+	schedulesInitialized    bool
+	nextScheduleAttempt     time.Time
+	nextDue                 *time.Time
+	lastScheduleErrorLog    time.Time
+	runtimeDeadlines        map[string]time.Time
+	executions              map[string]*workerExecution
+	lastAnalysisRunID       string
+	pendingAnalysisStartups []AnalysisDeferral
 }
 
 func NewManager(store *Store, scans ScanExecutor, options ManagerOptions) (*Manager, error) {
@@ -320,6 +323,7 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 	if time.Now().Before(m.nextScheduleAttempt) {
 		return nil
 	}
+	deferred := []AnalysisDeferral{}
 	defer func() {
 		m.nextScheduleAttempt = time.Now().Add(minimumScheduleRetry)
 		if err != nil {
@@ -327,6 +331,9 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 		}
 		m.mu.Lock()
 		m.scheduleReady = err == nil && m.schedulesInitialized
+		if err == nil {
+			m.analysisDeferrals = append([]AnalysisDeferral{}, deferred...)
+		}
 		m.mu.Unlock()
 		if err != nil && m.ctx.Err() == nil && time.Since(m.lastScheduleErrorLog) >= 5*time.Second {
 			m.lastScheduleErrorLog = time.Now()
@@ -342,31 +349,66 @@ func (m *Manager) schedule(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	if !m.schedulesInitialized {
+	initializedThisPass := !m.schedulesInitialized
+	if initializedThisPass {
 		if !m.enter() {
 			return context.Canceled
 		}
+		var pending []AnalysisDeferral
 		err = m.store.InitializeSystemEvents(ctx, m.startupAt)
 		if err == nil {
-			err = m.store.InitializeSchedules(ctx, m.startupAt)
+			pending, err = splitAnalysisDeferrals(m.store.InitializeSchedules(ctx, m.startupAt))
 		}
 		m.operations.Done()
 		if err != nil {
 			return err
 		}
+		m.pendingAnalysisStartups = pending
 		m.schedulesInitialized = true
+	}
+	collectDeferrals := func(cause error) error {
+		values, err := splitAnalysisDeferrals(cause)
+		if err != nil {
+			return err
+		}
+		for _, value := range values {
+			deferred, err = addAnalysisDeferral(deferred, value)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	// Initialization itself can admit startup runs. A second admission fence
 	// prevents a concurrent BeginClose from allowing subsequent due dispatch.
 	if !m.enter() {
 		return context.Canceled
 	}
-	_, err = m.store.DispatchDue(ctx, managerScheduleBatch)
+	_, dueErr := m.store.DispatchDue(ctx, managerScheduleBatch)
+	err = collectDeferrals(dueErr)
 	if err == nil {
-		_, err = m.store.DispatchSystemEvents(ctx, managerScheduleBatch)
+		_, eventErr := m.store.DispatchSystemEvents(ctx, managerScheduleBatch)
+		err = collectDeferrals(eventErr)
 	}
 	m.operations.Done()
 	if err != nil {
+		return err
+	}
+	// A backlog of deferred startup rules must not consume the next pass's
+	// budget before ordinary timed and event providers receive their turn.
+	if !initializedThisPass && len(m.pendingAnalysisStartups) > 0 {
+		if !m.enter() {
+			return context.Canceled
+		}
+		var pending []AnalysisDeferral
+		pending, err = splitAnalysisDeferrals(m.store.retryAnalysisStartups(ctx, m.startupAt, m.pendingAnalysisStartups))
+		m.operations.Done()
+		if err != nil {
+			return err
+		}
+		m.pendingAnalysisStartups = pending
+	}
+	if err = collectDeferrals(analysisDeferralResult(m.pendingAnalysisStartups)); err != nil {
 		return err
 	}
 	m.nextDue, err = m.store.NextDue(ctx)

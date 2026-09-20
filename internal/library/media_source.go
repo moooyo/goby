@@ -160,15 +160,17 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess, itemID, sourceID string) (indexedMediaSource, error) {
 	var snapshot indexedMediaSource
 	var modified *time.Time
+	var analysisSourceRevision string
 	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`,
 		i.relative_path, i.file_identity, i.file_size, i.modified_at,
-		r.id, r.library_id, r.path, r.allowed_path, r.relative_path
+		r.id, r.library_id, r.path, r.allowed_path, r.relative_path,
+		CASE WHEN i.type='Episode' THEN `+introSourceRevisionSQL+` ELSE '' END
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
 		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i"), itemID, access.all, access.folders),
 		&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
-		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath)
+		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath, &analysisSourceRevision)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return indexedMediaSource{}, ErrNotFound
 	}
@@ -189,6 +191,7 @@ func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess
 		return indexedMediaSource{}, fmt.Errorf("%w: media source has no valid indexed snapshot", ErrUnavailable)
 	}
 	item.CanPlay = access.canPlay
+	item.AnalysisSourceRevision = analysisSourceRevision
 	items := []Item{item}
 	if err := attachSubtitles(ctx, tx, items); err != nil {
 		return indexedMediaSource{}, err

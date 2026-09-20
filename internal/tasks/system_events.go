@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
@@ -30,8 +31,22 @@ func (s *Store) DispatchSystemEvents(ctx context.Context, limit int) (bool, erro
 		return false, ErrInvalidInput
 	}
 	processed := false
-	for range limit {
-		changed, err := s.dispatchSystemEvent(ctx)
+	deferred := []AnalysisDeferral{}
+	excluded := []string{}
+	for handled := 0; handled < limit; {
+		changed, err := s.dispatchSystemEvent(ctx, excluded...)
+		var blocked *analysisAdmissionDeferred
+		if errors.As(err, &blocked) {
+			if slices.Contains(excluded, blocked.TaskID) || len(excluded) >= 2 {
+				return processed, ErrInconsistent
+			}
+			excluded = append(excluded, blocked.TaskID)
+			deferred, err = addAnalysisDeferral(deferred, blocked.AnalysisDeferral)
+			if err != nil {
+				return processed, err
+			}
+			continue
+		}
 		if err != nil {
 			return processed, err
 		}
@@ -39,11 +54,12 @@ func (s *Store) DispatchSystemEvents(ctx context.Context, limit int) (bool, erro
 			break
 		}
 		processed = true
+		handled++
 	}
-	return processed, nil
+	return processed, analysisDeferralResult(deferred)
 }
 
-func (s *Store) dispatchSystemEvent(ctx context.Context) (bool, error) {
+func (s *Store) dispatchSystemEvent(ctx context.Context, excluded ...string) (bool, error) {
 	processed := false
 	err := s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		definitions := make(map[string]Definition)
@@ -55,6 +71,9 @@ func (s *Store) dispatchSystemEvent(ctx context.Context) (bool, error) {
 			}
 			if err != nil {
 				return err
+			}
+			if slices.Contains(excluded, definition.ID) {
+				continue
 			}
 			definitions[definition.ID] = definition
 			ids = append(ids, definition.ID)

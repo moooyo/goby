@@ -5,8 +5,25 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/moooyo/goby/internal/library"
 )
+
+var errAnalysisGroupBusy = errors.New("analysis concurrency group is occupied")
+
+func (s *Store) nextAnalysisRun(ctx context.Context, previousRun string) (string, error) {
+	var id string
+	err := s.pool.QueryRow(ctx, `SELECT r.id FROM task_runs r
+		WHERE r.task_key=ANY($1::text[]) AND r.state IN ('pending','running')
+		AND EXISTS(SELECT 1 FROM task_run_children c WHERE c.run_id=r.id AND c.state='waiting')
+		ORDER BY (r.id=$2),r.created_at,r.id LIMIT 1`,
+		[]string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey}, previousRun).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	return id, err
+}
 
 func (s *Store) snapshotChildren(tx library.OwnedTx, runID, key string) (int64, error) {
 	entry, generic := s.executors.lookup(key)
@@ -50,6 +67,17 @@ func (s *Store) claimExecution(ctx context.Context, runID, childID, token string
 		}
 		if _, exists := s.executors.lookup(run.TaskKey); !exists {
 			return ErrUnavailable
+		}
+		if isAnalysisTask(run.TaskKey) {
+			var busy bool
+			if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_run_children c JOIN task_runs r ON r.id=c.run_id
+				WHERE r.task_key=ANY($1::text[]) AND c.state IN ('queued','running') AND c.executor_token IS NOT NULL)`,
+				[]string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey}).Scan(&busy); err != nil {
+				return err
+			}
+			if busy {
+				return errAnalysisGroupBusy
+			}
 		}
 		if err := decodeRow(tx.QueryRow(`SELECT to_jsonb(c) FROM task_run_children c
             WHERE id=$1 AND run_id=$2 FOR UPDATE`, childID, runID), &child); err != nil {

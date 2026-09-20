@@ -162,16 +162,20 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		if len(parts) == 2 {
 			literal(1, "Counts", "Prefixes")
 		}
-		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "Refresh", "File", "Download", "Similar", "InstantMix", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
+		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "ThumbnailSet", "Refresh", "File", "Download", "Similar", "InstantMix", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
 		literal(3, "Subtitles", "Attachments")
 		literal(4, "Delete")
 		literal(5, "Stream")
 		if len(parts) > 2 && parts[2] == "Images" {
+			literal(3, "Thumbnail")
 			literal(4, "Delete")
 			literal(5, "Delete", "Index")
 		}
 	case "Videos", "Audio":
 		literal(1, "ActiveEncodings")
+		if resource == "Videos" {
+			literal(2, "index.bif")
+		}
 		literal(2, "stream", "AdditionalParts", "master.m3u8", "main.m3u8", "live.m3u8", "subtitles.m3u8", "live_subtitles.m3u8", "hls1", "hls2", "Subtitles")
 		if len(parts) > 1 && parts[1] == "ActiveEncodings" {
 			literal(2, "Delete")

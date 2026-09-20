@@ -22,14 +22,15 @@ const (
 )
 
 var (
-	ErrNotFound         = errors.New("task resource not found")
-	ErrNotRunning       = errors.New("task is not running")
-	ErrInvalidInput     = errors.New("invalid task input")
-	ErrUnavailable      = errors.New("task service unavailable")
-	ErrDisabled         = errors.New("task is disabled")
-	ErrRequestConflict  = errors.New("task request ID was already used with different input")
-	ErrRevisionConflict = errors.New("task revision conflict")
-	ErrInconsistent     = errors.New("task execution history is inconsistent")
+	ErrNotFound          = errors.New("task resource not found")
+	ErrNotRunning        = errors.New("task is not running")
+	ErrInvalidInput      = errors.New("invalid task input")
+	ErrUnavailable       = errors.New("task service unavailable")
+	ErrDisabled          = errors.New("task is disabled")
+	ErrRequestConflict   = errors.New("task request ID was already used with different input")
+	ErrActiveRunConflict = errors.New("an active analysis run has different selection or configuration")
+	ErrRevisionConflict  = errors.New("task revision conflict")
+	ErrInconsistent      = errors.New("task execution history is inconsistent")
 )
 
 type RunState string
@@ -112,17 +113,20 @@ type Trigger struct {
 }
 
 type Run struct {
-	ID             string   `json:"id"`
-	TaskID         string   `json:"task_id"`
-	State          RunState `json:"state"`
-	Source         string   `json:"source"`
-	RequestID      *string  `json:"request_id"`
-	ActorUserID    string   `json:"actor_user_id"`
-	ActorSessionID string   `json:"actor_session_id"`
-	ActorKind      string   `json:"actor_kind"`
-	TaskKey        string   `json:"task_key"`
-	TaskEmbyKey    string   `json:"task_emby_key"`
-	TaskName       string   `json:"task_name"`
+	ID                        string                     `json:"id"`
+	TaskID                    string                     `json:"task_id"`
+	State                     RunState                   `json:"state"`
+	Source                    string                     `json:"source"`
+	RequestID                 *string                    `json:"request_id"`
+	ActorUserID               string                     `json:"actor_user_id"`
+	ActorSessionID            string                     `json:"actor_session_id"`
+	ActorKind                 string                     `json:"actor_kind"`
+	TaskKey                   string                     `json:"task_key"`
+	TaskEmbyKey               string                     `json:"task_emby_key"`
+	TaskName                  string                     `json:"task_name"`
+	AnalysisInput             *library.AnalysisSelection `json:"analysis_input,omitempty"`
+	AnalysisConfigFingerprint string                     `json:"analysis_config_fingerprint,omitempty"`
+	authority                 executionAuthority
 	// Trigger identity, revision, and due instant are all absent for manual
 	// requests and all present for scheduled/startup runs. The referenced rule
 	// remains retained, including after replacement retires its revision.
@@ -151,21 +155,22 @@ type Run struct {
 }
 
 type Child struct {
-	ID           string     `json:"id"`
-	RunID        string     `json:"run_id"`
-	LibraryID    string     `json:"library_id"`
-	LibraryName  string     `json:"library_name"`
-	Ordinal      int        `json:"ordinal"`
-	State        ChildState `json:"state"`
-	ScanJobID    *string    `json:"scan_job_id"`
-	Scanned      int64      `json:"scanned"`
-	Added        int64      `json:"added"`
-	Updated      int64      `json:"updated"`
-	ErrorCode    string     `json:"error_code"`
-	ErrorMessage string     `json:"error_message"`
-	CreatedAt    time.Time  `json:"created_at"`
-	StartedAt    *time.Time `json:"started_at"`
-	FinishedAt   *time.Time `json:"finished_at"`
+	ID               string     `json:"id"`
+	RunID            string     `json:"run_id"`
+	LibraryID        string     `json:"library_id"`
+	LibraryName      string     `json:"library_name"`
+	AnalysisScopeKey string     `json:"analysis_scope_key,omitempty"`
+	Ordinal          int        `json:"ordinal"`
+	State            ChildState `json:"state"`
+	ScanJobID        *string    `json:"scan_job_id"`
+	Scanned          int64      `json:"scanned"`
+	Added            int64      `json:"added"`
+	Updated          int64      `json:"updated"`
+	ErrorCode        string     `json:"error_code"`
+	ErrorMessage     string     `json:"error_message"`
+	CreatedAt        time.Time  `json:"created_at"`
+	StartedAt        *time.Time `json:"started_at"`
+	FinishedAt       *time.Time `json:"finished_at"`
 }
 
 type ListOptions struct {
@@ -193,8 +198,9 @@ type ChildPage struct {
 }
 
 type StartRequest struct {
-	TaskID    string
-	RequestID string
+	TaskID        string
+	RequestID     string
+	AnalysisInput *library.AnalysisSelection
 }
 
 type Admission struct {

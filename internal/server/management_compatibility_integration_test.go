@@ -11,8 +11,8 @@ import (
 
 func assertPublishedTaskCollection(t *testing.T, f *scheduledTaskHTTPFixture, items []map[string]any) {
 	t.Helper()
-	if len(items) != 5 {
-		t.Fatalf("expected five implemented task capabilities, got %d", len(items))
+	if len(items) != 7 {
+		t.Fatalf("expected seven implemented task capabilities, got %d", len(items))
 	}
 	seen := make(map[string]bool)
 	for _, item := range items {

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
@@ -28,10 +29,10 @@ func adminTaskHTTPFixtureForKey(t *testing.T, key string) (*serverFixture, *http
 	expectStatus(t, response, http.StatusOK)
 	page := jsonObject(t, response)
 	items, ok := page["Items"].([]any)
-	if !ok || len(items) != 5 || page["TotalRecordCount"] != float64(5) {
-		t.Fatal("task startup did not register the five registered task executors")
+	if !ok || len(items) != 7 || page["TotalRecordCount"] != float64(7) {
+		t.Fatal("task startup did not register the seven task executors")
 	}
-	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details", tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles", tasks.CacheMaintainKey: "Maintain provider cache"}
+	expected := map[string]string{tasks.LibraryScanKey: "Scan media library", tasks.LibraryRefreshMediaKey: "Refresh media details", tasks.MetadataRefreshKey: "Refresh online metadata", tasks.SubtitleDownloadKey: "Download missing subtitles", tasks.CacheMaintainKey: "Maintain provider cache", library.TaskIntroAnalysisKey: "Analyze episode introductions", library.TaskPreviewGenerationKey: "Generate seek previews"}
 	definitions := make(map[string]map[string]any)
 	identities := make(map[string]bool)
 	for _, raw := range items {
