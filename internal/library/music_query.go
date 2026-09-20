@@ -27,6 +27,11 @@ var effectiveMusicAlbumArtistItemSQL = `(CASE WHEN i.type IN ('Audio', 'MusicVid
 	END)`
 
 func normalizeMusicFilters(query Query) (Query, error) {
+	for _, value := range []string{query.ArtistStartsWithOrGreater, query.AlbumArtistStartsWithOrGreater} {
+		if len(value) > 256 || !utf8.ValidString(value) || strings.IndexFunc(value, unicode.IsControl) >= 0 {
+			return Query{}, ErrInvalidInput
+		}
+	}
 	for _, values := range [][]int64{query.ArtistIds, query.AlbumArtistIds} {
 		if len(values) > 1024 {
 			return Query{}, ErrInvalidInput
@@ -56,6 +61,14 @@ func normalizeMusicFilters(query Query) (Query, error) {
 }
 
 func addMusicConditions(query Query, conditions []string, args []any) ([]string, []any) {
+	for _, bound := range []struct{ role, value string }{
+		{"Artist", query.ArtistStartsWithOrGreater}, {"AlbumArtist", query.AlbumArtistStartsWithOrGreater},
+	} {
+		if bound.value != "" {
+			args = append(args, bound.value)
+			conditions = append(conditions, fmt.Sprintf("%s >= lower($%d::text)", itemMusicArtistSortSQL(bound.role), len(args)))
+		}
+	}
 	if len(query.ArtistIds) != 0 {
 		args = append(args, query.ArtistIds)
 		conditions = append(conditions, fmt.Sprintf(`EXISTS (SELECT 1 FROM item_entities association

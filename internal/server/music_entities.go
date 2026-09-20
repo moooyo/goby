@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
@@ -15,7 +14,9 @@ func (s *Server) registerMusicEntityRoutes(mux *http.ServeMux) {
 		{"AlbumArtists", "albumartists"}, {"MusicGenres", "genres"},
 	} {
 		mux.HandleFunc("GET /emby/"+route.path, s.requireEmby(s.musicEntityList(route.family)))
-		mux.HandleFunc("GET /emby/"+route.path+"/{Name}", s.requireEmby(s.musicEntityByName(route.family)))
+		if route.path != "Artists/AlbumArtists" {
+			mux.HandleFunc("GET /emby/"+route.path+"/{Name}", s.requireEmby(s.musicEntityByName(route.family)))
+		}
 	}
 	mux.HandleFunc("GET /admin/v1/music/artists", s.requireAdmin(s.adminMusicEntities("artists")))
 	mux.HandleFunc("GET /admin/v1/music/genres", s.requireAdmin(s.adminMusicEntities("genres")))
@@ -29,17 +30,17 @@ func musicEntityFamily(r *http.Request, family string) (string, bool) {
 	if len(values) != 1 {
 		return "", false
 	}
-	switch strings.ToLower(values[0]) {
-	case "artist":
-		return family, true
-	case "albumartist":
-		if family == "artists" {
-			return "albumartists", true
-		}
-		return family, true
-	default:
+	artist, albumArtist, valid := musicArtistRoles(values[0])
+	if !valid {
 		return "", false
 	}
+	if family == "artists" && albumArtist {
+		if artist {
+			return "allartists", true
+		}
+		return "albumartists", true
+	}
+	return family, true
 }
 
 func (s *Server) musicEntityDTO(entity library.Entity, family string, fields []string, detail bool) map[string]any {
@@ -58,7 +59,7 @@ func (s *Server) musicEntityList(family string) http.HandlerFunc {
 		}
 		selected, valid := musicEntityFamily(r, family)
 		if !valid {
-			apiError(w, r, http.StatusBadRequest, "invalid_input", "ArtistType must be Artist or AlbumArtist.")
+			apiError(w, r, http.StatusBadRequest, "invalid_input", "ArtistType must identify Artist, AlbumArtist, or both.")
 			return
 		}
 		query, ok := readItemQuery(w, r, userID)

@@ -34,7 +34,7 @@ func TestHTTPUserPreferencesPersistWithIndependentCASAndCurrentAuthority(t *test
 	}
 	headers := http.Header{"X-CSRF-Token": {csrfToken(accounts.cookie.Value)}}
 	patch := map[string]any{"Revision": "1", "Configuration": map[string]any{"AudioLanguagePreference": "eng", "SubtitleMode": "Always", "ResumeRewindSeconds": 10,
-		"IntroSkipMode": "AutoSkip", "EnableNextEpisodeAutoPlay": false}}
+		"IntroSkipMode": "AutoSkip", "EnableNextEpisodeAutoPlay": false, "DisplayMissingEpisodes": true, "HidePlayedInSuggestions": true}}
 	expectStatus(t, f.request(t, http.MethodPut, path, patch, nil, accounts.cookie), http.StatusForbidden)
 	written := f.request(t, http.MethodPut, path, patch, headers, accounts.cookie)
 	expectStatus(t, written, http.StatusOK)
@@ -48,12 +48,14 @@ func TestHTTPUserPreferencesPersistWithIndependentCASAndCurrentAuthority(t *test
 	read := f.request(t, http.MethodGet, compat, nil, accounts.second.headers)
 	expectStatus(t, read, http.StatusOK)
 	if got := jsonObject(t, read); got["AudioLanguagePreference"] != "eng" || got["SubtitleMode"] != "Always" || got["ResumeRewindSeconds"] != float64(10) ||
-		got["IntroSkipMode"] != "AutoSkip" || got["EnableNextEpisodeAutoPlay"] != false {
+		got["IntroSkipMode"] != "AutoSkip" || got["EnableNextEpisodeAutoPlay"] != false ||
+		got["DisplayMissingEpisodes"] != true || got["HidePlayedInSuggestions"] != true {
 		t.Fatal("another authenticated device did not read the persisted account configuration")
 	}
 	other := jsonObject(t, f.request(t, http.MethodGet, "/emby/Users/"+accounts.other.userID+"/Configuration", nil, accounts.other.headers))
-	if other["IntroSkipMode"] != "None" || other["EnableNextEpisodeAutoPlay"] != true {
-		t.Fatal("another user inherited playback behavior preferences")
+	if other["IntroSkipMode"] != "None" || other["EnableNextEpisodeAutoPlay"] != true ||
+		other["DisplayMissingEpisodes"] != false || other["HidePlayedInSuggestions"] != false {
+		t.Fatal("another user inherited playback or discovery preferences")
 	}
 	response := f.request(t, http.MethodPost, compat, map[string]any{"SubtitleLanguagePreference": "fra"}, accounts.viewer.headers)
 	expectStatus(t, response, http.StatusOK)
@@ -66,7 +68,7 @@ func TestHTTPUserPreferencesPersistWithIndependentCASAndCurrentAuthority(t *test
 	if configuration["AudioLanguagePreference"] != "eng" || configuration["SubtitleLanguagePreference"] != "fra" {
 		t.Fatal("ordinary UserDto did not consume the persisted configuration")
 	}
-	for _, body := range []map[string]any{{"UnknownPreference": true}, {"SubtitleMode": "Unsupported"}, {"ResumeRewindSeconds": -1}, {"HidePlayedInSuggestions": true}} {
+	for _, body := range []map[string]any{{"UnknownPreference": true}, {"SubtitleMode": "Unsupported"}, {"ResumeRewindSeconds": -1}, {"HidePlayedInSuggestions": "true"}, {"DisplayMissingEpisodes": nil}} {
 		expectStatus(t, f.request(t, http.MethodPost, compat, body, accounts.viewer.headers), http.StatusBadRequest)
 	}
 	expectStatus(t, f.request(t, http.MethodPost, compat, map[string]any{"AudioLanguagePreference": "deu"}, accounts.other.headers), http.StatusForbidden)

@@ -19,6 +19,7 @@ func normalizeItemSort(query Query) (Query, error) {
 			"sortname": "SortName", "name": "Name", "datecreated": "DateCreated", "indexnumber": "IndexNumber",
 			"productionyear": "ProductionYear", "premieredate": "PremiereDate", "dateplayed": "DatePlayed", "playcount": "PlayCount",
 			"communityrating": "CommunityRating", "runtime": "Runtime", "parentindexnumber": "ParentIndexNumber",
+			"album": "Album", "artist": "Artist", "albumartist": "AlbumArtist",
 		}[strings.ToLower(strings.TrimSpace(field))]
 		if canonical == "" || seen[canonical] {
 			return Query{}, ErrInvalidInput
@@ -79,6 +80,10 @@ func itemOrderSQL(query Query, userParameter int) string {
 			column = "i.index_number"
 		case "ParentIndexNumber":
 			column = "i.parent_index_number"
+		case "Album":
+			column = `(SELECT lower(music_album.name) FROM items music_album WHERE music_album.id=` + physicalMusicAlbumIDSQL + `)`
+		case "Artist", "AlbumArtist":
+			column = itemMusicArtistSortSQL(field)
 		case "CommunityRating":
 			column = navigationNumberSQL(itemMetadataColumn, "CommunityRating")
 		case "Runtime":
@@ -95,4 +100,20 @@ func itemOrderSQL(query Query, userParameter int) string {
 		clauses = append(clauses, column+" "+direction+" NULLS LAST")
 	}
 	return strings.Join(append(clauses, "i.id "+lastDirection), ", ")
+}
+
+// itemMusicArtistSortSQL chooses the first effective display credit, using the
+// same ordered relationship and album inheritance as the music DTO. Prefix
+// bounds reuse this scalar so jumping to a bucket cannot use a second credit
+// that disagrees with the row's sort position. The role is package-owned.
+func itemMusicArtistSortSQL(role string) string {
+	owner, group := "i.id", "1"
+	if role == "AlbumArtist" {
+		owner, group = effectiveMusicAlbumArtistItemSQL, "2"
+	}
+	return `(SELECT lower(association.display_name) FROM item_entities association
+		JOIN catalog_entities entity ON entity.id=association.entity_id
+		WHERE association.item_id=` + owner + ` AND entity.kind='MusicArtist'
+		AND association.credit_group=` + group + ` AND association.credit_type=` + policySQLString(role) + `
+		ORDER BY association.position,entity.id LIMIT 1)`
 }

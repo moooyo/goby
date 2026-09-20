@@ -125,10 +125,18 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 	// Known extra IDs are a direct selection on the Items endpoint, not an
 	// ordinary-browse switch. Resume and other catalog consumers retain their
 	// existing visibility even when their own filters contain explicit IDs.
+	query.expectedEpisodePopulation = explicitExtras && !query.Resumable && includesExpectedEpisodes(query)
 	explicitExtras = explicitExtras && len(query.Ids) != 0
 	prefix, filter, args := itemQuerySQLWithExtraIDs(query, access, parentLibraryID, explicitExtras)
+	population, columns := "items", access.itemColumnsSQL()
+	if query.expectedEpisodePopulation {
+		prefix = appendItemQueryCTE(prefix, `discovery_items AS (
+			SELECT physical.*, NULL::jsonb AS expected_episode FROM items physical
+			UNION ALL `+expectedEpisodeItemsSQL(access)+`)`)
+		population, columns = "discovery_items", columns+", i.expected_episode"
+	}
 	result := ItemResult{Items: make([]Item, 0)}
-	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM items i WHERE "+filter,
+	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM "+population+" i WHERE "+filter,
 		args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, fmt.Errorf("count library items: %w", err)
 	}
@@ -144,7 +152,7 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 			WHERE user_data.user_id = $%d::text AND user_data.item_id = i.id) DESC NULLS LAST, i.id ASC`, len(args))
 	}
 	args = append(args, query.Limit, query.StartIndex)
-	statement := prefix + "SELECT " + access.itemColumnsSQL() + " FROM items i WHERE " + filter +
+	statement := prefix + "SELECT " + columns + " FROM " + population + " i WHERE " + filter +
 		" ORDER BY " + access.scopeSQL(order) + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
 	rows, err := tx.Query(ctx, statement, args...)
 	if err != nil {
@@ -152,11 +160,21 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 	}
 	defer rows.Close()
 	for rows.Next() {
-		item, err := scanItem(rows)
+		var expected []byte
+		var additional []any
+		if query.expectedEpisodePopulation {
+			additional = []any{&expected}
+		}
+		item, err := scanItem(rows, additional...)
 		if err != nil {
 			return ItemResult{}, fmt.Errorf("scan library item: %w", err)
 		}
-		item.CanPlay = access.canPlay
+		if len(expected) != 0 {
+			if err := json.Unmarshal(expected, &item.ExpectedEpisode); err != nil {
+				return ItemResult{}, fmt.Errorf("decode expected episode projection: %w", err)
+			}
+		}
+		item.CanPlay = access.canPlay && item.ExpectedEpisode == nil
 		result.Items = append(result.Items, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -198,6 +216,16 @@ func (s *Store) GetItemFor(ctx context.Context, subject Subject, id string) (Ite
 		return Item{}, err
 	}
 	defer tx.Rollback(ctx)
+	if IsExpectedEpisodeID(id) {
+		item, err := readExpectedEpisode(ctx, tx, access, id)
+		if err != nil {
+			return Item{}, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return Item{}, fmt.Errorf("complete expected episode read: %w", err)
+		}
+		return item, nil
+	}
 	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+` FROM items i
 		WHERE i.id = $1 AND ($2::boolean OR i.library_id = ANY($3::text[]) OR i.library_id = `+policySQLString(collectionLibraryID)+`) AND `+access.directSQL("i"),
 		id, access.all, access.folders))
@@ -396,7 +424,7 @@ func normalizeItemQuery(query Query) (Query, error) {
 	if !validSubject(Subject{UserID: query.UserID, ApplicationCredentialID: query.ApplicationCredentialID}) || query.StartIndex < 0 || query.Limit < 0 || query.Limit > 1000 {
 		return Query{}, ErrInvalidInput
 	}
-	if query.UserID == "" && (query.IsPlayed != nil || query.IsFavorite != nil || query.IsFavoriteOrLikes != nil || query.Resumable) {
+	if query.UserID == "" && (query.IsPlayed != nil || query.IsFavorite != nil || query.IsFavoriteOrLikes != nil || query.Likes != nil || query.Resumable) {
 		return Query{}, ErrInvalidInput
 	}
 	if query.ParentIndexNumber != nil && (*query.ParentIndexNumber < 0 || *query.ParentIndexNumber > 1<<31-1) {
@@ -543,6 +571,11 @@ func itemQuerySQLWithExtraIDs(query Query, access libraryAccess, parentLibraryID
 				WHERE ` + ordinaryItemSQL("child") + `
 			) `
 			membership := "i.id IN (SELECT id FROM descendants)"
+			if query.expectedEpisodePopulation {
+				// Expected rows are leaves of an authorized physical parent;
+				// they are deliberately absent from the physical traversal.
+				membership = "(" + membership + " OR (i.expected_episode IS NOT NULL AND (i.parent_id=$3 OR i.parent_id IN (SELECT id FROM descendants))))"
+			}
 			if explicitExtras {
 				// Only ordinary ancestors are traversable. An explicitly selected
 				// extra may be a leaf owned by the parent or an ordinary descendant;

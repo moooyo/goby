@@ -52,7 +52,7 @@ func TestUserConfigurationMergePreservesHistoricalJSONAndIndependentRevisions(t 
 	})
 	after, revision, _, nextUpdatedAt := snapshot()
 	if err != nil || unchanged.Revision != 2 || revision != 2 || after != before || nextUpdatedAt != updatedAt {
-		t.Fatal("default/readonly echo or no-op rewrote persisted JSON")
+		t.Fatal("default echo or no-op rewrote persisted JSON")
 	}
 	if _, err := store.UpdateUserPreferences(ctx, actor, viewer.ID, &current.Revision, identity.UserConfigurationPatch{"AudioLanguagePreference": json.RawMessage(`"fra"`)}); !errors.Is(err, identity.ErrRevisionConflict) {
 		t.Fatal("stale preference CAS was accepted")
@@ -61,6 +61,17 @@ func TestUserConfigurationMergePreservesHistoricalJSONAndIndependentRevisions(t 
 	restored, err := store.GetUserPreferences(ctx, actor, viewer.ID)
 	if err != nil || restored.Configuration.AudioLanguagePreference != "eng" || restored.Revision != 2 {
 		t.Fatal("new store lost persisted configuration")
+	}
+	discovery, err := store.UpdateUserPreferences(ctx, actor, viewer.ID, &restored.Revision, identity.UserConfigurationPatch{
+		"DisplayMissingEpisodes": json.RawMessage(`true`), "HidePlayedInSuggestions": json.RawMessage(`true`),
+	})
+	if err != nil || discovery.Revision != 3 {
+		t.Fatalf("write discovery preferences with independent CAS: %v", err)
+	}
+	store = identity.New(pool)
+	discovery, err = store.GetUserPreferences(ctx, actor, viewer.ID)
+	if err != nil || discovery.Revision != 3 || !discovery.Configuration.DisplayMissingEpisodes || !discovery.Configuration.HidePlayedInSuggestions {
+		t.Fatal("new store lost independently persisted discovery preferences")
 	}
 	if _, err := pool.Exec(ctx, `UPDATE users SET configuration_revision=$2 WHERE id=$1`, viewer.ID, int64(math.MaxInt64)); err != nil {
 		t.Fatal(err)

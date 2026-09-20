@@ -33,8 +33,12 @@ func readSimilarQuery(w http.ResponseWriter, r *http.Request, userID string) (li
 		}
 	}
 	if raw, supplied := values["ArtistType"]; supplied {
-		if len(raw) != 1 || (!strings.EqualFold(raw[0], "Artist") && !strings.EqualFold(raw[0], "AlbumArtist")) {
-			apiError(w, r, http.StatusBadRequest, "invalid_input", "ArtistType must identify Artist or AlbumArtist.")
+		valid := false
+		if len(raw) == 1 {
+			_, _, valid = musicArtistRoles(raw[0])
+		}
+		if !valid {
+			apiError(w, r, http.StatusBadRequest, "invalid_input", "ArtistType must identify Artist, AlbumArtist, or both.")
 			return library.SimilarQuery{}, false
 		}
 	}

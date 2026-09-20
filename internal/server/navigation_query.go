@@ -17,7 +17,8 @@ import (
 func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *library.Query) bool {
 	names := map[string]string{}
 	for _, name := range []string{"ExcludeItemTypes", "Years", "MinPremiereDate", "MaxPremiereDate", "MinDateCreated", "MaxDateCreated", "MinCommunityRating",
-		"NameStartsWith", "NameStartsWithOrGreater", "NameLessThan", "HasOverview", "HasSubtitles", "IsHD"} {
+		"NameStartsWith", "NameStartsWithOrGreater", "NameLessThan", "HasOverview", "HasSubtitles", "IsHD",
+		"ArtistStartsWithOrGreater", "AlbumArtistStartsWithOrGreater", "IsMissing", "IsVirtualUnaired", "IsPlaceHolder", "IsUnaired"} {
 		names[strings.ToLower(name)] = name
 	}
 	values := make(map[string]string)
@@ -93,13 +94,15 @@ func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *librar
 	for _, field := range []struct {
 		name   string
 		target *string
-	}{{"NameStartsWith", &query.NameStartsWith}, {"NameStartsWithOrGreater", &query.NameStartsWithOrGreater}, {"NameLessThan", &query.NameLessThan}} {
+	}{{"NameStartsWith", &query.NameStartsWith}, {"NameStartsWithOrGreater", &query.NameStartsWithOrGreater}, {"NameLessThan", &query.NameLessThan},
+		{"ArtistStartsWithOrGreater", &query.ArtistStartsWithOrGreater}, {"AlbumArtistStartsWithOrGreater", &query.AlbumArtistStartsWithOrGreater}} {
 		*field.target = values[field.name]
 	}
 	for _, field := range []struct {
 		name   string
 		target **bool
-	}{{"HasOverview", &query.HasOverview}, {"HasSubtitles", &query.HasSubtitles}, {"IsHD", &query.IsHD}} {
+	}{{"HasOverview", &query.HasOverview}, {"HasSubtitles", &query.HasSubtitles}, {"IsHD", &query.IsHD},
+		{"IsMissing", &query.IsMissing}, {"IsVirtualUnaired", &query.IsVirtualUnaired}, {"IsPlaceHolder", &query.IsPlaceHolder}, {"IsUnaired", &query.IsUnaired}} {
 		if raw := values[field.name]; raw != "" {
 			value, err := strconv.ParseBool(raw)
 			if err != nil {
@@ -114,5 +117,7 @@ func readNavigationFilters(w http.ResponseWriter, r *http.Request, query *librar
 func hasNavigationFilters(query library.Query) bool {
 	return len(query.ExcludeItemTypes) > 0 || len(query.Years) > 0 || query.MinPremiereDate != nil || query.MaxPremiereDate != nil ||
 		query.MinDateCreated != nil || query.MaxDateCreated != nil || query.MinCommunityRating != nil || query.NameStartsWith != "" ||
-		query.NameStartsWithOrGreater != "" || query.NameLessThan != "" || query.HasOverview != nil || query.HasSubtitles != nil || query.IsHD != nil
+		query.NameStartsWithOrGreater != "" || query.NameLessThan != "" || query.HasOverview != nil || query.HasSubtitles != nil || query.IsHD != nil ||
+		query.ArtistStartsWithOrGreater != "" || query.AlbumArtistStartsWithOrGreater != "" || query.IsMissing != nil || query.IsVirtualUnaired != nil ||
+		query.IsPlaceHolder != nil || query.IsUnaired != nil
 }

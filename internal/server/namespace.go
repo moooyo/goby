@@ -26,7 +26,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	if len(parts) == 0 {
 		return r
 	}
-	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features", "Registrations"}
+	resources := []string{"System", "Users", "UserSettings", "DisplayPreferences", "Items", "Videos", "Audio", "Sessions", "Library", "Environment", "Shows", "Genres", "Tags", "Studios", "Persons", "Artists", "AlbumArtists", "MusicGenres", "Albums", "Songs", "Search", "Auth", "Devices", "ScheduledTasks", "Branding", "Playlists", "Collections", "LiveStreams", "LiveTv", "Providers", "Features", "Registrations"}
 	resource := ""
 	decoded, err := url.PathUnescape(parts[0])
 	if err != nil {
@@ -60,6 +60,9 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	switch resource {
 	case "Playlists", "Collections":
 		literal(2, "Items", "Delete", "Users")
+		if resource == "Playlists" {
+			literal(2, "InstantMix")
+		}
 		literal(3, "Delete")
 		literal(4, "Move", "Delete")
 	case "LiveStreams":
@@ -73,6 +76,15 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 	case "Environment":
 		literal(1, "DefaultDirectoryBrowser", "DirectoryContents", "ParentPath", "ValidatePath")
 	case "Artists", "AlbumArtists", "MusicGenres", "Genres", "Tags", "Studios", "Persons":
+		if len(parts) == 2 && (resource == "Artists" || resource == "MusicGenres") {
+			literal(1, "InstantMix")
+			if resource == "Artists" {
+				literal(1, "Prefixes")
+			}
+		}
+		if resource == "MusicGenres" {
+			literal(2, "InstantMix")
+		}
 		nestedArtists := false
 		if resource == "Artists" {
 			imagePath := false
@@ -87,9 +99,18 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 		if !nestedArtists {
 			literal(2, "Images")
+			if resource == "Artists" {
+				literal(2, "Similar")
+			}
 		}
 	case "LiveTv":
 		literal(1, "Programs")
+	case "Search":
+		literal(1, "Hints", "Entities")
+	case "Albums":
+		literal(2, "Similar", "InstantMix")
+	case "Songs":
+		literal(2, "InstantMix")
 	case "Branding":
 		literal(1, "Configuration", "Css", "Css.css")
 	case "ScheduledTasks":
@@ -116,7 +137,7 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		}
 	case "Users":
 		literal(1, "Public", "Query", "New", "AuthenticateByName")
-		literal(2, "Items", "Views", "Authenticate", "PlayedItems", "FavoriteItems", "PlayingItems", "Password", "Policy", "Configuration", "Images", "Delete")
+		literal(2, "Items", "Views", "Suggestions", "Authenticate", "PlayedItems", "FavoriteItems", "PlayingItems", "Password", "Policy", "Configuration", "Images", "Delete")
 		if len(parts) > 2 && parts[2] == "Items" {
 			literal(3, "Root", "Latest", "Resume")
 			literal(4, "UserData", "HideFromResume", "Rating", "SpecialFeatures", "LocalTrailers")
@@ -131,9 +152,9 @@ func compatibilityNamespace(r *http.Request) *http.Request {
 		literal(5, "Delete")
 	case "Items":
 		if len(parts) == 2 {
-			literal(1, "Counts")
+			literal(1, "Counts", "Prefixes")
 		}
-		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "Refresh", "File", "Download", "Similar", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
+		literal(2, "PlaybackInfo", "Ancestors", "UserData", "Images", "Refresh", "File", "Download", "Similar", "InstantMix", "ThemeMedia", "AddToPlaylistInfo", "Delete", "DeleteInfo", "RemoteSearch", "Subtitles")
 		literal(3, "Subtitles", "Attachments")
 		literal(4, "Delete")
 		literal(5, "Stream")

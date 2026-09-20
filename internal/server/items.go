@@ -181,13 +181,25 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 		{"IsFolder", &query.IsFolder}, {"IsSpecialSeason", &query.IsSpecialSeason},
 		{"IsSpecialEpisode", &query.IsSpecialEpisode},
 	} {
-		if raw := values.Get(flag.name); raw != "" {
-			value, err := strconv.ParseBool(raw)
+		if raw, present := values[flag.name]; present {
+			if len(raw) != 1 {
+				apiError(w, r, 400, "invalid_input", flag.name+" must be one boolean.")
+				return query, false
+			}
+			value, err := strconv.ParseBool(raw[0])
 			if err != nil {
 				apiError(w, r, 400, "invalid_input", flag.name+" must be a boolean.")
 				return query, false
 			}
 			*flag.target = &value
+		}
+	}
+	for _, raw := range values["Filters"] {
+		for _, part := range strings.Split(raw, ",") {
+			if strings.TrimSpace(part) == "" {
+				apiError(w, r, 400, "invalid_input", "Filters must contain nonempty selector names.")
+				return query, false
+			}
 		}
 	}
 	for _, filter := range queryValues(values["Filters"]) {
@@ -202,6 +214,14 @@ func readItemQuery(w http.ResponseWriter, r *http.Request, userID string) (libra
 			target, value = &query.IsFavorite, true
 		case "isfavoriteorlikes":
 			target, value = &query.IsFavoriteOrLikes, true
+		case "likes":
+			target, value = &query.Likes, true
+		case "dislikes":
+			target, value = &query.Likes, false
+		case "isfolder":
+			target, value = &query.IsFolder, true
+		case "isnotfolder":
+			target, value = &query.IsFolder, false
 		case "isresumable":
 			query.Resumable = true
 			continue
@@ -252,6 +272,12 @@ func (s *Server) embyItems(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query library.Query, bare bool) {
+	preferences, err := s.requestUserConfiguration(r.Context(), r, query.UserID)
+	if err != nil {
+		s.identityError(w, r, err)
+		return
+	}
+	query.DisplayMissingEpisodes = preferences.DisplayMissingEpisodes
 	if !s.applyDisplayPreferenceDefaults(w, r, &query) {
 		return
 	}
@@ -549,6 +575,7 @@ func (s *Server) itemDTO(item library.Item, fields []string, detail bool) map[st
 	addLocalMetadata(dto, item.Metadata, item.Entities, fields, detail)
 	addMusicCatalogFields(dto, item)
 	addTVParentFields(dto, item)
+	addDiscoveryItemFields(dto, item, fields, detail)
 	if item.UserData != nil {
 		dto["UserData"] = userDataDTO(*item.UserData, false)
 	}
@@ -612,7 +639,7 @@ func addLocalMetadata(dto map[string]any, source *metadata.Metadata, entities li
 		}
 		dto["ProviderIds"] = providers
 	}
-	if detail || hasField(fields, "Genres") {
+	if detail || hasField(fields, "Genres") || hasField(fields, "GenreItems") {
 		genres := localMetadataRefs(local.Genres, entities.Genres)
 		names := make([]string, 0, len(genres))
 		for _, genre := range genres {
@@ -621,7 +648,7 @@ func addLocalMetadata(dto map[string]any, source *metadata.Metadata, entities li
 		dto["Genres"] = names
 		dto["GenreItems"] = metadataEntityDTOs(genres)
 	}
-	if detail || hasField(fields, "Tags") {
+	if detail || hasField(fields, "Tags") || hasField(fields, "TagItems") {
 		tags := localMetadataRefs(local.Tags, entities.Tags)
 		sort.SliceStable(tags, func(i, j int) bool {
 			left, right := strings.ToLower(tags[i].Name), strings.ToLower(tags[j].Name)

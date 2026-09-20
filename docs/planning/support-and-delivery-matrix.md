@@ -5,8 +5,9 @@ is the current implementation scope. Phase 1 is closed under the user's
 third-party-client adapter boundary; its original Web licensing restriction
 remains recorded rather than blocking delivery. Phase 2 is closed within its
 [recorded media, artwork, browser and recovery scopes](../development/selected-compatibility-phase2-20260920.md),
-with owned workers and PostgreSQL stopped. Phase 3 music/search/discovery is next;
-phase 4 has not started implementation. The [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
+with owned workers and PostgreSQL stopped. [Phase 3 music/search/discovery](../development/selected-compatibility-phase3-20260920.md)
+implementation is in progress; verification has not started. Phase 4 has not
+started implementation. The [phase 1 record](../development/selected-compatibility-phase1-20260920.md)
 retains the exact accepted contracts and client limitations. It covers
 account/playback behavior, subtitles/artwork, music/search, management settings
 and client protocols. The user explicitly excludes Live TV/EPG/DVR/tuners, DLNA,

@@ -37,6 +37,16 @@ const similarAlbumArtistCreditSQL = `(entity.kind = 'MusicArtist' AND associatio
 // mixed-feature Movie cases support these boundaries without proving unique
 // weights for unobserved combinations.
 func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQuery) (ItemResult, error) {
+	return s.querySimilar(ctx, seedID, query, "")
+}
+
+// QuerySimilarAlbums is an alias with a seed-type check in the same snapshot as
+// authorization and ranking. It preserves the established item Similar model.
+func (s *Store) QuerySimilarAlbums(ctx context.Context, seedID string, query SimilarQuery) (ItemResult, error) {
+	return s.querySimilar(ctx, seedID, query, "MusicAlbum")
+}
+
+func (s *Store) querySimilar(ctx context.Context, seedID string, query SimilarQuery, requiredSeedType string) (ItemResult, error) {
 	if seedID == "" || len(seedID) > 256 || !utf8.ValidString(seedID) || strings.TrimSpace(seedID) != seedID ||
 		strings.IndexFunc(seedID, unicode.IsControl) >= 0 || len(query.ExcludeArtistIds) > 1024 {
 		return ItemResult{}, ErrInvalidInput
@@ -68,6 +78,9 @@ func (s *Store) QuerySimilar(ctx context.Context, seedID string, query SimilarQu
 	}
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("authorize similar seed: %w", err)
+	}
+	if requiredSeedType != "" && seedType != requiredSeedType {
+		return ItemResult{}, ErrNotFound
 	}
 	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {

@@ -37,7 +37,7 @@ func attachUserData(ctx context.Context, tx pgx.Tx, userID string, items []Item,
 	seen := make(map[string]bool, len(items))
 	for index := range items {
 		items[index].UserData = nil
-		if !supportsUserData(items[index].Type) || seen[items[index].ID] {
+		if items[index].ExpectedEpisode != nil || !supportsUserData(items[index].Type) || seen[items[index].ID] {
 			continue
 		}
 		seen[items[index].ID] = true
@@ -71,7 +71,7 @@ func attachUserData(ctx context.Context, tx pgx.Tx, userID string, items []Item,
 		return err
 	}
 	for index := range items {
-		if !supportsUserData(items[index].Type) {
+		if items[index].ExpectedEpisode != nil || !supportsUserData(items[index].Type) {
 			continue
 		}
 		data := stored[items[index].ID]
@@ -185,7 +185,7 @@ func itemPlayedSQL(userParameter int, scopes ...libraryAccess) string {
 }
 
 func addUserDataConditions(query Query, conditions []string, args []any, scopes ...libraryAccess) ([]string, []any) {
-	if query.IsPlayed == nil && query.IsFavorite == nil && query.IsFavoriteOrLikes == nil && !query.Resumable {
+	if query.IsPlayed == nil && query.IsFavorite == nil && query.IsFavoriteOrLikes == nil && query.Likes == nil && !query.Resumable {
 		return conditions, args
 	}
 	args = append(args, query.UserID)
@@ -213,6 +213,13 @@ func addUserDataConditions(query Query, conditions []string, args []any, scopes 
 		args = append(args, *query.IsFavoriteOrLikes)
 		conditions = append(conditions, fmt.Sprintf(`(EXISTS(SELECT 1 FROM user_item_data user_data
 			WHERE user_data.user_id=$%d::text AND user_data.item_id=i.id AND (user_data.is_favorite OR user_data.likes IS TRUE)))=$%d::boolean`, userParameter, len(args)))
+	}
+	if query.Likes != nil {
+		// Dislikes require an explicitly stored negative preference. Missing
+		// state is neutral and must not match either Likes or Dislikes.
+		args = append(args, *query.Likes)
+		conditions = append(conditions, fmt.Sprintf(`EXISTS (SELECT 1 FROM user_item_data user_data
+			WHERE user_data.user_id=$%d::text AND user_data.item_id=i.id AND user_data.likes=$%d::boolean)`, userParameter, len(args)))
 	}
 	if query.Resumable {
 		// The catalog's current duration is authoritative after file replacement

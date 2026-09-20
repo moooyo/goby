@@ -13,11 +13,20 @@ boundary. No untested client parity or deployment is claimed.
 The selected phase 2 source adds the [native media-processing API](media-processing.md)
 for embedded-subtitle removal and reviewed bitmap OCR, owned subtitle delivery,
 MP3/FLAC/M4A embedded covers, authorized library/genre collages and additional
-image transformations. Schema 45 is current. Implementation, composed verification,
+image transformations through schema 45. Implementation, composed verification,
 scoped repairs and owned-resource closure are complete within the
 [phase 2 record](../development/selected-compatibility-phase2-20260920.md).
 This paragraph supersedes older unsupported labels for those selected features
 without changing historical acceptance records or claiming untested clients.
+
+Selected phase 3 source now adds [music discovery](music-discovery.md),
+[Search/Hints and typed navigation](search-hints.md), and
+[discovery query/Suggestions consumers](discovery-queries.md). Schema 46 stores
+explicit administrator-imported expected episodes separately from physical
+items. Native roster management and the two discovery preferences are connected.
+Implementation is in progress; the [phase 3 record](../development/selected-compatibility-phase3-20260920.md)
+has no consolidated passing result yet. Source-backed missing facts remain
+unplayable, and no numbering gap or new external provider call creates them.
 
 This file tracks implementation separately from the immutable upstream research inventory. The [full catalog](catalog.md) contains upstream contracts and initial scope labels; its generated `planned-unimplemented` field records the research baseline, not the current implementation tracker.
 
@@ -448,15 +457,17 @@ The Emby user projection reflects supported saved policy and the enabled runtime
 
 Item fields currently include identity, hierarchy, type, creation time and selected `Overview`, `MediaStreams`, `MediaSources`, `Path`, and `Chapters` projections. Default list results omit paths and probe structures; an explicit field selection or authorized item detail includes them as observed in the reference. Authorization is applied before any projection. `EnableImages=false` removes image fields, and `EnableUserData=false` suppresses user data when present. Source stream indices and probe sizes/ticks are preserved. Current probe snapshots can advertise original delivery when user policy permits; PlaybackInfo reopens and verifies the source before negotiation. Wire source IDs use `mediasource_{ItemId}`, and wire containers use canonical names such as `mp4` instead of an arbitrary first ffprobe alias. Indexed artwork populates image tags, with `ImageTypeLimit` and `EnableImageTypes` selection.
 
-Phase 3 adds bounded ExcludeItemTypes, Years, premiere/creation-date ranges,
+The preceding AMD/client phase 3 added bounded ExcludeItemTypes, Years, premiere/creation-date ranges,
 minimum community rating, name-boundary and HasOverview/HasSubtitles/IsHD
 predicates, plus CommunityRating/Runtime/ParentIndexNumber sorting. The
 [navigation contract](../development/next-up.md#phase-3-selected-navigation-contract)
 defines their exact validation and grouping boundaries. Unknown SortBy/Filters
 remain errors; unimplemented query hints are inert and unimplemented Fields
-are omitted, not claimed as supported. Search/Hints is not part of this selected
-adapter scope; SearchTerm remains available. Selected protocol coverage passed
-in the phase 3 record; broader reference/client parity is not implied.
+are omitted, not claimed as supported. Search/Hints was outside that accepted
+scope; SearchTerm remained available. The new selected phase 3 source adds the
+separate Search/Hints adapter and discovery contracts linked above. Earlier
+protocol results do not verify these new changes; broader reference/client
+parity is not implied.
 
 The currently recognized Emby resources also accept root aliases and case variants of route literals. Dynamic IDs and escaped entity names are preserved. HEAD requests share the normal authentication and CORS boundary. Original media and finalized HLS segments support ranges and conditional requests; progressive audio/video have the distinct HTTP behavior below. See [original playback and user state](../development/direct-playback.md) for the historical direct-delivery contract. [Client sessions](../development/client-sessions.md) expose validated capabilities and the latest authorized Playing/Paused record per client context, with paths and UserData omitted from NowPlayingItem. Subtitle delivery now includes bounded embedded text extraction, ASS, font attachments, HLS WebVTT and supported HLS/progressive MP4 burn-in; [advanced media](../development/advanced-media.md) states the exact scope. [WebSocket events](../development/websocket-events.md) deliver committed user-state notifications and remote commands. Additional formats/events and complete consumer-client acceptance remain open.
 

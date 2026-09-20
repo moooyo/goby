@@ -6,8 +6,9 @@ Its [four-phase execution plan](../planning/selected-compatibility-plan-20260920
 is approved; phase 1 is closed on `codex/selected-client-compatibility` under
 the user's third-party-client adapter boundary. [Phase 2](selected-compatibility-phase2-20260920.md)
 is closed after composed regression, scoped repairs and the complete native
-browser journey at `bd20b23`. Phase 3 music/search/discovery is next;
-phase 4 has not started implementation.
+browser journey at `bd20b23`. [Phase 3 music/search/discovery](selected-compatibility-phase3-20260920.md)
+implementation is in progress; consolidated verification has not started.
+Phase 4 has not started implementation.
 The [phase 1 execution record](selected-compatibility-phase1-20260920.md) separates
 implementation from scoped acceptance. Backend repair scopes, administration,
 original-client local-password/PIN, enabled/disabled autoplay, runtime restart,

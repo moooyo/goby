@@ -6,11 +6,19 @@ The [account/playback contract](../api/playback-accounts.md) extends the complet
 phase 3 baseline below. IntroSkipMode and EnableNextEpisodeAutoPlay have writable
 consumers; ProfilePin uses encrypted state and owner-only authenticated
 projection, while local-password enablement belongs to credential management.
-Configuration/Partial is supported. DisplayMissingEpisodes and
-HidePlayedInSuggestions remain phase 3 of the next plan. The extension is closed
+Configuration/Partial is supported. The account/playback extension is closed
 under the user's third-party-client adapter boundary. Original Web enabled intro
 modes retain their external-license limitation; no untested third-party seek is
 claimed. Earlier successful records do not validate this extension by implication.
+
+The [selected phase 3 implementation](selected-compatibility-phase3-20260920.md)
+connects DisplayMissingEpisodes to explicit, source-attributed expected episode
+discovery and HidePlayedInSuggestions to the actual Suggestions endpoint. Both
+are writable Booleans using the existing preference revision and authority.
+Explicit query selectors override defaults; application keys remain neutral.
+These new consumers are being implemented and have not yet completed phase 3
+consolidated verification. Missing facts do not become playable items, and the
+Suggestions preference does not alter InstantMix.
 
 ## Current phase 3 integration boundary
 
@@ -52,6 +60,7 @@ schedule and preference policy. User DTO projection reads the stored values.
 | `ResumeRewindSeconds` | `0`; integer `0..300`; applied for playback negotiation with `IsPlayback=true` and no explicit StartTime |
 | `OrderedViews`, `MyMediaExcludes`, `LatestItemsExcludes` | Empty arrays; at most 1,024 bounded opaque IDs; view order/exclusion and Latest filtering |
 | `HidePlayedInLatest`, `HidePlayedInMoreLikeThis` | `true` and `false`; current-user Latest and Similar filtering |
+| `DisplayMissingEpisodes`, `HidePlayedInSuggestions` | Both `false`; selected phase 3 source-backed missing discovery and local Suggestions defaults, with explicit query precedence |
 
 Preference request bodies accept JSON bytes as application/json or text/plain,
 bounded to 128 KiB; native and Configuration routes reject business query
@@ -60,12 +69,14 @@ view identifiers are nonempty, trimmed, control-free strings of at most 256
 bytes. Nulls and invalid/unknown or duplicate aliases reject the whole patch.
 Omitted writable fields retain their current values.
 
-Fields without a selected server consumer remain read-only compatibility
-projections: `DisplayMissingEpisodes`, `EnableLocalPassword`,
-`EnableNextEpisodeAutoPlay`, `HidePlayedInSuggestions`, and `IntroSkipMode`.
-A same-value echo is accepted; attempting to change one is rejected. ProfilePin
-accepts only an empty value because PIN authentication is not implemented.
-The administrator editor omits write controls for these unsupported behaviors.
+`EnableLocalPassword` changes through the dedicated local-credentials operation;
+a same-value configuration echo is accepted. `EnableNextEpisodeAutoPlay` and
+`IntroSkipMode` are writable under the closed selected phase 1 contract.
+`ProfilePin` is an encrypted profile lock with owner-only authenticated projection
+and dedicated credential handling, not a password-login replacement. Native
+administration exposes credential presence rather than returning plaintext PINs.
+The selected phase 3 administrator editor adds the two discovery preference
+controls with their real catalog consumers.
 
 `GET` and `POST /emby/DisplayPreferences/{Id}` address a separate
 `(user_id, Client, Id)` row, not a session/device-name key. UserId and Client

@@ -249,7 +249,8 @@ test('phase 3 administration workflows persist through conflicts and restart', a
     await stage(fixture, result, 'library');
 
     let preferences = await preferencesEditor(page, fixture);
-    await expect(preferences.getByRole('checkbox', { name: 'Hide played items from Suggestions', exact: true })).toHaveCount(0);
+    await expect(preferences.getByRole('checkbox', { name: 'Hide played items from Suggestions', exact: true })).toBeVisible();
+    await expect(preferences.getByRole('checkbox', { name: 'Display missing episodes', exact: true })).toBeVisible();
     await preferences.getByLabel('Preferred audio language', { exact: true }).fill('eng');
     await preferences.getByLabel('Preferred subtitle language', { exact: true }).fill('zho');
     await select(page, preferences, 'Subtitle mode', 'Always');
@@ -260,7 +261,8 @@ test('phase 3 administration workflows persist through conflicts and restart', a
     await preferences.getByRole('button', { name: 'Save preferences', exact: true }).click();
     const preferenceResponse = await response;
     const submittedPreferences = preferenceResponse.request().postDataJSON() as { Configuration: Record<string, unknown> };
-    expect(Object.keys(submittedPreferences.Configuration).filter((field) => ['HidePlayedInSuggestions', 'DisplayMissingEpisodes', 'EnableNextEpisodeAutoPlay', 'IntroSkipMode', 'EnableLocalPassword', 'ProfilePin'].includes(field))).toEqual([]);
+    expect(Object.keys(submittedPreferences.Configuration).filter((field) => ['EnableLocalPassword', 'ProfilePin'].includes(field))).toEqual([]);
+    expect(submittedPreferences.Configuration).toMatchObject({ HidePlayedInSuggestions: expect.any(Boolean), DisplayMissingEpisodes: expect.any(Boolean), EnableNextEpisodeAutoPlay: expect.any(Boolean), IntroSkipMode: expect.stringMatching(/^(?:None|ShowButton|AutoSkip)$/) });
     const savedPreferences = await payload<UserPreferences>(Promise.resolve(preferenceResponse));
     expect(savedPreferences.Configuration).toMatchObject({ AudioLanguagePreference: 'eng', SubtitleLanguagePreference: 'zho', SubtitleMode: 'Always', ResumeRewindSeconds: 10 });
     await expect(preferences.getByText('Preferences saved. New client requests use these settings.', { exact: true })).toBeVisible();

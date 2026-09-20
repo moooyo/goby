@@ -73,6 +73,7 @@ type Item struct {
 	CanPlay                                                       bool
 	PlaylistItemID                                                string
 	Collection                                                    *CollectionInfo
+	ExpectedEpisode                                               *ExpectedEpisodeInfo
 }
 
 // AlbumRef is the nearest physical MusicAlbum in the item's authorized library.
@@ -89,28 +90,33 @@ type TVParentRef struct {
 }
 
 type Query struct {
-	UserID, ParentID, SearchTerm, SortBy, SortOrder       string
-	ApplicationCredentialID                               string
-	Recursive                                             bool
-	StartIndex, Limit                                     int
-	IncludeItemTypes, Ids, MediaTypes                     []string
-	ParentIndexNumber                                     *int
-	GenreIds, TagIds, StudioIds                           []int64
-	ArtistIds, AlbumArtistIds                             []int64
-	AlbumIds, ExcludeItemIds, ListItemIds                 []string
-	PersonIds, Genres, Tags, Studios, PersonTypes         []string
-	Person                                                string
-	IsPlayed, IsFavorite                                  *bool
-	IsFavoriteOrLikes                                     *bool
-	IsFolder, IsSpecialSeason, IsSpecialEpisode           *bool
-	Resumable                                             bool
-	ExcludeItemTypes                                      []string
-	Years                                                 []int
-	MinPremiereDate, MaxPremiereDate                      *time.Time
-	MinDateCreated, MaxDateCreated                        *time.Time
-	MinCommunityRating                                    *float64
-	NameStartsWith, NameStartsWithOrGreater, NameLessThan string
-	HasOverview, HasSubtitles, IsHD                       *bool
+	UserID, ParentID, SearchTerm, SortBy, SortOrder           string
+	ApplicationCredentialID                                   string
+	Recursive                                                 bool
+	StartIndex, Limit                                         int
+	IncludeItemTypes, Ids, MediaTypes                         []string
+	ParentIndexNumber                                         *int
+	GenreIds, TagIds, StudioIds                               []int64
+	ArtistIds, AlbumArtistIds                                 []int64
+	AlbumIds, ExcludeItemIds, ListItemIds                     []string
+	PersonIds, Genres, Tags, Studios, PersonTypes             []string
+	Person                                                    string
+	IsPlayed, IsFavorite                                      *bool
+	IsFavoriteOrLikes                                         *bool
+	Likes                                                     *bool
+	IsFolder, IsSpecialSeason, IsSpecialEpisode               *bool
+	IsMissing, IsVirtualUnaired, IsPlaceHolder, IsUnaired     *bool
+	DisplayMissingEpisodes                                    bool
+	expectedEpisodePopulation                                 bool
+	Resumable                                                 bool
+	ExcludeItemTypes                                          []string
+	Years                                                     []int
+	MinPremiereDate, MaxPremiereDate                          *time.Time
+	MinDateCreated, MaxDateCreated                            *time.Time
+	MinCommunityRating                                        *float64
+	NameStartsWith, NameStartsWithOrGreater, NameLessThan     string
+	ArtistStartsWithOrGreater, AlbumArtistStartsWithOrGreater string
+	HasOverview, HasSubtitles, IsHD                           *bool
 }
 
 type ItemResult struct {

@@ -13,26 +13,28 @@ func TestUserConfigurationPatchIsValidatedAndConsumerBound(t *testing.T) {
 		"PlayDefaultAudioTrack": json.RawMessage(`false`), "SubtitleMode": json.RawMessage(`"HearingImpaired"`),
 		"ResumeRewindSeconds": json.RawMessage(`10`), "OrderedViews": json.RawMessage(`["second","first"]`),
 		"IntroSkipMode": json.RawMessage(`"AutoSkip"`), "EnableNextEpisodeAutoPlay": json.RawMessage(`false`),
+		"DisplayMissingEpisodes": json.RawMessage(`true`), "HidePlayedInSuggestions": json.RawMessage(`true`),
 	})
 	if err != nil || updated.AudioLanguagePreference != "eng" || updated.SubtitleMode != "HearingImpaired" ||
 		updated.PlayDefaultAudioTrack || updated.ResumeRewindSeconds != 10 || PreferenceLanguageKey("eng") != PreferenceLanguageKey("en") ||
-		PreferenceLanguageKey("zh-Hans") != PreferenceLanguageKey("zho") || updated.IntroSkipMode != "AutoSkip" || updated.EnableNextEpisodeAutoPlay {
+		PreferenceLanguageKey("zh-Hans") != PreferenceLanguageKey("zho") || updated.IntroSkipMode != "AutoSkip" || updated.EnableNextEpisodeAutoPlay ||
+		!updated.DisplayMissingEpisodes || !updated.HidePlayedInSuggestions {
 		t.Fatalf("valid preferences lost their language or field semantics: %+v, %v", updated, err)
 	}
 	for name, patch := range map[string]UserConfigurationPatch{
-		"unknown":                   {"IsAdministrator": json.RawMessage(`true`)},
-		"duplicate aliases":         {"SubtitleMode": json.RawMessage(`"None"`), "subTITLEmode": json.RawMessage(`"Always"`)},
-		"null boolean":              {"PlayDefaultAudioTrack": json.RawMessage(`null`)},
-		"null list":                 {"OrderedViews": json.RawMessage(`null`)},
-		"invalid language":          {"AudioLanguagePreference": json.RawMessage(`"en\nprivate"`)},
-		"rewind overflow":           {"ResumeRewindSeconds": json.RawMessage(`301`)},
-		"invalid mode":              {"SubtitleMode": json.RawMessage(`"auto"`)},
-		"credential operation":      {"EnableLocalPassword": json.RawMessage(`true`)},
-		"PIN credential operation":  {"ProfilePin": json.RawMessage(`"1234"`)},
-		"invalid intro mode":        {"IntroSkipMode": json.RawMessage(`"auto"`)},
-		"invalid autoplay":          {"EnableNextEpisodeAutoPlay": json.RawMessage(`"false"`)},
-		"unimplemented missing":     {"DisplayMissingEpisodes": json.RawMessage(`true`)},
-		"unimplemented suggestions": {"HidePlayedInSuggestions": json.RawMessage(`true`)},
+		"unknown":                  {"IsAdministrator": json.RawMessage(`true`)},
+		"duplicate aliases":        {"SubtitleMode": json.RawMessage(`"None"`), "subTITLEmode": json.RawMessage(`"Always"`)},
+		"null boolean":             {"PlayDefaultAudioTrack": json.RawMessage(`null`)},
+		"null list":                {"OrderedViews": json.RawMessage(`null`)},
+		"invalid language":         {"AudioLanguagePreference": json.RawMessage(`"en\nprivate"`)},
+		"rewind overflow":          {"ResumeRewindSeconds": json.RawMessage(`301`)},
+		"invalid mode":             {"SubtitleMode": json.RawMessage(`"auto"`)},
+		"credential operation":     {"EnableLocalPassword": json.RawMessage(`true`)},
+		"PIN credential operation": {"ProfilePin": json.RawMessage(`"1234"`)},
+		"invalid intro mode":       {"IntroSkipMode": json.RawMessage(`"auto"`)},
+		"invalid autoplay":         {"EnableNextEpisodeAutoPlay": json.RawMessage(`"false"`)},
+		"invalid missing":          {"DisplayMissingEpisodes": json.RawMessage(`"true"`)},
+		"invalid suggestions":      {"HidePlayedInSuggestions": json.RawMessage(`null`)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := ApplyUserConfigurationPatch(base, patch); err == nil {

@@ -13,7 +13,7 @@ export interface UserConfiguration {
 export interface UserPreferences { UserId: string; Revision: string; Configuration: UserConfiguration }
 export type WritableUserConfiguration = Pick<UserConfiguration,
   'AudioLanguagePreference' | 'SubtitleLanguagePreference' | 'PlayDefaultAudioTrack' | 'RememberAudioSelections' | 'RememberSubtitleSelections'
-  | 'SubtitleMode' | 'ResumeRewindSeconds' | 'IntroSkipMode' | 'EnableNextEpisodeAutoPlay' | 'HidePlayedInLatest' | 'HidePlayedInMoreLikeThis' | 'OrderedViews' | 'LatestItemsExcludes' | 'MyMediaExcludes'>;
+  | 'SubtitleMode' | 'ResumeRewindSeconds' | 'IntroSkipMode' | 'EnableNextEpisodeAutoPlay' | 'HidePlayedInLatest' | 'HidePlayedInMoreLikeThis' | 'HidePlayedInSuggestions' | 'DisplayMissingEpisodes' | 'OrderedViews' | 'LatestItemsExcludes' | 'MyMediaExcludes'>;
 export const preferenceBooleans = ['PlayDefaultAudioTrack', 'RememberAudioSelections', 'RememberSubtitleSelections', 'EnableNextEpisodeAutoPlay', 'HidePlayedInLatest', 'HidePlayedInMoreLikeThis', 'HidePlayedInSuggestions', 'DisplayMissingEpisodes'] as const;
 export const subtitleModes = ['Default', 'Always', 'OnlyForced', 'None', 'Smart', 'HearingImpaired'] as const;
 export const introSkipModes = ['None', 'ShowButton', 'AutoSkip'] as const;

@@ -357,11 +357,57 @@ test('playback preferences save every intro mode and next episode choice without
         AudioLanguagePreference: 'en', SubtitleLanguagePreference: 'en', PlayDefaultAudioTrack: true,
         RememberAudioSelections: true, RememberSubtitleSelections: true, SubtitleMode: 'Default', ResumeRewindSeconds: 5,
         HidePlayedInLatest: false, HidePlayedInMoreLikeThis: false, OrderedViews: [], LatestItemsExcludes: [], MyMediaExcludes: [],
+        HidePlayedInSuggestions: false, DisplayMissingEpisodes: false,
         IntroSkipMode: choice.mode, EnableNextEpisodeAutoPlay: choice.next,
       },
     });
   }
   expect(api.writes(preferencesPath)).toHaveLength(cases.length);
+});
+
+test('discovery preferences save and reload missing episode and played suggestion choices', async ({ page, api }) => {
+  const user = await openUser(page);
+  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Playback and display preferences', exact: true });
+  await dialog.getByRole('checkbox', { name: 'Display missing episodes', exact: true }).check();
+  await dialog.getByRole('checkbox', { name: 'Hide played items from Suggestions', exact: true }).check();
+  const [response] = await Promise.all([
+    page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === preferencesPath),
+    dialog.getByRole('button', { name: 'Save preferences', exact: true }).click(),
+  ]);
+  expect(response.status()).toBe(200);
+  await expect(dialog.getByRole('button', { name: 'Save preferences', exact: true })).toBeDisabled();
+  expect(api.writes(preferencesPath)).toHaveLength(1);
+  const input = api.writes(preferencesPath)[0].body as { Configuration: Record<string, unknown> };
+  expect(input.Configuration).toMatchObject({ DisplayMissingEpisodes: true, HidePlayedInSuggestions: true, HidePlayedInLatest: false, HidePlayedInMoreLikeThis: false });
+  expect(input.Configuration).not.toHaveProperty('ProfilePin');
+  expect(input.Configuration).not.toHaveProperty('EnableLocalPassword');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
+  await expect(dialog.getByRole('checkbox', { name: 'Display missing episodes', exact: true })).toBeChecked();
+  await expect(dialog.getByRole('checkbox', { name: 'Hide played items from Suggestions', exact: true })).toBeChecked();
+});
+
+test('conflicted discovery preferences keep the draft and require reload before another write', async ({ page, api }) => {
+  const user = await openUser(page);
+  await user.getByRole('button', { name: 'Playback and display preferences', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Playback and display preferences', exact: true });
+  const missing = dialog.getByRole('checkbox', { name: 'Display missing episodes', exact: true });
+  await missing.check();
+  api.preferences = { ...api.preferences, Revision: '9007199254740993' };
+  const [response] = await Promise.all([
+    page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === preferencesPath),
+    dialog.getByRole('button', { name: 'Save preferences', exact: true }).click(),
+  ]);
+  expect(response.status()).toBe(409);
+  await expect(missing).toBeChecked();
+  await expect(missing).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Save preferences', exact: true })).toBeDisabled();
+  page.once('dialog', (prompt) => { void prompt.accept(); });
+  await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
+  await expect(missing).not.toBeChecked();
+  await expect(missing).toBeEnabled();
+  expect(api.writes(preferencesPath)).toHaveLength(1);
 });
 
 test('manual intro edits, JSON imports, and chapter resets bind every mutation to its source', async ({ page, api }) => {

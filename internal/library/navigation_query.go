@@ -119,5 +119,6 @@ func addNavigationConditions(query Query, conditions []string, args []any) ([]st
 			navigationNumberSQL("stream", "Width") + ">=1280 OR " + navigationNumberSQL("stream", "Height") + ">=720))"
 		add("("+predicate+")", "=", "::boolean", *query.IsHD)
 	}
+	conditions, args = addExpectedEpisodeConditions(query, conditions, args)
 	return conditions, args
 }

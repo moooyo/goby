@@ -159,9 +159,6 @@ func applyConfigurationField(result *UserConfiguration, name string, raw json.Ra
 		if writable && value != *flag && name == "EnableLocalPassword" {
 			return fmt.Errorf("Use the local-credentials operation to change local-password authentication.")
 		}
-		if writable && value != *flag && (name == "DisplayMissingEpisodes" || name == "HidePlayedInSuggestions") {
-			return fmt.Errorf("This compatibility preference has no implemented consumer and is read-only.")
-		}
 		*flag = value
 		return nil
 	}
