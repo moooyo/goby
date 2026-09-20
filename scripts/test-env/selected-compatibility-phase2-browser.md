@@ -135,6 +135,13 @@ secret text, and cannot replace the underlying error or prevent cleanup.
 Native screenshots disable UI animation so a dialog fade does not obscure
 the review view.
 
+Initialization seeds the manual overview through the real metadata store using
+the current revision, a non-null override object, and an explicit empty
+`LockedFields` array. Setup failures retain safe error categories, Go error
+types, PostgreSQL SQLSTATE codes, and allowlisted metadata field names. Raw
+error messages, rejected values, private file paths, credentials, and connection
+strings are excluded from these diagnostics.
+
 A separate browser context provides a private HTMLVideoElement test consumer
 for the published OCR subtitle at the fixture-only `/__selected-phase2-media`
 route. The companion `/__selected-phase2-hls.js` route serves the admitted

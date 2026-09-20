@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
@@ -145,6 +146,70 @@ type selectedPhase2Result struct {
 	Stages                      []struct{ Phase, State string }
 }
 
+// Classify failures without serializing error messages, connection strings,
+// source paths, rejected values, or authentication material.
+func selectedPhase2SafeError(err error) string {
+	if err == nil {
+		return `{"Category":"none"}`
+	}
+	value := map[string]any{}
+	value["Type"] = reflect.TypeOf(err).String()
+	value["Category"] = "unclassified_error"
+	for _, candidate := range []struct {
+		name string
+		err  error
+	}{
+		{"context_deadline", context.DeadlineExceeded}, {"context_cancelled", context.Canceled},
+		{"not_found", os.ErrNotExist}, {"permission_denied", os.ErrPermission}, {"already_exists", os.ErrExist},
+		{"library_invalid_input", library.ErrInvalidInput}, {"library_forbidden", library.ErrForbidden},
+		{"library_not_found", library.ErrNotFound}, {"metadata_revision_conflict", library.ErrRevisionConflict},
+		{"identity_invalid_input", identity.ErrInvalidInput}, {"identity_unauthorized", identity.ErrUnauthorized},
+		{"identity_invalid_credentials", identity.ErrInvalidCredentials}, {"already_initialized", identity.ErrAlreadyInitialized},
+	} {
+		if errors.Is(err, candidate.err) {
+			value["Category"] = candidate.name
+			break
+		}
+	}
+	var validation *library.MetadataValidationError
+	if errors.As(err, &validation) {
+		value["Category"] = "metadata_validation"
+		known := []string{"Revision", "Overrides", "LockedFields", "Name", "SortName", "Overview", "OriginalTitle", "OfficialRating", "ProductionYear", "PremiereDate", "CommunityRating", "ProviderIds", "Genres", "Tags", "Studios", "People", "IndexNumber", "ParentIndexNumber", "Album", "Artists", "AlbumArtists"}
+		fields, unknown := []string{}, 0
+		for field := range validation.Fields {
+			if slices.Contains(known, field) {
+				fields = append(fields, field)
+			} else {
+				unknown++
+			}
+		}
+		slices.Sort(fields)
+		value["Fields"], value["UnknownFieldCount"] = fields, unknown
+	}
+	var postgres *pgconn.PgError
+	if errors.As(err, &postgres) {
+		value["Category"] = "postgres_error"
+		if regexp.MustCompile(`^[0-9A-Z]{5}$`).MatchString(postgres.Code) {
+			value["SQLState"] = postgres.Code
+		}
+	}
+	var syntax *json.SyntaxError
+	if errors.As(err, &syntax) {
+		value["Category"], value["Offset"] = "json_syntax", syntax.Offset
+	}
+	var typeError *json.UnmarshalTypeError
+	if errors.As(err, &typeError) {
+		value["Category"], value["Offset"] = "json_type", typeError.Offset
+	}
+	encoded, _ := json.Marshal(value)
+	return string(encoded)
+}
+
+func selectedPhase2Fatal(t *testing.T, operation string, err error) {
+	t.Helper()
+	t.Fatalf("%s: %s", operation, selectedPhase2SafeError(err))
+}
+
 // These two private fixture routes host only a fixed test document and the
 // unchanged pinned open-source HLS engine. Every business route remains Goby.
 type selectedPhase2Runtime struct {
@@ -237,19 +302,22 @@ func selectedPhase2ReadExecution(t *testing.T) (selectedPhase2Execution, []selec
 	t.Helper()
 	path := refreshBrowserPath(t, "GOBY_SELECTED_PHASE2_EXECUTION_CONFIG", false)
 	var raw json.RawMessage
-	if featureWavePrivateJSON(path, 64<<10, &raw) != nil {
-		t.Fatal("read private phase 2 execution inventory")
+	if err := featureWavePrivateJSON(path, 64<<10, &raw); err != nil {
+		selectedPhase2Fatal(t, "read private phase 2 execution inventory", err)
 	}
 	var execution selectedPhase2Execution
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
-	if decoder.Decode(&execution) != nil || execution.Marker != "goby-selected-phase2-execution-v1" {
+	if err := decoder.Decode(&execution); err != nil {
+		selectedPhase2Fatal(t, "decode phase 2 execution inventory", err)
+	}
+	if execution.Marker != "goby-selected-phase2-execution-v1" {
 		t.Fatal("phase 2 execution inventory has an invalid schema")
 	}
 	configuration := config.MediaOperationsConfig{Enabled: true, MaxConcurrent: 1, MaxQueued: 4, MaxRuntimeSeconds: 90,
 		MaxScratchBytes: 512 << 20, ScratchDirectory: "/owned/phase2-scratch", WritableProfiles: []string{"matroska-v1"}, OCR: execution.OCR}
-	if configuration.Validate() != nil {
-		t.Fatal("phase 2 execution inventory does not contain a supported OCR configuration")
+	if err := configuration.Validate(); err != nil {
+		selectedPhase2Fatal(t, "validate phase 2 OCR configuration", err)
 	}
 	if execution.HlsBundleSHA256 != phase2BrowserBundleSHA256 {
 		t.Fatal("phase 2 HLS bundle digest does not identify the reviewed engine")
@@ -288,8 +356,11 @@ func selectedPhase2PNG(t *testing.T, path string, shade color.NRGBA) []byte {
 		}
 	}
 	var encoded bytes.Buffer
-	if png.Encode(&encoded, canvas) != nil || os.WriteFile(path, encoded.Bytes(), 0o600) != nil {
-		t.Fatal("write owned phase 2 cover pixels")
+	if err := png.Encode(&encoded, canvas); err != nil {
+		selectedPhase2Fatal(t, "encode owned phase 2 cover pixels", err)
+	}
+	if err := os.WriteFile(path, encoded.Bytes(), 0o600); err != nil {
+		selectedPhase2Fatal(t, "write owned phase 2 cover pixels", err)
 	}
 	return encoded.Bytes()
 }
@@ -331,8 +402,8 @@ func selectedPhase2GenerateVideo(t *testing.T, execution selectedPhase2Execution
 	args = append(args, "-af", "asetpts=PTS+1024/SR/TB", "-c:v", "libx264", "-preset", "ultrafast", "-threads:v", "1", "-bf", "0", "-g", "24",
 		"-pix_fmt", "yuv420p", "-c:a", "aac", "-threads:a", "1", "-b:a", "64000", "-t", "12", "-avoid_negative_ts", "disabled", "-f", "matroska", output)
 	hlsHTTPMediaCommand(t, execution.FFmpegPath, args...)
-	if os.Chmod(output, 0o600) != nil {
-		t.Fatal("protect owned phase 2 video")
+	if err := os.Chmod(output, 0o600); err != nil {
+		selectedPhase2Fatal(t, "protect owned phase 2 video", err)
 	}
 }
 
@@ -1164,19 +1235,24 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	execution, inventory := selectedPhase2ReadExecution(t)
 	hlsBundle, bundleErr := os.ReadFile(execution.HlsBundlePath)
 	bundleDigest := sha256.Sum256(hlsBundle)
-	if bundleErr != nil || len(hlsBundle) > 8<<20 || hex.EncodeToString(bundleDigest[:]) != phase2BrowserBundleSHA256 {
+	if bundleErr != nil {
+		selectedPhase2Fatal(t, "read pinned phase 2 HLS bundle", bundleErr)
+	}
+	if len(hlsBundle) > 8<<20 || hex.EncodeToString(bundleDigest[:]) != phase2BrowserBundleSHA256 {
 		t.Fatal("phase 2 HLS bundle changed after pinned inventory admission")
 	}
 	runID := os.Getenv("GOBY_SELECTED_PHASE2_RUN_ID")
 	if !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$`).MatchString(runID) {
 		t.Fatal("an explicit phase 2 browser run identity is required")
 	}
-	if info, err := os.Stat(artifacts); err != nil || info.Mode().Perm() != 0o700 {
-		t.Fatal("phase 2 artifact parent must be private")
+	if info, err := os.Stat(artifacts); err != nil {
+		selectedPhase2Fatal(t, "read phase 2 artifact parent identity", err)
+	} else if info.Mode().Perm() != 0o700 {
+		t.Fatalf("phase 2 artifact parent must be private: mode=%04o", info.Mode().Perm())
 	}
 	cwd, err := os.Getwd()
 	if err != nil {
-		t.Fatal("read phase 2 source directory")
+		selectedPhase2Fatal(t, "read phase 2 source directory", err)
 	}
 	sourceRoot := ""
 	for directory := cwd; directory != filepath.Dir(directory); directory = filepath.Dir(directory) {
@@ -1188,17 +1264,22 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	if sourceRoot == "" {
 		t.Fatal("locate phase 2 source root")
 	}
-	for _, input := range []string{node, playwright, filepath.Join(sourceRoot, "scripts", "test-env", "bitmap-subtitle-fixtures.py"),
-		filepath.Join(sourceRoot, "scripts", "test-env", "selected-compatibility-phase2-browser.mjs")} {
-		fact, err := selectedPhase2Fact(input, 256<<20)
+	for _, input := range []struct{ role, path string }{{"node", node}, {"playwright", playwright},
+		{"bitmap-author", filepath.Join(sourceRoot, "scripts", "test-env", "bitmap-subtitle-fixtures.py")},
+		{"browser-driver", filepath.Join(sourceRoot, "scripts", "test-env", "selected-compatibility-phase2-browser.mjs")}} {
+		fact, err := selectedPhase2Fact(input.path, 256<<20)
 		if err != nil {
-			t.Fatal("capture phase 2 browser and authoring source identities")
+			// selectedPhase2Fact returns only fixed path-free diagnostic text.
+			t.Fatalf("capture phase 2 %s identity: %v", input.role, err)
 		}
 		inventory = append(inventory, fact)
 	}
 	output, err := os.MkdirTemp(artifacts, "selected-phase2-browser-")
-	if err != nil || os.Chmod(output, 0o700) != nil {
-		t.Fatal("create phase 2 private artifact directory")
+	if err != nil {
+		selectedPhase2Fatal(t, "create phase 2 private artifact directory", err)
+	}
+	if err := os.Chmod(output, 0o700); err != nil {
+		selectedPhase2Fatal(t, "protect phase 2 private artifact directory", err)
 	}
 	driver := map[string]any{"Marker": "goby-selected-phase2-browser-driver-v1", "RunId": runID, "Complete": false, "ArtifactDirectory": output,
 		"CredentialsWrittenToSummary": false, "RealProber": true, "OCRRecognitionExercised": false, "OriginalClientUsed": false}
@@ -1235,20 +1316,20 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 			t.Error("preserve phase 2 driver result")
 		}
 	})
-	if refreshBrowserWriteJSON(filepath.Join(output, "execution-inventory.json"), inventory) != nil {
-		t.Fatal("preserve pinned phase 2 execution identities")
+	if err := refreshBrowserWriteJSON(filepath.Join(output, "execution-inventory.json"), inventory); err != nil {
+		selectedPhase2Fatal(t, "preserve pinned phase 2 execution identities", err)
 	}
 	f := newServerFixtureWithTimeout(t, 12*time.Minute)
-	if f.pool.QueryRow(f.ctx, "SELECT current_schema()").Scan(&schema) != nil {
-		t.Fatal("identify phase 2 owned schema")
+	if err := f.pool.QueryRow(f.ctx, "SELECT current_schema()").Scan(&schema); err != nil {
+		selectedPhase2Fatal(t, "identify phase 2 owned schema", err)
 	}
 	mediaRoot = t.TempDir()
 	inputDir := filepath.Join(mediaRoot, "authoring")
 	movieDir := filepath.Join(mediaRoot, "movies")
 	musicDir := filepath.Join(mediaRoot, "music")
 	for _, dir := range []string{inputDir, movieDir, filepath.Join(musicDir, "First Album"), filepath.Join(musicDir, "Second Album")} {
-		if os.MkdirAll(dir, 0o700) != nil {
-			t.Fatal("create phase 2 owned source directories")
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			selectedPhase2Fatal(t, "create phase 2 owned source directories", err)
 		}
 	}
 	bitmapDir := filepath.Join(inputDir, "bitmap")
@@ -1256,11 +1337,17 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	hlsHTTPMediaCommand(t, execution.PythonPath, "-I", generator, "--font-file", execution.FontPath, "--font-sha256", execution.FontSHA256, "--output-dir", bitmapDir)
 	manifestPath := filepath.Join(bitmapDir, "manifest.json")
 	manifestRaw, err := os.ReadFile(manifestPath)
-	if err != nil || len(manifestRaw) > 1<<20 {
-		t.Fatal("read bounded phase 2 authored bitmap manifest")
+	if err != nil {
+		selectedPhase2Fatal(t, "read bounded phase 2 authored bitmap manifest", err)
+	}
+	if len(manifestRaw) > 1<<20 {
+		t.Fatalf("phase 2 authored bitmap manifest exceeds size limit: bytes=%d", len(manifestRaw))
 	}
 	var manifest selectedPhase2BitmapManifest
-	if json.Unmarshal(manifestRaw, &manifest) != nil || manifest.Format != "goby-bitmap-subtitle-fixtures-v2" || manifest.DurationTicks != 97_280_000 {
+	if err := json.Unmarshal(manifestRaw, &manifest); err != nil {
+		selectedPhase2Fatal(t, "decode phase 2 bitmap authoring manifest", err)
+	}
+	if manifest.Format != "goby-bitmap-subtitle-fixtures-v2" || manifest.DurationTicks != 97_280_000 {
 		t.Fatal("phase 2 bitmap authoring manifest identity differs")
 	}
 	var expected []selectedPhase2ExpectedCue
@@ -1297,16 +1384,16 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 			t.Fatalf("phase 2 authored bitmap %s: manifest size or SHA-256 mismatch", name)
 		}
 	}
-	if refreshBrowserWriteJSON(filepath.Join(output, "bitmap-authoring-manifest.json"), json.RawMessage(manifestRaw)) != nil {
-		t.Fatal("preserve independent phase 2 authored bitmap evidence")
+	if err := refreshBrowserWriteJSON(filepath.Join(output, "bitmap-authoring-manifest.json"), json.RawMessage(manifestRaw)); err != nil {
+		selectedPhase2Fatal(t, "preserve independent phase 2 authored bitmap evidence", err)
 	}
 	removeText := filepath.Join(inputDir, "remove.srt")
 	keepText := filepath.Join(inputDir, "keep.srt")
 	chapterPath := filepath.Join(inputDir, "chapters.ffmetadata")
 	for path, contents := range map[string]string{removeText: "1\n00:00:01,000 --> 00:00:03,000\nRemove this English track\n", keepText: "1\n00:00:02,000 --> 00:00:04,000\nConserver cette piste\n",
 		chapterPath: ";FFMETADATA1\ntitle=Selected Phase Two Source\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=0\nEND=3000\ntitle=Opening\n[CHAPTER]\nTIMEBASE=1/1000\nSTART=3000\nEND=12000\ntitle=Main\n"} {
-		if os.WriteFile(path, []byte(contents), 0o600) != nil {
-			t.Fatal("write owned phase 2 subtitle and chapter sources")
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			selectedPhase2Fatal(t, "write owned phase 2 subtitle and chapter sources", err)
 		}
 	}
 	removePath := filepath.Join(movieDir, "Phase Two Remove.mkv")
@@ -1320,20 +1407,20 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 		hlsHTTPMediaCommand(t, execution.FFmpegPath, "-hide_banner", "-nostdin", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=800:sample_rate=48000", "-i", coverPaths[index],
 			"-map", "0:a:0", "-map", "1:v:0", "-af", "atrim=end_sample=9600,asetpts=PTS-STARTPTS", "-c:a", "flac", "-c:v", "copy", "-disposition:v:0", "attached_pic",
 			"-metadata:s:v:0", "comment=Cover (front)", "-metadata:s:v:0", "title=Embedded source cover", path)
-		if os.Chmod(path, 0o600) != nil {
-			t.Fatal("protect phase 2 real audio source")
+		if err := os.Chmod(path, 0o600); err != nil {
+			selectedPhase2Fatal(t, "protect phase 2 real audio source", err)
 		}
 	}
 	files := map[string]selectedPhase2FileFact{}
 	for _, path := range append([]string{removePath, ocrPath, removeText, keepText, chapterPath, bitmapPath, manifestPath, coverPaths[0], coverPaths[1]}, audioPaths...) {
 		fact, err := selectedPhase2Fact(path, 32<<20)
 		if err != nil {
-			t.Fatal("capture phase 2 owned source fingerprints")
+			t.Fatalf("capture phase 2 owned source fingerprints: %v", err)
 		}
 		files[path] = fact
 	}
 	if err := f.app.Close(f.ctx); err != nil {
-		t.Fatal("close initial phase 2 application")
+		selectedPhase2Fatal(t, "close initial phase 2 application", err)
 	}
 	scratch := t.TempDir()
 	f.cfg.FFmpegPath, f.cfg.FFprobePath, f.cfg.MediaRoots = execution.FFmpegPath, execution.FFprobePath, []string{mediaRoot}
@@ -1342,11 +1429,11 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	f.cfg.MediaOperations = config.MediaOperationsConfig{Enabled: true, MaxConcurrent: 1, MaxQueued: 4, MaxRuntimeSeconds: 90, MaxScratchBytes: 512 << 20, ScratchDirectory: scratch, WritableProfiles: []string{"matroska-v1"}, OCR: execution.OCR}
 	assets, err := adminassets.Files()
 	if err != nil {
-		t.Fatal("open phase 2 embedded native administrator assets")
+		selectedPhase2Fatal(t, "open phase 2 embedded native administrator assets", err)
 	}
 	app, err := New(f.ctx, f.cfg, f.pool, f.users, f.log, "selected-phase2-browser-integration", WithDashboardAssets(assets))
 	if err != nil {
-		t.Fatal("construct phase 2 actual media operation application")
+		selectedPhase2Fatal(t, "construct phase 2 actual media operation application", err)
 	}
 	f.app, f.handler = app, app.Handler()
 	runtime := &selectedPhase2Runtime{phase3BrowserRuntime: &phase3BrowserRuntime{f: f, assets: assets, addr: "127.0.0.1:0"}, bundle: hlsBundle}
@@ -1379,42 +1466,45 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	adminPassword, viewerPassword := featureWavePassword(t), featureWavePassword(t)
 	admin, err := f.users.Bootstrap(f.ctx, "Selected phase 2 administrator", adminPassword)
 	if err != nil {
-		t.Fatal("bootstrap phase 2 native administrator")
+		selectedPhase2Fatal(t, "bootstrap phase 2 native administrator", err)
 	}
 	viewer, err := f.users.CreateUser(f.ctx, "Selected phase 2 viewer", viewerPassword, false)
 	if err != nil {
-		t.Fatal("create phase 2 independent HTTP viewer")
+		selectedPhase2Fatal(t, "create phase 2 independent HTTP viewer", err)
 	}
 	credentials, err := f.users.Authenticate(f.ctx, admin.Name, adminPassword, identity.Client{Name: "Phase 2 fixture observer", DeviceID: "phase2-fixture-observer", Device: "Linux", Version: "1"}, "admin")
 	if err != nil {
-		t.Fatal("authenticate phase 2 fixture observer")
+		selectedPhase2Fatal(t, "authenticate phase 2 fixture observer", err)
 	}
 	actor, err := f.users.Resolve(f.ctx, credentials.Token, "admin")
 	if err != nil {
-		t.Fatal("resolve phase 2 fixture observer")
+		selectedPhase2Fatal(t, "resolve phase 2 fixture observer", err)
 	}
 	movies, err := app.library.CreateLibrary(f.ctx, "Selected Phase Two Movies", "movies", []string{movieDir})
 	if err != nil {
-		t.Fatal("create phase 2 real movie library")
+		selectedPhase2Fatal(t, "create phase 2 real movie library", err)
 	}
 	music, err := app.library.CreateLibrary(f.ctx, "Selected Phase Two Music", "music", []string{musicDir})
 	if err != nil {
-		t.Fatal("create phase 2 real music library")
+		selectedPhase2Fatal(t, "create phase 2 real music library", err)
 	}
 	policy, _ := json.Marshal(map[string]any{"EnableAllFolders": false, "EnabledFolders": []string{movies.ID, music.ID}, "EnableMediaPlayback": true,
 		"EnableVideoPlaybackTranscoding": true, "EnableAudioPlaybackTranscoding": true, "EnablePlaybackRemuxing": true})
 	if _, err := f.pool.Exec(f.ctx, "UPDATE users SET policy=$2::jsonb WHERE id=$1", viewer.ID, policy); err != nil {
-		t.Fatal("set phase 2 owned viewer media execution policy")
+		selectedPhase2Fatal(t, "set phase 2 owned viewer media execution policy", err)
 	}
 	selectedPhase1Scan(t, f, movies.ID, 2)
 	selectedPhase1Scan(t, f, music.ID, 2)
 	readItem := func(path string) library.Item {
 		var id string
-		if f.pool.QueryRow(f.ctx, "SELECT id FROM items WHERE path=$1", path).Scan(&id) != nil {
-			t.Fatal("read phase 2 scanned item identity")
+		if err := f.pool.QueryRow(f.ctx, "SELECT id FROM items WHERE path=$1", path).Scan(&id); err != nil {
+			selectedPhase2Fatal(t, "read phase 2 scanned item identity", err)
 		}
 		item, err := app.library.GetItem(f.ctx, viewer.ID, id)
-		if err != nil || item.Media == nil || item.Media.ProbeVersion != media.CurrentProbeVersion {
+		if err != nil {
+			selectedPhase2Fatal(t, "read phase 2 scanned item", err)
+		}
+		if item.Media == nil || item.Media.ProbeVersion != media.CurrentProbeVersion {
 			t.Fatal("phase 2 item lacks real current media probe facts")
 		}
 		return item
@@ -1446,34 +1536,37 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	for _, id := range []string{removeItem.ID, ocrItem.ID} {
 		detail, err := app.library.GetItemMetadata(f.ctx, actor, id)
 		if err != nil {
-			t.Fatal("read phase 2 metadata baseline")
+			selectedPhase2Fatal(t, "read phase 2 metadata baseline", err)
 		}
 		value, _ := json.Marshal("Phase 2 preserved manual overview")
-		if _, err := app.library.UpdateItemMetadata(f.ctx, actor, id, library.MetadataEdit{Revision: detail.Revision, Overrides: map[string]json.RawMessage{"Overview": value}}); err != nil {
-			t.Fatal("seed phase 2 preserved manual metadata")
+		if _, err := app.library.UpdateItemMetadata(f.ctx, actor, id, library.MetadataEdit{Revision: detail.Revision, Overrides: map[string]json.RawMessage{"Overview": value}, LockedFields: []string{}}); err != nil {
+			selectedPhase2Fatal(t, "seed phase 2 preserved manual metadata", err)
 		}
 		if _, err := f.pool.Exec(f.ctx, `INSERT INTO user_item_data(user_id,item_id,playback_position_ticks,play_count,is_favorite,played,last_played_at) VALUES($1,$2,50000000,3,true,false,'2026-01-02T03:04:05Z')`, viewer.ID, id); err != nil {
-			t.Fatal("seed phase 2 persistent owned user data")
+			selectedPhase2Fatal(t, "seed phase 2 persistent owned user data", err)
 		}
 	}
 	preservation, err := selectedPhase2Preservation(f.ctx, f, viewer.ID, []string{removeItem.ID, ocrItem.ID})
 	if err != nil {
-		t.Fatal("capture phase 2 user data and metadata preservation baseline")
+		selectedPhase2Fatal(t, "capture phase 2 user data and metadata preservation baseline", err)
 	}
 	embedded, err := refreshBrowserAssetInventory(assets)
 	if err != nil {
-		t.Fatal("inventory phase 2 native assets")
+		selectedPhase2Fatal(t, "inventory phase 2 native assets", err)
 	}
 	sourceAssets, err := refreshBrowserAssetInventory(os.DirFS(filepath.Join(sourceRoot, "web", "admin", "dist")))
-	if err != nil || !reflect.DeepEqual(embedded, sourceAssets) {
+	if err != nil {
+		selectedPhase2Fatal(t, "inventory phase 2 frozen source assets", err)
+	}
+	if !reflect.DeepEqual(embedded, sourceAssets) {
 		t.Fatal("phase 2 embedded administrator assets differ from source")
 	}
-	if refreshBrowserWriteJSON(filepath.Join(output, "embedded-assets.json"), embedded) != nil {
-		t.Fatal("preserve phase 2 embedded asset inventory")
+	if err := refreshBrowserWriteJSON(filepath.Join(output, "embedded-assets.json"), embedded); err != nil {
+		selectedPhase2Fatal(t, "preserve phase 2 embedded asset inventory", err)
 	}
 	driver["EmbeddedAssetsMatchFrozenSource"] = true
-	if runtime.listen() != nil {
-		t.Fatal("start phase 2 owned TCP4 listener")
+	if err := runtime.listen(); err != nil {
+		selectedPhase2Fatal(t, "start phase 2 owned TCP4 listener", err)
 	}
 	fixture := selectedPhase2Context{Marker: "goby-selected-phase2-browser-fixture-v1", RunID: runID, BaseURL: "http://" + runtime.addr,
 		AdminID: admin.ID, AdminName: admin.Name, AdminPassword: adminPassword, ViewerID: viewer.ID, ViewerName: viewer.Name, ViewerPassword: viewerPassword,
@@ -1492,17 +1585,17 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 			driver["PrivateContextRemoved"] = true
 		}
 	})
-	if refreshBrowserWriteJSON(contextPath, fixture) != nil {
-		t.Fatal("write private phase 2 browser context")
+	if err := refreshBrowserWriteJSON(contextPath, fixture); err != nil {
+		selectedPhase2Fatal(t, "write private phase 2 browser context", err)
 	}
 	observer := &selectedPhase2Observer{runtime: runtime, fixture: fixture, execution: execution, actor: actor, actorToken: credentials.Token, files: files,
 		removePath: removePath, ocrPath: ocrPath, scratch: scratch, originalRemove: files[removePath], removeMedia: *removeItem.Media, coverBytes: coverBytes, preservation: preservation}
 	if _, err := observer.snapshot(f.ctx, "seeded", "database"); err != nil {
-		t.Fatal("preserve phase 2 real source seed evidence")
+		selectedPhase2Fatal(t, "preserve phase 2 real source seed evidence", err)
 	}
 	for _, name := range []string{"home", "tmp", "cache"} {
-		if os.Mkdir(filepath.Join(output, name), 0o700) != nil {
-			t.Fatal("create phase 2 private browser runtime directories")
+		if err := os.Mkdir(filepath.Join(output, name), 0o700); err != nil {
+			selectedPhase2Fatal(t, "create phase 2 private browser runtime directories", err)
 		}
 	}
 	environment := []string{"PATH=/usr/bin:/bin", "LANG=C.UTF-8", "LC_ALL=C.UTF-8", "TZ=UTC", "CI=1", "HOME=" + filepath.Join(output, "home"), "TMPDIR=" + filepath.Join(output, "tmp"), "XDG_CACHE_HOME=" + filepath.Join(output, "cache"),
@@ -1523,7 +1616,8 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 	var result selectedPhase2Result
 	readErr := featureWavePrivateJSON(fixture.ResultPath, 1<<20, &result)
 	if commandErr != nil || observerErr != nil || readErr != nil || observer.completed != len(selectedPhase2Phases) {
-		t.Fatal("phase 2 browser or independent observer failed; inspect retained private artifacts")
+		t.Fatalf("phase 2 browser or independent observer failed: command=%s observer=%s result=%s completed_stages=%d; inspect retained private artifacts",
+			selectedPhase2SafeError(commandErr), selectedPhase2SafeError(observerErr), selectedPhase2SafeError(readErr), observer.completed)
 	}
 	checks := []string{"Authentication", "RemovalPrepared", "RemovalApplied", "OCRRecognized", "OCRReviewed", "OCRApplied", "SubtitleSelected", "SubtitleOff", "SubtitleReselected", "SubtitleStopped", "CancelPrepared", "Cancelled", "ArtworkObserved", "RestartPersisted", "HistoryPersisted", "Cleanup"}
 	if result.Marker != "goby-selected-phase2-browser-result-v1" || result.RunID != runID || !result.Complete || len(result.Checks) != len(checks) || len(result.Stages) != len(selectedPhase2Phases) || result.PageErrors == nil || *result.PageErrors != 0 || result.ForeignRequests == nil || *result.ForeignRequests != 0 {
