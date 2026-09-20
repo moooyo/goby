@@ -142,6 +142,35 @@ types, PostgreSQL SQLSTATE codes, and allowlisted metadata field names. Raw
 error messages, rejected values, private file paths, credentials, and connection
 strings are excluded from these diagnostics.
 
+The fixture wraps the real media-operation executors only for diagnostics. It
+joins the idle coordinator before installing the wrappers and starts a fresh
+coordinator using its already admitted configuration and inventory, without
+another probe or recovery pass. Execute, Apply, Discard, progress values,
+callback errors, and returned results remain delegated unchanged. Each call
+creates a private `executor-<number>-<phase>/receipt.json` containing safe error
+classifications, progress/callback outcomes, selected stream, and execution
+budgets. No new public response fields or product logging are introduced.
+
+On executor failure, `private-error.json` retains the bounded error tree,
+including joined errors, after removing known passwords, access/fencing tokens,
+database connection strings, URI credentials, and credential-shaped fields.
+It is a private `0600` artifact, never copied into console output, browser
+results, public DTOs, or the driver's summary. Limits and any truncation are
+explicit in the file. Inspect it only within the owned private evidence scope.
+
+The wrapper opens the selected authored source read-only. At the real
+`remuxing` or `copying` progress callback it also opens the newly created
+candidate read-only. The product may unlink a failed candidate normally; the
+held descriptor allows the wrapper to preserve its actual final bytes after
+the executor and child processes return. Failure samples are bounded to 32 MiB
+each and saved as private `source-at-entry.bin` and
+`candidate-held-descriptor.bin`, with hashes, inode/size/time observations, and
+an explicit unlinked flag. An empty candidate is recorded as empty, and an
+unavailable sample is never represented as captured. Descriptors close before
+the executor returns to its coordinator. These retained diagnostic copies are
+outside the media root and survive its ordinary cleanup; they are not used as
+playback or publication inputs.
+
 A separate browser context provides a private HTMLVideoElement test consumer
 for the published OCR subtitle at the fixture-only `/__selected-phase2-media`
 route. The companion `/__selected-phase2-hls.js` route serves the admitted

@@ -26,6 +26,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -165,6 +166,9 @@ func selectedPhase2SafeError(err error) string {
 		{"library_not_found", library.ErrNotFound}, {"metadata_revision_conflict", library.ErrRevisionConflict},
 		{"identity_invalid_input", identity.ErrInvalidInput}, {"identity_unauthorized", identity.ErrUnauthorized},
 		{"identity_invalid_credentials", identity.ErrInvalidCredentials}, {"already_initialized", identity.ErrAlreadyInitialized},
+		{"subtitle_removal_unsupported", media.ErrSubtitleRemovalUnsupported}, {"subtitle_removal_budget", media.ErrSubtitleRemovalBudget},
+		{"source_changed", library.ErrSourceChanged}, {"media_operation_conflict", library.ErrMediaOperationConflict},
+		{"media_operation_recovery", library.ErrMediaOperationRecovery},
 	} {
 		if errors.Is(err, candidate.err) {
 			value["Category"] = candidate.name
@@ -193,6 +197,10 @@ func selectedPhase2SafeError(err error) string {
 			value["SQLState"] = postgres.Code
 		}
 	}
+	var exit *exec.ExitError
+	if errors.As(err, &exit) {
+		value["ExitCode"] = exit.ExitCode()
+	}
 	var syntax *json.SyntaxError
 	if errors.As(err, &syntax) {
 		value["Category"], value["Offset"] = "json_syntax", syntax.Offset
@@ -210,14 +218,304 @@ func selectedPhase2Fatal(t *testing.T, operation string, err error) {
 	t.Fatalf("%s: %s", operation, selectedPhase2SafeError(err))
 }
 
+type selectedPhase2ExecutorDiagnostics struct {
+	mu                          sync.Mutex
+	directory, mediaRoot, runID string
+	sources                     map[string]string
+	secrets                     []string
+	calls, failures, active     int
+}
+
+type selectedPhase2ObservedExecutor struct {
+	delegate    mediaOperationExecutor
+	diagnostics *selectedPhase2ExecutorDiagnostics
+}
+
+type selectedPhase2ExecutorCall struct {
+	diagnostics                 *selectedPhase2ExecutorDiagnostics
+	work                        library.MediaOperationWork
+	phase, sourcePath           string
+	source, candidate           *os.File
+	sourceError, candidateError error
+	progress                    []library.MediaOperationProgress
+	progressErrors              []json.RawMessage
+	chainTruncated              bool
+	number                      int
+}
+
+// Only this run's authored media can be retained. A read descriptor does not
+// alter the source's bytes, file offset, ownership, link count, or publication.
+func (diagnostics *selectedPhase2ExecutorDiagnostics) open(path string) (*os.File, error) {
+	relative, err := filepath.Rel(diagnostics.mediaRoot, path)
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return nil, errors.New("diagnostic sample is outside owned media")
+	}
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return nil, err
+	}
+	if resolved != path {
+		return nil, errors.New("diagnostic sample alias is not admitted")
+	}
+	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		return nil, err
+	}
+	info, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok || !info.Mode().IsRegular() || stat.Uid != 0 || stat.Nlink != 1 || info.Mode().Perm()&0o022 != 0 || info.Size() < 0 || info.Size() > 32<<20 {
+		file.Close()
+		return nil, errors.New("diagnostic sample identity or size is not admitted")
+	}
+	return file, nil
+}
+
+func (diagnostics *selectedPhase2ExecutorDiagnostics) begin(work library.MediaOperationWork, phase string) *selectedPhase2ExecutorCall {
+	diagnostics.mu.Lock()
+	diagnostics.calls++
+	diagnostics.active++
+	number := diagnostics.calls
+	diagnostics.mu.Unlock()
+	call := &selectedPhase2ExecutorCall{diagnostics: diagnostics, work: work, phase: phase, number: number, sourcePath: diagnostics.sources[work.Operation.ItemID]}
+	if call.sourcePath != "" {
+		call.source, call.sourceError = diagnostics.open(call.sourcePath)
+	}
+	if phase != "execute" {
+		call.openCandidate()
+	}
+	return call
+}
+
+func (call *selectedPhase2ExecutorCall) openCandidate() {
+	if call.candidate != nil || call.sourcePath == "" || call.work.Operation.Kind != library.MediaOperationRemoveSubtitle ||
+		!regexp.MustCompile(`^[0-9a-f]{32}$`).MatchString(call.work.Operation.ID) {
+		return
+	}
+	call.candidate, call.candidateError = call.diagnostics.open(filepath.Join(filepath.Dir(call.sourcePath), ".goby-edit-"+call.work.Operation.ID, "payload"))
+}
+
+func (call *selectedPhase2ExecutorCall) observe(progress func(library.MediaOperationProgress) error) func(library.MediaOperationProgress) error {
+	return func(value library.MediaOperationProgress) error {
+		// Forward the exact progress value and return the exact callback error.
+		err := progress(value)
+		if len(call.progress) < 16 {
+			call.progress = append(call.progress, value)
+			call.progressErrors = append(call.progressErrors, json.RawMessage(selectedPhase2SafeError(err)))
+		}
+		// The real executor creates its candidate before reporting this stage.
+		// Hold only a read descriptor until it returns, so its own failure cleanup
+		// can unlink normally without destroying the diagnostic inode evidence.
+		if value.Stage == "remuxing" || value.Stage == "copying" {
+			call.openCandidate()
+		}
+		return err
+	}
+}
+
+func (call *selectedPhase2ExecutorCall) close() {
+	failed := false
+	if call.source != nil {
+		failed = call.source.Close() != nil
+	}
+	if call.candidate != nil {
+		failed = call.candidate.Close() != nil || failed
+	}
+	call.diagnostics.mu.Lock()
+	call.diagnostics.active--
+	if failed {
+		call.diagnostics.failures++
+	}
+	call.diagnostics.mu.Unlock()
+}
+
+func (diagnostics *selectedPhase2ExecutorDiagnostics) redact(message string, work library.MediaOperationWork) string {
+	secrets := append(append([]string(nil), diagnostics.secrets...), work.Token, work.Operation.WorkerToken)
+	slices.SortFunc(secrets, func(a, b string) int { return len(b) - len(a) })
+	for _, secret := range secrets {
+		if secret == "" {
+			continue
+		}
+		for _, encoded := range []string{secret, url.QueryEscape(secret), url.PathEscape(secret)} {
+			message = strings.ReplaceAll(message, encoded, "[credential redacted]")
+		}
+	}
+	connection := regexp.MustCompile(`(?i)(postgres(?:ql)?://|\b(?:database_url|dsn|host|dbname|sslmode|user)\s*=)`)
+	for _, line := range strings.Split(message, "\n") {
+		if connection.MatchString(line) {
+			message = strings.ReplaceAll(message, line, "[connection diagnostic redacted]")
+		}
+	}
+	message = regexp.MustCompile(`(?i)\b[a-z][a-z0-9+.-]*://[^\s<>"']+`).ReplaceAllString(message, "[URI redacted]")
+	credential := regexp.MustCompile(`(?i)(?:["']?)(?:x-emby-token|api_key|access_?token|refresh_?token|authorization|cookie|password|passwd|pwd|secret|token|profilepin|pin)(?:["']?)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)`)
+	return credential.ReplaceAllString(message, "[credential field redacted]")
+}
+
+func (call *selectedPhase2ExecutorCall) errorChain(err error) []map[string]any {
+	result := []map[string]any{}
+	var visit func(error, int)
+	visit = func(current error, depth int) {
+		if current == nil {
+			return
+		}
+		if len(result) >= 32 || depth > 12 {
+			call.chainTruncated = true
+			return
+		}
+		message := call.diagnostics.redact(current.Error(), call.work)
+		truncated := len(message) > 64<<10
+		if truncated {
+			message = message[:64<<10]
+		}
+		result = append(result, map[string]any{"Depth": depth, "Classification": json.RawMessage(selectedPhase2SafeError(current)), "Message": message, "MessageTruncated": truncated})
+		if joined, ok := current.(interface{ Unwrap() []error }); ok {
+			for _, child := range joined.Unwrap() {
+				visit(child, depth+1)
+			}
+		} else {
+			visit(errors.Unwrap(current), depth+1)
+		}
+	}
+	visit(err, 0)
+	return result
+}
+
+func (call *selectedPhase2ExecutorCall) sample(directory, role string, file *os.File, openErr error) map[string]any {
+	value := map[string]any{"Role": role, "Saved": false}
+	if file == nil {
+		value["OpenError"] = json.RawMessage(selectedPhase2SafeError(openErr))
+		return value
+	}
+	before, err := file.Stat()
+	if err != nil {
+		value["ReadError"] = json.RawMessage(selectedPhase2SafeError(err))
+		return value
+	}
+	stat, ok := before.Sys().(*syscall.Stat_t)
+	if !ok || !before.Mode().IsRegular() || before.Size() < 0 || before.Size() > 32<<20 {
+		value["Error"] = "sample_size_or_type_changed"
+		return value
+	}
+	value["Bytes"], value["Device"], value["Inode"], value["Links"] = before.Size(), uint64(stat.Dev), stat.Ino, stat.Nlink
+	value["Modified"], value["Changed"], value["UnlinkedAtCapture"] = before.ModTime().UnixNano(), stat.Ctim.Nano(), stat.Nlink == 0
+	filename := role + ".bin"
+	output, err := os.OpenFile(filepath.Join(directory, filename), os.O_CREATE|os.O_EXCL|os.O_WRONLY|syscall.O_NOFOLLOW, 0o600)
+	if err != nil {
+		value["WriteError"] = json.RawMessage(selectedPhase2SafeError(err))
+		return value
+	}
+	digest := sha256.New()
+	n, copyErr := io.Copy(io.MultiWriter(output, digest), io.NewSectionReader(file, 0, before.Size()))
+	syncErr, closeErr := output.Sync(), output.Close()
+	after, statErr := file.Stat()
+	stable := statErr == nil && os.SameFile(before, after) && before.Size() == after.Size() && before.ModTime().Equal(after.ModTime()) && media.FileChangeTime(before) == media.FileChangeTime(after)
+	value["File"], value["CopiedBytes"], value["SHA256"], value["StableDuringCopy"] = filename, n, hex.EncodeToString(digest.Sum(nil)), stable
+	value["Saved"] = copyErr == nil && syncErr == nil && closeErr == nil && n == before.Size() && stable
+	if err := errors.Join(copyErr, syncErr, closeErr, statErr); err != nil {
+		value["CopyError"] = json.RawMessage(selectedPhase2SafeError(err))
+	}
+	return value
+}
+
+func (call *selectedPhase2ExecutorCall) finish(result library.MediaOperationResult, executionErr error) {
+	directoryName := "executor-" + strconv.Itoa(call.number) + "-" + call.phase
+	directory := filepath.Join(call.diagnostics.directory, directoryName)
+	failed := func() { call.diagnostics.mu.Lock(); call.diagnostics.failures++; call.diagnostics.mu.Unlock() }
+	if err := os.Mkdir(directory, 0o700); err != nil {
+		failed()
+		return
+	}
+	chain := call.errorChain(executionErr)
+	classifications := make([]json.RawMessage, 0, len(chain))
+	for _, entry := range chain {
+		classifications = append(classifications, entry["Classification"].(json.RawMessage))
+	}
+	evidence := map[string]any{"Marker": "goby-selected-phase2-executor-diagnostic-v1", "RunId": call.diagnostics.runID,
+		"OperationId": call.work.Operation.ID, "Kind": call.work.Operation.Kind, "Phase": call.phase, "StreamIndex": call.work.Operation.StreamIndex,
+		"SourceRevision": call.work.Operation.SourceRevision, "ResultHash": result.ResultHash, "Progress": call.progress, "ProgressCallbackErrors": call.progressErrors, "Succeeded": executionErr == nil,
+		"OriginalResultAndErrorReturned": true, "ErrorClassifications": classifications}
+	if snapshot, err := decodeMediaOperationExecution(call.work.Operation.ExecutionSnapshot); err == nil {
+		evidence["ExecutionBudget"] = map[string]any{"MaxRuntimeSeconds": snapshot.Configuration.MaxRuntimeSeconds, "MaxScratchBytes": snapshot.Configuration.MaxScratchBytes, "Profile": call.work.Operation.Parameters.Profile}
+	}
+	if executionErr != nil {
+		evidence["Samples"] = []map[string]any{call.sample(directory, "source-at-entry", call.source, call.sourceError), call.sample(directory, "candidate-held-descriptor", call.candidate, call.candidateError)}
+		private := map[string]any{"Marker": "goby-selected-phase2-private-executor-error-v1", "RunId": call.diagnostics.runID,
+			"OperationId": call.work.Operation.ID, "Phase": call.phase, "CredentialRedactionApplied": true, "Chain": chain, "ChainTruncated": call.chainTruncated, "NodeLimit": 32, "DepthLimit": 12, "MessageByteLimit": 64 << 10}
+		if err := refreshBrowserWriteJSON(filepath.Join(directory, "private-error.json"), private); err != nil {
+			failed()
+		}
+	}
+	if err := refreshBrowserWriteJSON(filepath.Join(directory, "receipt.json"), evidence); err != nil {
+		failed()
+	}
+}
+
+func (executor selectedPhase2ObservedExecutor) Execute(ctx context.Context, work library.MediaOperationWork, progress func(library.MediaOperationProgress) error) (library.MediaOperationResult, error) {
+	call := executor.diagnostics.begin(work, "execute")
+	defer call.close()
+	result, err := executor.delegate.Execute(ctx, work, call.observe(progress))
+	call.finish(result, err)
+	return result, err
+}
+func (executor selectedPhase2ObservedExecutor) Apply(ctx context.Context, work library.MediaOperationWork, progress func(library.MediaOperationProgress) error) error {
+	call := executor.diagnostics.begin(work, "apply")
+	defer call.close()
+	err := executor.delegate.Apply(ctx, work, call.observe(progress))
+	call.finish(library.MediaOperationResult{}, err)
+	return err
+}
+func (executor selectedPhase2ObservedExecutor) Discard(ctx context.Context, work library.MediaOperationWork) error {
+	call := executor.diagnostics.begin(work, "discard")
+	defer call.close()
+	err := executor.delegate.Discard(ctx, work)
+	call.finish(library.MediaOperationResult{}, err)
+	return err
+}
+
 // These two private fixture routes host only a fixed test document and the
 // unchanged pinned open-source HLS engine. Every business route remains Goby.
 type selectedPhase2Runtime struct {
 	*phase3BrowserRuntime
-	bundle []byte
+	bundle      []byte
+	diagnostics *selectedPhase2ExecutorDiagnostics
 }
 
 func (runtime *selectedPhase2Runtime) listen() error {
+	if runtime.diagnostics != nil {
+		var pending int
+		if err := runtime.f.pool.QueryRow(runtime.f.ctx, `SELECT count(*) FROM media_operations WHERE state IN ('queued','running','applying') OR worker_token<>''`).Scan(&pending); err != nil || pending != 0 {
+			return errors.New("phase 2 diagnostics require a quiescent executor before listener admission")
+		}
+		// Join before replacing the executor map: the product's execute reader
+		// intentionally does not share its coordinator mutex. Reuse the already
+		// admitted real inventory; do not invoke another probe or recovery pass.
+		previous := runtime.f.app.mediaOperations
+		ctx, cancel := context.WithTimeout(runtime.f.ctx, 20*time.Second)
+		closeErr := previous.Close(ctx)
+		cancel()
+		if closeErr != nil || len(previous.workers) != 0 {
+			return errors.New("phase 2 executor instrumentation could not join the idle coordinator")
+		}
+		lifetime, stop := context.WithCancel(context.Background())
+		current := &mediaOperationsRuntime{server: previous.server, store: previous.store, configuration: previous.configuration,
+			inventory: previous.inventory, toolsReady: previous.toolsReady, ocrReady: previous.ocrReady, processingEnabled: previous.processingEnabled,
+			ctx: lifetime, cancel: stop, wake: make(chan struct{}, 1), done: make(chan struct{}), workers: map[string]*mediaOperationExecution{},
+			executors: map[string]mediaOperationExecutor{}, loopStarted: true}
+		for _, kind := range []string{library.MediaOperationRemoveSubtitle, library.MediaOperationOCR} {
+			delegate, ok := previous.executors[kind].(mediaOperationBuiltinExecutor)
+			if !ok {
+				stop()
+				return errors.New("phase 2 instrumentation requires the unchanged real builtin executor")
+			}
+			delegate.runtime = current
+			current.executors[kind] = selectedPhase2ObservedExecutor{delegate: delegate, diagnostics: runtime.diagnostics}
+		}
+		runtime.f.app.mediaOperations = current
+		go current.loop()
+	}
 	listener, err := net.Listen("tcp4", runtime.addr)
 	if err != nil {
 		return err
@@ -1459,6 +1757,15 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 		} else {
 			driver["ServerWorkersClosed"], driver["HTTPListenerClosed"] = true, true
 		}
+		if runtime.diagnostics != nil {
+			runtime.diagnostics.mu.Lock()
+			calls, failures, active := runtime.diagnostics.calls, runtime.diagnostics.failures, runtime.diagnostics.active
+			runtime.diagnostics.mu.Unlock()
+			driver["ExecutorDiagnostics"] = map[string]any{"Calls": calls, "WriteOrCloseFailures": failures, "ActiveCallsAfterRuntimeClose": active, "PrivateErrorMessagesExcluded": true}
+			if failures != 0 || active != 0 {
+				t.Error("phase 2 executor diagnostic persistence or descriptor closure failed")
+			}
+		}
 	})
 	if !app.mediaOperations.Available() || !app.mediaOperations.ocrReady {
 		t.Fatal("phase 2 pinned real media and OCR execution inventory is unavailable")
@@ -1565,6 +1872,14 @@ func TestSelectedCompatibilityPhase2BrowserIntegration(t *testing.T) {
 		selectedPhase2Fatal(t, "preserve phase 2 embedded asset inventory", err)
 	}
 	driver["EmbeddedAssetsMatchFrozenSource"] = true
+	runtime.diagnostics = &selectedPhase2ExecutorDiagnostics{directory: output, mediaRoot: mediaRoot, runID: runID,
+		sources: map[string]string{removeItem.ID: removePath, ocrItem.ID: ocrPath},
+		secrets: []string{adminPassword, viewerPassword, credentials.Token, os.Getenv("GOBY_TEST_DATABASE_URL")}}
+	if connection, err := url.Parse(os.Getenv("GOBY_TEST_DATABASE_URL")); err == nil && connection.User != nil {
+		if password, found := connection.User.Password(); found {
+			runtime.diagnostics.secrets = append(runtime.diagnostics.secrets, password)
+		}
+	}
 	if err := runtime.listen(); err != nil {
 		selectedPhase2Fatal(t, "start phase 2 owned TCP4 listener", err)
 	}
