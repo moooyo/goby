@@ -28,7 +28,10 @@ type analysisAudioFrame struct {
 	checksum uint32
 }
 
-var analysisAudioLine = regexp.MustCompile(`\bn:([0-9]+) pts:([^ ]+) pts_time:[^ ]+ fmt:s16 channels:1 chlayout:mono rate:11025 nb_samples:([0-9]+) checksum:([0-9A-Fa-f]{8})(?: |$)`)
+var (
+	analysisAudioLine       = regexp.MustCompile(`\bn:([0-9]+) pts:([^ ]+) pts_time:[^ ]+ fmt:s16 channels:1 chlayout:mono rate:11025 nb_samples:([0-9]+) checksum:([0-9A-Fa-f]{8})(?: |$)`)
+	analysisAudioFrameStart = regexp.MustCompile(`(?:^|\s)n:`)
+)
 
 type analysisAudioLog struct {
 	mu         sync.Mutex
@@ -87,7 +90,10 @@ func (log *analysisAudioLog) line(line string) error {
 	// not require a prefix on every continuation. There is one ashowinfo filter.
 	matches := analysisAudioLine.FindAllStringSubmatch(line, -1)
 	if len(matches) == 0 {
-		if strings.Contains(line, "ashowinfo@analysis_audio") && strings.Contains(line, "n:") {
+		// A checksum continuation can share a physical line with a demuxer
+		// duration: field. Only the standalone n: token starts a frame body;
+		// its log prefix may be absent after another thread's continuation.
+		if analysisAudioFrameStart.MatchString(line) {
 			return fmt.Errorf("%w: incomplete PCM frame timing", ErrAnalysisUnproven)
 		}
 		return nil

@@ -198,7 +198,7 @@ func analysisProcessTestAssertRetired(t *testing.T, ids analysisProcessTestPIDs)
 	deadline := time.Now().Add(2 * time.Second)
 	for {
 		data, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(ids.child), "stat"))
-		if errors.Is(err, os.ErrNotExist) {
+		if analysisProcessTestDisappeared(err) {
 			return
 		}
 		if err != nil {
@@ -212,6 +212,31 @@ func analysisProcessTestAssertRetired(t *testing.T, ids analysisProcessTestPIDs)
 			t.Fatalf("analysis descendant remains executable after runner returned: %s", data)
 		}
 		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// A task can disappear after procfs lookup or open but before its stat read.
+// Linux may report ESRCH for that race rather than the pathname's ENOENT.
+// Both prove absence; permission, I/O and cancellation errors prove nothing.
+func analysisProcessTestDisappeared(err error) bool {
+	return errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ESRCH)
+}
+
+func TestAnalysisProcessDisappearanceClassificationPreservesOtherFailures(t *testing.T) {
+	for _, fixture := range []struct {
+		err  error
+		gone bool
+	}{
+		{&os.PathError{Op: "read", Path: "/proc/123/stat", Err: syscall.ESRCH}, true},
+		{&os.PathError{Op: "open", Path: "/proc/123/stat", Err: syscall.ENOENT}, true},
+		{&os.PathError{Op: "read", Path: "/proc/123/stat", Err: syscall.EACCES}, false},
+		{&os.PathError{Op: "read", Path: "/proc/123/stat", Err: syscall.EIO}, false},
+		{context.Canceled, false},
+		{nil, false},
+	} {
+		if got := analysisProcessTestDisappeared(fixture.err); got != fixture.gone {
+			t.Fatalf("process disappearance %v = %v, want %v", fixture.err, got, fixture.gone)
+		}
 	}
 }
 

@@ -73,8 +73,12 @@ func TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys(t *testing
 				}
 			}
 			complete := migrationHistory(t, ctx, pool)
-			if err := database.Migrate(ctx, pool); err != nil {
-				t.Fatal(err)
+			if runner == "normal" {
+				if err := database.Migrate(ctx, pool); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				themeOwnersMigrateTo(t, ctx, pool, 49)
 			}
 			if migrationHistory(t, ctx, pool) != complete {
 				t.Fatal("repeated migration changed history")

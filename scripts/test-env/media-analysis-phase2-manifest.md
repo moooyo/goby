@@ -172,11 +172,16 @@ labeler: nonempty identity of the human or assistant performing source review
 label_evidence: EvidenceRef
 ```
 
-Label evidence must describe the actual viewed and listened-to source, its
-identity, the source excerpts or observations supporting the labels, the timing
-method, labeling date/revision, and narrative boundaries. Assistant source
-review is allowed and does not require an external human reviewer. It must
-inspect actual source video/audio and create independent annotations; a plot
+Label evidence must describe the actual source review, its identity, the source
+excerpts or observations supporting the labels, the timing method, labeling
+date/revision, and narrative boundaries. Record the review modalities explicitly:
+direct listening must not be claimed when an assistant cannot consume audio.
+In that case, independently generated timestamped transcripts and audio-signal
+evidence may support the viewed frames. Preserve their source/tool identities,
+disclose transcription uncertainty, and do not treat an ASR boundary alone as
+exact ground truth. Assistant source review is allowed and does not require an
+external human reviewer. It must inspect evidence derived from the actual
+source video/audio and create independent annotations; a plot
 summary, detector output, or synthetic repeated signal cannot substitute for
 that inspection. Freeze labels and their evidence hashes before detector
 outputs are observed. Never derive labels from those outputs or change labels

@@ -18,23 +18,28 @@ import (
 // storage and all operations until their actual processes and I/O have returned.
 // Publication and reference pruning share one cancellable serialization gate.
 type mediaAnalysisRuntime struct {
-	server        *Server
-	configuration config.MediaAnalysisConfig
-	extractor     media.AnalysisExtractor
-	availability  media.AnalysisAvailability
-	profiles      map[string]library.AnalysisExecutionProfile
-	cache         *analysiscache.Store
-	ctx           context.Context
-	cancel        context.CancelFunc
-	publish       chan struct{}
-	previewSlots  chan struct{}
-	mu            sync.Mutex
-	closing       bool
-	failures      map[string]string
-	operations    sync.WaitGroup
-	closeOnce     sync.Once
-	done          chan struct{}
-	closeErr      error
+	server           *Server
+	configuration    config.MediaAnalysisConfig
+	extractor        media.AnalysisExtractor
+	availability     media.AnalysisAvailability
+	profiles         map[string]library.AnalysisExecutionProfile
+	cache            *analysiscache.Store
+	ctx              context.Context
+	cancel           context.CancelFunc
+	publish          chan struct{}
+	previewSlots     chan struct{}
+	mu               sync.Mutex
+	closing          bool
+	failures         map[string]string
+	activeOperations map[*mediaAnalysisOperation]struct{}
+	operations       sync.WaitGroup
+	closeOnce        sync.Once
+	done             chan struct{}
+	closeErr         error
+}
+
+type mediaAnalysisOperation struct {
+	cancel context.CancelFunc
 }
 
 func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysisRuntime, error) {
@@ -210,20 +215,35 @@ func (r *mediaAnalysisRuntime) enter(ctx context.Context) (context.Context, func
 	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
+	work, cancel := context.WithCancel(ctx)
+	operation := &mediaAnalysisOperation{cancel: cancel}
 	r.mu.Lock()
 	if r.closing {
 		r.mu.Unlock()
+		cancel()
 		return nil, nil, library.ErrUnavailable
 	}
+	if r.activeOperations == nil {
+		r.activeOperations = make(map[*mediaAnalysisOperation]struct{})
+	}
+	r.activeOperations[operation] = struct{}{}
 	r.operations.Add(1)
-	r.mu.Unlock()
-	work, cancel := context.WithCancel(ctx)
 	stop := context.AfterFunc(r.ctx, cancel)
+	r.mu.Unlock()
 	if r.ctx.Err() != nil {
 		cancel()
 	}
 	var once sync.Once
-	leave := func() { once.Do(func() { stop(); cancel(); r.operations.Done() }) }
+	leave := func() {
+		once.Do(func() {
+			stop()
+			cancel()
+			r.mu.Lock()
+			delete(r.activeOperations, operation)
+			r.mu.Unlock()
+			r.operations.Done()
+		})
+	}
 	return work, leave, nil
 }
 
@@ -301,6 +321,11 @@ func (r *mediaAnalysisRuntime) BeginClose() {
 		r.mu.Lock()
 		r.closing = true
 		r.cancel()
+		// AfterFunc propagation is asynchronous. Cancel every admitted operation
+		// before returning, while ownership remains with its eventual leave call.
+		for operation := range r.activeOperations {
+			operation.cancel()
+		}
 		r.mu.Unlock()
 		go func() {
 			r.operations.Wait()

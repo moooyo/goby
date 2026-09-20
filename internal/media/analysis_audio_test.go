@@ -148,6 +148,35 @@ func TestAnalysisAudioParsesInterleavedAtomicLogBodies(t *testing.T) {
 	}
 }
 
+func TestAnalysisAudioChecksumContinuationDoesNotInventAFrameStart(t *testing.T) {
+	log := analysisTestAudioLog(t)
+	// The preceding frame body may already have been completed by a demuxer
+	// newline. Its later plane-checksum call can acquire a fresh prefix and
+	// then share another line with a packet's duration: field. The suffix n:
+	// inside duration: is not another ashowinfo frame record.
+	text := analysisTestAudioPackets + analysisTestAudioFrame(0, 11025, "000A0006") +
+		"[ashowinfo@analysis_audio @ 0x1] [info] plane_checksums: [ " + analysisTestAudioPackets +
+		"000A0006 ]\n" + analysisTestAudioFrame(1, 11027, "00320016")
+	for position := 0; position < len(text); position += 7 {
+		if _, err := log.Write([]byte(text[position:min(position+7, len(text))])); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log.Close(nil)
+	if pts, err := log.provePCM([]byte{0, 1, 2, 3, 4, 5, 6, 7}); err != nil || pts != 11025 || len(log.frames) != 2 {
+		t.Fatalf("continuation changed the exact PCM inventory: pts=%d frames=%d error=%v", pts, len(log.frames), err)
+	}
+}
+
+func TestAnalysisAudioRejectsMalformedFrameBodyWithoutRepeatedPrefix(t *testing.T) {
+	log := analysisTestAudioLog(t)
+	malformed := strings.Replace(analysisTestAudioFrame(0, 11025, "000A0006"), "[ashowinfo@analysis_audio @ 0x1] [info] ", "", 1)
+	malformed = strings.Replace(malformed, "rate:11025", "rate:48000", 1)
+	if _, err := log.Write([]byte(analysisTestAudioPackets + malformed)); !errors.Is(err, ErrAnalysisUnproven) {
+		t.Fatalf("prefixless malformed PCM timing was ignored: %v", err)
+	}
+}
+
 func TestAnalysisAudioRefusesMissingDiscontinuousAndUnboundedTiming(t *testing.T) {
 	for _, bad := range []string{
 		strings.Replace(analysisTestAudioPackets, "pkt_pts:1000", "pkt_pts:NOPTS", 1),

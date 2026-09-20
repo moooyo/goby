@@ -1,9 +1,10 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **implementation source complete; actual schema catalog generated; consolidated verification in progress**.
-Fresh remote admission, independent PostgreSQL setup, the catalog exporter build
-and actual schema-50 export have completed. Full product builds, product tests and
-real-media accuracy/consumer acceptance remain pending.
+Status: **initial consolidated verification completed; targeted repairs await verification**.
+Fresh remote admission, independent PostgreSQL setup, the actual schema-50
+catalog, full product builds and an initial 13-package regression have completed.
+The initial regression failed and is not accepted. Targeted repair verification,
+native browser coverage and real-media accuracy/consumer acceptance remain pending.
 
 This phase implements the second delivery in the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -104,6 +105,45 @@ the one-attempt retirement journal and original closure records are retained.
 Historical databases, logs, source trees, browser evidence and runtime
 dependencies remain intact. Independent readback found all four archival workers
 closed and the unrelated service identities unchanged.
+
+## Initial verification and repair scope
+
+Candidate `a3a74a32c8196e3f76e55ace6c799ec34e79d707` includes the actual catalog.
+Its full product build completed all 20 steps, producing 17 binaries and 73
+frontend assets. The compiled fingerprint helper passed seven protocol tests;
+the three frontend source-test files passed 12 tests without skips.
+
+The initial complete Go regression recorded 2,898 passing parents, nine failed
+parents and six explicit skips. All 13 child process groups closed without a
+timeout or forced termination. The backup, recovery-database and recovery
+packages passed 128, 12 and 37 parents respectively. These results do not erase
+the failures or constitute overall phase acceptance.
+
+The failures identified two implementation defects: a substring check mistook
+an interleaved `duration:` log field for a new PCM frame, and asynchronous
+context propagation let analysis shutdown return before every admitted operation
+had observed cancellation. Repairs preserve the strict timestamp/checksum proof
+and retain operation ownership until its actual release. Other repairs address
+procfs `ESRCH` observation, a moving-window fixture race, explicit new-table,
+sequence and task-count expectations, a recovery test's fixed migration target,
+and a missing OCR fixture environment variable. Published SQL and the actual
+schema-50 catalog remain unchanged. Original failed outputs remain retained;
+the repaired code has not yet been rebuilt or tested.
+
+The six skips are the existing Dolby Vision, VAAPI/AMD and mount-helper profiles.
+They are not passes, real preview-client evidence or phase-3 fault acceptance.
+
+Eight licensed source candidates totaling 922,230,546 bytes were acquired using
+ordinary workstation HTTPS and SCP after the remote direct route failed before
+saving media bytes. The successful remote import independently measured every
+source and checked the preserved permission/checksum records. It does not claim
+successful remote HTTP. The originals are unchanged and the failed attempt is
+retained. Remote decoding produced timestamped visual-review artifacts; no
+detector has consumed this corpus yet and labels are not frozen. The current
+assistant's audio input tool cannot consume the exported listening clip, so
+direct listening is not claimed. Timestamped transcript/signal evidence will
+be reviewed alongside actual frames, with that method disclosed in the private
+label evidence and delivery record.
 
 ## Required consolidated evidence
 

@@ -227,9 +227,9 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		target string
 		count  int
 	}{
-		{"/emby/ScheduledTasks", 5},
-		{"/ScheduledTasks", 5},
-		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 5},
+		{"/emby/ScheduledTasks", 7},
+		{"/ScheduledTasks", 7},
+		{"/EmBy/sChEdUlEdTaSkS?iShIdDeN=false&iSeNaBlEd=true", 7},
 		{"/ScheduledTasks?IsHidden=true", 0},
 		{"/ScheduledTasks?IsEnabled=false", 0},
 		{"/ScheduledTasks?IsHidden=false&IsEnabled=false", 0},
@@ -244,6 +244,38 @@ func TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo(t *testi
 		}
 		if test.count != 0 {
 			assertPublishedTaskCollection(t, f, items)
+			expectedAnalysis := map[string]string{
+				"GobyAnalyzeIntroductions": "Analyze episode introductions",
+				"GobyGenerateSeekPreviews": "Generate seek previews",
+			}
+			seenAnalysis := make(map[string]bool, len(expectedAnalysis))
+			for _, info := range items {
+				key, _ := info["Key"].(string)
+				name, analysis := expectedAnalysis[key]
+				if !analysis {
+					continue
+				}
+				seenAnalysis[key] = true
+				if info["Name"] != name || info["Category"] != "Media analysis" || info["IsHidden"] != false || info["State"] != "Idle" {
+					t.Fatal("analysis TaskInfo lost its explicit registered identity or idle state")
+				}
+				fields := []string{"Id", "Name", "Key", "Description", "Category", "IsHidden", "State", "Triggers"}
+				if len(info) != len(fields) {
+					t.Fatal("analysis TaskInfo exposed native analysis, actor or execution fields")
+				}
+				for _, field := range fields {
+					if _, present := info[field]; !present {
+						t.Fatalf("analysis TaskInfo omitted %s", field)
+					}
+				}
+				stringValue(t, info, "Description")
+				if triggers, ok := info["Triggers"].([]any); !ok || len(triggers) != 0 {
+					t.Fatal("new analysis TaskInfo must contain an explicit empty trigger array")
+				}
+			}
+			if len(seenAnalysis) != len(expectedAnalysis) {
+				t.Fatal("task list omitted an explicitly registered analysis capability")
+			}
 		}
 	}
 	for _, target := range []string{"/sChEdUlEdTaSkS/" + f.taskID, "/EMBY/SCHEDULEDTASKS/" + f.taskID} {

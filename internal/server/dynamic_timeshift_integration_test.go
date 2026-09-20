@@ -27,15 +27,27 @@ import (
 )
 
 type dynamicTimeshiftHTTPFixture struct {
-	h                *hlsHTTPFixture
-	upstream         *httptest.Server
-	firstEOF         chan struct{}
-	endFirst         sync.Once
-	mediaRequests    atomic.Int32
-	badAuthorization atomic.Bool
-	subtitleRequests [8]atomic.Int32
-	clock            atomic.Int64
+	h                  *hlsHTTPFixture
+	upstream           *httptest.Server
+	firstEOF           chan struct{}
+	endFirst           sync.Once
+	mediaRequests      atomic.Int32
+	badAuthorization   atomic.Bool
+	subtitleRequests   [8]atomic.Int32
+	clock              atomic.Int64
+	holdReconnectTail  atomic.Bool
+	reconnectPrefix    chan struct{}
+	reconnectTail      chan struct{}
+	prefixSent         sync.Once
+	releaseTail        sync.Once
+	prefixTimelineSafe bool
 }
+
+// HTTPConnector reads exactly probeSampleBytes into a finite private file, then
+// ProbeStreamPrefix probes that file rather than waiting for the response tail.
+// The heldReconnectWindow witness additionally requires real generation-two
+// admission to finish; writing this many bytes alone is not considered ready.
+const dynamicHTTPProbePrefixBytes = 128 * 1024
 
 type dynamicHTTPPresentation struct {
 	playID, liveID, presentationID, masterURL, mainURL, windowURL string
@@ -55,7 +67,7 @@ type dynamicHTTPWindow struct {
 func newDynamicTimeshiftHTTPFixture(t *testing.T, withSubtitles bool, timeouts ...time.Duration) *dynamicTimeshiftHTTPFixture {
 	t.Helper()
 	h := newHLSHTTPFixture(t, timeouts...)
-	fixture := &dynamicTimeshiftHTTPFixture{h: h, firstEOF: make(chan struct{})}
+	fixture := &dynamicTimeshiftHTTPFixture{h: h, firstEOF: make(chan struct{}), reconnectPrefix: make(chan struct{}), reconnectTail: make(chan struct{})}
 	fixture.clock.Store(time.Now().UnixNano())
 	path := filepath.Join(t.TempDir(), "source.ts")
 	// Keep enough continuous media for twelve seconds of closed slices while
@@ -68,12 +80,13 @@ func newDynamicTimeshiftHTTPFixture(t *testing.T, withSubtitles bool, timeouts .
 		"-g", "72", "-keyint_min", "72", "-sc_threshold", "0", "-bf", "0", "-pix_fmt", "yuv420p",
 		"-c:a", "aac", "-threads:a", "1", "-b:a", "96000", "-t", "24", "-muxrate", "600000", "-f", "mpegts", path)
 	probe := hlsHTTPMediaCommand(t, h.ffprobe, "-v", "error", "-show_frames", "-show_format",
-		"-show_entries", "frame=media_type,best_effort_timestamp_time,nb_samples:format=duration", "-of", "json", path)
+		"-show_entries", "frame=media_type,best_effort_timestamp_time,nb_samples,pkt_pos:format=duration", "-of", "json", path)
 	var clock struct {
 		Frames []struct {
-			Type    string "json:\"media_type\""
-			PTS     string "json:\"best_effort_timestamp_time\""
-			Samples int    "json:\"nb_samples\""
+			Type           string          "json:\"media_type\""
+			PTS            string          "json:\"best_effort_timestamp_time\""
+			Samples        int             "json:\"nb_samples\""
+			PacketPosition json.RawMessage `json:"pkt_pos"`
 		}
 		Format struct{ Duration string }
 	}
@@ -86,6 +99,8 @@ func newDynamicTimeshiftHTTPFixture(t *testing.T, withSubtitles bool, timeouts .
 	}
 	videoFrames, audioFrames, priorSamples := 0, 0, 0
 	var firstVideo, priorAudio float64
+	prefixFrames, prefixPositionsKnown := 0, true
+	var prefixVideoEnd float64
 	for _, frame := range clock.Frames {
 		pts, err := strconv.ParseFloat(frame.PTS, 64)
 		if err != nil || math.IsNaN(pts) || math.IsInf(pts, 0) {
@@ -99,6 +114,18 @@ func newDynamicTimeshiftHTTPFixture(t *testing.T, withSubtitles bool, timeouts .
 			if math.Abs(pts-firstVideo-float64(videoFrames)/24) > .000025 {
 				t.Fatal("dynamic video source has a timestamp reset or cadence gap")
 			}
+			positionText := string(frame.PacketPosition)
+			var quotedPosition string
+			if json.Unmarshal(frame.PacketPosition, &quotedPosition) == nil {
+				positionText = quotedPosition
+			}
+			position, positionErr := strconv.ParseInt(positionText, 10, 64)
+			if positionErr != nil || position < 0 {
+				prefixPositionsKnown = false
+			} else if position < dynamicHTTPProbePrefixBytes {
+				prefixFrames++
+				prefixVideoEnd = max(prefixVideoEnd, pts-firstVideo+1.0/24)
+			}
 			videoFrames++
 		case "audio":
 			if frame.Samples <= 0 || audioFrames > 0 && math.Abs(pts-priorAudio-float64(priorSamples)/48000) > .000025 {
@@ -111,6 +138,11 @@ func newDynamicTimeshiftHTTPFixture(t *testing.T, withSubtitles bool, timeouts .
 	if videoFrames != 576 || audioFrames == 0 {
 		t.Fatal("dynamic source lost complete continuous audio/video")
 	}
+	// The optional reconnect gate must allow the real 128 KiB source probe,
+	// but withhold enough measured video that no three-second HLS slice can
+	// close. Packet positions come from the actual complete fixture, not an
+	// assumed byte rate or a sleep while the producer might still advance.
+	fixture.prefixTimelineSafe = prefixPositionsKnown && prefixFrames > 0 && prefixVideoEnd < 3
 	data, err := os.ReadFile(path)
 	if err != nil || len(data) <= 128*1024 || len(data) > 4<<20 {
 		t.Fatal("dynamic source must have a complete bounded probe prefix", err)
@@ -124,7 +156,21 @@ func newDynamicTimeshiftHTTPFixture(t *testing.T, withSubtitles bool, timeouts .
 		if r.URL.Path == "/media" {
 			number := fixture.mediaRequests.Add(1)
 			w.Header().Set("Content-Type", "video/mp2t")
-			if _, err := w.Write(data); err != nil {
+			firstByte := 0
+			if number > 1 && fixture.holdReconnectTail.Load() {
+				if _, err := w.Write(data[:dynamicHTTPProbePrefixBytes]); err != nil {
+					return
+				}
+				w.(http.Flusher).Flush()
+				fixture.prefixSent.Do(func() { close(fixture.reconnectPrefix) })
+				select {
+				case <-fixture.reconnectTail:
+				case <-r.Context().Done():
+					return
+				}
+				firstByte = dynamicHTTPProbePrefixBytes
+			}
+			if _, err := w.Write(data[firstByte:]); err != nil {
 				return
 			}
 			w.(http.Flusher).Flush()
@@ -356,8 +402,84 @@ func dynamicHTTPQuery(t *testing.T, raw string, updates map[string]string) strin
 	return parsed.String()
 }
 
+func (d *dynamicTimeshiftHTTPFixture) heldReconnectWindow(t *testing.T, presentation dynamicHTTPPresentation) dynamicHTTPWindow {
+	t.Helper()
+	deadline := time.NewTimer(15 * time.Second)
+	defer deadline.Stop()
+	select {
+	case <-d.reconnectPrefix:
+	case <-deadline.C:
+		t.Fatal("reconnect did not reach the controlled prefix barrier")
+	case <-d.h.f.ctx.Done():
+		t.Fatal("fixture ended before reconnect reached its prefix barrier")
+	}
+	ticker := time.NewTicker(25 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		server := d.h.f.app
+		server.dynamicStreams.mu.Lock()
+		session := server.dynamicStreams.sessions[presentation.presentationID]
+		server.dynamicStreams.mu.Unlock()
+		if session != nil && session.mu.TryLock() {
+			generation, started, ended, closed := session.generation, session.producerStarted, session.producerEnded, session.closed
+			session.mu.Unlock()
+			if generation == 2 && started && !ended && !closed {
+				// Starting generation two follows the first job's actual terminal
+				// publication/drain. Its withheld tail cannot publish another slice,
+				// so these retained bounds stay fixed until the test releases it.
+				window := d.window(t, presentation)
+				if d.mediaRequests.Load() != 2 || window.LiveEdgeTicks < 20*media.TicksPerSecond || window.IsEnded {
+					d.logWindowTimeout(t, presentation, window)
+					t.Fatal("held reconnect did not retain the completed first media epoch")
+				}
+				return window
+			}
+		}
+		select {
+		case <-deadline.C:
+			d.logWindowTimeout(t, presentation, dynamicHTTPWindow{})
+			t.Fatal("reconnect did not finish admission behind the controlled prefix barrier")
+		case <-d.h.f.ctx.Done():
+			t.Fatal("fixture ended before the held reconnect became ready")
+		case <-ticker.C:
+		}
+	}
+}
+
+func (d *dynamicTimeshiftHTTPFixture) expectWindowResponse(t *testing.T, presentation dynamicHTTPPresentation, requested int64, captured dynamicHTTPWindow, response hlsHTTPResponse, expected int) {
+	t.Helper()
+	if response.status == expected {
+		return
+	}
+	var body struct {
+		Error          struct{ Code string }
+		ResponseStatus struct{ ErrorCode string }
+	}
+	_ = json.Unmarshal(response.body, &body)
+	code := body.Error.Code
+	if code == "" {
+		code = body.ResponseStatus.ErrorCode
+	}
+	if len(code) > 64 || strings.Trim(code, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") != "" {
+		code = "unavailable"
+	}
+	t.Logf("dynamic_seek_failure requested_ticks=%d captured_earliest=%d captured_live=%d status=%d expected=%d code=%s",
+		requested, captured.EarliestTicks, captured.LiveEdgeTicks, response.status, expected, code)
+	observedResponse := d.h.request(t, http.MethodGet, presentation.windowURL, nil, nil)
+	var observed dynamicHTTPWindow
+	observedOK := observedResponse.status == http.StatusOK && json.Unmarshal(observedResponse.body, &observed) == nil
+	t.Logf("dynamic_seek_observed available=%t status=%d earliest=%d live=%d", observedOK, observedResponse.status, observed.EarliestTicks, observed.LiveEdgeTicks)
+	d.logWindowTimeout(t, presentation, observed)
+	t.Fatalf("HLS response status = %d, want %d", response.status, expected)
+}
+
 func TestDynamicTimeshiftHTTPPauseReconnectWindowSeekLiveAndOwnership(t *testing.T) {
 	d := newDynamicTimeshiftHTTPFixture(t, false)
+	if !d.prefixTimelineSafe {
+		t.Fatal("fixture cannot prove that the reconnect probe prefix is shorter than one closed media slice")
+	}
+	d.holdReconnectTail.Store(true)
+	defer d.releaseTail.Do(func() { close(d.reconnectTail) })
 	p := d.openWithMode(t, false)
 	h := d.h
 	expectHLSHTTPStatus(t, h.request(t, http.MethodHead, p.mainURL, nil, nil), http.StatusNotFound)
@@ -367,9 +489,7 @@ func TestDynamicTimeshiftHTTPPauseReconnectWindowSeekLiveAndOwnership(t *testing
 	report["IsPaused"] = true
 	expectHLSHTTPStatus(t, h.request(t, http.MethodPost, "/emby/Sessions/Playing/Progress", report, h.accounts.viewer.headers), http.StatusNoContent)
 	d.endFirst.Do(func() { close(d.firstEOF) })
-	advanced := d.waitWindow(t, p, func(w dynamicHTTPWindow) bool {
-		return w.LiveEdgeTicks >= 20*media.TicksPerSecond && d.mediaRequests.Load() >= 2
-	})
+	advanced := d.heldReconnectWindow(t, p)
 	if advanced.PresentationID != first.PresentationID || advanced.EarliestTicks <= 0 || advanced.BufferedBytes > h.f.app.cfg.Timeshift.MaxWindowBytes {
 		t.Fatal("paused reconnect replaced its presentation or exceeded retention bounds")
 	}
@@ -382,7 +502,7 @@ func TestDynamicTimeshiftHTTPPauseReconnectWindowSeekLiveAndOwnership(t *testing
 	}
 	seek := dynamicHTTPQuery(t, p.mainURL, map[string]string{"StartTimeTicks": strconv.FormatInt(advanced.EarliestTicks, 10)})
 	mediaPlaylist := h.request(t, http.MethodGet, seek, nil, nil)
-	expectHLSHTTPStatus(t, mediaPlaylist, http.StatusOK)
+	d.expectWindowResponse(t, p, advanced.EarliestTicks, advanced, mediaPlaylist, http.StatusOK)
 	if !bytes.Contains(mediaPlaylist.body, []byte("#EXT-X-START:TIME-OFFSET=")) || bytes.Contains(mediaPlaylist.body, []byte("#EXT-X-ENDLIST")) {
 		t.Fatal("retained seek was not a live playlist view")
 	}
@@ -391,7 +511,20 @@ func TestDynamicTimeshiftHTTPPauseReconnectWindowSeekLiveAndOwnership(t *testing
 		t.Fatal("retained window has no media artifacts")
 	}
 	segment := h.request(t, http.MethodGet, children[0], nil, nil)
-	expectHLSHTTPStatus(t, segment, http.StatusOK)
+	d.expectWindowResponse(t, p, advanced.EarliestTicks, advanced, segment, http.StatusOK)
+	expired := h.request(t, http.MethodGet, dynamicHTTPQuery(t, p.mainURL, map[string]string{"StartTimeTicks": "0"}), nil, nil)
+	d.expectWindowResponse(t, p, 0, advanced, expired, http.StatusGone)
+	held := d.window(t, p)
+	if held.EarliestTicks != advanced.EarliestTicks || held.LiveEdgeTicks != advanced.LiveEdgeTicks {
+		t.Fatalf("controlled prefix advanced the window during retained seek: earliest=%d/%d live=%d/%d", advanced.EarliestTicks, held.EarliestTicks, advanced.LiveEdgeTicks, held.LiveEdgeTicks)
+	}
+	// Release real source bytes only after the retained/expired seek witnesses.
+	// Publication must then advance while the consumer remains paused.
+	d.releaseTail.Do(func() { close(d.reconnectTail) })
+	resumed := d.waitWindow(t, p, func(w dynamicHTTPWindow) bool { return w.LiveEdgeTicks > advanced.LiveEdgeTicks })
+	if resumed.PresentationID != advanced.PresentationID || resumed.BufferedBytes > h.f.app.cfg.Timeshift.MaxWindowBytes {
+		t.Fatal("releasing the real reconnect tail replaced the presentation or exceeded its byte budget")
+	}
 	artifact := filepath.Join(t.TempDir(), "retained.ts")
 	if err := os.WriteFile(artifact, segment.body, 0600); err != nil {
 		t.Fatal(err)
@@ -402,7 +535,6 @@ func TestDynamicTimeshiftHTTPPauseReconnectWindowSeekLiveAndOwnership(t *testing
 			expectHLSHTTPStatus(t, h.request(t, http.MethodGet, hlsHTTPWithoutToken(t, target), nil, foreign), http.StatusNotFound)
 		}
 	}
-	expectHLSHTTPStatus(t, h.request(t, http.MethodGet, dynamicHTTPQuery(t, p.mainURL, map[string]string{"StartTimeTicks": "0"}), nil, nil), http.StatusGone)
 	live := h.request(t, http.MethodGet, advanced.LiveURL, nil, nil)
 	expectHLSHTTPStatus(t, live, http.StatusOK)
 	liveChildren := hlsHTTPManifestChildren(live.body)

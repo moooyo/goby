@@ -198,7 +198,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				expected[table.name] = extraSnapshot(t, ctx, pool, table, true)
 			}
 			identities, sequences := themeReservedTableIdentities(t, ctx, pool, names), themeOwnersSequences(t, ctx, pool)
-			expectedSequences := make(map[string]string, len(sequences)+2)
+			expectedSequences := make(map[string]string, len(sequences)+3)
 			for name, snapshot := range sequences {
 				expectedSequences[name] = snapshot
 			}
@@ -252,7 +252,7 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 				}
 				actualSequences := themeOwnersSequences(t, ctx, pool)
 				if runner == "normal" && attempt == 0 {
-					// Schema30 and schema38 add independent, unconsumed identities.
+					// Schema30, schema38 and schema50 add independent, unconsumed identities.
 					// Retain every historical snapshot and admit only these named
 					// additions after checking ownership, definition, and state.
 					var validCollectionIdentity bool
@@ -281,6 +281,24 @@ func TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes(t *testing.
 					// assertPhase3MigrationDefaults above verifies its exact owned
 					// bigint identity definition and unused initial sequence state.
 					expectedSequences[artworkSequence] = artworkAdded
+					var validAnalysisAuditIdentity bool
+					if err := pool.QueryRow(ctx, `SELECT
+						pg_get_serial_sequence('analysis_intro_audit','id')::regclass='analysis_intro_audit_id_seq'::regclass
+						AND EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='analysis_intro_audit'::regclass AND attname='id' AND attidentity='a')
+						AND EXISTS(SELECT 1 FROM pg_sequence WHERE seqrelid='analysis_intro_audit_id_seq'::regclass
+							AND seqtypid='bigint'::regtype AND seqstart=1 AND seqincrement=1 AND seqmin=1
+							AND seqmax=9223372036854775807 AND seqcache=1 AND NOT seqcycle)
+						AND NOT EXISTS(SELECT 1 FROM analysis_intro_audit)
+						AND last_value=1 AND log_cnt=0 AND NOT is_called
+						FROM analysis_intro_audit_id_seq`).Scan(&validAnalysisAuditIdentity); err != nil || !validAnalysisAuditIdentity {
+						t.Fatalf("schema50 did not add the declared unused analysis audit identity: %v", err)
+					}
+					const analysisAuditSequence = "analysis_intro_audit_id_seq"
+					analysisAuditAdded, analysisAuditExists := actualSequences[analysisAuditSequence]
+					if _, previouslyExisted := sequences[analysisAuditSequence]; previouslyExisted || !analysisAuditExists {
+						t.Fatal("analysis audit sequence was not an independent addition to schema26")
+					}
+					expectedSequences[analysisAuditSequence] = analysisAuditAdded
 				}
 				if themeReservedTableIdentities(t, ctx, pool, names) != identities {
 					t.Fatal("extra migration changed a historical table identity")

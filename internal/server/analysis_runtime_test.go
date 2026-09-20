@@ -49,6 +49,48 @@ func TestAnalysisShutdownRetainsOwnedWorkAfterCallerTimeout(t *testing.T) {
 	}
 }
 
+func TestAnalysisShutdownCancelsAllCallersWithoutReleasingTheirOwnership(t *testing.T) {
+	runtime := analysisLifecycleFixture()
+	type callerKey struct{}
+	var work []context.Context
+	var releases []func()
+	for index := 0; index < 3; index++ {
+		caller, cancel := context.WithCancel(context.WithValue(context.Background(), callerKey{}, index))
+		defer cancel()
+		operation, leave, err := runtime.enter(caller)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer leave()
+		if operation.Value(callerKey{}) != index {
+			t.Fatal("operation lost its caller context")
+		}
+		work, releases = append(work, operation), append(releases, leave)
+		if index == 0 {
+			cancel()
+		}
+	}
+	runtime.BeginClose()
+	for _, operation := range work {
+		if !errors.Is(operation.Err(), context.Canceled) {
+			t.Fatal("shutdown returned before canceling every admitted caller")
+		}
+	}
+	releases[0]()
+	releases[1]()
+	expired, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := runtime.Close(expired); !errors.Is(err, context.Canceled) {
+		t.Fatal("shutdown released a caller that had not returned")
+	}
+	releases[2]()
+	bounded, stop := context.WithTimeout(context.Background(), time.Second)
+	defer stop()
+	if err := runtime.Close(bounded); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestAnalysisPublicationWaitIsCancellableWithoutTakingAnotherOwnersGate(t *testing.T) {
 	runtime := analysisLifecycleFixture()
 	unlocked, err := runtime.lockPublication(context.Background())

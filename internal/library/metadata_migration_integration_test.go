@@ -508,6 +508,9 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 	expectedAdditions = append(expectedAdditions, "media_operations", "media_operation_cues", "item_owned_subtitles", "item_embedded_artwork")
 	expectedAdditions = append(expectedAdditions, "series_episode_rosters", "episode_roster_imports", "expected_episodes")
 	expectedAdditions = append(expectedAdditions, "notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries")
+	analysisTables := []string{"analysis_settings", "analysis_run_profiles", "analysis_work", "analysis_work_sources", "analysis_feature_cache",
+		"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews"}
+	expectedAdditions = append(expectedAdditions, analysisTables...)
 	sort.Strings(expectedAdditions)
 	if !reflect.DeepEqual(additions, expectedAdditions) {
 		t.Errorf("metadata migration created unexpected tables: %+v", additions)
@@ -518,6 +521,24 @@ func TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection(t
 		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+pgx.Identifier{table}.Sanitize()).Scan(&count); err != nil || count != 0 {
 			t.Errorf("metadata migration populated task table %s without registry initialization: count=%d error=%v", table, count, err)
 		}
+	}
+	// Analysis admission is explicit. Upgrading an old catalog creates only
+	// its independent default profile, never inferred jobs, evidence or cache.
+	for _, table := range analysisTables {
+		if table == "analysis_settings" {
+			continue
+		}
+		var count int
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM "+pgx.Identifier{table}.Sanitize()).Scan(&count); err != nil || count != 0 {
+			t.Errorf("metadata migration populated analysis table %s without admission: count=%d error=%v", table, count, err)
+		}
+	}
+	var analysisDefaults bool
+	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM analysis_settings)=1 AND EXISTS(
+		SELECT 1 FROM analysis_settings WHERE id=1 AND revision=1 AND publication_epoch=1 AND auto_publish_intros
+		AND preview_interval_seconds=10 AND preview_quality=80 AND max_source_bytes=137438953472
+		AND max_item_runtime_seconds=1200 AND feature_cache_max_bytes=134217728)`).Scan(&analysisDefaults); err != nil || !analysisDefaults {
+		t.Errorf("metadata migration did not preserve the independent initial analysis profile: defaults=%v error=%v", analysisDefaults, err)
 	}
 	var keys, clients int
 	if err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM application_keys),
