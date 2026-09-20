@@ -142,7 +142,24 @@ wait "$child"`)
 	subtitleExtractAssertProcessStopped(t, pid)
 }
 
-func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
+func TestSubtitleRemovalMP4RejectsScratchBudgetBeforeMediaInspection(t *testing.T) {
+	input, candidate := mediaEditProcessTestFiles(t)
+	before, err := input.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = RemuxSubtitleRemoval(context.Background(), input, candidate, SubtitleRemovalOptions{Container: "mp4", StreamIndex: 1,
+		FFmpegPath: "/must-not-launch-ffmpeg", FFprobePath: "/must-not-launch-ffprobe", MaxOutputBytes: before.Size() - 1})
+	if !errors.Is(err, ErrSubtitleRemovalBudget) {
+		t.Fatalf("equal-size structural copy was not rejected before inspecting invalid media bytes: %v", err)
+	}
+	after, err := candidate.Stat()
+	if err != nil || after.Size() != 0 {
+		t.Fatalf("budget rejection wrote a candidate: %+v %v", after, err)
+	}
+}
+
+func TestSubtitleRemovalActualMediaPreservesSelectedProfiles(t *testing.T) {
 	ffmpeg, ffprobe := os.Getenv("GOBY_FFMPEG"), os.Getenv("GOBY_FFPROBE")
 	if ffmpeg == "" || ffprobe == "" {
 		t.Skip("set GOBY_FFMPEG and GOBY_FFPROBE for the Linux subtitle removal integration test")
@@ -198,7 +215,7 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer candidate.Close()
-			record.Stage = "remux_and_proof"
+			record.Stage = "candidate_edit_and_proof"
 			evidence, err := RemuxSubtitleRemoval(context.Background(), input, candidate, SubtitleRemovalOptions{FFmpegPath: ffmpeg, FFprobePath: ffprobe, Container: container, StreamIndex: removedIndex, Timeout: 90 * time.Second})
 			record.Result = &evidence
 			if err != nil {
@@ -207,6 +224,13 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 			}
 			if evidence.Version != mediaEditProofVersion || evidence.RemovedIndex != removedIndex || len(evidence.RetainedStreams) != retainedStreams || evidence.CandidateBytes <= 0 || len(evidence.MetadataSHA256) != 64 || len(evidence.ContainerSHA256) != 64 || len(evidence.SourceSHA256) != 64 || len(evidence.CandidateSHA256) != 64 {
 				t.Fatalf("incomplete preservation evidence: %+v", evidence)
+			}
+			if container == "mp4" {
+				if evidence.Engine != "structural_edit" || len(evidence.PreservedBytesSHA256) != 64 || evidence.SourceBytes != evidence.CandidateBytes {
+					t.Fatalf("MP4 structural editing evidence is incomplete: %+v", evidence)
+				}
+			} else if evidence.Engine != "ffmpeg_remux" || evidence.PreservedBytesSHA256 != "" {
+				t.Fatalf("incorrect Matroska preparation engine evidence: %+v", evidence)
 			}
 			for _, stream := range evidence.RetainedStreams {
 				if stream.SourceIndex == removedIndex || stream.CodecType != "attachment" && (stream.Packets == 0 || len(stream.PayloadSHA256) != 64 || len(stream.TimingSHA256) != 64) || stream.CodecType == "attachment" && len(stream.ExtradataSHA256) != 64 {
@@ -234,6 +258,22 @@ func TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles(t *testing.T) {
 			}
 			if subtitles != 1 || container != "mp4" && len(info.Chapters) != 2 {
 				t.Fatalf("chapter or subtitle preservation failed: %+v", info)
+			}
+			record.Stage = "candidate_decode"
+			decodeEvidence, err := decodeMediaEditTestCandidate(context.Background(), ffmpeg, candidate, info)
+			record.CandidateDecode = &decodeEvidence
+			if err != nil {
+				record.Failure = err.Error()
+				t.Fatalf("complete retained audio/video decode failed: %v", err)
+			}
+			expectedVideo := 1
+			if container == "mka" {
+				expectedVideo = 0
+			}
+			if !decodeEvidence.Complete || !decodeEvidence.ProgressEnd || decodeEvidence.OutTimeUS < 1_900_000 || decodeEvidence.OutTimeUS > 2_100_000 || decodeEvidence.AudioStreams != 2 ||
+				decodeEvidence.VideoStreams != expectedVideo || len(decodeEvidence.MappedIndexes) != 2+expectedVideo || expectedVideo != 0 && decodeEvidence.VideoFrames != 50 {
+				record.Failure = "candidate decode evidence is incomplete"
+				t.Fatalf("candidate decode did not prove complete mapped A/V output: %+v", decodeEvidence)
 			}
 			record.Stage = "complete"
 		})

@@ -24,8 +24,9 @@ type mediaEditTestEvidence struct {
 	Test, Container, Stage, Failure string
 	Failed                          bool
 	CapturedAt                      time.Time
-	Result                          *SubtitleRemovalEvidence `json:",omitempty"`
-	CandidateInfo                   *Info                    `json:",omitempty"`
+	Result                          *SubtitleRemovalEvidence     `json:",omitempty"`
+	CandidateInfo                   *Info                        `json:",omitempty"`
+	CandidateDecode                 *mediaEditTestDecodeEvidence `json:",omitempty"`
 	Files                           []mediaEditTestEvidenceFile
 }
 

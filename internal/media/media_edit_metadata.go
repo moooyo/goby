@@ -112,8 +112,12 @@ func (document mediaEditDocument) admit(container string, removedIndex int) erro
 		if codecType == "audio" || codecType == "video" && !attachedPicture {
 			retainedMedia = true
 		}
-		if codec == "" || codecType != "audio" && codecType != "video" && codecType != "subtitle" && codecType != "attachment" {
-			return fmt.Errorf("%w: unsupported stream type", ErrSubtitleRemovalUnsupported)
+		if codecType == "attachment" && (container == "mkv" || container == "mka") {
+			if err := mediaEditValidateAttachment(stream); err != nil {
+				return fmt.Errorf("%w: attachment stream=%d", err, index)
+			}
+		} else if codec == "" || codec == "unknown" || codec == "none" || codecType != "audio" && codecType != "video" && codecType != "subtitle" {
+			return fmt.Errorf("%w: unsupported stream type at stream=%d", ErrSubtitleRemovalUnsupported, index)
 		}
 		if container == "mka" && codecType == "video" && !attachedPicture {
 			return fmt.Errorf("%w: MKA profile contains video", ErrSubtitleRemovalUnsupported)
@@ -142,6 +146,9 @@ func (document mediaEditDocument) timeBases() map[int]*big.Rat {
 }
 
 func buildMediaEditRemuxArgs(source mediaEditDocument, options SubtitleRemovalOptions) ([]string, error) {
+	if options.Container != "mkv" && options.Container != "mka" {
+		return nil, fmt.Errorf("%w: MP4 requires structural track editing", ErrSubtitleRemovalUnsupported)
+	}
 	args := []string{"-hide_banner", "-nostdin", "-v", "error", "-y", "-threads", "1", "-max_alloc", "268435456", "-copyts",
 		"-protocol_whitelist", "file,pipe", "-format_whitelist", "matroska,webm,mov,mp4,m4a,3gp,3g2,mj2", "-i", "/proc/self/fd/3",
 		"-map", "0", "-map", "-0:" + strconv.Itoa(options.StreamIndex), "-map_metadata", "0", "-map_chapters", "0", "-c", "copy",
@@ -159,27 +166,9 @@ func buildMediaEditRemuxArgs(source mediaEditDocument, options SubtitleRemovalOp
 			return nil, err
 		}
 		args = append(args, "-map_metadata:s:"+strconv.Itoa(outputIndex), "0:s:"+strconv.FormatInt(index, 10), "-disposition:"+strconv.Itoa(outputIndex), disposition)
-		if options.Container == "mp4" {
-			tags, err := mediaEditTags(stream["tags"])
-			if err != nil {
-				return nil, err
-			}
-			if name, present := tags["name"]; present {
-				// mov.c projects the track name as name, while movenc.c consumes
-				// title to regenerate it. The caller first binds name to the raw
-				// admitted atom; the completed candidate must retain both proofs.
-				args = append(args, "-metadata:s:"+strconv.Itoa(outputIndex), "title="+name)
-			}
-		}
 		outputIndex++
 	}
-	if options.Container == "mp4" {
-		// Retain arbitrary format metadata in an mdta atom. The independent
-		// signature still rejects any source key the muxer cannot round-trip.
-		args = append(args, "-movflags", "use_metadata_tags", "-use_editlist", "0", "-f", "mp4")
-	} else {
-		args = append(args, "-f", "matroska")
-	}
+	args = append(args, "-default_mode", "passthrough", "-f", "matroska")
 	return append(args, "/proc/self/fd/4"), nil
 }
 

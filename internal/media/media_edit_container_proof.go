@@ -14,6 +14,7 @@ type mediaEditContainerProof struct {
 	Writer    map[string]string
 	Chapters  []mediaEditChapterDisplayProof
 	MP4Tracks []mediaEditMP4TrackProof
+	MP4Layout *mediaEditMP4Layout
 }
 
 type mediaEditMP4RollProof struct {

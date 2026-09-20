@@ -22,7 +22,8 @@ accepted only when the implementation can prove all retained semantics:
 - MP4 is limited to ordinary, self-contained `avc1`, `mp4a`, and `tx3g` tracks.
   Fragmentation, encryption, external references, alternate sample descriptions,
   private atoms, unknown sample groups, chapter references, and nontrivial edit
-  lists are rejected. AAC requires an explicit `roll` sample-group pair declaring
+  lists are rejected. Explicit 32-bit or 64-bit track-box sizes are required.
+  AAC requires an explicit `roll` sample-group pair declaring
   exactly one preceding access unit for every sample. Its description and mapping
   are read directly from `sgpd`/`sbgp`; their normalized meaning must match after
   remuxing and their sample counts must equal the bound stream's actual packet
@@ -35,10 +36,32 @@ accepted only when the implementation can prove all retained semantics:
   this editing profile. Ordinary supported HDR stream metadata is compared
   completely. Playback support for a source does not imply edit support.
 
-FFmpeg maps every stream except the selected absolute subtitle index and copies
-all retained codecs. Chapters and metadata are explicitly mapped. Every output
-stream disposition is set explicitly so FFmpeg cannot promote another stream to
-default merely because the selected subtitle was removed.
+For MKV/MKA, FFmpeg maps every stream except the selected absolute subtitle index
+and copies all retained codecs. Chapters and metadata are explicitly mapped.
+Every output stream disposition is set explicitly and Matroska's default mode
+is fixed to `passthrough`.
+
+MP4 uses `Engine=structural_edit`, without invoking the FFmpeg muxer. A bounded
+descriptor copy changes only the selected `tx3g` track's four-byte `trak` type
+to `free` and fills that track body with zeroes. The original size fields, every
+other box, all sample tables, all offsets, and every `mdat` byte remain identical.
+The selected track ID is bound to the requested absolute ffprobe stream index.
+The original `mvhd` duration is preserved; the request is rejected if removal
+would invalidate its existing complete-timeline invariant. Track references,
+fragmentation, external data references, and unknown container semantics remain
+rejected by admission.
+
+This removes a track declaration, rather than securely erasing its former media
+payload. Unreferenced `mdat` bytes remain and the candidate has the same size as
+the source. Scratch space must cover that complete size, checked before media
+scanning or hashing. The output is still a separate unpublished file. An
+independent descriptor reread proves the three unchanged byte ranges and the
+exact `free`/zero-filled replacement; the normalized preserved-range digest is
+returned as `PreservedBytesSHA256`. The same exact-size, range-digest and cleared-
+body checks run again inside the final candidate proof baseline, binding that
+digest to `CandidateSHA256` even if unreferenced bytes change after copying.
+All existing stream, metadata, packet,
+extradata, and structural proofs still run after this edit.
 
 An independent ffprobe pass hashes every retained packet payload in stream order,
 including packet boundaries, sizes, and counts. A separate hash covers exact
@@ -47,6 +70,17 @@ is no timestamp rounding allowance. Currently, only the fully rendered `Skip
 Samples` packet side-data structure is admitted; opaque or unknown side data is
 rejected. Codec extradata hashes prove retained codec headers and attachment
 bytes, including attachments that produce no packets.
+
+An opaque Matroska attachment may legitimately have no recognized codec name.
+It is admitted only with explicit attachment type, positive bounded extradata,
+a complete SHA-256 hash, filename, and valid MIME type. Each retained attachment
+still has independent index, metadata, length, and full-content proofs; ordinary
+unknown audio, video, subtitle, or data streams remain rejected. FFmpeg's
+[Matroska reader](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavformat/matroskadec.c)
+copies unrecognized-MIME attachment bytes into extradata, and its
+[attachment writer](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavformat/matroskaenc.c)
+writes that complete payload back. In particular, `font/ttf` need not result in
+a recognized `codec_name` to retain the attachment exactly.
 
 All retained user tags, stream tags, dispositions, rendered stream facts, and
 chapter metadata must match. Container-local track and chapter IDs, indexes,
@@ -77,8 +111,9 @@ See [`DURATION_STRING_LENGTH` and the duration writer](https://github.com/FFmpeg
 
 FFmpeg reconstructs AAC's all-sample, one-access-unit `roll` mapping rather than
 copying arbitrary original sample-group boxes. Its demuxer does not expose those
-groups through ffprobe. The source/candidate comparison therefore uses direct
-structural evidence instead of treating matching packet bytes as sufficient.
+groups through ffprobe. The MP4 structural path preserves the original group
+boxes and independently compares their decoded semantics, instead of treating
+matching packet bytes as sufficient.
 See the [pinned FFmpeg preroll writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/movenc.c#L3305)
 and [sample-group reader](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/mov.c#L3922).
 
@@ -91,16 +126,23 @@ Unknown children, scheme/value prefixes with extra text, duplicates, ambiguous
 strings, and trailing data are rejected. The raw name presence/value and sorted
 kind pairs are compared for each retained track and included in `ContainerSHA256`.
 
-The raw name must match its complete ffprobe `tags.name` projection. FFmpeg
-reads that atom as `name` but writes it from `title`, so the remux command
-explicitly supplies the proven value as the output stream's `title` alias.
-The existing complete stream-tag comparison remains unchanged. Each kind also
+The raw name must match its complete ffprobe `tags.name` projection. FFmpeg reads
+that atom as `name` but writes it from `title`; the structural editing path
+avoids that lossy metadata-copy boundary by preserving the original atom bytes.
+The complete stream-tag comparison remains unchanged. Each kind also
 must match all of its disposition bits, including both hearing-impaired/captions
 and both visual-impaired/descriptions bits. This avoids trusting the demuxer's
 prefix matching or losing track names during a metadata-only copy. See the
 [track metadata writer](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/movenc.c#L4298),
 [string reader](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/mov.c#L490),
 and [complete disposition mapping](https://github.com/FFmpeg/FFmpeg/blob/bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa/libavformat/isom.c#L450).
+
+The byte-preserving MP4 path also keeps the original `ftyp` and explicit global
+`mdta` namespaces intact. It does not re-copy the flattened ffprobe metadata
+projection: doing so duplicates derived brand tags, and a semicolon-combined
+creation-time projection can no longer reconstruct the original header time.
+The implementation never splits arbitrary user metadata on semicolons, removes
+explicit `mdta` values, or exempts creation time from preservation.
 
 Source SHA-256, candidate SHA-256, candidate byte length, a canonical metadata
 digest, a `ContainerSHA256` digest of retained structural semantics, retained stream
@@ -121,9 +163,10 @@ descriptors, and process-group cancellation. No shell command is constructed.
   slot admission, complete packet scans, and file hashing.
 - Two concurrent operations; each child has a 4 GiB address-space limit and a
   64-descriptor limit. Individual FFmpeg allocations are also bounded.
-- The candidate has an exact `RLIMIT_FSIZE` ceiling, defaulting to source bytes
-  plus 64 MiB. This also protects sparse writes and seekable MP4 trailer rewrites.
-  Probe processes have a zero-byte regular-file write ceiling.
+- The Matroska candidate has an exact `RLIMIT_FSIZE` ceiling, defaulting to source
+  bytes plus 64 MiB. The MP4 structural copy rejects a smaller-than-source budget
+  before scanning and uses bounded `WriteAt` calls that never extend beyond the
+  source extent. Probe processes have a zero-byte regular-file write ceiling.
 - At most 256 streams, 10,000 chapters, two million container headers, 64 MiB of
   container metadata, and 256 MiB of attachment payloads are admitted.
 - ffprobe metadata output is limited to 8 MiB. Packet JSON is streamed with a
@@ -143,9 +186,19 @@ group. Direct chapter-language and AAC sample-group preservation proofs were
 added in response. A second targeted run passed 66 parent tests but again failed
 the three actual-remux profiles at admission: MKV/MKA rejected legal EBML text
 padding, and MP4 rejected track-level `udta`. Both failed runs are retained.
-The corresponding text-padding and exact track-userdata proofs are now added;
-targeted re-verification is pending. These repairs have not yet established a
-passing actual remux result.
+The corresponding text-padding and exact track-userdata proofs were added. The
+third run progressed to a Matroska opaque-attachment admission issue and MP4
+metadata comparison. Its retained source/candidate bytes were then inspected
+with one authorized read-only diagnostic pass. The MP4 writer had duplicated
+derived brand metadata, lost track creation times, promoted the remaining
+subtitle to default, appended 20 bytes of subtitle extradata, and added a fourth
+subtitle packet. The original first three subtitle packets and all retained A/V
+packets were identical. These differences are not accepted as normalization.
+
+The admitted MP4 profile now uses structural editing to preserve those original
+bytes and semantics. Matroska opaque attachments retain their independent full
+extradata proof. The next consolidated verification is pending; these repairs
+have not yet established a passing actual candidate result.
 
 Unit coverage includes exact rational clocks, payload tampering, reordered and
 missing packets, duplicate JSON keys, malformed metadata, chapter and attachment
@@ -153,18 +206,26 @@ changes, absolute stream mapping, descriptor offsets, hard file-size limits,
 environment isolation, and descendant cancellation. Structural tests exercise
 supported synthetic containers and rejected hidden metadata and timeline cases.
 
-`TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles` uses
+`TestSubtitleRemovalActualMediaPreservesSelectedProfiles` uses
 `GOBY_FFMPEG`/`GOBY_FFPROBE` for actual MKV, MKA, and selected MP4 candidates. MKV/MKA
 fixtures include two audio tracks, two subtitle tracks, chapters, metadata, and
 an opaque attachment with a font MIME type. The MP4 fixture explicitly disables
 edit lists to stay within the selected profile. It verifies complete returned
-evidence and independently probes the resulting stream/chapter inventory. These
-tests must run in the designated Linux verification environment; their presence
+evidence and independently probes the resulting stream/chapter inventory. It
+then performs one complete bounded FFmpeg decode of every retained A/V stream
+with explicit maps, `-xerror`, and `-err_detect explode`, with no time/frame/seek
+truncation. A clean exit, final `progress=end`, positive output time, and positive
+video-frame count when video exists are required. The fixed two-second fixtures
+additionally require 50 video frames when present and output time within
+1.9–2.1 seconds, allowing bounded AAC padding. The three earlier failed runs
+used the historical name `TestSubtitleRemovalActualFFmpegPreservesSelectedProfiles`.
+These tests must run in the designated Linux verification environment; their presence
 alone is not evidence that actual remuxing has passed.
 
 The optional `GOBY_MEDIA_EDIT_EVIDENCE_DIR` setting retains actual-test evidence
 in a unique private run directory (0700), with source/candidate copies and a
 manifest (0600). Cleanup records the bytes present at the current test stage,
-their hashes, and the result, including failures. This diagnostic capture does
-not run another probe or change the fixtures. It permits the next repair to
+their hashes, the engine/preservation result, probe facts, and the one complete
+decode result, including failures. This diagnostic capture does not itself run
+another probe or decode or change the fixtures. It permits the next repair to
 inspect the exact failed inputs and candidate instead of discarding them.

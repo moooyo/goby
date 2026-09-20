@@ -74,16 +74,22 @@ func mediaEditReadContainerProof(ctx context.Context, file *os.File, size int64,
 		return mediaEditContainerProof{}, err
 	}
 	proof := mediaEditContainerProof{Writer: s.writer, Chapters: s.chapterDisplays}
+	if container == "mp4" {
+		proof.MP4Layout = &mediaEditMP4Layout{SourceBytes: size, MovieDuration: s.movieDuration}
+	}
 	for _, track := range s.mp4Tracks {
 		roll, err := s.mp4RollProof(track)
 		if err != nil {
 			return mediaEditContainerProof{}, err
 		}
 		idOffset := 12 + int(track.header[0])*8
+		id := uint64(binary.BigEndian.Uint32(track.header[idOffset : idOffset+4]))
 		proof.MP4Tracks = append(proof.MP4Tracks, mediaEditMP4TrackProof{
-			ID: uint64(binary.BigEndian.Uint32(track.header[idOffset : idOffset+4])), Codec: track.codec,
+			ID: id, Codec: track.codec,
 			Samples: track.tableSamples, Roll: roll, UserData: track.userData,
 		})
+		proof.MP4Layout.Tracks = append(proof.MP4Layout.Tracks, mediaEditMP4TrackLayout{ID: id, Codec: track.codec,
+			Duration: track.duration, TypeOffset: track.typeOffset, BodyOffset: track.bodyOffset, End: track.atomEnd})
 	}
 	return proof, nil
 }
@@ -674,6 +680,7 @@ func (s *mediaEditContainerScanner) ebmlProjection(kind string, uid uint64, name
 type mediaEditMP4Box struct {
 	kind       string
 	start, end int64
+	typeOffset int64
 }
 
 type mediaEditMP4Track struct {
@@ -697,6 +704,9 @@ type mediaEditMP4Track struct {
 	rollDescriptions bool
 	rollMapping      bool
 	userData         mediaEditMP4UserDataProof
+	typeOffset       int64
+	bodyOffset       int64
+	atomEnd          int64
 }
 
 func (s *mediaEditContainerScanner) mp4Box(offset, end int64, depth int) (mediaEditMP4Box, error) {
@@ -725,7 +735,7 @@ func (s *mediaEditContainerScanner) mp4Box(offset, end int64, depth int) (mediaE
 	if size < uint64(header) || size > uint64(end-offset) {
 		return mediaEditMP4Box{}, mediaEditContainerError("MP4 box exceeds its parent")
 	}
-	return mediaEditMP4Box{kind: string(raw[4:8]), start: offset + header, end: offset + int64(size)}, nil
+	return mediaEditMP4Box{kind: string(raw[4:8]), start: offset + header, end: offset + int64(size), typeOffset: offset + 4}, nil
 }
 
 var mediaEditMP4Children = map[string]map[string]bool{
@@ -766,7 +776,7 @@ func (s *mediaEditContainerScanner) mp4(parent string, start, end int64, depth i
 				return mediaEditContainerError("empty MP4 media data")
 			}
 		case "trak":
-			child := &mediaEditMP4Track{}
+			child := &mediaEditMP4Track{typeOffset: box.typeOffset, bodyOffset: box.start, atomEnd: box.end}
 			if err := s.mp4("trak", box.start, box.end, depth+1, child); err != nil {
 				return err
 			}

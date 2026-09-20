@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"reflect"
 	"testing"
 )
 
@@ -59,28 +58,10 @@ func TestMediaEditMP4TrackUserDataBindsCompleteProbeProjection(t *testing.T) {
 	}
 }
 
-func TestMediaEditMP4TrackNameAliasIsExplicitAndPreservesArgumentBytes(t *testing.T) {
-	const literal = "Original audio; $(literal)\nUTF-8 track"
-	source := mediaEditDocument{Streams: []map[string]any{
-		{"index": "0", "disposition": map[string]any{"default": "0"}, "tags": map[string]any{"name": literal}},
-		{"index": "7", "disposition": map[string]any{"default": "0"}, "tags": map[string]any{"name": "Removed subtitle"}},
-		{"index": "9", "disposition": map[string]any{"default": "0"}, "tags": map[string]any{"name": "Retained subtitle"}},
-	}}
-	args, err := buildMediaEditRemuxArgs(source, SubtitleRemovalOptions{Container: "mp4", StreamIndex: 7})
-	if err != nil {
-		t.Fatal(err)
-	}
-	metadata := map[string]string{}
-	for index := 0; index+1 < len(args); index++ {
-		if args[index] == "-metadata:s:0" || args[index] == "-metadata:s:1" || args[index] == "-metadata:s:2" {
-			if _, duplicate := metadata[args[index]]; duplicate {
-				t.Fatal("duplicate explicit track title alias")
-			}
-			metadata[args[index]] = args[index+1]
-		}
-	}
-	if !reflect.DeepEqual(metadata, map[string]string{"-metadata:s:0": "title=" + literal, "-metadata:s:1": "title=Retained subtitle"}) {
-		t.Fatalf("track-name aliases lost literal bytes or absolute mapping: %#v", metadata)
+func TestMediaEditMP4CannotSelectTheLossyRemuxCommand(t *testing.T) {
+	args, err := buildMediaEditRemuxArgs(mediaEditDocument{}, SubtitleRemovalOptions{Container: "mp4", StreamIndex: 7})
+	if !errors.Is(err, ErrSubtitleRemovalUnsupported) || len(args) != 0 {
+		t.Fatalf("MP4 incorrectly selected the generic FFmpeg writer: %#v %v", args, err)
 	}
 }
 

@@ -15,23 +15,43 @@ No source name or byte is changed during queued, running, or ready states.
 
 The initial profiles are `.mkv`, `.mka`, and a conservative `.mp4` profile. The
 media proof admits a container only when its structure and retained content can
-be demonstrated to survive the selected remux. An extension alone is not proof.
+be demonstrated to survive the selected removal engine. An extension alone is
+not proof.
 Unsupported container features, encrypted data, unrepresentable metadata,
 unknown packet side data, or preservation mismatches leave the original intact.
 
-FFmpeg copies retained streams and metadata; FFprobe independently verifies
-retained packet payloads, exact rational presentation clocks, codec extradata,
-dispositions, chapters, and metadata. Container writer provenance may change
-because this operation writes a new container, and those changes are recorded in
-the evidence. User-authored metadata is not treated as disposable provenance.
+Matroska uses FFmpeg to copy retained streams and metadata with explicit
+disposition passthrough. The restricted MP4 engine instead copies the complete
+source through held descriptors, replaces the selected `tx3g` track declaration
+with a same-size `free` box, and clears that box's body. All other bytes,
+including `mdat` and `mvhd`, remain identical. If removing a track would require
+changing the movie duration, the operation is rejected. The removed subtitle's
+unreferenced `mdat` bytes are retained; this is track removal, not forensic
+erasure. `Engine` distinguishes `structural_edit` from `ffmpeg_remux`, and a
+separate preserved-range SHA-256 proves the structural edit's unchanged bytes.
+
+FFprobe independently verifies retained packet payloads, exact rational
+presentation clocks, codec extradata, dispositions, chapters, and metadata.
+The Matroska writer's generator provenance may change and is recorded in the
+evidence; the MP4 structural engine preserves it. User-authored metadata is not
+treated as disposable provenance.
 The ready witness also contains whole-file source/candidate SHA-256 digests and
 the freshly probed candidate catalog facts.
+
+A Matroska stream explicitly typed as `attachment` may omit `codec_name` when
+FFmpeg does not decode its MIME type. It still requires a filename, a MIME
+declaration, and a complete bounded extradata SHA-256. Each retained attachment's
+bytes and metadata are compared independently. This exception never admits an
+unknown ordinary audio, video, subtitle, or data stream.
 
 The source owner, group, ordinary permission bits, and supported extended
 attributes are copied and checked. Content-bound `security.ima` and
 `security.evm` signatures, special permission bits, or failed attribute copying
-reject the operation. Linux and a trusted `/usr/bin/prlimit` are required for
-the remux process's hard output-file limit. Input is limited to 1 TiB and work to
+reject the operation. Linux and a trusted `/usr/bin/prlimit` enforce subprocess
+limits, including the FFmpeg remux process's hard output-file ceiling. MP4's Go
+structural copier instead enforces exact source and destination extents through
+bounded descriptor reads/writes; its full source size must fit the scratch
+budget before any copy or probe begins. Input is limited to 1 TiB and work to
 two hours, with separately bounded subprocess diagnostics and proof records.
 The captured `WritableProfiles` list is enforced by the worker. The actual
 candidate limit is the smaller of captured `MaxScratchBytes` and the bounded

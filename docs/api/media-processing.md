@@ -94,9 +94,12 @@ Subtitle removal preparation uses all of these fields:
 ```
 
 Supported profile selectors are `matroska-v1` and `mp4-movtext-v1`, subject to the
-runtime inventory and the actual container/stream validation. Preparation remuxes
-and validates a candidate before it can become ready. It does not replace the
-original file or claim a backup has already been published.
+runtime inventory and the actual container/stream validation. Preparation builds
+and validates a candidate using the profile's removal engine before it can become
+ready. It does not replace the original file or claim a backup has already been
+published.
+The [media preservation contract](../development/media-edit-publication.md)
+defines Matroska remuxing and the restricted MP4 structural edit.
 
 OCR uses `Kind: "subtitle_ocr"` with the same top-level fields and these exact
 parameters:

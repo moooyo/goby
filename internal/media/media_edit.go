@@ -69,17 +69,19 @@ type MediaEditWriterChange struct {
 // to replace a source; the library must revalidate its journal, root binding,
 // source identity and digest before atomically publishing the candidate.
 type SubtitleRemovalEvidence struct {
-	Version         int                       `json:"version"`
-	Container       string                    `json:"container"`
-	RemovedIndex    int                       `json:"removed_index"`
-	SourceBytes     int64                     `json:"source_bytes"`
-	CandidateBytes  int64                     `json:"candidate_bytes"`
-	SourceSHA256    string                    `json:"source_sha256"`
-	CandidateSHA256 string                    `json:"candidate_sha256"`
-	MetadataSHA256  string                    `json:"metadata_sha256"`
-	ContainerSHA256 string                    `json:"container_sha256"`
-	RetainedStreams []MediaEditStreamEvidence `json:"retained_streams"`
-	WriterChanges   []MediaEditWriterChange   `json:"writer_changes,omitempty"`
+	Version              int                       `json:"version"`
+	Engine               string                    `json:"engine"`
+	Container            string                    `json:"container"`
+	RemovedIndex         int                       `json:"removed_index"`
+	SourceBytes          int64                     `json:"source_bytes"`
+	CandidateBytes       int64                     `json:"candidate_bytes"`
+	SourceSHA256         string                    `json:"source_sha256"`
+	CandidateSHA256      string                    `json:"candidate_sha256"`
+	MetadataSHA256       string                    `json:"metadata_sha256"`
+	ContainerSHA256      string                    `json:"container_sha256"`
+	PreservedBytesSHA256 string                    `json:"preserved_bytes_sha256,omitempty"`
+	RetainedStreams      []MediaEditStreamEvidence `json:"retained_streams"`
+	WriterChanges        []MediaEditWriterChange   `json:"writer_changes,omitempty"`
 }
 
 // RemuxSubtitleRemoval borrows two distinct regular descriptors without
@@ -88,12 +90,15 @@ type SubtitleRemovalEvidence struct {
 // copies all other streams, then independently proves their packet payloads,
 // clocks, metadata, chapters, dispositions and codec extradata. Unknown proof
 // cases fail closed and leave an unpublished candidate for caller cleanup.
+// Matroska uses FFmpeg stream copy. Admitted MP4 uses an equal-size structural
+// edit: the selected track declaration becomes zero-filled free space while
+// every other byte, including unreferenced mdat payloads, remains unchanged.
 // Supported profiles are single-segment Matroska with plain metadata and
 // ordinary self-contained AVC/AAC/mov_text MP4 without nontrivial edit lists.
 // Container writer identities are the only permitted metadata changes and
 // appear explicitly in WriterChanges; no user or stream tags are exempted.
-// Linux util-linux /usr/bin/prlimit is required to enforce a hard file-size
-// ceiling on the seekable candidate, including MP4 trailer rewrites.
+// Linux util-linux /usr/bin/prlimit enforces Matroska output and tool budgets;
+// the MP4 copy enforces its source-sized output ceiling before every write.
 func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, options SubtitleRemovalOptions) (evidence SubtitleRemovalEvidence, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return evidence, err
@@ -137,6 +142,11 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if options.MaxOutputBytes <= 0 || options.MaxOutputBytes > MaxSubtitleRemovalInputBytes+mediaEditOutputAllowance {
 		return evidence, ErrSubtitleRemovalBudget
 	}
+	// MP4 structural editing preserves all physical extents. Reject its exact
+	// scratch requirement before any structural scan, hashing or packet probe.
+	if options.Container == "mp4" && options.MaxOutputBytes < before.Size() {
+		return evidence, ErrSubtitleRemovalBudget
+	}
 	defer func() {
 		if err := mediaEditCheckUnchanged(input, before); err != nil {
 			evidence, resultErr = SubtitleRemovalEvidence{}, err
@@ -156,9 +166,14 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err := source.admit(options.Container, options.StreamIndex); err != nil {
 		return evidence, err
 	}
+	var mp4Plan mediaEditMP4RemovalPlan
 	if options.Container == "mp4" {
 		if err := mediaEditValidateMP4UserDataProjection(sourceContainer, source); err != nil {
 			return evidence, fmt.Errorf("subtitle removal source MP4 user data: %w", err)
+		}
+		mp4Plan, err = buildMediaEditMP4RemovalPlan(sourceContainer, source, options.StreamIndex)
+		if err != nil {
+			return evidence, err
 		}
 	}
 	sourceDigest, err := mediaEditFileDigest(operationContext, input, before.Size())
@@ -169,12 +184,21 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err != nil {
 		return evidence, err
 	}
-	args, err := buildMediaEditRemuxArgs(source, options)
-	if err != nil {
-		return evidence, err
-	}
-	if err := runMediaEditRemux(operationContext, options.FFmpegPath, input, candidate, options.MaxOutputBytes, args); err != nil {
-		return evidence, err
+	engine, preservedBytes := "ffmpeg_remux", ""
+	if options.Container == "mp4" {
+		preservedBytes, err = runMediaEditMP4StructuralCopy(operationContext, input, candidate, mp4Plan, options.MaxOutputBytes)
+		if err != nil {
+			return evidence, err
+		}
+		engine = "structural_edit"
+	} else {
+		args, err := buildMediaEditRemuxArgs(source, options)
+		if err != nil {
+			return evidence, err
+		}
+		if err := runMediaEditRemux(operationContext, options.FFmpegPath, input, candidate, options.MaxOutputBytes, args); err != nil {
+			return evidence, err
+		}
 	}
 	if err := candidate.Sync(); err != nil {
 		return evidence, fmt.Errorf("sync subtitle removal candidate: %w", err)
@@ -235,6 +259,11 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err != nil {
 		return evidence, err
 	}
+	if options.Container == "mp4" {
+		if err := verifyMediaEditMP4StructuralCandidate(operationContext, candidate, mp4Plan, preservedBytes); err != nil {
+			return evidence, err
+		}
+	}
 	finalDigest, err := mediaEditFileDigest(operationContext, candidate, outputAfter.Size())
 	if err != nil || finalDigest != stagedDigest {
 		return evidence, fmt.Errorf("%w: candidate changed during proof", ErrSubtitleRemovalUnsupported)
@@ -242,9 +271,9 @@ func RemuxSubtitleRemoval(ctx context.Context, input, candidate *os.File, option
 	if err := mediaEditCheckUnchanged(candidate, outputAfter); err != nil {
 		return evidence, err
 	}
-	return SubtitleRemovalEvidence{Version: mediaEditProofVersion, Container: options.Container, RemovedIndex: options.StreamIndex,
+	return SubtitleRemovalEvidence{Version: mediaEditProofVersion, Engine: engine, Container: options.Container, RemovedIndex: options.StreamIndex,
 		SourceBytes: before.Size(), CandidateBytes: outputAfter.Size(), SourceSHA256: sourceDigest,
-		CandidateSHA256: stagedDigest, MetadataSHA256: metadataDigest, ContainerSHA256: containerDigest, RetainedStreams: pairs, WriterChanges: writerChanges}, nil
+		CandidateSHA256: stagedDigest, MetadataSHA256: metadataDigest, ContainerSHA256: containerDigest, PreservedBytesSHA256: preservedBytes, RetainedStreams: pairs, WriterChanges: writerChanges}, nil
 }
 
 func mediaEditCheckUnchanged(file *os.File, before os.FileInfo) error {

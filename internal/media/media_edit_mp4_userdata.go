@@ -118,9 +118,9 @@ func (s *mediaEditContainerScanner) mp4TrackUserData(box mediaEditMP4Box, depth 
 	return mediaEditMP4ValidateUserDataProof(track.userData)
 }
 
-// FFmpeg reads trak/udta/name as tags.name, but writes that atom from
-// tags.title. Validate the entire projection before the remux command supplies
-// that explicit alias. Raw userdata remains independently compared afterward.
+// FFmpeg reads trak/udta/name as tags.name and can collapse kind declarations
+// into disposition flags. Validate the entire projection in addition to the
+// original container bytes that the structural edit preserves directly.
 func mediaEditValidateMP4UserDataProjection(proof mediaEditContainerProof, document mediaEditDocument) error {
 	if len(proof.MP4Tracks) != len(document.Streams) {
 		return mediaEditContainerError("MP4 user-data/probe track inventories differ")

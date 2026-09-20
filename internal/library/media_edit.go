@@ -40,6 +40,7 @@ type mediaEditJournal struct {
 }
 
 type mediaEditSummary struct {
+	Engine                string `json:"Engine"`
 	ContainerProfile      string `json:"ContainerProfile"`
 	RemovedStreamIndex    int    `json:"RemovedStreamIndex"`
 	PreservedStreamCount  int    `json:"PreservedStreamCount"`
@@ -143,7 +144,7 @@ func encodeMediaEditResult(journal mediaEditJournal) (MediaOperationResult, erro
 	if err != nil || len(encoded) > MaxMediaOperationDocumentBytes {
 		return MediaOperationResult{}, errors.Join(ErrUnavailable, err)
 	}
-	summary, err := json.Marshal(mediaEditSummary{ContainerProfile: journal.Container, RemovedStreamIndex: journal.StreamIndex, PreservedStreamCount: len(journal.CandidateMedia.Streams), OriginalBytes: journal.source().File.Size, CandidateBytes: journal.Candidate.Size, BackupRetained: journal.Published != nil, MaximumOutputBytes: journal.MaximumOutputBytes, MaximumRuntimeSeconds: journal.MaximumRuntimeSeconds})
+	summary, err := json.Marshal(mediaEditSummary{Engine: journal.Proof.Engine, ContainerProfile: journal.Container, RemovedStreamIndex: journal.StreamIndex, PreservedStreamCount: len(journal.CandidateMedia.Streams), OriginalBytes: journal.source().File.Size, CandidateBytes: journal.Candidate.Size, BackupRetained: journal.Published != nil, MaximumOutputBytes: journal.MaximumOutputBytes, MaximumRuntimeSeconds: journal.MaximumRuntimeSeconds})
 	return MediaOperationResult{Summary: summary, ResultHash: journal.ReadyHash, Journal: encoded}, err
 }
 
@@ -241,7 +242,11 @@ func (s *Store) StageEmbeddedSubtitleRemoval(ctx context.Context, work MediaOper
 		}
 	}()
 	if progress != nil {
-		progress(MediaOperationProgress{Stage: "remuxing", Total: target.File.Size})
+		stage := "remuxing"
+		if container == "mp4" {
+			stage = "copying"
+		}
+		progress(MediaOperationProgress{Stage: stage, Total: target.File.Size})
 	}
 	proof, err := media.RemuxSubtitleRemoval(ctx, capture.base.source, candidate, media.SubtitleRemovalOptions{FFmpegPath: ffmpeg, FFprobePath: ffprobe, Container: container, StreamIndex: op.StreamIndex, MaxOutputBytes: outputBudget, Timeout: timeout})
 	if err != nil {

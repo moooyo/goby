@@ -126,7 +126,7 @@ func TestSubtitleRemovalAdmissionAndAbsoluteMapping(t *testing.T) {
 		t.Fatalf("remux did not remove exactly one absolute stream: %v", args)
 	}
 	joined := strings.Join(args, " ")
-	for _, expected := range []string{"-map_metadata 0", "-map_chapters 0", "-c copy", "-copyts", "-disposition:0 0", "-disposition:1 0", "-disposition:2 0", "-map_metadata:s:1 0:s:12", "-i /proc/self/fd/3"} {
+	for _, expected := range []string{"-map_metadata 0", "-map_chapters 0", "-c copy", "-copyts", "-default_mode passthrough", "-disposition:0 0", "-disposition:1 0", "-disposition:2 0", "-map_metadata:s:1 0:s:12", "-i /proc/self/fd/3"} {
 		if !strings.Contains(joined, expected) {
 			t.Fatalf("missing preservation argument %q: %v", expected, args)
 		}
