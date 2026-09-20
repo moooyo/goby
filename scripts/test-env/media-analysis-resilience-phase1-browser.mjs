@@ -63,6 +63,9 @@ async function operation(name, action) {
     if (error.phase1Captured) throw error;
     result.FailurePhase = currentPhase; result.FailureOperation = name;
     result.ErrorKind = ['Error', 'TimeoutError', 'AggregateError', 'TypeError'].includes(error.name) ? error.name : 'OperationError';
+    // Classify the locator failure without retaining Playwright's DOM excerpt,
+    // which can contain account data or a private fixture pathname.
+    if (typeof error.message === 'string' && error.message.includes('strict mode violation')) result.LocatorFailure = 'multiple_matches';
     if (!error.safeCode) error.safeCode = `native_${name.replaceAll('-', '_')}_failed`;
     await screenshot(`failure-${currentPhase}-${name}`, true);
     error.phase1Captured = true;
@@ -259,7 +262,7 @@ async function saveUser() {
   requireThat(saved.Submitted.IsDisabled === true && saved.Submitted.Policy.IsHidden === true && typeof saved.Submitted.Revision === 'string', 'user_save_not_bound');
   await waitDisabled(dialog.getByRole('button', { name: 'Save changes', exact: true }), 'user_save_not_settled');
   await screenshot('native-account-query-flags');
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Close', exact: true }).filter({ hasText: /^Close$/ }).click();
 }
 
 async function inspectUsers() {
@@ -334,7 +337,7 @@ async function saveMetadata() {
     saved.Submitted.Overrides.EndDate === '2025-12-31T00:00:00Z', 'series_metadata_cas');
   seriesRevision = saved.Body.Revision;
   await waitDisabled(loaded.dialog.getByRole('button', { name: 'Save changes', exact: true }), 'series_save_not_settled');
-  await loaded.dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await loaded.dialog.getByRole('button', { name: 'Close', exact: true }).filter({ hasText: /^Close$/ }).click();
   loaded = await metadataDialog(fixture.PlacedSpecialId, fixture.PlacedSpecialName);
   for (const [label, value] of [['Airs before season', '0'], ['Airs after season', '0'], ['Airs before episode', '2']])
     await loaded.dialog.getByRole('textbox', { name: label, exact: true }).fill(value);
@@ -344,7 +347,7 @@ async function saveMetadata() {
   placementRevision = saved.Body.Revision;
   await waitDisabled(loaded.dialog.getByRole('button', { name: 'Save changes', exact: true }), 'placement_save_not_settled');
   await screenshot('native-special-placement');
-  await loaded.dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await loaded.dialog.getByRole('button', { name: 'Close', exact: true }).filter({ hasText: /^Close$/ }).click();
 }
 async function waitScan(id) {
   requireThat(typeof id === 'string' && id.length > 0, 'scan_job_missing');
@@ -645,14 +648,14 @@ async function inspectPersisted() {
   const detail = await metadataDialog(fixture.SeriesId, fixture.SeriesName);
   requireThat(detail.detail.Revision === seriesRevision && detail.detail.Effective.Status === 'Ended' &&
     detail.detail.Effective.EndDate.startsWith('2025-12-31'), 'restart_lost_series_metadata');
-  await detail.dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await detail.dialog.getByRole('button', { name: 'Close', exact: true }).filter({ hasText: /^Close$/ }).click();
   const placed = await metadataDialog(fixture.PlacedSpecialId, fixture.PlacedSpecialName);
   requireThat(placed.detail.Revision === placementRevision && placed.detail.Effective.ParentIndexNumber === 0 &&
     placed.detail.Effective.AirsBeforeSeasonNumber === 0 && placed.detail.Effective.AirsAfterSeasonNumber === 0 &&
     placed.detail.Effective.AirsBeforeEpisodeNumber === 2, 'restart_lost_native_placement');
   requireThat(await placed.dialog.getByRole('textbox', { name: 'Airs before season', exact: true }).inputValue() === '0' &&
     await placed.dialog.getByRole('textbox', { name: 'Airs after season', exact: true }).inputValue() === '0', 'restart_native_placement_controls');
-  await placed.dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await placed.dialog.getByRole('button', { name: 'Close', exact: true }).filter({ hasText: /^Close$/ }).click();
   await page.goto(`${fixture.BaseURL}/admin/libraries`);
   const library = await responseFor('GET', `/admin/v1/libraries/${fixture.MovieLibraryId}`, () =>
     page.getByRole('button', { name: `Edit library ${fixture.MovieLibraryName}`, exact: true }).click());

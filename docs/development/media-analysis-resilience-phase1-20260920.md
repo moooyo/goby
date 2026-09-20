@@ -151,6 +151,25 @@ parents on a fresh independently owned pair in 30.19 seconds; its process group
 and worker closed. This is an environment repair, not a weakened emptiness guard.
 No current source is accepted or published by these partial results.
 
+The scanner and first locator repair were frozen at
+`398756d07be4b6814724aa8acb20518ec033c8f8` (archive SHA-256
+`69bf902eb4e60a578b13cab4fa435c060d31d57868f2e0c15e706251a78c9797`).
+`product-build-03` stopped before compilation because its frontend reuse guard
+mistook a generated contribution manifest for a source input. The original
+failed guard remains retained. `product-build-04` compared all 96 tracked
+frontend inputs against both frozen Git archives, verified 71 retained asset
+files, and passed the library, server and browser test builds plus both
+application builds. All five build process groups closed.
+
+`verification-04` runs the complete library package, including the actual
+10,000-file scan, plus affected HTTP tests and the full browser journey. Its
+browser reached a successful account PUT and saved-state screenshot, then
+failed because the successful form has both a dismissible alert and a footer
+button named Close. The driver now selects the visible footer text in all five
+affected account/metadata closures. The remaining control roles and dialog
+scopes were compared with the actual components and existing browser tests.
+This is a driver-only repair; complete browser acceptance is still pending.
+
 Private admission, setup, compilation and generation receipts are retained under
 `D:/Code/goby/.git/media-analysis-resilience-20260920/phase1` and the owned remote
 root. Credentials and DSNs remain only in the private runtime context.
