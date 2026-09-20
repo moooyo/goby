@@ -371,7 +371,7 @@ func TestHTTPConfigurationFullPartialEncodingAndReadonlyState(t *testing.T) {
 	seed["Overrides"].(map[string]any)["MaxWidth"] = 160
 	// Exercise a writable configuration clone. The fixture's deployment-only
 	// ephemeral port zero is intentionally readable but cannot be an override.
-	seed["Runtime"] = map[string]any{"Network": map[string]any{"HttpPort": 18096}}
+	seed["Runtime"] = map[string]any{"Network": map[string]any{"BindHost": nil, "HttpPort": 18096}}
 	adminSettingsHTTPObject(t, adminSettingsHTTPWrite(t, f.serverFixture, f.cookie, f.csrf, http.MethodPut, "/admin/v1/settings", seed), http.StatusOK)
 	getTotal := func() map[string]any {
 		return configurationHTTPObject(t, f.request(t, http.MethodGet, "/emby/System/Configuration", nil, f.admin.headers))
