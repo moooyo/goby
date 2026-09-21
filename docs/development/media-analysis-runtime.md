@@ -2,7 +2,7 @@
 
 Implementation contract for phase 2. Verification of the declared scope is
 complete, including the full client lifecycle and independent resource closure.
-Mainline publication remains pending. See the
+The accepted delivery is published on `main`. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
 [recorded results](media-analysis-resilience-phase2-results-20260922.json).
 The [original fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)

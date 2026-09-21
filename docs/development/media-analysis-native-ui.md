@@ -2,7 +2,7 @@
 
 Status: verification of the declared Phase 2 scope is complete. The corrected
 full client-lifecycle run passed and its worker and observer independently
-closed. Mainline publication remains pending. See the
+closed. The accepted delivery is published on `main`. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
 [recorded results](media-analysis-resilience-phase2-results-20260922.json).
 

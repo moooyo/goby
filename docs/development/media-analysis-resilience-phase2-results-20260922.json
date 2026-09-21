@@ -1,6 +1,6 @@
 {
   "marker": "goby-media-analysis-resilience-phase2-delivery-v1",
-  "status": "verified and phase resources closed; publication pending",
+  "status": "verified, phase resources closed, merged and pushed with exact delivery ref readback",
   "phase_accepted": true,
   "cutoff": "Actual02 complete client-lifecycle fixture-repair repeat, independent run closure and whole-phase resource closure read from copied original JSON bytes",
   "preparation": "Local documentary composition only; no local test, build, runtime probe, SSH, media decoding or feature inspection",
@@ -1117,9 +1117,7 @@
     "Actual01 complete browser, worker verification and observer-pass flags remain false; failed-run closure is not successful complete acceptance.",
     "Actual02 passes as a fixture-only complete-client-lifecycle repeat. It does not rewrite actual01, create a new unseen trial, or increase the independent corpus denominator."
   ],
-  "pending_required": [
-    "Record authorized merge/push and exact remote-ref readback; this is publication, not an open verification gate"
-  ],
+  "pending_required": [],
   "resolved_not_blockers": [
     "Actual14 corpus and fresh3 accuracy",
     "All four required actual previews and FH1 skip",
@@ -1447,15 +1445,18 @@
     "guest_reboot_performed": false
   },
   "publication": {
-    "status": "pending",
-    "merged": false,
-    "pushed": false,
-    "delivery_commit": null,
-    "main_commit": null,
-    "remote_ref": null,
-    "remote_commit": null,
-    "remote_readback_verified": false,
-    "note": "Verification and resource closure are accepted. Root will separately record the authorized merge/push and exact remote-ref readback."
+    "status": "published",
+    "merged": true,
+    "pushed": true,
+    "delivery_commit": "feb5004a76e06fa533252ea36ad99cfeb0f3e40b",
+    "main_commit": "feb5004a76e06fa533252ea36ad99cfeb0f3e40b",
+    "remote_ref": "refs/heads/main",
+    "remote_commit": "feb5004a76e06fa533252ea36ad99cfeb0f3e40b",
+    "remote_readback_verified": true,
+    "date": "2026-09-22",
+    "original_uncommitted_paths_preserved": 19,
+    "original_uncommitted_status_and_bytes_unchanged": true,
+    "note": "This records the verified delivery readback before the documentation-only publication follow-up. Phase3 remains required; no production deployment or guest reboot is claimed."
   },
   "pending_verification_requirements": [],
   "ancillary_and_original_failure_references": {

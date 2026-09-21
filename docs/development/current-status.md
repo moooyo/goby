@@ -14,8 +14,9 @@ The [execution record](media-analysis-resilience-phase1-20260920.md) and
 accepted 2,328 composed Go parents, three skips, 55 mocked UI cases, seven Node
 checks, complete 24-stage actual browser journey and both application builds.
 
-Phase 2 is verified and operationally closed within its declared scope; main
-publication is pending. Product `49fc4ec` implements automatic episode-intro
+Phase 2 is verified, closed and published within its declared scope. Delivery
+`feb5004` was merged into `main`, pushed and read back on September 22, 2026.
+Product `49fc4ec` implements automatic episode-intro
 analysis, source-bound BIF previews and their shared management/task lifecycle.
 The final [execution record](media-analysis-resilience-phase2-20260921.md) and
 [results](media-analysis-resilience-phase2-results-20260922.json) bind the builds,

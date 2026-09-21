@@ -16,7 +16,8 @@ to `main`, pushed, and read back from `origin/main` on September 21, 2026. Its
 binds the composed regression, complete 24-stage actual browser, both application
 builds and retained failures to their actual sources. Phase 2 is also implemented,
 verified and operationally closed within its declared scope; its main publication
-is pending. The [Phase 2 results](../development/media-analysis-resilience-phase2-results-20260922.json)
+is complete at `feb5004`, with exact remote readback on September 22, 2026.
+The [Phase 2 results](../development/media-analysis-resilience-phase2-results-20260922.json)
 bind the full corpus/client/lifecycle run and resource closure. Phase 3 remains
 required and product implementation has not started.
 Historical completed increments below remain closed.

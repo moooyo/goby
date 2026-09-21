@@ -1,6 +1,6 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **accepted within the declared Phase 2 scope; complete client/lifecycle verification and owned-resource closure passed on September 22, 2026; main publication pending**.
+Status: **accepted within the declared Phase 2 scope; complete client/lifecycle verification and owned-resource closure passed on September 22, 2026; delivery `feb5004` merged and pushed to `main` with exact remote readback**.
 The [delivery results](media-analysis-resilience-phase2-results-20260922.json)
 bind the final product, fixture correction, retained evidence and scope limits.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
@@ -678,5 +678,9 @@ Final receipt SHA-256 values:
 Phase 2 is accepted with its declared episode-level population and assistant
 source-review provenance. It does not establish unseen-series, unseen-season
 or fresh-negative specificity, original Emby Web parity, compound capacity or
-host-reboot recovery. The authorized main merge/push follows this acceptance;
-the full three-phase objective remains active for Phase 3.
+host-reboot recovery. Delivery `feb5004a76e06fa533252ea36ad99cfeb0f3e40b` was
+fast-forwarded into `main`, pushed to `origin/main`, and read back at that exact
+commit on September 22, 2026. The original checkout's 19 unrelated uncommitted
+paths retained their status and exact bytes. This documentation follow-up
+records publication separately; the full three-phase objective remains active
+for Phase 3.

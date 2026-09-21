@@ -84,7 +84,7 @@ selection and actor carriers, binary and relational corruption, raw round-trip
 preservation, epoch precision/exhaustion and transactional invalidation.
 Verification of the declared Phase 2 scope is complete, including actual
 PostgreSQL/archive checks and the independently closed full client-lifecycle
-run. Mainline publication remains pending. Source/scope composition and outcomes
+run. The accepted delivery is published on `main`. Source/scope composition and outcomes
 are recorded in the [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md)
 and [recorded results](media-analysis-resilience-phase2-results-20260922.json).
 The [original cancellation-fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)

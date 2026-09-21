@@ -16,8 +16,9 @@ were fast-forwarded into `main`, pushed and read back. Its
 actual test/build sources and original failures. Its resources are closed.
 
 Phase 2 automatic intro analysis and BIF previews are implemented, verified and
-operationally closed within their declared scope. Main publication is the next
-action. Read the [execution record](media-analysis-resilience-phase2-20260921.md)
+operationally closed within their declared scope. Delivery `feb5004` was merged
+into `main`, pushed and read back on September 22, 2026.
+Read the [execution record](media-analysis-resilience-phase2-20260921.md)
 and [delivery results](media-analysis-resilience-phase2-results-20260922.json).
 The frozen product is `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57`; the complete
 client/lifecycle repeat uses only the browser assertion fix at
@@ -45,7 +46,7 @@ binds exact units, receipt hashes, screened copies and preserved failures.
 Four credential-bearing preview HTTP originals remain remote; secret runtime
 contexts were not copied. Do not publish them.
 
-After verified Phase 2 merge/push and remote-ref readback, implement Phase 3:
+The next implementation is Phase 3:
 10k/100k mixed scan/search/playback/analysis workloads, bounded scan evidence and
 Seen staging, storage faults, process/database recovery, and clean OS reboot
 plus forced reset on an isolated owned guest. Source-only scanner designs are
