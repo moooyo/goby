@@ -9,26 +9,26 @@ implementation and verified merge/push to `main`. Development starts at
 is verified, its resources are closed, and delivery commit
 `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded into `main` and
 pushed to `origin/main`, with exact remote readback on September 21, 2026.
-Phase 2 remains in repair and acceptance. Source `00047ac` passed its scoped
-build, 284 affected Go parent tests and six-original calibration, but the
-controlled cold-open positives remained Review. V3 product source `b88c528`
-passed the composed build and 423 Go parent tests, including the isolated
-test-fixture correction at `21eff7e`. Its original-six calibration then failed:
-three originals qualified and three returned no result; all four body controls
-passed. The failed score remains acceptance-blocking. One equivalent diagnostic
-replay located recursive visual-boundary erosion: a complete three-source
-witness was cropped for 24 rounds until its confirmed duration fell below 15
-seconds. The subsequent source repair freezes visual correspondences and
-remeasures fixed final intervals, with complete original/refined clock selection
-and 13 new mechanical regression tests. Repair source `49acf4d` built all four
-required artifacts and passed all 99 intro parent tests. Its fixed five-call
-calibration preserved six safe candidates, but C1/C4/C5 remained Review because
-the group's measured visual matched time was 848/1000, below 850/1000. The four
-body controls passed. An equivalent replay located unmatched edge time in C1/C4's
-different windows under identical audio clocks. The common-clock intersection
-repair and six additional parent tests are implemented but unverified.
-Controlled acceptance has not resumed. Options and labels are unchanged; fresh
-holdout remains sealed and real consumer acceptance remains pending.
+Phase 2 implementation is complete and final acceptance remains open. Product
+source `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57` fixes recursive visual cropping
+and unequal source windows by remeasuring frozen correspondences over a shared
+clock interval. Four affected artifacts built successfully. All 105 current
+intro parent tests passed; 337 unaffected parent results retain their original
+source provenance, yielding 442 composed passes. The test wrapper's erroneous
+post-run count assertion is preserved separately from the successful suite and
+its accepted inventory proof.
+
+The fixed five-call calibration qualified all six original episodes within the
+unchanged safe bounds and five-second tolerance; all four body controls passed.
+The three controlled analyses passed cold-open qualification, recap safety and
+competing-interval branch coverage, and no-intro body controls. These analyses
+reused previously verified extraction bundles: they are eight new Analyze calls,
+not fresh media extractions or independent new originals. Options, labels and
+quality gates remain unchanged, and all earlier failures remain retained.
+Fresh holdout sources are still sealed. Independent source review and label
+freeze, fresh holdout accuracy, and the actual 14-source consumer/lifecycle
+journey remain required before phase 2 publication. All affected verification
+workers are closed; the owned PostgreSQL and required evidence remain available.
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
 source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and

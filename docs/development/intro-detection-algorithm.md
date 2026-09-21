@@ -332,11 +332,13 @@ winner that fails a hard gate, a nontransitive visual cycle, and a clock
 refinement crossing an audio nearest-bin boundary. These source changes remain
 separate from semantic-accuracy acceptance. The common-clock intersection repair
 adds six parent tests for geometry, signed arithmetic, immutable caps, duration
-gates, cancellation and actual group remeasurement; that repair is pending
-consolidated remote verification. It must be evaluated as
-one declared profile against the unchanged calibration labels and predeclared
-controls; its source changes still require unified remote verification and
-fresh held-out acceptance after the final algorithm freeze.
+gates, cancellation and actual group remeasurement. Frozen source `49fc4ec`
+passed all 105 current intro parent tests, six-original calibration and the
+predeclared cold-open, recap and body-only controls under the unchanged profile
+and labels. The [phase record](media-analysis-resilience-phase2-20260921.md)
+binds those results and their original extraction provenance. Fresh held-out
+accuracy and actual consumer acceptance remain required; calibration success
+alone does not establish generalization or complete phase acceptance.
 
 The integrated phase must use licensed, independent real episodes with labels
 derived from independently reviewed source evidence and separate

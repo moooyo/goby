@@ -50,10 +50,24 @@ identical audio clocks. Only its fourth, smaller-resource attempt ran; two
 earlier admission refusals remain preserved. The common-clock intersection
 repair now maps the immutable source caps to one reference-time intersection
 per complete clock witness, then fully remeasures the frozen correspondence.
-Six new parent tests and the related fixture updates are implemented, with
-consolidated remote verification pending. Controlled run 03 has not started. Fresh holdout media
-remain sealed; final real consumer acceptance and phase-2 publication remain
-pending.
+Product source `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57` now passes the four
+affected builds and all 105 current intro parent tests. The 337 unaffected
+parent results retain their older source provenance, for 442 composed passes.
+The wrapper's post-run added-test count assertion failed after the actual suite
+passed; a separate accepted proof binds the exact 99-minus-1-plus-7 inventory
+without rewriting that failure or rerunning the suite. Five fixed calibration
+analyses qualified all six originals and passed all four body controls. Three
+controlled analyses passed cold-open qualification, recap safety and actual
+competing-interval branch coverage, and all no-intro body controls. Exactly
+eight Analyze calls reused the original extraction bundles; no media extraction
+or label/Options change occurred. The unified evidence SHA-256 is
+`d21340628ec47ab84219ff5fea90dd7185c82ff258b2e6db0b67508dc55f46dd`.
+All verification workers are closed. Four obsolete `49acf4d` binaries were
+copied, verified and retired; their source tree and the final overlay remain.
+Fresh holdout media remain sealed. Prepare the bounded source-only review,
+independently freeze its labels before any detector execution, then complete
+fresh accuracy and the 14-source named consumer/lifecycle journey. Phase-2
+publication remains pending; phase 3 product work has not started.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
 binds the retained remote evidence and current owned worker state. Read it before
 resuming remote work, and do not restart a completed or still-running worker.

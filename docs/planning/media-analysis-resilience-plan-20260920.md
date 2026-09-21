@@ -98,5 +98,5 @@ read back the remote commit. Publication and deployment remain separate states.
 | Phase | Implementation | Verification | Main publication |
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
-| 2. Intro analysis and BIF previews | Shared lifecycle, preview delivery and management implemented; common-clock intersection repair awaits verification | Source `49acf4d` passed four builds and 99 intro tests but still qualified only three of six originals. An equivalent replay identified unmatched edge time from different source windows; the repair and six new parent tests are complete in source. Controlled acceptance, sealed holdout and real consumers remain open. | Pending |
+| 2. Intro analysis and BIF previews | Shared lifecycle, preview delivery and management implemented; common-clock repair complete | Source `49fc4ec` passed four affected builds, 105 current intro parents plus 337 explicitly reused parents, all six original qualifications and the cold-open/recap/body controls. Independent fresh holdout and final 14-source consumer/lifecycle acceptance remain open. | Pending |
 | 3. Concurrency and recovery | Not started | Not started | Pending |

@@ -1,12 +1,14 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **v3 repair in progress; source `00047ac` passed original calibration but failed controlled cold-open qualification; complete acceptance is pending**.
+Status: **source `49fc4ec` passes affected builds, intro regression, original calibration and controlled accuracy; fresh holdout and final consumer acceptance remain pending**.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
 passed, including the source-geometry compatibility repair and native mocked
 browser coverage. The first real-content run missed all six positive intros;
 automatic skip and the remaining composed consumer journey are not accepted.
+The later common-clock repair verification below supersedes the earlier failed
+accuracy attempts without erasing their evidence.
 
 This phase implements the second delivery in the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -443,8 +445,50 @@ prevent partial or wrapped geometry. Frozen visual correspondences, all quality
 gates and absolute bands are remeasured without recursive clipping. The
 geometry reads no score or label and can improve or worsen observed fractions.
 Six new mechanical parent tests and precise updates to clock/cycle fixtures
-cover this rule. These complete source changes await consolidated remote
-verification; no new accuracy result is claimed. Fresh holdout stays sealed.
+cover this rule. Their subsequent verification is recorded below.
+
+## Common-clock repair verification
+
+Frozen product source `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57` was built with
+the standard Go overlay over the immutable physical `49acf4d` tree. Full source
+manifests bind all four Go and five documentation changes, unchanged frontend
+assets, and the complete logical target archive. The physical base is explicitly
+not relabeled as the target commit. The intro test binary, ordinary application,
+embedded application and server/browser test binary all built successfully.
+
+All 105 actual intro parent tests passed without skips, failures or protocol
+errors. The wrapper subsequently failed a count assertion that confused six net
+additions with seven added names and one removed name. The original failure is
+retained. A separate postproof validates the actual child exit, complete test
+inventory, source/artifact pins and closure without rerunning tests. Its SHA-256
+is `d64dae9eff0889d2d5a23d93afb57c9edef633fff9d6cb4e8ec96aa7604773b4`.
+Together with 337 unchanged parent results at their original b88/21eff sources,
+this yields 442 composed parents; earlier 86- and 99-parent intro suites are not
+double-counted.
+
+The fixed five calibration analyses qualified all six original episodes inside
+the original safe bounds and five-second tolerance. All four predeclared body
+controls passed coverage, eligibility and exact NoResult requirements. The score
+SHA-256 is `b36b7efb888b6f791b09483b59b565b3ddf0bc65d957ec1780c91e854fe368a3`.
+Three controlled analyses then passed all six cold-open qualifications, recap
+safety and actual competing-interval branch coverage, and all three body-only
+controls. Their score SHA-256 is
+`58de5ddc94c28a287ccf710a55c25076397232788196f0af0be69a09f47cf7fd`.
+These eight Analyze calls reused the exact prior original-six and fifteen
+controlled extraction bundles. They performed zero new extraction or media
+calls. Controlled derivatives still represent six original parent works, not
+fifteen independent originals. All 40 Options, labels and score gates are
+unchanged.
+
+The unified proof SHA-256 is
+`d21340628ec47ab84219ff5fea90dd7185c82ff258b2e6db0b67508dc55f46dd`.
+All workers closed and all four protected services retained their identities.
+The four superseded `49acf4d` binaries were copied locally, compared by complete
+hash and retired through an independently closed operation. Their physical
+source tree, final overlay, new artifacts and all reused-scope dependencies
+remain available. No fresh holdout source has been opened. Independent source
+review and label freeze, held-out accuracy and the complete real consumer and
+management/restart journey remain required before phase acceptance.
 
 ## Required consolidated evidence
 
@@ -456,7 +500,8 @@ return, migration 49 to 50, and backup/restore of every new state category.
 Synthetic mechanics do not replace real independent episodes. The initial real
 corpus run established six misses and two correct insufficient-evidence
 abstentions. Later calibration success does not erase that failure or establish
-the still-pending controlled, fresh-holdout and consumer acceptance.
+fresh-holdout and consumer acceptance. Controlled acceptance subsequently passed
+in the common-clock verification scope above.
 
 Publicly licensed, distinct episodes are research candidates only until their
 actual media is viewed and labeled. Labels must identify their real provenance:
