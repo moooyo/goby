@@ -234,7 +234,7 @@ async function cancelJourney() {
   const progress = page.getByRole('region', { name: 'Analysis task progress' });
   // The production run must still be active when this actual UI stop happens.
   // A run that won the race and completed is not reported as a cancellation.
-  const stopped = await responseFor('POST', `/admin/v1/task-runs/${encodeURIComponent(admitted.Body.RunId)}/cancel`, () => progress.getByRole('button', { name: 'Request stop', exact: true }).click());
+  const stopped = await responseFor('POST', `/admin/v1/task-runs/${encodeURIComponent(admitted.Body.RunId)}/cancel`, () => progress.getByRole('button', { name: 'Request stop', exact: true }).click(), 202);
   const final = await waitRun(admitted.Body.RunId, admitted.Body.TaskId);
   requireThat(final.Body.Run.State === 'cancelled' && final.Body.Run.TerminalChildren === final.Body.Run.TotalChildren, 'actual_cancel_did_not_join_terminal_work');
   await evidence('native-cancellation-http.json', { Admission: admitted, Running: running, Stop: stopped, Final: final }); result.Mechanics.ActualCancellation = true;
