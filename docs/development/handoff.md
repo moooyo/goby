@@ -46,13 +46,25 @@ binds exact units, receipt hashes, screened copies and preserved failures.
 Four credential-bearing preview HTTP originals remain remote; secret runtime
 contexts were not copied. Do not publish them.
 
-The next implementation is Phase 3:
-10k/100k mixed scan/search/playback/analysis workloads, bounded scan evidence and
-Seen staging, storage faults, process/database recovery, and clean OS reboot
-plus forced reset on an isolated owned guest. Source-only scanner designs are
-in the private Phase 3 directory; product work has not started. Do not reboot
-shared `test-env` or the physical PVE host. Recheck guest IDs and resources before
-creating the isolated environment; old infrastructure observations are stale.
+Phase 3 implementation has started; verification and publication are pending.
+The [execution record](media-analysis-resilience-phase3-20260922.md) retains the
+complete 10k/100k mixed-workload, sorting/metadata concurrency, storage-fault,
+process/database recovery and isolated-guest clean reboot/forced-reset scope.
+PostgreSQL temporary Seen staging, bounded disk spool with generation identity,
+SQL candidate paging, configuration/store integration and runtime-resource
+observation sources are written. Source review and fixture/runtime/oracle
+integration remain in progress. No Phase 3 product test/build or mixed-load,
+fault, clean-reboot or forced-reset acceptance run has started.
+
+VM106 and its dependencies are provisioned. The successful second clone,
+task-specific SSH and identity-bootstrap reboot have independent records;
+the failed first clone and exact partial cleanup remain preserved. Infrastructure
+readiness is separate from workload admission, which is still pending. The guest
+has 2 vCPU, 3 GiB fixed RAM and a 33 GiB disk. Only the sole infrastructure owner
+operates it; source implementation owners must not start independent workloads.
+Finish source/fixture integration and freeze the full candidate and both workload
+profiles before consolidated remote verification.
+Do not reboot shared `test-env`, other existing VMs or the physical PVE host.
 
 All tests, builds and runtime probes remain remote-only. `ui-ux-pro-max` remains
 disabled. Live TV, EPG, DVR, tuners, DLNA, external channels and group playback

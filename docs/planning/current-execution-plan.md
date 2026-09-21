@@ -18,8 +18,14 @@ builds and retained failures to their actual sources. Phase 2 is also implemente
 verified and operationally closed within its declared scope; its main publication
 is complete at `feb5004`, with exact remote readback on September 22, 2026.
 The [Phase 2 results](../development/media-analysis-resilience-phase2-results-20260922.json)
-bind the full corpus/client/lifecycle run and resource closure. Phase 3 remains
-required and product implementation has not started.
+bind the full corpus/client/lifecycle run and resource closure. Phase 3
+implementation has started; verification and publication remain pending. Its
+[execution record](../development/media-analysis-resilience-phase3-20260922.md)
+tracks the written Seen staging, spool, SQL paging, configuration/store and
+resource-observation sources. Fixture/runtime/oracle integration remains active.
+VM106 and dependencies are provisioned, with the first bootstrap failure retained.
+No Phase 3 product verification has started and no workload profile is admitted;
+the full approved Phase 3 scope remains required.
 Historical completed increments below remain closed.
 
 ## Completed selected increment: September 20, 2026
