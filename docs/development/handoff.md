@@ -39,9 +39,15 @@ replay reproduced the same result and 3,413,597 comparisons. It located recursiv
 visual cropping through 24 rounds, ending at a 14.5145145-second confirmed
 interval; admitted and refined audio clocks were identical. The subsequent
 source repair measures fixed final intervals under frozen visual correspondences
-and preserves complete original/refined witnesses. It includes 13 new mechanical
-regression tests and awaits consolidated remote verification. The diagnostic is
-not acceptance. Controlled run 03 has not started. Fresh holdout media
+and preserves complete original/refined witnesses. Source `49acf4d` built four
+artifacts and passed all 99 intro parent tests, including the 13 new regressions.
+Five fixed calibration analyses then retained all six safe candidates, but the
+A-family group remained Review at 848/1000 visual matched time against the
+unchanged 850/1000 gate. All four body controls passed. The diagnostic is not
+acceptance; the new calibration is a retained failure. One narrow equivalent
+replay is authorized to identify the weak pair and its actual time spans.
+Common-clock interval semantics are under source-only review; no subsequent
+product fix is implemented yet. Controlled run 03 has not started. Fresh holdout media
 remain sealed; final real consumer acceptance and phase-2 publication remain
 pending.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`

@@ -20,9 +20,13 @@ replay located recursive visual-boundary erosion: a complete three-source
 witness was cropped for 24 rounds until its confirmed duration fell below 15
 seconds. The subsequent source repair freezes visual correspondences and
 remeasures fixed final intervals, with complete original/refined clock selection
-and 13 new mechanical regression tests. This repair awaits consolidated remote
-verification. Options and labels are unchanged. Fresh holdout remains sealed
-and real consumer acceptance remains pending.
+and 13 new mechanical regression tests. Repair source `49acf4d` built all four
+required artifacts and passed all 99 intro parent tests. Its fixed five-call
+calibration preserved six safe candidates, but C1/C4/C5 remained Review because
+the group's measured visual matched time was 848/1000, below 850/1000. The four
+body controls passed. Controlled acceptance has not resumed. Options and labels
+are unchanged; fresh holdout remains sealed and real consumer acceptance remains
+pending.
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
 source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and

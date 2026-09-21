@@ -385,6 +385,42 @@ verification. Controlled run 03 has not started. The
 three fresh holdout sources remain sealed, and the named real consumer journey
 has not been accepted.
 
+## Fixed-window repair verification
+
+Source `49acf4da9f07f538572bef58919a0b27f81a0077` built `introdetect.test`,
+`goby`, `goby-embedded` and `server-browser.test` successfully. Its first test
+wrapper failed on an incorrect historical reader path before starting any test;
+that failure remains separate. The corrected run passed all 99 intro parent
+tests, including all 13 new regressions, with no skips, failures or protocol
+errors. The receipt is
+`a7896f6d231aa91207c38cc2806793905dcb3353e44aefbb93fe714e22ff28af`;
+the independent closure is
+`e7f50b6b94ebb1f8a60a5888334a6bf1df41f470cbdbdd60575d9adc5267a1a1`.
+The separately retained 337 unchanged parent results yield 436 composed parent
+observations; they are not relabeled as new-source executions or complete phase
+acceptance.
+
+The new calibration reused the exact b88 extraction bundle and performed five
+fixed analyses, with zero new extraction or media calls. All six originals now
+have one safe candidate inside the original five-second boundary tolerance.
+C2/C3/C6 qualified. C1/C4/C5 remain Review solely for weak visual evidence: their
+group reports 848/1000 matched visual time, 121/1000 contradicted time and
+31/1000 unobservable time. The unchanged automatic matched-time gate is
+850/1000. Group extrema do not identify the failing pair or imply all metrics
+came from the same pair. All four predeclared body controls passed their
+coverage, eligibility and exact NoResult requirements.
+
+The calibration score remains failed, SHA-256
+`e471319a5b67fc23af5399e09ea234d32f7c853a00b0f498f5911db33fa01b4f`;
+its independent closure is
+`1586c51421ad8cd590f7d9b0db55879d727881385c85533e23396353ec971827`.
+All workers are closed and the original evidence is copied with per-file hashes.
+Controlled analysis has not run under this repair. A narrow unchanged-source
+observational replay is authorized to locate the actual weak pair and spans;
+it cannot change parameters or count as acceptance. The common-clock
+intersection of the original source caps is under static review, with no new
+production changes or assumed accuracy improvement. Fresh holdout stays sealed.
+
 ## Required consolidated evidence
 
 Acceptance must cover real labeled intro accuracy and boundary error, actual
