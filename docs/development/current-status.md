@@ -11,10 +11,14 @@ is verified, its resources are closed, and delivery commit
 pushed to `origin/main`, with exact remote readback on September 21, 2026.
 Phase 2 remains in repair and acceptance. Source `00047ac` passed its scoped
 build, 284 affected Go parent tests and six-original calibration, but the
-controlled cold-open positives remained Review. Current v3 source repairs
-interval-scoped quality accounting and audio/visual alignment while retaining
-frozen historical v2 records. The new repair has not been built or tested;
-fresh holdout remains sealed and real consumer acceptance remains pending.
+controlled cold-open positives remained Review. V3 product source `b88c528`
+passed the composed build and 423 Go parent tests, including the isolated
+test-fixture correction at `21eff7e`. Its original-six calibration then failed:
+three originals qualified and three returned no result; all four body controls
+passed. The failed score remains acceptance-blocking. A bounded observational
+replay is being prepared to locate the lost witnesses without changing the
+algorithm, Options or labels. Fresh holdout remains sealed and real consumer
+acceptance remains pending.
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
 source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and

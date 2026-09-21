@@ -323,14 +323,41 @@ remained genuinely weak; removing stale metrics alone does not prove accuracy.
 The observer's independent closure is
 `19dae4d7671cac217e4cfc83ee683e978d0e0d4a4371942deb7acfaa24411d3e`.
 
-The v3 repair is source work in progress. Guarded audio evidence now measures
+The v3 repair was frozen at product source `b88c528`. Guarded audio evidence now measures
 only the original matched bins fully inside both intervals. Final group metrics
 describe the current complete pairwise intersection; boundary, periodicity and
 search-limit facts survive cropping. Historical v2 admissions, results and
 archive validation have independent frozen wire semantics and cannot become
-current automatic publication or worker authority. This dirty source has no v3
-build or test result yet. The three fresh holdout sources remain sealed, and the
-named real consumer journey has not been accepted.
+current automatic publication or worker authority.
+
+The composed build succeeded using ten Go artifacts from the same product
+source, one unchanged native helper and the retained frontend assets. Earlier
+resource-limited build attempts remain recorded failures. The first Go run
+exposed a test-fixture alias: unmarshaling into a shallow-copied `json.RawMessage`
+modified the original admission payload. Test-only commit `21eff7e` detaches
+those buffers; no production code, Options or labels changed. The accepted
+composition contains 423 passing parent tests across seven packages, with no
+skips or failures in that composition. Its receipt SHA-256 is
+`ccd3f166032ec2aeadda79b4d1d9413e0968dadee58b4ffe847f4cf48fee6e24`.
+The original post-run resource check refused a per-path WAL-growth charge and
+remains false; a separate retained reconciliation measures allocated WAL-subtree
+growth from the same original baseline. It does not rewrite the failed check.
+
+Calibration 05 performed all six extractions and five analyses successfully,
+but the required automatic positive score failed at 3/6. C2/C3/C6 each qualified
+with one safe candidate within the original five-second tolerance. C1/C4/C5
+returned no result. All four predeclared body-window controls passed. The score
+SHA-256 is `f73fa4af790c6724d81441fd26ecf9ef10e142af1f8883045c79c1609219d5be`;
+the independent closure is
+`eeee6e74631d25a58e1df4da06cdceaa8d32965f847f1d7863dd6589e5fb43bd`.
+The public reason `insufficient_audio_coverage` can originate from another
+rejected pair offset and does not identify the final group rejection. One
+observational replay of the unchanged detector and saved original features is
+authorized to distinguish pair admission from group projection loss. No new
+matching calls, labels, thresholds or media are part of its hooks, and exact
+public-result equality is required. Controlled run 03 has not started. The
+three fresh holdout sources remain sealed, and the named real consumer journey
+has not been accepted.
 
 ## Required consolidated evidence
 

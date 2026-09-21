@@ -28,10 +28,17 @@ six-original calibration. All 15 controlled derivative extractions succeeded,
 but all six cold-open positives remained Review, so controlled acceptance failed.
 That failure and the earlier failures remain preserved. An observational replay
 reproduced the same public result and identified stale interval-quality metrics;
-it did not count as acceptance. The current dirty v3 repair includes audio
-remeasurement, final-group evidence accounting and frozen historical v2 storage
-compatibility. It has not yet been built or tested. Fresh holdout media remain
-sealed; final real consumer acceptance and phase-2 publication remain pending.
+it did not count as acceptance. V3 product source `b88c528` includes audio
+remeasurement, final-group evidence accounting, audio/visual alignment and frozen
+historical v2 storage compatibility. Its composed build and 423 Go parent tests
+passed, with the test-only RawMessage fixture correction at `21eff7e` explicitly
+separated. Original-six calibration 05 completed but failed: C1/C4/C5 returned
+no result, C2/C3/C6 qualified, and all four body controls passed. The worker is
+closed and original evidence is preserved. A single unchanged-source diagnostic
+replay of those saved features is authorized to locate actual rejection paths;
+it is not acceptance. Controlled run 03 has not started. Fresh holdout media
+remain sealed; final real consumer acceptance and phase-2 publication remain
+pending.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
 binds the retained remote evidence and current owned worker state. Read it before
 resuming remote work, and do not restart a completed or still-running worker.
