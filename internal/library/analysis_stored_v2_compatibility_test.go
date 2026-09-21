@@ -72,6 +72,9 @@ func TestStoredAnalysisV2AdmissionPreservesCanonicalFingerprints(t *testing.T) {
 			if fixture.name == "intro" {
 				changed := bytes.Replace(raw, []byte(`"MaxVisualUnconfirmedGapTicks":50000000`), []byte(`"MaxVisualUnconfirmedGapTicks":40000000`), 1)
 				changedEnvelope := envelope
+				// RawMessage unmarshaling reuses storage; detach both payloads so
+				// this mutation cannot alter the original admission below.
+				changedEnvelope.Profile, changedEnvelope.Execution = nil, nil
 				if bytes.Equal(changed, raw) || json.Unmarshal(changed, &changedEnvelope) != nil {
 					t.Fatal("the frozen option mutation did not change the intended input")
 				}
