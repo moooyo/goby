@@ -115,21 +115,30 @@ func visualProjectionCycleFixture(t *testing.T) ([]Episode, map[[2]int]pairMatch
 
 func TestVisualProjectionDoesNotErodeACompleteCorrespondenceCycle(t *testing.T) {
 	episodes, edges, ranges := visualProjectionCycleFixture(t)
-	want := map[int]Interval{0: {0, 49 * TicksPerSecond}, 1: {0, 50 * TicksPerSecond}, 2: {TicksPerSecond, 50 * TicksPerSecond}}
-	if !reflect.DeepEqual(ranges, want) {
+	initialCaps := map[int]Interval{0: {0, 49 * TicksPerSecond}, 1: {0, 50 * TicksPerSecond}, 2: {TicksPerSecond, 50 * TicksPerSecond}}
+	if !reflect.DeepEqual(ranges, initialCaps) {
 		t.Fatalf("incorrect initial confirmed caps: %#v", ranges)
 	}
 	group, err := projectGroup(episodes, []int{0, 1, 2}, ranges, edges, DefaultOptions(), v2TestBudget())
 	if err != nil || group == nil || group.Status != Qualified || len(group.Members) != 3 || len(group.Reasons) != 0 || group.Metrics.PairCount != 3 {
 		t.Fatalf("repeated endpoint feedback erased the complete witness: %#v, %v", group, err)
 	}
+	if !reflect.DeepEqual(ranges, initialCaps) {
+		t.Fatalf("projection mutated the original confirmed caps: got %#v, want %#v", ranges, initialCaps)
+	}
+	want := Interval{TicksPerSecond, 49 * TicksPerSecond}
 	for source, member := range group.Members {
-		if member.Interval != want[source] {
-			t.Fatalf("final interval escaped or eroded its initial confirmed cap: %#v, want %#v", member, want[source])
+		if member.SourceKey != episodes[source].SourceKey || member.Interval != want || intersect(member.Interval, initialCaps[source]) != member.Interval {
+			t.Fatalf("final interval did not retain the unique common clock intersection inside its cap: %#v, want %#v inside %#v", member, want, initialCaps[source])
 		}
 	}
-	if group.Metrics.AudioAgreementPermille != 979 || group.Metrics.VisualMatchedTimePermille != 980 ||
-		group.Metrics.VisualMinBandMatchedPermille != 800 || group.Metrics.VisualSimilarityPermille != 750 || group.Metrics.VisualMaxUnconfirmedGapTicks != TicksPerSecond {
+	// The frozen AC map retains A1..A48 -> C2..C49. Each source still has
+	// one unconfirmed edge second inside the common [1s,49s] time window.
+	if group.Metrics.AudioAgreementPermille != 1000 || group.Metrics.VisualMatchedTimePermille != 979 ||
+		group.Metrics.VisualContradictedTimePermille != 0 || group.Metrics.VisualUnobservableTimePermille != 21 ||
+		group.Metrics.VisualMinBandMatchedPermille != 1000 || group.Metrics.VisualSimilarityPermille != 750 ||
+		group.Metrics.VisualMaxUnconfirmedGapTicks != TicksPerSecond || group.Metrics.VisualStartAnchorGapTicks != TicksPerSecond || group.Metrics.VisualEndAnchorGapTicks != TicksPerSecond ||
+		group.Metrics.VisualSamples != 47 || group.Metrics.VisualCoveragePermille != 979 || group.Metrics.VisualDistinctStates != 48 {
 		t.Fatalf("final-window lost mates were hidden or discovery metrics were reused: %#v", group.Metrics)
 	}
 }

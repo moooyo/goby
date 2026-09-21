@@ -189,26 +189,86 @@ func projectGroup(episodes []Episode, selected []int, ranges map[int]Interval, e
 	return chosen, nil
 }
 
-// projectGroupWithClocks rechecks every edge under one fixed mapping and the
-// same final intersection of the original confirmed bounds. A second mapping
-// cannot inherit measurements or change the first witness's intervals.
+// intersectClockRanges chooses the unique common reference-time interval of
+// one complete clock witness. It never searches metrics or band positions.
+// Each mapped interval must stay inside its immutable source cap.
+func intersectClockRanges(selected []int, caps map[int]Interval, clocks map[int]int64, o Options, budget *workBudget) (map[int]Interval, error) {
+	if budget == nil || budget.ctx == nil {
+		return nil, fmt.Errorf("%w: clock intersection budget", ErrInvalidInput)
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(selected) == 0 || len(selected) > o.MaxEpisodes || len(caps) != len(selected) || len(clocks) != len(selected) || o.MinDurationTicks <= 0 {
+		return nil, fmt.Errorf("%w: clock intersection witness", ErrInvalidInput)
+	}
+	seen := make(map[int]bool, len(selected))
+	var common Interval
+	for index, node := range selected {
+		if err := budget.spend(); err != nil {
+			return nil, err
+		}
+		cap, capExists := caps[node]
+		clock, clockExists := clocks[node]
+		if node < 0 || seen[node] || !capExists || !clockExists || cap.StartTicks < 0 || cap.EndTicks <= cap.StartTicks {
+			return nil, fmt.Errorf("%w: clock intersection member", ErrInvalidInput)
+		}
+		seen[node] = true
+		start, startOK := hypothesisSubtractTicks(cap.StartTicks, clock)
+		end, endOK := hypothesisSubtractTicks(cap.EndTicks, clock)
+		if !startOK || !endOK {
+			return nil, fmt.Errorf("%w: clock intersection reference arithmetic", ErrInvalidInput)
+		}
+		if index == 0 {
+			common = Interval{start, end}
+		} else {
+			common.StartTicks, common.EndTicks = max(common.StartTicks, start), min(common.EndTicks, end)
+		}
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return nil, err
+	}
+	if common.EndTicks <= common.StartTicks {
+		return nil, nil
+	}
+	duration, valid := hypothesisSubtractTicks(common.EndTicks, common.StartTicks)
+	if !valid {
+		return nil, fmt.Errorf("%w: clock intersection duration arithmetic", ErrInvalidInput)
+	}
+	if duration < o.MinDurationTicks {
+		return nil, nil
+	}
+	ranges := make(map[int]Interval, len(selected))
+	for _, node := range selected {
+		if err := budget.spend(); err != nil {
+			return nil, err
+		}
+		start, startOK := addConsensusTicks(common.StartTicks, clocks[node])
+		end, endOK := addConsensusTicks(common.EndTicks, clocks[node])
+		cap := caps[node]
+		if !startOK || !endOK || start < cap.StartTicks || end > cap.EndTicks || end <= start {
+			return nil, fmt.Errorf("%w: clock intersection escaped source cap", ErrInvalidInput)
+		}
+		ranges[node] = Interval{start, end}
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return nil, err
+	}
+	return ranges, nil
+}
+
+// projectGroupWithClocks rechecks every edge once on the common reference-time
+// intersection under one fixed mapping. Each mapping starts with the same
+// immutable caps and cannot inherit measurements from another witness.
 func projectGroupWithClocks(episodes []Episode, selected []int, initial map[int]Interval, edges map[[2]int]pairMatch, clocks map[int]int64, o Options, budget *workBudget) (*Group, error) {
 	if err := budget.ctx.Err(); err != nil {
 		return nil, err
 	}
-	ranges := make(map[int]Interval, len(initial))
-	for source, interval := range initial {
-		if err := budget.spend(); err != nil {
-			return nil, err
-		}
-		ranges[source] = interval
-	}
 	ordered := append([]int(nil), selected...)
 	sort.Ints(ordered)
-	for _, interval := range ranges {
-		if interval.EndTicks-interval.StartTicks < o.MinDurationTicks {
-			return nil, nil
-		}
+	ranges, err := intersectClockRanges(ordered, initial, clocks, o, budget)
+	if err != nil || ranges == nil {
+		return nil, err
 	}
 	metrics, reasons := Metrics{}, []Reason{}
 	for index, left := range ordered {

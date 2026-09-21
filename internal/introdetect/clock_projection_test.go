@@ -123,6 +123,25 @@ func cloneClockProjectionFixture(value clockProjectionFixtureData) clockProjecti
 	return value
 }
 
+func requireClockProjectionRanges(t *testing.T, group *Group, episodes []Episode, expected map[int]Interval) {
+	t.Helper()
+	if group == nil || len(group.Members) != len(expected) {
+		t.Fatalf("incomplete common-clock group: %#v", group)
+	}
+	actual := make(map[string]Interval, len(group.Members))
+	for _, member := range group.Members {
+		if _, exists := actual[member.SourceKey]; exists {
+			t.Fatal("common-clock group repeated a source")
+		}
+		actual[member.SourceKey] = member.Interval
+	}
+	for source, interval := range expected {
+		if got, exists := actual[episodes[source].SourceKey]; !exists || got != interval {
+			t.Fatalf("source %d common interval = %#v, want %#v", source, got, interval)
+		}
+	}
+}
+
 func TestGroupProjectionPreservesQualifiedAdmittedWitnessAfterClockRefinement(t *testing.T) {
 	for _, example := range []struct {
 		name        string
@@ -152,12 +171,20 @@ func TestGroupProjectionPreservesQualifiedAdmittedWitnessAfterClockRefinement(t 
 			}
 			baselineBudget := audioEvidenceBudget()
 			baseline, err := projectGroupWithClocks(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, fixture.admitted, o, baselineBudget)
-			if err != nil || baseline == nil || baseline.Status != Qualified || len(baseline.Members) != 3 || baseline.Metrics.PairCount != 3 {
+			if err != nil || baseline == nil || baseline.Status != Qualified || len(baseline.Members) != 3 || baseline.Metrics.PairCount != 3 || baseline.Metrics.AudioAgreementPermille != 990 {
 				t.Fatalf("the complete original mapping must qualify: %#v, %v", baseline, err)
 			}
+			requireClockProjectionRanges(t, baseline, fixture.episodes, map[int]Interval{
+				0: {50_000_000, 448_875_000}, 1: {51_125_000, 450_000_000}, 2: {51_125_000, 450_000_000},
+			})
 			refined, err := projectGroupWithClocks(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, fixture.refined, o, audioEvidenceBudget())
-			if err != nil || example.alternating && refined != nil || !example.alternating && (refined == nil || refined.Status != Review || !slices.Contains(refined.Reasons, WeakAudioEvidence)) {
+			if err != nil || example.alternating && refined != nil || !example.alternating && (refined == nil || refined.Status != Review || refined.Metrics.AudioAgreementPermille != 872 || !slices.Contains(refined.Reasons, WeakAudioEvidence)) {
 				t.Fatalf("the complete refined mapping must preserve its real failure: %#v, %v", refined, err)
+			}
+			if refined != nil {
+				requireClockProjectionRanges(t, refined, fixture.episodes, map[int]Interval{
+					0: {50_000_000, 448_500_000}, 1: {51_500_000, 450_000_000}, 2: {50_750_000, 449_250_000},
+				})
 			}
 			// Exactly enough for admission, one complete projection, and its
 			// qualification check: attempting a refinement would exhaust it.
@@ -184,21 +211,31 @@ func TestGroupProjectionPreservesQualifiedAdmittedWitnessAfterClockRefinement(t 
 	}
 }
 
-func TestGroupProjectionRetainsCompleteReviewWhenRefinementLosesEvidence(t *testing.T) {
+func TestGroupProjectionSelectsOneCompleteReviewAcrossClockMappings(t *testing.T) {
 	for _, alternating := range []bool{true, false} {
 		fixture := clockProjectionFixture(t, clockProjectionConfig{alternating: alternating, weakBaseline: true})
 		o := DefaultOptions()
 		baseline, err := projectGroupWithClocks(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, fixture.admitted, o, audioEvidenceBudget())
-		if err != nil || baseline == nil || baseline.Status != Review || baseline.Metrics.AudioAgreementPermille != 875 || !slices.Contains(baseline.Reasons, WeakAudioEvidence) {
+		if err != nil || baseline == nil || baseline.Status != Review || baseline.Metrics.AudioAgreementPermille != 864 || !slices.Contains(baseline.Reasons, WeakAudioEvidence) {
 			t.Fatalf("baseline fixture must be a complete actual Review: %#v, %v", baseline, err)
 		}
+		requireClockProjectionRanges(t, baseline, fixture.episodes, map[int]Interval{
+			0: {50_000_000, 448_875_000}, 1: {51_125_000, 450_000_000}, 2: {51_125_000, 450_000_000},
+		})
 		refined, err := projectGroupWithClocks(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, fixture.refined, o, audioEvidenceBudget())
-		if err != nil || alternating && refined != nil || !alternating && (refined == nil || refined.Status != Review || refined.Metrics.AudioAgreementPermille >= baseline.Metrics.AudioAgreementPermille) {
-			t.Fatalf("refined fixture must lose complete evidence or actual agreement: %#v, %v", refined, err)
+		if err != nil || alternating && refined != nil || !alternating && (refined == nil || refined.Status != Review || refined.Metrics.AudioAgreementPermille != 865) {
+			t.Fatalf("refined fixture must retain its independently measured evidence: %#v, %v", refined, err)
+		}
+		expected := baseline
+		if !alternating {
+			expected = refined
+			requireClockProjectionRanges(t, refined, fixture.episodes, map[int]Interval{
+				0: {50_000_000, 448_500_000}, 1: {51_500_000, 450_000_000}, 2: {50_750_000, 449_250_000},
+			})
 		}
 		got, err := projectGroup(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, o, audioEvidenceBudget())
-		if err != nil || !reflect.DeepEqual(got, baseline) {
-			t.Fatalf("the original Review was lost or mixed with another witness: %#v, %v", got, err)
+		if err != nil || !reflect.DeepEqual(got, expected) {
+			t.Fatalf("clock selection mixed evidence instead of selecting one complete Review: %#v, %v", got, err)
 		}
 	}
 }
@@ -212,9 +249,12 @@ func TestGroupProjectionCanUseCompleteRefinementWhenBaselineHasNoEvidence(t *tes
 		t.Fatalf("original cross-edge must select a rejected adjacent bin: %#v, %v", baseline, err)
 	}
 	refined, err := projectGroupWithClocks(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, fixture.refined, o, audioEvidenceBudget())
-	if err != nil || refined == nil || refined.Status != Qualified || refined.Metrics.PairCount != 3 {
+	if err != nil || refined == nil || refined.Status != Qualified || refined.Metrics.PairCount != 3 || refined.Metrics.AudioAgreementPermille != 990 {
 		t.Fatalf("one refined mapping must independently prove the full clique: %#v, %v", refined, err)
 	}
+	requireClockProjectionRanges(t, refined, fixture.episodes, map[int]Interval{
+		0: {50_300_000, 449_250_000}, 1: {51_800_000, 450_750_000}, 2: {51_050_000, 450_000_000},
+	})
 	got, err := projectGroup(fixture.episodes, []int{2, 1, 0}, fixture.ranges, fixture.edges, o, audioEvidenceBudget())
 	if err != nil || !reflect.DeepEqual(got, refined) || !reflect.DeepEqual(fixture, before) {
 		t.Fatalf("complete refinement was lost, mixed, or changed its inputs: %#v, %v", got, err)
@@ -249,7 +289,7 @@ func TestGroupProjectionSkipsAnIdenticalClockMappingForReview(t *testing.T) {
 	}
 }
 
-func clockProjectionSecondAttemptStart(t *testing.T, fixture clockProjectionFixtureData) int64 {
+func clockProjectionSecondAttemptAudioStart(t *testing.T, fixture clockProjectionFixtureData) int64 {
 	t.Helper()
 	o := DefaultOptions()
 	budget := audioEvidenceBudget()
@@ -270,13 +310,18 @@ func clockProjectionSecondAttemptStart(t *testing.T, fixture clockProjectionFixt
 	if err != nil || maps.Equal(clocks, refined) {
 		t.Fatalf("late-error fixture needs a distinct second mapping: %#v, %v", refined, err)
 	}
-	return budget.used + 3
+	geometryBudget := audioEvidenceBudget()
+	ranges, err := intersectClockRanges([]int{0, 1, 2}, fixture.ranges, refined, o, geometryBudget)
+	if err != nil || ranges == nil {
+		t.Fatalf("second clock mapping must have a measurable common interval: %#v, %v", ranges, err)
+	}
+	return budget.used + 3 + geometryBudget.used
 }
 
 func TestGroupProjectionSecondAttemptBudgetFailureDiscardsEarlierReview(t *testing.T) {
 	fixture := clockProjectionFixture(t, clockProjectionConfig{alternating: true, weakBaseline: true})
-	start := clockProjectionSecondAttemptStart(t, fixture)
-	budget := &workBudget{ctx: context.Background(), limit: start + int64(len(fixture.ranges)) + 1}
+	start := clockProjectionSecondAttemptAudioStart(t, fixture)
+	budget := &workBudget{ctx: context.Background(), limit: start + 1}
 	group, err := projectGroup(fixture.episodes, []int{0, 1, 2}, fixture.ranges, fixture.edges, DefaultOptions(), budget)
 	if !errors.Is(err, ErrLimit) || group != nil || budget.used <= start {
 		t.Fatalf("second-attempt exhaustion returned a prior Review or reset its budget: %#v, %v, used %d", group, err, budget.used)
@@ -299,7 +344,7 @@ func (c *cancelAtClockProjectionBudget) Err() error {
 
 func TestGroupProjectionSecondAttemptCancellationDiscardsEarlierReview(t *testing.T) {
 	fixture := clockProjectionFixture(t, clockProjectionConfig{alternating: true, weakBaseline: true})
-	start := clockProjectionSecondAttemptStart(t, fixture)
+	start := clockProjectionSecondAttemptAudioStart(t, fixture)
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	controlled := &cancelAtClockProjectionBudget{Context: ctx, after: start, cancel: cancel}

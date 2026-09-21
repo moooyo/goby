@@ -416,10 +416,35 @@ its independent closure is
 `1586c51421ad8cd590f7d9b0db55879d727881385c85533e23396353ec971827`.
 All workers are closed and the original evidence is copied with per-file hashes.
 Controlled analysis has not run under this repair. A narrow unchanged-source
-observational replay is authorized to locate the actual weak pair and spans;
-it cannot change parameters or count as acceptance. The common-clock
-intersection of the original source caps is under static review, with no new
-production changes or assumed accuracy improvement. Fresh holdout stays sealed.
+observational replay subsequently located the actual weak pair and spans; it
+did not change parameters or count as acceptance.
+
+Only observer attempt 04 ran, with one Analyze and exact typed result/cohort
+equality at 2,803,923 comparisons. Attempts 02 and 03 stopped before any worker
+or analysis; 03 recorded insufficient available memory for the previous
+resource reservation. Attempt 04 reduced the actual cgroup cap to 1 GiB and Go's
+soft limit to 384 MiB while preserving 1 GiB of memory headroom, the original
+disk baseline/cap/floor and all algorithm inputs. It completed and closed; the
+same-invocation journal reported 176.9M peak memory. The trace SHA-256 is
+`1510768fa9094b5ea5412b4cd42b2050d73cf19f954adf183117d9b574158dfd`;
+the independent closure is
+`c45c521464fd5dc6799881ac4ed45937c877990371fb5d1ea60a11b90d71e896`.
+
+C1/C4 alone measured 848/1000. Their audio clocks and visual phase were zero,
+and both measured the same actual visual spans. C1's preceding 1.001001 seconds
+and C4's following 1.001001 seconds lay outside those shared spans. The other
+two A-family pairs measured 984/1000 without reasons. No alternative interval
+or score was calculated by the observer.
+
+The subsequent source fix computes the unique largest common reference-time
+intersection for each complete clock map, then maps it back inside the original
+source caps. Checked arithmetic, two linear budgeted passes and cancellation
+prevent partial or wrapped geometry. Frozen visual correspondences, all quality
+gates and absolute bands are remeasured without recursive clipping. The
+geometry reads no score or label and can improve or worsen observed fractions.
+Six new mechanical parent tests and precise updates to clock/cycle fixtures
+cover this rule. These complete source changes await consolidated remote
+verification; no new accuracy result is claimed. Fresh holdout stays sealed.
 
 ## Required consolidated evidence
 

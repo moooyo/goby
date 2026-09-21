@@ -154,7 +154,8 @@ SourceKey are invalid. Different profiles are not compared.
    candidate groups from every matched edge, requiring a matching edge between
    every pair of members. A connected chain is not a consensus. Different
    opening versions can produce different groups. Final per-source bounds are
-   intersections of the supporting intervals, never an extrapolated union.
+   initially bounded by intersections of the supporting source intervals,
+   never an extrapolated union.
    Retain each actual pair offset and first check the original source-clock map,
    using the smallest source identity as reference and the configured audio
    alignment tolerance. A contradictory or incomplete clique still fails that
@@ -169,6 +170,13 @@ SourceKey are invalid. Different profiles are not compared.
    compatible, retaining one whole result. All attempts share the work budget;
    errors and cancellation return no partially usable result. There is no time
    warping or search among fitted alternatives.
+   Each clock witness computes its unique largest common reference-time
+   interval: subtract each source clock from its original cap, take the maximum
+   start and minimum end, then add each clock back. All arithmetic is checked;
+   empty or too-short intersections supply no witness. Every mapped interval
+   must stay inside its original cap. This two-pass geometry reads no quality
+   metrics, hashes, band positions or labels. Original and refined maps compute
+   their own intersection from the same immutable caps.
    Freeze each selected visual map from its original acoustic window. The final
    per-source interval must lie inside every selected pair's originally
    confirmed bounds. Filter the frozen map against both final windows and the
@@ -240,7 +248,7 @@ These fields must not be labeled as a probability or statistical confidence.
 | State dominance | No state exceeds 600/1000 of all informative source observations |
 | State representatives | At most 256 per source/candidate window; exhaustion is an explicit limit |
 | Period hypotheses | At most the window's visual observation count, within the configured feature bound |
-| Final projection | At most two complete clock witnesses on fixed final intervals; exact-witness cache at most `MaxGroups*MaxCandidatesPerPair` entries |
+| Final projection | At most two complete clock witnesses, each using its unique common-time intersection; exact-witness cache at most `MaxGroups*MaxCandidatesPerPair` entries |
 | Visual phase search | At most one pending event per source observation; every event, heap comparison and contribution update consumes the shared comparison budget |
 
 Counts and logical memory budgets are independent of any serialized feature
@@ -322,7 +330,10 @@ constant-phase selection against a small exhaustive oracle, and shared mapping
 limits. The subsequent projection repair adds mechanical cases for a hash-cost
 winner that fails a hard gate, a nontransitive visual cycle, and a clock
 refinement crossing an audio nearest-bin boundary. These source changes remain
-pending consolidated remote verification. They must be evaluated as
+separate from semantic-accuracy acceptance. The common-clock intersection repair
+adds six parent tests for geometry, signed arithmetic, immutable caps, duration
+gates, cancellation and actual group remeasurement; that repair is pending
+consolidated remote verification. It must be evaluated as
 one declared profile against the unchanged calibration labels and predeclared
 controls; its source changes still require unified remote verification and
 fresh held-out acceptance after the final algorithm freeze.

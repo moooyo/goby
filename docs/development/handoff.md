@@ -45,9 +45,13 @@ Five fixed calibration analyses then retained all six safe candidates, but the
 A-family group remained Review at 848/1000 visual matched time against the
 unchanged 850/1000 gate. All four body controls passed. The diagnostic is not
 acceptance; the new calibration is a retained failure. One narrow equivalent
-replay is authorized to identify the weak pair and its actual time spans.
-Common-clock interval semantics are under source-only review; no subsequent
-product fix is implemented yet. Controlled run 03 has not started. Fresh holdout media
+replay identified C1/C4's unmatched edge time in different windows despite
+identical audio clocks. Only its fourth, smaller-resource attempt ran; two
+earlier admission refusals remain preserved. The common-clock intersection
+repair now maps the immutable source caps to one reference-time intersection
+per complete clock witness, then fully remeasures the frozen correspondence.
+Six new parent tests and the related fixture updates are implemented, with
+consolidated remote verification pending. Controlled run 03 has not started. Fresh holdout media
 remain sealed; final real consumer acceptance and phase-2 publication remain
 pending.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
