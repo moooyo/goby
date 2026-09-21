@@ -15,10 +15,14 @@ controlled cold-open positives remained Review. V3 product source `b88c528`
 passed the composed build and 423 Go parent tests, including the isolated
 test-fixture correction at `21eff7e`. Its original-six calibration then failed:
 three originals qualified and three returned no result; all four body controls
-passed. The failed score remains acceptance-blocking. A bounded observational
-replay is being prepared to locate the lost witnesses without changing the
-algorithm, Options or labels. Fresh holdout remains sealed and real consumer
-acceptance remains pending.
+passed. The failed score remains acceptance-blocking. One equivalent diagnostic
+replay located recursive visual-boundary erosion: a complete three-source
+witness was cropped for 24 rounds until its confirmed duration fell below 15
+seconds. The subsequent source repair freezes visual correspondences and
+remeasures fixed final intervals, with complete original/refined clock selection
+and 13 new mechanical regression tests. This repair awaits consolidated remote
+verification. Options and labels are unchanged. Fresh holdout remains sealed
+and real consumer acceptance remains pending.
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
 source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and

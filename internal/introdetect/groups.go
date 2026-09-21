@@ -134,7 +134,7 @@ func collectGroups(cohortKey string, episodes []Episode, pairs map[[2]int][]pair
 			}
 		}
 	}
-	// Every group already has a revalidated fixed-point intersection. Retain
+	// Every group already has a revalidated fixed final intersection. Retain
 	// the bounds here too; duplicate-hypothesis selection never joins witnesses.
 	bounded := groups[:0]
 	for _, group := range groups {

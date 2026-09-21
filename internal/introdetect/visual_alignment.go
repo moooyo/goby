@@ -249,15 +249,38 @@ func alignVisual(a, b Episode, audio audioMatch, offset int64, o Options, budget
 	consider(phase, o.VisualAlignmentTicks)
 	// Materialize only the complete winning map. Budget exhaustion anywhere
 	// above returns an error, never an incompletely searched best-so-far map.
-	value := visualAlignment{start: start, targets: make([]int, end-start), phase: bestPhase}
+	return materializeVisualPhase(a, b, audio, offset, bestPhase, o, budget)
+}
+
+// materializeVisualPhase uses one fixed phase while enforcing the original
+// acoustic corridor. It does not search for a different phase or reuse a raw
+// target whose first eligible owner has low contrast.
+func materializeVisualPhase(a, b Episode, audio audioMatch, offset, phase int64, o Options, budget *workBudget) (visualAlignment, error) {
+	if budget == nil || budget.ctx == nil || o.VisualAlignmentTicks < 0 || o.MaxVisualSamples < 1 ||
+		phase < -o.VisualAlignmentTicks || phase > o.VisualAlignmentTicks ||
+		audio.a.EndTicks < audio.a.StartTicks || audio.b.EndTicks < audio.b.StartTicks {
+		return visualAlignment{}, fmt.Errorf("%w: fixed visual phase", ErrInvalidInput)
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return visualAlignment{}, err
+	}
+	if len(a.Visual) > o.MaxVisualSamples || len(b.Visual) > o.MaxVisualSamples {
+		return visualAlignment{}, fmt.Errorf("%w: fixed visual phase samples", ErrLimit)
+	}
+	start := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.StartTicks })
+	end := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks > audio.a.EndTicks })
+	value := visualAlignment{start: start, targets: make([]int, end-start), phase: phase}
 	j, lastTarget := 0, -1
 	for i := start; i < end; i++ {
 		if err := budget.spend(); err != nil {
 			return visualAlignment{}, err
 		}
 		value.targets[i-start] = -1
+		if len(b.Visual) == 0 {
+			continue
+		}
 		originalTarget := a.Visual[i].Ticks + offset
-		target := originalTarget + bestPhase
+		target := originalTarget + phase
 		for j+1 < len(b.Visual) && absolute(b.Visual[j+1].Ticks-target) <= absolute(b.Visual[j].Ticks-target) {
 			if err := budget.spend(); err != nil {
 				return visualAlignment{}, err
@@ -270,6 +293,46 @@ func alignVisual(a, b Episode, audio audioMatch, offset int64, o Options, budget
 		}
 		lastTarget, value.targets[i-start] = j, j
 		value.maximumResidual = max(value.maximumResidual, absolute(b.Visual[j].Ticks-originalTarget))
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return visualAlignment{}, err
+	}
+	return value, nil
+}
+
+// filterVisualAlignment only removes original correspondences. In particular,
+// a target whose owner falls outside the final window cannot be reassigned.
+func filterVisualAlignment(a, b Episode, audio audioMatch, offset int64, original visualAlignment, o Options, budget *workBudget) (visualAlignment, error) {
+	if budget == nil || budget.ctx == nil || original.start < 0 || original.start+len(original.targets) > len(a.Visual) {
+		return visualAlignment{}, fmt.Errorf("%w: projected visual alignment", ErrInvalidInput)
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return visualAlignment{}, err
+	}
+	start := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.StartTicks })
+	end := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks > audio.a.EndTicks })
+	if start < original.start || end < start || end > original.start+len(original.targets) {
+		return visualAlignment{}, fmt.Errorf("%w: projected visual window", ErrInvalidInput)
+	}
+	value := visualAlignment{start: start, targets: make([]int, end-start), phase: original.phase}
+	for i := start; i < end; i++ {
+		if err := budget.spend(); err != nil {
+			return visualAlignment{}, err
+		}
+		value.targets[i-start] = -1
+		j := original.targets[i-original.start]
+		if j >= len(b.Visual) {
+			return visualAlignment{}, fmt.Errorf("%w: projected visual target", ErrInvalidInput)
+		}
+		if j < 0 || b.Visual[j].Ticks < audio.b.StartTicks || b.Visual[j].Ticks > audio.b.EndTicks {
+			continue
+		}
+		residual := absolute(b.Visual[j].Ticks - a.Visual[i].Ticks - offset)
+		if residual > o.VisualAlignmentTicks {
+			continue
+		}
+		value.targets[i-start] = j
+		value.maximumResidual = max(value.maximumResidual, residual)
 	}
 	if err := budget.ctx.Err(); err != nil {
 		return visualAlignment{}, err

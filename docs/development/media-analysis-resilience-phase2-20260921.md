@@ -352,10 +352,36 @@ the independent closure is
 `eeee6e74631d25a58e1df4da06cdceaa8d32965f847f1d7863dd6589e5fb43bd`.
 The public reason `insufficient_audio_coverage` can originate from another
 rejected pair offset and does not identify the final group rejection. One
-observational replay of the unchanged detector and saved original features is
-authorized to distinguish pair admission from group projection loss. No new
-matching calls, labels, thresholds or media are part of its hooks, and exact
-public-result equality is required. Controlled run 03 has not started. The
+observational replay of the unchanged detector and saved original features
+completed, with exact typed result/cohort equality and the same 3,413,597
+comparisons. Its 822 trace records show that all three A-family pairs were
+retained without reasons. The admitted and refined clocks were identical.
+Projection then repeatedly cropped the visual boundaries for 24 rounds. The
+last C4/C5 audio measurement still had 957/1000 agreement, but visual trimming
+left only 14.5145145 seconds, below the original 15-second minimum, and discarded
+the entire group. The trace SHA-256 is
+`b9eb0f56745613b402b7f34564e0f76a0ed846d41202ce7284eaacd06ff58a1d`;
+the independent closure is
+`69b1a30390176f72d2558c1affd5fde7dbf34a142662446fd4a3c7135d30782d`.
+The original closure is supplemented by the same-invocation successful systemd
+journal proof, SHA-256
+`caf769a800dd7a1f9968f542fb66ac156a6380fde59e6058277aff86ced5d496`.
+The diagnostic opened no labels or media and is not an acceptance run.
+
+The subsequent source repair freezes each selected visual correspondence in
+its original window, intersects the original confirmed bounds once, and
+remeasures all evidence in the fixed final windows. Excluded mates remain
+unobservable; current audio corridors, full time denominators, absolute bands,
+states, anchors and all hard gates remain enforced. Zero phase and the one
+hash-cost winner are measured as whole observations before pair selection.
+The original admitted clock map is projected first; a qualified original is
+retained, and at most one independent refinement may replace a compatible
+weaker complete result. Refinement is a separately proven mechanism risk,
+not the cause of calibration 05. All alternatives share one budget and fail
+closed on errors. Thirteen new mechanical parent tests cover these mechanisms.
+The unreleased v3 wire version, Options, labels and extraction implementation
+are unchanged. This complete source repair still requires consolidated remote
+verification. Controlled run 03 has not started. The
 three fresh holdout sources remain sealed, and the named real consumer journey
 has not been accepted.
 

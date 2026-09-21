@@ -35,8 +35,13 @@ passed, with the test-only RawMessage fixture correction at `21eff7e` explicitly
 separated. Original-six calibration 05 completed but failed: C1/C4/C5 returned
 no result, C2/C3/C6 qualified, and all four body controls passed. The worker is
 closed and original evidence is preserved. A single unchanged-source diagnostic
-replay of those saved features is authorized to locate actual rejection paths;
-it is not acceptance. Controlled run 03 has not started. Fresh holdout media
+replay reproduced the same result and 3,413,597 comparisons. It located recursive
+visual cropping through 24 rounds, ending at a 14.5145145-second confirmed
+interval; admitted and refined audio clocks were identical. The subsequent
+source repair measures fixed final intervals under frozen visual correspondences
+and preserves complete original/refined witnesses. It includes 13 new mechanical
+regression tests and awaits consolidated remote verification. The diagnostic is
+not acceptance. Controlled run 03 has not started. Fresh holdout media
 remain sealed; final real consumer acceptance and phase-2 publication remain
 pending.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`

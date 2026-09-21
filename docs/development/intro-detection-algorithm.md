@@ -14,9 +14,9 @@ Starting and ending anchor gaps remain limited to three seconds. No measured
 fraction is rounded up to qualify. The previous calibration attempts and the
 controlled cold-open failure at source `00047ac` remain retained separately.
 
-V3 corrects interval-scoped quality accounting, uses all already-admitted clique
-edges to refine a single constant audio clock map, and selects one constant
-visual sampling phase for the whole candidate window. It does not change
+V3 corrects interval-scoped quality accounting, retains complete original and
+refined clock witnesses, and selects a complete constant-phase visual witness
+for the whole candidate window. It does not change
 labels, slide the visual band grid or fit a separate phase to each frame.
 Historical v1 and v2 wire semantics have independent storage decoders and do
 not acquire current publication authority.
@@ -94,15 +94,20 @@ SourceKey are invalid. Different profiles are not compared.
    discovery gates, then remeasure the original matched pairs whose complete
    bins lie inside both guarded intervals. Cropping cannot rematch a consumed
    target or borrow excluded entropy, duration or similarity.
-6. Select one constant visual phase for the whole acoustic window. Sweep exact
+6. Propose one constant visual phase for the whole acoustic window. Sweep exact
    nearest-target midpoint events using a bounded heap; simultaneous events
    take effect together. Rank phases by the total reduction in a fixed
    full-window hash-distance cost, with unmatched and low-contrast observations
    receiving no credit. Ties favor the phase closest to zero, then the smaller
    signed phase. Neither qualification nor band placement participates in this
-   selection. Every selected one-to-one pair must still lie within the original
+   cost selection. Evaluate the zero-phase witness and this one cost winner as
+   complete observations, using the existing eligibility-first pair ordering.
+   Reuse the observation when the winning phase is zero. A better hash cost
+   cannot replace an eligible observation with one that fails a hard gate;
+   metrics and reasons are never combined across the two maps. Every selected
+   one-to-one pair must still lie within the original
    `VisualAlignmentTicks` corridor around the audio map; phase refinement never
-   expands that corridor. Materialize one complete mapping and share it between
+   expands that corridor. Materialize each complete mapping and share it between
    point diagnostics and time evidence. Keep the actual-time, contrast,
    sample-coverage, hash-distance and adjacent-change diagnostics. The adjacent
    500 ms change rate is no longer a qualification condition. The production
@@ -153,12 +158,24 @@ SourceKey are invalid. Different profiles are not compared.
    Retain each actual pair offset and first check the original source-clock map,
    using the smallest source identity as reference and the configured audio
    alignment tolerance. A contradictory or incomplete clique still fails that
-   admission. For an admitted clique, compute one equal-weight constant-clock
+   admission. First measure the complete admitted map and keep it if qualified.
+   Otherwise compute one equal-weight constant-clock
    least-squares solution from all directed edge offsets and round to integer
    ticks. If any edge or fixed phase anchor exceeds the original tolerance, keep
-   the complete admitted map instead. No media quality score selects a clock
-   map, and there is no time warping or search among fitted alternatives.
-   Recheck audio, anchors, states and boundaries on the final intersection,
+   the complete admitted map instead. An admissible distinct refinement is one
+   alternative complete projection, starting from the same initial intervals.
+   A failed alternative cannot discard a usable original observation. Select
+   between two existing results only when their intervals and alignment are
+   compatible, retaining one whole result. All attempts share the work budget;
+   errors and cancellation return no partially usable result. There is no time
+   warping or search among fitted alternatives.
+   Freeze each selected visual map from its original acoustic window. The final
+   per-source interval must lie inside every selected pair's originally
+   confirmed bounds. Filter the frozen map against both final windows and the
+   current acoustic corridor before measuring all evidence again. Removed mates
+   leave unobservable edge time; they do not trigger recursive endpoint trimming
+   that can erode an otherwise supported clique indefinitely.
+   Recheck audio, anchors, states and boundaries on that fixed final intersection,
    without applying the extraction uncertainty guard a second time. Aggregate
    quality metrics across these current pair measurements only. Recompute
    interval-local quality reasons, while preserving observed boundary,
@@ -178,7 +195,7 @@ map and fixed phase anchors. The clock map is internal matching evidence, not
 worker authority. Exact complete-witness projections are cached within one
 Analyze call so different seed edges do not repeatedly re-evaluate the same
 dense clique; cache keys include original intervals, offsets, phase anchors,
-metrics, reasons and acoustic evidence.
+metrics, reasons, acoustic evidence and the selected visual phase.
 
 Clique growth is deterministic and conservative, not an exhaustive
 maximum-clique solver. It can abstain even when a more expensive search could
@@ -223,7 +240,7 @@ These fields must not be labeled as a probability or statistical confidence.
 | State dominance | No state exceeds 600/1000 of all informative source observations |
 | State representatives | At most 256 per source/candidate window; exhaustion is an explicit limit |
 | Period hypotheses | At most the window's visual observation count, within the configured feature bound |
-| Final projection | At most `2*MaxEpisodes+2` boundary rounds; exact-witness cache at most `MaxGroups*MaxCandidatesPerPair` entries |
+| Final projection | At most two complete clock witnesses on fixed final intervals; exact-witness cache at most `MaxGroups*MaxCandidatesPerPair` entries |
 | Visual phase search | At most one pending event per source observation; every event, heap comparison and contribution update consumes the shared comparison budget |
 
 Counts and logical memory budgets are independent of any serialized feature
@@ -302,7 +319,10 @@ anchors, three-way clock conflicts and final-intersection reprojection. They are
 not evidence of real intro accuracy. V3 additionally covers original-pair guarded
 accounting, preservation of nonlocal safety facts, full-clique clock refinement,
 constant-phase selection against a small exhaustive oracle, and shared mapping
-limits. It must be evaluated as
+limits. The subsequent projection repair adds mechanical cases for a hash-cost
+winner that fails a hard gate, a nontransitive visual cycle, and a clock
+refinement crossing an audio nearest-bin boundary. These source changes remain
+pending consolidated remote verification. They must be evaluated as
 one declared profile against the unchanged calibration labels and predeclared
 controls; its source changes still require unified remote verification and
 fresh held-out acceptance after the final algorithm freeze.

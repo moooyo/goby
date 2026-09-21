@@ -1,6 +1,7 @@
 package introdetect
 
 import (
+	"fmt"
 	"math/bits"
 	"sort"
 )
@@ -10,6 +11,7 @@ type pairMatch struct {
 	a, b              Interval
 	offset            int64
 	audio             audioMatch
+	visualPhase       int64
 	phaseAnchorOffset int64
 	phaseGrouped      bool
 	phaseClass        string
@@ -18,6 +20,12 @@ type pairMatch struct {
 }
 
 func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budget *workBudget) (*pairMatch, Reason, error) {
+	if budget == nil || budget.ctx == nil {
+		return nil, "", fmt.Errorf("%w: visual confirmation budget", ErrInvalidInput)
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return nil, "", err
+	}
 	start := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.StartTicks })
 	end := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.EndTicks })
 	if end-start < o.MinVisualSamples || len(b.Visual) < o.MinVisualSamples {
@@ -26,6 +34,85 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 	alignment, err := alignVisual(a, b, audio, offset, o, budget)
 	if err != nil {
 		return nil, "", err
+	}
+	if alignment.phase == 0 {
+		return measureVisualMatch(a, b, audio, offset, alignment, true, o, budget)
+	}
+	zero, err := materializeVisualPhase(a, b, audio, offset, 0, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
+	baseline, _, err := measureVisualMatch(a, b, audio, offset, zero, true, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
+	candidate, reason, err := measureVisualMatch(a, b, audio, offset, alignment, true, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return nil, "", err
+	}
+	// Cost nominates one alternate; eligibility and preference compare whole
+	// measured witnesses. An error in either path invalidates the operation.
+	if baseline != nil && (candidate == nil || !preferPair(*candidate, *baseline, o)) {
+		return baseline, "", nil
+	}
+	return candidate, reason, nil
+}
+
+// projectVisualEvidence measures a fixed final window under the original raw
+// correspondence. Boundary discovery happens once; edge observations lost by
+// projection remain unobservable instead of repeatedly shrinking the window.
+func projectVisualEvidence(a, b Episode, audio audioMatch, offset int64, original pairMatch, o Options, budget *workBudget) (*pairMatch, Reason, error) {
+	if budget == nil || budget.ctx == nil {
+		return nil, "", fmt.Errorf("%w: visual projection budget", ErrInvalidInput)
+	}
+	if err := budget.ctx.Err(); err != nil {
+		return nil, "", err
+	}
+	if intersect(audio.a, original.a) != audio.a || intersect(audio.b, original.b) != audio.b ||
+		audio.a.EndTicks <= audio.a.StartTicks || audio.b.EndTicks <= audio.b.StartTicks {
+		return nil, "", fmt.Errorf("%w: visual projection escaped confirmed witness", ErrInvalidInput)
+	}
+	alignment, err := materializeVisualPhase(a, b, original.audio, original.offset, original.visualPhase, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
+	alignment, err = filterVisualAlignment(a, b, audio, offset, alignment, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
+	value, reason, err := measureVisualMatch(a, b, audio, offset, alignment, false, o, budget)
+	if err != nil || value == nil {
+		return nil, reason, err
+	}
+	for _, retained := range original.reasons {
+		if err := budget.spend(); err != nil {
+			return nil, "", err
+		}
+		if !intervalQualityReason(retained) {
+			value.reasons = addReason(value.reasons, retained)
+		}
+	}
+	// The returned ranges and metrics describe the final measurement. These
+	// immutable fields retain the discovery clock used to rebuild the map;
+	// the group's current acoustic clock is carried separately by its caller.
+	value.audio, value.offset, value.visualPhase = original.audio, original.offset, original.visualPhase
+	value.left, value.right = original.left, original.right
+	value.phaseAnchorOffset, value.phaseGrouped, value.phaseClass = original.phaseAnchorOffset, original.phaseGrouped, original.phaseClass
+	if err := budget.ctx.Err(); err != nil {
+		return nil, "", err
+	}
+	return value, "", nil
+}
+
+func measureVisualMatch(a, b Episode, audio audioMatch, offset int64, alignment visualAlignment, discoverBounds bool, o Options, budget *workBudget) (*pairMatch, Reason, error) {
+	start := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.StartTicks })
+	end := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.EndTicks })
+	if end-start < o.MinVisualSamples || len(b.Visual) < o.MinVisualSamples ||
+		audio.a.EndTicks-audio.a.StartTicks < o.MinDurationTicks || audio.b.EndTicks-audio.b.StartTicks < o.MinDurationTicks {
+		return nil, InsufficientVisual, nil
 	}
 	var usable, good, distance, transitions int
 	uniqueA, uniqueB := make(map[uint64]int), make(map[uint64]int)
@@ -115,17 +202,24 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 	if evidence.periodic {
 		reasons = addReason(reasons, PeriodicVisualEvidence)
 	}
-	// Use only the intersection of acoustic interior and confirmed visual time.
-	// No guessed extrapolation extends the skip past the last confirmed frame.
+	// Discovery clips once to actual confirmed observations. Projection still
+	// requires sufficient confirmed extent, but measures the admitted final
+	// window without feeding its missing edge observations into another crop.
 	arange := Interval{max(audio.a.StartTicks, evidence.firstA), min(audio.a.EndTicks, evidence.lastA)}
 	brange := Interval{max(audio.b.StartTicks, evidence.firstB), min(audio.b.EndTicks, evidence.lastB)}
 	if arange.EndTicks-arange.StartTicks < o.MinDurationTicks || brange.EndTicks-brange.StartTicks < o.MinDurationTicks {
 		return nil, InsufficientVisual, nil
 	}
+	if !discoverBounds {
+		arange, brange = audio.a, audio.b
+	}
 	if min(arange.EndTicks-arange.StartTicks, brange.EndTicks-brange.StartTicks) < o.AutoMinDurationTicks {
 		reasons = addReason(reasons, ShortInterval)
 	}
-	return &pairMatch{a: arange, b: brange, offset: offset, audio: audio, metrics: metrics, reasons: reasons}, "", nil
+	if err := budget.ctx.Err(); err != nil {
+		return nil, "", err
+	}
+	return &pairMatch{a: arange, b: brange, offset: offset, audio: audio, visualPhase: alignment.phase, metrics: metrics, reasons: reasons}, "", nil
 }
 
 func compatibleInterval(a, b Interval, o Options) bool {
