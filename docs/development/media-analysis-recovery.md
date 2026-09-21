@@ -82,5 +82,13 @@ rows. These normalization counts are distinct from the exact raw archive witness
 The accompanying test sources cover historical-version gates, malformed typed
 selection and actor carriers, binary and relational corruption, raw round-trip
 preservation, epoch precision/exhaustion and transactional invalidation. Actual
-PostgreSQL/archive checks belong to the consolidated remote Phase 2 verification;
-source delivery alone is not a passing runtime result.
+PostgreSQL/archive checks have completed within the recorded remote source and
+scope composition; their evidence is in the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
+
+The later fourteen-source client run passed 14/14 corpus cases, four required
+previews, actual skip, CAS and decisions, but failed at a browser cancellation
+assertion expecting HTTP 200 instead of the existing HTTP 202 response. The
+fixture-only `e94173f` correction is in the running second attempt. Cancellation
+completion, pruning, restart and full client acceptance remain pending; those
+outcomes are not inferred from the archive/recovery results.

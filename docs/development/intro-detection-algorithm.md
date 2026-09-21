@@ -6,8 +6,11 @@ publish an intro. `Analyze(ctx, Cohort, Options)` returns observations for a
 complete explicit cohort window. The caller owns authorization, extraction,
 source integrity, calibration, persistence and publication precedence.
 
-V3 is a repair in progress, not an accepted accuracy profile. It retains every
-Option from the final v2 profile: complete five-second bands need 400/1000
+V3 at source `49fc4ec` has passed the declared calibration, controlled cases and
+fourteen-source accuracy population, including three fresh episode holdouts.
+Complete phase acceptance still requires the client lifecycle verification
+recorded in the [phase record](media-analysis-resilience-phase2-20260921.md).
+It retains every Option from the final v2 profile: complete five-second bands need 400/1000
 matched time, the maximum unconfirmed gap is five seconds, full visual matched
 time must reach 850/1000, and every complete band needs a real one-second anchor.
 Starting and ending anchor gaps remain limited to three seconds. No measured

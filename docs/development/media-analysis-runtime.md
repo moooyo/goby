@@ -1,7 +1,13 @@
 # Media analysis runtime
 
-Implementation record for phase 2. This document describes the code contract;
-the phase has not yet completed its consolidated remote verification.
+Implementation contract for phase 2. Remote builds, affected regressions and
+calibration/control checks have passed. The first fourteen-source run passed
+14/14 corpus cases, all four required previews, actual skip, CAS and decisions;
+the browser failed at a cancellation assertion expecting HTTP 200 instead of
+the existing HTTP 202 response. The fixture-only `e94173f` correction is in the
+running second attempt. Cancellation completion, pruning, restart and full
+acceptance remain pending; see the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
 
 ## Deployment inventory
 
@@ -134,5 +140,7 @@ is hidden without making ordinary playback fail.
 
 Restore invalidates automatic publication proofs and discards feature/preview
 references tied to the earlier runtime. Settings, manual state and audit history
-remain durable. See the phase execution record and recovery contract for required
-verification; authored source and fixtures are not passing evidence.
+remain durable. See the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) for actual
+verification outcomes and the [recovery contract](media-analysis-recovery.md)
+for archive and normalization boundaries.

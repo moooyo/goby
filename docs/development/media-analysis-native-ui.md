@@ -1,8 +1,12 @@
 # Native media analysis workflow
 
-Status: source implementation for media-analysis resilience Phase 2. No build,
-type check, unit test, browser run or runtime probe was performed for this source
-delivery. Consolidated remote acceptance belongs to the phase delivery record.
+Status: remote builds and regression checks have completed. The first actual
+fourteen-source run passed corpus accuracy, all four required preview cases,
+actual skip, configuration/CAS and administrator decisions. The whole browser
+attempt failed at a cancellation HTTP-status assertion. The fixture-only
+`e94173f` correction is in the running second attempt; cancellation completion,
+pruning, restart and full acceptance remain pending. See the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
 
 ## Entry and supported controls
 
@@ -68,12 +72,13 @@ receipt reports removed entries/bytes, remaining bytes and retained busy entries
 Active readers and in-progress builds/publications are displayed. The UI never
 claims that busy entries were immediately removed or that original media changed.
 
-## Source coverage and remaining verification
+## Verification coverage and remaining acceptance
 
-`web/admin/src/mediaAnalysis.test.ts` contains five source-level checks for exact
+`web/admin/src/mediaAnalysis.test.ts` contains source-level checks for exact
 profile drafts, bounds, large revisions, malformed/inconsistent response rejection
-and stale/unsupported candidate admission. These checks have not been executed in
-this implementation stage.
+and stale/unsupported candidate admission. The remote source-check and mocked
+browser results, with their source bindings, are recorded in the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
 
 `web/admin/e2e/media-analysis.spec.ts` contains seven synthetic-API browser cases:
 
@@ -85,8 +90,10 @@ this implementation stage.
 6. Missing tools with disabled starts and visible configuration/results.
 7. Unconfirmed admission across reload with exact request reuse.
 
-These synthetic cases are UI and protocol-boundary coverage, not detector,
-FFmpeg, cache-publication or end-to-end media evidence. Real browser acceptance
-must additionally exercise these controls against the owned remote server and
-verify task completion/cancellation, source-bound decision effects, actual
-preview outputs and cache accounting independently.
+These synthetic cases cover the UI and protocol boundary; they do not establish
+detector accuracy or actual FFmpeg/cache behavior. The first real-media attempt
+passed 14/14 corpus cases, including 3/3 fresh holdout cases, and the observed
+native controls above. Cancellation returned its existing HTTP 202 contract
+while the browser helper expected 200. The second complete client-lifecycle run
+uses the same frozen product and labels with that one assertion corrected. It
+is not a new unseen accuracy trial, and its remaining outcomes are pending.

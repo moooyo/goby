@@ -5,10 +5,11 @@ Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
 passed, including the source-geometry compatibility repair and native mocked
-browser coverage. The first real-content run missed all six positive intros;
-automatic skip and the remaining composed consumer journey are not accepted.
-The later common-clock repair verification below supersedes the earlier failed
-accuracy attempts without erasing their evidence.
+browser coverage. The first real-content run missed all six positive intros and
+did not demonstrate automatic skip. The later common-clock repair and actual
+fourteen-source run passed the declared accuracy, skip and preview checks;
+the complete cancellation/prune/restart journey remains pending. Earlier failed
+accuracy attempts retain their original evidence and verdicts.
 
 This phase implements the second delivery in the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
