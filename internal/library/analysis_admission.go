@@ -198,6 +198,16 @@ func ValidateStoredAnalysisAdmission(profileRaw, executionRaw []byte, revision, 
 		}
 		return nil
 	}
+	if wire.Version == analysisStoredExecutionVersionV2 {
+		var profile analysisStoredProfileV2
+		var execution analysisStoredExecutionV2
+		if analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil ||
+			validateAnalysisProfileV2(profile) != nil || validateAnalysisExecutionProfileV2(execution) != nil ||
+			analysisAdmissionFingerprintV2(profile, execution, revision, epoch) != fingerprint {
+			return ErrInvalidInput
+		}
+		return nil
+	}
 	var profile AnalysisProfile
 	var execution AnalysisExecutionProfile
 	if wire.Version != AnalysisExecutionProfileVersion || analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil || ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil || analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {

@@ -91,9 +91,11 @@ func seedAnalysisRecoveryUnavailableHistory(t *testing.T, f *engineRecoveryFixtu
 	if err != nil {
 		t.Fatal("encode the current unavailable execution profile")
 	}
+	v2Unavailable, v2Fingerprint := analysisRecoveryV2Admission(t, "unavailable")
 	for _, entry := range []struct{ version, run, scope, execution, fingerprint string }{
 		{"v1", strings.Repeat("a", 32), "analysis:" + strings.Repeat("5", 64), analysisRecoveryV1Unavailable, hex.EncodeToString(digest[:])},
-		{"v2", strings.Repeat("b", 32), "analysis:" + strings.Repeat("6", 64), string(currentRaw), analysisRecoveryFingerprint(library.DefaultAnalysisProfile(), current)},
+		{"v2", strings.Repeat("e", 32), "analysis:" + strings.Repeat("8", 64), v2Unavailable, v2Fingerprint},
+		{"v3", strings.Repeat("b", 32), "analysis:" + strings.Repeat("6", 64), string(currentRaw), analysisRecoveryFingerprint(library.DefaultAnalysisProfile(), current)},
 	} {
 		item, source := "analysis-restore-unavailable-"+entry.version, "unavailable-source-"+entry.version
 		result := strings.ReplaceAll(analysisRecoveryV1Abstention, "v1", entry.version)
@@ -153,17 +155,23 @@ func analysisRecoveryV1AdmissionFingerprint(execution string) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func assertUnavailableProfilesRejectQualifiedHistory(t *testing.T, f *engineRecoveryFixture) {
+func assertUnavailableProfilesRejectQualifiedHistory(t *testing.T, f *engineRecoveryFixture, includeV2 bool) {
 	t.Helper()
 	current := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"}
 	currentRaw, err := json.Marshal(current)
 	if err != nil {
 		t.Fatal("encode the unavailable current profile")
 	}
-	for _, entry := range []struct{ version, run, item, execution, fingerprint string }{
+	entries := []struct{ version, run, item, execution, fingerprint string }{
 		{"v1", strings.Repeat("9", 32), "analysis-restore-two", analysisRecoveryV1Unavailable, analysisRecoveryV1AdmissionFingerprint(analysisRecoveryV1Unavailable)},
-		{"v2", strings.Repeat("5", 32), "analysis-restore-one", string(currentRaw), analysisRecoveryFingerprint(library.DefaultAnalysisProfile(), current)},
-	} {
+		{"v3", strings.Repeat("5", 32), "analysis-restore-one", string(currentRaw), analysisRecoveryFingerprint(library.DefaultAnalysisProfile(), current)},
+	}
+	if includeV2 {
+		execution, fingerprint := analysisRecoveryV2Admission(t, "unavailable")
+		entries = append(entries, struct{ version, run, item, execution, fingerprint string }{
+			"v2", strings.Repeat("d", 32), "analysis-restore-v2-source-1", execution, fingerprint})
+	}
+	for _, entry := range entries {
 		t.Run("unavailable_"+entry.version+"_cannot_own_qualified_history", func(t *testing.T) {
 			tx, err := f.source.Begin(f.ctx)
 			if err != nil {
@@ -228,7 +236,7 @@ func TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof(
 	seedAnalysisRecoveryFixture(t, f)
 	fingerprint := seedAnalysisRecoveryV1History(t, f)
 	before := recoveryEngineJSONState(t, f.ctx, f.source, analysisRecoveryRetainedSQL)
-	assertUnavailableProfilesRejectQualifiedHistory(t, f)
+	assertUnavailableProfilesRejectQualifiedHistory(t, f, false)
 	if after := recoveryEngineJSONState(t, f.ctx, f.source, analysisRecoveryRetainedSQL); after != before {
 		t.Fatal("isolated unavailable profile witnesses changed original history")
 	}
@@ -261,11 +269,12 @@ func TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof(
 		if err := tx.QueryRow(ctx, `SELECT (SELECT publication_epoch=1 FROM analysis_settings WHERE id=1)
 			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='1' AND fingerprint=$1 AND execution=$2::jsonb)=1
 			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='1')=3
-			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='2')=3
-			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->'Available'='false'::jsonb AND execution->>'DetectorVersion'='')=2
+			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='2')=1
+			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='3')=3
+			AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->'Available'='false'::jsonb AND execution->>'DetectorVersion'='')=3
 			AND (SELECT count(*) FROM analysis_detections d JOIN analysis_work w ON w.child_id=d.child_id JOIN analysis_run_profiles p ON p.run_id=w.run_id
 				WHERE d.status='no_result' AND d.result->>'Reason'='source_unavailable' AND NOT d.auto_published
-				AND d.result->>'Version'='introdetect-v'||(p.execution->>'Version') AND p.execution->'Available'='false'::jsonb)=2
+				AND d.result->>'Version'='introdetect-v'||(p.execution->>'Version') AND p.execution->'Available'='false'::jsonb)=3
 			AND (SELECT count(*) FROM analysis_detections WHERE auto_published)=2
 			AND (SELECT result=$3::jsonb FROM analysis_detections WHERE item_id='analysis-restore-two')
 			AND (SELECT count(*) FROM analysis_previews)=3 AND (SELECT count(*) FROM analysis_feature_cache)=1`,
@@ -285,7 +294,7 @@ func TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof(
 		t.Fatalf("mixed-version invalidation counts=%+v error=%v", result, err)
 	}
 	if after := recoveryEngineJSONState(t, f.ctx, f.target, analysisRecoveryRetainedSQL); after != before {
-		t.Fatal("normalization rewrote immutable v1/v2 admission, result, support, audit, or manual history")
+		t.Fatal("normalization rewrote immutable v1/v2/v3 admission, result, support, audit, or manual history")
 	}
 	var safe bool
 	if err := f.target.QueryRow(f.ctx, `SELECT
@@ -294,7 +303,7 @@ func TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof(
 		AND (SELECT publication_epoch=2 FROM analysis_settings WHERE id=1)
 		AND (SELECT count(*) FROM task_runs WHERE id IN (repeat('5',32),repeat('6',32)) AND state='interrupted')=2
 		AND (SELECT state='completed' AND analysis_config_fingerprint=$1 FROM task_runs WHERE id=repeat('9',32))
-		AND (SELECT count(*) FROM task_runs WHERE id IN (repeat('a',32),repeat('b',32)) AND state='completed')=2
+		AND (SELECT count(*) FROM task_runs WHERE id IN (repeat('a',32),repeat('b',32),repeat('e',32)) AND state='completed')=3
 		AND (SELECT state='completed' FROM task_runs WHERE id=repeat('c',32))
 		AND (SELECT count(*) FROM task_run_children WHERE run_id IN (repeat('5',32),repeat('6',32)) AND state='interrupted')=2
 		AND (SELECT state='completed' FROM task_run_children WHERE run_id=repeat('9',32))`, fingerprint).Scan(&safe); err != nil || !safe {
@@ -314,7 +323,7 @@ func TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof(
 	if err != nil || stored.Version != "introdetect-v1" || stored.Episode.SourceKey != "source-two" || len(stored.Episode.Candidates) != 1 || len(stored.Episode.Candidates[0].Support) != 3 {
 		t.Fatalf("neutral historical reader lost v1 evidence: %v", err)
 	}
-	for _, version := range []string{"v1", "v2"} {
+	for _, version := range []string{"v1", "v2", "v3"} {
 		var resultRaw, auditRaw []byte
 		if err := f.target.QueryRow(f.ctx, `SELECT d.result,a.evidence FROM analysis_detections d
 			JOIN analysis_intro_audit a ON a.item_id=d.item_id WHERE d.item_id=$1`, "analysis-restore-unavailable-"+version).Scan(&resultRaw, &auditRaw); err != nil {

@@ -98,5 +98,5 @@ read back the remote commit. Publication and deployment remain separate states.
 | Phase | Implementation | Verification | Main publication |
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
-| 2. Intro analysis and BIF previews | Shared lifecycle, preview delivery and management implemented; v2 intro accuracy and historical-record repairs in progress | Initial regressions and repair checks completed; first real accuracy attempt missed all six positives; full consumer acceptance pending | Pending |
+| 2. Intro analysis and BIF previews | Shared lifecycle, preview delivery and management implemented; v3 interval-scoped evidence and historical v2 compatibility repairs in progress | Source `00047ac` passed 284 affected Go parent tests and the six-original calibration; controlled extraction succeeded for all 15 derivatives, but all six cold-open positives remained Review. The preserved failure is not acceptance. Fresh holdout remains sealed; final real consumer acceptance is pending. | Pending |
 | 3. Concurrency and recovery | Not started | Not started | Pending |

@@ -73,9 +73,11 @@ func seedAnalysisArchiveV1History(t *testing.T, ctx context.Context, pool *pgxpo
 	unavailableCanonical := `{"Version":1,"Revision":1,"Epoch":1,"Profile":` + analysisArchiveV1Profile + `,"Execution":` + analysisArchiveV1Unavailable + `}`
 	unavailableDigest := sha256.Sum256([]byte(unavailableCanonical))
 	currentUnavailable, currentFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
+	v2Unavailable, v2Fingerprint := analysisArchiveV2Admission(t, "unavailable")
 	for _, entry := range []struct{ version, run, scope, execution, fingerprint string }{
 		{"v1", strings.Repeat("d", 32), "analysis:" + strings.Repeat("2", 64), analysisArchiveV1Unavailable, hex.EncodeToString(unavailableDigest[:])},
-		{"v2", strings.Repeat("c", 32), "analysis:" + strings.Repeat("3", 64), currentUnavailable, currentFingerprint},
+		{"v2", strings.Repeat("4", 32), "analysis:" + strings.Repeat("5", 64), v2Unavailable, v2Fingerprint},
+		{"v3", strings.Repeat("c", 32), "analysis:" + strings.Repeat("3", 64), currentUnavailable, currentFingerprint},
 	} {
 		item, source := "analysis-history-unavailable-"+entry.version, "unavailable-source-"+entry.version
 		childDigest := sha256.Sum256([]byte(entry.run + ":" + entry.scope))
@@ -228,7 +230,8 @@ func TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecove
 		(SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='1' AND fingerprint=$1 AND profile=$2::jsonb AND execution=$3::jsonb)=1
 		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='1')=3
 		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='1' AND execution->'Available'='false'::jsonb)=1
-		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='2')=2
+		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='2')=1
+		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='3')=2
 		AND (SELECT analysis_config_fingerprint=$1 FROM task_runs WHERE id=repeat('e',32))
 		AND (SELECT result=$4::jsonb AND NOT auto_published FROM analysis_detections WHERE item_id='analysis-history-item')
 		AND (SELECT evidence->'Result'=$4::jsonb FROM analysis_intro_audit WHERE item_id='analysis-history-item')`,
@@ -240,9 +243,9 @@ func TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecove
 		analysisArchiveV1BarePreview, analysisArchiveV1AdmissionFingerprint(analysisArchiveV1BarePreview)).Scan(&exact); err != nil || !exact {
 		t.Fatal("raw restore appended geometry claims to an early preview admission")
 	}
-	if err := target.QueryRow(ctx, `SELECT count(*)=2 FROM analysis_detections d
+	if err := target.QueryRow(ctx, `SELECT count(*)=3 FROM analysis_detections d
 		JOIN analysis_work w ON w.child_id=d.child_id JOIN analysis_run_profiles p ON p.run_id=w.run_id
-		WHERE d.item_id IN ('analysis-history-unavailable-v1','analysis-history-unavailable-v2')
+		WHERE d.item_id IN ('analysis-history-unavailable-v1','analysis-history-unavailable-v2','analysis-history-unavailable-v3')
 		AND p.execution->'Available'='false'::jsonb AND p.execution->>'DetectorVersion'=''
 		AND d.result->>'Version'='introdetect-v'||(p.execution->>'Version')
 		AND d.status='no_result' AND d.result->>'Reason'='source_unavailable' AND NOT d.auto_published
@@ -257,53 +260,46 @@ func TestPostgreSQLAnalysisHistoryRequiresMatchingAdmissionAndResultVersions(t *
 	ctx, source, _, options := recoveryFixture(t)
 	seedAnalysisArchiveState(t, ctx, source)
 	v1Fingerprint := seedAnalysisArchiveV1History(t, ctx, source)
-	if introdetect.Version != "introdetect-v2" || library.AnalysisExecutionProfileVersion != 2 {
-		t.Fatal("mixed-version witness requires the current v2 execution contract")
+	if introdetect.Version != "introdetect-v3" || library.AnalysisExecutionProfileVersion != 3 {
+		t.Fatal("mixed-version witness requires the current v3 execution contract")
 	}
-	profile := library.DefaultAnalysisProfile()
 	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
 		FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64),
-		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: 5000000, IntroProfile: "archive-intro-v2"}
-	currentRaw, err := json.Marshal(execution)
-	if err != nil {
-		t.Fatal("encode the current execution fixture")
-	}
-	currentCanonical, err := json.Marshal(struct {
-		Version         int
-		Revision, Epoch int64
-		Profile         library.AnalysisProfile
-		Execution       library.AnalysisExecutionProfile
-	}{library.AnalysisExecutionProfileVersion, 1, 1, profile, execution})
-	if err != nil {
-		t.Fatal("encode the current canonical admission")
-	}
-	currentDigest := sha256.Sum256(currentCanonical)
-	v2Fingerprint := hex.EncodeToString(currentDigest[:])
-	v2Result := strings.Replace(analysisArchiveV1Result, "introdetect-v1", "introdetect-v2", 1)
-	for _, raw := range []string{analysisArchiveV1Result, v2Result} {
+		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: 5000000, IntroProfile: "archive-intro-v3"}
+	currentRaw, currentFingerprint := analysisArchiveCurrentAdmission(t, execution)
+	v2Raw, v2Fingerprint := analysisArchiveV2Admission(t, "intro")
+	for _, version := range []string{"v1", "v2", "v3"} {
+		raw := strings.Replace(analysisArchiveV1Result, "introdetect-v1", "introdetect-"+version, 1)
 		if err := library.ValidateStoredAnalysisResult([]byte(raw), "no_result", nil, nil); err != nil {
 			t.Fatalf("cross-version witness must use independently valid result shapes: %v", err)
 		}
 	}
-	if err := library.ValidateStoredAnalysisAdmission([]byte(analysisArchiveV1Profile), currentRaw, 1, 1, v2Fingerprint); err != nil {
-		t.Fatalf("cross-version witness must use a valid v2 fingerprint: %v", err)
+	if err := library.ValidateStoredAnalysisAdmission([]byte(analysisArchiveV1Profile), []byte(currentRaw), 1, 1, currentFingerprint); err != nil {
+		t.Fatalf("cross-version witness must use a valid current fingerprint: %v", err)
 	}
-	unavailableCanonical := `{"Version":1,"Revision":1,"Epoch":1,"Profile":` + analysisArchiveV1Profile + `,"Execution":` + analysisArchiveV1Unavailable + `}`
-	unavailableDigest := sha256.Sum256([]byte(unavailableCanonical))
-	v2Unavailable, v2UnavailableFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
-	for _, test := range []struct {
+	v2Unavailable, v2UnavailableFingerprint := analysisArchiveV2Admission(t, "unavailable")
+	currentUnavailable, currentUnavailableFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
+	var tests []struct {
 		name, execution, fingerprint, result string
 		valid                                bool
-	}{
-		{"v1_admission_v1_result", analysisArchiveV1Execution, v1Fingerprint, analysisArchiveV1Result, true},
-		{"v1_admission_v2_result", analysisArchiveV1Execution, v1Fingerprint, v2Result, false},
-		{"v2_admission_v1_result", string(currentRaw), v2Fingerprint, analysisArchiveV1Result, false},
-		{"v2_admission_v2_result", string(currentRaw), v2Fingerprint, v2Result, true},
-		{"unavailable_v1_admission_v1_result", analysisArchiveV1Unavailable, hex.EncodeToString(unavailableDigest[:]), analysisArchiveV1Result, true},
-		{"unavailable_v1_admission_v2_result", analysisArchiveV1Unavailable, hex.EncodeToString(unavailableDigest[:]), v2Result, false},
-		{"unavailable_v2_admission_v1_result", v2Unavailable, v2UnavailableFingerprint, analysisArchiveV1Result, false},
-		{"unavailable_v2_admission_v2_result", v2Unavailable, v2UnavailableFingerprint, v2Result, true},
+	}
+	for _, admission := range []struct{ name, version, execution, fingerprint string }{
+		{"v1_admission", "v1", analysisArchiveV1Execution, v1Fingerprint},
+		{"v2_admission", "v2", v2Raw, v2Fingerprint},
+		{"v3_admission", "v3", currentRaw, currentFingerprint},
+		{"unavailable_v1_admission", "v1", analysisArchiveV1Unavailable, analysisArchiveV1AdmissionFingerprint(analysisArchiveV1Unavailable)},
+		{"unavailable_v2_admission", "v2", v2Unavailable, v2UnavailableFingerprint},
+		{"unavailable_v3_admission", "v3", currentUnavailable, currentUnavailableFingerprint},
 	} {
+		for _, version := range []string{"v1", "v2", "v3"} {
+			tests = append(tests, struct {
+				name, execution, fingerprint, result string
+				valid                                bool
+			}{admission.name + "_" + version + "_result", admission.execution, admission.fingerprint,
+				strings.Replace(analysisArchiveV1Result, "introdetect-v1", "introdetect-"+version, 1), admission.version == version})
+		}
+	}
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			tx, err := source.Begin(ctx)
 			if err != nil {
@@ -400,7 +396,7 @@ func TestPostgreSQLUnavailableAnalysisHistoryCannotAcquireMatcherEvidence(t *tes
 	ctx, source, _, options := recoveryFixture(t)
 	seedAnalysisArchiveState(t, ctx, source)
 	seedAnalysisArchiveV1History(t, ctx, source)
-	for _, version := range []string{"v1", "v2"} {
+	for _, version := range []string{"v1", "v2", "v3"} {
 		for _, test := range []struct{ name, mutation string }{
 			{"qualified", `UPDATE analysis_detections SET status='qualified',start_ticks=0,end_ticks=300000000,result=jsonb_set(result,'{Episode,Status}','"qualified"') WHERE item_id=$1`},
 			{"content_identity", `UPDATE analysis_detections SET result=jsonb_set(result,'{Episode,ContentIdentity}',to_jsonb(repeat('a',64))) WHERE item_id=$1`},

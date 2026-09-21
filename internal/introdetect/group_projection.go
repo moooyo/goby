@@ -102,10 +102,7 @@ func projectAudioEvidence(a, b Episode, ar, br Interval, offset int64, original 
 	metrics := Metrics{AudioAgreementPermille: min(1000, agreement), AudioInformativePermille: information,
 		AudioSimilarityPermille: 1000 - distance*1000/(count*32), AudioSamples: count,
 		AudioDistinct: min(len(uniqueA), len(uniqueB)), BoundaryUncertaintyTicks: original.metrics.BoundaryUncertaintyTicks, PairCount: 1}
-	reasons := append([]Reason{}, original.reasons...)
-	if agreement < o.MinAudioAgreement || metrics.AudioSimilarityPermille < o.MinAudioSimilarity {
-		reasons = addReason(reasons, WeakAudioEvidence)
-	}
+	reasons := audioReasonsForInterval(original.reasons, metrics, o)
 	return &audioMatch{a: ar, b: br, metrics: metrics, reasons: reasons}, nil
 }
 
@@ -120,11 +117,15 @@ func checkOffsetBudget(selected []int, edges map[[2]int]pairMatch, o Options, bu
 }
 
 // projectGroup retains the selected complete witness and rechecks its final
-// intersection under one source-clock mapping. Neither cropping nor a different
-// seed can erase a real boundary, periodicity or search-limitation reason.
+// intersection under one source-clock mapping. Quality measurements describe
+// that intersection; boundary, periodicity and search-limit facts survive it.
 func projectGroup(episodes []Episode, selected []int, ranges map[int]Interval, edges map[[2]int]pairMatch, o Options, budget *workBudget) (*Group, error) {
 	clocks, valid, err := checkOffsetBudget(selected, edges, o, budget)
 	if err != nil || !valid {
+		return nil, err
+	}
+	clocks, err = refineCliqueClocks(selected, edges, clocks, o, budget)
+	if err != nil {
 		return nil, err
 	}
 	ordered := append([]int(nil), selected...)
@@ -154,11 +155,13 @@ func projectGroup(episodes []Episode, selected []int, ranges map[int]Interval, e
 					return nil, err
 				}
 				next[left], next[right] = intersect(next[left], observed.a), intersect(next[right], observed.b)
-				pairMetrics := conservativeMetrics(original.metrics, observed.metrics)
+				pairMetrics := observed.metrics
 				pairMetrics.PairCount = 1
 				metrics = conservativeMetrics(metrics, pairMetrics)
 				for _, reason := range original.reasons {
-					reasons = addReason(reasons, reason)
+					if !intervalQualityReason(reason) {
+						reasons = addReason(reasons, reason)
+					}
 				}
 				for _, reason := range observed.reasons {
 					reasons = addReason(reasons, reason)

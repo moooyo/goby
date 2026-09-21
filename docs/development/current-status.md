@@ -9,9 +9,14 @@ implementation and verified merge/push to `main`. Development starts at
 is verified, its resources are closed, and delivery commit
 `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded into `main` and
 pushed to `origin/main`, with exact remote readback on September 21, 2026.
-Phase 2 implementation source is complete in the isolated checkout; its new code
-has not been built or tested. The [phase 2 record](media-analysis-resilience-phase2-20260921.md)
-tracks integration and remaining acceptance. Phase 3 has not started product changes. The phase 1
+Phase 2 remains in repair and acceptance. Source `00047ac` passed its scoped
+build, 284 affected Go parent tests and six-original calibration, but the
+controlled cold-open positives remained Review. Current v3 source repairs
+interval-scoped quality accounting and audio/visual alignment while retaining
+frozen historical v2 records. The new repair has not been built or tested;
+fresh holdout remains sealed and real consumer acceptance remains pending.
+The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
+source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and
 [delivery results](media-analysis-resilience-phase1-results-20260921.json)
 bind 2,328 unique Go passes, three explicit skips, 55 composed mocked UI cases,

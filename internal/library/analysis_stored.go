@@ -9,8 +9,8 @@ import (
 	"github.com/moooyo/goby/internal/introdetect"
 )
 
-// Historical facts deliberately contain no matcher metrics. A v1 observation
-// must never become a fabricated zero-valued measurement in a newer algorithm.
+// Historical facts deliberately contain no matcher metrics. An observation
+// from a retired algorithm must never acquire current measurement semantics.
 type AnalysisStoredIntervalFacts struct {
 	StartTicks int64
 	EndTicks   int64
@@ -66,6 +66,25 @@ func analysisV1ResultFacts(value analysisStoredResultV1) AnalysisStoredResultFac
 	return result
 }
 
+func analysisV2ResultFacts(value analysisStoredResultV2) AnalysisStoredResultFacts {
+	episode := value.Episode
+	result := AnalysisStoredResultFacts{Version: value.Version, Reason: value.Reason,
+		Episode: AnalysisStoredEpisodeFacts{EpisodeKey: episode.EpisodeKey, SourceKey: episode.SourceKey,
+			ContentIdentity: episode.ContentIdentity, Status: episode.Status, Reasons: episode.Reasons,
+			Candidates: make([]AnalysisStoredCandidateFacts, 0, len(episode.Candidates))}}
+	for _, candidate := range episode.Candidates {
+		fact := AnalysisStoredCandidateFacts{Interval: AnalysisStoredIntervalFacts(candidate.Interval),
+			GroupID: candidate.GroupID, Status: candidate.Status, Reasons: candidate.Reasons,
+			Support: make([]AnalysisStoredSupportFacts, 0, len(candidate.Support))}
+		for _, support := range candidate.Support {
+			fact.Support = append(fact.Support, AnalysisStoredSupportFacts{support.EpisodeKey, support.SourceKey,
+				support.ContentIdentity, AnalysisStoredIntervalFacts(support.Interval)})
+		}
+		result.Episode.Candidates = append(result.Episode.Candidates, fact)
+	}
+	return result
+}
+
 func analysisCurrentResultFacts(value AnalysisStoredResult) AnalysisStoredResultFacts {
 	episode := value.Episode
 	result := AnalysisStoredResultFacts{Version: value.Version, Reason: value.Reason,
@@ -102,6 +121,13 @@ func decodeAnalysisStoredResult(raw []byte) (AnalysisStoredResultFacts, *Analysi
 			return AnalysisStoredResultFacts{}, nil, ErrInvalidInput
 		}
 		return analysisV1ResultFacts(value), nil, nil
+	}
+	if version.Version == analysisStoredDetectorVersionV2 {
+		var value analysisStoredResultV2
+		if analysisStrictJSON(raw, &value) != nil || validateAnalysisStoredResultV2(value) != nil {
+			return AnalysisStoredResultFacts{}, nil, ErrInvalidInput
+		}
+		return analysisV2ResultFacts(value), nil, nil
 	}
 	if version.Version != introdetect.Version {
 		return AnalysisStoredResultFacts{}, nil, ErrInvalidInput

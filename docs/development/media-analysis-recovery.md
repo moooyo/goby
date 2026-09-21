@@ -11,7 +11,15 @@ invalidated.
 
 The archive retains facts, not live authority. Validation does not require an old
 credential to remain enabled, a historical root to remain mounted, or a cache
-file to exist. It checks the stored admission graph and exact payload semantics:
+file to exist. It checks the stored admission graph and exact payload semantics.
+
+Historical execution versions 1 and 2 use independent frozen admission and
+result decoders, including their original canonical fingerprints and qualification
+rules. Current execution version 3 does not reinterpret those measurements.
+Unavailable executions map to the matching detector version for all three
+generations. Raw restore validates the original history before normalization
+withdraws publication authority; a stale historical observation cannot become a
+current worker, accepted detection or feature-cache authority.
 
 | State | Required raw invariants |
 | --- | --- |

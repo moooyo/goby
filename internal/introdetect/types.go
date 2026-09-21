@@ -6,7 +6,7 @@ import "errors"
 
 const (
 	TicksPerSecond int64 = 10_000_000
-	Version              = "introdetect-v2"
+	Version              = "introdetect-v3"
 )
 
 var (
@@ -92,7 +92,7 @@ type Options struct {
 	MinVisualChangeCoverage int
 	MaxVisualDominance      int
 	// The three legacy fields above describe the retained v1 diagnostics.
-	// They do not determine v2 eligibility.
+	// They do not determine current eligibility.
 	VisualBandTicks                 int64
 	MinVisualBandMatchedPermille    int
 	MinVisualAnchorTicks            int64

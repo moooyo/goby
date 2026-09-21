@@ -1,6 +1,6 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **regression repairs verified; the latest six-source calibration retains safe review candidates but automatic accuracy is not accepted**.
+Status: **v3 repair in progress; source `00047ac` passed original calibration but failed controlled cold-open qualification; complete acceptance is pending**.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
@@ -81,7 +81,8 @@ under cumulative source/log/runtime budgets; this cost still needs measurement.
 Semantic archive checks and real-consumer fixture source are complete. The last
 cache review also retained charges for unresolved trash directories, preserved
 missing ownership proof, and distinguished verified missing derivatives from
-unsafe cache state. There is no runtime proof of these authored checks yet.
+unsafe cache state. These observations describe the initial source freeze;
+runtime results and subsequent repairs are recorded separately below.
 
 The source candidate was frozen at
 `6ab55e26b7c65aadfce11b60f07ff14526daf839`. The fresh remote profile admits a
@@ -291,13 +292,45 @@ three-second edge limits, full audio support and all boundary/conflict checks.
 This candidate still requires a new build and the same five analyses; no
 accuracy or regression result from candidate 02 is relabeled as a new pass.
 
-Current v2 library, task, HTTP, backup/recovery, Python, Node and mocked-browser
-regressions still require their integrated execution. Controlled real-media
-cold-open, recap and no-intro scenarios are being prepared separately. No v2
-database provisioning, full fresh-holdout consumer run or phase-2 publication
-has occurred. Four superseded builds' reproducible `node_modules` directories
+At that candidate's preparation point, integrated v2 library, task, HTTP,
+backup/recovery, Python, Node and mocked-browser regressions were still pending.
+Controlled real-media cold-open, recap and no-intro scenarios were being prepared
+separately. V2 database provisioning and the fresh-holdout consumer run had not
+occurred. Later scoped results follow below; no phase-2 publication has occurred.
+Four superseded builds' reproducible `node_modules` directories
 were retired after their workers closed; source archives, source files, built
 frontend assets, binary artifacts, media and evidence remain retained.
+
+## Controlled cold-open failure and v3 repair
+
+The later source `00047acfe0e1bf0fa0ec4b4ab3ab6b61b0a8e152` fixed incomplete
+visual sampling at short source tails. Its affected Go run passed 284 parent
+tests with no skips; its six-original calibration qualified all six positives
+and returned no result for all 24 derived body-window observations. These are
+scoped results, not complete phase acceptance.
+
+Controlled run 02 extracted all 15 native derivatives and completed all three
+analyses. Recap ambiguity and body abstention checks passed, but all six
+cold-open positives remained Review despite safe, source-labeled boundaries.
+The frozen labels, five-second boundary tolerance and all 40 Options remain
+unchanged. The failed score is retained with SHA-256
+`6412a79d0cf0e49c577f9c37a88be0938e20b11d13f5f90bae11193a75912586`.
+
+One private observational replay of the existing cold features produced exactly
+the original public result and cohort. It confirmed that metrics from the raw
+and guarded intervals were retained after final intersection. Some final pairs
+remained genuinely weak; removing stale metrics alone does not prove accuracy.
+The observer's independent closure is
+`19dae4d7671cac217e4cfc83ee683e978d0e0d4a4371942deb7acfaa24411d3e`.
+
+The v3 repair is source work in progress. Guarded audio evidence now measures
+only the original matched bins fully inside both intervals. Final group metrics
+describe the current complete pairwise intersection; boundary, periodicity and
+search-limit facts survive cropping. Historical v2 admissions, results and
+archive validation have independent frozen wire semantics and cannot become
+current automatic publication or worker authority. This dirty source has no v3
+build or test result yet. The three fresh holdout sources remain sealed, and the
+named real consumer journey has not been accepted.
 
 ## Required consolidated evidence
 
@@ -306,9 +339,10 @@ skip consumption, BIF decoding and visible seek frames, full management flows,
 source replacement and revocation, concurrent manual edits, configuration CAS,
 task cancellation/restart, interrupted publication, bounded storage and resource
 return, migration 49 to 50, and backup/restore of every new state category.
-Synthetic mechanics do not replace real independent episodes. The current real
-corpus established six misses and two correct insufficient-evidence abstentions;
-it has not established acceptable automatic intro accuracy.
+Synthetic mechanics do not replace real independent episodes. The initial real
+corpus run established six misses and two correct insufficient-evidence
+abstentions. Later calibration success does not erase that failure or establish
+the still-pending controlled, fresh-holdout and consumer acceptance.
 
 Publicly licensed, distinct episodes are research candidates only until their
 actual media is viewed and labeled. Labels must identify their real provenance:

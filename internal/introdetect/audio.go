@@ -215,22 +215,28 @@ func alignedAudio(a, b Episode, offset int64, o Options, budget *workBudget) ([]
 	var results []audioMatch
 	var reasons []Reason
 	first, last := -1, -1
-	flush := func() {
+	flush := func() error {
 		if first < 0 {
-			return
+			return nil
 		}
-		match, reason := measureAudioRun(a, b, matched, first, last, o)
+		match, reason, err := measureAudioRun(a, b, matched, first, last, o, budget)
+		if err != nil {
+			return err
+		}
 		if reason != "" {
 			reasons = addReason(reasons, reason)
 		} else if match != nil {
 			results = append(results, *match)
 		}
 		first, last = -1, -1
+		return nil
 	}
 	for i, target := range matched {
 		if first >= 0 && (a.Audio[i].StartTicks-a.Audio[last].EndTicks > o.MaxAudioGapTicks ||
 			target >= 0 && b.Audio[target].StartTicks-b.Audio[matched[last]].EndTicks > o.MaxAudioGapTicks) {
-			flush()
+			if err := flush(); err != nil {
+				return nil, nil, err
+			}
 		}
 		if target >= 0 {
 			if first < 0 {
@@ -239,71 +245,45 @@ func alignedAudio(a, b Episode, offset int64, o Options, budget *workBudget) ([]
 			last = i
 		}
 	}
-	flush()
+	if err := flush(); err != nil {
+		return nil, nil, err
+	}
 	return results, reasons, nil
 }
 
-func measureAudioRun(a, b Episode, matched []int, first, last int, o Options) (*audioMatch, Reason) {
+func measureAudioRun(a, b Episode, matched []int, first, last int, o Options, budget *workBudget) (*audioMatch, Reason, error) {
 	arange := Interval{a.Audio[first].StartTicks, a.Audio[last].EndTicks}
 	brange := Interval{b.Audio[matched[first]].StartTicks, b.Audio[matched[last]].EndTicks}
 	duration := arange.EndTicks - arange.StartTicks
 	if duration < o.MinDurationTicks {
-		return nil, ""
+		return nil, "", nil
 	}
 	if duration > o.MaxDurationTicks || brange.EndTicks-brange.StartTicks > o.MaxDurationTicks {
-		return nil, OverlongRepeat
+		return nil, OverlongRepeat, nil
 	}
-	var count, distance, changesA, changesB, adjacent int
-	var coveredA, coveredB, informativeA, informativeB int64
-	uniqueA, uniqueB := make(map[uint32]bool), make(map[uint32]bool)
-	for i := first; i <= last; i++ {
-		j := matched[i]
-		if j < 0 {
-			continue
-		}
-		count++
-		spanA, spanB := a.Audio[i].EndTicks-a.Audio[i].StartTicks, b.Audio[j].EndTicks-b.Audio[j].StartTicks
-		coveredA, coveredB = coveredA+spanA, coveredB+spanB
-		if informativeAudio(a.Audio, i) && informativeAudio(b.Audio, j) {
-			informativeA, informativeB = informativeA+spanA, informativeB+spanB
-		}
-		if i > first && matched[i-1] >= 0 && j == matched[i-1]+1 {
-			changesA += bits.OnesCount32(a.Audio[i].Fingerprint ^ a.Audio[i-1].Fingerprint)
-			changesB += bits.OnesCount32(b.Audio[j].Fingerprint ^ b.Audio[j-1].Fingerprint)
-			adjacent++
-		}
-		distance += bits.OnesCount32(a.Audio[i].Fingerprint ^ b.Audio[j].Fingerprint)
-		uniqueA[a.Audio[i].Fingerprint], uniqueB[b.Audio[j].Fingerprint] = true, true
-	}
-	distinct := min(len(uniqueA), len(uniqueB))
-	information := min(int(informativeA*1000/max(int64(1), coveredA)), int(informativeB*1000/max(int64(1), coveredB)))
-	if distinct < 12 || adjacent == 0 || min(changesA, changesB) < 2*adjacent || information < o.MinAudioInformation {
-		return nil, LowAudioEntropy
-	}
-	agreement := min(int(coveredA*1000/duration), int(coveredB*1000/(brange.EndTicks-brange.StartTicks)))
-	if agreement < 800 {
-		return nil, InsufficientAudio
-	}
-	metrics := Metrics{AudioAgreementPermille: min(1000, agreement), AudioInformativePermille: information, AudioSimilarityPermille: 1000 - distance*1000/(count*32),
-		AudioSamples: count, AudioDistinct: distinct, PairCount: 1}
-	reasons := []Reason{}
-	if agreement < o.MinAudioAgreement || metrics.AudioSimilarityPermille < o.MinAudioSimilarity {
-		reasons = addReason(reasons, WeakAudioEvidence)
+	// A safe interior cannot erase failed discovery gates on the full run.
+	if _, reason, err := measureMatchedAudioEvidence(a, b, matched, first, last, arange, brange, o, budget); err != nil || reason != "" {
+		return nil, reason, err
 	}
 	guard := max(a.AudioBoundaryUncertaintyTicks, b.AudioBoundaryUncertaintyTicks)
-	metrics.BoundaryUncertaintyTicks = guard
 	arange.StartTicks += guard
 	arange.EndTicks -= guard
 	brange.StartTicks += guard
 	brange.EndTicks -= guard
 	if arange.EndTicks-arange.StartTicks < o.MinDurationTicks || brange.EndTicks-brange.StartTicks < o.MinDurationTicks {
-		return nil, ""
+		return nil, "", nil
 	}
+	metrics, reason, err := measureMatchedAudioEvidence(a, b, matched, first, last, arange, brange, o, budget)
+	if err != nil || reason != "" {
+		return nil, reason, err
+	}
+	metrics.BoundaryUncertaintyTicks = guard
+	reasons := audioReasonsForInterval(nil, metrics, o)
 	// A repeat reaching either extracted suffix has no demonstrated ending.
 	if last == len(a.Audio)-1 || matched[last] == len(b.Audio)-1 ||
 		a.Audio[last].EndTicks >= min(a.DurationTicks, o.WindowTicks)-o.AudioAlignmentTicks ||
 		b.Audio[matched[last]].EndTicks >= min(b.DurationTicks, o.WindowTicks)-o.AudioAlignmentTicks {
 		reasons = addReason(reasons, AnalysisBoundary)
 	}
-	return &audioMatch{arange, brange, metrics, reasons}, ""
+	return &audioMatch{arange, brange, metrics, reasons}, "", nil
 }

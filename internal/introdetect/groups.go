@@ -244,7 +244,7 @@ func groupID(cohortKey string, group Group, options Options) string {
 	for _, key := range phaseKeys {
 		fmt.Fprintf(hash, "phase:%d:%s;%d:%s;%d;%s;", len(key[0]), key[0], len(key[1]), key[1], group.phaseAnchors[key], group.phaseClasses[key])
 	}
-	return "intro-group-v2-" + hex.EncodeToString(hash.Sum(nil))
+	return "intro-group-v3-" + hex.EncodeToString(hash.Sum(nil))
 }
 
 func distinctCandidates(candidates []Candidate, o Options) []Candidate {

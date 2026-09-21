@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/moooyo/goby/internal/introdetect"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -34,10 +35,23 @@ func analysisCompatibilitySources(t *testing.T, f analysisAdminFixture) []Analys
 	return sources
 }
 
-func seedAnalysisCompatibilityV1Detection(t *testing.T, f analysisAdminFixture) {
+func analysisCompatibilityLiteral(t *testing.T, version, name string) []byte {
+	t.Helper()
+	switch version {
+	case "v1":
+		return analysisV1Literal(t, name)
+	case "v2":
+		return analysisV2Literal(t, name)
+	default:
+		t.Fatal("unsupported historical fixture version")
+		return nil
+	}
+}
+
+func seedAnalysisCompatibilityDetection(t *testing.T, f analysisAdminFixture, version string) {
 	t.Helper()
 	sources := analysisCompatibilitySources(t, f)
-	raw := string(analysisV1Literal(t, "analysis-result-v1-qualified"))
+	raw := string(analysisCompatibilityLiteral(t, version, "analysis-result-"+version+"-qualified"))
 	contents := make([]string, len(sources))
 	for index, source := range sources {
 		encodedEpisode, _ := json.Marshal(source.EpisodeKey)
@@ -50,8 +64,8 @@ func seedAnalysisCompatibilityV1Detection(t *testing.T, f analysisAdminFixture) 
 	}
 	if _, err := f.pool.Exec(f.ctx, `INSERT INTO analysis_detections(item_id,revision,source_revision,profile_fingerprint,
 		profile_revision,publication_epoch,child_id,cohort_revision,status,result,start_ticks,end_ticks,auto_published)
-		SELECT $1,1,$2,$3,revision,publication_epoch,'historical-v1-child',$4,'qualified',$5,100000000,400000000,true
-		FROM analysis_settings WHERE id=1`, f.ids[0], sources[0].SourceRevision, strings.Repeat("a", 64), analysisCohortHash(sources), raw); err != nil {
+		SELECT $1,1,$2,$3,revision,publication_epoch,$6,$4,'qualified',$5,100000000,400000000,true
+		FROM analysis_settings WHERE id=1`, f.ids[0], sources[0].SourceRevision, strings.Repeat("a", 64), analysisCohortHash(sources), raw, "historical-"+version+"-child"); err != nil {
 		t.Fatal(err)
 	}
 	for index, source := range sources {
@@ -64,8 +78,17 @@ func seedAnalysisCompatibilityV1Detection(t *testing.T, f analysisAdminFixture) 
 }
 
 func TestAnalysisV1DetectionRemainsReadableButCannotBecomeEffectiveOrAccepted(t *testing.T) {
+	checkAnalysisRetiredDetectionCannotBecomeEffectiveOrAccepted(t, "v1")
+}
+
+func TestAnalysisV2DetectionRemainsReadableButCannotBecomeEffectiveOrAccepted(t *testing.T) {
+	checkAnalysisRetiredDetectionCannotBecomeEffectiveOrAccepted(t, "v2")
+}
+
+func checkAnalysisRetiredDetectionCannotBecomeEffectiveOrAccepted(t *testing.T, version string) {
+	t.Helper()
 	f := newAnalysisAdminFixture(t)
-	seedAnalysisCompatibilityV1Detection(t, f)
+	seedAnalysisCompatibilityDetection(t, f, version)
 	item := f.item(t, 0)
 	if item.Detection.Status != "stale" || item.Detection.Candidate != nil || item.Detection.Effective != nil ||
 		!reflect.DeepEqual(item.Detection.Reasons, []string{"algorithm_changed"}) {
@@ -87,26 +110,39 @@ func TestAnalysisV1DetectionRemainsReadableButCannotBecomeEffectiveOrAccepted(t 
 	if err := f.pool.QueryRow(f.ctx, `SELECT auto_published FROM analysis_detections WHERE item_id=$1`, item.ID).Scan(&active); err != nil || !active {
 		t.Fatal("read-only compatibility rewrote historical publication state")
 	}
-	manual, err := f.store.UpdateItemIntro(f.ctx, f.actor, item.ID, IntroEdit{Revision: "0", SourceRevision: item.SourceRevision,
-		StartTicks: media.TicksPerSecond, EndTicks: 5 * media.TicksPerSecond, Provenance: "Manual"}, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	item = f.item(t, 0)
-	if !reflect.DeepEqual(item.Detection.Effective, manual.Effective) {
-		t.Fatal("retiring an algorithm hid the independently valid manual marker")
+	var explicit *IntroInterval
+	for _, provenance := range []string{"Manual", "Import"} {
+		marker, err := f.store.UpdateItemIntro(f.ctx, f.actor, item.ID, IntroEdit{Revision: item.Detection.ManualRevision, SourceRevision: item.SourceRevision,
+			StartTicks: media.TicksPerSecond, EndTicks: 5 * media.TicksPerSecond, Provenance: provenance}, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		explicit = marker.Effective
+		item = f.item(t, 0)
+		if !reflect.DeepEqual(item.Detection.Effective, explicit) || explicit == nil || explicit.Provenance != provenance {
+			t.Fatalf("retiring an algorithm hid the independent %s marker", provenance)
+		}
 	}
 	for _, action := range []string{"reject", "reset"} {
 		result, err := f.store.DecideAnalysisIntro(f.ctx, f.actor, item.ID, analysisDecisionForTest(item, action))
 		if err != nil || result.Status != "stale" || result.Candidate != nil || result.Suppressed != (action == "reject") ||
-			!reflect.DeepEqual(result.Effective, manual.Effective) {
-			t.Fatalf("old evidence blocked safe %s or changed manual state: %+v %v", action, result, err)
+			!reflect.DeepEqual(result.Effective, explicit) {
+			t.Fatalf("old evidence blocked safe %s or changed explicit state: %+v %v", action, result, err)
 		}
 		item = f.item(t, 0)
 	}
 }
 
 func TestAnalysisV1DetectionPreservesCurrentExplicitChapterIntro(t *testing.T) {
+	checkAnalysisRetiredDetectionPreservesCurrentChapterIntro(t, "v1")
+}
+
+func TestAnalysisV2DetectionPreservesCurrentExplicitChapterIntro(t *testing.T) {
+	checkAnalysisRetiredDetectionPreservesCurrentChapterIntro(t, "v2")
+}
+
+func checkAnalysisRetiredDetectionPreservesCurrentChapterIntro(t *testing.T, version string) {
+	t.Helper()
 	f := newAnalysisAdminFixture(t)
 	chapters, err := json.Marshal([]media.Chapter{
 		{StartTicks: 0, EndTicks: 5 * media.TicksPerSecond, Title: "IntroStart"},
@@ -118,7 +154,7 @@ func TestAnalysisV1DetectionPreservesCurrentExplicitChapterIntro(t *testing.T) {
 	if _, err := f.pool.Exec(f.ctx, `UPDATE items SET media=jsonb_set(media,'{Chapters}',$2::jsonb) WHERE id=$1`, f.ids[0], chapters); err != nil {
 		t.Fatal(err)
 	}
-	seedAnalysisCompatibilityV1Detection(t, f)
+	seedAnalysisCompatibilityDetection(t, f, version)
 	item := f.item(t, 0)
 	want := &IntroInterval{StartTicks: 0, EndTicks: 5 * media.TicksPerSecond, Provenance: "Chapter"}
 	if item.Detection.Status != "stale" || item.Detection.Candidate != nil || !reflect.DeepEqual(item.Detection.Effective, want) {
@@ -132,9 +168,18 @@ func TestAnalysisV1DetectionPreservesCurrentExplicitChapterIntro(t *testing.T) {
 }
 
 func TestAnalysisV1AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
+	checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t, "v1")
+}
+
+func TestAnalysisV2AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
+	checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t, "v2")
+}
+
+func checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t *testing.T, version string) {
+	t.Helper()
 	f := newAnalysisAdminFixture(t)
 	sources := analysisCompatibilitySources(t, f)
-	canonical := strings.Replace(string(analysisV1Literal(t, "analysis-admission-v1-intro")), `"Revision":7,"Epoch":3`, `"Revision":1,"Epoch":1`, 1)
+	canonical := strings.Replace(string(analysisCompatibilityLiteral(t, version, "analysis-admission-"+version+"-intro")), `"Revision":7,"Epoch":3`, `"Revision":1,"Epoch":1`, 1)
 	digest := sha256.Sum256([]byte(canonical))
 	fingerprint := hex.EncodeToString(digest[:])
 	var envelope struct{ Profile, Execution json.RawMessage }
@@ -195,6 +240,9 @@ func TestAnalysisV1AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
 	if work, err := f.store.GetAnalysisWork(f.ctx, child, fence); !errors.Is(err, ErrUnavailable) || !reflect.DeepEqual(work, AnalysisWork{}) {
 		t.Fatalf("a valid task fence upgraded old execution semantics: %+v %v", work, err)
 	}
+	if _, found, err := f.store.GetAnalysisFeatures(f.ctx, child, sources[0].ItemID, fence); !errors.Is(err, ErrUnavailable) || found {
+		t.Fatalf("a valid task fence acquired an old feature cache: found=%v err=%v", found, err)
+	}
 	if err := f.store.PublishAnalysisAbstention(f.ctx, child, fence, "source_unavailable"); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("old work published a newly stamped abstention: %v", err)
 	}
@@ -221,9 +269,9 @@ func TestAnalysisCurrentUnavailableAdmissionCanPublishOnlyTruthfulAbstention(t *
 			}
 			var valid bool
 			if err := f.pool.QueryRow(f.ctx, `SELECT count(*)=3 AND bool_and(status='no_result' AND NOT auto_published
-				AND result->>'Version'='introdetect-v2' AND result->>'Reason'='source_unavailable'
+				AND result->>'Version'=$1 AND result->>'Reason'='source_unavailable'
 				AND result#>'{Episode,Candidates}'='[]'::jsonb AND result#>'{Episode,Reasons}'='[]'::jsonb
-				AND result#>>'{Episode,ContentIdentity}'='') FROM analysis_detections`).Scan(&valid); err != nil || !valid {
+				AND result#>>'{Episode,ContentIdentity}'='') FROM analysis_detections`, introdetect.Version).Scan(&valid); err != nil || !valid {
 				t.Fatal("unavailable abstention introduced candidate, content, or automatic evidence")
 			}
 			result := analysisFixtureQualifiedResult(t, f, work)

@@ -104,7 +104,8 @@ const analysisStateRelationsSQL = `SELECT
 		OR detection.result->>'Version' IS DISTINCT FROM CASE
 			WHEN profile.execution->'Available'='true'::jsonb THEN profile.execution->>'DetectorVersion'
 			WHEN profile.execution->>'Version'='1' THEN 'introdetect-v1'
-			WHEN profile.execution->>'Version'='2' THEN 'introdetect-v2' ELSE '' END
+			WHEN profile.execution->>'Version'='2' THEN 'introdetect-v2'
+			WHEN profile.execution->>'Version'='3' THEN 'introdetect-v3' ELSE '' END
 		OR (detection.result->>'Reason'='' AND profile.execution->'Available' IS DISTINCT FROM 'true'::jsonb)
 		OR (detection.auto_published AND (detection.publication_epoch<>settings.publication_epoch
 		OR detection.profile_revision<>settings.revision OR NOT settings.auto_publish_intros)))

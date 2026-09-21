@@ -23,30 +23,25 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 	if end-start < o.MinVisualSamples || len(b.Visual) < o.MinVisualSamples {
 		return nil, InsufficientVisual, nil
 	}
+	alignment, err := alignVisual(a, b, audio, offset, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
 	var usable, good, distance, transitions int
 	uniqueA, uniqueB := make(map[uint64]int), make(map[uint64]int)
 	var changingTime int64
 	previousA, previousB := -1, -1
 	previousMatched := false
 	maximumGap := int64(0)
-	j, lastTarget := 0, -1
 	for i := start; i < end; i++ {
 		if err := budget.spend(); err != nil {
 			return nil, "", err
 		}
 		frame := a.Visual[i]
-		target := frame.Ticks + offset
-		for j+1 < len(b.Visual) && absolute(b.Visual[j+1].Ticks-target) <= absolute(b.Visual[j].Ticks-target) {
-			if err := budget.spend(); err != nil {
-				return nil, "", err
-			}
-			j++
-		}
-		if j >= len(b.Visual) || j <= lastTarget || b.Visual[j].Ticks < audio.b.StartTicks || b.Visual[j].Ticks >= audio.b.EndTicks ||
-			absolute(b.Visual[j].Ticks-target) > o.VisualAlignmentTicks || frame.Contrast < o.MinVisualContrast || b.Visual[j].Contrast < o.MinVisualContrast {
+		j := alignment.targets[i-alignment.start]
+		if j < 0 || b.Visual[j].Ticks >= audio.b.EndTicks || frame.Contrast < o.MinVisualContrast || b.Visual[j].Contrast < o.MinVisualContrast {
 			continue
 		}
-		lastTarget = j
 		usable++
 		difference := bits.OnesCount64(frame.Hash ^ b.Visual[j].Hash)
 		matched := difference <= o.MaxVisualHamming
@@ -91,8 +86,8 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 	metrics.VisualAgreementPermille, metrics.VisualSimilarityPermille = agreement, 1000-distance*1000/(usable*64)
 	metrics.VisualCoveragePermille, metrics.VisualSamples, metrics.VisualTransitions = coverage, usable, transitions
 	metrics.VisualChangeCoveragePermille, metrics.VisualDominancePermille = changeCoverage, dominant
-	metrics.BoundaryUncertaintyTicks = max(metrics.BoundaryUncertaintyTicks, maximumGap, o.AudioAlignmentTicks)
-	evidence, err := measureVisualV2(a, b, audio, offset, o, budget)
+	metrics.BoundaryUncertaintyTicks = max(metrics.BoundaryUncertaintyTicks, maximumGap, o.AudioAlignmentTicks, alignment.maximumResidual)
+	evidence, err := measureAlignedVisualV2(a, b, audio, alignment, o, budget)
 	if err != nil {
 		return nil, "", err
 	}

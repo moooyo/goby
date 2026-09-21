@@ -165,6 +165,14 @@ func measureVisualTimeline(interval Interval, spans []visualSpan, o Options, bud
 }
 
 func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, budget *workBudget) (visualV2Evidence, error) {
+	alignment, err := alignVisual(a, b, audio, offset, o, budget)
+	if err != nil {
+		return visualV2Evidence{}, err
+	}
+	return measureAlignedVisualV2(a, b, audio, alignment, o, budget)
+}
+
+func measureAlignedVisualV2(a, b Episode, audio audioMatch, alignment visualAlignment, o Options, budget *workBudget) (visualV2Evidence, error) {
 	value := visualV2Evidence{firstA: -1, firstB: -1, lastA: -1, lastB: -1}
 	statesA, err := buildVisualStates(a.Visual, audio.a, o, budget)
 	if err != nil {
@@ -175,27 +183,17 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 		return value, err
 	}
 	var matchedObservations [][2]int
-	start := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.StartTicks })
-	end := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks > audio.a.EndTicks })
 	var spansA, spansB []visualSpan
 	previousI, previousJ, previousKind := -1, -1, 0
-	j, lastTarget := 0, -1
-	for i := start; i < end; i++ {
+	for relative, j := range alignment.targets {
 		if err := budget.spend(); err != nil {
 			return value, err
 		}
-		target := a.Visual[i].Ticks + offset
-		for j+1 < len(b.Visual) && absolute(b.Visual[j+1].Ticks-target) <= absolute(b.Visual[j].Ticks-target) {
-			if err := budget.spend(); err != nil {
-				return value, err
-			}
-			j++
-		}
-		if j >= len(b.Visual) || j <= lastTarget || b.Visual[j].Ticks < audio.b.StartTicks || b.Visual[j].Ticks > audio.b.EndTicks || absolute(b.Visual[j].Ticks-target) > o.VisualAlignmentTicks {
+		i := alignment.start + relative
+		if j < 0 {
 			previousI, previousJ, previousKind = -1, -1, 0
 			continue
 		}
-		lastTarget = j
 		kind := 0
 		if a.Visual[i].Contrast >= o.MinVisualContrast && b.Visual[j].Contrast >= o.MinVisualContrast {
 			kind = 2

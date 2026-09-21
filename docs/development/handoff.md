@@ -20,10 +20,21 @@ Delivery commit `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded
 into `main` and pushed to `origin/main`, with exact remote readback on September
 21, 2026. No deployment occurred, and the original checkout's unrelated changes
 remain preserved. This follow-up records publication separately from the tested
-source snapshots. **Phase 2 automatic intro analysis and BIF preview source is complete; remote verification is next.**
+source snapshots. **Phase 2 automatic intro analysis and BIF previews remain in repair and acceptance; phase 3 has not started.**
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) describes the
 shared task, source-proof and derivative-lifecycle contracts and remaining work.
-Its source has not been built or tested; do not treat authored checks as evidence.
+Source `00047ac` passed its scoped build, 284 affected Go parent tests and the
+six-original calibration. All 15 controlled derivative extractions succeeded,
+but all six cold-open positives remained Review, so controlled acceptance failed.
+That failure and the earlier failures remain preserved. An observational replay
+reproduced the same public result and identified stale interval-quality metrics;
+it did not count as acceptance. The current dirty v3 repair includes audio
+remeasurement, final-group evidence accounting and frozen historical v2 storage
+compatibility. It has not yet been built or tested. Fresh holdout media remain
+sealed; final real consumer acceptance and phase-2 publication remain pending.
+The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
+binds the retained remote evidence and current owned worker state. Read it before
+resuming remote work, and do not restart a completed or still-running worker.
 Tests/builds/runtime checks are remote-only for this
 increment. The original `D:/Code/goby` changes remain unrelated and preserved.
 Phases 2 and 3 remain required; phase 3 product work has not started. The earlier

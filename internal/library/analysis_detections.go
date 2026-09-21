@@ -371,8 +371,8 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 	if facts.Reason != "" {
 		result.Reasons = append(result.Reasons, facts.Reason)
 	}
-	// Stored v1 claims remain auditable without inventing current metrics or
-	// making old qualification effective under unchanged settings and sources.
+	// Retired algorithm claims remain auditable without inventing current metrics
+	// or making old qualification effective under unchanged settings and sources.
 	if current == nil {
 		result.Status = "stale"
 		result.Reasons = append(result.Reasons, "algorithm_changed")

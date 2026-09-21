@@ -1,29 +1,25 @@
 # Pure episode intro matching
 
-`internal/introdetect` implements `introdetect-v2`, a pure Go, deterministic matcher. It does not open
+`internal/introdetect` implements `introdetect-v3`, a pure Go, deterministic matcher. It does not open
 media, run tools, access a database, infer episode identity from titles, or
 publish an intro. `Analyze(ctx, Cohort, Options)` returns observations for a
 complete explicit cohort window. The caller owns authorization, extraction,
 source integrity, calibration, persistence and publication precedence.
 
-This is the third fixed, unreleased v2 candidate. The failed calibration and
-diagnostics of candidate 01 at source
-`26c2e24af21f1b865beacc06df52a5bf63973709` and candidate 02 at source
-`d52cddd8ed30ee664c7fc9ce3d2f70722db8c7d7` remain retained separately. No v2
-job admission or result had been written to the database before this revision.
-The source build and complete Options fingerprint distinguish these candidates;
-historical v1 DTOs and thresholds remain unchanged. This revision is not an
-accuracy acceptance claim.
+V3 is a repair in progress, not an accepted accuracy profile. It retains every
+Option from the final v2 profile: complete five-second bands need 400/1000
+matched time, the maximum unconfirmed gap is five seconds, full visual matched
+time must reach 850/1000, and every complete band needs a real one-second anchor.
+Starting and ending anchor gaps remain limited to three seconds. No measured
+fraction is rounded up to qualify. The previous calibration attempts and the
+controlled cold-open failure at source `00047ac` remain retained separately.
 
-Candidate 03 changes only two defaults from candidate 02: complete five-second
-bands need 400/1000 matched time, and the maximum unconfirmed gap is five
-seconds. This explicitly calibrates secondary visual corroboration; it does not
-round a measured 497/1000 band up to 500/1000. The joint policy retains strong
-full audio evidence, at least 850/1000 full visual matched time, and a real
-one-second continuous anchor within every complete band. It allows a short
-changing shot and sampling-phase differences without asserting picture
-equality. Starting and ending anchor gaps remain limited to three seconds;
-audio guards, scene-state corroboration, clique and conflict rules are unchanged.
+V3 corrects interval-scoped quality accounting, uses all already-admitted clique
+edges to refine a single constant audio clock map, and selects one constant
+visual sampling phase for the whole candidate window. It does not change
+labels, slide the visual band grid or fit a separate phase to each frame.
+Historical v1 and v2 wire semantics have independent storage decoders and do
+not acquire current publication authority.
 
 ## Input contract
 
@@ -94,8 +90,20 @@ SourceKey are invalid. Different profiles are not compared.
    its own interval time, taking the worse source. Information fractions and
    adjacent matched-word changes are also checked on both sides; a sparse
    source cannot borrow a dense source's temporal coverage.
-6. Confirm visual observations under the same fixed audio offset and one-to-one
-   nearest timestamp correspondence. Keep the original actual-time, contrast,
+   Apply the extraction guard only after the full raw run passes its hard
+   discovery gates, then remeasure the original matched pairs whose complete
+   bins lie inside both guarded intervals. Cropping cannot rematch a consumed
+   target or borrow excluded entropy, duration or similarity.
+6. Select one constant visual phase for the whole acoustic window. Sweep exact
+   nearest-target midpoint events using a bounded heap; simultaneous events
+   take effect together. Rank phases by the total reduction in a fixed
+   full-window hash-distance cost, with unmatched and low-contrast observations
+   receiving no credit. Ties favor the phase closest to zero, then the smaller
+   signed phase. Neither qualification nor band placement participates in this
+   selection. Every selected one-to-one pair must still lie within the original
+   `VisualAlignmentTicks` corridor around the audio map; phase refinement never
+   expands that corridor. Materialize one complete mapping and share it between
+   point diagnostics and time evidence. Keep the actual-time, contrast,
    sample-coverage, hash-distance and adjacent-change diagnostics. The adjacent
    500 ms change rate is no longer a qualification condition. The production
    visual basis remains `gray32-dhash9x8-rms-v1`; the private DCT experiment is
@@ -142,11 +150,19 @@ SourceKey are invalid. Different profiles are not compared.
    every pair of members. A connected chain is not a consensus. Different
    opening versions can produce different groups. Final per-source bounds are
    intersections of the supporting intervals, never an extrapolated union.
-   Retain each actual pair offset and check a fixed global source-clock map,
+   Retain each actual pair offset and first check the original source-clock map,
    using the smallest source identity as reference and the configured audio
-   alignment tolerance. This is a bounded consistency check, not a time warp.
+   alignment tolerance. A contradictory or incomplete clique still fails that
+   admission. For an admitted clique, compute one equal-weight constant-clock
+   least-squares solution from all directed edge offsets and round to integer
+   ticks. If any edge or fixed phase anchor exceeds the original tolerance, keep
+   the complete admitted map instead. No media quality score selects a clock
+   map, and there is no time warping or search among fitted alternatives.
    Recheck audio, anchors, states and boundaries on the final intersection,
-   without applying the extraction uncertainty guard a second time.
+   without applying the extraction uncertainty guard a second time. Aggregate
+   quality metrics across these current pair measurements only. Recompute
+   interval-local quality reasons, while preserving observed boundary,
+   periodicity, search-limit and unknown safety reasons from the original edges.
 
 Equivalent pair hypotheses are sorted canonically and grouped against a fixed
 first anchor. Selecting a stronger complete witness never moves that anchor,
@@ -208,6 +224,7 @@ These fields must not be labeled as a probability or statistical confidence.
 | State representatives | At most 256 per source/candidate window; exhaustion is an explicit limit |
 | Period hypotheses | At most the window's visual observation count, within the configured feature bound |
 | Final projection | At most `2*MaxEpisodes+2` boundary rounds; exact-witness cache at most `MaxGroups*MaxCandidatesPerPair` entries |
+| Visual phase search | At most one pending event per source observation; every event, heap comparison and contribution update consumes the shared comparison budget |
 
 Counts and logical memory budgets are independent of any serialized feature
 cache size. The caller must also bound actual encoded bytes. The visual default
@@ -217,12 +234,12 @@ group search and results also occupy memory. The comparison counter does not
 count every map lookup or Go operation and is not a wall-clock promise. The
 worker must provide a cancellation/deadline context and measured load limits.
 
-The old fourteen metrics retain their v1 definitions. In particular,
+The first fourteen metrics retain their measured quantities. In particular,
 `VisualTransitions`, `VisualChangeCoveragePermille` and
 `VisualDominancePermille` still describe adjacent strong changes and exact
 matched-hash dominance. They are not relabeled as anchors or clusters and can
 remain low on a qualified slow-moving intro. Their three legacy Options slots
-are retained and range-checked for an explicit profile, but do not determine v2
+are retained and range-checked for an explicit profile, but do not determine current
 qualification.
 
 The ten new metrics report anchor count, minimum matched fraction among complete
@@ -266,11 +283,13 @@ required before operational publication claims.
 
 ## Acceptance boundary
 
-Historical v1 JSON and its qualification rules remain explicitly versioned in
-the storage layer. New admission fingerprints bind v2 and its full Options;
+Historical v1 and v2 JSON and their qualification rules remain explicitly
+versioned in the storage layer. New admission fingerprints bind v3 and its full Options;
 old audit facts are neither rewritten nor decoded against current defaults.
-The extraction hash/feature codec is unchanged. V2 adds bounded result metrics,
-not a migration that rewrites old schemas or manual decisions.
+The extraction hash/feature codec and schema 50 are unchanged. Current execution
+uses profile version 3; old observations remain readable as stale history and
+cannot be accepted or automatically published under current authority. Explicit
+chapter, import and manual decisions retain their existing precedence.
 
 Synthetic unit fixtures exercise cold-open offsets, distributed fingerprint
 noise, irregular timestamps, variant groups, duplicate identities, pairwise
@@ -280,8 +299,10 @@ and fast state changes inside continuous matched anchors, isolated states that
 cannot borrow an anchor, sparse shared-title flashes, black-frame denominators,
 state corroboration, dominance dilution, loops with missing evidence, immutable phase
 anchors, three-way clock conflicts and final-intersection reprojection. They are
-not evidence of real intro accuracy. This third fixed profile is informed by
-the preceding candidates' retained calibration diagnostics. It must be evaluated as
+not evidence of real intro accuracy. V3 additionally covers original-pair guarded
+accounting, preservation of nonlocal safety facts, full-clique clock refinement,
+constant-phase selection against a small exhaustive oracle, and shared mapping
+limits. It must be evaluated as
 one declared profile against the unchanged calibration labels and predeclared
 controls; its source changes still require unified remote verification and
 fresh held-out acceptance after the final algorithm freeze.
