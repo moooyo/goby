@@ -136,6 +136,42 @@ func TestFinalGroupProjectionRechecksStatesWithoutReapplyingTheAudioGuard(t *tes
 	}
 }
 
+func TestVisualCorroborationRejectsConcentratedGapsDespiteStrongGlobalCoverage(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		first, last      int64
+		wantGap          int64
+		wantBandPermille int
+	}{
+		{"six_second_gap_across_two_confirmed_bands", 8, 12, 6, 400},
+		{"sparse_band_with_a_real_one_second_anchor", 11, 13, 4, 200},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			episodes, edges := v2ProjectionFixture(t)
+			for index := range episodes[2].Visual {
+				frame := &episodes[2].Visual[index]
+				if frame.Ticks >= test.first*TicksPerSecond && frame.Ticks <= test.last*TicksPerSecond {
+					frame.Hash = ^frame.Hash
+				}
+			}
+			o := DefaultOptions()
+			audio := edges[[2]int{0, 2}].audio
+			evidence, err := measureVisualV2(episodes[0], episodes[2], audio, 0, o, v2TestBudget())
+			if err != nil || !evidence.allBandsAnchored || evidence.metrics.VisualMatchedTimePermille < o.MinVisualAgreement ||
+				evidence.metrics.VisualMaxUnconfirmedGapTicks != test.wantGap*TicksPerSecond ||
+				evidence.metrics.VisualMinBandMatchedPermille != test.wantBandPermille {
+				t.Fatalf("the fixture lost its strong global coverage or actual distributed anchors: %#v, %v", evidence, err)
+			}
+			match, reason, err := visualConfirm(episodes[0], episodes[2], audio, 0, o, v2TestBudget())
+			if err != nil || match == nil || reason != "" || !slices.Equal(match.reasons, []Reason{InsufficientVisualAnchors}) ||
+				match.metrics.VisualAgreementPermille < o.MinVisualAgreement || match.metrics.VisualSimilarityPermille < o.MinVisualSimilarity ||
+				qualifiedEvidence(match.metrics, o) {
+				t.Fatalf("strong aggregate evidence hid a concentrated unconfirmed region: %#v, %s, %v", match, reason, err)
+			}
+		})
+	}
+}
+
 func TestFixedPairRangeClassesSurviveGroupDeduplication(t *testing.T) {
 	o := DefaultOptions()
 	values := []pairMatch{hypothesisPhasePair(0, 950), hypothesisPhasePair(0, 990), hypothesisPhasePair(0, 970)}

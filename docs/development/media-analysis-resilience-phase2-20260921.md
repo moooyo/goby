@@ -1,6 +1,6 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **regression repairs verified; real intro accuracy failed and requires correction**.
+Status: **regression repairs verified; the latest six-source calibration retains safe review candidates but automatic accuracy is not accepted**.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
@@ -176,8 +176,8 @@ Automatic intro accuracy failed: all six positive cases abstained, producing
 six misses; the two singleton negative works correctly abstained. C1 reported
 no repeated interval; C2/C3 reported insufficient audio coverage and low visual
 diversity. The actual skip journey stopped because H1 had no published markers.
-The original labels and failed result remain intact. Only C1/C2/C3 calibration
-features may guide matching corrections. Three additional, unseen original
+The original labels and failed result remain intact. The first matching
+diagnostics used only C1/C2/C3 calibration features. Three additional, unseen original
 episodes have been acquired and sealed for final holdout verification after the
 algorithm is frozen; their content has not been decoded or reviewed. Existing holdout
 outcomes must not be used to tune thresholds or relabel positives.
@@ -206,8 +206,9 @@ product. The three additional calibration episode identities were fixed before
 content review to investigate independent support for opening variants. Two
 assistants independently reviewed all fifteen contact sheets and original
 selected transition frames, with machine transcription as supporting evidence.
-Their conservative endpoints agree. These three positive labels are frozen
-before feature extraction or detector output; their first detection is pending.
+Their conservative endpoints agree. These three positive labels were frozen
+before feature extraction or detector output and remained unchanged during the
+two v2 calibration attempts below.
 Together with the three sealed holdout episodes, fourteen independent originals
 total 1,646,688,512 bytes. None of these additions removes the original misses.
 
@@ -222,6 +223,81 @@ acceptance manifest separates the six calibration episodes, the original
 regression holdout and the three still-sealed fresh holdout episodes. Frontend
 contracts expose confirmed visual coverage and the longest unconfirmed gap.
 These source changes have not yet passed their consolidated verification.
+
+## V2 calibration and mechanical regression
+
+The first complete v2 candidate, `26c2e24af21f1b865beacc06df52a5bf63973709`,
+passed its full product build. Its six-source calibration produced no candidate
+groups. A fixed-profile observer then established two three-source families
+with strong full-interval audio evidence: C1/C4/C5 and C2/C3/C6. The visual rule
+incorrectly required an individual near-hash state to remain stationary for a
+second before counting it as scene diversity. Other visual coverage conditions
+also failed. These are calibration observations, not evidence from the sealed
+holdout and not permission to change the source-derived labels.
+
+The second unreleased candidate,
+`d52cddd8ed30ee664c7fc9ce3d2f70722db8c7d7`, counts distinct observed states
+inside continuous cross-source matching anchors. Its declared profile changes
+the visual matching radius to 24 and minimum mean similarity to 750/1000 while
+retaining the full-audio, complete-support, boundary, full-time and conflict
+requirements. Insufficient diversity remains reviewable evidence. The old v1
+storage contract and schemas 49/50 are unchanged; neither v2 candidate had been
+admitted to a product database before this source revision.
+
+The complete 20-step product build passed, with 17 binary artifacts and 73
+frontend files independently read back. Its closure SHA-256 is
+`006961bcd19453309263b61f0d16324d761baabe1e221d334b5e1024511fc0ce`.
+The full matcher mechanical package then passed 53 parent tests with no failed
+or skipped parents. Its receipt SHA-256 is
+`df0e08e9cc9915b0bb8c31ef17a3325f959e4eca2004d4b9cb962f87b9a19134`.
+An earlier wrapper attempt lacked `GOCACHE` and started no product tests; that
+operational failure and its closed process group remain retained separately.
+
+One subsequent fixed calibration invocation reused all six original feature
+bundles without decoding media again. It performed exactly five analyses: the
+original cohort and four predeclared two-minute narrative feature windows.
+All six positives now have one candidate within the original safe interval and
+five-second inward boundary tolerance, organized into the two expected groups.
+All six remain `review`, so the required automatic positive score is still
+0/6. The sole remaining reason is insufficient visual anchors: one group has
+a 4.004004-second unconfirmed gap against the three-second limit, and the other
+has a minimum complete-band fraction of 497/1000 against 500/1000. Aggregate
+metrics alone do not identify every failing pair or anchor intersection.
+
+Each of the four derived narrative controls actually ran and returned
+`no_result` for all six members. These controls are feature slices from the
+same six originals, not native edited-media or fresh-episode acceptance. They
+do not increase the main corpus's independent-source denominator. The combined
+calibration receipt is
+`6ab41565392279deb21750b8c3f6f0147e58a8e070b712704a2c80beaa116ad3`;
+the independent closure is
+`0058b42cc49ea0a4c0515fc292cf2d14496c618ef3e2504e322534f3f2e58eda`.
+The failed automatic score, unchanged labels, raw results and all closed worker
+identities remain retained. The three fresh holdout originals remain unopened.
+
+A subsequent fixed-profile observer reproduced the exact public result and
+2,723,193 comparisons. Every complete band on both sides of all six pairs had
+a sufficient continuous anchor. The actual remaining rejections were C1/C4's
+4.004004-second gap, C1/C5's 3.003003-second gap, and C2/C6's 497/1000 band
+with a valid 1.986987-second anchor. Original and final-projection reasons
+agreed. The observation SHA-256 is
+`9048f97198f649556ae13093865dbff6a766caf07b97199a8c99eec5bb0c05e9`;
+its independent closure is
+`a8d50bbf62ae5088bd7e5eacf4356b291b6617321acc35b7dd592ff1df0cb7da`.
+The third fixed candidate therefore explicitly calibrates only the secondary
+visual band's minimum to 400/1000 and the maximum internal gap to five seconds.
+It retains full visual matched time of 850/1000, real one-second band anchors,
+three-second edge limits, full audio support and all boundary/conflict checks.
+This candidate still requires a new build and the same five analyses; no
+accuracy or regression result from candidate 02 is relabeled as a new pass.
+
+Current v2 library, task, HTTP, backup/recovery, Python, Node and mocked-browser
+regressions still require their integrated execution. Controlled real-media
+cold-open, recap and no-intro scenarios are being prepared separately. No v2
+database provisioning, full fresh-holdout consumer run or phase-2 publication
+has occurred. Four superseded builds' reproducible `node_modules` directories
+were retired after their workers closed; source archives, source files, built
+frontend assets, binary artifacts, media and evidence remain retained.
 
 ## Required consolidated evidence
 

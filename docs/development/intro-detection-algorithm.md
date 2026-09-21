@@ -6,12 +6,24 @@ publish an intro. `Analyze(ctx, Cohort, Options)` returns observations for a
 complete explicit cohort window. The caller owns authorization, extraction,
 source integrity, calibration, persistence and publication precedence.
 
-This is the second fixed, unreleased v2 candidate. It supersedes the candidate
-at source `26c2e24af21f1b865beacc06df52a5bf63973709`, whose failed calibration
-and diagnostics are retained separately. No v2 job admission or result had been
-written to the database before this revision. The source build and complete
-Options fingerprint distinguish these candidates; historical v1 DTOs and
-thresholds remain unchanged. This revision is not an accuracy acceptance claim.
+This is the third fixed, unreleased v2 candidate. The failed calibration and
+diagnostics of candidate 01 at source
+`26c2e24af21f1b865beacc06df52a5bf63973709` and candidate 02 at source
+`d52cddd8ed30ee664c7fc9ce3d2f70722db8c7d7` remain retained separately. No v2
+job admission or result had been written to the database before this revision.
+The source build and complete Options fingerprint distinguish these candidates;
+historical v1 DTOs and thresholds remain unchanged. This revision is not an
+accuracy acceptance claim.
+
+Candidate 03 changes only two defaults from candidate 02: complete five-second
+bands need 400/1000 matched time, and the maximum unconfirmed gap is five
+seconds. This explicitly calibrates secondary visual corroboration; it does not
+round a measured 497/1000 band up to 500/1000. The joint policy retains strong
+full audio evidence, at least 850/1000 full visual matched time, and a real
+one-second continuous anchor within every complete band. It allows a short
+changing shot and sampling-phase differences without asserting picture
+equality. Starting and ending anchor gaps remain limited to three seconds;
+audio guards, scene-state corroboration, clique and conflict rules are unchanged.
 
 ## Input contract
 
@@ -189,8 +201,8 @@ These fields must not be labeled as a probability or statistical confidence.
 | Visual | Hamming distance at most 24; automatic sample agreement at least 850/1000 and integer mean similarity at least 750/1000 |
 | Full visual time | At least 850/1000 matched time, retaining contradicted and unobservable time in the denominator |
 | Visual observations | At least eight usable observations; contrast at least 40/1000 |
-| Complete internal bands | Absolute five-second bands; at least 500/1000 matched time and a continuous anchor |
-| Anchors and gaps | Anchor duration at least one second; maximum unconfirmed, starting-anchor and ending-anchor gaps each three seconds |
+| Complete internal bands | Absolute five-second bands; at least 400/1000 matched time (two seconds) and a continuous anchor |
+| Anchors and gaps | Anchor duration at least one second; maximum unconfirmed gap five seconds; starting-anchor and ending-anchor gaps each three seconds |
 | Visual states | Fixed representative radius eight; at least four different observed states within continuous matched anchors of at least one second on both sources |
 | State dominance | No state exceeds 600/1000 of all informative source observations |
 | State representatives | At most 256 per source/candidate window; exhaustion is an explicit limit |
@@ -268,8 +280,8 @@ and fast state changes inside continuous matched anchors, isolated states that
 cannot borrow an anchor, sparse shared-title flashes, black-frame denominators,
 state corroboration, dominance dilution, loops with missing evidence, immutable phase
 anchors, three-way clock conflicts and final-intersection reprojection. They are
-not evidence of real intro accuracy. This second fixed profile is informed by
-the first candidate's retained calibration diagnostics. It must be evaluated as
+not evidence of real intro accuracy. This third fixed profile is informed by
+the preceding candidates' retained calibration diagnostics. It must be evaluated as
 one declared profile against the unchanged calibration labels and predeclared
 controls; its source changes still require unified remote verification and
 fresh held-out acceptance after the final algorithm freeze.

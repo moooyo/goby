@@ -120,8 +120,8 @@ func DefaultOptions() Options {
 		MinAudioSimilarity: 850, MinVisualSimilarity: 750,
 		MinVisualContrast: 40, MinVisualSamples: 8, MinVisualTransitions: 3,
 		MinVisualChangeCoverage: 300, MaxVisualDominance: 600,
-		VisualBandTicks: 5 * TicksPerSecond, MinVisualBandMatchedPermille: 500,
-		MinVisualAnchorTicks: TicksPerSecond, MaxVisualUnconfirmedGapTicks: 3 * TicksPerSecond,
+		VisualBandTicks: 5 * TicksPerSecond, MinVisualBandMatchedPermille: 400,
+		MinVisualAnchorTicks: TicksPerSecond, MaxVisualUnconfirmedGapTicks: 5 * TicksPerSecond,
 		MaxVisualAnchorEdgeGapTicks: 3 * TicksPerSecond, VisualStateRadius: 8,
 		MinVisualStates: 4, MinVisualStateAnchorTicks: TicksPerSecond, MaxVisualStateDominancePermille: 600,
 	}
