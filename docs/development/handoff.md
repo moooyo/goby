@@ -64,10 +64,25 @@ or label/Options change occurred. The unified evidence SHA-256 is
 `d21340628ec47ab84219ff5fea90dd7185c82ff258b2e6db0b67508dc55f46dd`.
 All verification workers are closed. Four obsolete `49acf4d` binaries were
 copied, verified and retired; their source tree and the final overlay remain.
-Fresh holdout media remain sealed. Prepare the bounded source-only review,
-independently freeze its labels before any detector execution, then complete
-fresh accuracy and the 14-source named consumer/lifecycle journey. Phase-2
-publication remains pending; phase 3 product work has not started.
+The fresh holdout source-only operation subsequently passed all 15 steps and
+copied 609 files, including 540 raw JPEGs. All producers closed. The original
+closure wrapper's tuple/list comparison rejection remains retained; a canonical
+JSON postproof accepted the same unchanged source proof and invocation without
+rerunning media. Its SHA-256 is
+`0cdc6720784002666391caa08a1617885ce2bd37695794a760ae72797b3f887a`.
+Three isolated case reviewers each inspected all 180 images, and the coordinator
+inspected 54 representative/boundary images and machine transcripts. Frozen
+labels have SHA-256
+`79c826d6521222851aaa412144e157cd1aafb76866fe9efd4b3c93135a4acfac`.
+The complete fourteen-source reviewed manifest has SHA-256
+`b117f19dafc5e2b04f649599e9278ce55c61a6ab62393d267a63181f5055d759`.
+No FH fingerprint, intro-feature or Analyze call has occurred. FH1 was selected
+as the consumer by predeclared case order after independent positive source
+review, not by detector output. Complete recoverable test-space retirement,
+stage the bound evidence, provision one fresh browser database and admit the
+single final real consumer/accuracy/lifecycle run. Do not add a preliminary FH
+detector run. Phase-2 publication remains pending; phase 3 product work has not
+started. The private checkpoint records the current retirement owner and state.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
 binds the retained remote evidence and current owned worker state. Read it before
 resuming remote work, and do not restart a completed or still-running worker.

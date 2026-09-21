@@ -25,10 +25,18 @@ competing-interval branch coverage, and no-intro body controls. These analyses
 reused previously verified extraction bundles: they are eight new Analyze calls,
 not fresh media extractions or independent new originals. Options, labels and
 quality gates remain unchanged, and all earlier failures remain retained.
-Fresh holdout sources are still sealed. Independent source review and label
-freeze, fresh holdout accuracy, and the actual 14-source consumer/lifecycle
-journey remain required before phase 2 publication. All affected verification
-workers are closed; the owned PostgreSQL and required evidence remain available.
+The three fresh holdout sources subsequently completed one source-only review
+operation: 15 successful steps and 609 copied files, including 540 raw JPEGs.
+Three isolated case reviewers each directly inspected all 180 supplied frames;
+the coordinator inspected 54 representative and boundary frames and the mapped
+machine transcripts. Source-derived labels were frozen before any FH features
+or Analyze calls. This is assistant review, not human ground truth or direct
+audio listening. The complete fourteen-source manifest is assembled with FH1
+selected by the predeclared case order, without detector pre-screening.
+Fresh accuracy and the actual consumer/lifecycle journey remain required before
+phase 2 publication. The source-only worker is independently closed. Test-space
+recovery, a fresh single-browser database and final runtime admission are in
+progress; the owned PostgreSQL and required evidence remain available.
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
 source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and

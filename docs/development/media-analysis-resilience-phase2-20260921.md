@@ -486,9 +486,54 @@ All workers closed and all four protected services retained their identities.
 The four superseded `49acf4d` binaries were copied locally, compared by complete
 hash and retired through an independently closed operation. Their physical
 source tree, final overlay, new artifacts and all reused-scope dependencies
-remain available. No fresh holdout source has been opened. Independent source
-review and label freeze, held-out accuracy and the complete real consumer and
-management/restart journey remain required before phase acceptance.
+remain available. That verification campaign opened no fresh holdout source.
+The subsequent source-only review is recorded below; held-out accuracy and the
+complete real consumer and management/restart journey remain required.
+
+## Independent fresh source review and frozen labels
+
+After the algorithm and successful calibration/control scopes were frozen, one
+bounded source-only operation processed the three fresh sources. All fifteen
+probe, coarse-frame, fine-frame, PCM and ASR steps passed and closed. Each source
+provided 60 coarse and 120 fine raw JPEGs with actual source PTS. The complete
+609-file output occupied 12,871,097 logical bytes and was copied with individual
+byte-count and SHA-256 agreement. The receipt SHA-256 is
+`c491782f936d39415a6fba094228a88305f195d84f6f50581db67903b1747303`.
+An initial independent closure wrapper rejected a tuple/list representation
+difference after reading its JSON admission. The original refusal remains
+retained. A separately pinned canonical-JSON postproof established unchanged
+source evidence, the same successful invocation, closed worker/child groups and
+cgroup, and unchanged protected services; no media operation was rerun. Its
+SHA-256 is `0cdc6720784002666391caa08a1617885ce2bd37695794a760ae72797b3f887a`.
+
+Three isolated assistants each directly inspected all 180 images for one case
+and its mapped machine transcript, without another case or detector material.
+The coordinator inspected 54 representative and adjacent boundary images across
+the three cases and their transcripts. Exact viewed-file inventories and source
+clocks are retained. All three have source-observed reusable opening labels.
+Natural transition uncertainty and conservative protected narrative intervals
+remain explicit; sampled review does not claim continuous frame-by-frame
+coverage. Machine ASR outside the retained PCM window is excluded from boundary
+evidence. Neither human annotation nor direct audio listening is claimed.
+
+Source labels were frozen before any FH fingerprint, intro-feature or Analyze
+call, at SHA-256
+`79c826d6521222851aaa412144e157cd1aafb76866fe9efd4b3c93135a4acfac`.
+The full fourteen-source reviewed manifest has SHA-256
+`b117f19dafc5e2b04f649599e9278ce55c61a6ab62393d267a63181f5055d759`.
+It preserves the original eight cases, the three expanded calibration labels,
+all thresholds and original preview obligations. FH1 adds the required fresh
+320-pixel preview consumer, selected by predeclared order without predictions.
+The actual source grouping remains one known series with an unknown historical
+season. Fresh episode review does not demonstrate unseen-series/season accuracy
+or fresh-negative specificity.
+
+The final browser fixture must perform its real fourteen-source tasks,
+consumer work and evaluator together; no preliminary FH detector run selects
+passing cases. Recoverable test-space retirement, new evidence staging, one
+fresh browser database/context and final runtime admission are still pending.
+Source review and manifest assembly do not constitute passing fresh accuracy,
+client consumption, management/restart behavior or phase acceptance.
 
 ## Required consolidated evidence
 
