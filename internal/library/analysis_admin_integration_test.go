@@ -84,7 +84,9 @@ func (f analysisAdminFixture) seedReview(t *testing.T) AnalysisItem {
 	}
 	candidate := introdetect.Candidate{Interval: interval, GroupID: "review-group", Status: introdetect.Review,
 		Reasons: []introdetect.Reason{introdetect.ShortInterval}, Support: support,
-		Metrics: introdetect.Metrics{AudioSamples: 50, AudioDistinct: 50, PairCount: 3}}
+		Metrics: introdetect.Metrics{AudioSamples: 50, AudioDistinct: 50, PairCount: 3,
+			VisualUnobservableTimePermille: 1000, VisualMaxUnconfirmedGapTicks: 15 * media.TicksPerSecond,
+			VisualStartAnchorGapTicks: 15 * media.TicksPerSecond, VisualEndAnchorGapTicks: 15 * media.TicksPerSecond}}
 	value := AnalysisStoredResult{Version: introdetect.Version, Episode: introdetect.EpisodeResult{EpisodeKey: sources[0].EpisodeKey, SourceKey: sources[0].SourceRevision,
 		ContentIdentity: support[0].ContentIdentity, Status: introdetect.Review, Reasons: []introdetect.Reason{introdetect.ShortInterval}, Candidates: []introdetect.Candidate{candidate}}}
 	raw, err := json.Marshal(value)

@@ -70,8 +70,15 @@ func testEpisode(number int, duration int64, openings ...testOpening) Episode {
 			}
 		}
 		shared = testRandom(opening.variant + 987654321)
+		var sharedState uint64
 		for tick := opening.start; tick < end; tick += TicksPerSecond {
-			visual = append(visual, VisualSample{tick, shared.next(), 200})
+			// Each shared state has two actual observations a second apart.
+			// This proves the v2 minimum state support instead of treating one
+			// instantaneous random hash as a second of observed state duration.
+			if (tick-opening.start)/TicksPerSecond%2 == 0 {
+				sharedState = shared.next()
+			}
+			visual = append(visual, VisualSample{tick, sharedState, 200})
 		}
 		sort.Slice(visual, func(i, j int) bool { return visual[i].Ticks < visual[j].Ticks })
 		e.Visual = visual
@@ -477,7 +484,9 @@ func TestAnalyzeCompetingIntervalsAndShortOpeningsRequireReview(t *testing.T) {
 					if i == 2 {
 						for j := range e.Visual {
 							if j%4 == 0 {
-								e.Visual[j].Hash ^= 0xfff
+								// Twenty bits remain a disagreement under the fixed
+								// v2 radius; the former twelve-bit fixture no longer did.
+								e.Visual[j].Hash ^= 0xfffff
 							}
 						}
 					}
@@ -498,13 +507,25 @@ func TestAnalyzeUsesIrregularVisualTimestamps(t *testing.T) {
 	cohort := testCohort()
 	starts := []int64{10*TicksPerSecond + 1200000, 35*TicksPerSecond + 3700000, 63*TicksPerSecond + 8100000}
 	for i := range cohort.Episodes {
-		for j := range cohort.Episodes[i].Visual {
-			frame := &cohort.Episodes[i].Visual[j]
-			if frame.Ticks >= starts[i] && frame.Ticks < starts[i]+49*TicksPerSecond {
-				position := (frame.Ticks - starts[i]) / TicksPerSecond
-				frame.Ticks += position % 3 * (TicksPerSecond / 7)
+		var observations []VisualSample
+		for _, frame := range cohort.Episodes[i].Visual {
+			if frame.Ticks < starts[i] || frame.Ticks >= starts[i]+50*TicksPerSecond {
+				observations = append(observations, frame)
 			}
 		}
+		shared := testRandom(778899 + 987654321)
+		states := make([]uint64, 25)
+		for state := range states {
+			states[state] = shared.next()
+		}
+		for position := int64(0); position < 100; position++ {
+			actual := position*(TicksPerSecond/2) + position%3*(TicksPerSecond/7)
+			// The frame's state is sampled at its actual relative presentation
+			// time, including when jitter crosses a two-second scene boundary.
+			observations = append(observations, VisualSample{starts[i] + actual, states[actual/(2*TicksPerSecond)], 200})
+		}
+		sort.Slice(observations, func(a, b int) bool { return observations[a].Ticks < observations[b].Ticks })
+		cohort.Episodes[i].Visual = observations
 	}
 	result := analyzeTest(t, cohort)
 	for _, episode := range result.Episodes {

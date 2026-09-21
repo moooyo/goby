@@ -85,7 +85,7 @@ func newAnalysisProjectionFixture(t *testing.T) analysisProjectionFixture {
 	if err := f.app.taskManager.Close(f.ctx); err != nil {
 		t.Fatal(err)
 	}
-	execution := library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, Available: true,
+	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
 		FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64),
 		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "projection-fixture-v1"}
 	registry, err := tasks.NewExecutorRegistry(tasks.ExecutorRegistration{Key: library.TaskIntroAnalysisKey, Name: "Projection evidence fixture", Executor: analysisHTTPNoWorkExecutor{},
@@ -238,6 +238,8 @@ func (f analysisProjectionFixture) seedQualified(t *testing.T) {
 	metrics := introdetect.Metrics{AudioAgreementPermille: 1000, AudioInformativePermille: 1000, AudioSimilarityPermille: 1000,
 		AudioSamples: 100, AudioDistinct: 100, VisualAgreementPermille: 1000, VisualSimilarityPermille: 1000, VisualCoveragePermille: 1000,
 		VisualSamples: 35, VisualTransitions: 34, VisualChangeCoveragePermille: 1000, VisualDominancePermille: 100, PairCount: 3}
+	metrics.VisualAnchorCount, metrics.VisualMinBandMatchedPermille, metrics.VisualMatchedTimePermille = 35, 1000, 1000
+	metrics.VisualDistinctStates, metrics.VisualDominantStatePermille = 8, 125
 	value := library.AnalysisStoredResult{Version: introdetect.Version, Episode: introdetect.EpisodeResult{
 		EpisodeKey: supports[target].EpisodeKey, SourceKey: supports[target].SourceKey, ContentIdentity: supports[target].ContentIdentity,
 		Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Candidates: []introdetect.Candidate{{Interval: interval,

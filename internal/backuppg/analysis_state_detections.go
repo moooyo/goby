@@ -57,11 +57,8 @@ func validateAnalysisDetectionState(ctx context.Context, tx pgx.Tx) error {
 		if err := rows.Scan(&item, &source, &profile, &action, &raw, &actor); err != nil {
 			return classifyResourceStateError(ctx, err)
 		}
-		if !analysisStateIdentifier(item, 256, false) || !analysisStateIdentifier(source, 256, false) || !analysisStateIdentifier(actor, 256, true) || profile != "" && !analysisStateDigest(profile) || library.ValidateStoredAnalysisAudit(raw, action) != nil {
-			return ErrSchema
-		}
-		var evidence library.AnalysisAuditEvidence
-		if json.Unmarshal(raw, &evidence) != nil {
+		evidence, err := library.ReadStoredAnalysisAudit(raw, action)
+		if !analysisStateIdentifier(item, 256, false) || !analysisStateIdentifier(source, 256, false) || !analysisStateIdentifier(actor, 256, true) || profile != "" && !analysisStateDigest(profile) || err != nil {
 			return ErrSchema
 		}
 		if evidence.Result != nil && evidence.Result.Episode.SourceKey != source {
@@ -75,11 +72,11 @@ func validateAnalysisDetectionState(ctx context.Context, tx pgx.Tx) error {
 }
 
 func validAnalysisStateDetection(item, source, episode string, duration int64, status string, raw []byte, start, end *int64, refs []byte) bool {
-	if !analysisStateIdentifier(item, 256, false) || !analysisStateIdentifier(source, 256, false) || library.ValidateStoredAnalysisResult(raw, status, start, end) != nil {
+	value, err := library.ReadStoredAnalysisResult(raw, status, start, end)
+	if !analysisStateIdentifier(item, 256, false) || !analysisStateIdentifier(source, 256, false) || err != nil {
 		return false
 	}
-	var value library.AnalysisStoredResult
-	if json.Unmarshal(raw, &value) != nil || value.Episode.SourceKey != source || value.Episode.EpisodeKey != episode {
+	if value.Episode.SourceKey != source || value.Episode.EpisodeKey != episode {
 		return false
 	}
 	var references []analysisStateEvidence

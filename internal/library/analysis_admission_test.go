@@ -13,14 +13,14 @@ import (
 )
 
 func analysisAdmissionTestIntroExecution() AnalysisExecutionProfile {
-	return AnalysisExecutionProfile{Version: AnalysisProfileVersion, Available: true,
+	return AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, Available: true,
 		FFmpegSHA256: strings.Repeat("a1", 32), FFprobeSHA256: strings.Repeat("b2", 32), FingerprintSHA256: strings.Repeat("c3", 32),
 		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(),
 		VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "intro-extraction-v1"}
 }
 
 func analysisAdmissionTestPreviewExecution() AnalysisExecutionProfile {
-	return AnalysisExecutionProfile{Version: AnalysisProfileVersion, Available: true,
+	return AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, Available: true,
 		FFmpegSHA256: strings.Repeat("a1", 32), FFprobeSHA256: strings.Repeat("b2", 32),
 		PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}
 }
@@ -95,7 +95,7 @@ func TestAnalysisExecutionProfileRequiresTheClosedAvailableContract(t *testing.T
 
 func TestAnalysisExecutionUnavailableProfilesCarryOnlyAReason(t *testing.T) {
 	for _, reason := range []string{"disabled", "not_configured", "dependencies_unavailable", "cache_unavailable", "unsupported_platform"} {
-		profile := AnalysisExecutionProfile{Version: AnalysisProfileVersion, UnavailableReason: reason}
+		profile := AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, UnavailableReason: reason}
 		if err := ValidateAnalysisExecutionProfile(profile); err != nil {
 			t.Fatalf("closed unavailable reason %q was rejected: %v", reason, err)
 		}
@@ -119,7 +119,7 @@ func TestAnalysisExecutionUnavailableProfilesCarryOnlyAReason(t *testing.T) {
 		}
 	}
 	for _, reason := range []string{"", "Disabled", "unknown", " disabled", "disabled\n"} {
-		if err := ValidateAnalysisExecutionProfile(AnalysisExecutionProfile{Version: AnalysisProfileVersion, UnavailableReason: reason}); !errors.Is(err, ErrInvalidInput) {
+		if err := ValidateAnalysisExecutionProfile(AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, UnavailableReason: reason}); !errors.Is(err, ErrInvalidInput) {
 			t.Fatalf("unknown unavailable reason %q was admitted", reason)
 		}
 	}
@@ -178,7 +178,7 @@ func TestStoredAnalysisAdmissionRequiresExactCompleteJSON(t *testing.T) {
 	if err := ValidateStoredAnalysisAdmission(profileRaw, executionRaw, 3, 7, analysisAdmissionFingerprint(profile, execution, 3, 7)); !errors.Is(err, ErrInvalidInput) {
 		t.Fatal("a null zero-valued boolean bypassed exact admission decoding")
 	}
-	for _, validExecution := range []AnalysisExecutionProfile{analysisAdmissionTestPreviewExecution(), {Version: AnalysisProfileVersion, UnavailableReason: "dependencies_unavailable"}} {
+	for _, validExecution := range []AnalysisExecutionProfile{analysisAdmissionTestPreviewExecution(), {Version: AnalysisExecutionProfileVersion, UnavailableReason: "dependencies_unavailable"}} {
 		profileRaw := analysisAdmissionTestJSON(t, DefaultAnalysisProfile())
 		executionRaw := analysisAdmissionTestJSON(t, validExecution)
 		if err := ValidateStoredAnalysisAdmission(profileRaw, executionRaw, 3, 7, analysisAdmissionFingerprint(DefaultAnalysisProfile(), validExecution, 3, 7)); err != nil {

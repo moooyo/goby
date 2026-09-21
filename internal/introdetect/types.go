@@ -6,7 +6,7 @@ import "errors"
 
 const (
 	TicksPerSecond int64 = 10_000_000
-	Version              = "introdetect-v1"
+	Version              = "introdetect-v2"
 )
 
 var (
@@ -91,6 +91,17 @@ type Options struct {
 	MinVisualTransitions    int
 	MinVisualChangeCoverage int
 	MaxVisualDominance      int
+	// The three legacy fields above describe the retained v1 diagnostics.
+	// They do not determine v2 eligibility.
+	VisualBandTicks                 int64
+	MinVisualBandMatchedPermille    int
+	MinVisualAnchorTicks            int64
+	MaxVisualUnconfirmedGapTicks    int64
+	MaxVisualAnchorEdgeGapTicks     int64
+	VisualStateRadius               int
+	MinVisualStates                 int
+	MinVisualStateSupportTicks      int64
+	MaxVisualStateDominancePermille int
 }
 
 // DefaultOptions is a starting profile, not a calibrated accuracy claim.
@@ -104,11 +115,15 @@ func DefaultOptions() Options {
 		OffsetBinTicks: TicksPerSecond / 2, AudioAlignmentTicks: TicksPerSecond / 3,
 		MaxAudioGapTicks: TicksPerSecond, VisualAlignmentTicks: TicksPerSecond,
 		MaxVisualGapTicks: 3 * TicksPerSecond, BoundaryToleranceTicks: 3 * TicksPerSecond,
-		MinSupport: 3, MaxAudioHamming: 6, MaxVisualHamming: 10,
+		MinSupport: 3, MaxAudioHamming: 6, MaxVisualHamming: 16,
 		MinAudioAgreement: 900, MinAudioInformation: 600, MinVisualAgreement: 850,
 		MinAudioSimilarity: 850, MinVisualSimilarity: 850,
 		MinVisualContrast: 40, MinVisualSamples: 8, MinVisualTransitions: 3,
 		MinVisualChangeCoverage: 300, MaxVisualDominance: 600,
+		VisualBandTicks: 5 * TicksPerSecond, MinVisualBandMatchedPermille: 500,
+		MinVisualAnchorTicks: TicksPerSecond, MaxVisualUnconfirmedGapTicks: 3 * TicksPerSecond,
+		MaxVisualAnchorEdgeGapTicks: 3 * TicksPerSecond, VisualStateRadius: 8,
+		MinVisualStates: 4, MinVisualStateSupportTicks: TicksPerSecond, MaxVisualStateDominancePermille: 600,
 	}
 }
 
@@ -123,25 +138,28 @@ const (
 type Reason string
 
 const (
-	DuplicateIdentity      Reason = "duplicate_identity"
-	InsufficientEpisodes   Reason = "insufficient_independent_episodes"
-	MissingAudio           Reason = "missing_audio"
-	MissingVisual          Reason = "missing_visual"
-	IncompatibleProfile    Reason = "incompatible_profile"
-	NoRepeatedInterval     Reason = "no_repeated_interval"
-	LowAudioEntropy        Reason = "low_audio_entropy"
-	InsufficientAudio      Reason = "insufficient_audio_coverage"
-	InsufficientVisual     Reason = "insufficient_visual_coverage"
-	LowVisualDiversity     Reason = "low_visual_diversity"
-	AudioWithoutVisual     Reason = "audio_without_visual_confirmation"
-	InsufficientConsensus  Reason = "insufficient_pairwise_consensus"
-	WeakAudioEvidence      Reason = "weak_audio_evidence"
-	WeakVisualEvidence     Reason = "weak_visual_evidence"
-	ShortInterval          Reason = "short_interval_requires_review"
-	CompetingIntervals     Reason = "competing_intervals"
-	AnalysisBoundary       Reason = "analysis_boundary"
-	OverlongRepeat         Reason = "overlong_repeated_sequence"
-	CandidateSearchLimited Reason = "candidate_search_limited"
+	DuplicateIdentity         Reason = "duplicate_identity"
+	InsufficientEpisodes      Reason = "insufficient_independent_episodes"
+	MissingAudio              Reason = "missing_audio"
+	MissingVisual             Reason = "missing_visual"
+	IncompatibleProfile       Reason = "incompatible_profile"
+	NoRepeatedInterval        Reason = "no_repeated_interval"
+	LowAudioEntropy           Reason = "low_audio_entropy"
+	InsufficientAudio         Reason = "insufficient_audio_coverage"
+	InsufficientVisual        Reason = "insufficient_visual_coverage"
+	LowVisualDiversity        Reason = "low_visual_diversity"
+	AudioWithoutVisual        Reason = "audio_without_visual_confirmation"
+	InsufficientConsensus     Reason = "insufficient_pairwise_consensus"
+	WeakAudioEvidence         Reason = "weak_audio_evidence"
+	WeakVisualEvidence        Reason = "weak_visual_evidence"
+	ShortInterval             Reason = "short_interval_requires_review"
+	CompetingIntervals        Reason = "competing_intervals"
+	AnalysisBoundary          Reason = "analysis_boundary"
+	OverlongRepeat            Reason = "overlong_repeated_sequence"
+	CandidateSearchLimited    Reason = "candidate_search_limited"
+	InsufficientVisualAnchors Reason = "insufficient_visual_anchors"
+	PeriodicVisualEvidence    Reason = "periodic_visual_sequence"
+	InconsistentTimeAlignment Reason = "inconsistent_time_alignment"
 )
 
 type Interval struct {
@@ -152,20 +170,30 @@ type Interval struct {
 // Metrics are integer similarities and observed counts, never probabilities.
 // Group metrics report the worst supporting pair, except PairCount.
 type Metrics struct {
-	AudioAgreementPermille       int
-	AudioInformativePermille     int
-	AudioSimilarityPermille      int
-	AudioSamples                 int
-	AudioDistinct                int
-	VisualAgreementPermille      int
-	VisualSimilarityPermille     int
-	VisualCoveragePermille       int
-	VisualSamples                int
-	VisualTransitions            int
-	VisualChangeCoveragePermille int
-	VisualDominancePermille      int
-	BoundaryUncertaintyTicks     int64
-	PairCount                    int
+	AudioAgreementPermille         int
+	AudioInformativePermille       int
+	AudioSimilarityPermille        int
+	AudioSamples                   int
+	AudioDistinct                  int
+	VisualAgreementPermille        int
+	VisualSimilarityPermille       int
+	VisualCoveragePermille         int
+	VisualSamples                  int
+	VisualTransitions              int
+	VisualChangeCoveragePermille   int
+	VisualDominancePermille        int
+	BoundaryUncertaintyTicks       int64
+	PairCount                      int
+	VisualAnchorCount              int
+	VisualMinBandMatchedPermille   int
+	VisualMatchedTimePermille      int
+	VisualContradictedTimePermille int
+	VisualUnobservableTimePermille int
+	VisualMaxUnconfirmedGapTicks   int64
+	VisualStartAnchorGapTicks      int64
+	VisualEndAnchorGapTicks        int64
+	VisualDistinctStates           int
+	VisualDominantStatePermille    int
 }
 
 type Support struct {
@@ -200,6 +228,11 @@ type Group struct {
 	Reasons          []Reason
 	Members          []Support
 	Metrics          Metrics
+	// Only the in-process matcher needs the chosen global source-clock map.
+	// Group IDs bind it; it is not reconstructed from untrusted JSON.
+	alignmentOffsets []int64
+	phaseAnchors     map[[2]string]int64
+	phaseClasses     map[[2]string]string
 }
 
 type Result struct {

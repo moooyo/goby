@@ -121,8 +121,8 @@ func TestAnalysisPublicationWaitIsCancellableWithoutTakingAnotherOwnersGate(t *t
 func TestAnalysisKnownDependencyFailureWithdrawsOnlyAffectedAdmission(t *testing.T) {
 	runtime := analysisLifecycleFixture()
 	runtime.profiles = map[string]library.AnalysisExecutionProfile{
-		library.TaskIntroAnalysisKey:     {Version: library.AnalysisProfileVersion, Available: true},
-		library.TaskPreviewGenerationKey: {Version: library.AnalysisProfileVersion, Available: true},
+		library.TaskIntroAnalysisKey:     {Version: library.AnalysisExecutionProfileVersion, Available: true},
+		library.TaskPreviewGenerationKey: {Version: library.AnalysisExecutionProfileVersion, Available: true},
 	}
 	for _, err := range []error{context.Canceled, context.DeadlineExceeded, library.ErrAnalysisSourceChanged, analysiscache.ErrLimit} {
 		runtime.rememberFailure(library.TaskIntroAnalysisKey, err)

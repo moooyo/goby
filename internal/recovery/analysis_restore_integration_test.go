@@ -28,7 +28,7 @@ func analysisRecoveryFingerprint(profile library.AnalysisProfile, execution libr
 		Revision, Epoch int64
 		Profile         library.AnalysisProfile
 		Execution       library.AnalysisExecutionProfile
-	}{library.AnalysisProfileVersion, 1, 1, profile, execution})
+	}{library.AnalysisExecutionProfileVersion, 1, 1, profile, execution})
 	digest := sha256.Sum256(raw)
 	return hex.EncodeToString(digest[:])
 }
@@ -48,8 +48,8 @@ func seedAnalysisRecoveryFixture(t *testing.T, f *engineRecoveryFixture) {
 	}
 	profile := library.DefaultAnalysisProfile()
 	profileRaw, _ := json.Marshal(profile)
-	intro := library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64), DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "archive-intro-v1"}
-	preview := library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}
+	intro := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64), DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "archive-intro-v1"}
+	preview := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true, FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}
 	children := make([]string, 2)
 	fingerprints := make([]string, 2)
 	for index, execution := range []library.AnalysisExecutionProfile{intro, preview} {
@@ -99,6 +99,8 @@ func seedAnalysisRecoveryFixture(t *testing.T, f *engineRecoveryFixture) {
 		support = append(support, introdetect.Support{EpisodeKey: episodes[index], SourceKey: sources[index], ContentIdentity: contents[index], Interval: interval})
 	}
 	metrics := introdetect.Metrics{AudioAgreementPermille: 1000, AudioInformativePermille: 1000, AudioSimilarityPermille: 1000, AudioSamples: 100, AudioDistinct: 100, VisualAgreementPermille: 1000, VisualSimilarityPermille: 1000, VisualCoveragePermille: 1000, VisualSamples: 30, VisualTransitions: 10, VisualChangeCoveragePermille: 1000, PairCount: 3}
+	metrics.VisualAnchorCount, metrics.VisualMinBandMatchedPermille, metrics.VisualMatchedTimePermille = 35, 1000, 1000
+	metrics.VisualDistinctStates, metrics.VisualDominantStatePermille = 8, 125
 	stored := library.AnalysisStoredResult{Version: introdetect.Version, Episode: introdetect.EpisodeResult{EpisodeKey: episodes[0], SourceKey: sources[0], ContentIdentity: contents[0], Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Candidates: []introdetect.Candidate{{Interval: interval, GroupID: "retained-group", Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Metrics: metrics, Support: support}}}}
 	resultRaw, _ := json.Marshal(stored)
 	if library.ValidateStoredAnalysisResult(resultRaw, "qualified", &interval.StartTicks, &interval.EndTicks) != nil {

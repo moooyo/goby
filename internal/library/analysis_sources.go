@@ -2,7 +2,6 @@ package library
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -97,8 +96,12 @@ func readAnalysisWork(tx OwnedTx, childID string) (AnalysisWork, error) {
 	if ValidateStoredAnalysisAdmission(profileRaw, executionRaw, revision, work.PublicationEpoch, work.ConfigurationFingerprint) != nil {
 		return AnalysisWork{}, ErrUnavailable
 	}
-	_ = json.Unmarshal(profileRaw, &work.Profile)
-	_ = json.Unmarshal(executionRaw, &work.Execution)
+	// Historical admissions remain valid archive facts but are never upgraded
+	// into worker authority by filling newly introduced fields with zero values.
+	if analysisStrictJSON(profileRaw, &work.Profile) != nil || analysisStrictJSON(executionRaw, &work.Execution) != nil ||
+		ValidateAnalysisExecutionProfile(work.Execution) != nil {
+		return AnalysisWork{}, ErrUnavailable
+	}
 	work.ConfigurationRevision = strconv.FormatInt(revision, 10)
 	rows, err := tx.Query(`SELECT item_id,position,target,library_id,root_id,series_id,season_id,episode_key,item_type,source_revision,hierarchy_revision,duration_ticks,size,manual_revision::text,decision_revision::text,preview_revision::text FROM analysis_work_sources WHERE child_id=$1 ORDER BY position`, childID)
 	if err != nil {

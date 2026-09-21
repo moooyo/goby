@@ -2,9 +2,12 @@
 """Parser contracts only; real media calibration is separate test-env evidence."""
 
 import copy
+import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -119,6 +122,220 @@ class SourceSARContracts(unittest.TestCase):
         self.assertEqual(len(self.source_rgb(known, "2/1")), 240 * 90 * 3)
         with self.assertRaises(EVALUATOR.Invalid):
             self.source_rgb(known, "0/1")
+
+
+class ManifestRoleContracts(unittest.TestCase):
+    """Metadata/parser adversaries only; these files are never decoded as media."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="phase2-manifest-contract-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name).resolve()
+        os.chmod(self.root, 0o700)
+        self.artifacts = EVALUATOR.PrivateArtifacts(str(self.root))
+        self.labels = self.write_json("labels.json", {"purpose": "Parser unit fixture, not source review."})
+        tool = self.root / "tool"
+        tool.write_bytes(b"not an executable media tool")
+        os.chmod(tool, 0o600)
+        self.original = {
+            "schema_version": 1, "corpus_id": "unit-corpus", "label_revision": "unit-labels",
+            "split_unit": "episode", "artifacts_root": str(self.root),
+            "tools": {name: {"path": str(tool), "sha256": hashlib.sha256(tool.read_bytes()).hexdigest()}
+                      for name in ("ffmpeg", "ffprobe")},
+            "thresholds": {"min_independent_positive_episodes": 3, "min_holdout_positive_cases": 3,
+                "min_holdout_negative_cases": 2, "max_boundary_error_ticks": 50_000_000,
+                "max_rgb_mae": 5, "max_rgb_p95_error": 16,
+                "required_categories": ["normal_op", "insufficient_evidence"]},
+            "cases": [self.case(name) for name in ("C1", "C2", "C3", "H1", "H2", "H3", "N1", "N2")]}
+        original_ref = self.write_json("original-manifest.json", self.original)
+        receipt = self.write_json("original-receipt.json", {"run": "observed-run", "complete": False})
+        self.manifest = copy.deepcopy(self.original)
+        self.manifest.update(schema_version=2, corpus_id="unit-expanded", consumer_case_id="FH1",
+            original_attempt_refs=[{"run_id": "observed-run", "case_ids": [case["case_id"] for case in self.original["cases"]],
+                "manifest": original_ref, "labels": self.labels, "receipt": receipt}])
+        self.manifest["thresholds"].pop("min_holdout_positive_cases")
+        self.manifest["thresholds"].pop("min_holdout_negative_cases")
+        self.manifest["thresholds"].update(min_fresh_holdout_positive_cases=3, min_regression_negative_cases=2)
+        for case in self.manifest["cases"]:
+            case["evaluation_role"] = "calibration" if case["split"] == "calibration" else "regression"
+        for name in ("C4", "C5", "C6", "FH1", "FH2", "FH3"):
+            case = self.case(name)
+            case["evaluation_role"] = "calibration" if name.startswith("C") else "fresh_holdout"
+            self.manifest["cases"].append(case)
+
+    def write_json(self, name, value):
+        path = self.root / name
+        raw = json.dumps(value).encode()
+        path.write_bytes(raw)
+        os.chmod(path, 0o600)
+        return {"path": str(path), "sha256": hashlib.sha256(raw).hexdigest()}
+
+    def case(self, name):
+        source = self.root / (name + ".mp4")
+        source.write_bytes(("Parser identity fixture " + name).encode())
+        os.chmod(source, 0o600)
+        negative = name.startswith("N")
+        return {"case_id": name, "split": "calibration" if name.startswith("C") else "holdout",
+            "series_id": "unit:" + name if negative else "unit:series", "season_id": "unknown",
+            "episode_id": name, "variant_group": "unit:" + name,
+            "categories": ["insufficient_evidence" if negative else "normal_op"],
+            "source": {"path": str(source), "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                "size_bytes": source.stat().st_size, "video_stream_index": 0,
+                "format_start_ticks": 0, "duration_ticks": 600_000_000},
+            "provenance": {"kind": "real", "license_ref": "Unit parser metadata only", "author": "Unit fixture",
+                "authorship_evidence": self.labels, "labeler": "Unit fixture", "label_evidence": self.labels,
+                "label_method": "assistant_source_review"},
+            "expected": {"kind": "negative" if negative else "positive",
+                "intro": None if negative else {"start_ticks": 50_000_000, "end_ticks": 150_000_000},
+                "safe": None if negative else {"start_ticks": 40_000_000, "end_ticks": 160_000_000},
+                "start_tolerance_ticks": 10_000_000, "end_tolerance_ticks": 10_000_000,
+                "narrative_intervals": [{"start_ticks": 200_000_000, "end_ticks": 500_000_000}]},
+            "preview": {"required": True, "width": 320, "interval_ticks": 100_000_000, "pts_tolerance_ticks": 0}}
+
+    def by_id(self, document=None):
+        return {case["case_id"]: case for case in (document or self.manifest)["cases"]}
+
+    def validate(self, document=None):
+        return EVALUATOR.validate_manifest(document or self.manifest, self.artifacts)[0]
+
+    def test_v1_replay_and_v2_calibration_population_preserve_originals(self):
+        before = copy.deepcopy(self.original)
+        self.assertEqual(len(self.validate(self.original)), 8)
+        cases = self.validate()
+        self.assertEqual(len(cases), 14)
+        self.assertEqual(self.original, before)
+        cohorts = {}
+        for name, case in cases.items():
+            key = (case["evaluation_role"], case["split"], case["series_id"], case["season_id"])
+            cohorts.setdefault(key, set()).add(name)
+        self.assertIn(set(("C1", "C2", "C3", "C4", "C5", "C6")), cohorts.values())
+        self.assertIn(set(("H1", "H2", "H3")), cohorts.values())
+        self.assertIn(set(("FH1", "FH2", "FH3")), cohorts.values())
+        self.assertEqual(len(cohorts), 5)
+
+    def test_observed_cases_cannot_be_relabelled_omitted_or_changed(self):
+        for attack in ("fresh", "omitted", "renamed", "label", "preview", "no_history"):
+            with self.subTest(attack=attack):
+                value = copy.deepcopy(self.manifest)
+                cases = self.by_id(value)
+                if attack == "fresh":
+                    cases["H1"]["evaluation_role"] = "fresh_holdout"
+                elif attack == "omitted":
+                    value["cases"].remove(cases["H1"])
+                    value["original_attempt_refs"][0]["case_ids"].remove("H1")
+                elif attack == "renamed":
+                    cases["H1"]["case_id"] = "FH-renamed"
+                    value["original_attempt_refs"][0]["case_ids"].remove("H1")
+                elif attack == "label":
+                    cases["C1"]["expected"]["end_tolerance_ticks"] += 1
+                elif attack == "preview":
+                    cases["H1"]["preview"]["required"] = False
+                else:
+                    value["original_attempt_refs"] = []
+                with self.assertRaises(EVALUATOR.Invalid):
+                    self.validate(value)
+
+    def test_original_thresholds_and_reference_bindings_cannot_be_rewritten(self):
+        for attack in ("rgb", "boundary", "support", "fresh_count", "negative_count", "categories", "labels", "receipt", "duplicate_run"):
+            with self.subTest(attack=attack):
+                value = copy.deepcopy(self.manifest)
+                if attack == "rgb":
+                    value["thresholds"]["max_rgb_mae"] = 6
+                elif attack == "boundary":
+                    value["thresholds"]["max_boundary_error_ticks"] += 1
+                elif attack == "support":
+                    value["thresholds"]["min_independent_positive_episodes"] = 4
+                elif attack == "fresh_count":
+                    value["thresholds"]["min_fresh_holdout_positive_cases"] = 2
+                elif attack == "negative_count":
+                    value["thresholds"]["min_regression_negative_cases"] = 1
+                elif attack == "categories":
+                    value["thresholds"]["required_categories"] = ["normal_op"]
+                elif attack == "labels":
+                    value["original_attempt_refs"][0]["labels"] = self.write_json("wrong-labels.json", {"other": True})
+                elif attack == "receipt":
+                    value["original_attempt_refs"][0]["receipt"] = self.write_json("wrong-receipt.json", {"run": "another-run"})
+                else:
+                    value["original_attempt_refs"].append(copy.deepcopy(value["original_attempt_refs"][0]))
+                with self.assertRaises(EVALUATOR.Invalid):
+                    self.validate(value)
+
+    def test_consumer_requires_fresh_positive_preview_mp4_and_independent_identity(self):
+        for attack in ("calibration", "regression", "missing", "negative", "no_preview", "mkv", "variant", "bytes", "invalid_role", "role_split"):
+            with self.subTest(attack=attack):
+                value = copy.deepcopy(self.manifest)
+                cases = self.by_id(value)
+                if attack in ("calibration", "regression", "missing"):
+                    value["consumer_case_id"] = {"calibration": "C1", "regression": "H1", "missing": "absent"}[attack]
+                elif attack == "negative":
+                    cases["FH1"]["expected"].update(kind="negative", intro=None, safe=None)
+                elif attack == "no_preview":
+                    cases["FH1"]["preview"]["required"] = False
+                elif attack == "mkv":
+                    source = self.root / "consumer.mkv"
+                    source.write_bytes(Path(cases["FH1"]["source"]["path"]).read_bytes())
+                    os.chmod(source, 0o600)
+                    cases["FH1"]["source"]["path"] = str(source)
+                elif attack == "variant":
+                    cases["FH2"]["variant_group"] = cases["FH1"]["variant_group"]
+                elif attack == "bytes":
+                    cases["FH2"]["source"] = copy.deepcopy(cases["FH1"]["source"])
+                elif attack == "invalid_role":
+                    cases["FH1"]["evaluation_role"] = ["fresh_holdout"]
+                else:
+                    cases["FH1"]["split"] = "calibration"
+                with self.assertRaises(EVALUATOR.Invalid):
+                    self.validate(value)
+
+    def test_cross_role_aliases_include_real_file_identity(self):
+        value = copy.deepcopy(self.manifest)
+        cases = self.by_id(value)
+        cases["FH2"]["variant_group"] = cases["H1"]["variant_group"]
+        with self.assertRaisesRegex(EVALUATOR.Invalid, "physical_identity_across_role"):
+            self.validate(value)
+        cases = self.validate()
+        snapshots = {name: {"device": 1, "inode": index} for index, name in enumerate(cases, 1)}
+        snapshots["FH2"] = snapshots["H1"]
+        groups = EVALUATOR.independent_groups(list(cases.values()), snapshots)
+        with self.assertRaisesRegex(EVALUATOR.Invalid, "physical_identity_across_role"):
+            EVALUATOR.check_group_splits(cases, groups, "FH1")
+
+    def test_support_uses_real_independence_and_never_crosses_roles(self):
+        cases = self.validate()
+        groups = EVALUATOR.independent_groups(list(cases.values()), {})
+        def observe(target, supports):
+            observation = {"status": "published", "support_case_ids": supports, "reason": "unit-contract",
+                "evidence": self.labels, **cases[target]["expected"]["intro"]}
+            result = {"counts": dict.fromkeys(EVALUATOR.COUNTS, 0)}
+            return EVALUATOR.evaluate_detection(cases[target], observation, self.artifacts, cases, groups,
+                                                self.manifest["thresholds"], result)
+        self.assertEqual(observe("C1", ["C1", "C4", "C5"])["independent_support_count"], 3)
+        self.assertEqual(observe("FH1", ["FH1", "FH2", "FH3"])["independent_support_count"], 3)
+        for target, support in (("FH1", ["FH1", "FH2", "H1"]), ("H1", ["H1", "FH2", "FH3"]),
+                                ("FH1", ["FH1", "FH2"]), ("FH1", ["FH1", "FH2", "FH2"])):
+            with self.subTest(target=target, support=support), self.assertRaises(EVALUATOR.Invalid):
+                observe(target, support)
+
+    def test_old_holdout_success_never_satisfies_fresh_population_gate(self):
+        cases = self.validate()
+        groups = EVALUATOR.independent_groups(list(cases.values()), {})
+        rows = [{"case_id": name, "evaluation_role": case["evaluation_role"], "split": case["split"],
+                 "expected": case["expected"]["kind"], "state": "pending" if name.startswith("FH") else "passed"}
+                for name, case in cases.items()]
+        gates = {gate["name"]: gate for gate in EVALUATOR.population_gates(self.manifest, rows, groups)}
+        self.assertEqual((gates["fresh_holdout_positive"]["count"], gates["fresh_holdout_positive"]["state"]), (0, "pending"))
+        self.assertEqual((gates["regression_negative"]["count"], gates["regression_negative"]["state"]), (2, "passed"))
+        self.assertNotIn("fresh_holdout_negative", gates)
+        for row in rows:
+            row["state"] = "passed"
+        gates = {gate["name"]: gate for gate in EVALUATOR.population_gates(self.manifest, rows, groups)}
+        self.assertEqual(gates["fresh_holdout_positive"]["count"], 3)
+        aliased = dict(groups, FH2=groups["FH1"])
+        gates = {gate["name"]: gate for gate in EVALUATOR.population_gates(self.manifest, rows, aliased)}
+        self.assertEqual((gates["fresh_holdout_positive"]["count"], gates["fresh_holdout_positive"]["state"]), (2, "pending"))
+        old_rows = [row for row in rows if row["case_id"] in self.by_id(self.original)]
+        legacy = {gate["name"]: gate for gate in EVALUATOR.population_gates(self.original, old_rows, groups)}
+        self.assertEqual((legacy["holdout_positive"]["count"], legacy["holdout_negative"]["count"]), (3, 2))
 
 
 if __name__ == "__main__":

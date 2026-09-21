@@ -1,11 +1,12 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **initial failures repaired and verified; actual-source geometry repair and consumer acceptance pending**.
+Status: **regression repairs verified; real intro accuracy failed and requires correction**.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
-passed; a newly observed source-geometry compatibility repair, native browser
-coverage and real-media accuracy/consumer acceptance remain pending.
+passed, including the source-geometry compatibility repair and native mocked
+browser coverage. The first real-content run missed all six positive intros;
+automatic skip and the remaining composed consumer journey are not accepted.
 
 This phase implements the second delivery in the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -143,22 +144,84 @@ decoded frames report `0/1`. The previous geometry policy rejected them. The
 new versioned display policy retains this unknown-source fact while using the
 square-pixel display fallback documented by FFplay; it does not fabricate a
 declared source ratio. Strict per-frame consistency, rotation, timestamps and
-resource bounds remain required. This further repair has not yet been executed.
+resource bounds remain required. Its full media regression passed except for
+one new AVI fixture that lacked original packet PTS. The test-only repair at
+`92577f23dc4f81cafc26bd5799ce99c7fb9f7018` uses an independently probed MP4 with
+stored packet PTS and unknown SAR; that exact real-media test passed. Archive
+comparison confirmed that production source is identical to the preceding
+`e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd` full build. The affected 56 library
+and 54 server parents, one real recovery-profile parent, and five Python
+evaluator methods passed. The seven mocked native browser cases also passed.
+
+## First actual consumer and accuracy attempt
+
+Eight unchanged real sources and independent assistant-reviewed labels passed
+admission. Labels were frozen before detector output. Review used actual decoded
+frames, exact PTS, independent machine transcription and PCM signal observations;
+direct listening and human review are explicitly false. A C1-only preview
+calibration passed 33 samples and two browser decode rounds under predeclared
+MAE 5 and P95/browser-point 16 budgets, including wrong-frame controls. Observed
+maxima were 2.0511 MAE, 6 P95 and 1 browser-point error. The failed initial
+browser identity query remains preserved; the correction observed the actual
+owned browser process without changing those budgets or regenerating images.
+
+The actual native configuration/CAS flow completed, all four intro work units
+and all eight preview work units completed, and 24 preview variants were stored.
+C1 at width 240 and the color N1 source at width 400 passed named-consumer visible
+first/middle/last hovers, BIF parsing, source-frame timing and pixel comparisons.
+Their range and anonymous-access checks also passed. This is partial preview
+evidence, not completion of the entire consumer or restart journey.
+
+Automatic intro accuracy failed: all six positive cases abstained, producing
+six misses; the two singleton negative works correctly abstained. C1 reported
+no repeated interval; C2/C3 reported insufficient audio coverage and low visual
+diversity. The actual skip journey stopped because H1 had no published markers.
+The original labels and failed result remain intact. Only C1/C2/C3 calibration
+features may guide matching corrections. Three additional, unseen original
+episodes have been acquired and sealed for final holdout verification after the
+algorithm is frozen; their content has not been decoded or reviewed. Existing holdout
+outcomes must not be used to tune thresholds or relabel positives.
 
 The six skips are the existing Dolby Vision, VAAPI/AMD and mount-helper profiles.
 They are not passes, real preview-client evidence or phase-3 fault acceptance.
 
-Eight licensed source candidates totaling 922,230,546 bytes were acquired using
+The initial eight licensed sources totaling 922,230,546 bytes were acquired using
 ordinary workstation HTTPS and SCP after the remote direct route failed before
 saving media bytes. The successful remote import independently measured every
 source and checked the preserved permission/checksum records. It does not claim
 successful remote HTTP. The originals are unchanged and the failed attempt is
-retained. Remote decoding produced timestamped visual-review artifacts; no
-detector has consumed this corpus yet and labels are not frozen. The current
-assistant's audio input tool cannot consume the exported listening clip, so
-direct listening is not claimed. Timestamped transcript/signal evidence will
-be reviewed alongside actual frames, with that method disclosed in the private
-label evidence and delivery record.
+retained. Remote decoding produced the timestamped visual-review artifacts used
+for the frozen labels and failed accuracy attempt above. The current assistant's
+audio input tool cannot consume the exported listening clip, so direct listening
+is not claimed. Timestamped transcript and signal evidence were reviewed
+alongside actual frames, with that method disclosed in the private labels.
+
+Calibration diagnostics reproduced the failure without reading holdout features.
+Dense audio anchors and fixed visual phase offsets did not repair it. C2/C3
+show sustained audio similarity, but the current visual policy rejects their
+slowly changing opening. C1 has only partial acoustic similarity to that pair;
+its whole-opening mean does not establish continuous support or a reliable end.
+A single private DCT hash substitution also failed and was not applied to the
+product. The three additional calibration episode identities were fixed before
+content review to investigate independent support for opening variants. Two
+assistants independently reviewed all fifteen contact sheets and original
+selected transition frames, with machine transcription as supporting evidence.
+Their conservative endpoints agree. These three positive labels are frozen
+before feature extraction or detector output; their first detection is pending.
+Together with the three sealed holdout episodes, fourteen independent originals
+total 1,646,688,512 bytes. None of these additions removes the original misses.
+
+An explicit v2 repair is in progress. Its first candidate profile was selected
+before the new calibration features were extracted. It retains the strong
+continuous-audio requirements and uses distributed visual support and distinct
+visual states instead of requiring rapid changes between adjacent frames. The
+original motion measurements remain diagnostic observations. Historical v1 JSON
+and canonical admission fingerprints have their own frozen storage decoder;
+current execution and automatic publication require current evidence. The new
+acceptance manifest separates the six calibration episodes, the original
+regression holdout and the three still-sealed fresh holdout episodes. Frontend
+contracts expose confirmed visual coverage and the longest unconfirmed gap.
+These source changes have not yet passed their consolidated verification.
 
 ## Required consolidated evidence
 
@@ -167,8 +230,9 @@ skip consumption, BIF decoding and visible seek frames, full management flows,
 source replacement and revocation, concurrent manual edits, configuration CAS,
 task cancellation/restart, interrupted publication, bounded storage and resource
 return, migration 49 to 50, and backup/restore of every new state category.
-Synthetic mechanics do not replace real independent episodes. No current corpus
-has yet established a positive or negative accuracy result.
+Synthetic mechanics do not replace real independent episodes. The current real
+corpus established six misses and two correct insufficient-evidence abstentions;
+it has not established acceptable automatic intro accuracy.
 
 Publicly licensed, distinct episodes are research candidates only until their
 actual media is viewed and labeled. Labels must identify their real provenance:

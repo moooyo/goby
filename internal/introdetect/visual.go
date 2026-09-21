@@ -6,10 +6,15 @@ import (
 )
 
 type pairMatch struct {
-	left, right int
-	a, b        Interval
-	metrics     Metrics
-	reasons     []Reason
+	left, right       int
+	a, b              Interval
+	offset            int64
+	audio             audioMatch
+	phaseAnchorOffset int64
+	phaseGrouped      bool
+	phaseClass        string
+	metrics           Metrics
+	reasons           []Reason
 }
 
 func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budget *workBudget) (*pairMatch, Reason, error) {
@@ -21,7 +26,6 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 	var usable, good, distance, transitions int
 	uniqueA, uniqueB := make(map[uint64]int), make(map[uint64]int)
 	var changingTime int64
-	firstA, lastA, firstB, lastB := int64(-1), int64(-1), int64(-1), int64(-1)
 	previousA, previousB := -1, -1
 	previousMatched := false
 	maximumGap := int64(0)
@@ -33,6 +37,9 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 		frame := a.Visual[i]
 		target := frame.Ticks + offset
 		for j+1 < len(b.Visual) && absolute(b.Visual[j+1].Ticks-target) <= absolute(b.Visual[j].Ticks-target) {
+			if err := budget.spend(); err != nil {
+				return nil, "", err
+			}
 			j++
 		}
 		if j >= len(b.Visual) || j <= lastTarget || b.Visual[j].Ticks < audio.b.StartTicks || b.Visual[j].Ticks >= audio.b.EndTicks ||
@@ -64,10 +71,6 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 		good++
 		uniqueA[frame.Hash]++
 		uniqueB[b.Visual[j].Hash]++
-		if firstA < 0 {
-			firstA, firstB = frame.Ticks, b.Visual[j].Ticks
-		}
-		lastA, lastB = frame.Ticks, b.Visual[j].Ticks
 	}
 	coverage := usable * 1000 / (end - start)
 	if usable < o.MinVisualSamples || coverage < 700 || maximumGap > o.MaxVisualGapTicks {
@@ -84,33 +87,50 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 		}
 	}
 	changeCoverage := min(1000, int(changingTime*1000/min(audio.a.EndTicks-audio.a.StartTicks, audio.b.EndTicks-audio.b.StartTicks)))
-	if len(uniqueA) < 4 || len(uniqueB) < 4 || transitions < o.MinVisualTransitions || changeCoverage < o.MinVisualChangeCoverage || dominant > o.MaxVisualDominance {
-		return nil, LowVisualDiversity, nil
-	}
-	if firstA-audio.a.StartTicks > o.MaxVisualGapTicks || audio.a.EndTicks-lastA > o.MaxVisualGapTicks ||
-		firstB-audio.b.StartTicks > o.MaxVisualGapTicks || audio.b.EndTicks-lastB > o.MaxVisualGapTicks {
-		return nil, InsufficientVisual, nil
-	}
 	metrics := audio.metrics
 	metrics.VisualAgreementPermille, metrics.VisualSimilarityPermille = agreement, 1000-distance*1000/(usable*64)
 	metrics.VisualCoveragePermille, metrics.VisualSamples, metrics.VisualTransitions = coverage, usable, transitions
 	metrics.VisualChangeCoveragePermille, metrics.VisualDominancePermille = changeCoverage, dominant
 	metrics.BoundaryUncertaintyTicks = max(metrics.BoundaryUncertaintyTicks, maximumGap, o.AudioAlignmentTicks)
+	evidence, err := measureVisualV2(a, b, audio, offset, o, budget)
+	if err != nil {
+		return nil, "", err
+	}
+	metrics.VisualAnchorCount = evidence.metrics.VisualAnchorCount
+	metrics.VisualMinBandMatchedPermille = evidence.metrics.VisualMinBandMatchedPermille
+	metrics.VisualMatchedTimePermille = evidence.metrics.VisualMatchedTimePermille
+	metrics.VisualContradictedTimePermille = evidence.metrics.VisualContradictedTimePermille
+	metrics.VisualUnobservableTimePermille = evidence.metrics.VisualUnobservableTimePermille
+	metrics.VisualMaxUnconfirmedGapTicks = evidence.metrics.VisualMaxUnconfirmedGapTicks
+	metrics.VisualStartAnchorGapTicks = evidence.metrics.VisualStartAnchorGapTicks
+	metrics.VisualEndAnchorGapTicks = evidence.metrics.VisualEndAnchorGapTicks
+	metrics.VisualDistinctStates = evidence.metrics.VisualDistinctStates
+	metrics.VisualDominantStatePermille = evidence.metrics.VisualDominantStatePermille
+	if metrics.VisualDistinctStates < o.MinVisualStates || metrics.VisualDominantStatePermille > o.MaxVisualStateDominancePermille {
+		return nil, LowVisualDiversity, nil
+	}
 	reasons := append([]Reason(nil), audio.reasons...)
-	if agreement < o.MinVisualAgreement || metrics.VisualSimilarityPermille < o.MinVisualSimilarity {
+	if agreement < o.MinVisualAgreement || metrics.VisualSimilarityPermille < o.MinVisualSimilarity || metrics.VisualMatchedTimePermille < o.MinVisualAgreement {
 		reasons = addReason(reasons, WeakVisualEvidence)
+	}
+	if !evidence.allBandsAnchored || metrics.VisualAnchorCount == 0 || metrics.VisualMinBandMatchedPermille < o.MinVisualBandMatchedPermille ||
+		metrics.VisualMaxUnconfirmedGapTicks > o.MaxVisualUnconfirmedGapTicks || metrics.VisualStartAnchorGapTicks > o.MaxVisualAnchorEdgeGapTicks || metrics.VisualEndAnchorGapTicks > o.MaxVisualAnchorEdgeGapTicks {
+		reasons = addReason(reasons, InsufficientVisualAnchors)
+	}
+	if evidence.periodic {
+		reasons = addReason(reasons, PeriodicVisualEvidence)
 	}
 	// Use only the intersection of acoustic interior and confirmed visual time.
 	// No guessed extrapolation extends the skip past the last confirmed frame.
-	arange := Interval{max(audio.a.StartTicks, firstA), min(audio.a.EndTicks, lastA)}
-	brange := Interval{max(audio.b.StartTicks, firstB), min(audio.b.EndTicks, lastB)}
+	arange := Interval{max(audio.a.StartTicks, evidence.firstA), min(audio.a.EndTicks, evidence.lastA)}
+	brange := Interval{max(audio.b.StartTicks, evidence.firstB), min(audio.b.EndTicks, evidence.lastB)}
 	if arange.EndTicks-arange.StartTicks < o.MinDurationTicks || brange.EndTicks-brange.StartTicks < o.MinDurationTicks {
 		return nil, InsufficientVisual, nil
 	}
 	if min(arange.EndTicks-arange.StartTicks, brange.EndTicks-brange.StartTicks) < o.AutoMinDurationTicks {
 		reasons = addReason(reasons, ShortInterval)
 	}
-	return &pairMatch{a: arange, b: brange, metrics: metrics, reasons: reasons}, "", nil
+	return &pairMatch{a: arange, b: brange, offset: offset, audio: audio, metrics: metrics, reasons: reasons}, "", nil
 }
 
 func compatibleInterval(a, b Interval, o Options) bool {
@@ -143,5 +163,15 @@ func conservativeMetrics(a, b Metrics) Metrics {
 		VisualChangeCoveragePermille: min(a.VisualChangeCoveragePermille, b.VisualChangeCoveragePermille),
 		VisualDominancePermille:      max(a.VisualDominancePermille, b.VisualDominancePermille),
 		BoundaryUncertaintyTicks:     max(a.BoundaryUncertaintyTicks, b.BoundaryUncertaintyTicks), PairCount: a.PairCount + b.PairCount,
+		VisualAnchorCount:              min(a.VisualAnchorCount, b.VisualAnchorCount),
+		VisualMinBandMatchedPermille:   min(a.VisualMinBandMatchedPermille, b.VisualMinBandMatchedPermille),
+		VisualMatchedTimePermille:      min(a.VisualMatchedTimePermille, b.VisualMatchedTimePermille),
+		VisualContradictedTimePermille: max(a.VisualContradictedTimePermille, b.VisualContradictedTimePermille),
+		VisualUnobservableTimePermille: max(a.VisualUnobservableTimePermille, b.VisualUnobservableTimePermille),
+		VisualMaxUnconfirmedGapTicks:   max(a.VisualMaxUnconfirmedGapTicks, b.VisualMaxUnconfirmedGapTicks),
+		VisualStartAnchorGapTicks:      max(a.VisualStartAnchorGapTicks, b.VisualStartAnchorGapTicks),
+		VisualEndAnchorGapTicks:        max(a.VisualEndAnchorGapTicks, b.VisualEndAnchorGapTicks),
+		VisualDistinctStates:           min(a.VisualDistinctStates, b.VisualDistinctStates),
+		VisualDominantStatePermille:    max(a.VisualDominantStatePermille, b.VisualDominantStatePermille),
 	}
 }

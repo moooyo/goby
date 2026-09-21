@@ -11,6 +11,8 @@ const (
 	TaskIntroAnalysisKey     = "media.intro_analysis"
 	TaskPreviewGenerationKey = "media.preview_generation"
 	AnalysisProfileVersion   = 1
+	// Execution wire evolution is independent of managed configuration and CAS.
+	AnalysisExecutionProfileVersion = 2
 )
 
 // AnalysisSelection is immutable admission input, not execution authority.

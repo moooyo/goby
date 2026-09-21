@@ -80,7 +80,7 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 			if err != nil {
 				return Result{}, err
 			}
-			var found []pairMatch
+			var hypotheses []pairMatch
 			for _, offset := range offsets {
 				runs, reasons, err := alignedAudio(a, b, offset, o, budget)
 				if err != nil {
@@ -106,11 +106,15 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 					if limited {
 						match.reasons = addReason(match.reasons, CandidateSearchLimited)
 					}
-					found = mergePair(found, *match, o)
-					if len(found) > o.MaxCandidatesPerPair {
-						return Result{}, fmt.Errorf("%w: candidate intervals for one pair", ErrLimit)
+					hypotheses = append(hypotheses, *match)
+					if len(hypotheses) > o.MaxOffsetCandidates*(int(o.WindowTicks/o.MinDurationTicks)+1) {
+						return Result{}, fmt.Errorf("%w: raw hypotheses for one pair", ErrLimit)
 					}
 				}
+			}
+			found, err := distinctPairHypotheses(hypotheses, o, budget)
+			if err != nil {
+				return Result{}, err
 			}
 			if limited {
 				limitedSources[a.SourceKey], limitedSources[b.SourceKey] = true, true
@@ -119,10 +123,7 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 			}
 			if len(found) != 0 {
 				sort.Slice(found, func(a, b int) bool {
-					if found[a].a.StartTicks != found[b].a.StartTicks {
-						return found[a].a.StartTicks < found[b].a.StartTicks
-					}
-					return found[a].b.StartTicks < found[b].b.StartTicks
+					return preferPair(found[a], found[b], o)
 				})
 				pairs[[2]int{i, j}] = found
 			}
@@ -191,19 +192,4 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 	}
 	result.Comparisons = budget.used
 	return result, nil
-}
-
-func mergePair(found []pairMatch, value pairMatch, o Options) []pairMatch {
-	for i, prior := range found {
-		if compatibleInterval(prior.a, value.a, o) && compatibleInterval(prior.b, value.b, o) {
-			found[i].a, found[i].b = intersect(prior.a, value.a), intersect(prior.b, value.b)
-			found[i].metrics = conservativeMetrics(prior.metrics, value.metrics)
-			found[i].metrics.PairCount = 1
-			for _, reason := range value.reasons {
-				found[i].reasons = addReason(found[i].reasons, reason)
-			}
-			return found
-		}
-	}
-	return append(found, value)
 }

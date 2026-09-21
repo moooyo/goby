@@ -24,6 +24,9 @@ function item(): AnalysisItem {
       AudioAgreementPermille: 920, AudioInformativePermille: 750, AudioSimilarityPermille: 930, AudioSamples: 100, AudioDistinct: 40,
       VisualAgreementPermille: 940, VisualSimilarityPermille: 950, VisualCoveragePermille: 900, VisualSamples: 40, VisualTransitions: 8,
       VisualChangeCoveragePermille: 500, VisualDominancePermille: 200, BoundaryUncertaintyTicks: 10_000_000, PairCount: 3,
+      VisualAnchorCount: 24, VisualMinBandMatchedPermille: 600, VisualMatchedTimePermille: 875,
+      VisualContradictedTimePermille: 50, VisualUnobservableTimePermille: 125, VisualMaxUnconfirmedGapTicks: 25_000_000,
+      VisualStartAnchorGapTicks: 10_000_000, VisualEndAnchorGapTicks: 15_000_000, VisualDistinctStates: 6, VisualDominantStatePermille: 300,
     }, Support: [1, 2, 3].map((index) => ({ EpisodeKey: `episode-support-${index}`, SourceKey: `source-support-${index}`, ContentIdentity: `content-${index}`, Interval: { StartTicks: 100_000_000, EndTicks: 400_000_000 } })) },
   } };
 }
@@ -127,6 +130,7 @@ test('candidate review uses both CAS values, retains manual priority through rej
   await open(page); await page.getByRole('button', { name: 'Review analysis for Opening episode' }).click();
   const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true });
   await expect(detail).toContainText('Supporting episodes (3)'); await expect(detail).toContainText('Audio similarity: 930 / 1000'); await expect(detail).toContainText('Manual');
+  await expect(detail).toContainText('Confirmed visual coverage: 87.5%'); await expect(detail).toContainText('Longest unconfirmed gap: 2.50 seconds');
   await detail.getByRole('button', { name: 'Accept candidate', exact: true }).click();
   await page.getByRole('dialog', { name: 'Accept this candidate as a manual intro?' }).getByRole('button', { name: 'Accept as manual intro' }).click();
   await expect(detail).toContainText('0:10.00–0:40.00 · Manual');
@@ -144,10 +148,12 @@ test('source conflict blocks another decision until a real reload exposes the st
   await open(page); await page.getByRole('button', { name: 'Review analysis for Opening episode' }).click();
   const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true }); await expect(detail.getByRole('button', { name: 'Accept candidate', exact: true })).toBeEnabled();
   api.item.SourceRevision = 'replaced-source'; api.item.Detection.SourceRevision = 'replaced-source'; api.item.Detection.Status = 'stale';
+  api.item.Detection.Candidate = null; api.item.Detection.Reasons = ['algorithm_changed'];
   await detail.getByRole('button', { name: 'Accept candidate', exact: true }).click();
   await page.getByRole('dialog', { name: 'Accept this candidate as a manual intro?' }).getByRole('button', { name: 'Accept as manual intro' }).click();
   await expect(detail.getByRole('button', { name: 'Reload result', exact: true })).toBeVisible(); await expect(detail.getByRole('button', { name: 'Accept candidate', exact: true })).toBeDisabled();
   await detail.getByRole('button', { name: 'Reload result', exact: true }).click(); await expect(detail).toContainText('The recorded evidence is stale');
+  await expect(detail.getByRole('heading', { name: 'Detected candidate', exact: true })).toHaveCount(0);
   await expect(detail.getByRole('button', { name: 'Accept candidate', exact: true })).toBeDisabled(); expect(api.writes('/admin/v1/media-analysis/items/episode-1/decision')).toHaveLength(1);
 });
 

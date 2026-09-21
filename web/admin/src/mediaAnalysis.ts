@@ -21,6 +21,9 @@ export interface AnalysisMetrics {
   AudioAgreementPermille: number; AudioInformativePermille: number; AudioSimilarityPermille: number; AudioSamples: number; AudioDistinct: number;
   VisualAgreementPermille: number; VisualSimilarityPermille: number; VisualCoveragePermille: number; VisualSamples: number; VisualTransitions: number;
   VisualChangeCoveragePermille: number; VisualDominancePermille: number; BoundaryUncertaintyTicks: number; PairCount: number;
+  VisualAnchorCount: number; VisualMinBandMatchedPermille: number; VisualMatchedTimePermille: number;
+  VisualContradictedTimePermille: number; VisualUnobservableTimePermille: number; VisualMaxUnconfirmedGapTicks: number;
+  VisualStartAnchorGapTicks: number; VisualEndAnchorGapTicks: number; VisualDistinctStates: number; VisualDominantStatePermille: number;
 }
 export interface AnalysisCandidate { Interval: AnalysisInterval; GroupID: string; Status: string; Reasons: string[]; Metrics: AnalysisMetrics; Support: AnalysisSupport[] }
 export interface AnalysisDetection {
@@ -68,6 +71,13 @@ export function validAnalysisOverview(value: unknown): value is AnalysisOverview
     && (runtime.Cache === null || record(runtime.Cache) && ['ReadyEntries', 'BuildingEntries', 'PendingPublications', 'Readers', 'ReadyBytes', 'ReservedBytes', 'ControlBytes', 'TotalBytes', 'MaxBytes'].every((key) => count((runtime.Cache as Record<string, unknown>)[key])));
 }
 function interval(value: unknown): value is AnalysisInterval { return record(value) && count(value.StartTicks) && count(value.EndTicks) && value.EndTicks > value.StartTicks; }
+function metrics(value: unknown): value is AnalysisMetrics {
+  return record(value)
+    && ['AudioAgreementPermille', 'AudioInformativePermille', 'AudioSimilarityPermille', 'VisualAgreementPermille', 'VisualSimilarityPermille', 'VisualCoveragePermille', 'VisualChangeCoveragePermille', 'VisualDominancePermille', 'VisualMinBandMatchedPermille', 'VisualMatchedTimePermille', 'VisualContradictedTimePermille', 'VisualUnobservableTimePermille', 'VisualDominantStatePermille'].every((key) => count(value[key]) && value[key] <= 1000)
+    && ['AudioSamples', 'AudioDistinct', 'VisualSamples', 'VisualTransitions', 'BoundaryUncertaintyTicks', 'PairCount'].every((key) => count(value[key]))
+    && ['VisualAnchorCount', 'VisualDistinctStates'].every((key) => count(value[key]) && value[key] <= 4096)
+    && ['VisualMaxUnconfirmedGapTicks', 'VisualStartAnchorGapTicks', 'VisualEndAnchorGapTicks'].every((key) => count(value[key]) && value[key] <= 6_000_000_000);
+}
 export function validAnalysisDetection(value: unknown): value is AnalysisDetection {
   if (!record(value) || !nonempty(value.ItemId) || !analysisRevision(value.Revision, true) || !analysisRevision(value.ManualRevision, true) || !nonempty(value.SourceRevision)
     || !nonempty(value.Status) || !strings(value.Reasons) || typeof value.Suppressed !== 'boolean' || !timestamp(value.UpdatedAt)
@@ -75,7 +85,7 @@ export function validAnalysisDetection(value: unknown): value is AnalysisDetecti
   if (value.Candidate === null) return true;
   const candidate = value.Candidate;
   return record(candidate) && interval(candidate.Interval) && nonempty(candidate.GroupID) && nonempty(candidate.Status) && strings(candidate.Reasons)
-    && record(candidate.Metrics) && ['AudioAgreementPermille', 'AudioInformativePermille', 'AudioSimilarityPermille', 'AudioSamples', 'AudioDistinct', 'VisualAgreementPermille', 'VisualSimilarityPermille', 'VisualCoveragePermille', 'VisualSamples', 'VisualTransitions', 'VisualChangeCoveragePermille', 'VisualDominancePermille', 'BoundaryUncertaintyTicks', 'PairCount'].every((key) => count((candidate.Metrics as Record<string, unknown>)[key]))
+    && metrics(candidate.Metrics)
     && Array.isArray(candidate.Support) && candidate.Support.every((support) => record(support) && nonempty(support.EpisodeKey) && nonempty(support.SourceKey) && nonempty(support.ContentIdentity) && interval(support.Interval));
 }
 export function validAnalysisItem(value: unknown): value is AnalysisItem {

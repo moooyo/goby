@@ -51,6 +51,7 @@ IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
 CATEGORIES = frozenset({"normal_op", "cold_open", "recap", "changing_op",
                         "same_music_different_visuals", "dub", "insufficient_evidence",
                         "missing_audio", "vfr", "source_replacement", "no_intro", "logo", "silence"})
+EVALUATION_ROLES = frozenset({"calibration", "regression", "fresh_holdout"})
 COUNTS = ("false_positive", "miss", "abstention", "boundary", "narrative_safety", "pending", "failure")
 FORMATS = "matroska,webm,mov,mp4,m4a,3gp,3g2,mj2,mpegts,avi"
 CANCEL_REQUESTED = False
@@ -364,9 +365,14 @@ def interval(value, duration):
 
 
 def validate_manifest(document, artifacts):
-    object_fields(document, ("schema_version", "corpus_id", "label_revision", "split_unit", "artifacts_root",
-                             "tools", "thresholds", "cases"))
-    require(type(document["schema_version"]) is int and document["schema_version"] == 1, "manifest_version")
+    require(isinstance(document, dict) and type(document.get("schema_version")) is int and
+            document["schema_version"] in (1, 2), "manifest_version")
+    version = document["schema_version"]
+    manifest_fields = ("schema_version", "corpus_id", "label_revision", "split_unit", "artifacts_root",
+                       "tools", "thresholds", "cases")
+    if version == 2:
+        manifest_fields += ("consumer_case_id", "original_attempt_refs")
+    object_fields(document, manifest_fields)
     identifier(document["corpus_id"])
     text(document["label_revision"], 256)
     require(document["split_unit"] in ("series", "season", "episode"), "invalid_split_unit")
@@ -376,12 +382,16 @@ def validate_manifest(document, artifacts):
         absolute_path(tool["path"])
         digest(tool["sha256"])
     thresholds = document["thresholds"]
-    object_fields(thresholds, ("min_independent_positive_episodes", "min_holdout_positive_cases",
-                              "min_holdout_negative_cases", "max_boundary_error_ticks", "max_rgb_mae",
+    population_thresholds = ("min_holdout_positive_cases", "min_holdout_negative_cases") if version == 1 else \
+                            ("min_fresh_holdout_positive_cases", "min_regression_negative_cases")
+    object_fields(thresholds, ("min_independent_positive_episodes", *population_thresholds,
+                              "max_boundary_error_ticks", "max_rgb_mae",
                               "max_rgb_p95_error"), ("required_categories",))
     integer(thresholds["min_independent_positive_episodes"], 3, MAX_CASES)
-    integer(thresholds["min_holdout_positive_cases"], 1, MAX_CASES)
-    integer(thresholds["min_holdout_negative_cases"], 1, MAX_CASES)
+    for name in population_thresholds:
+        minimum = 3 if name == "min_fresh_holdout_positive_cases" else \
+                  2 if name == "min_regression_negative_cases" else 1
+        integer(thresholds[name], minimum, MAX_CASES)
     integer(thresholds["max_boundary_error_ticks"], 0, 30 * TICKS)
     number(thresholds["max_rgb_mae"])
     number(thresholds["max_rgb_p95_error"])
@@ -391,8 +401,11 @@ def validate_manifest(document, artifacts):
     case_ids, split_groups, variant_groups, hashes = set(), {}, {}, {}
     by_id = {}
     for case in cases:
-        object_fields(case, ("case_id", "split", "categories", "series_id", "season_id", "episode_id",
-                             "variant_group", "source", "provenance", "expected", "preview"))
+        case_fields = ("case_id", "split", "categories", "series_id", "season_id", "episode_id",
+                       "variant_group", "source", "provenance", "expected", "preview")
+        if version == 2:
+            case_fields += ("evaluation_role",)
+        object_fields(case, case_fields)
         case_id = identifier(case["case_id"])
         require(case_id not in case_ids, "duplicate_case_id")
         case_ids.add(case_id)
@@ -400,6 +413,11 @@ def validate_manifest(document, artifacts):
         for name in ("series_id", "season_id", "episode_id", "variant_group"):
             identifier(case[name])
         require(case["split"] in ("calibration", "holdout"), "invalid_split")
+        if version == 2:
+            role = case["evaluation_role"]
+            require(isinstance(role, str) and role in EVALUATION_ROLES, "invalid_evaluation_role")
+            require(role == "regression" or case["split"] ==
+                    ("calibration" if role == "calibration" else "holdout"), "role_split_mismatch")
         categories = unique_strings(case["categories"], len(CATEGORIES), CATEGORIES)
         require(bool(categories), "invalid_categories")
         require(case["season_id"] != "unknown" or document["split_unit"] == "episode",
@@ -452,7 +470,72 @@ def validate_manifest(document, artifacts):
         integer(preview["interval_ticks"], 2 * TICKS, 120 * TICKS)
         require(preview["interval_ticks"] % TICKS == 0, "preview_interval_not_whole_seconds")
         integer(preview["pts_tolerance_ticks"], 0, TICKS)
+    if version == 2:
+        validate_original_attempts(document, by_id, artifacts)
+        consumer = by_id.get(identifier(document["consumer_case_id"]))
+        require(consumer is not None and consumer["evaluation_role"] == "fresh_holdout" and
+                consumer["expected"]["kind"] == "positive" and consumer["preview"]["required"] and
+                Path(consumer["source"]["path"]).suffix.lower() == ".mp4", "invalid_fresh_consumer")
+        check_group_splits(by_id, independent_groups(cases, {}), document["consumer_case_id"])
     return by_id, required_categories
+
+
+def referenced_json(artifacts, reference):
+    artifacts.reference(reference)
+    value, actual = load_json(artifacts.path(reference["path"]))
+    require(actual == reference["sha256"], "original_reference_changed")
+    return value
+
+
+def validate_original_attempts(document, by_id, artifacts):
+    """Bind observed cases to immutable history; a new name cannot make them fresh."""
+    attempts = document["original_attempt_refs"]
+    require(isinstance(attempts, list) and 1 <= len(attempts) <= 32, "original_attempt_budget")
+    runs, historical = set(), set()
+    for attempt in attempts:
+        object_fields(attempt, ("run_id", "case_ids", "manifest", "labels", "receipt"))
+        run = identifier(attempt["run_id"])
+        require(run not in runs, "duplicate_original_attempt")
+        runs.add(run)
+        selected = unique_strings(attempt["case_ids"], MAX_CASES, set(by_id))
+        original = referenced_json(artifacts, attempt["manifest"])
+        artifacts.reference(attempt["labels"])
+        receipt = referenced_json(artifacts, attempt["receipt"])
+        require(isinstance(receipt, dict) and receipt.get("run") == run, "original_receipt_run_mismatch")
+        require(isinstance(original, dict) and type(original.get("schema_version")) is int and
+                original["schema_version"] in (1, 2) and isinstance(original.get("cases"), list) and
+                1 <= len(original["cases"]) <= MAX_CASES, "invalid_original_manifest")
+        old_thresholds = original.get("thresholds")
+        require(isinstance(old_thresholds, dict), "invalid_original_thresholds")
+        for name in ("min_independent_positive_episodes", "max_boundary_error_ticks", "max_rgb_mae",
+                     "max_rgb_p95_error", "required_categories"):
+            require(document["thresholds"].get(name, sorted(CATEGORIES)) ==
+                    old_thresholds.get(name, sorted(CATEGORIES)), "original_threshold_changed")
+        for current_name, old_name in (("min_fresh_holdout_positive_cases", "min_holdout_positive_cases"),
+                                       ("min_regression_negative_cases", "min_holdout_negative_cases")):
+            previous = old_thresholds.get(old_name, old_thresholds.get(current_name))
+            require(type(previous) is int and document["thresholds"][current_name] >= previous,
+                    "original_population_threshold_lowered")
+        original_cases = {}
+        for old in original["cases"]:
+            require(isinstance(old, dict) and isinstance(old.get("case_id"), str) and
+                    old["case_id"] not in original_cases, "invalid_original_case_identity")
+            original_cases[old["case_id"]] = old
+        require(set(selected) == set(original_cases), "original_case_omitted")
+        for case_id, old in original_cases.items():
+            current = by_id[case_id]
+            # Do not reinterpret old labels, source identities or preview obligations.
+            for name in ("split", "categories", "series_id", "season_id", "episode_id", "variant_group",
+                         "source", "provenance", "expected", "preview"):
+                require(name in old and current[name] == old[name], "original_case_changed")
+            require(old["provenance"]["label_evidence"]["sha256"] == attempt["labels"]["sha256"],
+                    "original_labels_reference_mismatch")
+            original_role = old.get("evaluation_role", old["split"])
+            required_role = "calibration" if original_role == "calibration" else "regression"
+            require(current["evaluation_role"] == required_role, "observed_case_relabelled_fresh")
+            historical.add(case_id)
+    require(all(case_id in historical for case_id, case in by_id.items()
+                if case["evaluation_role"] == "regression"), "regression_missing_original_attempt")
 
 
 def observation_snapshot(value, source, require_ctime=False):
@@ -521,11 +604,17 @@ def independent_groups(cases, snapshots):
     return {case_id: find(case_id) for case_id in parents}
 
 
-def check_group_splits(by_id, groups):
-    grouped_splits = {}
+def check_group_splits(by_id, groups, consumer_case_id=None):
+    grouped_splits, grouped_roles = {}, {}
     for case_id, group in groups.items():
         split = by_id[case_id]["split"]
         require(grouped_splits.setdefault(group, split) == split, "physical_identity_across_split")
+        if "evaluation_role" in by_id[case_id]:
+            role = by_id[case_id]["evaluation_role"]
+            require(grouped_roles.setdefault(group, role) == role, "physical_identity_across_role")
+    if consumer_case_id is not None:
+        require(sum(group == groups[consumer_case_id] for group in groups.values()) == 1,
+                "consumer_identity_not_independent")
 
 
 def admit(manifest, manifest_sha, artifacts):
@@ -540,14 +629,14 @@ def admit(manifest, manifest_sha, artifacts):
                                                  expected["sha256"], expected["size_bytes"]))
             snapshots[case_id] = source.snapshot()
             sources.append(source)
-        check_group_splits(by_id, independent_groups(list(by_id.values()), snapshots))
+        check_group_splits(by_id, independent_groups(list(by_id.values()), snapshots), manifest.get("consumer_case_id"))
         for expected in manifest["tools"].values():
             source = stack.enter_context(HeldFile(expected["path"], 1 << 30, expected["sha256"]))
             require(os.fstat(source.fd).st_mode & 0o111, "pinned_tool_not_executable")
             sources.append(source)
         for source in sources:
             source.check()
-    return {"schema_version": 1, "manifest_sha256": manifest_sha, "admitted": True,
+    return {"schema_version": manifest["schema_version"], "manifest_sha256": manifest_sha, "admitted": True,
             "cases": [{"case_id": case_id, "source": snapshots[case_id]} for case_id in by_id]}
 
 
@@ -1057,6 +1146,7 @@ def evaluate_detection(case, observation, artifacts, by_id, groups, thresholds, 
     if positive:
         for support in supports:
             peer = by_id[support]
+            require(peer.get("evaluation_role") == case.get("evaluation_role"), "support_outside_evaluation_role")
             require((peer["series_id"], peer["season_id"], peer["split"]) ==
                     (case["series_id"], case["season_id"], case["split"]), "support_outside_frozen_cohort")
             require(peer["expected"]["kind"] == "positive", "negative_case_used_as_positive_support")
@@ -1065,6 +1155,27 @@ def evaluate_detection(case, observation, artifacts, by_id, groups, thresholds, 
         require(len(independent) >= thresholds["min_independent_positive_episodes"], "insufficient_independent_support")
     artifacts.reference(observation["evidence"], pending=True)
     return result
+
+
+def population_gates(manifest, cases, groups):
+    accepted = [row for row in cases if row["state"] == "passed"]
+    required = manifest["thresholds"]
+    positives = {groups[row["case_id"]] for row in accepted if row["expected"] == "positive"}
+    specs = [("independent_positive_episodes", len(positives), required["min_independent_positive_episodes"])]
+    if manifest["schema_version"] == 1:
+        populations = [("holdout_" + kind, "split", "holdout", kind, "min_holdout_" + kind + "_cases")
+                       for kind in ("positive", "negative")]
+    else:
+        populations = [("fresh_holdout_positive", "evaluation_role", "fresh_holdout", "positive",
+                        "min_fresh_holdout_positive_cases"),
+                       ("regression_negative", "evaluation_role", "regression", "negative",
+                        "min_regression_negative_cases")]
+    for name, field, population, kind, threshold in populations:
+        count = len({groups[row["case_id"]] for row in accepted
+                     if row[field] == population and row["expected"] == kind})
+        specs.append((name, count, required[threshold]))
+    return [{"name": name, "count": count, "minimum": minimum,
+             "state": "passed" if count >= minimum else "pending"} for name, count, minimum in specs]
 
 
 def evaluate(manifest, manifest_sha, observations, artifacts):
@@ -1086,7 +1197,7 @@ def evaluate(manifest, manifest_sha, observations, artifacts):
     label_methods = sorted({case["provenance"]["label_method"] for case in by_id.values()})
     scopes = {"series": "independent_new_series", "season": "independent_new_seasons",
               "episode": "independent_new_episodes"}
-    report = {"schema_version": 1, "manifest_sha256": manifest_sha, "corpus_id": manifest["corpus_id"],
+    report = {"schema_version": manifest["schema_version"], "manifest_sha256": manifest_sha, "corpus_id": manifest["corpus_id"],
               "label_revision_sha256": hashlib.sha256(manifest["label_revision"].encode()).hexdigest(),
               "label_method": label_methods[0] if len(label_methods) == 1 else "mixed",
               "label_methods": label_methods, "human_reviewed": label_methods == ["human_review"],
@@ -1099,6 +1210,16 @@ def evaluate(manifest, manifest_sha, observations, artifacts):
               "mechanical_coverage_exclusions": ["source_replacement_fault_injection", "cancellation_fault_injection",
                                                    "authorization_revocation", "http_range_and_cache_contracts"],
               "cases": [], "counts": {key: 0 for key in COUNTS}, "category_counts": {}, "gates": [], "global_failures": []}
+    if manifest["schema_version"] == 2:
+        report.update(scope="mixed_calibration_regression_fresh_holdout",
+                      fresh_holdout_scope=scopes[manifest["split_unit"]],
+                      consumer_case_id=manifest["consumer_case_id"],
+                      original_attempt_refs=[{"run_id": entry["run_id"], "case_ids": entry["case_ids"],
+                          **{name + "_sha256": entry[name]["sha256"] for name in ("manifest", "labels", "receipt")}}
+                          for entry in manifest["original_attempt_refs"]], evaluation_role_counts={})
+        report["generalization_exclusions"].append("fresh_holdout_negative_specificity")
+        report["fresh_holdout_negative_coverage"] = {"state": "not_covered", "count": 0,
+            "reason": "No fresh-negative acceptance gate is declared; regression negatives do not establish fresh specificity."}
     snapshots, source_errors, verified_run_sources = {}, {}, set()
     # Hash admission before determining independence, so hard links and inode
     # aliases cannot count as independent episodes under different labels.
@@ -1113,7 +1234,7 @@ def evaluate(manifest, manifest_sha, observations, artifacts):
                 raise Invalid("verification_cancelled") from error
             source_errors[case_id] = str(error) if isinstance(error, Invalid) else "source_unavailable"
     groups = independent_groups(list(by_id.values()), snapshots)
-    check_group_splits(by_id, groups)
+    check_group_splits(by_id, groups, manifest.get("consumer_case_id"))
     with ExitStack() as stack:
         toolset, held_sources, held_processed = {}, {}, {}
         for name, expected in manifest["tools"].items():
@@ -1130,6 +1251,8 @@ def evaluate(manifest, manifest_sha, observations, artifacts):
                       "original_season_unknown": case["season_id"] == "unknown",
                       "categories": case["categories"], "expected": case["expected"]["kind"], "state": "pending",
                       "classification": "pending", "counts": {key: 0 for key in COUNTS}}
+            if manifest["schema_version"] == 2:
+                result["evaluation_role"] = case["evaluation_role"]
             source, processed = None, None
             try:
                 if case_id in source_errors:
@@ -1221,16 +1344,19 @@ def evaluate(manifest, manifest_sha, observations, artifacts):
                 counters[result["state"]] += 1
             for key in COUNTS:
                 counters[key] += result["counts"][key]
+        if manifest["schema_version"] == 2:
+            counters = report["evaluation_role_counts"].setdefault(result["evaluation_role"],
+                dict.fromkeys(("cases", "passed", "failed", *COUNTS), 0))
+            counters["cases"] += 1
+            if result["state"] in ("passed", "failed"):
+                counters[result["state"]] += 1
+            for key in COUNTS:
+                counters[key] += result["counts"][key]
     accepted = [result for result in report["cases"] if result["state"] == "passed"]
-    positives = {groups[row["case_id"]] for row in accepted if row["expected"] == "positive"}
-    required = manifest["thresholds"]
-    gate_specs = [("independent_positive_episodes", len(positives), required["min_independent_positive_episodes"])]
-    for kind in ("positive", "negative"):
-        count = len({groups[row["case_id"]] for row in accepted if row["split"] == "holdout" and row["expected"] == kind})
-        gate_specs.append(("holdout_" + kind, count, required["min_holdout_" + kind + "_cases"]))
-    for name, actual, minimum in gate_specs:
-        report["gates"].append({"name": name, "count": actual, "minimum": minimum,
-                                "state": "passed" if actual >= minimum else "pending"})
+    report["gates"].extend(population_gates(manifest, report["cases"], groups))
+    if manifest["schema_version"] == 2:
+        report["fresh_holdout_negative_coverage"]["count"] = len({groups[row["case_id"]] for row in accepted
+            if row["evaluation_role"] == "fresh_holdout" and row["expected"] == "negative"})
     for category in required_categories:
         count = 0 if category == "source_replacement" else sum(category in row["categories"] for row in accepted)
         gate = {"name": "category_" + category, "count": count, "minimum": 1,

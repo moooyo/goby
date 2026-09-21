@@ -75,6 +75,11 @@ never source paths, authors' names, URLs, credentials, or raw decoder logs.
 
 ## Manifest, schema version 1
 
+Version 1 retains its original fields, cohort semantics and holdout counters so
+old failed attempts can be replayed without rewriting their inputs. Version 2
+adds the explicit evaluation roles and original-attempt bindings below. A case
+name alone never establishes fresh-holdout status.
+
 The exact top-level fields are:
 
 | Field | Type and meaning |
@@ -237,6 +242,87 @@ For a one-frame BIF there is no observable inter-frame interval. The report
 sets `interval_observed` to `false` and records the configured effective plan
 instead of claiming that two index timestamps were observed.
 
+## Manifest, schema version 2
+
+Use `schema_version:2` and all shared v1 fields with these exact additions:
+
+| Field | Constraint |
+| --- | --- |
+| Case `evaluation_role` | `calibration`, `regression`, or `fresh_holdout` |
+| Top-level `consumer_case_id` | One existing, independently labeled positive `fresh_holdout` case with required preview and an MP4 source |
+| Top-level `original_attempt_refs` | Between 1 and 32 unique-run history bindings, described below |
+
+Calibration requires `split:calibration`; fresh holdout requires `split:holdout`.
+Regression retains its original split. The runtime and the support evaluator
+isolate `(evaluation_role,split,series_id,season_id)`. For the expanded corpus,
+C1-C6 share a six-episode calibration library/Season, H1-H3 form a separate
+regression population, FH1-FH3 form a separate fresh population, and N1/N2 remain
+their original singleton work populations. Unknown original seasons remain
+unknown. The real library's positive Season number is only an indexing container.
+
+Independent episode/variant/content/file aliases cannot span evaluation roles.
+The designated consumer must also have an independent identity, including the
+actual device/inode identity observed during admission. A copied or renamed
+episode cannot manufacture a third support. Qualified supports must have the
+same role, split, original series and season as their target; a fresh result
+cannot borrow support from old holdout or calibration episodes.
+
+Each history binding is exactly:
+
+```text
+{
+  run_id: ORIGINAL_RECEIPT_RUN_ID,
+  case_ids: EVERY_CASE_ID_IN_ORIGINAL_MANIFEST,
+  manifest: EvidenceRef,
+  labels: EvidenceRef,
+  receipt: EvidenceRef
+}
+```
+
+Every original case must remain present under its original ID. Its split,
+categories, episode/source/variant identities, provenance, expected labels and
+preview obligations must be equal to the referenced immutable manifest. The
+label reference must match each original case's label evidence, and the receipt
+must name the declared run. Original calibration stays calibration; an observed
+holdout becomes regression. Every regression case requires a history binding.
+The original files, including failed receipts, are preserved byte for byte.
+The public report includes only run/case IDs and reference hashes, not paths.
+
+The v2 `thresholds` object replaces the two v1 population keys with:
+
+- `min_fresh_holdout_positive_cases`: integer 3 through 256.
+- `min_regression_negative_cases`: integer 2 through 256.
+
+All other threshold fields are unchanged. The independent-support, boundary,
+RGB and category thresholds must equal the original referenced policy. The
+renamed population minima cannot be lower than the original corresponding
+holdout minima. The current plan retains support3, fresh-positive3,
+regression-negative2, boundary50,000,000 ticks, RGB MAE5/P95 16, and the original
+category subset. No threshold is derived from fresh detector results.
+
+Only accepted fresh-role positives count toward the fresh-positive gate. Old H
+successes do not satisfy it, and old N negatives do not establish fresh-negative
+specificity. The latter is explicitly `fresh_holdout_negative_coverage` with
+`state:not_covered`, an observed count, and an exclusion from generalization
+claims; there is no vacuously passing zero-minimum fresh-negative gate. All
+per-case failures and pending observations still block acceptance.
+
+Freeze the actual algorithm source, binary and full execution profile before
+fresh-source content review; then freeze independent fresh labels before its
+detector run. A role field and an EvidenceRef do not prove this chronology by
+themselves. Review it in the release evidence. If fresh outcomes inform another
+algorithm change, retain their results and treat those cases as regression on
+the next iteration. Do not invent labels, a runnable manifest or an algorithm
+release while those inputs remain pending.
+
+The explicitly designated fresh consumer runs before other required previews.
+There is no fallback to an old positive, manual marker, different role or
+synthetic source. Existing C1/240, H1/320 and N1/400 obligations are retained;
+the chosen fresh MP4 adds its declared preview requirement. Quality81 RGB
+calibration on the original C1 may be reused only with explicit unchanged-source,
+tool, browser and preview-profile/implementation evidence. A matcher-only change
+does not itself alter those inputs; a preview change requires a new review.
+
 ## Admission output
 
 `--admit-only` validates the full manifest, frozen source-review evidence, source
@@ -245,7 +331,7 @@ hashes. It does not run either tool. On success it creates exactly:
 
 ```text
 {
-  schema_version: 1,
+  schema_version: MANIFEST_SCHEMA_VERSION,
   manifest_sha256: SHA256_OF_EXACT_MANIFEST_BYTES,
   admitted: true,
   cases: [
@@ -530,8 +616,10 @@ a narrative safety failure even if a numerical boundary tolerance was met.
 
 Acceptance requires zero false positives, positive misses, boundary failures,
 and narrative safety failures; no failed or pending case; the independent
-positive threshold; independent holdout positive and negative coverage; and
-every required category. Incomplete corpus coverage remains pending. Counts
+positive threshold; the declared version's population gates; and every required
+category. Version1 requires holdout positive/negative coverage. Version2 requires
+fresh-holdout positives and regression negatives separately, without claiming
+fresh-negative coverage. Incomplete required coverage remains pending. Counts
 are retained per case and per category; category totals can overlap because
 one case may intentionally belong to several categories.
 
@@ -540,6 +628,13 @@ counts, BIF facts, actual JPEG decode count, source-comparison count, observed
 source PTS, representative pixel-error measurements, and browser/raster hashes.
 Reports do not create a substitute corpus, redefine ground truth from current
 detector behavior, or convert pending evidence into successful acceptance.
+
+Version2 also records per-case `evaluation_role`, `evaluation_role_counts`,
+`scope:mixed_calibration_regression_fresh_holdout`, a separate fresh-holdout
+scope, explicit consumer ID, and original attempt hashes. It does not label the
+combined regression/calibration population as newly blind. The observation wire
+schema stays version1: roles are read from the admitted manifest rather than
+trusted from browser-supplied observations.
 
 `mechanical_coverage_exclusions` explicitly lists source-replacement fault
 injection, cancellation fault injection, authorization revocation, and HTTP

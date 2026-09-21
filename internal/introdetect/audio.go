@@ -202,6 +202,9 @@ func alignedAudio(a, b Episode, offset int64, o Options, budget *workBudget) ([]
 		}
 		target := sample.StartTicks + offset
 		for j+1 < len(b.Audio) && absolute(b.Audio[j+1].StartTicks-target) <= absolute(b.Audio[j].StartTicks-target) {
+			if err := budget.spend(); err != nil {
+				return nil, nil, err
+			}
 			j++
 		}
 		if j < len(b.Audio) && j > lastTarget && absolute(b.Audio[j].StartTicks-target) <= o.AudioAlignmentTicks &&

@@ -37,6 +37,8 @@ func analysisMatcherReason(reason introdetect.Reason) bool {
 	switch reason {
 	case introdetect.DuplicateIdentity, introdetect.InsufficientEpisodes, introdetect.MissingAudio, introdetect.MissingVisual, introdetect.IncompatibleProfile, introdetect.NoRepeatedInterval, introdetect.LowAudioEntropy, introdetect.InsufficientAudio, introdetect.InsufficientVisual, introdetect.LowVisualDiversity, introdetect.AudioWithoutVisual, introdetect.InsufficientConsensus, introdetect.WeakAudioEvidence, introdetect.WeakVisualEvidence, introdetect.ShortInterval, introdetect.CompetingIntervals, introdetect.AnalysisBoundary, introdetect.OverlongRepeat, introdetect.CandidateSearchLimited, "source_timeline_unproven":
 		return true
+	case introdetect.InsufficientVisualAnchors, introdetect.PeriodicVisualEvidence, introdetect.InconsistentTimeAlignment:
+		return true
 	}
 	return false
 }
@@ -56,18 +58,10 @@ func validateAnalysisReasons(reasons []introdetect.Reason) bool {
 func analysisInterval(interval introdetect.Interval, duration int64) bool {
 	return interval.StartTicks >= 0 && interval.EndTicks > interval.StartTicks && interval.EndTicks <= min(duration, 600*media.TicksPerSecond)
 }
-func validateAnalysisMetrics(metrics introdetect.Metrics) bool {
-	for _, value := range []int{metrics.AudioAgreementPermille, metrics.AudioInformativePermille, metrics.AudioSimilarityPermille, metrics.VisualAgreementPermille, metrics.VisualSimilarityPermille, metrics.VisualCoveragePermille, metrics.VisualChangeCoveragePermille, metrics.VisualDominancePermille} {
-		if value < 0 || value > 1000 {
-			return false
-		}
-	}
-	return metrics.AudioSamples >= 0 && metrics.AudioSamples <= 8192 && metrics.AudioDistinct >= 0 && metrics.AudioDistinct <= 8192 && metrics.VisualSamples >= 0 && metrics.VisualSamples <= 4096 && metrics.VisualTransitions >= 0 && metrics.VisualTransitions <= 4096 && metrics.PairCount >= 0 && metrics.PairCount <= 496 && metrics.BoundaryUncertaintyTicks >= 0 && metrics.BoundaryUncertaintyTicks <= 30*media.TicksPerSecond
-}
 func validateAnalysisCandidate(candidate introdetect.Candidate) bool {
 	options := introdetect.DefaultOptions()
 	duration := candidate.Interval.EndTicks - candidate.Interval.StartTicks
-	if !analysisInterval(candidate.Interval, 600*media.TicksPerSecond) || duration < options.MinDurationTicks || duration > options.MaxDurationTicks || !analysisOpaque(candidate.GroupID, 256) || candidate.Status != introdetect.Qualified && candidate.Status != introdetect.Review || !validateAnalysisReasons(candidate.Reasons) || !validateAnalysisMetrics(candidate.Metrics) || len(candidate.Support) < options.MinSupport || len(candidate.Support) > 32 || candidate.Metrics.AudioDistinct < 12 || candidate.Metrics.AudioSamples < candidate.Metrics.AudioDistinct || candidate.Metrics.PairCount != len(candidate.Support)*(len(candidate.Support)-1)/2 {
+	if !analysisInterval(candidate.Interval, 600*media.TicksPerSecond) || duration < options.MinDurationTicks || duration > options.MaxDurationTicks || !analysisOpaque(candidate.GroupID, 256) || candidate.Status != introdetect.Qualified && candidate.Status != introdetect.Review || !validateAnalysisReasons(candidate.Reasons) || !introdetect.ValidateCandidateEvidence(candidate, options) || len(candidate.Support) < options.MinSupport || len(candidate.Support) > 32 || candidate.Metrics.AudioDistinct < 12 || candidate.Metrics.AudioSamples < candidate.Metrics.AudioDistinct || candidate.Metrics.PairCount != len(candidate.Support)*(len(candidate.Support)-1)/2 {
 		return false
 	}
 	episodes, sources, contents := map[string]bool{}, map[string]bool{}, map[string]bool{}
@@ -84,12 +78,6 @@ func validateAnalysisCandidate(candidate introdetect.Candidate) bool {
 		episodes[support.EpisodeKey] = true
 		sources[support.SourceKey] = true
 		contents[support.ContentIdentity] = true
-	}
-	if candidate.Status == introdetect.Qualified {
-		m := candidate.Metrics
-		if len(candidate.Reasons) != 0 || duration < options.AutoMinDurationTicks || m.AudioAgreementPermille < options.MinAudioAgreement || m.AudioInformativePermille < options.MinAudioInformation || m.AudioSimilarityPermille < options.MinAudioSimilarity || m.VisualAgreementPermille < options.MinVisualAgreement || m.VisualSimilarityPermille < options.MinVisualSimilarity || m.VisualCoveragePermille < 700 || m.VisualChangeCoveragePermille < options.MinVisualChangeCoverage || m.VisualDominancePermille > options.MaxVisualDominance || m.VisualSamples < options.MinVisualSamples || m.VisualTransitions < options.MinVisualTransitions {
-			return false
-		}
 	}
 	return true
 }
@@ -158,44 +146,13 @@ func analysisStoredInterval(value AnalysisStoredResult) (*int64, *int64) {
 }
 
 func ValidateStoredAnalysisResult(raw []byte, status string, start, end *int64) error {
-	var value AnalysisStoredResult
-	if len(raw) > 131072 || analysisStrictJSON(raw, &value) != nil || validateAnalysisStoredResult(value) != nil || string(value.Episode.Status) != status {
-		return ErrInvalidInput
-	}
-	expectedStart, expectedEnd := analysisStoredInterval(value)
-	if !reflect.DeepEqual(start, expectedStart) || !reflect.DeepEqual(end, expectedEnd) {
-		return ErrInvalidInput
-	}
-	return nil
+	_, err := ReadStoredAnalysisResult(raw, status, start, end)
+	return err
 }
 
 func ValidateStoredAnalysisAudit(raw []byte, action string) error {
-	var evidence AnalysisAuditEvidence
-	if len(raw) > 131072 || analysisStrictJSON(raw, &evidence) != nil {
-		return ErrInvalidInput
-	}
-	if evidence.Result != nil && validateAnalysisStoredResult(*evidence.Result) != nil {
-		return ErrInvalidInput
-	}
-	switch action {
-	case "qualified", "review", "no_result":
-		if evidence.Result == nil || evidence.Decision != nil || string(evidence.Result.Episode.Status) != action {
-			return ErrInvalidInput
-		}
-	case "accept", "reject", "reset":
-		if evidence.Decision == nil || evidence.Decision.Action != action || !analysisOpaque(evidence.Decision.SourceRevision, 256) {
-			return ErrInvalidInput
-		}
-		if _, err := analysisRevision(evidence.Decision.Revision); err != nil {
-			return err
-		}
-		if _, err := analysisRevision(evidence.Decision.ManualRevision); err != nil {
-			return err
-		}
-	default:
-		return ErrInvalidInput
-	}
-	return nil
+	_, err := ReadStoredAnalysisAudit(raw, action)
+	return err
 }
 
 func normalizeAnalysisEpisode(episode introdetect.EpisodeResult) introdetect.EpisodeResult {
@@ -238,7 +195,8 @@ func validateAnalysisResultForWork(work AnalysisWork, result introdetect.Result)
 		}
 		for _, candidate := range episode.Candidates {
 			group, exists := groups[candidate.GroupID]
-			if !exists || group.Status != candidate.Status || group.AlgorithmProfile != work.Execution.IntroProfile || !reflect.DeepEqual(group.Members, candidate.Support) {
+			if !exists || group.Status != candidate.Status || group.AlgorithmProfile != work.Execution.IntroProfile ||
+				group.Metrics != candidate.Metrics || !reflect.DeepEqual(group.Reasons, candidate.Reasons) || !reflect.DeepEqual(group.Members, candidate.Support) {
 				return nil, ErrInvalidInput
 			}
 			if !analysisInterval(candidate.Interval, source.DurationTicks) {
@@ -288,6 +246,10 @@ func (s *Store) PublishAnalysisAbstention(ctx context.Context, childID string, f
 }
 
 func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]AnalysisStoredResult) error {
+	if work.TaskKey != TaskIntroAnalysisKey || ValidateAnalysisExecutionProfile(work.Execution) != nil ||
+		work.Execution.Available && work.Execution.DetectorVersion != introdetect.Version {
+		return ErrInvalidInput
+	}
 	profileRevision, err := analysisRevision(work.ConfigurationRevision)
 	if err != nil || profileRevision < 1 {
 		return ErrInvalidInput
@@ -298,7 +260,9 @@ func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]Ana
 			continue
 		}
 		value, exists := values[source.ItemID]
-		if !exists {
+		// An unavailable execution can record a library abstention in the
+		// current result format, but cannot supply matcher qualification facts.
+		if !exists || validateAnalysisStoredResult(value) != nil || !work.Execution.Available && value.Reason == "" {
 			return ErrInvalidInput
 		}
 		raw, err := json.Marshal(value)
@@ -365,7 +329,6 @@ type analysisDetectionProof struct {
 	source, profile, cohort string
 	revision, epoch         int64
 	active                  bool
-	value                   AnalysisStoredResult
 }
 
 func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess, source AnalysisSource) (AnalysisDetection, error) {
@@ -397,19 +360,26 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 		return result, err
 	}
 	result.Revision = strconv.FormatInt(max(revision, decisionRevision), 10)
-	if ValidateStoredAnalysisResult(raw, result.Status, start, end) != nil {
+	facts, current, decodeErr := decodeAnalysisStoredResult(raw)
+	if decodeErr != nil || !analysisStoredFactsMatch(facts, result.Status, start, end) {
 		return result, ErrUnavailable
 	}
-	_ = json.Unmarshal(raw, &proof.value)
 	result.Reasons = []string{}
-	for _, reason := range proof.value.Episode.Reasons {
-		result.Reasons = append(result.Reasons, string(reason))
+	for _, reason := range facts.Episode.Reasons {
+		result.Reasons = append(result.Reasons, reason)
 	}
-	if proof.value.Reason != "" {
-		result.Reasons = append(result.Reasons, proof.value.Reason)
+	if facts.Reason != "" {
+		result.Reasons = append(result.Reasons, facts.Reason)
 	}
-	if len(proof.value.Episode.Candidates) > 0 {
-		candidate := proof.value.Episode.Candidates[0]
+	// Stored v1 claims remain auditable without inventing current metrics or
+	// making old qualification effective under unchanged settings and sources.
+	if current == nil {
+		result.Status = "stale"
+		result.Reasons = append(result.Reasons, "algorithm_changed")
+		return result, nil
+	}
+	if len(current.Episode.Candidates) > 0 {
+		candidate := current.Episode.Candidates[0]
 		result.Candidate = &candidate
 	}
 	stale := ""
@@ -425,7 +395,7 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 		stale = "profile_changed"
 	}
 	if stale == "" {
-		valid, err := analysisDetectionReferencesCurrent(ctx, tx, access, source, proof.cohort, maxBytes, proof.value.Reason != "")
+		valid, err := analysisDetectionReferencesCurrent(ctx, tx, access, source, proof.cohort, maxBytes, facts.Reason != "")
 		if err != nil {
 			return result, err
 		}

@@ -44,7 +44,7 @@ func previewGenerationFixture(t *testing.T) (*analysiscache.Store, config.MediaA
 	profile.PreviewIntervalSeconds, profile.PreviewQuality = 2, 95
 	source := library.AnalysisSource{ItemID: "preview-item", SourceRevision: "source-revision", DurationTicks: 5 * media.TicksPerSecond, Size: 4096, Target: true}
 	work := library.AnalysisWork{TaskKey: library.TaskPreviewGenerationKey, ConfigurationFingerprint: strings.Repeat("a", 64), ConfigurationRevision: "1", PublicationEpoch: 1,
-		Profile: profile, Sources: []library.AnalysisSource{source}, Execution: library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, Available: true,
+		Profile: profile, Sources: []library.AnalysisSource{source}, Execution: library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
 			FFmpegSHA256: strings.Repeat("b", 64), FFprobeSHA256: strings.Repeat("c", 64), PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}}
 	info := media.Info{DurationTicks: source.DurationTicks, Size: source.Size}
 	plan, err := planAnalysisPreviewBuild(configuration, work, source, info)

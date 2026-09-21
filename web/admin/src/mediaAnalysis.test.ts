@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { analysisCurrentCandidate, analysisDraft, analysisRevision, parseAnalysisDraft, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
-import type { AnalysisDetection, AnalysisItem, AnalysisProfile } from './mediaAnalysis.ts';
+import type { AnalysisCandidate, AnalysisDetection, AnalysisItem, AnalysisMetrics, AnalysisProfile } from './mediaAnalysis.ts';
 
 const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20 };
 const stamp = '2026-09-21T00:00:00Z';
@@ -9,6 +9,16 @@ function detection(): AnalysisDetection {
   return { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'not_analyzed', Reasons: ['not_analyzed'], Candidate: null, Effective: null, Suppressed: false, UpdatedAt: '0001-01-01T00:00:00Z' };
 }
 function item(): AnalysisItem { return { Id: 'episode-1', Name: 'Pilot', Type: 'Episode', LibraryId: 'library-1', MediaSourceId: 'media-source-1', SourceRevision: 'source-current', Detection: detection(), Previews: [] }; }
+function candidate(): AnalysisCandidate {
+  return { Interval: { StartTicks: 50_000_000, EndTicks: 400_000_000 }, GroupID: 'group', Status: 'review', Reasons: [], Support: [], Metrics: {
+    AudioAgreementPermille: 900, AudioInformativePermille: 700, AudioSimilarityPermille: 910, AudioSamples: 100, AudioDistinct: 40,
+    VisualAgreementPermille: 920, VisualSimilarityPermille: 930, VisualCoveragePermille: 880, VisualSamples: 50, VisualTransitions: 7,
+    VisualChangeCoveragePermille: 500, VisualDominancePermille: 300, BoundaryUncertaintyTicks: 10_000_000, PairCount: 3,
+    VisualAnchorCount: 24, VisualMinBandMatchedPermille: 600, VisualMatchedTimePermille: 875,
+    VisualContradictedTimePermille: 50, VisualUnobservableTimePermille: 125, VisualMaxUnconfirmedGapTicks: 25_000_000,
+    VisualStartAnchorGapTicks: 10_000_000, VisualEndAnchorGapTicks: 15_000_000, VisualDistinctStates: 6, VisualDominantStatePermille: 300,
+  } };
+}
 
 test('profile drafts preserve exact saved values and explicit false without client defaults', () => {
   const value = { ...profile, AutoPublishIntros: false, MaxSourceBytes: 1, PreviewQuality: 95, FeatureCacheMaxBytes: 512 * 2 ** 20 };
@@ -59,15 +69,21 @@ test('manual priority is preserved and stale or unsupported candidates cannot be
   const value = item();
   value.Detection.Status = 'review';
   value.Detection.Effective = { StartTicks: 0, EndTicks: 100_000_000, Provenance: 'Manual' };
-  value.Detection.Candidate = { Interval: { StartTicks: 50_000_000, EndTicks: 400_000_000 }, GroupID: 'group', Status: 'review', Reasons: [], Support: [], Metrics: {
-    AudioAgreementPermille: 900, AudioInformativePermille: 700, AudioSimilarityPermille: 910, AudioSamples: 100, AudioDistinct: 40,
-    VisualAgreementPermille: 920, VisualSimilarityPermille: 930, VisualCoveragePermille: 880, VisualSamples: 50, VisualTransitions: 7,
-    VisualChangeCoveragePermille: 500, VisualDominancePermille: 300, BoundaryUncertaintyTicks: 10_000_000, PairCount: 3,
-  } };
+  value.Detection.Candidate = candidate();
   assert.equal(analysisCurrentCandidate(value), true);
   assert.equal(value.Detection.Effective.Provenance, 'Manual');
   assert.equal(analysisCurrentCandidate({ ...value, Type: 'Movie' }), false);
   assert.equal(analysisCurrentCandidate({ ...value, Detection: { ...value.Detection, Status: 'stale' } }), false);
   assert.equal(analysisCurrentCandidate({ ...value, SourceRevision: 'replaced' }), false);
   assert.equal(analysisCurrentCandidate({ ...value, Detection: { ...value.Detection, Candidate: null } }), false);
+});
+
+test('current candidates require finite visual anchor evidence while stale empty results remain readable', () => {
+  const current = { ...detection(), Status: 'review', Candidate: candidate() };
+  assert.equal(validAnalysisDetection(current), true);
+  const incomplete: Partial<AnalysisMetrics> = { ...current.Candidate.Metrics };
+  delete incomplete.VisualAnchorCount;
+  assert.equal(validAnalysisDetection({ ...current, Candidate: { ...current.Candidate, Metrics: incomplete } }), false);
+  assert.equal(validAnalysisDetection({ ...current, Candidate: { ...current.Candidate, Metrics: { ...current.Candidate.Metrics, VisualAnchorCount: Infinity } } }), false);
+  assert.equal(validAnalysisDetection({ ...detection(), Status: 'stale', Reasons: ['algorithm_changed'] }), true);
 });

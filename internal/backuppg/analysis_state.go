@@ -55,6 +55,9 @@ func validateAnalysisState(ctx context.Context, tx pgx.Tx, version int64) error 
 	return ctx.Err()
 }
 
+// Available intro results bind the exact admitted detector. An unavailable
+// envelope identifies only its known result wire version: the nonempty library
+// Reason and strict result validator require a no-result with no matcher facts.
 const analysisStateRelationsSQL = `SELECT
 	(SELECT count(*) FROM analysis_settings)=1
 	AND NOT EXISTS(SELECT 1 FROM analysis_run_profiles profile LEFT JOIN task_runs run ON run.id=profile.run_id
@@ -98,6 +101,10 @@ const analysisStateRelationsSQL = `SELECT
 		OR detection.source_revision<>source.source_revision OR detection.cohort_revision<>work.cohort_revision
 		OR detection.profile_fingerprint<>profile.fingerprint OR detection.profile_revision<>profile.configuration_revision
 		OR detection.publication_epoch<>profile.publication_epoch
+		OR detection.result->>'Version' IS DISTINCT FROM CASE
+			WHEN profile.execution->'Available'='true'::jsonb THEN profile.execution->>'DetectorVersion'
+			WHEN profile.execution->>'Version'='1' THEN 'introdetect-v1'
+			WHEN profile.execution->>'Version'='2' THEN 'introdetect-v2' ELSE '' END
 		OR (detection.result->>'Reason'='' AND profile.execution->'Available' IS DISTINCT FROM 'true'::jsonb)
 		OR (detection.auto_published AND (detection.publication_epoch<>settings.publication_epoch
 		OR detection.profile_revision<>settings.revision OR NOT settings.auto_publish_intros)))

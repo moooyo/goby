@@ -19,7 +19,7 @@ func edgesBetween(pairs map[[2]int][]pairMatch, a, b int) []pairMatch {
 	return pairs[[2]int{min(a, b), max(a, b)}]
 }
 
-func joinGroup(selected []int, current map[int]Interval, node int, pairs map[[2]int][]pairMatch, o Options, budget *workBudget) (map[int]Interval, []pairMatch, error) {
+func joinGroup(selected []int, current map[int]Interval, currentEdges map[[2]int]pairMatch, node int, pairs map[[2]int][]pairMatch, o Options, budget *workBudget) (map[int]Interval, map[[2]int]pairMatch, error) {
 	anchor := selected[0]
 	for _, first := range edgesBetween(pairs, anchor, node) {
 		if err := budget.spend(); err != nil {
@@ -34,7 +34,12 @@ func joinGroup(selected []int, current map[int]Interval, node int, pairs map[[2]
 			proposed[k] = interval
 		}
 		proposed[anchor], proposed[node] = intersect(current[anchor], anchorRange), nodeRange
-		used, valid := []pairMatch{first}, true
+		used := make(map[[2]int]pairMatch, len(currentEdges)+len(selected))
+		for key, edge := range currentEdges {
+			used[key] = edge
+		}
+		used[[2]int{min(anchor, node), max(anchor, node)}] = first
+		valid := true
 		for _, member := range selected[1:] {
 			found := false
 			for _, edge := range edgesBetween(pairs, member, node) {
@@ -44,7 +49,7 @@ func joinGroup(selected []int, current map[int]Interval, node int, pairs map[[2]
 				a, b := edgeIntervals(edge, member)
 				if compatibleInterval(current[member], a, o) && compatibleInterval(proposed[node], b, o) {
 					proposed[member], proposed[node] = intersect(current[member], a), intersect(proposed[node], b)
-					used, found = append(used, edge), true
+					used[[2]int{min(member, node), max(member, node)}], found = edge, true
 					break
 				}
 			}
@@ -54,6 +59,11 @@ func joinGroup(selected []int, current map[int]Interval, node int, pairs map[[2]
 			}
 		}
 		if valid {
+			_, coherent, err := checkOffsetBudget(append(append([]int(nil), selected...), node), used, o, budget)
+			if err != nil {
+				return nil, nil, err
+			}
+			valid = coherent
 			for _, interval := range proposed {
 				valid = valid && interval.EndTicks-interval.StartTicks >= o.MinDurationTicks
 			}
@@ -67,6 +77,7 @@ func joinGroup(selected []int, current map[int]Interval, node int, pairs map[[2]
 
 func collectGroups(cohortKey string, episodes []Episode, pairs map[[2]int][]pairMatch, o Options, budget *workBudget) ([]Group, error) {
 	groups := []Group{}
+	projections := make(map[string]*Group)
 	// Enumerate seeds in source order. Greedy clique growth is bounded and
 	// conservative: every added episode must match every existing member.
 	// Enumerating all seed edges avoids treating a merely connected component
@@ -79,55 +90,52 @@ func collectGroups(cohortKey string, episodes []Episode, pairs map[[2]int][]pair
 				}
 				selected := []int{left, right}
 				ranges := map[int]Interval{left: seed.a, right: seed.b}
-				metrics, reasons := seed.metrics, append([]Reason{}, seed.reasons...)
+				edges := map[[2]int]pairMatch{{left, right}: seed}
 				for node := range episodes {
 					if _, present := ranges[node]; present {
 						continue
 					}
-					proposed, used, err := joinGroup(selected, ranges, node, pairs, o, budget)
+					proposed, used, err := joinGroup(selected, ranges, edges, node, pairs, o, budget)
 					if err != nil {
 						return nil, err
 					}
 					if proposed == nil {
 						continue
 					}
-					selected, ranges = append(selected, node), proposed
-					for _, edge := range used {
-						metrics = conservativeMetrics(metrics, edge.metrics)
-						for _, reason := range edge.reasons {
-							reasons = addReason(reasons, reason)
-						}
-					}
+					selected, ranges, edges = append(selected, node), proposed, used
 				}
 				if len(selected) < o.MinSupport {
 					continue
 				}
-				sort.Ints(selected)
-				group := Group{AlgorithmProfile: episodes[left].AlgorithmProfile, Status: Qualified,
-					Reasons: reasons, Metrics: metrics, Members: make([]Support, 0, len(selected))}
-				valid := true
-				for _, node := range selected {
-					episode, interval := episodes[node], ranges[node]
-					if interval.EndTicks-interval.StartTicks < o.MinDurationTicks {
-						valid = false
-					}
-					if interval.EndTicks-interval.StartTicks < o.AutoMinDurationTicks {
-						group.Reasons = addReason(group.Reasons, ShortInterval)
-					}
-					group.Members = append(group.Members, Support{episode.EpisodeKey, episode.SourceKey, episode.ContentIdentity, interval})
+				key, err := groupProjectionKey(selected, ranges, edges, budget)
+				if err != nil {
+					return nil, err
 				}
-				if !valid {
+				group, cached := projections[key]
+				if !cached {
+					if len(projections) == o.MaxGroups*o.MaxCandidatesPerPair {
+						return nil, fmt.Errorf("%w: projected witness cache", ErrLimit)
+					}
+					group, err = projectGroup(episodes, selected, ranges, edges, o, budget)
+					if err != nil {
+						return nil, err
+					}
+					projections[key] = detachedGroup(group)
+				} else {
+					group = detachedGroup(group)
+				}
+				if group == nil {
 					continue
 				}
-				groups = mergeGroup(groups, group, o)
+				groups = mergeGroup(groups, *group, o)
 				if len(groups) > o.MaxGroups {
 					return nil, fmt.Errorf("%w: candidate groups", ErrLimit)
 				}
 			}
 		}
 	}
-	// Repeated intersections during merging can shorten a previously admitted
-	// interval. Recheck both duration gates on the final boundaries.
+	// Every group already has a revalidated fixed-point intersection. Retain
+	// the bounds here too; duplicate-hypothesis selection never joins witnesses.
 	bounded := groups[:0]
 	for _, group := range groups {
 		valid := true
@@ -152,7 +160,8 @@ func collectGroups(cohortKey string, episodes []Episode, pairs map[[2]int][]pair
 		}
 		keep[i] = true
 		for j := range groups {
-			if i != j && len(groups[i].Members) < len(groups[j].Members) && groupContained(groups[i], groups[j], o) {
+			if i != j && len(groups[i].Members) < len(groups[j].Members) && groupContained(groups[i], groups[j], o) && compatibleGroupAlignment(groups[i], groups[j], o) &&
+				!(groups[i].Status == Qualified && groups[j].Status == Review) {
 				keep[i] = false
 				break
 			}
@@ -164,24 +173,8 @@ func collectGroups(cohortKey string, episodes []Episode, pairs map[[2]int][]pair
 			filtered = append(filtered, group)
 		}
 	}
-	for i := range filtered {
-		if err := budget.ctx.Err(); err != nil {
-			return nil, err
-		}
-		for j := i + 1; j < len(filtered); j++ {
-			conflict := false
-			for _, a := range filtered[i].Members {
-				for _, b := range filtered[j].Members {
-					if a.SourceKey == b.SourceKey && !compatibleInterval(a.Interval, b.Interval, o) {
-						conflict = true
-					}
-				}
-			}
-			if conflict {
-				filtered[i].Reasons = addReason(filtered[i].Reasons, CompetingIntervals)
-				filtered[j].Reasons = addReason(filtered[j].Reasons, CompetingIntervals)
-			}
-		}
+	if err := markGroupConflicts(filtered, o, budget); err != nil {
+		return nil, err
 	}
 	for i := range filtered {
 		if len(filtered[i].Reasons) != 0 {
@@ -211,16 +204,11 @@ func groupContained(a, b Group, o Options) bool {
 
 func mergeGroup(groups []Group, value Group, o Options) []Group {
 	for i, prior := range groups {
-		if len(prior.Members) != len(value.Members) || !groupContained(value, prior, o) {
+		if len(prior.Members) != len(value.Members) || !groupContained(value, prior, o) || !compatibleGroupAlignment(value, prior, o) {
 			continue
 		}
-		for j, member := range value.Members {
-			groups[i].Members[j].Interval = intersect(groups[i].Members[j].Interval, member.Interval)
-		}
-		groups[i].Metrics = conservativeMetrics(prior.Metrics, value.Metrics)
-		groups[i].Metrics.PairCount = len(value.Members) * (len(value.Members) - 1) / 2
-		for _, reason := range value.Reasons {
-			groups[i].Reasons = addReason(groups[i].Reasons, reason)
+		if preferGroup(value, prior, o) {
+			groups[i] = value
 		}
 		return groups
 	}
@@ -234,13 +222,29 @@ func groupID(cohortKey string, group Group, options Options) string {
 	for _, value := range []string{Version, cohortKey, group.AlgorithmProfile} {
 		fmt.Fprintf(hash, "%d:%s;", len(value), value)
 	}
-	for _, member := range group.Members {
+	for index, member := range group.Members {
 		for _, value := range []string{member.EpisodeKey, member.SourceKey, member.ContentIdentity} {
 			fmt.Fprintf(hash, "%d:%s;", len(value), value)
 		}
 		fmt.Fprintf(hash, "%d:%d;", member.Interval.StartTicks, member.Interval.EndTicks)
+		if index < len(group.alignmentOffsets) {
+			fmt.Fprintf(hash, "clock:%d;", group.alignmentOffsets[index])
+		}
 	}
-	return "intro-group-v1-" + hex.EncodeToString(hash.Sum(nil))
+	phaseKeys := make([][2]string, 0, len(group.phaseAnchors))
+	for key := range group.phaseAnchors {
+		phaseKeys = append(phaseKeys, key)
+	}
+	sort.Slice(phaseKeys, func(i, j int) bool {
+		if phaseKeys[i][0] != phaseKeys[j][0] {
+			return phaseKeys[i][0] < phaseKeys[j][0]
+		}
+		return phaseKeys[i][1] < phaseKeys[j][1]
+	})
+	for _, key := range phaseKeys {
+		fmt.Fprintf(hash, "phase:%d:%s;%d:%s;%d;%s;", len(key[0]), key[0], len(key[1]), key[1], group.phaseAnchors[key], group.phaseClasses[key])
+	}
+	return "intro-group-v2-" + hex.EncodeToString(hash.Sum(nil))
 }
 
 func distinctCandidates(candidates []Candidate, o Options) []Candidate {

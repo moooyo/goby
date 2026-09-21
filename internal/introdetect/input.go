@@ -33,7 +33,15 @@ func normalizeOptions(o Options) (Options, error) {
 		o.MinAudioSimilarity < 750 || o.MinAudioSimilarity > 1000 || o.MinVisualSimilarity < 750 || o.MinVisualSimilarity > 1000 ||
 		o.MinVisualContrast < 1 || o.MinVisualContrast > 1000 || o.MinVisualSamples < 4 || o.MinVisualSamples > 128 ||
 		o.MinVisualTransitions < 2 || o.MinVisualTransitions > 32 ||
-		o.MinVisualChangeCoverage < 100 || o.MinVisualChangeCoverage > 1000 || o.MaxVisualDominance < 200 || o.MaxVisualDominance > 900 {
+		o.MinVisualChangeCoverage < 100 || o.MinVisualChangeCoverage > 1000 || o.MaxVisualDominance < 200 || o.MaxVisualDominance > 900 ||
+		o.VisualBandTicks < TicksPerSecond || o.VisualBandTicks > 10*TicksPerSecond ||
+		o.MinVisualBandMatchedPermille < 1 || o.MinVisualBandMatchedPermille > 1000 ||
+		o.MinVisualAnchorTicks < TicksPerSecond/2 || o.MinVisualAnchorTicks > o.VisualBandTicks ||
+		o.MaxVisualUnconfirmedGapTicks < 0 || o.MaxVisualUnconfirmedGapTicks > 5*TicksPerSecond ||
+		o.MaxVisualAnchorEdgeGapTicks < 0 || o.MaxVisualAnchorEdgeGapTicks > 5*TicksPerSecond ||
+		o.VisualStateRadius < 0 || o.VisualStateRadius > 16 || o.MinVisualStates < 4 || o.MinVisualStates > 32 ||
+		o.MinVisualStateSupportTicks < TicksPerSecond/2 || o.MinVisualStateSupportTicks > 10*TicksPerSecond ||
+		o.MaxVisualStateDominancePermille < 200 || o.MaxVisualStateDominancePermille > 900 {
 		return Options{}, fmt.Errorf("%w: invalid options", ErrInvalidInput)
 	}
 	return o, nil

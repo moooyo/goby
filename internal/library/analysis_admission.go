@@ -46,7 +46,7 @@ func analysisSHA(value string) bool {
 // ValidateAnalysisExecutionProfile validates a closed, path-free tool inventory.
 // Unavailable execution records contain no fabricated tool identities.
 func ValidateAnalysisExecutionProfile(value AnalysisExecutionProfile) error {
-	if value.Version != AnalysisProfileVersion {
+	if value.Version != AnalysisExecutionProfileVersion {
 		return ErrInvalidInput
 	}
 	if !value.Available {
@@ -55,7 +55,7 @@ func ValidateAnalysisExecutionProfile(value AnalysisExecutionProfile) error {
 		default:
 			return ErrInvalidInput
 		}
-		expected := AnalysisExecutionProfile{Version: AnalysisProfileVersion, UnavailableReason: value.UnavailableReason}
+		expected := AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, UnavailableReason: value.UnavailableReason}
 		if !reflect.DeepEqual(value, expected) {
 			return ErrInvalidInput
 		}
@@ -175,7 +175,7 @@ func analysisAdmissionFingerprint(profile AnalysisProfile, execution AnalysisExe
 		Revision, Epoch int64
 		Profile         AnalysisProfile
 		Execution       AnalysisExecutionProfile
-	}{AnalysisProfileVersion, revision, epoch, profile, execution})
+	}{AnalysisExecutionProfileVersion, revision, epoch, profile, execution})
 	digest := sha256.Sum256(raw)
 	return hex.EncodeToString(digest[:])
 }
@@ -183,9 +183,24 @@ func analysisAdmissionFingerprint(profile AnalysisProfile, execution AnalysisExe
 // ValidateStoredAnalysisAdmission validates preserved historical profiles without
 // consulting current tool paths or requiring an old worker to remain authorized.
 func ValidateStoredAnalysisAdmission(profileRaw, executionRaw []byte, revision, epoch int64, fingerprint string) error {
+	var wire struct{ Version int }
+	if len(profileRaw) > 32768 || len(executionRaw) > 32768 || revision < 1 || epoch < 1 ||
+		!analysisSHA(fingerprint) || json.Unmarshal(executionRaw, &wire) != nil {
+		return ErrInvalidInput
+	}
+	if wire.Version == analysisStoredExecutionVersionV1 {
+		var profile analysisStoredProfileV1
+		var execution analysisStoredExecutionV1
+		if analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil ||
+			validateAnalysisProfileV1(profile) != nil || validateAnalysisExecutionProfileV1(execution) != nil ||
+			analysisAdmissionFingerprintV1(profile, execution, revision, epoch) != fingerprint {
+			return ErrInvalidInput
+		}
+		return nil
+	}
 	var profile AnalysisProfile
 	var execution AnalysisExecutionProfile
-	if len(profileRaw) > 32768 || len(executionRaw) > 32768 || revision < 1 || epoch < 1 || analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil || ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil || analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {
+	if wire.Version != AnalysisExecutionProfileVersion || analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil || ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil || analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {
 		return ErrInvalidInput
 	}
 	return nil

@@ -18,7 +18,7 @@ import (
 func seedAnalysisArchiveState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	profile := library.DefaultAnalysisProfile()
-	execution := library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, UnavailableReason: "not_configured"}
+	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"}
 	profileRaw, _ := json.Marshal(profile)
 	executionRaw, _ := json.Marshal(execution)
 	bound, _ := json.Marshal(struct {
@@ -26,7 +26,7 @@ func seedAnalysisArchiveState(t *testing.T, ctx context.Context, pool *pgxpool.P
 		Revision, Epoch int64
 		Profile         library.AnalysisProfile
 		Execution       library.AnalysisExecutionProfile
-	}{library.AnalysisProfileVersion, 1, 1, profile, execution})
+	}{library.AnalysisExecutionProfileVersion, 1, 1, profile, execution})
 	digest := sha256.Sum256(bound)
 	fingerprint := hex.EncodeToString(digest[:])
 	run := strings.Repeat("b", 32)

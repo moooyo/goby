@@ -38,12 +38,13 @@ type mediaAnalysisPhase2Tool struct {
 	SHA256 string `json:"sha256"`
 }
 type mediaAnalysisPhase2Case struct {
-	ID      string `json:"case_id"`
-	Split   string `json:"split"`
-	Series  string `json:"series_id"`
-	Season  string `json:"season_id"`
-	Episode string `json:"episode_id"`
-	Source  struct {
+	ID             string `json:"case_id"`
+	Split          string `json:"split"`
+	EvaluationRole string `json:"evaluation_role"`
+	Series         string `json:"series_id"`
+	Season         string `json:"season_id"`
+	Episode        string `json:"episode_id"`
+	Source         struct {
 		Path     string `json:"path"`
 		SHA256   string `json:"sha256"`
 		Bytes    int64  `json:"size_bytes"`
@@ -59,10 +60,12 @@ type mediaAnalysisPhase2Case struct {
 	} `json:"preview"`
 }
 type mediaAnalysisPhase2Manifest struct {
-	Version   int    `json:"schema_version"`
-	SplitUnit string `json:"split_unit"`
-	Artifacts string `json:"artifacts_root"`
-	Tools     struct {
+	Version             int             `json:"schema_version"`
+	SplitUnit           string          `json:"split_unit"`
+	Artifacts           string          `json:"artifacts_root"`
+	ConsumerCaseID      string          `json:"consumer_case_id"`
+	OriginalAttemptRefs json.RawMessage `json:"original_attempt_refs"`
+	Tools               struct {
 		FFmpeg  mediaAnalysisPhase2Tool `json:"ffmpeg"`
 		FFprobe mediaAnalysisPhase2Tool `json:"ffprobe"`
 	} `json:"tools"`
@@ -79,6 +82,7 @@ type mediaAnalysisPhase2Execution struct {
 }
 type mediaAnalysisPhase2ClientCase struct {
 	CaseId, Split, ItemId, Name, LibraryId, MediaSourceId, SourceRevision string
+	EvaluationRole                                                        string `json:"EvaluationRole,omitempty"`
 	PreviewRequired                                                       bool
 	Width                                                                 int
 	DurationTicks                                                         int64
@@ -87,6 +91,7 @@ type mediaAnalysisPhase2BrowserContext struct {
 	Marker, RunId, BaseURL, AdminId, AdminName, AdminPassword, ViewerId, ViewerName, ViewerPassword string
 	ArtifactsDir, ResultPath, ConsumerCaseId                                                        string
 	PreviewIntervalSeconds                                                                          int
+	ManifestVersion                                                                                 int
 	MaxRGBMAE, MaxRGBP95                                                                            float64
 	Cases                                                                                           []mediaAnalysisPhase2ClientCase
 	Libraries                                                                                       []map[string]string
@@ -424,7 +429,7 @@ func TestMediaAnalysisResiliencePhase2BrowserIntegration(t *testing.T) {
 	if parsedManifest, err := selectedPhase2Fact(manifestPath, 2<<20); err != nil || parsedManifest != initialManifest {
 		t.Fatal("manifest changed while decoding the frozen corpus selection")
 	}
-	if manifest.Version != 1 || len(manifest.Cases) < 1 || len(manifest.Cases) > 32 {
+	if manifest.Version != 1 && manifest.Version != 2 || len(manifest.Cases) < 1 || len(manifest.Cases) > 32 {
 		t.Fatal("this browser journey requires one through 32 explicitly labeled real cases")
 	}
 	var declaredBytes int64
@@ -483,7 +488,10 @@ func TestMediaAnalysisResiliencePhase2BrowserIntegration(t *testing.T) {
 	if err != nil || os.Chmod(output, 0o700) != nil {
 		t.Fatal("create Phase 2 private artifact directory")
 	}
-	driver := map[string]any{"Marker": "goby-media-analysis-phase2-driver-v1", "RunId": runID, "Complete": false, "RealCorpusConfigured": true, "SyntheticCorpusUsed": false, "OriginalEmbyClientUsed": false, "ProductEntitlementModified": false}
+	driver := map[string]any{"Marker": "goby-media-analysis-phase2-driver-v1", "RunId": runID, "Complete": false, "ManifestVersion": manifest.Version, "RealCorpusConfigured": true, "SyntheticCorpusUsed": false, "OriginalEmbyClientUsed": false, "ProductEntitlementModified": false}
+	if manifest.Version == 2 {
+		driver["OriginalAttemptRefs"] = manifest.OriginalAttemptRefs
+	}
 	t.Cleanup(func() {
 		driver["GoTestFailed"] = t.Failed()
 		if t.Failed() {
@@ -541,13 +549,21 @@ func TestMediaAnalysisResiliencePhase2BrowserIntegration(t *testing.T) {
 				t.Fatal("one browser journey requires a shared supported minimum preview interval")
 			}
 		}
-		if consumerCase == "" && sample.Split == "holdout" && sample.Expected.Kind == "positive" && sample.Preview.Required && strings.EqualFold(filepath.Ext(sample.Source.Path), ".mp4") {
+		eligible := sample.Split == "holdout" && sample.Expected.Kind == "positive" && sample.Preview.Required && strings.EqualFold(filepath.Ext(sample.Source.Path), ".mp4")
+		if manifest.Version == 1 && consumerCase == "" && eligible {
+			consumerCase = sample.ID
+		}
+		if manifest.Version == 2 && sample.ID == manifest.ConsumerCaseID {
+			if !eligible || sample.EvaluationRole != "fresh_holdout" || consumerCase != "" {
+				t.Fatal("the explicit consumer must be one independently labeled fresh-holdout positive MP4")
+			}
 			consumerCase = sample.ID
 		}
 	}
 	if total > 16<<30 || consumerCase == "" {
 		t.Fatal("Phase 2 browser scope requires at most 16 GiB of real sources and a preview-enabled holdout-positive MP4 consumer case")
 	}
+	driver["ConsumerCaseId"] = consumerCase
 	f := newServerFixtureWithTimeout(t, 90*time.Minute)
 	if err := f.app.Close(f.ctx); err != nil {
 		t.Fatal("close initial fixture generation")
@@ -606,13 +622,16 @@ func TestMediaAnalysisResiliencePhase2BrowserIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal("resolve independent observer authority")
 	}
-	fixture := mediaAnalysisPhase2BrowserContext{Marker: "goby-media-analysis-phase2-browser-v1", RunId: runID, AdminId: admin.ID, AdminName: admin.Name, AdminPassword: adminPassword, ViewerId: viewer.ID, ViewerName: viewer.Name, ViewerPassword: viewerPassword, ArtifactsDir: output, ResultPath: filepath.Join(output, "browser-result.json"), ConsumerCaseId: consumerCase, PreviewIntervalSeconds: int(interval / 10_000_000), MaxRGBMAE: manifest.Thresholds.MaxRGBMAE, MaxRGBP95: manifest.Thresholds.MaxRGBP95}
+	fixture := mediaAnalysisPhase2BrowserContext{Marker: "goby-media-analysis-phase2-browser-v1", RunId: runID, AdminId: admin.ID, AdminName: admin.Name, AdminPassword: adminPassword, ViewerId: viewer.ID, ViewerName: viewer.Name, ViewerPassword: viewerPassword, ArtifactsDir: output, ResultPath: filepath.Join(output, "browser-result.json"), ConsumerCaseId: consumerCase, ManifestVersion: manifest.Version, PreviewIntervalSeconds: int(interval / 10_000_000), MaxRGBMAE: manifest.Thresholds.MaxRGBMAE, MaxRGBP95: manifest.Thresholds.MaxRGBP95}
 	groups := make(map[string][]mediaAnalysisPhase2Case)
 	catalogMappings := make([]map[string]any, 0, len(manifest.Cases))
 	processedPaths := make(map[string]string)
 	processedBefore := make(map[string]selectedPhase2FileFact)
 	for _, sample := range manifest.Cases {
 		key := sample.Split + "\x00" + sample.Series + "\x00" + sample.Season
+		if manifest.Version == 2 {
+			key = sample.EvaluationRole + "\x00" + key
+		}
 		groups[key] = append(groups[key], sample)
 	}
 	keys := make([]string, 0, len(groups))
@@ -653,7 +672,11 @@ func TestMediaAnalysisResiliencePhase2BrowserIntegration(t *testing.T) {
 			if os.WriteFile(strings.TrimSuffix(target, filepath.Ext(target))+".nfo", []byte(nfo), 0o600) != nil {
 				t.Fatal("write hierarchy-only corpus metadata")
 			}
-			catalogMappings = append(catalogMappings, map[string]any{"case_id": sample.ID, "split": sample.Split, "original_series_id": sample.Series, "original_season_id": sample.Season, "original_episode_id": sample.Episode, "actual_catalog_season_number": seasonNumber, "actual_catalog_episode_number": episodes[sample.Episode], "grouping_basis": groupingBasis, "isolated_library_group": index})
+			mapping := map[string]any{"case_id": sample.ID, "split": sample.Split, "original_series_id": sample.Series, "original_season_id": sample.Season, "original_episode_id": sample.Episode, "actual_catalog_season_number": seasonNumber, "actual_catalog_episode_number": episodes[sample.Episode], "grouping_basis": groupingBasis, "isolated_library_group": index}
+			if manifest.Version == 2 {
+				mapping["evaluation_role"] = sample.EvaluationRole
+			}
+			catalogMappings = append(catalogMappings, mapping)
 		}
 		collection, err := f.app.library.CreateLibrary(f.ctx, fmt.Sprintf("Corpus group %02d", index), "tvshows", []string{root})
 		if err != nil {
@@ -680,10 +703,10 @@ func TestMediaAnalysisResiliencePhase2BrowserIntegration(t *testing.T) {
 				t.Fatal("indexed corpus copy differs from the frozen labeled source")
 			}
 			processedPaths[sample.ID], processedBefore[sample.ID] = paths[sample.ID], processed
-			fixture.Cases = append(fixture.Cases, mediaAnalysisPhase2ClientCase{CaseId: sample.ID, Split: sample.Split, ItemId: item.ID, Name: item.Name, LibraryId: item.LibraryID, MediaSourceId: item.MediaSourceID, SourceRevision: item.SourceRevision, PreviewRequired: sample.Preview.Required, Width: sample.Preview.Width, DurationTicks: sample.Source.Duration})
+			fixture.Cases = append(fixture.Cases, mediaAnalysisPhase2ClientCase{CaseId: sample.ID, Split: sample.Split, EvaluationRole: sample.EvaluationRole, ItemId: item.ID, Name: item.Name, LibraryId: item.LibraryID, MediaSourceId: item.MediaSourceID, SourceRevision: item.SourceRevision, PreviewRequired: sample.Preview.Required, Width: sample.Preview.Width, DurationTicks: sample.Source.Duration})
 		}
 	}
-	if featureWaveWriteCheckpoint(filepath.Join(output, "catalog-source-mapping.json"), map[string]any{"split_unit": manifest.SplitUnit, "cohorts_isolated_by_split": true, "historical_season_inferred": false, "cases": catalogMappings}) != nil {
+	if featureWaveWriteCheckpoint(filepath.Join(output, "catalog-source-mapping.json"), map[string]any{"schema_version": manifest.Version, "split_unit": manifest.SplitUnit, "cohorts_isolated_by_split": true, "cohorts_isolated_by_evaluation_role": manifest.Version == 2, "historical_season_inferred": false, "cases": catalogMappings}) != nil {
 		t.Fatal("retain explicit source-to-test-catalog mapping")
 	}
 	if err := runtime.listen(); err != nil {

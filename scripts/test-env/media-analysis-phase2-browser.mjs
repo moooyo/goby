@@ -244,6 +244,14 @@ try {
   requireThat(process.platform === 'linux' && process.getuid() === 0, 'remote_linux_fixture_required');
   fixture = await privateJSON(process.env.GOBY_MEDIA_ANALYSIS_PHASE2_CONTEXT, 256 << 10);
   requireThat(fixture.Marker === 'goby-media-analysis-phase2-browser-v1' && fixture.RunId === process.env.GOBY_MEDIA_ANALYSIS_PHASE2_RUN_ID && Array.isArray(fixture.Cases) && fixture.Cases.length > 0 && fixture.Cases.length <= 32, 'browser_context_binding_invalid');
+  requireThat([1, 2].includes(fixture.ManifestVersion) && new Set(fixture.Cases.map((sample) => sample.CaseId)).size === fixture.Cases.length, 'browser_manifest_identity_invalid');
+  const designated = fixture.Cases.find((sample) => sample.CaseId === fixture.ConsumerCaseId);
+  requireThat(designated?.PreviewRequired === true, 'designated_consumer_missing');
+  if (fixture.ManifestVersion === 2) {
+    requireThat(designated.EvaluationRole === 'fresh_holdout' && fixture.Cases.every((sample) => ['calibration', 'regression', 'fresh_holdout'].includes(sample.EvaluationRole)), 'browser_evaluation_role_invalid');
+    result.EvaluationRoles = Object.fromEntries(fixture.Cases.map((sample) => [sample.CaseId, sample.EvaluationRole]));
+  }
+  result.ManifestVersion = fixture.ManifestVersion; result.Consumer.CaseId = designated.CaseId;
   requireThat(new URL(fixture.BaseURL).hostname === '127.0.0.1' && new URL(fixture.BaseURL).protocol === 'http:' && path.dirname(fixture.ResultPath) === fixture.ArtifactsDir, 'browser_fixture_authority_invalid');
   const directory = await fs.stat(fixture.ArtifactsDir); requireThat(directory.isDirectory() && directory.uid === process.getuid() && (directory.mode & 0o777) === 0o700 && await fs.realpath(fixture.ArtifactsDir) === fixture.ArtifactsDir, 'private_artifact_root_required');
   deadline = Date.now() + 75 * 60 * 1000; result.RunId = fixture.RunId; result.Cases = fixture.Cases.map((sample) => ({ case_id: sample.CaseId, task: { status: 'pending' }, detection: { status: 'pending' }, preview: { status: 'pending' } })); await checkpoint();
@@ -275,7 +283,9 @@ try {
   await evidence('automatic-http.json', { Cases: actual }); await stage('automatic-observed');
   requireThat(introRun.Final.Body.Run.State === 'completed' && previewRun.Final.Body.Run.State === 'completed', 'real_analysis_tasks_not_successful'); result.Mechanics.ActualTaskCompletion = true;
   phase = 'consumers';
-  for (const sample of fixture.Cases.filter((sample) => sample.PreviewRequired)) await consume(sample, result.Cases.find((entry) => entry.case_id === sample.CaseId));
+  const previewCases = fixture.Cases.filter((sample) => sample.PreviewRequired);
+  const orderedPreviews = fixture.ManifestVersion === 2 ? [designated, ...previewCases.filter((sample) => sample.CaseId !== designated.CaseId)] : previewCases;
+  for (const sample of orderedPreviews) await consume(sample, result.Cases.find((entry) => entry.case_id === sample.CaseId));
   requireThat(result.Mechanics.ActualSkip, 'actual_automatic_intro_skip_not_exercised');
   phase = 'decisions'; await decisionJourney(fixture.Cases.find((sample) => sample.CaseId === fixture.ConsumerCaseId));
   phase = 'cancellation'; await cancelJourney();

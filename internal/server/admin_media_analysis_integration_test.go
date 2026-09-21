@@ -139,7 +139,7 @@ func TestHTTPAdminMediaAnalysisRunsRetainTypedRequestReceiptAndActualNativeActor
 	}
 	registry, err := tasks.NewExecutorRegistry(tasks.ExecutorRegistration{Key: library.TaskIntroAnalysisKey, Name: "Analysis HTTP receipt fixture", Executor: analysisHTTPNoWorkExecutor{},
 		AnalysisAdmission: func(tx library.OwnedTx, request tasks.AnalysisAdmissionRequest) (tasks.AnalysisAdmissionBinding, error) {
-			binding, err := library.PrepareAnalysis(tx, request.TaskKey, request.Selection, library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, UnavailableReason: "not_configured"})
+			binding, err := library.PrepareAnalysis(tx, request.TaskKey, request.Selection, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
 			return tasks.AnalysisAdmissionBinding{ConfigurationFingerprint: binding.ConfigurationFingerprint, Bind: binding.Bind, SnapshotChildren: binding.SnapshotChildren}, err
 		}})
 	if err != nil {

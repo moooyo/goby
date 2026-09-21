@@ -81,7 +81,7 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 	r.setUnavailableProfiles("dependencies_unavailable")
 	if availability.PreviewAvailable {
 		r.profiles[library.TaskPreviewGenerationKey] = library.AnalysisExecutionProfile{
-			Version: library.AnalysisProfileVersion, Available: true,
+			Version: library.AnalysisExecutionProfileVersion, Available: true,
 			FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256,
 			PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}
 	}
@@ -92,7 +92,7 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 			return nil, errors.Join(err, cache.Close(context.Background()))
 		}
 		r.profiles[library.TaskIntroAnalysisKey] = library.AnalysisExecutionProfile{
-			Version: library.AnalysisProfileVersion, Available: true,
+			Version: library.AnalysisExecutionProfileVersion, Available: true,
 			FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256,
 			FingerprintSHA256: availability.FingerprintSHA256, DetectorVersion: introdetect.Version,
 			DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2,
@@ -103,7 +103,7 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 
 func (r *mediaAnalysisRuntime) setUnavailableProfiles(reason string) {
 	for _, key := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey} {
-		r.profiles[key] = library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, UnavailableReason: reason}
+		r.profiles[key] = library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: reason}
 	}
 }
 
@@ -131,7 +131,7 @@ func (r *mediaAnalysisRuntime) executionProfile(key string) (library.AnalysisExe
 		return library.AnalysisExecutionProfile{}, library.ErrInvalidInput
 	}
 	if reason != "" {
-		return library.AnalysisExecutionProfile{Version: library.AnalysisProfileVersion, UnavailableReason: reason}, nil
+		return library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: reason}, nil
 	}
 	profile.PreviewWidths = append([]int(nil), profile.PreviewWidths...)
 	return profile, nil

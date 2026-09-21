@@ -86,6 +86,48 @@ cohorts. An episode split demonstrates new independent episodes in the same
 series, not new-season or new-series generalization. Variants, physical copies,
 duplicate hashes and the same original episode cannot cross splits.
 
+Manifest version1 retains its original selection and reporting behavior for
+replay. Version2 additionally isolates evaluation roles and requires an explicit
+`consumer_case_id`. Its `calibration` cases share a runtime library/Season when
+their split and original series/season match, regardless of which attempt first
+included them. Thus old C1-C3 and new C4-C6 can form one six-episode calibration
+population. Old H1-H3 use a separate `regression` population; FH1-FH3 use a
+separate `fresh_holdout` population. N1/N2 remain original singleton populations.
+No original ground truth, source, preview obligation or threshold is rewritten.
+
+The v2 admission verifies `original_attempt_refs` against immutable historical
+manifests, label files and named receipts. Every observed case remains present;
+old holdout cannot be relabeled fresh, and one transitive episode/variant/hash/
+file identity cannot span roles. Actual support IDs still come from the server
+and are independently checked against the role-separated corpus. Do not repeat
+a source to reach the minimum support of three.
+
+The explicitly designated v2 consumer must be a fresh-role positive MP4 with
+required preview and independent identity. It is consumed first, with no
+fallback if the real detector abstains or playback fails. All other original
+required previews remain in the journey. The existing `ConsumerCaseId` also
+selects the subsequent native decision journey, after automatic results have
+been retained. Version1 continues selecting its first eligible holdout-positive
+MP4 as before. The private context and receipts retain `ManifestVersion`, role
+mapping and the designated ID; the source-to-catalog artifact records actual
+role isolation without claiming a historical season.
+
+Version2 requires at least three accepted independent fresh positives and two
+accepted regression negatives. Its old holdout results do not inflate the fresh
+gate. Fresh-negative specificity is explicitly `not_covered`; it is not a
+zero-minimum pass. All 14 declared cases still require complete actual evidence,
+and every miss, false positive, unsafe boundary or pending case blocks the run.
+The 14-case plan fits existing 32-case/16GiB bounds without raising them; actual
+source sizes and work must still pass those bounds.
+
+Freeze the matcher/profile before fresh source review and freeze independent
+labels before detector observation. Keep all earlier failures and partial media
+results. A new matcher/source requires a new exact build/run attribution; these
+source changes do not assert that such a release or a runnable 14-case manifest
+already exists. Reuse original C1 Quality81/33-sample RGB calibration only after
+reviewing unchanged source, preview implementation/profile, tools, browser and
+thresholds. Do not claim an intro-matcher rerun from an old BIF result.
+
 Unknown original seasons remain `original_season_id="unknown"` and require an
 episode split. Their positive-numbered `Season 01` catalog container is named
 `Unseasoned corpus cohort` and recorded as `grouping_basis="test_indexing_container"`,
@@ -191,6 +233,15 @@ observer checks selected durable state and absence of active analysis replay.
 All owned browser contexts, credentials, listeners and runtime operations are
 closed. Residual credential revocation is failure cleanup, never successful
 normal cleanup.
+
+The source-only parser contract suite is
+`python3.13 -B scripts/test-env/test-media-analysis-phase2-evaluate.py -v` on the
+designated remote worker. In addition to the five original SAR methods, seven
+schema/role methods cover v1 replay, the six-member calibration population,
+immutable original attempts and thresholds, consumer eligibility and aliases,
+cross-role support rejection, and fresh gate counts. These are parser contracts
+using metadata fixtures; they are not decoded real media or corpus acceptance.
+Writing this revision did not execute that suite, a browser, build or worker.
 
 Source-replacement injection and authority-revocation mechanics are explicitly
 not claimed by this browser journey. The separate package/HTTP acceptance scope

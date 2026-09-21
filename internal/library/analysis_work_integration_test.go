@@ -50,7 +50,7 @@ func newAnalysisWorkFixture(t *testing.T, count int) analysisWorkFixture {
 	return analysisWorkFixture{ctx, pool, store, metadataEditTestActor(t, ctx, pool, "analysis-work-editor"), viewer, collection, paths, ids}
 }
 
-func (f analysisWorkFixture) admit(t *testing.T, key string, items []string) (string, []string) {
+func (f analysisWorkFixture) admit(t *testing.T, key string, items []string, executions ...AnalysisExecutionProfile) (string, []string) {
 	t.Helper()
 	runID, err := randomID()
 	if err != nil {
@@ -65,6 +65,12 @@ func (f analysisWorkFixture) admit(t *testing.T, key string, items []string) (st
 	execution := analysisAdmissionTestIntroExecution()
 	if key == TaskPreviewGenerationKey {
 		execution = analysisAdmissionTestPreviewExecution()
+	}
+	if len(executions) > 1 {
+		t.Fatal("one explicit fixture execution profile is required")
+	}
+	if len(executions) == 1 {
+		execution = executions[0]
 	}
 	err = f.store.WithOwnedTx(f.ctx, func(tx OwnedTx) error {
 		binding, err := PrepareAnalysis(tx, key, selection, execution)
@@ -216,6 +222,8 @@ func analysisFixtureQualifiedResult(t *testing.T, f analysisWorkFixture, work An
 		supports = append(supports, introdetect.Support{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: hex.EncodeToString(digest[:]), Interval: interval})
 	}
 	metrics := introdetect.Metrics{AudioAgreementPermille: 1000, AudioInformativePermille: 1000, AudioSimilarityPermille: 1000, AudioSamples: 100, AudioDistinct: 100, VisualAgreementPermille: 1000, VisualSimilarityPermille: 1000, VisualCoveragePermille: 1000, VisualSamples: 35, VisualTransitions: 34, VisualChangeCoveragePermille: 1000, VisualDominancePermille: 100, PairCount: len(supports) * (len(supports) - 1) / 2}
+	metrics.VisualAnchorCount, metrics.VisualMinBandMatchedPermille, metrics.VisualMatchedTimePermille = 35, 1000, 1000
+	metrics.VisualDistinctStates, metrics.VisualDominantStatePermille = 8, 125
 	group := introdetect.Group{ID: "fixture-independent-evidence", AlgorithmProfile: work.Execution.IntroProfile, Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Members: supports, Metrics: metrics}
 	result := introdetect.Result{Version: introdetect.Version, CohortKey: work.ScopeKey, Options: work.Execution.DetectorOptions, Groups: []introdetect.Group{group}, Episodes: []introdetect.EpisodeResult{}}
 	for _, support := range supports {

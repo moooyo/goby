@@ -98,6 +98,8 @@ func TestAnalysisArchiveDetectionBindsCompleteSupportAndSourceTimeline(t *testin
 		{EpisodeKey: "episode-three", SourceKey: "source-three", ContentIdentity: strings.Repeat("c", 64), Interval: interval},
 	}
 	metrics := introdetect.Metrics{AudioAgreementPermille: 1000, AudioInformativePermille: 1000, AudioSimilarityPermille: 1000, AudioSamples: 100, AudioDistinct: 100, VisualAgreementPermille: 1000, VisualSimilarityPermille: 1000, VisualCoveragePermille: 1000, VisualSamples: 30, VisualTransitions: 10, VisualChangeCoveragePermille: 1000, PairCount: 3}
+	metrics.VisualAnchorCount, metrics.VisualMinBandMatchedPermille, metrics.VisualMatchedTimePermille = 35, 1000, 1000
+	metrics.VisualDistinctStates, metrics.VisualDominantStatePermille = 8, 125
 	value := library.AnalysisStoredResult{Version: introdetect.Version, Episode: introdetect.EpisodeResult{EpisodeKey: "episode-one", SourceKey: "source-one", ContentIdentity: strings.Repeat("a", 64), Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Candidates: []introdetect.Candidate{{Interval: interval, GroupID: "group", Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Metrics: metrics, Support: support}}}}
 	raw, _ := json.Marshal(value)
 	base := []analysisStateEvidence{

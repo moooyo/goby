@@ -42,6 +42,8 @@ func analysisDetectionTestValue(status introdetect.Status) AnalysisStoredResult 
 			AudioSamples: 120, AudioDistinct: 120, VisualAgreementPermille: 1000, VisualSimilarityPermille: 1000,
 			VisualCoveragePermille: 1000, VisualSamples: 40, VisualTransitions: 39, VisualChangeCoveragePermille: 1000,
 			VisualDominancePermille: 25, BoundaryUncertaintyTicks: media.TicksPerSecond,
+			VisualAnchorCount: int(span / media.TicksPerSecond), VisualMinBandMatchedPermille: 1000, VisualMatchedTimePermille: 1000,
+			VisualDistinctStates: 8, VisualDominantStatePermille: 125,
 			PairCount: options.MinSupport * (options.MinSupport - 1) / 2}, Support: []introdetect.Support{}}
 	for index := range options.MinSupport {
 		start := int64(10+5*index) * media.TicksPerSecond
@@ -164,10 +166,23 @@ func TestStoredQualifiedAnalysisRequiresObservedAudioPairsAndVisualCoverage(t *t
 		func(m *introdetect.Metrics) { m.VisualCoveragePermille = 699 },
 		func(m *introdetect.Metrics) { m.VisualAgreementPermille = options.MinVisualAgreement - 1 },
 		func(m *introdetect.Metrics) { m.VisualSimilarityPermille = options.MinVisualSimilarity - 1 },
-		func(m *introdetect.Metrics) { m.VisualChangeCoveragePermille = options.MinVisualChangeCoverage - 1 },
-		func(m *introdetect.Metrics) { m.VisualDominancePermille = options.MaxVisualDominance + 1 },
 		func(m *introdetect.Metrics) { m.VisualSamples = options.MinVisualSamples - 1 },
-		func(m *introdetect.Metrics) { m.VisualTransitions = options.MinVisualTransitions - 1 },
+		func(m *introdetect.Metrics) { m.VisualAnchorCount = 0 },
+		func(m *introdetect.Metrics) {
+			m.VisualMinBandMatchedPermille = options.MinVisualBandMatchedPermille - 1
+		},
+		func(m *introdetect.Metrics) { m.VisualMatchedTimePermille = options.MinVisualAgreement - 1 },
+		func(m *introdetect.Metrics) {
+			m.VisualMaxUnconfirmedGapTicks = options.MaxVisualUnconfirmedGapTicks + 1
+		},
+		func(m *introdetect.Metrics) { m.VisualStartAnchorGapTicks = options.MaxVisualAnchorEdgeGapTicks + 1 },
+		func(m *introdetect.Metrics) { m.VisualEndAnchorGapTicks = options.MaxVisualAnchorEdgeGapTicks + 1 },
+		func(m *introdetect.Metrics) { m.VisualDistinctStates = options.MinVisualStates - 1 },
+		func(m *introdetect.Metrics) {
+			m.VisualDominantStatePermille = options.MaxVisualStateDominancePermille + 1
+		},
+		func(m *introdetect.Metrics) { m.VisualContradictedTimePermille = -1 },
+		func(m *introdetect.Metrics) { m.VisualUnobservableTimePermille = 1001 },
 		func(m *introdetect.Metrics) { m.VisualSamples = 4097 },
 		func(m *introdetect.Metrics) { m.VisualTransitions = 4097 },
 		func(m *introdetect.Metrics) { m.AudioSamples = 8193 },
@@ -189,6 +204,20 @@ func TestStoredQualifiedAnalysisRequiresObservedAudioPairsAndVisualCoverage(t *t
 	start, end := analysisDetectionTestInterval(value)
 	if err := ValidateStoredAnalysisResult(analysisDetectionTestJSON(t, value), "qualified", start, end); err != nil {
 		t.Fatalf("inclusive detector visual sample bound was rejected: %v", err)
+	}
+	// Distributed anchors can qualify static shots; old adjacent-motion
+	// diagnostics remain stored observations, not v2 qualification gates.
+	value.Episode.Candidates[0].Metrics.VisualTransitions = 0
+	value.Episode.Candidates[0].Metrics.VisualChangeCoveragePermille = 0
+	value.Episode.Candidates[0].Metrics.VisualDominancePermille = 1000
+	if err := ValidateStoredAnalysisResult(analysisDetectionTestJSON(t, value), "qualified", start, end); err != nil {
+		t.Fatalf("current anchor evidence was gated by legacy motion diagnostics: %v", err)
+	}
+	value.Episode.Candidates[0].Metrics.VisualMatchedTimePermille = 850
+	value.Episode.Candidates[0].Metrics.VisualContradictedTimePermille = 150
+	value.Episode.Candidates[0].Metrics.VisualUnobservableTimePermille = 150
+	if err := ValidateStoredAnalysisResult(analysisDetectionTestJSON(t, value), "qualified", start, end); err != nil {
+		t.Fatalf("worst-pair group time metrics were incorrectly treated as one partition: %v", err)
 	}
 }
 

@@ -72,7 +72,7 @@ func (r *mediaAnalysisRuntime) buildPreview(ctx context.Context, work library.An
 }
 
 func planAnalysisPreviewBuild(configuration config.MediaAnalysisConfig, work library.AnalysisWork, source library.AnalysisSource, info media.Info) (analysisPreviewBuildPlan, error) {
-	if work.TaskKey != library.TaskPreviewGenerationKey || !work.Execution.Available || work.Execution.Version != library.AnalysisProfileVersion ||
+	if work.TaskKey != library.TaskPreviewGenerationKey || !work.Execution.Available || work.Execution.Version != library.AnalysisExecutionProfileVersion ||
 		work.Execution.PreviewProfile != media.PreviewAnalysisProfile || !analysisPreviewHash(work.Execution.FFmpegSHA256) || !analysisPreviewHash(work.Execution.FFprobeSHA256) ||
 		!source.Target || !analysisPreviewBuildIdentity(source.ItemID) || !analysisPreviewBuildIdentity(source.SourceRevision) ||
 		!analysisPreviewHash(work.ConfigurationFingerprint) || !analysisPreviewBuildIdentity(work.ConfigurationRevision) || work.PublicationEpoch < 1 ||

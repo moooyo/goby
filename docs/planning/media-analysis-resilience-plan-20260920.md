@@ -98,5 +98,5 @@ read back the remote commit. Publication and deployment remain separate states.
 | Phase | Implementation | Verification | Main publication |
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
-| 2. Intro analysis and BIF previews | Source complete, including shared tasks, extraction, matching, derivatives, persistence and management | Initial full builds and regression complete; targeted repairs and actual media/browser acceptance pending | Pending |
+| 2. Intro analysis and BIF previews | Shared lifecycle, preview delivery and management implemented; v2 intro accuracy and historical-record repairs in progress | Initial regressions and repair checks completed; first real accuracy attempt missed all six positives; full consumer acceptance pending | Pending |
 | 3. Concurrency and recovery | Not started | Not started | Pending |
