@@ -22,12 +22,21 @@ import (
 
 // New acquires exclusive catalog ownership before recovering interrupted jobs.
 // Missing configured roots do not prevent server startup.
-func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string) (*Store, error) {
+func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string, options ...Option) (*Store, error) {
 	if pool == nil || prober == nil {
 		return nil, fmt.Errorf("%w: database and media prober are required", ErrInvalidInput)
 	}
 	s := &Store{pool: pool, prober: prober, active: make(map[string]*scanTask), queue: make(chan *scanTask, 128),
 		scanUpdates: make(chan struct{}, 1), done: make(chan struct{})}
+	var settings storeOptions
+	for _, option := range options {
+		if option == nil {
+			return nil, fmt.Errorf("%w: nil library option", ErrInvalidInput)
+		}
+		if err := option(&settings); err != nil {
+			return nil, err
+		}
+	}
 	seen := make(map[string]bool)
 	for _, path := range allowedRoots {
 		if strings.TrimSpace(path) == "" || strings.ContainsRune(path, '\x00') {
@@ -57,9 +66,19 @@ func New(pool *pgxpool.Pool, prober Prober, allowedRoots []string) (*Store, erro
 	}
 	s.ownership = ownership
 	s.ctx, s.cancel = context.WithCancel(context.Background())
+	if settings.scanEvidence != nil {
+		scope, scopeErr := s.scanEvidenceScope(ctx, settings.scanEvidence.ServerID)
+		if scopeErr == nil {
+			s.scanEvidence, scopeErr = newScanEvidenceManager(s.ctx, scope, *settings.scanEvidence, allowedRoots)
+		}
+		if scopeErr != nil {
+			s.cancel()
+			return nil, errors.Join(scopeErr, ownership.release())
+		}
+	}
 	if err := s.recoverTaskScans(ctx); err != nil {
 		s.cancel()
-		return nil, errors.Join(fmt.Errorf("recover interrupted scans: %w", err), ownership.release())
+		return nil, errors.Join(fmt.Errorf("recover interrupted scans: %w", err), s.retireScanEvidenceOwnership())
 	}
 	for i := 0; i < 2; i++ {
 		s.workers.Add(1)
@@ -377,7 +396,10 @@ func (s *Store) Close(ctx context.Context) error {
 			// its syscall and recovery work, so a successor cannot clear its journal
 			// while an old rename is still capable of taking effect.
 			s.fileDeletions.Wait()
-			ownershipErr := s.ownership.release()
+			ownershipErr := s.retireScanEvidenceOwnership()
+			// Failed evidence retirement retains its filesystem lock and catalog
+			// fence outside the pool until process exit. Pool.Close must not wait
+			// for a deliberately quarantined ownership checkout.
 			s.closeCatalogChangeListener()
 			s.mu.Lock()
 			s.shutdownErr = errors.Join(s.shutdownErr, ownershipErr)

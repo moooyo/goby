@@ -16,19 +16,27 @@ import (
 // HTTP stream slots bound their count; this runtime fences shutdown and waits
 // until their authorization watchers have stopped using the catalog.
 type originalStreamRuntime struct {
-	mu       sync.Mutex
-	ctx      context.Context
-	cancel   context.CancelFunc
-	closing  bool
-	requests sync.WaitGroup
-	owners   map[originalStreamOwner]int
-	sources  map[*originalSourceLease]struct{}
+	mu                 sync.Mutex
+	ctx                context.Context
+	cancel             context.CancelFunc
+	closing            bool
+	requests           sync.WaitGroup
+	owners             map[originalStreamOwner]int
+	sources            map[*originalSourceLease]struct{}
+	instanceID         string
+	resourceErr        error
+	leaseSequence      uint64
+	completionSequence uint64
+	completed          [originalResourceCompletionLimit]originalResourceRecord
+	completedHead      int
+	completedCount     int
 }
 
 type originalSourceLease struct {
 	itemID, sourceID string
 	cancel           context.CancelFunc
 	done             chan struct{}
+	resource         originalResourceRecord
 }
 
 const maxOriginalOwnerStreams = 8
@@ -40,7 +48,9 @@ type originalStreamOwner struct {
 
 func newOriginalStreamRuntime() *originalStreamRuntime {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &originalStreamRuntime{ctx: ctx, cancel: cancel, owners: make(map[originalStreamOwner]int)}
+	instanceID, resourceErr := newOriginalResourceInstanceID()
+	return &originalStreamRuntime{ctx: ctx, cancel: cancel, owners: make(map[originalStreamOwner]int),
+		instanceID: instanceID, resourceErr: resourceErr}
 }
 
 func (runtime *originalStreamRuntime) enter(principal identity.Principal) (context.Context, func(), error) {
@@ -68,10 +78,14 @@ func (runtime *originalStreamRuntime) enterSource(principal identity.Principal, 
 	if runtime.owners[owner] >= maxOriginalOwnerStreams {
 		return nil, nil, library.ErrBusy
 	}
+	record, err := runtime.nextResourceLease(itemID, sourceID)
+	if err != nil {
+		return nil, nil, err
+	}
 	runtime.owners[owner]++
 	runtime.requests.Add(1)
 	lifetime, cancel := context.WithCancel(runtime.ctx)
-	lease := &originalSourceLease{itemID: itemID, sourceID: sourceID, cancel: cancel, done: make(chan struct{})}
+	lease := &originalSourceLease{itemID: itemID, sourceID: sourceID, cancel: cancel, done: make(chan struct{}), resource: record}
 	if runtime.sources == nil {
 		runtime.sources = make(map[*originalSourceLease]struct{})
 	}
@@ -88,6 +102,9 @@ func (runtime *originalStreamRuntime) enterSource(principal identity.Principal, 
 			delete(runtime.sources, lease)
 			cancel()
 			close(lease.done)
+			// Existing guard cleanup joins its watcher before invoking leave.
+			// This records that callback, not a claim that every source FD closed.
+			runtime.completeResourceLease(lease.resource)
 			runtime.mu.Unlock()
 			runtime.requests.Done()
 		})

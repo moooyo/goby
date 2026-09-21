@@ -81,11 +81,15 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	if err != nil {
 		return nil, err
 	}
+	catalogOptions, err := scanEvidenceLibraryOptions(cfg, id)
+	if err != nil {
+		return nil, err
+	}
 	// Optional restart analysis belongs to scanning, independently of whether
 	// conversion is currently enabled. Unsupported analysis retains the normal
 	// probe facts; playback requests only read cached evidence.
 	catalog, err := library.New(db, media.Prober{FFprobePath: cfg.FFprobePath, FFmpegPath: cfg.FFmpegPath,
-		AnalyzeVideoSeek: true, Timeout: 30 * time.Second}, cfg.MediaRoots)
+		AnalyzeVideoSeek: true, Timeout: 30 * time.Second}, cfg.MediaRoots, catalogOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -247,6 +251,7 @@ func (s *Server) Handler() http.Handler {
 	s.registerAdminMediaDiagnosticRoutes(mux)
 	s.registerAdminMediaOperationRoutes(mux)
 	s.registerAdminMediaAnalysisRoutes(mux)
+	s.registerAdminRuntimeResourcesRoutes(mux)
 	s.registerAdminSettingsRoutes(mux)
 	s.registerAdminBackupRoutes(mux)
 	s.registerConfigurationRoutes(mux)

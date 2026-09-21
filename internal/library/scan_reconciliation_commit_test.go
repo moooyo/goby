@@ -146,7 +146,7 @@ func TestScanReconciliationBudgetsRejectRatherThanTruncateProof(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			previous := test.budget
 			err := test.budget.retain(test.item)
-			if !errors.Is(err, errScanReconciliationEvidenceBudget) || !scanReconciliationObservationOnly(err) || test.budget != previous {
+			if !errors.Is(err, errScanReconciliationEvidenceBudget) || !scanReconciliationObservationOnly(err) || !reflect.DeepEqual(test.budget, previous) {
 				t.Fatalf("exhausted proof was retained: before=%+v, after=%+v, error=%v", previous, test.budget, err)
 			}
 		})
@@ -154,5 +154,30 @@ func TestScanReconciliationBudgetsRejectRatherThanTruncateProof(t *testing.T) {
 	budget := scanReconciliationBudgetState{bytes: scanReconciliationMaxBytes - scanReconciliationItemBytes - 1}
 	if err := budget.retain(scanReconciliationItem{id: "x"}); err != nil || budget.bytes != scanReconciliationMaxBytes || budget.items != 1 {
 		t.Fatalf("exact finite budget was rejected: %+v, %v", budget, err)
+	}
+}
+
+func TestScanReconciliationRetainedBudgetCountsDistinctConsistentItems(t *testing.T) {
+	budget := &scanReconciliationBudgetState{}
+	item := scanReconciliationItem{id: "shared-member", libraryID: "library", path: "/media/member", relative: "member"}
+	if err := budget.retain(item); err != nil {
+		t.Fatal(err)
+	}
+	charged := budget.bytes
+	for index := 0; index < 10; index++ {
+		if err := budget.retain(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if budget.items != 1 || budget.bytes != charged || len(budget.retained) != 1 {
+		t.Fatalf("duplicate relation edges inflated the retained budget: %+v", budget)
+	}
+	changed := item
+	changed.rootID = "replacement-root"
+	if err := budget.retain(changed); !errors.Is(err, errScanReconciliationEvidenceUnavailable) {
+		t.Fatalf("changed duplicate identity was accepted: %v", err)
+	}
+	if budget.items != 1 || budget.bytes != charged || budget.retained[item.id] != item {
+		t.Fatal("rejected duplicate changed the retained proof")
 	}
 }

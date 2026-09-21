@@ -146,6 +146,7 @@ type scanTask struct {
 type Store struct {
 	pool          *pgxpool.Pool
 	ownership     *scanOwnership
+	scanEvidence  *scanEvidenceManager
 	prober        Prober
 	roots         []approvedRoot
 	ctx           context.Context

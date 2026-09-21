@@ -18,6 +18,8 @@ type scanReconciliationPass struct {
 	eligible   bool
 	individual bool
 	task       *scanTask
+	staging    *scanReconciliationStaging
+	closeErr   error
 }
 
 func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (*scanReconciliationPass, error) {
@@ -31,14 +33,22 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 		return pass, nil
 	}
 	pass.eligible = true
-	pass.evidence = newScanReconciliationEvidence()
+	var err error
+	pass.evidence, err = s.newScanReconciliationEvidence(task.ctx)
+	if err != nil {
+		if pass.evidence == nil {
+			pass.evidence = newScanReconciliationEvidence()
+		}
+		// Admission exhaustion prevents deletion but does not hide readable
+		// media from an ordinary scan. Store ownership tracks any late cleanup.
+		pass.evidence.Disable(err)
+	}
 	retainedBytes, retainedHandles := int64(0), 0
 	for _, root := range roots {
 		capture, err := s.prepareRootBindingScan(task, root)
 		if err != nil {
 			_ = capture.Close()
-			_ = pass.Close()
-			return nil, err
+			return nil, errors.Join(err, pass.Close())
 		}
 		pass.captures = append(pass.captures, capture)
 		pass.byRoot[root.id] = capture
@@ -55,6 +65,12 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 		retainedHandles += handles
 		if pass.eligible && pass.evidence.Err() == nil {
 			_ = pass.evidence.AttachRoot(root.id, capture.opened)
+		}
+	}
+	if pass.evidence.Err() == nil {
+		pass.staging, err = s.beginScanReconciliationStaging(task.ctx, task.job.ID, task.job.LibraryID)
+		if err != nil {
+			return nil, errors.Join(err, pass.Close())
 		}
 	}
 	return pass, nil
@@ -94,14 +110,19 @@ func (pass *scanReconciliationPass) Close() error {
 		return nil
 	}
 	var err error
+	if pass.staging != nil {
+		err = pass.staging.Close()
+		pass.staging = nil
+	}
 	if pass.evidence != nil {
-		err = pass.evidence.Close()
+		err = errors.Join(err, pass.evidence.Close())
 	}
 	for _, capture := range pass.captures {
 		err = errors.Join(err, capture.Close())
 	}
 	pass.captures, pass.byRoot = nil, nil
-	return err
+	pass.closeErr = errors.Join(pass.closeErr, err)
+	return pass.closeErr
 }
 
 func (pass *scanReconciliationPass) openRoot(s *Store, root libraryRoot) (*os.Root, error) {
@@ -147,7 +168,19 @@ func (pass *scanReconciliationPass) finish(s *Store, task *scanTask, library Lib
 	if pass.evidence.Err() != nil {
 		return retained, nil
 	}
-	parents, err := s.reconcileMissingScanItems(task, library, pass.captures, pass.evidence, musicParents)
+	if err := pass.evidence.requireComplete(task.ctx); err != nil {
+		if task.ctx.Err() != nil {
+			return "", task.ctx.Err()
+		}
+		return retained, nil
+	}
+	if pass.staging == nil {
+		return "", errors.New("complete scan has no accepted-identity staging")
+	}
+	if err := pass.staging.Seal(task.ctx); err != nil {
+		return "", err
+	}
+	parents, err := s.reconcileMissingScanItems(task, library, pass.captures, pass.evidence, musicParents, pass.staging)
 	if err != nil {
 		if task.ctx.Err() != nil {
 			return "", task.ctx.Err()
@@ -163,10 +196,22 @@ func (pass *scanReconciliationPass) finish(s *Store, task *scanTask, library Lib
 	return "", nil
 }
 
-func (state *scanState) recordScanSeen(id string) {
+type scanSeenRecordingError struct{ err error }
+
+func (failure *scanSeenRecordingError) Error() string { return failure.err.Error() }
+func (failure *scanSeenRecordingError) Unwrap() error { return failure.err }
+
+func (state *scanState) recordScanSeen(id string) error {
+	if state.reconciliationPass != nil && state.reconciliationPass.staging != nil {
+		if err := state.reconciliationPass.staging.Record(state.task.ctx, id); err != nil {
+			return &scanSeenRecordingError{err}
+		}
+		return nil
+	}
 	if state.reconciliation != nil {
 		_ = state.reconciliation.MarkSeen(id)
 	}
+	return nil
 }
 
 // The scanner needs complete membership for auxiliary classification and album

@@ -43,6 +43,7 @@ type scanState struct {
 	themeLibrary        *themeLibraryScan
 	extras              *extraScan
 	reconciliation      *scanReconciliationEvidence
+	reconciliationPass  *scanReconciliationPass
 }
 
 type storedFile struct {
@@ -56,7 +57,7 @@ type storedFile struct {
 	scanSortName                                                                           *string
 }
 
-func (s *Store) scanLibrary(task *scanTask) (string, error) {
+func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 	library, err := s.GetLibrary(task.ctx, task.job.LibraryID)
 	if err != nil {
 		return "Library is unavailable", err
@@ -86,7 +87,14 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 	if err != nil {
 		return "Library storage approval or scan ownership changed; existing catalog records were retained", err
 	}
-	defer reconciliation.Close()
+	defer func() {
+		if err := reconciliation.Close(); err != nil {
+			resultErr = errors.Join(resultErr, err)
+			if message == "" {
+				message = "Scan evidence cleanup could not be completed"
+			}
+		}
+	}()
 	warnings, failedRoots, numberingConflicts := 0, 0, 0
 	themeOwners := &themeLibraryScan{roots: make(map[string]*scanState), expected: roots,
 		claimed: make(map[string]string), issues: make(map[string]int)}
@@ -106,7 +114,7 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 			continue
 		}
 		state := &scanState{store: s, task: task, library: library, root: root, opened: opened,
-			themeLibrary: themeOwners, reconciliation: reconciliation.collector()}
+			themeLibrary: themeOwners, reconciliation: reconciliation.collector(), reconciliationPass: reconciliation}
 		err = state.startThemeScan()
 		if err == nil {
 			err = state.startExtraScan()
@@ -134,6 +142,10 @@ func (s *Store) scanLibrary(task *scanTask) (string, error) {
 		if err != nil {
 			if task.ctx.Err() != nil {
 				return "Scan cancelled", task.ctx.Err()
+			}
+			var recordingFailure *scanSeenRecordingError
+			if errors.As(err, &recordingFailure) {
+				return "Accepted scan identities could not be retained safely", err
 			}
 			failedRoots++
 		}
@@ -422,7 +434,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 			}
 		}
 		state.recordThemePrimary(path, stored.id, itemType)
-		state.recordScanSeen(stored.id)
+		if err := state.recordScanSeen(stored.id); err != nil {
+			return err
+		}
 		return state.store.persistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
@@ -516,7 +530,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		}
 	}
 	state.recordThemePrimary(path, id, itemType)
-	state.recordScanSeen(id)
+	if err := state.recordScanSeen(id); err != nil {
+		return err
+	}
 	return state.store.persistProgress(state.task)
 }
 
@@ -625,7 +641,9 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 			return "", err
 		}
 	}
-	state.recordScanSeen(id)
+	if err := state.recordScanSeen(id); err != nil {
+		return "", err
+	}
 	return id, nil
 }
 

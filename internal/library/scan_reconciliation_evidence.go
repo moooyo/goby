@@ -61,6 +61,7 @@ type scanReconciliationRootEvidence struct {
 // shared with the catalog transaction.
 type scanReconciliationEvidence struct {
 	observation           storageObservationLifetime
+	spool                 *scanReconciliationSpool
 	limits                scanReconciliationEvidenceLimits
 	directories           int
 	entries               int
@@ -108,6 +109,9 @@ func (evidence *scanReconciliationEvidence) AttachRoot(rootID string, borrowed *
 	if rootID == "" || strings.ContainsRune(rootID, '\x00') || borrowed == nil || evidence.roots[rootID] != nil {
 		return evidence.unavailable("root attachment is invalid or repeated")
 	}
+	if evidence.spool != nil {
+		return evidence.attachSpoolRoot(rootID, borrowed)
+	}
 	if err := evidence.reserve(1, 0, 0, scanReconciliationDirectoryBytes+int64(len(rootID))); err != nil {
 		return err
 	}
@@ -135,6 +139,9 @@ func (evidence *scanReconciliationEvidence) AttachRoot(rootID string, borrowed *
 // includes ignored names, auxiliary resources, symlinks and unsupported files.
 // Ancestors must already be recorded; their walks need not yet be complete.
 func (evidence *scanReconciliationEvidence) RecordDirectory(rootID, relative string, before os.FileInfo, raw []os.DirEntry) error {
+	if evidence != nil && evidence.spool != nil {
+		return evidence.recordSpoolDirectory(rootID, relative, before, raw)
+	}
 	if err := evidence.Err(); err != nil {
 		return err
 	}
@@ -199,6 +206,9 @@ func (evidence *scanReconciliationEvidence) RecordDirectory(rootID, relative str
 // CompleteDirectory is called only after the directory's entire walk succeeds.
 // A repeated completion is harmless; it cannot replace the original snapshot.
 func (evidence *scanReconciliationEvidence) CompleteDirectory(rootID, relative string) error {
+	if evidence != nil && evidence.spool != nil {
+		return evidence.completeSpoolDirectory(rootID, relative)
+	}
 	if err := evidence.Err(); err != nil {
 		return err
 	}
@@ -255,6 +265,9 @@ func (evidence *scanReconciliationEvidence) Revalidate(ctx context.Context) erro
 	if err := evidence.requireComplete(ctx); err != nil {
 		return err
 	}
+	if evidence.spool != nil {
+		return evidence.revalidateSpool(ctx)
+	}
 	for _, root := range evidence.roots {
 		for _, witness := range root.directories {
 			if err := evidence.verifyDirectory(ctx, root, witness); err != nil {
@@ -275,6 +288,9 @@ func (evidence *scanReconciliationEvidence) Revalidate(ctx context.Context) erro
 func (evidence *scanReconciliationEvidence) PathAbsent(ctx context.Context, rootID, relative string) (bool, error) {
 	if err := evidence.requireComplete(ctx); err != nil {
 		return false, err
+	}
+	if evidence.spool != nil {
+		return evidence.spoolPathAbsent(ctx, rootID, relative)
 	}
 	relative, valid := scanReconciliationRelative(relative, false)
 	root := evidence.roots[rootID]
@@ -355,13 +371,22 @@ func (evidence *scanReconciliationEvidence) Disable(cause error) error {
 			evidence.err = errors.Join(errScanReconciliationEvidenceUnavailable, cause)
 		}
 	}
-	_ = evidence.release()
+	if evidence.spool != nil {
+		_ = evidence.observation.retire(evidence.release)
+	} else {
+		_ = evidence.release()
+	}
 	return evidence.err
 }
 
 func (evidence *scanReconciliationEvidence) Close() error {
 	if evidence == nil {
 		return nil
+	}
+	if evidence.spool != nil {
+		if done, receipt := evidence.CleanupStatus(); done {
+			return receipt.Err
+		}
 	}
 	return evidence.observation.retire(func() error {
 		if evidence.err == nil {
@@ -385,6 +410,9 @@ func (evidence *scanReconciliationEvidence) release() error {
 	}
 	evidence.roots = nil
 	evidence.seen = nil
+	if evidence.spool != nil {
+		result = evidence.spool.close(result)
+	}
 	return result
 }
 

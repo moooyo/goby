@@ -35,6 +35,7 @@ type Config struct {
 	MediaDiagnostics      MediaDiagnosticsConfig
 	MediaOperations       MediaOperationsConfig
 	MediaAnalysis         MediaAnalysisConfig
+	ScanEvidence          ScanEvidenceConfig
 	Diagnostics           diagnostics.Config
 	Recovery              RecoveryConfig
 	ActivityRetentionDays int
@@ -92,6 +93,10 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	c.MediaAnalysis, err = loadMediaAnalysis()
+	if err != nil {
+		return Config{}, err
+	}
+	c.ScanEvidence, err = loadScanEvidence()
 	if err != nil {
 		return Config{}, err
 	}
@@ -160,6 +165,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if err := c.validateMediaAnalysis(); err != nil {
+		return err
+	}
+	if err := c.validateScanEvidence(); err != nil {
 		return err
 	}
 	if err := c.OnlineProviders.Validate(); err != nil {

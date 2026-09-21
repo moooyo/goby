@@ -25,6 +25,14 @@ type scanOwnership struct {
 	lost atomic.Bool
 	conn *pgxpool.Conn
 	key  int64
+
+	// The dirty flag is set before the first private DDL is sent and never
+	// cleared. Even a failed or rolled-back initialization cannot return this
+	// physical session to an unrelated pool borrower.
+	scanStagingDirty      bool
+	scanStagingReady      bool
+	scanStagingGeneration string
+	scanStagingPasses     map[string]*scanReconciliationStaging
 }
 
 func acquireScanOwnership(ctx context.Context, pool *pgxpool.Pool) (*scanOwnership, error) {
@@ -72,8 +80,7 @@ func (ownership *scanOwnership) release() error {
 		return nil
 	}
 	if ownership.lost.Load() {
-		ownership.discardLocked()
-		return fmt.Errorf("%w: library ownership session was lost", ErrUnavailable)
+		return errors.Join(fmt.Errorf("%w: library ownership session was lost", ErrUnavailable), ownership.discardLocked())
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -81,26 +88,35 @@ func (ownership *scanOwnership) release() error {
 	err := ownership.conn.QueryRow(ctx, "SELECT pg_advisory_unlock($1::bigint)", ownership.key).Scan(&unlocked)
 	if err != nil || !unlocked {
 		ownership.lost.Store(true)
-		ownership.discardLocked()
+		closeErr := ownership.discardLocked()
 		if err != nil {
-			return fmt.Errorf("%w: release library ownership lock: %w", ErrUnavailable, err)
+			return errors.Join(fmt.Errorf("%w: release library ownership lock: %w", ErrUnavailable, err), closeErr)
 		}
-		return fmt.Errorf("%w: library ownership lock was lost", ErrUnavailable)
+		return errors.Join(fmt.Errorf("%w: library ownership lock was lost", ErrUnavailable), closeErr)
+	}
+	if ownership.scanStagingDirty {
+		// ON COMMIT PRESERVE ROWS is session state. Explicitly unlocking above
+		// preserves the existing handoff ordering, but never makes a dirty
+		// physical session safe for normal pool reuse.
+		if err := ownership.discardLocked(); err != nil {
+			return fmt.Errorf("%w: close private scan staging session: %w", ErrUnavailable, err)
+		}
+		return nil
 	}
 	ownership.conn.Release()
 	ownership.conn = nil
 	return nil
 }
 
-func (ownership *scanOwnership) discardLocked() {
+func (ownership *scanOwnership) discardLocked() error {
 	if ownership.conn == nil {
-		return
+		return nil
 	}
 	conn := ownership.conn.Hijack()
 	ownership.conn = nil
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_ = conn.Close(ctx)
+	return conn.Close(ctx)
 }
 
 // Available reports the last known write availability. CheckOwnership verifies
