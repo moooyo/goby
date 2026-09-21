@@ -336,9 +336,14 @@ gates, cancellation and actual group remeasurement. Frozen source `49fc4ec`
 passed all 105 current intro parent tests, six-original calibration and the
 predeclared cold-open, recap and body-only controls under the unchanged profile
 and labels. The [phase record](media-analysis-resilience-phase2-20260921.md)
-binds those results and their original extraction provenance. Fresh held-out
-accuracy and actual consumer acceptance remain required; calibration success
-alone does not establish generalization or complete phase acceptance.
+binds those results and their original extraction provenance. The subsequent
+fourteen-source run passed its first three fresh holdout cases and all other
+corpus cases under the unchanged labels and five-second tolerance. Actual FH1
+skip and all four required previews also passed; the full browser journey later
+failed a cancellation fixture's 200-versus-202 assertion. The test-only fix does
+not alter this algorithm or convert that journey into a pass. Remaining lifecycle
+acceptance is still required. The declared episode-level result does not establish
+new-series, new-season or fresh-negative specificity.
 
 The integrated phase must use licensed, independent real episodes with labels
 derived from independently reviewed source evidence and separate

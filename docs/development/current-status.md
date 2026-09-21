@@ -33,10 +33,18 @@ machine transcripts. Source-derived labels were frozen before any FH features
 or Analyze calls. This is assistant review, not human ground truth or direct
 audio listening. The complete fourteen-source manifest is assembled with FH1
 selected by the predeclared case order, without detector pre-screening.
-Fresh accuracy and the actual consumer/lifecycle journey remain required before
-phase 2 publication. The source-only worker is independently closed. Test-space
-recovery, a fresh single-browser database and final runtime admission are in
-progress; the owned PostgreSQL and required evidence remain available.
+The first actual fourteen-source run passed every corpus case: six calibration,
+three fresh holdout and five regression cases, including the two expected
+insufficient-evidence abstentions. All four required preview evaluations passed,
+and FH1's real intro-skip action succeeded. The complete browser journey failed
+later at cancellation because its assertion expected HTTP 200 from the existing
+HTTP 202 endpoint. Product behavior and frozen labels were not changed. The
+test-only correction at `e94173f` expects 202 and still requires actual terminal
+cancellation and joined work. Cancellation, pruning and restart acceptance
+remain open. The failed run and both observer/worker closures are retained;
+phase 2 is not published. A separate complete lifecycle verification is being
+prepared with the same product binary and corpus, a fresh database and an
+explicit runtime file view containing the one corrected test script.
 The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
 source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
 [execution record](media-analysis-resilience-phase1-20260920.md) and

@@ -76,13 +76,26 @@ labels have SHA-256
 `79c826d6521222851aaa412144e157cd1aafb76866fe9efd4b3c93135a4acfac`.
 The complete fourteen-source reviewed manifest has SHA-256
 `b117f19dafc5e2b04f649599e9278ce55c61a6ab62393d267a63181f5055d759`.
-No FH fingerprint, intro-feature or Analyze call has occurred. FH1 was selected
-as the consumer by predeclared case order after independent positive source
-review, not by detector output. Complete recoverable test-space retirement,
-stage the bound evidence, provision one fresh browser database and admit the
-single final real consumer/accuracy/lifecycle run. Do not add a preliminary FH
-detector run. Phase-2 publication remains pending; phase 3 product work has not
-started. The private checkpoint records the current retirement owner and state.
+FH1 was selected as the consumer by predeclared case order after independent
+positive source review, not by detector output. After reversible space recovery,
+evidence staging and fresh database provisioning, the actual fourteen-source
+run completed its first FH detection and accuracy evaluation. Its corpus report
+passed all fourteen cases, with zero misses, false positives, boundary failures
+or narrative-safety failures and two expected regression abstentions. SHA-256:
+`3fc86f7e80efd0fc8bb0fd1c7e22aeedab792f1bd907d0c1aa4a04b96200d5ba`.
+The four required preview evaluations and actual FH1 skip passed. The browser
+journey then failed at its cancellation assertion: the existing production
+endpoint returned 202 with state `stopping`, while the fixture expected 200.
+Both units and their process groups are closed; original failed receipts remain
+failed. The test-only correction `e94173f592f1ef000e94673dfc1c29742d526dcd`
+adds an explicit expected 202 to that request without relaxing terminal-state
+or work-join checks. Product source49fc, Options, labels and the manifest remain
+unchanged. Prepare a new database and unique runtime namespace for the complete
+client/lifecycle verification. Its minimal 77-file runtime view uses the one
+corrected script with the original unchanged assets; do not mutate the physical
+49acf source or relabel the repeat as a new unseen trial. Phase-2 publication
+remains pending; phase 3 product work has not started. Read the private checkpoint
+for the latest exact execution/closure and successor-preparation state.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
 binds the retained remote evidence and current owned worker state. Read it before
 resuming remote work, and do not restart a completed or still-running worker.

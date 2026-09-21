@@ -1,6 +1,6 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **source `49fc4ec` passes affected builds, intro regression, original calibration and controlled accuracy; fresh holdout and final consumer acceptance remain pending**.
+Status: **source `49fc4ec` passes affected builds, regression, calibration/controls and fourteen-source accuracy including fresh holdout; final cancellation/prune/restart acceptance remains pending after a test-only HTTP-status correction**.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
@@ -534,6 +534,53 @@ passing cases. Recoverable test-space retirement, new evidence staging, one
 fresh browser database/context and final runtime admission are still pending.
 Source review and manifest assembly do not constitute passing fresh accuracy,
 client consumption, management/restart behavior or phase acceptance.
+
+## First fourteen-source run and cancellation fixture correction
+
+One actual complete fourteen-source attempt ran against source49fc in a fresh
+database under the admitted resource profile. The corpus evaluator passed all
+fourteen cases: calibration 6/6, fresh holdout 3/3, regression 5/5. The regression
+scope includes two expected insufficient-evidence abstentions. There were zero
+misses, false positives, boundary failures, narrative-safety failures or pending
+corpus cases. All four required preview cases (C1/240, H1/320, FH1/320 and N1/400)
+passed their actual decoding, source timing and pixel requirements. The corpus
+report SHA-256 is
+`3fc86f7e80efd0fc8bb0fd1c7e22aeedab792f1bd907d0c1aa4a04b96200d5ba`.
+This establishes the first frozen-product fresh-episode result, not new-series,
+new-season or fresh-negative specificity.
+
+The browser completed native configuration/CAS, real tasks, the actual FH1 skip,
+BIF range/authentication and administrator decisions. It failed at cancellation:
+`POST /admin/v1/task-runs/{id}/cancel` returned its existing HTTP 202 contract with
+`Run.State=stopping`, while `responseFor` defaulted to expected HTTP 200. The
+failure HTTP artifact has SHA-256
+`f77336d3695f97638269c25cb1f5adf793d2c5fece3cfaee9a93f37925058ade`.
+The browser and driver remain failed; cancellation completion, cache pruning and
+restart were not reached and are not inferred from the accepted response.
+
+The Go parent failed after 1,112.22 seconds. The worker and independent observer
+are both closed with their original failed verdicts retained. No resource-guard
+kill or OOM caused the failure. Cleanup joined analysis, left zero active HTTP
+requests/cache readers/building entries/pending publications, and used no
+fallback live credential cleanup. Private HTTP artifacts containing API keys
+remain remote; 79 screened original files were copied with byte/hash checks.
+The worker closure SHA-256 is
+`c485b4905fd266c150d170d22cec113db47a51d7ba09820c70072e38e2901bcc`.
+
+Test-only commit `e94173f592f1ef000e94673dfc1c29742d526dcd` adds expected 202 to
+that one cancellation response assertion. The production endpoint and its
+existing integration test already specify 202. The browser must still observe
+a running child before clicking stop, then a cancelled parent with all children
+terminal; no success condition or quality threshold is loosened. The corrected
+script has SHA-256
+`ad05703cd2f2a43450dcc169e6a076aa71125c5ac1b996e452d8ded22d86a747`.
+It has not yet completed the remaining lifecycle acceptance. A separate runtime
+view will contain go.mod, the three required scripts and 73 unchanged frontend
+assets, preserving the original physical source tree and compiled binaries.
+The subsequent full client/lifecycle run must retain the already observed
+accuracy and original failed attempt, use a new database/namespace, and keep
+product49fc, all Options, labels, source media and the fourteen-case contract
+unchanged. It is a repeat of the frozen corpus, not a newly unseen trial.
 
 ## Required consolidated evidence
 
