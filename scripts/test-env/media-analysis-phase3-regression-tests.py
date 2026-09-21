@@ -3,6 +3,7 @@
 
 import importlib.util
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -29,6 +30,20 @@ class DatabaseAdmissionTests(unittest.TestCase):
         self.assertEqual(runner.database_identity(value, backup=True), (55461, "goby_backup_phase3_source"))
         with self.assertRaises(runner.Failure):
             runner.database_identity(value)
+
+
+class SourceInventoryTests(unittest.TestCase):
+    def test_path_components_use_the_manifest_posix_string_order(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            names = ["cmd/goby/dashboard_assets.go", "cmd/goby-notification-receiver/main.go", "go.mod"]
+            for name in names:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(name.encode())
+            rows = runner.source_inventory(root)
+            self.assertEqual([row["path"] for row in rows], sorted(names))
+            self.assertEqual(rows[0]["path"], "cmd/goby-notification-receiver/main.go")
 
 
 if __name__ == "__main__":

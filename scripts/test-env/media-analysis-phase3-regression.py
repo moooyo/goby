@@ -108,7 +108,7 @@ def process_identity(pid):
 
 def source_inventory(root):
     result = []
-    for path in sorted(root.rglob("*")):
+    for path in sorted(root.rglob("*"), key=lambda value: value.relative_to(root).as_posix()):
         info = path.lstat()
         need(not stat.S_ISLNK(info.st_mode), "source_symlink")
         if stat.S_ISDIR(info.st_mode):

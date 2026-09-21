@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **source implementation integrated; remote verification admission and publication pending**.
+Status: **source implementation integrated; consolidated remote verification in progress; publication pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -152,3 +152,31 @@ source/artifact identities, selectors, real workload overlap, resource peaks,
 recovery outcomes and remaining limitations. Only the verified delivery may be
 merged and pushed, with exact remote-ref readback; publication remains distinct
 from deployment.
+
+## First consolidated verification attempt
+
+The complete source was frozen at `46c2747e3cc148141db13cd2fe05c42c95b899a3`.
+Remote source staging verified all 6,720 canonical Git archive files before and
+after compiling 27 Python sources, with bytecode written outside the frozen
+tree. The staging process and cgroup closed independently. Seven isolated
+PostgreSQL databases were then provisioned; the setup process closed while its
+dedicated PostgreSQL remained available for regression. An initial setup-closure
+collector assertion confused `INVOCATION_ID` and `_SYSTEMD_INVOCATION_ID`;
+that collector failure remains preserved separately from successful provisioning.
+
+The first full regression worker failed before any test, npm command or build
+ran, at `frozen_source_inventory`. All 6,720 paths, byte counts and hashes still
+matched; 28 array positions differed. The runner sorted `Path` components while
+the manifest sorts complete relative POSIX path strings. For example,
+`cmd/goby-notification-receiver/main.go` and `cmd/goby/dashboard_assets.go`
+received different relative ordering. This is a verification-runner defect,
+not a product source mismatch or a Goby regression result.
+
+The repair uses explicit relative POSIX string ordering and adds a focused
+regression source with that actual prefix/directory pattern. The failed run is
+retained, with zero test/build stages accepted. Its fast exit also exposed the
+independent observer's inability to bind a worker before the first polling
+sample; that failed observer result remains separate. A successor must bind
+the launch identity, preserve transient observation gaps, and use a new immutable
+source/profile/context. The untouched seven databases can be reused only with
+their original service and database identities rechecked; setup is not repeated.
