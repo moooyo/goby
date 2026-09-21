@@ -22,7 +22,8 @@ bind the full corpus/client/lifecycle run and resource closure. Phase 3
 implementation has started; verification and publication remain pending. Its
 [execution record](../development/media-analysis-resilience-phase3-20260922.md)
 tracks the written Seen staging, spool, SQL paging, configuration/store and
-resource-observation sources. Fixture/runtime/oracle integration remains active.
+resource-observation sources. Fixture/runtime/oracle and overload sources are
+integrated; exact release values are still being bound.
 VM106 and dependencies are provisioned, with the first bootstrap failure retained.
 No Phase 3 product verification has started and no workload profile is admitted;
 the full approved Phase 3 scope remains required.

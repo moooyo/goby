@@ -46,14 +46,14 @@ binds exact units, receipt hashes, screened copies and preserved failures.
 Four credential-bearing preview HTTP originals remain remote; secret runtime
 contexts were not copied. Do not publish them.
 
-Phase 3 implementation has started; verification and publication are pending.
+Phase 3 source implementation is integrated; verification admission and publication are pending.
 The [execution record](media-analysis-resilience-phase3-20260922.md) retains the
 complete 10k/100k mixed-workload, sorting/metadata concurrency, storage-fault,
 process/database recovery and isolated-guest clean reboot/forced-reset scope.
 PostgreSQL temporary Seen staging, bounded disk spool with generation identity,
 SQL candidate paging, configuration/store integration and runtime-resource
-observation sources are written. Source review and fixture/runtime/oracle
-integration remain in progress. No Phase 3 product test/build or mixed-load,
+observation sources are written. Fixture/runtime/oracle, regression and actual
+HTTP overload sources are integrated. No Phase 3 product test/build or mixed-load,
 fault, clean-reboot or forced-reset acceptance run has started.
 
 VM106 and its dependencies are provisioned. The successful second clone,
@@ -62,8 +62,9 @@ the failed first clone and exact partial cleanup remain preserved. Infrastructur
 readiness is separate from workload admission, which is still pending. The guest
 has 2 vCPU, 3 GiB fixed RAM and a 33 GiB disk. Only the sole infrastructure owner
 operates it; source implementation owners must not start independent workloads.
-Finish source/fixture integration and freeze the full candidate and both workload
-profiles before consolidated remote verification.
+Freeze the full candidate and bind exact release values before consolidated
+remote verification. Complete both workload profiles and the full fault matrices;
+individual scenario partial results never accept the whole phase.
 Do not reboot shared `test-env`, other existing VMs or the physical PVE host.
 
 All tests, builds and runtime probes remain remote-only. `ui-ux-pro-max` remains

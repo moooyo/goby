@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **implementation started; verification and publication pending**.
+Status: **source implementation integrated; remote verification admission and publication pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -22,7 +22,7 @@ set or result is frozen by this document.
 | PostgreSQL temporary Seen staging and ownership | Source implementation and scan-path integration written. | Session-private staging, batch/physical limits and ownership retirement require remote verification. |
 | Disk spool generation-handle identity and fallback | Source implementation and scan-path integration written. | Exact directory evidence, Linux export handles, bounded held-FD fallback and cleanup require remote verification. |
 | SQL paging and configuration/store integration | Source implementation written. | Unseen candidates use keyset pages; a bounded positive deletion closure remains atomic. Explicit spool configuration, owner manifest, resource observations and failed-cleanup shutdown repair are integrated; verification is pending. |
-| Consolidated workload and recovery acceptance | Drivers, fault helpers, state observer and real HTTP/media probe written; fixture/runtime/oracle integration continues. | Both scale-tier profiles and the complete candidate remain unfrozen. No Phase 3 product test, build, benchmark or fault/reboot acceptance run has started. |
+| Consolidated workload and recovery acceptance | Compound/fixture, fault/transport, state/probe/oracle, regression and actual HTTP overload sources are integrated. Private runtime/PG/observer/export sources are also complete. | Exact source/tool/build/fixture references and resource admission remain to be bound. No Phase 3 product test, build, benchmark or fault/reboot acceptance run has started. |
 
 These are workstream status observations, not completion claims. Source-only
 design and review do not establish bounded resource use, concurrency, fault
@@ -52,8 +52,15 @@ static review. It discovers every ordinary Go package, builds the frontend and
 both application variants, includes embedded command tests and all Phase 3
 Python test sources, and requires seven distinct owned PostgreSQL databases.
 Actual missing credentials cannot turn required database coverage into a silent
-skip. Runtime setup, fixture and recovery-oracle bindings still require final
-integration before this runner may execute.
+skip. Runtime setup, fixture and recovery-oracle sources are integrated; exact
+release values must be bound before this runner may execute.
+
+The actual HTTP overload source complements each tier's full workload. It holds
+eight same-user original-response leases, requires the ninth request's exact
+429 response, observes another user's successful allowance, then checks recovery
+and closure. It uses already indexed licensed media without sparse extension.
+It does not substitute for decoding, throughput or the cold/cached/incremental
+capacity journey.
 
 Each fault scenario will receive a separate immutable runtime/context export
 from the actual current service and PostgreSQL lifetimes. Reboots cannot reuse
@@ -130,10 +137,11 @@ environment mutation, test, build or runtime probe.
 
 ## Next work and closeout state
 
-Finish source review and the remaining fixture/runtime/oracle integration.
-The fixture producer must establish real item identities and frozen expected
-results, and the recovery checks must bind actual blocked work, resource return,
-explicit replacement-storage rebind and durable playback state. Freeze the complete candidate,
+Freeze the integrated candidate and bind the release values for the completed
+runtime/fixture/oracle sources. The fixture producer must establish real item
+identities and frozen expected results, and the recovery checks must bind actual
+blocked work, resource return, explicit replacement-storage rebind and durable
+playback state. Record the complete candidate,
 environment/corpus inventory, both scale-tier profiles, thresholds, fault
 injections and protected ownership boundaries before consolidated verification.
 

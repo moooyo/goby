@@ -43,11 +43,12 @@ replacement, revocation, migration and backup/recovery retain their independent
 package evidence rather than being attributed to the browser journey.
 
 Phase 3 large-library concurrency, storage faults and isolated-guest reboot/reset
-implementation has started; verification and publication remain pending. The
+sources are integrated; verification admission and publication remain pending. The
 [Phase 3 execution record](media-analysis-resilience-phase3-20260922.md) tracks
 the written PostgreSQL temporary Seen staging, disk spool, SQL paging,
 configuration/store integration and runtime-resource observation sources.
-Workload fixtures, runtime setup and recovery-oracle integration remain in progress.
+Workload fixtures, runtime setup, recovery oracle and actual HTTP overload
+sources are integrated; immutable release values still require binding.
 VM106 and its dependencies are provisioned; the failed first clone is preserved
 separately. No Phase 3 product test/build, 10k/100k workload or fault/reboot
 acceptance run has started, and no workload profile is admitted. Tests/builds/runtime probes remain
