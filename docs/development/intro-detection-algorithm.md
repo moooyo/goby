@@ -8,8 +8,8 @@ source integrity, calibration, persistence and publication precedence.
 
 V3 at source `49fc4ec` has passed the declared calibration, controlled cases and
 fourteen-source accuracy population, including three fresh episode holdouts.
-Complete phase acceptance still requires the client lifecycle verification
-recorded in the [phase record](media-analysis-resilience-phase2-20260921.md).
+The complete client lifecycle verification also passed, as recorded in the
+[phase record](media-analysis-resilience-phase2-20260921.md).
 It retains every Option from the final v2 profile: complete five-second bands need 400/1000
 matched time, the maximum unconfirmed gap is five seconds, full visual matched
 time must reach 850/1000, and every complete band needs a real one-second anchor.
@@ -344,8 +344,9 @@ fourteen-source run passed its first three fresh holdout cases and all other
 corpus cases under the unchanged labels and five-second tolerance. Actual FH1
 skip and all four required previews also passed; the full browser journey later
 failed a cancellation fixture's 200-versus-202 assertion. The test-only fix does
-not alter this algorithm or convert that journey into a pass. Remaining lifecycle
-acceptance is still required. The declared episode-level result does not establish
+not alter this algorithm or convert that journey into a pass. A separate complete
+client/lifecycle repeat subsequently passed with the corrected fixture. The
+declared episode-level result does not establish
 new-series, new-season or fresh-negative specificity.
 
 The integrated phase must use licensed, independent real episodes with labels

@@ -1,12 +1,10 @@
 # Native media analysis workflow
 
-Status: remote builds and regression checks have completed. The first actual
-fourteen-source run passed corpus accuracy, all four required preview cases,
-actual skip, configuration/CAS and administrator decisions. The whole browser
-attempt failed at a cancellation HTTP-status assertion. The fixture-only
-`e94173f` correction is in the running second attempt; cancellation completion,
-pruning, restart and full acceptance remain pending. See the
-[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
+Status: verification of the declared Phase 2 scope is complete. The corrected
+full client-lifecycle run passed and its worker and observer independently
+closed. Mainline publication remains pending. See the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
+[recorded results](media-analysis-resilience-phase2-results-20260922.json).
 
 ## Entry and supported controls
 
@@ -72,7 +70,7 @@ receipt reports removed entries/bytes, remaining bytes and retained busy entries
 Active readers and in-progress builds/publications are displayed. The UI never
 claims that busy entries were immediately removed or that original media changed.
 
-## Verification coverage and remaining acceptance
+## Verification coverage
 
 `web/admin/src/mediaAnalysis.test.ts` contains source-level checks for exact
 profile drafts, bounds, large revisions, malformed/inconsistent response rejection
@@ -90,10 +88,9 @@ browser results, with their source bindings, are recorded in the
 6. Missing tools with disabled starts and visible configuration/results.
 7. Unconfirmed admission across reload with exact request reuse.
 
-These synthetic cases cover the UI and protocol boundary; they do not establish
-detector accuracy or actual FFmpeg/cache behavior. The first real-media attempt
-passed 14/14 corpus cases, including 3/3 fresh holdout cases, and the observed
-native controls above. Cancellation returned its existing HTTP 202 contract
-while the browser helper expected 200. The second complete client-lifecycle run
-uses the same frozen product and labels with that one assertion corrected. It
-is not a new unseen accuracy trial, and its remaining outcomes are pending.
+These synthetic cases cover the UI and protocol boundary; actual media and the
+complete client lifecycle were also verified within the declared scope,
+including cancellation, pruning and restart. The
+[original cancellation-fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
+remains recorded. The successful successor used the same frozen product and
+labels after the assertion correction; it was not a new unseen accuracy trial.

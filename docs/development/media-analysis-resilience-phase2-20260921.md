@@ -1,6 +1,8 @@
 # Phase 2: Automatic intro analysis and seek previews
 
-Status: **source `49fc4ec` passes affected builds, regression, calibration/controls and fourteen-source accuracy including fresh holdout; final cancellation/prune/restart acceptance remains pending after a test-only HTTP-status correction**.
+Status: **accepted within the declared Phase 2 scope; complete client/lifecycle verification and owned-resource closure passed on September 22, 2026; main publication pending**.
+The [delivery results](media-analysis-resilience-phase2-results-20260922.json)
+bind the final product, fixture correction, retained evidence and scope limits.
 Fresh remote admission, independent PostgreSQL setup, the actual schema-50
 catalog, full product builds and an initial 13-package regression have completed.
 The initial failed attempt remains retained. Targeted repair verification has
@@ -8,7 +10,8 @@ passed, including the source-geometry compatibility repair and native mocked
 browser coverage. The first real-content run missed all six positive intros and
 did not demonstrate automatic skip. The later common-clock repair and actual
 fourteen-source run passed the declared accuracy, skip and preview checks;
-the complete cancellation/prune/restart journey remains pending. Earlier failed
+the complete cancellation/prune/restart journey subsequently passed in run 02.
+Earlier failed
 accuracy attempts retain their original evidence and verdicts.
 
 This phase implements the second delivery in the
@@ -610,3 +613,70 @@ is not authorized. Retain original failures and actual source/artifact identitie
 Merge and push only after this phase's complete acceptance and resource closure.
 Phase 3 compound capacity, storage blocking and isolated-guest reboot/reset
 acceptance remain required after phase 2 closes.
+
+## Final Phase 2 acceptance
+
+The complete corrected-fixture run `verification-schema2-49fc-browser-02`
+passed its single required Go parent in 1,112.424 seconds with no skip, failure,
+timeout or forced descendant termination. It used production source `49fc4ec`,
+the previously built server/browser artifact, and only the `e94173f` browser
+assertion correction. The exact 77-file runtime view retained the original
+frontend assets and scripts apart from that assertion. The source proof,
+artifact hashes, manifest, labels and Options were checked before and after the
+run. This repeats the frozen corpus for complete client/lifecycle acceptance;
+it does not create another unseen holdout trial or erase the first failure.
+
+The evaluator again passed all fourteen cases: twelve published positives and
+two expected insufficient-evidence abstentions, with zero misses, false
+positives, boundary failures, narrative-safety failures or pending cases. All
+four required previews passed source timing, JPEG/pixel and visible consumer
+checks. The named consumer used Video.js, the pinned BIF plugin and the explicit
+Goby adapter. Actual FH1 skip, native configuration/CAS, completed analysis,
+accept/reject/reset, BIF range delivery and anonymous denial all passed.
+
+The actual Force cancellation reached `cancelled` with all fourteen children
+terminal and cancelled. Native prune returned HTTP 200, zero removed entries,
+zero busy entries and 10,868,153 remaining logical bytes: referenced results
+were retained. This is the actual management journey; eligible-entry deletion
+has its separately retained cache/package tests. A fresh Server instance then
+preserved durable configuration, manual state and analysis history without
+replaying active work. Both runtime generations joined analysis and closed with
+zero active HTTP requests, readers, builders, pending publications and reserved
+bytes. Ready cache entries remained valid until the fixture retired its owned
+temporary data. No fallback live-credential cleanup was required.
+
+The actual source-replacement and revocation tests retain their explicit
+server-package evidence; those injections were not part of this browser
+journey. Schema 49 preservation, migration to schema 50, historical stored
+analysis versions and backup/recovery retain their source-bound package and
+catalog evidence. The final 105 current intro parents plus 337 reused unaffected
+parents are an affected composition of 442, not the whole Phase 2 test total.
+Earlier full-package campaigns overlap and are not added together. The six
+original hardware/mount-profile skips and every failed attempt remain recorded.
+
+The independent observer accepted resource accounting and natural termination.
+It observed a cumulative charged peak of 2,795,474,944 bytes under the unchanged
+6 GiB final-consumer cap, with a minimum observed free space of 4,431,441,920
+bytes. Worker and observer process groups/cgroups were independently absent.
+The phase-owned PostgreSQL then shut down cleanly with no client connections;
+all 22 database directories, including the default databases, and evidence were
+preserved. The three unrelated services retained their original identities.
+No guest reboot occurred in this phase.
+
+Final receipt SHA-256 values:
+
+| Evidence | SHA-256 |
+| --- | --- |
+| Complete Go/browser run | `326940ee78681b5a3058b558507ec4d6bb675ec4eb59ad65798c80d05b21dad6` |
+| Fourteen-source evaluator | `0263aa4cbeae9acb72bde340fb4ee6914bd49cc01345f1e52528b3c9f5cf885b` |
+| Browser result | `38edce0e7cad5d62da84bed1776f0de08417f2bdd2b6c540baa252894c462047` |
+| Driver and two-generation cleanup | `3d7218f00d81d1fab0f7f62498b3993d2c682d1794c0c603b8f56d9b715b02de` |
+| Independent reader closure | `8807f274e434bb77400490ed0c0177fefac8d533b2eb9f9829ff81d0f933fa5d` |
+| Independent observer closure | `ea98fea1b97b0c73c8a117d31daf25fb3c5b6df09ee2ef8c07c20746832e0ecd` |
+| Phase resource closure | `a40e8f0eed56d5377bb67c528d7aa81bf28d7b30cc227749c595c64adfa54b38` |
+
+Phase 2 is accepted with its declared episode-level population and assistant
+source-review provenance. It does not establish unseen-series, unseen-season
+or fresh-negative specificity, original Emby Web parity, compound capacity or
+host-reboot recovery. The authorized main merge/push follows this acceptance;
+the full three-phase objective remains active for Phase 3.

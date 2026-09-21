@@ -3,60 +3,50 @@
 ## Active increment: compatibility, media analysis and resilience
 
 The user authorized the [three-phase plan](../planning/media-analysis-resilience-plan-20260920.md)
-on September 20, 2026, including consolidated tests after each phase's complete
-implementation and verified merge/push to `main`. Development starts at
-`2fd9182` on `codex/media-analysis-resilience` in an isolated checkout. Phase 1
-is verified, its resources are closed, and delivery commit
-`59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded into `main` and
-pushed to `origin/main`, with exact remote readback on September 21, 2026.
-Phase 2 implementation is complete and final acceptance remains open. Product
-source `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57` fixes recursive visual cropping
-and unequal source windows by remeasuring frozen correspondences over a shared
-clock interval. Four affected artifacts built successfully. All 105 current
-intro parent tests passed; 337 unaffected parent results retain their original
-source provenance, yielding 442 composed passes. The test wrapper's erroneous
-post-run count assertion is preserved separately from the successful suite and
-its accepted inventory proof.
+on September 20, 2026, including complete implementation, consolidated remote
+verification, and verified merge/push after each phase. Development uses the
+isolated `codex/media-analysis-resilience` checkout.
 
-The fixed five-call calibration qualified all six original episodes within the
-unchanged safe bounds and five-second tolerance; all four body controls passed.
-The three controlled analyses passed cold-open qualification, recap safety and
-competing-interval branch coverage, and no-intro body controls. These analyses
-reused previously verified extraction bundles: they are eight new Analyze calls,
-not fresh media extractions or independent new originals. Options, labels and
-quality gates remain unchanged, and all earlier failures remain retained.
-The three fresh holdout sources subsequently completed one source-only review
-operation: 15 successful steps and 609 copied files, including 540 raw JPEGs.
-Three isolated case reviewers each directly inspected all 180 supplied frames;
-the coordinator inspected 54 representative and boundary frames and the mapped
-machine transcripts. Source-derived labels were frozen before any FH features
-or Analyze calls. This is assistant review, not human ground truth or direct
-audio listening. The complete fourteen-source manifest is assembled with FH1
-selected by the predeclared case order, without detector pre-screening.
-The first actual fourteen-source run passed every corpus case: six calibration,
-three fresh holdout and five regression cases, including the two expected
-insufficient-evidence abstentions. All four required preview evaluations passed,
-and FH1's real intro-skip action succeeded. The complete browser journey failed
-later at cancellation because its assertion expected HTTP 200 from the existing
-HTTP 202 endpoint. Product behavior and frozen labels were not changed. The
-test-only correction at `e94173f` expects 202 and still requires actual terminal
-cancellation and joined work. Cancellation, pruning and restart acceptance
-remain open. The failed run and both observer/worker closures are retained;
-phase 2 is not published. A separate complete lifecycle verification is being
-prepared with the same product binary and corpus, a fresh database and an
-explicit runtime file view containing the one corrected test script.
-The [phase 2 record](media-analysis-resilience-phase2-20260921.md) tracks those
-source boundaries and retained failures. Phase 3 has not started product changes. The phase 1
-[execution record](media-analysis-resilience-phase1-20260920.md) and
-[delivery results](media-analysis-resilience-phase1-results-20260921.json)
-bind 2,328 unique Go passes, three explicit skips, 55 composed mocked UI cases,
-seven frontend source tests, the complete 24-stage actual journey and both
-application builds. Original failures and source reuse remain explicit. All 17
-owned workers and PostgreSQL are closed, nine databases/evidence are preserved,
-and three unrelated services retain their identities. Tests, builds and runtime checks
-use remote environments; earlier local-test authorization is historical.
-Unrelated original-checkout changes are preserved. The completed delivery
-records below describe the previous increment and do not close this new scope.
+Phase 1 is verified, closed and published. Delivery `59ce074` and publication
+record `2b284c3` were merged into `main` and pushed with exact remote readback.
+The [execution record](media-analysis-resilience-phase1-20260920.md) and
+[results](media-analysis-resilience-phase1-results-20260921.json) retain the
+accepted 2,328 composed Go parents, three skips, 55 mocked UI cases, seven Node
+checks, complete 24-stage actual browser journey and both application builds.
+
+Phase 2 is verified and operationally closed within its declared scope; main
+publication is pending. Product `49fc4ec` implements automatic episode-intro
+analysis, source-bound BIF previews and their shared management/task lifecycle.
+The final [execution record](media-analysis-resilience-phase2-20260921.md) and
+[results](media-analysis-resilience-phase2-results-20260922.json) bind the builds,
+source-scoped regressions, calibration/controls, first fresh-episode accuracy,
+and successful complete client/lifecycle repeat with fixture-only `e94173f`.
+All fourteen corpus cases, four required previews, actual skip, native decisions,
+Force cancellation, prune, durable restart and cleanup passed. The two expected
+insufficient-evidence abstentions are successful negative outcomes. The first
+browser attempt's HTTP-status assertion failure remains recorded as failed.
+
+Both runtime generations closed with no active HTTP requests, cache readers,
+builders, pending publications or reserved bytes. Prune retained referenced
+entries; no empty-cache claim is made. Independent worker/observer closure passed,
+and the dedicated PostgreSQL shut down cleanly. All 22 database directories
+(including defaults) and evidence were retained, with three unrelated services
+unchanged. No Phase 2 worker remains active. The 442 latest affected Go passes
+include 337 explicitly reused results and are not an all-Phase-2 total.
+
+The accuracy population is episode-level within one known series with unknown
+historical season. It does not establish new-series/new-season generalization
+or fresh-negative specificity. Labels came from disclosed assistant source
+review. Client evidence uses the named Video.js/BIF-plugin/Goby adapter. Source
+replacement, revocation, migration and backup/recovery retain their independent
+package evidence rather than being attributed to the browser journey.
+
+Phase 3 large-library concurrency, storage faults and isolated-guest reboot/reset
+remain required; product implementation has not started. The prepared scanner
+design remains applicable to the current source. Tests/builds/runtime probes
+remain remote-only, `ui-ux-pro-max` remains disabled, and unrelated changes in
+the original checkout are preserved. Earlier completed increments below do not
+satisfy the remaining Phase 3 scope.
 
 ## Completed selected compatibility increment
 

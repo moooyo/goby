@@ -1,108 +1,63 @@
-# Goby handoff — September 20, 2026
+# Goby handoff — September 22, 2026
 
 ## Resume here
 
-The active objective is the [three-phase compatibility, media-analysis and
-resilience plan](../planning/media-analysis-resilience-plan-20260920.md), approved
-on September 20, 2026. The user authorized execution, consolidated verification
-only after each phase's complete code, then merge to `main` and push.
-Implementation uses `codex/media-analysis-resilience` at
-`C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`, based on
-`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Phase 1 is verified and its resources
-are closed. Its [execution record](media-analysis-resilience-phase1-20260920.md)
-and [delivery results](media-analysis-resilience-phase1-results-20260921.json)
-bind the accepted scanner/application source `398756d` and final browser source
-`2c11c66`, all original failures, the 2,328 composed Go passes and three skips,
-and the complete 24-stage actual browser journey. All 17 owned workers and the
-admitted PostgreSQL are closed, nine databases/evidence are preserved, and three
-unrelated services retain their identities. No runtime needs resuming.
-Delivery commit `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded
-into `main` and pushed to `origin/main`, with exact remote readback on September
-21, 2026. No deployment occurred, and the original checkout's unrelated changes
-remain preserved. This follow-up records publication separately from the tested
-source snapshots. **Phase 2 automatic intro analysis and BIF previews remain in repair and acceptance; phase 3 has not started.**
-The [phase 2 record](media-analysis-resilience-phase2-20260921.md) describes the
-shared task, source-proof and derivative-lifecycle contracts and remaining work.
-Source `00047ac` passed its scoped build, 284 affected Go parent tests and the
-six-original calibration. All 15 controlled derivative extractions succeeded,
-but all six cold-open positives remained Review, so controlled acceptance failed.
-That failure and the earlier failures remain preserved. An observational replay
-reproduced the same public result and identified stale interval-quality metrics;
-it did not count as acceptance. V3 product source `b88c528` includes audio
-remeasurement, final-group evidence accounting, audio/visual alignment and frozen
-historical v2 storage compatibility. Its composed build and 423 Go parent tests
-passed, with the test-only RawMessage fixture correction at `21eff7e` explicitly
-separated. Original-six calibration 05 completed but failed: C1/C4/C5 returned
-no result, C2/C3/C6 qualified, and all four body controls passed. The worker is
-closed and original evidence is preserved. A single unchanged-source diagnostic
-replay reproduced the same result and 3,413,597 comparisons. It located recursive
-visual cropping through 24 rounds, ending at a 14.5145145-second confirmed
-interval; admitted and refined audio clocks were identical. The subsequent
-source repair measures fixed final intervals under frozen visual correspondences
-and preserves complete original/refined witnesses. Source `49acf4d` built four
-artifacts and passed all 99 intro parent tests, including the 13 new regressions.
-Five fixed calibration analyses then retained all six safe candidates, but the
-A-family group remained Review at 848/1000 visual matched time against the
-unchanged 850/1000 gate. All four body controls passed. The diagnostic is not
-acceptance; the new calibration is a retained failure. One narrow equivalent
-replay identified C1/C4's unmatched edge time in different windows despite
-identical audio clocks. Only its fourth, smaller-resource attempt ran; two
-earlier admission refusals remain preserved. The common-clock intersection
-repair now maps the immutable source caps to one reference-time intersection
-per complete clock witness, then fully remeasures the frozen correspondence.
-Product source `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57` now passes the four
-affected builds and all 105 current intro parent tests. The 337 unaffected
-parent results retain their older source provenance, for 442 composed passes.
-The wrapper's post-run added-test count assertion failed after the actual suite
-passed; a separate accepted proof binds the exact 99-minus-1-plus-7 inventory
-without rewriting that failure or rerunning the suite. Five fixed calibration
-analyses qualified all six originals and passed all four body controls. Three
-controlled analyses passed cold-open qualification, recap safety and actual
-competing-interval branch coverage, and all no-intro body controls. Exactly
-eight Analyze calls reused the original extraction bundles; no media extraction
-or label/Options change occurred. The unified evidence SHA-256 is
-`d21340628ec47ab84219ff5fea90dd7185c82ff258b2e6db0b67508dc55f46dd`.
-All verification workers are closed. Four obsolete `49acf4d` binaries were
-copied, verified and retired; their source tree and the final overlay remain.
-The fresh holdout source-only operation subsequently passed all 15 steps and
-copied 609 files, including 540 raw JPEGs. All producers closed. The original
-closure wrapper's tuple/list comparison rejection remains retained; a canonical
-JSON postproof accepted the same unchanged source proof and invocation without
-rerunning media. Its SHA-256 is
-`0cdc6720784002666391caa08a1617885ce2bd37695794a760ae72797b3f887a`.
-Three isolated case reviewers each inspected all 180 images, and the coordinator
-inspected 54 representative/boundary images and machine transcripts. Frozen
-labels have SHA-256
-`79c826d6521222851aaa412144e157cd1aafb76866fe9efd4b3c93135a4acfac`.
-The complete fourteen-source reviewed manifest has SHA-256
-`b117f19dafc5e2b04f649599e9278ce55c61a6ab62393d267a63181f5055d759`.
-FH1 was selected as the consumer by predeclared case order after independent
-positive source review, not by detector output. After reversible space recovery,
-evidence staging and fresh database provisioning, the actual fourteen-source
-run completed its first FH detection and accuracy evaluation. Its corpus report
-passed all fourteen cases, with zero misses, false positives, boundary failures
-or narrative-safety failures and two expected regression abstentions. SHA-256:
-`3fc86f7e80efd0fc8bb0fd1c7e22aeedab792f1bd907d0c1aa4a04b96200d5ba`.
-The four required preview evaluations and actual FH1 skip passed. The browser
-journey then failed at its cancellation assertion: the existing production
-endpoint returned 202 with state `stopping`, while the fixture expected 200.
-Both units and their process groups are closed; original failed receipts remain
-failed. The test-only correction `e94173f592f1ef000e94673dfc1c29742d526dcd`
-adds an explicit expected 202 to that request without relaxing terminal-state
-or work-join checks. Product source49fc, Options, labels and the manifest remain
-unchanged. Prepare a new database and unique runtime namespace for the complete
-client/lifecycle verification. Its minimal 77-file runtime view uses the one
-corrected script with the original unchanged assets; do not mutate the physical
-49acf source or relabel the repeat as a new unseen trial. Phase-2 publication
-remains pending; phase 3 product work has not started. Read the private checkpoint
-for the latest exact execution/closure and successor-preparation state.
+The active objective is the approved [three-phase plan](../planning/media-analysis-resilience-plan-20260920.md):
+complete each phase's code, run consolidated verification remotely, then merge
+and push the accepted delivery. The full objective remains active for Phase 3.
+Use the isolated `codex/media-analysis-resilience` checkout at
+`C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
+unrelated changes in the original `D:/Code/goby` checkout.
+
+Phase 1 is published: delivery `59ce074` and publication follow-up `2b284c3`
+were fast-forwarded into `main`, pushed and read back. Its
+[record](media-analysis-resilience-phase1-20260920.md) and
+[results](media-analysis-resilience-phase1-results-20260921.json) preserve the
+actual test/build sources and original failures. Its resources are closed.
+
+Phase 2 automatic intro analysis and BIF previews are implemented, verified and
+operationally closed within their declared scope. Main publication is the next
+action. Read the [execution record](media-analysis-resilience-phase2-20260921.md)
+and [delivery results](media-analysis-resilience-phase2-results-20260922.json).
+The frozen product is `49fc4ec67de30d3d5dbe51a40be257ccac3f3e57`; the complete
+client/lifecycle repeat uses only the browser assertion fix at
+`e94173f592f1ef000e94673dfc1c29742d526dcd`. Later documentation commits are not
+new compiled product sources. The physical remote source remains immutable
+`49acf4d` plus the accepted Go overlay, with a separately proven runtime view.
+
+The first frozen-product fourteen-source run passed accuracy, four required
+previews and actual skip but failed a cancellation assertion expecting 200
+instead of the endpoint's existing 202. Preserve that failed attempt. The
+second complete run passed all fourteen cases, the four required previews,
+actual skip, configuration/CAS, native decisions, real terminal cancellation,
+prune, durable restart and normal cleanup. It is a repeat of the frozen corpus,
+not another unseen holdout trial. The current 105 intro parents plus 337 reused
+parents are 442 affected passes, not the entire Phase 2 Go suite. Historical
+failures and six original hardware/mount-profile skips remain explicit.
+
+Independent worker and observer closure succeeded. The phase-owned PostgreSQL
+shut down cleanly; all 22 database directories (including defaults), evidence
+and retained media remain. Three unrelated service identities were unchanged.
+There are no active Phase 2 units to resume or restart. Final resource closure
+SHA-256: `a40e8f0eed56d5377bb67c528d7aa81bf28d7b30cc227749c595c64adfa54b38`.
 The private checkpoint under `D:/Code/goby/.git/media-analysis-resilience-20260920/`
-binds the retained remote evidence and current owned worker state. Read it before
-resuming remote work, and do not restart a completed or still-running worker.
-Tests/builds/runtime checks are remote-only for this
-increment. The original `D:/Code/goby` changes remain unrelated and preserved.
-Phases 2 and 3 remain required; phase 3 product work has not started. The earlier
-completed records below retain their historical scope and authorization.
+binds exact units, receipt hashes, screened copies and preserved failures.
+Four credential-bearing preview HTTP originals remain remote; secret runtime
+contexts were not copied. Do not publish them.
+
+After verified Phase 2 merge/push and remote-ref readback, implement Phase 3:
+10k/100k mixed scan/search/playback/analysis workloads, bounded scan evidence and
+Seen staging, storage faults, process/database recovery, and clean OS reboot
+plus forced reset on an isolated owned guest. Source-only scanner designs are
+in the private Phase 3 directory; product work has not started. Do not reboot
+shared `test-env` or the physical PVE host. Recheck guest IDs and resources before
+creating the isolated environment; old infrastructure observations are stale.
+
+All tests, builds and runtime probes remain remote-only. `ui-ux-pro-max` remains
+disabled. Live TV, EPG, DVR, tuners, DLNA, external channels and group playback
+remain excluded; other unselected work remains deferred. Original Emby Web
+commercial gating is outside the selected adapter acceptance. Earlier completed
+increments below retain their historical scope and authorization.
 
 ## Previous selected-compatibility publication
 

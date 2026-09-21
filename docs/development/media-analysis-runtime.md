@@ -1,13 +1,12 @@
 # Media analysis runtime
 
-Implementation contract for phase 2. Remote builds, affected regressions and
-calibration/control checks have passed. The first fourteen-source run passed
-14/14 corpus cases, all four required previews, actual skip, CAS and decisions;
-the browser failed at a cancellation assertion expecting HTTP 200 instead of
-the existing HTTP 202 response. The fixture-only `e94173f` correction is in the
-running second attempt. Cancellation completion, pruning, restart and full
-acceptance remain pending; see the
-[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
+Implementation contract for phase 2. Verification of the declared scope is
+complete, including the full client lifecycle and independent resource closure.
+Mainline publication remains pending. See the
+[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
+[recorded results](media-analysis-resilience-phase2-results-20260922.json).
+The [original fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
+remains part of that history.
 
 ## Deployment inventory
 

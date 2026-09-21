@@ -1,0 +1,1669 @@
+{
+  "marker": "goby-media-analysis-resilience-phase2-delivery-v1",
+  "status": "verified and phase resources closed; publication pending",
+  "phase_accepted": true,
+  "cutoff": "Actual02 complete client-lifecycle fixture-repair repeat, independent run closure and whole-phase resource closure read from copied original JSON bytes",
+  "preparation": "Local documentary composition only; no local test, build, runtime probe, SSH, media decoding or feature inspection",
+  "path_base": "Operator-private Phase2 evidence; artifacts are retained outside the repository",
+  "frozen": {
+    "product_source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+    "source_mode": "Logical 49fc target through the accepted Go overlay over immutable physical 49acf",
+    "physical_source": "49acf4da9f07f538572bef58919a0b27f81a0077",
+    "options_count": 40,
+    "options_changed": false,
+    "fh_label_artifact_sha256": "79c826d6521222851aaa412144e157cd1aafb76866fe9efd4b3c93135a4acfac",
+    "manifest_sha256": "b117f19dafc5e2b04f649599e9278ce55c61a6ab62393d267a63181f5055d759",
+    "fixture_only_fix_commit": "e94173f592f1ef000e94673dfc1c29742d526dcd",
+    "fixture_script_sha256": "ad05703cd2f2a43450dcc169e6a076aa71125c5ac1b996e452d8ded22d86a747",
+    "fixture_fix_scope": "Correct expected cancel HTTP status from 200 to 202; product, corpus and score gates unchanged",
+    "fixture_fix_attribution": "Actual02 runtime_view_before/after binds product49fc and fixture-only e941; same frozen corpus, not a new unseen trial"
+  },
+  "evidence": {
+    "affected_49fc": {
+      "sha256": "d21340628ec47ab84219ff5fea90dd7185c82ff258b2e6db0b67508dc55f46dd",
+      "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-unified-composition.json"
+    },
+    "historical_named_passes": {
+      "sha256": "b3da9fdfbd322198104ebb0d54796ac20d2ff88c93af255a65e8ca25074dedc1",
+      "new_tests_executed": false,
+      "resolved_parents": [
+        "TestMediaAnalysisMigrationPreservesSchema49AndInitializesOnlyDefaults",
+        "TestIdleResponseWriterNaturalTimeoutAbortsWriteAndFinalFlush",
+        "TestIdleResponseWriterCancellationInterruptsWriteAndFinalFlush"
+      ],
+      "private_evidence_path": "final49fc-historical-parent-pass-01.json"
+    },
+    "actual01_corpus": {
+      "sha256": "3fc86f7e80efd0fc8bb0fd1c7e22aeedab792f1bd907d0c1aa4a04b96200d5ba",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/consumer/corpus-result.json"
+    },
+    "actual01_browser": {
+      "sha256": "5772418d3a44c27fb4c10e48f5b5d10cfe97189c02e1b72a324814c5ca2218f9",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/consumer/browser-result.json"
+    },
+    "actual01_driver": {
+      "sha256": "82654a6cee1854469ee071c37aca6bdc65387e489e5c0759944bb1c3345cb803",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/consumer/driver-result.json"
+    },
+    "actual01_decisions": {
+      "sha256": "8eb19cf1c03c3c8a62912f6a44ec998882bccbdaa25bf9f103c279da287d8a79",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/consumer/native-decisions-http.json"
+    },
+    "actual01_cancel_failure": {
+      "sha256": "f77336d3695f97638269c25cb1f5adf793d2c5fece3cfaee9a93f37925058ade",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/consumer/failure-http-0.json"
+    },
+    "actual01_worker": {
+      "sha256": "45fdb103f5a8197fad7b724913bea70c4b5220b8cf96874618d197b9b19a295d",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/records/verification-schema2-49fc-browser-01.json"
+    },
+    "actual01_worker_closure": {
+      "sha256": "c485b4905fd266c150d170d22cec113db47a51d7ba09820c70072e38e2901bcc",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/records/verification-schema2-49fc-browser-01.closure.json"
+    },
+    "actual01_observer": {
+      "sha256": "d7c97085f5fe67fbc144ed3af5bbac62809ea4cfbb0c4c7ced3dbf3caeb42319",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/records/observer-result.json"
+    },
+    "actual01_observer_closure": {
+      "sha256": "98b475fdaa451db2f338ef554baa2021516d11b96c4cd4eeb3a2629d3eefa5fd",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/records/independent-closure.json"
+    },
+    "actual01_database_terminal": {
+      "sha256": "a23fca4764343645ffed22ce6b7e0bd1ba66503e7c1771434e399cbd5c12c174",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/records/database-terminal-state.json"
+    },
+    "actual01_postclosure_resources": {
+      "sha256": "184f21b3c88b7daa353572a4d795cb9788bbd37e18c90492d98118f376e484a5",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/records/postclosure-resources.json"
+    },
+    "actual01_screened_copy": {
+      "sha256": "bf15e460d783b6b47003110c2f0fde9642bb1a5accc094a2421493ce94e99970",
+      "private_evidence_path": "final49fc-browser-observer-01/evidence/screened-copy-receipt.json"
+    },
+    "actual02_corpus": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/corpus-result.json",
+      "sha256": "0263aa4cbeae9acb72bde340fb4ee6914bd49cc01345f1e52528b3c9f5cf885b"
+    },
+    "actual02_browser": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/browser-result.json",
+      "sha256": "38edce0e7cad5d62da84bed1776f0de08417f2bdd2b6c540baa252894c462047"
+    },
+    "actual02_driver": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/driver-result.json",
+      "sha256": "3d7218f00d81d1fab0f7f62498b3993d2c682d1794c0c603b8f56d9b715b02de"
+    },
+    "actual02_observations": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/observations.json",
+      "sha256": "aede456f74e910559d2b5ba5ca208360b89e5697d86ff08ec0ef337dce5faa13"
+    },
+    "actual02_worker": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/records/verification-schema2-49fc-browser-02.json",
+      "sha256": "326940ee78681b5a3058b558507ec4d6bb675ec4eb59ad65798c80d05b21dad6"
+    },
+    "actual02_worker_closure": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/records/verification-schema2-49fc-browser-02.closure.json",
+      "sha256": "8807f274e434bb77400490ed0c0177fefac8d533b2eb9f9829ff81d0f933fa5d"
+    },
+    "actual02_observer": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/records/observer-result.json",
+      "sha256": "30edeba8968549bebb166e2bfa565bb76d872abc84562f5c31acf2a5b1efd62e"
+    },
+    "actual02_observer_closure": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/records/independent-closure.json",
+      "sha256": "ea98fea1b97b0c73c8a117d31daf25fb3c5b6df09ee2ef8c07c20746832e0ecd"
+    },
+    "actual02_cancel": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/native-cancellation-http.json",
+      "sha256": "558829544be8080b7c29246302e207e1df90f75b821eef51934963cec9bafad2"
+    },
+    "actual02_prune": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/native-cache-prune-http.json",
+      "sha256": "5a4bd679c8b4747156f66e13864bd5221d479d9fc585a128fb514404a0b3b02a"
+    },
+    "actual02_decisions": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/native-decisions-http.json",
+      "sha256": "4615180aea02cfb4c4e87eaff44edfa954f0f31669ac6c86e1117dde9fe32bdc"
+    },
+    "actual02_configuration": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/native-configuration-http.json",
+      "sha256": "d69ddefe0b9bb5718f7b825eac8245255e32153a5f876f82f372336577374eb3"
+    },
+    "actual02_persisted_ack": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/stage-persisted-ack.json",
+      "sha256": "84f0aa36db9187af0674648b0c0a4a1801a6727215baae99cbb1378f9df1d92a"
+    },
+    "actual02_cleanup_ack": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/consumer/stage-cleanup-ack.json",
+      "sha256": "746dfccc98004cbecf39973a50385bb51457f9ca06aac42bb965c46e475328cd"
+    },
+    "actual02_core_export": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/screened-core-export.json",
+      "sha256": "6fca083e49fbf7990533c6b8bd2d2f680295f21b242bcba9dcfd6ae5a327d9a6"
+    },
+    "actual02_screened_export": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/screened-export.json",
+      "sha256": "b24bf55e2fe926c019b684a16ecc3fe4c18ab2f94caa266eb30b2c55ba9a3327"
+    },
+    "actual02_local_copy": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/local-copy-receipt.json",
+      "sha256": "f1c9f058c8951377b7373b2d86ae4ff486ebd7c8c5b0d51e93a6ba81ca384086"
+    },
+    "phase2_resource_closure": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/records/phase2-resource-closure-01.json",
+      "sha256": "a40e8f0eed56d5377bb67c528d7aa81bf28d7b30cc227749c595c64adfa54b38"
+    },
+    "phase2_post_closure_resource": {
+      "private_evidence_path": "final49fc-browser-observer-02/evidence/records/phase2-post-closure-resource.json",
+      "sha256": "8f5dfcc07b194472a2d091554d6ab981ce3a32262755aa811548fa5d98762cf2"
+    }
+  },
+  "actual01": {
+    "corpus_state": "passed",
+    "cases_passed": 14,
+    "positive_cases": 12,
+    "fresh_holdout_positive_cases_passed": 3,
+    "regression_negative_abstentions": 2,
+    "misses": 0,
+    "false_positives": 0,
+    "boundary_errors": 0,
+    "narrative_safety_errors": 0,
+    "failed_cases": 0,
+    "pending_cases": 0,
+    "evaluator_combined_label_revision_sha256": "9bae913928d8e94d4b735fb06ae53c7f09422b9d75d3b50bc8f7b43520a8eaab",
+    "label_hash_scope_note": "The evaluator's combined label revision is distinct from the frozen three-FH label-file SHA",
+    "required_previews_passed": [
+      {
+        "case_id": "C1",
+        "width": 240
+      },
+      {
+        "case_id": "H1",
+        "width": 320
+      },
+      {
+        "case_id": "FH1",
+        "width": 320
+      },
+      {
+        "case_id": "N1",
+        "width": 400
+      }
+    ],
+    "native_configuration": true,
+    "configuration_cas": true,
+    "actual_task_completion": true,
+    "actual_skip_case": "FH1",
+    "actual_skip_passed": true,
+    "new_presented_frames_after_skip": 3,
+    "native_decisions": true,
+    "bif_range": true,
+    "anonymous_preview_denied": true,
+    "complete_browser": false,
+    "failure_phase": "cancellation",
+    "failure_code": "native_mutation_status_mismatch",
+    "expected_cancel_status_in_failed_harness": 200,
+    "actual_correct_cancel_status": 202,
+    "cancel_acknowledgement_state": "stopping",
+    "cancel_acknowledgement_terminal_children": 13,
+    "cancel_acknowledgement_total_children": 14,
+    "actual_cancellation_accepted": false,
+    "cache_prune": false,
+    "restart": false,
+    "worker_closure_complete": true,
+    "worker_verification_passed": false,
+    "observer_closure_complete": true,
+    "observer_resource_observation_passed": false,
+    "observer_abort_reason": "worker_terminal_not_successful",
+    "observer_failed_resource_sample": null,
+    "observer_kill_sent": false,
+    "database_connections_after_closure": 0,
+    "failure_cleanup_analysis_joined": true,
+    "browser_context_closed": true,
+    "browser_closed": true,
+    "copy_verified_files": 79,
+    "copy_verified_bytes": 5486390,
+    "sensitive_preview_http_files_left_remote": 4,
+    "original_failure_reclassified_as_pass": false
+  },
+  "requirements": [
+    {
+      "id": "content_matcher_mechanics",
+      "state": "passed_scoped",
+      "evidence": [
+        "affected_49fc"
+      ],
+      "scope": "105 current intro parents; bounded versioned source/profile/evidence mechanics"
+    },
+    {
+      "id": "real_calibration_and_controlled",
+      "state": "passed_scoped",
+      "evidence": [
+        "affected_49fc"
+      ],
+      "scope": "Six calibration positives plus four body controls; six native cold positives, recap safety/competing branch and three native body controls; eight new Analyze calls reuse prior extractions"
+    },
+    {
+      "id": "independent_fh_and_complete_corpus",
+      "state": "passed_actual01_subscope",
+      "evidence": [
+        "actual01_corpus"
+      ],
+      "scope": "14/14 with three fresh positives, two regression-negative abstentions and no case pending; episode-only scope"
+    },
+    {
+      "id": "intro_publication_precedence_skip_and_correction",
+      "state": "passed_actual01_subscope",
+      "evidence": [
+        "affected_49fc",
+        "actual01_browser",
+        "actual01_decisions"
+      ],
+      "scope": "Published detections, actual FH1 skip and native accept/reject/reset retaining Manual priority"
+    },
+    {
+      "id": "bif_protocol_named_consumer_and_generation",
+      "state": "passed_scoped_and_actual01_subscope",
+      "evidence": [
+        "affected_49fc",
+        "actual01_corpus",
+        "actual01_browser"
+      ],
+      "scope": "Original bif35/cache27 and tail media71 retained at original sources; provider/HTTP scope reused; four required visible previews and drag passed"
+    },
+    {
+      "id": "management_cas_cancel_prune",
+      "state": "passed",
+      "evidence": [
+        "actual02_browser",
+        "actual02_cancel",
+        "actual02_prune",
+        "actual02_decisions"
+      ],
+      "passed": [
+        "configuration",
+        "CAS",
+        "task completion",
+        "native decisions",
+        "terminal cancellation and join",
+        "cache prune retaining referenced entries"
+      ],
+      "pending": []
+    },
+    {
+      "id": "shared_lifecycle_restart_and_successful_cleanup",
+      "state": "passed",
+      "evidence": [
+        "affected_49fc",
+        "actual02_driver",
+        "actual02_worker_closure",
+        "actual02_observer_closure",
+        "actual02_persisted_ack",
+        "actual02_cleanup_ack",
+        "phase2_resource_closure",
+        "phase2_post_closure_resource"
+      ],
+      "scope": "Mechanical lifecycle plus complete actual02 fresh-server restart, two joined server generations and independent successful run/phase closure; ready cached entries remain retained with no active owners"
+    },
+    {
+      "id": "source_replacement_revocation_and_deadlines",
+      "state": "passed_scoped",
+      "evidence": [
+        "affected_49fc",
+        "historical_named_passes"
+      ],
+      "scope": "Named provider replacement/revocation/expiry tests plus generic blocked-writer tests and explicit preview route wiring; no preview-specific blocked-response injection claim or new gate"
+    },
+    {
+      "id": "schema49_to50_and_backup_restore",
+      "state": "passed_scoped",
+      "evidence": [
+        "historical_named_passes",
+        "affected_49fc"
+      ],
+      "scope": "Named historical migration pass and preserved schema catalog; b88 backuppg133/recovery39 with original recoverydb12 provenance; raw/history compatibility and invalidated runtime proofs"
+    },
+    {
+      "id": "native_helper_frontend_and_builds",
+      "state": "passed_scoped",
+      "evidence": [
+        "affected_49fc"
+      ],
+      "scope": "Four new 49fc artifacts; prior full product builds and unchanged native/frontend dependencies explicitly reused; native7, B9 Python12/Node6 and mock7 retain their distinct scopes"
+    },
+    {
+      "id": "phase2_acceptance",
+      "state": "passed",
+      "evidence": [
+        "actual02_worker",
+        "actual02_worker_closure",
+        "actual02_observer_closure",
+        "phase2_resource_closure",
+        "phase2_post_closure_resource"
+      ],
+      "scope": "Phase2 accepted after actual02 complete consumer/lifecycle repeat and whole-phase resource closure. Publication is recorded separately."
+    }
+  ],
+  "go_accounting": {
+    "all_phase2_unique_parent_total": null,
+    "latest_affected_current_intro_passes": 105,
+    "reused_unaffected_passes": 337,
+    "latest_affected_composed_passes": 442,
+    "latest_affected_is_full_phase2_suite": false,
+    "reused_scope_sources": "b88 production; library uses the 21eff test-only overlay",
+    "reused_scopes": {
+      "library": 70,
+      "tasks": 17,
+      "server": 54,
+      "cmd_goby": 24,
+      "backuppg": 133,
+      "recovery": 39
+    },
+    "historical_campaigns_are_non_additive": true,
+    "historical_campaigns": [
+      {
+        "id": "initial-a3",
+        "source": "a3a74a32c8196e3f76e55ace6c799ec34e79d707",
+        "product_source": "a3a74a32c8196e3f76e55ace6c799ec34e79d707",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "verification-01.json",
+          "sha256": "9abedf575ef9825d0634af5282a90eeb32b4b1d0b02a1e2cead471846e542dc8"
+        },
+        "original_complete": false,
+        "scopes": [
+          {
+            "scope": "config",
+            "selector": "all",
+            "parent_passes": 63,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "0aa4f81d5de1134387666b3c2f3e4053ad3604beeb94909e63d799a2915b2bc7",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "media",
+            "selector": "all",
+            "parent_passes": 523,
+            "parent_skips": [
+              "TestDolbyVisionActualRPUCoverageCRCAndNativeSyntax",
+              "TestHardwareEncodingActualVAAPIAdmission",
+              "TestHardwareEncodingActualAV1PaddingRejection"
+            ],
+            "failed_test_events": [
+              "TestAnalysisAudioActualChromaprintAndNonzeroOrigin",
+              "TestAnalysisProcessStdoutBudgetRetiresActualGroup",
+              "TestRecognizeBitmapSubtitlesActualFixtures"
+            ],
+            "binary_sha256": "33f10cad51d07821a965df9286b67a65199f1f4adff243c34c6dc726be1a86ab",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "introdetect",
+            "selector": "all",
+            "parent_passes": 18,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "195ad79ba0ac3e19663984f1e094f78ccaf155fc33100c44289284e8de17e4ff",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "bif",
+            "selector": "all",
+            "parent_passes": 35,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "c884e0a2ab7874418cbb431320a3eeb1b493130c4be15f39b980851e262d63c3",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "analysiscache",
+            "selector": "all",
+            "parent_passes": 27,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "4a8d0011aaabf3d1dea54dad639669e94165ef68055155a9778553f77978d6c8",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "library",
+            "selector": "all",
+            "parent_passes": 872,
+            "parent_skips": [
+              "TestRootBindingFullScanMountNamespaceHelper"
+            ],
+            "failed_test_events": [
+              "TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection"
+            ],
+            "binary_sha256": "9c0955cf46fe1a178a0576c0ccbab55eaf062a95a588b665f991c05660b53b14",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "tasks",
+            "selector": "all",
+            "parent_passes": 92,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "125ceb9ef75f25ca68595214376c3d9f79641926bac40eabda93fb01522525c6",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "server",
+            "selector": "all",
+            "parent_passes": 1003,
+            "parent_skips": [
+              "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+              "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+            ],
+            "failed_test_events": [
+              "TestAnalysisShutdownRetainsOwnedWorkAfterCallerTimeout",
+              "TestDynamicTimeshiftHTTPPauseReconnectWindowSeekLiveAndOwnership",
+              "TestHTTPScheduledTasksRequireManagementTokensAndExposeOnlyTaskInfo"
+            ],
+            "binary_sha256": "8aafd3a9c2579244014fd34de355b20c238095444e2ba8b46409d3311fd416f4",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "database",
+            "selector": "all",
+            "parent_passes": 64,
+            "parent_skips": [],
+            "failed_test_events": [
+              "TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes/normal",
+              "TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes",
+              "TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys/recovery",
+              "TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys"
+            ],
+            "binary_sha256": "e9ced33fdcf6c387c9d9e844d199eaae0a7e3ba11cada170ff185442b101a9a2",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "backuppg",
+            "selector": "all",
+            "parent_passes": 128,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "ff5e02e620d95b0375f39e9792bc9a67a5551192e68fc579e2a9cd625fec691b",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "recoverydb",
+            "selector": "all",
+            "parent_passes": 12,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "b7d4f7463fed00e7776ae0fe97cd5369fd501881b76ef1ee27a3d61f6f1cbdfd",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "recovery",
+            "selector": "all",
+            "parent_passes": 37,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "0e295aff9ad9bd0f314e3b33fa0137f043b1e18d71da782c1e184676377ec732",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "cmd-goby",
+            "selector": "all",
+            "parent_passes": 24,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "e9b243651d0e482945b21e1e512d26bc481748ecc3b634b012e65c3bb1a8314a",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "Original failed 13-package regression retained: 2898 passing parents, nine failed parents, six skips."
+      },
+      {
+        "id": "repair-c3",
+        "source": "c3d3e7ab88eb68871378d4da91fd358fe376773e",
+        "product_source": "c3d3e7ab88eb68871378d4da91fd358fe376773e",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "verification-02.json",
+          "sha256": "f3587ce879714b9d94bb1502fbaafcccd3baf3f0e52ea6ff5abc379d399a6034"
+        },
+        "original_complete": true,
+        "scopes": [
+          {
+            "scope": "media",
+            "selector": "all",
+            "parent_passes": 529,
+            "parent_skips": [
+              "TestDolbyVisionActualRPUCoverageCRCAndNativeSyntax",
+              "TestHardwareEncodingActualVAAPIAdmission",
+              "TestHardwareEncodingActualAV1PaddingRejection"
+            ],
+            "failed_test_events": [],
+            "binary_sha256": "3adc50ad6d86b6f6aaef378254ca2443f7d76f34a391b1d4e15e918e1345bdac",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "library",
+            "selector": "^TestMetadataMigrationFromThirteenPreservesEveryExistingTableAndProjection$",
+            "parent_passes": 1,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "5c2a044cb4a30e5b80a767bff2bb91e04aa7a477dcd1e2585f6628d88ff9b597",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "server",
+            "selector": "all",
+            "parent_passes": 1007,
+            "parent_skips": [
+              "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+              "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+            ],
+            "failed_test_events": [],
+            "binary_sha256": "8fcaeeb540cffcc80a1318c68a064c4b191b8d1765edd7f47dfbfaac177e749a",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "database",
+            "selector": "^(TestExtraMigrationPreservesSchema26AndOnlyRetiresAffectedThemes|TestSortingOptionsMigrationPreservesSchema48FactsAndExplicitKeys)$",
+            "parent_passes": 2,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "31e1a9f08b71ff051d8e9396f9e83eb07b3a320cd92ae32a0c408e104b187c69",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "cmd-goby",
+            "selector": "all",
+            "parent_passes": 24,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "c9f790d50fa55fa2f22d22103f40d6993ff7b35b4e568311f426f3a2bbc2c134",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "Full media/server/cmd plus three anchored migration-parent repairs; 1563 passing parents and five hardware skips. Does not rerun unaffected full packages."
+      },
+      {
+        "id": "sar-e7",
+        "source": "e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd",
+        "product_source": "e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "verification-03.json",
+          "sha256": "eada61219edda9001a72e9376fa70f597137690a3c7fdb25ec8d6b4528bccbc7"
+        },
+        "original_complete": false,
+        "scopes": [
+          {
+            "scope": "media",
+            "selector": "all",
+            "parent_passes": 533,
+            "parent_skips": [
+              "TestDolbyVisionActualRPUCoverageCRCAndNativeSyntax",
+              "TestHardwareEncodingActualVAAPIAdmission",
+              "TestHardwareEncodingActualAV1PaddingRejection"
+            ],
+            "failed_test_events": [
+              "TestAnalysisGeometryActualUnknownSARUsesSquareDisplayFallback"
+            ],
+            "binary_sha256": "ea53e3dfbe5225d6895120758b47e4d5f1b0033beb4b3747d8a5e87ea9b9f8f0",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "library",
+            "selector": "^Test(Analysis.*|StoredAnalysis.*|StoredQualifiedAnalysis.*|ClearAnalysis.*|EncodeAnalysis.*|DecodeAnalysis.*)$",
+            "parent_passes": 56,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "363b11a51236a09d0cf1f063111ef2fa7b0ab9e9a4d64827b962d64f251c7e6a",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "server",
+            "selector": "^Test(Analysis.*|AdminMediaAnalysis.*|HTTPAdminMediaAnalysis.*)$",
+            "parent_passes": 54,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "8ad9792d2e69e7b05583eb90ce402e2b6fd91fee7d99b14e9b831b184ee3cdb1",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "Original unknown-SAR fixture failure retained; full media533/one fail/three skips, selected library56/server54."
+      },
+      {
+        "id": "recovery-e7-selected",
+        "source": "e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd",
+        "product_source": "e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "verification-04.json",
+          "sha256": "5fc0699c2c439355108a36acae080ad1044c427b4cf1147c68e20aad92047189"
+        },
+        "original_complete": true,
+        "scopes": [
+          {
+            "scope": "recovery",
+            "selector": "^TestEngineAnalysisRestoreVerifiesRawThenInvalidatesEveryExecutionProof$",
+            "parent_passes": 1,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "9d218893b8a241462777997d032576e571425917d6f390dc388958c2d66fb965",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "One exact recovery-profile parent, not another full recovery suite."
+      },
+      {
+        "id": "sar-fixture-92577",
+        "source": "92577f23dc4f81cafc26bd5799ce99c7fb9f7018",
+        "product_source": "e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd",
+        "fixture_source": "92577f23dc4f81cafc26bd5799ce99c7fb9f7018",
+        "receipt": {
+          "private_evidence_path": "verification-05.json",
+          "sha256": "a3e2b7657d3cf8add84a64f0c1a6b776b2b1490810da2f1556c0c062d1b426f2"
+        },
+        "original_complete": true,
+        "scopes": [
+          {
+            "scope": "media",
+            "selector": "^TestAnalysisGeometryActualUnknownSARUsesSquareDisplayFallback$",
+            "parent_passes": 1,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "5bbea66a0d9e27674e1c2a2096359f674d04ee25521e87d6fccfb99fa5ba9d9a",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "One replaced SAR fixture failure; production identical to E7. Historical media composition534 is not a full92577 suite.",
+        "production_equivalence_evidence": {
+          "private_evidence_path": "media-fixture-build-04.json",
+          "sha256": "17232a1b5eb80831a0ecf81a5d2b2d528d8ea38b42b68974d2db450816c591f1"
+        }
+      },
+      {
+        "id": "v2-b9-original",
+        "source": "b9b75b2a3907e5ed9054f8a7173a7b4e460a37c3",
+        "product_source": "b9b75b2a3907e5ed9054f8a7173a7b4e460a37c3",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "v2-execution-preparation/verification-v2-03.json",
+          "sha256": "8d98885d5d8d8c7890418c3ed1afa9be9cb6b02357759dd7e72f9fbe47f497be"
+        },
+        "original_complete": false,
+        "scopes": [
+          {
+            "scope": "introdetect",
+            "selector": "all",
+            "parent_passes": 54,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "702d534a9ec91fda893d1d40f1920e78d829cbadc40b8eab36c87c46f86b1130",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "library",
+            "selector": "^Test(Analysis.*|StoredAnalysis.*|StoredCurrentAnalysisRequiresExplicitNewZeroValuedObservations|StoredQualifiedAnalysis.*|ClearAnalysis.*|EncodeAnalysis.*|DecodeAnalysis.*)$",
+            "parent_passes": 63,
+            "parent_skips": [],
+            "failed_test_events": [
+              "TestAnalysisV1AdmissionCannotUseAValidCurrentWorkerFence"
+            ],
+            "binary_sha256": "5c73757a8801ea84575b161cd9ecf224d172994d3656856264db10f0cdd7eab3",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "tasks",
+            "selector": "^TestAnalysis.*$",
+            "parent_passes": 17,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "e7d8e0119c496594c6962cc45e853d7ac67698b3d6dfc6a9d9ef629fec94b54c",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "server",
+            "selector": "^Test(Analysis.*|AdminMediaAnalysis.*|HTTPAdminMediaAnalysis.*)$",
+            "parent_passes": 54,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "4612001f1f94e1897c94f51bad3f09d158182a096e73d8164f389bd2f1a5fed6",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "backuppg",
+            "selector": "all",
+            "parent_passes": 131,
+            "parent_skips": [],
+            "failed_test_events": [
+              "TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecoveryInspection"
+            ],
+            "binary_sha256": "9529aec55f270ef1d2fb388f6ff417b0f2421fc51b54ac2a7ca71475c7ab6561",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "recoverydb",
+            "selector": "all",
+            "parent_passes": 12,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "bf524ab1ce403c479800978e895334863322a1a3315ada41e41a9866133a6b6e",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "recovery",
+            "selector": "all",
+            "parent_passes": 37,
+            "parent_skips": [],
+            "failed_test_events": [
+              "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof",
+              "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof/unavailable_v1_cannot_own_qualified_history",
+              "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof/unavailable_v2_cannot_own_qualified_history"
+            ],
+            "binary_sha256": "4c27e98cf4c107df96ebb0790414463125e40b04822ecf5bf4df2a21d2f796dc",
+            "exit_code": 1,
+            "process_group_closed": true
+          },
+          {
+            "scope": "cmd-goby",
+            "selector": "all",
+            "parent_passes": 24,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "b0723353545a291ece8110a0e74e2ef2cefc0595ba835a0c1896bfd8092feefd",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "Original392 passes/three fixture failures across eight selected scopes retained.",
+        "independent_closure": {
+          "private_evidence_path": "v2-execution-preparation/verification-v2-03.closure.json",
+          "sha256": "ac598c16b46a0bc9aa381e11d40ba32069dad95bea01048a0adca73999ee3074"
+        }
+      },
+      {
+        "id": "v2-ecd-fixture-repair",
+        "source": "ecdaddfb6e96c74567aaed3cc478d60a2509b6a7",
+        "product_source": "b9b75b2a3907e5ed9054f8a7173a7b4e460a37c3",
+        "fixture_source": "ecdaddfb6e96c74567aaed3cc478d60a2509b6a7",
+        "receipt": {
+          "private_evidence_path": "test-only-fixture-repair-01/analysis-fixture-verification-v2-01.json",
+          "sha256": "0ef2a4e839f58799d4191dd5d165c39117e03a60ab7b3e6d326252b70e9c03d6"
+        },
+        "original_complete": true,
+        "scopes": [
+          {
+            "scope": "library",
+            "selector": "^TestAnalysisV1AdmissionCannotUseAValidCurrentWorkerFence$",
+            "parent_passes": 1,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "edc7653c8bb7e9b1f669770cb948adde7c5a629ff1f2e63fb15d10f768c955bd",
+            "exit_code": 0,
+            "process_group_closed": true,
+            "repaired_parent": "TestAnalysisV1AdmissionCannotUseAValidCurrentWorkerFence",
+            "required_subtest_events": {}
+          },
+          {
+            "scope": "backuppg",
+            "selector": "^TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecoveryInspection$",
+            "parent_passes": 1,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "480ea66da3c7b685b06dde66ee442a31a0f84c1c12de0f2f873c97cd017ddb96",
+            "exit_code": 0,
+            "process_group_closed": true,
+            "repaired_parent": "TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecoveryInspection",
+            "required_subtest_events": {}
+          },
+          {
+            "scope": "recovery",
+            "selector": "^TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof$",
+            "parent_passes": 1,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "c37726624b991fd13484fc4e5f6da64e152f4f003cf545d195095380eb088ed0",
+            "exit_code": 0,
+            "process_group_closed": true,
+            "repaired_parent": "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof",
+            "required_subtest_events": {
+              "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof/unavailable_v1_cannot_own_qualified_history": [
+                "run",
+                "pass"
+              ],
+              "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof/unavailable_v2_cannot_own_qualified_history": [
+                "run",
+                "pass"
+              ]
+            }
+          }
+        ],
+        "composition_note": "Three exact failed parents replaced; only three test files changed. Production/frontend/other tests identical to B9;392+3=395 selected distinct parents, not a fullECD rerun.",
+        "independent_closure": {
+          "private_evidence_path": "test-only-fixture-repair-01/analysis-fixture-verification-v2-01.closure.json",
+          "sha256": "ff8c4142964eb2067c5e79d8c220a54f0469db4b3ad45ca2ab757548964d69ff"
+        },
+        "original_failures_preserved": true
+      },
+      {
+        "id": "tail-00047",
+        "source": "00047acfe0e1bf0fa0ec4b4ab3ab6b61b0a8e152",
+        "product_source": "00047acfe0e1bf0fa0ec4b4ab3ab6b61b0a8e152",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "intro-tail-verification-01/runtime/go-evidence-01/verification-tail-go-01.json",
+          "sha256": "f0e4ec35f8d2e04eaf4f093e0bd29da4239c643b02305f2bd5eeec5db3369e9f"
+        },
+        "original_complete": true,
+        "scopes": [
+          {
+            "scope": "media",
+            "selector": "^TestAnalysis.*$",
+            "parent_passes": 71,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "9786aab4ccf214ebc78aafd63e28d624775e8989d94e7e2a1c1fd08b468b9c67",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "introdetect",
+            "selector": "all",
+            "parent_passes": 54,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "b0da3f2d6cf159f5c9d0d0ea6311e58581777e1bed104c148417d17c6b327483",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "library",
+            "selector": "^Test(Analysis.*|StoredAnalysis.*|StoredCurrentAnalysisRequiresExplicitNewZeroValuedObservations|StoredQualifiedAnalysis.*|ClearAnalysis.*|EncodeAnalysis.*|DecodeAnalysis.*)$",
+            "parent_passes": 64,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "f28bd3f34fab6b4d4974e3340bd574dd01d9cb236145644edb68b9b1a2594fa2",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "tasks",
+            "selector": "^TestAnalysis.*$",
+            "parent_passes": 17,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "5d6ca889a63e7e15a90611bf7a6af0cf74e5617b8c59809594bd59b7735cc705",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "server",
+            "selector": "^Test(Analysis.*|AdminMediaAnalysis.*|HTTPAdminMediaAnalysis.*)$",
+            "parent_passes": 54,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "bb165949d9acdf52aa97934350ea34767b22c55722fa88b0e36ff3c867bfbc56",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "cmd-goby",
+            "selector": "all",
+            "parent_passes": 24,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "26348798d88b690fbf119715a2ff20ce84090e8545aed5125cd91e8e373e3e98",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "284 selected parent passes, zero skips; media71 is not full media coverage.",
+        "independent_closure": {
+          "private_evidence_path": "intro-tail-verification-01/runtime/go-evidence-01/verification-tail-go-01.closure.json",
+          "sha256": "3726972ad3f19962a7c05fd66ac2fc268dc57124f9d03e570dc49216754198a9"
+        }
+      },
+      {
+        "id": "v3-b88-go01-original",
+        "source": "b88c528a0f92029f5769245ff5dd04aab0cb6c26",
+        "product_source": "b88c528a0f92029f5769245ff5dd04aab0cb6c26",
+        "fixture_source": null,
+        "receipt": {
+          "private_evidence_path": "detector-v3-verification-01/go-evidence-01/verification-detector-v3-go-01.json",
+          "sha256": "238031a1f7f348d59778915c554e9e69c2781cc4b7aadc89077135d7b48d6c1f"
+        },
+        "original_complete": false,
+        "scopes": [
+          {
+            "scope": "introdetect",
+            "selector": "all",
+            "parent_passes": 86,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "1a6e16145d65c322f8553d3717a2ca285b74e2954f1c98e97d74291cc75f95b7",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "library",
+            "selector": "^Test(Analysis.*|StoredAnalysis.*|StoredCurrentAnalysisRequiresExplicitNewZeroValuedObservations|StoredQualifiedAnalysis.*|ClearAnalysis.*|EncodeAnalysis.*|DecodeAnalysis.*)$",
+            "parent_passes": 69,
+            "parent_skips": [],
+            "failed_test_events": [
+              "TestStoredAnalysisV2AdmissionPreservesCanonicalFingerprints",
+              "TestStoredAnalysisV2AdmissionPreservesCanonicalFingerprints/intro"
+            ],
+            "binary_sha256": "3ba0566865aacfa7dcebff9df208641cc749a715d6d74e47dbf076718be93de4",
+            "exit_code": 1,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "Only intro86 and library69/one fixture failure executed; later five scopes did not start. Original failure retained.",
+        "independent_closure": {
+          "private_evidence_path": "detector-v3-verification-01/go-evidence-01/verification-detector-v3-go-01.closure.json",
+          "sha256": "2047e6416ffce1c74ee8b83fed8c3a6ac23baa4f98bcb365dc7aef7905913707"
+        }
+      },
+      {
+        "id": "v3-b88-go02-fixture-continuation",
+        "source": "b88c528a0f92029f5769245ff5dd04aab0cb6c26",
+        "product_source": "b88c528a0f92029f5769245ff5dd04aab0cb6c26",
+        "fixture_source": "21eff7e1c247d79bec1d8bee41f5d925d87f001d",
+        "receipt": {
+          "private_evidence_path": "detector-v3-verification-01/go-evidence-02/verification-detector-v3-go-02.json",
+          "sha256": "99cf8b6f36e1036d523c490548d8512d4a9bbcd0b874632a6f549954199b8d1f"
+        },
+        "original_complete": true,
+        "scopes": [
+          {
+            "scope": "library",
+            "selector": "^Test(Analysis.*|StoredAnalysis.*|StoredCurrentAnalysisRequiresExplicitNewZeroValuedObservations|StoredQualifiedAnalysis.*|ClearAnalysis.*|EncodeAnalysis.*|DecodeAnalysis.*)$",
+            "parent_passes": 70,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "1c6dd2cefeabcb918a1aa07ec4b6e3f09f70d4a46d49ef0260729d78922b8800",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "tasks",
+            "selector": "^TestAnalysis.*$",
+            "parent_passes": 17,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "a25e501b60bff5606f4737af1de8e68062f072d41faabfd71989cb9330d4ed2c",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "server",
+            "selector": "^Test(Analysis.*|AdminMediaAnalysis.*|HTTPAdminMediaAnalysis.*)$",
+            "parent_passes": 54,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "85de9a8d867fe51f319f358abe3c6671d91adc88507b14707c9f89f60d3fe271",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "cmd-goby",
+            "selector": "all",
+            "parent_passes": 24,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "d8c3c344937474e443ce98d59fa30802e371f104d455a0f9adbcc1eac48272d8",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "backuppg",
+            "selector": "all",
+            "parent_passes": 133,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "661f3d97cf7783d58fbab5de93ec838aa3bfc00bd301b9b026104940c346b855",
+            "exit_code": 0,
+            "process_group_closed": true
+          },
+          {
+            "scope": "recovery",
+            "selector": "all",
+            "parent_passes": 39,
+            "parent_skips": [],
+            "failed_test_events": [],
+            "binary_sha256": "126c981f949bf526ec564b022e593dc1b248d1ba70f4ef984297d867e0fbc5fb",
+            "exit_code": 0,
+            "process_group_closed": true
+          }
+        ],
+        "composition_note": "Six scopes337 passes. Library70 replaces the prior69/one-failure scope; the old69 is not added. Original WAL post-check refusal remains separate from accepted reconciliation.",
+        "independent_closure": {
+          "private_evidence_path": "detector-v3-verification-01/go-evidence-02/verification-detector-v3-go-02.closure.json",
+          "sha256": "9faa2c34f70211af798e12af5707a8d4ecf2146f4e2ee25259077d44e0c6f90a"
+        }
+      }
+    ],
+    "original_skips_not_converted_to_pass": [
+      "TestDolbyVisionActualRPUCoverageCRCAndNativeSyntax",
+      "TestHardwareEncodingActualVAAPIAdmission",
+      "TestHardwareEncodingActualAV1PaddingRejection",
+      "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+      "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan",
+      "TestRootBindingFullScanMountNamespaceHelper"
+    ],
+    "historical_compositions": [
+      {
+        "receipt": {
+          "private_evidence_path": "v2-accepted-composed-ledger-01.md",
+          "sha256": "62b34a69be1ade01fed6d4f9544ecf0d794f52c95da2815b3f25d8cbcee3b9f2"
+        },
+        "source": "b9 product plus ecd test-only repair",
+        "selected_distinct_parents": 395,
+        "rule": "392 original passes plus three replacements, excluding original failed outcomes"
+      },
+      {
+        "receipt": {
+          "private_evidence_path": "detector-v3-verification-01/final-evidence/verification-detector-v3-composite-03.json",
+          "sha256": "ccd3f166032ec2aeadda79b4d1d9413e0968dadee58b4ffe847f4cf48fee6e24"
+        },
+        "source": "b88 product plus21eff library fixture overlay",
+        "selected_distinct_parents": 423,
+        "rule": "Original go01 intro86 plus go02 six scopes337; exclude old library69"
+      },
+      {
+        "receipt": {
+          "sha256": "d21340628ec47ab84219ff5fea90dd7185c82ff258b2e6db0b67508dc55f46dd",
+          "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-unified-composition.json"
+        },
+        "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+        "affected_composed_parents": 442,
+        "rule": "Current105 intro replaces prior86/99; retain337 original-source unaffected parents. Not an allPhase2 total."
+      }
+    ],
+    "actual02_browser_parent_passes": 1,
+    "browser_parent_added_to_latest_affected_total": false
+  },
+  "failure_preservation": [
+    "Original A3 nine failures, E7 unknown-SAR fixture failure, B9 three fixture failures and b88 RawMessage fixture failure remain in their immutable receipts; repairs replace scoped outcomes without rewriting failures.",
+    "Earlier real-corpus six misses, failed calibration qualification stages and controlled02 cold-opening failure remain retained; later success does not erase them.",
+    "Original operational wrapper/preflight/build refusals, WAL accounting refusal and count-assertion failure remain distinct from accepted postproof/reconciliation results.",
+    "Actual01 complete browser, worker verification and observer-pass flags remain false; failed-run closure is not successful complete acceptance.",
+    "Actual02 passes as a fixture-only complete-client-lifecycle repeat. It does not rewrite actual01, create a new unseen trial, or increase the independent corpus denominator."
+  ],
+  "pending_required": [
+    "Record authorized merge/push and exact remote-ref readback; this is publication, not an open verification gate"
+  ],
+  "resolved_not_blockers": [
+    "Actual14 corpus and fresh3 accuracy",
+    "All four required actual previews and FH1 skip",
+    "Native configuration CAS and decisions",
+    "Historical named schema49-to50 and generic blocked-writer pass binding"
+  ],
+  "limits_not_new_phase2_gates": [
+    "Episode-only generalization in one known series with unknown historical season",
+    "No unseen-series, unseen-season or fresh-negative specificity claim",
+    "Assistant source review is not human annotation or direct audio listening",
+    "Named Video.js/BIF-plugin/Goby protocol adapter evidence is not original Emby Web parity",
+    "No preview-specific blocked-response injection claim; not a newly imposed Phase2 gate",
+    "Phase3 compound load, storage faults and isolated guest reboot/reset remain separate",
+    "Repeated observations do not add independent originals or justify a new aggregate Go count",
+    "Actual02 native prune retained referenced ready cache entries; it did not demonstrate deletion of those entries. Deletion behavior retains package evidence."
+  ],
+  "successful_successor_result": "actual02_worker",
+  "phase": 2,
+  "full_three_phase_goal_complete": false,
+  "product_source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+  "actual02": {
+    "verification_kind": "complete_client_lifecycle_fixture_repair",
+    "new_unseen_holdout_trial": false,
+    "same_frozen_corpus_repeat": true,
+    "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+    "fixture_source": "e94173f592f1ef000e94673dfc1c29742d526dcd",
+    "runtime_view_manifest_sha256": "73d1d9612ec9694b4559ef9a1b5c6b5d2658e3a69957069ebd1508123fb51976",
+    "original_actual01_fresh_result_preserved": true,
+    "original_failure_reclassified_as_pass": false,
+    "corpus_state": "passed",
+    "case_count": 14,
+    "case_results": [
+      {
+        "case_id": "C1",
+        "state": "passed",
+        "evaluation_role": "calibration",
+        "preview_state": "passed"
+      },
+      {
+        "case_id": "C2",
+        "state": "passed",
+        "evaluation_role": "calibration",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "C3",
+        "state": "passed",
+        "evaluation_role": "calibration",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "C4",
+        "state": "passed",
+        "evaluation_role": "calibration",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "C5",
+        "state": "passed",
+        "evaluation_role": "calibration",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "C6",
+        "state": "passed",
+        "evaluation_role": "calibration",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "H1",
+        "state": "passed",
+        "evaluation_role": "regression",
+        "preview_state": "passed"
+      },
+      {
+        "case_id": "H2",
+        "state": "passed",
+        "evaluation_role": "regression",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "H3",
+        "state": "passed",
+        "evaluation_role": "regression",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "FH1",
+        "state": "passed",
+        "evaluation_role": "fresh_holdout",
+        "preview_state": "passed"
+      },
+      {
+        "case_id": "FH2",
+        "state": "passed",
+        "evaluation_role": "fresh_holdout",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "FH3",
+        "state": "passed",
+        "evaluation_role": "fresh_holdout",
+        "preview_state": "not_required"
+      },
+      {
+        "case_id": "N1",
+        "state": "passed",
+        "evaluation_role": "regression",
+        "preview_state": "passed"
+      },
+      {
+        "case_id": "N2",
+        "state": "passed",
+        "evaluation_role": "regression",
+        "preview_state": "not_required"
+      }
+    ],
+    "counts": {
+      "abstention": 2,
+      "boundary": 0,
+      "failure": 0,
+      "false_positive": 0,
+      "miss": 0,
+      "narrative_safety": 0,
+      "pending": 0
+    },
+    "gates": [
+      {
+        "count": 12,
+        "minimum": 3,
+        "name": "independent_positive_episodes",
+        "state": "passed"
+      },
+      {
+        "count": 3,
+        "minimum": 3,
+        "name": "fresh_holdout_positive",
+        "state": "passed"
+      },
+      {
+        "count": 2,
+        "minimum": 2,
+        "name": "regression_negative",
+        "state": "passed"
+      },
+      {
+        "count": 12,
+        "minimum": 1,
+        "name": "category_normal_op",
+        "state": "passed"
+      },
+      {
+        "count": 2,
+        "minimum": 1,
+        "name": "category_insufficient_evidence",
+        "state": "passed"
+      }
+    ],
+    "manifest_sha256": "b117f19dafc5e2b04f649599e9278ce55c61a6ab62393d267a63181f5055d759",
+    "combined_label_revision_sha256": "9bae913928d8e94d4b735fb06ae53c7f09422b9d75d3b50bc8f7b43520a8eaab",
+    "human_reviewed": false,
+    "label_method": "assistant_source_review",
+    "generalization_exclusions": [
+      "new_series_generalization",
+      "new_season_generalization",
+      "fresh_holdout_negative_specificity"
+    ],
+    "corpus_evaluator_mechanical_exclusions": [
+      "source_replacement_fault_injection",
+      "cancellation_fault_injection",
+      "authorization_revocation",
+      "http_range_and_cache_contracts"
+    ],
+    "required_previews": [
+      {
+        "case_id": "C1",
+        "width": 240,
+        "state": "passed"
+      },
+      {
+        "case_id": "FH1",
+        "width": 320,
+        "state": "passed"
+      },
+      {
+        "case_id": "N1",
+        "width": 400,
+        "state": "passed"
+      },
+      {
+        "case_id": "H1",
+        "width": 320,
+        "state": "passed"
+      }
+    ],
+    "browser_complete": true,
+    "mechanics": {
+      "NativeConfiguration": true,
+      "ConfigurationCAS": true,
+      "ActualTaskCompletion": true,
+      "ActualCancellation": true,
+      "Decisions": true,
+      "CachePrune": true,
+      "Restart": true,
+      "ActualSkip": true,
+      "BIFRange": true,
+      "AnonymousPreviewDenied": true,
+      "SourceReplacement": false,
+      "AuthorityRevocation": false
+    },
+    "consumer": {
+      "VideoJS": "7.6.5",
+      "BIFPluginCommit": "69989cee2f5ffed5151042cc9aef2280ea9ce5f6",
+      "BIFPluginModified": false,
+      "IntroAdapter": "Goby acceptance protocol adapter",
+      "OriginalEmbyClient": false,
+      "EntitlementModified": false,
+      "CaseId": "FH1"
+    },
+    "page_errors": 0,
+    "foreign_requests": 0,
+    "browser_context_closed": true,
+    "browser_closed": true,
+    "driver_complete": true,
+    "go_test_failed": false,
+    "independent_driver_observer_completed": true,
+    "fallback_live_credentials": 0,
+    "closed_generations": [
+      {
+        "close_succeeded": true,
+        "analysis_joined": true,
+        "active_http_requests": 0,
+        "cache_after_close": {
+          "ReadyEntries": 14,
+          "BuildingEntries": 0,
+          "PendingPublications": 0,
+          "Readers": 0,
+          "ReadyBytes": 10868075,
+          "ReservedBytes": 0,
+          "ControlBytes": 78,
+          "TotalBytes": 10868153,
+          "MaxBytes": 2147483648
+        }
+      },
+      {
+        "close_succeeded": true,
+        "analysis_joined": true,
+        "active_http_requests": 0,
+        "cache_after_close": {
+          "ReadyEntries": 14,
+          "BuildingEntries": 0,
+          "PendingPublications": 0,
+          "Readers": 0,
+          "ReadyBytes": 10868075,
+          "ReservedBytes": 0,
+          "ControlBytes": 78,
+          "TotalBytes": 10868153,
+          "MaxBytes": 2147483648
+        }
+      }
+    ],
+    "cache_empty_claimed": false,
+    "cancel": {
+      "acknowledgement_status": 202,
+      "terminal_status": 200,
+      "terminal_state": "cancelled",
+      "terminal_children": 14,
+      "total_children": 14
+    },
+    "prune": {
+      "status": 200,
+      "removed_entries": 0,
+      "removed_bytes": 0,
+      "busy_entries": 0,
+      "remaining_bytes": 10868153,
+      "interpretation": "Referenced ready generations were retained; this run did not delete 14 entries. Deletion semantics retain cache/package evidence."
+    },
+    "persisted_ack_complete": true,
+    "cleanup_ack_complete": true,
+    "worker_complete": true,
+    "required_named_parent_passes": [
+      "TestMediaAnalysisResiliencePhase2BrowserIntegration"
+    ],
+    "required_named_parents_passed": true,
+    "browser_parent_duration_seconds": 1112.4244599342346,
+    "browser_parent_exit_code": 0,
+    "browser_parent_process_group_closed": true,
+    "worker_closure_complete": true,
+    "worker_verification_passed": true,
+    "worker_cgroup_absent": true,
+    "worker_closure_errors": [],
+    "observer_complete": true,
+    "resource_observation_passed": true,
+    "natural_worker_terminal": true,
+    "accounting_thread_joined": true,
+    "observer_closure_complete": true,
+    "observer_observation_passed": true,
+    "copy_file_count": 91,
+    "copy_total_bytes": 5851253,
+    "all_copied_sha256_and_lengths_equal": true,
+    "secret_context_copied": false,
+    "excluded_browser_mechanics": {
+      "SourceReplacement": "Not injected by browser; independently covered by named HTTP/provider scope",
+      "AuthorityRevocation": "Not injected by browser; independently covered by named HTTP/provider scope"
+    }
+  },
+  "phase_resource_closure": {
+    "status": "closed",
+    "evidence": "phase2_resource_closure",
+    "complete": true,
+    "clean_cluster_shutdown": true,
+    "owned_postgres_process_group_absent": true,
+    "owned_postgres_cgroup_absent": true,
+    "postmaster_and_socket_absent": true,
+    "database_count_retained": 22,
+    "database_count_includes_cluster_defaults": true,
+    "database_directories_preserved": true,
+    "evidence_directories_preserved": true,
+    "directories_deleted": 0,
+    "databases_deleted": 0,
+    "unrelated_services_retained": 3,
+    "unrelated_service_identities_unchanged": true,
+    "post_closure_evidence": "phase2_post_closure_resource",
+    "active_phase_units": [],
+    "guest_reboot_performed": false
+  },
+  "publication": {
+    "status": "pending",
+    "merged": false,
+    "pushed": false,
+    "delivery_commit": null,
+    "main_commit": null,
+    "remote_ref": null,
+    "remote_commit": null,
+    "remote_readback_verified": false,
+    "note": "Verification and resource closure are accepted. Root will separately record the authorized merge/push and exact remote-ref readback."
+  },
+  "pending_verification_requirements": [],
+  "ancillary_and_original_failure_references": {
+    "product-build-01.json": {
+      "private_evidence_path": "product-build-01.json",
+      "sha256": "6ee9f0c4a65289eeef04a1aeb507920044bf0b8aa294bed6677fd6b52c708e8f"
+    },
+    "product-build-02.json": {
+      "private_evidence_path": "product-build-02.json",
+      "sha256": "3f7c6645690a184a321ce3a66a3e62318a99cd60fa8014fee3a9c4da1a0403b2"
+    },
+    "product-build-03.json": {
+      "private_evidence_path": "product-build-03.json",
+      "sha256": "af988ee66e155020b49ff1fb0ab2f5e225b87073c2834e92181fe46bced71849"
+    },
+    "product-build-v2-03.json": {
+      "private_evidence_path": "product-build-v2-03.json",
+      "sha256": "dcd8059eab613dd291d79127f3e9b9c5869f0967381ee8aeedcfdcb93eede166"
+    },
+    "media-fixture-build-04.json": {
+      "private_evidence_path": "media-fixture-build-04.json",
+      "sha256": "17232a1b5eb80831a0ecf81a5d2b2d528d8ea38b42b68974d2db450816c591f1"
+    },
+    "extras-01.json": {
+      "private_evidence_path": "extras-01.json",
+      "sha256": "bdfb5e0e8a7c38e8502c043da8dc5241198f95b4123a3d1f20fdec0927f63dd8"
+    },
+    "intro-v2-source-checks-01.json": {
+      "private_evidence_path": "intro-v2-source-checks-01.json",
+      "sha256": "612f2fe2b913df137e77587c5e3c100b81d30a424b64da0970c3317a44d8fceb"
+    },
+    "mocked-browser-02/receipt.json": {
+      "private_evidence_path": "mocked-browser-02/receipt.json",
+      "sha256": "2b0cf2820c8d772fe54013cf7f2c23e51183c3899a1ab841494cc88b7b255126"
+    },
+    "mocked-browser-02/closure.json": {
+      "private_evidence_path": "mocked-browser-02/closure.json",
+      "sha256": "03c8d708f6a82bc64e2f3037b1466e23aa3cc04904954d9d7a8167f04a3f9c1d"
+    },
+    "catalog-generation-01.json": {
+      "private_evidence_path": "catalog-generation-01.json",
+      "sha256": "07f1a30ef00ddfd8640a48762614dd54ce5ff8562898ecf5ff937e426e2ffee7"
+    },
+    "catalog-review-01.json": {
+      "private_evidence_path": "catalog-review-01.json",
+      "sha256": "79ffb9f961dfb6641626b06d3ef82df03c56f9bc76cc6b2e5499a2abe074cdfe"
+    },
+    "real-browser-02.json": {
+      "private_evidence_path": "real-browser-02.json",
+      "sha256": "4f7760619bd8dc27457980270361e7676d3f27cbbdef34279d5d8245c5fc54e5"
+    },
+    "real-browser-02/corpus-result.json": {
+      "private_evidence_path": "real-browser-02/corpus-result.json",
+      "sha256": "9bb9c684de5cbe44674c589833a07ec3b4625a26b430e6f2e5affb58d280aec9"
+    }
+  },
+  "current_algorithm_campaigns": [
+    {
+      "phase": "calibration",
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "old_extraction_source": "b88c528a0f92029f5769245ff5dd04aab0cb6c26",
+      "analyze_calls": 5,
+      "new_extraction_calls": 0,
+      "overall_pass": true,
+      "receipt": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-calibration.receipt.json",
+        "sha256": "c374478076f2c906df1d92216288ab28fe18088327dbd4d3e8e3da8f485b7f7e"
+      },
+      "independent_closure": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-calibration.closure.json",
+        "sha256": "158a3b32c689dc7228c439f4a23c3d7e4eacd1f4f6fb5c0af877a7e06b2cab5a"
+      },
+      "score": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/data/calibration/score.json",
+        "sha256": "b36b7efb888b6f791b09483b59b565b3ddf0bc65d957ec1780c91e854fe368a3"
+      },
+      "raw_result_sha256": "a138161bd74ef9b4df1a361bcc6df981d81fe9a1e6869077ce3b81668ec23877"
+    },
+    {
+      "phase": "controlled",
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "old_extraction_source": "00047acfe0e1bf0fa0ec4b4ab3ab6b61b0a8e152",
+      "analyze_calls": 3,
+      "new_extraction_calls": 0,
+      "overall_pass": true,
+      "receipt": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-controlled.receipt.json",
+        "sha256": "774fed2f849183a73bde5ba5688f885c1f4f8880c511c605dc689876c23fad6c"
+      },
+      "independent_closure": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-controlled.closure.json",
+        "sha256": "1ee64eb792e027b9e6e01329706adf6f687c66746f4f45b5a799db82b8672d0f"
+      },
+      "score": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/data/controlled/score.json",
+        "sha256": "58de5ddc94c28a287ccf710a55c25076397232788196f0af0be69a09f47cf7fd"
+      },
+      "raw_result_sha256": "061ae249343978b4641a501243c5753140d94b5b3c1f4d687c600751cfd54912"
+    }
+  ],
+  "current_intro_execution": {
+    "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+    "actual_parent_passes": 105,
+    "actual_parent_failures": 0,
+    "actual_parent_skips": 0,
+    "original_wrapper_passed": false,
+    "original_receipt": {
+      "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-introdetect.receipt.json",
+      "sha256": "7f6e3a707ae17a90a828b3bf59cbab4b8288bc6127f21328f00a28afad0d9009"
+    },
+    "postproof": {
+      "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-introdetect.postproof.json",
+      "sha256": "d64dae9eff0889d2d5a23d93afb57c9edef633fff9d6cb4e8ec96aa7604773b4"
+    },
+    "explanation": "Actual105 parents passed; original wrapper count assertion remained failed. Separate inventory/source/exit/closure postproof accepted without rerunning tests."
+  },
+  "current_builds": [
+    {
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "scope": "build",
+      "artifact_count": 1,
+      "receipt": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-build.receipt.json",
+        "sha256": "2cbfa36b36cc844df1e47501b1d62bbd1f9d27a4498aa441d4c49128adb42a7a"
+      },
+      "independent_closure": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-build.closure.json",
+        "sha256": "d67cd64e6b50b765b81f2eec79aaac12836f9cb6a484649eef43b1f1b1490edb"
+      }
+    },
+    {
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "scope": "product-build",
+      "artifact_count": 3,
+      "receipt": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-product-build.receipt.json",
+        "sha256": "dbd816f97e6fcd212608bdcca2c5b32c8adcdb344fd5114095cca8ae852ae1e5"
+      },
+      "independent_closure": {
+        "private_evidence_path": "detector-v3-matcher-repair-02/evidence/records/detector-v3-matcher-repair-02-product-build.closure.json",
+        "sha256": "c1f434e803f617ec73dc24053a386b93e263d1c282bf1f94dc84ae030a4d6366"
+      }
+    }
+  ],
+  "current_artifacts": [
+    {
+      "name": "introdetect.test",
+      "bytes": 6704048,
+      "sha256": "5463710cf0aac49e5cd3561dc6c6fda8985aa907890550f1f686e17cdb3993a2",
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "source_mode": "go-overlay",
+      "newly_compiled": true
+    },
+    {
+      "name": "goby",
+      "bytes": 48360298,
+      "sha256": "0b2ea1ec880706d7c6ebd728fd5196262db360aae50804576313388bfea77ccc",
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "source_mode": "go-overlay",
+      "newly_compiled": true
+    },
+    {
+      "name": "goby-embedded",
+      "bytes": 49800198,
+      "sha256": "cf3b5e7aa2cdaf37b5c4bcf5b07d26c0b31d9299e55f659d98dc62f55e3ca135",
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "source_mode": "go-overlay",
+      "newly_compiled": true
+    },
+    {
+      "name": "server-browser.test",
+      "bytes": 49946131,
+      "sha256": "c64e9b378ab35dd6bbfb70ad100a07d6d2cbcfc4110596ea10198b62b50ea996",
+      "source": "49fc4ec67de30d3d5dbe51a40be257ccac3f3e57",
+      "source_mode": "go-overlay",
+      "newly_compiled": true
+    }
+  ],
+  "build_and_source_check_provenance": [
+    {
+      "source": "a3a74a32c8196e3f76e55ace6c799ec34e79d707",
+      "receipt": "product-build-01.json",
+      "scope": "20 successful build steps,17 artifacts,73 frontend assets; building test binaries is not executing tests"
+    },
+    {
+      "source": "c3d3e7ab88eb68871378d4da91fd358fe376773e",
+      "receipt": "product-build-02.json",
+      "scope": "20 successful build steps,17 artifacts,73 assets after initial fixes"
+    },
+    {
+      "source": "e7d3fb601483f69cc9f9cf5ba4e436565c0f8ecd",
+      "receipt": "product-build-03.json",
+      "scope": "20 successful build steps,17 artifacts,73 assets for SAR production fix"
+    },
+    {
+      "source": "a3a74a32c8196e3f76e55ace6c799ec34e79d707",
+      "receipt": "extras-01.json",
+      "scope": "Seven native protocol methods and three Node source-test files passed;12 Node tests are documented, not enumerated in this receipt"
+    },
+    {
+      "source": "b9b75b2a3907e5ed9054f8a7173a7b4e460a37c3",
+      "receipt": "intro-v2-source-checks-01.json",
+      "scope": "12 Python methods,6 affected Node tests,2 JavaScript syntax checks; mocks/syntax are not real-consumer acceptance"
+    },
+    {
+      "source": "b9b75b2a3907e5ed9054f8a7173a7b4e460a37c3",
+      "receipt": "mocked-browser-02/receipt.json",
+      "scope": "Seven mocked native UI tests, independently closed; retained separately from actual browser runs"
+    }
+  ]
+}

@@ -81,14 +81,11 @@ rows. These normalization counts are distinct from the exact raw archive witness
 
 The accompanying test sources cover historical-version gates, malformed typed
 selection and actor carriers, binary and relational corruption, raw round-trip
-preservation, epoch precision/exhaustion and transactional invalidation. Actual
-PostgreSQL/archive checks have completed within the recorded remote source and
-scope composition; their evidence is in the
-[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
-
-The later fourteen-source client run passed 14/14 corpus cases, four required
-previews, actual skip, CAS and decisions, but failed at a browser cancellation
-assertion expecting HTTP 200 instead of the existing HTTP 202 response. The
-fixture-only `e94173f` correction is in the running second attempt. Cancellation
-completion, pruning, restart and full client acceptance remain pending; those
-outcomes are not inferred from the archive/recovery results.
+preservation, epoch precision/exhaustion and transactional invalidation.
+Verification of the declared Phase 2 scope is complete, including actual
+PostgreSQL/archive checks and the independently closed full client-lifecycle
+run. Mainline publication remains pending. Source/scope composition and outcomes
+are recorded in the [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md)
+and [recorded results](media-analysis-resilience-phase2-results-20260922.json).
+The [original cancellation-fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
+is retained separately from the successful successor and archive/recovery results.
