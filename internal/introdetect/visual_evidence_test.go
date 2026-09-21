@@ -38,7 +38,7 @@ func TestCompleteVisualBandCannotBorrowOnlyTheTipOfAnOutsideAnchor(t *testing.T)
 	}
 }
 
-func TestVisualStateSupportCannotAccumulateSeparatedHalfSecondFlashes(t *testing.T) {
+func TestVisualStatesWithinContinuousMatchedAnchorsNeedNotRemainStationary(t *testing.T) {
 	states := []uint64{0x0000ffff0000ffff, 0xffff0000ffff0000, 0xff00ff00ff00ff00, 0x00ff00ff00ff00ff}
 	a := Episode{DurationTicks: 30 * TicksPerSecond}
 	for i := 0; i <= 40; i++ {
@@ -50,8 +50,8 @@ func TestVisualStateSupportCannotAccumulateSeparatedHalfSecondFlashes(t *testing
 	}
 	b := a
 	evidence, err := measureVisualV2(a, b, audioMatch{a: Interval{0, 20 * TicksPerSecond}, b: Interval{0, 20 * TicksPerSecond}}, 0, DefaultOptions(), v2TestBudget())
-	if err != nil || evidence.metrics.VisualDistinctStates != 3 {
-		t.Fatalf("three separate 0.5-second flashes became one second of continuous state evidence: %#v, %v", evidence.metrics, err)
+	if err != nil || evidence.metrics.VisualDistinctStates != 4 || evidence.metrics.VisualMatchedTimePermille != 1000 || evidence.metrics.VisualAnchorCount != 1 {
+		t.Fatalf("a genuinely matched state inside a continuous anchor was incorrectly required to remain stationary: %#v, %v", evidence.metrics, err)
 	}
 }
 
@@ -131,8 +131,8 @@ func TestFinalGroupProjectionRechecksStatesWithoutReapplyingTheAudioGuard(t *tes
 		ranges[source] = Interval{22 * TicksPerSecond, 38 * TicksPerSecond}
 	}
 	cropped, err := projectGroup(episodes, []int{0, 1, 2}, ranges, edges, DefaultOptions(), v2TestBudget())
-	if err != nil || cropped != nil {
-		t.Fatalf("cropping inherited the original four-state witness after only two states remained: %#v, %v", cropped, err)
+	if err != nil || cropped == nil || cropped.Status != Review || cropped.Metrics.VisualDistinctStates != 2 || !slices.Contains(cropped.Reasons, LowVisualDiversity) {
+		t.Fatalf("cropping did not retain an honest two-state review after losing the original diversity: %#v, %v", cropped, err)
 	}
 }
 

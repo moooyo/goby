@@ -100,7 +100,7 @@ type Options struct {
 	MaxVisualAnchorEdgeGapTicks     int64
 	VisualStateRadius               int
 	MinVisualStates                 int
-	MinVisualStateSupportTicks      int64
+	MinVisualStateAnchorTicks       int64
 	MaxVisualStateDominancePermille int
 }
 
@@ -115,15 +115,15 @@ func DefaultOptions() Options {
 		OffsetBinTicks: TicksPerSecond / 2, AudioAlignmentTicks: TicksPerSecond / 3,
 		MaxAudioGapTicks: TicksPerSecond, VisualAlignmentTicks: TicksPerSecond,
 		MaxVisualGapTicks: 3 * TicksPerSecond, BoundaryToleranceTicks: 3 * TicksPerSecond,
-		MinSupport: 3, MaxAudioHamming: 6, MaxVisualHamming: 16,
+		MinSupport: 3, MaxAudioHamming: 6, MaxVisualHamming: 24,
 		MinAudioAgreement: 900, MinAudioInformation: 600, MinVisualAgreement: 850,
-		MinAudioSimilarity: 850, MinVisualSimilarity: 850,
+		MinAudioSimilarity: 850, MinVisualSimilarity: 750,
 		MinVisualContrast: 40, MinVisualSamples: 8, MinVisualTransitions: 3,
 		MinVisualChangeCoverage: 300, MaxVisualDominance: 600,
 		VisualBandTicks: 5 * TicksPerSecond, MinVisualBandMatchedPermille: 500,
 		MinVisualAnchorTicks: TicksPerSecond, MaxVisualUnconfirmedGapTicks: 3 * TicksPerSecond,
 		MaxVisualAnchorEdgeGapTicks: 3 * TicksPerSecond, VisualStateRadius: 8,
-		MinVisualStates: 4, MinVisualStateSupportTicks: TicksPerSecond, MaxVisualStateDominancePermille: 600,
+		MinVisualStates: 4, MinVisualStateAnchorTicks: TicksPerSecond, MaxVisualStateDominancePermille: 600,
 	}
 }
 

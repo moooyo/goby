@@ -174,24 +174,11 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 	if err != nil {
 		return value, err
 	}
-	matchedStatesA, matchedStatesB := make([]int64, len(statesA.counts)), make([]int64, len(statesB.counts))
+	var matchedObservations [][2]int
 	start := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks >= audio.a.StartTicks })
 	end := sort.Search(len(a.Visual), func(i int) bool { return a.Visual[i].Ticks > audio.a.EndTicks })
 	var spansA, spansB []visualSpan
 	previousI, previousJ, previousKind := -1, -1, 0
-	chainA, chainB := -1, -1
-	var chainTicksA, chainTicksB int64
-	advance := func(state int, gap int64, chain *int, duration *int64, longest []int64) {
-		if state < 0 {
-			*chain, *duration = -1, 0
-			return
-		}
-		if *chain != state {
-			*duration = 0
-		}
-		*chain, *duration = state, *duration+gap
-		longest[state] = max(longest[state], *duration)
-	}
 	j, lastTarget := 0, -1
 	for i := start; i < end; i++ {
 		if err := budget.spend(); err != nil {
@@ -206,7 +193,6 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 		}
 		if j >= len(b.Visual) || j <= lastTarget || b.Visual[j].Ticks < audio.b.StartTicks || b.Visual[j].Ticks > audio.b.EndTicks || absolute(b.Visual[j].Ticks-target) > o.VisualAlignmentTicks {
 			previousI, previousJ, previousKind = -1, -1, 0
-			chainA, chainB, chainTicksA, chainTicksB = -1, -1, 0, 0
 			continue
 		}
 		lastTarget = j
@@ -215,14 +201,13 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 			kind = 2
 			if bits.OnesCount64(a.Visual[i].Hash^b.Visual[j].Hash) <= o.MaxVisualHamming {
 				kind = 1
+				matchedObservations = append(matchedObservations, [2]int{i, j})
 				if value.firstA < 0 {
 					value.firstA, value.firstB = a.Visual[i].Ticks, b.Visual[j].Ticks
 				}
 				value.lastA, value.lastB = a.Visual[i].Ticks, b.Visual[j].Ticks
 			}
 		}
-		stateA, stateB := -1, -1
-		var stateGapA, stateGapB int64
 		if previousI >= 0 && i == previousI+1 && j == previousJ+1 {
 			gapA, gapB := a.Visual[i].Ticks-a.Visual[previousI].Ticks, b.Visual[j].Ticks-b.Visual[previousJ].Ticks
 			if gapA <= maxVisualEvidenceEdgeTicks && gapB <= maxVisualEvidenceEdgeTicks {
@@ -236,18 +221,8 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 					spansA = appendVisualSpan(spansA, Interval{a.Visual[previousI].Ticks, a.Visual[i].Ticks}, spanKind)
 					spansB = appendVisualSpan(spansB, Interval{b.Visual[previousJ].Ticks, b.Visual[j].Ticks}, spanKind)
 				}
-				if spanKind == 1 {
-					if state := statesA.ids[i]; state >= 0 && statesA.ids[previousI] == state {
-						stateA, stateGapA = state, gapA
-					}
-					if state := statesB.ids[j]; state >= 0 && statesB.ids[previousJ] == state {
-						stateB, stateGapB = state, gapB
-					}
-				}
 			}
 		}
-		advance(stateA, stateGapA, &chainA, &chainTicksA, matchedStatesA)
-		advance(stateB, stateGapB, &chainB, &chainTicksB, matchedStatesB)
 		previousI, previousJ, previousKind = i, j, kind
 	}
 	ta, err := measureVisualTimeline(audio.a, spansA, o, budget)
@@ -270,16 +245,10 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 	m.VisualMatchedTimePermille, m.VisualContradictedTimePermille, m.VisualUnobservableTimePermille = partition.matched, partition.contradicted, partition.unobservable
 	m.VisualMaxUnconfirmedGapTicks = max(ta.maximumGap, tb.maximumGap)
 	m.VisualStartAnchorGapTicks, m.VisualEndAnchorGapTicks = max(ta.startGap, tb.startGap), max(ta.endGap, tb.endGap)
-	countStates := func(values []int64) int {
-		count := 0
-		for _, span := range values {
-			if span >= o.MinVisualStateSupportTicks {
-				count++
-			}
-		}
-		return count
+	m.VisualDistinctStates, err = anchoredVisualStates(a.Visual, b.Visual, statesA, statesB, matchedObservations, ta.anchors, tb.anchors, o, budget)
+	if err != nil {
+		return value, err
 	}
-	m.VisualDistinctStates = min(countStates(matchedStatesA), countStates(matchedStatesB))
 	for _, states := range []visualStates{statesA, statesB} {
 		for _, count := range states.counts {
 			m.VisualDominantStatePermille = max(m.VisualDominantStatePermille, count*1000/max(1, states.total))
@@ -287,4 +256,50 @@ func measureVisualV2(a, b Episode, audio audioMatch, offset int64, o Options, bu
 	}
 	value.allBandsAnchored, value.periodic = ta.allBandsAnchored && tb.allBandsAnchored, statesA.periodic || statesB.periodic
 	return value, nil
+}
+
+// A state is an observed near-template identity, not a stationary scene. Its
+// matched observation must belong to a sufficiently long continuous matched
+// anchor on both source clocks. Isolated hits cannot borrow a remote anchor.
+func anchoredVisualStates(a, b []VisualSample, statesA, statesB visualStates, observations [][2]int, anchorsA, anchorsB []Interval, o Options, budget *workBudget) (int, error) {
+	seenA, seenB := make([]bool, len(statesA.counts)), make([]bool, len(statesB.counts))
+	anchorA, anchorB := 0, 0
+	countA, countB := 0, 0
+	for _, observation := range observations {
+		if err := budget.spend(); err != nil {
+			return 0, err
+		}
+		i, j := observation[0], observation[1]
+		for anchorA < len(anchorsA) && anchorsA[anchorA].EndTicks < a[i].Ticks {
+			if err := budget.spend(); err != nil {
+				return 0, err
+			}
+			anchorA++
+		}
+		for anchorB < len(anchorsB) && anchorsB[anchorB].EndTicks < b[j].Ticks {
+			if err := budget.spend(); err != nil {
+				return 0, err
+			}
+			anchorB++
+		}
+		if anchorA == len(anchorsA) || anchorB == len(anchorsB) {
+			continue
+		}
+		left, right := anchorsA[anchorA], anchorsB[anchorB]
+		if a[i].Ticks < left.StartTicks || b[j].Ticks < right.StartTicks ||
+			left.EndTicks-left.StartTicks < o.MinVisualStateAnchorTicks || right.EndTicks-right.StartTicks < o.MinVisualStateAnchorTicks {
+			continue
+		}
+		stateA, stateB := statesA.ids[i], statesB.ids[j]
+		if stateA < 0 || stateB < 0 {
+			continue
+		}
+		if !seenA[stateA] {
+			seenA[stateA], countA = true, countA+1
+		}
+		if !seenB[stateB] {
+			seenB[stateB], countB = true, countB+1
+		}
+	}
+	return min(countA, countB), nil
 }

@@ -27,7 +27,7 @@ func normalizeOptions(o Options) (Options, error) {
 		o.VisualAlignmentTicks < 1 || o.VisualAlignmentTicks > 2*TicksPerSecond ||
 		o.MaxVisualGapTicks < o.VisualAlignmentTicks || o.MaxVisualGapTicks > 5*TicksPerSecond ||
 		o.BoundaryToleranceTicks < 1 || o.BoundaryToleranceTicks > 10*TicksPerSecond ||
-		o.MaxAudioHamming < 0 || o.MaxAudioHamming > 8 || o.MaxVisualHamming < 0 || o.MaxVisualHamming > 16 ||
+		o.MaxAudioHamming < 0 || o.MaxAudioHamming > 8 || o.MaxVisualHamming < 0 || o.MaxVisualHamming > 24 ||
 		o.MinAudioAgreement < 800 || o.MinAudioAgreement > 1000 || o.MinVisualAgreement < 650 || o.MinVisualAgreement > 1000 ||
 		o.MinAudioInformation < 400 || o.MinAudioInformation > 1000 ||
 		o.MinAudioSimilarity < 750 || o.MinAudioSimilarity > 1000 || o.MinVisualSimilarity < 750 || o.MinVisualSimilarity > 1000 ||
@@ -40,7 +40,7 @@ func normalizeOptions(o Options) (Options, error) {
 		o.MaxVisualUnconfirmedGapTicks < 0 || o.MaxVisualUnconfirmedGapTicks > 5*TicksPerSecond ||
 		o.MaxVisualAnchorEdgeGapTicks < 0 || o.MaxVisualAnchorEdgeGapTicks > 5*TicksPerSecond ||
 		o.VisualStateRadius < 0 || o.VisualStateRadius > 16 || o.MinVisualStates < 4 || o.MinVisualStates > 32 ||
-		o.MinVisualStateSupportTicks < TicksPerSecond/2 || o.MinVisualStateSupportTicks > 10*TicksPerSecond ||
+		o.MinVisualStateAnchorTicks < TicksPerSecond/2 || o.MinVisualStateAnchorTicks > 10*TicksPerSecond ||
 		o.MaxVisualStateDominancePermille < 200 || o.MaxVisualStateDominancePermille > 900 {
 		return Options{}, fmt.Errorf("%w: invalid options", ErrInvalidInput)
 	}

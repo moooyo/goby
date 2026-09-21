@@ -6,6 +6,13 @@ publish an intro. `Analyze(ctx, Cohort, Options)` returns observations for a
 complete explicit cohort window. The caller owns authorization, extraction,
 source integrity, calibration, persistence and publication precedence.
 
+This is the second fixed, unreleased v2 candidate. It supersedes the candidate
+at source `26c2e24af21f1b865beacc06df52a5bf63973709`, whose failed calibration
+and diagnostics are retained separately. No v2 job admission or result had been
+written to the database before this revision. The source build and complete
+Options fingerprint distinguish these candidates; historical v1 DTOs and
+thresholds remain unchanged. This revision is not an accuracy acceptance claim.
+
 ## Input contract
 
 All times are signed 64-bit, 100 ns media ticks relative to the original media
@@ -100,9 +107,14 @@ SourceKey are invalid. Different profiles are not compared.
 9. Independently cluster each source's informative observations against fixed
    first representatives. Choose the nearest representative within radius eight,
    breaking ties by its stable first-observation order. Representatives never
-   move or union through a neighbor chain. At least four states need a genuinely
-   continuous one-second matched same-state chain; disconnected flashes cannot
-   add their durations together. Dominance counts every informative observation
+   move or union through a neighbor chain. At least four different states must
+   have actual cross-source matched observations inside continuous matched
+   anchors of at least `MinVisualStateAnchorTicks` on both source clocks. The
+   state may change while the audiovisual correspondence continues: remaining
+   in one hash neighborhood for a second is not a measure of dynamic scene
+   diversity. An isolated matching point cannot borrow an anchor elsewhere, and
+   unmatched, dark or gap-separated observations do not contribute states.
+   Dominance counts every informative observation
    in the complete source interval, including transitions, rather than only
    favorable matches. The cluster radius is distinct from the cross-source
    matching radius and from the source contrast threshold.
@@ -174,12 +186,12 @@ These fields must not be labeled as a probability or statistical confidence.
 | Automatic duration gate | At least 30 seconds; shorter accepted candidates require review |
 | Audio | Hamming distance at most 6; automatic agreement at least 900/1000 and similarity at least 850/1000 |
 | Matched informative audio time | At least 600/1000 |
-| Visual | Hamming distance at most 16; automatic sample agreement and similarity each at least 850/1000 |
+| Visual | Hamming distance at most 24; automatic sample agreement at least 850/1000 and integer mean similarity at least 750/1000 |
 | Full visual time | At least 850/1000 matched time, retaining contradicted and unobservable time in the denominator |
 | Visual observations | At least eight usable observations; contrast at least 40/1000 |
 | Complete internal bands | Absolute five-second bands; at least 500/1000 matched time and a continuous anchor |
 | Anchors and gaps | Anchor duration at least one second; maximum unconfirmed, starting-anchor and ending-anchor gaps each three seconds |
-| Visual states | Fixed representative radius eight; at least four corroborated states, each with one second of continuous matched support |
+| Visual states | Fixed representative radius eight; at least four different observed states within continuous matched anchors of at least one second on both sources |
 | State dominance | No state exceeds 600/1000 of all informative source observations |
 | State representatives | At most 256 per source/candidate window; exhaustion is an explicit limit |
 | Period hypotheses | At most the window's visual observation count, within the configured feature bound |
@@ -204,7 +216,12 @@ qualification.
 The ten new metrics report anchor count, minimum matched fraction among complete
 internal bands, the complete matched/contradicted/unobservable time partition,
 maximum unconfirmed gap, the two edge-anchor gaps, supported distinct states and
-full-source state dominance. Group metrics use minima for positive support and
+full-source state dominance. `VisualDistinctStates` counts different near-template
+identities actually observed inside sufficiently long continuous matched anchors; it
+does not count stationary scenes or sum disconnected same-state dwell times.
+The former unreleased `MinVisualStateSupportTicks` option is replaced by
+`MinVisualStateAnchorTicks`, explicitly describing the evidence interval rather
+than a requirement that movement stop. Group metrics use minima for positive support and
 maxima for gaps, contradiction, unknown time and dominance. These worst values
 may come from different pairs, so the three group time fractions need not sum
 to 1000. `ValidateCandidateEvidence` shares the actual current qualification
@@ -219,7 +236,8 @@ that could accidentally be published. The caller processes longer seasons in
 explicit windows rather than quietly truncating them.
 
 Weak audio/visual agreement, an observed repeat touching the extracted suffix,
-short intervals, incomplete anchor coverage, periodic evidence and limited
+short intervals, insufficient anchored states, dominant imagery, incomplete
+anchor coverage, periodic evidence and limited
 offset search require review. Search truncation in
 any pair remains source-wide uncertainty: every retained group using that source,
 and all corresponding candidates and episode results, are marked for review.
@@ -246,15 +264,21 @@ Synthetic unit fixtures exercise cold-open offsets, distributed fingerprint
 noise, irregular timestamps, variant groups, duplicate identities, pairwise
 consensus, silence/logo/visual negatives, competing intervals, conservative
 boundaries, cancellation and resource limits. Additional v2 fixtures cover slow
-state changes, sparse shared-title flashes, black-frame denominators, continuous
-state support, dominance dilution, loops with missing evidence, immutable phase
+and fast state changes inside continuous matched anchors, isolated states that
+cannot borrow an anchor, sparse shared-title flashes, black-frame denominators,
+state corroboration, dominance dilution, loops with missing evidence, immutable phase
 anchors, three-way clock conflicts and final-intersection reprojection. They are
-not evidence of real intro accuracy. The v2 candidate profile was declared
-before consuming the new calibration features; its source changes still require
-the phase's unified remote verification and fresh held-out acceptance.
+not evidence of real intro accuracy. This second fixed profile is informed by
+the first candidate's retained calibration diagnostics. It must be evaluated as
+one declared profile against the unchanged calibration labels and predeclared
+controls; its source changes still require unified remote verification and
+fresh held-out acceptance after the final algorithm freeze.
 
-The integrated phase must use licensed, independent real episodes with human
-labels and separate calibration/holdout material. Report false positives,
+The integrated phase must use licensed, independent real episodes with labels
+derived from independently reviewed source evidence and separate
+calibration/holdout material. Disclose the review method, including whether a
+human reviewed the labels or audio was directly listened to; automated source
+review must not be described as human annotation. Report false positives,
 misses, abstentions and boundary errors by category. The library layer must
 recheck the target and supporting source/hierarchy revisions, suppression,
 current authority and worker fencing before publication. Valid manual/import

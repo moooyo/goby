@@ -143,11 +143,18 @@ func TestStoredCurrentAnalysisRequiresExplicitNewZeroValuedObservations(t *testi
 	execution := AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, UnavailableReason: "disabled"}
 	profileRaw := analysisAdmissionTestJSON(t, profile)
 	executionRaw := analysisAdmissionTestJSON(t, execution)
-	missing = bytes.Replace(executionRaw, []byte(`"VisualBandTicks":0,`), nil, 1)
-	if bytes.Equal(missing, executionRaw) {
-		t.Fatal("current unavailable fixture did not contain the new zero-valued option")
+	for _, name := range []string{"VisualBandTicks", "MinVisualStateAnchorTicks"} {
+		missing = bytes.Replace(executionRaw, []byte(`"`+name+`":0,`), nil, 1)
+		if bytes.Equal(missing, executionRaw) {
+			t.Fatalf("current unavailable fixture did not contain explicit zero option %s", name)
+		}
+		if !errors.Is(ValidateStoredAnalysisAdmission(profileRaw, missing, 1, 1, analysisAdmissionFingerprint(profile, execution, 1, 1)), ErrInvalidInput) {
+			t.Fatalf("a current unavailable envelope accepted missing option %s", name)
+		}
 	}
-	if !errors.Is(ValidateStoredAnalysisAdmission(profileRaw, missing, 1, 1, analysisAdmissionFingerprint(profile, execution, 1, 1)), ErrInvalidInput) {
-		t.Fatal("a current unavailable envelope accepted the old incomplete option shape")
+	oldName := bytes.Replace(executionRaw, []byte(`"MinVisualStateAnchorTicks"`), []byte(`"MinVisualStateSupportTicks"`), 1)
+	if bytes.Equal(oldName, executionRaw) || !errors.Is(ValidateStoredAnalysisAdmission(profileRaw, oldName, 1, 1,
+		analysisAdmissionFingerprint(profile, execution, 1, 1)), ErrInvalidInput) {
+		t.Fatal("an unpublished option alias was accepted as the current exact wire contract")
 	}
 }

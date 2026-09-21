@@ -106,10 +106,10 @@ func visualConfirm(a, b Episode, audio audioMatch, offset int64, o Options, budg
 	metrics.VisualEndAnchorGapTicks = evidence.metrics.VisualEndAnchorGapTicks
 	metrics.VisualDistinctStates = evidence.metrics.VisualDistinctStates
 	metrics.VisualDominantStatePermille = evidence.metrics.VisualDominantStatePermille
-	if metrics.VisualDistinctStates < o.MinVisualStates || metrics.VisualDominantStatePermille > o.MaxVisualStateDominancePermille {
-		return nil, LowVisualDiversity, nil
-	}
 	reasons := append([]Reason(nil), audio.reasons...)
+	if metrics.VisualDistinctStates < o.MinVisualStates || metrics.VisualDominantStatePermille > o.MaxVisualStateDominancePermille {
+		reasons = addReason(reasons, LowVisualDiversity)
+	}
 	if agreement < o.MinVisualAgreement || metrics.VisualSimilarityPermille < o.MinVisualSimilarity || metrics.VisualMatchedTimePermille < o.MinVisualAgreement {
 		reasons = addReason(reasons, WeakVisualEvidence)
 	}

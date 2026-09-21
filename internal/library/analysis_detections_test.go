@@ -205,6 +205,10 @@ func TestStoredQualifiedAnalysisRequiresObservedAudioPairsAndVisualCoverage(t *t
 	if err := ValidateStoredAnalysisResult(analysisDetectionTestJSON(t, value), "qualified", start, end); err != nil {
 		t.Fatalf("inclusive detector visual sample bound was rejected: %v", err)
 	}
+	value.Episode.Candidates[0].Metrics.VisualSimilarityPermille = options.MinVisualSimilarity
+	if err := ValidateStoredAnalysisResult(analysisDetectionTestJSON(t, value), "qualified", start, end); err != nil {
+		t.Fatalf("the current visual similarity boundary was rejected: %v", err)
+	}
 	// Distributed anchors can qualify static shots; old adjacent-motion
 	// diagnostics remain stored observations, not v2 qualification gates.
 	value.Episode.Candidates[0].Metrics.VisualTransitions = 0

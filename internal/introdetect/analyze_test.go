@@ -204,8 +204,17 @@ func TestAnalyzeCannotPublishAudioAloneStaticLogosOrDarkFrames(t *testing.T) {
 			}
 			result := analyzeTest(t, cohort)
 			requireNoAutomatic(t, result)
-			if len(result.Groups) != 0 {
-				t.Fatalf("negative fixture retained a publishable witness group: %#v", result.Groups)
+			if kind == "static_logo" {
+				if len(result.Groups) == 0 {
+					t.Fatal("complete audio and matched static imagery lost its explicit review evidence")
+				}
+				for _, group := range result.Groups {
+					if group.Status != Review || group.Metrics.VisualDistinctStates != 1 || !slices.Contains(group.Reasons, LowVisualDiversity) {
+						t.Fatalf("static imagery was not retained as an honest one-state review: %#v", group)
+					}
+				}
+			} else if len(result.Groups) != 0 {
+				t.Fatalf("fixture without useful audiovisual support retained a group: %#v", result.Groups)
 			}
 			want := map[string]Reason{"different_visuals": AudioWithoutVisual, "static_logo": LowVisualDiversity,
 				"low_contrast": InsufficientVisual, "silence": LowAudioEntropy, "missing_visual": MissingVisual}[kind]
@@ -396,8 +405,13 @@ func TestAnalyzeFlickersCannotMakeAStaticLogoDynamic(t *testing.T) {
 	}
 	result := analyzeTest(t, cohort)
 	requireNoAutomatic(t, result)
-	if len(result.Groups) != 0 || !hasResultReason(result, LowVisualDiversity) {
+	if len(result.Groups) == 0 || !hasResultReason(result, LowVisualDiversity) {
 		t.Fatalf("three brief flickers legitimized a predominantly static logo: %#v", result)
+	}
+	for _, group := range result.Groups {
+		if group.Status != Review || group.Metrics.VisualDominantStatePermille <= DefaultOptions().MaxVisualStateDominancePermille {
+			t.Fatalf("flickers hid full-window state dominance: %#v", group)
+		}
 	}
 }
 
@@ -423,8 +437,13 @@ func TestAnalyzeUnmatchedVisualPulsesCannotSupplySceneEvidence(t *testing.T) {
 	}
 	result := analyzeTest(t, cohort)
 	requireNoAutomatic(t, result)
-	if len(result.Groups) != 0 || !hasResultReason(result, LowVisualDiversity) {
+	if len(result.Groups) == 0 || !hasResultReason(result, LowVisualDiversity) {
 		t.Fatalf("30 unmatched pulses supplied the missing temporal confirmation: %#v", result)
+	}
+	for _, group := range result.Groups {
+		if group.Status != Review || group.Metrics.VisualDistinctStates != 1 {
+			t.Fatalf("unmatched pulse states borrowed the matched base-image anchors: %#v", group)
+		}
 	}
 }
 
@@ -484,9 +503,9 @@ func TestAnalyzeCompetingIntervalsAndShortOpeningsRequireReview(t *testing.T) {
 					if i == 2 {
 						for j := range e.Visual {
 							if j%4 == 0 {
-								// Twenty bits remain a disagreement under the fixed
-								// v2 radius; the former twelve-bit fixture no longer did.
-								e.Visual[j].Hash ^= 0xfffff
+								// Twenty-eight bits remain a disagreement under the
+								// second fixed v2 candidate's radius of twenty-four.
+								e.Visual[j].Hash ^= 0xfffffff
 							}
 						}
 					}
