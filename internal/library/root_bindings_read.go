@@ -179,6 +179,9 @@ func (s *Store) getRootBinding(ctx context.Context, actor identity.Principal, li
 	if !row.same(current) {
 		return RootBindingInfo{}, fmt.Errorf("%w: root binding changed during observation", ErrUnavailable)
 	}
+	if errors.Is(observationErr, errStorageObservationUnavailable) {
+		return RootBindingInfo{}, fmt.Errorf("%w: root binding observation capacity or deadline is unavailable", ErrUnavailable)
+	}
 	return rootBindingProjection(row, approved, observed, observationErr)
 }
 
@@ -304,6 +307,15 @@ func (s *Store) configuredRootBindingPath(root libraryRoot) (string, error) {
 }
 
 func (s *Store) observeRootBinding(ctx context.Context, root libraryRoot) (RootTopologySnapshot, error) {
+	return s.observeRootBindingWith(ctx, root, observeConfiguredRootBinding)
+}
+
+type rootBindingFilesystemObserver func(context.Context, string, libraryRoot) (RootTopologySnapshot, error)
+
+func (s *Store) observeRootBindingWith(ctx context.Context, root libraryRoot, observe rootBindingFilesystemObserver) (RootTopologySnapshot, error) {
+	if ctx == nil || observe == nil {
+		return RootTopologySnapshot{}, ErrInvalidInput
+	}
 	if err := ctx.Err(); err != nil {
 		return RootTopologySnapshot{}, err
 	}
@@ -311,22 +323,42 @@ func (s *Store) observeRootBinding(ctx context.Context, root libraryRoot) (RootT
 	if err != nil {
 		return RootTopologySnapshot{}, err
 	}
+	// Copy only configuration while holding Store.mu. The worker captures no
+	// Store or database object, and owns every filesystem operation and close.
+	result := make(chan RootTopologySnapshot, 1)
+	err = runStorageObservation(ctx, nil, func(work context.Context) error {
+		snapshot, err := observe(work, path, root)
+		if err == nil {
+			// A timed-out caller never races a late result or blocks its cleanup.
+			result <- snapshot
+		}
+		return err
+	})
+	if err != nil {
+		return RootTopologySnapshot{}, err
+	}
+	return <-result, nil
+}
+
+// observeConfiguredRootBinding uses only copied paths and its own held roots.
+// Its complete lifetime, including deferred closes, occupies one observation slot.
+func observeConfiguredRootBinding(ctx context.Context, path string, root libraryRoot) (snapshot RootTopologySnapshot, result error) {
 	approved := approvedRoot{path: path}
 	if err := openApprovedRoot(&approved); err != nil {
 		return RootTopologySnapshot{}, err
 	}
 	lease := &libraryRootLease{approved: approved.root, relativePath: root.relativePath}
-	defer lease.Close()
+	defer func() { result = errors.Join(result, lease.Close()) }()
 	registered, err := lease.Open()
 	if err != nil {
 		return RootTopologySnapshot{}, err
 	}
-	defer registered.Close()
+	defer func() { result = errors.Join(result, registered.Close()) }()
 	capture, err := lease.CaptureTopology(ctx, RootTopologyMapping{ApprovedPath: path, RegisteredPath: root.path}, registered)
 	if err != nil {
 		return RootTopologySnapshot{}, err
 	}
-	defer capture.Close()
+	defer func() { result = errors.Join(result, capture.Close()) }()
 	return capture.Snapshot()
 }
 

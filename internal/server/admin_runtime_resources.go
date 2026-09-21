@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/library"
 )
 
@@ -56,6 +57,35 @@ type adminRuntimeResourcesDTO struct {
 	ScanEvidence        library.ScanEvidenceStatus
 	StorageObservations library.StorageObservationStatus
 	OriginalStreams     originalResourcesDTO
+	DatabasePool        databasePoolResourcesDTO
+}
+
+type databasePoolResourcesDTO struct {
+	MaxConns                    int32
+	TotalConns                  int32
+	IdleConns                   int32
+	AcquiredConns               int32
+	ConstructingConns           int32
+	AcquireCount                string
+	AcquireDurationNanoseconds  string
+	EmptyAcquireCount           string
+	EmptyAcquireWaitNanoseconds string
+	CanceledAcquireCount        string
+}
+
+// One in-memory Stat snapshot reports successful acquisitions and their wait
+// durations separately from canceled acquisitions. It never borrows a pool
+// connection or queries PostgreSQL. Empty waits include connection construction.
+func databasePoolResources(snapshot *pgxpool.Stat) databasePoolResourcesDTO {
+	return databasePoolResourcesDTO{
+		MaxConns: snapshot.MaxConns(), TotalConns: snapshot.TotalConns(), IdleConns: snapshot.IdleConns(),
+		AcquiredConns: snapshot.AcquiredConns(), ConstructingConns: snapshot.ConstructingConns(),
+		AcquireCount:                strconv.FormatInt(snapshot.AcquireCount(), 10),
+		AcquireDurationNanoseconds:  strconv.FormatInt(snapshot.AcquireDuration().Nanoseconds(), 10),
+		EmptyAcquireCount:           strconv.FormatInt(snapshot.EmptyAcquireCount(), 10),
+		EmptyAcquireWaitNanoseconds: strconv.FormatInt(snapshot.EmptyAcquireWaitTime().Nanoseconds(), 10),
+		CanceledAcquireCount:        strconv.FormatInt(snapshot.CanceledAcquireCount(), 10),
+	}
 }
 
 func newOriginalResourceInstanceID() (string, error) {
@@ -187,10 +217,11 @@ func (s *Server) adminRuntimeResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	originals, err := s.originals.resourceSnapshot()
-	if err != nil || s.library == nil {
+	if err != nil || s.library == nil || s.db == nil {
 		apiError(w, r, http.StatusServiceUnavailable, "runtime_resources_unavailable", "The runtime resource snapshot is unavailable.")
 		return
 	}
 	jsonResponse(w, http.StatusOK, adminRuntimeResourcesDTO{ScanEvidence: s.library.ScanEvidenceStatus(),
-		StorageObservations: library.StorageObservationSnapshot(), OriginalStreams: originals})
+		StorageObservations: library.StorageObservationSnapshot(), OriginalStreams: originals,
+		DatabasePool: databasePoolResources(s.db.Stat())})
 }
