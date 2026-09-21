@@ -179,6 +179,25 @@ func TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecove
 		t.Fatal("begin mixed-history recovery inspection")
 	}
 	defer rollback(tx)
+	// The generic backup fixture owns a random schema and leaves default public
+	// in place. Whole-database recovery inspection requires no outside schema.
+	// Remove only empty, owned public inside this never-committed transaction.
+	const publicNamespace = `SELECT to_jsonb(n)::text,
+		pg_catalog.pg_has_role(n.nspowner,'USAGE') AND EXISTS(SELECT 1 FROM pg_catalog.pg_database
+			WHERE datname=current_database() AND pg_catalog.pg_has_role(datdba,'USAGE')),
+		NOT EXISTS(SELECT 1 FROM pg_catalog.pg_depend WHERE refclassid='pg_catalog.pg_namespace'::regclass AND refobjid=n.oid)
+		AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_class WHERE relnamespace=n.oid)
+		AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_proc WHERE pronamespace=n.oid)
+		AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_type WHERE typnamespace=n.oid)
+		FROM pg_catalog.pg_namespace n WHERE n.nspname='public'`
+	var publicBefore string
+	var publicOwned, publicEmpty bool
+	if err := tx.QueryRow(ctx, publicNamespace).Scan(&publicBefore, &publicOwned, &publicEmpty); err != nil || !publicOwned || !publicEmpty || options.Schema == "public" {
+		t.Fatal("inspection requires the fixture database's empty, owned default public schema")
+	}
+	if _, err := tx.Exec(ctx, `DROP SCHEMA public RESTRICT`); err != nil {
+		t.Fatalf("isolate recovery inspection without removing any schema contents: %v", err)
+	}
 	inspection, err := InspectRecoveryTransaction(ctx, tx, options.Schema)
 	if err != nil {
 		t.Fatalf("recovery reader rejected literal v1 history: %v", err)
@@ -191,7 +210,11 @@ func TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecove
 		t.Fatalf("recovery reader changed mixed-version table facts: %v", err)
 	}
 	if err := tx.Rollback(ctx); err != nil {
-		t.Fatal("release the read-only recovery inspection")
+		t.Fatal("roll back the isolated recovery inspection")
+	}
+	var publicAfter string
+	if err := source.QueryRow(ctx, publicNamespace).Scan(&publicAfter, &publicOwned, &publicEmpty); err != nil || publicAfter != publicBefore || !publicOwned || !publicEmpty {
+		t.Fatal("inspection rollback did not restore the exact public namespace OID, owner and ACL")
 	}
 	if _, err := Restore(ctx, source, target, archive, facts, options); err != nil {
 		t.Fatalf("restore verified mixed-version analysis history: %v", err)

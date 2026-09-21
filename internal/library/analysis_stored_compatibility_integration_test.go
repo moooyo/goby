@@ -146,7 +146,7 @@ func TestAnalysisV1AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
 	childDigest := sha256.Sum256([]byte(run + ":" + scope))
 	child := hex.EncodeToString(childDigest[:16])
 	err := f.store.WithOwnedTx(f.ctx, func(tx OwnedTx) error {
-		if _, err := tx.Exec(`INSERT INTO task_definitions(id,key,name) VALUES('compatibility-v1-definition',$1,'Historical intro')
+		if _, err := tx.Exec(`INSERT INTO task_definitions(id,key,name) VALUES(repeat('d',32),$1,'Historical intro')
 			ON CONFLICT(key) DO UPDATE SET name=EXCLUDED.name`, TaskIntroAnalysisKey); err != nil {
 			return err
 		}
