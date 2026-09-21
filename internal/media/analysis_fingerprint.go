@@ -313,6 +313,11 @@ func analysisValidateFFprobe(ctx context.Context, tool *analysisTool) error {
 	return tool.check()
 }
 
+// IntroVisualSamplingProfile distinguishes complete-interval intro sampling
+// from the historical request for every partial terminal interval. It belongs
+// to the extraction identity even when the tools and raster hash are unchanged.
+const IntroVisualSamplingProfile = "intro-visual-complete-slots-v1"
+
 // IntroAlgorithmProfile derives the cache/matcher profile from admission facts
 // without launching a tool or reading a source. It intentionally excludes file
 // names, stream indexes, source timestamps and other per-episode identity.
@@ -335,9 +340,9 @@ func IntroAlgorithmProfile(available AnalysisAvailability, visualIntervalTicks i
 	if visualIntervalTicks < TicksPerSecond/10 || visualIntervalTicks > 10*TicksPerSecond {
 		return "", ErrAnalysisUnproven
 	}
-	return fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d",
+	return fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d;visual_sampling=%s",
 		analysisAudioProfile(metadata), available.FFmpegSHA256, available.FingerprintSHA256, VisualHashProfile, AnalysisGeometryProfile,
-		available.FFprobeSHA256, visualIntervalTicks), nil
+		available.FFprobeSHA256, visualIntervalTicks, IntroVisualSamplingProfile), nil
 }
 
 func analysisAudioProfile(metadata AudioFingerprintMetadata) string {

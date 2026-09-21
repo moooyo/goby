@@ -168,8 +168,14 @@ type IntroFeatures struct {
 	AudioMetadata                 AudioFingerprintMetadata
 	AlgorithmProfile              string
 	SourceIdentity                string
-	WindowTicks                   int64
-	ToolFacts                     AnalysisToolFacts
+	// WindowTicks is the admitted audio and overall source-relative prefix bound.
+	// It does not imply that a visual sample exists at that endpoint.
+	WindowTicks int64
+	// VisualWindowTicks is the exclusive end of this extraction's visual request,
+	// rounded down to complete sampling intervals from source-relative zero.
+	// It is not the actual timestamp of the last selected frame.
+	VisualWindowTicks int64
+	ToolFacts         AnalysisToolFacts
 }
 
 type AnalysisToolFacts struct {
@@ -201,13 +207,17 @@ func (e AnalysisExtractor) ExtractIntro(ctx context.Context, input *os.File, inf
 			result, resultErr = IntroFeatures{}, err
 		}
 	}()
+	visualOptions, err := analysisIntroVisualOptions(info, request.VisualIntervalTicks)
+	if err != nil {
+		return result, err
+	}
 	bounded, cancel := context.WithTimeout(ctx, limits.Timeout)
 	defer cancel()
 	availability, err := e.Availability(bounded)
 	if err != nil {
 		return result, err
 	}
-	profile, err := IntroAlgorithmProfile(availability, request.VisualIntervalTicks)
+	profile, err := IntroAlgorithmProfile(availability, visualOptions.IntervalTicks)
 	if err != nil {
 		return result, err
 	}
@@ -222,7 +232,7 @@ func (e AnalysisExtractor) ExtractIntro(ctx context.Context, input *os.File, inf
 	if err != nil {
 		return result, err
 	}
-	visual, err := admitted.ExtractVisual(bounded, input, info, request.VideoStreamIndex, VisualAnalysisOptions{IntervalTicks: request.VisualIntervalTicks})
+	visual, err := admitted.ExtractVisual(bounded, input, info, request.VideoStreamIndex, visualOptions)
 	if err != nil {
 		return result, err
 	}
@@ -235,7 +245,8 @@ func (e AnalysisExtractor) ExtractIntro(ctx context.Context, input *os.File, inf
 	}
 	return IntroFeatures{Audio: audio.Samples, Visual: visual, AudioBoundaryUncertaintyTicks: audio.BoundaryUncertaintyTicks,
 		AudioMetadata: audio.Metadata, AlgorithmProfile: profile, SourceIdentity: identity, WindowTicks: min(info.DurationTicks, MaxIntroAnalysisTicks),
-		ToolFacts: AnalysisToolFacts{FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256, FingerprintSHA256: availability.FingerprintSHA256}}, nil
+		VisualWindowTicks: visualOptions.EndTicks,
+		ToolFacts:         AnalysisToolFacts{FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256, FingerprintSHA256: availability.FingerprintSHA256}}, nil
 }
 
 func analysisAdmittedExtractor(extractor AnalysisExtractor, availability AnalysisAvailability) (AnalysisExtractor, error) {

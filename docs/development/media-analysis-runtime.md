@@ -60,6 +60,20 @@ episode. The normalized stream policy selects a default local audio/video stream
 first, then its original stream index. External tracks and attached pictures are
 excluded. A current source-bound feature cache can avoid repeated extraction.
 Force requests repeat extraction.
+
+Intro extraction admits at most the first 600 seconds. Its visual request covers
+only complete sampling intervals within that horizon: with the default 500 ms
+interval, a 137.005-second source requests visual samples before 137.0 seconds.
+It does not invent a frame at 137.0 seconds or copy an earlier frame into that
+slot. A source shorter than one sampling interval has no admissible intro visual
+window. `IntroFeatures.WindowTicks` remains the overall admitted audio horizon;
+`VisualWindowTicks` records the visual request's relative end separately.
+The fixed `intro-visual-complete-slots-v1` policy participates in the extraction
+profile, so historical profiles cannot silently supply current feature data.
+Generic visual requests and explicit end times retain their strict slot contract.
+Missing internal slots, truncated bytes, unmatched timestamps and decoder errors
+still reject extraction; this rule changes the intro request, not those checks.
+
 Preview tasks similarly reuse only a complete set of current variants whose
 actual sealed bytes and BIF indexes pass acquisition. A missing variant causes
 regeneration; an unsafe cache is a failure, not a cache miss. Force regenerates

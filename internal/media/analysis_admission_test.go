@@ -2,6 +2,7 @@ package media
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -58,6 +59,22 @@ func TestAnalysisIntroProfileRejectsIncompleteAdmission(t *testing.T) {
 		if _, err := IntroAlgorithmProfile(available, 0); !errors.Is(err, ErrAnalysisUnavailable) {
 			t.Fatalf("incomplete admission was accepted: %v", err)
 		}
+	}
+}
+
+func TestAnalysisIntroProfileSeparatesHistoricalPartialSlotExtraction(t *testing.T) {
+	available := analysisTestAvailability()
+	current, err := IntroAlgorithmProfile(available, TicksPerSecond/2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Freeze the previous format independently: identical installed tools and
+	// raster hashes must not make old extraction artifacts current again.
+	previous := fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d",
+		analysisAudioProfile(available.Fingerprint), available.FFmpegSHA256, available.FingerprintSHA256,
+		VisualHashProfile, AnalysisGeometryProfile, available.FFprobeSHA256, TicksPerSecond/2)
+	if current == previous || !strings.HasSuffix(current, ";visual_sampling=intro-visual-complete-slots-v1") {
+		t.Fatalf("complete-interval sampling reused the historical extraction profile: %q", current)
 	}
 }
 
