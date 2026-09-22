@@ -1443,5 +1443,56 @@
     "broker_successor_test_closure_sha256": "003604e4fb6ed237626e65d566bce5d938ab0bea1ff6521715edb9b61b624e31",
     "successor_actual_lowered_runtime_check_pending": true,
     "original_failures_preserved": true
+  },
+  "capacity_scope09": {
+    "status": "cold_failed_independently_closed_repairs_pending",
+    "accepted": false,
+    "execution_complete": false,
+    "product_revision": "55d50696e4590d719cad1540cac42c90c028d139",
+    "preparation_passed": true,
+    "compound_dispatched": true,
+    "cached_executed": false,
+    "incremental_executed": false,
+    "failure_codes": [
+      "http_status"
+    ],
+    "metadata_status": 409,
+    "metadata_error_code": "revision_conflict",
+    "metadata_diagnosis": "The sorting rebuild legitimately changed automatic SortName and revision; the driver required a stale CAS to succeed.",
+    "latest_latency_ms": [
+      10172.469106,
+      10468.90851
+    ],
+    "latest_sql_duration_ms": [
+      9717.77,
+      10268.185
+    ],
+    "latest_jit_functions": 1012,
+    "latest_diagnosis": "QueryLatest omitted the transaction-local JIT policy already used by QueryItems.",
+    "remux_first_byte_ms": [
+      4718.423945,
+      5169.600968
+    ],
+    "remux_threshold_ms": 5000,
+    "remux_cause": "unproven; preserve samples and revalidate the original threshold after the known query fix",
+    "cleanup_errors": [],
+    "observer": {
+      "resource_observation_passed": true,
+      "transient_gap_count": 1,
+      "persistent_loss": false,
+      "oom_observed": false,
+      "service_lifetime_changed": false
+    },
+    "all_runtime_lifetimes_closed": true,
+    "postgres_cleanly_closed": true,
+    "autostart_disabled": true,
+    "database_fixture_and_failed_evidence_retained": true,
+    "result_sha256": "c56f73146db8e3a8f563d3d84100bde1406234ff9454590dafa5498e0e84cd80",
+    "observer_sha256": "008f783411907bb7a1619dd70d6414c919551b2c89efb59ebb06694e49011fb3",
+    "compound_independent_closure_sha256": "b09c747c8c1bc6c30db0e277ee4fb395129f64af40e761bb3497197badb54cea",
+    "runtime_independent_closure_sha256": "814708aa562629847364c3c3bfca6357e5ac9a44865822eaea667abe86e2e1a4",
+    "repair_verification": "pending_remote",
+    "local_verification_performed": false,
+    "capacity_or_fault_acceptance": false
   }
 }

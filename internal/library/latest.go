@@ -31,6 +31,12 @@ func (s *Store) QueryLatest(ctx context.Context, query Query, group bool, prefer
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
+	// Compilation can dominate bounded latest reads and their projections.
+	// Keep JIT disabled only in this snapshot so pooled sessions retain their
+	// incoming setting after either commit or rollback.
+	if _, err := tx.Exec(ctx, `SET LOCAL jit = off`); err != nil {
+		return nil, fmt.Errorf("disable latest catalog query JIT: %w", err)
+	}
 	parentLibraryID, err := readOrdinaryQueryParent(ctx, tx, query.ParentID, access)
 	if err != nil {
 		return nil, err

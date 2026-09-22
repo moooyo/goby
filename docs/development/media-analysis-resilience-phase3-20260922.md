@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope07 repairs at 55d5069 passed complete remote regression, builds and independent closure; fresh full capacity/fault acceptance and Phase 3 publication remain pending**.
+Status: **scope09's full compound attempt failed during cold; Latest JIT and workload metadata-CAS repairs await remote regression. Full capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -16,6 +16,48 @@ evidence. Exact profiles, contexts and receipts remain bound in the private
 checkpoint and delivery ledger; this document does not itself admit a workload.
 
 ## Current checkpoint
+
+Scope09 passed preparation and final resource admission, then ran the complete
+compound driver until a cold-phase failure. The metadata edit returned a real
+`409 revision_conflict`: the concurrent sorting rebuild legitimately changed
+the same item's automatic sort name and metadata revision. The driver had
+incorrectly required its old revision to succeed. The repair retains the first
+concurrent request and its overlap evidence, accepts only that specific conflict,
+checks that the rejected write did not change manual metadata, and permits one
+fresh CAS followed by independent persistence readback. A repeated conflict or
+unexpected manual/source change still fails.
+
+Two Latest requests took 10,172-10,469 ms. Their existing PostgreSQL plans showed
+9,718-10,268 ms execution and 1,012 JIT functions with optimization and inlining.
+`QueryLatest` had not applied the transaction-local JIT policy already used by
+ordinary catalog queries. Its repair covers the main query and subsequent user
+data/subtitle projections without changing pooled-session settings. New tests
+cover grouped and ungrouped results, user/application subjects, and restoration
+after both successful reads and an actual SQL failure. These source changes have
+not yet passed remote verification.
+
+Remux first-byte samples were 4,718 and 5,170 ms against the unchanged 5,000 ms
+target. Their overlap with the expensive Latest queries suggests contention,
+but does not establish its cause. No additional remux change or threshold
+increase is justified by these two samples. Seek checks passed; the existing
+joint video/audio boundary repair remains. Cached and incremental phases did
+not run, so no full capacity tier is accepted.
+
+The external observer completed with no OOM or service-generation change. It
+retained one transient observation gap without persistent loss. Workload cleanup
+reported no errors. Actor, observer, publisher, closure collector, control parent,
+application and PostgreSQL are independently closed; PostgreSQL shut down cleanly
+and both application service units have autostart disabled. The database, fixture
+and original failed evidence remain intact.
+
+| Scope09 evidence | SHA256 |
+| --- | --- |
+| Failed compound result | `c56f73146db8e3a8f563d3d84100bde1406234ff9454590dafa5498e0e84cd80` |
+| Resource observer | `008f783411907bb7a1619dd70d6414c919551b2c89efb59ebb06694e49011fb3` |
+| Compound independent closure | `b09c747c8c1bc6c30db0e277ee4fb395129f64af40e761bb3497197badb54cea` |
+| Runtime independent closure | `814708aa562629847364c3c3bfca6357e5ac9a44865822eaea667abe86e2e1a4` |
+
+### Accepted regression before the scope09 repairs
 
 The query JIT, thirteen ownership-admission paths, remux joint-boundary selector,
 and driver packet-proof repairs are frozen at
@@ -50,9 +92,12 @@ Scope07's failed fixture, preparation and compound output were externally
 archived with all 349,360 members read back. After independent consumer closure,
 only those three guest trees and two redundant guest archive files were retired.
 All databases, original diagnostics, source/build artifacts and the complete
-external archive remain. Fresh scope08 inputs are drafted but unreleased.
-Storage reclamation must meet the unchanged initial free-space gate before
-provisioning/preparation; no latency, concurrency or failure threshold is relaxed.
+external archive remain. Scope08 subsequently failed when the preparation
+observer reached its control cgroup limit while accounting directory metadata.
+Its failed trees were externally archived and verified before exact retirement.
+The control parent now uses a 64 MiB reclaim threshold within the original
+128 MiB hard limit; scope09 preparation and compound observation completed
+without OOM. No latency, concurrency or failure threshold is relaxed.
 No complete 10k/100k compound journey, overload profile or fault matrix is accepted.
 
 ### Earlier failures and their repairs

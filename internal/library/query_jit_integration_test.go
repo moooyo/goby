@@ -100,6 +100,118 @@ func TestCatalogQueryJITRestoresSessionAfterQueryFailure(t *testing.T) {
 	}
 }
 
+func TestLatestQueryJITPreservesScopedResultsAndSessionSetting(t *testing.T) {
+	ctx, fixture := libraryQueryTestStore(t)
+	seedLatestQueryJITFixture(t, ctx, fixture.pool)
+	application := seedCatalogApplicationKey(t, ctx, fixture.pool, "latest-jit-key", true)
+	for _, incoming := range []string{"on", "off"} {
+		for _, credential := range []string{"user", "application"} {
+			for _, group := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/%s/group=%t", incoming, credential, group), func(t *testing.T) {
+					trace := &catalogQueryJITTracer{projections: true}
+					store := catalogQueryJITStore(t, ctx, fixture, incoming, trace)
+					pid := assertCatalogQueryJITSession(t, ctx, store.pool, incoming, 0)
+					played := false
+					query := Query{UserID: "restricted", ParentID: "library-b",
+						IncludeItemTypes: []string{"Movie", "Episode"}, IsPlayed: &played, Limit: 2}
+					if credential == "application" {
+						query.ApplicationCredentialID = application.ApplicationCredentialID
+					}
+					want := []latestExpectation{{"movie-b", 1}, {"episode-b2", 1}}
+					if group {
+						want[1] = latestExpectation{"series-b", 1}
+					}
+					var first []LatestItem
+					for call := 0; call < 2; call++ {
+						trace.reads = nil
+						result, err := store.QueryLatest(ctx, query, group)
+						if err != nil {
+							t.Fatalf("read the scoped latest page: %v", err)
+						}
+						assertLatestItems(t, result, want)
+						if data := result[0].Item.UserData; data == nil || !data.IsFavorite || data.Played {
+							t.Fatalf("latest lost the selected movie's user data: %+v", data)
+						}
+						if group {
+							data := result[1].Item.UserData
+							if data == nil || data.UnplayedItemCount == nil || *data.UnplayedItemCount != 1 || data.Played {
+								t.Fatalf("latest lost the representative's folder state: %+v", data)
+							}
+						}
+						if call == 0 {
+							first = result
+						} else if !reflect.DeepEqual(result, first) {
+							t.Fatal("the cached latest statement changed its complete item projections")
+						}
+						assertCatalogQueryJITReadKinds(t, trace, []string{
+							"page", "user-data", "folder-user-data", "collection-user-data", "subtitles", "owned-subtitles",
+						}, pid)
+						assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
+					}
+					query.ParentID = "library-a"
+					if _, err := store.QueryLatest(ctx, query, group); !errors.Is(err, ErrNotFound) {
+						t.Fatalf("an unauthorized latest parent remained readable: %v", err)
+					}
+					assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
+				})
+			}
+		}
+	}
+}
+
+func TestLatestQueryJITRestoresSessionAfterProjectionFailure(t *testing.T) {
+	ctx, fixture := libraryQueryTestStore(t)
+	seedLatestQueryJITFixture(t, ctx, fixture.pool)
+	for _, incoming := range []string{"on", "off"} {
+		for _, group := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/group=%t", incoming, group), func(t *testing.T) {
+				trace := &catalogQueryJITTracer{projections: true, failKind: "subtitles"}
+				store := catalogQueryJITStore(t, ctx, fixture, incoming, trace)
+				pid := assertCatalogQueryJITSession(t, ctx, store.pool, incoming, 0)
+				played := false
+				query := Query{UserID: "restricted", ParentID: "library-b",
+					IncludeItemTypes: []string{"Movie", "Episode"}, IsPlayed: &played, Limit: 2}
+				_, err := store.QueryLatest(ctx, query, group)
+				var queryError, injectedError *pgconn.PgError
+				if !errors.As(err, &queryError) || queryError.Code != "25P02" ||
+					!errors.As(trace.injected, &injectedError) || injectedError.Code != "22012" {
+					t.Fatalf("the projection did not fail in an aborted database transaction: query=%v, injected=%v", err, trace.injected)
+				}
+				assertCatalogQueryJITReadKinds(t, trace, []string{
+					"page", "user-data", "folder-user-data", "collection-user-data", "subtitles",
+				}, pid)
+				assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
+				trace.failKind, trace.reads = "", nil
+				result, err := store.QueryLatest(ctx, query, group)
+				if err != nil {
+					t.Fatalf("the same session was not reusable after latest rollback: %v", err)
+				}
+				want := []latestExpectation{{"movie-b", 1}, {"episode-b2", 1}}
+				if group {
+					want[1] = latestExpectation{"series-b", 1}
+				}
+				assertLatestItems(t, result, want)
+				assertCatalogQueryJITReadKinds(t, trace, []string{
+					"page", "user-data", "folder-user-data", "collection-user-data", "subtitles", "owned-subtitles",
+				}, pid)
+				assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
+			})
+		}
+	}
+}
+
+func seedLatestQueryJITFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	seedLibraryLatestFixture(t, ctx, pool)
+	// A media-bearing movie reaches both subtitle projections in grouped and
+	// raw pages. A played episode exercises source filtering and folder state.
+	if _, err := pool.Exec(ctx, `UPDATE items SET media='{"DurationTicks":15000000,"Container":"mkv"}'::jsonb WHERE id='movie-b';
+		INSERT INTO user_item_data (user_id,item_id,is_favorite,played) VALUES
+			('restricted','movie-b',true,false), ('restricted','episode-b1',false,true)`); err != nil {
+		t.Fatalf("seed latest JIT projections: %v", err)
+	}
+}
+
 func catalogQueryJITStore(t *testing.T, ctx context.Context, fixture *Store, incoming string, trace *catalogQueryJITTracer) *Store {
 	t.Helper()
 	config := fixture.pool.Config()
@@ -120,10 +232,12 @@ type catalogQueryJITRead struct {
 }
 
 type catalogQueryJITTracer struct {
-	reads    []catalogQueryJITRead
-	err      error
-	failPage bool
-	injected error
+	reads       []catalogQueryJITRead
+	err         error
+	projections bool
+	failPage    bool
+	failKind    string
+	injected    error
 }
 
 type catalogQueryJITObservationKey struct{}
@@ -135,8 +249,23 @@ func (trace *catalogQueryJITTracer) TraceQueryStart(ctx context.Context, conn *p
 	kind := ""
 	if strings.Contains(data.SQL, "SELECT count(*) FROM items i WHERE ") {
 		kind = "count"
-	} else if strings.Contains(data.SQL, " FROM items i WHERE ") && strings.Contains(data.SQL, " LIMIT $") && strings.Contains(data.SQL, " OFFSET $") {
+	} else if (strings.Contains(data.SQL, " FROM items i WHERE ") || strings.Contains(data.SQL, "FROM latest_groups latest")) &&
+		strings.Contains(data.SQL, " LIMIT $") && strings.Contains(data.SQL, " OFFSET $") {
 		kind = "page"
+	}
+	if kind == "" && trace.projections {
+		switch {
+		case strings.HasPrefix(data.SQL, "SELECT "+userDataColumns+" FROM user_item_data"):
+			kind = "user-data"
+		case strings.HasPrefix(data.SQL, "WITH RECURSIVE roots AS (") && strings.Contains(data.SQL, "folder_descendants AS ("):
+			kind = "folder-user-data"
+		case strings.HasPrefix(data.SQL, "WITH RECURSIVE roots AS (") && strings.Contains(data.SQL, "collection_userdata_descendants AS ("):
+			kind = "collection-user-data"
+		case strings.Contains(data.SQL, " FROM item_subtitles s"):
+			kind = "subtitles"
+		case strings.Contains(data.SQL, " FROM item_owned_subtitles s"):
+			kind = "owned-subtitles"
+		}
 	}
 	if kind == "" {
 		return ctx
@@ -149,9 +278,9 @@ func (trace *catalogQueryJITTracer) TraceQueryStart(ctx context.Context, conn *p
 		trace.err = errors.Join(trace.err, fmt.Errorf("observe the catalog transaction: %w", err))
 	}
 	trace.reads = append(trace.reads, observation)
-	if kind == "page" && trace.failPage {
-		// A real SQL error tests rollback of an aborted transaction after the
-		// count succeeded, without cancelling or replacing its pooled connection.
+	if kind == "page" && trace.failPage || kind == trace.failKind {
+		// A real SQL error tests rollback after earlier reads succeeded, without
+		// cancelling or replacing the pooled connection.
 		_, trace.injected = conn.Exec(observationCtx, `SELECT 1 / 0`)
 	}
 	return ctx
@@ -161,13 +290,21 @@ func (*catalogQueryJITTracer) TraceQueryEnd(context.Context, *pgx.Conn, pgx.Trac
 
 func assertCatalogQueryJITReads(t *testing.T, trace *catalogQueryJITTracer, pairs int, pid int32) {
 	t.Helper()
-	if trace.err != nil || len(trace.reads) != pairs*2 {
+	want := make([]string, pairs*2)
+	for index := range want {
+		want[index] = []string{"count", "page"}[index%2]
+	}
+	assertCatalogQueryJITReadKinds(t, trace, want, pid)
+}
+
+func assertCatalogQueryJITReadKinds(t *testing.T, trace *catalogQueryJITTracer, want []string, pid int32) {
+	t.Helper()
+	if trace.err != nil || len(trace.reads) != len(want) {
 		t.Fatalf("catalog query observations are incomplete: reads=%+v, error=%v", trace.reads, trace.err)
 	}
 	for index, read := range trace.reads {
-		wantKind := []string{"count", "page"}[index%2]
-		if read.kind != wantKind || read.jit != "off" || read.readOnly != "on" || read.isolation != "repeatable read" || read.pid != pid {
-			t.Fatalf("catalog count/page lost its transaction-local execution policy: %+v", read)
+		if read.kind != want[index] || read.jit != "off" || read.readOnly != "on" || read.isolation != "repeatable read" || read.pid != pid {
+			t.Fatalf("catalog read lost its transaction-local execution policy: %+v", read)
 		}
 	}
 }

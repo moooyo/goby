@@ -154,6 +154,144 @@ class DatabasePoolAccountingTests(unittest.TestCase):
             ACTOR.database_pool_values(value)
 
 
+class ConcurrentMetadataEditTests(unittest.TestCase):
+    """Model both owner-transaction orders without accepting stale writes."""
+
+    def setUp(self):
+        self.actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        self.actor.phase = "cold"
+        self.actor.e = mock.Mock()
+        self.actor.http = mock.Mock(side_effect=self.http)
+        self.settings = {"Revision": "7", "Overrides": {}, "Sorting": {"SortRemoveWords": []}}
+        self.update = {**self.settings, "Sorting": {"SortRemoveWords": ["The"]}}
+        self.initial = {"Item": {"Id": "witness", "LibraryId": "library", "ParentId": "workload",
+                                 "Name": "The Witness", "Type": "Movie", "Path": "/owned/The Witness.mp4", "IsFolder": False},
+                        "Revision": "1", "Automatic": {"Name": "The Witness", "SortName": "the witness",
+                                                         "Overview": "Automatic overview", "OriginalTitle": "Raw title", "OfficialRating": "PG"},
+                        "Effective": {"Name": "The Witness", "SortName": "the witness", "Overview": "Automatic overview",
+                                      "OriginalTitle": "Manual title", "OfficialRating": "TV-PG"},
+                        "Overrides": {"OriginalTitle": "Manual title"}, "LockedValues": {"OfficialRating": "TV-PG"},
+                        "LockedFields": ["OfficialRating"], "EditableFields": ["Overview", "OriginalTitle", "OfficialRating"],
+                        "InactiveFields": [], "LastEditedBy": "earlier-admin", "LastEditedAt": "before"}
+        self.state = copy.deepcopy(self.initial)
+        self.path = "/admin/v1/items/witness/metadata"
+        self.order, self.conflict_code = "sorting-first", "revision_conflict"
+        self.corrupt_fresh, self.corrupt_final, self.second_conflict = None, None, False
+        self.requests, self.receipts = [], []
+        self.lock = threading.Lock()
+        self.sorting_entered, self.metadata_entered = threading.Event(), threading.Event()
+        self.sorting_done, self.metadata_done = threading.Event(), threading.Event()
+
+    def http(self, label, method, path, body=None, admin=False, statuses=(200,), include_status=False, **kwargs):
+        with self.lock:
+            started = len(self.requests) + 1
+            self.requests.append((label, method, path, copy.deepcopy(body)))
+        status = 200
+        if label == "sorting-rebuild":
+            self.sorting_entered.set()
+            self.assertTrue(self.metadata_entered.wait(2), "metadata was not submitted concurrently")
+            if self.order == "metadata-first":
+                self.assertTrue(self.metadata_done.wait(2))
+            with self.lock:
+                self.state["Automatic"]["SortName"] = "witness"
+                self.state["Effective"]["SortName"] = "witness"
+                self.state["Revision"] = str(int(self.state["Revision"]) + 1)
+                result = {**copy.deepcopy(self.update), "Revision": "8"}
+            self.sorting_done.set()
+        elif method == "PUT":
+            if label == "metadata-edit":
+                self.metadata_entered.set()
+                self.assertTrue(self.sorting_entered.wait(2), "sorting was not submitted concurrently")
+                if self.order == "sorting-first":
+                    self.assertTrue(self.sorting_done.wait(2))
+            with self.lock:
+                if label == "metadata-edit-rebased" and self.second_conflict:
+                    self.state["Revision"] = str(int(self.state["Revision"]) + 1)
+                if body["Revision"] != self.state["Revision"]:
+                    status, result = 409, {"Error": {"Code": self.conflict_code}}
+                else:
+                    self.state["Overrides"] = copy.deepcopy(body["Overrides"])
+                    self.state["Effective"]["Overview"] = body["Overrides"]["Overview"]
+                    self.state["Revision"] = str(int(self.state["Revision"]) + 1)
+                    self.state["LastEditedBy"], self.state["LastEditedAt"] = "workload-admin", "saved"
+                    result = copy.deepcopy(self.state)
+            if label == "metadata-edit":
+                self.metadata_done.set()
+        else:
+            self.assertEqual((method, path), ("GET", self.path))
+            with self.lock:
+                result = copy.deepcopy(self.state)
+            corruption = self.corrupt_fresh if label == "metadata-edit-refresh" else self.corrupt_final
+            if corruption:
+                corruption(result)
+        receipt = {"name": label + "-body.json"}
+        with self.lock:
+            self.receipts.append({"label": label, "status": status, "body": copy.deepcopy(result), "receipt": receipt})
+        ACTOR.need(status in statuses, "http_status")
+        response = result, {}, (started, started + 10), receipt
+        return (*response, status) if include_status else response
+
+    def run_edit(self):
+        return self.actor.concurrent_metadata_edit(self.path, copy.deepcopy(self.initial), self.settings, self.update)
+
+    def test_metadata_first_succeeds_and_readback_retains_later_sorting_commit(self):
+        self.order = "metadata-first"
+        result = self.run_edit()
+        first = next(row for row in self.receipts if row["label"] == "metadata-edit")
+        self.assertEqual((first["status"], first["body"]["Automatic"]["SortName"]), (200, "the witness"))
+        self.assertEqual((result["Revision"], result["Automatic"]["SortName"]), ("3", "witness"))
+        self.assertEqual(result["Effective"]["Overview"], "Phase 3 concurrent metadata cold")
+        self.assertCountEqual([row[0] for row in self.requests if row[1] == "PUT"], ["sorting-rebuild", "metadata-edit"])
+        self.assertFalse(any(row[0] == "metadata-edit-refresh" for row in self.requests))
+
+    def test_sorting_first_rejects_stale_write_and_saves_one_fresh_cas(self):
+        result = self.run_edit()
+        writes = [row for row in self.requests if row[1] == "PUT" and row[2] == self.path]
+        self.assertEqual([(row[0], row[3]["Revision"]) for row in writes], [("metadata-edit", "1"), ("metadata-edit-rebased", "2")])
+        self.assertEqual(result["Overrides"], {"OriginalTitle": "Manual title", "Overview": "Phase 3 concurrent metadata cold"})
+        self.assertEqual(result["LockedValues"], self.initial["LockedValues"])
+        self.assertEqual(result["Automatic"]["Overview"], "Automatic overview")
+        self.assertEqual(result["Automatic"]["SortName"], "witness")
+        conflict = next(call for call in self.actor.e.event.call_args_list if call.args[0] == "metadata_edit_conflict")
+        self.assertEqual(conflict.kwargs["rejected_body"], {"name": "metadata-edit-body.json"})
+        self.assertEqual(conflict.kwargs["current_revision"], "2")
+        self.assertTrue(conflict.kwargs["manual_state_unchanged"])
+
+    def test_unrelated_conflict_is_not_reloaded_or_accepted(self):
+        self.conflict_code = "access_denied"
+        with self.assertRaisesRegex(ACTOR.Failure, "metadata_edit_unexpected_response"):
+            self.run_edit()
+        self.assertFalse(any(row[0] in ("metadata-edit-refresh", "metadata-edit-rebased") for row in self.requests))
+
+    def test_conflict_must_leave_manual_controls_and_edit_history_unchanged(self):
+        for field, value in (("Overrides", {"OriginalTitle": "Someone else's edit"}),
+                             ("LockedValues", {"OfficialRating": "R"}), ("LastEditedBy", "another-admin")):
+            with self.subTest(field=field):
+                self.setUp()
+                self.corrupt_fresh = lambda detail, field=field, value=value: detail.__setitem__(field, value)
+                with self.assertRaises(ACTOR.Failure):
+                    self.run_edit()
+                self.assertFalse(any(row[0] == "metadata-edit-rebased" for row in self.requests))
+
+    def test_changed_automatic_source_cannot_be_misclassified_as_sorting(self):
+        self.corrupt_fresh = lambda detail: detail["Automatic"].__setitem__("Overview", "New source overview")
+        with self.assertRaisesRegex(ACTOR.Failure, "metadata_edit_automatic_sort_changed"):
+            self.run_edit()
+        self.assertFalse(any(row[0] == "metadata-edit-rebased" for row in self.requests))
+
+    def test_second_conflict_fails_without_a_retry_loop(self):
+        self.second_conflict = True
+        with self.assertRaisesRegex(ACTOR.Failure, "http_status"):
+            self.run_edit()
+        self.assertEqual(sum(row[0] == "metadata-edit-rebased" for row in self.requests), 1)
+        self.assertFalse(any(row[0] == "metadata-edit-readback" for row in self.requests))
+
+    def test_success_response_does_not_replace_final_persistence_readback(self):
+        self.corrupt_final = lambda detail: detail["Effective"].__setitem__("Overview", "Lost edit")
+        with self.assertRaisesRegex(ACTOR.Failure, "metadata_edit_final_readback"):
+            self.run_edit()
+
+
 AAC_PACKET_SHA256 = ACTOR.digest(b"owned raw AAC access unit")
 
 

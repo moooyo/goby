@@ -816,7 +816,7 @@ class Actor:
         self.e.artifact("sql.json", json_bytes({"statement": statement, "raw": raw.decode("utf-8"), "command": ref}))
         return strict_json(raw.strip())
 
-    def http(self, label, method, path, body=None, admin=False, statuses=(200,), binary=False, headers=None):
+    def http(self, label, method, path, body=None, admin=False, statuses=(200,), binary=False, headers=None, include_status=False):
         self.assert_owned()
         parsed = urlsplit(path)
         need(not parsed.scheme and not parsed.netloc and parsed.path.startswith("/") and not parsed.fragment, "http_same_origin")
@@ -883,7 +883,8 @@ class Actor:
             body_ref = self.e.artifact("body.bin", bytes(data))
             self.e.event("http", label=label, phase=self.phase, start_ns=started, end_ns=ended,
                          first_byte_ns=first, status=status, bytes=len(data), error=error, receipt=ref, body=body_ref)
-        return (bytes(data) if binary or not data else strict_json(data)), response_headers, (started, ended), body_ref
+        result = (bytes(data) if binary or not data else strict_json(data)), response_headers, (started, ended), body_ref
+        return (*result, status) if include_status else result
 
     def native(self, path, method="GET", body=None, statuses=(200,)):
         return self.http("control", method, path, body, admin=True, statuses=statuses)[0]
@@ -1303,6 +1304,83 @@ class Actor:
              and value["user_data"] == self.move_user_data, "increment_identity_or_userdata")
         self.e.event("increment_verified", phase=self.phase, deleted=1, added=1, stable_cross_root_identity=True, user_state_preserved=True)
 
+    def concurrent_metadata_edit(self, metadata_path, metadata, settings, update):
+        overview = "Phase 3 concurrent metadata " + self.phase
+
+        def revision(detail):
+            raw = detail.get("Revision")
+            need(type(raw) is str and re.fullmatch(r"[1-9][0-9]*", raw), "metadata_revision_shape")
+            return int(raw)
+
+        def controls_unchanged(before, after, overrides):
+            need(after["Item"] == before["Item"], "metadata_edit_identity_changed")
+            need(after["Overrides"] == overrides and all(after[key] == before[key] for key in
+                 ("LockedFields", "LockedValues", "EditableFields", "InactiveFields")), "metadata_edit_controls_changed")
+
+        def sorting_changed(before, after):
+            old, current = before["Automatic"], after["Automatic"]
+            need(type(current.get("SortName")) is str and current["SortName"] != old["SortName"]
+                 and {key: value for key, value in current.items() if key != "SortName"}
+                 == {key: value for key, value in old.items() if key != "SortName"}
+                 and after["Effective"]["SortName"] == current["SortName"], "metadata_edit_automatic_sort_changed")
+
+        def edit_body(detail):
+            return {"Revision": detail["Revision"], "Overrides": {**detail["Overrides"], "Overview": overview},
+                    "LockedFields": list(detail["LockedFields"])}
+
+        def saved_edit(before, after):
+            controls_unchanged(before, after, edit_body(before)["Overrides"])
+            need(revision(after) == revision(before) + 1 and after["Automatic"] == before["Automatic"]
+                 and after["Effective"] == {**before["Effective"], "Overview": overview}, "metadata_edit_save_mismatch")
+
+        need(metadata["Overrides"].get("Overview") != overview and "Overview" not in metadata["LockedFields"]
+             and "SortName" not in metadata["Overrides"] and "SortName" not in metadata["LockedFields"], "metadata_edit_witness_controls")
+        # The prepared witness has unchanged source bytes and metadata. Only
+        # one sorting change and this one manual edit may advance its revision.
+        initial_revision = revision(metadata)
+        # Keep the original request as the sole metadata overlap witness. A
+        # sorting commit may legitimately invalidate its whole-item revision.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            rebuild = executor.submit(self.http, "sorting-rebuild", "PUT", "/admin/v1/settings", update, True)
+            editing = executor.submit(self.http, "metadata-edit", "PUT", metadata_path, edit_body(metadata), True,
+                                      statuses=(200, 409), include_status=True)
+            saved, first = rebuild.result()[0], editing.result()
+        need(saved["Sorting"]["SortRemoveWords"] == update["Sorting"]["SortRemoveWords"]
+             and int(saved["Revision"]) == int(settings["Revision"]) + 1, "concurrent_edit_readback")
+        edited, _, first_span, first_receipt, status = first
+        need(status == 200 or status == 409 and type(edited) is dict and type(edited.get("Error")) is dict
+             and edited["Error"].get("Code") == "revision_conflict", "metadata_edit_unexpected_response")
+        if status == 409:
+            fresh, _, _, fresh_receipt = self.http("metadata-edit-refresh", "GET", metadata_path, admin=True)
+            controls_unchanged(metadata, fresh, metadata["Overrides"])
+            need(revision(fresh) == initial_revision + 1 and all(fresh[key] == metadata[key] for key in
+                 ("LastEditedBy", "LastEditedAt")), "metadata_edit_conflict_changed_manual_state")
+            sorting_changed(metadata, fresh)
+            need(fresh["Effective"] == {**metadata["Effective"], "SortName": fresh["Automatic"]["SortName"]},
+                 "metadata_edit_conflict_changed_effective_state")
+            self.e.event("metadata_edit_conflict", phase=self.phase, start_ns=first_span[0], end_ns=first_span[1],
+                         code="revision_conflict", rejected_revision=metadata["Revision"], current_revision=fresh["Revision"],
+                         rejected_body=first_receipt, current_body=fresh_receipt, manual_state_unchanged=True)
+            # One fresh CAS is allowed after proving the rejected request left
+            # manual state intact. Any further conflict fails the workload.
+            edited, _, _, _, rebased_status = self.http("metadata-edit-rebased", "PUT", metadata_path,
+                                                       edit_body(fresh), admin=True, include_status=True)
+            need(rebased_status == 200, "metadata_edit_rebase_failed")
+            saved_edit(fresh, edited)
+        else:
+            saved_edit(metadata, edited)
+        final, _, _, final_receipt = self.http("metadata-edit-readback", "GET", metadata_path, admin=True)
+        controls_unchanged(metadata, final, edit_body(metadata)["Overrides"])
+        sorting_changed(metadata, final)
+        need(revision(final) == initial_revision + 2 and final["Effective"] ==
+             {**metadata["Effective"], "Overview": overview, "SortName": final["Automatic"]["SortName"]}
+             and all(final[key] == edited[key] for key in ("LastEditedBy", "LastEditedAt")), "metadata_edit_final_readback")
+        if status == 409:
+            need(final["Automatic"] == fresh["Automatic"], "metadata_edit_rebase_overwrote_automatic")
+        self.e.event("metadata_edit_verified", phase=self.phase, first_status=status, rebased=status == 409,
+                     initial_revision=metadata["Revision"], final_revision=final["Revision"], final_body=final_receipt)
+        return final
+
     def edits(self):
         settings = self.native("/admin/v1/settings")
         metadata_path = "/admin/v1/items/" + self.c["mutation"]["metadata_item_id"] + "/metadata"
@@ -1313,7 +1391,6 @@ class Actor:
         if words == settings["Sorting"]["SortRemoveWords"]:
             words = []
         update = {"Revision": settings["Revision"], "Overrides": settings["Overrides"], "Sorting": {"SortRemoveWords": words}}
-        edit = {"Revision": metadata["Revision"], "Overrides": {**metadata["Overrides"], "Overview": "Phase 3 concurrent metadata " + self.phase}, "LockedFields": metadata["LockedFields"]}
         before = self.snapshot()
         # Lock only the declared sorting witness. A global journal lock would
         # also make unrelated scan publications fail, invalidating this load
@@ -1363,17 +1440,13 @@ class Actor:
             holder.stdin.close()
             holder.stdout.close()
             holder.stderr.close()
-        # The same CAS succeeds after rollback. Metadata executes concurrently
-        # with the real full-catalog rebuild, not merely before or after it.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            rebuild = executor.submit(self.http, "sorting-rebuild", "PUT", "/admin/v1/settings", update, True)
-            editing = executor.submit(self.http, "metadata-edit", "PUT", metadata_path, edit, True)
-            saved, edited = rebuild.result()[0], editing.result()[0]
-        need(saved["Sorting"]["SortRemoveWords"] == words and int(saved["Revision"]) == int(settings["Revision"]) + 1
-             and edited["Overrides"]["Overview"] == edit["Overrides"]["Overview"], "concurrent_edit_readback")
+        # The settings CAS survives rollback; metadata keeps its separate
+        # source-sensitive revision while the actual rebuild runs concurrently.
+        edited = self.concurrent_metadata_edit(metadata_path, metadata, settings, update)
         after = self.snapshot()
         need(after["owner"] == before["owner"], "catalog_owner_changed")
-        need(before["sort_witness"] is not None and after["sort_witness"] != before["sort_witness"], "sorting_rebuild_no_effect")
+        need(before["sort_witness"] is not None and after["sort_witness"] != before["sort_witness"]
+             and after["sort_witness"] == edited["Effective"]["SortName"], "sorting_rebuild_no_effect")
 
     def run_phase(self, phase):
         with self.pool_lock:
