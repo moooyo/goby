@@ -47,6 +47,23 @@ and application/database lifetimes closed, and its original failed evidence and
 database remain intact. A fresh full preparation must bind its own configuration
 hash before dispatch. Complete capacity and fault acceptance remain pending.
 
+Scope06's 347,966 members have now passed full guest and external readback;
+the exact archived fixture and preparation trees were retired after independent
+worker closure. All databases, diagnostics, source, binaries and external
+originals remain retained. Scope07 provisioned successfully with its manifest,
+predicted configuration and actual deployed configuration in agreement. Its
+actual Actor broker check also validates the complete scan configuration against
+the pinned manifest before producer dispatch.
+
+Scope07's first launcher was refused before creating a fixture or dispatching a
+worker: free space was 30,105,600 bytes below the unchanged preparation gate.
+Only three closed, unreferenced generated compiler-cache directories were then
+retired, freeing 31,465,472 bytes. Sources, binaries, frontend and private results
+were preserved. A separately recorded successor passed the original gates and
+started the full producer and resource observer. The producer's new real broker
+check passed before any fixture mutation. Preparation is running; no complete
+capacity journey is accepted by these records.
+
 The latest composed regression has **4,264 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
 **73 Python passes**. Frontend and both application builds passed. Original
