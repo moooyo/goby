@@ -71,9 +71,15 @@ PostgreSQL and closure helper are independently closed; PostgreSQL stopped
 cleanly and all ten databases and original evidence remain retained.
 The after-compound preparation suite passed ten tests; its actual handoff still
 requires an accepted capacity run. The preparation-only build-reuse bridge was
-not used for the new production binaries. Both 10k/100k mixed workloads and the
-complete fault/reboot matrix remain pending; regression success does not
-establish their capacity or recovery claims.
+not used for the new production binaries. The licensed corpus transfer is
+accepted. The first actual 10k fixture preparation was OOM-killed at its 384 MiB
+producer limit; kernel directory/inode slab dominated the charge. It did not
+produce a prepared context or start the compound workload. The producer,
+observer, Goby and PostgreSQL are now closed, with clean database shutdown and
+all data and original evidence retained. A fresh preparation needs a separately
+observed memory envelope. Both 10k/100k mixed workloads and all 28 fault/recovery
+cases remain unrun; regression success does not establish their capacity or
+recovery claims.
 Tests/builds/runtime probes remain
 remote-only, `ui-ux-pro-max` remains disabled, and unrelated changes in the
 original checkout are preserved. Earlier completed increments below do not

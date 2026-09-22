@@ -55,6 +55,59 @@
       "preparation_only_build_reuse_bridge_applicable": false
     }
   ],
+  "capacity_preparation_01": {
+    "status": "failed_oom_and_closed",
+    "accepted": false,
+    "product_build_workload_revision": "1ed1d69b94548e5beb842906b6177664367310df",
+    "producer_fixture_revision": "0dacf3c9b29ce6b42bd0787c4d323dee14e9c95e",
+    "licensed_corpus_source_count": 14,
+    "licensed_corpus_transfer_accepted": true,
+    "licensed_seed_scans_completed": 5,
+    "producer_memory_max_bytes": 402653184,
+    "producer_exit_status": 9,
+    "kernel_oom_breakdown_bytes": {
+      "anon": 24408064,
+      "file": 26193920,
+      "kernel": 352051200,
+      "slab_reclaimable": 351860200
+    },
+    "partial_fixture_entries": 220397,
+    "partial_fixture_allocated_bytes": 1738973184,
+    "prepared_context_produced": false,
+    "compound_started": false,
+    "producer_and_observer_closed": true,
+    "observer_resource_observation_is_not_producer_success": true,
+    "goby_cleanly_closed": true,
+    "postgres_cleanly_closed": true,
+    "runtime_units_disabled": true,
+    "original_processes_and_cgroups_absent": true,
+    "goby_idle_snapshot_bytes": {
+      "memory_current": 754610176,
+      "anon": 34787328,
+      "file": 717717504,
+      "kernel": 602112
+    },
+    "goby_snapshot_does_not_classify_historical_peak": true,
+    "failed_data_and_original_evidence_retained": true,
+    "external_archive_status": "in_progress",
+    "artifact_retirement_accepted": false,
+    "producer_closure_sha256": "8086ab394a88c6f5cc0c114a9af636652359c0ee52706283d127cdc4aae2882d",
+    "kernel_breakdown_sha256": "100b640c8112c490f5b8b45e5d73229e60c055d5c5333c49321b509b62070769",
+    "runtime_closure_sha256": "09f407d1344cd4cb056b88462f36f2070a0675ea0280f565353a21873b2812ab",
+    "required_compound_tiers_unrun": [10000, 100000],
+    "required_fault_recovery_cases_unrun": 28
+  },
+  "preparation_fixture_successor": {
+    "revision": "00af9e49ea0ae97d05955526c1706b2b94c61f45",
+    "status": "frozen_remote_affected_tests_pending",
+    "prepare_sha256": "060ae2b73bc49e7b24605d5f12a5e1990ea2cad62edea51e8d9637a86931e296",
+    "test_sha256": "5690fcee165298deb424ce5aea410beac8d454158b375d6d6e2c3f2274b3af8f",
+    "product_and_workload_unchanged": true,
+    "fixture_population_budgets_and_thresholds_unchanged": true,
+    "new_inventory_tests": 5,
+    "retained_preparation_tests": 10,
+    "measured_memory_improvement_claimed": false
+  },
   "environment": {
     "verification_guest": 106,
     "configured_cpu_count": 2,

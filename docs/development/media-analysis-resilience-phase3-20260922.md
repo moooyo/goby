@@ -74,6 +74,56 @@ of its actual cache consumer. These setup changes precede that case's baseline
 ACKs. The settings sentinel changes the managed server name rather than
 invalidating media-analysis work during fault admission.
 
+## Capacity preparation checkpoint
+
+The fourteen-source licensed corpus transfer is accepted. Product, workload and
+build provenance remain `1ed1d69`; fixture-only `0dacf3c` makes shared media
+ancestors readable by the media group while retaining owner-only private inputs.
+Deployment-only directory, diagnostic-store and PostgreSQL observer-role repairs
+allowed the second isolated 10k runtime to start. They do not establish capacity
+acceptance or weaken the product's database ownership checks.
+
+The first actual fixture preparation failed before producing its prepared
+context. Its 384 MiB producer cgroup was OOM-killed while creating the unchanged
+directory-stress fixture. Kernel evidence recorded 24,408,064 anonymous bytes,
+26,193,920 file bytes and 352,051,200 kernel bytes, including 351,860,200 bytes of
+reclaimable slab. This establishes the dominant charge at failure; it does not
+prove that slab can be reclaimed promptly. The partial fixture contains 220,397
+entries and occupies 1,738,973,184 allocated bytes. The producer and observer
+are closed; successful disk/lifetime observation does not turn the producer's
+exit status 9 into preparation success.
+
+The five licensed-library seed scans completed. Before clean runtime closure,
+Goby had no active scans, task children, playback sessions, original-stream
+leases or media-process descendants. Its memory snapshot contained 34,787,328
+anonymous bytes and 717,717,504 file-cache bytes; this does not classify its
+earlier peak. Goby then stopped successfully, PostgreSQL shut down cleanly, and
+both units were disabled with their original processes and cgroups absent.
+Databases, control records, the failed fixture and original evidence remain
+retained. Full external archival is in progress; no artifact retirement is
+accepted by this checkpoint.
+
+Fixture successor `00af9e4` streams the exact inventory JSONL after its original
+space precheck, releases the source row list after a successful synced write,
+and avoids a second directory-sized list of Path objects. It preserves the full
+inode identity set, fixture population, budgets and all benchmark thresholds.
+Five focused inventory tests were added; remote verification is pending. These
+changes reduce retained Python objects but are not a measured resolution of the
+kernel-slab OOM. Product and workload binaries remain unchanged.
+
+Preparation requires a fresh runtime and an independently recorded memory
+envelope. The failed workspace and initialized database cannot be replayed as
+fresh input. Any temporary preparation limit must be restored after the
+producer and its descendants close, before admitting the original benchmark
+envelope. Both full 10k/100k compound runs, overload and all 28 fault/recovery
+cases remain unrun. Phase 3 is not accepted or published.
+
+| Evidence | SHA-256 |
+| --- | --- |
+| Failed producer and observer closure | `8086ab394a88c6f5cc0c114a9af636652359c0ee52706283d127cdc4aae2882d` |
+| Kernel OOM memory breakdown | `100b640c8112c490f5b8b45e5d73229e60c055d5c5333c49321b509b62070769` |
+| Clean Goby and PostgreSQL closure | `09f407d1344cd4cb056b88462f36f2070a0675ea0280f565353a21873b2812ab` |
+
 ## Required scope retained from the approved plan
 
 | Work | Required delivery and acceptance |

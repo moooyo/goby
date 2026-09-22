@@ -87,6 +87,26 @@ historical evidence. The affected worker, observer, PostgreSQL and closure
 helper are independently closed; PostgreSQL shut down cleanly and all ten
 databases remain retained. Follow the private checkpoint for subsequent
 capacity preparation rather than restarting either closed regression run.
+
+The latest capacity attempt is also closed. The fourteen-source transfer passed,
+and fixture-only `0dacf3c` corrected media-ancestor read permission. Product,
+workload and binary provenance remain `1ed1d69`. The first actual 10k preparer
+was OOM-killed at 384 MiB during directory-stress creation, before any prepared
+context or compound run. Kernel slab dominated the failed producer's memory;
+Goby's separate idle snapshot was dominated by file cache. The five licensed
+seed scans completed. Goby and PostgreSQL then stopped cleanly, their units
+were disabled and their processes/cgroups are absent. Original data and failures
+are retained; complete external archival is in progress. Do not replay this
+initialized database/workspace or restart either closed capacity scope. A fresh
+preparation requires the revised observer, an observed preparation memory
+envelope and restoration of the original benchmark limits before workload
+admission. Both tiers, overload and all 28 fault/recovery cases remain required.
+The [execution record](media-analysis-resilience-phase3-20260922.md#capacity-preparation-checkpoint)
+binds the failed preparation and clean shutdown evidence.
+Fixture successor `00af9e4` removes duplicate inventory buffers and eager Path
+lists without changing the data or thresholds. Its five new inventory tests and
+ten retained preparation tests await a single remote affected-suite execution.
+
 The post-compound fault-fixture handoff repair is committed at `34344c8`:
 successful capacity cleanup restores files while the catalog still reflects the
 incremental pass, so a proven reconciliation must precede fault-fixture expansion.
