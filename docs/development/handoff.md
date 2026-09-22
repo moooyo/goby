@@ -9,6 +9,12 @@ Use the isolated `codex/media-analysis-resilience` checkout at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
 unrelated changes in the original `D:/Code/goby` checkout.
 
+Current Phase 3 checkpoint: scope03 was restored and closed; scope04's actual
+10k preparation and benchmark-limit restoration succeeded, and its preparation
+controls are closed. Compound capacity, overload and fault/recovery acceptance
+have not started. Phase 3 remains
+unpublished; Phase 1/2 publication is recorded on `main` at `e41febbb`.
+
 Phase 1 is published: delivery `59ce074` and publication follow-up `2b284c3`
 were fast-forwarded into `main`, pushed and read back. Its
 [record](media-analysis-resilience-phase1-20260920.md) and
@@ -50,6 +56,30 @@ Phase 3 source implementation is integrated; consolidated verification is active
 The [execution record](media-analysis-resilience-phase3-20260922.md) retains the
 complete 10k/100k mixed-workload, sorting/metadata concurrency, storage-fault,
 process/database recovery and isolated-guest clean reboot/forced-reset scope.
+
+Scope04 preparation produced an actual private handoff from product/build
+`1ed1d69` and fixture `00af9e4`: 9,342 seed catalog items including directories,
+658 pending media files, 14 licensed sources, 4,200 stress directories and
+336,000 nonmedia entries. The fixture occupies 1,800,376,320 allocated bytes.
+Cold, cached and incremental counts of 10,000 are frozen targets, not accepted
+results; `accepted_capacity` remains false. Same-invocation journals establish
+successful launcher, worker and observer exit, and their original processes,
+cgroups and Actor-UID processes are absent. The prepared/context/closure hashes
+are in the execution record; the credential-bearing context remains private.
+
+Goby PID `114162` / invocation `6831967b922841f5a188a00641b218f9` and PostgreSQL
+PID `114049` / invocation `2646f886443040a1b60ceb48a3bc3efa` remain running.
+Goby's original 1,280 MiB benchmark limit is restored; PostgreSQL remains at
+512 MiB, both with zero swap and unchanged lifetimes. The restoration helper
+and preparation control parent are closed with their original PIDs/cgroups
+absent. Fresh admission still precedes the unstarted compound workload.
+Scope03's access failure was traced to missing `io.stat` accounting, after which
+its preparation limit was restored and the scope closed. Scope04 uses runtime
+template09 with `IOAccounting=yes`; this was a deployment issue, not a product
+defect or a capacity result.
+
+The following regression and scope02 paragraphs preserve earlier attempts;
+their failures remain evidence and do not describe the current preparation.
 PostgreSQL temporary Seen staging, bounded disk spool with generation identity,
 SQL candidate paging, configuration/store integration and runtime-resource
 observation sources are written. Fixture/runtime/oracle, regression and actual
@@ -82,13 +112,14 @@ both Go builds, five complete ordinary Go packages and embedded command tests.
 Source-stage05 also passed ten preparation tests. Root composed 2,138 new
 ordinary parents with 2,125 retained unchanged parents: 4,263 passes, zero
 failures and 18 explicit skips across 35 package scopes, plus 24 embedded
-passes and 65 composed Python tests. The five original failures remain failed
+passes. The latest fixture composition is 70 Python passes, replacing the older
+65-test composition as described below. The five original failures remain failed
 historical evidence. The affected worker, observer, PostgreSQL and closure
 helper are independently closed; PostgreSQL shut down cleanly and all ten
 databases remain retained. Follow the private checkpoint for subsequent
 capacity preparation rather than restarting either closed regression run.
 
-The latest capacity attempt is also closed. The fourteen-source transfer passed,
+The retained scope02 capacity attempt is closed. The fourteen-source transfer passed,
 and fixture-only `0dacf3c` corrected media-ancestor read permission. Product,
 workload and binary provenance remain `1ed1d69`. The first actual 10k preparer
 was OOM-killed at 384 MiB during directory-stress creation, before any prepared
@@ -97,7 +128,11 @@ Goby's separate idle snapshot was dominated by file cache. The five licensed
 seed scans completed. Goby and PostgreSQL then stopped cleanly, their units
 were disabled and their processes/cgroups are absent. Original data and failures
 are retained; complete external archival and archive-worker closure passed.
-Exact retirement is authorized but its result is pending. Do not replay this
+Exact retirement of the two archived source trees and two large guest archive
+files passed, with 220,626 removals and independent worker closure. All databases,
+credentials, control records, binaries and external originals are preserved.
+That retirement snapshot passed the unchanged free-space gate for the then-fresh
+scope03; it is not a current admission measurement. Do not replay this
 initialized database/workspace or restart either closed capacity scope. A fresh
 preparation requires the revised observer, an observed preparation memory
 envelope and restoration of the original benchmark limits before workload

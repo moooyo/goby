@@ -223,7 +223,14 @@ targets require a single link so deletion/move identity is unambiguous.
 `run_id`, `source_revision`, `guest`, `app_pid`, `app_start_ticks`, `roots`, and
 `cgroup_path` and `postgres`. It is reread before every HTTP/SQL/child/mutation operation. The
 app PID's `/proc` start time and membership in the dedicated cgroup are checked.
-Goby and PostgreSQL use distinct, nonnested cgroups. The `postgres` object binds
+Goby and PostgreSQL use distinct, nonnested cgroups.
+Enable `IOAccounting=yes` in both owned service definitions before startup and
+verify that each live cgroup exposes a readable `io.stat`. Controller support
+in the cgroup root alone is insufficient. Missing I/O accounting is a deployment
+failure, not zero I/O; preserve the broker's original response before asserting
+that its sample succeeded.
+
+The `postgres` object binds
 the actual postmaster PID/start ticks and `pg_postmaster_start_time()`. The real
 advisory-lock owner backend must be in that PG cgroup and have a revalidated
 parent chain to the pinned postmaster. Its backend start identity must survive

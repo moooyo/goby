@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **source implementation integrated; consolidated remote verification in progress; publication pending**.
+Status: **scope04 10k preparation and benchmark-limit restoration succeeded; preparation controls are closed; compound/fault acceptance has not started; Phase 3 is unpublished**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -11,13 +11,34 @@ verification. The overall three-phase objective remains incomplete.
 
 Implementation uses the isolated `codex/media-analysis-resilience` checkout.
 Unrelated changes in the original checkout remain outside this increment.
-Complete the phase's implementation and integration before its consolidated
-remote verification. No Phase 3 source candidate, workload profile, threshold
-set or result is frozen by this document.
+Product/build source `1ed1d69` and fixture successor `00af9e4` have actual remote
+evidence. Exact profiles, contexts and receipts remain bound in the private
+checkpoint and delivery ledger; this document does not itself admit a workload.
 
-## Implementation in progress
+## Current checkpoint
 
-| Workstream | Current state | Evidence boundary |
+Scope03's temporary preparation limit was restored and its runtime closed after
+diagnosis identified missing `io.stat` accounting. Scope04 uses runtime template09
+with `IOAccounting=yes` and has completed actual preparation and independent
+worker closure. This resolves a deployment prerequisite, not a Goby product
+defect. Goby's original benchmark limit is restored and all preparation controls
+are closed. The [capacity checkpoint](#capacity-preparation-checkpoint) records
+the actual fixture, restoration and preserved service lifetimes.
+
+The latest composed regression has **4,263 ordinary Go parent passes, zero
+failures and 18 explicit skips**, plus **24 embedded command passes** and
+**70 Python passes**. Frontend and both application builds passed. Original
+failures and skips remain in their source-bound records. Preparation is not
+capacity acceptance: both full 10k/100k compound journeys, overload and all 28
+fault/recovery cases remain unrun; `accepted_capacity` is false.
+
+## Implementation history before consolidated verification
+
+This section records the earlier source-only checkpoint. Its unexecuted-test
+statements are historical and are superseded by the current checkpoint and the
+later source-bound regression results below.
+
+| Workstream | State at that checkpoint | Evidence boundary at that checkpoint |
 | --- | --- | --- |
 | PostgreSQL temporary Seen staging and ownership | Source implementation and scan-path integration written. | Session-private staging, batch/physical limits and ownership retirement require remote verification. |
 | Disk spool generation-handle identity and fallback | Source implementation and scan-path integration written. | Exact directory evidence, Linux export handles, bounded held-FD fallback and cleanup require remote verification. |
@@ -76,6 +97,40 @@ invalidating media-analysis work during fault admission.
 
 ## Capacity preparation checkpoint
 
+Scope04 is the current prepared 10k scope. Its receipt records 9,342 initial
+catalog items, including directories, and 658 pending media files. The frozen
+cold/cached/incremental totals are each 10,000; those are workload expectations,
+not observed compound results. All 14 licensed sources, 4,200 stress directories
+and 336,000 distinct zero-byte nonmedia entries remain, with 79,695,000 raw name
+bytes. The actual fixture has 5,780 media paths and occupies 1,800,376,320
+allocated bytes. Its prepared receipt explicitly says `accepted_capacity:false`.
+
+Same-invocation launcher, worker and observer journals establish successful
+completion. Their original PIDs and cgroups, producer descendants and Actor-UID
+processes are absent. The closure records the real context, inventory, owner and
+manifest bindings without exporting the credential-bearing context. A prior
+closure-collector metadata failure remains retained separately.
+
+Goby PID `114162` / invocation `6831967b922841f5a188a00641b218f9` and PostgreSQL
+PID `114049` / invocation `2646f886443040a1b60ceb48a3bc3efa` retain their original
+running lifetimes. Preparation lowering and restoration both passed. Goby's
+effective limit is restored to 1,280 MiB; PostgreSQL remains at 512 MiB, both
+with zero swap and no restart. The restoration helper exited successfully and
+its original PID/cgroup are absent. The empty preparation control parent
+`[27,146123]` was stopped and its cgroup is absent. All preparation controls are
+closed; actual compound dispatch still requires fresh resource admission.
+Closure-time free space is a dated observation, not a future admission guarantee.
+
+| Scope04 evidence | SHA-256 |
+| --- | --- |
+| Actual prepared receipt | `4e3b289b479ecb6539e70cbe594a050ad4be08b45bdc1eb39946bb0c9badf6aa` |
+| Independent preparation closure | `ad24681dfd23c95b110565537728010d8e83089a4bde15fc8977c7e54b7c5bca` |
+| Prepared context bindings | `0ec6b644a145e1ad0e89b871376a48b48b6021a20f0a1bf773f1336229711611` |
+| Benchmark-limit restoration | `be86459e7b22ab2f00c3ef935c06787a28427e1e9fb3c232451cde36a13617e4` |
+| Restoration and control-parent closure | `41424adfbf70390e127855a99a2f4fc3c6349ddd02e4709539675727a889ff0d` |
+
+### Retained scope02 failure, retirement and fixture repair
+
 The fourteen-source licensed corpus transfer is accepted. Product, workload and
 build provenance remain `1ed1d69`; fixture-only `0dacf3c` makes shared media
 ancestors readable by the media group while retaining owner-only private inputs.
@@ -104,7 +159,13 @@ retained. Full external archival is accepted: all 220,624 members and
 1,649,703,901 source bytes were independently read back with their original
 metadata, and the four external files and directory were synced. Both archive
 workers are closed. Retirement of the two preserved source trees and the two
-large guest archive files is authorized; its actual result remains pending.
+large guest archive files completed with 220,626 recorded removals. The worker
+and its cgroup are closed; the exact four targets are absent. Databases,
+credentials, control records, binaries, shared corpus and all external archive
+originals are preserved. The independent snapshot recorded 21,962,846,208 free
+bytes, satisfying the unchanged 21,676,163,072-byte admission floor for the
+then-fresh scope03. This historical snapshot cannot admit scope04 or a later
+operation. No capacity or fault/recovery acceptance follows from this cleanup.
 
 Fixture successor `00af9e4` streams the exact inventory JSONL after its original
 space precheck, releases the source row list after a successful synced write,
@@ -117,12 +178,10 @@ Python tests, the latest fixture composition has 70 passing tests. These changes
 reduce retained Python objects but are not a measured resolution of the
 kernel-slab OOM. Product and workload binaries remain unchanged.
 
-Preparation requires a fresh runtime and an independently recorded memory
-envelope. The failed workspace and initialized database cannot be replayed as
-fresh input. Any temporary preparation limit must be restored after the
-producer and its descendants close, before admitting the original benchmark
-envelope. Both full 10k/100k compound runs, overload and all 28 fault/recovery
-cases remain unrun. Phase 3 is not accepted or published.
+The failed workspace and initialized database cannot be replayed as fresh input.
+The later scope04 preparation above used a fresh runtime and an independently
+recorded memory envelope. Restoration after producer closure is a prerequisite
+for the original benchmark envelope; scope04 has now satisfied that requirement.
 
 | Evidence | SHA-256 |
 | --- | --- |
@@ -131,6 +190,8 @@ cases remain unrun. Phase 3 is not accepted or published.
 | Clean Goby and PostgreSQL closure | `09f407d1344cd4cb056b88462f36f2070a0675ea0280f565353a21873b2812ab` |
 | Complete external archive readback | `4cf55d05f7b0244b2967ba0b6aebe1da96c2573ba42d8094097e51346518a733` |
 | Fixture successor tests and closure | `c796c8f214805e1c10f03d1ac88fc98b73406fc5db001db74269e0452f014bdb` |
+| Exact failed-fixture retirement | `d3732b58e3a7d9b33f8614d294d276ea0787f6d198e602cbfc707fbb8193e056` |
+| Independent retirement postproof | `90bfdeca27fbfab638ad9bf54f6abfd3b303179e92a3b512dce7fe2de7e0deee` |
 
 ## Required scope retained from the approved plan
 
@@ -151,7 +212,10 @@ timeout does not establish termination of an uninterruptible filesystem syscall.
 Unavailable guest reboot/reset evidence remains pending rather than reducing
 the approved scope.
 
-## Isolated environment preparation and retained bootstrap failure
+## Initial environment preparation and retained bootstrap failure
+
+This section records the earlier environment bootstrap, not current service or
+transport admission. Its free-space and memory observations are historical.
 
 Read-only PVE preparation has completed. The first clone attempt for the new,
 owned VM `106` failed after the controller's 60-second timeout; its UPID records
@@ -171,7 +235,7 @@ received task-specific key-only SSH access and an independent machine identity.
 Its one identity-bootstrap reboot is infrastructure preparation, not product
 reboot acceptance. Original failure and cleanup records remain retained.
 
-VM106 is now provisioned with 2 vCPU, 3 GiB fixed RAM, a 33 GiB disk and no swap.
+VM106 was provisioned with 2 vCPU, 3 GiB fixed RAM, a 33 GiB disk and no swap.
 Dependency preparation is complete: PostgreSQL 17.11, Go 1.27.1, FFmpeg/ffprobe
 9.0.1, the pinned fingerprint helper, Node 24.20.0 and the fixed browser runtime
 are available. No PostgreSQL workload cluster or Goby workload was started by
@@ -180,11 +244,11 @@ filesystem bytes and 2,563,784,704 available memory bytes; these are historical
 observations, not future admission guarantees.
 
 All eight pre-existing guests and the template retained their recorded
-identities. Preparation workers are closed; VM106 intentionally remains running.
-The external controller transport is ready, but reset dispatch remains disabled
-until the exact workload, artifacts and scenario are frozen. Full workload
-admission is still pending. Private records bind the guest owner, machine and
-storage identities, tool hashes, failed history and independent closures.
+identities. Preparation workers closed; VM106 intentionally remained running.
+The external controller transport was ready at that checkpoint, with reset
+dispatch disabled until the exact workload, artifacts and scenario were frozen.
+Full workload admission was still pending. Private records bind the guest owner,
+machine and storage identities, tool hashes, failed history and independent closures.
 
 All tests, builds, validation and runtime probes remain remote-only. Ordinary
 checks use `test-env`; clean reboot and forced-reset acceptance require the
@@ -195,23 +259,31 @@ environment mutation, test, build or runtime probe.
 
 ## Next work and closeout state
 
-Freeze the integrated candidate and bind the release values for the completed
-runtime/fixture/oracle sources. The fixture producer must establish real item
-identities and frozen expected results, and the recovery checks must bind actual
-blocked work, resource return, explicit replacement-storage rebind and durable
-playback state. Record the complete candidate,
-environment/corpus inventory, both scale-tier profiles, thresholds, fault
-injections and protected ownership boundaries before consolidated verification.
+Refresh service and resource admission after the completed scope04 restoration
+and control closure. External-controller admission is required before later
+external ACK, archive writes or fault operations, not for independent guest
+work that performs no external write. Use the actual
+prepared context for the complete 10k compound journey and overload; follow it
+with the required post-compound reconciliation and the full fault/recovery matrix.
+The 100k tier remains a separate required preparation and acceptance scope.
+Recovery evidence must bind actual blocked work, resource return, replacement
+storage rebind and durable playback state. Historical external free-space or
+transport records cannot authorize a later ACK or fault operation.
 
-Verification, resource closure and Phase 3 publication are pending. Preserve
-each failed attempt and bind any repair to its own affected verification; do not
-relabel earlier evidence as a later pass. The final record must identify exact
+Capacity/fault verification, final runtime closure and Phase 3 publication are
+pending. Preserve each failed attempt and bind any repair to its own affected
+verification; do not relabel earlier evidence as a later pass. The final record must identify exact
 source/artifact identities, selectors, real workload overlap, resource peaks,
 recovery outcomes and remaining limitations. Only the verified delivery may be
 merged and pushed, with exact remote-ref readback; publication remains distinct
 from deployment.
 
 ## First consolidated verification attempt
+
+This and the following attempt-by-attempt regression sections retain their
+historical checkpoints. References to live workers, pending tests or unfrozen
+sources describe those earlier moments; use the current checkpoint above for
+the latest results and service state.
 
 The complete source was frozen at `46c2747e3cc148141db13cd2fe05c42c95b899a3`.
 Remote source staging verified all 6,720 canonical Git archive files before and
@@ -431,10 +503,11 @@ the original source-bound result: 2,125 passing parents and 13 explicit skips.
 Replacing the five affected scopes adds 2,138 passes and five explicit skips,
 yielding **4,263 ordinary Go parent passes, zero failures and 18 skips** across
 35 package scopes. Two packages have no tests and contribute no parent passes.
-Embedded command passes remain separate. The Python composition keeps 55
-unchanged tests from seven scripts and replaces the old three preparation tests
-with ten current tests, giving 65 tests across eight scripts. No repeat is added
-to its predecessor's count, and no retained result is described as a new run.
+Embedded command passes remain separate. At source-stage05, 55 unchanged Python
+tests plus ten preparation tests gave 65 passes across eight scripts. Fixture
+successor `00af9e4` replaces that ten-test scope with 15 passes, making the current
+composition 70 passes. No repeat is added to its predecessor's count, and no
+retained result is described as a new run.
 
 The unchanged opt-in skips cover mount, hardware/media fixture and HTTP binding
 profiles; their original and current reasons are preserved. They do not establish

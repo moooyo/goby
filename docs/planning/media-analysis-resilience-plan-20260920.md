@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 verified, closed and published; phase 3 sources integrated, verification admission and publication pending**.
+Status: **active; phases 1 and 2 verified, closed and published; phase 3 regression and builds accepted, capacity and recovery verification in progress, publication pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -73,9 +73,10 @@ Source implementation is integrated. The
 [Phase 3 execution record](../development/media-analysis-resilience-phase3-20260922.md)
 tracks the written core scanning/resource and integrated fixture/runtime/
 oracle/overload sources. The isolated guest and dependencies are provisioned; the
-original bootstrap failure remains preserved. Verification and publication remain
-pending. No workload profile or product acceptance result is established by this
-status update.
+original bootstrap failure remains preserved. Composed regression and builds
+passed within their recorded scopes. The 10k fixture is prepared and its
+temporary resource limits are restored; full capacity and fault/recovery runs
+remain unstarted. Phase acceptance and publication remain pending.
 
 The integrated workload includes scanning, searching, playback, intro analysis
 and preview generation. Reuse one controlled environment and corpus while
