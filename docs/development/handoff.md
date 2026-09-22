@@ -12,8 +12,10 @@ unrelated changes in the original `D:/Code/goby` checkout.
 Current Phase 3 checkpoint: scope03 was restored and closed; scope04's actual
 10k preparation and benchmark-limit restoration succeeded, and its preparation
 controls are closed. Compound capacity, overload and fault/recovery acceptance
-have not started. Phase 3 remains
-unpublished; Phase 1/2 publication is recorded on `main` at `e41febbb`.
+have not started. The first compound publisher failed its memory admission by
+3,682,304 bytes before publishing sources or dispatching business work; its
+process and control parent are closed. Phase 3 remains unpublished; Phase 1/2
+publication is recorded on `main` at `e41febbb`.
 
 Phase 1 is published: delivery `59ce074` and publication follow-up `2b284c3`
 were fast-forwarded into `main`, pushed and read back. Its
@@ -73,6 +75,9 @@ Goby's original 1,280 MiB benchmark limit is restored; PostgreSQL remains at
 512 MiB, both with zero swap and unchanged lifetimes. The restoration helper
 and preparation control parent are closed with their original PIDs/cgroups
 absent. Fresh admission still precedes the unstarted compound workload.
+The original publisher refusal is retained, not reclassified as a passing
+capacity result. A successor is being prepared with an explicit aggregate
+reserve policy and fresh final-launcher observations; it has not run.
 Scope03's access failure was traced to missing `io.stat` accounting, after which
 its preparation limit was restored and the scope closed. Scope04 uses runtime
 template09 with `IOAccounting=yes`; this was a deployment issue, not a product

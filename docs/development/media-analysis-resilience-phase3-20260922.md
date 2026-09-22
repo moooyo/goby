@@ -32,6 +32,26 @@ failures and skips remain in their source-bound records. Preparation is not
 capacity acceptance: both full 10k/100k compound journeys, overload and all 28
 fault/recovery cases remain unrun; `accepted_capacity` is false.
 
+The first actual compound publisher was rejected before source publication or
+business dispatch. Its minimum observed MemAvailable was 2,300,395,520 bytes;
+the App/PG-only incremental estimate required 2,304,077,824 bytes, a 3,682,304-byte
+shortfall. Disk, inode, CPU, total-memory and no-swap checks passed. This is an
+admission failure, not a Goby workload result. The publisher exited with status
+1, its original process/cgroup and control parent are closed, and the prepared
+data and original App/PG lifetimes remain intact. No resampling or retry occurred.
+Admission SHA-256: `29131d0adb8e4c312d7059e8c1fe36b7de49b16becf7fea453c2d5678e744806`;
+independent closure: `9b26d06eeb441f00ae367038de39202cea2f23b84679a812138d6c0d01b334ae`.
+
+The original estimate omitted resident control memory, but no simultaneous
+control counters were captured, so the refusal cannot be proved incorrect or
+attributed to the outer SSH/dispatcher. A source-only successor is being prepared
+with an explicit new policy: count disjoint App, PostgreSQL and shared-control
+resident candidates once, subtract one aggregate 64 MiB operational reserve,
+and observe again in the final launcher after exec. This policy is not equivalent
+to the old per-role rule, is not an atomic or guaranteed headroom calculation,
+and cannot retroactively accept the failed attempt. Role caps, VM resources,
+disk floors, performance thresholds and the full workload scope stay unchanged.
+
 ## Implementation history before consolidated verification
 
 This section records the earlier source-only checkpoint. Its unexecuted-test
