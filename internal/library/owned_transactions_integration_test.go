@@ -12,6 +12,70 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+func TestOwnedTransactionAvailabilityDoesNotReenterAdmissionMutex(t *testing.T) {
+	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+	ownerPID := int32(store.ownership.conn.Conn().PgConn().PID())
+	entered := make(chan struct{})
+	observe := make(chan struct{})
+	released := false
+	release := func() {
+		if !released {
+			close(observe)
+			released = true
+		}
+	}
+	defer release()
+	available := make(chan bool, 1)
+	finished := make(chan error, 1)
+	go func() {
+		finished <- store.WithOwnedTx(ctx, func(tx OwnedTx) error {
+			close(entered)
+			<-observe
+			available <- store.Available()
+			_, err := tx.Exec(`INSERT INTO server_settings (key, value)
+				VALUES ('owned-transactions-availability', 'committed')`)
+			return err
+		})
+	}()
+	select {
+	case <-entered:
+	case err := <-finished:
+		t.Fatalf("transaction failed before its callback: %v", err)
+	case <-ctx.Done():
+		t.Fatal("transaction did not enter its callback")
+	}
+	// Model the admission side of the observed lock inversion: the callback
+	// owns ownership.mu, while an admission holds Store.mu waiting for that
+	// owner. Keep this side under test control so even the old bug can unwind.
+	store.mu.Lock()
+	locked := true
+	defer func() {
+		if locked {
+			store.mu.Unlock()
+		}
+	}()
+	release()
+	var ready, blocked bool
+	select {
+	case ready = <-available:
+	case <-time.After(5 * time.Second):
+		blocked = true
+	}
+	store.mu.Unlock()
+	locked = false
+	if err := ownedTransactionsAwait(t, ctx, finished); err != nil {
+		t.Fatalf("availability callback did not complete: %v", err)
+	}
+	if blocked {
+		t.Fatal("availability inside an owned transaction waited for the admission mutex")
+	}
+	if !ready {
+		t.Fatal("admission contention made the live catalog appear unavailable")
+	}
+	ownedTransactionsExpectSetting(t, ctx, pool, "owned-transactions-availability", "committed")
+	ownedTransactionsAssertReusable(t, ctx, store, ownerPID)
+}
+
 func TestWithOwnedTxCallerCancellationCommitsEveryQueryMethod(t *testing.T) {
 	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	ownerPID := int32(store.ownership.conn.Conn().PgConn().PID())

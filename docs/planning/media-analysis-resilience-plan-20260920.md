@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 verified, closed and published; phase 3 regression and builds accepted, capacity and recovery verification in progress, publication pending**.
+Status: **active; phases 1 and 2 published; phase 3 baseline regression/builds accepted, real cold concurrency failure diagnosed, repair verification and full capacity/recovery acceptance pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -74,9 +74,11 @@ Source implementation is integrated. The
 tracks the written core scanning/resource and integrated fixture/runtime/
 oracle/overload sources. The isolated guest and dependencies are provisioned; the
 original bootstrap failure remains preserved. Composed regression and builds
-passed within their recorded scopes. The 10k fixture is prepared and its
-temporary resource limits are restored; full capacity and fault/recovery runs
-remain unstarted. Phase acceptance and publication remain pending.
+passed within their recorded scopes at `1ed1d69`. The real 10k compound run then
+failed during cold; actual stacks confirmed an ownership/admission lock inversion.
+Its runtime is closed, and the source repair awaits remote verification and
+new builds before complete capacity and fault/recovery acceptance. Phase
+acceptance and publication remain pending.
 
 The integrated workload includes scanning, searching, playback, intro analysis
 and preview generation. Reuse one controlled environment and corpus while
@@ -108,4 +110,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core staging/spool/paging/configuration/resource and fixture/runtime/oracle/overload sources integrated; repairs verified at `1ed1d69` | Composed regression, actual builds and independent closure accepted with explicit skips; original failures retained. Full capacity and fault/reboot profiles remain unstarted | Pending |
+| 3. Concurrency and recovery | Core sources integrated; baseline repairs verified at `1ed1d69`; the observed concurrency lock inversion has a new source repair | Baseline regression/builds accepted with explicit skips. Actual 10k cold run failed and closed; repair verification, complete capacity journeys and fault/reboot acceptance remain pending | Pending |

@@ -121,13 +121,15 @@ func (ownership *scanOwnership) discardLocked() error {
 
 // Available reports the last known write availability. CheckOwnership verifies
 // the live session when a readiness check needs to detect an idle backend loss.
+// It does not acquire the admission mutex: executor availability can be checked
+// inside an owned transaction while another admission is waiting for that owner.
 func (s *Store) Available() bool {
 	if s == nil {
 		return false
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return !s.closed && !s.closing.Load() && s.ownership != nil && !s.ownership.lost.Load()
+	// New publishes ownership once. Close sets closing before it can set closed,
+	// and ownership loss is atomic, so no mutable admission state is read here.
+	return !s.closing.Load() && s.ownership != nil && !s.ownership.lost.Load()
 }
 
 // CheckOwnership verifies the existing lock session without reconnecting or

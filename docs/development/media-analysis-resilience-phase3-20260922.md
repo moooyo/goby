@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope04 10k preparation and benchmark-limit restoration succeeded; preparation controls are closed; compound/fault acceptance has not started; Phase 3 is unpublished**.
+Status: **scope04 cold workload failed and its runtime is closed; the observed lock inversion has a source repair awaiting remote verification; Phase 3 is unpublished**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -29,8 +29,8 @@ The latest composed regression has **4,263 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
 **70 Python passes**. Frontend and both application builds passed. Original
 failures and skips remain in their source-bound records. Preparation is not
-capacity acceptance: both full 10k/100k compound journeys, overload and all 28
-fault/recovery cases remain unrun; `accepted_capacity` is false.
+capacity acceptance: the full 10k compound journey failed during cold, while 100k,
+overload and all 28 fault/recovery cases remain unrun; `accepted_capacity` is false.
 
 The first actual compound publisher was rejected before source publication or
 business dispatch. Its minimum observed MemAvailable was 2,300,395,520 bytes;
@@ -44,13 +44,79 @@ independent closure: `9b26d06eeb441f00ae367038de39202cea2f23b84679a812138d6c0d01
 
 The original estimate omitted resident control memory, but no simultaneous
 control counters were captured, so the refusal cannot be proved incorrect or
-attributed to the outer SSH/dispatcher. A source-only successor is being prepared
-with an explicit new policy: count disjoint App, PostgreSQL and shared-control
+attributed to the outer SSH/dispatcher. The independently recorded successor uses
+an explicit new policy: count disjoint App, PostgreSQL and shared-control
 resident candidates once, subtract one aggregate 64 MiB operational reserve,
 and observe again in the final launcher after exec. This policy is not equivalent
 to the old per-role rule, is not an atomic or guaranteed headroom calculation,
 and cannot retroactively accept the failed attempt. Role caps, VM resources,
 disk floors, performance thresholds and the full workload scope stay unchanged.
+
+Publisher02's final three-sample admission passed after its exact caller exited
+and the observer became ready. Minimum MemAvailable was 2,316,333,056 bytes,
+against a 2,309,144,576-byte estimated remaining requirement. App, PostgreSQL
+and shared-control minimum resident candidates were 37,773,312, 116,379,648
+and 19,730,432 bytes; the aggregate reserve remained 67,108,864 bytes. All disk,
+inode, CPU, memory and no-swap gates passed. This is a new-policy admission,
+not retrospective acceptance of publisher01 or a claim of guaranteed headroom.
+Admission SHA-256: `09896f50b7c989d314d9a797d92be570313b0f643cd5df287856a8f887d5c697`.
+
+The unchanged full driver actually started as PID `165428`, start ticks
+`4517597`, invocation `f84abce06ce5400f9af15ae441fae93e`; observer PID `165360`,
+start ticks `4517486`, invocation `56607cc24a374118852182dcc569913d`. The publisher
+exited successfully. The later failure and closure below supersede those live
+handles; neither dispatch nor a partial stage accepts the tier.
+
+### Actual cold failure, diagnosis and source repair
+
+The Actor exited 1 during cold with `http_status`; cached and incremental did
+not complete. Three playback preparations returned `503 playback_timeout`
+after approximately 20 seconds. Analysis admission, settings and scan requests
+subsequently reached the client's 90-second transport deadline. Their start
+times were within approximately 6.4 ms: late completion is not late dispatch.
+The editing lane never completed its first settings GET, so its sorting rebuild,
+metadata edit and deliberately forced statement timeout had not started.
+
+The failed observer also had a separate confirmed defect: its new disk-peak
+loop overwrote the worker-state dictionary with an integer. Original gaps and
+source were retained; the monitor was explicitly stopped after the Actor ended.
+Its later generic OSError gap did not preserve enough detail to classify it.
+No successful resource-observation result is claimed. The isolated source
+successor changes only that local variable name and still requires remote use.
+
+A read-only reconciliation found no current scan, storage-observation or stream
+work and no matching committed analysis/playback/encoding records. That does
+not recast the original unknown POST outcomes as never accepted. The original
+catalog owner was backend `114170`; its PostgreSQL log records an idle-in-
+transaction timeout at 09:39:56.250 UTC, thirty seconds after the concurrent
+requests began. A deliberately terminating SIGQUIT then captured the original
+Goby instance's blocked stacks. The analysis admission held ownership.mu and
+waited for Store.mu in Available; the scan admission held Store.mu and waited
+for ownership.mu. The settings request was also blocked on Store.mu. These are
+actual stacks of the same Store, not solely a source-level possibility.
+
+The repair makes Available observe the immutable ownership reference and atomic
+closing/lost state without acquiring Store.mu. Close already sets closing
+before closed, so the mutable closed field is unnecessary for this observation.
+Owned write admission and session fencing stay in place. A deterministic
+integration regression holds the admission mutex while an owned callback checks
+availability, then verifies commit and ownership reuse. This new code and test
+are source-only until the required remote verification and fresh builds run.
+
+Goby's diagnostic exit 2 is not graceful shutdown or a fault-matrix success.
+After it exited, a read-only PostgreSQL snapshot found no other clients and no
+surviving matching admitted work. PostgreSQL then shut down cleanly; both retired
+runtime units were disabled. Original processes/cgroups and control parents are
+absent, with all databases, fixture files and failure evidence retained.
+
+| Failure and closure evidence | SHA-256 |
+| --- | --- |
+| Closed failed Actor/observer controllers | `1973308265b2ad2a3cf4c20440a1db3bafb14577febdd5b03315decd4be8edcd` |
+| Independent helper/control-parent closure | `b9a834caefd9bf8be5915d18ede1835adf009bc4f43f423325b47b373cda9627` |
+| Owner observation and matching PostgreSQL timeout | `615a1d7bf45a98a54658a4ab56fd7f4a14fc923be8742292809caee66c9fa9d8` |
+| Screened actual blocked-goroutine record | `89b153b3e36d2c711ca5e73933892760592cb49cdd8d19e759f17912a4f63d2d` |
+| Post-Goby read-only database state | `c6db7435e812aa747a91ae36ddca7c45dab1c4b7e46688f78dc23bfa7c5ef72d` |
+| Retired Goby/PostgreSQL runtime closure | `a9141da68c25eb7cf52a0d44b0918d945f413b1f97910e79b498cabdf53f4ba1` |
 
 ## Implementation history before consolidated verification
 
@@ -117,7 +183,10 @@ invalidating media-analysis work during fault admission.
 
 ## Capacity preparation checkpoint
 
-Scope04 is the current prepared 10k scope. Its receipt records 9,342 initial
+This section preserves the preparation checkpoint before the failed compound
+run. Its service lifetimes are now closed as recorded above.
+
+Scope04's prepared receipt records 9,342 initial
 catalog items, including directories, and 658 pending media files. The frozen
 cold/cached/incremental totals are each 10,000; those are workload expectations,
 not observed compound results. All 14 licensed sources, 4,200 stress directories
@@ -131,10 +200,10 @@ processes are absent. The closure records the real context, inventory, owner and
 manifest bindings without exporting the credential-bearing context. A prior
 closure-collector metadata failure remains retained separately.
 
-Goby PID `114162` / invocation `6831967b922841f5a188a00641b218f9` and PostgreSQL
-PID `114049` / invocation `2646f886443040a1b60ceb48a3bc3efa` retain their original
-running lifetimes. Preparation lowering and restoration both passed. Goby's
-effective limit is restored to 1,280 MiB; PostgreSQL remains at 512 MiB, both
+At that checkpoint, Goby PID `114162` / invocation `6831967b922841f5a188a00641b218f9`
+and PostgreSQL PID `114049` / invocation `2646f886443040a1b60ceb48a3bc3efa` retained
+their original running lifetimes. Preparation lowering and restoration both
+passed. Goby's effective limit was restored to 1,280 MiB; PostgreSQL stayed at 512 MiB, both
 with zero swap and no restart. The restoration helper exited successfully and
 its original PID/cgroup are absent. The empty preparation control parent
 `[27,146123]` was stopped and its cgroup is absent. All preparation controls are
@@ -279,8 +348,10 @@ environment mutation, test, build or runtime probe.
 
 ## Next work and closeout state
 
-Refresh service and resource admission after the completed scope04 restoration
-and control closure. External-controller admission is required before later
+Verify the nonblocking availability repair and new regression remotely, producing
+fresh source-bound binaries. Retain the failed scope04 evidence, arrange storage
+from actual allocations, and prepare a fresh capacity runtime. Do not reuse the
+retired service context. External-controller admission is required before later
 external ACK, archive writes or fault operations, not for independent guest
 work that performs no external write. Use the actual
 prepared context for the complete 10k compound journey and overload; follow it

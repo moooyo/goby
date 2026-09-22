@@ -45,7 +45,8 @@ var errOwnedCallbackInterrupted = errors.New("owned transaction callback did not
 // context. Every iterator is closed before commit or protected rollback.
 //
 // Callbacks must perform only bounded repository operations. They must not call
-// Store public methods, retain handles, wait for workers, start processes, or
+// Store public methods other than the atomic Available observation, retain
+// handles, wait for workers, start processes, or
 // issue SQL that controls transactions, connections, or the ownership lock.
 // This method is a narrow internal capability, not a SQL sandbox.
 func (s *Store) WithOwnedTx(ctx context.Context, callback func(OwnedTx) error) error {

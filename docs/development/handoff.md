@@ -9,10 +9,13 @@ Use the isolated `codex/media-analysis-resilience` checkout at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
 unrelated changes in the original `D:/Code/goby` checkout.
 
-Current Phase 3 checkpoint: scope03 was restored and closed; scope04's actual
-10k preparation and benchmark-limit restoration succeeded, and its preparation
-controls are closed. Compound capacity, overload and fault/recovery acceptance
-have not started. The first compound publisher failed its memory admission by
+Current Phase 3 checkpoint: scope04's full 10k workload failed during cold;
+actual goroutine stacks confirm a catalog ownership/admission lock inversion.
+The failed Actor, observer and controls are closed. Goby was diagnostically
+terminated to preserve its blocked stacks; PostgreSQL then shut down cleanly.
+All data and original failures remain retained. The nonblocking availability
+repair and its concurrency regression are written but not remotely verified.
+The 100k tier, overload and fault/recovery matrix remain unrun. The first compound publisher failed its memory admission by
 3,682,304 bytes before publishing sources or dispatching business work; its
 process and control parent are closed. Phase 3 remains unpublished; Phase 1/2
 publication is recorded on `main` at `e41febbb`.
@@ -69,15 +72,20 @@ successful launcher, worker and observer exit, and their original processes,
 cgroups and Actor-UID processes are absent. The prepared/context/closure hashes
 are in the execution record; the credential-bearing context remains private.
 
-Goby PID `114162` / invocation `6831967b922841f5a188a00641b218f9` and PostgreSQL
-PID `114049` / invocation `2646f886443040a1b60ceb48a3bc3efa` remain running.
-Goby's original 1,280 MiB benchmark limit is restored; PostgreSQL remains at
-512 MiB, both with zero swap and unchanged lifetimes. The restoration helper
-and preparation control parent are closed with their original PIDs/cgroups
-absent. Fresh admission still precedes the unstarted compound workload.
+Publisher02's final admission passed and dispatched the complete driver under
+the original 1,280/512 MiB Goby/PostgreSQL limits. Actor `165428` failed during
+cold before cached or incremental acceptance. Observer `165360` also had a
+confirmed unit-state variable shadow defect; its observations were not accepted.
+Root preserved and closed that monitor, then used SIGQUIT on the failed Goby
+instance to capture the actual blocked goroutines. Original Goby `114162` and
+PostgreSQL `114049` are now closed and their units disabled. Do not resume their
+old contexts or present the diagnostic exit as a planned recovery test.
 The original publisher refusal is retained, not reclassified as a passing
-capacity result. A successor is being prepared with an explicit aggregate
-reserve policy and fresh final-launcher observations; it has not run.
+capacity result. The explicit aggregate-reserve successor sampled in the final
+launcher after exec and observer readiness; a passing admission is not workload
+acceptance. The failed workload and complete runtime closure are recorded in
+the execution record. Test the availability repair remotely with fresh actual
+builds, then admit a fresh capacity runtime and retain the complete workload scope.
 Scope03's access failure was traced to missing `io.stat` accounting, after which
 its preparation limit was restored and the scope closed. Scope04 uses runtime
 template09 with `IOAccounting=yes`; this was a deployment issue, not a product
