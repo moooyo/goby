@@ -17,20 +17,32 @@ checkpoint and delivery ledger; this document does not itself admit a workload.
 
 ## Current checkpoint
 
-Scope03's temporary preparation limit was restored and its runtime closed after
-diagnosis identified missing `io.stat` accounting. Scope04 uses runtime template09
-with `IOAccounting=yes` and has completed actual preparation and independent
-worker closure. This resolves a deployment prerequisite, not a Goby product
-defect. Goby's original benchmark limit is restored and all preparation controls
-are closed. The [capacity checkpoint](#capacity-preparation-checkpoint) records
-the actual fixture, restoration and preserved service lifetimes.
+The scope04 compound failure exposed an actual product lock inversion, repaired
+at `5fb968a`. Its affected regression and both Go builds passed. Scope05 then
+failed during fixture preparation because the observer broker rejected the
+temporary systemd memory override. The corrected broker passed twelve remote
+guard checks. Neither failed attempt establishes capacity acceptance.
 
-The latest composed regression has **4,263 ordinary Go parent passes, zero
+All scope05 processes are closed. Its 347,968 archived members were independently
+read back on the external controller before the exact guest fixture and
+preparation trees were retired. Databases, diagnostics, builds and external
+originals remain retained. Independent retirement closure measured 21,989,072,896
+free bytes, above the unchanged initial 10k gate of 21,676,163,072 bytes.
+
+Fresh scope06 provisioned successfully from the accepted repair build with the
+corrected broker. Its provisioning worker is closed; new application and
+PostgreSQL lifetimes are running. Actual broker access after managed memory
+lowering must pass before the heavy producer starts. Full preparation, compound
+load and fault acceptance remain pending for this scope.
+
+The latest composed regression has **4,264 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
 **70 Python passes**. Frontend and both application builds passed. Original
 failures and skips remain in their source-bound records. Preparation is not
 capacity acceptance: the full 10k compound journey failed during cold, while 100k,
 overload and all 28 fault/recovery cases remain unrun; `accepted_capacity` is false.
+
+### Historical scope04 admission and failure
 
 The first actual compound publisher was rejected before source publication or
 business dispatch. Its minimum observed MemAvailable was 2,300,395,520 bytes;
