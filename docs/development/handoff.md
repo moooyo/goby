@@ -15,10 +15,12 @@ The failed Actor, observer and controls are closed. Goby was diagnostically
 terminated to preserve its blocked stacks; PostgreSQL then shut down cleanly.
 All data and original failures remain retained. Repair `5fb968a` passed its
 remote focused case and race check, while the old implementation failed for the
-expected lock wait. Both new binaries built successfully. Full package regression
-was interrupted by the independent observer's 128 MiB OOM; worker and observer
-are closed, with all evidence retained. Regression PostgreSQL remains live with
-eleven databases. A fresh-database continuation must complete all affected packages.
+expected lock wait. Both new binaries built successfully. After preserving the
+observer OOM interruption, a fresh-database continuation passed all five affected
+packages: 2,139 parent passes, zero failures and five explicit skips, plus 24
+embedded passes. Combined with unchanged complete scopes, the current regression
+is 4,264 passes, zero failures and 18 skips, with 70 retained Python passes.
+Worker, observer and regression PostgreSQL are closed; all twelve databases remain.
 The 100k tier, overload and fault/recovery matrix remain unrun. The first compound publisher failed its memory admission by
 3,682,304 bytes before publishing sources or dispatching business work; its
 process and control parent are closed. Phase 3 remains unpublished; Phase 1/2
@@ -88,10 +90,13 @@ The original publisher refusal is retained, not reclassified as a passing
 capacity result. The explicit aggregate-reserve successor sampled in the final
 launcher after exec and observer readiness; a passing admission is not workload
 acceptance. The failed workload and complete runtime closure are recorded in
-the execution record. Complete the interrupted package regression using the
-prepared lower-memory observer successor, then admit a fresh capacity runtime.
-Retain the completed focused/race/build receipts; partial library output is not
-a complete passing package. The full workload scope is unchanged.
+the execution record. The complete repair regression and independent closure
+are accepted. Failed scope04 data has a complete external archive, verified by
+all 348,699 members. Exact guest retirement and regenerable-cache cleanup passed,
+with independent worker closure and 22,229,053,440 free bytes afterward. A fresh
+scope05 profile is prepared but not deployed. Admit it from current resource and
+namespace facts plus the accepted build-delivery receipt. The full workload scope
+is unchanged.
 Scope03's access failure was traced to missing `io.stat` accounting, after which
 its preparation limit was restored and the scope closed. Scope04 uses runtime
 template09 with `IOAccounting=yes`; this was a deployment issue, not a product

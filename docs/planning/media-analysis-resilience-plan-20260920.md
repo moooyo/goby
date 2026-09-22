@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; phase 3 baseline regression/builds accepted, real cold concurrency failure diagnosed, repair verification and full capacity/recovery acceptance pending**.
+Status: **active; phases 1 and 2 published; phase 3 concurrency repair regression/builds accepted, full capacity/recovery acceptance and publication pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -76,8 +76,9 @@ oracle/overload sources. The isolated guest and dependencies are provisioned; th
 original bootstrap failure remains preserved. Composed regression and builds
 passed within their recorded scopes at `1ed1d69`. The real 10k compound run then
 failed during cold; actual stacks confirmed an ownership/admission lock inversion.
-Its runtime is closed, and the source repair awaits remote verification and
-new builds before complete capacity and fault/recovery acceptance. Phase
+Its runtime is closed, and repair `5fb968a` passed remote regression and fresh
+Go builds. Failed data is externally archived; fresh complete capacity and
+fault/recovery acceptance still remain. Phase
 acceptance and publication remain pending.
 
 The integrated workload includes scanning, searching, playback, intro analysis

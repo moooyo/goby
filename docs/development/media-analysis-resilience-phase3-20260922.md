@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **repair focused/race checks and builds passed; full package regression was interrupted by observer OOM and requires continuation; Phase 3 is unpublished**.
+Status: **repair regression/builds and independent closure passed; failed-capacity evidence is externally archived; fresh full capacity and fault/recovery acceptance remain pending; Phase 3 is unpublished**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -116,6 +116,46 @@ native `du` byte/inode accounting with the same caps, reporting failed reads as
 gaps. The continuation must rerun the entire library package and complete tasks,
 settings, server, command and embedded-command scopes with a fresh database.
 It may retain the independently completed focused/race/build stages.
+
+The fresh-database continuation completed all five packages and embedded command
+tests: library 955 passes/one skip; tasks 92 passes; settings 55 passes; server
+1,013 passes/four skips; command 24 passes; embedded command 24 passes. All new
+stages exited successfully with their children closed. The observer stayed
+within its 128 MiB limit with no OOM or persistent loss. Six transient allocation
+samples raced PostgreSQL temporary-file removal; their failures remain recorded,
+not zero-valued samples. Independent closure verified the real worker/observer
+exit identities and clean PostgreSQL shutdown, retaining all twelve databases.
+
+The composed ordinary regression is now 4,264 passing parents, zero failures and
+18 explicit skips across 35 scopes; embedded 24 and Python 70 are separate.
+The partial interrupted library output was replaced by a complete new run.
+Frontend reuse binds unchanged tracked inputs and the full original artifact
+inventory; both Go binaries were actually built at `5fb968a`.
+
+| Repair verification | SHA-256 |
+| --- | --- |
+| Complete affected continuation | `e8b28b1bcabdb09829ed8e739f1affa4d38e9170edfd8771601051e6a57e8000` |
+| Independent observer result | `afa5ef836a517a366bf5732315cd4ec9d07cbc07f808fc18cedaf6c3e37dc3cc` |
+| Independent worker/observer/PostgreSQL closure | `e5d66d4a799df49ff5daeaf0781eaa132901be26f5c60edcd73e04a7176573ba` |
+| Setup-compatible build delivery | `a152e8407e88e7ee57a6a01f2b19e4ec79a037e6e90aae051b21f4187c07f8d0` |
+
+Failed scope04 fixture, preparation output and compound output were archived
+with all 348,699 original path/stat records and 1,673,799,971 source bytes.
+The independent PVE readback matched every member and all four complete file
+hashes, then synced files and directory. Guest archive, transfer and readback
+workers are closed. The external receipt is
+`c9b123394be6b39b2b81a9b7e64ccd8f9475f8f73d81cd1afeaa451f9082a42b`;
+its independent closure is
+`68f2aa733037a05c36fd31ebf7eeedce65edbd07347e2a004f03dbcd25fdfb1a`.
+Exact guest retirement and regenerable build-cache cleanup completed. Source
+bytes were compared with the verified manifest before retirement; all hardlinks
+were confined to the archived tree. Eleven exact trees and the two large guest
+archive files are absent, with protected databases, credentials, diagnostics,
+source snapshots, build artifacts and external originals retained. Independent
+closure recorded 22,229,053,440 free bytes, above the unchanged initial10k gate.
+This snapshot does not replace fresh admission for the pending scope05 profile.
+Retirement receipt: `033f5f301e5b32096e1e1ac94efd90c98bf6e305a1431ac4b008cdb6ac3fc8a9`;
+independent closure: `9d7bbc21c1a6df71ed685dbe0587b1039410cc11ebf50b19af5d13013330090f`.
 
 Goby's diagnostic exit 2 is not graceful shutdown or a fault-matrix success.
 After it exited, a read-only PostgreSQL snapshot found no other clients and no
@@ -362,9 +402,9 @@ environment mutation, test, build or runtime probe.
 
 ## Next work and closeout state
 
-Verify the nonblocking availability repair and new regression remotely, producing
-fresh source-bound binaries. Retain the failed scope04 evidence, arrange storage
-from actual allocations, and prepare a fresh capacity runtime. Do not reuse the
+Use the accepted repair/build delivery after completed exact retirement and fresh
+storage admission to prepare a new capacity runtime. Retain all original failure
+and archive evidence. Do not reuse the
 retired service context. External-controller admission is required before later
 external ACK, archive writes or fault operations, not for independent guest
 work that performs no external write. Use the actual

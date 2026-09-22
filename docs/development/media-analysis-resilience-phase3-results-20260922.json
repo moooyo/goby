@@ -105,7 +105,10 @@
     "producer_closure_sha256": "8086ab394a88c6f5cc0c114a9af636652359c0ee52706283d127cdc4aae2882d",
     "kernel_breakdown_sha256": "100b640c8112c490f5b8b45e5d73229e60c055d5c5333c49321b509b62070769",
     "runtime_closure_sha256": "09f407d1344cd4cb056b88462f36f2070a0675ea0280f565353a21873b2812ab",
-    "required_compound_tiers_unrun": [10000, 100000],
+    "required_compound_tiers_unrun": [
+      10000,
+      100000
+    ],
     "required_fault_recovery_cases_unrun": 28
   },
   "preparation_fixture_successor": {
@@ -152,7 +155,11 @@
     "media_paths": 5780,
     "expected_catalog_count_for_each_unrun_compound_phase": 10000,
     "licensed_source_cases": 14,
-    "selected_analysis_cases": ["H1", "H2", "H3"],
+    "selected_analysis_cases": [
+      "H1",
+      "H2",
+      "H3"
+    ],
     "directory_stress": {
       "directories": 4200,
       "zero_byte_nonmedia_entries": 336000,
@@ -180,7 +187,10 @@
     "memory_restoration_helper_closed": true,
     "preparation_control_parent_absent": true,
     "compound_started": false,
-    "required_compound_tiers_unrun": [10000, 100000],
+    "required_compound_tiers_unrun": [
+      10000,
+      100000
+    ],
     "required_fault_recovery_cases_unrun": 28,
     "private_context_body_exported": false
   },
@@ -194,7 +204,13 @@
     "shortfall_bytes": 3682304,
     "free_bytes": 19810516992,
     "free_inodes": 1547658,
-    "other_admission_gates_passed": ["free", "inodes", "cpu", "total", "swap"],
+    "other_admission_gates_passed": [
+      "free",
+      "inodes",
+      "cpu",
+      "total",
+      "swap"
+    ],
     "publisher_exit_status": 1,
     "publisher_process_cgroup_and_control_parent_closed": true,
     "application_and_postgres_original_lifetimes_preserved": true,
@@ -234,14 +250,20 @@
     "released_launcher_sha256": "f639bebbc648c0c56122c0fa82a2a9c34a1b410128b136bbd286ddb290bc6eab",
     "released_observer_sha256": "86f65a6f388e2d19fc4b6e675728d002c841ba5f6fde9c520458e4e5cf997472",
     "driver_sha256": "a3be1b2174659048f4612bfedf6ae88496fd572b5e179b30e3d686c828e6b730",
-    "phases": ["cold", "cached", "incremental"],
+    "phases": [
+      "cold",
+      "cached",
+      "incremental"
+    ],
     "publisher_exit_status": 0,
     "exact_outer_python_exit_observed": true,
     "all_ssh_descendants_exit_claimed": false,
     "original_refused_attempt_preserved": true,
     "execution_complete": false,
     "actor_exit_status": 1,
-    "failure_codes": ["http_status"],
+    "failure_codes": [
+      "http_status"
+    ],
     "first_playback_status": 503,
     "first_playback_error_code": "playback_timeout",
     "observer_state_variable_shadow_confirmed": true,
@@ -264,7 +286,7 @@
     "fault_cases_started": false
   },
   "nonblocking_availability_repair": {
-    "status": "remote_focused_red_green_race_and_builds_passed; full_package_regression_interrupted_by_observer_oom",
+    "status": "remote_focused_red_green_race_builds_and_complete_affected_regression_accepted; independent_closure_passed",
     "source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
     "production_change": "Available reads the immutable ownership reference and atomic closing/lost state without acquiring Store.mu; owned transaction admission and session fencing are unchanged.",
     "regression_test": "TestOwnedTransactionAvailabilityDoesNotReenterAdmissionMutex",
@@ -283,7 +305,7 @@
     "interrupted_library_parent_skips": 1,
     "observer_oom_peak_bytes": 134217728,
     "interruption_closure_sha256": "09dea8add5e22a535c6598de68e3ab70fdc14452036a5c7632b595cad16f4906",
-    "full_regression_accepted": false,
+    "full_regression_accepted": true,
     "observer_pending_successor_sha256": "e51dd093a889b28ea962e762abd035916c791ddc0ec02464556b0415a885ad16",
     "observer_materialized_successor_sha256": "6f699ade7275dc0dc892a922db4e883df1b0f88b1d186034ad14266f65bceaca",
     "observer_successor_has_run": false,
@@ -1045,5 +1067,356 @@
     "phase3_capacity_accepted": false,
     "phase3_fault_recovery_accepted": false,
     "phase3_published": false
+  },
+  "repair_composed_regression": {
+    "status": "accepted_composed_regression_with_explicit_skips",
+    "target_source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+    "ordinary_package_scopes": 35,
+    "ordinary_parent_passes": 4264,
+    "ordinary_parent_failures": 0,
+    "ordinary_parent_skips": 18,
+    "new_complete_affected_packages": 5,
+    "new_affected_parent_passes": 2139,
+    "new_affected_parent_skips": 5,
+    "retained_unaffected_packages": 30,
+    "retained_unaffected_parent_passes": 2125,
+    "embedded_command_passes": 24,
+    "embedded_command_failures": 0,
+    "embedded_command_skips": 0,
+    "focused_red_green_race_are_separate_not_extra_parent_counts": true,
+    "python_tests": 70,
+    "python_scope": "Retain unchanged fixture00af and other previously accepted Python scopes; no Python product/test source changed in the availability repair.",
+    "frontend_reused_with_exact_input_and_artifact_equality": true,
+    "ordinary_and_embedded_binaries_actually_built_at_target": true,
+    "result_sha256": "e8b28b1bcabdb09829ed8e739f1affa4d38e9170edfd8771601051e6a57e8000",
+    "observer_result_sha256": "afa5ef836a517a366bf5732315cd4ec9d07cbc07f808fc18cedaf6c3e37dc3cc",
+    "independent_closure_sha256": "e5d66d4a799df49ff5daeaf0781eaa132901be26f5c60edcd73e04a7176573ba",
+    "build_delivery_sha256": "a152e8407e88e7ee57a6a01f2b19e4ec79a037e6e90aae051b21f4187c07f8d0",
+    "transient_observation_gaps": 6,
+    "persistent_observation_loss": false,
+    "oom_observed": false,
+    "postgres_cleanly_closed": true,
+    "database_count": 12,
+    "original_failures_retained": true,
+    "packages": [
+      {
+        "package": "github.com/moooyo/goby/cmd/goby",
+        "source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+        "execution": "complete_repair_continuation04",
+        "passed_parents": 24,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/cmd/goby-notification-receiver",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 0,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": true
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/activity",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 29,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/analysiscache",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 27,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/artwork",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 47,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backupformat",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 14,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backuppg",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 133,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/backupstore",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 32,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/bif",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 35,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/config",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 69,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/database",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 66,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/diagnostics",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 41,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/dynamicsource",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 26,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/events",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 25,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/identity",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 197,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/introdetect",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 105,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/library",
+        "source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+        "execution": "complete_repair_continuation04",
+        "passed_parents": 955,
+        "failed_parents": 0,
+        "skipped_parents": 1,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/lifecycle",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 17,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/media",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 539,
+        "failed_parents": 0,
+        "skipped_parents": 4,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/metadata",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 22,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/notificationjournal",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 3,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/notifications",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 4,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/playback",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 228,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/providers",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 4,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/recovery",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 39,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/recoverycontrol",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 16,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/recoverydb",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 12,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/server",
+        "source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+        "execution": "complete_repair_continuation04",
+        "passed_parents": 1013,
+        "failed_parents": 0,
+        "skipped_parents": 4,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/settings",
+        "source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+        "execution": "complete_repair_continuation04",
+        "passed_parents": 55,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/storagebinding",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 11,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/subtitle",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 48,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/systemevents",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 0,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": true
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/tasks",
+        "source_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+        "execution": "complete_repair_continuation04",
+        "passed_parents": 92,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/timeshift",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 23,
+        "failed_parents": 0,
+        "skipped_parents": 0,
+        "empty_package": false
+      },
+      {
+        "package": "github.com/moooyo/goby/internal/transcode",
+        "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+        "execution": "retained_complete_scope_from_composed03",
+        "passed_parents": 313,
+        "failed_parents": 0,
+        "skipped_parents": 9,
+        "empty_package": false
+      }
+    ],
+    "capacity_accepted": false,
+    "whole_phase_accepted": false,
+    "main_published": false
   }
 }
