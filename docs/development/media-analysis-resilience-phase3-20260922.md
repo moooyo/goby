@@ -31,9 +31,11 @@ free bytes, above the unchanged initial 10k gate of 21,676,163,072 bytes.
 
 Fresh scope06 provisioned successfully from the accepted repair build with the
 corrected broker. Its provisioning worker is closed; new application and
-PostgreSQL lifetimes are running. Actual broker access after managed memory
-lowering must pass before the heavy producer starts. Full preparation, compound
-load and fault acceptance remain pending for this scope.
+PostgreSQL lifetimes are running. Managed memory lowering and actual Actor broker
+access passed before producer dispatch, including all fourteen corpus read opens
+and application private-path isolation. The original full producer and its
+resource observer are now running after unchanged resource admission passed.
+Preparation is in progress; compound load and fault acceptance remain pending.
 
 The latest composed regression has **4,264 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
