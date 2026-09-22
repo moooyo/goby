@@ -180,3 +180,78 @@ sample; that failed observer result remains separate. A successor must bind
 the launch identity, preserve transient observation gaps, and use a new immutable
 source/profile/context. The untouched seven databases can be reused only with
 their original service and database identities rechecked; setup is not repeated.
+
+## Second regression attempt and PostgreSQL resource failure
+
+The inventory repair is `ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467`; product Go
+inputs are unchanged from the first candidate. Its complete source staging and
+syntax checks passed. Eight Python scripts passed all 58 tests. Frontend
+installation/build and both ordinary/embedded Go application builds passed.
+The first six Go package scopes completed with 141 passing parents; the
+notification receiver has no test files and is a package-level skip.
+
+The next package, `internal/backuppg`, recorded 103 passing and 30 failing
+parents. Its first failure was
+`TestPostgreSQLPhase3MaximumManagedArtworkDumpValidatesAndRestores` at the
+snapshot-fingerprint step. The kernel recorded a PostgreSQL memory-cgroup OOM
+at the same time, under the 384 MiB test-database cap. Later database-dependent
+failures remain recorded; they do not independently establish product defects.
+All remaining 28 package scopes and the embedded command tests were unstarted.
+
+The same maximum-size artwork case has a
+[historical 1 GiB PostgreSQL result](amd-media-phase3-20260919.md), following a
+512 MiB failure. Its earlier PostgreSQL peak was 756,084,736 bytes, and the
+relevant fingerprint/fixture implementation remains unchanged. The current
+384 MiB regression profile is therefore insufficient for that supported case.
+The worker's last live counters showed memory reclaim but no worker OOM; they
+are not substituted for unavailable final counters after cgroup removal.
+
+The second worker, observer and PostgreSQL processes and cgroups are closed.
+PostgreSQL stopped because of OOM, not a clean shutdown. All seven databases and
+original evidence are retained, including the consumed backup pair. Source
+bytes were rechecked unchanged. The
+[results ledger](media-analysis-resilience-phase3-results-20260922.json) keeps
+the original failure, passing scope and remaining requirements separate.
+
+The proposed successor redistributes the same aggregate 2,304 MiB cap across
+PostgreSQL (1,024 MiB), the serial test worker (1,152 MiB, `GOMEMLIMIT=800MiB`)
+and the observer (128 MiB). This is a candidate, not an accepted worker profile.
+It preserves the successful builds, Python and complete Go scopes, uses a fresh
+pair for the entire failed backup package, then runs every previously unstarted
+package and embedded command tests. The previous failure is never relabeled
+successful. Actual resource admission, database recovery and this successor's
+results remained pending at that checkpoint.
+
+## Live regression successor and preparation repair
+
+Successor03 is now running from the immutable `ad02b12` candidate. The original
+PostgreSQL cluster completed WAL recovery with its system identity and seven
+database identities preserved. Four unused recovery databases were checked
+empty, and a separate fresh backup pair was created; all nine owned databases
+remain retained. The setup process closed independently before the test worker
+started. PostgreSQL has a 1 GiB cap, the serial worker has 1,152 MiB with
+`GOMEMLIMIT=800MiB`, and the observer has 128 MiB. The aggregate limit is unchanged.
+
+The retained-build receipt binds the actual ordinary and embedded binaries and
+all 73 frontend assets. It remains a build-only receipt and does not relabel the
+failed regression. Collector failures for two metadata file modes and one
+previously undeclared generated frontend report are preserved, with their exact
+repairs and independent closures. No passed build or package was replayed.
+
+At the latest live observation, the complete backup package, including the
+previously failing maximum-artwork case, and package scopes 07 through 15 have
+passed. The library package is active. Six complete scopes from attempt02 plus
+these ten new scopes cover 16 of the 35 ordinary package scopes so far; one of
+the original six has no test files. This is live progress, not complete
+regression or resource acceptance. The remaining ordinary packages and embedded
+command tests must finish, and final observations and closures remain required.
+
+The independent `34344c8` preparation repair reconciles the restored filesystem
+with the accepted compound run's incremental catalog before creating fault
+fixtures. It preserves the original exact-tier result, verifies the one new and
+one moved item, and records a cached-only handoff. Population digests hash each
+row first, then the ordered row hashes, with full count guards before aggregation.
+The repair changes three preparation source/documentation/test files only;
+production Go, frontend and build inputs remain unchanged. Its remote checks and
+actual handoff have not run. The live regression source is not modified, and
+later binary reuse must retain the real `ad02b12` build provenance explicitly.

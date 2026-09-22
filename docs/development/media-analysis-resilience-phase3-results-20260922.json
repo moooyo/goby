@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "phase": 3,
+  "status": "in_progress",
+  "accepted": false,
+  "published": false,
+  "plan": "docs/planning/media-analysis-resilience-plan-20260920.md",
+  "execution_record": "docs/development/media-analysis-resilience-phase3-20260922.md",
+  "source_candidates": [
+    {
+      "revision": "46c2747e3cc148141db13cd2fe05c42c95b899a3",
+      "archive_sha256": "b7a4dc537965725154b24ae0122e1e43fe40807c3a1d34df2fc98786a823b966",
+      "manifest_sha256": "f28e641116dc688ffd6754f65d17ea89b71d782d45ae57c0b84a3f48e78427c1",
+      "files": 6720,
+      "file_bytes": 141269433,
+      "disposition": "Source staging passed; regression initialization failed before tests or builds. Original source and failures retained."
+    },
+    {
+      "revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+      "archive_sha256": "b964df78ab1f41884d630f508b75ba43f7cfe9fc012de2fe34edd707c84d565a",
+      "manifest_sha256": "95c3c1ba275b1eec45735152109d0f5fcedb570a6e828988b48d2344d15d303d",
+      "files": 6720,
+      "file_bytes": 141272039,
+      "disposition": "Source staging and syntax checks passed. Eight Python scripts, frontend and ordinary/embedded builds passed. The complete regression failed after PostgreSQL reached its 384 MiB cgroup limit during the maximum-artwork backup case; original result retained.",
+      "changed_scope": [
+        "scripts/test-env/media-analysis-phase3-regression.py",
+        "scripts/test-env/media-analysis-phase3-regression-tests.py",
+        "docs/development/media-analysis-resilience-phase3-20260922.md"
+      ],
+      "product_go_unchanged_from_previous": true
+    },
+    {
+      "revision": "34344c87cbcc133fd33917b688817767362697a3",
+      "archive_sha256": "208699b31aa6ecd884b2c1f4e79f054bc30cf6db481110b12fbd431abebeb1f9",
+      "manifest_sha256": "f49184261459273b8cc3f3ec8e219f9603bbc477d582b4c31b881e8e3d486c11",
+      "files": 6720,
+      "file_bytes": 141310707,
+      "disposition": "Committed and archived after-compound preparation repair. Remote staging, affected pure Python tests and actual handoff are pending. Live regression remains on ad02.",
+      "changed_scope": [
+        "scripts/test-env/media-analysis-phase3-prepare.py",
+        "scripts/test-env/media-analysis-phase3-prepare.md",
+        "scripts/test-env/test-media-analysis-phase3-prepare.py"
+      ],
+      "product_go_frontend_and_build_inputs_unchanged_from_previous": true
+    }
+  ],
+  "environment": {
+    "verification_guest": 106,
+    "configured_cpu_count": 2,
+    "configured_memory_bytes": 3221225472,
+    "configured_disk_bytes": 35433480192,
+    "swap_bytes": 0,
+    "postgres_version": "17.11",
+    "go_version": "1.27.1",
+    "ffmpeg_version": "9.0.1",
+    "node_version": "24.20.0",
+    "bootstrap_not_product_acceptance": true,
+    "initial_clone_failure_retained": true,
+    "identity_bootstrap_reboot_not_recovery_acceptance": true,
+    "shared_host_or_existing_guest_rebooted": false
+  },
+  "source_staging_01": {
+    "status": "passed_and_closed",
+    "source_revision": "46c2747e3cc148141db13cd2fe05c42c95b899a3",
+    "canonical_files_checked_before_and_after": 6720,
+    "python_sources_compiled_remotely": 27,
+    "bytecode_outside_frozen_source": true,
+    "product_tests_or_builds_started": false,
+    "receipt_sha256": "6658d8d7fd78f86a783f2886505127652e5e1e470399788e2654dc9d821af8eb",
+    "independent_closure_sha256": "7b244ee5e39044fdd0d690241ff29861eb45c5123fe39eb0e6fdc2e002e64c92",
+    "root_reviewed_original_receipts_and_hashes": true
+  },
+  "regression_database_setup_01": {
+    "status": "provisioned_and_setup_process_closed",
+    "postgres_retained_running_for_regression": true,
+    "ordinary_databases": 1,
+    "distinct_backup_source_target_pairs": 3,
+    "total_owned_databases": 7,
+    "memory_max_bytes": 402653184,
+    "shared_buffers_bytes": 67108864,
+    "max_connections": 48,
+    "work_mem_bytes": 4194304,
+    "independent_closure_sha256": "895f8458820f31080d6401e8aac6bda9c4bba6acfd3f75aa6a7f1eb5e3941347",
+    "initial_closure_collector_failure_retained": true,
+    "collector_repair": "Attribute journal records using either actual invocation field; preserve unrelated collection warnings. Do not rerun successful setup.",
+    "root_reviewed_original_closure": true
+  },
+  "regression_attempts": [
+    {
+      "attempt": "01",
+      "source_revision": "46c2747e3cc148141db13cd2fe05c42c95b899a3",
+      "status": "failed",
+      "error_code": "frozen_source_inventory",
+      "test_stages_started": 0,
+      "product_builds_started": 0,
+      "all_per_path_bytes_and_sha256_equal": true,
+      "array_order_differences": 28,
+      "cause": "Path component ordering differed from complete relative POSIX string ordering in the archive manifest.",
+      "diagnosis_sha256": "cee2fec80108f982b209f2a3c4679afc3c22285cced81d232209881bcbc450e8",
+      "observer_status": "failed",
+      "observer_error": "worker_not_started",
+      "observer_cause": "The worker exited before its first polling sample could bind the process.",
+      "lifecycle_closed": true,
+      "independent_closure_sha256": "0f3c6a690aace834d4ef28ee2e21598f921916f3e29e0bb0cb6db7ad2a318c6f",
+      "worker_peak_memory_bytes": 104820736,
+      "observer_peak_memory_bytes": 11137024,
+      "final_worker_memory_events": null,
+      "final_events_unavailable_reason": "The cgroup was removed before terminal readback; missing values are not assumed zero.",
+      "owned_databases_retained": 7,
+      "remaining_database_clients_at_closure": 0,
+      "root_reviewed_original_diagnosis_and_closure": true
+    },
+    {
+      "attempt": "02",
+      "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+      "status": "failed",
+      "stage_count": 20,
+      "passed_stage_count": 19,
+      "python_scripts_passed": 8,
+      "python_tests_passed": 58,
+      "frontend_build": "passed",
+      "ordinary_build": "passed",
+      "embedded_build": "passed",
+      "full_go_package_inventory": 35,
+      "complete_go_scopes_before_failure": 6,
+      "go_parent_passes_in_complete_scopes": 141,
+      "empty_package": "github.com/moooyo/goby/cmd/goby-notification-receiver",
+      "empty_package_status": "No test files; package-level skip, not an executed test pass.",
+      "failed_package": "github.com/moooyo/goby/internal/backuppg",
+      "failed_package_parent_passes": 103,
+      "failed_package_parent_failures": 30,
+      "first_failure": "TestPostgreSQLPhase3MaximumManagedArtworkDumpValidatesAndRestores",
+      "first_failure_location": "internal/backuppg/phase3_large_artwork_integration_test.go:84",
+      "first_failure_detail": "Snapshot fingerprints failed while the PostgreSQL cgroup exhausted its 384 MiB cap. Subsequent database-dependent failures are retained as failures.",
+      "kernel_constraint": "CONSTRAINT_MEMCG",
+      "postgres_memory_max_bytes": 402653184,
+      "postgres_peak_memory_bytes": 402669568,
+      "postgres_shutdown": "OOM termination; not a clean shutdown",
+      "worker_oom_observed": false,
+      "worker_oom_observation_boundary": "Last live memory.events reported zero worker OOMs. Final events were unavailable after cgroup removal.",
+      "worker_peak_memory_bytes": 1879052288,
+      "observer_resource_passed": true,
+      "observer_observation_gaps": [],
+      "lifecycle_closed": true,
+      "all_original_processes_and_cgroups_closed": true,
+      "owned_database_data_retained": true,
+      "backuppg_pair_consumed": true,
+      "remaining_go_packages_not_started": 28,
+      "embedded_command_tests_not_started": true,
+      "source_files_reverified": 6720,
+      "oom_evidence_sha256": "781eb9a961d1e8c87ff5cf792853c6ba7d83d41ba74d326c19355178b2b85ea8",
+      "independent_closure_sha256": "3f94a31a0555c276623b488739897d84a5e7aadb7cd529bba04b08cab72de3bc",
+      "screened_export_manifest_sha256": "e2ff94a0790f7d3e9c1ff059b8a2f07d1b2e1b1ebdc6ee14689182d4b203e42f",
+      "copied_files": 61,
+      "copied_bytes": 1619302,
+      "secret_contexts_copied": false,
+      "root_reviewed_original_receipts_test_summaries_and_oom_timing": true
+    }
+  ],
+  "required_acceptance": [
+    {
+      "requirement": "Complete integrated Go/Python regression and frontend plus ordinary/embedded builds",
+      "status": "pending"
+    },
+    {
+      "requirement": "10k and 100k cold/cached/incremental compound workload with exact query/count/page/user-state results",
+      "status": "pending"
+    },
+    {
+      "requirement": "Actual direct/remux/transcode/seek, productive intro/preview overlap, sorting and concurrent metadata edits",
+      "status": "pending"
+    },
+    {
+      "requirement": "Real statement-timeout rollback, actual query plans, pool waits and measured resource bounds",
+      "status": "pending"
+    },
+    {
+      "requirement": "Actual HTTP quota rejection, another user's service and resource recovery at both tiers",
+      "status": "pending"
+    },
+    {
+      "requirement": "Complete storage/database/process/guest restart/reset fault matrices, including late mounts",
+      "status": "pending"
+    },
+    {
+      "requirement": "External durable ACKs, stable identities/user state, explicit replacement rebind and actual resumed playback",
+      "status": "pending"
+    },
+    {
+      "requirement": "Applicable migration/backup/recovery, owned resource closure, final documentation and verified main push",
+      "status": "pending"
+    }
+  ],
+  "scope_limits": [
+    "Source inspection and Python syntax checks are not functional, capacity or recovery acceptance.",
+    "Catalog-item scale and actual media counts, bytes, formats and decoded work must be reported separately.",
+    "A successful single-case controller result is partial and does not accept the complete fault matrix.",
+    "A service restart or forced guest reset is not a physical power-loss test.",
+    "Phase 1 and Phase 2 evidence does not substitute for these Phase 3 requirements.",
+    "No local tests or builds were performed. Unselected features remain excluded or deferred under the approved plan."
+  ],
+  "current_regression_state": {
+    "status": "successor03 running",
+    "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+    "postgres": "same cluster recovered by WAL under a separately admitted 1 GiB cap",
+    "postgres_memory_max_bytes": 1073741824,
+    "worker_memory_max_bytes": 1207959552,
+    "observer_memory_max_bytes": 134217728,
+    "go_memory_limit": "800MiB",
+    "scope": "Preserve successful builds/Python and six complete Go scopes; run the entire failed backup package on a fresh pair, then all previously unrun packages and embedded command tests.",
+    "completed_new_package_indices": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "current_package_index": 16,
+    "current_package": "github.com/moooyo/goby/internal/library",
+    "maximum_artwork_case": "Passed within the complete backup package",
+    "full_tail_complete": false,
+    "supported_profile_proved": false,
+    "final_lifecycle_closed": false,
+    "owned_databases": 9,
+    "original_failed_backup_pair_retained": true,
+    "retained_build_receipt_sha256": "a2f171e34afea065ee99c05e19030d5f010af12434650cd8a0d1d64ce6954a19",
+    "postgres_resource_bridge_sha256": "cdd97af07c3e1186b4e044796fa76a82e3cba33422641d3094049725eb46d03e",
+    "resource_setup_closure_sha256": "0f5a6163674a485b2220ab5a865fee1b7ae2c42d8fe39ab22da45d92355d36f0",
+    "observation_boundary": "Live progress from the original worker lifetime; final per-package receipts and overall closure are still pending."
+  },
+  "after_compound_repair": {
+    "source_revision": "34344c87cbcc133fd33917b688817767362697a3",
+    "status": "committed_pending_remote_checks",
+    "changed_paths": [
+      "scripts/test-env/media-analysis-phase3-prepare.py",
+      "scripts/test-env/media-analysis-phase3-prepare.md",
+      "scripts/test-env/test-media-analysis-phase3-prepare.py"
+    ],
+    "product_go_frontend_and_build_inputs_changed": false,
+    "remote_tests_run": false,
+    "actual_handoff_run": false,
+    "live_regression_source_changed": false,
+    "future_artifact_reuse_requires_source_bridge": true
+  }
+}

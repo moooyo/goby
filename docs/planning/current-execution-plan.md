@@ -19,14 +19,20 @@ verified and operationally closed within its declared scope; its main publicatio
 is complete at `feb5004`, with exact remote readback on September 22, 2026.
 The [Phase 2 results](../development/media-analysis-resilience-phase2-results-20260922.json)
 bind the full corpus/client/lifecycle run and resource closure. Phase 3
-implementation has started; verification and publication remain pending. Its
+source implementation is integrated; verification is active and publication remains pending. Its
 [execution record](../development/media-analysis-resilience-phase3-20260922.md)
 tracks the written Seen staging, spool, SQL paging, configuration/store and
 resource-observation sources. Fixture/runtime/oracle and overload sources are
 integrated; exact release values are still being bound.
 VM106 and dependencies are provisioned, with the first bootstrap failure retained.
-No Phase 3 product verification has started and no workload profile is admitted;
-the full approved Phase 3 scope remains required.
+The first admitted regression yielded passing Python/build scopes and six
+complete Go package scopes, then stopped after PostgreSQL exhausted its 384 MiB
+limit in the maximum-artwork backup case. A separately recorded successor
+preserves those results and covers the failed/unstarted scopes. That successor
+is running; the complete backup package and the next nine package scopes have
+passed, with library tests active at the latest observation. The independent
+post-compound preparation repair at `34344c8` awaits remote checks. No capacity
+or fault profile is accepted; the full approved Phase 3 scope remains required.
 Historical completed increments below remain closed.
 
 ## Completed selected increment: September 20, 2026

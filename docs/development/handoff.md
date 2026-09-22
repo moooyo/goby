@@ -46,15 +46,21 @@ binds exact units, receipt hashes, screened copies and preserved failures.
 Four credential-bearing preview HTTP originals remain remote; secret runtime
 contexts were not copied. Do not publish them.
 
-Phase 3 source implementation is integrated; verification admission and publication are pending.
+Phase 3 source implementation is integrated; consolidated verification is active and publication is pending.
 The [execution record](media-analysis-resilience-phase3-20260922.md) retains the
 complete 10k/100k mixed-workload, sorting/metadata concurrency, storage-fault,
 process/database recovery and isolated-guest clean reboot/forced-reset scope.
 PostgreSQL temporary Seen staging, bounded disk spool with generation identity,
 SQL candidate paging, configuration/store integration and runtime-resource
 observation sources are written. Fixture/runtime/oracle, regression and actual
-HTTP overload sources are integrated. No Phase 3 product test/build or mixed-load,
-fault, clean-reboot or forced-reset acceptance run has started.
+HTTP overload sources are integrated. Candidate `ad02b12` passed 58 Python tests,
+the frontend and both application builds, plus 141 Go parents in six complete
+package scopes (one contains no tests). Its full regression then failed during
+the maximum-artwork backup case when the 384 MiB PostgreSQL cgroup exhausted
+memory. The worker, observer and PG are closed; seven database directories and
+the failed backup pair are retained. Use the [results ledger](media-analysis-resilience-phase3-results-20260922.json)
+and private checkpoint for exact receipts and any later live successor handle.
+Do not restart the closed attempt or repeat successful setup.
 
 VM106 and its dependencies are provisioned. The successful second clone,
 task-specific SSH and identity-bootstrap reboot have independent records;
@@ -62,8 +68,22 @@ the failed first clone and exact partial cleanup remain preserved. Infrastructur
 readiness is separate from workload admission, which is still pending. The guest
 has 2 vCPU, 3 GiB fixed RAM and a 33 GiB disk. Only the sole infrastructure owner
 operates it; source implementation owners must not start independent workloads.
-Freeze the full candidate and bind exact release values before consolidated
-remote verification. Complete both workload profiles and the full fault matrices;
+Regression successor03 is running with a separately admitted PG/worker budget
+within the same guest envelope, a fresh backup pair, the entire failed package
+and all unstarted packages/embedded command tests. The whole backup package and
+the next nine package scopes have passed at the latest observation; library
+tests are active. Follow the exact private checkpoint handles and do not start
+a replacement while that invocation is live. Reuse only byte-bound successful
+evidence; its final resource result and complete regression remain pending.
+The post-compound fault-fixture handoff repair is committed at `34344c8`:
+successful capacity cleanup restores files while the catalog still reflects the
+incremental pass, so a proven reconciliation must precede fault-fixture expansion.
+This does not change the original exact-tier capacity requirements. Its pure
+Python checks and actual handoff are pending; the live regression remains on
+immutable `ad02b12`. Production Go and frontend inputs are unchanged, but later
+artifact reuse still requires an explicit source bridge preserving the actual
+build source and original build-only receipt.
+Complete both workload profiles and the full fault matrices;
 individual scenario partial results never accept the whole phase.
 Do not reboot shared `test-env`, other existing VMs or the physical PVE host.
 

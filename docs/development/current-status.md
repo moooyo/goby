@@ -43,15 +43,26 @@ replacement, revocation, migration and backup/recovery retain their independent
 package evidence rather than being attributed to the browser journey.
 
 Phase 3 large-library concurrency, storage faults and isolated-guest reboot/reset
-sources are integrated; verification admission and publication remain pending. The
+sources are integrated; consolidated verification is in progress and publication remains pending. The
 [Phase 3 execution record](media-analysis-resilience-phase3-20260922.md) tracks
 the written PostgreSQL temporary Seen staging, disk spool, SQL paging,
 configuration/store integration and runtime-resource observation sources.
 Workload fixtures, runtime setup, recovery oracle and actual HTTP overload
 sources are integrated; immutable release values still require binding.
 VM106 and its dependencies are provisioned; the failed first clone is preserved
-separately. No Phase 3 product test/build, 10k/100k workload or fault/reboot
-acceptance run has started, and no workload profile is admitted. Tests/builds/runtime probes remain
+separately. Candidate `ad02b12` passed 58 Python tests, the frontend and both
+application builds, and 141 Go parents across six complete package scopes
+(including one package with no tests). The next backup package failed during
+PostgreSQL's 384 MiB cgroup OOM; all original failures and closed processes are
+recorded in the [results ledger](media-analysis-resilience-phase3-results-20260922.json).
+A resource successor is running without replaying passed scopes. Its complete
+backup package, including the maximum-artwork case, and the next nine package
+scopes have passed at the latest observation; `internal/library` is active.
+Final regression closure is still pending. The fault-fixture reconciliation
+repair is committed at `34344c8` and awaits separate remote checks; it does not
+alter the running candidate's Go or frontend inputs. Full Go coverage,
+10k/100k workloads and fault/reboot acceptance remain pending.
+Tests/builds/runtime probes remain
 remote-only, `ui-ux-pro-max` remains disabled, and unrelated changes in the
 original checkout are preserved. Earlier completed increments below do not
 satisfy this Phase 3 scope.
