@@ -97,6 +97,72 @@ def source_components(cases):
             for identities in groups.values() for identity in identities}
 
 
+def accepted_compound(result, events, manifest, context):
+    """Admit only the complete, original three-phase capacity conclusion."""
+    need(type(result) is dict and type(result.get("schema_version")) is int and result.get("schema_version") == 1 and result.get("accepted") is True
+         and result.get("execution_complete") is True and result.get("failure_codes") == []
+         and result.get("cleanup_errors") == [], "after_compound_result_not_accepted")
+    checks = result.get("checks")
+    need(type(checks) is dict and checks and all(value is True for value in checks.values())
+         and checks.get("cleanup") is True and checks.get("no_observer_failures") is True, "after_compound_checks_incomplete")
+    for key in ("run_id", "owner_id", "source_revision", "profile_id", "tier", "guest", "thresholds", "concurrency"):
+        need(result.get(key) == manifest[key], "after_compound_result_scope")
+    need(result.get("manifest_sha256") == context["manifest_sha256"] and result.get("driver_sha256") == context["driver_sha256"], "after_compound_result_source_binding")
+    need(type(events) is list and len(events) <= manifest["budgets"]["max_events"], "after_compound_event_budget")
+    need(len(context["scan_libraries"]) == 1, "after_compound_single_capacity_library_required")
+    need(all(context["catalog_expected"][phase] == manifest["tier"] for phase in WORK.PHASES), "after_compound_original_exact_tier_required")
+    library = context["scan_libraries"][0]
+    for phase in WORK.PHASES:
+        observed = [row for row in events if row.get("kind") == "scan_completed" and row.get("phase") == phase]
+        need(len(observed) == 1 and observed[0].get("counters") == library["expected"][phase]
+             and observed[0].get("force_probe") is (phase == "cold"), "after_compound_phase_scan_missing")
+        need(result.get("scan_work", {}).get(phase, {}).get("completed_scans") == observed, "after_compound_phase_result_mismatch")
+        counted = [row for row in events if row.get("kind") == "catalog_exact_count" and row.get("phase") == phase]
+        overlap = [row for row in events if row.get("kind") == "compound_overlap" and row.get("phase") == phase]
+        need(len(counted) == 1 and counted[0].get("count") == context["catalog_expected"][phase]
+             and len(overlap) == 1 and overlap[0].get("analysis_admission_overlapped") is True
+             and set(overlap[0].get("productive_overlap_ms", {})) == {"intro", "previews"}
+             and all(value >= manifest["thresholds"]["min_all_lane_overlap_ms"] for value in overlap[0]["productive_overlap_ms"].values()), "after_compound_phase_acceptance_missing")
+    increments = [row for row in events if row.get("kind") == "increment_verified"]
+    need(len(increments) == 1 and increments[0].get("phase") == "incremental" and increments[0].get("deleted") == 1
+         and increments[0].get("added") == 1 and increments[0].get("stable_cross_root_identity") is True
+         and increments[0].get("user_state_preserved") is True, "after_compound_increment_proof_missing")
+    return {"Scanned": library["expected"]["incremental"]["Scanned"], "Added": 1, "Updated": 1}
+
+
+def reconciled_transition(before, after, old, context):
+    """One restored pathname is new; an intentional deletion is never revived."""
+    mutation = context["mutation"]
+    moved_id, removed_id, added_id = old["move"]["id"], old["delete_id"], before["addition"]["id"]
+    need(before["catalog_count"] == after["catalog_count"] == context["catalog_expected"]["incremental"], "after_compound_exact_catalog_count")
+    need(before["move"]["id"] == after["move"]["id"] == moved_id
+         and before["move"]["path"] == mutation["move_to"] and after["move"]["path"] == mutation["move_from"]
+         and after["move"]["root_id"] == old["move"]["root_id"]
+         and before["move"]["file_identity"] == after["move"]["file_identity"] == old["move"]["file_identity"], "after_compound_move_identity")
+    restored = after["restored"]
+    need(before["restored"] is None and type(restored) is dict and restored["path"] == mutation["delete_path"]
+         and restored["id"] not in {removed_id, added_id, moved_id} and before["old_deleted_count"] == after["old_deleted_count"] == 0
+         and after["addition"] is None and after["restored_userdata_count"] == 0, "after_compound_deleted_identity_not_new")
+    need(before["unaffected_sha256"] == after["unaffected_sha256"] and before["unaffected_count"] == after["unaffected_count"], "after_compound_unrelated_catalog_changed")
+    need(before["move_userdata"] == after["move_userdata"] and before["userdata_sha256"] == after["userdata_sha256"], "after_compound_user_state_changed")
+    need(before["settings_sha256"] == after["settings_sha256"] and before["metadata_sha256"] == after["metadata_sha256"], "after_compound_controls_changed")
+    return {"removed_incremental_item_id": added_id, "permanently_deleted_original_item_id": removed_id,
+            "recreated_item_id": restored["id"], "stable_moved_item_id": moved_id,
+            "removed_item_count": 1, "created_item_count": 1, "old_deleted_identity_revived": False,
+            "old_deleted_user_state_revived": False, "moved_user_state_preserved": True}
+
+
+def reconciliation_population(tier, catalog_count, userdata_count, move_userdata_count, expected_move_rows):
+    """Population checks accompany, and never truncate, ordered row hashes."""
+    integer = WORK.integer
+    integer(tier, 1, 200000, "reconciliation_tier_bound")
+    integer(catalog_count, 0, tier, "reconciliation_catalog_population_bound")
+    integer(userdata_count, 0, 200000, "reconciliation_userdata_population_bound")
+    integer(move_userdata_count, 0, 200000, "reconciliation_witness_observed_bound")
+    integer(expected_move_rows, 1, 4096, "reconciliation_witness_population_bound")
+    need(move_userdata_count == expected_move_rows, "reconciliation_witness_population_changed")
+
+
 class Preparer(WORK.Actor):
     def __init__(self, manifest, operator, evidence):
         self.operator = operator
@@ -595,6 +661,7 @@ class FaultFixture(Preparer):
         self.generated_bytes, self.inventory_rows, self.hardlink_batches = 0, [], {}
         self.library_ids, self.root_bindings = {}, []
         self.sentinel_record = None
+        self.compound_handoff = None
         self.sentinel_root = self.workspace / "media" / "fault-sentinel"
         self.fixture_roots = {Path(fact["fixture_path"]) for fact in receipt["data"]["fixture_directories"].values()
                               if fact["purpose"] in {"media", "replacement"}}
@@ -712,10 +779,231 @@ class FaultFixture(Preparer):
         self.e.artifact("sentinel-credential.json", json_bytes(self.sentinel_record))
         return self.sentinel_record
 
+    def compound_artifact(self, reference, maximum=2 << 20):
+        exact(reference, "name sha256 bytes", "compound_artifact_fields")
+        need(type(reference["name"]) is str and WORK.SAFE.fullmatch(reference["name"]), "compound_artifact_name")
+        raw = read_private(self.compound_directory / "private" / reference["name"], maximum)
+        need(len(raw) == reference["bytes"] and digest(raw) == reference["sha256"], "compound_artifact_changed")
+        return raw
+
+    def compound_http_before(self, events, path):
+        candidates = []
+        for event in events:
+            self.remaining()
+            if event.get("kind") != "http" or event.get("phase") != "cold" or event.get("label") != "control" or event.get("status") != 200 or event.get("error"):
+                continue
+            receipt = strict_json(self.compound_artifact(event["receipt"]))
+            if receipt.get("method") == "GET" and receipt.get("path") == path:
+                body = self.compound_artifact(event["body"])
+                need(receipt.get("body_sha256") == digest(body) and receipt.get("status") == 200, "compound_http_body_binding")
+                candidates.append((event["start_ns"], strict_json(body)))
+        need(candidates, "compound_original_control_snapshot_missing")
+        return min(candidates, key=lambda candidate: candidate[0])[1]
+
+    def compound_sql(self, reference, required_suffix):
+        path = Path(reference["path"])
+        need(path.parent == self.compound_directory / "private", "compound_sql_outside_result_scope")
+        value = strict_json(pinned_private(reference, 2 << 20))
+        exact(value, "statement raw command", "compound_sql_receipt_fields")
+        need(type(value["statement"]) is str and value["statement"].endswith(required_suffix)
+             and type(value["raw"]) is str, "compound_sql_statement_binding")
+        command = strict_json(self.compound_artifact(value["command"]))
+        need(command.get("tool") == "psql" and command.get("exit_code") == 0 and command.get("stdout_sha256") == digest(value["raw"].encode()), "compound_sql_process_binding")
+        return strict_json(value["raw"].encode())
+
+    def no_active_work(self):
+        end = min(self.deadline, time.monotonic() + 30)
+        while True:
+            value = self.sql("SELECT json_build_object('scan_jobs',(SELECT count(*) FROM scan_jobs WHERE status IN ('Queued','Running')),'task_runs',(SELECT count(*) FROM task_runs WHERE state IN ('pending','queued','running','stopping')),'encoding_jobs',(SELECT count(*) FROM encoding_jobs WHERE state IN ('queued','running')),'play_sessions',(SELECT count(*) FROM play_sessions WHERE state IN ('Prepared','Playing','Paused') AND expires_at>clock_timestamp()))")
+            resources = self.native("/admin/v1/runtime/resources")
+            observation = self.process_sample()
+            closed = all(count == 0 for count in value.values()) and resources["OriginalStreams"]["ActiveCount"] == 0 and not observation["processes"]
+            evidence = resources["ScanEvidence"]
+            closed = closed and evidence["ActivePasses"] == 0 and evidence["RetiringPasses"] == 0 and evidence["CleanupFailures"] == 0
+            if closed:
+                return {"database": value, "scan_evidence": evidence, "original_active": 0, "media_processes": [],
+                        "observed_monotonic_ns": observation["observed_monotonic_ns"]}
+            need(time.monotonic() < end, "after_compound_work_not_closed")
+            time.sleep(.25)
+
+    def restored_file_facts(self, inventory):
+        mutation = self.c["mutation"]
+        rows = [strict_json(row) for row in inventory.splitlines()]
+        facts = {}
+        for key in ("delete_path", "move_from", "add_from"):
+            path = Path(mutation[key])
+            if key == "add_from":
+                expected = self.operator["templates"]["short_video"]
+                expected_size, expected_hash = expected["bytes"], expected["sha256"]
+            else:
+                root_id = self.root_for(str(path))
+                relative = path.relative_to(self.roots[root_id]).as_posix()
+                candidates = [row for row in rows if row["root_id"] == root_id and row["relative_path"] == relative]
+                need(len(candidates) == 1, "after_compound_mutation_inventory")
+                expected_size, expected_hash = candidates[0]["bytes"], candidates[0]["sha256"]
+            info = path.lstat()
+            need(path.resolve() == path and stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_size == expected_size
+                 and hash_file(path, self.deadline, expected_size) == expected_hash, "after_compound_restored_media_changed")
+            facts[key] = {"path": str(path), "device": info.st_dev, "inode": info.st_ino, "bytes": info.st_size,
+                          "modified_ns": info.st_mtime_ns, "changed_ns": info.st_ctime_ns, "sha256": expected_hash,
+                          "file_identity": "%d:%d" % (info.st_dev, info.st_ino)}
+        for key in ("quarantine_path", "move_to", "add_to"):
+            need(not os.path.lexists(mutation[key]), "after_compound_restoration_target_retained")
+            facts[key] = {"path": mutation[key], "absent": True}
+        return facts
+
+    def reconciliation_snapshot(self, old, added_id, expected_move_rows):
+        mutation = self.c["mutation"]
+        moved, removed, added = map(sql_string, (old["move"]["id"], old["delete_id"], added_id))
+        catalog_limit = WORK.integer(self.m["tier"], 1, 200000, "reconciliation_tier_bound")
+        WORK.integer(expected_move_rows, 1, 4096, "reconciliation_witness_population_bound")
+        row = "jsonb_build_array(id,library_id,root_id,parent_id,type,path,relative_path,name,sort_name,file_identity,file_size)"
+        # Aggregate only fixed 64-byte lowercase row hashes, not complete row
+        # JSON. IDs stay inside each row hash as well as defining stable order.
+        row_hash = "encode(sha256(convert_to(" + row + "::text,'UTF8')),'hex')"
+        digest_sql = "encode(sha256(convert_to(COALESCE(string_agg(" + row_hash + ",E'\\n' ORDER BY id),''),'UTF8')),'hex')"
+        user_row_hash = "encode(sha256(convert_to(to_jsonb(u)::text,'UTF8')),'hex')"
+        user_digest = "encode(sha256(convert_to(COALESCE(string_agg(" + user_row_hash + ",E'\\n' ORDER BY user_id,item_id),''),'UTF8')),'hex')"
+        selection = "id NOT IN (" + moved + "," + added + ") AND path<>" + sql_string(mutation["delete_path"])
+        item = "SELECT id,library_id,root_id,parent_id,type,path,file_identity FROM items WHERE "
+        catalog_guard = "(SELECT catalog_count FROM population)<=" + str(catalog_limit)
+        user_guard = "(SELECT userdata_count FROM population)<=200000"
+        witness_guard = "(SELECT move_userdata_count FROM population)=" + str(expected_move_rows)
+        result = self.sql("WITH population AS MATERIALIZED (SELECT (SELECT count(*) FROM items) AS catalog_count,"
+            "(SELECT count(*) FROM user_item_data) AS userdata_count,(SELECT count(*) FROM user_item_data WHERE item_id=" + moved + ") AS move_userdata_count) "
+            "SELECT json_build_object('digest_format','sha256-ordered-row-hashes-v1','catalog_count',(SELECT catalog_count FROM population),"
+            "'userdata_count',(SELECT userdata_count FROM population),'move_userdata_count',(SELECT move_userdata_count FROM population),"
+            "'catalog_sha256',CASE WHEN " + catalog_guard + " THEN (SELECT " + digest_sql + " FROM items) ELSE NULL END,"
+            "'unaffected_count',(SELECT count(*) FROM items WHERE " + selection + "),'unaffected_sha256',CASE WHEN " + catalog_guard + " THEN (SELECT " + digest_sql + " FROM items WHERE " + selection + ") ELSE NULL END,"
+            "'move',(SELECT row_to_json(x) FROM (" + item + "id=" + moved + ")x),'addition',(SELECT row_to_json(x) FROM (" + item + "id=" + added + ")x),"
+            "'restored',(SELECT row_to_json(x) FROM (" + item + "path=" + sql_string(mutation["delete_path"]) + ")x),'old_deleted_count',(SELECT count(*) FROM items WHERE id=" + removed + "),"
+            "'move_userdata',CASE WHEN " + witness_guard + " THEN (SELECT COALESCE(json_agg(row_to_json(u) ORDER BY user_id),'[]'::json) FROM user_item_data u WHERE item_id=" + moved + ") ELSE NULL END,"
+            "'restored_userdata_count',(SELECT count(*) FROM user_item_data WHERE item_id IN (SELECT id FROM items WHERE path=" + sql_string(mutation["delete_path"]) + ")),"
+            "'addition_userdata_count',(SELECT count(*) FROM user_item_data WHERE item_id=" + added + "),"
+            "'userdata_sha256',CASE WHEN " + user_guard + " THEN (SELECT " + user_digest + " FROM user_item_data u) ELSE NULL END,"
+            "'settings_sha256',(SELECT encode(sha256(convert_to(to_jsonb(s)::text,'UTF8')),'hex') FROM managed_settings s WHERE id=1),"
+            "'metadata_sha256',(SELECT encode(sha256(convert_to(to_jsonb(m)::text,'UTF8')),'hex') FROM item_metadata_state m WHERE item_id=" + sql_string(mutation["metadata_item_id"]) + "))")
+        reconciliation_population(catalog_limit, result["catalog_count"], result["userdata_count"], result["move_userdata_count"], expected_move_rows)
+        need(result["digest_format"] == "sha256-ordered-row-hashes-v1" and all(type(result[key]) is str and len(result[key]) == 64
+             for key in ("catalog_sha256", "unaffected_sha256", "userdata_sha256")), "reconciliation_digest_unavailable")
+        return result
+
+    def reconcile_after_compound(self):
+        need(self.operator["after_compound"] is True, "after_compound_mode_required")
+        refs = self.operator["compound_receipts"]
+        exact(refs, "result events mutation_before move_userdata_before", "compound_receipt_references")
+        self.compound_directory = Path(refs["result"]["path"]).parent
+        need(Path(refs["result"]["path"]).name == "result.json" and Path(refs["events"]["path"]) == self.compound_directory / "events.jsonl", "compound_result_directory")
+        result = strict_json(pinned_private(refs["result"], 16 << 20))
+        raw_events = pinned_private(refs["events"], 128 << 20)
+        events = [strict_json(row) for row in raw_events.splitlines()]
+        expected = accepted_compound(result, events, self.m, self.base_context)
+        need(self.c["driver_sha256"] == hash_file(HERE / "media-analysis-phase3-workload.py"), "after_compound_driver_changed")
+        mutation = self.c["mutation"]
+        old = self.compound_sql(refs["mutation_before"], "'postgres_version',current_setting('server_version'));\n")
+        need(old.get("catalog_count") == self.c["catalog_expected"]["incremental"] and type(old.get("move")) is dict
+             and old["move"]["path"] == mutation["move_from"] and old.get("delete_id"), "compound_mutation_before_binding")
+        # The captured statement must be the actual Actor snapshot of these
+        # two paths, never a selected row from an unrelated fixture.
+        old_receipt = strict_json(pinned_private(refs["mutation_before"], 2 << 20))
+        need("path=" + sql_string(mutation["move_from"]) in old_receipt["statement"]
+             and "path=" + sql_string(mutation["delete_path"]) in old_receipt["statement"], "compound_mutation_path_binding")
+        userdata = self.compound_sql(refs["move_userdata_before"], "SELECT COALESCE(json_agg(row_to_json(u) ORDER BY user_id),'[]'::json) FROM user_item_data u WHERE item_id=" + sql_string(old["move"]["id"]) + ";\n")
+        need(type(userdata) is list and userdata, "compound_original_move_userdata_missing")
+        library = self.c["scan_libraries"][0]
+        need(old["move"]["library_id"] == library["id"] and old["move"]["root_id"] == self.root_for(mutation["move_from"]), "compound_move_library_binding")
+        selected = {self.c["mutation"]["metadata_item_id"], *self.c["analysis_item_ids"], *(play["item_id"] for play in self.c["playback"])}
+        selected.update(identity for queries in self.c["queries"].values() for query in queries for identity in query["ids"])
+        need(old["delete_id"] not in selected, "compound_deleted_id_still_selected")
+        closed_before = self.no_active_work()
+        inventory = pinned_private({"path": self.c["inventory_path"], "sha256": self.c["inventory_sha256"]}, 128 << 20)
+        scan_roots = {root["id"] for root in self.c["roots"] if root["library_id"] == library["id"]}
+        need(sum(strict_json(row)["root_id"] in scan_roots for row in inventory.splitlines()) == expected["Scanned"], "after_compound_scan_population_changed")
+        files_before = self.restored_file_facts(inventory)
+        need(files_before["move_from"]["file_identity"] == old["move"]["file_identity"], "after_compound_moved_inode_changed")
+        inventory_summary = WORK.Actor.inventory(self)
+        addition = self.sql("SELECT json_build_object('id',id,'path',path,'file_identity',file_identity,'type',type,'library_id',library_id) FROM items WHERE path=" + sql_string(mutation["add_to"]))
+        need(type(addition) is dict and addition["id"] not in selected and addition["type"] == "Movie"
+             and addition["library_id"] == library["id"] and addition["file_identity"] == files_before["add_from"]["file_identity"], "after_compound_incremental_addition_missing")
+        before = self.reconciliation_snapshot(old, addition["id"], len(userdata))
+        need(before["catalog_count"] == self.c["catalog_expected"]["incremental"] and before["old_deleted_count"] == 0
+             and before["restored"] is None and before["move"]["path"] == mutation["move_to"]
+             and before["move"]["file_identity"] == old["move"]["file_identity"] and before["move_userdata"] == userdata
+             and before["addition_userdata_count"] == 0,
+             "after_compound_database_not_incremental_state")
+        original_settings = self.compound_http_before(events, "/admin/v1/settings")
+        metadata_path = "/admin/v1/items/" + mutation["metadata_item_id"] + "/metadata"
+        original_metadata = self.compound_http_before(events, metadata_path)
+        settings, metadata = self.native("/admin/v1/settings"), self.native(metadata_path)
+        need(all(settings[key] == original_settings[key] for key in ("Overrides", "Sorting"))
+             and all(metadata[key] == original_metadata[key] for key in ("Overrides", "LockedFields")), "after_compound_controls_not_restored")
+        expected_removed = {"item_id": addition["id"], "count": 1}
+        plan = {"schema_version": 1, "operation": "after_compound_reconciliation", "run_id": self.m["run_id"],
+            "compound_receipts": refs, "original_manifest": self.operator["manifest"], "original_context": self.operator["base_context"],
+            "library_id": library["id"], "force_probe": False, "expected": expected, "expected_removed": expected_removed,
+            "catalog_count": before["catalog_count"], "database_before": before, "files_restored_before": files_before,
+            "closed_before": closed_before, "inventory_summary": inventory_summary,
+            "old_delete_inode_not_independently_recorded_by_compound": True,
+            "restored_delete_content_bound_by_original_inventory": True}
+        self.e.atomic("after-compound-plan-private.json", plan)
+        jobs_before = self.sql("SELECT COALESCE(json_agg(id),'[]'::json) FROM scan_jobs WHERE library_id=" + sql_string(library["id"]))
+        need(type(jobs_before) is list and len(jobs_before) <= 256, "after_compound_scan_history_bound")
+        intent = self.admission_intent("after_compound_reconciliation", {"library_id": library["id"], "expected": expected, "known_job_ids": jobs_before})
+        admission_error, admitted = None, None
+        try:
+            admitted = self.native("/admin/v1/libraries/" + library["id"] + "/scan", "POST", {"ForceProbe": False}, (202,))["Job"]["Id"]
+        except Exception as error:
+            admission_error = str(error) if isinstance(error, WORK.Failure) else "reconciliation_admission_response_lost"
+        # Never replay POST after an uncertain response. Discover the sole new
+        # scan under this frozen library while the database is otherwise idle.
+        discovery_deadline = min(self.deadline, time.monotonic() + 30)
+        while True:
+            jobs = self.native("/admin/v1/jobs")["Items"]
+            candidates = [job for job in jobs if job["LibraryId"] == library["id"] and job["Id"] not in jobs_before]
+            need(len(candidates) <= 1, "after_compound_ambiguous_scan_admission")
+            if candidates:
+                job = candidates[0]
+                need(admitted is None or admitted == job["Id"], "after_compound_scan_id_mismatch")
+                break
+            need(time.monotonic() < discovery_deadline, "after_compound_scan_admission_unresolved")
+            time.sleep(.25)
+        self.jobs[job["Id"]] = {"kind": "scan", "active": True}
+        self.intents.pop(intent)
+        while job["Status"] not in WORK.TERMINAL:
+            self.remaining()
+            time.sleep(.25)
+            candidates = [row for row in self.native("/admin/v1/jobs")["Items"] if row["Id"] == job["Id"]]
+            need(len(candidates) == 1, "after_compound_scan_disappeared")
+            job = candidates[0]
+        self.jobs[job["Id"]]["active"] = False
+        need(job["Status"] == "completed" and job["ForceProbe"] is False and not job["Error"]
+             and all(job[key] == value for key, value in expected.items()), "after_compound_reconciliation_counters")
+        after = self.reconciliation_snapshot(old, addition["id"], len(userdata))
+        transition = reconciled_transition(before, after, old, self.c)
+        need(after["restored"]["file_identity"] == files_before["delete_path"]["file_identity"], "after_compound_recreated_file_binding")
+        recreated = self.native("/admin/v1/media-analysis/items/" + after["restored"]["id"])
+        moved = self.native("/admin/v1/media-analysis/items/" + old["move"]["id"])
+        need(recreated["Id"] == after["restored"]["id"] and moved["Id"] == old["move"]["id"]
+             and recreated["LibraryId"] == moved["LibraryId"] == library["id"], "after_compound_business_reference_binding")
+        transition["recreated_media_source_id"] = recreated["MediaSourceId"]
+        transition["recreated_source_revision"] = recreated["SourceRevision"]
+        transition["moved_media_source_id"] = moved["MediaSourceId"]
+        transition["moved_source_revision"] = moved["SourceRevision"]
+        files_after = self.restored_file_facts(inventory)
+        need(files_after == files_before, "after_compound_scan_modified_media")
+        closed_after = self.no_active_work()
+        handoff = {"schema_version": 1, "complete": True, "run_id": self.m["run_id"], "owner_id": self.m["owner_id"],
+            "source_revision": self.m["source_revision"], "tier": self.m["tier"], "compound_receipts": refs,
+            "original_capacity_result_modified": False, "reconciliation_is_outside_capacity_measurements": True,
+            "scan_job": job, "admission_response_error": admission_error, "database_before": before, "database_after": after,
+            "files_before": files_before, "files_after": files_after, "closed_after": closed_after, "identity_transition": transition,
+            "allowed_workload_phases": ["cached"]}
+        self.e.atomic("after-compound-handoff-private.json", handoff)
+        path = self.e.directory / "after-compound-handoff-private.json"
+        self.compound_handoff = {"path": str(path), "sha256": hash_file(path)}
+        return after["catalog_count"]
+
     def populate_faults(self):
-        initial = self.sql("SELECT count(*) FROM items")
-        need(initial == self.base_context["catalog_expected"]["initial"], "fault_base_profile_already_changed")
-        pinned_private({"path": self.base_context["inventory_path"], "sha256": self.base_context["inventory_sha256"]}, 128 << 20)
         mutation = self.base_context["mutation"]
         need(not Path(mutation["quarantine_path"]).exists() and Path(mutation["add_from"]).is_file()
              and Path(mutation["add_from"]).stat().st_nlink == 1, "fault_base_staging_changed")
@@ -728,6 +1016,7 @@ class FaultFixture(Preparer):
             templates[name] = safe_source(path, reference["bytes"], reference["sha256"], self.deadline)
         need(set(templates) == {"short_video", "playback_video"}, "fault_template_inventory")
         need(hash_file(mutation["add_from"], self.deadline, 16 << 20) == self.operator["templates"]["short_video"]["sha256"], "fault_base_addition_changed")
+        initial = self.reconcile_after_compound()
         fault_roots, derivatives = [], []
         for volume_id, volume in self.guest_binding["volumes"].items():
             self.assert_volumes()
@@ -777,7 +1066,10 @@ class FaultFixture(Preparer):
         need(0 < delta <= 64, "fault_catalog_delta")
         derived = copy.deepcopy(self.base_context)
         derived["roots"] += self.root_bindings
-        derived["catalog_expected"] = {phase: count + delta for phase, count in derived["catalog_expected"].items()}
+        # This is a cached-only fault context, not another capacity profile.
+        # Historical cold/incremental selectors are retained as source facts;
+        # the handoff and wrapper must prohibit executing those phases.
+        derived["catalog_expected"] = {phase: final_count for phase in derived["catalog_expected"]}
         raw_inventory = pinned_private({"path": derived["inventory_path"], "sha256": derived["inventory_sha256"]}, 128 << 20)
         for row in self.inventory_rows:
             path = Path(row["path"])
@@ -802,6 +1094,8 @@ class FaultFixture(Preparer):
             "resume_item_id": facts["progress"]["item_id"], "lock_item_id": facts["lock"]["item_id"], "settings_scope": "server"}
         result = {key: self.m[key] for key in ("run_id", "owner_id", "source_revision", "tier")}
         result.update({"schema_version": 1, "prepared": True, "manifest_sha256": self.operator["manifest"]["sha256"],
+            "after_compound": True, "compound_result": self.operator["compound_receipts"]["result"],
+            "after_compound_handoff": self.compound_handoff, "allowed_workload_phases": ["cached"],
             "guest_binding_sha256": self.operator["guest_binding"]["sha256"], "prepare_receipt_sha256": self.operator["prepare_receipt"]["sha256"],
             "workload_context": {"path": str(context_path), "sha256": digest(context_bytes)}, "workload_manifest": self.operator["manifest"],
             "healthy_roots": [healthy], "fault_roots": fault_roots, "derivatives": derivatives, "sentinel": sentinel, "state_refs": state_refs,
@@ -809,6 +1103,7 @@ class FaultFixture(Preparer):
             "catalog_count_before": initial, "catalog_count_after": final_count})
         self.e.atomic("fault-fixture-private.json", result)
         self.e.atomic("fault-prepared.json", {"schema_version": 1, "prepared": True, "accepted_capacity": False, "run_id": self.m["run_id"],
+            "after_compound": True, "allowed_workload_phases": ["cached"],
             "fault_media_roots": len(fault_roots), "healthy_roots": 1, "new_catalog_items": delta, "fixture_media_paths": len(self.inventory_rows),
             "conservative_reserved_bytes": self.generated_bytes, "requires_external_readonly_remount": True,
             "derivative_cache_deployment_must_be_bound_by_runtime": True})
@@ -816,8 +1111,8 @@ class FaultFixture(Preparer):
 
 def prepare_fault_fixture(operator_path, output):
     operator = strict_json(read_private(operator_path, 2 << 20))
-    exact(operator, "schema_version manifest base_context guest_binding prepare_receipt templates media_read_gid", "fault_operator_fields")
-    need(operator["schema_version"] == 1, "fault_operator_version")
+    exact(operator, "schema_version manifest base_context guest_binding prepare_receipt templates media_read_gid after_compound compound_receipts", "fault_operator_fields")
+    need(operator["schema_version"] == 1 and operator["after_compound"] is True, "fault_operator_after_compound_mode")
     manifest = WORK.validate_manifest(strict_json(pinned_private(operator["manifest"], 1 << 20)))
     context = strict_json(pinned_private(operator["base_context"]))
     need(context["manifest_sha256"] == operator["manifest"]["sha256"], "fault_manifest_binding")
@@ -831,7 +1126,8 @@ def prepare_fault_fixture(operator_path, output):
     except Exception as error:
         evidence.closing = True
         evidence.artifact("partial-fault-state.json", json_bytes({"libraries": actor.library_ids, "roots": actor.root_bindings,
-            "jobs": actor.jobs, "admission_intents": actor.intents, "sentinel": actor.sentinel_record}))
+            "jobs": actor.jobs, "admission_intents": actor.intents, "sentinel": actor.sentinel_record,
+            "after_compound_handoff": actor.compound_handoff}))
         evidence.atomic("fault-prepared.json", {"schema_version": 1, "prepared": False, "accepted_capacity": False,
             "run_id": manifest["run_id"], "error_code": str(error) if isinstance(error, WORK.Failure) else "fault_preparation_failure",
             "closure": "External controller must reconcile partial native admissions and close every owned fault resource."})

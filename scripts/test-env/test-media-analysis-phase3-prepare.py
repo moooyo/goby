@@ -2,6 +2,7 @@
 """Remote-only pure preparation identity and budget test source."""
 
 import importlib.util
+import copy
 from pathlib import Path
 import unittest
 
@@ -41,6 +42,109 @@ class SourceIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(PREPARE.WORK.Failure, "preparation_media_byte_budget"):
             preparer.reserve(8192)
         self.assertEqual(preparer.generated_bytes, 4096)
+
+
+def compound_fixture():
+    manifest = {"run_id": "run", "owner_id": "owner", "source_revision": "a" * 40, "profile_id": "profile", "tier": 10000,
+                "guest": {"vmid": 106, "machine_id": "b" * 32}, "thresholds": {"min_all_lane_overlap_ms": 100},
+                "concurrency": {"query_workers": 2, "playback_workers": 3}, "budgets": {"max_events": 100}}
+    context = {"manifest_sha256": "c" * 64, "driver_sha256": "d" * 64, "catalog_expected": {"initial": 9000, "cold": 10000, "cached": 10000, "incremental": 10000},
+               "scan_libraries": [{"id": "library", "expected": {"cold": {"Scanned": 6000, "Added": 1000, "Updated": 5000},
+                    "cached": {"Scanned": 6000, "Added": 0, "Updated": 0}, "incremental": {"Scanned": 6000, "Added": 1, "Updated": 1}}}]}
+    result = {key: copy.deepcopy(manifest[key]) for key in ("run_id", "owner_id", "source_revision", "profile_id", "tier", "guest", "thresholds", "concurrency")}
+    result.update(schema_version=1, accepted=True, execution_complete=True, failure_codes=[], cleanup_errors=[],
+                  checks={"cleanup": True, "no_observer_failures": True, "http_failures": True},
+                  manifest_sha256=context["manifest_sha256"], driver_sha256=context["driver_sha256"], scan_work={})
+    events = []
+    for phase in ("cold", "cached", "incremental"):
+        scan = {"kind": "scan_completed", "phase": phase, "reference": phase, "force_probe": phase == "cold", "counters": copy.deepcopy(context["scan_libraries"][0]["expected"][phase])}
+        events += [scan, {"kind": "catalog_exact_count", "phase": phase, "count": 10000},
+                   {"kind": "compound_overlap", "phase": phase, "analysis_admission_overlapped": True, "productive_overlap_ms": {"intro": 120, "previews": 130}}]
+        result["scan_work"][phase] = {"completed_scans": [copy.deepcopy(scan)]}
+    events.append({"kind": "increment_verified", "phase": "incremental", "deleted": 1, "added": 1,
+                   "stable_cross_root_identity": True, "user_state_preserved": True})
+    return manifest, context, result, events
+
+
+def transition_fixture():
+    context = {"catalog_expected": {"initial": 9000, "incremental": 10000},
+               "mutation": {"move_from": "/owned/a/move.mp4", "move_to": "/owned/b/move.mp4", "delete_path": "/owned/a/delete.mp4"}}
+    old = {"move": {"id": "moved", "root_id": "root-a", "file_identity": "1:2"}, "delete_id": "removed-original"}
+    before = {"catalog_count": 10000, "move": {"id": "moved", "path": context["mutation"]["move_to"], "root_id": "root-b", "file_identity": "1:2"},
+              "addition": {"id": "added-incremental"}, "restored": None, "old_deleted_count": 0,
+              "move_userdata": [{"item_id": "moved", "is_favorite": True}], "unaffected_count": 9998,
+              "unaffected_sha256": "e" * 64, "userdata_sha256": "f" * 64, "settings_sha256": "a" * 64, "metadata_sha256": "b" * 64}
+    after = copy.deepcopy(before)
+    after.update(addition=None, restored={"id": "new-restored", "path": context["mutation"]["delete_path"]}, restored_userdata_count=0)
+    after["move"].update(path=context["mutation"]["move_from"], root_id="root-a")
+    return context, old, before, after
+
+
+class AfterCompoundReceiptTests(unittest.TestCase):
+    def test_complete_capacity_receipt_freezes_reverse_scan_before_dispatch(self):
+        manifest, context, result, events = compound_fixture()
+        self.assertEqual(PREPARE.accepted_compound(result, events, manifest, context), {"Scanned": 6000, "Added": 1, "Updated": 1})
+        self.assertEqual(context["catalog_expected"]["initial"], 9000)
+        self.assertTrue(result["accepted"])
+
+    def test_partial_or_cleanup_failed_result_cannot_authorize_reconciliation(self):
+        for change in ({"execution_complete": False}, {"accepted": False}, {"cleanup_errors": ["unresolved_admission"]}, {"failure_codes": ["overlap"]}):
+            manifest, context, result, events = compound_fixture()
+            result.update(change)
+            with self.subTest(change=change), self.assertRaisesRegex(PREPARE.WORK.Failure, "after_compound_result_not_accepted"):
+                PREPARE.accepted_compound(result, events, manifest, context)
+
+    def test_missing_phase_changed_counter_or_wrong_driver_is_rejected(self):
+        for mutation in ("phase", "counter", "driver"):
+            manifest, context, result, events = compound_fixture()
+            if mutation == "phase":
+                events = [event for event in events if event.get("phase") != "cached"]
+            elif mutation == "counter":
+                events[0]["counters"]["Updated"] = 0
+            else:
+                result["driver_sha256"] = "0" * 64
+            with self.subTest(mutation=mutation), self.assertRaises(PREPARE.WORK.Failure):
+                PREPARE.accepted_compound(result, events, manifest, context)
+
+    def test_inverse_scan_preserves_move_but_does_not_revive_deleted_item(self):
+        context, old, before, after = transition_fixture()
+        result = PREPARE.reconciled_transition(before, after, old, context)
+        self.assertEqual(result["stable_moved_item_id"], "moved")
+        self.assertEqual(result["recreated_item_id"], "new-restored")
+        self.assertFalse(result["old_deleted_identity_revived"])
+        self.assertFalse(result["old_deleted_user_state_revived"])
+
+    def test_same_count_is_insufficient_without_identity_state_and_key_proof(self):
+        for mutation in ("old-id", "userdata", "unrelated", "settings", "seed-count", "added-retained"):
+            context, old, before, after = transition_fixture()
+            if mutation == "old-id":
+                after["restored"]["id"] = old["delete_id"]
+            elif mutation == "userdata":
+                after["move_userdata"][0]["is_favorite"] = False
+            elif mutation == "unrelated":
+                after["unaffected_sha256"] = "0" * 64
+            elif mutation == "settings":
+                after["settings_sha256"] = "0" * 64
+            elif mutation == "seed-count":
+                before["catalog_count"] = context["catalog_expected"]["initial"]
+            else:
+                after["addition"] = copy.deepcopy(before["addition"])
+            with self.subTest(mutation=mutation), self.assertRaises(PREPARE.WORK.Failure):
+                PREPARE.reconciled_transition(before, after, old, context)
+
+
+class ReconciliationPopulationTests(unittest.TestCase):
+    def test_full_population_boundaries_are_accepted_without_dropping_rows(self):
+        PREPARE.reconciliation_population(100000, 100000, 200000, 4096, 4096)
+        PREPARE.reconciliation_population(10000, 10000, 1, 1, 1)
+
+    def test_one_excess_row_or_changed_witness_is_rejected(self):
+        cases = ((100000, 100001, 1, 1, 1), (100000, 100000, 200001, 1, 1),
+                 (100000, 100000, 2, 2, 1), (100000, 100000, 4097, 4097, 4097),
+                 (100000, True, 1, 1, 1), (100000, 100000, 1, True, 1))
+        for values in cases:
+            with self.subTest(values=values), self.assertRaises(PREPARE.WORK.Failure):
+                PREPARE.reconciliation_population(*values)
 
 
 if __name__ == "__main__":

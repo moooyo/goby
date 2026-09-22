@@ -169,23 +169,95 @@ guest resources and the partial workspace. Preparation does not prove closure.
 
 ## Small fault fixture extension
 
-After the guest helper's actual `prepare_volumes` operation, invoke:
+After the complete compound capacity journey has produced its accepted result,
+and after the guest helper's actual `prepare_volumes` operation, invoke:
 
 ```text
 /usr/bin/python3 -I -B media-analysis-phase3-prepare.py fault-fixture --operator /owned/controller/fault-operator.json --output /owned/results/new-fault-preparation
 ```
 
 Its private operator has exactly `schema_version:1`, `manifest`, `base_context`,
-`guest_binding`, `prepare_receipt`, `templates`, and `media_read_gid`. The four
+`guest_binding`, `prepare_receipt`, `templates`, `media_read_gid`,
+`after_compound:true` and `compound_receipts`. The four ordinary
 reference inputs are pinned `{path,sha256}` references to actor-owned `0600`
 copies of the controller's exact frozen bytes. `templates` has exactly
 `short_video` and `playback_video`, each `{path,sha256,bytes}`, referring to this
 workspace's approved `media-fixtures/templates/short.mp4` and `playback.mp4`.
 No arbitrary source, executable, SQL or target path is accepted.
-The base corpus must still be at its frozen initial seed count, with unchanged
-inventory bytes and untouched incremental staging. Extending a context that has
-already run a workload is rejected before any native mutation; a controller must
-not relabel a changed database as fresh preparation.
+
+`compound_receipts` has exactly `result`, `events`, `mutation_before` and
+`move_userdata_before`, all `{path,sha256}` references frozen from the actual
+completed run. `result` is that output directory's `result.json`; `events` is
+its `events.jsonl`. The two SQL receipt paths must be inside the same `private/`
+directory. `mutation_before` selects the actual Actor snapshot with full-tier
+count, the original `move_from` row and the pre-deletion `delete_id`.
+`move_userdata_before` selects the actual SQL receipt querying all rows for that
+same moved item. The exporter finds these by their captured statement and raw
+values, never by inventing IDs. Each SQL receipt's child-output digest is
+checked. The frozen events bind the HTTP body references used to recover the
+original settings and metadata controls.
+
+This mode requires `accepted=true`, `execution_complete=true`, all result checks
+true, empty failure/cleanup errors, exact original run/owner/source/tier/
+manifest/driver binding, all three scan/count/overlap phase records and the
+nonzero deletion/stable-move proof. A fault wrapper's partial run cannot qualify.
+The original context and capacity artifacts remain unchanged. The old initial
+seed count is not applied to the finished full-tier catalog.
+
+The complete Actor cleanup reverses the three owned filesystem renames but does
+not scan again. Therefore the original deleted file is back on disk while its
+old database ID remains deleted, the incremental added ID still points at a file
+returned to staging, and the stable moved ID still points at its temporary root.
+Total count alone cannot establish a consistent cached baseline.
+
+Before any fault-library or sentinel write, the preparer checks actual absence
+of active scans, tasks, encoders, playback sessions, original leases, media
+children and retiring spool work. It rechecks the original inventory, full
+media bytes, the three restored single-link paths and absent temporary targets.
+It binds the moved inode to the original captured file identity, and the staged
+addition to the still-catalogued incremental item's file identity. The old
+deleted file's pre-mutation inode was not independently recorded by the original
+Actor, so the receipt does not invent that observation; its current content is
+bound to the admitted inventory and the source-pinned successful cleanup.
+
+`after-compound-plan-private.json` is frozen before one real reconciliation
+admission. The request uses `ForceProbe:false`, with `Scanned=M` from the
+original full capacity library and **Added=1, Updated=1**. This follows the
+frozen path classes: the restored deleted pathname creates one new item, the
+moved inode updates its one existing row back to the original root/path, and
+the staged-out incremental item is removed. An admission timeout is reconciled
+against the sole newly observed scan ID; the POST is never blindly repeated.
+
+Completion requires those predeclared counters, unchanged full-tier count,
+exactly one removed incremental ID, a new identity at the restored deleted path,
+the moved ID/root/file identity and user data preserved, and SHA256 equality of
+all unaffected catalog rows, user data, settings and the metadata witness.
+The catalog and user-data digests use the versioned
+`sha256-ordered-row-hashes-v1` format. Each selected catalog row first hashes the
+UTF-8 PostgreSQL canonical `jsonb_build_array` text for the unchanged columns
+`id,library_id,root_id,parent_id,type,path,relative_path,name,sort_name,file_identity,file_size`.
+The lowercase 64-character SHA256 values are then joined with one LF between
+rows, ordered by `id`, with no trailing LF; SHA256 of that UTF-8 string is the
+population digest. User data retains every previous `to_jsonb(u)` field,
+including both identity columns, and uses the same two-layer format ordered by
+`user_id,item_id`. An empty set hashes the empty byte string. Row identities
+remain in their row digests, so neither ordering nor row boundaries are omitted.
+
+A materialized count-only CTE and `CASE` gates precede each population aggregate.
+Catalog population may not exceed the original tier (itself at most 200,000),
+and user data may not exceed 200,000 rows. Counts are returned in the same SQL
+snapshot; the transition still requires the exact original tier before and
+after. The unchanged-row selection and identity-difference checks are unchanged.
+There is no `LIMIT` or silent tail truncation. A 100,000-row digest concatenates
+at most 6,499,999 bytes of row hashes, rather than complete row JSON repeatedly.
+The separate moved-item witness array is materialized only when its count
+matches the already pinned original witness count, bounded at 4,096 rows.
+
+The old deleted ID and its user state are not revived. API readback supplies the
+actual new media-source and source-revision references. Media files must remain
+unchanged by this scan. A separate `after-compound-handoff-private.json` records
+these observations and the original result reference; this preparation scan is
+outside, and never retroactively added to, the capacity latency/count result.
 
 The guest binding includes `fixture_access:{actor_uid,media_read_gid}` and at
 least two media volumes, one replacement and one derivatives volume. The root
@@ -215,8 +287,18 @@ capacity or recovery passed. The runtime/oracle builder consumes the private
 receipt; business IDs must not be typed by an operator.
 
 New `private/fault-workload-context.json` and inventory include these actual
-roots and add the observed catalog delta to every exact count. The original
-compound context remains unchanged. The controller separately freezes the
-fault profile, remounts declared read-only media, and verifies that Goby's
+roots, and their initial/cached count is the observed full tier plus the actual
+fault extension delta. The fault receipt pins the original compound result and
+the independent reconciliation handoff and declares
+`allowed_workload_phases:["cached"]`. The wrapper/exporter must enforce this
+closed phase set; it must not call the full Actor `execute()` or rerun cold or
+incremental work from this derived context. Historical unused selectors remain
+source facts, not another whole-profile acceptance contract. The cached scan
+keeps the original `M/0/0` counters. The old deleted ID and incremental added ID
+must not appear in frozen query pages, playback, analysis or metadata selections;
+otherwise preparation fails rather than silently replacing those references.
+The original exact 10k/100k capacity context and report remain unchanged.
+
+The controller separately freezes the fault profile, remounts declared read-only media, and verifies that Goby's
 derivative-cache deployment uses the returned `analysis-cache` path. Populating
 a derivatives volume alone is not ENOSPC consumer evidence.
