@@ -100,15 +100,21 @@ anonymous bytes and 717,717,504 file-cache bytes; this does not classify its
 earlier peak. Goby then stopped successfully, PostgreSQL shut down cleanly, and
 both units were disabled with their original processes and cgroups absent.
 Databases, control records, the failed fixture and original evidence remain
-retained. Full external archival is in progress; no artifact retirement is
-accepted by this checkpoint.
+retained. Full external archival is accepted: all 220,624 members and
+1,649,703,901 source bytes were independently read back with their original
+metadata, and the four external files and directory were synced. Both archive
+workers are closed. Retirement of the two preserved source trees and the two
+large guest archive files is authorized; its actual result remains pending.
 
 Fixture successor `00af9e4` streams the exact inventory JSONL after its original
 space precheck, releases the source row list after a successful synced write,
 and avoids a second directory-sized list of Path objects. It preserves the full
 inode identity set, fixture population, budgets and all benchmark thresholds.
-Five focused inventory tests were added; remote verification is pending. These
-changes reduce retained Python objects but are not a measured resolution of the
+The complete affected preparation suite passed remotely: 15 tests, zero
+failures/skips, unchanged source hashes and an independently closed worker.
+It replaces the previous ten-test scope; together with 55 unaffected retained
+Python tests, the latest fixture composition has 70 passing tests. These changes
+reduce retained Python objects but are not a measured resolution of the
 kernel-slab OOM. Product and workload binaries remain unchanged.
 
 Preparation requires a fresh runtime and an independently recorded memory
@@ -123,6 +129,8 @@ cases remain unrun. Phase 3 is not accepted or published.
 | Failed producer and observer closure | `8086ab394a88c6f5cc0c114a9af636652359c0ee52706283d127cdc4aae2882d` |
 | Kernel OOM memory breakdown | `100b640c8112c490f5b8b45e5d73229e60c055d5c5333c49321b509b62070769` |
 | Clean Goby and PostgreSQL closure | `09f407d1344cd4cb056b88462f36f2070a0675ea0280f565353a21873b2812ab` |
+| Complete external archive readback | `4cf55d05f7b0244b2967ba0b6aebe1da96c2573ba42d8094097e51346518a733` |
+| Fixture successor tests and closure | `c796c8f214805e1c10f03d1ac88fc98b73406fc5db001db74269e0452f014bdb` |
 
 ## Required scope retained from the approved plan
 

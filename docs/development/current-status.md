@@ -76,7 +76,10 @@ accepted. The first actual 10k fixture preparation was OOM-killed at its 384 MiB
 producer limit; kernel directory/inode slab dominated the charge. It did not
 produce a prepared context or start the compound workload. The producer,
 observer, Goby and PostgreSQL are now closed, with clean database shutdown and
-all data and original evidence retained. A fresh preparation needs a separately
+all data and original evidence retained. Full external archival passed.
+Fixture successor `00af9e4` passed its complete 15-test preparation suite; the
+latest Python composition is 70 passes after replacing the old ten-test scope.
+A fresh preparation needs a separately
 observed memory envelope. Both 10k/100k mixed workloads and all 28 fault/recovery
 cases remain unrun; regression success does not establish their capacity or
 recovery claims.

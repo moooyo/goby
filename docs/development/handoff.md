@@ -96,7 +96,8 @@ context or compound run. Kernel slab dominated the failed producer's memory;
 Goby's separate idle snapshot was dominated by file cache. The five licensed
 seed scans completed. Goby and PostgreSQL then stopped cleanly, their units
 were disabled and their processes/cgroups are absent. Original data and failures
-are retained; complete external archival is in progress. Do not replay this
+are retained; complete external archival and archive-worker closure passed.
+Exact retirement is authorized but its result is pending. Do not replay this
 initialized database/workspace or restart either closed capacity scope. A fresh
 preparation requires the revised observer, an observed preparation memory
 envelope and restoration of the original benchmark limits before workload
@@ -104,8 +105,10 @@ admission. Both tiers, overload and all 28 fault/recovery cases remain required.
 The [execution record](media-analysis-resilience-phase3-20260922.md#capacity-preparation-checkpoint)
 binds the failed preparation and clean shutdown evidence.
 Fixture successor `00af9e4` removes duplicate inventory buffers and eager Path
-lists without changing the data or thresholds. Its five new inventory tests and
-ten retained preparation tests await a single remote affected-suite execution.
+lists without changing the data or thresholds. Its complete 15-test preparation
+suite passed remotely, with unchanged source hashes and actual worker closure.
+Replace the previous ten preparation tests with this scope: the latest Python
+composition is 70 passes, including 55 unchanged tests from seven other scripts.
 
 The post-compound fault-fixture handoff repair is committed at `34344c8`:
 successful capacity cleanup restores files while the catalog still reflects the
