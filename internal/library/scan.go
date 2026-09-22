@@ -206,6 +206,9 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	// Hold the observed directory while its NFO and children are processed so
 	// its identity cannot be recycled after a concurrent rename or removal.
 	defer directory.Close()
+	if state.reconciliation != nil {
+		_ = state.reconciliation.BeginDirectoryObservation(state.root.id, relative, directory, info)
+	}
 	entries, err := readScanDirectoryEntries(state.task.ctx, directory)
 	if err != nil {
 		return err

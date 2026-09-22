@@ -55,12 +55,17 @@ application builds, and 141 Go parents across six complete package scopes
 (including one package with no tests). The next backup package failed during
 PostgreSQL's 384 MiB cgroup OOM; all original failures and closed processes are
 recorded in the [results ledger](media-analysis-resilience-phase3-results-20260922.json).
-A resource successor is running without replaying passed scopes. Its complete
-backup package, including the maximum-artwork case, and the next nine package
-scopes have passed at the latest observation; `internal/library` is active.
-Final regression closure is still pending. The fault-fixture reconciliation
-repair is committed at `34344c8` and awaits separate remote checks; it does not
-alter the running candidate's Go or frontend inputs. Full Go coverage,
+A resource successor finished without replaying passed scopes. Its complete
+backup package, including the maximum-artwork case, and recovery scopes have
+passed. Library completed with 944 passing parents, three failed parents and
+one original opt-in mount helper skip; server tests passed. The library failures
+cover staged reconciliation latency, restored directory identity and symlink
+records. Settings and task fixtures added two failed parents, for five in the
+complete run. Repair source is integrated but awaits remote verification;
+original evidence is retained and final resource closure is being collected.
+The fault-fixture reconciliation repair at `34344c8` also awaits remote checks.
+Subsequent production Go repairs require fresh builds; the unexecuted build-reuse
+bridge for the preparation-only change does not cover them. Full Go coverage,
 10k/100k workloads and fault/reboot acceptance remain pending.
 Tests/builds/runtime probes remain
 remote-only, `ui-ux-pro-max` remains disabled, and unrelated changes in the

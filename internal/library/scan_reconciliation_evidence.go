@@ -447,6 +447,9 @@ func (evidence *scanReconciliationEvidence) requireComplete(ctx context.Context)
 	if len(evidence.roots) == 0 || evidence.completeRoots != len(evidence.roots) || evidence.incompleteDirectories != 0 {
 		return evidence.unavailable("not every root and observed directory completed its walk")
 	}
+	if evidence.spool != nil && evidence.spool.pending != nil {
+		return evidence.unavailable("a raw directory observation was not recorded")
+	}
 	return nil
 }
 

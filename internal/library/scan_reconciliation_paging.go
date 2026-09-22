@@ -14,25 +14,11 @@ const (
 // row locking or retaining a page. The cursor is the exact admitted primary key;
 // an oversized/invalid identity aborts rather than advancing a truncated cursor.
 func readScanReconciliationPage(tx OwnedTx, libraryID, after string, first bool, staging *scanReconciliationStaging) ([]scanReconciliationItem, error) {
-	predicate := `i.library_id=$1 AND ($3::boolean OR i.id>$2)
-		AND i.root_id IS NOT NULL AND i.type<>'CollectionFolder'
-		AND i.path<>'' AND i.relative_path<>'' AND left(i.path,2)<>'//'
-		AND left(i.relative_path,2)<>'//' AND ` + ordinaryItemSQL("i")
-	arguments := []any{libraryID, after, first, scanReconciliationPageItems}
-	if staging != nil {
-		generation, scanID, stagedLibrary := staging.Scope()
-		if stagedLibrary != libraryID {
-			return nil, ErrInvalidInput
-		}
-		predicate += ` AND NOT EXISTS (SELECT 1 FROM pg_temp.goby_scan_reconciliation_seen seen
-			WHERE seen.generation=$5 AND seen.scan_id=$6 AND seen.library_id=$7
-			AND seen.item_id=i.id COLLATE "C")`
-		arguments = append(arguments, generation, scanID, stagedLibrary)
+	statement, arguments, err := scanReconciliationPageQuery(libraryID, after, first, staging)
+	if err != nil {
+		return nil, err
 	}
-	rows, err := tx.Query(`SELECT `+scanReconciliationItemColumns+`
-		FROM items i LEFT JOIN item_theme_resources theme ON theme.resource_item_id=i.id
-		LEFT JOIN item_extra_resources extra ON extra.resource_item_id=i.id
-		WHERE `+predicate+` ORDER BY i.id LIMIT $4 FOR UPDATE OF i`, arguments...)
+	rows, err := tx.Query(statement, arguments...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +41,28 @@ func readScanReconciliationPage(tx OwnedTx, libraryID, after string, first bool,
 		items = append(items, item)
 	}
 	return items, rows.Err()
+}
+
+func scanReconciliationPageQuery(libraryID, after string, first bool, staging *scanReconciliationStaging) (string, []any, error) {
+	predicate := `i.library_id=$1 AND ($3::boolean OR i.id>$2)
+		AND i.root_id IS NOT NULL AND i.type<>'CollectionFolder'
+		AND i.path<>'' AND i.relative_path<>'' AND left(i.path,2)<>'//'
+		AND left(i.relative_path,2)<>'//' AND ` + ordinaryItemSQL("i")
+	arguments := []any{libraryID, after, first, scanReconciliationPageItems}
+	if staging != nil {
+		generation, scanID, stagedLibrary := staging.Scope()
+		if stagedLibrary != libraryID {
+			return "", nil, ErrInvalidInput
+		}
+		predicate += ` AND NOT EXISTS (SELECT 1 FROM pg_temp.goby_scan_reconciliation_seen seen
+			WHERE seen.generation=$5 AND seen.scan_id=$6 AND seen.library_id=$7
+			AND seen.item_id=i.id COLLATE "C")`
+		arguments = append(arguments, generation, scanID, stagedLibrary)
+	}
+	return `SELECT ` + scanReconciliationItemColumns + `
+		FROM items i LEFT JOIN item_theme_resources theme ON theme.resource_item_id=i.id
+		LEFT JOIN item_extra_resources extra ON extra.resource_item_id=i.id
+		WHERE ` + predicate + ` ORDER BY i.id LIMIT $4 FOR UPDATE OF i`, arguments, nil
 }
 
 func scanReconciliationReadItem(rows OwnedRows) (scanReconciliationItem, error) {

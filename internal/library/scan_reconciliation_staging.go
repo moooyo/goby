@@ -291,6 +291,18 @@ func (stage *scanReconciliationStaging) flush(ctx context.Context, seal bool) er
 		if err != nil {
 			return nil, err
 		}
+		if seal {
+			// PostgreSQL cannot auto-analyze another session's temporary table.
+			// The final anti-join needs the completed pass's scope cardinality:
+			// without these statistics, a large accepted set can be estimated as
+			// a tiny inner relation and repeatedly scanned for each catalog row.
+			// Publish sealing authority only after this statement and commit
+			// succeed, under the existing SQL, lock and allocation bounds.
+			if _, err := transaction.tx.Exec(transaction.ctx, `ANALYZE `+scanReconciliationSeenTable+
+				` (generation,scan_id,library_id,item_id)`); err != nil {
+				return nil, err
+			}
+		}
 		return func() {
 			stage.stats.Rows, stage.stats.SerializedBytes = rows, bytes
 			stage.stats.SessionPhysicalBytes = physical

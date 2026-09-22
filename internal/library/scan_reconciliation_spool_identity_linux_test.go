@@ -65,6 +65,9 @@ func TestScanReconciliationSpoolUnsupportedHandlesRetainBoundedOriginals(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := evidence.BeginDirectoryObservation("root", "b", directory, before); err != nil {
+		t.Fatal(err)
+	}
 	entries, err := directory.ReadDir(-1)
 	_ = directory.Close()
 	if err != nil {
@@ -82,13 +85,27 @@ func TestScanReconciliationSpoolUnsupportedHandlesRetainBoundedOriginals(t *test
 }
 
 func TestScanReconciliationSpoolFallbackRejectsReplacedAndRestoredChains(t *testing.T) {
+	scanSpoolTestRejectReplacedAndRestoredChains(t, func(*os.File) (scanSpoolIdentity, bool, error) {
+		return scanSpoolIdentity{}, false, nil
+	})
+}
+
+func TestScanReconciliationSpoolNativeHandlesRejectReplacedAndRestoredChains(t *testing.T) {
+	scanSpoolTestRejectReplacedAndRestoredChains(t, func(*os.File) (scanSpoolIdentity, bool, error) {
+		// Rename and restoration do not change an inode's exported generation.
+		return scanSpoolIdentity{kind: 1, mountID: 17, handleType: 1, bytes: "stable-generation"}, true, nil
+	})
+}
+
+func scanSpoolTestRejectReplacedAndRestoredChains(t *testing.T, identity scanSpoolIdentityReader) {
+	t.Helper()
 	for _, restore := range []bool{false, true} {
 		t.Run(map[bool]string{false: "replaced", true: "restored"}[restore], func(t *testing.T) {
 			mediaDirectory := t.TempDir()
 			scanEvidenceTestFiles(t, mediaDirectory, map[string]string{"ancestor/child/movie.mp4": "movie"})
 			evidence := newScanReconciliationSpoolEvidence(context.Background(), scanReconciliationSpoolOptions{
 				Directory:         t.TempDir(),
-				directoryIdentity: func(*os.File) (scanSpoolIdentity, bool, error) { return scanSpoolIdentity{}, false, nil },
+				directoryIdentity: identity,
 			})
 			t.Cleanup(func() { _ = evidence.Close() })
 			root := scanEvidenceTestAttach(t, evidence, "root", mediaDirectory)

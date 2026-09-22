@@ -51,6 +51,18 @@ type scanReconciliationSpoolOptions struct {
 
 type scanSpoolIdentityReader func(*os.File) (scanSpoolIdentity, bool, error)
 
+type scanSpoolChangeTracker interface {
+	watch(*os.File) error
+	check() error
+	close() error
+}
+
+type scanSpoolDirectoryObservation struct {
+	rootID   string
+	relative string
+	version  scanSpoolVersion
+}
+
 // Exported Linux file handles include the inode generation, unlike a stat
 // tuple. Unsupported filesystems retain the original descriptor instead.
 type scanSpoolIdentity struct {
@@ -68,8 +80,11 @@ type scanReconciliationSpoolStats struct {
 	Bytes              int64
 	FallbackHandles    int
 	FallbackHandlePeak int
-	CleanupFinished    bool
-	CleanupErr         error
+	// Conservatively charge registrations, including aliases of a kernel watch.
+	ChangeWatches   int
+	ChangeWatchPeak int
+	CleanupFinished bool
+	CleanupErr      error
 }
 
 type scanReconciliationSpoolCleanup struct {
@@ -94,6 +109,8 @@ type scanReconciliationSpool struct {
 	directories     int
 	entries         int
 	fallbacks       []*os.Root
+	changes         scanSpoolChangeTracker
+	pending         *scanSpoolDirectoryObservation
 	mu              sync.Mutex
 	done            chan struct{}
 	cleanup         scanReconciliationSpoolCleanup
@@ -154,7 +171,7 @@ func newScanReconciliationSpoolEvidence(ctx context.Context, options scanReconci
 	if options.directoryIdentity == nil {
 		options.directoryIdentity = scanSpoolDirectoryIdentity
 	}
-	if options.MaxDirectories < 1 || options.MaxEntries < 1 || options.MaxBytes < scanSpoolMaxHeader || options.MaxRoots < 1 || options.MaxRoots > scanReconciliationMaxRoots || options.MaxFallbackHandles < 1 || options.MaxFallbackHandles > 4096 {
+	if options.MaxDirectories < 1 || options.MaxDirectories > 131072 || options.MaxEntries < 1 || options.MaxBytes < scanSpoolMaxHeader || options.MaxRoots < 1 || options.MaxRoots > scanReconciliationMaxRoots || options.MaxFallbackHandles < 1 || options.MaxFallbackHandles > 4096 {
 		evidence.err = errScanReconciliationEvidenceBudget
 		evidence.closed = true
 		return evidence
@@ -167,6 +184,11 @@ func newScanReconciliationSpoolEvidence(ctx context.Context, options scanReconci
 	}
 	var parent *os.Root
 	var err error
+	spool.changes, err = newScanSpoolChangeTracker(options.MaxDirectories + options.MaxRoots)
+	if err != nil {
+		evidence.Disable(err)
+		return evidence
+	}
 	if options.Parent != nil {
 		before, statErr := options.Parent.Stat(".")
 		if statErr != nil {
@@ -273,6 +295,9 @@ func (evidence *scanReconciliationEvidence) SpoolStats() scanReconciliationSpool
 }
 
 func (spool *scanReconciliationSpool) close(result error) error {
+	if spool.changes != nil {
+		result = errors.Join(result, spool.changes.close())
+	}
 	for _, held := range spool.fallbacks {
 		result = errors.Join(result, held.Close())
 	}
@@ -314,6 +339,7 @@ func (spool *scanReconciliationSpool) close(result error) error {
 	spool.stats.CleanupFinished, spool.stats.CleanupErr = true, result
 	if result == nil {
 		spool.stats.Roots, spool.stats.FallbackHandles = 0, 0
+		spool.stats.ChangeWatches = 0
 		spool.stats.Directories, spool.stats.Entries, spool.stats.Bytes = 0, 0, 0
 	}
 	close(spool.done)
@@ -392,9 +418,15 @@ func (evidence *scanReconciliationEvidence) attachSpoolRoot(rootID string, borro
 		_ = anchor.Close()
 		return evidence.unavailable("root changed while being retained")
 	}
+	if err := spool.watchDirectory(anchor, before); err != nil {
+		_ = anchor.Close()
+		return evidence.Disable(err)
+	}
 	evidence.roots[strings.Clone(rootID)] = &scanReconciliationRootEvidence{anchor: anchor, info: before}
 	spool.mu.Lock()
 	spool.stats.Roots++
+	spool.stats.ChangeWatches++
+	spool.stats.ChangeWatchPeak = spool.stats.ChangeWatches
 	spool.mu.Unlock()
 	return nil
 }
@@ -407,6 +439,72 @@ func scanSpoolPathsOverlap(a, b string) bool {
 		}
 	}
 	return false
+}
+
+func (spool *scanReconciliationSpool) watchDirectory(held *os.Root, expected os.FileInfo) error {
+	directory, err := openScanFile(held, ".")
+	if err != nil {
+		return err
+	}
+	defer directory.Close()
+	before, err := directory.Stat()
+	if err != nil || !scanReconciliationSameInfo(expected, before) {
+		return errScanReconciliationEvidenceUnavailable
+	}
+	if err := spool.changes.watch(directory); err != nil {
+		return err
+	}
+	after, err := directory.Stat()
+	if err != nil || !scanReconciliationSameInfo(before, after) {
+		return errScanReconciliationEvidenceUnavailable
+	}
+	return spool.changes.check()
+}
+
+// BeginDirectoryObservation starts the history witness before the scanner's
+// first ReadDir. There is at most one pending directory because a scan records
+// its raw membership before descending. A caller cannot reconstruct this
+// missing pre-read boundary after receiving a possibly stale raw listing.
+func (evidence *scanReconciliationEvidence) BeginDirectoryObservation(rootID, relative string, directory *os.File, before os.FileInfo) error {
+	if err := evidence.Err(); err != nil {
+		return err
+	}
+	if evidence.spool == nil {
+		return nil
+	}
+	if !evidence.observation.retain() {
+		return errScanReconciliationEvidenceUnavailable
+	}
+	defer evidence.observation.release()
+	spool := evidence.spool
+	if err := spool.ctx.Err(); err != nil {
+		return evidence.Disable(err)
+	}
+	relative, valid := scanReconciliationRelative(relative, true)
+	version, versionValid := scanSpoolInfo(before)
+	if !valid || !versionValid || !version.directory() || evidence.roots[rootID] == nil || directory == nil || spool.pending != nil {
+		return evidence.unavailable("directory observation did not start at a fresh pre-read boundary")
+	}
+	observed, err := directory.Stat()
+	if err != nil || !version.matches(observed) {
+		return evidence.unavailable("directory changed before change tracking")
+	}
+	if err := spool.changes.watch(directory); err != nil {
+		return evidence.Disable(err)
+	}
+	spool.mu.Lock()
+	spool.stats.ChangeWatches++
+	spool.stats.ChangeWatchPeak = spool.stats.ChangeWatches
+	spool.mu.Unlock()
+	after, err := directory.Stat()
+	if err != nil || !version.matches(after) {
+		return evidence.unavailable("directory changed while registering change tracking")
+	}
+	if err := spool.changes.check(); err != nil {
+		return evidence.Disable(err)
+	}
+	spool.pending = &scanSpoolDirectoryObservation{rootID: rootID, relative: relative, version: version}
+	return nil
 }
 
 func scanSpoolFileName(rootID, relative string) string {
@@ -648,6 +746,10 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 	if !valid || root == nil || !versionValid || !version.directory() {
 		return evidence.unavailable("directory observation is invalid")
 	}
+	if spool.pending == nil || spool.pending.rootID != rootID || spool.pending.relative != relative || spool.pending.version != version {
+		return evidence.unavailable("raw directory membership has no matching pre-read observation")
+	}
+	spool.pending = nil
 	rootVersion, _ := scanSpoolInfo(root.info)
 	record := &scanSpoolDirectory{rootID: rootID, relative: relative, root: rootVersion, version: version, count: len(raw), ordinal: spool.directories + 1}
 	header := scanSpoolEncodeHeader(record)
@@ -770,6 +872,9 @@ func (evidence *scanReconciliationEvidence) openSpoolDirectory(ctx context.Conte
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if err := evidence.spool.changes.check(); err != nil {
+		return nil, err
+	}
 	root := evidence.roots[rootID]
 	if root == nil {
 		return nil, errScanReconciliationEvidenceUnavailable
@@ -842,6 +947,9 @@ func (evidence *scanReconciliationEvidence) openSpoolDirectory(ctx context.Conte
 			return nil, err
 		}
 	} else if requireFinal || !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	if err := evidence.spool.changes.check(); err != nil {
 		return nil, err
 	}
 	return current, nil
@@ -999,6 +1107,9 @@ func (evidence *scanReconciliationEvidence) revalidateSpool(ctx context.Context)
 	if count != spool.directories || entries != spool.entries || bytes != spool.bytes {
 		return evidence.unavailable("scan spool membership is incomplete")
 	}
+	if err := spool.changes.check(); err != nil {
+		return evidence.Disable(err)
+	}
 	return nil
 }
 
@@ -1044,6 +1155,9 @@ func (evidence *scanReconciliationEvidence) spoolPathAbsent(ctx context.Context,
 			return false, evidence.unavailable("absence parent changed during lookup")
 		}
 		if err := ctx.Err(); err != nil {
+			return false, evidence.Disable(err)
+		}
+		if err := evidence.spool.changes.check(); err != nil {
 			return false, evidence.Disable(err)
 		}
 		if !exists {
@@ -1116,6 +1230,9 @@ func (evidence *scanReconciliationEvidence) captureSpoolIdentity(record *scanSpo
 }
 
 func (evidence *scanReconciliationEvidence) checkSpoolIdentity(record *scanSpoolDirectory, held *os.Root) error {
+	if err := evidence.spool.changes.check(); err != nil {
+		return err
+	}
 	switch record.identity.kind {
 	case 3:
 		if record.relative != "." {

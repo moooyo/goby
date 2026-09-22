@@ -16,9 +16,11 @@ import (
 const (
 	scanEvidenceMaxPasses      = 4
 	scanEvidenceMaxReservation = int64(4 << 30)
-	// This budget covers evidence-owned roots, fallback identities and scratch
-	// descriptors. Root-binding capture has its own separate scan budget.
-	scanEvidenceDescriptorsPerPass = 4096 + scanReconciliationMaxRoots + 8
+	// This covers evidence-owned roots and fallback identities, plus ten fixed
+	// descriptors: parent, spool, change queue, enumerator, record, verification
+	// root/file, named-chain root, and the private openat directory/file pair.
+	// Root-binding capture has its own separate budget.
+	scanEvidenceDescriptorsPerPass = 4096 + scanReconciliationMaxRoots + 10
 	scanEvidenceMaxDescriptors     = scanEvidenceMaxPasses * scanEvidenceDescriptorsPerPass
 )
 
@@ -279,7 +281,7 @@ func (s *Store) ScanEvidenceStatus() ScanEvidenceStatus {
 		MaxReservedBytes: scanEvidenceMaxReservation, MaxReservedFileDescriptors: scanEvidenceMaxDescriptors}
 	for _, lease := range manager.leases {
 		status.ReservedBytes += manager.options.MaxBytes
-		status.ReservedFileDescriptors += manager.options.MaxFallbackHandles + scanReconciliationMaxRoots + 8
+		status.ReservedFileDescriptors += manager.options.MaxFallbackHandles + scanReconciliationMaxRoots + 10
 		if lease.finished && lease.err != nil {
 			status.CleanupFailures++
 		}

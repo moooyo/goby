@@ -30,7 +30,7 @@ func scanSpoolTestCollector(t *testing.T, options scanReconciliationSpoolOptions
 	return evidence
 }
 
-func scanSpoolTestReadDirectory(t *testing.T, root *os.Root, relative string) (os.FileInfo, []os.DirEntry) {
+func scanSpoolTestReadDirectory(t *testing.T, evidence *scanReconciliationEvidence, root *os.Root, relative string) (os.FileInfo, []os.DirEntry) {
 	t.Helper()
 	directory, err := openScanFile(root, filepath.FromSlash(relative))
 	if err != nil {
@@ -40,6 +40,9 @@ func scanSpoolTestReadDirectory(t *testing.T, root *os.Root, relative string) (o
 	info, err := directory.Stat()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if err := evidence.BeginDirectoryObservation("root", relative, directory, info); err != nil {
+		t.Fatalf("begin directory %q: %v", relative, err)
 	}
 	entries, err := directory.ReadDir(-1)
 	if err != nil {
@@ -239,7 +242,7 @@ func TestScanReconciliationSpoolRequiresEveryDistinctDirectoryRecord(t *testing.
 }
 
 func TestScanReconciliationSpoolRejectsLinkedAndSpecialRecordFiles(t *testing.T) {
-	for _, scenario := range []string{"symlink", "fifo"} {
+	for _, scenario := range []string{"symlink", "hardlink", "fifo", "nonprivate"} {
 		t.Run(scenario, func(t *testing.T) {
 			directory := t.TempDir()
 			evidence := scanSpoolTestCollector(t, scanReconciliationSpoolOptions{})
@@ -251,20 +254,40 @@ func TestScanReconciliationSpoolRejectsLinkedAndSpecialRecordFiles(t *testing.T)
 			if err := os.Rename(filename, filename+".saved"); err != nil {
 				t.Fatal(err)
 			}
-			if scenario == "symlink" {
+			switch scenario {
+			case "symlink":
 				if err := os.Symlink(name+".saved", filename); err != nil {
 					t.Fatal(err)
 				}
-			} else if err := syscall.Mkfifo(filename, 0o600); err != nil {
-				t.Fatal(err)
+			case "hardlink":
+				if err := os.Link(filename+".saved", filename); err != nil {
+					t.Fatal(err)
+				}
+			case "fifo":
+				if err := syscall.Mkfifo(filename, 0o600); err != nil {
+					t.Fatal(err)
+				}
+			case "nonprivate":
+				if err := os.Rename(filename+".saved", filename); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(filename, 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
 			result := make(chan error, 1)
 			go func() {
-				record, err := evidence.spool.open("root", ".", os.O_RDONLY)
-				if record != nil {
-					_ = record.file.Close()
+				for _, flags := range []int{os.O_RDONLY, os.O_RDWR} {
+					record, err := evidence.spool.open("root", ".", flags)
+					if record != nil {
+						_ = record.file.Close()
+					}
+					if err == nil {
+						result <- nil
+						return
+					}
 				}
-				result <- err
+				result <- errScanReconciliationEvidenceUnavailable
 			}()
 			select {
 			case err := <-result:
@@ -319,7 +342,7 @@ func TestScanReconciliationSpoolBudgetFailureProducesOneCleanupReceipt(t *testin
 			if scenario == "bytes" && before.Bytes != options.MaxBytes {
 				t.Fatalf("fixture did not exactly fill its byte budget: %d, want %d", before.Bytes, options.MaxBytes)
 			}
-			info, raw := scanSpoolTestReadDirectory(t, root, child)
+			info, raw := scanSpoolTestReadDirectory(t, evidence, root, child)
 			if err := evidence.RecordDirectory("root", child, info, raw); !errors.Is(err, errScanReconciliationEvidenceBudget) {
 				t.Fatalf("spool budget overflow did not disable the pass: %v", err)
 			}
@@ -552,7 +575,8 @@ func TestScanReconciliationSpoolDirectoryCountDoesNotRetainDescriptors(t *testin
 	}
 	scanEvidenceTestComplete(t, evidence, "root", ".")
 	stats := evidence.SpoolStats()
-	if stats.Directories != directoryCount+1 || stats.Entries != directoryCount || stats.FallbackHandles != 0 {
+	if stats.Directories != directoryCount+1 || stats.Entries != directoryCount || stats.FallbackHandles != 0 ||
+		stats.ChangeWatches != directoryCount+2 || stats.ChangeWatchPeak != directoryCount+2 {
 		t.Fatalf("large directory topology retained unexpected evidence: %+v", stats)
 	}
 	if evidence.roots["root"].directories != nil {

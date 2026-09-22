@@ -3,9 +3,11 @@
 package library
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func scanReconciliationStageFixture(t *testing.T, fixture rootBindingScanFixture, ids []string) *scanReconciliationStaging {
@@ -46,7 +48,9 @@ func TestScanReconciliationStagedPagingExcludesLargeAcceptedPopulationBeforeLock
 	for index := range ids {
 		ids[index] = fmt.Sprintf("seen-%06d", index+1)
 	}
+	stagingStarted := time.Now()
 	stage := scanReconciliationStageFixture(t, fixture, ids)
+	t.Logf("record and seal %d accepted identities: %s", count, time.Since(stagingStarted))
 	scanReconciliationCommitInsertItem(t, fixture, "missing-only", "Missing.mkv", "Movie", fixture.library.ID, false)
 	locked, err := fixture.pool.Begin(fixture.ctx)
 	if err != nil {
@@ -60,7 +64,31 @@ func TestScanReconciliationStagedPagingExcludesLargeAcceptedPopulationBeforeLock
 		if err := stage.RequireSealed(tx); err != nil {
 			return err
 		}
+		var estimatedRows int64
+		if err := tx.QueryRow(`SELECT reltuples::bigint FROM pg_class WHERE oid=$1::regclass`,
+			scanReconciliationSeenTable).Scan(&estimatedRows); err != nil {
+			return err
+		}
+		// Check useful cardinality, not a particular planner node or exact
+		// sampled estimate. An unanalyzed temporary relation reports -1 here.
+		if estimatedRows < count/2 || estimatedRows > count*2 {
+			return fmt.Errorf("sealed Seen cardinality was not available to the planner: %d for %d rows", estimatedRows, count)
+		}
+		statement, arguments, err := scanReconciliationPageQuery(fixture.library.ID, "", true, stage)
+		if err != nil {
+			return err
+		}
+		var plan []byte
+		if err := tx.QueryRow(`EXPLAIN (FORMAT JSON) `+statement, arguments...).Scan(&plan); err != nil {
+			return err
+		}
+		if !json.Valid(plan) {
+			return errors.New("unseen page EXPLAIN did not return valid JSON")
+		}
+		t.Logf("sealed Seen estimated rows: %d; actual owner-session unseen page plan: %s", estimatedRows, plan)
+		pageStarted := time.Now()
 		page, err := readScanReconciliationPage(tx, fixture.library.ID, "", true, stage)
+		t.Logf("unseen page while an accepted row is locked: %s", time.Since(pageStarted))
 		if err != nil {
 			return err
 		}
@@ -77,8 +105,11 @@ func TestScanReconciliationStagedPagingExcludesLargeAcceptedPopulationBeforeLock
 	}
 	capture := scanReconciliationCommitCapture(t, fixture, nil)
 	evidence := scanReconciliationCommitEvidence(t, capture)
-	if _, err := fixture.store.reconcileMissingScanItems(fixture.task, fixture.library,
-		[]*rootBindingScanCapture{capture}, evidence, nil, stage); err != nil {
+	reconciliationStarted := time.Now()
+	_, err = fixture.store.reconcileMissingScanItems(fixture.task, fixture.library,
+		[]*rootBindingScanCapture{capture}, evidence, nil, stage)
+	t.Logf("complete reconciliation with %d accepted identities and one missing item: %s", count, time.Since(reconciliationStarted))
+	if err != nil {
 		t.Fatal(err)
 	}
 	scanReconciliationCommitAssertItem(t, fixture, "missing-only", false)

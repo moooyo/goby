@@ -29,9 +29,11 @@ The first admitted regression yielded passing Python/build scopes and six
 complete Go package scopes, then stopped after PostgreSQL exhausted its 384 MiB
 limit in the maximum-artwork backup case. A separately recorded successor
 preserves those results and covers the failed/unstarted scopes. That successor
-is running; the complete backup package and the next nine package scopes have
-passed, with library tests active at the latest observation. The independent
-post-compound preparation repair at `34344c8` awaits remote checks. No capacity
+completed; complete backup, recovery and server scopes passed. Three library
+and two fixture parent failures have integrated source repairs awaiting remote
+verification. Original failures and final closure records remain separate.
+The independent post-compound preparation repair at `34344c8`
+awaits remote checks; new production fixes require fresh builds. No capacity
 or fault profile is accepted; the full approved Phase 3 scope remains required.
 Historical completed increments below remain closed.
 

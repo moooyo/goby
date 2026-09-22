@@ -60,12 +60,42 @@ directory descriptor open. Filesystems lacking that support use a bounded
 held-descriptor fallback; exhaustion disables deletion authority. It never
 silently substitutes inode-number equality for generation identity.
 
+Each spooled pass additionally owns one nonblocking inotify descriptor. Root
+attachment starts the root watch; each walked directory registers its held
+descriptor before the first raw `ReadDir`. At most one unrecorded directory
+observation is retained. The queue applies to both exported-handle and
+held-descriptor paths: restoring the original directory after a rename must
+not recover deletion authority merely because its inode and timestamps match.
+No watcher goroutine or directory-to-watch map is retained.
+
+Registration attempts, including aliases of an existing kernel watch, are
+bounded by `maxDirectories + 256` (131,328 at the maximum). The four-pass limit
+also covers retiring passes and their watches. Kernel per-user instance/watch
+and queue limits can reject a smaller population. Watch memory is kernel
+resource usage, not part of the spool's logical file-byte reservation; measure
+it with the admitted runtime profile. Registration failure, any queued change,
+queue overflow, `IN_IGNORED`, unmount or a closed queue permanently invalidates
+that pass. The queue is checked at the named-chain, absence and final
+revalidation boundaries; draining or rearming never restores authority.
+
+This namespace-history witness is admitted only for the declared local ext
+family, XFS, Btrfs and tmpfs filesystem types. Successful watch registration is
+not proof that remote filesystem changes are observable. NFS, CIFS, FUSE,
+overlay and unknown filesystem types retain missing catalog records while
+ordinary readable scan additions/updates continue. Neither an empty queue nor
+these repeated observations is a filesystem lock shared with the SQL commit.
+Private spool records are opened as one leaf with kernel `openat` no-follow
+semantics and checked for regular type, private owner/mode and a single link;
+symlinks, hard links and special files cannot supply recorded evidence.
+
 The manager admits at most four passes including unfinished retirements, with
-at most 4 GiB of reserved evidence capacity and 17,440 evidence-owned descriptor
+at most 4 GiB of reserved evidence capacity and 17,448 evidence-owned descriptor
 reservations. These are admission reservations, not eager allocation or a
 process-wide FD ceiling. Root-binding capture and other service work have their
 own budgets. Filesystem allocation and metadata need independent free-space
-margin beyond logical byte limits.
+margin beyond logical byte limits. Each pass reserves up to 4,096 fallback
+handles, 256 root anchors and ten fixed/scratch descriptors, including the
+change queue and the directory/file pair used by private record opening.
 
 Final reconciliation excludes staged identities in SQL before retaining or
 locking candidate rows. It reads exact-key pages of at most 256 rows/4 MiB,
@@ -88,7 +118,9 @@ A returned request or cancellation does not release an operation that is still
 inside a filesystem syscall. Its evidence slot, descriptors, reservation and
 filesystem owner remain until actual work and retirement finish. Successful
 quota release requires actual cleanup, durable manifest update and absence of
-the exact owned directory.
+the exact owned directory. The pass's one change-queue descriptor and all its
+kernel watches close only after the final retained filesystem worker returns;
+a request timeout does not close or release them early.
 
 Native root-binding reads use the same bounded observation mechanism. They copy
 configured paths under the short store lock, then perform filesystem work and

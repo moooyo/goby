@@ -200,7 +200,7 @@
     "No local tests or builds were performed. Unselected features remain excluded or deferred under the approved plan."
   ],
   "current_regression_state": {
-    "status": "successor03 running",
+    "status": "successor03 terminal failed; independent final closure being collected",
     "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
     "postgres": "same cluster recovered by WAL under a separately admitted 1 GiB cap",
     "postgres_memory_max_bytes": 1073741824,
@@ -218,12 +218,31 @@
       12,
       13,
       14,
-      15
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34
     ],
-    "current_package_index": 16,
-    "current_package": "github.com/moooyo/goby/internal/library",
+    "current_package_index": null,
+    "current_package": null,
     "maximum_artwork_case": "Passed within the complete backup package",
-    "full_tail_complete": false,
+    "full_tail_complete": true,
     "supported_profile_proved": false,
     "final_lifecycle_closed": false,
     "owned_databases": 9,
@@ -231,7 +250,43 @@
     "retained_build_receipt_sha256": "a2f171e34afea065ee99c05e19030d5f010af12434650cd8a0d1d64ce6954a19",
     "postgres_resource_bridge_sha256": "cdd97af07c3e1186b4e044796fa76a82e3cba33422641d3094049725eb46d03e",
     "resource_setup_closure_sha256": "0f5a6163674a485b2220ab5a865fee1b7ae2c42d8fe39ab22da45d92355d36f0",
-    "observation_boundary": "Live progress from the original worker lifetime; final per-package receipts and overall closure are still pending."
+    "observation_boundary": "Live progress from the original worker lifetime; final per-package receipts and overall closure are still pending.",
+    "library_failure": {
+      "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
+      "package": "github.com/moooyo/goby/internal/library",
+      "passed_parents": 944,
+      "failed_parents": [
+        "TestScanReconciliationStagedPagingExcludesLargeAcceptedPopulationBeforeLocks",
+        "TestScanReconciliationSpoolFallbackRejectsReplacedAndRestoredChains",
+        "TestScanReconciliationSpoolRejectsLinkedAndSpecialRecordFiles"
+      ],
+      "skipped_parents": [
+        "TestRootBindingFullScanMountNamespaceHelper"
+      ],
+      "skipped_reason": "Existing explicit reviewed opt-in mount namespace helper scope",
+      "failure_extract_sha256": "f18790cd7a46314d86a13ce0e868c8bd94b9fd34454fb9af976975a84608f8ed",
+      "resource_and_skip_sha256": "56073d68cb1bd30c6a9b843c41b469378291ab14fd0a530dd10fa81bb8a2c505",
+      "worker_postgres_observer_oom_observed": false,
+      "resource_samples_are_per_assertion": false,
+      "root_read_original_events": true,
+      "repair_status": "production source fixes in progress; no repaired remote result yet",
+      "new_production_builds_required": true
+    },
+    "reported_composed_summary": {
+      "ordinary_package_scopes": 35,
+      "passed": 4251,
+      "failed": 5,
+      "skipped": 18,
+      "embedded_passed": 24,
+      "embedded_failed": 0,
+      "embedded_skipped": 0,
+      "result_sha256": "bb126255a8b87aad89091cc4640e262959c6e292de274b550f813a4ac5bb8c67",
+      "original_result_and_final_closure_root_review_pending": true
+    },
+    "additional_failed_parents": [
+      "TestConfigurationCompatibilityMigrationPreservesEverySchema20Field",
+      "TestManagerOwnerLossFencesWritesAndRecoveryDoesNotResumeOldRun"
+    ]
   },
   "after_compound_repair": {
     "source_revision": "34344c87cbcc133fd33917b688817767362697a3",
@@ -246,5 +301,20 @@
     "actual_handoff_run": false,
     "live_regression_source_changed": false,
     "future_artifact_reuse_requires_source_bridge": true
+  },
+  "integrated_regression_repair": {
+    "state": "source complete, formatted and statically reviewed; remote verification pending",
+    "changes": [
+      "Refresh completed Seen statistics without relaxing SQL or proof deadlines",
+      "Track bounded directory namespace changes before enumeration for native and fallback evidence",
+      "Use kernel single-leaf no-follow private record opens",
+      "Update schema50 migration fixture while preserving every schema20 field and explicit new defaults",
+      "Wait for actual owned backend termination while preserving the blocked late-writer window"
+    ],
+    "published_migrations_changed": false,
+    "production_ownership_protection_changed": false,
+    "new_application_builds_required": true,
+    "remote_repaired_tests_run": false,
+    "capacity_or_fault_acceptance_started": false
   }
 }

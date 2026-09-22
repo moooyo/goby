@@ -26,7 +26,10 @@ func compatibilityMigrationSnapshot(t *testing.T, ctx context.Context, pool *pgx
 		projection += " - 'music_source' - 'online_source' - 'online_type' - 'online_base' - 'automatic_sort_name_explicit'"
 	}
 	if table == "task_run_children" {
-		projection += " - 'executor_token'"
+		projection += " - 'executor_token' - 'analysis_scope_key'"
+	}
+	if table == "task_runs" {
+		projection += " - 'analysis_input' - 'analysis_config_fingerprint' - 'actor_application_key_id' - 'actor_client_session_id' - 'actor_peer_ip'"
 	}
 	if table == "play_sessions" {
 		projection += " - 'is_dynamic'"
@@ -139,6 +142,31 @@ func compatibilityMigrationPhase3Defaults(t *testing.T, ctx context.Context, poo
 	}
 }
 
+// Schema 50 adds admission fields, not historical task facts. Check each new
+// default explicitly while the snapshots retain every original schema-20 field.
+func compatibilityMigrationAnalysisDefaults(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var valid bool
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT count(*)=1 FROM analysis_settings)
+		AND EXISTS(SELECT 1 FROM analysis_settings WHERE id=1 AND revision=1 AND publication_epoch=1
+			AND auto_publish_intros IS NOT DISTINCT FROM true AND preview_interval_seconds=10 AND preview_quality=80
+			AND max_source_bytes=137438953472 AND max_item_runtime_seconds=1200
+			AND feature_cache_max_bytes=134217728 AND updated_at IS NOT NULL)
+		AND NOT EXISTS(SELECT 1 FROM task_runs WHERE analysis_input IS NOT NULL
+			OR analysis_config_fingerprint IS DISTINCT FROM '' OR actor_application_key_id IS DISTINCT FROM 0
+			OR actor_client_session_id IS DISTINCT FROM '' OR actor_peer_ip IS DISTINCT FROM '')
+		AND NOT EXISTS(SELECT 1 FROM task_run_children WHERE executor_token IS NOT NULL
+			OR analysis_scope_key IS DISTINCT FROM '')
+		AND NOT EXISTS(SELECT 1 FROM analysis_run_profiles) AND NOT EXISTS(SELECT 1 FROM analysis_work)
+		AND NOT EXISTS(SELECT 1 FROM analysis_work_sources) AND NOT EXISTS(SELECT 1 FROM analysis_feature_cache)
+		AND NOT EXISTS(SELECT 1 FROM analysis_detections) AND NOT EXISTS(SELECT 1 FROM analysis_detection_sources)
+		AND NOT EXISTS(SELECT 1 FROM analysis_intro_decisions) AND NOT EXISTS(SELECT 1 FROM analysis_intro_audit)
+		AND NOT EXISTS(SELECT 1 FROM analysis_preview_state) AND NOT EXISTS(SELECT 1 FROM analysis_previews)`).Scan(&valid); err != nil || !valid {
+		t.Fatalf("compatibility migration changed analysis defaults or inferred historical analysis work: %v", err)
+	}
+}
+
 // These are schema-20 source facts, captured with every other historical field
 // before the upgrade. They independently distinguish the new provenance marker
 // from a blanket false default without rewriting the shared legacy fixture.
@@ -210,6 +238,13 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 			if len(tables) != 28 || strings.Join(tables, " ") != strings.Join(wantTables, " ") {
 				t.Fatalf("schema 20 compatibility fixture table inventory = %v, want all 28 historical tables", tables)
 			}
+			var historicalAnalysisColumns int
+			if err := pool.QueryRow(ctx, `SELECT count(*) FROM pg_attribute WHERE attnum>0 AND NOT attisdropped AND (
+				(attrelid='task_runs'::regclass AND attname IN ('analysis_input','analysis_config_fingerprint',
+					'actor_application_key_id','actor_client_session_id','actor_peer_ip'))
+				OR (attrelid='task_run_children'::regclass AND attname='analysis_scope_key'))`).Scan(&historicalAnalysisColumns); err != nil || historicalAnalysisColumns != 0 {
+				t.Fatalf("analysis snapshot exclusions would remove schema-20 fields: columns=%d error=%v", historicalAnalysisColumns, err)
+			}
 			before := make(map[string]string, len(tables))
 			for _, table := range tables {
 				before[table] = compatibilityMigrationSnapshot(t, ctx, pool, table)
@@ -230,9 +265,11 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				"display_preferences", "artwork_state", "artwork_images", "entity_user_data", "task_system_events", "task_system_event_receipts",
 				"item_intro_state", "media_operations", "media_operation_cues", "item_owned_subtitles", "item_embedded_artwork",
 				"series_episode_rosters", "episode_roster_imports", "expected_episodes",
-				"notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries")
+				"notification_transport", "notification_journal_state", "notification_registrations", "notification_source_events", "notification_deliveries",
+				"analysis_settings", "analysis_run_profiles", "analysis_work", "analysis_work_sources", "analysis_feature_cache",
+				"analysis_detections", "analysis_detection_sources", "analysis_intro_decisions", "analysis_intro_audit", "analysis_preview_state", "analysis_previews")
 			sort.Strings(currentTables)
-			var migratedSettings, migratedHistory string
+			var migratedSettings, migratedHistory, migratedAnalysisSettings string
 			for attempt := 1; attempt <= 2; attempt++ {
 				if err := database.Migrate(ctx, pool); err != nil {
 					t.Fatalf("compatibility migration attempt %d: %v", attempt, err)
@@ -243,6 +280,7 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				compatibilityMigrationPhase3Defaults(t, ctx, pool)
 				compatibilityMigrationSortingDefaults(t, ctx, pool)
+				compatibilityMigrationAnalysisDefaults(t, ctx, pool)
 				var dynamicSessions int
 				if err := pool.QueryRow(ctx, `SELECT count(*) FROM play_sessions WHERE is_dynamic IS DISTINCT FROM false`).Scan(&dynamicSessions); err != nil || dynamicSessions != 0 {
 					t.Errorf("current migration marked historical playback sessions as dynamic: count=%d error=%v", dynamicSessions, err)
@@ -289,10 +327,12 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				}
 				currentSettings := settingsMigrationSnapshot(t, ctx, pool, "managed_settings")
 				currentHistory := compatibilityMigrationHistory(t, ctx, pool)
+				currentAnalysisSettings := settingsMigrationSnapshot(t, ctx, pool, "analysis_settings")
 				if attempt == 1 {
 					migratedSettings, migratedHistory = currentSettings, currentHistory
-				} else if currentSettings != migratedSettings || currentHistory != migratedHistory {
-					t.Error("reapplying compatibility migration changed settings, mode, width, or complete migration history")
+					migratedAnalysisSettings = currentAnalysisSettings
+				} else if currentSettings != migratedSettings || currentHistory != migratedHistory || currentAnalysisSettings != migratedAnalysisSettings {
+					t.Error("reapplying compatibility migration changed settings, mode, width, analysis defaults, or complete migration history")
 				}
 			}
 			// Reapplication must not reconstruct the mode from the raw name after
@@ -314,11 +354,15 @@ func TestConfigurationCompatibilityMigrationPreservesEverySchema20Field(t *testi
 				}
 				compatibilityMigrationBindingDefaults(t, ctx, pool)
 				compatibilityMigrationSortingDefaults(t, ctx, pool)
+				compatibilityMigrationAnalysisDefaults(t, ctx, pool)
 				if after := settingsMigrationSnapshot(t, ctx, pool, "managed_settings"); after != persisted {
 					t.Errorf("repeated compatibility migration changed persisted mode %s, width, or original settings", state.mode)
 				}
 				if after := compatibilityMigrationHistory(t, ctx, pool); after != migratedHistory {
 					t.Errorf("repeated compatibility migration with mode %s changed complete migration history", state.mode)
+				}
+				if after := settingsMigrationSnapshot(t, ctx, pool, "analysis_settings"); after != migratedAnalysisSettings {
+					t.Errorf("repeated compatibility migration with mode %s changed the complete analysis settings row", state.mode)
 				}
 				for _, table := range tables {
 					if table != "managed_settings" && compatibilityMigrationSnapshot(t, ctx, pool, table) != before[table] {

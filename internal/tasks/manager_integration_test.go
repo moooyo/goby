@@ -500,13 +500,26 @@ func TestManagerOwnerLossFencesWritesAndRecoveryDoesNotResumeOldRun(t *testing.T
 	}
 	managerWait(t, f.ctx, "old owner scan", func(context.Context) bool { return f.prober.observed(collection.payload, false) })
 	var ownerPID int32
-	if err := f.pool.QueryRow(f.ctx, `SELECT locks.pid FROM pg_locks locks JOIN pg_stat_activity activity ON activity.pid=locks.pid
-		WHERE locks.locktype='advisory' AND locks.granted AND activity.application_name=$1`, f.schema).Scan(&ownerPID); err != nil {
-		t.Fatal(err)
+	if err := f.catalog.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
+		return tx.QueryRow(`SELECT pg_backend_pid()`).Scan(&ownerPID)
+	}); err != nil {
+		t.Fatalf("identify the exact reserved catalog owner backend: %v", err)
 	}
+	// A signal acknowledgement is not backend termination. The server can
+	// report owner loss before it finishes releasing session advisory locks.
+	// Wait for that exact backend to exit without opening the blocked probe.
+	terminateCtx, cancelTerminate := context.WithTimeout(f.ctx, 7*time.Second)
 	var terminated bool
-	if err := f.pool.QueryRow(f.ctx, "SELECT pg_terminate_backend($1)", ownerPID).Scan(&terminated); err != nil || !terminated {
-		t.Fatal("terminate the isolated catalog ownership session")
+	err = f.pool.QueryRow(terminateCtx, `SELECT pg_terminate_backend($1::integer, 5000::bigint)`, ownerPID).Scan(&terminated)
+	cancelTerminate()
+	if err != nil || !terminated {
+		t.Fatalf("confirm isolated catalog backend termination: terminated=%t error=%v", terminated, err)
+	}
+	var backendAbsent, lockAbsent bool
+	if err := f.pool.QueryRow(f.ctx, `SELECT
+		NOT EXISTS(SELECT 1 FROM pg_stat_activity WHERE pid=$1),
+		NOT EXISTS(SELECT 1 FROM pg_locks WHERE pid=$1 AND locktype='advisory')`, ownerPID).Scan(&backendAbsent, &lockAbsent); err != nil || !backendAbsent || !lockAbsent {
+		t.Fatalf("terminated catalog owner retained backend or advisory locks: backend absent=%t lock absent=%t error=%v", backendAbsent, lockAbsent, err)
 	}
 	manager.Wake()
 	managerWait(t, f.ctx, "task owner fencing", func(context.Context) bool { return !manager.Available() })

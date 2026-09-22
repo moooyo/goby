@@ -57,6 +57,9 @@ func scanEvidenceTestRecord(t *testing.T, evidence *scanReconciliationEvidence, 
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := evidence.BeginDirectoryObservation(rootID, relative, directory, before); err != nil {
+		t.Fatalf("begin directory %q: %v", relative, err)
+	}
 	entries, err := directory.ReadDir(-1)
 	if err != nil {
 		t.Fatal(err)

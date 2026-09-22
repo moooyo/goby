@@ -68,13 +68,18 @@ the failed first clone and exact partial cleanup remain preserved. Infrastructur
 readiness is separate from workload admission, which is still pending. The guest
 has 2 vCPU, 3 GiB fixed RAM and a 33 GiB disk. Only the sole infrastructure owner
 operates it; source implementation owners must not start independent workloads.
-Regression successor03 is running with a separately admitted PG/worker budget
+Regression successor03 completed with a separately admitted PG/worker budget
 within the same guest envelope, a fresh backup pair, the entire failed package
-and all unstarted packages/embedded command tests. The whole backup package and
-the next nine package scopes have passed at the latest observation; library
-tests are active. Follow the exact private checkpoint handles and do not start
-a replacement while that invocation is live. Reuse only byte-bound successful
-evidence; its final resource result and complete regression remain pending.
+and all unstarted packages/embedded command tests. The whole backup and recovery
+scopes have passed, while library finished with three failed parents and one
+original opt-in mount helper skip; server tests passed. The library failures cover
+staged reconciliation latency, restored directory identity and symlink records.
+Settings and task fixtures contributed two additional failed parents. The
+original worker exited with failure after completing the full scope; repair
+source is integrated and awaits remote verification. Follow the private
+checkpoint for independent final closure and PostgreSQL state before any new
+operation. Reuse only byte-bound successful evidence; the five original failures
+remain retained and cannot accept the complete regression.
 The post-compound fault-fixture handoff repair is committed at `34344c8`:
 successful capacity cleanup restores files while the catalog still reflects the
 incremental pass, so a proven reconciliation must precede fault-fixture expansion.
@@ -82,7 +87,10 @@ This does not change the original exact-tier capacity requirements. Its pure
 Python checks and actual handoff are pending; the live regression remains on
 immutable `ad02b12`. Production Go and frontend inputs are unchanged, but later
 artifact reuse still requires an explicit source bridge preserving the actual
-build source and original build-only receipt.
+build source and original build-only receipt. The prepared bridge covers only
+the preparation-script difference. It remains unexecuted and cannot cover the
+subsequent production Go fixes; freeze and build a new candidate after those
+repairs, then complete their affected acceptance before capacity admission.
 Complete both workload profiles and the full fault matrices;
 individual scenario partial results never accept the whole phase.
 Do not reboot shared `test-env`, other existing VMs or the physical PVE host.

@@ -56,6 +56,9 @@ func scanReconciliationCommitObserveRoot(t *testing.T, evidence *scanReconciliat
 		if err != nil {
 			t.Fatal(err)
 		}
+		if err := evidence.BeginDirectoryObservation(rootID, relative, directory, before); err != nil {
+			t.Fatalf("begin directory %q: %v", relative, err)
+		}
 		raw, err := directory.ReadDir(-1)
 		if err != nil {
 			t.Fatal(err)

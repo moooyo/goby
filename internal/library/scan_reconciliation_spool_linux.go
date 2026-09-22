@@ -5,13 +5,34 @@ package library
 import (
 	"errors"
 	"os"
-	"syscall"
 
 	"golang.org/x/sys/unix"
 )
 
 func openScanSpoolFile(root *os.Root, name string, flags int) (*os.File, error) {
-	return root.OpenFile(name, flags|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0o600)
+	if !scanSpoolRawName(name) {
+		return nil, errScanReconciliationEvidenceUnavailable
+	}
+	// os.Root resolves symlinks itself, including an ELOOP returned for an
+	// O_NOFOLLOW open. A private record is exactly one leaf beneath this held
+	// directory, so use openat directly to preserve the kernel's no-follow rule.
+	directory, err := openScanFile(root, ".")
+	if err != nil {
+		return nil, err
+	}
+	descriptor, err := unix.Openat(int(directory.Fd()), name, flags|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0o600)
+	closeErr := directory.Close()
+	if err != nil {
+		return nil, errors.Join(err, closeErr)
+	}
+	file := os.NewFile(uintptr(descriptor), name)
+	info, statErr := file.Stat()
+	named, namedErr := root.Lstat(name)
+	if closeErr != nil || statErr != nil || namedErr != nil || scanEvidencePrivateInfo(info, false) != nil ||
+		scanEvidencePrivateInfo(named, false) != nil || !os.SameFile(info, named) {
+		return nil, errors.Join(errScanReconciliationEvidenceUnavailable, closeErr, statErr, namedErr, file.Close())
+	}
+	return file, nil
 }
 
 func scanSpoolDirectoryIdentity(file *os.File) (scanSpoolIdentity, bool, error) {

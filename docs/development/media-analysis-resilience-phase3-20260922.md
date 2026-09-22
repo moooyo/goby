@@ -255,3 +255,85 @@ The repair changes three preparation source/documentation/test files only;
 production Go, frontend and build inputs remain unchanged. Its remote checks and
 actual handoff have not run. The live regression source is not modified, and
 later binary reuse must retain the real `ad02b12` build provenance explicitly.
+
+## Library regressions found during successor03
+
+The complete library package subsequently finished with 944 passing parents,
+three failed parents and one original opt-in mount-namespace helper skip. The
+failed parents are:
+
+- `TestScanReconciliationStagedPagingExcludesLargeAcceptedPopulationBeforeLocks`:
+  the final reconciliation returned `context deadline exceeded` after the
+  40,000-row fixture; the full test took 50.54 seconds. The earlier accepted-row
+  lock check was not the failing assertion.
+- `TestScanReconciliationSpoolFallbackRejectsReplacedAndRestoredChains`:
+  the restored-chain subcase incorrectly authorized absence after a rename
+  round trip. The replaced-chain subcase passed.
+- `TestScanReconciliationSpoolRejectsLinkedAndSpecialRecordFiles`:
+  the symlink subcase accepted a linked record as private evidence. The FIFO
+  subcase passed.
+
+The original events, summary, stage receipt, skip reason and nearest resource
+observations are retained. The observed worker, PostgreSQL and observer memory
+events report no OOM; these failures are not attributed to attempt02's OOM.
+The resource samples bracket the failure window and are not per-assertion
+measurements. The original runner continues its frozen remaining package order.
+At the next checkpoint, package scopes through 26 were complete, with only
+library failed, and server scope27 was active.
+
+Source repairs are in progress. Seen is a session-private temporary table and
+had no explicit statistics refresh before the exclusion query. Its repair adds
+`ANALYZE` at successful sealing without changing the SQL/proof deadlines, the
+40,000-row population, or lock/deletion/resource assertions. The original
+execution plan and individual timing contributions were not captured, so the
+missing statistics are a confirmed source defect rather than proof of the sole
+50.54-second cause. The affected test now records the actual owner-session
+plan and operation timings. Directory identity and private-record access fixes
+must preserve bounded resources and conservative deletion authority.
+
+The previously prepared `ad02` to `34344c8` build-reuse bridge remains unexecuted.
+It covers only the preparation-script change and cannot authorize binaries for
+these new production Go repairs. After all repair source is integrated, freeze
+a new candidate, run the affected remote verification and rebuild the actual
+application artifacts. Capacity and fault/reboot acceptance remain unstarted.
+
+## Complete successor03 and integrated repair source
+
+The original successor subsequently completed all 29 new ordinary package
+scopes and the embedded command scope, then exited with failure as required.
+Its composed ordinary summary reports 4,251 passes, five failures and 18 skips;
+embedded command tests report 24 passes without failures or skips. Original
+per-scope evidence and skip reasons remain authoritative. Independent final
+resource closure is being collected; these counts do not accept the phase.
+
+The two additional failed parents were
+`TestConfigurationCompatibilityMigrationPreservesEverySchema20Field` in
+settings and `TestManagerOwnerLossFencesWritesAndRecoveryDoesNotResumeOldRun`
+in tasks. The former retained a pre-schema50 table inventory and compared new
+analysis admission keys as historical fields. Its fixture now includes all
+eleven analysis tables, proves the six excluded new task keys did not exist in
+schema20, checks their exact defaults, and retains every original field's value
+comparison. Repeated migration must preserve the complete analysis-settings
+row. No published migration or production settings behavior was changed.
+
+The task fixture acknowledged a backend-termination signal before proving the
+old session and its advisory locks had disappeared. It now binds the reserved
+owner backend through an actual owned transaction, uses the existing bounded
+backend-termination API, and separately confirms backend and lock absence. The
+old probe remains blocked through this transition; all late-writer fences and
+the prohibition on resuming the old run remain tested. Production ownership,
+manager shutdown and failed-cleanup quarantine are unchanged.
+
+The integrated source also refreshes sealed Seen statistics, opens private
+records with kernel no-follow semantics, and records bounded directory-change
+history before raw enumeration. Native and fallback paths share that history
+witness. Overflow, registration failure and unsupported notification semantics
+cannot restore deletion authority. The [runtime contract](scan-evidence-runtime.md)
+states the filesystem and resource bounds, including the unchanged positive
+scan behavior where reliable namespace history is unavailable. The fixed
+descriptor reservation includes both the change queue and record-opening
+scratch directory. Source review corrected those two accounting omissions.
+
+These repairs have been formatted and statically reviewed only. Their affected
+remote tests, new application builds, complete capacity profiles and fault
+matrices remain pending. The original five failures are not relabeled as passes.
