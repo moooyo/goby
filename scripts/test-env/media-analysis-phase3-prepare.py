@@ -489,7 +489,9 @@ class Preparer(WORK.Actor):
         need(not self.workspace.exists() and self.workspace.is_absolute() and self.workspace.resolve() == self.workspace, "preparation_workspace_not_fresh")
         self.workspace.mkdir(mode=0o700)
         os.chown(self.workspace, -1, self.operator["media_read_gid"])
-        os.chmod(self.workspace, 0o710)
+        # Root topology observation opens every media ancestor for reading.
+        # Private inputs remain in the separate owner-only private subtree.
+        os.chmod(self.workspace, 0o750)
         for name in ("private", "media"):
             (self.workspace / name).mkdir(mode=0o700)
         quarantine = self.workspace / "private" / "quarantine"
