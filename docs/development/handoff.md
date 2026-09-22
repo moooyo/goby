@@ -13,8 +13,12 @@ Current Phase 3 checkpoint: scope04's full 10k workload failed during cold;
 actual goroutine stacks confirm a catalog ownership/admission lock inversion.
 The failed Actor, observer and controls are closed. Goby was diagnostically
 terminated to preserve its blocked stacks; PostgreSQL then shut down cleanly.
-All data and original failures remain retained. The nonblocking availability
-repair and its concurrency regression are written but not remotely verified.
+All data and original failures remain retained. Repair `5fb968a` passed its
+remote focused case and race check, while the old implementation failed for the
+expected lock wait. Both new binaries built successfully. Full package regression
+was interrupted by the independent observer's 128 MiB OOM; worker and observer
+are closed, with all evidence retained. Regression PostgreSQL remains live with
+eleven databases. A fresh-database continuation must complete all affected packages.
 The 100k tier, overload and fault/recovery matrix remain unrun. The first compound publisher failed its memory admission by
 3,682,304 bytes before publishing sources or dispatching business work; its
 process and control parent are closed. Phase 3 remains unpublished; Phase 1/2
@@ -84,8 +88,10 @@ The original publisher refusal is retained, not reclassified as a passing
 capacity result. The explicit aggregate-reserve successor sampled in the final
 launcher after exec and observer readiness; a passing admission is not workload
 acceptance. The failed workload and complete runtime closure are recorded in
-the execution record. Test the availability repair remotely with fresh actual
-builds, then admit a fresh capacity runtime and retain the complete workload scope.
+the execution record. Complete the interrupted package regression using the
+prepared lower-memory observer successor, then admit a fresh capacity runtime.
+Retain the completed focused/race/build receipts; partial library output is not
+a complete passing package. The full workload scope is unchanged.
 Scope03's access failure was traced to missing `io.stat` accounting, after which
 its preparation limit was restored and the scope closed. Scope04 uses runtime
 template09 with `IOAccounting=yes`; this was a deployment issue, not a product

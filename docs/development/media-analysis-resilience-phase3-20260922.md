@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope04 cold workload failed and its runtime is closed; the observed lock inversion has a source repair awaiting remote verification; Phase 3 is unpublished**.
+Status: **repair focused/race checks and builds passed; full package regression was interrupted by observer OOM and requires continuation; Phase 3 is unpublished**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -101,7 +101,21 @@ before closed, so the mutable closed field is unnecessary for this observation.
 Owned write admission and session fencing stay in place. A deterministic
 integration regression holds the admission mutex while an owned callback checks
 availability, then verifies commit and ownership reuse. This new code and test
-are source-only until the required remote verification and fresh builds run.
+now have remote focused verification. The old ownership implementation failed
+the new case after the expected five-second mutex wait; the repair passed in
+0.20 seconds and with `-race` in 0.22 seconds. Both actual Go binaries built.
+These completed stages have individual exit/child-closure receipts.
+
+The following full library package was interrupted after 696 parent passes and
+one skip, without a package terminal result. Its independent observer retained
+a Python tuple for every inode and hit its 128 MiB memory cap. The observer was
+OOM-killed; `BindsTo` then stopped the worker. The unloaded worker unit's default
+exit fields are not a passing test result. Both original processes/cgroups are
+closed, and the failed output is retained. A source-only observer successor uses
+native `du` byte/inode accounting with the same caps, reporting failed reads as
+gaps. The continuation must rerun the entire library package and complete tasks,
+settings, server, command and embedded-command scopes with a fresh database.
+It may retain the independently completed focused/race/build stages.
 
 Goby's diagnostic exit 2 is not graceful shutdown or a fault-matrix success.
 After it exited, a read-only PostgreSQL snapshot found no other clients and no
