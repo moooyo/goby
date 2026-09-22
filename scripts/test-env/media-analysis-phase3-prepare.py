@@ -14,6 +14,7 @@ import copy
 import hashlib
 from http.cookies import SimpleCookie
 import importlib.util
+from itertools import chain
 import json
 import os
 from pathlib import Path
@@ -284,6 +285,28 @@ class Preparer(WORK.Actor):
         value = {"path": str(path), "sha256": hash_file(path, self.deadline), "bytes": info.st_size, "origin": origin, "original_id": original_id}
         self.inventory_rows.append(value)
         return value
+
+    def write_inventory(self):
+        """Reserve exact JSONL size before streaming rows in their original order."""
+        def encoded_rows():
+            for row in self.inventory_rows:
+                path = Path(row["path"])
+                root = next(root for root in self.root_bindings if Path(root["path"]) in path.parents)
+                yield json_bytes({"root_id": root["id"], "relative_path": path.relative_to(root["path"]).as_posix(),
+                    "sha256": row["sha256"], "bytes": row["bytes"], "origin": row["origin"], "original_id": row["original_id"]})
+
+        inventory = self.workspace / "private" / "inventory.jsonl"
+        size = sum(len(raw) for raw in encoded_rows())
+        self.reserve(((size + 4095) // 4096 + 1) * 4096)
+        fd = os.open(inventory, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as stream:
+            for raw in encoded_rows():
+                stream.write(raw)
+            stream.flush()
+            os.fsync(stream.fileno())
+        media_paths = len(self.inventory_rows)
+        self.inventory_rows.clear()
+        return inventory, media_paths
 
     def copy_media(self, source, target, origin, original_id, hardlink=False):
         self.assert_owned()
@@ -556,16 +579,7 @@ class Preparer(WORK.Actor):
         self.seed_userdata(resume, move)
         seed_parent, state_parent = self.item(seed), self.item(state_root)
         queries = self.frozen_queries(library, seed_parent, state_parent, resume, pending)
-        raw_rows = []
-        for row in self.inventory_rows:
-            path = Path(row["path"])
-            root = next(root for root in self.root_bindings if Path(root["path"]) in path.parents)
-            raw_rows.append(json_bytes({"root_id": root["id"], "relative_path": path.relative_to(root["path"]).as_posix(),
-                "sha256": row["sha256"], "bytes": row["bytes"], "origin": row["origin"], "original_id": row["original_id"]}))
-        inventory = self.workspace / "private" / "inventory.jsonl"
-        inventory_bytes = b"".join(raw_rows)
-        self.reserve(((len(inventory_bytes) + 4095) // 4096 + 1) * 4096)
-        private_write(inventory, inventory_bytes)
+        inventory, media_paths = self.write_inventory()
         roots = self.root_bindings
         owner_file = self.workspace / "workload-owner.json"
         owner = {key: self.m[key] for key in ("owner_id", "run_id", "source_revision", "guest")}
@@ -607,8 +621,9 @@ class Preparer(WORK.Actor):
         allocated, identities, entries = 0, set(), 0
         for directory, children, filenames in os.walk(self.workspace, followlinks=False):
             self.remaining()
-            need(all(not (Path(directory) / child).is_symlink() for child in children), "preparation_unexpected_symlink")
-            for path in [Path(directory), *(Path(directory) / filename for filename in filenames)]:
+            directory = Path(directory)
+            need(all(not (directory / child).is_symlink() for child in children), "preparation_unexpected_symlink")
+            for path in chain((directory,), (directory / filename for filename in filenames)):
                 info = path.lstat()
                 need(not stat.S_ISLNK(info.st_mode), "preparation_unexpected_symlink")
                 identity = (info.st_dev, info.st_ino)
@@ -621,7 +636,7 @@ class Preparer(WORK.Actor):
             "run_id": self.m["run_id"], "tier": self.m["tier"], "manifest_sha256": self.operator["manifest_sha256"],
             "seed_catalog_count": initial, "settled_catalog_count": self.m["tier"], "pending_media_files": pending,
             "licensed_source_cases": 14, "independent_licensed_source_groups": self.licensed_groups,
-            "generated_distinct_templates": 3, "media_paths": len(self.inventory_rows), "conservative_fixture_reserved_bytes": self.generated_bytes,
+            "generated_distinct_templates": 3, "media_paths": media_paths, "conservative_fixture_reserved_bytes": self.generated_bytes,
             "actual_fixture_allocated_bytes": allocated, "actual_fixture_unique_inodes": len(identities), "tool_sha256": self.operator["tool_sha256"],
             "hardlink_batches": sum(len(batches) for batches in self.hardlink_batches.values()),
             "licensed_manifest_sha256": self.operator["licensed_manifest"]["sha256"],

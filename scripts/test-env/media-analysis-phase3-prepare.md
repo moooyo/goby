@@ -105,6 +105,10 @@ Before writes, the actor reserves conservative space for copied media, template
 limits, staging, directory/inode entries, hardlink directory entries and the
 inventory. Hashing/copying reads a fixed preobserved length, checks the deadline
 between chunks, and rejects source growth, replacement or metadata changes.
+Inventory serialization measures the exact JSONL byte count before reserving
+space, then writes the same row order incrementally and releases the source
+rows. It retains private exclusive creation, flush/fsync and the final content
+hash without retaining a second full encoded inventory in memory.
 The final physical allocation counts unique device/inode identities and is
 checked against the same ceiling. Decoder `-fs` limits are emergency bounds;
 ffprobe must still confirm full template duration, so truncation cannot pass.

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Remote-only pure preparation identity and budget test source."""
+"""Remote-only preparation identity, inventory, and budget test source."""
 
 import importlib.util
 import copy
 from pathlib import Path
+import stat
+import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent
@@ -42,6 +45,103 @@ class SourceIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(PREPARE.WORK.Failure, "preparation_media_byte_budget"):
             preparer.reserve(8192)
         self.assertEqual(preparer.generated_bytes, 4096)
+
+
+class InventoryWriteTests(unittest.TestCase):
+    expected = (
+        b'{"bytes":17,"origin":"licensed","original_id":"licensed-b","relative_path":"Zed\\u7535\\u5f71.mp4","root_id":"root-b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}\n'
+        b'{"bytes":11,"origin":"generated","original_id":"short-template","relative_path":"Folder/First.mp4","root_id":"root-a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}\n'
+    )
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.workspace = Path(temporary.name).resolve()
+        (self.workspace / "private").mkdir()
+        self.inventory = self.workspace / "private" / "inventory.jsonl"
+        self.preparer = PREPARE.Preparer.__new__(PREPARE.Preparer)
+        self.preparer.workspace = self.workspace
+        self.preparer.operator = {"max_fixture_allocated_bytes": 8192}
+        self.preparer.generated_bytes = 0
+        self.preparer.root_bindings = [{"id": "root-a", "path": str(self.workspace / "media" / "a")},
+                                       {"id": "root-b", "path": str(self.workspace / "media" / "b")}]
+        self.preparer.inventory_rows = [
+            {"path": str(self.workspace / "media" / "b" / "Zed\u7535\u5f71.mp4"), "sha256": "b" * 64,
+             "bytes": 17, "origin": "licensed", "original_id": "licensed-b"},
+            {"path": str(self.workspace / "media" / "a" / "Folder" / "First.mp4"), "sha256": "a" * 64,
+             "bytes": 11, "origin": "generated", "original_id": "short-template"}]
+
+    def test_exact_ordered_jsonl_is_private_and_flushed_before_sync(self):
+        retained_rows = self.preparer.inventory_rows
+        synchronized = []
+        real_fsync = PREPARE.os.fsync
+
+        def observe_sync(fd):
+            synchronized.append(self.inventory.read_bytes())
+            real_fsync(fd)
+
+        with mock.patch.object(PREPARE.os, "fsync", side_effect=observe_sync):
+            path, count = self.preparer.write_inventory()
+        self.assertEqual((path, count), (self.inventory, 2))
+        self.assertEqual(self.inventory.read_bytes(), self.expected)
+        self.assertEqual(synchronized, [self.expected])
+        self.assertEqual(stat.S_IMODE(self.inventory.stat().st_mode), 0o600)
+        self.assertEqual(self.preparer.generated_bytes, 8192)
+        self.assertEqual(retained_rows, [])
+
+    def test_exact_page_budget_is_checked_before_file_creation(self):
+        prefix = b'{"bytes":11,"origin":"generated","original_id":"'
+        suffix = b'","relative_path":"Only.mp4","root_id":"root-a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}\n'
+        padding = "x" * (4096 - len(prefix) - len(suffix))
+        self.preparer.inventory_rows = [{"path": str(self.workspace / "media" / "a" / "Only.mp4"),
+            "sha256": "a" * 64, "bytes": 11, "origin": "generated", "original_id": padding}]
+        self.preparer.operator["max_fixture_allocated_bytes"] = 8191
+        with mock.patch.object(PREPARE.os, "open") as opened:
+            with self.assertRaisesRegex(PREPARE.WORK.Failure, "preparation_media_byte_budget"):
+                self.preparer.write_inventory()
+        opened.assert_not_called()
+        self.assertFalse(self.inventory.exists())
+        self.assertEqual(self.preparer.generated_bytes, 0)
+        self.preparer.operator["max_fixture_allocated_bytes"] = 8192
+        self.assertEqual(self.preparer.write_inventory(), (self.inventory, 1))
+        self.assertEqual(self.inventory.read_bytes(), prefix + padding.encode() + suffix)
+        self.assertEqual(self.preparer.generated_bytes, 8192)
+
+    def test_existing_inventory_is_not_overwritten(self):
+        self.inventory.write_bytes(b"existing inventory\n")
+        with self.assertRaises(FileExistsError):
+            self.preparer.write_inventory()
+        self.assertEqual(self.inventory.read_bytes(), b"existing inventory\n")
+        self.assertEqual(len(self.preparer.inventory_rows), 2)
+
+    def test_inventory_symlink_is_not_followed(self):
+        original = self.workspace / "private" / "original.jsonl"
+        original.write_bytes(b"original inventory\n")
+        self.inventory.symlink_to(original)
+        with self.assertRaises(FileExistsError):
+            self.preparer.write_inventory()
+        self.assertTrue(self.inventory.is_symlink())
+        self.assertEqual(original.read_bytes(), b"original inventory\n")
+        self.assertEqual(len(self.preparer.inventory_rows), 2)
+
+    def test_sync_failure_closes_stream_and_retains_inventory_rows(self):
+        retained_rows = self.preparer.inventory_rows
+        streams = []
+        real_fdopen = PREPARE.os.fdopen
+
+        def observe_stream(*args, **kwargs):
+            stream = real_fdopen(*args, **kwargs)
+            streams.append(stream)
+            return stream
+
+        with mock.patch.object(PREPARE.os, "fdopen", side_effect=observe_stream), \
+             mock.patch.object(PREPARE.os, "fsync", side_effect=OSError("injected sync failure")):
+            with self.assertRaisesRegex(OSError, "injected sync failure"):
+                self.preparer.write_inventory()
+        self.assertEqual(len(streams), 1)
+        self.assertTrue(streams[0].closed)
+        self.assertIs(self.preparer.inventory_rows, retained_rows)
+        self.assertEqual(len(retained_rows), 2)
 
 
 def compound_fixture():
