@@ -9,7 +9,27 @@ Use the isolated `codex/media-analysis-resilience` checkout at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
 unrelated changes in the original `D:/Code/goby` checkout.
 
-Current Phase 3 checkpoint: scope04's full 10k workload failed during cold;
+Current Phase 3 checkpoint: scope07 preparation passed, but its actual 10k cold
+compound workload failed. Catalog requests took approximately 6.2-7.9 seconds;
+playback preparation took 6.2-6.4 seconds, and remux seek returned 415. Cached and
+incremental phases did not run. All workload/control processes and their parent
+are closed; the original scope07 application/database and failed data remain.
+Do not replay this initialized scope as a fresh capacity attempt.
+
+Read-only JIT comparison of the original SQL preserved counts and ordered IDs.
+Transaction-local disabling reduced isolated page execution from approximately
+1.8 seconds to 26-79 ms. This is diagnostic evidence, not compound acceptance.
+The query and remux joint-boundary repairs are written with new tests but not
+yet verified. A separate admission repair moves all thirteen owner waits outside
+the shared store mutex and passed independent source review. Preserve queue
+admission, root-anchor publication and shutdown semantics. Driver AAC
+packet-content verification and its regressions are also written. Follow the
+private execution checkpoint and the
+[Phase 3 record](media-analysis-resilience-phase3-20260922.md) before dispatch.
+The full 10k/100k compound journeys, overload and 28 fault/recovery cases remain
+required. Phase 3 remains unpublished; Phase 1/2 are published on main.
+
+Historical accepted baseline: scope04's full 10k workload failed during cold;
 actual goroutine stacks confirm a catalog ownership/admission lock inversion.
 The failed Actor, observer and controls are closed. Goby was diagnostically
 terminated to preserve its blocked stacks; PostgreSQL then shut down cleanly.
@@ -19,7 +39,8 @@ expected lock wait. Both new binaries built successfully. After preserving the
 observer OOM interruption, a fresh-database continuation passed all five affected
 packages: 2,139 parent passes, zero failures and five explicit skips, plus 24
 embedded passes. Combined with unchanged complete scopes, the current regression
-is 4,264 passes, zero failures and 18 skips, with 70 retained Python passes.
+is 4,264 passes, zero failures and 18 skips, with 73 retained Python passes.
+This baseline does not cover the new uncommitted scope07 repairs.
 Worker, observer and regression PostgreSQL are closed; all twelve databases remain.
 The 100k tier, overload and fault/recovery matrix remain unrun. The first compound publisher failed its memory admission by
 3,682,304 bytes before publishing sources or dispatching business work; its

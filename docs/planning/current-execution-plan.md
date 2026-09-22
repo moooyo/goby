@@ -32,11 +32,15 @@ preserves those results and covers the failed/unstarted scopes. That successor
 completed; its three library and two fixture parent failures were repaired and
 verified at `1ed1d69`. Fresh frontend/ordinary/embedded builds and complete
 affected scopes passed, with independent resource closure and ten databases
-retained. The source-bound composition has 4,263 ordinary Go parent passes,
-18 explicit skips, 24 embedded passes and 65 Python tests, without double
-counting retained scopes. Original failures remain separate. Capacity corpus
-and runtime preparation are next; no capacity or fault profile is accepted and
-the full approved Phase 3 scope remains required.
+retained. The subsequent lock-inversion repair passed regression and builds at
+`5fb968a`. Its source-bound composition has 4,264 ordinary Go parent passes,
+18 explicit skips, 24 embedded passes and 73 Python tests, without double
+counting retained scopes. Original failures remain separate. Scope07 preparation
+completed, but the actual 10k cold compound workload failed on catalog latency
+and remux seek, with playback admission also delayed by the shared store mutex.
+Query, remux and admission repairs and driver assertions are written and source
+reviewed. These changes need remote verification. No complete capacity or fault
+profile is accepted, and the full approved Phase 3 scope remains required.
 Historical completed increments below remain closed.
 
 ## Completed selected increment: September 20, 2026

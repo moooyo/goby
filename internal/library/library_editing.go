@@ -274,21 +274,17 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 			return LibraryEditing{}, err
 		}
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.closing.Load() {
-		return LibraryEditing{}, ErrUnavailable
+	tx, err := s.beginOwnedAdmission(ctx, false)
+	if err != nil {
+		return LibraryEditing{}, err
 	}
+	defer s.mu.Unlock()
+	defer rollback(tx)
 	for _, registration := range registrations {
 		if !s.rootBindingPathConfiguredLocked(registration.root.allowedPath) {
 			return LibraryEditing{}, ErrUnavailable
 		}
 	}
-	tx, err := s.beginOwnedTx(ctx)
-	if err != nil {
-		return LibraryEditing{}, err
-	}
-	defer rollback(tx)
 	protected := tx.(*ownedTx).ctx
 	if err := administrator.check(protected, tx, true); err != nil {
 		return LibraryEditing{}, err

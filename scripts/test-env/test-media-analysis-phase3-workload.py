@@ -9,7 +9,9 @@ result. Importing the actor must perform no work.
 import copy
 import importlib.util
 from pathlib import Path
+import threading
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent
@@ -150,6 +152,272 @@ class DatabasePoolAccountingTests(unittest.TestCase):
         value["AcquiredConns"] = 6
         with self.assertRaisesRegex(ACTOR.Failure, "database_pool_snapshot_bounds"):
             ACTOR.database_pool_values(value)
+
+
+AAC_PACKET_SHA256 = ACTOR.digest(b"owned raw AAC access unit")
+
+
+def copy_seek_plan(actual=240000000, requested=300000000, timestamps=True):
+    audio = {"stream_index": 1, "codec": "aac", "time_base_numerator": 1, "time_base_denominator": 48000,
+             "sample_rate": 48000, "channels": 1, "pts": actual * 48000 // 10000000,
+             "duration": 1024, "packet_sha256": AAC_PACKET_SHA256}
+    candidate = {"version": 1, "requested_start_ticks": actual,
+        "index": {"stream_index": 0, "time_base_numerator": 1, "time_base_denominator": 12288,
+                  "entries": [{"pts": actual * 12288 // 10000000, "dts": actual * 12288 // 10000000,
+                               "audio": [copy.deepcopy(audio)]}]}, "audio": audio}
+    if actual != requested:
+        candidate["original_requested_start_ticks"] = requested
+    if timestamps:
+        candidate["copy_timestamps"] = True
+    return {"StartTicks": actual, "CopyTimestamps": timestamps, "VideoCodec": "copy", "AudioCodec": "copy",
+        "VideoStreamIndex": 0, "AudioStreamIndex": 1, "OutputMode": "progressive", "Container": "mp4",
+        "VideoCopySeekCandidate": ACTOR.json_bytes(candidate).decode()}
+
+
+class ProgressiveSeekTests(unittest.TestCase):
+    def test_alignment_opt_in_preserves_original_request_codecs_and_scope(self):
+        path = "/emby/Videos/item/stream.mp4?VideoCodec=copy&AudioCodec=copy&PlaySessionId=play_owned&api_key=token"
+        result = ACTOR.progressive_request(path, "remux", 300000000)
+        query = dict(ACTOR.parse_qsl(ACTOR.urlsplit(result).query))
+        self.assertEqual(query, {"VideoCodec": "copy", "AudioCodec": "copy", "PlaySessionId": "play_owned",
+                                "api_key": "token", "StartTimeTicks": "300000000", "AllowVideoSeekAlignment": "true"})
+        self.assertNotIn("AllowVideoSeekAlignment", ACTOR.progressive_request(path, "remux", 0))
+        self.assertNotIn("AllowVideoSeekAlignment", ACTOR.progressive_request(path, "transcode", 300000000))
+        with self.assertRaisesRegex(ACTOR.Failure, "remux_copy_request_required"):
+            ACTOR.progressive_request(path.replace("AudioCodec=copy", "AudioCodec=aac"), "remux", 300000000)
+
+    def test_actual_header_is_bounded_preceding_alignment_not_a_new_target(self):
+        self.assertEqual(ACTOR.progressive_start({"X-Goby-Start-Time-Ticks": "240000000", "X-Goby-Seek-Aligned": "true"},
+                                                300000000, True), 240000000)
+        self.assertEqual(ACTOR.progressive_start({"X-Goby-Start-Time-Ticks": "300000000"}, 300000000, False), 300000000)
+        for headers, permitted in (({}, True), ({"X-Goby-Start-Time-Ticks": "240000000"}, True),
+            ({"X-Goby-Start-Time-Ticks": "320000000", "X-Goby-Seek-Aligned": "true"}, True),
+            ({"X-Goby-Start-Time-Ticks": "190000000", "X-Goby-Seek-Aligned": "true"}, True),
+            ({"X-Goby-Start-Time-Ticks": "240000000", "X-Goby-Seek-Aligned": "true"}, False)):
+            with self.subTest(headers=headers, permitted=permitted), self.assertRaises(ACTOR.Failure):
+                ACTOR.progressive_start(headers, 300000000, permitted)
+
+    def test_completed_plan_retains_original_request_and_both_copy_tracks(self):
+        self.assertEqual(ACTOR.remux_seek_contract(copy_seek_plan(), 300000000, 240000000), (True, AAC_PACKET_SHA256))
+        self.assertEqual(ACTOR.remux_seek_contract(copy_seek_plan(300000000, 300000000, False), 300000000, 300000000),
+                         (False, AAC_PACKET_SHA256))
+        for change in ("requested", "actual", "clock", "audio-copy", "audio-proof", "video-proof"):
+            plan = copy_seek_plan()
+            candidate = ACTOR.strict_json(plan["VideoCopySeekCandidate"].encode())
+            if change == "requested":
+                candidate["original_requested_start_ticks"] = 320000000
+            elif change == "actual":
+                candidate["requested_start_ticks"] = 300000000
+            elif change == "clock":
+                plan["CopyTimestamps"] = False
+            elif change == "audio-copy":
+                plan["AudioCodec"] = "aac"
+            elif change == "audio-proof":
+                candidate.pop("audio")
+            else:
+                candidate["index"]["stream_index"] = 2
+            plan["VideoCopySeekCandidate"] = ACTOR.json_bytes(candidate).decode()
+            with self.subTest(change=change), self.assertRaises(ACTOR.Failure):
+                ACTOR.remux_seek_contract(plan, 300000000, 240000000)
+
+    def test_completed_plan_binds_full_audio_proof_to_selected_video_point(self):
+        for change, code in (("missing", "remux_seek_audio_binding"), ("different-hash", "remux_seek_audio_binding"),
+            ("different-stream", "remux_seek_audio_binding"), ("duplicate", "remux_seek_audio_binding"),
+            ("bool-channels", "remux_seek_audio_binding"), ("wrong-clock", "remux_seek_joint_clock"),
+            ("invalid-hash", "remux_seek_audio_proof")):
+            plan = copy_seek_plan()
+            candidate = ACTOR.strict_json(plan["VideoCopySeekCandidate"].encode())
+            point = candidate["index"]["entries"][0]
+            if change == "missing":
+                point.pop("audio")
+            elif change == "different-hash":
+                point["audio"][0]["packet_sha256"] = "f" * 64
+            elif change == "different-stream":
+                point["audio"][0]["stream_index"] = 2
+            elif change == "duplicate":
+                point["audio"].append(copy.deepcopy(candidate["audio"]))
+            elif change == "bool-channels":
+                point["audio"][0]["channels"] = True
+            elif change == "wrong-clock":
+                candidate["audio"]["pts"] += 1024
+                point["audio"][0] = copy.deepcopy(candidate["audio"])
+            else:
+                candidate["audio"]["packet_sha256"] = "SHA256:" + AAC_PACKET_SHA256
+                point["audio"][0] = copy.deepcopy(candidate["audio"])
+            plan["VideoCopySeekCandidate"] = ACTOR.json_bytes(candidate).decode()
+            with self.subTest(change=change), self.assertRaisesRegex(ACTOR.Failure, code):
+                ACTOR.remux_seek_contract(plan, 300000000, 240000000)
+
+    def test_packet_clock_requires_actual_preserved_start_for_both_tracks(self):
+        for kind, index, rate in (("video", 0, 12288), ("audio", 1, 48000)):
+            sample = {"streams": [{"index": index, "codec_type": kind, "time_base": "1/" + str(rate)}],
+                      "packets": [{"stream_index": index, "pts": 24 * rate, "dts": 24 * rate,
+                                   "data_hash": "SHA256:" + AAC_PACKET_SHA256}]}
+            expected_hash = AAC_PACKET_SHA256 if kind == "audio" else None
+            result = ACTOR.copied_packet_start(sample, 240000000, kind, expected_hash)
+            self.assertEqual(result["position_ticks_numerator"], 240000000)
+            for position in (0, 30):
+                changed = copy.deepcopy(sample)
+                changed["packets"][0].update(pts=position * rate, dts=position * rate)
+                with self.subTest(kind=kind, position=position), self.assertRaisesRegex(ACTOR.Failure, "copied_packet_source_clock_mismatch"):
+                    ACTOR.copied_packet_start(changed, 240000000, kind, expected_hash)
+            sample["packets"][0]["dts"] -= 1
+            with self.assertRaisesRegex(ACTOR.Failure, "copied_packet_restart_timestamp"):
+                ACTOR.copied_packet_start(sample, 240000000, kind, expected_hash)
+
+    def test_audio_packet_payload_hash_cannot_be_replaced_by_clock_or_extradata(self):
+        sample = {"streams": [{"index": 1, "codec_type": "audio", "time_base": "1/48000",
+                               "extradata_hash": "SHA256:" + AAC_PACKET_SHA256}],
+                  "packets": [{"stream_index": 1, "pts": 1152000, "dts": 1152000,
+                               "data_hash": "SHA256:" + AAC_PACKET_SHA256}]}
+        for payload_hash in (AAC_PACKET_SHA256, AAC_PACKET_SHA256.upper()):
+            sample["packets"][0]["data_hash"] = "SHA256:" + payload_hash
+            observed = ACTOR.copied_packet_start(sample, 240000000, "audio", AAC_PACKET_SHA256)
+            self.assertEqual(observed["packet_sha256"], observed["expected_packet_sha256"])
+            self.assertEqual(observed["packet_sha256"], AAC_PACKET_SHA256)
+        for payload_hash, code in (("SHA256:" + "f" * 64, "copied_audio_hash_mismatch"),
+            (None, "copied_audio_hash_missing"), ("SHA512:" + AAC_PACKET_SHA256, "copied_audio_hash_missing")):
+            changed = copy.deepcopy(sample)
+            changed["packets"].append(copy.deepcopy(sample["packets"][0]))
+            changed["packets"][0]["data_hash"] = payload_hash
+            with self.subTest(payload_hash=payload_hash), self.assertRaisesRegex(ACTOR.Failure, code):
+                ACTOR.copied_packet_start(changed, 240000000, "audio", AAC_PACKET_SHA256)
+        with self.assertRaisesRegex(ACTOR.Failure, "copied_audio_expected_hash"):
+            ACTOR.copied_packet_start(sample, 240000000, "audio")
+        sample["packets"][0].update(pts=0, dts=0)
+        self.assertEqual(ACTOR.copied_packet_start(sample, 0, "audio", AAC_PACKET_SHA256)["packet_sha256"], AAC_PACKET_SHA256)
+
+    def test_consumer_selects_original_source_time_instead_of_aligned_first_frame(self):
+        arguments = ACTOR.progressive_frame_arguments("aligned.mp4", 300000000, True)
+        self.assertIn("-copyts", arguments)
+        self.assertEqual(arguments[arguments.index("-vf") + 1], "select=gte(t\\,30.0000000),scale=64:36")
+        self.assertNotIn("-ss", arguments)
+        exact = ACTOR.progressive_frame_arguments("rebased.mp4", 300000000, False)
+        self.assertNotIn("-copyts", exact)
+        self.assertEqual(exact[exact.index("-vf") + 1], "scale=64:36")
+
+
+class RemuxPlaybackTests(unittest.TestCase):
+    def setUp(self):
+        self.actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        self.actor.lock = threading.RLock()
+        self.actor.phase, self.actor.plays, self.actor.intents = "cold", {}, {}
+        self.actor.m = {"thresholds": {"min_media_bytes": 64, "frame_mae": 0}}
+        self.actor.c = {"user_id": "user", "device_id": "device", "playback": [{"mode": "remux", "item_id": "item",
+            "path": "/owned/source.mp4", "body": {"IsPlayback": True}, "seek_ticks": 300000000, "expected_codecs": ["h264", "aac"]}]}
+        self.events, self.requests = [], []
+        self.actor.e = mock.Mock(private=Path("/evidence"))
+        self.actor.e.event.side_effect = lambda kind, **fields: self.events.append({"kind": kind, **fields})
+        self.actor.admission_intent = mock.Mock(side_effect=self.admission)
+        self.actor.http = mock.Mock(side_effect=self.http)
+        self.actor.command = mock.Mock(side_effect=self.command)
+        self.actor.sql = mock.Mock(side_effect=self.jobs)
+        self.actor.close_one_playback = mock.Mock()
+        self.actor.drain_playback = mock.Mock()
+        self.seeking, self.wrong_frame = False, False
+        self.audio_packet_hash, self.unbound_audio = AAC_PACKET_SHA256, False
+
+    def admission(self, kind, value):
+        self.actor.intents["intent"] = value
+        return "intent"
+
+    def http(self, label, method, path, body=None, **kwargs):
+        self.requests.append((label, method, path, copy.deepcopy(body)))
+        if label == "remux-prepare":
+            value = {"PlaySessionId": "play_owned", "MediaSources": [{"Id": "source", "TranscodingUrl":
+                "/emby/Videos/item/stream.mp4?VideoCodec=copy&AudioCodec=copy&PlaySessionId=play_owned"}]}
+            return value, {}, (1, 2), None
+        if label in ("remux-start", "remux-seek"):
+            self.seeking = label.endswith("-seek")
+            headers = {"X-Goby-Start-Time-Ticks": "240000000" if self.seeking else "0"}
+            if self.seeking:
+                headers["X-Goby-Seek-Aligned"] = "true"
+            return b"m" * 128, headers, (30, 45) if self.seeking else (10, 20), {"name": label + ".mp4"}
+        if label == "remux-progress-read":
+            return {"UserData": {"PlaybackPositionTicks": 300000000}}, {}, (50, 51), None
+        return None, {}, (3, 4), None
+
+    def command(self, tool, arguments, **kwargs):
+        if tool == "ffprobe":
+            if "-show_packets" in arguments:
+                video = arguments[arguments.index("-select_streams") + 1] == "v:0"
+                index, rate, kind = (0, 12288, "video") if video else (1, 48000, "audio")
+                value = {"streams": [{"index": index, "codec_type": kind, "time_base": "1/" + str(rate)}],
+                         "packets": [{"stream_index": index, "pts": 24 * rate, "dts": 24 * rate}]}
+                if not video:
+                    self.assertEqual(arguments[arguments.index("-show_data_hash") + 1], "sha256")
+                    self.assertIn("data_hash", arguments[arguments.index("-show_entries") + 1])
+                    self.assertEqual(arguments[arguments.index("-read_intervals") + 1], "%+#64")
+                    value["packets"][0]["data_hash"] = "SHA256:" + self.audio_packet_hash
+            else:
+                value = {"streams": [{"codec_type": "video", "codec_name": "h264"}, {"codec_type": "audio", "codec_name": "aac"}]}
+            return ACTOR.json_bytes(value), {"name": "probe.json"}
+        if "-ss" in arguments:
+            position = int(float(arguments[arguments.index("-ss") + 1]))
+        elif self.seeking:
+            target_selected = "-copyts" in arguments and "select=gte(t\\,30.0000000),scale=64:36" in arguments
+            position = 30 if target_selected and not self.wrong_frame else 24
+        else:
+            position = 0
+        return bytes([position]) * (64 * 36 * 3), {"name": "frame.bin"}
+
+    def jobs(self, query):
+        for binding in ("play_session_id='play_owned'", "item_id='item'", "media_source_id='source'", "device_id='device'", "user_id='user'"):
+            self.assertIn(binding, query)
+        plan = copy_seek_plan() if self.seeking else copy_seek_plan(0, 0, False)
+        if self.seeking and self.unbound_audio:
+            candidate = ACTOR.strict_json(plan["VideoCopySeekCandidate"].encode())
+            candidate["index"]["entries"][0]["audio"][0]["packet_sha256"] = "f" * 64
+            plan["VideoCopySeekCandidate"] = ACTOR.json_bytes(candidate).decode()
+        return [{"id": "job", "state": "completed", "plan": plan, "source_stamp": "owned-source", "bytes": 128}]
+
+    def test_aligned_seek_keeps_measured_get_original_progress_and_session_cleanup(self):
+        self.actor.playback("remux")
+        self.assertEqual([row[0] for row in self.requests], ["remux-prepare", "remux-started", "remux-start", "remux-seek", "remux-progress", "remux-progress-read"])
+        seek = next(row for row in self.requests if row[0] == "remux-seek")
+        query = dict(ACTOR.parse_qsl(ACTOR.urlsplit(seek[2]).query))
+        self.assertEqual(query["StartTimeTicks"], "300000000")
+        self.assertEqual(query["AllowVideoSeekAlignment"], "true")
+        self.assertEqual(query["VideoCodec"], query["AudioCodec"])
+        self.assertEqual(query["VideoCodec"], "copy")
+        progress = next(row[3] for row in self.requests if row[0] == "remux-progress")
+        self.assertEqual(progress["PositionTicks"], 300000000)
+        observed = next(event for event in self.events if event["kind"] == "decoded_media" and event["seeking"])
+        self.assertEqual((observed["actual_start_ticks"], observed["consumer_target_ticks"], observed["frame_mae"]), (240000000, 300000000, 0))
+        span = next(event for event in self.events if event["kind"] == "playback_bytes" and event["seeking"])
+        self.assertEqual((span["start_ns"], span["end_ns"]), (30, 45))
+        clock = next(event for event in self.events if event["kind"] == "copied_seek_clock")
+        self.assertEqual(clock["packet_starts"]["audio"]["packet_sha256"], AAC_PACKET_SHA256)
+        self.assertEqual(clock["packet_starts"]["audio"]["expected_packet_sha256"], AAC_PACKET_SHA256)
+        self.assertEqual(sum(call.args[0] == "ffprobe" and "-show_packets" in call.args[1]
+                             for call in self.actor.command.call_args_list), 2)
+        self.actor.close_one_playback.assert_called_once_with("play_owned")
+        self.actor.drain_playback.assert_called_once()
+        self.assertEqual(self.actor.intents, {})
+
+    def test_aligned_first_picture_cannot_pass_as_requested_seek_picture(self):
+        self.wrong_frame = True
+        with self.assertRaisesRegex(ACTOR.Failure, "seek_frame_mismatch"):
+            self.actor.playback("remux")
+        self.assertFalse(any(row[0] == "remux-progress" for row in self.requests))
+        self.assertIn("play_owned", self.actor.plays)
+        self.actor.close_one_playback.assert_not_called()
+
+    def test_replaced_audio_cannot_pass_with_correct_clock_and_requested_video_frame(self):
+        self.audio_packet_hash = "f" * 64
+        with self.assertRaisesRegex(ACTOR.Failure, "copied_audio_hash_mismatch"):
+            self.actor.playback("remux")
+        self.assertFalse(any(row[0] == "remux-progress" for row in self.requests))
+        self.assertFalse(any(event["kind"] == "copied_seek_clock" for event in self.events))
+        self.assertIn("play_owned", self.actor.plays)
+
+    def test_unbound_audio_proof_cannot_authorize_a_matching_output_packet(self):
+        self.unbound_audio = True
+        with self.assertRaisesRegex(ACTOR.Failure, "remux_seek_audio_binding"):
+            self.actor.playback("remux")
+        self.assertFalse(any(row[0] == "remux-progress" for row in self.requests))
+        self.assertFalse(any(call.args[0] == "ffprobe" and "-show_packets" in call.args[1]
+                             for call in self.actor.command.call_args_list))
 
 
 if __name__ == "__main__":

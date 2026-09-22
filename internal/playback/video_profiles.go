@@ -124,23 +124,46 @@ func planHTTPVideoProfile(source Source, request Request, profile TranscodingPro
 	var unverified *ConversionDecision
 	// Decoder restart evidence is optional and selected only for the final
 	// encoded plan. Copy seeking instead needs a feasible exact boundary before
-	// choosing a delivery mode. Reduce its checked scan evidence once so bounded
-	// profile retries cannot repeatedly traverse a large catalog index.
+	// choosing a delivery mode. Retain at most two checked boundaries: the nearest
+	// video restart and the nearest restart shared with copied audio. Reducing to
+	// video alone would discard an earlier remux boundary; keeping both also
+	// preserves exact video with independently encoded audio. Profile retries must
+	// not repeatedly traverse a large catalog index.
 	copySeekInfo := source.Info
 	source.Info.VideoSeekIndexes = nil
 	allowAlignment := !isFalse(request.AllowVideoSeekAlignment) && !isFalse(profile.CopyTimestamps)
 	if request.StartTimeTicks != nil && *request.StartTimeTicks > 0 {
-		prepared := transcode.Plan{OutputMode: "progressive", Container: "mp4", VideoCodec: "copy", VideoStreamIndex: selection.video.Index,
-			AudioStreamIndex: -1, StartTicks: *request.StartTimeTicks, DurationTicks: source.Info.DurationTicks,
-			SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks, CopyTimestamps: isTrue(profile.CopyTimestamps)}
-		attached := transcode.AttachVideoCopySeekCandidate(&prepared, copySeekInfo)
-		if !attached && allowAlignment {
-			prepared.CopyTimestamps = true
-			attached = transcode.AttachVideoCopySeekCandidateAligned(&prepared, copySeekInfo, 10*media.TicksPerSecond)
+		audioIndexes := []int{-1}
+		if selection.audio != nil {
+			audioIndexes = append(audioIndexes, selection.audio.Index)
 		}
-		if attached {
+		for _, audioIndex := range audioIndexes {
+			prepared := transcode.Plan{OutputMode: "progressive", Container: "mp4", VideoCodec: "copy", VideoStreamIndex: selection.video.Index,
+				AudioStreamIndex: audioIndex, StartTicks: *request.StartTimeTicks, DurationTicks: source.Info.DurationTicks,
+				SourceFormatStartKnown: source.Info.FormatStartKnown, SourceFormatStartTicks: source.Info.FormatStartTicks, CopyTimestamps: isTrue(profile.CopyTimestamps)}
+			if audioIndex >= 0 {
+				prepared.AudioCodec = "copy"
+			}
+			attached := transcode.AttachVideoCopySeekCandidate(&prepared, copySeekInfo)
+			if !attached && allowAlignment {
+				prepared.CopyTimestamps = true
+				attached = transcode.AttachVideoCopySeekCandidateAligned(&prepared, copySeekInfo, 10*media.TicksPerSecond)
+			}
+			if !attached {
+				continue
+			}
 			if candidate, err := media.ValidateVideoCopySeekCandidate(prepared.VideoCopySeekCandidate); err == nil {
-				source.Info.VideoSeekIndexes = []media.VideoSeekIndex{candidate.Index}
+				if len(source.Info.VideoSeekIndexes) == 0 {
+					source.Info.VideoSeekIndexes = []media.VideoSeekIndex{candidate.Index}
+					continue
+				}
+				index := &source.Info.VideoSeekIndexes[0]
+				point, previous := candidate.Index.Entries[0], index.Entries[0]
+				if point.PTS < previous.PTS {
+					index.Entries = []media.VideoSeekPoint{point, previous}
+				} else if point.PTS > previous.PTS {
+					index.Entries = []media.VideoSeekPoint{previous, point}
+				}
 			}
 		}
 	}

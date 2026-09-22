@@ -157,15 +157,74 @@ func (s *Store) CheckOwnership(ctx context.Context) error {
 // finishing after a successor has recovered them. Media probes still run in
 // parallel; only short database transactions share this mutex.
 func (s *Store) beginOwnedTx(ctx context.Context) (pgx.Tx, error) {
+	if err := s.lockOwnedSession(ctx); err != nil {
+		return nil, err
+	}
+	return s.beginOwnedTxLocked(ctx)
+}
+
+// lockOwnedSession must be called without Store.mu. A queued writer must not
+// prevent unrelated root admission or independent pool transactions.
+func (s *Store) lockOwnedSession(ctx context.Context) error {
+	if s == nil {
+		return ErrUnavailable
+	}
 	ownership := s.ownership
 	if ownership == nil || ownership.lost.Load() {
-		return nil, ErrUnavailable
+		return ErrUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	ownership.mu.Lock()
 	if ownership.conn == nil || ownership.lost.Load() {
 		ownership.mu.Unlock()
-		return nil, ErrUnavailable
+		return ErrUnavailable
 	}
+	if err := ctx.Err(); err != nil {
+		ownership.mu.Unlock()
+		return err
+	}
+	return nil
+}
+
+// lockOwnedAdmission returns with both ownership.mu and Store.mu held. The
+// owner is acquired first, and shutdown is checked again under admission.
+// Existing scan cancellation may finish while Close joins its workers.
+func (s *Store) lockOwnedAdmission(ctx context.Context, allowClosing bool) error {
+	if s == nil || !allowClosing && s.closing.Load() {
+		return ErrUnavailable
+	}
+	if err := s.lockOwnedSession(ctx); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	if !allowClosing && (s.closed || s.closing.Load()) {
+		s.mu.Unlock()
+		s.ownership.mu.Unlock()
+		return ErrUnavailable
+	}
+	return nil
+}
+
+// beginOwnedAdmission leaves Store.mu held only on success. The caller retains
+// it through any queue or root-anchor publication, or releases it before a
+// repository callback. The returned transaction owns ownership.mu as usual.
+func (s *Store) beginOwnedAdmission(ctx context.Context, allowClosing bool) (pgx.Tx, error) {
+	if err := s.lockOwnedAdmission(ctx, allowClosing); err != nil {
+		return nil, err
+	}
+	tx, err := s.beginOwnedTxLocked(ctx)
+	if err != nil {
+		s.mu.Unlock()
+	}
+	return tx, err
+}
+
+// beginOwnedTxLocked transfers the held owner mutex to the transaction, or
+// releases it on failure. Check cancellation after any admission mutex wait.
+func (s *Store) beginOwnedTxLocked(ctx context.Context) (pgx.Tx, error) {
+	ownership := s.ownership
 	if err := ctx.Err(); err != nil {
 		ownership.mu.Unlock()
 		return nil, err
@@ -288,8 +347,8 @@ func (tx *ownedTx) Rollback(_ context.Context) error {
 }
 
 // ownershipErrorLocked never takes Store.mu: management calls may already hold
-// it before acquiring the write mutex. Cancellation and the lost flag are safe
-// without reversing that lock order.
+// admission while repository callbacks deliberately run without it. Cancellation
+// and the lost flag do not require another admission lock.
 func (s *Store) ownershipErrorLocked(err error) error {
 	if err == nil {
 		return nil

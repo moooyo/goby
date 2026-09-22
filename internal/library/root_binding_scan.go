@@ -232,14 +232,18 @@ func rootBindingScanObservationOnly(err error) (error, bool) {
 
 // admitRootBindingScan retains admission through commit and anchor publication.
 // All filesystem acquisition precedes this call, and revalidation never takes
-// Store.mu. The lock order is Store.mu followed by ownership.mu throughout.
+// Store.mu. Ownership is acquired before the admission mutex.
 func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous *rootBindingRow, capture *rootBindingScanCapture, anchor **os.Root) (rootBindingRow, error) {
-	s.mu.Lock()
+	raw, err := s.beginOwnedAdmission(task.ctx, false)
+	if err != nil {
+		return rootBindingRow{}, err
+	}
 	defer s.mu.Unlock()
+	defer rollback(raw)
 	if err := task.ctx.Err(); err != nil {
 		return rootBindingRow{}, err
 	}
-	if s.closed || s.closing.Load() || !s.rootBindingPathConfiguredLocked(root.allowedPath) {
+	if !s.rootBindingPathConfiguredLocked(root.allowedPath) {
 		return rootBindingRow{}, ErrUnavailable
 	}
 	if s.active[task.job.ID] != task || task.job.LibraryID != root.libraryID || task.job.Status != "Running" {
@@ -249,7 +253,7 @@ func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous 
 		return rootBindingRow{}, context.Canceled
 	}
 	var current rootBindingRow
-	err := s.taskScanTransaction(task.ctx, func(tx OwnedTx) error {
+	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
 		if err := task.ctx.Err(); err != nil {
 			return err
 		}

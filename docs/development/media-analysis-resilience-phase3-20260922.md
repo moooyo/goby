@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **repair regression/builds and independent closure passed; failed-capacity evidence is externally archived; fresh full capacity and fault/recovery acceptance remain pending; Phase 3 is unpublished**.
+Status: **scope07 preparation passed; its actual cold compound workload failed; query, playback-admission and remux-seek repairs are in progress; Phase 3 acceptance and publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -61,12 +61,53 @@ Only three closed, unreferenced generated compiler-cache directories were then
 retired, freeing 31,465,472 bytes. Sources, binaries, frontend and private results
 were preserved. A separately recorded successor passed the original gates and
 started the full producer and resource observer. The producer's new real broker
-check passed before any fixture mutation. Preparation is running; no complete
-capacity journey is accepted by these records.
+check passed before any fixture mutation. Preparation completed with 9,342 seed
+catalog rows and 658 pending additions for the 10,000-item tier. Resource
+observation passed, all preparation workers closed, and the application returned
+to its original 1,280 MiB limit without changing its lifetime.
+
+The actual scope07 compound workload then failed during cold. Concurrent shallow
+and deep catalog requests took approximately 6.2-7.9 seconds. Three playback
+preparations took approximately 6.2-6.4 seconds, and remux seek returned 415.
+Cached and incremental phases did not execute. External resource observation
+passed without gaps or service-lifetime changes; that does not make the workload
+successful. Driver cleanup completed. Independent closure confirmed the worker,
+observer, publisher, closure collector and control parent were closed. The
+original application/database and all failed data remain retained.
+
+A read-only diagnostic replayed the original count and page SELECTs inside one
+repeatable-read snapshot in JIT on/off/off/on order. Counts and ordered IDs
+matched. With JIT enabled, count took 587-630 ms and pages 1,784-1,854 ms;
+transaction-local JIT disabling reduced those to 22-23 ms and 26-79 ms. This was
+an isolated diagnostic, not a repeated compound acceptance run. The original
+collector failed at a CSV field-size limit after SQL completion; a separate
+collection of existing output succeeded without repeating SQL. Both records
+remain retained. The query repair and semantic/connection-restoration tests are
+written but not yet remotely verified.
+
+Playback admission separately exposes head-of-line blocking: a request waiting
+for the catalog owner holds the shared store mutex, delaying unrelated source
+opens and user-state writes. All thirteen affected admission paths now wait
+outside that mutex while preserving queue, root-anchor and shutdown semantics.
+New tests observe the actual owner-mutex wait before checking independent work,
+cancellation and shutdown. Independent source review found no remaining reversed
+admission path; remote verification is still required. This differs from the
+earlier repaired lock inversion.
+
+The remux fixture's requested 30-second video point lacks a matching AAC packet
+boundary; a proved joint boundary exists at 24 seconds within the allowed
+window. The selector repair searches earlier joint candidates after validating
+the entire index. The driver explicitly permits alignment while retaining the
+original 30-second request, both copy codecs, source timestamps and target-frame
+verification. Independent review also identified an output AAC packet-hash
+verification gap; the driver now compares the first output AAC payload with the
+source proof and validates the proof's joint-boundary binding. These changes still
+require remote verification. No latency or failure threshold was relaxed.
 
 The latest composed regression has **4,264 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
-**73 Python passes**. Frontend and both application builds passed. Original
+**73 Python passes**. This is the accepted baseline before the new scope07
+repairs. Frontend and both application builds passed. Original
 failures and skips remain in their source-bound records. Preparation is not
 capacity acceptance: the full 10k compound journey failed during cold, while 100k,
 overload and all 28 fault/recovery cases remain unrun; `accepted_capacity` is false.

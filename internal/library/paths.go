@@ -194,7 +194,7 @@ func (s *Store) approvedLibraryRootLocked(root libraryRoot) (*os.Root, error) {
 
 // A publication lease owns a clone of the approved anchor, not the registered
 // directory. Each Open rechecks the registered name chain without Store.mu,
-// which must never be acquired while an owned transaction holds ownership.mu.
+// which transaction callbacks must not acquire to perform filesystem work.
 type libraryRootLease struct {
 	approved     *os.Root
 	relativePath string

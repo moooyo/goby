@@ -184,22 +184,19 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		}
 	}
 	// Hold admission through commit and anchor publication. Filesystem capture
-	// happened outside Store.mu; its revalidation never consults the Store.
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.closing.Load() {
-		return Library{}, ErrUnavailable
+	// and the ownership wait happen outside Store.mu; revalidation never
+	// consults the Store.
+	tx, err := s.beginOwnedAdmission(ctx, false)
+	if err != nil {
+		return Library{}, fmt.Errorf("begin library creation: %w", err)
 	}
+	defer s.mu.Unlock()
+	defer rollback(tx)
 	for _, registration := range roots {
 		if !s.rootBindingPathConfiguredLocked(registration.root.allowedPath) {
 			return Library{}, ErrUnavailable
 		}
 	}
-	tx, err := s.beginOwnedTx(ctx)
-	if err != nil {
-		return Library{}, fmt.Errorf("begin library creation: %w", err)
-	}
-	defer rollback(tx)
 	protected := tx.(*ownedTx).ctx
 	if err := administrator.check(protected, tx, true); err != nil {
 		return Library{}, err
@@ -313,15 +310,11 @@ func (s *Store) deleteLibrary(ctx context.Context, administrator *catalogAdminis
 	if id == collectionLibraryID {
 		return ErrNotFound
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.closing.Load() {
-		return ErrUnavailable
-	}
-	tx, err := s.beginOwnedTx(ctx)
+	tx, err := s.beginOwnedAdmission(ctx, false)
 	if err != nil {
 		return fmt.Errorf("begin library deletion: %w", err)
 	}
+	defer s.mu.Unlock()
 	defer rollback(tx)
 	if err := administrator.check(ctx, tx, true); err != nil {
 		return err

@@ -56,18 +56,13 @@ func (s *Store) WithOwnedTx(ctx context.Context, callback func(OwnedTx) error) e
 	if callback == nil {
 		return fmt.Errorf("%w: owned transaction callback is required", ErrInvalidInput)
 	}
-	// Admission and shutdown use Store.mu before the owner mutex. Release the
-	// admission mutex before invoking repository code; never take it from there.
-	s.mu.Lock()
-	if s.closed || s.closing.Load() {
-		s.mu.Unlock()
-		return ErrUnavailable
-	}
-	raw, err := s.beginOwnedTx(ctx)
-	s.mu.Unlock()
+	// Wait for the owner without admission, then release the admitted memory
+	// state before invoking repository code; never take Store.mu from there.
+	raw, err := s.beginOwnedAdmission(ctx, false)
 	if err != nil {
 		return err
 	}
+	s.mu.Unlock()
 	return s.withOwnedTxCallback(raw, callback)
 }
 

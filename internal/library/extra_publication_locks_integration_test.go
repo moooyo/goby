@@ -192,8 +192,12 @@ func runExtraPublicationDeletionChild(t *testing.T, schema string) {
 		deleted <- store.DeleteLibrary(ctx, os.Getenv("GOBY_TEST_EXTRA_PUBLICATION_DELETED"))
 	}()
 	// The scanner is fixed at the database gate and the other worker is idle.
-	// Only DeleteLibrary can now acquire Store.mu and wait on ownership.mu.
-	waitExtraDeletionStoreLock(t, ctx, store, deleted)
+	// Observe DeleteLibrary waiting for that owner without blocking admission.
+	ownedAdmissionWaitForOwner(t, ctx, deleted, "deleteLibrary")
+	if !store.mu.TryLock() {
+		t.Fatal("the queued deletion held Store.mu while awaiting publication")
+	}
+	store.mu.Unlock()
 	if err := gate.Commit(ctx); err != nil {
 		t.Fatal("release the exact extra publication transaction gate")
 	}
@@ -231,28 +235,6 @@ func holdExtraPublicationGate(t *testing.T, ctx context.Context, pool *pgxpool.P
 		t.Fatal("hold the extra publication gate")
 	}
 	return gate
-}
-
-func waitExtraDeletionStoreLock(t *testing.T, ctx context.Context, store *Store, deleted <-chan error) {
-	t.Helper()
-	deadline, tick := time.NewTimer(5*time.Second), time.NewTicker(5*time.Millisecond)
-	defer deadline.Stop()
-	defer tick.Stop()
-	for {
-		if !store.mu.TryLock() {
-			return
-		}
-		store.mu.Unlock()
-		select {
-		case err := <-deleted:
-			t.Fatalf("independent deletion returned before owning its management lock (%T)", err)
-		case <-tick.C:
-		case <-deadline.C:
-			t.Fatal("independent deletion did not acquire Store.mu at the publication gate")
-		case <-ctx.Done():
-			t.Fatal("publication/deletion fixture ended before its lock barrier")
-		}
-	}
 }
 
 func TestExtraPublicationRejectsSourceChangesAfterTransactionStarts(t *testing.T) {

@@ -533,31 +533,13 @@ func TestBoxSetPlayedSerializesMembershipEditsThroughCatalogOwnership(t *testing
 				_, err := store.AddCollectionItems(operationCtx, owner, box.ID, BoxSetKind, []string{"collection-track-c"})
 				membershipDone <- err
 			}()
-			// The batch already released Store.mu and the scan workers are idle.
-			// Only the membership API can hold it while awaiting catalog ownership.
-			admissionCtx, stopAdmission := context.WithTimeout(operationCtx, 5*time.Second)
-			ticker := time.NewTicker(5 * time.Millisecond)
-			admitted := false
-			for !admitted {
-				if !store.mu.TryLock() {
-					admitted = true
-					break
-				}
-				store.mu.Unlock()
-				select {
-				case err := <-membershipDone:
-					ticker.Stop()
-					stopAdmission()
-					t.Fatalf("membership edit completed before the batch released ownership: %v", err)
-				case <-ticker.C:
-				case <-admissionCtx.Done():
-					ticker.Stop()
-					stopAdmission()
-					t.Fatal("membership edit did not reach catalog admission behind the blocked batch")
-				}
+			// The membership API waits for the exact catalog owner without
+			// holding admission against unrelated root or user-state operations.
+			ownedAdmissionWaitForOwner(t, operationCtx, membershipDone, "beginCollectionWriteWithScope")
+			if !store.mu.TryLock() {
+				t.Fatal("the queued membership edit held Store.mu while awaiting ownership")
 			}
-			ticker.Stop()
-			stopAdmission()
+			store.mu.Unlock()
 			select {
 			case err := <-membershipDone:
 				t.Fatalf("membership edit escaped catalog ownership while the source was locked: %v", err)

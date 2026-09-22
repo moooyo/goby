@@ -162,16 +162,11 @@ func (s *Store) beginCollectionWriteWithScope(ctx context.Context, subject Subje
 		(!actor.IsApplicationKey() && (subject.UserID != actor.User.ID || subject.ApplicationCredentialID != ""))) {
 		return nil, libraryAccess{}, ErrForbidden
 	}
-	s.mu.Lock()
-	if s.closed || s.closing.Load() {
-		s.mu.Unlock()
-		return nil, libraryAccess{}, ErrUnavailable
-	}
-	tx, err := s.beginOwnedTx(ctx)
-	s.mu.Unlock()
+	tx, err := s.beginOwnedAdmission(ctx, false)
 	if err != nil {
 		return nil, libraryAccess{}, err
 	}
+	s.mu.Unlock()
 	protected := tx.(*ownedTx).ctx
 	// Match managed-user deletion's account order before either side touches
 	// cascading collection/share rows. The owner is immutable, so a preliminary

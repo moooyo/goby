@@ -99,6 +99,12 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 		return ItemResult{}, err
 	}
 	defer tx.Rollback(ctx)
+	// Compilation can dominate bounded catalog counts and pages. Keep their
+	// shared snapshot and authorization unchanged while disabling JIT only for
+	// this transaction; commit or rollback restores the pooled session setting.
+	if _, err := tx.Exec(ctx, `SET LOCAL jit = off`); err != nil {
+		return ItemResult{}, fmt.Errorf("disable catalog query JIT: %w", err)
+	}
 	if err := collectionAdministrator(ctx).check(ctx, tx, false); err != nil {
 		return ItemResult{}, err
 	}

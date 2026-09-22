@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/database"
 )
 
@@ -222,16 +221,16 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 			return nil, err
 		}
 	}
-	// Admission must precede the owner mutex. The callback never acquires
-	// Store.mu, including its final observations and original-context checks.
-	s.mu.Lock()
-	err = s.admitScanReconciliationLocked(task, roots)
-	var raw pgx.Tx
-	if err == nil {
-		raw, err = s.beginOwnedTx(task.ctx)
+	// Wait for ownership without blocking root admission, then recheck the
+	// task and configured roots under Store.mu. The callback never reacquires it.
+	raw, err := s.beginOwnedAdmission(task.ctx, false)
+	if err != nil {
+		return nil, err
 	}
+	err = s.admitScanReconciliationLocked(task, roots)
 	s.mu.Unlock()
 	if err != nil {
+		rollback(raw)
 		return nil, err
 	}
 	var albums []string

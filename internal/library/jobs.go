@@ -36,13 +36,14 @@ func (s *Store) startScan(ctx context.Context, administrator *catalogAdministrat
 	if libraryID == collectionLibraryID {
 		return Job{}, ErrNotFound
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.closing.Load() {
-		return Job{}, ErrUnavailable
+	raw, err := s.beginOwnedAdmission(ctx, false)
+	if err != nil {
+		return Job{}, fmt.Errorf("queue library scan: %w", err)
 	}
+	defer s.mu.Unlock()
+	defer rollback(raw)
 	var job Job
-	err := s.taskScanTransaction(ctx, func(tx OwnedTx) error {
+	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
 		authorization := catalogAuthorizationTx{tx: tx}
 		if err := administrator.check(ctx, authorization, true); err != nil {
 			return err
@@ -143,9 +144,13 @@ func (s *Store) CancelJobAsAdministrator(ctx context.Context, actor identity.Pri
 }
 
 func (s *Store) cancelJob(ctx context.Context, administrator *catalogAdministrator, id string) error {
-	s.mu.Lock()
+	raw, err := s.beginOwnedAdmission(ctx, true)
+	if err != nil {
+		return fmt.Errorf("request scan cancellation: %w", err)
+	}
 	defer s.mu.Unlock()
-	err := s.taskScanTransaction(ctx, func(tx OwnedTx) error {
+	defer rollback(raw)
+	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
 		authorization := catalogAuthorizationTx{tx: tx}
 		if err := administrator.check(ctx, authorization, true); err != nil {
 			return err

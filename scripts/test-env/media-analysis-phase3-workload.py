@@ -10,6 +10,7 @@ decoding. Missing observations and missing overlap fail closed.
 import argparse
 import concurrent.futures
 from datetime import datetime
+from fractions import Fraction
 import hashlib
 import http.client
 import json
@@ -125,6 +126,110 @@ def distribution(values):
     return {"count": len(values), "min": min(values) if values else None,
             "p50": percentile(values, .50), "p95": percentile(values, .95),
             "p99": percentile(values, .99), "max": max(values) if values else None}
+
+
+def progressive_request(path, mode, requested_ticks):
+    parts = urlsplit(path)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["StartTimeTicks"] = str(requested_ticks)
+    if mode == "remux":
+        need(query.get("VideoCodec") == query.get("AudioCodec") == "copy", "remux_copy_request_required")
+        if requested_ticks:
+            query["AllowVideoSeekAlignment"] = "true"
+    return urlunsplit(("", "", parts.path, urlencode(query), ""))
+
+
+def progressive_start(headers, requested_ticks, allow_alignment):
+    values = {key.lower(): value for key, value in headers.items()}
+    raw = values.get("x-goby-start-time-ticks", "")
+    need(type(raw) is str and re.fullmatch(r"0|[1-9][0-9]*", raw), "progressive_actual_start_missing")
+    actual = integer(int(raw), 0, requested_ticks, "progressive_actual_start_bounds")
+    aligned = actual != requested_ticks
+    need(values.get("x-goby-seek-aligned", "") == ("true" if aligned else "") and
+         (not aligned or allow_alignment and requested_ticks - actual <= 100000000), "progressive_alignment_contract")
+    return actual
+
+
+def remux_seek_contract(plan, requested_ticks, actual_ticks):
+    """Read completed-job preparation data; it never replaces runtime copy proof."""
+    need(type(plan.get("StartTicks")) is int and plan["StartTicks"] == actual_ticks and
+         plan.get("VideoCodec") == plan.get("AudioCodec") == "copy" and
+         type(plan.get("VideoStreamIndex")) is int and plan["VideoStreamIndex"] >= 0 and
+         type(plan.get("AudioStreamIndex")) is int and plan["AudioStreamIndex"] >= 0, "remux_seek_plan")
+    copy_timestamps = plan.get("CopyTimestamps", False)
+    need(type(copy_timestamps) is bool and (actual_ticks == requested_ticks or copy_timestamps), "remux_seek_clock_contract")
+    raw = plan.get("VideoCopySeekCandidate", "")
+    need(type(raw) is str and 0 < len(raw.encode("utf-8")) <= 8192, "remux_seek_candidate_missing")
+    candidate = strict_json(raw.encode("utf-8"))
+    need(type(candidate) is dict, "remux_seek_joint_candidate")
+    original = candidate.get("original_requested_start_ticks", 0)
+    need(type(candidate.get("version")) is int and candidate["version"] == 1 and type(candidate.get("requested_start_ticks")) is int and
+         candidate["requested_start_ticks"] == actual_ticks and type(original) is int and
+         original == (requested_ticks if actual_ticks != requested_ticks else 0) and
+         candidate.get("copy_timestamps", False) is copy_timestamps, "remux_seek_request_binding")
+    index, audio = candidate.get("index"), candidate.get("audio")
+    need(type(index) is dict and index.get("stream_index") == plan["VideoStreamIndex"] and
+         type(index.get("entries")) is list and len(index["entries"]) == 1 and
+         type(audio) is dict and audio.get("stream_index") == plan["AudioStreamIndex"] and
+         audio.get("codec") == "aac", "remux_seek_joint_candidate")
+    exact(audio, "stream_index codec time_base_numerator time_base_denominator sample_rate channels pts duration packet_sha256",
+          "remux_seek_audio_proof")
+    for key, lower, upper in (("stream_index", 0, (1 << 63) - 1), ("time_base_numerator", 1, (1 << 63) - 1),
+        ("time_base_denominator", 1, (1 << 63) - 1), ("sample_rate", 8000, 192000), ("channels", 1, 8),
+        ("pts", -(1 << 63) + 1, (1 << 63) - 1), ("duration", 1, (1 << 63) - 1)):
+        integer(audio[key], lower, upper, "remux_seek_audio_proof")
+    need(type(audio["packet_sha256"]) is str and re.fullmatch(r"[0-9a-f]{64}", audio["packet_sha256"]),
+         "remux_seek_audio_proof")
+    audio_clock = Fraction(audio["time_base_numerator"], audio["time_base_denominator"])
+    need(audio["duration"] * audio_clock <= Fraction(1, 2), "remux_seek_audio_proof")
+    point = index["entries"][0]
+    need(type(point) is dict and type(point.get("audio")) is list and 0 < len(point["audio"]) <= 32,
+         "remux_seek_audio_binding")
+    matches = [proof for proof in point["audio"] if type(proof) is dict and proof.get("stream_index") == audio["stream_index"]]
+    # Canonical JSON keeps bools distinct from integers when binding the full proof.
+    need(len(matches) == 1 and json_bytes(matches[0]) == json_bytes(audio), "remux_seek_audio_binding")
+    for key in ("time_base_numerator", "time_base_denominator"):
+        integer(index.get(key), 1, (1 << 63) - 1, "remux_seek_joint_clock")
+    integer(point.get("pts"), -(1 << 63) + 1, (1 << 63) - 1, "remux_seek_joint_clock")
+    need(type(point.get("dts")) is int and point["pts"] == point["dts"] and
+         audio["pts"] * audio_clock == point["pts"] * Fraction(index["time_base_numerator"], index["time_base_denominator"]),
+         "remux_seek_joint_clock")
+    return copy_timestamps, audio["packet_sha256"]
+
+
+def copied_packet_start(probe, expected_ticks, kind, expected_audio_sha256=None):
+    streams, packets = probe.get("streams"), probe.get("packets")
+    need(type(streams) is list and len(streams) == 1 and streams[0].get("codec_type") == kind and
+         type(packets) is list and 0 < len(packets) <= 64, "copied_packet_observation_missing")
+    stream, packet = streams[0], packets[0]
+    clock = stream.get("time_base", "")
+    need(type(clock) is str and re.fullmatch(r"[1-9][0-9]*/[1-9][0-9]*", clock), "copied_packet_clock_missing")
+    need(type(packet.get("pts")) is int and type(packet.get("dts")) is int and packet["pts"] == packet["dts"] and
+         packet.get("stream_index") == stream.get("index"), "copied_packet_restart_timestamp")
+    position = packet["pts"] * Fraction(clock) * 10000000
+    # Aligned native timestamps may round down by less than one public tick.
+    need(Fraction(expected_ticks) <= position < expected_ticks + 1, "copied_packet_source_clock_mismatch")
+    result = {"stream_index": stream["index"], "pts": packet["pts"], "dts": packet["dts"], "time_base": clock,
+              "position_ticks_numerator": position.numerator, "position_ticks_denominator": position.denominator}
+    if kind == "audio":
+        need(type(expected_audio_sha256) is str and re.fullmatch(r"[0-9a-f]{64}", expected_audio_sha256),
+             "copied_audio_expected_hash")
+        payload_hash = packet.get("data_hash")
+        need(type(payload_hash) is str and re.fullmatch(r"SHA256:[0-9a-fA-F]{64}", payload_hash), "copied_audio_hash_missing")
+        actual_hash = payload_hash[7:].lower()
+        need(actual_hash == expected_audio_sha256, "copied_audio_hash_mismatch")
+        result.update(packet_sha256=actual_hash, expected_packet_sha256=expected_audio_sha256)
+    return result
+
+
+def progressive_frame_arguments(output, requested_ticks, copy_timestamps):
+    inputs, filters = ["-i", output], "scale=64:36"
+    if copy_timestamps:
+        inputs = ["-copyts", *inputs]
+        seconds, ticks = divmod(requested_ticks, 10000000)
+        filters = "select=gte(t\\,%d.%07d)," % (seconds, ticks) + filters
+    return ["-v", "error", "-nostdin", "-threads", "1", *inputs, "-map", "0:v:0", "-an", "-sn",
+            "-frames:v", "1", "-vf", filters, "-pix_fmt", "rgb24", "-f", "rawvideo", "pipe:1"]
 
 
 def interval_overlap(left, right):
@@ -1094,36 +1199,65 @@ class Actor:
                     need(raw == stream.read(length), "direct_range_bytes")
                 need(headers.get("Content-Range", "").startswith("bytes %d-%d/" % (offset, offset + length - 1)), "direct_range_header")
             else:
-                parts = urlsplit(current)
-                query = dict(parse_qsl(parts.query, keep_blank_values=True))
-                query["StartTimeTicks"] = str(play["seek_ticks"] if seeking else 0)
-                current = urlunsplit(("", "", parts.path, urlencode(query), ""))
-                raw, _, span, ref = self.http(mode + ("-seek" if seeking else "-start"), "GET", current, binary=True)
+                ticks = play["seek_ticks"] if seeking else 0
+                current = progressive_request(current, mode, ticks)
+                # Alignment negotiation occurs inside this same measured GET;
+                # no separate request may hide its cost from seek first-byte time.
+                raw, headers, span, ref = self.http(mode + ("-seek" if seeking else "-start"), "GET", current, binary=True)
+                actual_ticks = progressive_start(headers, ticks, mode == "remux" and seeking)
                 need(len(raw) >= self.m["thresholds"]["min_media_bytes"], "conversion_empty")
                 output = str(self.e.private / ref["name"])
                 probe, _ = self.command("ffprobe", ["-v", "error", "-show_streams", "-of", "json", output])
                 streams = strict_json(probe)["streams"]
                 need(any(stream["codec_type"] == "video" for stream in streams), "video_seek_consumer_required")
                 need(sorted(s["codec_name"] for s in streams if s["codec_type"] in {"audio", "video"}) == sorted(play["expected_codecs"]), "actual_output_codecs")
-                if any(s["codec_type"] == "video" for s in streams):
-                    ticks = play["seek_ticks"] if seeking else 0
-                    args = ["-v", "error", "-nostdin", "-threads", "1"]
-                    tail = ["-an", "-sn", "-frames:v", "1", "-vf", "scale=64:36", "-pix_fmt", "rgb24", "-f", "rawvideo", "pipe:1"]
-                    original, _ = self.command("ffmpeg", args + ["-ss", str(ticks / 10000000), "-i", play["path"]] + tail, maximum=1 << 20)
-                    decoded, _ = self.command("ffmpeg", args + ["-i", output] + tail, maximum=1 << 20)
-                    need(len(original) == len(decoded) == 64 * 36 * 3, "decoded_frame_size")
-                    mae = sum(abs(a - b) for a, b in zip(original, decoded)) / len(original)
-                    need(mae <= self.m["thresholds"]["frame_mae"], "seek_frame_mismatch")
-                    self.e.event("decoded_media", phase=self.phase, mode=mode, seeking=seeking, frame_mae=mae)
                 jobs = self.sql("SELECT COALESCE(json_agg(json_build_object('id',id,'state',state,'plan',plan,'source_stamp',source_stamp,'bytes',output_bytes)),'[]'::json) FROM encoding_jobs WHERE play_session_id=" + sql_string(identity) + " AND item_id=" + sql_string(play["item_id"]) + " AND media_source_id=" + sql_string(source["Id"]) + " AND device_id=" + sql_string(self.c["device_id"]) + " AND user_id=" + sql_string(self.c["user_id"]))
-                matching = [job for job in jobs if job["plan"].get("StartTicks") == (play["seek_ticks"] if seeking else 0)]
+                matching = [job for job in jobs if job["plan"].get("StartTicks") == actual_ticks]
                 need(matching, "encoding_database_binding")
+                clocks, audio_hashes = [], []
                 for job in matching:
                     plan = job["plan"]
+                    need(type(plan.get("StartTicks")) is int and type(plan.get("CopyTimestamps", False)) is bool, "encoding_start_clock")
                     codecs = [plan.get(key) for key, stream in (("VideoCodec", "VideoStreamIndex"), ("AudioCodec", "AudioStreamIndex")) if plan.get(stream, -1) >= 0]
                     need(plan.get("OutputMode") == "progressive" and plan.get("Container") == "mp4" and job["source_stamp"]
                          and job["state"] == "completed" and job["bytes"] >= len(raw), "encoding_actual_completion")
                     need(all(codec == "copy" for codec in codecs) if mode == "remux" else any(codec and codec != "copy" for codec in codecs), "encoding_mode_not_exercised")
+                    if mode == "remux" and seeking:
+                        clock, audio_hash = remux_seek_contract(plan, ticks, actual_ticks)
+                        clocks.append(clock)
+                        audio_hashes.append(audio_hash)
+                    else:
+                        clocks.append(plan.get("CopyTimestamps", False))
+                need(all(clock is clocks[0] for clock in clocks), "encoding_clock_ambiguous")
+                copy_timestamps = clocks[0]
+                if mode == "remux" and seeking:
+                    need(len(set(audio_hashes)) == 1, "encoding_audio_proof_ambiguous")
+                    packet_starts = {}
+                    for kind, selector in (("video", "v:0"), ("audio", "a:0")):
+                        packet_fields, hash_args = "stream_index,pts,dts", []
+                        if kind == "audio":
+                            # The MP4 workload's AAC payload is the same AVPacket data
+                            # hashed by production's copy/framehash proof. Neither an
+                            # ADTS file checksum nor stream extradata is this evidence.
+                            packet_fields += ",data_hash"
+                            hash_args = ["-show_data_hash", "sha256"]
+                        packet_raw, packet_ref = self.command("ffprobe", ["-v", "error", "-select_streams", selector,
+                            "-read_intervals", "%+#64", "-show_streams", "-show_packets", *hash_args, "-show_entries",
+                            "stream=index,codec_type,time_base:packet=" + packet_fields, "-of", "json", output])
+                        packet_starts[kind] = {**copied_packet_start(strict_json(packet_raw), actual_ticks if copy_timestamps else 0,
+                            kind, audio_hashes[0] if kind == "audio" else None), "receipt": packet_ref}
+                    self.e.event("copied_seek_clock", phase=self.phase, mode=mode, requested_start_ticks=ticks,
+                        actual_start_ticks=actual_ticks, copy_timestamps=copy_timestamps, packet_starts=packet_starts)
+                args = ["-v", "error", "-nostdin", "-threads", "1"]
+                tail = ["-an", "-sn", "-frames:v", "1", "-vf", "scale=64:36", "-pix_fmt", "rgb24", "-f", "rawvideo", "pipe:1"]
+                original, _ = self.command("ffmpeg", args + ["-ss", str(ticks / 10000000), "-i", play["path"]] + tail, maximum=1 << 20)
+                decoded, _ = self.command("ffmpeg", progressive_frame_arguments(output, ticks, copy_timestamps), maximum=1 << 20)
+                need(len(original) == len(decoded) == 64 * 36 * 3, "decoded_frame_size")
+                mae = sum(abs(a - b) for a, b in zip(original, decoded)) / len(original)
+                need(mae <= self.m["thresholds"]["frame_mae"], "seek_frame_mismatch")
+                self.e.event("decoded_media", phase=self.phase, mode=mode, seeking=seeking, frame_mae=mae,
+                    requested_start_ticks=ticks, actual_start_ticks=actual_ticks, copy_timestamps=copy_timestamps,
+                    consumer_target_ticks=ticks)
             self.e.event("playback_bytes", phase=self.phase, mode=mode, seeking=seeking, start_ns=span[0], end_ns=span[1], bytes=len(raw))
         report["PositionTicks"] = play["seek_ticks"]
         self.http(mode + "-progress", "POST", "/emby/Sessions/Playing/Progress", report, statuses=(204,))

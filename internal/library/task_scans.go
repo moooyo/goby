@@ -306,14 +306,15 @@ func (s *Store) AdmitTaskScan(ctx context.Context, childID string) (ScanAdmissio
 	if !validTaskChildID(childID) {
 		return ScanAdmission{}, ErrInvalidInput
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.closing.Load() {
-		return ScanAdmission{}, ErrUnavailable
+	raw, err := s.beginOwnedAdmission(ctx, false)
+	if err != nil {
+		return ScanAdmission{}, err
 	}
+	defer s.mu.Unlock()
+	defer rollback(raw)
 	var result ScanAdmission
 	var afterCommit error
-	err := s.taskScanTransaction(ctx, func(tx OwnedTx) error {
+	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
 		child, err := lockTaskScanChild(tx, childID)
 		if err != nil {
 			return err
@@ -415,10 +416,14 @@ func (s *Store) CancelTaskScan(ctx context.Context, childID string) error {
 	if !validTaskChildID(childID) {
 		return ErrInvalidInput
 	}
-	s.mu.Lock()
+	raw, err := s.beginOwnedAdmission(ctx, true)
+	if err != nil {
+		return err
+	}
 	defer s.mu.Unlock()
+	defer rollback(raw)
 	var cancelID string
-	err := s.taskScanTransaction(ctx, func(tx OwnedTx) error {
+	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
 		child, err := lockTaskScanChild(tx, childID)
 		if err != nil {
 			return err

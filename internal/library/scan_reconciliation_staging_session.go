@@ -17,7 +17,7 @@ type scanStagingTx struct {
 }
 
 // Only private staging statements use this internal capability. It follows the
-// existing Store-before-owner admission order and protected SQL/rollback
+// owner-before-Store admission order and protected SQL/rollback
 // lifetimes, without reopening public writes while Store.Close joins workers.
 // The commit callback runs under the owner mutex after confirmed commit.
 func (s *Store) withScanStagingTx(ctx context.Context, cleanup bool, operation func(*scanStagingTx) (func(), error)) (resultErr error) {
@@ -31,12 +31,9 @@ func (s *Store) withScanStagingTx(ctx context.Context, cleanup bool, operation f
 	if cleanup {
 		owner.mu.Lock()
 	} else {
-		s.mu.Lock()
-		if s.closed || s.closing.Load() {
-			s.mu.Unlock()
-			return ErrUnavailable
+		if err := s.lockOwnedAdmission(ctx, false); err != nil {
+			return err
 		}
-		owner.mu.Lock()
 		s.mu.Unlock()
 	}
 	defer func() {

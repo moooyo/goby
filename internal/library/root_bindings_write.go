@@ -111,18 +111,17 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
 
-	// Admission, scan exclusion, and shutdown always take Store.mu before the
-	// ownership mutex. Capture revalidation never consults the Store or its cache.
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.closed || s.closing.Load() || !s.rootBindingPathConfiguredLocked(previous.root.allowedPath) {
-		return RootBindingInfo{}, ErrUnavailable
-	}
-	tx, err := s.beginOwnedTx(ctx)
+	// Wait for ownership before holding admission through the binding change.
+	// Capture revalidation never consults the Store or its cache.
+	tx, err := s.beginOwnedAdmission(ctx, false)
 	if err != nil {
 		return RootBindingInfo{}, fmt.Errorf("begin root binding update: %w", err)
 	}
+	defer s.mu.Unlock()
 	defer rollback(tx)
+	if !s.rootBindingPathConfiguredLocked(previous.root.allowedPath) {
+		return RootBindingInfo{}, ErrUnavailable
+	}
 	protected := tx.(*ownedTx).ctx
 	if err := administrator.check(protected, tx, true); err != nil {
 		return RootBindingInfo{}, err
@@ -242,7 +241,7 @@ func readRootBindingForUpdate(ctx context.Context, tx pgx.Tx, libraryID, rootID 
 	return row, nil
 }
 
-// The caller holds Store.mu and has not acquired ownership.mu yet.
+// The caller holds Store.mu. This lookup never waits for ownership or storage.
 func (s *Store) rootBindingPathConfiguredLocked(path string) bool {
 	for _, approved := range s.roots {
 		if approved.path == path {

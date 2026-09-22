@@ -64,26 +64,40 @@ func SelectVideoCopySeekCandidateForInfo(info Info, streamIndex int, requestedTi
 // SelectVideoCopySeekCandidateForInfoAligned permits explicit backward
 // alignment only within the caller's bounded tolerance. Zero means exact.
 func SelectVideoCopySeekCandidateForInfoAligned(info Info, streamIndex int, requestedTicks, maxPrerollTicks int64) (string, error) {
+	return SelectVideoCopySeekCandidateForStreamsAligned(info, streamIndex, -1, requestedTicks, maxPrerollTicks)
+}
+
+// SelectVideoCopySeekCandidateForStreamsAligned selects a shared packet boundary
+// when audioStreamIndex identifies copied AAC. A negative audio index of -1
+// requires video only. The complete catalog evidence is validated before any
+// point is skipped for missing audio, and alignment retains the original request.
+func SelectVideoCopySeekCandidateForStreamsAligned(info Info, streamIndex, audioStreamIndex int, requestedTicks, maxPrerollTicks int64) (string, error) {
 	invalid := func() (string, error) {
 		return "", fmt.Errorf("video copy seek catalog evidence is inconsistent or unavailable")
 	}
 	if info.ProbeVersion != CurrentProbeVersion || !info.FormatStartKnown ||
+		audioStreamIndex < -1 ||
 		len(info.Streams) == 0 || len(info.Streams) > maxVideoCopySeekSourceStreams ||
 		len(info.VideoSeekIndexes) == 0 || len(info.VideoSeekIndexes) > maxVideoCopySeekSourceStreams {
 		return invalid()
 	}
-	var video *Stream
+	var video, audio *Stream
 	for position := range info.Streams {
 		stream := &info.Streams[position]
-		if stream.Index != streamIndex {
-			continue
+		if stream.Index == streamIndex {
+			if video != nil || stream.CodecType != "video" || !videoCopySeekSourceCodecSupported(*stream) || stream.IsExternal || stream.IsAttachedPicture {
+				return invalid()
+			}
+			video = stream
 		}
-		if video != nil || stream.CodecType != "video" || !videoCopySeekSourceCodecSupported(*stream) || stream.IsExternal || stream.IsAttachedPicture {
-			return invalid()
+		if audioStreamIndex >= 0 && stream.Index == audioStreamIndex {
+			if audio != nil || stream.CodecType != "audio" || stream.Codec != "aac" || stream.IsExternal || !strings.EqualFold(stream.Profile, "LC") {
+				return invalid()
+			}
+			audio = stream
 		}
-		video = stream
 	}
-	if video == nil {
+	if video == nil || audioStreamIndex >= 0 && audio == nil {
 		return invalid()
 	}
 	timeBase, err := parseVideoSeekTimeBase(video.TimeBase)
@@ -133,7 +147,7 @@ func SelectVideoCopySeekCandidateForInfoAligned(info Info, streamIndex int, requ
 	if selected == nil {
 		return invalid()
 	}
-	return SelectVideoCopySeekCandidateAligned(*selected, requestedTicks, maxPrerollTicks)
+	return selectVideoCopySeekCandidateAligned(*selected, requestedTicks, maxPrerollTicks, audio)
 }
 
 // SelectVideoCopySeekCandidate accepts only an exact source-clock restart whose
@@ -145,11 +159,26 @@ func SelectVideoCopySeekCandidate(index VideoSeekIndex, requestedTicks int64) (s
 // SelectVideoCopySeekCandidateAligned retains the real source boundary rather
 // than pretending that an earlier keyframe satisfies an exact seek request.
 func SelectVideoCopySeekCandidateAligned(index VideoSeekIndex, requestedTicks, maxPrerollTicks int64) (string, error) {
+	return selectVideoCopySeekCandidateAligned(index, requestedTicks, maxPrerollTicks, nil)
+}
+
+func selectVideoCopySeekCandidateAligned(index VideoSeekIndex, requestedTicks, maxPrerollTicks int64, audio *Stream) (string, error) {
 	if err := ValidateVideoSeekIndex(index); err != nil {
 		return "", err
 	}
 	if requestedTicks <= 0 || requestedTicks >= index.DurationTicks || maxPrerollTicks < 0 || maxPrerollTicks > 10*TicksPerSecond {
 		return "", fmt.Errorf("invalid video copy seek alignment window")
+	}
+	var audioTimeBase *big.Rat
+	if audio != nil {
+		var ok bool
+		if len(audio.TimeBase) == 0 || len(audio.TimeBase) > 64 {
+			return "", fmt.Errorf("video copy seek audio source clock is unavailable")
+		}
+		audioTimeBase, ok = new(big.Rat).SetString(audio.TimeBase)
+		if !ok || audioTimeBase.Sign() <= 0 {
+			return "", fmt.Errorf("video copy seek audio source clock is invalid")
+		}
 	}
 	requested := VideoSeekRequestedTime(index, requestedTicks)
 	for position := len(index.Entries) - 1; position >= 0; position-- {
@@ -166,8 +195,22 @@ func SelectVideoCopySeekCandidateAligned(index VideoSeekIndex, requestedTicks, m
 		if quantized && maxPrerollTicks == 0 {
 			continue
 		}
+		var selectedAudio *VideoCopySeekAudio
+		if audio != nil {
+			for _, proof := range point.Audio {
+				if proof.StreamIndex == audio.Index && proof.Codec == audio.Codec && proof.SampleRate == audio.SampleRate && proof.Channels == audio.Channels &&
+					audioTimeBase.Cmp(videoSeekTimeBase(proof.TimeBaseNumerator, proof.TimeBaseDenominator)) == 0 {
+					selected := proof
+					selectedAudio = &selected
+					break
+				}
+			}
+			if selectedAudio == nil {
+				continue
+			}
+		}
 		index.Entries = []VideoSeekPoint{point}
-		candidate := VideoCopySeekCandidate{Version: VideoCopySeekCandidateVersion, RequestedStartTicks: aligned, Index: index}
+		candidate := VideoCopySeekCandidate{Version: VideoCopySeekCandidateVersion, RequestedStartTicks: aligned, Index: index, Audio: selectedAudio}
 		if quantized {
 			// The exact native point remains authoritative. Only the public
 			// 100 ns position is rounded down, by strictly less than one tick.
