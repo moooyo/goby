@@ -75,10 +75,13 @@ scopes have passed, while library finished with three failed parents and one
 original opt-in mount helper skip; server tests passed. The library failures cover
 staged reconciliation latency, restored directory identity and symlink records.
 Settings and task fixtures contributed two additional failed parents. The
-original worker exited with failure after completing the full scope; repair
-source is integrated and awaits remote verification. Follow the private
-checkpoint for independent final closure and PostgreSQL state before any new
-operation. Reuse only byte-bound successful evidence; the five original failures
+original worker exited with failure after completing the full scope. Repair
+source `1ed1d69b94548e5beb842906b6177664367310df` is frozen in private
+`phase3/source-freeze-04` and awaits affected verification and actual new builds.
+The original worker, observer, PostgreSQL and closure helper are independently
+closed; PostgreSQL shut down cleanly and all nine databases remain retained.
+Follow the private checkpoint for any subsequently dispatched source-stage or
+repair worker. Reuse only byte-bound successful evidence; the five original failures
 remain retained and cannot accept the complete regression.
 The post-compound fault-fixture handoff repair is committed at `34344c8`:
 successful capacity cleanup restores files while the catalog still reflects the

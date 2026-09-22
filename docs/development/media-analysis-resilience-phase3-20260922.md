@@ -304,7 +304,11 @@ scopes and the embedded command scope, then exited with failure as required.
 Its composed ordinary summary reports 4,251 passes, five failures and 18 skips;
 embedded command tests report 24 passes without failures or skips. Original
 per-scope evidence and skip reasons remain authoritative. Independent final
-resource closure is being collected; these counts do not accept the phase.
+closure and closure-helper postproof succeeded: the worker, observer, helper
+and original PostgreSQL processes/cgroups are closed. PostgreSQL shut down
+cleanly, its system identity is unchanged and nine databases remain retained.
+Root reviewed the original composed result, all package scopes, failed events,
+18 skip reasons and both closure records. These counts do not accept the phase.
 
 The two additional failed parents were
 `TestConfigurationCompatibilityMigrationPreservesEverySchema20Field` in
@@ -334,6 +338,7 @@ scan behavior where reliable namespace history is unavailable. The fixed
 descriptor reservation includes both the change queue and record-opening
 scratch directory. Source review corrected those two accounting omissions.
 
-These repairs have been formatted and statically reviewed only. Their affected
+These repairs are frozen at `1ed1d69b94548e5beb842906b6177664367310df`, with
+6,723 canonical archive files. They have been formatted and statically reviewed only. Their affected
 remote tests, new application builds, complete capacity profiles and fault
 matrices remain pending. The original five failures are not relabeled as passes.

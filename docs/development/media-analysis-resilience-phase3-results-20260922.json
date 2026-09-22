@@ -42,6 +42,17 @@
         "scripts/test-env/test-media-analysis-phase3-prepare.py"
       ],
       "product_go_frontend_and_build_inputs_unchanged_from_previous": true
+    },
+    {
+      "revision": "1ed1d69b94548e5beb842906b6177664367310df",
+      "archive_sha256": "752a71d6200c58e306c539c3b67739cdeda7d299158bc62ede40ee3507e0edd7",
+      "manifest_sha256": "bb52ee47071d753571f7469c8dbfb6b09de629ad3f280b7d876b2e4b05698395",
+      "files": 6723,
+      "file_bytes": 141366402,
+      "disposition": "Integrated and statically reviewed repair source; remote stage, affected tests and new application builds pending.",
+      "production_go_changed": true,
+      "new_builds_required": true,
+      "preparation_only_build_reuse_bridge_applicable": false
     }
   ],
   "environment": {
@@ -200,9 +211,9 @@
     "No local tests or builds were performed. Unselected features remain excluded or deferred under the approved plan."
   ],
   "current_regression_state": {
-    "status": "successor03 terminal failed; independent final closure being collected",
+    "status": "successor03 terminal failed and independently closed",
     "source_revision": "ad02b1223dc0aeef9adc27cea4fc95bbd5ca1467",
-    "postgres": "same cluster recovered by WAL under a separately admitted 1 GiB cap",
+    "postgres": "cleanly stopped; same cluster and nine databases retained",
     "postgres_memory_max_bytes": 1073741824,
     "worker_memory_max_bytes": 1207959552,
     "observer_memory_max_bytes": 134217728,
@@ -244,7 +255,7 @@
     "maximum_artwork_case": "Passed within the complete backup package",
     "full_tail_complete": true,
     "supported_profile_proved": false,
-    "final_lifecycle_closed": false,
+    "final_lifecycle_closed": true,
     "owned_databases": 9,
     "original_failed_backup_pair_retained": true,
     "retained_build_receipt_sha256": "a2f171e34afea065ee99c05e19030d5f010af12434650cd8a0d1d64ce6954a19",
@@ -281,12 +292,25 @@
       "embedded_failed": 0,
       "embedded_skipped": 0,
       "result_sha256": "bb126255a8b87aad89091cc4640e262959c6e292de274b550f813a4ac5bb8c67",
-      "original_result_and_final_closure_root_review_pending": true
+      "original_result_and_final_closure_root_review_pending": false
     },
     "additional_failed_parents": [
       "TestConfigurationCompatibilityMigrationPreservesEverySchema20Field",
       "TestManagerOwnerLossFencesWritesAndRecoveryDoesNotResumeOldRun"
-    ]
+    ],
+    "independent_closure": {
+      "receipt_sha256": "25300cd8286622319f5acc1303b0ff581252119e4fa4c3be9150e3c6001806bc",
+      "postproof_sha256": "39ad0dcf42263bad2116552e091403a3d014f1a05537130fe7ca72905de17137",
+      "skip_evidence_sha256": "1ae70810b0c53b36e41c6ba71870310e9067a622e59ddb98d23bde3aac3e3ae8",
+      "worker_observer_postgres_and_close_helper_closed": true,
+      "postgres_clean_shutdown": true,
+      "databases_retained": 9,
+      "original_failed_runs_preserved": true,
+      "source_files_reverified": 6720,
+      "final_worker_observer_memory_events": null,
+      "final_events_unavailable_reason": "Cgroups removed; last-live counters are retained separately and are not claimed as final.",
+      "root_original_result_closure_and_all_skip_reasons_reviewed": true
+    }
   },
   "after_compound_repair": {
     "source_revision": "34344c87cbcc133fd33917b688817767362697a3",
@@ -315,6 +339,7 @@
     "production_ownership_protection_changed": false,
     "new_application_builds_required": true,
     "remote_repaired_tests_run": false,
-    "capacity_or_fault_acceptance_started": false
+    "capacity_or_fault_acceptance_started": false,
+    "source_revision": "1ed1d69b94548e5beb842906b6177664367310df"
   }
 }

@@ -61,8 +61,9 @@ passed. Library completed with 944 passing parents, three failed parents and
 one original opt-in mount helper skip; server tests passed. The library failures
 cover staged reconciliation latency, restored directory identity and symlink
 records. Settings and task fixtures added two failed parents, for five in the
-complete run. Repair source is integrated but awaits remote verification;
-original evidence is retained and final resource closure is being collected.
+complete run. Repair source `1ed1d69` is frozen but awaits remote verification.
+The worker, observer, PostgreSQL and closure helper are independently closed;
+PostgreSQL stopped cleanly and all nine databases and original evidence remain.
 The fault-fixture reconciliation repair at `34344c8` also awaits remote checks.
 Subsequent production Go repairs require fresh builds; the unexecuted build-reuse
 bridge for the preparation-only change does not cover them. Full Go coverage,
