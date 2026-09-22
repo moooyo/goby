@@ -157,6 +157,48 @@ This snapshot does not replace fresh admission for the pending scope05 profile.
 Retirement receipt: `033f5f301e5b32096e1e1ac94efd90c98bf6e305a1431ac4b008cdb6ac3fc8a9`;
 independent closure: `9d7bbc21c1a6df71ed685dbe0587b1039410cc11ebf50b19af5d13013330090f`.
 
+### Scope05 preparation failure and broker correction
+
+Scope05 deployed the accepted repaired binary with fresh user, database and
+process identities. Initial cross-UID media access, private-path isolation and
+I/O accounting passed. Direct cgroup lowering initially read back successfully,
+but a later observation found the application back at its declared limit before
+the producer started; the cause of that reversion was not established. The
+replacement used one explicitly pinned systemd runtime MemoryMax dropin, with
+the same application lifetime and the unchanged preparation resource envelope.
+
+The full producer reached the final observation after creating the pressure
+tree and indexing 9,342 seed catalog rows. It then exited 1 with `child_exit`:
+the fixed read-only broker returned `app_service_binding_changed` because its
+original contract rejected every service dropin. This is a preparation tooling
+failure, not a mixed-workload result or a new product deadlock. The prepared
+receipt remains false and no compound context was published. Removing the exact
+temporary dropin through the restoration operation made the same broker return
+complete on the same App/PG lifetimes. All native work was idle; the one retained
+playback row was the intended terminal `Stopped` seed. Goby and PostgreSQL then
+closed cleanly, with all failed data retained. Runtime closure:
+`0b84771fc9be9e0372718fb8b00f0dd8cacdf628f7eba46b0dd21b57879e3fb8`.
+
+The private setup10/broker successor binds only the exact initial normal-service
+preparation dropin path, hash and 512 MiB limit. It still checks original unit,
+process, executable, effective memory and zero swap, and rejects extra overrides.
+Case/fault bindings carry no preparation override. Twelve remote guard tests
+passed, including wrong hash, additional dropin, foreign unit, limit, PID and
+fragment rejection; test/worker closure:
+`003604e4fb6ed237626e65d566bce5d938ab0bea1ff6521715edb9b61b624e31`.
+The old broker bytes were preserved before deploying the new helper at its fixed
+argv path, after every old application lifetime had closed. The next fresh scope
+must perform actual Actor broker access after managed lowering and before the
+heavy producer; unit tests are not that runtime check. Scope05's archive and
+external readback completed for all 347,968 members and 1,673,278,695 source
+bytes, with exact hashes and file/directory fsync. External receipt:
+`9257d2be4e9956ca0d33b73acb62065f18eb334dffec1505de0c2bc29b4776c5`;
+independent closure:
+`59382d72a4cbdd8a476c57bd3dfc344c83c62967c9576c5f206f08673e5d86ca`.
+Only the two externally preserved source trees and two large guest archive
+files are selected for current retirement. The fresh scope06 profile remains
+unreleased until current resource and namespace admission.
+
 Goby's diagnostic exit 2 is not graceful shutdown or a fault-matrix success.
 After it exited, a read-only PostgreSQL snapshot found no other clients and no
 surviving matching admitted work. PostgreSQL then shut down cleanly; both retired

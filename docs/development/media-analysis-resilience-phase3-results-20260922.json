@@ -1418,5 +1418,30 @@
     "capacity_accepted": false,
     "whole_phase_accepted": false,
     "main_published": false
+  },
+  "capacity_scope05_preparation": {
+    "status": "failed_final_broker_sample; restored_and_cleanly_closed",
+    "product_revision": "5fb968a9be1857c050f53a1165ad74b1ad254b0b",
+    "prepared": false,
+    "accepted_capacity": false,
+    "compound_started": false,
+    "producer_exit_code": 1,
+    "error_code": "child_exit",
+    "broker_error_code": "app_service_binding_changed",
+    "temporary_memory_override_rejected_by_old_broker": true,
+    "broker_passed_after_exact_dropin_removed": true,
+    "same_app_postgres_lifetimes_preserved_until_clean_stop": true,
+    "seed_catalog_count": 9342,
+    "producer_oom": false,
+    "observer_resource_observation_passed": true,
+    "observer_pass_does_not_accept_preparation": true,
+    "failed_prepared_sha256": "6340a44970a2b950835dd2489d5355bb12cd877ba2c6feaaba5bdd0bfdfd3e53",
+    "observer_sha256": "7831990a468949d140d894b20720c5da993d069d2569382a9ceaa0185aca32de",
+    "restored_sha256": "99bb8818495f56e563b3c028aaeea3b98e0c321fe024233a1b4c78e51fc7bf03",
+    "runtime_closure_sha256": "0b84771fc9be9e0372718fb8b00f0dd8cacdf628f7eba46b0dd21b57879e3fb8",
+    "broker_successor_tests_passed": 12,
+    "broker_successor_test_closure_sha256": "003604e4fb6ed237626e65d566bce5d938ab0bea1ff6521715edb9b61b624e31",
+    "successor_actual_lowered_runtime_check_pending": true,
+    "original_failures_preserved": true
   }
 }

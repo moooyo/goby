@@ -93,10 +93,15 @@ acceptance. The failed workload and complete runtime closure are recorded in
 the execution record. The complete repair regression and independent closure
 are accepted. Failed scope04 data has a complete external archive, verified by
 all 348,699 members. Exact guest retirement and regenerable-cache cleanup passed,
-with independent worker closure and 22,229,053,440 free bytes afterward. A fresh
-scope05 profile is prepared but not deployed. Admit it from current resource and
-namespace facts plus the accepted build-delivery receipt. The full workload scope
-is unchanged.
+with independent worker closure and 22,229,053,440 free bytes afterward. Scope05
+then deployed and built its seed fixture, but preparation failed at the final process
+broker sample: the original broker rejected the exact temporary systemd memory
+dropin. Its failed receipt is preserved, no compound ran, and the runtime was
+restored then cleanly closed. The setup/broker successor passed twelve remote
+guard tests; scope06 must verify the real broker after lowering before generating
+the next fixture. Scope05 external archival and complete readback passed; exact
+guest retirement is running. Scope06 remains pending. The full workload scope is
+unchanged.
 Scope03's access failure was traced to missing `io.stat` accounting, after which
 its preparation limit was restored and the scope closed. Scope04 uses runtime
 template09 with `IOAccounting=yes`; this was a deployment issue, not a product
