@@ -61,13 +61,19 @@ passed. Library completed with 944 passing parents, three failed parents and
 one original opt-in mount helper skip; server tests passed. The library failures
 cover staged reconciliation latency, restored directory identity and symlink
 records. Settings and task fixtures added two failed parents, for five in the
-complete run. Repair source `1ed1d69` is frozen but awaits remote verification.
-The worker, observer, PostgreSQL and closure helper are independently closed;
-PostgreSQL stopped cleanly and all nine databases and original evidence remain.
-The fault-fixture reconciliation repair at `34344c8` also awaits remote checks.
-Subsequent production Go repairs require fresh builds; the unexecuted build-reuse
-bridge for the preparation-only change does not cover them. Full Go coverage,
-10k/100k workloads and fault/reboot acceptance remain pending.
+complete run. Repair source `1ed1d69` has now passed the complete affected
+library/settings/tasks/server/command scopes, embedded command tests and fresh
+frontend/ordinary/embedded builds. The composed regression has 4,263 ordinary
+Go parent passes, zero failures and 18 explicit skips, plus 24 embedded command
+passes and 65 composed Python tests. Thirty unchanged Go package scopes retain
+their original evidence; they are not new executions. The worker, observer,
+PostgreSQL and closure helper are independently closed; PostgreSQL stopped
+cleanly and all ten databases and original evidence remain retained.
+The after-compound preparation suite passed ten tests; its actual handoff still
+requires an accepted capacity run. The preparation-only build-reuse bridge was
+not used for the new production binaries. Both 10k/100k mixed workloads and the
+complete fault/reboot matrix remain pending; regression success does not
+establish their capacity or recovery claims.
 Tests/builds/runtime probes remain
 remote-only, `ui-ux-pro-max` remains disabled, and unrelated changes in the
 original checkout are preserved. Earlier completed increments below do not

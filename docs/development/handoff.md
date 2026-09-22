@@ -77,23 +77,24 @@ staged reconciliation latency, restored directory identity and symlink records.
 Settings and task fixtures contributed two additional failed parents. The
 original worker exited with failure after completing the full scope. Repair
 source `1ed1d69b94548e5beb842906b6177664367310df` is frozen in private
-`phase3/source-freeze-04` and awaits affected verification and actual new builds.
-The original worker, observer, PostgreSQL and closure helper are independently
-closed; PostgreSQL shut down cleanly and all nine databases remain retained.
-Follow the private checkpoint for any subsequently dispatched source-stage or
-repair worker. Reuse only byte-bound successful evidence; the five original failures
-remain retained and cannot accept the complete regression.
+`phase3/source-freeze-04`. Successor04 passed all ten stages: fresh frontend and
+both Go builds, five complete ordinary Go packages and embedded command tests.
+Source-stage05 also passed ten preparation tests. Root composed 2,138 new
+ordinary parents with 2,125 retained unchanged parents: 4,263 passes, zero
+failures and 18 explicit skips across 35 package scopes, plus 24 embedded
+passes and 65 composed Python tests. The five original failures remain failed
+historical evidence. The affected worker, observer, PostgreSQL and closure
+helper are independently closed; PostgreSQL shut down cleanly and all ten
+databases remain retained. Follow the private checkpoint for subsequent
+capacity preparation rather than restarting either closed regression run.
 The post-compound fault-fixture handoff repair is committed at `34344c8`:
 successful capacity cleanup restores files while the catalog still reflects the
 incremental pass, so a proven reconciliation must precede fault-fixture expansion.
 This does not change the original exact-tier capacity requirements. Its pure
-Python checks and actual handoff are pending; the live regression remains on
-immutable `ad02b12`. Production Go and frontend inputs are unchanged, but later
-artifact reuse still requires an explicit source bridge preserving the actual
-build source and original build-only receipt. The prepared bridge covers only
-the preparation-script difference. It remains unexecuted and cannot cover the
-subsequent production Go fixes; freeze and build a new candidate after those
-repairs, then complete their affected acceptance before capacity admission.
+Python checks passed in source-stage05; the actual post-compound handoff remains
+pending. The production Go repairs were genuinely rebuilt at `1ed1d69`, so the
+old preparation-only `ad02` to `34344c8` bridge remains unused. Future tier setup
+binds both source and artifacts directly to the accepted `1ed1d69` result.
 Complete both workload profiles and the full fault matrices;
 individual scenario partial results never accept the whole phase.
 Do not reboot shared `test-env`, other existing VMs or the physical PVE host.

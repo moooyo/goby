@@ -342,3 +342,63 @@ These repairs are frozen at `1ed1d69b94548e5beb842906b6177664367310df`, with
 6,723 canonical archive files. They have been formatted and statically reviewed only. Their affected
 remote tests, new application builds, complete capacity profiles and fault
 matrices remain pending. The original five failures are not relabeled as passes.
+
+## Accepted composed regression and capacity handoff
+
+Source-stage04 extracted the frozen repair but failed before starting tests
+because its private wrapper named the preparation test incorrectly. Its failure,
+source and partial external bytecode remain retained. Source-stage05 checked
+all 6,723 canonical files before and after running the correct suite: ten tests
+passed. Its worker, child group and cgroup closed independently. No PostgreSQL
+or Goby service was started by that operation.
+
+The subsequent PostgreSQL setup preserved the original cluster and nine database
+and role identities, creating one fresh unprivileged ordinary test database.
+An independent collector initially compared OID JSON strings with integer
+receipt fields. All ten actual identities matched; the failed collector remains
+retained. A distinct collector with two explicit bigint casts established the
+same successful setup's closure without repeating setup or altering a database.
+
+Affected regression04 executed all ten declared stages from `1ed1d69`. Frontend
+installation/build and both ordinary/embedded application builds passed. Full
+library, settings, tasks, server and command packages passed with respectively
+954, 55, 92, 1,013 and 24 parent tests. The embedded command scope passed 24
+parents. All five original failed parents now have explicit passing evidence.
+The 40,000-row paging parent took 10.51 seconds overall, without relaxing its
+internal SQL/proof limits; its recorded operation timings and actual owner
+session plan remain distinct from whole-test duration.
+
+The complete regression composition retains 30 unchanged package scopes from
+the original source-bound result: 2,125 passing parents and 13 explicit skips.
+Replacing the five affected scopes adds 2,138 passes and five explicit skips,
+yielding **4,263 ordinary Go parent passes, zero failures and 18 skips** across
+35 package scopes. Two packages have no tests and contribute no parent passes.
+Embedded command passes remain separate. The Python composition keeps 55
+unchanged tests from seven scripts and replaces the old three preparation tests
+with ten current tests, giving 65 tests across eight scripts. No repeat is added
+to its predecessor's count, and no retained result is described as a new run.
+
+The unchanged opt-in skips cover mount, hardware/media fixture and HTTP binding
+profiles; their original and current reasons are preserved. They do not establish
+those scenarios' execution. The complete capacity/fault/reboot campaign retains
+its independent acceptance requirements.
+
+Independent closure confirmed the worker, observer and closure helper gone,
+the exact PostgreSQL instance cleanly stopped, ten databases retained and the
+6,723 source files unchanged. The result, observer, closure and helper-postproof
+hashes are in the delivery ledger. All original failed attempts are preserved.
+Seventy-two screened original files were copied with exact byte/hash checks;
+the server stdout with potential credential patterns remains remote, alongside
+its copied summary, receipt and full skip evidence. No secret context was copied.
+
+The two actual new artifacts are 48,793,294-byte `goby` and 50,231,482-byte
+`goby-embedded`; the frontend contains 73 files totaling 1,421,440 bytes. Both
+artifacts and frontend bind directly to build source `1ed1d69`. The old
+preparation-only build-reuse proposal was not executed. Runtime tier setup can
+consume the actual source-matching build result after fresh admission.
+
+Composed regression and build acceptance is complete. Neither capacity nor a
+fault matrix has run yet. Proceed with one tier at a time, exact corpus/source
+and runtime bindings, the complete three-phase mixed workload, post-compound
+reconciliation, independent overload and all declared recovery cases. Preserve
+the original thresholds, concurrency and full scope before final publication.
