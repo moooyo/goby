@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; phase 3 scope07 cold failures are being repaired, with full capacity/recovery acceptance and publication pending**.
+Status: **active; phases 1 and 2 published; phase 3 scope07 repairs passed regression/builds and closure at 55d5069; full capacity/recovery acceptance and publication pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -80,7 +80,8 @@ Its runtime is closed, and repair `5fb968a` passed remote regression and fresh
 Go builds. Earlier failed data is externally archived. Scope07 preparation then
 passed, but the actual cold compound workload exposed excessive query JIT cost,
 playback-admission blocking and a remux joint-boundary selection issue. Repairs
-are in progress and need remote regression before fresh full capacity runs.
+at `55d5069` passed complete remote regression, fresh Go builds and independent
+closure. Fresh full capacity runs still require their own runtime admission.
 Complete capacity and fault/recovery acceptance, phase acceptance and
 publication remain pending.
 
@@ -114,4 +115,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core sources integrated; prior lock inversion repaired at `5fb968a`; scope07 query, playback-admission and remux repairs in progress | Prior repair regression/builds and fresh preparation accepted. Actual scope07 cold failed; new repairs need remote verification. Complete capacity journeys and fault/reboot acceptance remain pending | Pending |
+| 3. Concurrency and recovery | Core sources integrated; prior lock inversion repaired at `5fb968a`; scope07 query, playback-admission and remux repairs verified at `55d5069` | Complete 35-package regression, embedded/Python/focused/race checks, new builds and independent closure accepted. Failed data externally archived. Fresh capacity journeys and fault/reboot acceptance remain pending | Pending |

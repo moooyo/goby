@@ -1,4 +1,4 @@
-# Goby handoff — September 22, 2026
+# Goby handoff — September 23, 2026
 
 ## Resume here
 
@@ -12,19 +12,28 @@ unrelated changes in the original `D:/Code/goby` checkout.
 Current Phase 3 checkpoint: scope07 preparation passed, but its actual 10k cold
 compound workload failed. Catalog requests took approximately 6.2-7.9 seconds;
 playback preparation took 6.2-6.4 seconds, and remux seek returned 415. Cached and
-incremental phases did not run. All workload/control processes and their parent
-are closed; the original scope07 application/database and failed data remain.
-Do not replay this initialized scope as a fresh capacity attempt.
+incremental phases did not run. The original application/database and all
+workload/control processes are closed. All 349,360 failed-data archive members
+passed external readback before exact guest copy retirement. The database,
+diagnostics and full external archive remain; do not replay this scope as fresh.
 
 Read-only JIT comparison of the original SQL preserved counts and ordered IDs.
 Transaction-local disabling reduced isolated page execution from approximately
 1.8 seconds to 26-79 ms. This is diagnostic evidence, not compound acceptance.
-The query and remux joint-boundary repairs are written with new tests but not
-yet verified. A separate admission repair moves all thirteen owner waits outside
-the shared store mutex and passed independent source review. Preserve queue
-admission, root-anchor publication and shutdown semantics. Driver AAC
-packet-content verification and its regressions are also written. Follow the
-private execution checkpoint and the
+The query, remux, thirteen admission paths and driver AAC packet-proof repairs
+are verified at `55d5069`: all 35 ordinary packages completed with 4,275 parent
+passes, zero failures and 18 explicit skips; embedded command tests passed 24,
+and eight Python scripts passed 84 tests. Focused eight and race fifteen passed
+separately and are not double-counted. Both new binaries built; frontend reuse
+was proven from unchanged inputs and all 73 artifacts. Resource observation
+passed with four retained transient PostgreSQL-file `du` gaps and no persistent
+loss. Independent closure passed; all 19 databases remain. Build delivery SHA:
+`ee20450db2d81b581da95dc409745687df0491ba886566e95a1743a0d70f0708`.
+
+Fresh scope08 is source-only and unreleased. Meet the original free-space gate,
+bind the actual new artifacts and matched prepare/workload scripts, and verify
+the deployed scan configuration against its new manifest before preparation.
+Follow the private execution checkpoint and the
 [Phase 3 record](media-analysis-resilience-phase3-20260922.md) before dispatch.
 The full 10k/100k compound journeys, overload and 28 fault/recovery cases remain
 required. Phase 3 remains unpublished; Phase 1/2 are published on main.
@@ -38,9 +47,9 @@ remote focused case and race check, while the old implementation failed for the
 expected lock wait. Both new binaries built successfully. After preserving the
 observer OOM interruption, a fresh-database continuation passed all five affected
 packages: 2,139 parent passes, zero failures and five explicit skips, plus 24
-embedded passes. Combined with unchanged complete scopes, the current regression
-is 4,264 passes, zero failures and 18 skips, with 73 retained Python passes.
-This baseline does not cover the new uncommitted scope07 repairs.
+embedded passes. Combined with unchanged complete scopes, that regression
+had 4,264 passes, zero failures and 18 skips, with 73 retained Python passes.
+The later scope07 repairs are separately verified at `55d5069` above.
 Worker, observer and regression PostgreSQL are closed; all twelve databases remain.
 The 100k tier, overload and fault/recovery matrix remain unrun. The first compound publisher failed its memory admission by
 3,682,304 bytes before publishing sources or dispatching business work; its

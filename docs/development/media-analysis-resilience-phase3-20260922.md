@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope07 preparation passed; its actual cold compound workload failed; query, playback-admission and remux-seek repairs are in progress; Phase 3 acceptance and publication remain pending**.
+Status: **scope07 repairs at 55d5069 passed complete remote regression, builds and independent closure; fresh full capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -16,6 +16,46 @@ evidence. Exact profiles, contexts and receipts remain bound in the private
 checkpoint and delivery ledger; this document does not itself admit a workload.
 
 ## Current checkpoint
+
+The query JIT, thirteen ownership-admission paths, remux joint-boundary selector,
+and driver packet-proof repairs are frozen at
+`55d50696e4590d719cad1540cac42c90c028d139`. All 35 ordinary Go packages completed:
+**4,275 parent passes, zero failures and 18 explicit skips**. The embedded command
+suite passed **24** parents; eight Python scripts passed **84** tests. Focused
+checks passed eight parents and the race run passed fifteen; these repeated
+cases are not added to the ordinary total. Both ordinary and embedded binaries
+were freshly built. Frontend assets were reused after comparing every tracked
+input and all 73 artifact files.
+
+The independent observer passed its declared resource checks. It retained four
+`du` observation failures caused by PostgreSQL files disappearing during
+measurement; monitoring resumed without persistent loss. Missing measurements
+were not zero-filled. Eighteen hardware, fixture and explicit-profile parent
+skips, plus one Vulkan subcase skip, remain explicit in the retained evidence.
+
+The successful collector rechecked all 49 original stage receipts and log
+hashes, complete package results, artifacts and source inventories. Worker,
+observer and the exact PostgreSQL lifetime closed normally; all 19 databases
+remain, including the original twelve. Root then independently closed the
+collector and published the actual build delivery. Key receipt hashes are:
+
+| Evidence | SHA256 |
+| --- | --- |
+| Complete regression | `28ca253c776c5e5cbf225a283cdd182d06492431bc096892cb11df546a918ed7` |
+| Resource observer | `e3db6cb6d84db0f47d413190c4a03c442d86e5d9cb23178ef2e4fcde26bdbfcd` |
+| Independent closure | `bbee5da585b504f8e198ffb70a75aebc9cbf809679729640eb8f10e922d24d2c` |
+| Build delivery | `ee20450db2d81b581da95dc409745687df0491ba886566e95a1743a0d70f0708` |
+
+Scope07's failed fixture, preparation and compound output were externally
+archived with all 349,360 members read back. After independent consumer closure,
+only those three guest trees and two redundant guest archive files were retired.
+All databases, original diagnostics, source/build artifacts and the complete
+external archive remain. Fresh scope08 inputs are drafted but unreleased.
+Storage reclamation must meet the unchanged initial free-space gate before
+provisioning/preparation; no latency, concurrency or failure threshold is relaxed.
+No complete 10k/100k compound journey, overload profile or fault matrix is accepted.
+
+### Earlier failures and their repairs
 
 The scope04 compound failure exposed an actual product lock inversion, repaired
 at `5fb968a`. Its affected regression and both Go builds passed. Scope05 then
@@ -73,7 +113,8 @@ Cached and incremental phases did not execute. External resource observation
 passed without gaps or service-lifetime changes; that does not make the workload
 successful. Driver cleanup completed. Independent closure confirmed the worker,
 observer, publisher, closure collector and control parent were closed. The
-original application/database and all failed data remain retained.
+original application/database subsequently closed cleanly. Its failed data is
+retained in the complete external archive described above.
 
 A read-only diagnostic replayed the original count and page SELECTs inside one
 repeatable-read snapshot in JIT on/off/off/on order. Counts and ordered IDs
@@ -82,8 +123,8 @@ transaction-local JIT disabling reduced those to 22-23 ms and 26-79 ms. This was
 an isolated diagnostic, not a repeated compound acceptance run. The original
 collector failed at a CSV field-size limit after SQL completion; a separate
 collection of existing output succeeded without repeating SQL. Both records
-remain retained. The query repair and semantic/connection-restoration tests are
-written but not yet remotely verified.
+remain retained. The query repair and semantic/connection-restoration tests
+passed the later 55d5069 regression described above.
 
 Playback admission separately exposes head-of-line blocking: a request waiting
 for the catalog owner holds the shared store mutex, delaying unrelated source
@@ -91,7 +132,7 @@ opens and user-state writes. All thirteen affected admission paths now wait
 outside that mutex while preserving queue, root-anchor and shutdown semantics.
 New tests observe the actual owner-mutex wait before checking independent work,
 cancellation and shutdown. Independent source review found no remaining reversed
-admission path; remote verification is still required. This differs from the
+admission path; the later focused, race and full regression passed. This differs from the
 earlier repaired lock inversion.
 
 The remux fixture's requested 30-second video point lacks a matching AAC packet
@@ -101,10 +142,11 @@ the entire index. The driver explicitly permits alignment while retaining the
 original 30-second request, both copy codecs, source timestamps and target-frame
 verification. Independent review also identified an output AAC packet-hash
 verification gap; the driver now compares the first output AAC payload with the
-source proof and validates the proof's joint-boundary binding. These changes still
-require remote verification. No latency or failure threshold was relaxed.
+source proof and validates the proof's joint-boundary binding. These changes
+passed regression; their real compound repeat remains required. No latency or
+failure threshold was relaxed.
 
-The latest composed regression has **4,264 ordinary Go parent passes, zero
+The previous composed regression had **4,264 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
 **73 Python passes**. This is the accepted baseline before the new scope07
 repairs. Frontend and both application builds passed. Original

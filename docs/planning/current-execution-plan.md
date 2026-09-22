@@ -38,9 +38,14 @@ retained. The subsequent lock-inversion repair passed regression and builds at
 counting retained scopes. Original failures remain separate. Scope07 preparation
 completed, but the actual 10k cold compound workload failed on catalog latency
 and remux seek, with playback admission also delayed by the shared store mutex.
-Query, remux and admission repairs and driver assertions are written and source
-reviewed. These changes need remote verification. No complete capacity or fault
-profile is accepted, and the full approved Phase 3 scope remains required.
+Query, remux and admission repairs and driver assertions are verified at
+`55d5069`: all 35 ordinary Go packages completed with 4,275 parent passes and
+18 explicit skips, embedded tests passed 24, and eight Python scripts passed 84.
+Focused/race checks and both new builds passed; independent resource closure
+retained all 19 databases. Original scope07 failures are externally archived.
+Fresh scope08 remains unreleased pending its original storage gate and actual
+runtime bindings. No complete capacity or fault profile is accepted, and the
+full approved Phase 3 scope remains required.
 Historical completed increments below remain closed.
 
 ## Completed selected increment: September 20, 2026
