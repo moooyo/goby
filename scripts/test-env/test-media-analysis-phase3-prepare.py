@@ -47,6 +47,93 @@ class SourceIdentityTests(unittest.TestCase):
         self.assertEqual(preparer.generated_bytes, 4096)
 
 
+class PreparationAdmissionTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.workspace = Path(temporary.name).resolve() / "fixture"
+        self.preparer = PREPARE.Preparer.__new__(PREPARE.Preparer)
+        self.preparer.workspace = self.workspace
+        self.preparer.m = {"run_id": "run", "owner_id": "owner",
+                           "scan_evidence": {"configuration_sha256": "a" * 64}}
+        self.preparer.c = {"app_pid": 123, "app_start_ticks": 456,
+            "cgroup_path": "/sys/fs/cgroup/system.slice/goby.service",
+            "process_observer": {"binding_sha256": "b" * 64},
+            "scan_evidence_path": "/owned/config/scan-evidence.json",
+            "scan_evidence_sha256": self.preparer.m["scan_evidence"]["configuration_sha256"]}
+        self.preparer.operator = {"media_read_gid": 1234}
+        self.preparer.phase = "admission"
+        self.preparer.e = mock.Mock()
+        self.preparer.validate_process_observer = mock.Mock()
+        self.preparer.command = mock.Mock(side_effect=self.broker_sample)
+        self.preparer.authenticate = mock.Mock()
+        self.preparer.generate = mock.Mock()
+        self.preparer.licensed = mock.Mock()
+        self.preparer.seed_userdata = mock.Mock()
+        self.scan_evidence = {"path": self.preparer.c["scan_evidence_path"],
+                              "configuration_sha256": "a" * 64, "environment_matches": True}
+
+    def broker_sample(self, tool, arguments, input_data, maximum):
+        self.assertEqual(tool, "process_observer")
+        self.assertEqual(arguments, [])
+        self.assertEqual(PREPARE.strict_json(input_data), {"schema_version": 1, "operation": "sample"})
+        self.assertEqual(maximum, 8 << 20)
+        value = {"schema_version": 1, "complete": True, "run_id": "run", "owner_id": "owner",
+            "binding_sha256": "b" * 64,
+            "app": {"pid": self.preparer.c["app_pid"], "start_ticks": self.preparer.c["app_start_ticks"],
+                    "cgroup_path": self.preparer.c["cgroup_path"]},
+            "observed_monotonic_ns": PREPARE.time.monotonic_ns(),
+            "resource": {key: 0 for key in ("cpu_usage_usec", "io_bytes", "memory_bytes", "scan_spool_generations")},
+            "processes": [], "scan_evidence": dict(self.scan_evidence), "race_count": 0}
+        return PREPARE.json_bytes(value), {"exit_code": 0}
+
+    def assert_refused_without_mutation(self, error):
+        with mock.patch.object(PREPARE.Path, "mkdir") as mkdir, \
+             mock.patch.object(PREPARE.os, "chown") as chown, \
+             mock.patch.object(PREPARE.os, "chmod") as chmod, \
+             mock.patch.object(PREPARE, "private_write") as private_write:
+            with self.assertRaisesRegex(PREPARE.WORK.Failure, error):
+                self.preparer.populate()
+        for operation in (mkdir, chown, chmod, private_write, self.preparer.authenticate,
+                          self.preparer.generate, self.preparer.licensed, self.preparer.seed_userdata):
+            operation.assert_not_called()
+        self.assertFalse(self.workspace.exists())
+
+    def test_wrong_scan_configuration_refuses_before_fixture_or_bootstrap(self):
+        for change in ({"configuration_sha256": "c" * 64}, {"path": "/another/config.json"},
+                       {"environment_matches": False}):
+            with self.subTest(change=change):
+                original = dict(self.scan_evidence)
+                self.scan_evidence.update(change)
+                self.assert_refused_without_mutation("scan_evidence_deployment_mismatch")
+                self.scan_evidence = original
+        self.assertEqual(self.preparer.command.call_count, 3)
+
+    def test_broker_failure_refuses_before_fixture_or_bootstrap(self):
+        self.preparer.command.side_effect = PREPARE.WORK.Failure("child_exit")
+        self.assert_refused_without_mutation("child_exit")
+        self.preparer.command.assert_called_once()
+
+    def test_matching_configuration_reaches_original_fixture_generation(self):
+        class GenerationReached(Exception):
+            pass
+
+        def generate():
+            self.preparer.command.assert_called_once()
+            for name in ("private", "media", "private/quarantine"):
+                self.assertTrue((self.workspace / name).is_dir())
+            self.preparer.authenticate.assert_not_called()
+            raise GenerationReached()
+
+        self.preparer.generate.side_effect = generate
+        with mock.patch.object(PREPARE.os, "chown"), mock.patch.object(PREPARE.os, "chmod"):
+            with self.assertRaises(GenerationReached):
+                self.preparer.populate()
+        self.preparer.generate.assert_called_once()
+        self.preparer.e.artifact.assert_called_once()
+        self.preparer.e.event.assert_called_once()
+
+
 class InventoryWriteTests(unittest.TestCase):
     expected = (
         b'{"bytes":17,"origin":"licensed","original_id":"licensed-b","relative_path":"Zed\\u7535\\u5f71.mp4","root_id":"root-b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}\n'

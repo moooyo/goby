@@ -510,6 +510,9 @@ class Preparer(WORK.Actor):
 
     def populate(self):
         need(not self.workspace.exists() and self.workspace.is_absolute() and self.workspace.resolve() == self.workspace, "preparation_workspace_not_fresh")
+        # The real broker must match the manifest-bound scan configuration
+        # before bootstrap, media generation, or any fixture mutation.
+        self.process_sample()
         self.workspace.mkdir(mode=0o700)
         os.chown(self.workspace, -1, self.operator["media_read_gid"])
         # Root topology observation opens every media ancestor for reading.

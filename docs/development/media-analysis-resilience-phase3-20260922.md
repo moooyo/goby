@@ -29,17 +29,27 @@ preparation trees were retired. Databases, diagnostics, builds and external
 originals remain retained. Independent retirement closure measured 21,989,072,896
 free bytes, above the unchanged initial 10k gate of 21,676,163,072 bytes.
 
-Fresh scope06 provisioned successfully from the accepted repair build with the
-corrected broker. Its provisioning worker is closed; new application and
-PostgreSQL lifetimes are running. Managed memory lowering and actual Actor broker
-access passed before producer dispatch, including all fourteen corpus read opens
-and application private-path isolation. The original full producer and its
-resource observer are now running after unchanged resource admission passed.
-Preparation is in progress; compound load and fault acceptance remain pending.
+Scope06 passed provisioning, managed memory lowering and actual Actor broker
+access, including all fourteen corpus read opens and application private-path
+isolation. Its full preparation later failed because the workload manifest still
+pinned scope04's scan configuration hash. The final broker itself exited zero
+and matched the actual scope06 configuration; the producer correctly refused the
+stale manifest. Six seed scans completed with 9,342 catalog rows, but no accepted
+context or successful preparation was published. Resource observation passed
+without gaps; it does not convert the producer's exit one into success.
+
+The preparation tool now checks the real broker against the manifest before any
+fixture directory creation, bootstrap or media generation, while retaining its
+final check. All eighteen preparation tests passed remotely, including refusal
+without side effects and the valid configuration path. Product and workload
+driver bytes are unchanged. Scope06's memory limit was restored, all its workers
+and application/database lifetimes closed, and its original failed evidence and
+database remain intact. A fresh full preparation must bind its own configuration
+hash before dispatch. Complete capacity and fault acceptance remain pending.
 
 The latest composed regression has **4,264 ordinary Go parent passes, zero
 failures and 18 explicit skips**, plus **24 embedded command passes** and
-**70 Python passes**. Frontend and both application builds passed. Original
+**73 Python passes**. Frontend and both application builds passed. Original
 failures and skips remain in their source-bound records. Preparation is not
 capacity acceptance: the full 10k compound journey failed during cold, while 100k,
 overload and all 28 fault/recovery cases remain unrun; `accepted_capacity` is false.
