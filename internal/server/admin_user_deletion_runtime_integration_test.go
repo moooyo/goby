@@ -56,18 +56,26 @@ func (process deletedUserEncoderProcess) exited(t *testing.T) bool {
 	t.Helper()
 	// Poll the retained process handle, not a potentially reused numeric PID.
 	// This helper never sends a signal; cancellation must come from the server.
-	files := []unix.PollFd{{Fd: int32(process.pidfd), Events: unix.POLLIN}}
-	ready, err := unix.Poll(files, 0)
-	if err != nil || files[0].Revents&(unix.POLLERR|unix.POLLNVAL) != 0 {
-		t.Fatalf("inspect the owned encoder process handle (%T)", err)
+	for {
+		files := []unix.PollFd{{Fd: int32(process.pidfd), Events: unix.POLLIN}}
+		ready, err := unix.Poll(files, 0)
+		if errors.Is(err, unix.EINTR) {
+			continue
+		}
+		if err != nil {
+			t.Fatalf("inspect the owned encoder process handle: %v", err)
+		}
+		if files[0].Revents&(unix.POLLERR|unix.POLLNVAL) != 0 {
+			t.Fatalf("the owned encoder process handle returned an invalid event: ready=%d revents=%#x", ready, files[0].Revents)
+		}
+		if ready == 0 {
+			return false
+		}
+		if files[0].Revents&(unix.POLLIN|unix.POLLHUP) == 0 {
+			t.Fatalf("the owned encoder process handle returned an unknown event: ready=%d revents=%#x", ready, files[0].Revents)
+		}
+		return true
 	}
-	if ready == 0 {
-		return false
-	}
-	if files[0].Revents&(unix.POLLIN|unix.POLLHUP) == 0 {
-		t.Fatal("the owned encoder process handle returned an unknown event")
-	}
-	return true
 }
 
 func TestHTTPDeleteManagedUserStopsRealEncoderAndSocketsWithoutInterruptingOtherUser(t *testing.T) {
