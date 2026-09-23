@@ -173,18 +173,15 @@ func buildAnalysisPreviewHoldArgs(stream Stream, plan analysisVisualPlan, limits
 		if len(proof.points) == 0 || len(proof.points) > plan.frames {
 			return nil, ErrAnalysisUnproven
 		}
-		var selection strings.Builder
 		previous := -1
-		for index, point := range proof.points {
+		for _, point := range proof.points {
 			if point.ordinal <= previous || point.ordinal >= limits.MaxSourceFrames {
 				return nil, ErrAnalysisUnproven
 			}
-			if index > 0 {
-				selection.WriteByte('+')
-			}
-			fmt.Fprintf(&selection, "eq(n,%d)", point.ordinal)
 			previous = point.ordinal
 		}
+		var selection strings.Builder
+		writeAnalysisPreviewSelection(&selection, proof.points)
 		expression = selection.String()
 	}
 	// FFmpeg n9.0.1 f_select.c defines n as frame_count_out - 1 and forwards
@@ -207,6 +204,28 @@ func buildAnalysisPreviewHoldArgs(stream Stream, plan analysisVisualPlan, limits
 		return append(args, "-c:v", "wrapped_avframe", "-f", "null", "pipe:1"), nil
 	}
 	return append(args, "-c:v", "rawvideo", "-pix_fmt", "rgb24", "-f", "rawvideo", "-flush_packets", "1", "pipe:1"), nil
+}
+
+// FFmpeg n9.0.1 eval.c folds additions leftward and limits expression-tree
+// depth to 100. Grouping short sums keeps all 8192 admitted ordinals within
+// depth 25. Sixteen-term leaves also leave room for the complete filter under
+// its existing byte limit, including seven-digit source ordinals.
+func writeAnalysisPreviewSelection(selection *strings.Builder, points []analysisPreviewHoldPoint) {
+	if len(points) <= 16 {
+		for index, point := range points {
+			if index > 0 {
+				selection.WriteByte('+')
+			}
+			fmt.Fprintf(selection, "eq(n,%d)", point.ordinal)
+		}
+		return
+	}
+	middle := len(points) / 2
+	selection.WriteByte('(')
+	writeAnalysisPreviewSelection(selection, points[:middle])
+	selection.WriteString(")+(")
+	writeAnalysisPreviewSelection(selection, points[middle:])
+	selection.WriteByte(')')
 }
 
 func readAnalysisPreviewHeldFrames(ctx context.Context, input io.Reader, log *analysisPreviewHoldLog, emit func(analysisPreviewHoldPoint, []byte) error) error {
