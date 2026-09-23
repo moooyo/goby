@@ -111,6 +111,22 @@ environment-specific skips, final application artifacts and retention receipts.
 Final owned PostgreSQL/worker closure and documentation are complete. Existing
 production services have not been promoted by these results.
 
+## Copy-timestamp progress successor source
+
+The `amd-media-v4` installer source adds the
+[unknown-progress-timestamp repair](../../scripts/test-env/toolchain-patches/progress-copyts-nopts/README.md)
+to the two existing FFmpeg 9.0.1 patches. It preserves an unknown scheduler clock
+through the existing `N/A` progress representation instead of subtracting a
+previous copy-timestamp origin from `AV_NOPTS_VALUE`. No Goby parser limit or
+media timestamp behavior is relaxed.
+
+Its distinct recipe includes the new patch and real-reporter native harness
+hashes, keeps the original decoder queue gate, and publishes a successor prefix
+only after both gates pass. The OCI source recipe includes the same progress
+patch and gate. The earlier v3 binary identities and acceptance records above
+remain historical evidence; these source changes are not an executed v4 build
+or a replacement for actual progressive/compound media acceptance.
+
 ## Build and test boundary
 
 Ordinary formatting, compilation, production builds, type checks, test suites,

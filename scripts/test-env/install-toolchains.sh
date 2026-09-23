@@ -32,7 +32,9 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 RUNTIME_HELPER="$SCRIPT_DIR/bundle-toolchain-runtime.py"
 FFMPEG_PATCH="$SCRIPT_DIR/toolchain-patches/ffmpeg-libplacebo-strict-dovi-mel.patch"
 FFMPEG_WAKE_PATCH="$SCRIPT_DIR/toolchain-patches/ffmpeg-decoder-queue-wakeup.patch"
+FFMPEG_PROGRESS_PATCH="$SCRIPT_DIR/toolchain-patches/ffmpeg-progress-copyts-nopts.patch"
 NATIVE_HARNESS="$SCRIPT_DIR/toolchain-patches/decoder-queue-wakeup"
+PROGRESS_HARNESS="$SCRIPT_DIR/toolchain-patches/progress-copyts-nopts"
 native_inputs=(native-regression.c native-regression.mk run-native-regression.py)
 
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || { echo 'GOBY_BUILD_JOBS must be positive.' >&2; exit 1; }
@@ -48,8 +50,10 @@ done
 [[ -f "$RUNTIME_HELPER" ]] || { echo "Missing runtime helper: $RUNTIME_HELPER" >&2; exit 1; }
 [[ -s "$FFMPEG_PATCH" ]] || { echo "Missing or empty FFmpeg patch: $FFMPEG_PATCH" >&2; exit 1; }
 [[ -s "$FFMPEG_WAKE_PATCH" ]] || { echo "Missing or empty FFmpeg patch: $FFMPEG_WAKE_PATCH" >&2; exit 1; }
+[[ -s "$FFMPEG_PROGRESS_PATCH" ]] || { echo "Missing or empty FFmpeg patch: $FFMPEG_PROGRESS_PATCH" >&2; exit 1; }
 for file in "${native_inputs[@]}" README.md; do
   [[ -s "$NATIVE_HARNESS/$file" ]] || { echo "Missing native regression input: $NATIVE_HARNESS/$file" >&2; exit 1; }
+  [[ -s "$PROGRESS_HARNESS/$file" ]] || { echo "Missing progress regression input: $PROGRESS_HARNESS/$file" >&2; exit 1; }
 done
 if [[ -n "$REUSE_ROOT" ]]; then
   [[ "$REUSE_ROOT" =~ ^/[A-Za-z0-9._/-]+$ && "$REUSE_ROOT" != / && -d "$REUSE_ROOT" ]] || {
@@ -110,19 +114,23 @@ placebo_flags=(
 )
 ffmpeg_patch_hash=$(sha256sum "$FFMPEG_PATCH" | cut -d ' ' -f 1)
 ffmpeg_wake_patch_hash=$(sha256sum "$FFMPEG_WAKE_PATCH" | cut -d ' ' -f 1)
-declare -A native_hashes
+ffmpeg_progress_patch_hash=$(sha256sum "$FFMPEG_PROGRESS_PATCH" | cut -d ' ' -f 1)
+declare -A native_hashes progress_native_hashes
 for file in "${native_inputs[@]}"; do
   native_hashes[$file]=$(sha256sum "$NATIVE_HARNESS/$file" | cut -d ' ' -f 1)
+  progress_native_hashes[$file]=$(sha256sum "$PROGRESS_HARNESS/$file" | cut -d ' ' -f 1)
 done
 {
-  printf 'recipe=amd-media-v3\nffmpeg=%s\nlibplacebo=%s\nlibplacebo_commit=%s\nnv_codec=%s\nnv_codec_commit=%s\n' \
+  printf 'recipe=amd-media-v4\nffmpeg=%s\nlibplacebo=%s\nlibplacebo_commit=%s\nnv_codec=%s\nnv_codec_commit=%s\n' \
     "$FFMPEG_VERSION" "$LIBPLACEBO_VERSION" "$LIBPLACEBO_COMMIT" "$NV_CODEC_VERSION" "$NV_CODEC_COMMIT"
   printf 'installer_sha256=%s\n' "$(sha256sum "${BASH_SOURCE[0]}" | cut -d ' ' -f 1)"
   printf 'runtime_helper_sha256=%s\n' "$(sha256sum "$RUNTIME_HELPER" | cut -d ' ' -f 1)"
   printf 'ffmpeg_patch_sha256=%s\n' "$ffmpeg_patch_hash"
   printf 'ffmpeg_decoder_wakeup_patch_sha256=%s\n' "$ffmpeg_wake_patch_hash"
+  printf 'ffmpeg_progress_copyts_patch_sha256=%s\n' "$ffmpeg_progress_patch_hash"
   for file in "${native_inputs[@]}"; do
     printf 'native_input=%s sha256=%s\n' "$file" "${native_hashes[$file]}"
+    printf 'progress_native_input=%s sha256=%s\n' "$file" "${progress_native_hashes[$file]}"
   done
   printf 'ffmpeg_flag=%s\n' "${ffmpeg_flags[@]}"
   printf 'libplacebo_flag=%s\n' "${placebo_flags[@]}"
@@ -202,21 +210,27 @@ if (( build_ffmpeg )); then
     > "$evidence/build-packages.tsv"
   cp -- "${BASH_SOURCE[0]}" "$RUNTIME_HELPER" "$evidence/"
   mkdir "$evidence/toolchain-patches"
-  cp -- "$FFMPEG_PATCH" "$FFMPEG_WAKE_PATCH" "$evidence/toolchain-patches/"
+  cp -- "$FFMPEG_PATCH" "$FFMPEG_WAKE_PATCH" "$FFMPEG_PROGRESS_PATCH" "$evidence/toolchain-patches/"
   mkdir "$evidence/toolchain-patches/decoder-queue-wakeup"
+  mkdir "$evidence/toolchain-patches/progress-copyts-nopts"
   for file in "${native_inputs[@]}" README.md; do
     cp -- "$NATIVE_HARNESS/$file" "$evidence/toolchain-patches/decoder-queue-wakeup/"
+    cp -- "$PROGRESS_HARNESS/$file" "$evidence/toolchain-patches/progress-copyts-nopts/"
   done
   if [[ -f "$(dirname -- "$FFMPEG_PATCH")/README.md" ]]; then
     cp -- "$(dirname -- "$FFMPEG_PATCH")/README.md" "$evidence/toolchain-patches/"
   fi
   FFMPEG_PATCH="$evidence/toolchain-patches/$(basename -- "$FFMPEG_PATCH")"
   FFMPEG_WAKE_PATCH="$evidence/toolchain-patches/$(basename -- "$FFMPEG_WAKE_PATCH")"
+  FFMPEG_PROGRESS_PATCH="$evidence/toolchain-patches/$(basename -- "$FFMPEG_PROGRESS_PATCH")"
   NATIVE_HARNESS="$evidence/toolchain-patches/decoder-queue-wakeup"
+  PROGRESS_HARNESS="$evidence/toolchain-patches/progress-copyts-nopts"
   [[ $(sha256sum "$FFMPEG_PATCH" | cut -d ' ' -f 1) == "$ffmpeg_patch_hash" ]]
   [[ $(sha256sum "$FFMPEG_WAKE_PATCH" | cut -d ' ' -f 1) == "$ffmpeg_wake_patch_hash" ]]
+  [[ $(sha256sum "$FFMPEG_PROGRESS_PATCH" | cut -d ' ' -f 1) == "$ffmpeg_progress_patch_hash" ]]
   for file in "${native_inputs[@]}"; do
     [[ $(sha256sum "$NATIVE_HARNESS/$file" | cut -d ' ' -f 1) == "${native_hashes[$file]}" ]]
+    [[ $(sha256sum "$PROGRESS_HARNESS/$file" | cut -d ' ' -f 1) == "${progress_native_hashes[$file]}" ]]
   done
 
   if [[ -n "$REUSE_ROOT" ]]; then
@@ -302,9 +316,11 @@ if (( build_ffmpeg )); then
       "$FFMPEG_KEY" "$LIBPLACEBO_COMMIT" "$LIBPLACEBO_SIGNER"
     printf 'ffmpeg_patch_sha256=%s\n' "$ffmpeg_patch_hash"
     printf 'ffmpeg_decoder_wakeup_patch_sha256=%s\n' "$ffmpeg_wake_patch_hash"
-    printf 'ffmpeg_local_changes=strict_dolbyvision_zero_residual_mel,decoder_queue_receive_wakeup\n'
+    printf 'ffmpeg_progress_copyts_patch_sha256=%s\n' "$ffmpeg_progress_patch_hash"
+    printf 'ffmpeg_local_changes=strict_dolbyvision_zero_residual_mel,decoder_queue_receive_wakeup,copyts_unknown_progress_timestamp\n'
     for file in "${native_inputs[@]}"; do
       printf 'native_input=%s sha256=%s\n' "$file" "${native_hashes[$file]}"
+      printf 'progress_native_input=%s sha256=%s\n' "$file" "${progress_native_hashes[$file]}"
     done
     printf 'libplacebo_fast_float_commit=%s\n' "$fast_float_commit"
     printf 'libplacebo_archive_sha256=%s\n' "$(git -C "$work/libplacebo" archive HEAD | sha256sum | cut -d ' ' -f 1)"
@@ -320,7 +336,7 @@ if (( build_ffmpeg )); then
   ffmpeg_source="$work/ffmpeg-$FFMPEG_VERSION"
   ffmpeg_baseline="$work/ffmpeg-baseline"
   ffmpeg_build="$work/ffmpeg-build"
-  patched_sources=(libavfilter/vf_libplacebo.c fftools/thread_queue.h fftools/thread_queue.c fftools/ffmpeg_sched.c)
+  patched_sources=(libavfilter/vf_libplacebo.c fftools/thread_queue.h fftools/thread_queue.c fftools/ffmpeg_sched.c fftools/ffmpeg.c)
   (
     cd "$ffmpeg_source"
     sha256sum "${patched_sources[@]}" > "$evidence/ffmpeg-patch-input.sha256"
@@ -328,11 +344,13 @@ if (( build_ffmpeg )); then
     sha256sum "${patched_sources[@]}" > "$evidence/ffmpeg-baseline-source.sha256"
   )
   # Preserve a complete strict-DV baseline before applying the independent
-  # scheduler repair. Generated headers and objects live outside either source.
+  # scheduler and progress repairs. Generated headers and objects live outside
+  # either source. Each native gate reads its actual changed production source.
   cp -a "$ffmpeg_source" "$ffmpeg_baseline"
   (
     cd "$ffmpeg_source"
     patch --batch --forward --fuzz=0 -p1 < "$FFMPEG_WAKE_PATCH" > "$evidence/ffmpeg-wakeup-patch.log" 2>&1
+    patch --batch --forward --fuzz=0 -p1 < "$FFMPEG_PROGRESS_PATCH" > "$evidence/ffmpeg-progress-patch.log" 2>&1
     sha256sum "${patched_sources[@]}" > "$evidence/ffmpeg-patch-output.sha256"
   )
   mkdir "$ffmpeg_build"
@@ -344,6 +362,9 @@ if (( build_ffmpeg )); then
     python3 "$NATIVE_HARNESS/run-native-regression.py" \
       --baseline "$ffmpeg_baseline" --candidate "$ffmpeg_source" --build "$ffmpeg_build" \
       --binaries "$work/native-regression-binaries" --evidence "$evidence/native-regression"
+    python3 "$PROGRESS_HARNESS/run-native-regression.py" \
+      --baseline "$ffmpeg_baseline" --candidate "$ffmpeg_source" --build "$ffmpeg_build" \
+      --binaries "$work/progress-regression-binaries" --evidence "$evidence/progress-regression"
     make DESTDIR="$work/install-root" install-progs install-data > "$evidence/ffmpeg-install.log" 2>&1
     cp ffbuild/config.mak "$evidence/ffmpeg-config.mak"
     cp ffbuild/config.log "$evidence/ffmpeg-config.log"

@@ -1,0 +1,14 @@
+diff --git a/fftools/ffmpeg.c b/fftools/ffmpeg.c
+--- a/fftools/ffmpeg.c
++++ b/fftools/ffmpeg.c
+@@ -635,7 +635,9 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time,
+         }
+     }
+ 
+-    if (copy_ts) {
++    // The scheduler can report an unknown timestamp while finished streams
++    // drain. Keep the sentinel intact instead of subtracting the copy origin.
++    if (copy_ts && pts != AV_NOPTS_VALUE) {
+         if (copy_ts_first_pts == AV_NOPTS_VALUE && pts > 1)
+             copy_ts_first_pts = pts;
+         if (copy_ts_first_pts != AV_NOPTS_VALUE)

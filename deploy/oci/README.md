@@ -33,12 +33,20 @@ build-ffmpeg.sh
 check-artifact.py
 entrypoint.sh
 source-pins.json
+toolchain-patches/ffmpeg-progress-copyts-nopts.patch
+toolchain-patches/progress-copyts-nopts/native-regression.c
+toolchain-patches/progress-copyts-nopts/native-regression.mk
+toolchain-patches/progress-copyts-nopts/run-native-regression.py
+toolchain-patches/progress-copyts-nopts/README.md
 goby
 manifest.json
 ```
 
-Copy the first six files from this directory and the last two from the selected
-verified release, preserving bytes. The scripts must have LF line endings.
+Copy the first six files from this directory, the `toolchain-patches` inputs from
+[`scripts/test-env/toolchain-patches`](../../scripts/test-env/toolchain-patches),
+and the last two files from the selected verified release, preserving bytes.
+The patch has one canonical repository copy; do not maintain an independent OCI
+variant. The scripts must have LF line endings.
 Keep runtime environment files, application state, keys, browser material and
 private frontend contribution reports outside this context. The included
 `.dockerignore` allows only these inputs. Retain their names, lengths and hashes
@@ -55,6 +63,12 @@ file alone is insufficient: the checker must exit zero.
 The media stage verifies the pinned FFmpeg source hash and selected signing-key
 fingerprint, and the fixed-commit NVIDIA header archive hash, before compiling.
 It uses the existing project's configure flags and one or two compiler jobs.
+Before compiling it applies the recorded copy-timestamp progress patch with
+zero fuzz, preserving an unpatched source snapshot for the deterministic
+[real-reporter gate](../../scripts/test-env/toolchain-patches/progress-copyts-nopts/README.md).
+Both baseline and candidate reporter contracts must pass before the matching
+FFmpeg/ffprobe pair is installed. Patch bytes, source hashes, harness inputs and
+native regression receipts remain in `/usr/share/goby/toolchain/`.
 The runtime image checks actual FFmpeg/ffprobe 9.0.1 and PostgreSQL 17 version
 commands, records executable hashes and package versions, and retains build
 configuration, source archives, recipe files and available upstream legal texts.

@@ -167,7 +167,7 @@ empty-stream cancellation. See the
 These selected results do not by themselves accept a later recipe build or the
 entire phase.
 
-`amd-media-v3` hashes both patches and the native harness build inputs into the
+The historical `amd-media-v3` recipe hashes both patches and the native harness build inputs into the
 recipe identity. It applies strict Dolby Vision first, retains a complete
 baseline source, applies the queue patch, and builds out of tree. Publication
 requires both native contracts. Metadata retains both patches, hashes of all
@@ -181,3 +181,28 @@ or installation. Missing packages fail explicitly. The default `0` retains the
 existing package setup behavior. Both modes rebuild private libplacebo and FFmpeg
 from verified sources; neither imports earlier private objects or changes GPU
 drivers as part of the patch.
+
+## Copy-timestamp progress with an unknown clock
+
+`ffmpeg-progress-copyts-nopts.patch` changes only FFmpeg 9.0.1's
+`fftools/ffmpeg.c`. The scheduler can temporarily report `AV_NOPTS_VALUE` while
+all completed input streams drain through the mux task. The original reporter
+subtracts an established `copy_ts_first_pts` from that sentinel, overflowing the
+signed timestamp before it reaches the existing `N/A` serialization branch.
+Goby correctly rejects that invalid positive time, which interrupts an otherwise
+valid progressive response after its HTTP headers have already been sent.
+
+The patch skips copy-timestamp normalization only for `AV_NOPTS_VALUE`, allowing
+the existing `N/A` output. It leaves valid timestamps, media clocks, seeking,
+encoders, and every Goby progress limit unchanged. The
+[native progress gate](progress-copyts-nopts/README.md) includes and invokes the
+actual `print_report()` function, checks three negative-control overflows among
+five cases, and requires five passing candidate cases with no overflow.
+
+The new `amd-media-v4` source recipe includes all three patches and both native
+harnesses in its identity. It retains the strict-only baseline before the queue
+and progress patches, records all five modified upstream source files, and runs
+both independent gates before installation. Existing v3 prefixes remain intact.
+The independent OCI build also stages the canonical progress patch and harness,
+applies it with zero fuzz, and requires the same reporter gate. These source
+changes do not by themselves establish a successful build or media acceptance.

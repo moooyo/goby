@@ -35,7 +35,15 @@
     "keyUrl": "https://ffmpeg.org/ffmpeg-devel.asc",
     "requiredSignerFingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
     "signatureReverifiedThisPreparation": false,
-    "boundary": "The source hash was read from the existing toolchain record. The Docker recipe still must verify both this hash and the selected signer before compilation."
+    "localPatches": [
+      {
+        "source": "scripts/test-env/toolchain-patches/ffmpeg-progress-copyts-nopts.patch",
+        "contextPath": "toolchain-patches/ffmpeg-progress-copyts-nopts.patch",
+        "purpose": "Preserve AV_NOPTS_VALUE before copy-timestamp progress normalization.",
+        "regression": "toolchain-patches/progress-copyts-nopts/run-native-regression.py"
+      }
+    ],
+    "boundary": "The source hash was read from the existing toolchain record. The Docker recipe must verify this hash and signer, record and apply the local patch, and pass the real-reporter native regression before installation."
   },
   "nvCodecHeaders": {
     "tag": "n13.1.15.0",

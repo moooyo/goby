@@ -6,8 +6,19 @@ jobs=${GOBY_FFMPEG_BUILD_JOBS:-2}
 case "$jobs" in 1|2) ;; *) echo 'FFmpeg build jobs must be 1 or 2.' >&2; exit 1 ;; esac
 work=/build/media
 evidence=/opt/goby-toolchain-evidence
+progress_patch=/build/toolchain-patches/ffmpeg-progress-copyts-nopts.patch
+progress_harness=/build/toolchain-patches/progress-copyts-nopts
+[[ -s "$progress_patch" ]] || { echo 'Missing FFmpeg progress patch.' >&2; exit 1; }
+for file in native-regression.c native-regression.mk run-native-regression.py README.md; do
+  [[ -s "$progress_harness/$file" ]] || { echo "Missing progress regression input: $file" >&2; exit 1; }
+done
 mkdir -m 0700 "$work"
-mkdir -p "$evidence/licenses" "$evidence/sources"
+mkdir -p "$evidence/licenses" "$evidence/sources" "$evidence/toolchain-patches"
+cp "$progress_patch" "$evidence/toolchain-patches/"
+cp -a "$progress_harness" "$evidence/toolchain-patches/"
+progress_patch="$evidence/toolchain-patches/ffmpeg-progress-copyts-nopts.patch"
+progress_harness="$evidence/toolchain-patches/progress-copyts-nopts"
+sha256sum "$progress_patch" "$progress_harness"/* > "$evidence/progress-patch-inputs.sha256"
 cd "$work"
 
 curl --fail --location --silent --show-error --retry 3 \
@@ -33,13 +44,20 @@ tar -xzf nv-codec-headers.tar.gz --strip-components=1 -C nv-codec-headers
 make -C nv-codec-headers PREFIX=/opt/nv-codec-headers install
 export PKG_CONFIG_PATH=/opt/nv-codec-headers/lib/pkgconfig
 tar -xJf ffmpeg.tar.xz
+cp -a ffmpeg-9.0.1 ffmpeg-baseline
 cd ffmpeg-9.0.1
+sha256sum fftools/ffmpeg.c > "$evidence/ffmpeg-patch-input.sha256"
+patch --batch --forward --fuzz=0 -p1 < "$progress_patch" > "$evidence/ffmpeg-progress-patch.log" 2>&1
+sha256sum fftools/ffmpeg.c > "$evidence/ffmpeg-patch-output.sha256"
 ./configure --prefix=/opt/ffmpeg/9.0.1 \
   --enable-gpl --enable-libx264 --enable-libass --enable-libmp3lame \
   --enable-libopus --enable-libvorbis --enable-vaapi --enable-libvpl \
   --enable-ffnvcodec --enable-cuvid --enable-nvenc \
   --disable-debug --disable-doc --disable-ffplay > "$evidence/ffmpeg-configure.txt" 2>&1
 make -j "$jobs"
+python3 "$progress_harness/run-native-regression.py" \
+  --baseline "$work/ffmpeg-baseline" --candidate "$work/ffmpeg-9.0.1" --build "$work/ffmpeg-9.0.1" \
+  --binaries "$work/progress-regression-binaries" --evidence "$evidence/progress-regression"
 make install-progs install-data
 cp ffbuild/config.mak "$evidence/ffmpeg-config.mak"
 cp COPYING.* LICENSE.md "$evidence/licenses/"

@@ -39,11 +39,12 @@ ENV SOURCE_DATE_EPOCH=1789430400
 # It is a build dependency, not a standalone verification receipt.
 COPY --from=artifact /artifact-inputs.valid /build/artifact-inputs.valid
 COPY build-ffmpeg.sh /build/build-ffmpeg.sh
+COPY toolchain-patches/ /build/toolchain-patches/
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       build-essential ca-certificates curl gnupg libass-dev libdrm-dev libmp3lame-dev \
       libnuma-dev libopus-dev libssl-dev libva-dev libvorbis-dev libvpl-dev \
-      libx264-dev nasm pkg-config xz-utils yasm \
+      libx264-dev nasm patch pkg-config python3 xz-utils yasm \
     && GOBY_FFMPEG_BUILD_JOBS="$FFMPEG_BUILD_JOBS" bash /build/build-ffmpeg.sh
 
 FROM base AS runtime

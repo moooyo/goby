@@ -7,3 +7,12 @@
 !source-pins.json
 !goby
 !manifest.json
+!toolchain-patches/
+toolchain-patches/**
+!toolchain-patches/ffmpeg-progress-copyts-nopts.patch
+!toolchain-patches/progress-copyts-nopts/
+toolchain-patches/progress-copyts-nopts/**
+!toolchain-patches/progress-copyts-nopts/native-regression.c
+!toolchain-patches/progress-copyts-nopts/native-regression.mk
+!toolchain-patches/progress-copyts-nopts/run-native-regression.py
+!toolchain-patches/progress-copyts-nopts/README.md
