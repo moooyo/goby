@@ -53,7 +53,7 @@ func TestAuxiliaryCatalogSnapshotJITRestoresTransactionAndSession(t *testing.T) 
 						preparedName = name
 					}
 					if name != preparedName || generic+custom != int64(call) {
-						t.Fatalf("snapshot did not reuse its default cached statement: name = %q, generic = %d, custom = %d, call = %d", name, generic, custom, call)
+						t.Fatalf("snapshot did not reuse its cached statement: name = %q, generic = %d, custom = %d, call = %d", name, generic, custom, call)
 					}
 				}
 				if !slices.Equal(observed.settings, []string{"off", "off"}) {
@@ -75,8 +75,8 @@ func TestAuxiliaryCatalogSnapshotJITRestoresTransactionAndSession(t *testing.T) 
 
 func TestAuxiliaryCatalogSnapshotJITPreservesExistingGenericPlanResults(t *testing.T) {
 	ctx, store, libraryID := auxiliaryCatalogJITTestFixture(t)
-	// Capture the production statement without copying its SQL or selecting a
-	// different pgx query mode. The fresh connection below has no cached plan.
+	// Capture the production statement without copying its SQL. The fresh
+	// cached-statement connection below starts with no retained plan.
 	captureTx := beginCatalogTestTransaction(t, ctx, store)
 	capture := &auxiliaryCatalogJITObservedTx{Tx: captureTx}
 	expected, err := readAuxiliaryCatalogRows(captureTx.(*ownedTx).ctx, capture,
@@ -211,8 +211,11 @@ func auxiliaryCatalogJITTestFixture(t *testing.T) (context.Context, *Store, stri
 func auxiliaryCatalogJITTestConnection(t *testing.T, ctx context.Context, store *Store) *pgx.Conn {
 	t.Helper()
 	config := store.pool.Config().ConnConfig.Copy()
-	if config.DefaultQueryExecMode != pgx.QueryExecModeCacheStatement || config.StatementCacheCapacity <= 0 {
-		t.Fatal("the integration fixture must preserve the default pgx statement cache")
+	// Cover callers that retain named plans independently of the production
+	// pool's default mode, including plans originally compiled with JIT enabled.
+	config.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
+	if config.StatementCacheCapacity <= 0 {
+		t.Fatal("the cached-plan fixture requires a positive statement cache capacity")
 	}
 	conn, err := pgx.ConnectConfig(ctx, config)
 	if err != nil {
