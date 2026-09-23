@@ -7,6 +7,7 @@ SSH, start services, mount devices, or establish real recovery acceptance.
 
 from __future__ import annotations
 
+import copy
 import importlib.util
 from pathlib import Path
 import unittest
@@ -35,6 +36,61 @@ def stable_state():
     return {"catalog_count": 10000, **{name: SHA for name in controller.STATE_HASHES}}
 
 
+def inventory_manifest(disk_bytes=73 << 30):
+    root = "/var/lib/goby-phase3/inventory-case"
+    def reference(name):
+        return {"path": "/external/" + name, "sha256": SHA}
+    volumes = {}
+    for index, (name, purpose, writable) in enumerate((("media", "media", False),
+                                                       ("derivatives", "derivatives", True))):
+        volumes[name] = {"mountpoint": root + "/mounts/" + name,
+                         "backing_file": root + "/backing/" + name,
+                         "loop_device": "/dev/loop" + str(index), "mapper_name": "goby-phase3-" + name,
+                         "dm_uuid": "GOBY-PHASE3-owner1-" + name,
+                         "filesystem_uuid": "11111111-2222-3333-4444-555555555555",
+                         "major_minor": "253:" + str(index), "size_bytes": 32 << 20,
+                         "writable": writable, "purpose": purpose}
+    return {"schema_version": 1, "run_id": "run1", "source_revision": "c" * 40,
+            "profile_id": "profile1", "tier": 10000, "owner_id": "owner1",
+            "controller": {"machine_id": "1" * 32, "artifacts_root": "/external", "marker": reference("owner.json")},
+            "guest": {"vmid": 106, "name": "goby-phase3-inventory", "machine_id": "2" * 32,
+                      "smbios_uuid": "11111111-2222-3333-4444-555555555555", "owner_marker_sha256": SHA,
+                      "owned_root": root, "disks": {"scsi0": {"volume": "local-lvm:vm-106-disk-0",
+                          "uuid": "actual-owned-disk-uuid", "size_bytes": disk_bytes}}, "goby_uid": 1001,
+                      "goby_cgroup": "/system.slice/goby-phase3-app.service",
+                      "postgres_cgroup": "/system.slice/goby-phase3-postgres.service"},
+            "adapters": {role: {**reference(role + ".py"), "context": reference(role + ".json")}
+                         for role in ("executor", "observer", "workload", "hypervisor")},
+            "workload_manifest": reference("workload.json"), "volumes": volumes, "healthy_roots": ["healthy-root"],
+            "budgets": {"rpc_seconds": 120, "recovery_seconds": 900, "fault_seconds": 120,
+                        "poll_seconds": 0.25, "max_output_bytes": 8 << 20,
+                        "healthy_latency_ms": 1500, "cleanup_seconds": 120},
+            "scenarios": [scenario()],
+            "state_validator": {"source": reference("state.py"), "binding_sha256": SHA,
+                "scope": {"user_ids": ["viewer"], "item_ids": ["item"], "library_ids": ["library"],
+                          "root_ids": ["healthy-root", "fault-root"], "fault_root_ids": ["fault-root"]}}}
+
+
+def inventory_observations(manifest):
+    configured = manifest["guest"]
+    observed = {key: copy.deepcopy(configured[key]) for key in
+                ("vmid", "name", "machine_id", "smbios_uuid", "owner_marker_sha256", "disks")}
+    observed.update(owner_id=manifest["owner_id"], boot_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", btime=1,
+                    volumes=copy.deepcopy(manifest["volumes"]), observed_unix_ns=10)
+    for index, role in enumerate(("goby", "postgres")):
+        observed[role] = {"pid": 100 + index, "start_ticks": 200 + index,
+                          "cgroup": configured[role + "_cgroup"], "executable_sha256": SHA}
+    observed["volume_observations"] = {name: {
+        "present": True, "mounted": True, "dm_uuid": volume["dm_uuid"], "major_minor": volume["major_minor"],
+        "loop_backing_file": volume["backing_file"], "size_bytes": volume["size_bytes"]}
+        for name, volume in manifest["volumes"].items()}
+    hypervisor = {"owner_id": manifest["owner_id"], "vmid": configured["vmid"],
+                  "smbios_uuid": configured["smbios_uuid"], "status": "running", "qemu_pid": 500,
+                  "qemu_start_ticks": 600, "config_sha256": SHA, "disks": copy.deepcopy(configured["disks"]),
+                  "observed_unix_ns": 10, "observer_machine_id": manifest["controller"]["machine_id"]}
+    return observed, hypervisor
+
+
 class MemoryJournal:
     def __init__(self):
         self.events = []
@@ -45,6 +101,39 @@ class MemoryJournal:
 
 
 class ContractTests(unittest.TestCase):
+    def test_guest_disk_inventory_describes_authorized_73_gib_and_finite_128_gib_ceiling(self):
+        for size in (73 << 30, 128 << 30):
+            with self.subTest(size=size):
+                manifest = inventory_manifest(size)
+                self.assertIs(controller.load_manifest(manifest), manifest)
+        with self.assertRaisesRegex(controller.Invalid, "invalid_integer"):
+            controller.load_manifest(inventory_manifest((128 << 30) + 1))
+
+    def test_inventory_ceiling_does_not_allow_changed_owner_volume_uuid_or_actual_size(self):
+        manifest = controller.load_manifest(inventory_manifest())
+        observed, hypervisor = inventory_observations(manifest)
+        controller.validate_identity(observed, manifest)
+        controller.validate_hypervisor(hypervisor, manifest)
+        changes = (("owner_id", "another-owner"), ("volume", "local-lvm:vm-106-disk-9"),
+                   ("uuid", "another-disk-uuid"), ("size_bytes", (73 << 30) + 512))
+        for name, value in changes:
+            for original, validate in ((observed, controller.validate_identity),
+                                       (hypervisor, controller.validate_hypervisor)):
+                with self.subTest(field=name, validator=validate.__name__):
+                    changed = copy.deepcopy(original)
+                    if name == "owner_id":
+                        changed[name] = value
+                    else:
+                        changed["disks"]["scsi0"][name] = value
+                    with self.assertRaises(controller.Invalid):
+                        validate(changed, manifest)
+
+    def test_larger_guest_inventory_keeps_original_two_gib_fault_volume_limit(self):
+        manifest = inventory_manifest()
+        manifest["volumes"]["media"]["size_bytes"] = (2 << 30) + 512
+        with self.assertRaisesRegex(controller.Invalid, "invalid_integer"):
+            controller.load_manifest(manifest)
+
     def test_duplicate_json_keys_and_nonfinite_values_are_rejected(self):
         for raw in (b'{"vmid":106,"vmid":101}', b'{"value":NaN}', b'{"value":Infinity}'):
             with self.subTest(raw=raw), self.assertRaises(controller.Invalid):

@@ -71,6 +71,12 @@ postgres_cgroup: /system.slice/goby-phase3-....service
 Only `local-lvm:vm-106-disk-N` and `local-lvm:vm-106-cloudinit` volume names are
 admitted. The PVE adapter must observe their real LVM identities; copying a
 manifest's disk inventory into a guest response is only a scope reference.
+Each guest disk inventory entry can describe up to 128 GiB, including the
+already authorized 73 GiB system disk. This is a finite provenance-inventory
+ceiling, not permission to expand or substitute a disk. The exact owner,
+volume, UUID and observed byte size must still match the frozen inventory.
+Fault-volume sizes, ENOSPC scope, resource budgets and service thresholds are
+unchanged by this descriptive limit.
 
 `adapters` has `executor`, `observer`, `workload`, and `hypervisor`. Each is
 `{path, sha256, context:{path,sha256}}`. Source and context remain pinned for

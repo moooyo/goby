@@ -35,6 +35,10 @@ MAX_EVENT = 16 << 20
 MAX_ADAPTER_BYTES = 2 << 20
 MAX_EVENTS = 2048
 MAX_SCENARIOS = 1
+# This finite provenance-inventory ceiling can describe an already authorized
+# guest disk. It grants no resize permission: exact owner, volume, UUID and
+# observed size must still match. Fault-volume and resource budgets are separate.
+MAX_GUEST_DISK_INVENTORY_BYTES = 128 << 30
 SHA = re.compile(r"[0-9a-f]{64}\Z")
 REVISION = re.compile(r"[0-9a-f]{40}\Z")
 ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
@@ -269,7 +273,7 @@ def load_manifest(value):
         fields(disk, ("volume", "uuid", "size_bytes"))
         need(re.fullmatch(r"local-lvm:vm-106-(?:disk-[0-9]+|cloudinit)", disk["volume"]), "unowned_disk")
         text(disk["uuid"], 128)
-        integer(disk["size_bytes"], 1, 40 << 30)
+        integer(disk["size_bytes"], 1, MAX_GUEST_DISK_INVENTORY_BYTES)
     fields(value["adapters"], ("executor", "observer", "workload", "hypervisor"))
     for adapter in value["adapters"].values():
         fields(adapter, ("path", "sha256", "context"))
