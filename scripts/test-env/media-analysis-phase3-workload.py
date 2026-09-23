@@ -31,6 +31,7 @@ from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
 
 VERSION = 1
+CONTEXT_VERSION = 2
 PHASES = ("cold", "cached", "incremental")
 QUERY_KINDS = {"unicode", "filter", "exact_total", "shallow", "deep", "resume", "latest"}
 PLAY_MODES = {"direct", "remux", "transcode"}
@@ -52,6 +53,29 @@ def need(condition, code):
 
 def exact(value, keys, code):
     need(type(value) is dict and set(value) == set(keys.split()), code)
+
+
+def playback_client_headers(client):
+    """Use the immutable native credential belonging to one playback lane."""
+    exact(client, "emby_token auth_session_id device_id", "playback_client_fields")
+    token = client["emby_token"]
+    need(type(token) is str and 0 < len(token) <= 4096 and
+         not any(character in token for character in "\r\n\x00"), "playback_client_token")
+    need(all(type(client[key]) is str and SAFE.fullmatch(client[key])
+             for key in ("auth_session_id", "device_id")), "playback_client_identity")
+    return {"X-Emby-Token": token, "X-Emby-Authorization":
+            'MediaBrowser Client="Phase3", Device="Linux", DeviceId="%s", Version="1"' % client["device_id"]}
+
+
+def validate_playback_clients(clients, primary_token, primary_device):
+    exact(clients, "direct remux transcode", "playback_client_modes")
+    for client in clients.values():
+        playback_client_headers(client)
+    need(all(len({client[key] for client in clients.values()}) == 3
+             for key in ("emby_token", "auth_session_id", "device_id")), "distinct_playback_clients_required")
+    need(clients["direct"]["emby_token"] == primary_token and clients["direct"]["device_id"] == primary_device,
+         "primary_direct_client_binding")
+    return clients
 
 
 def integer(value, lower, upper, code):
@@ -126,6 +150,68 @@ def distribution(values):
     return {"count": len(values), "min": min(values) if values else None,
             "p50": percentile(values, .50), "p95": percentile(values, .95),
             "p99": percentile(values, .99), "max": max(values) if values else None}
+
+
+def cpu_usage_sample(group):
+    """Bind one cumulative counter to the clock interval of its own read."""
+    path = Path(group) / "cpu.stat"
+    started = time.monotonic_ns()
+    raw = path.read_text()
+    ended = time.monotonic_ns()
+    integer(started, 0, 1 << 63, "cpu_sample_clock")
+    integer(ended, started, 1 << 63, "cpu_sample_clock")
+    rows = [line.split() for line in raw.splitlines()]
+    need(all(len(row) == 2 for row in rows) and len({row[0] for row in rows}) == len(rows), "cpu_stat_shape")
+    usage = dict(rows).get("usage_usec")
+    need(type(usage) is str and re.fullmatch(r"[0-9]+", usage), "cpu_usage_counter")
+    return {"cpu_usage_usec": integer(int(usage), 0, 1 << 63, "cpu_usage_counter"),
+            "cpu_sample_start_ns": started, "cpu_sample_end_ns": ended,
+            "cpu_sample_at_ns": (started + ended) // 2}
+
+
+def service_cpu_percent(previous, current):
+    """Sum each service's rate over its own consecutive counter-read intervals.
+
+    The service windows are slightly staggered, not an atomic VM-wide sample.
+    Keep their raw read boundaries in evidence; never use an earlier broker
+    timestamp, clamp a high rate, or turn a reset into zero utilization.
+    """
+    need(type(current) is dict and set(current) == {"goby", "postgres"}, "cpu_service_scope")
+    need(previous is None or type(previous) is dict and set(previous) == set(current), "cpu_service_scope")
+    for samples in ((current,) if previous is None else (previous, current)):
+        for sample in samples.values():
+            integer(sample["cpu_usage_usec"], 0, 1 << 63, "cpu_usage_counter")
+            started = integer(sample["cpu_sample_start_ns"], 0, 1 << 63, "cpu_sample_clock")
+            ended = integer(sample["cpu_sample_end_ns"], started, 1 << 63, "cpu_sample_clock")
+            need(type(sample["cpu_sample_at_ns"]) is int and
+                 sample["cpu_sample_at_ns"] == (started + ended) // 2, "cpu_sample_clock")
+    if previous is None:
+        return None
+    total = Fraction(0)
+    for name, sample in current.items():
+        before = previous[name]
+        elapsed = sample["cpu_sample_at_ns"] - before["cpu_sample_at_ns"]
+        need(elapsed > 0 and sample["cpu_sample_start_ns"] >= before["cpu_sample_end_ns"], "cpu_sample_interval")
+        delta = sample["cpu_usage_usec"] - before["cpu_usage_usec"]
+        need(delta >= 0, "cpu_counter_regressed")
+        total += Fraction(100000 * delta, elapsed)
+    return float(total)
+
+
+def http_exception_details(error):
+    """Retain a bounded exception type/errno, never exception text or arguments."""
+    kind = type(error)
+    name = kind.__name__
+    known = kind is Failure or kind.__module__ in ("builtins", "http.client", "socket")
+    if not known or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", name):
+        name = "OtherException"
+    try:
+        error_number = getattr(error, "errno", None)
+    except Exception:
+        error_number = None
+    if type(error_number) is not int or not -(1 << 31) <= error_number < 1 << 31:
+        error_number = None
+    return {"exception_type": name, "errno": error_number}
 
 
 def progressive_request(path, mode, requested_ticks):
@@ -479,7 +565,7 @@ class Actor:
     def validate_context(self):
         required = "schema_version manifest_sha256 driver_sha256 run_id owner_id origin admin_cookie csrf_token emby_token user_id device_id owner_file app_pid app_start_ticks cgroup_path postgres process_observer pg_env tools roots inventory_path inventory_sha256 scan_libraries catalog_expected queries playback analysis_item_ids mutation scan_evidence_path scan_evidence_sha256"
         exact(self.c, required, "context_fields")
-        need(self.c["schema_version"] == VERSION and self.c["run_id"] == self.m["run_id"]
+        need(type(self.c["schema_version"]) is int and self.c["schema_version"] == CONTEXT_VERSION and self.c["run_id"] == self.m["run_id"]
              and self.c["owner_id"] == self.m["owner_id"], "context_binding")
         origin = urlsplit(self.c["origin"])
         need(origin.scheme == "http" and origin.hostname in ("127.0.0.1", "::1") and origin.port
@@ -530,13 +616,15 @@ class Actor:
              and len(self.c["playback"]) == 3, "playback_modes")
         need(len({p.get("item_id") for p in self.c["playback"]}) == 3, "distinct_playback_items_required")
         for play in self.c["playback"]:
-            exact(play, "mode item_id path body seek_ticks expected_codecs", "playback_fields")
+            exact(play, "mode item_id path body seek_ticks expected_codecs client", "playback_fields")
             need(type(play["body"]) is dict and type(play["expected_codecs"]) is list and play["expected_codecs"], "playback_profile")
             need(len(json_bytes(play["body"])) <= 65536 and len(play["expected_codecs"]) <= 8 and all(type(codec) is str and SAFE.fullmatch(codec) for codec in play["expected_codecs"]), "playback_profile_bounds")
             integer(play["seek_ticks"], 10000000, 1 << 53, "seek_required")
             self.owned_media(play["path"])
             if play["mode"] != "direct":
                 need(play["body"].get("EnableDirectPlay") is False and play["body"].get("EnableTranscoding") is True, "conversion_profile")
+        validate_playback_clients({play["mode"]: play["client"] for play in self.c["playback"]},
+                                  self.c["emby_token"], self.c["device_id"])
         need(type(self.c["analysis_item_ids"]) is list and 2 <= len(self.c["analysis_item_ids"]) <= 200, "analysis_cohort")
         need(type(self.c["scan_libraries"]) is list and 1 <= len(self.c["scan_libraries"]) <= 8, "scan_scope")
         for library in self.c["scan_libraries"]:
@@ -837,6 +925,7 @@ class Actor:
             request_headers["Content-Type"] = "application/json"
         started = time.monotonic_ns()
         status, first, data, error, response_headers = None, None, bytearray(), "", {}
+        exception_details = None
         connection = http.client.HTTPConnection(origin.hostname, origin.port, timeout=min(self.m["budgets"]["request_seconds"], self.remaining()))
         request_deadline = time.monotonic() + min(self.m["budgets"]["request_seconds"], self.remaining())
         watchdog = None
@@ -870,6 +959,7 @@ class Actor:
             need(status in statuses, "http_status")
         except Exception as caught:
             error = str(caught) if isinstance(caught, Failure) else "http_transport"
+            exception_details = http_exception_details(caught)
             raise Failure(error) from None
         finally:
             if watchdog:
@@ -879,10 +969,12 @@ class Actor:
             connection.close()
             ended = time.monotonic_ns()
             ref = self.e.artifact("http.json", json_bytes({"label": label, "method": method, "path": path, "request_body": body,
-                "status": status, "headers": response_headers, "body_sha256": digest(data), "error": error}))
+                "status": status, "headers": response_headers, "body_sha256": digest(data), "error": error,
+                "exception_details": exception_details}))
             body_ref = self.e.artifact("body.bin", bytes(data))
             self.e.event("http", label=label, phase=self.phase, start_ns=started, end_ns=ended,
-                         first_byte_ns=first, status=status, bytes=len(data), error=error, receipt=ref, body=body_ref)
+                         first_byte_ns=first, status=status, bytes=len(data), error=error, receipt=ref, body=body_ref,
+                         exception_details=exception_details)
         result = (bytes(data) if binary or not data else strict_json(data)), response_headers, (started, ended), body_ref
         return (*result, status) if include_status else result
 
@@ -1007,7 +1099,7 @@ class Actor:
                 "apparent_bytes_by_format": format_bytes, "unique_content_bytes": content_bytes}
 
     def observer(self):
-        previous_cpu, previous_at, previous_io = None, None, None
+        previous_cpu, previous_io = None, None
         last_pool_sample = 0
         group = Path(self.c["cgroup_path"])
         while not self.stop.is_set():
@@ -1017,12 +1109,11 @@ class Actor:
                 now = observed["observed_monotonic_ns"]
                 services = {}
                 for label, service_group in (("goby", group), ("postgres", Path(self.c["postgres"]["cgroup_path"]))):
-                    cpu = dict(line.split() for line in (service_group / "cpu.stat").read_text().splitlines())
-                    services[label] = {"cpu_usage_usec": int(cpu["usage_usec"]),
+                    services[label] = {**cpu_usage_sample(service_group),
                         "io_bytes": sum(int(field.split("=", 1)[1]) for line in (service_group / "io.stat").read_text().splitlines()
                             for field in line.split()[1:] if field.startswith(("rbytes=", "wbytes="))),
                         "memory_bytes": int((service_group / "memory.current").read_text())}
-                cpu_us = sum(service["cpu_usage_usec"] for service in services.values())
+                cpu_percent = service_cpu_percent(previous_cpu, services)
                 io_bytes = sum(service["io_bytes"] for service in services.values())
                 memory = sum(service["memory_bytes"] for service in services.values())
                 current = []
@@ -1041,7 +1132,7 @@ class Actor:
                     process["source_paths"] = sorted(set(process["source_paths"]) | set(paths))
                 row = {"phase": self.phase, "at_ns": now, "memory_bytes": memory, "children": len(current),
                        "services": services,
-                       "cpu_percent": None if previous_at is None else 100 * (cpu_us - previous_cpu) * 1000 / (now - previous_at),
+                       "cpu_percent": cpu_percent, "cpu_sampling": "per_service_read_midpoint",
                        "io_bytes": 0 if previous_io is None else max(0, io_bytes - previous_io)}
                 row["scan_spool_generations"] = observed["resource"]["scan_spool_generations"]
                 self.resources.append(row)
@@ -1049,7 +1140,7 @@ class Actor:
                 if now - last_pool_sample >= 1000000000:
                     self.sample_database_pool()
                     last_pool_sample = now
-                previous_cpu, previous_at, previous_io = cpu_us, now, io_bytes
+                previous_cpu, previous_io = services, io_bytes
                 with self.lock:
                     checkpoint = {key: self.m[key] for key in ("owner_id", "run_id", "profile_id", "source_revision", "tier")}
                     checkpoint.update({"schema_version": VERSION, "phase": self.phase, "at_monotonic_ns": now,
@@ -1171,21 +1262,26 @@ class Actor:
 
     def playback(self, mode):
         play = next(p for p in self.c["playback"] if p["mode"] == mode)
-        intent = self.admission_intent("playback", {"item_id": play["item_id"], "user_id": self.c["user_id"], "device_id": self.c["device_id"]})
-        prepared, _, _, _ = self.http(mode + "-prepare", "POST", "/emby/Items/" + play["item_id"] + "/PlaybackInfo", play["body"])
+        client = play["client"]
+        client_headers = playback_client_headers(client)
+        owner = {"auth_session_id": client["auth_session_id"], "device_id": client["device_id"]}
+        intent = self.admission_intent("playback", {"item_id": play["item_id"], "user_id": self.c["user_id"], **owner})
+        prepared, _, _, _ = self.http(mode + "-prepare", "POST", "/emby/Items/" + play["item_id"] + "/PlaybackInfo",
+                                      play["body"], headers=client_headers)
         identity = prepared["PlaySessionId"]
         with self.lock:
             need(identity not in self.plays, "playback_scope_reused")
-            self.plays[identity] = {"item_id": play["item_id"], "source_id": "", "mode": mode}
+            self.plays[identity] = {"item_id": play["item_id"], "source_id": "", "mode": mode, **owner}
         del self.intents[intent]
         need(len(prepared["MediaSources"]) == 1 and identity.startswith("play_"), "playback_prepare")
         source = prepared["MediaSources"][0]
         path = source.get("DirectStreamUrl" if mode == "direct" else "TranscodingUrl", "")
         need(path and ".m3u8" not in urlsplit(path).path, "progressive_profile_required")
         with self.lock:
-            self.plays[identity] = {"item_id": play["item_id"], "source_id": source["Id"], "mode": mode}
+            self.plays[identity] = {"item_id": play["item_id"], "source_id": source["Id"], "mode": mode, **owner}
+        self.verify_playback_identity(identity, self.plays[identity])
         report = {"PlaySessionId": identity, "ItemId": play["item_id"], "MediaSourceId": source["Id"], "PositionTicks": 0, "IsPaused": False}
-        self.http(mode + "-started", "POST", "/emby/Sessions/Playing", report, statuses=(204,))
+        self.http(mode + "-started", "POST", "/emby/Sessions/Playing", report, statuses=(204,), headers=client_headers)
         for seeking in (False, True):
             current = path
             if mode == "direct":
@@ -1194,7 +1290,7 @@ class Actor:
                 length = min(size - offset, self.m["budgets"]["max_stream_bytes"], 1 << 20)
                 need(offset >= 0 and length >= self.m["thresholds"]["min_media_bytes"], "direct_source_size")
                 raw, headers, span, _ = self.http(mode + ("-seek" if seeking else "-start"), "GET", current, binary=True,
-                    headers={"Range": "bytes=%d-%d" % (offset, offset + length - 1)}, statuses=(206,))
+                    headers={**client_headers, "Range": "bytes=%d-%d" % (offset, offset + length - 1)}, statuses=(206,))
                 with open(play["path"], "rb") as stream:
                     stream.seek(offset)
                     need(raw == stream.read(length), "direct_range_bytes")
@@ -1204,7 +1300,8 @@ class Actor:
                 current = progressive_request(current, mode, ticks)
                 # Alignment negotiation occurs inside this same measured GET;
                 # no separate request may hide its cost from seek first-byte time.
-                raw, headers, span, ref = self.http(mode + ("-seek" if seeking else "-start"), "GET", current, binary=True)
+                raw, headers, span, ref = self.http(mode + ("-seek" if seeking else "-start"), "GET", current,
+                                                 binary=True, headers=client_headers)
                 actual_ticks = progressive_start(headers, ticks, mode == "remux" and seeking)
                 need(len(raw) >= self.m["thresholds"]["min_media_bytes"], "conversion_empty")
                 output = str(self.e.private / ref["name"])
@@ -1212,7 +1309,7 @@ class Actor:
                 streams = strict_json(probe)["streams"]
                 need(any(stream["codec_type"] == "video" for stream in streams), "video_seek_consumer_required")
                 need(sorted(s["codec_name"] for s in streams if s["codec_type"] in {"audio", "video"}) == sorted(play["expected_codecs"]), "actual_output_codecs")
-                jobs = self.sql("SELECT COALESCE(json_agg(json_build_object('id',id,'state',state,'plan',plan,'source_stamp',source_stamp,'bytes',output_bytes)),'[]'::json) FROM encoding_jobs WHERE play_session_id=" + sql_string(identity) + " AND item_id=" + sql_string(play["item_id"]) + " AND media_source_id=" + sql_string(source["Id"]) + " AND device_id=" + sql_string(self.c["device_id"]) + " AND user_id=" + sql_string(self.c["user_id"]))
+                jobs = self.sql("SELECT COALESCE(json_agg(json_build_object('id',id,'state',state,'plan',plan,'source_stamp',source_stamp,'bytes',output_bytes)),'[]'::json) FROM encoding_jobs WHERE play_session_id=" + sql_string(identity) + " AND item_id=" + sql_string(play["item_id"]) + " AND media_source_id=" + sql_string(source["Id"]) + " AND auth_session_id=" + sql_string(client["auth_session_id"]) + " AND device_id=" + sql_string(client["device_id"]) + " AND user_id=" + sql_string(self.c["user_id"]))
                 matching = [job for job in jobs if job["plan"].get("StartTicks") == actual_ticks]
                 need(matching, "encoding_database_binding")
                 clocks, audio_hashes = [], []
@@ -1261,9 +1358,10 @@ class Actor:
                     consumer_target_ticks=ticks)
             self.e.event("playback_bytes", phase=self.phase, mode=mode, seeking=seeking, start_ns=span[0], end_ns=span[1], bytes=len(raw))
         report["PositionTicks"] = play["seek_ticks"]
-        self.http(mode + "-progress", "POST", "/emby/Sessions/Playing/Progress", report, statuses=(204,))
+        self.http(mode + "-progress", "POST", "/emby/Sessions/Playing/Progress", report, statuses=(204,), headers=client_headers)
         # Persisted progress is checked through the real item/user projection.
-        detail, _, _, _ = self.http(mode + "-progress-read", "GET", "/emby/Users/" + self.c["user_id"] + "/Items/" + play["item_id"])
+        detail, _, _, _ = self.http(mode + "-progress-read", "GET", "/emby/Users/" + self.c["user_id"] + "/Items/" + play["item_id"],
+                                  headers=client_headers)
         need(detail["UserData"]["PlaybackPositionTicks"] == play["seek_ticks"], "playback_progress_persistence")
         self.close_one_playback(identity)
         self.drain_playback()
@@ -1549,11 +1647,24 @@ class Actor:
         for identity in list(self.plays):
             self.close_one_playback(identity)
 
+    def verify_playback_identity(self, identity, play):
+        observed = self.sql("SELECT row_to_json(p) FROM (SELECT id,user_id,auth_session_id,device_id,item_id,media_source_id "
+            "FROM play_sessions WHERE id=" + sql_string(identity) + ") p")
+        need(observed == {"id": identity, "user_id": self.c["user_id"], "auth_session_id": play["auth_session_id"],
+             "device_id": play["device_id"], "item_id": play["item_id"], "media_source_id": play["source_id"]},
+             "playback_authentication_binding")
+
     def close_one_playback(self, identity):
         play = self.plays[identity]
+        binding = next(p for p in self.c["playback"] if p["mode"] == play["mode"])
+        client = binding["client"]
+        need(all(play[key] == client[key] for key in ("auth_session_id", "device_id")), "playback_client_changed")
+        headers = playback_client_headers(client)
         self.http("playback-stop", "POST", "/emby/Sessions/Playing/Stopped", {"PlaySessionId": identity,
-            "ItemId": play["item_id"], "MediaSourceId": play["source_id"], "PositionTicks": next(p["seek_ticks"] for p in self.c["playback"] if p["mode"] == play["mode"])}, statuses=(204,))
-        self.http("encoding-stop", "DELETE", "/emby/Videos/ActiveEncodings?" + urlencode({"PlaySessionId": identity, "DeviceId": self.c["device_id"]}), statuses=(204,))
+            "ItemId": play["item_id"], "MediaSourceId": play["source_id"], "PositionTicks": binding["seek_ticks"]},
+            statuses=(204,), headers=headers)
+        self.http("encoding-stop", "DELETE", "/emby/Videos/ActiveEncodings?" + urlencode({"PlaySessionId": identity,
+            "DeviceId": client["device_id"]}), statuses=(204,), headers=headers)
         del self.plays[identity]
         self.closed_plays[identity] = play
 

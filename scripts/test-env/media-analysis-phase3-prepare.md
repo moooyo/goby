@@ -18,6 +18,11 @@ Read-only PostgreSQL observations bind resulting opaque IDs and query truth.
 The script never inserts catalog rows. Both its generated short fixtures and
 the licensed sources are scanned by Goby's actual prober.
 
+The three-client authentication correction requires a fresh preparation
+namespace, newly frozen preparer/Actor source pins and manifest/context input pins.
+It does not retroactively accept any failed historical compound run or permit
+editing its retained context or receipts in place.
+
 ## Private operator binding
 
 Invoke a fresh source-pinned process with fixed argv:
@@ -93,6 +98,42 @@ source and binding hashes are included in the typed context.
 The service's allowlist must permit the named future media subtree before it
 starts. An unsuccessful run is never retried over partial state.
 
+## Three native playback clients
+
+`Preparer.authenticate` creates the existing primary viewer login and two
+additional native `Users/AuthenticateByName` logins before fixture baselines
+are captured. All three authenticate the same viewer `User.Id`; they use
+distinct `DeviceId` values, access tokens and native `SessionInfo.Id` values.
+The primary login remains the default for queries and overload traffic and is
+also the direct-play client. The other two logins belong to remux and transcode.
+Each mode keeps its exact client throughout cold, cached and incremental work.
+Tokens are never rotated between phases or shared across the three modes.
+
+The private Actor context uses `CONTEXT_VERSION=2`. Every `playback` row adds
+the required `client` object with exactly `emby_token`, `auth_session_id` and
+`device_id`; the direct row's token and device must equal the top-level default.
+The public manifest and result remain `VERSION=1`, as does the private operator
+binding above. Native `Users/Me` and read-only authentication-session,
+play-session and encoding-job SQL observations must prove the common viewer
+and each distinct session/device binding. Distinct item IDs alone do not prove
+three independent native clients.
+
+Preparation compares each actual `sessions` row's `id`, `user_id`, `device_id`
+and `kind` with that login, requires `kind="emby"`, and checks that the session
+is unrevoked and unexpired. The stored `token_hash`, encoded as lowercase hex,
+must equal SHA256 of that client's token bytes. This query records only the
+digest, not the bearer token, and its SQL receipt still remains private.
+Playback admission subsequently compares `play_sessions` ownership, while
+conversion evidence selects `encoding_jobs` by that same user, authentication
+session, device, play session, item and media source.
+
+This fixture correction preserves query concurrency two, playback concurrency
+three, all SLOs, and the existing encoding caps: global two, per-user two and
+per-session one. It does not increase production capacity or change broker
+UID, Goby PID or cgroup ownership. Tokens and raw login/session receipts remain
+in actor-owned `0600` files under private `0700` directories; public manifests,
+results and summaries must not contain credentials.
+
 ## Generated layout and frozen truth
 
 The preparer creates three small, genuine generated media templates: H.264 MP4,
@@ -155,8 +196,9 @@ incremental pass expectations are frozen before the workload begins.
 On successful preparation the private workspace contains:
 
 - `private/workload-manifest.json`, exact approved manifest bytes.
-- `private/workload-context.json`, complete typed driver input with actual IDs,
-  credentials, root bindings, per-phase expectations and source paths.
+- `private/workload-context.json`, private Actor context version 2 with actual
+  IDs, three fixed client bindings, credentials, root bindings, per-phase
+  expectations and source paths.
 - `private/inventory.jsonl`, one explicitly classified row per media pathname.
 - `workload-owner.json` (`0600`), derived finite scope bound to the original
   controller ownership and actual native root identities.
@@ -170,6 +212,12 @@ paths; never publish the private directory. A failed run preserves a private
 partial owned-state receipt and returns nonzero. The controller must reconcile
 possibly late admissions and close all credentials, jobs, services, PostgreSQL,
 guest resources and the partial workspace. Preparation does not prove closure.
+
+Keep all three authentication sessions valid through the last admitted
+after-compound or fault consumer. Stopping an owned playback and draining its
+encoders does not authorize early authentication logout. Only after the final
+consumer and independent cleanup have closed may the controller perform the
+corresponding native Logout operations and account for those credentials.
 
 ## Small fault fixture extension
 
@@ -302,6 +350,13 @@ keeps the original `M/0/0` counters. The old deleted ID and incremental added ID
 must not appear in frozen query pages, playback, analysis or metadata selections;
 otherwise preparation fails rather than silently replacing those references.
 The original exact 10k/100k capacity context and report remain unchanged.
+
+The derived context remains private Actor version 2. Its deep copy preserves
+all three playback `client` objects and the primary top-level query/overload
+credentials; recovery transport must carry those fields without reconstruction
+or token substitution. The separate fault sentinel, probe and state observer
+retain their own identity and versioned contracts. Sentinel credentials do not
+replace any compound playback client.
 
 The controller separately freezes the fault profile, remounts declared read-only media, and verifies that Goby's
 derivative-cache deployment uses the returned `analysis-cache` path. Populating

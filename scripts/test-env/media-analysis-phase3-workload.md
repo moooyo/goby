@@ -6,6 +6,10 @@ They are not capacity claims. Do not execute this source on a developer machine
 or on the shared `test-env` host. Phase 3 must finish implementation before its
 consolidated remote verification begins.
 
+The three-client authentication correction requires a fresh owned namespace
+and newly frozen source and input pins. It does not retroactively accept a
+failed historical run or allow rewriting its private context or evidence.
+
 ## Boundaries
 
 `media-analysis-phase3-workload.py` is an unprivileged Linux guest-local actor.
@@ -109,15 +113,20 @@ The context is a fresh canonical absolute `0600` JSON file, owner UID, one link,
 at most 16 MiB. Keep it and every raw receipt out of published evidence. It has
 exactly these fields (identifiers/paths below are structural examples):
 
+Private Actor input is `CONTEXT_VERSION=2`; public manifests, checkpoints and
+results remain `VERSION=1`. Each playback row requires `client` with exactly
+`emby_token`, `auth_session_id` and `device_id`. Its authentication session ID is
+the native login's `SessionInfo.Id`, distinct from a later play-session ID.
+
 ```json
 {
-  "schema_version":1,
+  "schema_version":2,
   "manifest_sha256":"<hash of exact admitted manifest bytes>",
   "driver_sha256":"<hash of exact driver bytes>",
   "run_id":"<same as manifest>","owner_id":"<same as manifest>",
   "origin":"http://127.0.0.1:18099",
   "admin_cookie":"<native session cookie>","csrf_token":"<native CSRF>",
-  "emby_token":"<workload viewer token>","user_id":"<viewer id>","device_id":"phase3-workload",
+  "emby_token":"<primary viewer token>","user_id":"<same viewer id for all three clients>","device_id":"phase3-workload",
   "owner_file":"/owned/private/owner.json",
   "app_pid":1234,"app_start_ticks":123456,
   "cgroup_path":"/sys/fs/cgroup/owned-phase3-profile",
@@ -135,9 +144,9 @@ exactly these fields (identifiers/paths below are structural examples):
     "incremental":[{"id":"unicode","kind":"unicode","params":{"ParentId":"<stable library>","Recursive":"true","SearchTerm":"\u7535\u5f71","Limit":"20","SortBy":"SortName","SortOrder":"Ascending"},"total":20,"ids":["<frozen ordered incremental ids>"]}]
   },
   "playback":[
-    {"mode":"direct","item_id":"<direct item>","path":"/owned/media/a/direct.mp4","body":{"IsPlayback":true,"DeviceProfile":{"DirectPlayProfiles":[{"Type":"Video","Container":"mp4","VideoCodec":"h264","AudioCodec":"aac"}]}},"seek_ticks":300000000,"expected_codecs":["h264","aac"]},
-    {"mode":"remux","item_id":"<distinct remux item>","path":"/owned/media/a/remux.mkv","body":{"IsPlayback":true,"EnableDirectPlay":false,"EnableTranscoding":true,"DeviceProfile":{}},"seek_ticks":300000000,"expected_codecs":["h264","aac"]},
-    {"mode":"transcode","item_id":"<distinct transcode item>","path":"/owned/media/a/transcode.mkv","body":{"IsPlayback":true,"EnableDirectPlay":false,"EnableTranscoding":true,"DeviceProfile":{}},"seek_ticks":300000000,"expected_codecs":["h264","aac"]}
+    {"mode":"direct","client":{"emby_token":"<primary viewer token>","auth_session_id":"<primary native SessionInfo.Id>","device_id":"phase3-workload"},"item_id":"<direct item>","path":"/owned/media/a/direct.mp4","body":{"IsPlayback":true,"DeviceProfile":{"DirectPlayProfiles":[{"Type":"Video","Container":"mp4","VideoCodec":"h264","AudioCodec":"aac"}]}},"seek_ticks":300000000,"expected_codecs":["h264","aac"]},
+    {"mode":"remux","client":{"emby_token":"<distinct remux viewer token>","auth_session_id":"<distinct remux SessionInfo.Id>","device_id":"phase3-workload-remux"},"item_id":"<distinct remux item>","path":"/owned/media/a/remux.mkv","body":{"IsPlayback":true,"EnableDirectPlay":false,"EnableTranscoding":true,"DeviceProfile":{}},"seek_ticks":300000000,"expected_codecs":["h264","aac"]},
+    {"mode":"transcode","client":{"emby_token":"<distinct transcode viewer token>","auth_session_id":"<distinct transcode SessionInfo.Id>","device_id":"phase3-workload-transcode"},"item_id":"<distinct transcode item>","path":"/owned/media/a/transcode.mkv","body":{"IsPlayback":true,"EnableDirectPlay":false,"EnableTranscoding":true,"DeviceProfile":{}},"seek_ticks":300000000,"expected_codecs":["h264","aac"]}
   ],
   "analysis_item_ids":["<first episode>","<second same-cohort episode>"],
   "mutation":{"delete_path":"/owned/media/a/delete.mp4","quarantine_path":"/owned/private/staging/deleted.mp4","move_from":"/owned/media/a/move.mp4","move_to":"/owned/media/b/move.mp4","add_from":"/owned/private/staging/add.mp4","add_to":"/owned/media/a/add.mp4","metadata_item_id":"<stable automatic-sort witness item>","sort_words":["The"]},
@@ -178,9 +187,25 @@ and an empty list across phases, changes only `Overview` in the metadata edit,
 and requires the witness's stored sort key to change after every successful CAS.
 
 Supply exactly three playback bindings, one each for `direct`, `remux` and
-`transcode`, with three distinct `item_id` values. Each mode therefore has an
-independent playback scope under the declared viewer/device binding; reusing an
-item to inflate concurrency is rejected. `remux` and `transcode` must negotiate
+`transcode`, with three distinct `item_id` values and three native authenticated
+clients for the same viewer `user_id`. The preparer creates the primary
+query/direct login plus separate remux and transcode logins before capturing
+the fixture baseline. Their native `SessionInfo.Id`, device IDs and tokens must
+all be distinct. The direct client's token/device pair equals the top-level
+default used by queries and overload. Each mode retains its fixed client for
+all three phases; neither rotating tokens nor reusing an item establishes
+independent concurrency. Native `Users/Me` and read-only session, play-session
+and encoding-job SQL observations bind the real user/session/device chain.
+
+`PlaybackInfo`, `Sessions/Playing` (Started), initial and seek media reads,
+Progress, item/UserData reads, Stopped, `ActiveEncodings` requests and cleanup
+all explicitly use that mode's same client. Request-specific credentials pass
+through the existing `http(headers=...)` interface; parallel lanes must not
+mutate shared `self.c` authentication fields. Retain the admitted q2/p3 workload,
+all SLOs, and encoding caps of global two, per-user two and per-session one.
+The broker's UID, app identity and cgroup remain unchanged.
+
+`remux` and `transcode` must negotiate
 progressive MP4 output (not HLS); set `EnableDirectPlay:false`,
 `EnableTranscoding:true` and the real suitable device profile. Select codecs
 that actually exercise stream copy versus encoding; the retained database plan
@@ -292,6 +317,14 @@ jobs, drain queued/running encoding records, and establish that the matching
 live media producers have exited before restoring files they could still read.
 Keep the original failure and any cleanup failure visible; the external
 controller remains responsible for independent physical closure.
+
+Playback cleanup preserves authentication sessions for later admitted
+after-compound and fault consumers. Recovery derives contexts by deep copy and
+must transport all three `client` objects unchanged. The fault sentinel's
+probe/state identity remains separate. Keep the three viewer sessions until
+the final consumer and independent cleanup have closed; only then may the
+controller perform their native Logout operations. Tokens and raw credentials
+remain in private `0600` artifacts and never enter public evidence.
 
 ## Execution and evidence
 

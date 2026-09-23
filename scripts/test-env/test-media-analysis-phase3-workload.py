@@ -7,7 +7,9 @@ result. Importing the actor must perform no work.
 """
 
 import copy
+import errno
 import importlib.util
+import io
 from pathlib import Path
 import threading
 import unittest
@@ -152,6 +154,193 @@ class DatabasePoolAccountingTests(unittest.TestCase):
         value["AcquiredConns"] = 6
         with self.assertRaisesRegex(ACTOR.Failure, "database_pool_snapshot_bounds"):
             ACTOR.database_pool_values(value)
+
+
+class ServiceCPUAccountingTests(unittest.TestCase):
+    @staticmethod
+    def sample(usage, at):
+        return {"cpu_usage_usec": usage, "cpu_sample_start_ns": at - 1,
+                "cpu_sample_end_ns": at + 1, "cpu_sample_at_ns": at}
+
+    def test_counter_read_is_bracketed_before_parsing_or_other_resource_reads(self):
+        order = []
+        clock = iter((101, 106))
+
+        def now():
+            order.append("clock")
+            return next(clock)
+
+        def read(path):
+            order.append("read:" + path.name)
+            return "usage_usec 9007199254740993\nuser_usec 7\nsystem_usec 8\n"
+
+        with mock.patch.object(ACTOR.time, "monotonic_ns", side_effect=now), \
+                mock.patch.object(ACTOR.Path, "read_text", autospec=True, side_effect=read):
+            sample = ACTOR.cpu_usage_sample(Path("/sys/fs/cgroup/goby"))
+        self.assertEqual(order, ["clock", "read:cpu.stat", "clock"])
+        self.assertEqual(sample, {"cpu_usage_usec": 9007199254740993,
+            "cpu_sample_start_ns": 101, "cpu_sample_end_ns": 106, "cpu_sample_at_ns": 103})
+
+    def test_variable_broker_delay_does_not_manufacture_the_reported_cpu_spike(self):
+        # The counters/broker clocks reproduce the retained failed run. Counter
+        # read times below are modeled observations, not recovered historical
+        # evidence and not a reclassification of that run's 222.7% failure.
+        broker_times = (4057588696721, 4057967384431)
+        broker_ends = (4057624296217, 4058095187338)
+        counters = {"goby": [419829372, 420260326], "postgres": [202835368, 203247803]}
+        modeled_times = []
+        for ended in broker_ends:
+            for offset in (1000000, 2000000):
+                modeled_times.extend((ended + offset, ended + offset + 200))
+        actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        actor.c = {"cgroup_path": "/sys/fs/cgroup/goby", "postgres": {"cgroup_path": "/sys/fs/cgroup/postgres"}}
+        actor.m = {"budgets": {"poll_seconds": .25}, "owner_id": "owner", "run_id": "run",
+                   "profile_id": "profile", "source_revision": "revision", "tier": 10000}
+        actor.assert_owned = mock.Mock()
+        actor.sample_database_pool = mock.Mock()
+        actor.phase, actor.procs, actor.resources, actor.failures = "cold", {}, [], []
+        actor.lanes, actor.jobs, actor.lock = {}, {}, threading.RLock()
+        actor.stop, actor.e = mock.Mock(), mock.Mock()
+        actor.stop.is_set.side_effect = (False, False, True)
+        actor.process_sample = mock.Mock(side_effect=[{
+            "observed_monotonic_ns": at, "resource": {"scan_spool_generations": 1},
+            "processes": [{"pid": 100, "start_ticks": 7, "arguments": ["ffmpeg", "-c:v", "copy"],
+                           "source_paths": ["/owned/video.mp4"], "executable": "ffmpeg", "lineage": [],
+                           "cpu_ticks": 10 + index}]} for index, at in enumerate(broker_times)])
+
+        def read(path):
+            if path.name == "cpu.stat":
+                return "usage_usec %d\n" % counters[path.parent.name].pop(0)
+            return "8:0 rbytes=10 wbytes=20\n" if path.name == "io.stat" else "1024\n"
+
+        with mock.patch.object(ACTOR.time, "monotonic_ns", side_effect=modeled_times), \
+                mock.patch.object(ACTOR.Path, "read_text", autospec=True, side_effect=read):
+            actor.observer()
+        self.assertEqual(actor.failures, [])
+        self.assertEqual(len(actor.resources), 2)
+        self.assertIsNone(actor.resources[0]["cpu_percent"])
+        legacy = 100000 * 843389 / (broker_times[1] - broker_times[0])
+        self.assertAlmostEqual(legacy, 222.7135916293666)
+        self.assertAlmostEqual(actor.resources[1]["cpu_percent"], 100000 * 843389 / (broker_ends[1] - broker_ends[0]))
+        self.assertLess(actor.resources[1]["cpu_percent"], 205)
+        self.assertEqual(actor.resources[1]["cpu_sampling"], "per_service_read_midpoint")
+        self.assertEqual(actor.resources[1]["at_ns"], broker_times[1])
+        self.assertEqual(actor.procs["100:7"]["work_intervals"], [broker_times])
+        for row, ended in zip(actor.resources, broker_ends):
+            self.assertGreater(row["services"]["goby"]["cpu_sample_start_ns"], ended)
+
+    def test_services_use_their_own_intervals_and_true_overload_is_not_clamped(self):
+        before = {"goby": self.sample(0, 1000000000), "postgres": self.sample(0, 1000000000)}
+        staggered = {"goby": self.sample(1000000, 2000000000), "postgres": self.sample(1000000, 3000000000)}
+        self.assertEqual(ACTOR.service_cpu_percent(before, staggered), 150)
+        overloaded = {"goby": self.sample(1100000, 2000000000), "postgres": self.sample(1000000, 2000000000)}
+        self.assertEqual(ACTOR.service_cpu_percent(before, overloaded), 210)
+        self.assertGreater(ACTOR.service_cpu_percent(before, overloaded), 205)
+        unchanged = {"goby": self.sample(0, 2000000000), "postgres": self.sample(0, 2000000000)}
+        self.assertEqual(ACTOR.service_cpu_percent(before, unchanged), 0)
+        self.assertIsNone(ACTOR.service_cpu_percent(None, before))
+
+    def test_counter_regression_and_nonpositive_time_are_failures(self):
+        before = {"goby": self.sample(10, 1000000000), "postgres": self.sample(20, 1000000000)}
+        current = {"goby": self.sample(11, 2000000000), "postgres": self.sample(21, 2000000000)}
+        cases = [("cpu_usage_usec", 9, "cpu_counter_regressed"),
+                 ("cpu_usage_usec", -1, "cpu_usage_counter"),
+                 ("cpu_usage_usec", True, "cpu_usage_counter"),
+                 ("cpu_usage_usec", 11.0, "cpu_usage_counter"),
+                 ("cpu_sample_end_ns", 1999999998, "cpu_sample_clock"),
+                 ("cpu_sample_at_ns", 2000000000.0, "cpu_sample_clock")]
+        for field, value, code in cases:
+            changed = copy.deepcopy(current)
+            changed["goby"][field] = value
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(ACTOR.Failure, code):
+                ACTOR.service_cpu_percent(before, changed)
+        for at in (999999999, 1000000000):
+            changed = {**current, "goby": self.sample(11, at)}
+            with self.subTest(at=at), self.assertRaisesRegex(ACTOR.Failure, "cpu_sample_interval"):
+                ACTOR.service_cpu_percent(before, changed)
+
+
+class HTTPExceptionDiagnosticsTests(unittest.TestCase):
+    def actor(self):
+        actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        actor.assert_owned, actor.remaining = mock.Mock(), mock.Mock(return_value=90)
+        actor.c = {"origin": "http://127.0.0.1:18108", "emby_token": "test-token", "device_id": "test-device"}
+        actor.m = {"budgets": {"max_requests": 1000, "request_seconds": 90,
+                              "max_stream_bytes": 4096, "max_response_bytes": 4096}}
+        actor.lock, actor.requests, actor.cleanup_mode, actor.phase = threading.RLock(), 0, False, "cold"
+        actor.e = mock.Mock()
+        artifacts = {}
+
+        def capture(label, data):
+            artifacts[label] = data
+            return {"name": label, "bytes": len(data), "sha256": ACTOR.digest(data)}
+
+        actor.e.artifact.side_effect = capture
+        return actor, artifacts
+
+    def request(self, chunks, *, status=200):
+        actor, artifacts = self.actor()
+        response = mock.Mock(status=status, length=None, fp=object())
+        response.getheaders.return_value = []
+        response.read1.side_effect = chunks
+        connection = mock.Mock()
+        connection.getresponse.return_value = response
+        timer = mock.Mock()
+        timer.is_alive.return_value = False
+        return actor, artifacts, connection, timer
+
+    def test_positive_short_reads_remain_successful(self):
+        actor, artifacts, connection, timer = self.request([b"a", b"bc", b""])
+        with mock.patch.object(ACTOR.http.client, "HTTPConnection", return_value=connection), \
+                mock.patch.object(ACTOR.threading, "Timer", return_value=timer):
+            result = actor.http("transcode-start", "GET", "/binary", binary=True)
+        self.assertEqual(result[0], b"abc")
+        self.assertEqual(artifacts["body.bin"], b"abc")
+        self.assertIsNone(ACTOR.strict_json(artifacts["http.json"])["exception_details"])
+
+    def test_transport_failure_keeps_partial_body_and_only_safe_exception_fields(self):
+        secret = "https://private.invalid/?api_key=credential-sentinel header-sentinel"
+        errors = [(ConnectionResetError(errno.ECONNRESET, secret), "ConnectionResetError", errno.ECONNRESET),
+                  (ACTOR.http.client.IncompleteRead(secret.encode(), 99), "IncompleteRead", None),
+                  (ACTOR.http.client.HTTPException(secret), "HTTPException", None)]
+        for error, kind, number in errors:
+            actor, artifacts, connection, timer = self.request([b"a", b"bc", error])
+            with self.subTest(kind=kind), \
+                    mock.patch.object(ACTOR.http.client, "HTTPConnection", return_value=connection), \
+                    mock.patch.object(ACTOR.threading, "Timer", return_value=timer), \
+                    self.assertRaisesRegex(ACTOR.Failure, "^http_transport$"):
+                actor.http("transcode-start", "GET", "/binary", binary=True)
+            record = ACTOR.strict_json(artifacts["http.json"])
+            details = {"exception_type": kind, "errno": number}
+            self.assertEqual(record["exception_details"], details)
+            self.assertEqual(record["error"], "http_transport")
+            self.assertEqual(artifacts["body.bin"], b"abc")
+            event = actor.e.event.call_args.kwargs
+            self.assertEqual(event["exception_details"], details)
+            self.assertEqual(event["error"], "http_transport")
+            self.assertEqual((event["status"], event["bytes"]), (200, 3))
+            self.assertIsNotNone(event["first_byte_ns"])
+            self.assertNotIn(secret.encode(), artifacts["http.json"])
+            self.assertNotIn("credential-sentinel", repr(event))
+
+    def test_invalid_errno_and_unknown_exception_name_do_not_leak(self):
+        for number in (None, True, "credential-sentinel", 1.5, 1 << 40):
+            error = OSError("credential-sentinel")
+            error.errno = number
+            with self.subTest(number=number):
+                self.assertEqual(ACTOR.http_exception_details(error), {"exception_type": "OSError", "errno": None})
+        unknown = type("CredentialSentinel", (Exception,), {"__module__": "private_module"})
+        self.assertEqual(ACTOR.http_exception_details(unknown("credential-sentinel")),
+                         {"exception_type": "OtherException", "errno": None})
+
+    def test_existing_http_status_failure_code_is_not_reclassified(self):
+        actor, artifacts, connection, timer = self.request([b""], status=503)
+        with mock.patch.object(ACTOR.http.client, "HTTPConnection", return_value=connection), \
+                mock.patch.object(ACTOR.threading, "Timer", return_value=timer), \
+                self.assertRaisesRegex(ACTOR.Failure, "^http_status$"):
+            actor.http("transcode-start", "GET", "/binary", binary=True)
+        self.assertEqual(ACTOR.strict_json(artifacts["http.json"])["exception_details"],
+                         {"exception_type": "Failure", "errno": None})
 
 
 class ConcurrentMetadataEditTests(unittest.TestCase):
@@ -435,14 +624,145 @@ class ProgressiveSeekTests(unittest.TestCase):
         self.assertEqual(exact[exact.index("-vf") + 1], "scale=64:36")
 
 
+def playback_clients():
+    return {mode: {"emby_token": mode + "-token", "auth_session_id": mode + "-auth", "device_id": mode + "-device"}
+            for mode in ("direct", "remux", "transcode")}
+
+
+class PlaybackClientBindingTests(unittest.TestCase):
+    def test_legacy_private_context_is_rejected_before_any_runtime_checks(self):
+        actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        fields = "schema_version manifest_sha256 driver_sha256 run_id owner_id origin admin_cookie csrf_token emby_token user_id device_id owner_file app_pid app_start_ticks cgroup_path postgres process_observer pg_env tools roots inventory_path inventory_sha256 scan_libraries catalog_expected queries playback analysis_item_ids mutation scan_evidence_path scan_evidence_sha256"
+        actor.c = dict.fromkeys(fields.split())
+        actor.c.update(schema_version=1, run_id="run", owner_id="owner", origin="https://outside.invalid")
+        actor.m = {"run_id": "run", "owner_id": "owner"}
+        for version in (1, 2.0, "2", True):
+            actor.c["schema_version"] = version
+            with self.subTest(version=version), self.assertRaisesRegex(ACTOR.Failure, "context_binding"):
+                actor.validate_context()
+        actor.c["schema_version"] = 2
+        with self.assertRaisesRegex(ACTOR.Failure, "loopback_origin"):
+            actor.validate_context()
+
+    def test_three_fixed_clients_share_the_primary_query_and_direct_identity(self):
+        clients = playback_clients()
+        original = copy.deepcopy(clients)
+        ACTOR.validate_playback_clients(clients, "direct-token", "direct-device")
+        for mode, client in clients.items():
+            headers = ACTOR.playback_client_headers(client)
+            self.assertEqual(headers["X-Emby-Token"], mode + "-token")
+            self.assertIn('DeviceId="' + mode + '-device"', headers["X-Emby-Authorization"])
+        self.assertEqual(clients, original)
+
+    def test_sharing_any_credential_component_between_lanes_is_rejected(self):
+        for key in ("emby_token", "auth_session_id", "device_id"):
+            clients = playback_clients()
+            clients["transcode"][key] = clients["remux"][key]
+            with self.subTest(key=key), self.assertRaisesRegex(ACTOR.Failure, "distinct_playback_clients_required"):
+                ACTOR.validate_playback_clients(clients, "direct-token", "direct-device")
+
+    def test_missing_extra_or_unsafe_client_fields_are_rejected(self):
+        for key, value in (("emby_token", ""), ("emby_token", "token\r\nInjected: yes"),
+                           ("auth_session_id", "bad session"), ("device_id", 'device"')):
+            clients = playback_clients()
+            clients["remux"][key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ACTOR.Failure):
+                ACTOR.validate_playback_clients(clients, "direct-token", "direct-device")
+        for mutation in ("missing", "extra", "missing-mode"):
+            clients = playback_clients()
+            if mutation == "missing":
+                del clients["remux"]["auth_session_id"]
+            elif mutation == "extra":
+                clients["remux"]["user_id"] = "other-user"
+            else:
+                del clients["transcode"]
+            with self.subTest(mutation=mutation), self.assertRaises(ACTOR.Failure):
+                ACTOR.validate_playback_clients(clients, "direct-token", "direct-device")
+
+    def test_query_credentials_cannot_diverge_from_the_direct_lane(self):
+        for token, device in (("other-token", "direct-device"), ("direct-token", "other-device")):
+            with self.subTest(token=token, device=device), self.assertRaisesRegex(ACTOR.Failure, "primary_direct_client_binding"):
+                ACTOR.validate_playback_clients(playback_clients(), token, device)
+
+    def test_database_play_session_must_match_every_identity_field(self):
+        actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        actor.c = {"user_id": "viewer"}
+        play = {"auth_session_id": "remux-auth", "device_id": "remux-device", "item_id": "item", "source_id": "source"}
+        expected = {"id": "play-owned", "user_id": "viewer", "auth_session_id": "remux-auth",
+                    "device_id": "remux-device", "item_id": "item", "media_source_id": "source"}
+        actor.sql = mock.Mock(return_value=copy.deepcopy(expected))
+        actor.verify_playback_identity("play-owned", play)
+        for key in expected:
+            actor.sql.return_value = {**expected, key: "unrelated"}
+            with self.subTest(key=key), self.assertRaisesRegex(ACTOR.Failure, "playback_authentication_binding"):
+                actor.verify_playback_identity("play-owned", play)
+        actor.sql.return_value = None
+        with self.assertRaisesRegex(ACTOR.Failure, "playback_authentication_binding"):
+            actor.verify_playback_identity("play-owned", play)
+
+
+class PlaybackClientCleanupTests(unittest.TestCase):
+    def setUp(self):
+        self.actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        self.clients = playback_clients()
+        self.actor.c = {"emby_token": "direct-token", "device_id": "direct-device", "user_id": "viewer",
+                        "playback": [{"mode": mode, "client": client, "seek_ticks": 300000000}
+                                     for mode, client in self.clients.items()]}
+        self.actor.plays = {"play-" + mode: {"item_id": "item-" + mode, "source_id": "source-" + mode,
+            "mode": mode, "auth_session_id": client["auth_session_id"], "device_id": client["device_id"]}
+            for mode, client in self.clients.items()}
+        self.actor.closed_plays = {}
+        self.actor.http = mock.Mock()
+        self.actor.sql = mock.Mock(side_effect=AssertionError("Cleanup must still attempt HTTP when SQL is unavailable"))
+
+    def test_cleanup_keeps_each_original_client_without_mutating_query_credentials(self):
+        before = copy.deepcopy(self.actor.c)
+        barrier = threading.Barrier(3)
+        def observed(label, method, path, body=None, **kwargs):
+            identity = body["PlaySessionId"] if body else dict(ACTOR.parse_qsl(ACTOR.urlsplit(path).query))["PlaySessionId"]
+            mode = identity.removeprefix("play-")
+            self.assertEqual(kwargs["headers"], ACTOR.playback_client_headers(self.clients[mode]))
+            if label == "playback-stop":
+                barrier.wait(timeout=2)
+                self.assertEqual(body["ItemId"], "item-" + mode)
+            else:
+                self.assertEqual(dict(ACTOR.parse_qsl(ACTOR.urlsplit(path).query))["DeviceId"], mode + "-device")
+        self.actor.http.side_effect = observed
+        with ACTOR.concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            list(executor.map(self.actor.close_one_playback, list(self.actor.plays)))
+        self.assertEqual(self.actor.c, before)
+        self.assertEqual(self.actor.plays, {})
+        self.assertEqual(set(self.actor.closed_plays), {"play-direct", "play-remux", "play-transcode"})
+        self.assertEqual(self.actor.http.call_count, 6)
+        self.actor.sql.assert_not_called()
+
+    def test_changed_lane_identity_cannot_stop_a_different_clients_play(self):
+        self.actor.plays["play-remux"]["auth_session_id"] = "transcode-auth"
+        with self.assertRaisesRegex(ACTOR.Failure, "playback_client_changed"):
+            self.actor.close_one_playback("play-remux")
+        self.actor.http.assert_not_called()
+        self.assertIn("play-remux", self.actor.plays)
+
+    def test_partial_prepare_still_attempts_cleanup_with_its_original_client(self):
+        self.actor.plays["play-remux"]["source_id"] = ""
+        self.actor.close_one_playback("play-remux")
+        self.assertEqual(self.actor.http.call_args_list[0].kwargs["headers"],
+                         ACTOR.playback_client_headers(self.clients["remux"]))
+        self.assertEqual(self.actor.http.call_count, 2)
+        self.actor.sql.assert_not_called()
+
+
 class RemuxPlaybackTests(unittest.TestCase):
     def setUp(self):
         self.actor = ACTOR.Actor.__new__(ACTOR.Actor)
         self.actor.lock = threading.RLock()
         self.actor.phase, self.actor.plays, self.actor.intents = "cold", {}, {}
-        self.actor.m = {"thresholds": {"min_media_bytes": 64, "frame_mae": 0}}
-        self.actor.c = {"user_id": "user", "device_id": "device", "playback": [{"mode": "remux", "item_id": "item",
-            "path": "/owned/source.mp4", "body": {"IsPlayback": True}, "seek_ticks": 300000000, "expected_codecs": ["h264", "aac"]}]}
+        self.actor.m = {"thresholds": {"min_media_bytes": 64, "frame_mae": 0}, "budgets": {"max_stream_bytes": 4096}}
+        self.client = {"emby_token": "remux-token", "auth_session_id": "remux-auth", "device_id": "remux-device"}
+        self.actor.c = {"user_id": "user", "device_id": "query-device", "emby_token": "query-token", "playback": [{"mode": "remux", "item_id": "item",
+            "path": "/owned/source.mp4", "body": {"IsPlayback": True}, "seek_ticks": 300000000,
+            "expected_codecs": ["h264", "aac"], "client": self.client}]}
+        self.mode = "remux"
         self.events, self.requests = [], []
         self.actor.e = mock.Mock(private=Path("/evidence"))
         self.actor.e.event.side_effect = lambda kind, **fields: self.events.append({"kind": kind, **fields})
@@ -461,17 +781,28 @@ class RemuxPlaybackTests(unittest.TestCase):
 
     def http(self, label, method, path, body=None, **kwargs):
         self.requests.append((label, method, path, copy.deepcopy(body)))
-        if label == "remux-prepare":
-            value = {"PlaySessionId": "play_owned", "MediaSources": [{"Id": "source", "TranscodingUrl":
-                "/emby/Videos/item/stream.mp4?VideoCodec=copy&AudioCodec=copy&PlaySessionId=play_owned"}]}
+        expected_headers = ACTOR.playback_client_headers(self.client)
+        self.assertEqual({key: kwargs.get("headers", {}).get(key) for key in expected_headers}, expected_headers)
+        if label == self.mode + "-prepare":
+            path_key = "DirectStreamUrl" if self.mode == "direct" else "TranscodingUrl"
+            codecs = "VideoCodec=h264&AudioCodec=aac" if self.mode == "transcode" else "VideoCodec=copy&AudioCodec=copy"
+            value = {"PlaySessionId": "play_owned", "MediaSources": [{"Id": "source", path_key:
+                "/emby/Videos/item/stream.mp4?" + codecs + "&PlaySessionId=play_owned"}]}
             return value, {}, (1, 2), None
-        if label in ("remux-start", "remux-seek"):
+        if label in (self.mode + "-start", self.mode + "-seek"):
             self.seeking = label.endswith("-seek")
-            headers = {"X-Goby-Start-Time-Ticks": "240000000" if self.seeking else "0"}
-            if self.seeking:
+            if self.mode == "direct":
+                offset = 4096 if self.seeking else 0
+                self.assertEqual(kwargs["headers"]["Range"], "bytes=%d-%d" % (offset, offset + 4095))
+                self.assertEqual(kwargs["statuses"], (206,))
+                raw = (b"b" if self.seeking else b"a") * 4096
+                return raw, {"Content-Range": "bytes %d-%d/8192" % (offset, offset + 4095)}, (10, 20), None
+            ticks = 240000000 if self.mode == "remux" else 300000000
+            headers = {"X-Goby-Start-Time-Ticks": str(ticks) if self.seeking else "0"}
+            if self.seeking and self.mode == "remux":
                 headers["X-Goby-Seek-Aligned"] = "true"
             return b"m" * 128, headers, (30, 45) if self.seeking else (10, 20), {"name": label + ".mp4"}
-        if label == "remux-progress-read":
+        if label == self.mode + "-progress-read":
             return {"UserData": {"PlaybackPositionTicks": 300000000}}, {}, (50, 51), None
         return None, {}, (3, 4), None
 
@@ -492,6 +823,8 @@ class RemuxPlaybackTests(unittest.TestCase):
             return ACTOR.json_bytes(value), {"name": "probe.json"}
         if "-ss" in arguments:
             position = int(float(arguments[arguments.index("-ss") + 1]))
+        elif self.seeking and self.mode == "transcode":
+            position = 30
         elif self.seeking:
             target_selected = "-copyts" in arguments and "select=gte(t\\,30.0000000),scale=64:36" in arguments
             position = 30 if target_selected and not self.wrong_frame else 24
@@ -500,8 +833,19 @@ class RemuxPlaybackTests(unittest.TestCase):
         return bytes([position]) * (64 * 36 * 3), {"name": "frame.bin"}
 
     def jobs(self, query):
-        for binding in ("play_session_id='play_owned'", "item_id='item'", "media_source_id='source'", "device_id='device'", "user_id='user'"):
+        if "FROM play_sessions" in query:
+            self.assertIn("WHERE id='play_owned'", query)
+            return {"id": "play_owned", "user_id": "user", "auth_session_id": self.client["auth_session_id"],
+                    "device_id": self.client["device_id"], "item_id": "item", "media_source_id": "source"}
+        for binding in ("play_session_id='play_owned'", "item_id='item'", "media_source_id='source'",
+                        "auth_session_id='" + self.client["auth_session_id"] + "'",
+                        "device_id='" + self.client["device_id"] + "'", "user_id='user'"):
             self.assertIn(binding, query)
+        if self.mode == "transcode":
+            plan = {"StartTicks": 300000000 if self.seeking else 0, "CopyTimestamps": False,
+                    "VideoCodec": "h264", "AudioCodec": "aac", "VideoStreamIndex": 0, "AudioStreamIndex": 1,
+                    "OutputMode": "progressive", "Container": "mp4"}
+            return [{"id": "transcode-job", "state": "completed", "plan": plan, "source_stamp": "owned-source", "bytes": 128}]
         plan = copy_seek_plan() if self.seeking else copy_seek_plan(0, 0, False)
         if self.seeking and self.unbound_audio:
             candidate = ACTOR.strict_json(plan["VideoCopySeekCandidate"].encode())
@@ -556,6 +900,43 @@ class RemuxPlaybackTests(unittest.TestCase):
         self.assertFalse(any(row[0] == "remux-progress" for row in self.requests))
         self.assertFalse(any(call.args[0] == "ffprobe" and "-show_packets" in call.args[1]
                              for call in self.actor.command.call_args_list))
+
+    def test_transcode_uses_its_own_client_for_the_entire_playback(self):
+        self.mode = self.actor.c["playback"][0]["mode"] = "transcode"
+        self.client.update(emby_token="transcode-token", auth_session_id="transcode-auth", device_id="transcode-device")
+        before = copy.deepcopy(self.actor.c)
+        self.actor.playback("transcode")
+        self.assertEqual([row[0] for row in self.requests], ["transcode-prepare", "transcode-started", "transcode-start",
+            "transcode-seek", "transcode-progress", "transcode-progress-read"])
+        for label, _, path, _ in self.requests:
+            if label in ("transcode-start", "transcode-seek"):
+                query = dict(ACTOR.parse_qsl(ACTOR.urlsplit(path).query))
+                self.assertEqual((query["VideoCodec"], query["AudioCodec"]), ("h264", "aac"))
+                self.assertEqual(query["StartTimeTicks"], "300000000" if label.endswith("-seek") else "0")
+        self.assertEqual(self.actor.c, before)
+        self.actor.close_one_playback.assert_called_once_with("play_owned")
+
+    def test_direct_preserves_range_and_primary_client_on_every_request(self):
+        self.mode = self.actor.c["playback"][0]["mode"] = "direct"
+        self.client.update(emby_token=self.actor.c["emby_token"], auth_session_id="direct-auth", device_id=self.actor.c["device_id"])
+        before = copy.deepcopy(self.actor.c)
+        offsets = []
+        class Source(io.BytesIO):
+            def seek(self, offset, whence=0):
+                offsets.append((offset, whence))
+                return super().seek(offset, whence)
+        def open_source(path, mode):
+            self.assertEqual((path, mode), ("/owned/source.mp4", "rb"))
+            return Source(b"a" * 4096 + b"b" * 4096)
+        with mock.patch.object(ACTOR.Path, "stat", return_value=mock.Mock(st_size=8192)), \
+                mock.patch("builtins.open", side_effect=open_source):
+            self.actor.playback("direct")
+        self.assertEqual([row[0] for row in self.requests], ["direct-prepare", "direct-started", "direct-start",
+            "direct-seek", "direct-progress", "direct-progress-read"])
+        self.assertEqual(self.actor.c, before)
+        self.actor.command.assert_not_called()
+        self.assertEqual(self.actor.sql.call_count, 1)
+        self.assertEqual(offsets, [(0, 0), (4096, 0)])
 
 
 if __name__ == "__main__":

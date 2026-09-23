@@ -172,6 +172,7 @@ class Preparer(WORK.Actor):
         self.generated_bytes = 0
         self.inventory_rows, self.originals = [], {}
         self.hardlink_batches = {}
+        self.playback_clients = {}
         self.item_paths, self.library_ids, self.root_bindings = {}, {}, []
         context = {"run_id": manifest["run_id"], "owner_id": manifest["owner_id"], "origin": operator["origin"],
             "admin_cookie": "", "csrf_token": "", "emby_token": "", "user_id": "uninitialized",
@@ -377,9 +378,43 @@ class Preparer(WORK.Actor):
             "IsAdministrator": False, "IsDisabled": False, "Policy": policy})
         login = self.http("preparation-viewer-login", "POST", "/emby/Users/AuthenticateByName",
             {"Username": self.operator["viewer"]["Name"], "Pw": self.operator["viewer"]["Password"]})[0]
+        need(login["User"]["Id"] == viewer["Id"], "preparation_viewer_login_identity")
         self.c["emby_token"], self.c["user_id"] = login["AccessToken"], login["User"]["Id"]
+        self.authenticate_playback_clients(login)
         self.e.artifact("credentials.json", json_bytes({"admin_id": self.admin_id, "viewer_id": self.c["user_id"],
-            "admin_cookie": self.c["admin_cookie"], "csrf_token": self.c["csrf_token"], "emby_token": self.c["emby_token"], "viewer_session_id": login["SessionInfo"]["Id"]}))
+            "admin_cookie": self.c["admin_cookie"], "csrf_token": self.c["csrf_token"], "emby_token": self.c["emby_token"],
+            "viewer_session_id": login["SessionInfo"]["Id"], "playback_clients": self.playback_clients}))
+
+    def authenticate_playback_clients(self, primary_login):
+        """Keep three real clients of the same viewer for the entire workload."""
+        need(not self.playback_clients, "playback_clients_already_created")
+        prefix = "phase3-playback-" + digest(self.m["run_id"].encode())[:16]
+        for mode in ("direct", "remux", "transcode"):
+            device = self.c["device_id"] if mode == "direct" else prefix + "-" + mode
+            login = primary_login if mode == "direct" else self.http("preparation-" + mode + "-login", "POST",
+                "/emby/Users/AuthenticateByName",
+                {"Username": self.operator["viewer"]["Name"], "Pw": self.operator["viewer"]["Password"]},
+                headers={"X-Emby-Token": "", "X-Emby-Authorization":
+                    'MediaBrowser Client="Phase3", Device="Linux", DeviceId="%s", Version="1"' % device})[0]
+            session = login["SessionInfo"]
+            client = {"emby_token": login["AccessToken"], "auth_session_id": session["Id"], "device_id": device}
+            headers = WORK.playback_client_headers(client)
+            need(login["User"]["Id"] == session["UserId"] == self.c["user_id"] and
+                 login["User"]["Policy"]["IsAdministrator"] is False and session["DeviceId"] == device,
+                 "playback_login_identity")
+            self.playback_clients[mode] = client
+            self.e.artifact("playback-client-private.json", json_bytes({"mode": mode,
+                "user_id": self.c["user_id"], "client": client}))
+            current = self.http("preparation-" + mode + "-identity", "GET", "/emby/Users/Me", headers=headers)[0]
+            need(current["Id"] == self.c["user_id"] and current["Policy"]["IsAdministrator"] is False,
+                 "playback_client_user_changed")
+            stored = self.sql("SELECT json_build_object('id',id,'user_id',user_id,'device_id',device_id,'kind',kind,"
+                "'token_sha256',encode(token_hash,'hex'),'active',revoked_at IS NULL AND expires_at>clock_timestamp()) "
+                "FROM sessions WHERE id=" + sql_string(client["auth_session_id"]))
+            need(stored == {"id": client["auth_session_id"], "user_id": self.c["user_id"], "device_id": device,
+                 "kind": "emby", "token_sha256": digest(client["emby_token"].encode()), "active": True},
+                 "playback_client_session_binding")
+        WORK.validate_playback_clients(self.playback_clients, self.c["emby_token"], self.c["device_id"])
 
     def create_library(self, label, kind, paths):
         for path in paths:
@@ -597,11 +632,12 @@ class Preparer(WORK.Actor):
             else:
                 body = {"IsPlayback": True, "EnableDirectPlay": False, "EnableDirectStream": False, "EnableTranscoding": True,
                     "AllowVideoStreamCopy": mode == "remux", "AllowAudioStreamCopy": mode == "remux", "DeviceProfile": {"TranscodingProfiles": [profile]}}
-            playback.append({"mode": mode, "item_id": self.item(path), "path": str(path), "body": body, "seek_ticks": 300000000, "expected_codecs": ["h264", "aac"]})
+            playback.append({"mode": mode, "item_id": self.item(path), "path": str(path), "body": body,
+                "seek_ticks": 300000000, "expected_codecs": ["h264", "aac"], "client": self.playback_clients[mode]})
         observation = self.process_sample()
         configuration_sha256 = observation["scan_evidence"]["configuration_sha256"]
         need(configuration_sha256 == self.m["scan_evidence"]["configuration_sha256"], "preparation_scan_configuration")
-        context = {**self.c, "schema_version": 1, "manifest_sha256": self.operator["manifest_sha256"],
+        context = {**self.c, "schema_version": WORK.CONTEXT_VERSION, "manifest_sha256": self.operator["manifest_sha256"],
             "driver_sha256": hash_file(HERE / "media-analysis-phase3-workload.py"), "owner_file": str(owner_file), "roots": roots,
             "inventory_path": str(inventory), "inventory_sha256": hash_file(inventory),
             "catalog_expected": {"initial": initial, "cold": self.m["tier"], "cached": self.m["tier"], "incremental": self.m["tier"]},
@@ -1189,7 +1225,8 @@ def main(argv=None):
     except Exception as error:
         evidence.closing = True
         evidence.artifact("partial-owned-state.json", json_bytes({"libraries": actor.library_ids, "roots": actor.root_bindings, "jobs": actor.jobs,
-            "credentials": {key: actor.c[key] for key in ("admin_cookie", "csrf_token", "emby_token", "user_id")}}))
+            "credentials": {key: actor.c[key] for key in ("admin_cookie", "csrf_token", "emby_token", "user_id")},
+            "playback_clients": actor.playback_clients}))
         evidence.atomic("prepared.json", {"schema_version": 1, "prepared": False, "accepted_capacity": False,
             "run_id": manifest["run_id"], "error_code": str(error) if isinstance(error, WORK.Failure) else "preparation_failure",
             "closure": "Partial fixture retained; external controller must reconcile late admissions and close every owned resource."})

@@ -134,6 +134,213 @@ class PreparationAdmissionTests(unittest.TestCase):
         self.preparer.e.event.assert_called_once()
 
 
+class PlaybackClientAuthenticationTests(unittest.TestCase):
+    modes = ("direct", "remux", "transcode")
+
+    def setUp(self):
+        self.reset_preparer()
+
+    def reset_preparer(self):
+        self.preparer = PREPARE.Preparer.__new__(PREPARE.Preparer)
+        self.preparer.m = {"run_id": "playback-authentication"}
+        self.preparer.c = {"user_id": "viewer", "emby_token": "primary-token", "device_id": "primary-device"}
+        self.preparer.operator = {"viewer": {"Name": "viewer-name", "Password": "viewer-password"}}
+        self.preparer.playback_clients = {}
+        self.preparer.e = mock.Mock()
+        prefix = "phase3-playback-" + PREPARE.digest(self.preparer.m["run_id"].encode())[:16]
+        self.clients = {
+            "direct": {"emby_token": "primary-token", "auth_session_id": "primary-session", "device_id": "primary-device"},
+            "remux": {"emby_token": "remux-token", "auth_session_id": "remux-session", "device_id": prefix + "-remux"},
+            "transcode": {"emby_token": "transcode-token", "auth_session_id": "transcode-session", "device_id": prefix + "-transcode"}}
+        self.logins = {mode: {"AccessToken": client["emby_token"],
+            "User": {"Id": "viewer", "Policy": {"IsAdministrator": False}},
+            "SessionInfo": {"Id": client["auth_session_id"], "UserId": "viewer", "DeviceId": client["device_id"]}}
+            for mode, client in self.clients.items()}
+        self.identities = {mode: {"Id": "viewer", "Policy": {"IsAdministrator": False}} for mode in self.modes}
+        responses = [self.identities["direct"], self.logins["remux"], self.identities["remux"],
+                     self.logins["transcode"], self.identities["transcode"]]
+        self.preparer.http = mock.Mock(side_effect=[(value, {}, b"", 200) for value in responses])
+        self.sessions = {client["auth_session_id"]: {"id": client["auth_session_id"], "user_id": "viewer",
+            "device_id": client["device_id"], "kind": "emby", "token_sha256": PREPARE.digest(client["emby_token"].encode()),
+            "active": True} for client in self.clients.values()}
+        self.preparer.sql = mock.Mock(side_effect=self.session_query)
+
+    def session_query(self, statement):
+        for identity, stored in self.sessions.items():
+            if statement.endswith("FROM sessions WHERE id=" + PREPARE.sql_string(identity)):
+                return copy.deepcopy(stored)
+        self.fail("Unexpected session identity query: " + statement)
+
+    def headers(self, mode, *, login=False):
+        client = self.clients[mode]
+        return {"X-Emby-Token": "" if login else client["emby_token"], "X-Emby-Authorization":
+            'MediaBrowser Client="Phase3", Device="Linux", DeviceId="%s", Version="1"' % client["device_id"]}
+
+    def assert_retry_refused(self):
+        clients = self.preparer.playback_clients
+        retained = copy.deepcopy(clients)
+        context = copy.deepcopy(self.preparer.c)
+        self.preparer.http.reset_mock()
+        self.preparer.sql.reset_mock()
+        self.preparer.e.reset_mock()
+        with self.assertRaisesRegex(PREPARE.WORK.Failure, "playback_clients_already_created"):
+            self.preparer.authenticate_playback_clients(self.logins["direct"])
+        self.preparer.http.assert_not_called()
+        self.preparer.sql.assert_not_called()
+        self.preparer.e.artifact.assert_not_called()
+        self.assertIs(self.preparer.playback_clients, clients)
+        self.assertEqual(self.preparer.playback_clients, retained)
+        self.assertEqual(self.preparer.c, context)
+
+    def test_three_clients_reuse_primary_login_and_bind_each_identity_request(self):
+        context = copy.deepcopy(self.preparer.c)
+        primary = copy.deepcopy(self.logins["direct"])
+        self.preparer.authenticate_playback_clients(self.logins["direct"])
+        self.assertEqual(self.preparer.playback_clients, self.clients)
+        self.assertEqual(self.preparer.c, context)
+        self.assertEqual(self.logins["direct"], primary)
+        body = {"Username": "viewer-name", "Pw": "viewer-password"}
+        self.assertEqual(self.preparer.http.call_args_list, [
+            mock.call("preparation-direct-identity", "GET", "/emby/Users/Me", headers=self.headers("direct")),
+            mock.call("preparation-remux-login", "POST", "/emby/Users/AuthenticateByName", body,
+                      headers=self.headers("remux", login=True)),
+            mock.call("preparation-remux-identity", "GET", "/emby/Users/Me", headers=self.headers("remux")),
+            mock.call("preparation-transcode-login", "POST", "/emby/Users/AuthenticateByName", body,
+                      headers=self.headers("transcode", login=True)),
+            mock.call("preparation-transcode-identity", "GET", "/emby/Users/Me", headers=self.headers("transcode"))])
+        self.assertEqual(self.preparer.sql.call_count, 3)
+        for mode, recorded in zip(self.modes, self.preparer.sql.call_args_list):
+            self.assertEqual(len(recorded.args), 1)
+            self.assertEqual(recorded.kwargs, {})
+            statement = recorded.args[0]
+            self.assertIn("'token_sha256',encode(token_hash,'hex')", statement)
+            self.assertIn("'active',revoked_at IS NULL AND expires_at>clock_timestamp()", statement)
+            self.assertTrue(statement.endswith("FROM sessions WHERE id=" +
+                            PREPARE.sql_string(self.clients[mode]["auth_session_id"])))
+        artifacts = self.preparer.e.artifact.call_args_list
+        self.assertEqual(len(artifacts), 3)
+        for mode, recorded in zip(self.modes, artifacts):
+            self.assertEqual(recorded.args[0], "playback-client-private.json")
+            self.assertEqual(PREPARE.strict_json(recorded.args[1]),
+                             {"mode": mode, "user_id": "viewer", "client": self.clients[mode]})
+        self.preparer.e.event.assert_not_called()
+
+    def test_completed_clients_cannot_be_authenticated_again_or_rotated(self):
+        self.preparer.authenticate_playback_clients(self.logins["direct"])
+        self.assert_retry_refused()
+
+    def test_login_user_policy_device_and_auth_session_mismatches_are_rejected(self):
+        for mode in self.modes:
+            for mutation in ("login-user", "session-user", "other-viewer", "administrator", "device", "auth-session"):
+                with self.subTest(mode=mode, mutation=mutation):
+                    self.reset_preparer()
+                    login = self.logins[mode]
+                    error = "playback_login_identity"
+                    if mutation == "login-user":
+                        login["User"]["Id"] = "another-viewer"
+                    elif mutation == "session-user":
+                        login["SessionInfo"]["UserId"] = "another-viewer"
+                    elif mutation == "other-viewer":
+                        login["User"]["Id"] = login["SessionInfo"]["UserId"] = "another-viewer"
+                    elif mutation == "administrator":
+                        login["User"]["Policy"]["IsAdministrator"] = True
+                    elif mutation == "device":
+                        login["SessionInfo"]["DeviceId"] = "another-device"
+                    else:
+                        login["SessionInfo"]["Id"] = ""
+                        error = "playback_client_identity"
+                    with self.assertRaisesRegex(PREPARE.WORK.Failure, error):
+                        self.preparer.authenticate_playback_clients(self.logins["direct"])
+                    index = self.modes.index(mode)
+                    self.assertEqual(set(self.preparer.playback_clients), set(self.modes[:index]))
+                    self.assertEqual(self.preparer.http.call_count, index * 2)
+                    self.assertEqual(self.preparer.sql.call_count, index)
+                    self.assertEqual(self.preparer.e.artifact.call_count, index)
+                    self.assertEqual(self.preparer.c["emby_token"], "primary-token")
+
+    def test_identity_readback_rejects_another_user_or_an_administrator(self):
+        for mode in self.modes:
+            for mutation in ("user", "administrator"):
+                with self.subTest(mode=mode, mutation=mutation):
+                    self.reset_preparer()
+                    if mutation == "user":
+                        self.identities[mode]["Id"] = "another-viewer"
+                    else:
+                        self.identities[mode]["Policy"]["IsAdministrator"] = True
+                    with self.assertRaisesRegex(PREPARE.WORK.Failure, "playback_client_user_changed"):
+                        self.preparer.authenticate_playback_clients(self.logins["direct"])
+                    completed = self.modes.index(mode) + 1
+                    self.assertEqual(set(self.preparer.playback_clients), set(self.modes[:completed]))
+                    self.assertEqual(self.preparer.http.call_count, completed * 2 - 1)
+                    self.assertEqual(self.preparer.sql.call_count, completed - 1)
+                    self.assertEqual(self.preparer.e.artifact.call_count, completed)
+                    self.assert_retry_refused()
+
+    def test_duplicate_tokens_or_auth_sessions_cannot_be_accepted(self):
+        for earlier, later in (("direct", "remux"), ("direct", "transcode"), ("remux", "transcode")):
+            for field in ("token", "auth-session"):
+                with self.subTest(earlier=earlier, later=later, field=field):
+                    self.reset_preparer()
+                    if field == "token":
+                        self.logins[later]["AccessToken"] = self.logins[earlier]["AccessToken"]
+                        self.sessions[self.clients[later]["auth_session_id"]]["token_sha256"] = \
+                            self.sessions[self.clients[earlier]["auth_session_id"]]["token_sha256"]
+                        error = "distinct_playback_clients_required"
+                        completed = 3
+                    else:
+                        self.logins[later]["SessionInfo"]["Id"] = self.logins[earlier]["SessionInfo"]["Id"]
+                        error = "playback_client_session_binding"
+                        completed = self.modes.index(later) + 1
+                    with self.assertRaisesRegex(PREPARE.WORK.Failure, error):
+                        self.preparer.authenticate_playback_clients(self.logins["direct"])
+                    self.assertEqual(self.preparer.http.call_count, completed * 2 - 1)
+                    self.assertEqual(self.preparer.sql.call_count, completed)
+                    self.assertEqual(self.preparer.e.artifact.call_count, completed)
+                    self.assertEqual(self.preparer.c["emby_token"], "primary-token")
+                    self.assert_retry_refused()
+
+    def test_direct_login_cannot_replace_the_retained_primary_token(self):
+        self.logins["direct"]["AccessToken"] = "rotated-primary-token"
+        self.sessions["primary-session"]["token_sha256"] = PREPARE.digest(b"rotated-primary-token")
+        with self.assertRaisesRegex(PREPARE.WORK.Failure, "primary_direct_client_binding"):
+            self.preparer.authenticate_playback_clients(self.logins["direct"])
+        self.assertEqual(self.preparer.c["emby_token"], "primary-token")
+        self.assertEqual(self.preparer.c["device_id"], "primary-device")
+        self.assertEqual(self.preparer.http.call_count, 5)
+        self.assertEqual(self.preparer.sql.call_count, 3)
+        self.assert_retry_refused()
+
+    def test_native_session_identity_token_kind_and_active_state_are_required(self):
+        changes = (("id", "another-session"), ("user_id", "another-viewer"), ("device_id", "another-device"),
+                   ("token_sha256", "0" * 64), ("kind", "admin"), ("active", False), ("missing", None))
+        for mode in self.modes:
+            for field, value in changes:
+                with self.subTest(mode=mode, field=field):
+                    self.reset_preparer()
+                    identity = self.clients[mode]["auth_session_id"]
+                    if field == "missing":
+                        self.sessions[identity] = None
+                    else:
+                        self.sessions[identity][field] = value
+                    with self.assertRaisesRegex(PREPARE.WORK.Failure, "playback_client_session_binding"):
+                        self.preparer.authenticate_playback_clients(self.logins["direct"])
+                    completed = self.modes.index(mode) + 1
+                    self.assertEqual(self.preparer.http.call_count, completed * 2 - 1)
+                    self.assertEqual(self.preparer.sql.call_count, completed)
+                    self.assertEqual(self.preparer.e.artifact.call_count, completed)
+                    self.assertEqual(self.preparer.c["emby_token"], "primary-token")
+                    self.assert_retry_refused()
+
+    def test_failed_secondary_login_cannot_rotate_a_created_primary_client(self):
+        self.logins["remux"]["SessionInfo"]["UserId"] = "another-viewer"
+        with self.assertRaisesRegex(PREPARE.WORK.Failure, "playback_login_identity"):
+            self.preparer.authenticate_playback_clients(self.logins["direct"])
+        self.assertEqual(self.preparer.playback_clients, {"direct": self.clients["direct"]})
+        self.assertEqual(self.preparer.http.call_count, 2)
+        self.assertEqual(self.preparer.sql.call_count, 1)
+        self.assert_retry_refused()
+
+
 class InventoryWriteTests(unittest.TestCase):
     expected = (
         b'{"bytes":17,"origin":"licensed","original_id":"licensed-b","relative_path":"Zed\\u7535\\u5f71.mp4","root_id":"root-b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}\n'
