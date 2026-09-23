@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed bootstrap, actual SQL-version matching and complete fixture preparation. Its preparation controls and collector are independently closed; App1280/PG512 limits and original native lifetimes are preserved. Compound/rebind candidates remain source-only; capacity/recovery acceptance and publication remain pending**.
+Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages and both builds. Scope11 passed preparation, baseline, rebind and resource admission, but its actual compound repeat failed with another PostgreSQL OOM at 512 MiB. The deployed observer naturally exited 1; failure collection and runtime closure are independently complete, with original failures and the unrestarted PG state preserved. The JIT repair alone was insufficient. Capacity/recovery acceptance and publication remain pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -71,7 +71,7 @@ insufficient-evidence result until a supported content algorithm exists.
 
 Source implementation is integrated. The
 [Phase 3 execution record](../development/media-analysis-resilience-phase3-20260922.md)
-separates the retained scope10 failure from the current scope11 preparation and
+separates the retained scope10 failure from the current scope11 failure and
 accepted repairs.
 The session JIT repair at `89b667083a1c5608b9d7e554df27de721ac23c51` passed all
 **50 remote regression stages**: 35 ordinary Go packages with **4,279 parent
@@ -107,9 +107,10 @@ is claimed. Existing log analysis identifies recursive roots/user data JIT plans
 as diagnostic leads;
 it does not prove a single SQL cause. The Goby session JIT repair is now verified
 within the complete regression scope above. A separate observer terminal-handling
-candidate passed 15 isolated Python tests on VM106 and closed its worker, but
-has not been deployed as the real observer or tested for actual systemd
-propagation. No full 10k/100k journey, overload profile or any of the 28
+candidate passed 15 isolated Python tests on VM106 and closed its worker. Its
+scope11 adaptation was subsequently deployed and naturally exited 1 in the new
+failure. The effective unit graph was observed without stop propagation;
+simulated failure propagation was not tested. No full 10k/100k journey, overload profile or any of the 28
 fault/recovery cases is accepted.
 External preservation and exact guest-tree plus redundant tar/manifest
 retirement are complete for both the four selected scope10 failed-state trees
@@ -134,10 +135,23 @@ and all preparation controls are independently closed; the shared parent is
 absent, App memory is restored to 1280 MiB, and PG remains at 512 MiB with both
 original native lifetimes preserved. Final preparation closure is
 `99cbafc450deb9b2bb0de9913e7d910e97688738ab477773c612a540816177a8`.
-Compound candidates and the rebind helper remain source-only. Next bind the
-actual preparation/restoration evidence and fresh fixture/resource admission
-before the complete cold/cached/incremental journey and overload profile.
-Preparation passed with `accepted_capacity=false`; capacity remains unaccepted.
+Baseline and all ten rebind checks subsequently passed and their workers closed
+independently. The new manifest changed only `run_id`, preserving original inputs.
+All compound admission gates passed and the full cold/cached/incremental driver
+was dispatched. At **2026-09-23 07:28:11 UTC**, PG again OOM-killed at 512 MiB,
+killing backend `700735`. The driver failed with `http_status`,
+`accepted=false` and `execution_complete=false`; partial remux-start latency p95
+was 7,859.178006 ms against the unchanged 5,000 ms target. The deployed observer
+naturally exited 1 through its failed-terminal branch, retaining `complete=false`
+and unknown cgroup closure. The JIT repair alone was insufficient for this workload.
+Failure collection and original runtime/launcher/parent/collector closure are
+independently complete. App/PG autostart is disabled; failures were not reset.
+PG remains `in production`, unrestarted, with unchanged control-file hash; no SQL
+readback or filesystem rollback occurred, and durable job state is unknown.
+The current fixture and PG tree remain unarchived and undeleted. The retained
+PG log contains 3,355 plan entries with zero JIT entries; no new OOM root cause
+is established. Next analyze that retained evidence and decide a bounded repair
+at unchanged limits. Capacity remains unaccepted.
 Phase 3 remains unpublished;
 phases 1 and 2 are merged and pushed at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
@@ -172,4 +186,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both new builds and independent regression closure accepted. Storage retirement and cleanup are closed. Scope11 bootstrap and complete fixture preparation passed; preparation controls are independently closed and App memory restored. Compound/rebind candidates remain source-only; full capacity journeys, overload and fault/reboot acceptance remain pending | Pending |
+| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both builds and regression closure accepted. Scope11 preparation, baseline, rebind and resource admission passed; the actual compound repeat failed with PG OOM at 512 MiB. The deployed observer exited naturally; failure collection and runtime closure are independently complete. Full capacity journeys, overload and fault/reboot acceptance remain pending | Pending |

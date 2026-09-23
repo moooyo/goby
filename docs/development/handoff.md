@@ -11,10 +11,14 @@ unrelated changes in the original `D:/Code/goby` checkout.
 
 Current Phase 3 checkpoint: the Goby session JIT repair at
 `89b667083a1c5608b9d7e554df27de721ac23c51` passed all **50 remote regression
-stages**, both new Go builds and independent resource closure. Its real capacity
-repeat remains pending. Scope11's complete fixture preparation has passed;
-its collector and all preparation controls are independently closed, and App
-memory is restored to 1280 MiB with PostgreSQL still at 512 MiB. The tested
+stages**, both new Go builds and independent resource closure. The actual
+scope11 repeat `phase3-tier10k-11-compound-01` passed baseline, rebind and fresh
+resource admission, then failed at **2026-09-23 07:28:11 UTC** with another
+PostgreSQL OOM at the unchanged 512 MiB cap, killing backend `700735`.
+Its driver returned `accepted=false`, `execution_complete=false`
+and `failure_codes=["http_status"]`. The deployed observer exited naturally
+with status 1; failure collection and runtime closure are now independently complete.
+The JIT repair alone was insufficient for this capacity workload. The tested
 product remains `89b6670`; subsequent documentation commits do not identify
 new builds. The earlier scope10 generation
 `phase3-tier10k-10-compound-02` passed actual admission and entered cold business
@@ -74,9 +78,11 @@ limits.
 Real-connection tests cover replacement, Hijack, catalog ownership, deployment
 leases and unchanged independent PostgreSQL sessions. It does not prove that
 JIT alone caused the OOM. An observer terminal-handling candidate separately
-passed 15 isolated Python tests on VM106 and closed its test worker. It has not
-been deployed as the real observer or tested for actual systemd propagation;
-these additional checks do not accept capacity.
+passed 15 isolated Python tests on VM106 and closed its test worker. Its scope11
+adaptation was deployed and naturally reached failed terminal state in this run.
+The observed effective unit graph has no BindsTo, PartOf, stop-propagation or
+drop-ins; this graph readback is not a simulated failure-propagation test or
+capacity acceptance.
 
 External preservation and exact guest-copy retirement are complete for both
 the four selected scope10 failed-state trees and the clean 33-database regression
@@ -94,8 +100,7 @@ binaries, module caches, results and logs remain retained. Cache-cleanup closure
 recorded **21,970,751,488 free bytes**, above the unchanged **21,676,163,072-byte**
 initial space requirement. That observation does not admit a new capacity scope.
 Scope11 subsequently passed fresh bootstrap resource/identity admission and
-deployed the verified `89b6670` delivery. Its new Goby and PostgreSQL lifetimes
-are active at 1280 MiB and 512 MiB respectively. The new PostgreSQL instance's
+deployed the verified `89b6670` delivery at App1280/PG512 limits. Its PostgreSQL instance's
 actual SQL `server_version` matches the manifest, and the successful bootstrap
 worker is independently closed. The complete 14-file licensed corpus was read
 back and the frozen fixture helpers were published. Managed App lowering, Actor
@@ -107,14 +112,47 @@ entire fixture. The observer completed with resource observation passed, no
 observation gaps and no persistent observation loss.
 
 The collector, restoration worker and all preparation controls are closed;
-`gobyp3control11.slice` is absent. Goby PID `700727` and PostgreSQL PID `700614`
-retain their original lifetimes at 1280 MiB and 512 MiB. Final preparation
+`gobyp3control11.slice` is absent. That preparation closure preserved Goby PID
+`700727` and PostgreSQL PID `700614` at 1280 MiB and 512 MiB. Final preparation
 closure SHA256 is `99cbafc450deb9b2bb0de9913e7d910e97688738ab477773c612a540816177a8`.
-The compound candidates and rebind helper remain source-only. Next bind the
-actual preparation/closure/restoration evidence, complete fresh compound
-fixture/resource admission, and run the full cold/cached/incremental journey
-and overload profile at the unchanged thresholds. Preparation passed with
-`accepted_capacity=false`; no 10k/100k journey or fault/recovery case is accepted.
+Fresh baseline and all ten rebind checks subsequently passed and their workers
+closed independently. The new manifest changes only `run_id`; original inputs
+remain retained. The full cold/cached/incremental driver was published and
+dispatched after all resource gates passed, with 19,939,168,256 free bytes and
+minimum MemAvailable 2,323,398,656 against 2,301,169,664 required bytes.
+
+The scope11 PG original PID `700614` now has `Result=oom-kill` and MainPID 0;
+App `700727` has `Result=exit-code`. Actor `751446` and observer `751378` exited
+1 with zero MainPID and empty reported ControlGroup. The observer's failed-terminal branch recorded
+`complete=false`, `resource_oom_observed=true` and unknown cgroup closure, without
+external withdrawal. The last PG sample had 456,966,144 anonymous bytes and
+70,619,136 file bytes, including 62,414,848 shmem bytes; this was not page-cache-only.
+Independent checks subsequently confirmed all original processes/cgroups,
+runtime UIDs and root brokers absent, and closed the empty launcher and parent.
+Partial remux-start latency p95 was 7,859.178006 ms (first byte 7,836.735667 ms)
+against the unchanged 5,000 ms target; transcode-start latency p95 was
+8,127.525009 ms (first byte approximately 423.2 ms). These are failed partial
+measurements. Cleanup records seven `http_transport` errors,
+`filesystem_restore_held_for_active_worker`, and
+`unresolved_admission_requires_controller_reconciliation`.
+The failed unit states were preserved and App/PG autostart disabled. PG remains
+unrestarted with control state `in production`, system identifier
+`7688610908911833280`, checkpoint `0/5D464D0` and unchanged control-file hash.
+No SQL readback or filesystem rollback occurred; durable job state remains
+unknown. This scope11 fixture and PG tree have not been archived or deleted.
+The retained PG log has 3,412 lines, 3,355 plan entries, zero JIT entries and
+44 normalized query shapes. This confirms the JIT repair was insufficient,
+without establishing a new root cause. Independent failure closure SHA256 is
+`4abb5badde410f6e4c64d639531e9b2b024259f6ea541fa39b118bad25e8653c`.
+The next source candidate avoids recursive folder/collection UserData queries
+when a returned page contains only leaf items, and restricts mixed-page summaries
+to actual returned folders. Direct state-mutation derivation remains unchanged.
+Real PostgreSQL tracer tests cover query omission, folder ID subsets and snapshot
+semantics, but have not run yet. This candidate is not a proven OOM repair.
+Run its focused verification remotely and measure backend memory contexts before
+choosing any connection-cache or execution-memory policy. Preserve the failed PG
+and unchanged acceptance limits. No 10k/100k journey, overload profile or
+fault/recovery case is accepted.
 Read the [Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private
 checkpoint for exact evidence. Phase 3 remains unpublished. Phases 1 and 2 are
 merged and pushed on `main` at `e41febbb36687d04340f5c651f4bf1bf376a4310`.
