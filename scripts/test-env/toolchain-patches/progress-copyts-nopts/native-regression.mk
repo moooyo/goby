@@ -18,7 +18,10 @@ HARNESS_CC ?= $(CC)
 # The unpatched subtraction has signed-overflow UB. Explicit two's-complement
 # wrapping makes the observed negative control deterministic across compilers;
 # this flag is confined to the harness and does not change the media build.
-HARNESS_FLAGS := -std=c11 -O1 -g -fwrapv -pthread -DHAVE_AV_CONFIG_H \
+# Match the CLI's public header context. FFmpeg's library.mak adds
+# HAVE_AV_CONFIG_H only to library objects; it hides public codec declarations
+# needed while compiling the included ffmpeg.c, even in discarded functions.
+HARNESS_FLAGS := -std=c11 -O1 -g -fwrapv -pthread \
                  -ffunction-sections -fdata-sections
 HARNESS_LIBS := -Wl,--start-group $(FF_BUILD)/libavformat/libavformat.a \
                 $(FF_BUILD)/libavcodec/libavcodec.a $(FF_BUILD)/libavutil/libavutil.a \
