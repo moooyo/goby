@@ -13,6 +13,7 @@ import (
 	"os"
 	"sort"
 	"testing"
+	"time"
 )
 
 type mediaEditDurationFixture struct {
@@ -282,14 +283,22 @@ func TestMediaEditMatroskaDurationWitnessRejectsChangesBeforeCallerBaseline(t *t
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := mediaEditCheckUnchanged(fixture.candidate, result.Snapshot); !errors.Is(err, ErrSubtitleRemovalUnsupported) {
-				t.Fatalf("post-repair mutation became a caller baseline: %v", err)
-			}
 			if mutation == "unchanged padding" {
+				// The full-file witness detects changed bytes independently of
+				// whether adjacent writes share the same timestamp granularity.
 				digest, err := mediaEditFileDigest(context.Background(), fixture.candidate, result.Snapshot.Size())
 				if err != nil || digest == result.SHA256 {
 					t.Fatalf("same-size mutation retained repaired full-file evidence: %q, %v", digest, err)
 				}
+				// Give the separate metadata check an observable mtime change
+				// while retaining the original restoration snapshot as baseline.
+				modified := result.Snapshot.ModTime().Add(2 * time.Second)
+				if err := os.Chtimes(fixture.candidate.Name(), modified, modified); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := mediaEditCheckUnchanged(fixture.candidate, result.Snapshot); !errors.Is(err, ErrSubtitleRemovalUnsupported) {
+				t.Fatalf("post-repair mutation became a caller baseline: %v", err)
 			}
 		})
 	}
