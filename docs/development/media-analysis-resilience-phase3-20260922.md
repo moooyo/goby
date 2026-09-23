@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope09's full compound attempt failed during cold; Latest JIT and workload metadata-CAS repairs await remote regression. Full capacity/fault acceptance and Phase 3 publication remain pending**.
+Status: **scope09's cold failure remains retained; Latest JIT and workload metadata-CAS repairs passed complete remote regression and independent closure at 8b6cb21. Full capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -33,8 +33,8 @@ Two Latest requests took 10,172-10,469 ms. Their existing PostgreSQL plans showe
 ordinary catalog queries. Its repair covers the main query and subsequent user
 data/subtitle projections without changing pooled-session settings. New tests
 cover grouped and ungrouped results, user/application subjects, and restoration
-after both successful reads and an actual SQL failure. These source changes have
-not yet passed remote verification.
+after both successful reads and an actual SQL failure. These source changes and
+the workload metadata-CAS repair passed the complete remote regression below.
 
 Remux first-byte samples were 4,718 and 5,170 ms against the unchanged 5,000 ms
 target. Their overlap with the expensive Latest queries suggests contention,
@@ -56,6 +56,53 @@ and original failed evidence remain intact.
 | Resource observer | `008f783411907bb7a1619dd70d6414c919551b2c89efb59ebb06694e49011fb3` |
 | Compound independent closure | `b09c747c8c1bc6c30db0e277ee4fb395129f64af40e761bb3497197badb54cea` |
 | Runtime independent closure | `814708aa562629847364c3c3bfca6357e5ac9a44865822eaea667abe86e2e1a4` |
+
+### Accepted scope09 repair regression
+
+Source `8b6cb210f0ecc679c8067e19da142dfe963dfb8c` completed all **49 original
+stages**. All 35 ordinary Go packages completed with **4,277 parent passes,
+zero failures and 18 explicit parent skips**. One additional Vulkan subcase skip
+is retained separately and is not another parent skip. The embedded command
+suite passed **24** parents; the eight Python scripts passed **91** tests,
+including 35 workload tests. Focused checks passed **10** parents and the race
+stage passed **15**; these repeated cases are reported separately and are not
+added to the ordinary Go total.
+
+Both ordinary and embedded Go binaries were freshly built from this revision.
+All tracked frontend inputs and all **73** retained frontend artifact files were
+compared before reuse. The successful collector rechecked the complete stage
+inventory, original log hashes, package results, new binaries and source
+inventories before closing the proved service lifetimes.
+
+The independent resource observer passed. Four transient `du` observations
+failed when PostgreSQL files disappeared during measurement; monitoring resumed
+without persistent observation loss. Missing observations were not credited as
+zero. Worker, observer, setup and closure controllers are independently closed,
+and the retained regression PostgreSQL cluster shut down cleanly. All **26**
+databases remain, comprising the original 19 and seven fresh regression databases.
+The actual build delivery is bound to that complete result and independent closure:
+
+| Scope09 repair evidence | SHA256 |
+| --- | --- |
+| Complete regression | `d23198ff7128e6b5c902fbf3d39fe542e9b248dddd01a0376c4c7972f9c60612` |
+| Resource observer | `cec40c94a29450b64eb48209c3fe837c03e8a82cec754853c3bc885d044cf41c` |
+| Independent closure | `3d89ecbf1d0b6750c83eecf2da60996fafa87f8ef97bd9d52c21abd651788461` |
+| Build delivery | `e9c28c29aaaf2de8a754319b44172d0012f16680b78559d392b452397e1134fd` |
+| Explicit skip evidence | `69908004d04dbafa539243189634463a92aefba4b8a565abdcf8efefeedc6a9f` |
+
+Scope09's failed fixture, preparation and compound output were archived with
+all **349,155** members read back externally. After independent worker closure,
+the exact three guest trees and two redundant guest archive files were retired;
+the external four-file archive and all unselected data remain. The external
+readback receipt is `2e07a8f95f01ffdfcaaf66d1e90364fe3883cebf78b8477036ab5c5f013aeb3c`,
+and final retirement closure is
+`464e8aaf0bad2be669da6f016742f6d31703470b6433c602fef39b0ed93c6c08`.
+The next storage step is to archive the closed regression PostgreSQL cluster in
+full, verify the external copy, and only then retire the exact redundant guest
+copy to satisfy the original space gate. That cluster transfer and retirement
+have **not** completed; the 26 databases remain on the guest at this checkpoint.
+No complete 10k or 100k journey, or any of the 28 fault/recovery cases, is accepted.
+Phase 3 remains in progress and unpublished.
 
 ### Accepted regression before the scope09 repairs
 
@@ -613,8 +660,10 @@ environment mutation, test, build or runtime probe.
 
 ## Next work and closeout state
 
-Use the accepted repair/build delivery after completed exact retirement and fresh
-storage admission to prepare a new capacity runtime. Retain all original failure
+Use the accepted `8b6cb21` repair/build delivery after complete external
+preservation, exact redundant-copy retirement and fresh storage admission to
+prepare a new capacity runtime. The closed regression-cluster transfer and
+retirement are still planned, not completed. Retain all original failure
 and archive evidence. Do not reuse the
 retired service context. External-controller admission is required before later
 external ACK, archive writes or fault operations, not for independent guest

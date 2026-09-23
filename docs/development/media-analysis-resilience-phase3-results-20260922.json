@@ -4,6 +4,7 @@
   "status": "in_progress",
   "accepted": false,
   "published": false,
+  "latest_verified_regression": "scope09_repair_regression",
   "plan": "docs/planning/media-analysis-resilience-plan-20260920.md",
   "execution_record": "docs/development/media-analysis-resilience-phase3-20260922.md",
   "source_candidates": [
@@ -530,7 +531,7 @@
   "required_acceptance": [
     {
       "requirement": "Complete integrated Go/Python regression and frontend plus ordinary/embedded builds",
-      "status": "accepted_composed_with_explicit_skips"
+      "status": "accepted_complete_8b6cb21_with_explicit_skips"
     },
     {
       "requirement": "10k and 100k cold/cached/incremental compound workload with exact query/count/page/user-state results",
@@ -571,7 +572,8 @@
   ],
   "current_regression_state": {
     "attempt": "04",
-    "status": "affected04 passed and independently closed; complete regression composed separately",
+    "status": "historical affected04 passed and independently closed; superseded by scope09_repair_regression",
+    "superseded_by": "scope09_repair_regression",
     "source_revision": "1ed1d69b94548e5beb842906b6177664367310df",
     "scope": "Complete library, settings, tasks, server and cmd/goby packages; embedded command tests; actual frontend and ordinary/embedded builds",
     "source_prepare_tests_passed": 10,
@@ -1445,7 +1447,7 @@
     "original_failures_preserved": true
   },
   "capacity_scope09": {
-    "status": "cold_failed_independently_closed_repairs_pending",
+    "status": "cold_failed_independently_closed_repairs_regression_verified_full_capacity_repeat_pending",
     "accepted": false,
     "execution_complete": false,
     "product_revision": "55d50696e4590d719cad1540cac42c90c028d139",
@@ -1491,8 +1493,113 @@
     "observer_sha256": "008f783411907bb7a1619dd70d6414c919551b2c89efb59ebb06694e49011fb3",
     "compound_independent_closure_sha256": "b09c747c8c1bc6c30db0e277ee4fb395129f64af40e761bb3497197badb54cea",
     "runtime_independent_closure_sha256": "814708aa562629847364c3c3bfca6357e5ac9a44865822eaea667abe86e2e1a4",
-    "repair_verification": "pending_remote",
+    "repair_verification": "complete_remote_regression_and_independent_closure_passed",
+    "repair_revision": "8b6cb210f0ecc679c8067e19da142dfe963dfb8c",
+    "repair_regression_record": "scope09_repair_regression",
+    "failed_sample_external_archive_status": "complete_external_readback_and_exact_guest_retirement_closed",
     "local_verification_performed": false,
-    "capacity_or_fault_acceptance": false
+    "capacity_or_fault_acceptance": false,
+    "preserved_failure_archive": {
+      "complete": true,
+      "externally_verified_members": 349155,
+      "source_bytes": 1721267038,
+      "external_readback_sha256": "2e07a8f95f01ffdfcaaf66d1e90364fe3883cebf78b8477036ab5c5f013aeb3c",
+      "external_closure_sha256": "18ddcfd5ca05f0b5bc6b12d9428e5431a2475c67328eb60beb2fd5a0f9136ba8",
+      "selected_guest_trees_retired": 3,
+      "redundant_guest_archive_files_retired": 2,
+      "external_four_files_retained": true,
+      "all_unselected_data_retained": true,
+      "final_retirement_closure_sha256": "464e8aaf0bad2be669da6f016742f6d31703470b6433c602fef39b0ed93c6c08"
+    }
+  },
+  "scope09_repair_regression": {
+    "status": "complete_remote_regression_passed_independently_closed_build_delivery_recorded",
+    "source_revision": "8b6cb210f0ecc679c8067e19da142dfe963dfb8c",
+    "complete_stage_count": 49,
+    "all_original_stage_receipts_and_log_hashes_rechecked": true,
+    "ordinary_go": {
+      "complete_packages": 35,
+      "passed_parents": 4277,
+      "failed_parents": 0,
+      "explicit_skipped_parents": 18,
+      "additional_vulkan_subcase_skips": 1,
+      "subcase_skip_added_to_parent_total": false
+    },
+    "embedded_command": {
+      "passed_parents": 24,
+      "failed_parents": 0,
+      "skipped_parents": 0
+    },
+    "python": {
+      "complete_scripts": 8,
+      "passed_tests": 91,
+      "workload_passed_tests": 35,
+      "counts_from_actual_stage_outputs": true
+    },
+    "focused": {
+      "passed_parents": 10,
+      "failed_parents": 0,
+      "skipped_parents": 0
+    },
+    "race": {
+      "passed_parents": 15,
+      "failed_parents": 0,
+      "skipped_parents": 0
+    },
+    "focused_and_race_counts_added_to_ordinary_total": false,
+    "frontend": {
+      "reused": true,
+      "files": 73,
+      "all_tracked_inputs_equal": true,
+      "complete_artifact_inventory_equal": true,
+      "npm_repeated": false
+    },
+    "builds": [
+      {
+        "name": "goby",
+        "actual_new_build": true,
+        "bytes": 48796980,
+        "sha256": "ed8f903f2056144a557f83b63baa76327af461cda8e9ccd7117d90b8a9dffa06"
+      },
+      {
+        "name": "goby-embedded",
+        "actual_new_build": true,
+        "bytes": 50239424,
+        "sha256": "a3ad3cc965a37e014ec26385e4ea56f7badb7733b77162464bd32954d60bcb73"
+      }
+    ],
+    "observer": {
+      "complete": true,
+      "resource_observation_passed": true,
+      "transient_gap_count": 4,
+      "gap_cause": "PostgreSQL files disappeared during native du byte or inode accounting.",
+      "persistent_observation_loss": false,
+      "missing_observations_zero_filled": false
+    },
+    "independent_closure_complete": true,
+    "all_original_workers_observers_and_controllers_closed": true,
+    "postgres_cleanly_closed": true,
+    "databases_retained": 26,
+    "retained_old_databases": 19,
+    "fresh_regression_databases": 7,
+    "result_sha256": "d23198ff7128e6b5c902fbf3d39fe542e9b248dddd01a0376c4c7972f9c60612",
+    "observer_sha256": "cec40c94a29450b64eb48209c3fe837c03e8a82cec754853c3bc885d044cf41c",
+    "independent_closure_sha256": "3d89ecbf1d0b6750c83eecf2da60996fafa87f8ef97bd9d52c21abd651788461",
+    "build_delivery_sha256": "e9c28c29aaaf2de8a754319b44172d0012f16680b78559d392b452397e1134fd",
+    "skip_evidence_sha256": "69908004d04dbafa539243189634463a92aefba4b8a565abdcf8efefeedc6a9f",
+    "original_failures_preserved": true,
+    "local_verification_performed": false,
+    "capacity_accepted": false,
+    "fault_recovery_accepted": false,
+    "whole_phase_accepted": false,
+    "next_storage_preparation": {
+      "status": "guest_archive_running_external_preservation_pending",
+      "scope": "Preserve the cleanly closed regression PostgreSQL cluster externally in full before retiring its exact redundant guest copy.",
+      "external_transfer_complete": false,
+      "external_full_readback_complete": false,
+      "guest_copy_retired": false,
+      "original_storage_gate_unchanged": true,
+      "all_26_databases_currently_retained_on_guest": true
+    }
   }
 }
