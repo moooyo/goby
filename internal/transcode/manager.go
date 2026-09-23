@@ -92,6 +92,7 @@ type managedJob struct {
 	durable       bool
 	running       bool
 	finished      bool
+	reclaiming    bool
 	directory     bool
 	ready         bool
 	mediaReady    bool
@@ -317,6 +318,10 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 	if err != nil {
 		return Record{}, ErrInvalidInput
 	}
+retryAdmission:
+	if err := ctx.Err(); err != nil {
+		return Record{}, err
+	}
 	m.mu.Lock()
 	if m.closing {
 		m.mu.Unlock()
@@ -342,8 +347,9 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			err = ErrManagerClosed
 		case m.cacheFailed:
 			err = ErrOutputUnavailable
-		case m.jobs[record.ID] != existing:
-			err = ErrJobNotFound
+		case m.jobs[record.ID] != existing || existing.reclaiming:
+			m.mu.Unlock()
+			goto retryAdmission
 		default:
 			err = jobError(existing)
 		}
@@ -351,7 +357,18 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		return record, err
 	}
 	if !m.admissionAvailableLocked(spec.Scope) {
+		workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
 		m.mu.Unlock()
+		if !workAvailable {
+			return Record{}, ErrBusy
+		}
+		reclaimed, err := m.reclaimForAdmission(ctx, spec)
+		if err != nil {
+			return Record{}, err
+		}
+		if reclaimed {
+			goto retryAdmission
+		}
 		return Record{}, ErrBusy
 	}
 	if m.bytes >= m.options.MaxBytes {
@@ -392,12 +409,22 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
 		m.mu.Unlock()
 		cancel()
-		owned = true
-		return m.ensureInputs(ctx, spec, inputs)
+		goto retryAdmission
 	}
 	if !m.admissionAvailableLocked(spec.Scope) {
+		workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
 		m.mu.Unlock()
 		cancel()
+		if !workAvailable {
+			return Record{}, ErrBusy
+		}
+		reclaimed, err := m.reclaimForAdmission(ctx, spec)
+		if err != nil {
+			return Record{}, err
+		}
+		if reclaimed {
+			goto retryAdmission
+		}
 		return Record{}, ErrBusy
 	}
 	if m.bytes >= m.options.MaxBytes {
@@ -452,9 +479,10 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 // credential share the credential allowance; user sessions also share a user
 // allowance. Stopping jobs remain bounded by MaxRetainedJobs until reaped.
 func (m *Manager) admissionAvailableLocked(scope Scope) bool {
-	if len(m.jobs) >= m.options.MaxRetainedJobs {
-		return false
-	}
+	return len(m.jobs) < m.options.MaxRetainedJobs && m.workAdmissionAvailableLocked(scope)
+}
+
+func (m *Manager) workAdmissionAvailableLocked(scope Scope) bool {
 	active, user, auth := 0, 0, 0
 	for _, j := range m.jobs {
 		if j.finished || j.stopCode != "" {
@@ -471,13 +499,65 @@ func (m *Manager) admissionAvailableLocked(scope Scope) bool {
 	}
 	// A small retained-record budget must not erase the execution capacity
 	// reserved for other subjects. Completed history is still independently
-	// bounded by the global retention limit and existing idle reclamation.
+	// bounded by the global retention limit and reclaimed under admission pressure.
 	userLimit := min(m.options.MaxUserJobs+m.options.MaxUserQueueJobs,
 		m.options.MaxRetainedJobs-m.options.MaxJobs+m.options.MaxUserJobs)
 	authLimit := min(m.options.MaxSessionJobs+m.options.MaxSessionQueueJobs,
 		m.options.MaxRetainedJobs-m.options.MaxJobs+m.options.MaxSessionJobs)
 	return active < m.options.MaxJobs+m.options.MaxQueueJobs &&
 		(scope.ApplicationKey || user < userLimit) && auth < authLimit
+}
+
+// reclaimForAdmission retires one unpinned terminal record only when retention
+// is the remaining admission constraint. Finished includes process reaping,
+// input closure, and the final persistence attempt. Invalidated history is
+// preferred over reusable output, then the least recently accessed job wins.
+func (m *Manager) reclaimForAdmission(ctx context.Context, spec Spec) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	m.filesMu.Lock()
+	defer m.filesMu.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if m.closing {
+		return false, ErrManagerClosed
+	}
+	if m.cacheFailed {
+		return false, ErrOutputUnavailable
+	}
+	if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
+		return true, nil
+	}
+	if !m.workAdmissionAvailableLocked(spec.Scope) {
+		return false, nil
+	}
+	if len(m.jobs) < m.options.MaxRetainedJobs {
+		return true, nil
+	}
+	var victim *managedJob
+	for _, j := range m.jobs {
+		if !j.finished || j.readers != 0 || j.reclaiming {
+			continue
+		}
+		if victim == nil || j.stopCode != "" && victim.stopCode == "" ||
+			(j.stopCode != "") == (victim.stopCode != "") &&
+				(j.record.LastAccessAt.Before(victim.record.LastAccessAt) ||
+					j.record.LastAccessAt.Equal(victim.record.LastAccessAt) && j.record.ID < victim.record.ID) {
+			victim = j
+		}
+	}
+	if victim == nil {
+		return false, nil
+	}
+	reclaimed := m.reclaimLocked(victim, true)
+	if m.cacheFailed {
+		return false, ErrOutputUnavailable
+	}
+	return reclaimed, nil
 }
 
 // Health reports whether the engine can accept work, independently of temporary
@@ -592,7 +672,7 @@ func (m *Manager) lookupLocked(scope Scope, id string) (*managedJob, error) {
 		return nil, ErrOutputUnavailable
 	}
 	j := m.jobs[id]
-	if j == nil || j.record.Spec.Scope != scope {
+	if j == nil || j.reclaiming || j.record.Spec.Scope != scope {
 		return nil, ErrJobNotFound
 	}
 	return j, nil
@@ -1180,13 +1260,14 @@ func (m *Manager) maintain() {
 	}
 	m.mu.Unlock()
 	for _, j := range jobs {
+		m.filesMu.Lock()
 		m.mu.Lock()
-		directory, scan := j.directory, j.directory && (j.running || j.record.State == "completed")
+		scan := m.jobs[j.record.ID] == j && !j.reclaiming && j.directory && (j.running || j.record.State == "completed")
 		m.mu.Unlock()
-		if !directory || !scan {
+		if !scan {
+			m.filesMu.Unlock()
 			continue
 		}
-		m.filesMu.Lock()
 		size, ready, err := m.cache.ScanPlanJob(j.record.ID, j.record.Spec.Plan)
 		m.mu.Lock()
 		if err != nil {
@@ -1264,28 +1345,37 @@ func (m *Manager) maintain() {
 	}
 }
 
-func (m *Manager) reclaim(j *managedJob, closing bool) bool {
+func (m *Manager) reclaim(j *managedJob, force bool) bool {
+	m.filesMu.Lock()
+	defer m.filesMu.Unlock()
 	m.mu.Lock()
-	if !j.finished || j.readers != 0 {
-		m.mu.Unlock()
+	defer m.mu.Unlock()
+	return m.reclaimLocked(j, force)
+}
+
+// reclaimLocked requires filesMu and mu, and returns holding both. Keeping the
+// record reserved until guarded cleanup finishes prevents admission from using
+// its slot before a cleanup failure makes the cache unavailable. Lookups cannot
+// pin new readers while mu is released for filesystem work.
+func (m *Manager) reclaimLocked(j *managedJob, force bool) bool {
+	if m.jobs[j.record.ID] != j || !j.finished || j.readers != 0 || j.reclaiming {
 		return false
 	}
-	expired := closing || time.Since(j.record.LastAccessAt) >= m.options.IdleTimeout
+	expired := force || time.Since(j.record.LastAccessAt) >= m.options.IdleTimeout
 	removeFiles := j.directory && (expired || j.stopCode != "")
 	if removeFiles {
 		j.directory = false
 	}
 	if expired {
-		delete(m.jobs, j.record.ID)
+		j.reclaiming = true
 		if m.bySpec[j.record.Spec] == j {
 			delete(m.bySpec, j.record.Spec)
 		}
+		m.notifyLocked(j)
 	}
-	m.mu.Unlock()
 	if removeFiles {
-		m.filesMu.Lock()
+		m.mu.Unlock()
 		err := m.cache.RemoveJob(j.record.ID)
-		m.filesMu.Unlock()
 		m.mu.Lock()
 		if err == nil {
 			m.bytes -= j.record.OutputBytes
@@ -1300,7 +1390,19 @@ func (m *Manager) reclaim(j *managedJob, closing bool) bool {
 			}
 			m.closeErr = errors.Join(m.closeErr, err)
 		}
-		m.mu.Unlock()
+	}
+	if expired {
+		// A failed cleanup still releases metadata during shutdown. Admission
+		// remains fenced by cacheFailed, and closeErr preserves the failure.
+		delete(m.jobs, j.record.ID)
+		for index, queued := range m.queue {
+			if queued == j {
+				copy(m.queue[index:], m.queue[index+1:])
+				m.queue[len(m.queue)-1] = nil
+				m.queue = m.queue[:len(m.queue)-1]
+				break
+			}
+		}
 	}
 	return expired
 }
