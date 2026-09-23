@@ -9,7 +9,71 @@ Use the isolated `codex/media-analysis-resilience` checkout at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
 unrelated changes in the original `D:/Code/goby` checkout.
 
-Current Phase 3 checkpoint: scope07 preparation passed, but its actual 10k cold
+Current Phase 3 checkpoint: scope10 generation
+`phase3-tier10k-10-compound-02` passed actual admission and entered cold business
+concurrency, then failed at **2026-09-23 02:41:37 UTC** when the **512 MiB
+PostgreSQL cgroup exhausted memory**. The kernel killed catalog-owner backend
+`586572`; PostgreSQL, Goby and the Actor subsequently exited. The driver records
+`accepted=false`, `execution_complete=false`, and failure codes `observer_failure`
+and `http_status`. Its partial remux-start p95 was approximately **8,023.7 ms**
+against the unchanged **5,000 ms** threshold. No full 10k journey, 100k journey,
+overload profile or any of the 28 fault/recovery cases is accepted.
+
+Scope10 preparation, memory restoration and execution rebind passed. Its first
+compound generation was refused at admission because the PostgreSQL version
+banner differed from SQL `server_version`; its controls are closed and its
+failure retained. Compound02 corrected the execution manifest while preserving
+the original preparation references. Scope09's failed fixtures and the closed
+26-database regression cluster have complete external archives and readback;
+only their exact redundant guest copies were retired.
+
+Source `8b6cb210f0ecc679c8067e19da142dfe963dfb8c` passed all 49 remote regression
+stages: 35 ordinary Go packages, 4,277 parent passes, zero failures and 18 explicit
+parent skips; 24 embedded parents; and 91 tests across eight Python scripts.
+The 10 focused and 15 race passes are separate repeats. Both Go binaries built,
+and frontend reuse was proved from unchanged inputs and all 73 artifacts.
+These accepted checks precede the failed compound run and do not accept capacity.
+
+Failure closure is complete and independently confirmed. The observer remained
+active in its gap handler after the original application/PostgreSQL PIDs
+disappeared; it was externally withdrawn after evidence preservation. The empty
+publisher, control parent and successful closure collector are also closed.
+Original application, PostgreSQL and Actor failure states remain unchanged.
+Driver cleanup
+recorded seven `cleanup_operation` errors and
+`filesystem_restore_held_for_active_worker`. PostgreSQL data, WAL and control
+files remain in place with the control state `in production`; no clean database
+shutdown is claimed. The database has not restarted, durable job state is
+unknown, and fixture rollback has not run. Preserve the failed state before any
+recovery or successor workload.
+
+Read-only analysis of the existing PostgreSQL log found 30 recursive roots/user
+data query plans across five backends, with up to 182 JIT functions. `QueryItems`
+and `QueryLatest` already use `SET LOCAL jit = off`. The last PostgreSQL sample
+included 447,766,528 anonymous bytes and 76,296,192 file bytes, including
+61,272,064 shmem bytes. These observations are diagnostic evidence, not a repair,
+proof of a single causal SQL statement, or evidence of a page-cache-only OOM.
+
+The next repair sets `jit=off` on every Goby database session at connection
+startup, while retaining existing transaction guards and resource limits.
+Real-connection tests cover replacement, Hijack, catalog ownership, deployment
+leases and unchanged independent PostgreSQL sessions. This source change is
+written but not yet verified. The prior clean regression cluster archive has
+been transferred back for restoration and a new complete regression; the OOM
+cluster remains untouched. Resolve the demonstrated memory/observation failures
+before admitting a new complete capacity journey. Read the
+[Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private
+checkpoint for exact evidence. Phase 3 remains unpublished. Phases 1 and 2 are
+merged and pushed on `main` at `e41febbb36687d04340f5c651f4bf1bf376a4310`.
+
+## Historical checkpoints before scope10
+
+The following records preserve earlier failures, repairs and publication
+milestones. References to then-current workers, retained guest copies, pending
+retirement or future scopes describe those checkpoints; the current resumption
+state is above and supersedes their next-step instructions.
+
+At the scope07 checkpoint, preparation passed, but its actual 10k cold
 compound workload failed. Catalog requests took approximately 6.2-7.9 seconds;
 playback preparation took 6.2-6.4 seconds, and remux seek returned 415. Cached and
 incremental phases did not run. The original application/database and all
@@ -30,13 +94,10 @@ passed with four retained transient PostgreSQL-file `du` gaps and no persistent
 loss. Independent closure passed; all 19 databases remain. Build delivery SHA:
 `ee20450db2d81b581da95dc409745687df0491ba886566e95a1743a0d70f0708`.
 
-Fresh scope08 is source-only and unreleased. Meet the original free-space gate,
-bind the actual new artifacts and matched prepare/workload scripts, and verify
-the deployed scan configuration against its new manifest before preparation.
-Follow the private execution checkpoint and the
-[Phase 3 record](media-analysis-resilience-phase3-20260922.md) before dispatch.
-The full 10k/100k compound journeys, overload and 28 fault/recovery cases remain
-required. Phase 3 remains unpublished; Phase 1/2 are published on main.
+At that historical checkpoint, scope08 was source-only and unreleased. Its later
+preparation failure and scope09's cold failure are retained in the
+[Phase 3 record](media-analysis-resilience-phase3-20260922.md). Neither is the
+current runtime or an instruction to replay a retired scope.
 
 Historical accepted baseline: scope04's full 10k workload failed during cold;
 actual goroutine stacks confirm a catalog ownership/admission lock inversion.

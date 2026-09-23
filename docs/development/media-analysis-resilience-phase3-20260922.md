@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope09's cold failure remains retained; Latest JIT and workload metadata-CAS repairs passed complete remote regression and independent closure at 8b6cb21. Full capacity/fault acceptance and Phase 3 publication remain pending**.
+Status: **scope10 compound02 failed on PostgreSQL cgroup OOM and its runtime is independently closed. The Goby session JIT repair is written and awaits remote verification. Complete regression/builds at 8b6cb21 remain accepted. Full capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -11,11 +11,81 @@ verification. The overall three-phase objective remains incomplete.
 
 Implementation uses the isolated `codex/media-analysis-resilience` checkout.
 Unrelated changes in the original checkout remain outside this increment.
-Product/build source `1ed1d69` and fixture successor `00af9e4` have actual remote
-evidence. Exact profiles, contexts and receipts remain bound in the private
+The current accepted regression/build source is
+`8b6cb210f0ecc679c8067e19da142dfe963dfb8c`. Earlier product/build source `1ed1d69`
+and fixture successor `00af9e4` retain their original remote evidence.
+Exact profiles, contexts and receipts remain bound in the private
 checkpoint and delivery ledger; this document does not itself admit a workload.
 
 ## Current checkpoint
+
+Scope10 preparation, memory restoration and execution rebind passed. The first
+compound generation failed admission because the PostgreSQL version banner and
+SQL `server_version` strings differed. Its controls are closed and the original
+failure is retained. Generation `phase3-tier10k-10-compound-02` corrected the
+execution manifest without changing the original preparation references,
+passed actual admission, and entered cold business concurrency.
+
+At **2026-09-23 02:41:37 UTC**, the **512 MiB PostgreSQL cgroup exhausted memory**.
+The kernel killed catalog-owner backend `586572`; PostgreSQL, Goby and the Actor
+subsequently exited. The driver result is `accepted=false` and
+`execution_complete=false`, with failure codes `observer_failure` and
+`http_status`. Partial remux-start p95 was approximately **8,023.7 ms** against
+the unchanged **5,000 ms** threshold; this is a failed partial measurement.
+Cached and incremental acceptance did not complete. No full 10k or 100k
+journey, overload profile, or any of the 28 fault/recovery cases is accepted.
+
+The observer did not exit after the original application/PostgreSQL PIDs
+disappeared: its gap handler kept it active. Independent failure collection
+preserved the evidence and externally withdrew that exact observer. The empty
+publisher and control parent were stopped, and root independently confirmed the
+successful collector's exit and closure. No scoped native, Actor or broker
+process remains. Original service failures, including PostgreSQL `oom-kill`,
+were preserved. Driver cleanup
+recorded seven `cleanup_operation` errors and
+`filesystem_restore_held_for_active_worker`. PostgreSQL data, WAL and control
+files remain in place, with the control state `in production`. The database has
+not restarted; no clean shutdown, durable job-state result or fixture rollback
+is claimed. Preserve this state and bind any recovery to its own evidence.
+
+The last PostgreSQL sample contained **447,766,528 anonymous bytes** and
+**76,296,192 file bytes**, including **61,272,064 shmem bytes**. It does not support
+a page-cache-only explanation. Read-only analysis of the existing 77,032,176-byte
+PostgreSQL log found 30 recursive roots/user data query plans across five
+backends, with up to 182 JIT functions. `QueryItems` and `QueryLatest` already use
+`SET LOCAL jit = off`. These retained plans are diagnostic evidence, not a
+verified repair or proof that one SQL statement alone caused the OOM.
+
+| Scope10 compound02 retained evidence | SHA256 |
+| --- | --- |
+| Failed compound result | `01e735b67dfe9b7aa70897007ed38601f144206ff6e13ebcd30b0efc59eacf02` |
+| Compound launch intent | `f23ce3a047f99c28bdb31c211d832554ca80b6e745c68a3b63182da529c9ae84` |
+| Actor entry | `f4d01ab70b64a20dc1b53bc78689b82e1b1843d7a6b216ab412edd978e320115` |
+| Existing PostgreSQL diagnostic log | `4a22e9317bcaf6f55ff8a45f2a6fbd0f5e9edfde6cfa0cbadcf76d0b8a11b273` |
+| Failed-run closure receipt | `41ee8cfde07a0e6ee11f89fba930b3e99599b1af501df849a6a2f60c07e50391` |
+| Independent runtime closure | `a45ea2368e666f72d692192cb3a096648c1a8a912090821407bcca9b32728beb` |
+
+The accepted 49-stage regression at `8b6cb21` is detailed below. Scope09's failed
+fixtures and the closed 26-database regression cluster were completely archived,
+externally read back, and only then retired as exact redundant guest copies.
+That storage work and scope10's physical process closure do not establish
+capacity acceptance or durable job completion. The next source repair sets
+`jit=off` at startup for all Goby database connections, covering the observed
+userdata query path and connections retained for catalog ownership or deployment
+leases. Existing transaction guards, pool size and resource limits remain.
+Two new real-connection integration tests also cover replacement connections,
+Hijack and independent PostgreSQL sessions. The repair is not yet verified and
+does not establish that JIT was the only OOM cause. The prior clean regression
+archive has been transferred back for complete-tree restoration before a fresh
+regression. The failed capacity database remains unmodified.
+Phase 3 remains unpublished; phases 1 and 2 remain published at
+`e41febbb36687d04340f5c651f4bf1bf376a4310`.
+
+## Historical scope09 failure and accepted repair regression
+
+The following scope09 and earlier records retain their original failures and
+verification scope. Their service and storage states describe those checkpoints;
+the current resumption state is the scope10 checkpoint above.
 
 Scope09 passed preparation and final resource admission, then ran the complete
 compound driver until a cold-phase failure. The metadata edit returned a real
@@ -78,8 +148,10 @@ The independent resource observer passed. Four transient `du` observations
 failed when PostgreSQL files disappeared during measurement; monitoring resumed
 without persistent observation loss. Missing observations were not credited as
 zero. Worker, observer, setup and closure controllers are independently closed,
-and the retained regression PostgreSQL cluster shut down cleanly. All **26**
-databases remain, comprising the original 19 and seven fresh regression databases.
+and the regression PostgreSQL cluster shut down cleanly. At closure, all **26**
+databases were retained, comprising the original 19 and seven fresh regression
+databases. The subsequent full archive and exact guest retirement are recorded
+below.
 The actual build delivery is bound to that complete result and independent closure:
 
 | Scope09 repair evidence | SHA256 |
@@ -97,10 +169,11 @@ the external four-file archive and all unselected data remain. The external
 readback receipt is `2e07a8f95f01ffdfcaaf66d1e90364fe3883cebf78b8477036ab5c5f013aeb3c`,
 and final retirement closure is
 `464e8aaf0bad2be669da6f016742f6d31703470b6433c602fef39b0ed93c6c08`.
-The next storage step is to archive the closed regression PostgreSQL cluster in
-full, verify the external copy, and only then retire the exact redundant guest
-copy to satisfy the original space gate. That cluster transfer and retirement
-have **not** completed; the 26 databases remain on the guest at this checkpoint.
+The closed regression PostgreSQL cluster, including all 26 databases, also
+completed full external archival and readback before its exact redundant guest
+copy was retired. The external archive preserves those databases; they are no
+longer retained as that guest cluster. This completed storage step enabled the
+later scope10 preparation and does not accept its workload.
 No complete 10k or 100k journey, or any of the 28 fault/recovery cases, is accepted.
 Phase 3 remains in progress and unpublished.
 
@@ -660,16 +733,22 @@ environment mutation, test, build or runtime probe.
 
 ## Next work and closeout state
 
-Use the accepted `8b6cb21` repair/build delivery after complete external
-preservation, exact redundant-copy retirement and fresh storage admission to
-prepare a new capacity runtime. The closed regression-cluster transfer and
-retirement are still planned, not completed. Retain all original failure
-and archive evidence. Do not reuse the
-retired service context. External-controller admission is required before later
+Scope10 compound02 failure preservation and physical runtime closure are
+complete. Database control state remains `in production`, durable job state is
+unknown, and fixture restoration is held. Record any later database recovery
+separately. Do not reinterpret the involuntary OOM exit as a planned recovery
+test or replay the failed prepared state as fresh.
+
+The closed regression-cluster archive/readback and exact guest retirement are
+complete. Retain those archives and all original failures. Use the accepted
+`8b6cb21` repair/build delivery as the baseline for diagnosis, preserve the
+original limits, and investigate the memory failure and observer exit behavior.
+Verify any resulting repair before a newly admitted complete 10k compound
+journey and overload. Follow a
+successful journey with the required post-compound reconciliation and full
+fault/recovery matrix. External-controller admission is required before later
 external ACK, archive writes or fault operations, not for independent guest
-work that performs no external write. Use the actual
-prepared context for the complete 10k compound journey and overload; follow it
-with the required post-compound reconciliation and the full fault/recovery matrix.
+work that performs no external write.
 The 100k tier remains a separate required preparation and acceptance scope.
 Recovery evidence must bind actual blocked work, resource return, replacement
 storage rebind and durable playback state. Historical external free-space or

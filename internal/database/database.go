@@ -43,6 +43,9 @@ func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	config.ConnConfig.RuntimeParams["application_name"] = "goby"
 	config.ConnConfig.RuntimeParams["statement_timeout"] = "15000"
 	config.ConnConfig.RuntimeParams["idle_in_transaction_session_timeout"] = "30000"
+	// Repeated JIT compilation of wide catalog projections adds latency and
+	// private backend memory. Apply this policy to every Goby session at startup.
+	config.ConnConfig.RuntimeParams["jit"] = "off"
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
