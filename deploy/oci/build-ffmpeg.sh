@@ -29,6 +29,10 @@ curl --fail --location --silent --show-error --retry 3 \
 curl --fail --location --silent --show-error --retry 3 \
   https://ffmpeg.org/ffmpeg-devel.asc -o ffmpeg-devel.asc
 mkdir -m 0700 gnupg
+# Public-key verification does not need an automatically started private-key agent.
+printf '%s\n' no-autostart > "$work/gnupg/gpg.conf"
+chmod 600 "$work/gnupg/gpg.conf"
+cp -- "$work/gnupg/gpg.conf" "$evidence/gpg-public-verification.conf"
 gpg --homedir "$work/gnupg" --batch --import ffmpeg-devel.asc
 gpg --homedir "$work/gnupg" --batch --with-colons --fingerprint FCF986EA15E6E293A5644F10B4322F04D67658D8 > fingerprints.txt
 grep -Fq 'fpr:::::::::FCF986EA15E6E293A5644F10B4322F04D67658D8:' fingerprints.txt

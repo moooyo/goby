@@ -249,6 +249,10 @@ if (( build_ffmpeg )); then
   fi
   mkdir -m 700 "$work/gnupg"
   export GNUPGHOME="$work/gnupg"
+  # Public-key verification does not need an automatically started private-key agent.
+  printf '%s\n' no-autostart > "$GNUPGHOME/gpg.conf"
+  chmod 600 "$GNUPGHOME/gpg.conf"
+  cp -- "$GNUPGHOME/gpg.conf" "$evidence/gpg-public-verification.conf"
   gpg --batch --import "$work/ffmpeg-devel.asc" "$work/libplacebo-maintainer.asc"
   gpg --batch --with-colons --fingerprint "$FFMPEG_KEY" > "$evidence/ffmpeg-key.txt"
   grep -Fq "fpr:::::::::$FFMPEG_KEY:" "$evidence/ffmpeg-key.txt"
