@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **the Goby session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed fresh bootstrap admission, deployed the verified build and verified the actual SQL version; its bootstrap worker is independently closed. Full fixture preparation, capacity/fault acceptance and Phase 3 publication remain pending**.
+Status: **the Goby session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed bootstrap and complete fixture preparation, including actual SQL-version matching. Its preparation controls and collector are independently closed, App memory is restored to 1280 MiB, and PG remains at 512 MiB with both original lifetimes preserved. Compound/rebind candidates remain source-only; capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -12,7 +12,8 @@ verification. The overall three-phase objective remains incomplete.
 Implementation uses the isolated `codex/media-analysis-resilience` checkout.
 Unrelated changes in the original checkout remain outside this increment.
 The current accepted regression/build source is
-`89b667083a1c5608b9d7e554df27de721ac23c51`. Earlier product/build source `1ed1d69`
+`89b667083a1c5608b9d7e554df27de721ac23c51`; worktree checkpoint `2492a34`
+contains documentation changes only. Earlier product/build source `1ed1d69`
 and fixture successor `00af9e4` retain their original remote evidence.
 Exact profiles, contexts and receipts remain bound in the private
 checkpoint and delivery ledger; this document does not itself admit a workload.
@@ -99,8 +100,11 @@ were then retired. Independent closure measured 21,970,751,488 free bytes agains
 the unchanged 21,676,163,072-byte initial requirement. This meets that dated space
 check, not a new workload admission. Scope11 subsequently passed separate fresh
 bootstrap admission and deployment, including the new instance's actual SQL
-version match. Its bootstrap worker is independently closed; preparation remains
-pending and the new Goby/PostgreSQL lifetimes remain active for that next step.
+version match. Complete scope11 fixture preparation has since passed. Its
+collector and preparation controls are independently closed, the shared control
+parent is absent, and App memory is restored to 1280 MiB. PostgreSQL remains at
+512 MiB, with both native lifetimes preserved. The complete capacity journey
+remains pending; the compound candidates and rebind helper are source-only.
 Phase 3 remains unpublished; phases 1 and 2 remain published at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
 
@@ -179,7 +183,7 @@ This is a dated observation. Scope11 subsequently passed fresh resource and
 identity checks during its own bootstrap admission; storage cleanup does not
 accept a capacity journey, overload case or fault/recovery case.
 
-### Scope11 bootstrap and preparation boundary
+### Scope11 bootstrap, complete preparation and control closure
 
 The new `tier10k-11` deployment uses the accepted `89b6670` binary and frontend
 delivery without recompilation. All 14 licensed inputs, totaling 1,646,688,512
@@ -201,11 +205,39 @@ service lifetimes remain active. The failed scope10 database remains separate.
 | Safe actual SQL-version receipt | 1,191 | `7817cee4a97d206f3c74adc636dd3b8b51640273db01fe5e1b813c7785f32dfd` |
 | Independent bootstrap closure | 2,311 | `4a049f24652db5a2844209cdec1a896677a599f0973ddd17afc63f0b3eafe6ee` |
 
-The preparation controls are still unreleased. Next lower App memory through the
-managed property operation, verify Actor access, obtain the fresh SQL-version
-receipt for the same PG lifetime, and dispatch the complete fixture producer.
-After preparation and independent closure, restore App memory before the full
-cold/cached/incremental journey. Deployment readiness is not capacity acceptance.
+Managed App lowering, actual Actor access, the fresh SQL-version gate and the
+complete fixture producer passed. The prepared receipt records
+`prepared=true`, `accepted_capacity=false`, a 9,342-item seed catalog and 658
+pending media files for the 10k tier. It contains 5,780 media paths and the full
+directory stress: 4,200 directories, 336,000 zero-byte nonmedia entries and
+79,695,000 raw entry name bytes. Actual fixture allocation is 1,800,404,992 bytes.
+The 340,273 unique-inode count covers the entire fixture.
+
+The preparation observer completed with `resource_observation_passed=true`,
+no observation gaps and `persistent_observation_loss=false`. The successful
+collector is independently closed;
+all preparation controls and `gobyp3control11.slice` are closed. App memory is
+restored to 1280 MiB and PG remains at 512 MiB. Goby PID `700727`, start ticks
+`11945913`, invocation `a86f0d4ccc854c3594914b5a8ad657fe`, and PostgreSQL PID
+`700614`, start ticks `11945765`, invocation
+`c47a71e7429b489d99e7cdbf8d2b628d`, retain their original lifetimes.
+
+| Scope11 preparation evidence | Bytes | SHA256 |
+| --- | ---: | --- |
+| Prepared fixture | 1,287 | `c823846a1d79930c7bd9f02b0430c6707d421e66211151d12d84465cacc1b485` |
+| Preparation observer | 14,238 | `6cbf270cee7ce8a0128eb8238b7552f802259315893594339454da439054e469` |
+| Preparation collector | 7,115 | `76616eaac2da462b180c436f187a8e82d9fba1744cff39963b8d79be2a50def5` |
+| Independent collector closure | 988 | `7b0b1eb26105f6aa0443ac0223fc786fff31df34f06ae9743fe44159531f70a9` |
+| Safe prepared-context bindings | 1,292 | `a4fe0b76be810f0842f2ac2e1d14222578728277aac2f97a605aded986265aae` |
+| Memory restored | 2,832 | `b84cc59d323ea5870a8c93b422de4e348d1380ae1698a54bbc769e11e82cd3c6` |
+| Independent restoration closure | 1,083 | `169d971c569b89a96e0bdd6152b6643ed1c7377df416aab3f9bde05fc544513e` |
+| Final preparation closure | 2,250 | `99cbafc450deb9b2bb0de9913e7d910e97688738ab477773c612a540816177a8` |
+
+The compound candidates and rebind helper remain source-only. Next bind these
+actual preparation and restoration proofs, complete fresh compound fixture and
+resource admission, and execute the full cold/cached/incremental journey and
+overload profile without changing thresholds. Preparation success does not
+accept capacity, the 100k tier or any of the 28 fault/recovery cases.
 
 | Preservation/cleanup evidence | Bytes | SHA256 |
 | --- | ---: | --- |
@@ -898,11 +930,13 @@ and outputs preserved; closure measured 21,970,751,488 free bytes against the
 unchanged initial requirement of 21,676,163,072 bytes. Preserve all original
 failures, the unrecovered capacity database and every external archive.
 
-Scope11 passed fresh bootstrap admission and deployment, actual SQL-version
-matching and independent bootstrap closure. The new native service lifetimes
-remain active. Complete managed memory lowering, Actor access, the fresh SQL
-version gate and full fixture preparation, then restore the benchmark memory
-limit. Preparation controls remain unreleased; no capacity journey is accepted.
+Scope11 passed bootstrap, actual SQL-version matching and complete fixture
+preparation. Its collector and all preparation controls are independently closed,
+the shared parent is absent, and App1280/PG512 limits are restored with original
+native lifetimes preserved. The compound candidates and rebind helper remain
+source-only. Bind the actual preparation/collector/restoration proofs and
+complete fresh full-fixture, lifetime, storage and memory admission before
+dispatching the complete compound workload. No capacity journey is accepted.
 
 Use the accepted `89b6670` repair/build delivery and preserve the original
 limits for a newly admitted complete 10k compound journey and overload. The

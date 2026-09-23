@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed fresh bootstrap admission, deployment, actual SQL-version matching and independent bootstrap closure. Full fixture preparation, capacity/recovery acceptance and publication remain pending**.
+Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed bootstrap, actual SQL-version matching and complete fixture preparation. Its preparation controls and collector are independently closed; App1280/PG512 limits and original native lifetimes are preserved. Compound/rebind candidates remain source-only; capacity/recovery acceptance and publication remain pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -71,7 +71,8 @@ insufficient-evidence result until a supported content algorithm exists.
 
 Source implementation is integrated. The
 [Phase 3 execution record](../development/media-analysis-resilience-phase3-20260922.md)
-separates the current scope10 failure from earlier attempts and accepted repairs.
+separates the retained scope10 failure from the current scope11 preparation and
+accepted repairs.
 The session JIT repair at `89b667083a1c5608b9d7e554df27de721ac23c51` passed all
 **50 remote regression stages**: 35 ordinary Go packages with **4,279 parent
 passes, zero failures and 18 explicit parent skips**; 24 embedded parents; and
@@ -124,10 +125,19 @@ binaries, module caches, results and logs remain. Cache-cleanup closure measured
 21,970,751,488 free bytes, meeting the unchanged 21,676,163,072-byte initial space
 requirement. It does not establish a new capacity admission. Scope11 subsequently
 passed fresh bootstrap identity/resource admission and deployed the verified
-build. Its actual new SQL version matches the manifest, and the bootstrap worker
-is independently closed. The new Goby/PostgreSQL services remain active; managed
-memory lowering, Actor access, the fresh SQL gate and full fixture preparation
-are next. Preparation controls remain unreleased and capacity remains unaccepted.
+build. Actual SQL-version matching, managed lowering, Actor access and complete
+fixture preparation passed. The fixture records a 9,342-item seed catalog plus
+658 pending media files, 5,780 media paths, all 4,200 stress directories and
+336,000 nonmedia entries. The 340,273 unique inodes cover the entire fixture.
+The observer passed resource observation without persistent loss. The collector
+and all preparation controls are independently closed; the shared parent is
+absent, App memory is restored to 1280 MiB, and PG remains at 512 MiB with both
+original native lifetimes preserved. Final preparation closure is
+`99cbafc450deb9b2bb0de9913e7d910e97688738ab477773c612a540816177a8`.
+Compound candidates and the rebind helper remain source-only. Next bind the
+actual preparation/restoration evidence and fresh fixture/resource admission
+before the complete cold/cached/incremental journey and overload profile.
+Preparation passed with `accepted_capacity=false`; capacity remains unaccepted.
 Phase 3 remains unpublished;
 phases 1 and 2 are merged and pushed at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
@@ -162,4 +172,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both new builds and independent regression closure accepted. Storage retirement and cleanup are closed. Scope11 bootstrap admission, deployment, actual SQL-version matching and independent bootstrap closure passed. Fixture preparation, full capacity journeys, overload and fault/reboot acceptance remain pending | Pending |
+| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both new builds and independent regression closure accepted. Storage retirement and cleanup are closed. Scope11 bootstrap and complete fixture preparation passed; preparation controls are independently closed and App memory restored. Compound/rebind candidates remain source-only; full capacity journeys, overload and fault/reboot acceptance remain pending | Pending |

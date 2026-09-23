@@ -6,13 +6,23 @@
   "published": false,
   "latest_verified_regression": "scope10_repair_regression",
   "current_checkpoint": {
-    "status": "session_jit_repair_regression_passed_storage_closed_scope11_bootstrap_passed_preparation_and_capacity_pending",
+    "status": "session_jit_repair_regression_passed_storage_closed_scope11_preparation_passed_controls_closed_memory_restored_capacity_pending",
     "failed_capacity_record": "capacity_scope10",
     "verified_regression_record": "scope10_repair_regression",
     "additional_observer_candidate_record": "observer_terminal_candidate_tests",
     "cache_retirement_record": "regression_cache_retirement",
     "next_capacity_record": "capacity_scope11",
     "tested_product_revision": "89b667083a1c5608b9d7e554df27de721ac23c51",
+    "documentation_checkpoint_revision": "2492a3480f6c961ae582880f2028f400abe5abd8",
+    "documentation_checkpoint_is_docs_only": true,
+    "scope11_preparation_passed": true,
+    "scope11_preparation_controls_closed": true,
+    "scope11_preparation_control_parent_absent": true,
+    "scope11_memory_restored": true,
+    "scope11_native_lifetimes_preserved": true,
+    "scope11_compound_candidates_status": "source_only",
+    "scope11_rebind_helper_status": "source_only",
+    "next_action": "Bind actual scope11 preparation, collector and restoration proofs to the source-only compound/rebind candidates, complete fresh full-fixture and resource admission, then run the complete cold/cached/incremental journey and overload profile at unchanged thresholds.",
     "failed_scope10_four_tree_census_complete": true,
     "failed_scope10_four_tree_archive_complete": true,
     "failed_scope10_four_tree_external_readback_complete": true,
@@ -1888,7 +1898,7 @@
     "whole_phase_accepted": false
   },
   "capacity_scope11": {
-    "status": "bootstrap_admitted_deployed_sql_version_verified_independently_closed_preparation_pending",
+    "status": "complete_fixture_preparation_passed_controls_independently_closed_memory_restored_capacity_pending",
     "product_build_revision": "89b667083a1c5608b9d7e554df27de721ac23c51",
     "bootstrap_source_prepared": true,
     "preparation_candidate_sources_prepared": true,
@@ -1904,8 +1914,100 @@
     "sql_manifest_version_verified": true,
     "goby_memory_max_bytes": 1342177280,
     "postgres_memory_max_bytes": 536870912,
-    "preparation_controls_released": false,
-    "fixture_prepared": false,
+    "preparation_controls_released": true,
+    "preparation_released_and_executed": true,
+    "fixture_prepared": true,
+    "preparation_passed": true,
+    "preparation_accepted_capacity": false,
+    "preparation_collector_independently_closed": true,
+    "all_preparation_controls_closed": true,
+    "preparation_control_parent": "gobyp3control11.slice",
+    "preparation_control_parent_original_identity": [
+      27,
+      456973
+    ],
+    "preparation_control_parent_absent": true,
+    "memory_restored": true,
+    "native_lifetimes_preserved": true,
+    "native_services": {
+      "goby": {
+        "unit": "goby-phase3-tier10k-11-goby-normal.service",
+        "pid": 700727,
+        "start_ticks": 11945913,
+        "invocation_id": "a86f0d4ccc854c3594914b5a8ad657fe",
+        "uid": 61246,
+        "memory_max_bytes": 1342177280
+      },
+      "postgres": {
+        "unit": "goby-phase3-tier10k-11-postgres.service",
+        "pid": 700614,
+        "start_ticks": 11945765,
+        "invocation_id": "c47a71e7429b489d99e7cdbf8d2b628d",
+        "uid": 61248,
+        "memory_max_bytes": 536870912
+      }
+    },
+    "prepared_fixture": {
+      "tier": 10000,
+      "seed_catalog_count": 9342,
+      "pending_media_files": 658,
+      "media_paths": 5780,
+      "generated_distinct_templates": 3,
+      "directory_stress": {
+        "directories": 4200,
+        "zero_byte_nonmedia_entries": 336000,
+        "raw_entry_name_bytes": 79695000
+      },
+      "actual_fixture_allocated_bytes": 1800404992,
+      "actual_fixture_unique_inodes": 340273,
+      "unique_inode_count_scope": "entire_fixture"
+    },
+    "preparation_observer": {
+      "complete": true,
+      "resource_observation_passed": true,
+      "persistent_observation_loss": false,
+      "observation_gap_count": 0,
+      "result_bytes": 14238,
+      "result_sha256": "6cbf270cee7ce8a0128eb8238b7552f802259315893594339454da439054e469"
+    },
+    "preparation_evidence": {
+      "prepared": {
+        "bytes": 1287,
+        "sha256": "c823846a1d79930c7bd9f02b0430c6707d421e66211151d12d84465cacc1b485"
+      },
+      "collector": {
+        "bytes": 7115,
+        "sha256": "76616eaac2da462b180c436f187a8e82d9fba1744cff39963b8d79be2a50def5"
+      },
+      "collector_independent_closure": {
+        "bytes": 988,
+        "sha256": "7b0b1eb26105f6aa0443ac0223fc786fff31df34f06ae9743fe44159531f70a9"
+      },
+      "prepared_context_bindings": {
+        "bytes": 1292,
+        "sha256": "a4fe0b76be810f0842f2ac2e1d14222578728277aac2f97a605aded986265aae"
+      },
+      "private_context": {
+        "bytes": 16729,
+        "sha256": "67e77dbf23fa327c8015b4fd8ae01540e193a92e35416dc69c7b55240310561b",
+        "body_exported": false
+      },
+      "memory_restored": {
+        "bytes": 2832,
+        "sha256": "b84cc59d323ea5870a8c93b422de4e348d1380ae1698a54bbc769e11e82cd3c6"
+      },
+      "restoration_independent_closure": {
+        "bytes": 1083,
+        "sha256": "169d971c569b89a96e0bdd6152b6643ed1c7377df416aab3f9bde05fc544513e"
+      },
+      "final_preparation_closure": {
+        "bytes": 2250,
+        "sha256": "99cbafc450deb9b2bb0de9913e7d910e97688738ab477773c612a540816177a8"
+      }
+    },
+    "compound_candidates_status": "source_only",
+    "rebind_helper_status": "source_only",
+    "compound_dispatched": false,
     "full_workload_admission_complete": false,
     "profile_sha256": "0619eae543c0a5174ab23aaad7058c66015d9a0b9518c405aad69e24d4c12676",
     "workload_manifest_sha256": "e089287fd7b9a21e23d0303dc6fa075a9bd75e19596ed1018012f5bc98830e93",
@@ -1918,7 +2020,7 @@
     "complete_100k_journey_accepted": false,
     "overload_accepted": false,
     "fault_recovery_cases_accepted": 0,
-    "next_action": "Perform managed App memory lowering, verify Actor access, obtain the fresh SQL-version gate for the same PG lifetime, and prepare the complete 10k fixture. Restore App memory after independent preparation closure before the full capacity journey. Preserve the failed scope10 PostgreSQL tree and all external archives."
+    "next_action": "Bind the actual prepared/context, collector, memory-restoration and final-closure evidence to the source-only compound/rebind candidates. Complete fresh full-fixture, native-lifetime, storage and memory admission before the complete cold/cached/incremental journey and overload profile. Preserve the failed scope10 PostgreSQL tree and all external archives; preparation is not capacity acceptance."
   },
   "observer_terminal_candidate_tests": {
     "status": "isolated_remote_tests_passed_and_closed_real_observer_deployment_pending",

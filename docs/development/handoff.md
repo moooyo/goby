@@ -12,7 +12,11 @@ unrelated changes in the original `D:/Code/goby` checkout.
 Current Phase 3 checkpoint: the Goby session JIT repair at
 `89b667083a1c5608b9d7e554df27de721ac23c51` passed all **50 remote regression
 stages**, both new Go builds and independent resource closure. Its real capacity
-repeat remains pending. The earlier scope10 generation
+repeat remains pending. Scope11's complete fixture preparation has passed;
+its collector and all preparation controls are independently closed, and App
+memory is restored to 1280 MiB with PostgreSQL still at 512 MiB. The tested
+product remains `89b6670`; subsequent documentation commits do not identify
+new builds. The earlier scope10 generation
 `phase3-tier10k-10-compound-02` passed actual admission and entered cold business
 concurrency, then failed at **2026-09-23 02:41:37 UTC** when the **512 MiB
 PostgreSQL cgroup exhausted memory**. The kernel killed catalog-owner backend
@@ -94,11 +98,24 @@ deployed the verified `89b6670` delivery. Its new Goby and PostgreSQL lifetimes
 are active at 1280 MiB and 512 MiB respectively. The new PostgreSQL instance's
 actual SQL `server_version` matches the manifest, and the successful bootstrap
 worker is independently closed. The complete 14-file licensed corpus was read
-back and the frozen fixture helpers were published. Preparation controls remain
-unreleased: next perform managed App lowering, Actor access, the fresh SQL version
-gate and full 10k fixture preparation, then restore the benchmark memory limit
-before the complete capacity journey. Read the
-[Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private
+back and the frozen fixture helpers were published. Managed App lowering, Actor
+access, the fresh SQL version gate and complete fixture preparation passed. The fixture has a
+9,342-item seed catalog plus 658 pending media files for the 10k tier, 5,780 media
+paths, 4,200 stress directories, 336,000 nonmedia entries and 79,695,000 raw entry
+name bytes. Its 1,800,404,992 allocated bytes and 340,273 unique inodes cover the
+entire fixture. The observer completed with resource observation passed, no
+observation gaps and no persistent observation loss.
+
+The collector, restoration worker and all preparation controls are closed;
+`gobyp3control11.slice` is absent. Goby PID `700727` and PostgreSQL PID `700614`
+retain their original lifetimes at 1280 MiB and 512 MiB. Final preparation
+closure SHA256 is `99cbafc450deb9b2bb0de9913e7d910e97688738ab477773c612a540816177a8`.
+The compound candidates and rebind helper remain source-only. Next bind the
+actual preparation/closure/restoration evidence, complete fresh compound
+fixture/resource admission, and run the full cold/cached/incremental journey
+and overload profile at the unchanged thresholds. Preparation passed with
+`accepted_capacity=false`; no 10k/100k journey or fault/recovery case is accepted.
+Read the [Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private
 checkpoint for exact evidence. Phase 3 remains unpublished. Phases 1 and 2 are
 merged and pushed on `main` at `e41febbb36687d04340f5c651f4bf1bf376a4310`.
 
