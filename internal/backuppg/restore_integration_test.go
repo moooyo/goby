@@ -62,16 +62,8 @@ func recoveryFixtureAtVersion(t *testing.T, version int64) (context.Context, *pg
 		config.MaxConns = 4
 		config.ConnConfig.RuntimeParams["search_path"] = schema
 	}
-	source, err := pgxpool.NewWithConfig(ctx, sourceConfig)
-	if err != nil {
-		t.Fatal("open source fixture database")
-	}
-	t.Cleanup(source.Close)
-	target, err := pgxpool.NewWithConfig(ctx, targetConfig)
-	if err != nil {
-		t.Fatal("open target fixture database")
-	}
-	t.Cleanup(target.Close)
+	source := openBackupFixturePool(t, ctx, sourceConfig, sourceURL)
+	target := openBackupFixturePool(t, ctx, targetConfig, targetURL)
 	for _, pool := range []*pgxpool.Pool{source, target} {
 		if _, err := pool.Exec(ctx, `CREATE SCHEMA `+pgx.Identifier{schema}.Sanitize()); err != nil {
 			t.Fatal("create independently owned test schema")
@@ -115,6 +107,32 @@ func recoveryFixtureAtVersion(t *testing.T, version int64) (context.Context, *pg
 		t.Fatal("explicit PostgreSQL 17 tool paths are required")
 	}
 	return ctx, source, target, options
+}
+
+func openBackupFixturePool(t *testing.T, ctx context.Context, config *pgxpool.Config, rawURL string) *pgxpool.Pool {
+	t.Helper()
+	// Match the application's typed query policy without putting pgx-only
+	// parameters into the original URI also consumed by libpq.
+	config = config.Copy()
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheDescribe
+	if config.ConnConfig.DescriptionCacheCapacity <= 0 {
+		t.Fatal("backup fixture requires an enabled description cache")
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		t.Fatal("open the owned backup fixture pool")
+	}
+	t.Cleanup(pool.Close)
+	connection, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal("acquire the backup fixture's physical session")
+	}
+	defer connection.Release()
+	actual := connection.Conn().Config()
+	if pool.Config().ConnString() != rawURL || actual.ConnString() != rawURL || actual.DefaultQueryExecMode != pgx.QueryExecModeCacheDescribe {
+		t.Fatal("backup fixture changed its source URI or physical query mode")
+	}
+	return pool
 }
 
 func sourceArchive(t *testing.T, ctx context.Context, source *pgxpool.Pool, options Options) (*os.File, backupformat.SourceFacts) {

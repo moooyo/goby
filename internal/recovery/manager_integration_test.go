@@ -452,6 +452,7 @@ func newManagerIntegrationFixture(t *testing.T) *managerIntegrationFixture {
 		}
 	})
 	var cleanupIdentities [2]backuppg.RecoveryIdentity
+	urls := []string{sourceURL, targetURL}
 	for index, poolConfig := range []*pgxpool.Config{sourceConfig, targetConfig} {
 		poolConfig.MaxConns = 4
 		if poolConfig.ConnConfig.RuntimeParams == nil {
@@ -459,11 +460,7 @@ func newManagerIntegrationFixture(t *testing.T) *managerIntegrationFixture {
 		}
 		poolConfig.ConnConfig.RuntimeParams["search_path"] = "public"
 		poolConfig.ConnConfig.RuntimeParams["timezone"] = "UTC"
-		pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
-		if err != nil {
-			t.Fatal("open dedicated manager fixture database")
-		}
-		t.Cleanup(pool.Close)
+		pool := openRecoveryFixturePool(t, ctx, poolConfig, urls[index])
 		inspectionTx, err := pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
 		if err != nil {
 			t.Fatal("begin dedicated manager fixture ownership inspection")

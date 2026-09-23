@@ -91,6 +91,7 @@ func newEngineRecoveryFixture(t *testing.T) *engineRecoveryFixture {
 	}
 	schema := "goby_recovery_test_" + recoveryEngineTestID(t)
 	fixture := &engineRecoveryFixture{ctx: ctx, schema: schema}
+	urls := []string{sourceURL, targetURL}
 	for index, poolConfig := range []*pgxpool.Config{sourceConfig, targetConfig} {
 		poolConfig.MaxConns = 6
 		if poolConfig.ConnConfig.RuntimeParams == nil {
@@ -98,11 +99,7 @@ func newEngineRecoveryFixture(t *testing.T) *engineRecoveryFixture {
 		}
 		poolConfig.ConnConfig.RuntimeParams["search_path"] = schema
 		poolConfig.ConnConfig.RuntimeParams["timezone"] = "UTC"
-		pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
-		if err != nil {
-			t.Fatal("open dedicated fixture database")
-		}
-		t.Cleanup(pool.Close)
+		pool := openRecoveryFixturePool(t, ctx, poolConfig, urls[index])
 		var unsafe bool
 		if err := pool.QueryRow(ctx, `SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls
 			FROM pg_catalog.pg_roles WHERE rolname=current_user`).Scan(&unsafe); err != nil || unsafe {
@@ -173,6 +170,32 @@ func newEngineRecoveryFixture(t *testing.T) *engineRecoveryFixture {
 	}
 	fixture.engine.options.Schema = schema
 	return fixture
+}
+
+func openRecoveryFixturePool(t *testing.T, ctx context.Context, config *pgxpool.Config, rawURL string) *pgxpool.Pool {
+	t.Helper()
+	// Keep the trusted source URI intact for backup commands while exercising
+	// the same typed query mode as application-created physical connections.
+	config = config.Copy()
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheDescribe
+	if config.ConnConfig.DescriptionCacheCapacity <= 0 {
+		t.Fatal("recovery fixture requires an enabled description cache")
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		t.Fatal("open the owned recovery fixture pool")
+	}
+	t.Cleanup(pool.Close)
+	connection, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal("acquire the recovery fixture's physical session")
+	}
+	defer connection.Release()
+	actual := connection.Conn().Config()
+	if pool.Config().ConnString() != rawURL || actual.ConnString() != rawURL || actual.DefaultQueryExecMode != pgx.QueryExecModeCacheDescribe {
+		t.Fatal("recovery fixture changed its source URI or physical query mode")
+	}
+	return pool
 }
 
 func (f *engineRecoveryFixture) seed(t *testing.T) {

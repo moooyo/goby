@@ -978,11 +978,7 @@ func newRecoveryStoreFixture(t *testing.T) *recoveryStoreFixture {
 		}
 		application := "goby_recoverydb_" + f.suffix + "_" + string(slot)
 		config.ConnConfig.RuntimeParams["application_name"] = application
-		pool, err := pgxpool.NewWithConfig(ctx, config)
-		if err != nil {
-			t.Fatal("open an owned recovery fixture pool")
-		}
-		t.Cleanup(pool.Close)
+		pool := openRecoveryStoreFixturePool(t, ctx, config, urls[index])
 		postgres := options
 		postgres.SourceURL = urls[index]
 		entry := &recoveryFixtureDatabase{pool: pool, database: config.ConnConfig.Database, role: config.ConnConfig.User, application: application,
@@ -1003,6 +999,32 @@ func newRecoveryStoreFixture(t *testing.T) *recoveryStoreFixture {
 	f.reacquire(t, f.source)
 	f.reacquire(t, f.target)
 	return f
+}
+
+func openRecoveryStoreFixturePool(t *testing.T, ctx context.Context, config *pgxpool.Config, rawURL string) *pgxpool.Pool {
+	t.Helper()
+	// URI and transport validation above remains authoritative. Set the pgx
+	// execution policy as a field so libpq receives the original validated URI.
+	config = config.Copy()
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheDescribe
+	if config.ConnConfig.DescriptionCacheCapacity <= 0 {
+		t.Fatal("recovery store fixture requires an enabled description cache")
+	}
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		t.Fatal("open the owned recovery store fixture pool")
+	}
+	t.Cleanup(pool.Close)
+	connection, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal("acquire the recovery store fixture's physical session")
+	}
+	defer connection.Release()
+	actual := connection.Conn().Config()
+	if pool.Config().ConnString() != rawURL || actual.ConnString() != rawURL || actual.DefaultQueryExecMode != pgx.QueryExecModeCacheDescribe {
+		t.Fatal("recovery store fixture changed its source URI or physical query mode")
+	}
+	return pool
 }
 
 func (f *recoveryStoreFixture) preflight(t *testing.T, entry *recoveryFixtureDatabase) {
