@@ -1,6 +1,35 @@
-# Goby handoff — September 23, 2026
+# Goby handoff - September 24, 2026
 
 ## Resume here
+
+The user requested a checkpoint merge/push and a pause for continuation in another
+session. Product commit `e257694646b74f0d6e50d1d7196423a93e743e97` is published on
+`main`. Phase 3 large-library concurrency and fault-recovery acceptance remains
+open. Phases 1 and 2 retain their recorded acceptance.
+
+Read the [September 24 session handoff](session-handoff-20260924-media-analysis-resilience.md)
+first. It records the code, exact verification scope, unresolved transcode
+failure, current idle scope13 services, failed preparation-controller attempt,
+and the prepared source-only successor. The 63 selected Go tests, 80 Python
+tests and both current builds passed; they do not establish complete capacity
+or fault-matrix acceptance.
+
+The latest operational identities and release pins are in the local private
+`D:/Code/goby/.git/media-analysis-resilience-20260920/phase3/execution-current-20260922.md`.
+Reobserve those handles before resuming. No Actor workload is active; scope13
+App/PG are retained idle, with App temporarily at 512 MiB until preparation
+closure and restoration to 1280 MiB. Do not replay failed controllers or old
+failed PostgreSQL generations. All 19 unrelated dirty paths in `D:/Code/goby`
+remain outside this delivery.
+
+Verification remains remote-only. `ui-ux-pro-max` remains disabled. Resume the
+approved full scope from this checkpoint; the publication is not Phase 3 sign-off.
+
+## Historical September 23 checkpoint
+
+The following records are retained history. Their then-current workers, source
+revisions, publication status and next steps are superseded by the September 24
+handoff above.
 
 The active objective is the approved [three-phase plan](../planning/media-analysis-resilience-plan-20260920.md):
 complete each phase's code, run consolidated verification remotely, then merge

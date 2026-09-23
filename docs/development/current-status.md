@@ -42,51 +42,35 @@ review. Client evidence uses the named Video.js/BIF-plugin/Goby adapter. Source
 replacement, revocation, migration and backup/recovery retain their independent
 package evidence rather than being attributed to the browser journey.
 
-Phase 3 large-library concurrency, storage faults and isolated-guest reboot/reset
-sources are integrated; consolidated verification is in progress and publication remains pending. The
-[Phase 3 execution record](media-analysis-resilience-phase3-20260922.md) tracks
-the written PostgreSQL temporary Seen staging, disk spool, SQL paging,
-configuration/store integration and runtime-resource observation sources.
-Workload fixtures, runtime setup, recovery oracle and actual HTTP overload
-sources are integrated; immutable release values still require binding.
-VM106 and its dependencies are provisioned; the failed first clone is preserved
-separately. Candidate `ad02b12` passed 58 Python tests, the frontend and both
-application builds, and 141 Go parents across six complete package scopes
-(including one package with no tests). The next backup package failed during
-PostgreSQL's 384 MiB cgroup OOM; all original failures and closed processes are
-recorded in the [results ledger](media-analysis-resilience-phase3-results-20260922.json).
-A resource successor finished without replaying passed scopes. Its complete
-backup package, including the maximum-artwork case, and recovery scopes have
-passed. Library completed with 944 passing parents, three failed parents and
-one original opt-in mount helper skip; server tests passed. The library failures
-cover staged reconciliation latency, restored directory identity and symlink
-records. Settings and task fixtures added two failed parents, for five in the
-complete run. Repair source `1ed1d69` has now passed the complete affected
-library/settings/tasks/server/command scopes, embedded command tests and fresh
-frontend/ordinary/embedded builds. The composed regression has 4,263 ordinary
-Go parent passes, zero failures and 18 explicit skips, plus 24 embedded command
-passes and 65 composed Python tests. Thirty unchanged Go package scopes retain
-their original evidence; they are not new executions. The worker, observer,
-PostgreSQL and closure helper are independently closed; PostgreSQL stopped
-cleanly and all ten databases and original evidence remain retained.
-The after-compound preparation suite passed ten tests; its actual handoff still
-requires an accepted capacity run. The preparation-only build-reuse bridge was
-not used for the new production binaries. The licensed corpus transfer is
-accepted. The first actual 10k fixture preparation was OOM-killed at its 384 MiB
-producer limit; kernel directory/inode slab dominated the charge. It did not
-produce a prepared context or start the compound workload. The producer,
-observer, Goby and PostgreSQL are now closed, with clean database shutdown and
-all data and original evidence retained. Full external archival passed.
-Fixture successor `00af9e4` passed its complete 15-test preparation suite; the
-latest Python composition is 70 passes after replacing the old ten-test scope.
-A fresh preparation needs a separately
-observed memory envelope. Both 10k/100k mixed workloads and all 28 fault/recovery
-cases remain unrun; regression success does not establish their capacity or
-recovery claims.
-Tests/builds/runtime probes remain
-remote-only, `ui-ux-pro-max` remains disabled, and unrelated changes in the
-original checkout are preserved. Earlier completed increments below do not
-satisfy this Phase 3 scope.
+Phase 3 implementation is published as a checkpoint at `e257694`, following the
+user's September 24 request to merge/push current work and resume in another
+session. Full 10k/100k concurrency, overload and the 28 fault/recovery cases
+remain unaccepted. The objective is paused for handoff.
+
+The last complete source-equivalent regression/build composition is `3832a4d`:
+35 ordinary Go packages, 4,282 parent passes, zero failures and 18 explicit skips.
+The current `e257694` source separately passed 45 diagnostics-package parents,
+18 selected transcode parents with real media/seek coverage, 80 preparation and
+workload Python tests, and both ordinary and embedded application builds.
+The latest focused run had no failed or skipped tests and its worker is closed.
+These source scopes remain distinct; a complete final regression is still due.
+
+The last actual scope12 compound run failed during cold execution with a
+`process_progress` transcode interruption, excessive remux-start latency and an
+incorrectly timed CPU sample. Distinct native client sessions and aligned CPU
+counter timestamps are implemented and tested. New bounded parser diagnostics
+are wired through the real logging handler; the original intermittent failure's
+cause is still unresolved. Scope12 is cleanly stopped with evidence retained.
+
+The authorized VM106 disk/RAM expansion is complete. Fresh scope13 App/PG remain
+idle after successful provisioning, memory lowering and access admission. Its
+first preparation observer refused startup because its `READY` release gate was
+left false. The Actor never started, and a new control attempt is prepared as
+unreleased source. See the [September 24 handoff](session-handoff-20260924-media-analysis-resilience.md)
+for exact resumption steps and the private evidence locator.
+
+Tests, builds and runtime probes remain remote-only. `ui-ux-pro-max` remains
+disabled, and the original checkout's unrelated modifications are preserved.
 
 ## Completed selected compatibility increment
 

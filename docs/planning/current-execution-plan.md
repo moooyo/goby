@@ -1,53 +1,31 @@
 # Current execution plan
 
-## Active media-analysis and resilience increment: September 20, 2026
+## Paused media-analysis and resilience increment: September 24, 2026
 
-The user approved the [three-phase execution plan](media-analysis-resilience-plan-20260920.md):
-compatibility API long tail; automatic intro analysis with BIF previews; and
-large-library concurrency with storage faults and host restart recovery.
-Implementation is active on `codex/media-analysis-resilience` from `2fd9182`.
-Complete each phase's code before consolidated remote verification, then merge
-the verified delivery to `main` and push. Local verification is not authorized
-for this increment. Dedicated guest reboot coverage is required; shared hosts
-remain outside reboot scope. Phase 1 is verified and resources are closed;
-delivery commit `59ce0747a5b6947a088fe9eec22a8fa72d77a183` was fast-forwarded
-to `main`, pushed, and read back from `origin/main` on September 21, 2026. Its
-[execution record](../development/media-analysis-resilience-phase1-20260920.md)
-binds the composed regression, complete 24-stage actual browser, both application
-builds and retained failures to their actual sources. Phase 2 is also implemented,
-verified and operationally closed within its declared scope; its main publication
-is complete at `feb5004`, with exact remote readback on September 22, 2026.
-The [Phase 2 results](../development/media-analysis-resilience-phase2-results-20260922.json)
-bind the full corpus/client/lifecycle run and resource closure. Phase 3
-source implementation is integrated; verification is active and publication remains pending. Its
-[execution record](../development/media-analysis-resilience-phase3-20260922.md)
-tracks the written Seen staging, spool, SQL paging, configuration/store and
-resource-observation sources. Fixture/runtime/oracle and overload sources are
-integrated; exact release values are still being bound.
-VM106 and dependencies are provisioned, with the first bootstrap failure retained.
-The first admitted regression yielded passing Python/build scopes and six
-complete Go package scopes, then stopped after PostgreSQL exhausted its 384 MiB
-limit in the maximum-artwork backup case. A separately recorded successor
-preserves those results and covers the failed/unstarted scopes. That successor
-completed; its three library and two fixture parent failures were repaired and
-verified at `1ed1d69`. Fresh frontend/ordinary/embedded builds and complete
-affected scopes passed, with independent resource closure and ten databases
-retained. The subsequent lock-inversion repair passed regression and builds at
-`5fb968a`. Its source-bound composition has 4,264 ordinary Go parent passes,
-18 explicit skips, 24 embedded passes and 73 Python tests, without double
-counting retained scopes. Original failures remain separate. Scope07 preparation
-completed, but the actual 10k cold compound workload failed on catalog latency
-and remux seek, with playback admission also delayed by the shared store mutex.
-Query, remux and admission repairs and driver assertions are verified at
-`55d5069`: all 35 ordinary Go packages completed with 4,275 parent passes and
-18 explicit skips, embedded tests passed 24, and eight Python scripts passed 84.
-Focused/race checks and both new builds passed; independent resource closure
-retained all 19 databases. Original scope07 failures are externally archived.
-Fresh scope08 remains unreleased pending its original storage gate and actual
-runtime bindings. No complete capacity or fault profile is accepted, and the
-full approved Phase 3 scope remains required.
+The approved [three-phase plan](media-analysis-resilience-plan-20260920.md) retains
+its complete scope: compatibility API long tail; automatic intro analysis with
+BIF previews; and large-library concurrency, storage faults and host recovery.
+Phases 1 and 2 are accepted and published within their recorded boundaries.
+
+At the user's September 24 closeout request, the current Phase 3 code was merged
+and pushed as checkpoint `e257694`. The objective is paused for continuation in
+another session. Capacity and recovery acceptance remains open; publication does
+not replace the required complete 10k/100k workloads, overload coverage, 28 fault
+cases, final regression and evidence closeout.
+
+Start with the [current session handoff](../development/session-handoff-20260924-media-analysis-resilience.md).
+Current selected Go/Python checks and both builds passed. The earlier real 10k
+compound run failed; its stream interruption requires further diagnosis. A fresh
+scope13 runtime is idle and the Actor has not started. Its failed observer
+release attempt is preserved, with an unreleased successor ready for binding.
+
+Continue from the current native state and exact private pins. Do not replay
+consumed controllers, restart old failed databases or relax acceptance limits.
+Verification remains remote-only on the owned VM106 environment, with local
+PowerShell used for Git/source operations. Preserve unrelated changes in the
+original checkout and keep `ui-ux-pro-max` disabled.
+
 Historical completed increments below remain closed.
-
 ## Completed selected increment: September 20, 2026
 
 The user selected the remaining account/playback, subtitle, artwork, music,
