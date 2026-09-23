@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. The original scope10 OOM failure is closed and retained; its selected failed-state trees have complete external archival/readback. Exact-copy retirement, external preservation of the clean 33-database regression cluster and a fresh capacity journey remain pending. Full capacity/recovery acceptance and publication remain pending**.
+Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed fresh bootstrap admission, deployment, actual SQL-version matching and independent bootstrap closure. Full fixture preparation, capacity/recovery acceptance and publication remain pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -82,7 +82,8 @@ only after comparing input and artifact hashes. The observer passed with four
 transient PostgreSQL-file `du` gaps, no persistent loss and zero OOM events;
 missing measurements were not zero-filled. Worker, observer, PostgreSQL and
 collector are independently closed. This regression cluster shut down cleanly
-and retains 33 custom databases: the restored 26 plus seven new databases.
+with 33 custom databases: the restored 26 plus seven new databases. Its complete
+physical cluster is now preserved externally after exact guest-copy retirement.
 It is separate from the failed capacity cluster below. Scope09's failed fixtures
 and the original 26-database regression cluster retain completed external
 archival/readback and exact redundant guest-copy retirement.
@@ -109,13 +110,25 @@ candidate passed 15 isolated Python tests on VM106 and closed its worker, but
 has not been deployed as the real observer or tested for actual systemd
 propagation. No full 10k/100k journey, overload profile or any of the 28
 fault/recovery cases is accepted.
-The census and external preservation of four selected scope10 failed-state
-trees are complete, including all 350,821 members and independent archival
-control closure. Original guest trees remain pending exact-copy retirement.
-The separate clean 33-database regression cluster has a complete guest archive
-and closed worker; its external preservation remains pending. Complete those
-storage steps and fresh space/workload admission before the next capacity
-journey. Phase 3 remains unpublished;
+External preservation and exact guest-tree plus redundant tar/manifest
+retirement are complete for both the four selected scope10 failed-state trees
+and the separate clean 33-database regression cluster. Full readback covered
+350,821 failed-state members and 13,747 regression-cluster members. All archival,
+transfer, readback, retirement and admission controls are independently closed;
+each PVE archive retains all four files. The failed scope10 PostgreSQL tree and
+its original failure state remain untouched and unrestarted.
+
+Only the per-run `GOCACHE` directories for `regression-scope09repair01` and
+`regression-scope10repair01` were additionally removed. Source, frontend,
+binaries, module caches, results and logs remain. Cache-cleanup closure measured
+21,970,751,488 free bytes, meeting the unchanged 21,676,163,072-byte initial space
+requirement. It does not establish a new capacity admission. Scope11 subsequently
+passed fresh bootstrap identity/resource admission and deployed the verified
+build. Its actual new SQL version matches the manifest, and the bootstrap worker
+is independently closed. The new Goby/PostgreSQL services remain active; managed
+memory lowering, Actor access, the fresh SQL gate and full fixture preparation
+are next. Preparation controls remain unreleased and capacity remains unaccepted.
+Phase 3 remains unpublished;
 phases 1 and 2 are merged and pushed at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
 
@@ -149,4 +162,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both new builds and independent regression closure accepted. Selected failed-state trees have complete external preservation; the clean 33-database regression cluster has a complete guest archive. Storage retirement, regression-cluster external preservation, a fresh complete capacity journey, overload and fault/reboot acceptance remain pending | Pending |
+| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both new builds and independent regression closure accepted. Storage retirement and cleanup are closed. Scope11 bootstrap admission, deployment, actual SQL-version matching and independent bootstrap closure passed. Fixture preparation, full capacity journeys, overload and fault/reboot acceptance remain pending | Pending |

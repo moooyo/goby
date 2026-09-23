@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **the Goby session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. Scope10 compound02's original OOM failure remains closed and retained; its four selected failed-state trees have complete external archival/readback. Exact-copy retirement, external preservation of the clean 33-database regression cluster and a fresh capacity journey remain pending. Full capacity/fault acceptance and Phase 3 publication remain pending**.
+Status: **the Goby session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. External preservation, exact guest-copy retirement and two-cache cleanup are closed. Scope11 passed fresh bootstrap admission, deployed the verified build and verified the actual SQL version; its bootstrap worker is independently closed. Full fixture preparation, capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -21,11 +21,13 @@ checkpoint and delivery ledger; this document does not itself admit a workload.
 
 The session JIT repair at `89b6670` passed the complete 50-stage remote
 regression and independent closure detailed below. Its restored regression
-cluster shut down cleanly with 33 custom databases retained. That cluster is
+cluster shut down cleanly with 33 custom databases, all now preserved in the
+complete external archive after exact guest-tree retirement. That cluster is
 separate from the failed scope10 capacity cluster, whose original OOM and
 unrecovered database state remain preserved. No fresh capacity journey is yet
 accepted. The four selected failed-state trees have complete census and external
-archive/readback; their original guest copies have not been retired.
+archive/readback, followed by exact guest-tree and redundant guest tar/manifest
+retirement. Their failed PostgreSQL tree was not selected or restarted.
 
 Scope10 preparation, memory restoration and execution rebind passed. The first
 compound generation failed admission because the PostgreSQL version banner and
@@ -87,12 +89,18 @@ establish that JIT was the only OOM cause. The prior clean regression archive
 was restored for that separate regression; the failed capacity database remains
 unmodified. Census and external preservation of the four selected scope10
 failed-state trees are complete: 350,821 entries and 1,788,288,743 logical bytes
-passed full member readback. Archive, transfer and external readback controls
-are independently closed. The separate clean 33-database regression cluster
-has a completed guest archive containing 13,747 entries and 3,044,606,975 logical
-bytes, with its archive worker independently closed. Its external copy and
-readback remain pending; no original tree from either archive has been retired.
-Fresh disk admission must use measured physical free space after retirement.
+passed full member readback. The separate clean 33-database regression cluster
+also passed complete external readback of 13,747 entries and 3,044,606,975 logical
+bytes. Both scopes completed exact guest-tree retirement and subsequent removal
+of only their redundant guest tar/manifest files. All archival, transfer,
+readback, retirement and admission controls are independently closed, and both
+PVE archives retain all four files. Two reproducible per-run Go build caches
+were then retired. Independent closure measured 21,970,751,488 free bytes against
+the unchanged 21,676,163,072-byte initial requirement. This meets that dated space
+check, not a new workload admission. Scope11 subsequently passed separate fresh
+bootstrap admission and deployment, including the new instance's actual SQL
+version match. Its bootstrap worker is independently closed; preparation remains
+pending and the new Goby/PostgreSQL lifetimes remain active for that next step.
 Phase 3 remains unpublished; phases 1 and 2 remain published at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
 
@@ -120,9 +128,10 @@ The observer passed with **zero OOM events**. Four transient `du` measurements
 failed when PostgreSQL files disappeared during measurement; observation
 resumed without persistent loss, and missing values were not filled with zero.
 Worker `646051`, observer `646042`, PostgreSQL `645634` and collector `697473`
-are independently closed. PostgreSQL shut down cleanly, retaining **33 custom
+are independently closed. PostgreSQL shut down cleanly with **33 custom
 databases**, comprising the restored original 26 and seven new regression
-databases. This does not describe or recover the separate scope10 OOM cluster,
+databases; its complete cluster is now retained externally after the exact guest
+copy was retired. This does not describe or recover the separate scope10 OOM cluster,
 which remains unrestarted with control state `in production`, unknown durable
 job state and no fixture rollback.
 
@@ -137,6 +146,77 @@ The private evidence directory is
 | Independent closure | 5,330 | `dbbc033d4dca327e5812db093bf748f16686424c989c0e9fea4c5ecbc758d9c1` |
 | Build delivery | 11,804 | `bc30ec01e6a88afd5a638908e82b14a777dccba77b4722d87b9011f6e4646bf2` |
 | Explicit skip evidence | 8,002 | `90a8d40cfb0b011a2bdd50666c6caa6bff95f88109925c10439e86749c71f80b` |
+
+### Completed preservation, exact retirement and cache cleanup
+
+The clean after89 regression archive passed full member content and metadata
+readback through gzip EOF on PVE. Its complete physical cluster, including all
+33 custom databases and default databases, remains in the four-file external
+archive. Only `/var/lib/goby-phase3/regression-01/postgres` and then the guest
+archive's `sources.tar.gz` and `members.jsonl` were retired. Both retirement
+workers and their descendants are independently closed.
+
+The failed scope10 archive likewise retains all four external files. Exact
+retirement selected only its fixture and `actor-private/preparation-01`,
+`actor-private/compound-01`, and `actor-private/compound-02` trees, followed by
+its redundant guest tar/manifest. All retirement/admission controls are closed.
+The original failed PostgreSQL data, WAL and control files remain intact;
+control state is still `in production`, PostgreSQL has not restarted, durable
+job state is unknown, and no fixture rollback or change to the original service
+failure states occurred. Guest archive intents, receipts and all preservation
+evidence remain retained. The independent restore-input directory was not selected.
+
+Cache cleanup removed only these two reproducible `GOCACHE` directories:
+
+- `/opt/goby-phase3-campaign-20260922-01/build-work/regression-scope09repair01/cache`
+- `/opt/goby-phase3-campaign-20260922-01/build-work/regression-scope10repair01/cache`
+
+Source, frontend, binaries, module caches, results and logs were preserved. The
+cleanup worker, descendants and cgroup are independently closed. Its closure
+measured **21,970,751,488 free bytes**, meeting the original
+**21,676,163,072-byte** initial space requirement without changing any gate.
+This is a dated observation. Scope11 subsequently passed fresh resource and
+identity checks during its own bootstrap admission; storage cleanup does not
+accept a capacity journey, overload case or fault/recovery case.
+
+### Scope11 bootstrap and preparation boundary
+
+The new `tier10k-11` deployment uses the accepted `89b6670` binary and frontend
+delivery without recompilation. All 14 licensed inputs, totaling 1,646,688,512
+bytes, passed fresh content readback. The two frozen preparation/workload helpers
+were published under a new immutable source-fixture directory.
+
+Fresh bootstrap admission passed before deployment. Goby is active as UID 61246
+at 1280 MiB and PostgreSQL as UID 61248 at 512 MiB. The actual new SQL
+`server_version` is `17.11 (Debian 17.11-0+deb13u1)` and matches the workload
+manifest; a historical banner was not substituted for this check. The successful
+bootstrap worker and its cgroup are independently closed while both native
+service lifetimes remain active. The failed scope10 database remains separate.
+
+| Scope11 bootstrap evidence | Bytes | SHA256 |
+| --- | ---: | --- |
+| Released profile | 13,710 | `0619eae543c0a5174ab23aaad7058c66015d9a0b9518c405aad69e24d4c12676` |
+| Workload manifest | 1,853 | `e089287fd7b9a21e23d0303dc6fa075a9bd75e19596ed1018012f5bc98830e93` |
+| Private provisioning result | 16,562 | `99b1e341abe7ee853819c0af4fda144102b6d6bdd9fbb3f7835c9b949cb2d3b1` |
+| Safe actual SQL-version receipt | 1,191 | `7817cee4a97d206f3c74adc636dd3b8b51640273db01fe5e1b813c7785f32dfd` |
+| Independent bootstrap closure | 2,311 | `4a049f24652db5a2844209cdec1a896677a599f0973ddd17afc63f0b3eafe6ee` |
+
+The preparation controls are still unreleased. Next lower App memory through the
+managed property operation, verify Actor access, obtain the fresh SQL-version
+receipt for the same PG lifetime, and dispatch the complete fixture producer.
+After preparation and independent closure, restore App memory before the full
+cold/cached/incremental journey. Deployment readiness is not capacity acceptance.
+
+| Preservation/cleanup evidence | Bytes | SHA256 |
+| --- | ---: | --- |
+| After89 complete external readback | 8,753 | `fc15abe31b8543f2ed97219626a4120111224d456ed79da4ecc556cb468a3273` |
+| After89 external readback closure | 1,191 | `afb34dff2fdd7121ed221ab48f9fdb723155f7656934001c571c9d40f7b745d1` |
+| After89 exact PG-tree retirement closure | 1,214 | `13fa89cd9ce7050f78796483c05d5c9f5770c13db1a9c4ef7c375a7b6c35829a` |
+| After89 guest tar/manifest retirement closure | 1,282 | `d42734d9b42760abb010ae0577da8a8d99b28b47b95d9449ff9c9e8516cc6f5a` |
+| Failed scope10 four-tree retirement closure | 1,063 | `f93ca0c492e80b475a40201ed8e6d05abca2cd30bf8302639a59dc8b25250e78` |
+| Failed scope10 guest tar/manifest retirement closure | 1,114 | `238ec34968c9049a5190baf053f74fbcf1aa2096f55e26ddafb0182d9ff67c01` |
+| Two-cache cleanup receipt | 1,271 | `424755ec334b27ab891771c84b018b8b01e9f3c17ebfb5f5b82b3e00aad4a911` |
+| Two-cache independent closure and space observation | 1,096 | `063e65efd6d2833d6200e9de9ce8f03f6cf318a0e8c2756bf46fcc41471acb9f` |
 
 ### Observer terminal-handling candidate checks
 
@@ -809,15 +889,20 @@ unknown, and fixture restoration is held. Record any later database recovery
 separately. Do not reinterpret the involuntary OOM exit as a planned recovery
 test or replay the failed prepared state as fresh.
 
-The earlier 26-database regression-cluster archive/readback and exact guest
-retirement are complete. Its restored successor passed the `89b6670` regression,
-shut down cleanly and retains 33 custom databases. Its new guest archive and
-archive-worker closure are complete; external preservation remains pending.
-The failed capacity cluster is separate. The four selected scope10 failed-state
-trees have complete external preservation and closed archival controls, but
-their original guest trees remain. Complete exact-copy retirement and fresh
-space admission before a new capacity journey. Preserve all original failures,
-the unrecovered capacity database and external archives.
+The earlier 26-database archive and the complete 33-database after89 successor
+both retain external preservation after exact guest-copy retirement. The four
+selected scope10 failed-state trees and redundant guest tar/manifest are also
+retired with all controls closed. The failed capacity database remains intact
+and unrecovered. Two private Go build caches were removed with non-cache inputs
+and outputs preserved; closure measured 21,970,751,488 free bytes against the
+unchanged initial requirement of 21,676,163,072 bytes. Preserve all original
+failures, the unrecovered capacity database and every external archive.
+
+Scope11 passed fresh bootstrap admission and deployment, actual SQL-version
+matching and independent bootstrap closure. The new native service lifetimes
+remain active. Complete managed memory lowering, Actor access, the fresh SQL
+version gate and full fixture preparation, then restore the benchmark memory
+limit. Preparation controls remain unreleased; no capacity journey is accepted.
 
 Use the accepted `89b6670` repair/build delivery and preserve the original
 limits for a newly admitted complete 10k compound journey and overload. The

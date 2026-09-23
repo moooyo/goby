@@ -38,9 +38,11 @@ passes are separate repeats. Frontend reuse from `8b6cb21` was proved against
 unchanged inputs and all 73 artifact hashes. The observer passed with four
 transient PostgreSQL-file `du` gaps, no persistent loss and no OOM; missing
 measurements were not zero-filled. Worker, observer, PostgreSQL and collector
-are independently closed. This regression cluster shut down cleanly and retains
+are independently closed. This regression cluster shut down cleanly with
 33 custom databases: the restored 26 plus seven new regression databases.
-It is separate from the failed capacity cluster described below.
+The complete physical cluster is now preserved externally, and its exact guest
+tree and redundant guest tar/manifest have been retired. It is separate from
+the failed capacity cluster described below.
 
 The original scope10 failure's physical runtime closure is independently
 confirmed. Its observer remained active in its gap handler after the original
@@ -72,15 +74,30 @@ passed 15 isolated Python tests on VM106 and closed its test worker. It has not
 been deployed as the real observer or tested for actual systemd propagation;
 these additional checks do not accept capacity.
 
-The four selected scope10 failed-state trees now have complete external
-preservation: all 350,821 entries and 1,788,288,743 logical bytes were read back,
-and the guest archive, transfer and external readback controls are independently
-closed. Their original guest trees remain pending exact-copy retirement. The
-separate clean 33-database regression cluster also has a complete guest archive
-and independently closed archive worker; its external copy and readback remain
-pending. Complete those storage steps and fresh space admission before the next
-capacity journey. Preserve the unmodified OOM cluster and original failures;
-use the verified `89b6670` delivery for a newly admitted full journey. Read the
+External preservation and exact guest-copy retirement are complete for both
+the four selected scope10 failed-state trees and the clean 33-database regression
+cluster. Full readback covered all 350,821 failed-state entries and all 13,747
+regression-cluster entries, including every default and custom database. Only the
+selected guest trees and their redundant tar/manifest copies were retired;
+each PVE archive retains all four files. Archive, transfer, readback, retirement
+and admission controls are independently closed. The failed scope10 PostgreSQL
+tree remains intact and unrestarted, with its original `in production` control
+state, unknown durable job state, no fixture rollback and unchanged failures.
+
+Only the reproducible per-run `GOCACHE` directories for `regression-scope09repair01`
+and `regression-scope10repair01` were additionally removed. Source, frontend,
+binaries, module caches, results and logs remain retained. Cache-cleanup closure
+recorded **21,970,751,488 free bytes**, above the unchanged **21,676,163,072-byte**
+initial space requirement. That observation does not admit a new capacity scope.
+Scope11 subsequently passed fresh bootstrap resource/identity admission and
+deployed the verified `89b6670` delivery. Its new Goby and PostgreSQL lifetimes
+are active at 1280 MiB and 512 MiB respectively. The new PostgreSQL instance's
+actual SQL `server_version` matches the manifest, and the successful bootstrap
+worker is independently closed. The complete 14-file licensed corpus was read
+back and the frozen fixture helpers were published. Preparation controls remain
+unreleased: next perform managed App lowering, Actor access, the fresh SQL version
+gate and full 10k fixture preparation, then restore the benchmark memory limit
+before the complete capacity journey. Read the
 [Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private
 checkpoint for exact evidence. Phase 3 remains unpublished. Phases 1 and 2 are
 merged and pushed on `main` at `e41febbb36687d04340f5c651f4bf1bf376a4310`.
