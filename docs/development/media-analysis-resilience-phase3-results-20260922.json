@@ -4,7 +4,38 @@
   "status": "in_progress",
   "accepted": false,
   "published": false,
-  "latest_verified_regression": "scope09_repair_regression",
+  "latest_verified_regression": "scope10_repair_regression",
+  "current_checkpoint": {
+    "status": "session_jit_repair_regression_passed_failed_trees_externally_preserved_storage_retirement_and_capacity_pending",
+    "failed_capacity_record": "capacity_scope10",
+    "verified_regression_record": "scope10_repair_regression",
+    "additional_observer_candidate_record": "observer_terminal_candidate_tests",
+    "failed_scope10_four_tree_census_complete": true,
+    "failed_scope10_four_tree_archive_complete": true,
+    "failed_scope10_four_tree_external_readback_complete": true,
+    "failed_scope10_original_guest_trees_retired": false,
+    "clean_33_database_cluster_archive": {
+      "guest_archive_complete": true,
+      "archive_worker_independently_closed": true,
+      "external_preservation_complete": false,
+      "original_guest_tree_retired": false,
+      "source_entries": 13747,
+      "source_logical_bytes": 3044606975,
+      "archive_sha256": "cdce15d16fa6169b70fe7b28c14ca0e3f9b96ed5d049b79f31bedafa629757e2",
+      "manifest_sha256": "6430029b35b66884a62ddefe3b57d65746aa47f725d12e21193fdab0745f8054",
+      "receipt_sha256": "66a63af8b4dfea7fcf27989f60d3be58561298ff1d552aacd9575b73f8e9b5b0",
+      "independent_closure_sha256": "a7b07aefa129124844448bf6519ccc27800790e19a10f6ab7127388dedc355fc"
+    },
+    "scope10_oom_database_restarted": false,
+    "scope10_oom_database_control_state": "in production",
+    "scope10_durable_job_state": "unknown",
+    "scope10_fixture_rollback_performed": false,
+    "capacity_accepted": false,
+    "fault_recovery_accepted": false,
+    "whole_phase_accepted": false,
+    "main_revision": "e41febbb36687d04340f5c651f4bf1bf376a4310",
+    "main_unchanged": true
+  },
   "plan": "docs/planning/media-analysis-resilience-plan-20260920.md",
   "execution_record": "docs/development/media-analysis-resilience-phase3-20260922.md",
   "source_candidates": [
@@ -531,7 +562,7 @@
   "required_acceptance": [
     {
       "requirement": "Complete integrated Go/Python regression and frontend plus ordinary/embedded builds",
-      "status": "accepted_complete_8b6cb21_with_explicit_skips"
+      "status": "accepted_complete_89b6670_with_explicit_skips"
     },
     {
       "requirement": "10k and 100k cold/cached/incremental compound workload with exact query/count/page/user-state results",
@@ -572,8 +603,8 @@
   ],
   "current_regression_state": {
     "attempt": "04",
-    "status": "historical affected04 passed and independently closed; superseded by scope09_repair_regression",
-    "superseded_by": "scope09_repair_regression",
+    "status": "historical affected04 passed and independently closed; superseded by scope10_repair_regression",
+    "superseded_by": "scope10_repair_regression",
     "source_revision": "1ed1d69b94548e5beb842906b6177664367310df",
     "scope": "Complete library, settings, tasks, server and cmd/goby packages; embedded command tests; actual frontend and ordinary/embedded builds",
     "source_prepare_tests_passed": 10,
@@ -1514,6 +1545,7 @@
   },
   "scope09_repair_regression": {
     "status": "complete_remote_regression_passed_independently_closed_build_delivery_recorded",
+    "superseded_by": "scope10_repair_regression",
     "source_revision": "8b6cb210f0ecc679c8067e19da142dfe963dfb8c",
     "complete_stage_count": 49,
     "all_original_stage_receipts_and_log_hashes_rechecked": true,
@@ -1593,13 +1625,219 @@
     "fault_recovery_accepted": false,
     "whole_phase_accepted": false,
     "next_storage_preparation": {
-      "status": "guest_archive_running_external_preservation_pending",
+      "status": "complete_external_readback_and_exact_guest_retirement_closed",
       "scope": "Preserve the cleanly closed regression PostgreSQL cluster externally in full before retiring its exact redundant guest copy.",
-      "external_transfer_complete": false,
-      "external_full_readback_complete": false,
-      "guest_copy_retired": false,
+      "external_transfer_complete": true,
+      "external_full_readback_complete": true,
+      "guest_copy_retired": true,
       "original_storage_gate_unchanged": true,
-      "all_26_databases_currently_retained_on_guest": true
+      "all_26_databases_retained_as_original_guest_cluster": false,
+      "all_26_databases_preserved_in_external_archive": true,
+      "later_restoration_record": "scope10_repair_regression",
+      "scope10_failed_capacity_preservation_record": "capacity_scope10"
     }
+  },
+  "capacity_scope10": {
+    "status": "compound02_cold_failed_postgres_oom_independently_closed_selected_trees_externally_preserved",
+    "generation": "phase3-tier10k-10-compound-02",
+    "accepted": false,
+    "execution_complete": false,
+    "preparation_passed": true,
+    "memory_restoration_passed": true,
+    "execution_rebind_passed": true,
+    "compound01": {
+      "status": "admission_rejected_controls_closed_original_failure_retained",
+      "cause": "The PostgreSQL version banner differed from SQL server_version."
+    },
+    "compound02_execution_manifest_corrected": true,
+    "original_preparation_references_preserved": true,
+    "actual_admission_passed": true,
+    "cold_business_concurrency_entered": true,
+    "failure_time_utc": "2026-09-23T02:41:37Z",
+    "postgres_memory_max_bytes": 536870912,
+    "postgres_oom_observed": true,
+    "kernel_killed_catalog_owner_backend_pid": 586572,
+    "failure_codes": [
+      "observer_failure",
+      "http_status"
+    ],
+    "partial_remux_start_p95_ms_approximate": 8023.7,
+    "remux_start_threshold_ms": 5000,
+    "partial_latency_measurement_accepted": false,
+    "cached_accepted": false,
+    "incremental_accepted": false,
+    "observer": {
+      "continued_in_gap_handler_after_original_service_pids_disappeared": true,
+      "externally_withdrawn_after_evidence_preservation": true,
+      "failure_preserved": true
+    },
+    "runtime_independently_closed": true,
+    "application_postgres_actor_original_lifetimes_closed": true,
+    "observer_publisher_control_parent_and_collector_closed": true,
+    "original_service_failure_states_preserved": true,
+    "cleanup_operation_errors": 7,
+    "filesystem_restore_held_for_active_worker": true,
+    "postgres_data_wal_and_control_files_retained": true,
+    "postgres_control_state": "in production",
+    "postgres_cleanly_closed": false,
+    "postgres_restarted": false,
+    "durable_job_state": "unknown",
+    "fixture_rollback_performed": false,
+    "last_postgres_sample_bytes": {
+      "anon": 447766528,
+      "file": 76296192,
+      "shmem_included_in_file": 61272064
+    },
+    "retained_log_diagnostics": {
+      "postgres_log_bytes": 77032176,
+      "recursive_roots_userdata_query_plans": 30,
+      "backend_count": 5,
+      "maximum_jit_functions": 182,
+      "queryitems_and_querylatest_transaction_jit_guards_already_present": true,
+      "single_causal_sql_statement_proven": false,
+      "page_cache_only_oom_claimed": false
+    },
+    "result_sha256": "01e735b67dfe9b7aa70897007ed38601f144206ff6e13ebcd30b0efc59eacf02",
+    "launch_intent_sha256": "f23ce3a047f99c28bdb31c211d832554ca80b6e745c68a3b63182da529c9ae84",
+    "actor_entry_sha256": "f4d01ab70b64a20dc1b53bc78689b82e1b1843d7a6b216ab412edd978e320115",
+    "postgres_diagnostic_log_sha256": "4a22e9317bcaf6f55ff8a45f2a6fbd0f5e9edfde6cfa0cbadcf76d0b8a11b273",
+    "failed_run_closure_sha256": "41ee8cfde07a0e6ee11f89fba930b3e99599b1af501df849a6a2f60c07e50391",
+    "runtime_independent_closure_sha256": "a45ea2368e666f72d692192cb3a096648c1a8a912090821407bcca9b32728beb",
+    "repair_revision": "89b667083a1c5608b9d7e554df27de721ac23c51",
+    "repair_regression_record": "scope10_repair_regression",
+    "failed_state_preservation": {
+      "selected_tree_count": 4,
+      "census_complete": true,
+      "archive_complete": true,
+      "external_full_member_readback_complete": true,
+      "all_archive_transfer_readback_controls_closed": true,
+      "original_guest_trees_retired": false,
+      "source_entries": 350821,
+      "source_logical_bytes": 1788288743,
+      "archive_sha256": "e2bfece189132344ee3ff2a035087f404df0a48419fff33caaa24bb110386eb7",
+      "manifest_sha256": "b9ae71d7c4990db3f1732691bae079d355c302724051cd5b81cb289c26e5cd9c",
+      "external_readback_receipt_sha256": "899caef591ea0932e029ea7a87ca92583f448826b712d02e7eb3e55b01409e97",
+      "external_readback_closure_sha256": "4e0b8fccbe48fbcd47a86ebdcf7c18550488d2b4b454831b10f199de1d4fe6e3",
+      "status": "externally_preserved_original_guest_trees_pending_retirement"
+    },
+    "complete_10k_journey_accepted": false,
+    "complete_100k_journey_accepted": false,
+    "overload_accepted": false,
+    "fault_recovery_cases_required": 28,
+    "fault_recovery_cases_accepted": 0,
+    "whole_phase_accepted": false
+  },
+  "scope10_repair_regression": {
+    "status": "complete_remote_regression_passed_independently_closed_build_delivery_recorded",
+    "source_revision": "89b667083a1c5608b9d7e554df27de721ac23c51",
+    "repair_scope": "Set jit=off at startup for every Goby database session while retaining the existing transaction guards, pool size and resource limits.",
+    "complete_stage_count": 50,
+    "all_stages_passed": true,
+    "ordinary_go": {
+      "complete_packages": 35,
+      "passed_parents": 4279,
+      "failed_parents": 0,
+      "explicit_skipped_parents": 18,
+      "additional_vulkan_subcase_skips": 1,
+      "subcase_skip_added_to_parent_total": false,
+      "skip_identities_equal_to_scope09_repair_regression": true
+    },
+    "embedded_command": {
+      "passed_parents": 24
+    },
+    "python": {
+      "complete_scripts": 8,
+      "passed_tests": 91
+    },
+    "focused": {
+      "library_passed_parents": 10,
+      "database_passed_parents": 2,
+      "scope": "The database cases cover real connections, replacement, Hijack, catalog ownership, deployment leases and unchanged independent PostgreSQL sessions."
+    },
+    "race": {
+      "passed_parents": 15
+    },
+    "focused_and_race_counts_added_to_ordinary_total": false,
+    "frontend": {
+      "reused": true,
+      "source_revision": "8b6cb210f0ecc679c8067e19da142dfe963dfb8c",
+      "files": 73,
+      "all_tracked_inputs_equal": true,
+      "complete_artifact_inventory_equal": true
+    },
+    "builds": [
+      {
+        "name": "goby",
+        "actual_new_build": true,
+        "bytes": 48796956,
+        "sha256": "1709d063369278ad0690e1dac3df6f839aef513290b489cafeb38c8c591792cf"
+      },
+      {
+        "name": "goby-embedded",
+        "actual_new_build": true,
+        "bytes": 50239960,
+        "sha256": "69f46e1e2fe9aaab4689d5003014199d2b96d2de7737ddbbd185acae9f392b59"
+      }
+    ],
+    "observer": {
+      "complete": true,
+      "resource_observation_passed": true,
+      "transient_gap_count": 4,
+      "gap_cause": "PostgreSQL files were concurrently deleted during du accounting.",
+      "persistent_observation_loss": false,
+      "missing_observations_zero_filled": false,
+      "oom_observed": false
+    },
+    "independent_closure_complete": true,
+    "all_original_workers_observers_postgres_and_collectors_closed": true,
+    "closed_original_pids": {
+      "worker": 646051,
+      "observer": 646042,
+      "postgres": 645634,
+      "collector": 697473
+    },
+    "postgres_cleanly_closed": true,
+    "custom_databases_retained": 33,
+    "restored_original_databases": 26,
+    "fresh_regression_databases": 7,
+    "postgres_cluster_distinct_from_scope10_oom_cluster": true,
+    "scope10_oom_cluster_recovered_by_this_regression": false,
+    "evidence_directory": "/opt/goby-phase3-campaign-20260922-01/private/regression-scope10repair01",
+    "result_bytes": 650194,
+    "result_sha256": "87848ec48d5a926219eead3150399bd4be2d768c6d55640f04ca28eb6f1c2eee",
+    "observer_bytes": 10115,
+    "observer_sha256": "21827b5bea429fb147c9bbd08b54c00686232ed20ecebf328ea8def60c068bb8",
+    "collector_bytes": 39960,
+    "collector_sha256": "224e4fcb179dbe19b80257f017babeee0ba645a77f6714beedbd1c665aff01c6",
+    "independent_closure_bytes": 5330,
+    "independent_closure_sha256": "dbbc033d4dca327e5812db093bf748f16686424c989c0e9fea4c5ecbc758d9c1",
+    "build_delivery_bytes": 11804,
+    "build_delivery_sha256": "bc30ec01e6a88afd5a638908e82b14a777dccba77b4722d87b9011f6e4646bf2",
+    "skip_evidence_bytes": 8002,
+    "skip_evidence_sha256": "90a8d40cfb0b011a2bdd50666c6caa6bff95f88109925c10439e86749c71f80b",
+    "original_failures_preserved": true,
+    "local_verification_performed": false,
+    "jit_as_only_oom_cause_proven": false,
+    "capacity_accepted": false,
+    "fault_recovery_accepted": false,
+    "whole_phase_accepted": false,
+    "main_published": false
+  },
+  "observer_terminal_candidate_tests": {
+    "status": "isolated_remote_tests_passed_and_closed_real_observer_deployment_pending",
+    "source_sha256": "250a9fa1b1276f4410a941d1063370d157d745d7ed7f8ec56d6badbdbbfcb3a6",
+    "environment": "VM106",
+    "dynamic_user_uid": 64360,
+    "isolated_python_tests_passed": 15,
+    "test_worker_closed": true,
+    "result_path": "/opt/goby-phase3-campaign-20260922-01/private/observer-terminal-tests01-result.json",
+    "result_bytes": 2121,
+    "result_sha256": "485ec98ee207f20232cad8fe48ce5b8a15c8b22937638439fe112f95d0e87cc9",
+    "additional_evidence_outside_complete_regression": true,
+    "counts_added_to_regression_python_total": false,
+    "deployed_to_real_observer": false,
+    "systemd_propagation_tested": false,
+    "capacity_accepted": false,
+    "scope_limit": "Isolated candidate tests do not prove a deployed observer's terminal behavior, systemd propagation or capacity acceptance."
   }
 }

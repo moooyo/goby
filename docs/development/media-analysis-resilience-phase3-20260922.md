@@ -1,6 +1,6 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
-Status: **scope10 compound02 failed on PostgreSQL cgroup OOM and its runtime is independently closed. The Goby session JIT repair is written and awaits remote verification. Complete regression/builds at 8b6cb21 remain accepted. Full capacity/fault acceptance and Phase 3 publication remain pending**.
+Status: **the Goby session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. Scope10 compound02's original OOM failure remains closed and retained; its four selected failed-state trees have complete external archival/readback. Exact-copy retirement, external preservation of the clean 33-database regression cluster and a fresh capacity journey remain pending. Full capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the
 [approved three-phase plan](../planning/media-analysis-resilience-plan-20260920.md).
@@ -12,12 +12,20 @@ verification. The overall three-phase objective remains incomplete.
 Implementation uses the isolated `codex/media-analysis-resilience` checkout.
 Unrelated changes in the original checkout remain outside this increment.
 The current accepted regression/build source is
-`8b6cb210f0ecc679c8067e19da142dfe963dfb8c`. Earlier product/build source `1ed1d69`
+`89b667083a1c5608b9d7e554df27de721ac23c51`. Earlier product/build source `1ed1d69`
 and fixture successor `00af9e4` retain their original remote evidence.
 Exact profiles, contexts and receipts remain bound in the private
 checkpoint and delivery ledger; this document does not itself admit a workload.
 
 ## Current checkpoint
+
+The session JIT repair at `89b6670` passed the complete 50-stage remote
+regression and independent closure detailed below. Its restored regression
+cluster shut down cleanly with 33 custom databases retained. That cluster is
+separate from the failed scope10 capacity cluster, whose original OOM and
+unrecovered database state remain preserved. No fresh capacity journey is yet
+accepted. The four selected failed-state trees have complete census and external
+archive/readback; their original guest copies have not been retired.
 
 Scope10 preparation, memory restoration and execution rebind passed. The first
 compound generation failed admission because the PostgreSQL version banner and
@@ -41,8 +49,7 @@ preserved the evidence and externally withdrew that exact observer. The empty
 publisher and control parent were stopped, and root independently confirmed the
 successful collector's exit and closure. No scoped native, Actor or broker
 process remains. Original service failures, including PostgreSQL `oom-kill`,
-were preserved. Driver cleanup
-recorded seven `cleanup_operation` errors and
+were preserved. Driver cleanup recorded seven `cleanup_operation` errors and
 `filesystem_restore_held_for_active_worker`. PostgreSQL data, WAL and control
 files remain in place, with the control state `in production`. The database has
 not restarted; no clean shutdown, durable job-state result or fixture rollback
@@ -65,21 +72,84 @@ verified repair or proof that one SQL statement alone caused the OOM.
 | Failed-run closure receipt | `41ee8cfde07a0e6ee11f89fba930b3e99599b1af501df849a6a2f60c07e50391` |
 | Independent runtime closure | `a45ea2368e666f72d692192cb3a096648c1a8a912090821407bcca9b32728beb` |
 
-The accepted 49-stage regression at `8b6cb21` is detailed below. Scope09's failed
-fixtures and the closed 26-database regression cluster were completely archived,
-externally read back, and only then retired as exact redundant guest copies.
+The earlier accepted 49-stage regression at `8b6cb21` is retained below.
+Scope09's failed fixtures and the closed 26-database regression cluster were
+completely archived, externally read back, and only then retired as exact
+redundant guest copies.
 That storage work and scope10's physical process closure do not establish
-capacity acceptance or durable job completion. The next source repair sets
+capacity acceptance or durable job completion. The verified source repair sets
 `jit=off` at startup for all Goby database connections, covering the observed
 userdata query path and connections retained for catalog ownership or deployment
 leases. Existing transaction guards, pool size and resource limits remain.
 Two new real-connection integration tests also cover replacement connections,
-Hijack and independent PostgreSQL sessions. The repair is not yet verified and
-does not establish that JIT was the only OOM cause. The prior clean regression
-archive has been transferred back for complete-tree restoration before a fresh
-regression. The failed capacity database remains unmodified.
+Hijack and independent PostgreSQL sessions. The successful regression does not
+establish that JIT was the only OOM cause. The prior clean regression archive
+was restored for that separate regression; the failed capacity database remains
+unmodified. Census and external preservation of the four selected scope10
+failed-state trees are complete: 350,821 entries and 1,788,288,743 logical bytes
+passed full member readback. Archive, transfer and external readback controls
+are independently closed. The separate clean 33-database regression cluster
+has a completed guest archive containing 13,747 entries and 3,044,606,975 logical
+bytes, with its archive worker independently closed. Its external copy and
+readback remain pending; no original tree from either archive has been retired.
+Fresh disk admission must use measured physical free space after retirement.
 Phase 3 remains unpublished; phases 1 and 2 remain published at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
+
+### Accepted scope10 session JIT repair regression
+
+Source `89b667083a1c5608b9d7e554df27de721ac23c51` completed all **50 stages**.
+All **35 ordinary Go packages** completed with **4,279 parent passes, zero
+failures and 18 explicit parent skips**. The separate Vulkan subcase skip is
+not another parent skip. All 18 parent skip identities and that subcase identity
+exactly match the preceding accepted `8b6cb21` evidence. The embedded command
+suite passed **24** parents; eight Python scripts passed **91** tests. Focused
+library **10**, focused database **2** and race **15** passes are separate
+repeats and are not added to the ordinary Go total.
+
+Both Go binaries were freshly built from this source. All tracked frontend
+inputs and all **73 artifact files** were compared by hash before reusing the
+accepted `8b6cb21` frontend output.
+
+| New artifact | Bytes | SHA256 |
+| --- | ---: | --- |
+| Goby | 48,796,956 | `1709d063369278ad0690e1dac3df6f839aef513290b489cafeb38c8c591792cf` |
+| Embedded Goby | 50,239,960 | `69f46e1e2fe9aaab4689d5003014199d2b96d2de7737ddbbd185acae9f392b59` |
+
+The observer passed with **zero OOM events**. Four transient `du` measurements
+failed when PostgreSQL files disappeared during measurement; observation
+resumed without persistent loss, and missing values were not filled with zero.
+Worker `646051`, observer `646042`, PostgreSQL `645634` and collector `697473`
+are independently closed. PostgreSQL shut down cleanly, retaining **33 custom
+databases**, comprising the restored original 26 and seven new regression
+databases. This does not describe or recover the separate scope10 OOM cluster,
+which remains unrestarted with control state `in production`, unknown durable
+job state and no fixture rollback.
+
+The private evidence directory is
+`/opt/goby-phase3-campaign-20260922-01/private/regression-scope10repair01`.
+
+| Scope10 repair evidence | Bytes | SHA256 |
+| --- | ---: | --- |
+| Complete regression | 650,194 | `87848ec48d5a926219eead3150399bd4be2d768c6d55640f04ca28eb6f1c2eee` |
+| Resource observer | 10,115 | `21827b5bea429fb147c9bbd08b54c00686232ed20ecebf328ea8def60c068bb8` |
+| Closure collector | 39,960 | `224e4fcb179dbe19b80257f017babeee0ba645a77f6714beedbd1c665aff01c6` |
+| Independent closure | 5,330 | `dbbc033d4dca327e5812db093bf748f16686424c989c0e9fea4c5ecbc758d9c1` |
+| Build delivery | 11,804 | `bc30ec01e6a88afd5a638908e82b14a777dccba77b4722d87b9011f6e4646bf2` |
+| Explicit skip evidence | 8,002 | `90a8d40cfb0b011a2bdd50666c6caa6bff95f88109925c10439e86749c71f80b` |
+
+### Observer terminal-handling candidate checks
+
+A separate observer candidate with source SHA256
+`250a9fa1b1276f4410a941d1063370d157d745d7ed7f8ec56d6badbdbbfcb3a6`
+passed **15 isolated Python tests** on VM106 under DynamicUser UID `64360`.
+The test worker closed. These tests are additional to the eight-script,
+91-test regression total. The 2,121-byte receipt is retained at
+`/opt/goby-phase3-campaign-20260922-01/private/observer-terminal-tests01-result.json`,
+SHA256 `485ec98ee207f20232cad8fe48ce5b8a15c8b22937638439fe112f95d0e87cc9`.
+The candidate has not been deployed as the real observer, and actual systemd
+terminal-state propagation has not been tested. These isolated checks do not
+accept a capacity journey or close those remaining runtime requirements.
 
 ## Historical scope09 failure and accepted repair regression
 
@@ -739,13 +809,21 @@ unknown, and fixture restoration is held. Record any later database recovery
 separately. Do not reinterpret the involuntary OOM exit as a planned recovery
 test or replay the failed prepared state as fresh.
 
-The closed regression-cluster archive/readback and exact guest retirement are
-complete. Retain those archives and all original failures. Use the accepted
-`8b6cb21` repair/build delivery as the baseline for diagnosis, preserve the
-original limits, and investigate the memory failure and observer exit behavior.
-Verify any resulting repair before a newly admitted complete 10k compound
-journey and overload. Follow a
-successful journey with the required post-compound reconciliation and full
+The earlier 26-database regression-cluster archive/readback and exact guest
+retirement are complete. Its restored successor passed the `89b6670` regression,
+shut down cleanly and retains 33 custom databases. Its new guest archive and
+archive-worker closure are complete; external preservation remains pending.
+The failed capacity cluster is separate. The four selected scope10 failed-state
+trees have complete external preservation and closed archival controls, but
+their original guest trees remain. Complete exact-copy retirement and fresh
+space admission before a new capacity journey. Preserve all original failures,
+the unrecovered capacity database and external archives.
+
+Use the accepted `89b6670` repair/build delivery and preserve the original
+limits for a newly admitted complete 10k compound journey and overload. The
+observer candidate's 15 isolated tests do not establish deployed observer or
+actual systemd propagation behavior. Follow a successful journey with the
+required post-compound reconciliation and full
 fault/recovery matrix. External-controller admission is required before later
 external ACK, archive writes or fault operations, not for independent guest
 work that performs no external write.

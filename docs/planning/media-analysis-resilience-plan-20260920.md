@@ -1,6 +1,6 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; phase 3 regression/builds passed at 8b6cb21, but scope10 compound02 failed during cold concurrency on PostgreSQL cgroup OOM. Its runtime is independently closed and the Goby session JIT repair awaits remote verification. Full capacity/recovery acceptance and publication remain pending**.
+Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages, both new builds and independent closure. The original scope10 OOM failure is closed and retained; its selected failed-state trees have complete external archival/readback. Exact-copy retirement, external preservation of the clean 33-database regression cluster and a fresh capacity journey remain pending. Full capacity/recovery acceptance and publication remain pending**.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
@@ -72,14 +72,20 @@ insufficient-evidence result until a supported content algorithm exists.
 Source implementation is integrated. The
 [Phase 3 execution record](../development/media-analysis-resilience-phase3-20260922.md)
 separates the current scope10 failure from earlier attempts and accepted repairs.
-Source `8b6cb210f0ecc679c8067e19da142dfe963dfb8c` passed all 49 remote regression
-stages: 35 ordinary Go packages with 4,277 parent passes, zero failures and 18
-explicit parent skips; 24 embedded parents; and 91 tests across eight Python
-scripts. The 10 focused and 15 race passes are reported separately. Both Go
-builds passed, and all 73 frontend artifacts were reused only after proving
-unchanged inputs and outputs. Scope09's failed fixtures and the closed
-26-database regression cluster completed external archival/readback and exact
-redundant guest-copy retirement.
+The session JIT repair at `89b667083a1c5608b9d7e554df27de721ac23c51` passed all
+**50 remote regression stages**: 35 ordinary Go packages with **4,279 parent
+passes, zero failures and 18 explicit parent skips**; 24 embedded parents; and
+91 tests across eight Python scripts. One Vulkan subcase skip remains separate.
+Focused library 10, focused database 2 and race 15 passes are separate repeats.
+Both Go builds passed; all 73 frontend artifacts were reused from `8b6cb21`
+only after comparing input and artifact hashes. The observer passed with four
+transient PostgreSQL-file `du` gaps, no persistent loss and zero OOM events;
+missing measurements were not zero-filled. Worker, observer, PostgreSQL and
+collector are independently closed. This regression cluster shut down cleanly
+and retains 33 custom databases: the restored 26 plus seven new databases.
+It is separate from the failed capacity cluster below. Scope09's failed fixtures
+and the original 26-database regression cluster retain completed external
+archival/readback and exact redundant guest-copy retirement.
 
 Scope10 preparation, memory restoration and rebind passed. Compound01 failed
 admission on a PostgreSQL banner/SQL version-string mismatch and closed its
@@ -90,16 +96,26 @@ killed catalog-owner backend `586572`; PostgreSQL, Goby and the Actor exited.
 The driver did not accept or complete the journey. Partial remux-start p95 of
 approximately 8,023.7 ms also exceeded the unchanged 5,000 ms target.
 
-Independent failure closure is complete. The observer that remained active
-after the service PIDs disappeared was externally withdrawn with its evidence
-preserved. Cleanup errors and held fixture restoration
-remain recorded. Database control state is `in production`; no database restart,
-clean shutdown, durable job-state result or fixture rollback is claimed. Existing
-log analysis identifies recursive roots/user data JIT plans as diagnostic leads;
-it is not a verified repair or proof of a single SQL cause. No full 10k/100k
-journey, overload profile or any of the 28 fault/recovery cases is accepted.
-Verified repair and fresh workload admission
-precede further capacity/recovery acceptance. Phase 3 remains unpublished;
+The original scope10 failure's physical runtime closure is complete. Its observer
+was externally withdrawn after remaining active when the service PIDs disappeared;
+its evidence is preserved. Cleanup errors and held fixture restoration remain
+recorded. The failed capacity database control state is `in production`; no
+database restart, clean shutdown, durable job-state result or fixture rollback
+is claimed. Existing log analysis identifies recursive roots/user data JIT plans
+as diagnostic leads;
+it does not prove a single SQL cause. The Goby session JIT repair is now verified
+within the complete regression scope above. A separate observer terminal-handling
+candidate passed 15 isolated Python tests on VM106 and closed its worker, but
+has not been deployed as the real observer or tested for actual systemd
+propagation. No full 10k/100k journey, overload profile or any of the 28
+fault/recovery cases is accepted.
+The census and external preservation of four selected scope10 failed-state
+trees are complete, including all 350,821 members and independent archival
+control closure. Original guest trees remain pending exact-copy retirement.
+The separate clean 33-database regression cluster has a complete guest archive
+and closed worker; its external preservation remains pending. Complete those
+storage steps and fresh space/workload admission before the next capacity
+journey. Phase 3 remains unpublished;
 phases 1 and 2 are merged and pushed at
 `e41febbb36687d04340f5c651f4bf1bf376a4310`.
 
@@ -133,4 +149,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core sources and scope09 repairs integrated at `8b6cb21` | Complete 49-stage regression, builds and regression closure accepted. Scope09 fixtures and 26-database cluster externally archived/read back before exact guest retirement. Scope10 compound02 failed during cold concurrency on PostgreSQL cgroup OOM; independent failure closure and complete capacity/fault/reboot acceptance remain pending | Pending |
+| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both new builds and independent regression closure accepted. Selected failed-state trees have complete external preservation; the clean 33-database regression cluster has a complete guest archive. Storage retirement, regression-cluster external preservation, a fresh complete capacity journey, overload and fault/reboot acceptance remain pending | Pending |

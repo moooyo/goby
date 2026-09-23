@@ -9,7 +9,10 @@ Use the isolated `codex/media-analysis-resilience` checkout at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
 unrelated changes in the original `D:/Code/goby` checkout.
 
-Current Phase 3 checkpoint: scope10 generation
+Current Phase 3 checkpoint: the Goby session JIT repair at
+`89b667083a1c5608b9d7e554df27de721ac23c51` passed all **50 remote regression
+stages**, both new Go builds and independent resource closure. Its real capacity
+repeat remains pending. The earlier scope10 generation
 `phase3-tier10k-10-compound-02` passed actual admission and entered cold business
 concurrency, then failed at **2026-09-23 02:41:37 UTC** when the **512 MiB
 PostgreSQL cgroup exhausted memory**. The kernel killed catalog-owner backend
@@ -27,20 +30,25 @@ the original preparation references. Scope09's failed fixtures and the closed
 26-database regression cluster have complete external archives and readback;
 only their exact redundant guest copies were retired.
 
-Source `8b6cb210f0ecc679c8067e19da142dfe963dfb8c` passed all 49 remote regression
-stages: 35 ordinary Go packages, 4,277 parent passes, zero failures and 18 explicit
-parent skips; 24 embedded parents; and 91 tests across eight Python scripts.
-The 10 focused and 15 race passes are separate repeats. Both Go binaries built,
-and frontend reuse was proved from unchanged inputs and all 73 artifacts.
-These accepted checks precede the failed compound run and do not accept capacity.
+The latest `89b6670` regression completed 35 ordinary Go packages with **4,279
+parent passes, zero failures and 18 explicit parent skips**. One Vulkan subcase
+skip remains separate. The embedded suite passed 24 parents, and eight Python
+scripts passed 91 tests. Focused library 10, focused database 2 and race 15
+passes are separate repeats. Frontend reuse from `8b6cb21` was proved against
+unchanged inputs and all 73 artifact hashes. The observer passed with four
+transient PostgreSQL-file `du` gaps, no persistent loss and no OOM; missing
+measurements were not zero-filled. Worker, observer, PostgreSQL and collector
+are independently closed. This regression cluster shut down cleanly and retains
+33 custom databases: the restored 26 plus seven new regression databases.
+It is separate from the failed capacity cluster described below.
 
-Failure closure is complete and independently confirmed. The observer remained
-active in its gap handler after the original application/PostgreSQL PIDs
+The original scope10 failure's physical runtime closure is independently
+confirmed. Its observer remained active in its gap handler after the original
+application/PostgreSQL PIDs
 disappeared; it was externally withdrawn after evidence preservation. The empty
 publisher, control parent and successful closure collector are also closed.
 Original application, PostgreSQL and Actor failure states remain unchanged.
-Driver cleanup
-recorded seven `cleanup_operation` errors and
+Driver cleanup recorded seven `cleanup_operation` errors and
 `filesystem_restore_held_for_active_worker`. PostgreSQL data, WAL and control
 files remain in place with the control state `in production`; no clean database
 shutdown is claimed. The database has not restarted, durable job state is
@@ -54,14 +62,25 @@ included 447,766,528 anonymous bytes and 76,296,192 file bytes, including
 61,272,064 shmem bytes. These observations are diagnostic evidence, not a repair,
 proof of a single causal SQL statement, or evidence of a page-cache-only OOM.
 
-The next repair sets `jit=off` on every Goby database session at connection
-startup, while retaining existing transaction guards and resource limits.
+The verified source repair sets `jit=off` on every Goby database session at
+connection startup, while retaining existing transaction guards and resource
+limits.
 Real-connection tests cover replacement, Hijack, catalog ownership, deployment
-leases and unchanged independent PostgreSQL sessions. This source change is
-written but not yet verified. The prior clean regression cluster archive has
-been transferred back for restoration and a new complete regression; the OOM
-cluster remains untouched. Resolve the demonstrated memory/observation failures
-before admitting a new complete capacity journey. Read the
+leases and unchanged independent PostgreSQL sessions. It does not prove that
+JIT alone caused the OOM. An observer terminal-handling candidate separately
+passed 15 isolated Python tests on VM106 and closed its test worker. It has not
+been deployed as the real observer or tested for actual systemd propagation;
+these additional checks do not accept capacity.
+
+The four selected scope10 failed-state trees now have complete external
+preservation: all 350,821 entries and 1,788,288,743 logical bytes were read back,
+and the guest archive, transfer and external readback controls are independently
+closed. Their original guest trees remain pending exact-copy retirement. The
+separate clean 33-database regression cluster also has a complete guest archive
+and independently closed archive worker; its external copy and readback remain
+pending. Complete those storage steps and fresh space admission before the next
+capacity journey. Preserve the unmodified OOM cluster and original failures;
+use the verified `89b6670` delivery for a newly admitted full journey. Read the
 [Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private
 checkpoint for exact evidence. Phase 3 remains unpublished. Phases 1 and 2 are
 merged and pushed on `main` at `e41febbb36687d04340f5c651f4bf1bf376a4310`.
