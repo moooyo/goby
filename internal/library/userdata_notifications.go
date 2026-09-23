@@ -80,7 +80,7 @@ func (s *Store) UserDataNotificationPage(ctx context.Context, query UserDataNoti
 	items := make([]Item, 0, query.Limit+1)
 	for rows.Next() {
 		var item Item
-		if err := rows.Scan(&item.ID, &item.Type); err != nil {
+		if err := rows.Scan(&item.ID, &item.Type, &item.IsFolder); err != nil {
 			return UserDataNotificationResult{}, fmt.Errorf("scan user data notification item: %w", err)
 		}
 		items = append(items, item)
@@ -160,7 +160,7 @@ func userDataNotificationItemsSQL(scopes ...libraryAccess) string {
 		UNION
 		SELECT id, library_id FROM descendants
 	)
-	SELECT item.id, item.type FROM related JOIN items item
+	SELECT item.id, item.type, item.is_folder FROM related JOIN items item
 		ON item.id = related.id AND item.library_id = related.library_id
 	WHERE item.type IN (` + userDataFolderTypesSQL + `)
 		AND (` + access.ordinarySQL("item") + ` OR (item.id = $1::text AND ` + access.directSQL("item") + `))
