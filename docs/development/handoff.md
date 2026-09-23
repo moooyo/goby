@@ -9,7 +9,14 @@ Use the isolated `codex/media-analysis-resilience` checkout at
 `C:/Users/moooyo/.codex/worktrees/media-analysis-resilience/goby`. Preserve the
 unrelated changes in the original `D:/Code/goby` checkout.
 
-Current Phase 3 checkpoint: the Goby session JIT repair at
+Latest Phase 3 development: `fcefb82` passed 71 affected regression tests after
+fixing the notification projection exposed by the leaf UserData optimization.
+Remote same-backend diagnostics now distinguish migration catalog allocations,
+TEMP buffers, retained query plans, and real startup inspection. See the
+[memory investigation](media-analysis-memory-diagnostics-20260923.md). These
+results do not establish capacity acceptance or a new complete build delivery.
+
+The last complete regression/build checkpoint is the Goby session JIT repair at
 `89b667083a1c5608b9d7e554df27de721ac23c51` passed all **50 remote regression
 stages**, both new Go builds and independent resource closure. The actual
 scope11 repeat `phase3-tier10k-11-compound-01` passed baseline, rebind and fresh
@@ -18,9 +25,9 @@ PostgreSQL OOM at the unchanged 512 MiB cap, killing backend `700735`.
 Its driver returned `accepted=false`, `execution_complete=false`
 and `failure_codes=["http_status"]`. The deployed observer exited naturally
 with status 1; failure collection and runtime closure are now independently complete.
-The JIT repair alone was insufficient for this capacity workload. The tested
-product remains `89b6670`; subsequent documentation commits do not identify
-new builds. The earlier scope10 generation
+The JIT repair alone was insufficient for this capacity workload. The last
+complete regression/build product remains `89b6670`; affected regression on
+`fcefb82` is a separate, narrower result. The earlier scope10 generation
 `phase3-tier10k-10-compound-02` passed actual admission and entered cold business
 concurrency, then failed at **2026-09-23 02:41:37 UTC** when the **512 MiB
 PostgreSQL cgroup exhausted memory**. The kernel killed catalog-owner backend
@@ -144,13 +151,15 @@ The retained PG log has 3,412 lines, 3,355 plan entries, zero JIT entries and
 44 normalized query shapes. This confirms the JIT repair was insufficient,
 without establishing a new root cause. Independent failure closure SHA256 is
 `4abb5badde410f6e4c64d639531e9b2b024259f6ea541fa39b118bad25e8653c`.
-The next source candidate avoids recursive folder/collection UserData queries
+The leaf UserData optimization avoids recursive folder/collection queries
 when a returned page contains only leaf items, and restricts mixed-page summaries
 to actual returned folders. Direct state-mutation derivation remains unchanged.
-Real PostgreSQL tracer tests cover query omission, folder ID subsets and snapshot
-semantics, but have not run yet. This candidate is not a proven OOM repair.
-Run its focused verification remotely and measure backend memory contexts before
-choosing any connection-cache or execution-memory policy. Preserve the failed PG
+Real PostgreSQL tracer tests for query omission, folder ID subsets and snapshot
+semantics passed within the 71-test affected regression on `fcefb82`. Backend
+memory diagnostics also completed, including the actual startup inspection path;
+the linked investigation records their narrower scope. This is not a proven OOM
+repair. Evaluate the measured type-aware description-cache candidate with real
+JSON/array writes and complete regression before another capacity run. Preserve the failed PG
 and unchanged acceptance limits. No 10k/100k journey, overload profile or
 fault/recovery case is accepted.
 Read the [Phase 3 record](media-analysis-resilience-phase3-20260922.md) and the private

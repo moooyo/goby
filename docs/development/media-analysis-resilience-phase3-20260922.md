@@ -11,9 +11,12 @@ verification. The overall three-phase objective remains incomplete.
 
 Implementation uses the isolated `codex/media-analysis-resilience` checkout.
 Unrelated changes in the original checkout remain outside this increment.
-The current accepted regression/build source is
-`89b667083a1c5608b9d7e554df27de721ac23c51`; worktree checkpoint `c191482`
-contains documentation changes only. Earlier product/build source `1ed1d69`
+The last complete accepted regression/build source is
+`89b667083a1c5608b9d7e554df27de721ac23c51`. The later `fcefb82` leaf UserData and
+notification repair passed 71 affected tests; same-backend and real-startup
+[memory diagnostics](media-analysis-memory-diagnostics-20260923.md) also completed.
+Those narrower results do not replace complete regression/build or capacity gates.
+Earlier product/build source `1ed1d69`
 and fixture successor `00af9e4` retain their original remote evidence.
 Exact profiles, contexts and receipts remain bound in the private
 checkpoint and delivery ledger; this document does not itself admit a workload.
