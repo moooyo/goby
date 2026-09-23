@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure Phase 3 admission/accounting tests; run only in remote verification.
+"""Phase 3 admission/accounting and private-file tests; remote verification only.
 
 These tests do not exercise Goby and cannot establish capacity, media correctness
 or recovery acceptance. In particular, no synthetic event is an acceptance
@@ -10,7 +10,9 @@ import copy
 import errno
 import importlib.util
 import io
+import os
 from pathlib import Path
+import tempfile
 import threading
 import unittest
 from unittest import mock
@@ -20,6 +22,219 @@ ROOT = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("phase3_workload", ROOT / "media-analysis-phase3-workload.py")
 ACTOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(ACTOR)
+
+
+@unittest.skipUnless(hasattr(os, "O_NOFOLLOW") and hasattr(os, "getuid"), "Requires the Linux verification environment")
+class BodyEvidenceTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="goby-body-evidence-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.manifest = {"budgets": {"max_artifact_bytes": 8 << 20, "max_events": 1000,
+            "max_requests": 1000, "request_seconds": 10, "max_stream_bytes": 1 << 20, "max_response_bytes": 1 << 20}}
+        self.evidence = ACTOR.Evidence(self.root / "run", self.manifest)
+
+    def test_only_identical_bodies_share_complete_private_files(self):
+        evidence = self.evidence
+        first = evidence.artifact("body.bin", b"complete media")
+        again = evidence.artifact("body.bin", b"complete media")
+        empty = evidence.artifact("body.bin", b"")
+        self.assertEqual(empty, evidence.artifact("body.bin", b""))
+        self.assertEqual(first, again)
+        self.assertIsNot(first, again)
+        other = evidence.artifact("body.bin", b"different media")
+        metadata = evidence.artifact("http.json", b"complete media")
+        repeated_metadata = evidence.artifact("http.json", b"complete media")
+        self.assertNotEqual(metadata["name"], repeated_metadata["name"])
+        for reference, data in ((first, b"complete media"), (empty, b""), (other, b"different media")):
+            path = evidence.private / reference["name"]
+            self.assertEqual(path.read_bytes(), data)
+            self.assertEqual((reference["bytes"], reference["sha256"]), (len(data), ACTOR.digest(data)))
+            info = path.lstat()
+            self.assertEqual((ACTOR.stat.S_IMODE(info.st_mode), info.st_uid, info.st_nlink), (0o600, os.getuid(), 1))
+        self.assertEqual(evidence.bytes, len(b"complete media") * 3 + len(b"different media"))
+        self.assertEqual(len(list(evidence.private.iterdir())), 5)
+        first["name"] = "caller-mutated-reference"
+        self.assertEqual(evidence.artifact("body.bin", b"complete media"), again)
+
+    def test_concurrent_requests_publish_one_body_and_charge_it_once(self):
+        barrier = threading.Barrier(8)
+        data = b"media" * 20000
+
+        def capture(_):
+            barrier.wait(timeout=10)
+            return self.evidence.artifact("body.bin", data)
+
+        with ACTOR.concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            references = list(executor.map(capture, range(8)))
+        self.assertTrue(all(reference == references[0] for reference in references))
+        self.assertEqual(len(list(self.evidence.private.iterdir())), 1)
+        self.assertEqual(self.evidence.bytes, len(data))
+        self.assertEqual((self.evidence.private / references[0]["name"]).read_bytes(), data)
+
+    def test_index_capacity_falls_back_to_charged_files_without_eviction(self):
+        with mock.patch.object(ACTOR, "MAX_BODY_DEDUP_ENTRIES", 2):
+            first = self.evidence.artifact("body.bin", b"a")
+            self.evidence.artifact("body.bin", b"b")
+            overflow = self.evidence.artifact("body.bin", b"c")
+            repeated_overflow = self.evidence.artifact("body.bin", b"c")
+            self.assertEqual(self.evidence.artifact("body.bin", b"a"), first)
+        self.assertNotEqual(overflow["name"], repeated_overflow["name"])
+        self.assertEqual(len(self.evidence._body_index), 2)
+        self.assertEqual(len(list(self.evidence.private.iterdir())), 4)
+        self.assertEqual(self.evidence.bytes, 4)
+
+    def test_body_index_does_not_cross_evidence_instances(self):
+        other = ACTOR.Evidence(self.root / "other", self.manifest)
+        first = self.evidence.artifact("body.bin", b"same")
+        second = other.artifact("body.bin", b"same")
+        self.assertFalse(os.path.samefile(self.evidence.private / first["name"], other.private / second["name"]))
+        self.assertEqual((self.evidence.bytes, other.bytes), (4, 4))
+
+    def test_business_reserve_and_cleanup_ceiling_remain_enforced(self):
+        self.manifest["budgets"]["max_artifact_bytes"] = 1024
+        first = self.evidence.artifact("body.bin", b"a" * 800)
+        self.assertEqual(self.evidence.artifact("body.bin", b"a" * 800), first)
+        with self.assertRaisesRegex(ACTOR.Failure, "artifact_budget"):
+            self.evidence.artifact("body.bin", b"b" * 21)
+        self.assertEqual(self.evidence.bytes, 800)
+        self.evidence.closing = True
+        cleanup = self.evidence.artifact("body.bin", b"b" * 224)
+        self.assertEqual(self.evidence.artifact("body.bin", b"a" * 800), first)
+        self.assertEqual(self.evidence.artifact("body.bin", b"b" * 224), cleanup)
+        with self.assertRaisesRegex(ACTOR.Failure, "artifact_budget"):
+            self.evidence.artifact("body.bin", b"c")
+        self.assertEqual(self.evidence.bytes, 1024)
+        self.assertEqual(len(list(self.evidence.private.iterdir())), 2)
+
+    def test_mutated_replaced_linked_or_missing_body_cannot_be_reused(self):
+        for mutation in ("content", "replacement", "permissions", "hardlink", "symlink", "missing"):
+            with self.subTest(mutation=mutation):
+                evidence = ACTOR.Evidence(self.root / mutation, self.manifest)
+                reference = evidence.artifact("body.bin", b"original")
+                path = evidence.private / reference["name"]
+                if mutation == "content":
+                    path.write_bytes(b"modified")
+                elif mutation == "replacement":
+                    replacement = evidence.private / "replacement"
+                    replacement.write_bytes(b"original")
+                    replacement.chmod(0o600)
+                    os.replace(replacement, path)
+                elif mutation == "permissions":
+                    path.chmod(0o640)
+                elif mutation == "hardlink":
+                    os.link(path, evidence.private / "hardlink")
+                elif mutation == "symlink":
+                    target = evidence.private / "target"
+                    path.rename(target)
+                    path.symlink_to(target)
+                else:
+                    path.unlink()
+                with self.assertRaisesRegex(ACTOR.Failure, "body_artifact_"):
+                    evidence.artifact("body.bin", b"original")
+                self.assertEqual((evidence.bytes, evidence.serial), (8, 1))
+
+    def test_replaced_directory_cannot_reuse_an_original_file_moved_into_it(self):
+        reference = self.evidence.artifact("body.bin", b"original")
+        retired = self.root / "retired-private"
+        self.evidence.private.rename(retired)
+        self.evidence.private.mkdir(mode=0o700)
+        (retired / reference["name"]).rename(self.evidence.private / reference["name"])
+        with self.assertRaisesRegex(ACTOR.Failure, "body_artifact_directory"):
+            self.evidence.artifact("body.bin", b"original")
+
+    def test_wrong_descriptor_owner_is_rejected_before_reading(self):
+        self.evidence.artifact("body.bin", b"original")
+        original_fstat = os.fstat
+
+        def changed_owner(fd):
+            fields = list(original_fstat(fd))
+            fields[4] += 1
+            return os.stat_result(fields)
+
+        with mock.patch.object(ACTOR.os, "fstat", side_effect=changed_owner), \
+                mock.patch.object(ACTOR.os, "read") as reading:
+            with self.assertRaisesRegex(ACTOR.Failure, "body_artifact_identity"):
+                self.evidence.artifact("body.bin", b"original")
+        reading.assert_not_called()
+        self.assertEqual((self.evidence.bytes, self.evidence.serial), (8, 1))
+
+    def test_digest_match_alone_cannot_reuse_different_bytes(self):
+        with mock.patch.object(ACTOR, "digest", return_value="a" * 64):
+            reference = self.evidence.artifact("body.bin", b"first")
+            with self.assertRaisesRegex(ACTOR.Failure, "body_artifact_changed"):
+                self.evidence.artifact("body.bin", b"other")
+        self.assertEqual((self.evidence.private / reference["name"]).read_bytes(), b"first")
+        self.assertEqual((self.evidence.bytes, self.evidence.serial), (5, 1))
+
+    def test_file_replacement_during_comparison_fails_closed(self):
+        data = b"x" * (ACTOR.BODY_COMPARE_CHUNK_BYTES + 1)
+        reference = self.evidence.artifact("body.bin", data)
+        path = self.evidence.private / reference["name"]
+        replacement = self.evidence.private / "replacement"
+        replacement.write_bytes(data)
+        replacement.chmod(0o600)
+        original_read, original_open = os.read, os.open
+        replaced = False
+
+        def replace_after_read(fd, size):
+            nonlocal replaced
+            value = original_read(fd, size)
+            if not replaced:
+                os.replace(replacement, path)
+                replaced = True
+            return value
+
+        with mock.patch.object(ACTOR.os, "read", side_effect=replace_after_read), \
+                mock.patch.object(ACTOR.os, "open", wraps=original_open) as opening:
+            with self.assertRaisesRegex(ACTOR.Failure, "body_artifact_(changed|identity)"):
+                self.evidence.artifact("body.bin", data)
+        self.assertTrue(replaced)
+        self.assertTrue(opening.call_args.args[1] & os.O_NOFOLLOW)
+        self.assertEqual(self.evidence.bytes, len(data))
+
+    def test_http_requests_keep_separate_receipts_events_and_real_reads(self):
+        actor = object.__new__(ACTOR.Actor)
+        actor.e, actor.m = self.evidence, self.manifest
+        actor.c = {"origin": "http://127.0.0.1:18109", "emby_token": "private-token", "device_id": "device"}
+        actor.lock, actor.requests, actor.cleanup_mode, actor.phase = threading.RLock(), 0, False, "cold"
+        actor.assert_owned = mock.Mock()
+        actor.remaining = mock.Mock(return_value=60)
+        data = b"complete response" * 100
+        connections = []
+        for _ in range(2):
+            response = mock.Mock(status=200, length=None, fp=object())
+            response.getheaders.return_value = [("Content-Type", "video/mp4")]
+            response.read1.side_effect = [data, b""]
+            connection = mock.Mock()
+            connection.getresponse.return_value = response
+            connections.append(connection)
+        watchdog = mock.Mock()
+        watchdog.is_alive.return_value = False
+        with mock.patch.object(ACTOR.http.client, "HTTPConnection", side_effect=connections), \
+                mock.patch.object(ACTOR.threading, "Timer", return_value=watchdog), \
+                mock.patch.object(ACTOR.time, "monotonic_ns", side_effect=range(100, 1000, 10)):
+            first = actor.http("remux-start", "GET", "/stream.mp4", binary=True)
+            second = actor.http("remux-start", "GET", "/stream.mp4", binary=True)
+        self.assertEqual((first[0], second[0]), (data, data))
+        self.assertEqual(first[3], second[3])
+        self.assertNotEqual(first[2], second[2])
+        self.assertEqual(actor.requests, 2)
+        for connection in connections:
+            connection.request.assert_called_once()
+            self.assertEqual(connection.getresponse.return_value.read1.call_count, 2)
+            connection.close.assert_called_once()
+        events = self.evidence.events
+        self.assertEqual(len(events), 2)
+        self.assertEqual(events[0]["body"], events[1]["body"])
+        self.assertNotEqual(events[0]["receipt"]["name"], events[1]["receipt"]["name"])
+        for event in events:
+            receipt = ACTOR.strict_json(ACTOR.read_private(self.evidence.private / event["receipt"]["name"]))
+            self.assertEqual(receipt["body_sha256"], event["body"]["sha256"])
+            self.assertEqual(ACTOR.read_private(self.evidence.private / event["body"]["name"]), data)
+        self.assertEqual(len(list(self.evidence.private.glob("*-body.bin"))), 1)
+        self.assertEqual(self.evidence.bytes, sum(path.stat().st_size for path in self.evidence.private.iterdir()) +
+                         (self.evidence.directory / "events.jsonl").stat().st_size)
 
 
 class ManifestTests(unittest.TestCase):

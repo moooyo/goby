@@ -347,6 +347,25 @@ separate step. `private/` contains raw HTTP body/headers, paths, SQL statements
 and results, process command lines and real task IDs, and must never be copied
 into a PR or issue. Auth tokens in generated media URLs can appear there.
 
+Within one fresh evidence directory, identical captured HTTP body bytes may reuse
+the same private `{name,sha256,bytes}` reference. Every request still executes,
+retains its own HTTP receipt and timed event, and performs all response, media
+decoding and correctness checks. Failed requests retain their entire captured
+partial body and independent failure receipt. Reuse never samples, truncates,
+compresses or discards captured bytes. The index holds at most 4096 body
+identities and no payload bytes; once full, previously unseen bodies follow the original charged,
+exclusive-file write path. It is not shared across runs.
+
+Before reuse, the actor checks the original private-directory identity and the
+same regular file's identity, ownership, `0600` mode, single link and complete
+bytes through an `O_NOFOLLOW` descriptor, including empty response bodies. A
+missing, replaced, linked, changed or inaccessible file fails closed. References
+are shared directly; no hard links or symbolic links are created. Each stored
+body is charged once, while every receipt, event and checkpoint write remains
+charged as before. The artifact ceiling and cleanup reserve remain unchanged;
+cleanup may reuse the same verified files. This storage optimization does not
+guarantee that a workload fits its finite evidence budget.
+
 The atomically replaced checkpoint contract is:
 
 ```text

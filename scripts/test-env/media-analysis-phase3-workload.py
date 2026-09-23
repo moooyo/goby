@@ -32,6 +32,8 @@ from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
 VERSION = 1
 CONTEXT_VERSION = 2
+MAX_BODY_DEDUP_ENTRIES = 4096
+BODY_COMPARE_CHUNK_BYTES = 64 << 10
 PHASES = ("cold", "cached", "incremental")
 QUERY_KINDS = {"unicode", "filter", "exact_total", "shallow", "deep", "resume", "latest"}
 PLAY_MODES = {"direct", "remux", "transcode"}
@@ -488,6 +490,9 @@ class Evidence:
         self.lock = threading.RLock()
         self.events, self.bytes, self.serial = [], 0, 0
         self.closing = False
+        private = self.private.lstat()
+        self._private_identity = (private.st_dev, private.st_ino)
+        self._body_index = {}
 
     def charge(self, size):
         maximum = self.manifest["budgets"]["max_artifact_bytes"]
@@ -495,16 +500,73 @@ class Evidence:
         need(self.bytes + size <= maximum - (0 if self.closing else reserve), "artifact_budget")
         self.bytes += size
 
+    @staticmethod
+    def _body_identity(info, size):
+        need(stat.S_ISREG(info.st_mode) and info.st_uid == os.getuid() and info.st_nlink == 1 and
+             stat.S_IMODE(info.st_mode) == 0o600 and info.st_size == size, "body_artifact_identity")
+        return tuple(getattr(info, name) for name in ("st_dev", "st_ino", "st_mode", "st_uid", "st_gid",
+                                                     "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns"))
+
+    def _body_directory(self):
+        need(self.private.resolve(strict=True) == self.private, "body_artifact_directory")
+        info = self.private.lstat()
+        need(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid() and stat.S_IMODE(info.st_mode) == 0o700 and
+             (info.st_dev, info.st_ino) == self._private_identity, "body_artifact_directory")
+
+    def _reuse_body(self, data, entry):
+        """Reuse only the same unchanged file, including a legitimate empty body."""
+        reference, identity = entry
+        path = self.private / reference["name"]
+        try:
+            self._body_directory()
+            need(self._body_identity(path.lstat(), len(data)) == identity, "body_artifact_changed")
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
+            try:
+                need(self._body_identity(os.fstat(fd), len(data)) == identity, "body_artifact_changed")
+                offset = 0
+                while offset < len(data):
+                    chunk = os.read(fd, min(BODY_COMPARE_CHUNK_BYTES, len(data) - offset))
+                    need(chunk and chunk == data[offset:offset + len(chunk)], "body_artifact_changed")
+                    offset += len(chunk)
+                need(not os.read(fd, 1), "body_artifact_changed")
+                need(self._body_identity(os.fstat(fd), len(data)) == identity and
+                     self._body_identity(path.lstat(), len(data)) == identity, "body_artifact_changed")
+                self._body_directory()
+            finally:
+                os.close(fd)
+        except OSError:
+            raise Failure("body_artifact_unavailable") from None
+        return dict(reference)
+
     def artifact(self, label, data):
         with self.lock:
             need(SAFE.fullmatch(label), "artifact_label")
+            # Keep every request and event; only identical stored HTTP bodies share
+            # a reference. The bounded index never retains body bytes or crosses runs.
+            if label == "body.bin":
+                data = bytes(data)
+            body_key = (len(data), digest(data)) if label == "body.bin" else None
+            if body_key is not None and body_key in self._body_index:
+                return self._reuse_body(data, self._body_index[body_key])
             self.charge(len(data))
             self.serial += 1
             name = "%07d-%s" % (self.serial, label)
-            fd = os.open(self.private / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            fd = os.open(self.private / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
             with os.fdopen(fd, "wb") as stream:
+                os.fchmod(stream.fileno(), 0o600)
                 stream.write(data)
-            return {"name": name, "sha256": digest(data), "bytes": len(data)}
+                if body_key is not None:
+                    stream.flush()
+                    identity = self._body_identity(os.fstat(stream.fileno()), len(data))
+            reference = {"name": name, "sha256": body_key[1] if body_key is not None else digest(data), "bytes": len(data)}
+            if body_key is not None:
+                self._body_directory()
+                need(self._body_identity((self.private / name).lstat(), len(data)) == identity, "body_artifact_changed")
+                # At capacity, new bodies use the original charged, exclusive-write
+                # path. Existing indexed files remain reusable during cleanup too.
+                if len(self._body_index) < MAX_BODY_DEDUP_ENTRIES:
+                    self._body_index[body_key] = (dict(reference), identity)
+            return reference
 
     def event(self, kind, **values):
         with self.lock:
