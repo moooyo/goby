@@ -143,9 +143,12 @@ func TestLatestQueryJITPreservesScopedResultsAndSessionSetting(t *testing.T) {
 						} else if !reflect.DeepEqual(result, first) {
 							t.Fatal("the cached latest statement changed its complete item projections")
 						}
-						assertCatalogQueryJITReadKinds(t, trace, []string{
-							"page", "user-data", "folder-user-data", "collection-user-data", "subtitles", "owned-subtitles",
-						}, pid)
+						reads := []string{"page", "user-data"}
+						if group {
+							reads = append(reads, "folder-user-data", "collection-user-data")
+						}
+						reads = append(reads, "subtitles", "owned-subtitles")
+						assertCatalogQueryJITReadKinds(t, trace, reads, pid)
 						assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
 					}
 					query.ParentID = "library-a"
@@ -177,9 +180,12 @@ func TestLatestQueryJITRestoresSessionAfterProjectionFailure(t *testing.T) {
 					!errors.As(trace.injected, &injectedError) || injectedError.Code != "22012" {
 					t.Fatalf("the projection did not fail in an aborted database transaction: query=%v, injected=%v", err, trace.injected)
 				}
-				assertCatalogQueryJITReadKinds(t, trace, []string{
-					"page", "user-data", "folder-user-data", "collection-user-data", "subtitles",
-				}, pid)
+				reads := []string{"page", "user-data"}
+				if group {
+					reads = append(reads, "folder-user-data", "collection-user-data")
+				}
+				reads = append(reads, "subtitles")
+				assertCatalogQueryJITReadKinds(t, trace, reads, pid)
 				assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
 				trace.failKind, trace.reads = "", nil
 				result, err := store.QueryLatest(ctx, query, group)
@@ -191,13 +197,160 @@ func TestLatestQueryJITRestoresSessionAfterProjectionFailure(t *testing.T) {
 					want[1] = latestExpectation{"series-b", 1}
 				}
 				assertLatestItems(t, result, want)
-				assertCatalogQueryJITReadKinds(t, trace, []string{
-					"page", "user-data", "folder-user-data", "collection-user-data", "subtitles", "owned-subtitles",
-				}, pid)
+				assertCatalogQueryJITReadKinds(t, trace, append(reads, "owned-subtitles"), pid)
 				assertCatalogQueryJITSession(t, ctx, store.pool, incoming, pid)
 			})
 		}
 	}
+}
+
+func TestAttachUserDataDerivesOnlyReturnedFolders(t *testing.T) {
+	ctx, fixture := libraryQueryTestStore(t)
+	seedLibraryUserDataQueryFixture(t, ctx, fixture.pool)
+	for _, test := range []struct {
+		name      string
+		ids       []string
+		folders   []string
+		withScope bool
+	}{
+		{name: "leaves", ids: []string{"episode-b1", "video-b"}},
+		{name: "mixed", ids: []string{"episode-b1", "video-b", "series-b", "album-b"},
+			folders: []string{"album-b", "series-b"}, withScope: true},
+		{name: "folders", ids: []string{"series-b", "season-b", "album-b", "artist-b"},
+			folders: []string{"album-b", "artist-b", "season-b", "series-b"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			trace := &catalogQueryJITTracer{projections: true}
+			store := catalogQueryJITStore(t, ctx, fixture, "off", trace)
+			pid := assertCatalogQueryJITSession(t, ctx, store.pool, "off", 0)
+			tx, access, err := store.beginUserRead(ctx, "restricted")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			ids := append(slices.Clone(test.ids), "library-b", "album-disc-b")
+			items := readUserDataProjectionItems(t, ctx, tx, ids)
+			// Repeated physical items still get independent personal state. A
+			// virtual entry sharing a physical ID must not consume that ID.
+			items = append(items, slices.Clone(items)...)
+			items = append([]Item{{ID: "episode-b1", Type: "Episode", ExpectedEpisode: &ExpectedEpisodeInfo{},
+				UserData: &UserData{ItemID: "stale"}}}, items...)
+			trace.reads = nil
+			var scopes []libraryAccess
+			if test.withScope {
+				scopes = append(scopes, access)
+			}
+			if err := attachUserData(ctx, tx, "restricted", items, scopes...); err != nil {
+				t.Fatalf("attach the snapshot's user data: %v", err)
+			}
+			reads := []string{"user-data"}
+			if len(test.folders) != 0 {
+				reads = append(reads, "folder-user-data", "collection-user-data")
+			}
+			assertCatalogQueryJITReadKinds(t, trace, reads, pid)
+			for _, read := range trace.reads {
+				if read.kind == "folder-user-data" || read.kind == "collection-user-data" {
+					if !slices.Equal(read.ids, test.folders) {
+						t.Fatalf("derived query received IDs %v, want only returned folders %v", read.ids, test.folders)
+					}
+				}
+			}
+			want := map[string]UserData{
+				"episode-b1": userDataQueryEpisodeState("restricted"),
+				"video-b":    {ItemID: "video-b"},
+				"series-b":   userDataQueryFolderState("series-b", 1, false, false),
+				"season-b":   userDataQueryFolderState("season-b", 1, false, false),
+				"album-b":    userDataQueryFolderState("album-b", 2, false, false),
+				"artist-b":   userDataQueryFolderState("artist-b", 0, false, false),
+			}
+			seen := make(map[string]*UserData)
+			for _, item := range items {
+				if item.ExpectedEpisode != nil || item.ID == "library-b" || item.ID == "album-disc-b" {
+					if item.UserData != nil {
+						t.Fatalf("unsupported or virtual item retained user data: %+v", item)
+					}
+					continue
+				}
+				assertLibraryUserData(t, item, want[item.ID])
+				if previous := seen[item.ID]; previous != nil {
+					if previous == item.UserData || previous.LastPlayedDate != nil && previous.LastPlayedDate == item.UserData.LastPlayedDate ||
+						previous.UnplayedItemCount != nil && previous.UnplayedItemCount == item.UserData.UnplayedItemCount {
+						t.Fatalf("repeated item %s shares mutable user data", item.ID)
+					}
+				}
+				seen[item.ID] = item.UserData
+			}
+			if err := tx.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestAttachUserDataFolderSubsetKeepsReadSnapshot(t *testing.T) {
+	ctx, fixture := libraryQueryTestStore(t)
+	seedLibraryUserDataQueryFixture(t, ctx, fixture.pool)
+	trace := &catalogQueryJITTracer{projections: true}
+	store := catalogQueryJITStore(t, ctx, fixture, "off", trace)
+	pid := assertCatalogQueryJITSession(t, ctx, store.pool, "off", 0)
+	tx, access, err := store.beginUserRead(ctx, "restricted")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	items := readUserDataProjectionItems(t, ctx, tx, []string{"episode-b1", "series-b"})
+	if _, err := fixture.pool.Exec(ctx, `UPDATE user_item_data SET play_count=99
+		WHERE user_id='restricted' AND item_id='episode-b1';
+		UPDATE user_item_data SET played=false WHERE user_id='restricted' AND item_id='episode-b2';
+		UPDATE user_item_data SET is_favorite=true WHERE user_id='restricted' AND item_id='series-b'`); err != nil {
+		t.Fatalf("commit user data after the item snapshot: %v", err)
+	}
+	trace.reads = nil
+	if err := attachUserData(ctx, tx, "restricted", items, access); err != nil {
+		t.Fatal(err)
+	}
+	assertCatalogQueryJITReadKinds(t, trace, []string{"user-data", "folder-user-data", "collection-user-data"}, pid)
+	assertLibraryUserData(t, items[0], userDataQueryEpisodeState("restricted"))
+	assertLibraryUserData(t, items[1], userDataQueryFolderState("series-b", 1, false, false))
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	updated, err := fixture.GetItem(ctx, "restricted", "series-b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertLibraryUserData(t, updated, userDataQueryFolderState("series-b", 2, false, true))
+	leaf, err := fixture.GetItem(ctx, "restricted", "episode-b1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := userDataQueryEpisodeState("restricted")
+	want.PlayCount = 99
+	assertLibraryUserData(t, leaf, want)
+}
+
+func readUserDataProjectionItems(t *testing.T, ctx context.Context, tx pgx.Tx, ids []string) []Item {
+	t.Helper()
+	rows, err := tx.Query(ctx, `SELECT id,type,is_folder FROM items WHERE id=ANY($1::text[]) ORDER BY id`, ids)
+	if err != nil {
+		t.Fatalf("read actual item kinds in the projection snapshot: %v", err)
+	}
+	defer rows.Close()
+	var items []Item
+	for rows.Next() {
+		var item Item
+		if err := rows.Scan(&item.ID, &item.Type, &item.IsFolder); err != nil {
+			t.Fatal(err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != len(ids) {
+		t.Fatalf("read %d physical projection items, want %d", len(items), len(ids))
+	}
+	return items
 }
 
 func seedLatestQueryJITFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
@@ -229,6 +382,7 @@ func catalogQueryJITStore(t *testing.T, ctx context.Context, fixture *Store, inc
 type catalogQueryJITRead struct {
 	kind, jit, readOnly, isolation string
 	pid                            int32
+	ids                            []string
 }
 
 type catalogQueryJITTracer struct {
@@ -271,6 +425,16 @@ func (trace *catalogQueryJITTracer) TraceQueryStart(ctx context.Context, conn *p
 		return ctx
 	}
 	observation := catalogQueryJITRead{kind: kind}
+	if kind == "folder-user-data" || kind == "collection-user-data" {
+		if len(data.Args) == 0 {
+			trace.err = errors.Join(trace.err, errors.New("derived user data query has no root IDs"))
+		} else if ids, ok := data.Args[0].([]string); ok {
+			observation.ids = slices.Clone(ids)
+			slices.Sort(observation.ids)
+		} else {
+			trace.err = errors.Join(trace.err, errors.New("derived user data query has unexpected root IDs"))
+		}
+	}
 	observationCtx := context.WithValue(ctx, catalogQueryJITObservationKey{}, true)
 	if err := conn.QueryRow(observationCtx, `SELECT current_setting('jit'), current_setting('transaction_read_only'),
 		current_setting('transaction_isolation'), pg_backend_pid()`).

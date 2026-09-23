@@ -67,8 +67,25 @@ func attachUserData(ctx context.Context, tx pgx.Tx, userID string, items []Item,
 		return fmt.Errorf("read item user data: %w", err)
 	}
 	rows.Close()
-	if err := deriveUserDataFolders(ctx, tx, userID, stored, scopes...); err != nil {
-		return err
+	// The caller already read these item kinds in this transaction's snapshot.
+	// Leaf-only pages need no recursive folder or collection summaries.
+	var folders map[string]UserData
+	for _, item := range items {
+		if item.ExpectedEpisode != nil || !item.IsFolder || !supportsUserData(item.Type) {
+			continue
+		}
+		if folders == nil {
+			folders = make(map[string]UserData)
+		}
+		folders[item.ID] = stored[item.ID]
+	}
+	if len(folders) != 0 {
+		if err := deriveUserDataFolders(ctx, tx, userID, folders, scopes...); err != nil {
+			return err
+		}
+		for id, data := range folders {
+			stored[id] = data
+		}
 	}
 	for index := range items {
 		if items[index].ExpectedEpisode != nil || !supportsUserData(items[index].Type) {
