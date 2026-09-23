@@ -394,11 +394,13 @@ def media_process_kind(arguments):
 
 
 def process_observer_arguments(observer):
-    """Validate the only privileged argv; never accept a command template."""
+    """Validate fixed privileged arguments and the finite broker-source allowlist."""
     exact(observer, "argv binding_sha256 source_sha256", "process_observer_fields")
     arguments = observer["argv"]
     need(type(arguments) is list and len(arguments) == 10 and all(type(value) is str and len(value) <= 2048 for value in arguments), "process_observer_argv")
-    need(arguments[:6] == ["/usr/bin/sudo", "-n", "/usr/bin/python3.13", "-I", "-B", "/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py"]
+    need(arguments[:5] == ["/usr/bin/sudo", "-n", "/usr/bin/python3.13", "-I", "-B"]
+         and arguments[5] in ("/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py",
+                              "/opt/goby-phase3-runtime-setup-20260922-01/process-observer-exit-race01.py")
          and arguments[6] == "--binding" and arguments[8] == "--binding-sha256"
          and re.fullmatch(r"/var/lib/goby-phase3/[a-z0-9][a-z0-9-]{0,31}/control/(?:cases/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/)?process-observer.json", arguments[7])
          and arguments[9] == observer["binding_sha256"] and re.fullmatch(r"[0-9a-f]{64}", observer["binding_sha256"])

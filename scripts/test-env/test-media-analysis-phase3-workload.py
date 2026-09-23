@@ -315,17 +315,31 @@ class OverlapTests(unittest.TestCase):
 
 
 class PrivilegedObserverBoundaryTests(unittest.TestCase):
-    def reference(self, suffix="process-observer.json"):
+    def reference(self, suffix="process-observer.json",
+                  source="/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py"):
         return {"argv": ["/usr/bin/sudo", "-n", "/usr/bin/python3.13", "-I", "-B",
-                         "/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py", "--binding",
+                         source, "--binding",
                          "/var/lib/goby-phase3/tier10k/control/" + suffix, "--binding-sha256", "a" * 64],
                 "binding_sha256": "a" * 64, "source_sha256": "b" * 64}
 
     def test_initial_and_case_specific_frozen_bindings_are_allowed(self):
-        for suffix in ("process-observer.json", "cases/pg-restart-01/process-observer.json"):
-            with self.subTest(suffix=suffix):
-                value = self.reference(suffix)
-                self.assertEqual(ACTOR.process_observer_arguments(value), value["argv"])
+        for source in ("/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py",
+                       "/opt/goby-phase3-runtime-setup-20260922-01/process-observer-exit-race01.py"):
+            for suffix in ("process-observer.json", "cases/pg-restart-01/process-observer.json"):
+                with self.subTest(source=source, suffix=suffix):
+                    value = self.reference(suffix, source)
+                    self.assertEqual(ACTOR.process_observer_arguments(value), value["argv"])
+
+    def test_unapproved_broker_versions_and_lookalike_paths_are_rejected(self):
+        for source in ("/opt/goby-phase3-runtime-setup-20260922-01/process-observer-exit-race02.py",
+                       "/opt/goby-phase3-runtime-setup-20260922-01/process-observer-exit-race01.py.bak",
+                       "/opt/goby-phase3-runtime-setup-20260922-01/process-observer-exit-race01-helper.py",
+                       "/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py.bak",
+                       "/opt/goby-phase3-runtime-setup-20260922-01-extra/process-observer-exit-race01.py",
+                       "/opt/goby-phase3-runtime-setup-20260922-01/../process-observer-exit-race01.py",
+                       "/tmp/process-observer-exit-race01.py", "process-observer-exit-race01.py"):
+            with self.subTest(source=source), self.assertRaisesRegex(ACTOR.Failure, "^process_observer_fixed_scope$"):
+                ACTOR.process_observer_arguments(self.reference(source=source))
 
     def test_privileged_path_traversal_and_command_substitution_are_rejected(self):
         for suffix in ("../process-observer.json", "cases/../process-observer.json", "cases/a/b/process-observer.json"):
