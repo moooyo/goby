@@ -292,6 +292,12 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 	progress.finish()
+	if failure := progress.failure; failure != nil {
+		failure.WaitDelay = errors.Is(err, exec.ErrWaitDelay)
+		failure.WaitErrorClass = progressWaitErrorClass(err)
+		failure.ExitCode = result.ExitCode
+		result.ProgressFailure = failure
+	}
 	if ctx.Err() != nil {
 		return result, ctx.Err()
 	}
@@ -386,12 +392,16 @@ func processEnvironment() []string {
 // may emit progress for many hours without accumulating memory or being killed
 // merely because its regular progress updates exceeded a total output budget.
 type progressWriter struct {
-	line     [maxProgressLine]byte
-	length   int
-	current  Progress
-	callback func(Progress)
-	cancel   context.CancelFunc
-	err      error
+	line         [maxProgressLine]byte
+	length       int
+	current      Progress
+	callback     func(Progress)
+	cancel       context.CancelFunc
+	err          error
+	reason       string
+	failure      *ProgressFailure
+	previous     ProgressSnapshot
+	havePrevious bool
 	// Live clocks accumulate for the source lifetime, independently of the
 	// finite-media duration limit. Tick conversion must still fit in int64.
 	liveTimeline bool
@@ -404,14 +414,14 @@ func (w *progressWriter) Write(p []byte) (int, error) {
 	for i, char := range p {
 		if char == '\n' {
 			if !w.consumeLine() {
-				w.fail()
+				w.fail("Write", w.reason, w.length)
 				return i + 1, w.err
 			}
 			w.length = 0
 			continue
 		}
 		if w.length == len(w.line) {
-			w.fail()
+			w.fail("Write", "line_too_long", w.length+1)
 			return i, w.err
 		}
 		w.line[w.length] = char
@@ -420,7 +430,15 @@ func (w *progressWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func (w *progressWriter) fail() {
+func (w *progressWriter) fail(phase, reason string, observed int) {
+	if w.failure == nil {
+		var previous *ProgressSnapshot
+		if w.havePrevious {
+			value := w.previous
+			previous = &value
+		}
+		w.failure = newProgressFailure(phase, reason, w.line[:w.length], observed, previous)
+	}
 	w.err = ErrProgress
 	if w.cancel != nil {
 		w.cancel()
@@ -429,7 +447,7 @@ func (w *progressWriter) fail() {
 
 func (w *progressWriter) finish() {
 	if w.err == nil && w.length > 0 && !w.consumeLine() {
-		w.fail()
+		w.fail("finish", w.reason, w.length)
 	}
 	w.length = 0
 }
@@ -441,6 +459,7 @@ func (w *progressWriter) consumeLine() bool {
 	}
 	key, value, ok := strings.Cut(line, "=")
 	if !ok {
+		w.reason = "missing_separator"
 		return false
 	}
 	switch key {
@@ -453,7 +472,12 @@ func (w *progressWriter) consumeLine() bool {
 		if w.liveTimeline {
 			limit = math.MaxInt64 / 10
 		}
-		if err != nil || microseconds > limit {
+		if err != nil {
+			w.reason = "invalid_time"
+			return false
+		}
+		if microseconds > limit {
+			w.reason = "time_limit"
 			return false
 		}
 		if microseconds < 0 {
@@ -465,15 +489,23 @@ func (w *progressWriter) consumeLine() bool {
 			return true
 		}
 		bytes, err := strconv.ParseInt(value, 10, 64)
-		if err != nil || bytes < 0 {
+		if err != nil {
+			w.reason = "invalid_size"
+			return false
+		}
+		if bytes < 0 {
+			w.reason = "negative_size"
 			return false
 		}
 		w.current.Bytes = bytes
 	case "progress":
 		if value != "continue" && value != "end" {
+			w.reason = "invalid_state"
 			return false
 		}
 		w.current.Ended = value == "end"
+		w.previous = ProgressSnapshot{OutputTicks: w.current.OutputTicks, Bytes: w.current.Bytes, Ended: w.current.Ended}
+		w.havePrevious = true
 		if w.callback != nil {
 			w.callback(w.current)
 		}

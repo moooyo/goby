@@ -21,6 +21,8 @@ var (
 	errDiagnosticFallback  = errors.New("diagnostic fallback handler failed")
 	errDiagnosticRecursion = errors.New("recursive diagnostic logging rejected")
 	buildVersionPattern    = regexp.MustCompile(`^v?(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(-(dev|alpha|beta|rc)(\.(0|[1-9][0-9]{0,5}))?)?(\+[0-9a-f]{7,40})?$`)
+	progressValuePattern   = regexp.MustCompile(`^[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?$`)
+	progressHashPattern    = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
 type diagnosticContextKey struct{}
@@ -68,7 +70,7 @@ func (h *diagnosticHandler) Handle(ctx context.Context, record slog.Record) erro
 	levels := make([][]slog.Attr, len(h.groups)+1)
 	budget := maxDiagnosticAttrs
 	for _, binding := range h.bindings {
-		levels[binding.depth] = append(levels[binding.depth], filterDiagnosticAttrs(binding.attrs, spec.fields, &budget)...)
+		levels[binding.depth] = append(levels[binding.depth], filterDiagnosticAttrs(binding.attrs, spec, &budget)...)
 	}
 	if !h.blocked && budget > 0 {
 		attrs := make([]slog.Attr, 0, min(record.NumAttrs(), maxInspectedAttrs))
@@ -78,7 +80,7 @@ func (h *diagnosticHandler) Handle(ctx context.Context, record slog.Record) erro
 		})
 		freezeBudget := budget
 		frozen := freezeDiagnosticAttrs(attrs, len(h.groups), &freezeBudget)
-		levels[len(h.groups)] = append(levels[len(h.groups)], filterDiagnosticAttrs(frozen, spec.fields, &budget)...)
+		levels[len(h.groups)] = append(levels[len(h.groups)], filterDiagnosticAttrs(frozen, spec, &budget)...)
 	}
 	for depth := len(h.groups); depth > 0; depth-- {
 		if len(levels[depth]) > 0 {
@@ -93,6 +95,9 @@ func (h *diagnosticHandler) Handle(ctx context.Context, record slog.Record) erro
 	var safe slog.Record
 	var line []byte
 	for {
+		if spec.name == "transcode.progress.invalid" {
+			attrs = filterDiagnosticProgressContext(attrs)
+		}
 		// A zero program counter prevents a fallback with AddSource from
 		// disclosing an arbitrary source path supplied by a caller.
 		safe = slog.NewRecord(stamp, record.Level, spec.message, 0)
@@ -208,7 +213,7 @@ func freezeDiagnosticAttrs(attrs []slog.Attr, depth int, budget *int) []slog.Att
 	return result
 }
 
-func filterDiagnosticAttrs(attrs []slog.Attr, fields map[string]bool, budget *int) []slog.Attr {
+func filterDiagnosticAttrs(attrs []slog.Attr, spec diagnosticEvent, budget *int) []slog.Attr {
 	var result []slog.Attr
 	for _, attr := range attrs {
 		if *budget <= 0 {
@@ -216,13 +221,62 @@ func filterDiagnosticAttrs(attrs []slog.Attr, fields map[string]bool, budget *in
 		}
 		if attr.Value.Kind() == slog.KindGroup {
 			*budget--
-			if children := filterDiagnosticAttrs(attr.Value.Group(), fields, budget); len(children) > 0 {
+			if children := filterDiagnosticAttrs(attr.Value.Group(), spec, budget); len(children) > 0 {
 				result = append(result, slog.GroupAttrs(attr.Key, children...))
 			}
-		} else if fields[attr.Key] {
+		} else if spec.fields[attr.Key] {
+			if attr.Key == "error_class" {
+				allowed := diagnosticErrorClassAllowed(attr.Value.String())
+				if spec.name == "transcode.progress.invalid" {
+					allowed = diagnosticProgressErrorClassAllowed(attr.Value.String())
+				}
+				if !allowed {
+					continue
+				}
+			}
 			result = append(result, attr)
 			*budget--
 		}
+	}
+	return result
+}
+
+// Values and prior snapshots require unambiguous context at the same group level.
+func filterDiagnosticProgressContext(attrs []slog.Attr) []slog.Attr {
+	var fieldCount, truncatedCount, previousCount int
+	var knownField, truncated, previousKnown bool
+	for _, attr := range attrs {
+		switch attr.Key {
+		case "field":
+			fieldCount++
+			knownField = diagnosticProgressFieldAllowed(attr.Value.String())
+		case "truncated":
+			truncatedCount++
+			truncated = attr.Value.Bool()
+		case "previous_known":
+			previousCount++
+			previousKnown = attr.Value.Bool()
+		}
+	}
+	var result []slog.Attr
+	for _, attr := range attrs {
+		if attr.Value.Kind() == slog.KindGroup {
+			if children := filterDiagnosticProgressContext(attr.Value.Group()); len(children) > 0 {
+				result = append(result, slog.GroupAttrs(attr.Key, children...))
+			}
+			continue
+		}
+		switch attr.Key {
+		case "safe_value":
+			if fieldCount != 1 || !knownField || truncatedCount != 1 || truncated {
+				continue
+			}
+		case "output_ticks", "bytes", "ended":
+			if previousCount != 1 || !previousKnown {
+				continue
+			}
+		}
+		result = append(result, attr)
 	}
 	return result
 }
@@ -246,13 +300,19 @@ func freezeDiagnosticValue(attr slog.Attr) (slog.Attr, bool) {
 		return diagnosticInteger(attr, 1, 1<<63-1)
 	case "revoked_login_count", "bytes", "scanned", "added", "updated":
 		return diagnosticInteger(attr, 0, 1<<63-1)
+	case "output_ticks":
+		return diagnosticInteger(attr, 0, 1<<63-1)
+	case "line_bytes":
+		return diagnosticInteger(attr, 0, 4097)
+	case "captured_bytes":
+		return diagnosticInteger(attr, 0, 4096)
 	case "duration_ms":
 		return diagnosticInteger(attr, 0, int64((7*24*time.Hour)/time.Millisecond))
 	case "status":
 		return diagnosticInteger(attr, 100, 599)
 	case "exit_code":
 		return diagnosticInteger(attr, -1, 255)
-	case "administrator", "force_probe", "cancelled":
+	case "administrator", "force_probe", "cancelled", "truncated", "previous_known", "ended", "wait_delay":
 		if value.Kind() == slog.KindBool {
 			return slog.Bool(key, value.Bool()), true
 		}
@@ -263,8 +323,41 @@ func freezeDiagnosticValue(attr slog.Attr) (slog.Attr, bool) {
 			}
 		}
 	case "error_class":
-		if value.Kind() == slog.KindString && diagnosticErrorClassAllowed(value.String()) {
+		if value.Kind() == slog.KindString && (diagnosticErrorClassAllowed(value.String()) || diagnosticProgressErrorClassAllowed(value.String())) {
 			return slog.String(key, value.String()), true
+		}
+	case "phase":
+		if value.Kind() == slog.KindString && (value.String() == "Write" || value.String() == "finish") {
+			return slog.String(key, value.String()), true
+		}
+	case "reason":
+		if value.Kind() == slog.KindString {
+			switch value.String() {
+			case "missing_separator", "line_too_long", "invalid_time", "time_limit", "invalid_size", "negative_size", "invalid_state":
+				return slog.String(key, value.String()), true
+			}
+		}
+	case "field":
+		if value.Kind() == slog.KindString && (value.String() == "unknown" || diagnosticProgressFieldAllowed(value.String())) {
+			return slog.String(key, value.String()), true
+		}
+	case "line_sha256":
+		if value.Kind() == slog.KindString && len(value.String()) == 64 && progressHashPattern.MatchString(value.String()) {
+			return slog.String(key, value.String()), true
+		}
+	case "safe_value":
+		if value.Kind() == slog.KindString && len(value.String()) <= 64 {
+			text := value.String()
+			if text == "continue" || text == "end" || text == "N/A" || progressValuePattern.MatchString(text) {
+				return slog.String(key, text), true
+			}
+		}
+	case "wait_error_class":
+		if value.Kind() == slog.KindString {
+			switch value.String() {
+			case "none", "exit", "context_canceled", "context_deadline", "wait_delay", "other":
+				return slog.String(key, value.String()), true
+			}
 		}
 	case "method":
 		if value.Kind() == slog.KindString {
@@ -361,6 +454,22 @@ func diagnosticErrorClassAllowed(value string) bool {
 	return false
 }
 
+func diagnosticProgressErrorClassAllowed(value string) bool {
+	switch value {
+	case "cancelled", "process_start", "process_progress", "unsupported", "source_unavailable", "cache_unavailable", "process_failed":
+		return true
+	}
+	return false
+}
+
+func diagnosticProgressFieldAllowed(value string) bool {
+	switch value {
+	case "frame", "fps", "stream_0_0_q", "bitrate", "total_size", "out_time_us", "out_time_ms", "out_time", "dup_frames", "drop_frames", "speed", "progress":
+		return true
+	}
+	return false
+}
+
 type diagnosticEvent struct {
 	name    string
 	message string
@@ -417,6 +526,9 @@ var diagnosticEvents = func() map[string]diagnosticEvent {
 	}
 	add("transcode.completed", "transcode completed", "job_id", "request_id", "item_id", "duration_ms", "bytes", "mode", "exit_code", "cancelled")
 	add("transcode.failed", "transcode failed", "job_id", "request_id", "item_id", "duration_ms", "mode", "exit_code", "cancelled", "error_class")
+	add("transcode.progress.invalid", "transcode progress rejected", "job_id", "error_class", "phase", "reason", "field",
+		"line_bytes", "captured_bytes", "truncated", "line_sha256", "safe_value", "previous_known", "output_ticks", "bytes", "ended",
+		"wait_delay", "wait_error_class", "exit_code")
 	return events
 }()
 

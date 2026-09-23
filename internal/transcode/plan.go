@@ -124,6 +124,7 @@ type Progress struct {
 }
 
 type RunResult struct {
-	ExitCode   int
-	StderrTail string
+	ExitCode        int
+	StderrTail      string
+	ProgressFailure *ProgressFailure
 }

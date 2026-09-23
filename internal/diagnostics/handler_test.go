@@ -300,6 +300,167 @@ func TestHandlerClassifiesActivityRetentionRetryWithoutErrorText(t *testing.T) {
 	}
 }
 
+func TestHandlerPreservesTranscodeProgressRejection(t *testing.T) {
+	var output bytes.Buffer
+	handler := NewHandler(nil, slog.NewJSONHandler(&output, nil))
+	record := diagnosticTestRecord("transcode progress rejected",
+		slog.String("job_id", diagnosticTestID), slog.String("error_class", "process_progress"),
+		slog.String("phase", "Write"), slog.String("reason", "invalid_time"), slog.String("field", "out_time_us"),
+		slog.Int("line_bytes", 14), slog.Int("captured_bytes", 14), slog.Bool("truncated", false),
+		slog.String("line_sha256", strings.Repeat("a", 64)), slog.String("safe_value", "-1"),
+		slog.Bool("previous_known", true), slog.Int64("output_ticks", 120), slog.Int64("bytes", 40), slog.Bool("ended", false),
+		slog.Bool("wait_delay", true), slog.String("wait_error_class", "wait_delay"), slog.Int("exit_code", -1))
+	if err := handler.Handle(context.Background(), record); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]any{
+		"time": "2026-09-10T08:00:00Z", "level": "INFO", "msg": "transcode progress rejected", "event": "transcode.progress.invalid",
+		"job_id": diagnosticTestID, "error_class": "process_progress", "phase": "Write", "reason": "invalid_time", "field": "out_time_us",
+		"line_bytes": float64(14), "captured_bytes": float64(14), "truncated": false, "line_sha256": strings.Repeat("a", 64), "safe_value": "-1",
+		"previous_known": true, "output_ticks": float64(120), "bytes": float64(40), "ended": false,
+		"wait_delay": true, "wait_error_class": "wait_delay", "exit_code": float64(-1),
+	}
+	if actual := diagnosticJSON(t, output.Bytes()); !reflect.DeepEqual(actual, want) {
+		t.Fatalf("progress diagnostic lost its bounded fields: %#v", actual)
+	}
+}
+
+func TestHandlerTranscodeProgressAttributeBoundaries(t *testing.T) {
+	type attributeCase struct {
+		name  string
+		attr  slog.Attr
+		value any
+	}
+	tests := []attributeCase{
+		{"finish phase", slog.String("phase", "finish"), "finish"},
+		{"phase case", slog.String("phase", "write"), nil},
+		{"phase text", slog.String("phase", "test-secret"), nil},
+		{"known reason", slog.String("reason", "missing_separator"), "missing_separator"},
+		{"reason text", slog.String("reason", "test-secret"), nil},
+		{"known field", slog.String("field", "stream_0_0_q"), "stream_0_0_q"},
+		{"unknown field", slog.String("field", "unknown"), "unknown"},
+		{"field text", slog.String("field", "test-secret"), nil},
+		{"zero line bytes", slog.Int("line_bytes", 0), float64(0)},
+		{"overflow lower bound", slog.Int("line_bytes", 4097), float64(4097)},
+		{"line bytes excessive", slog.Int("line_bytes", 4098), nil},
+		{"negative line bytes", slog.Int("line_bytes", -1), nil},
+		{"line bytes wrong type", slog.String("line_bytes", "12"), nil},
+		{"capture limit", slog.Int("captured_bytes", 4096), float64(4096)},
+		{"capture excessive", slog.Int("captured_bytes", 4097), nil},
+		{"negative capture", slog.Int("captured_bytes", -1), nil},
+		{"capture wrong type", slog.Float64("captured_bytes", 12), nil},
+		{"lowercase hash", slog.String("line_sha256", strings.Repeat("b", 64)), strings.Repeat("b", 64)},
+		{"uppercase hash", slog.String("line_sha256", strings.Repeat("B", 64)), nil},
+		{"short hash", slog.String("line_sha256", strings.Repeat("b", 63)), nil},
+		{"hash text", slog.String("line_sha256", "test-secret"), nil},
+		{"boolean truncation", slog.Bool("truncated", true), true},
+		{"truncation wrong type", slog.String("truncated", "false"), nil},
+		{"previous wrong type", slog.String("previous_known", "true"), nil},
+		{"nonnegative ticks", slog.Int64("output_ticks", 0), float64(0)},
+		{"negative ticks", slog.Int64("output_ticks", -1), nil},
+		{"overflow ticks", slog.Uint64("output_ticks", math.MaxUint64), nil},
+		{"negative bytes", slog.Int64("bytes", -1), nil},
+		{"ended wrong type", slog.String("ended", "true"), nil},
+		{"wait flag", slog.Bool("wait_delay", false), false},
+		{"wait flag wrong type", slog.Int("wait_delay", 1), nil},
+		{"wait class", slog.String("wait_error_class", "context_deadline"), "context_deadline"},
+		{"wait class text", slog.String("wait_error_class", "test-secret"), nil},
+		{"runner class", slog.String("error_class", "process_failed"), "process_failed"},
+		{"unrelated error class", slog.String("error_class", "database_lease_busy"), nil},
+		{"error class text", slog.String("error_class", "test-secret"), nil},
+		{"exit limit", slog.Int("exit_code", 255), float64(255)},
+		{"exit excessive", slog.Int("exit_code", 256), nil},
+		{"raw progress", slog.String("line", "test-secret"), nil},
+		{"raw stderr", slog.String("stderr", "test-secret"), nil},
+	}
+	for _, value := range []string{"continue", "end", "N/A", "+1", "-.5", "1.", "1e-5", "1E+5", strings.Repeat("1", 64)} {
+		tests = append(tests, attributeCase{"safe value " + value, slog.String("safe_value", value), value})
+	}
+	for _, value := range []string{"", "+", ".", "1e", "NaN", "Inf", "-Inf", "1x", "00:00:01", "1 kbits/s", " 1", "1\n", "test-secret", strings.Repeat("1", 65)} {
+		tests = append(tests, attributeCase{"unsafe value " + value, slog.String("safe_value", value), nil})
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var output bytes.Buffer
+			handler := NewHandler(nil, slog.NewJSONHandler(&output, nil))
+			attrs := []slog.Attr{test.attr}
+			if test.attr.Key == "safe_value" {
+				attrs = append(attrs, slog.String("field", "progress"), slog.Bool("truncated", false))
+			}
+			if test.attr.Key == "output_ticks" || test.attr.Key == "bytes" || test.attr.Key == "ended" {
+				attrs = append(attrs, slog.Bool("previous_known", true))
+			}
+			if err := handler.Handle(context.Background(), diagnosticTestRecord("transcode progress rejected", attrs...)); err != nil {
+				t.Fatal(err)
+			}
+			actual := diagnosticJSON(t, output.Bytes())
+			if !reflect.DeepEqual(actual[test.attr.Key], test.value) || bytes.Contains(output.Bytes(), []byte("test-secret")) {
+				t.Fatalf("progress diagnostic retained or dropped an unexpected value: %#v", actual)
+			}
+		})
+	}
+}
+
+func TestHandlerTranscodeProgressRequiresValueAndSnapshotContext(t *testing.T) {
+	tests := []struct {
+		name         string
+		attrs        []slog.Attr
+		valueAllowed bool
+		priorAllowed bool
+	}{
+		{"known contexts", []slog.Attr{slog.String("field", "progress"), slog.Bool("truncated", false), slog.Bool("previous_known", true)}, true, true},
+		{"unknown field", []slog.Attr{slog.String("field", "unknown"), slog.Bool("truncated", false), slog.Bool("previous_known", true)}, false, true},
+		{"truncated line", []slog.Attr{slog.String("field", "progress"), slog.Bool("truncated", true), slog.Bool("previous_known", true)}, false, true},
+		{"missing contexts", nil, false, false},
+		{"missing truncation", []slog.Attr{slog.String("field", "progress")}, false, false},
+		{"unknown previous", []slog.Attr{slog.String("field", "progress"), slog.Bool("truncated", false), slog.Bool("previous_known", false)}, true, false},
+		{"duplicate field", []slog.Attr{slog.String("field", "unknown"), slog.String("field", "progress"), slog.Bool("truncated", false)}, false, false},
+		{"duplicate truncation", []slog.Attr{slog.String("field", "progress"), slog.Bool("truncated", true), slog.Bool("truncated", false)}, false, false},
+		{"duplicate previous", []slog.Attr{slog.Bool("previous_known", false), slog.Bool("previous_known", true)}, false, false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var output bytes.Buffer
+			handler := NewHandler(nil, slog.NewJSONHandler(&output, nil)).WithAttrs(test.attrs)
+			record := diagnosticTestRecord("transcode progress rejected", slog.String("safe_value", "end"),
+				slog.Int64("output_ticks", 0), slog.Int64("bytes", 0), slog.Bool("ended", false))
+			if err := handler.Handle(context.Background(), record); err != nil {
+				t.Fatal(err)
+			}
+			actual := diagnosticJSON(t, output.Bytes())
+			if _, exists := actual["safe_value"]; exists != test.valueAllowed {
+				t.Fatalf("safe value ignored its capture context: %#v", actual)
+			}
+			for _, key := range []string{"output_ticks", "bytes", "ended"} {
+				if _, exists := actual[key]; exists != test.priorAllowed {
+					t.Fatalf("previous progress ignored its availability: %#v", actual)
+				}
+			}
+		})
+	}
+}
+
+func TestHandlerProgressFieldsDoNotExpandOtherEventAllowlists(t *testing.T) {
+	for _, message := range []string{"server stopped", "transcode failed", "request completed"} {
+		t.Run(message, func(t *testing.T) {
+			var output bytes.Buffer
+			handler := NewHandler(nil, slog.NewJSONHandler(&output, nil)).WithAttrs([]slog.Attr{
+				slog.String("error_class", "process_progress"), slog.String("field", "progress"), slog.Bool("truncated", false),
+			})
+			record := diagnosticTestRecord(message, slog.String("safe_value", "end"), slog.String("phase", "finish"),
+				slog.String("reason", "invalid_state"), slog.Int("line_bytes", 12), slog.Int("captured_bytes", 12),
+				slog.String("line_sha256", strings.Repeat("a", 64)), slog.Bool("previous_known", true),
+				slog.Int64("output_ticks", 10), slog.Bool("ended", false), slog.Bool("wait_delay", false), slog.String("wait_error_class", "none"))
+			if err := handler.Handle(context.Background(), record); err != nil {
+				t.Fatal(err)
+			}
+			if actual := diagnosticJSON(t, output.Bytes()); len(actual) != 4 {
+				t.Fatalf("progress diagnostic fields expanded an existing event: %#v", actual)
+			}
+		})
+	}
+}
+
 func TestHandlerIdentifiersVersionsAndAdministrativeEnums(t *testing.T) {
 	tests := []struct {
 		message string

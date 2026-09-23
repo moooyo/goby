@@ -145,7 +145,7 @@ func TestRunBorrowsPinnedSourceAndKeepsBoundedOutput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v, stderr=%s", err, result.StderrTail)
 	}
-	if result.ExitCode != 0 || len(result.StderrTail) != maxStderrTail || !strings.HasSuffix(result.StderrTail, "helper tail") || count != 20_001 || !last.Ended {
+	if result.ExitCode != 0 || result.ProgressFailure != nil || len(result.StderrTail) != maxStderrTail || !strings.HasSuffix(result.StderrTail, "helper tail") || count != 20_001 || !last.Ended {
 		t.Fatalf("unexpected result: exit=%d, stderr length=%d, callbacks=%d, last=%+v", result.ExitCode, len(result.StderrTail), count, last)
 	}
 	position, err := input.Seek(0, io.SeekCurrent)
@@ -179,9 +179,14 @@ func TestRunCancelsMalformedProgress(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 	start := time.Now()
-	_, err := Run(ctx, helperExecutable(t, "bad-progress"), t.TempDir(), helperInput(t), commandPlan(), 1, nil)
+	result, err := Run(ctx, helperExecutable(t, "bad-progress"), t.TempDir(), helperInput(t), commandPlan(), 1, nil)
 	if !errors.Is(err, ErrProgress) || time.Since(start) > 5*time.Second {
 		t.Fatalf("malformed progress: %v after %s", err, time.Since(start))
+	}
+	failure := result.ProgressFailure
+	if failure == nil || failure.Reason != "line_too_long" || failure.Phase != "Write" || failure.Previous != nil ||
+		failure.WaitDelay || failure.WaitErrorClass != "exit" || failure.ExitCode != result.ExitCode || result.ExitCode != -1 {
+		t.Fatalf("runner lost or changed the progress failure diagnostic: result=%+v diagnostic=%+v", result, failure)
 	}
 }
 

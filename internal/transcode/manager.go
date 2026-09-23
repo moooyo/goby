@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -997,7 +998,7 @@ func (m *Manager) runJob(j *managedJob) {
 		runContext = withLiveRuntime(runContext, liveRuntime{spec: j.record.Spec, jobID: j.record.ID, inputs: StreamInputs{Media: j.input, Bitmap: j.bitmap},
 			maxBytes: min(MaxLiveScratchBytes, m.options.MaxJobBytes), timeout: m.options.NoProgressTimeout, publish: m.options.LivePublish, subtitle: m.options.LiveSubtitle, caption: m.options.LiveCaption})
 	}
-	_, err = m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, j.record.Spec.Plan.Execution.Threads, func(p Progress) {
+	result, err := m.options.run(runContext, m.options.FFmpegPath, directory, j.input, j.record.Spec.Plan, j.record.Spec.Plan.Execution.Threads, func(p Progress) {
 		m.mu.Lock()
 		if clock := p.HLSClock; clock != nil && needsHLSClock(j.record.Spec.Plan) && clock.Rendition >= 0 && clock.Rendition < max(1, j.record.Spec.Plan.HLS.RenditionCount) {
 			if _, err := clock.ticks(j.record.Spec.Plan.SourceMode != "stream"); err == nil && !j.hlsClockKnown[clock.Rendition] {
@@ -1024,7 +1025,32 @@ func (m *Manager) runJob(j *managedJob) {
 			m.signal()
 		}
 	})
+	jobID, errorClass := j.record.ID, runnerErrorCode(err)
 	m.finish(j, err)
+	if err != nil && result.ProgressFailure != nil {
+		logManagerProgressFailure(jobID, errorClass, result.ProgressFailure)
+	}
+}
+
+func logManagerProgressFailure(jobID, errorClass string, failure *ProgressFailure) {
+	attrs := []slog.Attr{
+		slog.String("job_id", jobID), slog.String("error_class", errorClass),
+		slog.String("phase", failure.Phase), slog.String("reason", failure.Reason), slog.String("field", failure.Field),
+		slog.Int("line_bytes", failure.LineBytes), slog.Int("captured_bytes", failure.CapturedBytes),
+		slog.Bool("truncated", failure.Truncated), slog.String("line_sha256", failure.LineSHA256),
+		slog.Bool("previous_known", failure.Previous != nil), slog.Bool("wait_delay", failure.WaitDelay),
+		slog.String("wait_error_class", failure.WaitErrorClass), slog.Int("exit_code", failure.ExitCode),
+	}
+	if failure.SafeValue != "" {
+		attrs = append(attrs, slog.String("safe_value", failure.SafeValue))
+	}
+	if previous := failure.Previous; previous != nil {
+		attrs = append(attrs, slog.Int64("output_ticks", previous.OutputTicks), slog.Int64("bytes", previous.Bytes),
+			slog.Bool("ended", previous.Ended))
+	}
+	// finish releases capacity, persists the original outcome and cancels the
+	// job context before synchronous diagnostic output can block.
+	slog.LogAttrs(context.Background(), slog.LevelWarn, "transcode progress rejected", attrs...)
 }
 
 func (m *Manager) fail(j *managedJob, code string) { m.mu.Lock(); m.stopLocked(j, code); m.mu.Unlock() }
