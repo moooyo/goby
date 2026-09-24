@@ -1,8 +1,14 @@
-"""Pure evidence contract tests. No live HTTP, SQL, process or fault access."""
+"""Evidence and request contracts with temporary artifacts and no live faults."""
 import copy
 import importlib.util
 from pathlib import Path
+import sys
+import tempfile
+import threading
+import time
+import types
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("oracle_evidence", Path(__file__).with_name("media-analysis-phase3-oracle-evidence.py"))
 evidence = importlib.util.module_from_spec(spec)
@@ -98,6 +104,165 @@ class EvidenceContracts(unittest.TestCase):
         with self.assertRaises(evidence.EvidenceError):
             evidence.postgres_lock_facts({"owner_backend": owner}, waiting, after, [], {"catalog": "a"}, {"catalog": "a"},
                                          {"blocker_backend_pids": [45]})
+
+
+@unittest.skipUnless(sys.platform == "linux", "Immutable intent contracts require Linux filesystem primitives")
+class NativeRequestContracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        def load(name, filename):
+            module_spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(filename))
+            module = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module)
+            return module
+
+        cls.oracle_module = load("oracle_native_contract", "media-analysis-phase3-oracle.py")
+        cls.guest_module = load("oracle_guest_contract", "media-analysis-phase3-recovery-guest.py")
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="goby-oracle-contract-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.fixture_number = 0
+        self.requests = []
+        self.binding_sha256 = "a" * 64
+        self.binding = {"run_id": "shared-run", "owner_id": "test-owner", "volumes": {"media": {}}}
+
+        # Fixture construction avoids infrastructure discovery. Guest.run,
+        # scenario validation and exclusive, fsynced intent writes stay real.
+        self.native_guest = self.guest_module.Guest.__new__(self.guest_module.Guest)
+        self.native_guest.binding = self.binding
+        self.native_guest.binding_sha256 = self.binding_sha256
+        self.native_guest.root = self.root / "guest-owned"
+        self.native_guest.operations = self.native_guest.root / "recovery-operations"
+        self.native_guest.operations.mkdir(parents=True, mode=0o700)
+        self.native_guest.guard = mock.Mock()
+        self.native_guest.release = mock.Mock()
+        self.native_guest.inject = mock.Mock(side_effect=lambda scenario: {"scenario_id": scenario["scenario_id"]})
+        self.native_guest.recover = mock.Mock(side_effect=lambda scenario, injection: {"recovered": True})
+
+        def call(role, request, timeout):
+            self.assertEqual(role, "guest")
+            self.assertGreater(timeout, 0)
+            wire_request = self.guest_module.decode(self.oracle_module.canonical(request))
+            self.requests.append(wire_request)
+            return self.native_guest.run(wire_request)
+
+        self.transport = types.SimpleNamespace(call=mock.Mock(side_effect=call))
+
+    def make_oracle(self, case_id="case-a", context_sha256="b" * 64,
+                    request_id="recover-0001", artifacts_root=None):
+        self.fixture_number += 1
+        root = artifacts_root or self.root / ("external-" + str(self.fixture_number))
+        root.mkdir(mode=0o700, exist_ok=True)
+        value = self.oracle_module.Oracle.__new__(self.oracle_module.Oracle)
+        value.c = {"run_id": self.binding["run_id"], "owner_id": self.binding["owner_id"],
+                   "source_revision": "c" * 40,
+                   "transport": {"remote": {"guest": {"binding": {"sha256": self.binding_sha256}}}},
+                   "budgets": {"external_bytes": 16 << 20, "external_files": 1024, "free_floor_bytes": 0}}
+        value.q = {"request_id": request_id, "context_sha256": context_sha256, "operation": "recover", "payload": {}}
+        value.serial = 0
+        value.io_lock = threading.RLock()
+        value.case_id = case_id
+        value.scenario = {"scenario_id": case_id, "fault": "blocked_read", "volume_id": "media",
+                          "replacement_volume_id": None, "relative_path": "source.mp4", "late_mount": False,
+                          "restart_goby_after": False, "require_interrupted_jobs": False}
+        value.root = root
+        value.state_path = root / "oracle-state.json"
+        value.saved = (self.oracle_module.decode(self.oracle_module.read_file(value.state_path))
+                       if value.state_path.exists() else {"version": 1, "scenario_id": case_id, "records": []})
+        value.record_refs = []
+        value.deadline = time.monotonic() + 120
+        value.transport = self.transport
+        value.modules = {}
+        return value
+
+    def operation_bytes(self):
+        return {path.name: path.read_bytes() for path in self.native_guest.operations.iterdir()}
+
+    def test_cases_share_guest_operations_without_native_intent_collision(self):
+        first = self.make_oracle(case_id="t10-01-block-read")
+        second = self.make_oracle(case_id="t10-02-block-meta")
+        second.scenario["fault"] = "blocked_metadata"
+        self.assertEqual((first.c["run_id"], first.q, first.serial),
+                         (second.c["run_id"], second.q, second.serial))
+        first.guest("inject")
+        previous = self.operation_bytes()
+        second.guest("inject")
+
+        self.assertNotEqual(self.requests[0]["request_id"], self.requests[1]["request_id"])
+        intents = sorted(self.native_guest.operations.glob("*-intent.json"))
+        self.assertEqual(len(intents), 2)
+        self.assertCountEqual([self.guest_module.decode(path.read_bytes()) for path in intents], self.requests)
+        expected_fields = {"schema_version", "request_id", "op", "run_id", "owner_id", "source_revision",
+                           "binding_sha256", "scenario", "payload"}
+        for request in self.requests:
+            self.assertEqual(set(request), expected_fields)
+            self.assertRegex(request["request_id"], r"oracle-[0-9a-f]{40}\Z")
+        for name, raw in previous.items():
+            self.assertEqual((self.native_guest.operations / name).read_bytes(), raw)
+        self.assertEqual(len(list(self.native_guest.operations.glob("*-result.json"))), 2)
+        self.assertEqual(self.native_guest.inject.call_count, 2)
+        self.assertEqual((len(first.record_refs), len(second.record_refs)), (1, 1))
+
+    def test_reconstructed_request_hits_real_exclusive_intent_guard(self):
+        first = self.make_oracle()
+        first.guest("inject")
+        first.persist()
+        original_operations = self.operation_bytes()
+        original_state = first.state_path.read_bytes()
+
+        reconstructed = self.make_oracle(artifacts_root=first.root)
+        with self.assertRaises(FileExistsError):
+            reconstructed.guest("inject")
+        self.assertEqual(self.requests[0]["request_id"], self.requests[1]["request_id"])
+        self.assertEqual(self.operation_bytes(), original_operations)
+        self.assertEqual(first.state_path.read_bytes(), original_state)
+        self.native_guest.inject.assert_called_once()
+        self.assertEqual(reconstructed.record_refs, [])
+
+    def test_refrozen_context_cannot_retry_persisted_oracle_mutation(self):
+        first = self.make_oracle()
+        first.saved["injection"] = {"mechanism": "fixture"}
+        self.assertEqual(first.dispatch(), {"recovered": True, "dispatches": 1})
+        first.persist()
+        original_state = first.state_path.read_bytes()
+        original_operations = self.operation_bytes()
+        self.assertEqual(first.saved["mutation_intents"]["recover"]["request_id"], first.q["request_id"])
+
+        for context_sha256 in ("b" * 64, "d" * 64):
+            with self.subTest(context_sha256=context_sha256):
+                first.q["context_sha256"] = context_sha256
+                with self.assertRaisesRegex(self.oracle_module.Refusal, "mutation_already_attempted_no_automatic_retry"):
+                    first.dispatch()
+        reconstructed = self.make_oracle(context_sha256="d" * 64, request_id="recover-0002", artifacts_root=first.root)
+        with self.assertRaisesRegex(self.oracle_module.Refusal, "mutation_already_attempted_no_automatic_retry"):
+            reconstructed.dispatch()
+        self.transport.call.assert_called_once()
+        self.native_guest.recover.assert_called_once()
+        self.assertEqual(first.state_path.read_bytes(), original_state)
+        self.assertEqual(self.operation_bytes(), original_operations)
+
+    def test_native_request_namespace_changes_each_scope_dimension(self):
+        baseline = self.make_oracle().native_id("guest", "inject")
+        self.assertEqual(self.make_oracle().native_id("guest", "inject"), baseline)
+        variants = (
+            ("scenario", {"case_id": "case-b"}, "guest", "inject", 0),
+            ("context", {"context_sha256": "d" * 64}, "guest", "inject", 0),
+            ("parent", {"request_id": "recover-0002"}, "guest", "inject", 0),
+            ("role", {}, "state", "inject", 0),
+            ("operation", {}, "guest", "recover", 0),
+            ("serial", {}, "guest", "inject", 1),
+        )
+        identifiers = {baseline}
+        for dimension, arguments, role, operation, serial in variants:
+            with self.subTest(dimension=dimension):
+                candidate = self.make_oracle(**arguments)
+                candidate.serial = serial
+                identifier = candidate.native_id(role, operation)
+                self.assertRegex(identifier, r"oracle-[0-9a-f]{40}\Z")
+                self.assertNotIn(identifier, identifiers)
+                identifiers.add(identifier)
 
 
 if __name__ == "__main__":

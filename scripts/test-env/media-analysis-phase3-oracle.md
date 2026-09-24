@@ -92,6 +92,27 @@ reports retain their partial status and exit 2. The outer runner composes the
 frozen 13 fault kinds plus late mount for both tiers; any absent case leaves the
 matrix incomplete. The wrapper grants no general context-refresh privilege.
 
+Native request IDs keep their opaque `oracle-` plus 40 hexadecimal character
+shape. Their deterministic scope includes the exact scenario ID and pinned
+oracle context SHA, as well as the parent request ID, role, operation and local
+serial. The structured identity uses namespace `goby-phase3-native-request-v2`.
+Different cases may share a tier's run ID and restart the controller counter;
+they must not collide in the guest's shared `recovery-operations` directory.
+Replaying the same frozen case/context and call sequence still produces the
+same native ID, so the existing exclusive guest intent refuses it without
+overwriting the original bytes. The oracle's already-recorded mutation guard
+continues to reject a repeated operation in the same case namespace, even when
+someone presents another context. Changing a context is not retry permission.
+
+This is a source successor for future explicitly released cases. Keep original
+requests, intents, results, failed attempts and source/context releases intact;
+never delete a consumed intent, change the tier run ID, or regenerate an old
+case's evidence to work around a collision. No RPC, release, journal or receipt
+field changes. Guest intent paths remain SHA256 of the actual native request ID;
+consumers must use the retained request's real ID rather than reconstructing an
+older generator. Controller parent IDs and explicit durable mutation IDs remain
+unchanged.
+
 Fault wrappers accept only `phase:"cached"`. For each tier, the complete
 independent compound journey still runs cold, cached, and incremental phases
 before fault-fixture population, overload, and the cached fault cases. The
@@ -144,6 +165,38 @@ Historical completion-ring drops do not invalidate a still-retained target;
 a missing/overwritten target or incomplete current projection fails.
 
 `media-analysis-phase3-oracle-tests.py` contains pure negative evidence tests
-for future authorized remote execution. It has not been run. Actual fixture
+and bounded mock-transport/temporary-intent regression tests for future
+authorized remote execution. It has not been run by this source delivery.
+Actual fixture
 bytes, module pins, per-case fresh identities, resource admission and the
 independent PVE adapter must be bound by the complete release before execution.
+
+For the native-ID successor, the designated remote executor should first run
+the oracle contract suite with the existing guest/controller sources installed
+beside it. The new tests must demonstrate two scenarios using the same run,
+parent counter and guest intent directory, preservation of the first case's
+original bytes, and rejection of a repeated frozen request before a second
+native primitive. Existing recovery and matrix contract suites then check the
+unchanged request, immutable-intent and journal consumers. These suites inject
+no real fault; actual case acceptance still requires the original full matrix.
+
+The original oracle suite has six tests. This successor adds four Linux-only
+contract tests, giving ten on the designated Linux verification host; none has
+been executed by this source delivery. The separate matrix and workload suites
+retain their original 40 and 66 tests. Product04's original nine-suite total of
+173 remains an immutable result for its published source. It does not cover
+these new tool bytes or four new tests. Report the successor verification
+separately; do not rewrite product04's count, reuse its receipt as acceptance
+of this change, or silently alter an existing 54-stage final-regression policy.
+The application binaries and active capacity source remain within their own
+original published identities while this fault-tool successor is independently
+bound and verified.
+
+Freeze new oracle source hashes in all three controller adapter roles and the
+case export/module-source maps before a new case. Recompute the associated
+controller manifest hashes, external copies and any enclosing source manifests
+or delivery bindings that pin the changed source or test suite. The existing
+accepted product/source identity cannot silently refer to changed helper bytes.
+Do not repin a consumed case in place. State/guest/transport schemas and their
+sources need no compatibility edit for this ID change; boot-history readers
+that follow original native IDs and SHA-derived intent paths remain compatible.

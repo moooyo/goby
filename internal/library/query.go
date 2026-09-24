@@ -17,13 +17,15 @@ import (
 
 const itemMetadataColumn = `COALESCE((SELECT ms.effective FROM item_metadata_state ms WHERE ms.item_id = i.id), i.local_metadata)`
 
+var itemAlbumChildCountColumn = `CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN
+		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id AND ` + ordinaryItemSQL("child") + `)
+	END`
+
 var itemColumns = `i.id, i.library_id, COALESCE(i.parent_id, ''), i.name,
 	i.sort_name, i.type, i.path, i.overview, i.is_folder, i.index_number,
 	i.parent_index_number, i.created_at, i.media,
 	` + itemMetadataColumn + `, ` + itemEntitiesColumn + `,
-	CASE WHEN i.type = 'MusicAlbum' AND i.is_folder THEN
-		(SELECT count(*) FROM items child WHERE child.parent_id = i.id AND child.library_id = i.library_id AND ` + ordinaryItemSQL("child") + `)
-	END, ` + itemAlbumColumn + `, ` + itemTVParentsColumn + `, ` + itemIntroColumn
+	` + itemAlbumChildCountColumn + `, ` + itemAlbumColumn + `, ` + itemTVParentsColumn + `, ` + itemIntroColumn
 
 var itemAlbumAncestorsSQL = `WITH RECURSIVE album_ancestors AS (
 		SELECT parent.id, parent.parent_id, parent.name, parent.type, parent.is_folder,
@@ -134,7 +136,7 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 	query.expectedEpisodePopulation = explicitExtras && !query.Resumable && includesExpectedEpisodes(query)
 	explicitExtras = explicitExtras && len(query.Ids) != 0
 	prefix, filter, args := itemQuerySQLWithExtraIDs(query, access, parentLibraryID, explicitExtras)
-	population, columns := "items", access.itemColumnsSQL()
+	population, columns := "items", access.scopeSQL(itemQueryColumns(query))
 	if query.expectedEpisodePopulation {
 		prefix = appendItemQueryCTE(prefix, `discovery_items AS (
 			SELECT physical.*, NULL::jsonb AS expected_episode FROM items physical

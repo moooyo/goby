@@ -261,7 +261,14 @@ class Oracle:
     def native_id(self, role, operation):
         with self.io_lock:
             self.serial += 1
-            return "oracle-" + hashlib.sha256((self.q["request_id"] + ":" + role + ":" + operation + ":" + str(self.serial)).encode()).hexdigest()[:40]
+            # A tier reuses its run ID and each case resets the controller's
+            # request counter, while guest mutation intents share one directory.
+            # Keep a replay stable within its frozen case/context, and separate
+            # genuinely different cases without deleting their earlier intents.
+            identity = {"namespace": "goby-phase3-native-request-v2", "scenario_id": self.case_id,
+                        "context_sha256": self.q["context_sha256"], "request_id": self.q["request_id"],
+                        "role": role, "operation": operation, "serial": self.serial}
+            return "oracle-" + digest(identity)[:40]
 
     def guest(self, operation, payload=None):
         request = {"schema_version": 1, "request_id": self.native_id("guest", operation), "op": operation,

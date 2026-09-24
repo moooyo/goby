@@ -661,12 +661,21 @@ const storedFileColumns = `id, root_id, relative_path, file_identity, file_size,
 		FROM item_metadata_state ms WHERE ms.item_id = items.id)`
 
 func readStoredFile(row rowScanner) (storedFile, error) {
+	return readStoredFileAccepted(row, nil)
+}
+
+func readStoredFileAccepted(row rowScanner, acceptID func(string) bool) (storedFile, error) {
 	var item storedFile
 	var raw, localRaw, automaticRaw []byte
 	err := row.Scan(&item.id, &item.rootID, &item.relativePath, &item.identity, &item.size, &item.modified, &raw, &item.parentID, &item.path, &item.name, &item.itemType,
 		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path, &automaticRaw)
 	if err != nil {
 		return storedFile{}, err
+	}
+	// A claim-excluded row was previously filtered by PostgreSQL. Reject it
+	// before decoding metadata so it cannot introduce a new parse failure.
+	if acceptID != nil && !acceptID(item.id) {
+		return storedFile{}, pgx.ErrNoRows
 	}
 	if len(raw) > 0 && string(raw) != "null" {
 		item.media = &media.Info{}
@@ -697,7 +706,6 @@ func (state *scanState) findStoredFile(relative string, info os.FileInfo) (store
 }
 
 func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo, role scannedMediaRole) (storedFile, error) {
-	excluded := state.claimedScannedIDs(relative, role)
 	visibility := ordinaryItemSQL("items")
 	switch role {
 	case scannedRoleTheme:
@@ -718,9 +726,12 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	if conflict {
 		return storedFile{}, errScannedMediaRoleConflict
 	}
-	stored, err := readStoredFile(state.store.pool.QueryRow(state.task.ctx,
-		"SELECT "+storedFileColumns+" FROM items WHERE root_id = $1 AND relative_path = $2 AND NOT (id=ANY($3::text[])) AND "+visibility,
-		state.root.id, relative, excluded))
+	// This pathname is unique within its already bound library root. Check
+	// only the returned ID instead of copying and transmitting all prior claims
+	// for every existing file in a scan.
+	stored, err := readStoredFileAccepted(state.store.pool.QueryRow(state.task.ctx,
+		"SELECT "+storedFileColumns+" FROM items WHERE root_id = $1 AND relative_path = $2 AND "+visibility,
+		state.root.id, relative), func(id string) bool { return state.scannedIDAvailable(id, relative, role) })
 	if err == nil {
 		return stored, nil
 	}
@@ -733,6 +744,9 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	}
 	// An inode match is only a rename candidate when the old path disappeared.
 	// Size and modification time reduce accidental reuse after inode recycling.
+	// Keep claim exclusion in SQL before LIMIT so claimed identities cannot
+	// consume the existing rename-candidate window.
+	excluded := state.claimedScannedIDs(relative, role)
 	rows, err := state.store.pool.Query(state.task.ctx, "SELECT "+storedFileColumns+` FROM items
 		WHERE library_id = $1 AND file_identity = $2 AND NOT is_folder AND file_size = $3
 		AND modified_at = $4 AND NOT (id=ANY($5::text[])) AND `+visibility+` ORDER BY created_at, id LIMIT 8`,

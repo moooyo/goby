@@ -302,6 +302,21 @@ func (state *scanState) recordThemeDirectoryOwner(relative string, current hiera
 	return nil
 }
 
+// One scan worker owns the states and shared claims for a library. Lookup
+// does not claim an ID: inspectScannedMedia retains its final check and claim
+// registration before probing, including for rename candidates.
+func (state *scanState) scannedIDAvailable(id, relative string, role scannedMediaRole) bool {
+	if state.themes == nil {
+		return true
+	}
+	claims := state.themes.claimed
+	if state.themeLibrary != nil {
+		claims = state.themeLibrary.claimed
+	}
+	claimed, present := claims[id]
+	return !present || claimed == string(role)+":"+state.root.id+":"+relative
+}
+
 func (state *scanState) claimedScannedIDs(relative string, role scannedMediaRole) []string {
 	result := []string{}
 	if state.themes == nil {
