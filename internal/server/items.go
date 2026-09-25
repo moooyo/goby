@@ -289,10 +289,11 @@ func (s *Server) sendItemQuery(w http.ResponseWriter, r *http.Request, query lib
 	}
 	attachApplicationCredentialID(r, &query)
 	zeroLimit := query.Limit == 0
+	readItems := s.library.QueryItems
 	if zeroLimit {
-		query.Limit = 1
+		readItems = s.library.CountQueryItems
 	}
-	result, err := s.library.QueryItems(r.Context(), query)
+	result, err := readItems(r.Context(), query)
 	if err != nil {
 		s.libraryError(w, r, err)
 		return

@@ -25,7 +25,7 @@ func (s *Store) CollectionItems(ctx context.Context, subject Subject, id, kind s
 		return ItemResult{}, err
 	}
 	query := Query{UserID: subject.UserID, ApplicationCredentialID: subject.ApplicationCredentialID, ParentID: id, StartIndex: start, Limit: limit}
-	result, _, err := queryCollectionItems(ctx, tx, query, access)
+	result, _, err := queryCollectionItems(ctx, tx, query, access, false)
 	if err != nil {
 		return ItemResult{}, err
 	}
@@ -38,7 +38,7 @@ func (s *Store) CollectionItems(ctx context.Context, subject Subject, id, kind s
 // queryCollectionItems shares the caller's read snapshot and accepts the same
 // filters as normal Items queries. A playlist result counts ordered entries,
 // including repeated media identities; pagination therefore preserves repeats.
-func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access libraryAccess) (ItemResult, bool, error) {
+func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access libraryAccess, countOnly bool) (ItemResult, bool, error) {
 	if query.ParentID == "" {
 		return ItemResult{}, false, nil
 	}
@@ -80,6 +80,9 @@ func queryCollectionItems(ctx context.Context, tx pgx.Tx, query Query, access li
 	result := ItemResult{Items: []Item{}}
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*)"+from, args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, true, err
+	}
+	if countOnly {
+		return result, true, nil
 	}
 	order := "e.position,e.id"
 	if recursiveBoxSet {

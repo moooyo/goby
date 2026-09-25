@@ -2,7 +2,6 @@ package media
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +27,10 @@ const (
 // identity, version output, and loader search path. The caller must recheck it
 // after analysis or verification before relying on any produced evidence.
 func VideoSeekToolIdentity(ctx context.Context, executable string) (string, string, error) {
+	return videoSeekToolIdentity(ctx, executable, &videoSeekToolHashes)
+}
+
+func videoSeekToolIdentity(ctx context.Context, executable string, cache *videoSeekToolHashCache) (string, string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", "", err
 	}
@@ -59,25 +62,14 @@ func VideoSeekToolIdentity(ctx context.Context, executable string) (string, stri
 	if err != nil || before.Size() <= 0 || before.Size() > maxVideoSeekToolBytes {
 		return "", "", fmt.Errorf("video seek executable identity is unavailable")
 	}
-	hash := sha256.New()
-	buffer := make([]byte, 64*1024)
-	remaining := int64(maxVideoSeekToolBytes + 1)
-	for {
-		if err := ctx.Err(); err != nil {
-			return "", "", err
-		}
-		n, readErr := file.Read(buffer)
-		remaining -= int64(n)
-		if remaining <= 0 {
-			return "", "", fmt.Errorf("video seek executable exceeds its byte budget")
-		}
-		_, _ = hash.Write(buffer[:n])
-		if readErr == io.EOF {
-			break
-		}
-		if readErr != nil {
-			return "", "", readErr
-		}
+	var attempt *videoSeekToolHashAttempt
+	if ctx.Err() == nil {
+		attempt = cache.acquire(resolved, before.Size())
+	}
+	defer attempt.close()
+	hash, err := videoSeekToolDigest(ctx, file, maxVideoSeekToolBytes, attempt)
+	if err != nil {
+		return "", "", err
 	}
 	// An inherited descriptor also selects the sanitized media environment.
 	version, err := runLimitedFiles(ctx, videoSeekProofTimeout, 64*1024, resolved, []*os.File{file}, "-version")
@@ -95,7 +87,11 @@ func VideoSeekToolIdentity(ctx context.Context, executable string) (string, stri
 	}
 	_, _ = fmt.Fprintf(hash, "\x00video-seek-tool-v1\x00%s\x00%s\x00%s\x00", resolved, stamp, os.Getenv("LD_LIBRARY_PATH"))
 	_, _ = hash.Write(version)
-	return resolved, fmt.Sprintf("%x", hash.Sum(nil)), nil
+	identity := fmt.Sprintf("%x", hash.Sum(nil))
+	if attempt != nil && ctx.Err() == nil {
+		attempt.publish = true
+	}
+	return resolved, identity, nil
 }
 
 // AnalyzeVideoSeekIndexes performs optional library analysis. Unsupported or

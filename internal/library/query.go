@@ -83,14 +83,21 @@ type libraryAccess struct {
 
 // QueryItems applies the current user policy before counting or paging items.
 func (s *Store) QueryItems(ctx context.Context, query Query) (ItemResult, error) {
-	return s.queryCatalogItems(ctx, query, query.Resumable && strings.TrimSpace(query.SortBy) == "", true)
+	return s.queryCatalogItems(ctx, query, query.Resumable && strings.TrimSpace(query.SortBy) == "", true, false)
+}
+
+// CountQueryItems applies the same validation, subject policy and filters as QueryItems,
+// returning an empty Items slice without reading a page or its attachments.
+// This explicit operation leaves QueryItems' default zero-limit paging unchanged.
+func (s *Store) CountQueryItems(ctx context.Context, query Query) (ItemResult, error) {
+	return s.queryCatalogItems(ctx, query, query.Resumable && strings.TrimSpace(query.SortBy) == "", true, true)
 }
 
 func (s *Store) queryItems(ctx context.Context, query Query, resumeOrder bool) (ItemResult, error) {
-	return s.queryCatalogItems(ctx, query, resumeOrder, false)
+	return s.queryCatalogItems(ctx, query, resumeOrder, false, false)
 }
 
-func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder, explicitExtras bool) (ItemResult, error) {
+func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder, explicitExtras, countOnly bool) (ItemResult, error) {
 	collectionSortExplicit := strings.TrimSpace(query.SortBy) != ""
 	query, err := normalizeItemQuery(query)
 	if err != nil {
@@ -115,7 +122,7 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 	if !collectionSortExplicit {
 		collectionQuery.SortBy = ""
 	}
-	if result, handled, err := queryCollectionItems(ctx, tx, collectionQuery, access); handled || err != nil {
+	if result, handled, err := queryCollectionItems(ctx, tx, collectionQuery, access, countOnly); handled || err != nil {
 		if err != nil {
 			return ItemResult{}, err
 		}
@@ -147,6 +154,12 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 	if err := tx.QueryRow(ctx, prefix+"SELECT count(*) FROM "+population+" i WHERE "+filter,
 		args...).Scan(&result.TotalRecordCount); err != nil {
 		return ItemResult{}, fmt.Errorf("count library items: %w", err)
+	}
+	if countOnly {
+		if err := tx.Commit(ctx); err != nil {
+			return ItemResult{}, fmt.Errorf("complete item count: %w", err)
+		}
+		return result, nil
 	}
 	userOrderParameter := 0
 	if itemSortUsesUserData(query.SortBy) {
