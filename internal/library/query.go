@@ -160,8 +160,8 @@ func (s *Store) queryCatalogItems(ctx context.Context, query Query, resumeOrder,
 			WHERE user_data.user_id = $%d::text AND user_data.item_id = i.id) DESC NULLS LAST, i.id ASC`, len(args))
 	}
 	args = append(args, query.Limit, query.StartIndex)
-	statement := prefix + "SELECT " + columns + " FROM " + population + " i WHERE " + filter +
-		" ORDER BY " + access.scopeSQL(order) + fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	statement := itemPageQuerySQL(query, prefix, population, columns, filter, access.scopeSQL(order),
+		fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args)))
 	rows, err := tx.Query(ctx, statement, args...)
 	if err != nil {
 		return ItemResult{}, fmt.Errorf("query library items: %w", err)
