@@ -1,29 +1,36 @@
-# Goby handoff - September 24, 2026
+# Goby handoff - September 26, 2026
 
 ## Resume here
 
-The user requested a checkpoint merge/push and a pause for continuation in another
-session. Product commit `e257694646b74f0d6e50d1d7196423a93e743e97` is published on
-`main`. Phase 3 large-library concurrency and fault-recovery acceptance remains
-open. Phases 1 and 2 retain their recorded acceptance.
+The user stopped acceptance work and requested a checkpoint merge/push and a
+handoff. The product checkpoint is
+`cd91390a78ec5b03831a77dbd4ac97265d116847`, followed by this documentation
+closeout. Phase 3 large-library concurrency and fault-recovery acceptance remains
+open. Phases 1 and 2 retain their recorded acceptance. Read Git history for the
+final documentation and published `main` commit identities.
 
-Read the [September 24 session handoff](session-handoff-20260924-media-analysis-resilience.md)
-first. It records the code, exact verification scope, unresolved transcode
-failure, current idle scope13 services, failed preparation-controller attempt,
-and the prepared source-only successor. The 63 selected Go tests, 80 Python
-tests and both current builds passed; they do not establish complete capacity
-or fault-matrix acceptance.
+Read the [September 26 session handoff](session-handoff-20260926-media-analysis-resilience.md)
+first. It records the eleven new commits, completed remote product verification,
+the failed formal23 cold run, closed scan-cost diagnosis, and the exact source-only
+stopping point for fresh24. Neither complete capacity tier, either overload, the
+28 real fault cases, the six boot transitions within them, nor final54 is accepted.
 
 The latest operational identities and release pins are in the local private
 `D:/Code/goby/.git/media-analysis-resilience-20260920/phase3/execution-current-20260922.md`.
-Reobserve those handles before resuming. No Actor workload is active; scope13
-App/PG are retained idle, with App temporarily at 512 MiB until preparation
-closure and restoration to 1280 MiB. Do not replay failed controllers or old
-failed PostgreSQL generations. All 19 unrelated dirty paths in `D:/Code/goby`
-remain outside this delivery.
+At closeout no Goby workload service or reserved-UID process was running.
+Scope23 and the diagnostic App/PG were normally retired. Fresh24's hardware seeds
+passed and closed, but its uploaded source tar was not extracted or executed;
+no fresh24 runtime exists. The heartbeat is paused. Reobserve state and authority
+when the user resumes; do not replay failed controllers or old generations.
+All 19 unrelated dirty paths in `D:/Code/goby` remain outside this delivery.
 
-Verification remains remote-only. `ui-ux-pro-max` remains disabled. Resume the
-approved full scope from this checkpoint; the publication is not Phase 3 sign-off.
+Verification remains remote-only on VM106; original `test-env` is read-only
+artifact recovery only. Resume the full scope when requested. This publication
+is not Phase 3 sign-off.
+
+The [September 24 handoff](session-handoff-20260924-media-analysis-resilience.md)
+is retained history. Its source, service state and next steps are superseded by
+the September 26 handoff.
 
 ## Historical September 23 checkpoint
 

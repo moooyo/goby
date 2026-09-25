@@ -1,5 +1,13 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
+Current closeout, September 26: product revision `cd91390a78ec5b03831a77dbd4ac97265d116847`
+and its documentation are being checkpointed at the user's request. Acceptance
+work is paused; complete 10k/100k, 28 real fault cases including six boot
+transitions, and final54 remain unaccepted. Read the
+[September 26 handoff](session-handoff-20260926-media-analysis-resilience.md)
+for current progress and the fresh24 source-upload stopping point. The status,
+runtime identities and next steps below are retained September 23 history.
+
 Status: **the Goby session JIT repair at 89b6670 passed all 50 remote regression stages and both builds. Scope11 passed preparation, baseline, rebind and resource admission, but its actual compound repeat failed with another PostgreSQL OOM at 512 MiB. The deployed observer naturally exited 1; failure collection and runtime closure are independently complete, with original failures and the unrestarted PG state preserved. The JIT repair alone was insufficient. Capacity/fault acceptance and Phase 3 publication remain pending**.
 
 This record covers Phase 3 of the

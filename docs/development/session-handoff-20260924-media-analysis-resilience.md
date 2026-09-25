@@ -1,5 +1,9 @@
 # Media analysis and resilience session handoff - September 24, 2026
 
+The [September 26 handoff](session-handoff-20260926-media-analysis-resilience.md)
+supersedes this document's current-state and resume instructions. This document
+is retained as historical evidence; its scope13 service state is no longer live.
+
 ## Closeout decision
 
 The user requested that the current code be merged into `main` and pushed, then
