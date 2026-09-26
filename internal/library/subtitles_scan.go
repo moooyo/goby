@@ -290,10 +290,6 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 	if embedded > highest {
 		highest = embedded
 	}
-	beforeProjection, err := readSubtitleCatalogProjection(ctx, tx, itemID, embedded)
-	if err != nil {
-		return err
-	}
 	retire := make([]int, 0)
 	retained := make(map[string]int, len(active))
 	for _, previous := range active {
@@ -302,6 +298,15 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 			continue
 		}
 		retained[previous.Path] = previous.Index
+	}
+	// Retain the locked primary and combined subtitle-capacity checks above.
+	// No retirement and no accepted input means there is no scan write to compare.
+	if len(retire) == 0 && len(inspected) == 0 {
+		return tx.Commit(ctx)
+	}
+	beforeProjection, err := readSubtitleCatalogProjection(ctx, tx, itemID, embedded)
+	if err != nil {
+		return err
 	}
 	if len(retire) != 0 {
 		if _, err := tx.Exec(ctx, `UPDATE item_subtitles SET active = false
