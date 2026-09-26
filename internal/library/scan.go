@@ -55,6 +55,7 @@ type storedFile struct {
 	local                                                                                  localMetadata
 	automatic                                                                              *MetadataValues
 	scanSortName                                                                           *string
+	hasLocalImages                                                                         bool
 }
 
 func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
@@ -428,7 +429,7 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
 			return err
 		}
-		if err := state.scanImages(stored.id, itemType, path, false); err != nil {
+		if err := state.scanImagesWithKnownAbsence(stored.id, itemType, path, false, !stored.hasLocalImages); err != nil {
 			return err
 		}
 		if probe != nil {
@@ -439,6 +440,11 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 		state.recordThemePrimary(path, stored.id, itemType)
 		if err := state.recordScanSeen(stored.id); err != nil {
 			return err
+		}
+		// The entry checkpoint already persisted Scanned for an independent scan.
+		// A cached visit does not change the primary item counters.
+		if state.task.job.TaskChildID == "" {
+			return state.task.ctx.Err()
 		}
 		return state.store.persistProgress(state.task)
 	}
@@ -513,6 +519,27 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	if err := beforeAuxiliary.record(state.task.ctx, tx, nil); err != nil {
 		return err
 	}
+	progressInItemTx := false
+	if state.task.job.TaskChildID == "" {
+		// Commit independent scan counters with the primary item. Task-owned
+		// scans keep their existing atomic job and child progress checkpoint.
+		added, updated := state.task.job.Added, state.task.job.Updated
+		if stored.id == "" {
+			added++
+		} else {
+			updated++
+		}
+		err = tx.QueryRow(state.task.ctx, `UPDATE scan_jobs SET scanned = $2, added = $3, updated = $4
+			WHERE id = $1 AND task_child_id IS NULL AND status = 'Running' AND NOT cancel_requested
+			RETURNING true`, state.task.job.ID, state.task.job.Scanned, added, updated).Scan(&progressInItemTx)
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Do not commit a primary item after its scan job stopped accepting
+			// progress; finalization will resolve the terminal job state.
+			return ErrUnavailable
+		} else if err != nil {
+			return err
+		}
+	}
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return err
 	}
@@ -521,10 +548,13 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	} else {
 		state.task.job.Updated++
 	}
+	if progressInItemTx {
+		state.store.notifyScanUpdate()
+	}
 	if err := state.scanSubtitles(id, path, probe); err != nil {
 		return err
 	}
-	if err := state.scanImages(id, itemType, path, false); err != nil {
+	if err := state.scanImagesWithKnownAbsence(id, itemType, path, false, stored.id != "" && !stored.hasLocalImages); err != nil {
 		return err
 	}
 	if probe != nil {
@@ -535,6 +565,9 @@ func (state *scanState) scanFile(path, kind string, current hierarchy) error {
 	state.recordThemePrimary(path, id, itemType)
 	if err := state.recordScanSeen(id); err != nil {
 		return err
+	}
+	if progressInItemTx {
+		return state.task.ctx.Err()
 	}
 	return state.store.persistProgress(state.task)
 }
@@ -658,7 +691,8 @@ const storedFileColumns = `id, root_id, relative_path, file_identity, file_size,
 		'ScanSortName',CASE WHEN ms.automatic_sort_name_explicit THEN COALESCE(ms.automatic->>'SortName','')
 		ELSE (SELECT CASE WHEN cardinality(sort_remove_words)>0
 			THEN goby_generated_sort_name(ms.automatic->>'Name',sort_remove_words) END FROM managed_settings WHERE id=1) END)
-		FROM item_metadata_state ms WHERE ms.item_id = items.id)`
+		FROM item_metadata_state ms WHERE ms.item_id = items.id),
+	EXISTS (SELECT 1 FROM item_images im WHERE im.item_id = items.id)`
 
 func readStoredFile(row rowScanner) (storedFile, error) {
 	return readStoredFileAccepted(row, nil)
@@ -668,7 +702,7 @@ func readStoredFileAccepted(row rowScanner, acceptID func(string) bool) (storedF
 	var item storedFile
 	var raw, localRaw, automaticRaw []byte
 	err := row.Scan(&item.id, &item.rootID, &item.relativePath, &item.identity, &item.size, &item.modified, &raw, &item.parentID, &item.path, &item.name, &item.itemType,
-		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path, &automaticRaw)
+		&item.sortName, &item.overview, &item.indexNumber, &item.parentIndexNumber, &localRaw, &item.local.hash, &item.local.path, &automaticRaw, &item.hasLocalImages)
 	if err != nil {
 		return storedFile{}, err
 	}

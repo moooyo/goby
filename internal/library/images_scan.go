@@ -24,6 +24,10 @@ type scannedImage struct {
 // One invalid candidate retains the entire previous image type; a complete,
 // stable directory listing without candidates removes that type's old rows.
 func (state *scanState) scanImages(itemID, itemType, relative string, isFolder bool) error {
+	return state.scanImagesWithKnownAbsence(itemID, itemType, relative, isFolder, false)
+}
+
+func (state *scanState) scanImagesWithKnownAbsence(itemID, itemType, relative string, isFolder, knownNoLocalImages bool) error {
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
@@ -84,6 +88,13 @@ func (state *scanState) scanImages(itemID, itemType, relative string, isFolder b
 		state.imageDirectories[directoryPath] = index
 	}
 	candidates := index.candidateNames(itemType, relative, isFolder)
+	noCandidates := true
+	for _, imageType := range scannedImageTypes {
+		if len(candidates[imageType]) != 0 {
+			noCandidates = false
+			break
+		}
+	}
 	images := make(map[string][]*scannedImage)
 	preserve := make(map[string]bool)
 	inspected := make(map[string]*scannedImage)
@@ -145,6 +156,11 @@ func (state *scanState) scanImages(itemID, itemType, relative string, isFolder b
 	}
 	if len(replaceTypes) == 0 {
 		return nil
+	}
+	if knownNoLocalImages && noCandidates {
+		// The stored item lookup found no local image rows, and the complete,
+		// stable directory supplied no replacement candidates.
+		return state.store.CheckOwnership(state.task.ctx)
 	}
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {

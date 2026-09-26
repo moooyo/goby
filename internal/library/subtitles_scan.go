@@ -122,12 +122,7 @@ func (state *scanState) scanSubtitles(itemID, relative string, probe *media.Info
 		return nil
 	}
 	defer currentDirectory.Close()
-	current, currentErr := currentDirectory.Stat(".")
-	after, afterErr := directory.Stat()
-	currentPrimary, primaryErr := currentDirectory.Lstat(filepath.Base(relative))
-	if !sameMediaSourceDirectory(state.opened, currentRoot) || currentErr != nil || afterErr != nil || primaryErr != nil ||
-		!sameSubtitleDirectoryInfo(directoryInfo, current) || !sameSubtitleDirectoryInfo(directoryInfo, after) ||
-		!sameMediaSourceFile(primary, currentPrimary) || !currentPrimary.Mode().IsRegular() {
+	if !state.subtitleSourceStable(relative, directoryInfo, primary, directory, currentRoot, currentDirectory) {
 		state.warnings++
 		return nil
 	}
@@ -141,7 +136,90 @@ func (state *scanState) scanSubtitles(itemID, relative string, probe *media.Info
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if len(candidates) == 0 {
+		tx, handled, err := state.prepareEmptySubtitleScan(itemID, relative, primary)
+		if err != nil || handled {
+			return err
+		}
+		return state.persistSubtitlesTx(tx, itemID, relative, primary, present, inspected)
+	}
 	return state.persistSubtitles(itemID, relative, primary, present, inspected)
+}
+
+func (state *scanState) subtitleSourceStable(relative string, directoryInfo, primary os.FileInfo, directory *os.File, currentRoot, currentDirectory *os.Root) bool {
+	current, currentErr := currentDirectory.Stat(".")
+	after, afterErr := directory.Stat()
+	currentPrimary, primaryErr := currentDirectory.Lstat(filepath.Base(relative))
+	return sameMediaSourceDirectory(state.opened, currentRoot) && currentErr == nil && afterErr == nil && primaryErr == nil &&
+		sameSubtitleDirectoryInfo(directoryInfo, current) && sameSubtitleDirectoryInfo(directoryInfo, after) &&
+		sameMediaSourceFile(primary, currentPrimary) && currentPrimary.Mode().IsRegular()
+}
+
+// prepareEmptySubtitleScan avoids a write transaction when a stable listing has
+// no candidates and the owned catalog has no active file-backed subtitles.
+// A positive active lookup transfers the owner mutex directly to the ordinary
+// transaction before retirement. No filesystem call runs under that mutex.
+func (state *scanState) prepareEmptySubtitleScan(itemID, relative string, primary os.FileInfo) (pgx.Tx, bool, error) {
+	ctx := state.task.ctx
+	if err := state.store.lockOwnedSession(ctx); err != nil {
+		return nil, false, err
+	}
+	held := true
+	defer func() {
+		if held {
+			state.store.ownership.mu.Unlock()
+		}
+	}()
+	readCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 20*time.Second)
+	defer cancel()
+	var identity string
+	var size int64
+	var modified *time.Time
+	var mediaJSON []byte
+	var active bool
+	err := state.store.ownership.conn.QueryRow(readCtx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
+		EXISTS(SELECT 1 FROM item_subtitles s WHERE s.item_id = i.id AND s.active)
+		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
+		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
+		AND NOT i.is_folder AND i.media IS NOT NULL`,
+		itemID, state.library.ID, state.root.id, filepath.ToSlash(relative)).Scan(&identity, &size, &modified, &mediaJSON, &active)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, false, ErrNotFound
+	}
+	if err != nil {
+		return nil, false, state.store.ownershipErrorLocked(err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, false, err
+	}
+	_, matches, err := subtitleScanPrimaryMatches(primary, identity, size, modified, mediaJSON)
+	if err != nil {
+		return nil, false, err
+	}
+	if !matches {
+		state.warnings++
+		return nil, true, nil
+	}
+	if !active {
+		return nil, true, nil
+	}
+	held = false
+	tx, err := state.store.beginOwnedTxLocked(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	return tx, false, nil
+}
+
+func subtitleScanPrimaryMatches(primary os.FileInfo, identity string, size int64, modified *time.Time, mediaJSON []byte) (media.Info, bool, error) {
+	var probe media.Info
+	if err := json.Unmarshal(mediaJSON, &probe); err != nil {
+		return media.Info{}, false, err
+	}
+	matches := identity == fileIdentity(primary) && size == primary.Size() && modified != nil &&
+		modified.Equal(catalogModifiedTime(primary)) &&
+		(probe.FileChangeTimeNs <= 0 || probe.FileChangeTimeNs == media.FileChangeTime(primary))
+	return probe, matches, nil
 }
 
 func sameSubtitleDirectoryInfo(first, second os.FileInfo) bool {
@@ -228,18 +306,22 @@ func readSubtitleBytes(ctx context.Context, file *os.File) ([]byte, error) {
 }
 
 func (state *scanState) persistSubtitles(itemID, relative string, primary os.FileInfo, present map[string]bool, inspected map[string]*scannedSubtitle) error {
-	ctx := state.task.ctx
-	tx, err := state.store.beginOwnedTx(ctx)
+	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return err
 	}
+	return state.persistSubtitlesTx(tx, itemID, relative, primary, present, inspected)
+}
+
+func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, primary os.FileInfo, present map[string]bool, inspected map[string]*scannedSubtitle) error {
+	ctx := state.task.ctx
 	defer rollback(tx)
 	var identity string
 	var size int64
 	var modified *time.Time
 	var mediaJSON []byte
 	change := CatalogChange{Kind: CatalogUpdated}
-	err = tx.QueryRow(ctx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
+	err := tx.QueryRow(ctx, `SELECT i.file_identity, i.file_size, i.modified_at, i.media,
 		i.id, i.library_id, COALESCE(i.parent_id, ''), i.is_folder, i.type = 'CollectionFolder' FROM items i
 		JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND i.library_id = $2 AND i.root_id = $3 AND i.relative_path = $4
@@ -252,13 +334,11 @@ func (state *scanState) persistSubtitles(itemID, relative string, primary os.Fil
 	if err != nil {
 		return err
 	}
-	var probe media.Info
-	if err := json.Unmarshal(mediaJSON, &probe); err != nil {
+	probe, matches, err := subtitleScanPrimaryMatches(primary, identity, size, modified, mediaJSON)
+	if err != nil {
 		return err
 	}
-	if identity != fileIdentity(primary) || size != primary.Size() || modified == nil ||
-		!modified.Equal(catalogModifiedTime(primary)) ||
-		(probe.FileChangeTimeNs > 0 && probe.FileChangeTimeNs != media.FileChangeTime(primary)) {
+	if !matches {
 		state.warnings++
 		return nil
 	}
