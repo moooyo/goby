@@ -1637,6 +1637,7 @@ class Actor:
                 mode = ("direct", "remux", "transcode")[index % 3]
                 players.append(executor.submit(self.lane, "playback-%d-%s" % (index, mode), lambda index=index, mode=mode: self.playback_loop(index, mode, done)))
             scanning = executor.submit(self.lane, "scan", self.scan)
+            phase_failed = False
             try:
                 pending = [scanning, *tasks]
                 phase_end = min(self.deadline, time.monotonic() + self.m["budgets"]["phase_seconds"])
@@ -1646,14 +1647,19 @@ class Actor:
                         if future.done():
                             future.result()
                     pending = [future for future in pending if not future.done()]
+                    need((time.monotonic_ns() - started) / 1e9 <= self.m["thresholds"]["scan_seconds"],
+                         "scan_latency_threshold")
                     time.sleep(.05)
             except Exception:
+                phase_failed = True
                 self.stop.set()
                 raise
             finally:
                 done.set()
-                for future in readers + players:
-                    future.result()
+                # Preserve the primary failure; executor shutdown still joins every lane.
+                if not phase_failed:
+                    for future in readers + players:
+                        future.result()
         elapsed = (time.monotonic_ns() - started) / 1e9
         need(elapsed <= self.m["thresholds"]["scan_seconds"], "scan_latency_threshold")
         if phase == "incremental":
