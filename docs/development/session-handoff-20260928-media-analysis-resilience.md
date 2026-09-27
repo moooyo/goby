@@ -57,6 +57,12 @@ unchanged; its result must not be relabeled as a functional-tier pass.
 There is no completed current-target nine-stage library/server/media suite,
 15-stage Product delivery, Reader qualification, or 10,000-item HTTP
 functional result for `c5d08be`. Phase 3 acceptance remains incomplete.
+Static review found no definite blocker in the merged diff, but the focused
+tests do not directly exercise the new no-image-row and no-active-subtitle
+shortcuts in every error path. The strict capacity fault wrapper also reuses
+`run_phase`; its early scan-deadline check may end a still-running actor before
+that wrapper's longer phase deadline. This path needs actual verification
+before fault acceptance.
 
 ## VM106 stopping point
 
