@@ -106,9 +106,14 @@ const test = base.extend<{ api: RosterAPI }>({
 });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 
+async function chooseRoster(page: Page): Promise<void> {
+  await page.getByRole('button', { name: `More actions for ${seriesName}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Episode roster', exact: true }).click();
+}
+
 async function openRoster(page: Page): Promise<Locator> {
-  await page.goto(`/admin/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: `Episode roster for ${seriesName}`, exact: true }).click();
+  await page.goto(`/admin/media/libraries/${library.Id}/items`);
+  await chooseRoster(page);
   const dialog = page.getByRole('dialog', { name: 'Episode roster', exact: true });
   await expect(dialog.getByRole('region', { name: 'Saved episode roster', exact: true })).toBeVisible();
   return dialog;
@@ -146,7 +151,7 @@ test('a declared roster is previewed before saving and numbering gaps do not add
 });
 
 test('metadata opens the same roster only after its draft is clean and other item types have no roster action', async ({ page, api }) => {
-  await page.goto(`/admin/libraries/${library.Id}/items`);
+  await page.goto(`/admin/media/libraries/${library.Id}/items`);
   await page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true }).click();
   const metadataDialog = page.getByRole('dialog', { name: /^Edit metadata/ });
   const rosterButton = metadataDialog.getByRole('button', { name: 'Episode roster', exact: true });
@@ -163,7 +168,9 @@ test('metadata opens the same roster only after its draft is clean and other ite
   api.item = metadata('Movie');
   await page.reload();
   await expect(page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: `Episode roster for ${seriesName}`, exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: `More actions for ${seriesName}`, exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Episode roster', exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await page.getByRole('button', { name: `Edit metadata for ${seriesName}`, exact: true }).click();
   await expect(metadataDialog.getByRole('button', { name: 'Episode roster', exact: true })).toHaveCount(0);
   expect(api.writes()).toEqual([]);
@@ -336,8 +343,8 @@ test('withdrawal is explicit, sends only the saved revision, and retains source 
 
 test('malformed roster reads cannot be edited and retry admits a complete response', async ({ page, api }) => {
   api.handlers.set(`GET ${rosterPath}`, async (route) => json(route, { ...active(), Entries: [null] }));
-  await page.goto(`/admin/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: `Episode roster for ${seriesName}`, exact: true }).click();
+  await page.goto(`/admin/media/libraries/${library.Id}/items`);
+  await chooseRoster(page);
   const dialog = page.getByRole('dialog', { name: 'Episode roster', exact: true });
   await expect(dialog).toContainText('roster response is incomplete');
   await expect(dialog.getByRole('button', { name: 'Save roster', exact: true })).toBeDisabled();
@@ -358,7 +365,7 @@ test('closing a dirty roster keeps or discards the draft only after an explicit 
   page.once('dialog', (prompt) => { void prompt.accept(); });
   await dialog.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await page.getByRole('button', { name: `Episode roster for ${seriesName}`, exact: true }).click();
+  await chooseRoster(page);
   await expect(dialog.getByRole('textbox', { name: 'Source key', exact: true })).toHaveValue('');
   expect(api.writes()).toEqual([]);
 });

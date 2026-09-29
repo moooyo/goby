@@ -50,8 +50,9 @@ class PermissionAPI {
 const test = base.extend<{ api: PermissionAPI }>({ api: async ({ context }, use) => { const api = new PermissionAPI(); await api.install(context); await use(api); expect(api.unexpected).toEqual([]); expect(api.writes().every((request) => request.csrf === csrf)).toBe(true); } });
 test.use({ serviceWorkers: 'block' });
 async function edit(page: Page): Promise<void> {
-  await page.goto('/admin/libraries');
-  await page.getByRole('button', { name: 'Edit library Permission library', exact: true }).click();
+  await page.goto('/admin/media/libraries');
+  await page.getByRole('button', { name: 'More actions for Permission library', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
   // The anonymous role locator collects diagnostics only. All workflow actions
   // remain scoped to the dialog's exact accessible name below.
   const mountedDialog = page.getByRole('dialog');
