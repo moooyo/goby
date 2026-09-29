@@ -1,6 +1,9 @@
 # Goby handoff - September 29, 2026
 
-The revised Phase 3 functional scope is complete. Read the
+The revised Phase 3 functional scope is complete and published to `origin/main`
+at `c998e924d166ee9760fa0f4a3b341c1d30b7a53b`; exact remote readback passed.
+The [publication record](phase3-functional-publication-20260929.md) closes the
+remaining authorized Git delivery step. Read the
 [September 29 closeout](phase3-functional-closeout-20260929.md) and its
 [result manifest](phase3-functional-closeout-results-20260929.json).
 Final ordinary Go evidence composes 4,339 parent passes with zero unresolved

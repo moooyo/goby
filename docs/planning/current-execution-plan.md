@@ -1,5 +1,15 @@
 # Current execution plan
 
+## Revised Phase 3 delivery published: September 29, 2026
+
+The accepted delivery `c998e924d166ee9760fa0f4a3b341c1d30b7a53b` was pushed
+to `origin/main`, and the exact remote ref was read back. The
+[publication record](../development/phase3-functional-publication-20260929.md)
+closes the remaining authorized Git delivery step. The revised three-phase
+sequence has no pending implementation, verification, or publication gate.
+Historical performance, full-matrix, and release-packaging exclusions remain
+explicit; they are not an automatic continuation queue. No deployment occurred.
+
 ## Revised Phase 3 functional scope complete: September 29, 2026
 
 The [functional closeout](../development/phase3-functional-closeout-20260929.md)

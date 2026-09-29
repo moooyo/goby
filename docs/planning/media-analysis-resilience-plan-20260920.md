@@ -1,13 +1,25 @@
 # Media analysis, compatibility and resilience execution plan
 
-Status: **active; phases 1 and 2 published; the phase 3 session JIT repair at 89b6670 passed all 50 remote regression stages and both builds. Scope11 passed preparation, baseline, rebind and resource admission, but its actual compound repeat failed with another PostgreSQL OOM at 512 MiB. The deployed observer naturally exited 1; failure collection and runtime closure are independently complete, with original failures and the unrestarted PG state preserved. The JIT repair alone was insufficient. Capacity/recovery acceptance and publication remain pending**.
+Status: **complete and published within the revised three-phase functional
+scope**. Phases 1 and 2 retain their accepted boundaries. The revised Phase 3
+delivery `c998e924d166ee9760fa0f4a3b341c1d30b7a53b` is published to
+`origin/main`, with exact remote readback. Read the
+[functional closeout](../development/phase3-functional-closeout-20260929.md) and
+[publication record](../development/phase3-functional-publication-20260929.md).
+
+The September 29 agreement prioritizes functional correctness and relaxes the
+historical performance and orchestration requirements. Strict capacity/SLO
+profiles, the exact full fault matrix, and release packaging remain outside this
+completed scope. The earlier capacity narrative and matrix below retain their
+historical requirements and failures; they are not current execution gates.
 
 The user approved this three-phase consolidation on September 20, 2026 and
 authorized implementation, consolidated verification after each phase's code is
 complete, merging to `main`, and pushing the verified delivery. The baseline is
-`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Development uses the isolated
-`codex/media-analysis-resilience` checkout. Unrelated changes in the original
-checkout remain outside this increment.
+`2fd9182aca8ddd1afed6a9af2ab377a82b58a05f`. Development originally used the
+isolated `codex/media-analysis-resilience` checkout. The accepted Phase 3 delivery
+is integrated on `main`. Unrelated changes in the original checkout remain
+outside this increment.
 
 ## Execution and scope
 
@@ -19,10 +31,9 @@ Failures require repairs and affected verification; an implementation or passing
 mock does not substitute for a required real consumer. Accepted unchanged
 evidence remains valid within its original scope.
 
-All tests, builds, validation and runtime probes for this increment execute on
-`test-env`; local verification has not been authorized for this new task.
-Historical local-test authorization in earlier execution records does not extend
-to this increment. Host reboot and forced-reset acceptance require an isolated,
+The September 29 agreement permits local compilation. Tests, validation suites,
+and runtime probes execute on `test-env`; local test execution remains outside
+that authorization. Host reboot and forced-reset acceptance use an isolated,
 owned guest. Shared `test-env` and the physical PVE host must not be rebooted.
 The `ui-ux-pro-max` skill remains disabled.
 
@@ -68,6 +79,18 @@ Those items retain explicit chapter/manual/import behavior and a truthful
 insufficient-evidence result until a supported content algorithm exists.
 
 ## Phase 3: Large-library concurrency and fault/restart recovery
+
+The revised functional scope is complete. Small focused acceptance covers scan
+reconciliation, compound media work, a 100k synthetic catalog, storage faults,
+process/database recovery, blocked operations, and isolated guest lifecycle.
+The final composition records 4,339 ordinary Go parent passes with zero
+unresolved failures, separate embedded/frontend/Node/Python checks, both Linux
+builds, migration/backup/recovery, and owned-resource closure. The
+[closeout](../development/phase3-functional-closeout-20260929.md) defines the
+exact evidence and exclusions; these results are not relabeled as acceptance
+of the historical strict capacity profiles or every old matrix cell.
+
+### Historical capacity campaign and original matrix
 
 Source implementation is integrated. The
 [Phase 3 execution record](../development/media-analysis-resilience-phase3-20260922.md)
@@ -186,4 +209,4 @@ read back the remote commit. Publication and deployment remain separate states.
 | --- | --- | --- | --- |
 | 1. Compatibility API long tail | Complete in the selected matrix | Accepted composed regression, 24-stage actual browser, builds and resource closure | Merged and pushed at `59ce074`; exact remote ref read back |
 | 2. Intro analysis and BIF previews | Complete at product `49fc4ec`, with fixture-only `e94173f` correction | Accepted builds/regression, calibration/controls, all 14 real cases, four preview consumers, actual skip, cancellation, prune, restart, and independent resource closure; original failures and scope limits retained in the delivery results | Merged and pushed at `feb5004`; exact remote ref read back |
-| 3. Concurrency and recovery | Core sources and Goby session JIT repair integrated at `89b6670` | Complete 50-stage regression, both builds and regression closure accepted. Scope11 preparation, baseline, rebind and resource admission passed; the actual compound repeat failed with PG OOM at 512 MiB. The deployed observer exited naturally; failure collection and runtime closure are independently complete. Full capacity journeys, overload and fault/reboot acceptance remain pending | Pending |
+| 3. Concurrency and recovery | Complete in the revised functional scope; final product repair at `242d6d8` | Accepted focused functional milestones and final composition at source `1bc71f1`: 4,339 ordinary Go parent passes, explicit skips, zero unresolved failures, separate embedded/frontend/Node/Python results, both Linux builds, migration/backup/recovery, and resource closure. Strict historical capacity/SLO/full-matrix and release-packaging claims remain excluded | Published to `main` at `c998e924d166ee9760fa0f4a3b341c1d30b7a53b`; exact remote ref read back |

@@ -1,7 +1,9 @@
 # Current implementation and delivery status
 
-The revised Phase 3 functional scope is complete; start with the
-[September 29 closeout](phase3-functional-closeout-20260929.md).
+The revised Phase 3 functional scope is complete and published to `origin/main`
+at `c998e924d166ee9760fa0f4a3b341c1d30b7a53b`, with exact remote readback.
+Start with the [September 29 closeout](phase3-functional-closeout-20260929.md)
+and [publication record](phase3-functional-publication-20260929.md).
 Composed final Go coverage has 4,339 parent passes, zero unresolved failures,
 and explicit skips. Embedded tests, frontend/Node/Python checks, both Linux
 builds, migration/backup/recovery composition, and resource closure passed.
@@ -12,7 +14,7 @@ remain outside this functional closeout. No verification runtime remains active;
 no deployment occurred.
 Earlier checkpoints below are not current execution instructions.
 
-## Active increment: compatibility, media analysis and resilience
+## Historical increment checkpoints: compatibility, media analysis and resilience
 
 The user authorized the [three-phase plan](../planning/media-analysis-resilience-plan-20260920.md)
 on September 20, 2026, including complete implementation, consolidated remote

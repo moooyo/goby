@@ -4,6 +4,11 @@ Status: **COMPLETE for the revised Phase 3 functional scope**.
 Final verification, affected repeats, both builds, and owned-resource closure
 are complete. No additional product change was needed in this final increment.
 
+The accepted delivery `c998e924d166ee9760fa0f4a3b341c1d30b7a53b` is now
+published to `origin/main`, with exact remote readback. See the
+[publication record](phase3-functional-publication-20260929.md). Documentation
+follow-up does not change the verified product or broaden its acceptance scope.
+
 The final verification source is committed revision `1bc71f1`. The last product
 repair is `242d6d8`; subsequent work adds verification and documentation.
 The clean source archive SHA-256 is
