@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -31,7 +32,6 @@ const (
 	catalogCapacityTracksPerAlbum    = 10
 	catalogCapacityEpisodes          = catalogCapacitySeries * catalogCapacitySeasons * catalogCapacityEpisodesPerSeason
 	catalogCapacityAudio             = catalogCapacityAlbums * catalogCapacityTracksPerAlbum
-	catalogCapacityLeaves            = catalogCapacityMovies + catalogCapacityEpisodes + catalogCapacityAudio
 	catalogCapacityPage              = 64
 )
 
@@ -45,7 +45,20 @@ func catalogCapacityLeafID(libraryID string, number int) string {
 
 func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *testing.T) {
 	started := time.Now()
-	f, root := newLibraryServerFixture(t)
+	movies := catalogCapacityMovies
+	fixtureTimeout, pageTimeout, blockTimeout := 90*time.Second, 5*time.Second, 10*time.Second
+	switch os.Getenv("GOBY_PHASE3_CATALOG_ITEMS") {
+	case "", "10000":
+	case "100000":
+		// Grow catalog population while retaining the same television/music
+		// hierarchy and its exact result assertions in both profiles.
+		movies = 50_000 - catalogCapacityEpisodes - catalogCapacityAudio
+		fixtureTimeout, pageTimeout, blockTimeout = 10*time.Minute, 30*time.Second, 15*time.Second
+	default:
+		t.Fatal("GOBY_PHASE3_CATALOG_ITEMS must be 10000 or 100000")
+	}
+	leavesPerLibrary := movies + catalogCapacityEpisodes + catalogCapacityAudio
+	f, root := catalogCapacityFixture(t, fixtureTimeout)
 	adminID := f.bootstrap(t)
 	subjects := make([]catalogCapacitySubject, 0, 2)
 	seedStarted := time.Now()
@@ -71,7 +84,7 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 		if _, err := f.pool.Exec(f.ctx, "UPDATE users SET policy=$2::jsonb WHERE id=$1", user.ID, policy); err != nil {
 			t.Fatalf("set fixture library policy before login: %v", err)
 		}
-		catalogCapacitySeed(t, f, collection.ID, path)
+		catalogCapacitySeed(t, f, collection.ID, path, movies)
 		login := f.embyLogin(t, user.Name, "capacity-fixture-password")
 		subjects = append(subjects, catalogCapacitySubject{collection.ID, user.ID, stringValue(t, login, "AccessToken")})
 	}
@@ -92,8 +105,8 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 		[]string{subjects[0].libraryID, subjects[1].libraryID}); err != nil {
 		t.Fatalf("index shared artist credit roles: %v", err)
 	}
-	seededNumbers := []int{1, catalogCapacityMovies + 1, catalogCapacityMovies + catalogCapacityEpisodes + 1,
-		catalogCapacityLeaves - 1, catalogCapacityLeaves}
+	seededNumbers := []int{1, movies + 1, movies + catalogCapacityEpisodes + 1,
+		leavesPerLibrary - 1, leavesPerLibrary}
 	expectedData := make(map[string]map[string]any)
 	for _, subject := range subjects {
 		for index, number := range seededNumbers {
@@ -116,8 +129,8 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 		t.Fatal(err)
 	}
 	wantFolders := int64(2 * (1 + catalogCapacitySeries + catalogCapacitySeries*catalogCapacitySeasons + catalogCapacityAlbums))
-	if leaves != 2*catalogCapacityLeaves || folders != wantFolders {
-		t.Fatalf("capacity seed counts = %d leaves/%d folders, want %d/%d", leaves, folders, 2*catalogCapacityLeaves, wantFolders)
+	if leaves != int64(2*leavesPerLibrary) || folders != wantFolders {
+		t.Fatalf("capacity seed counts = %d leaves/%d folders, want %d/%d", leaves, folders, 2*leavesPerLibrary, wantFolders)
 	}
 	if err := f.pool.QueryRow(f.ctx, `SELECT COALESCE(sum(pg_total_relation_size(c.oid)),0)::bigint
 		FROM pg_class c WHERE c.relnamespace=current_schema()::regnamespace AND c.relkind IN ('r','p')`).Scan(&schemaBytes); err != nil {
@@ -157,17 +170,17 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 			t.Fatal("bounded capacity page exceeded the fixture response-byte ceiling")
 		}
 		items, total := responseItems(t, response)
-		if total != catalogCapacityLeaves || len(items) != limit {
-			t.Fatalf("capacity page total/length = %d/%d, want %d/%d", total, len(items), catalogCapacityLeaves, limit)
+		if total != leavesPerLibrary || len(items) != limit {
+			t.Fatalf("capacity page total/length = %d/%d, want %d/%d", total, len(items), leavesPerLibrary, limit)
 		}
 		for index, item := range items {
 			number := offset + index + 1
 			id := catalogCapacityLeafID(subject.libraryID, number)
 			kind := "Movie"
-			if number > catalogCapacityMovies {
+			if number > movies {
 				kind = "Episode"
 			}
-			if number > catalogCapacityMovies+catalogCapacityEpisodes {
+			if number > movies+catalogCapacityEpisodes {
 				kind = "Audio"
 			}
 			if item["Id"] != id || item["Name"] != fmt.Sprintf("Item %05d", number) || item["Type"] != kind || item["IsFolder"] != false {
@@ -183,7 +196,7 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 	assertQueries := func(label string) {
 		t.Helper()
 		for _, subject := range subjects {
-			for kind, count := range map[string]int{"Movie": catalogCapacityMovies, "Episode": catalogCapacityEpisodes, "Audio": catalogCapacityAudio} {
+			for kind, count := range map[string]int{"Movie": movies, "Episode": catalogCapacityEpisodes, "Audio": catalogCapacityAudio} {
 				query := url.Values{"Recursive": {"true"}, "IncludeItemTypes": {kind}, "Limit": {"0"}}
 				response, _ := request(readCtx, subject, "/emby/Users/"+subject.userID+"/Items?"+query.Encode())
 				items, total := responseItems(t, response)
@@ -191,9 +204,9 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 					t.Fatalf("capacity %s count-only result = %d/%d, want %d/0", kind, total, len(items), count)
 				}
 			}
-			for _, page := range [][2]int{{0, catalogCapacityPage}, {catalogCapacityLeaves / 2, catalogCapacityPage},
-				{catalogCapacityLeaves - catalogCapacityPage, catalogCapacityPage}, {0, 0}} {
-				ctx, cancel := context.WithTimeout(readCtx, 5*time.Second)
+			for _, page := range [][2]int{{0, catalogCapacityPage}, {leavesPerLibrary / 2, catalogCapacityPage},
+				{leavesPerLibrary - catalogCapacityPage, catalogCapacityPage}, {0, 0}} {
+				ctx, cancel := context.WithTimeout(readCtx, pageTimeout)
 				response, elapsed := request(ctx, subject, target(subject, page[0], page[1]))
 				cancel()
 				assertPage(response, subject, page[0], page[1])
@@ -208,11 +221,11 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 					t.Fatalf("shared music filter %s exposed another library or duplicate credit roles", filter)
 				}
 			}
-			catalogCapacityAssertHierarchy(t, f, subject, expectedData)
+			catalogCapacityAssertHierarchy(t, f, subject, expectedData, movies)
 		}
 		response, _ := request(readCtx, admin, target(admin, 0, 0))
 		items, total := responseItems(t, response)
-		if len(items) != 0 || total != 2*catalogCapacityLeaves {
+		if len(items) != 0 || total != 2*leavesPerLibrary {
 			t.Fatalf("administrator count-only result = %d/%d", total, len(items))
 		}
 		for index, subject := range subjects {
@@ -304,7 +317,9 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 			return caller.Err()
 		})
 	}()
-	blockCtx, cancelBlock := context.WithTimeout(f.ctx, 10*time.Second)
+	// The test window stays below the product's protected transaction lifetime.
+	// Larger population changes the harness budget, not product SQL deadlines.
+	blockCtx, cancelBlock := context.WithTimeout(f.ctx, blockTimeout)
 	defer cancelBlock()
 	var ownerPID int32
 	select {
@@ -350,8 +365,8 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 	}
 	results := make(chan pageResult, 4)
 	other := subjects[1]
-	for _, page := range [][2]int{{0, catalogCapacityPage}, {catalogCapacityLeaves / 2, catalogCapacityPage},
-		{catalogCapacityLeaves - catalogCapacityPage, catalogCapacityPage}, {0, 0}} {
+	for _, page := range [][2]int{{0, catalogCapacityPage}, {leavesPerLibrary / 2, catalogCapacityPage},
+		{leavesPerLibrary - catalogCapacityPage, catalogCapacityPage}, {0, 0}} {
 		reads.Add(1)
 		go func(offset, limit int) {
 			defer reads.Done()
@@ -436,6 +451,24 @@ func TestHTTPCatalogCapacityKeepsACLAndUserDataDuringOwnedTransactionBlock(t *te
 	t.Log("catalog_capacity_boundary=synthetic_SQL_catalog_and_real_PostgreSQL_row_lock; no_latency_SLO_scanner_throughput_or_kernel_IO_claim")
 }
 
+func catalogCapacityFixture(t *testing.T, timeout time.Duration) (*serverFixture, string) {
+	t.Helper()
+	if runtime.GOOS != "linux" {
+		t.Skip("catalog capacity HTTP integration tests require Linux")
+	}
+	f := newServerFixtureWithTimeout(t, timeout)
+	closeFixtureCatalogForReplacement(t, f)
+	root := t.TempDir()
+	catalog, err := library.New(f.pool, apiMediaProber{}, []string{root})
+	if err != nil {
+		t.Fatalf("create catalog capacity fixture: %v", err)
+	}
+	installFixtureCatalog(t, f, catalog)
+	f.app.cfg.MediaRoots, f.cfg.MediaRoots = []string{root}, []string{root}
+	f.handler = f.app.Handler()
+	return f, root
+}
+
 func catalogCapacityAssertData(t *testing.T, actual any, expected map[string]any) {
 	t.Helper()
 	left, err := json.Marshal(actual)
@@ -448,7 +481,7 @@ func catalogCapacityAssertData(t *testing.T, actual any, expected map[string]any
 	}
 }
 
-func catalogCapacityAssertHierarchy(t *testing.T, f *serverFixture, subject catalogCapacitySubject, expectedData map[string]map[string]any) {
+func catalogCapacityAssertHierarchy(t *testing.T, f *serverFixture, subject catalogCapacitySubject, expectedData map[string]map[string]any, movies int) {
 	t.Helper()
 	headers := http.Header{"X-Emby-Token": {subject.token}}
 	series := subject.libraryID + "-series-001"
@@ -470,7 +503,7 @@ func catalogCapacityAssertHierarchy(t *testing.T, f *serverFixture, subject cata
 		t.Fatal("representative season lost its twenty episodes")
 	}
 	for index, item := range episodes {
-		if item["Id"] != catalogCapacityLeafID(subject.libraryID, catalogCapacityMovies+index+1) || item["ParentId"] != season || item["SeriesId"] != series || item["SeasonId"] != season {
+		if item["Id"] != catalogCapacityLeafID(subject.libraryID, movies+index+1) || item["ParentId"] != season || item["SeriesId"] != series || item["SeasonId"] != season {
 			t.Fatal("representative episode hierarchy changed")
 		}
 	}
@@ -486,11 +519,11 @@ func catalogCapacityAssertHierarchy(t *testing.T, f *serverFixture, subject cata
 		t.Fatal("representative album lost its ten physical-parent catalog tracks")
 	}
 	for index, item := range tracks {
-		if item["Id"] != catalogCapacityLeafID(subject.libraryID, catalogCapacityMovies+catalogCapacityEpisodes+index+1) || item["ParentId"] != album || item["AlbumId"] != album {
+		if item["Id"] != catalogCapacityLeafID(subject.libraryID, movies+catalogCapacityEpisodes+index+1) || item["ParentId"] != album || item["AlbumId"] != album {
 			t.Fatal("representative track album identity changed")
 		}
 	}
-	for _, number := range []int{1, catalogCapacityMovies + 1, catalogCapacityMovies + catalogCapacityEpisodes + 1} {
+	for _, number := range []int{1, movies + 1, movies + catalogCapacityEpisodes + 1} {
 		id := catalogCapacityLeafID(subject.libraryID, number)
 		response := f.request(t, http.MethodGet, "/emby/Users/"+subject.userID+"/Items/"+id, nil, headers)
 		expectStatus(t, response, http.StatusOK)
@@ -498,7 +531,7 @@ func catalogCapacityAssertHierarchy(t *testing.T, f *serverFixture, subject cata
 	}
 }
 
-func catalogCapacitySeed(t *testing.T, f *serverFixture, libraryID, path string) {
+func catalogCapacitySeed(t *testing.T, f *serverFixture, libraryID, path string, movies int) {
 	t.Helper()
 	var rootID string
 	if err := f.pool.QueryRow(f.ctx, "SELECT id FROM library_roots WHERE library_id=$1", libraryID).Scan(&rootID); err != nil {
@@ -528,7 +561,8 @@ func catalogCapacitySeed(t *testing.T, f *serverFixture, libraryID, path string)
 		SELECT $1||'-album-'||lpad(n::text,3,'0'),$1,$2,$1,'Album '||n,'album '||lpad(n::text,3,'0'),'MusicAlbum',true,
 		$3||'/albums/'||lpad(n::text,3,'0'),'albums/'||lpad(n::text,3,'0') FROM generate_series(1,$4::integer) n`,
 		libraryID, rootID, path, catalogCapacityAlbums)
-	insert(catalogCapacityLeaves, `WITH numbered AS (
+	leaves := movies + catalogCapacityEpisodes + catalogCapacityAudio
+	insert(int64(leaves), `WITH numbered AS (
 		SELECT n, CASE WHEN n<=$5::integer THEN 'Movie' WHEN n<=$6::integer THEN 'Episode' ELSE 'Audio' END AS kind,
 		(n-$5::integer-1)/$7::integer+1 AS show_number,
 		((n-$5::integer-1)%$7::integer)/$8::integer+1 AS season_number,
@@ -549,7 +583,7 @@ func catalogCapacitySeed(t *testing.T, f *serverFixture, libraryID, path string)
 		CASE kind WHEN 'Episode' THEN episode_number WHEN 'Audio' THEN track_number ELSE 0 END,
 		CASE kind WHEN 'Episode' THEN season_number ELSE 0 END,
 		jsonb_build_object('Container',CASE kind WHEN 'Audio' THEN 'flac' ELSE 'mp4' END,'DurationTicks',1250000000)
-		FROM named`, libraryID, rootID, path, catalogCapacityLeaves, catalogCapacityMovies,
-		catalogCapacityMovies+catalogCapacityEpisodes, catalogCapacitySeasons*catalogCapacityEpisodesPerSeason,
+		FROM named`, libraryID, rootID, path, leaves, movies,
+		movies+catalogCapacityEpisodes, catalogCapacitySeasons*catalogCapacityEpisodesPerSeason,
 		catalogCapacityEpisodesPerSeason, catalogCapacityTracksPerAlbum)
 }

@@ -1,5 +1,14 @@
 # Current execution plan
 
+## Completed compound and catalog continuation: September 29, 2026
+
+The [compound/catalog/recovery record](../development/phase3-concurrency-recovery-20260929.md)
+is the current entry. Real small-scale media concurrency, 100k SQL-catalog
+isolation, their same-server composition, and selected actual PG/mount recovery
+checks passed. Continue with small owned process/storage recovery scenarios;
+the full fault matrix and final regression remain open. The relaxed performance
+and simplified remote-verification agreement remains in effect.
+
 ## Completed local functional repair: September 29, 2026
 
 The [functional repair record](../development/phase3-functional-repair-20260929.md)
