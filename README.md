@@ -35,14 +35,28 @@ every GPU or codec tuple. See the [AMD media contract](docs/development/amd-vide
 
 ## Run Goby
 
-Use Docker Engine and the Docker Compose guide for the selected Linux amd64
-image profile. Both profiles include the embedded administrator dashboard and
-use an external PostgreSQL 17 server.
+Start with the [Docker quick start](deploy/oci/QUICKSTART.md). The operations
+toolkit provides `goby-docker.py prepare`, `check`, `start`, `status`, `logs`
+and `stop` for the existing Linux amd64 software and AMD image profiles.
+[current-release.json](deploy/oci/current-release.json) binds their accepted
+image IDs, archives and companions. Both profiles include the embedded
+administrator dashboard and use an external PostgreSQL 17 server.
+
+The small toolkit is delivered as
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
+Use it with the existing image archive in
+`D:/Code/goby/.artifacts/oci-providers-20260930/software` or `amd`.
+It does not duplicate or rebuild either image. The
+[operations record](docs/development/docker-operations-20260930.md) retains
+the 14 helper tests, actual software installation/playback/database-recovery
+journey, original failed attempts and final resource closure. There is no new
+GPU or browser acceptance claim.
 
 - [Linux amd64 software image and Compose guide](deploy/oci/README.md): archive
   import, database configuration, persistent paths, startup, backup, upgrade and
-  rollback. The [delivery record](docs/development/oci-delivery-20260929.md)
-  binds the accepted image, tools and application source.
+  rollback details beyond the quick start. The current image comes from the
+  release catalog; the [original delivery record](docs/development/oci-delivery-20260929.md)
+  retains its earlier source, tool and recovery evidence.
 - [Linux amd64 AMD image and Compose extension](deploy/oci/README.amd.md): device
   selection, numeric render-group access, media settings and the recorded
   GFX1150/Mesa profile. The [AMD delivery record](docs/development/oci-amd-delivery-20260929.md)
@@ -66,12 +80,13 @@ this policy does not prescribe their deployment method.
 The [credential-free online-provider increment](docs/development/online-providers-20260930.md)
 also accepts MusicBrainz album search, metadata application/refresh and Docker
 restart persistence. The [provider guide](deploy/oci/README.providers.md) covers
-configuration and optional subtitle write access. TMDB and OpenSubtitles have
-offline contract coverage; their real online acceptance awaits credentials.
+configuration and optional subtitle write access. MusicBrainz acceptance is
+unchanged. The user has deferred TMDB/OpenSubtitles online work and new scraper
+research; their credentials are not a requirement or blocker for Docker operations.
 
 There is no remaining implementation or acceptance gate in the completed selected
 scopes. Further work requires a separately selected delivery or feature scope:
-credentialed TMDB/OpenSubtitles online acceptance, additional clients and media combinations,
+additional clients and media combinations,
 other GPU/driver profiles within Docker, an additional Docker image architecture
 such as Linux arm64, registry distribution, or production/public-HTTPS
 deployment. Current acceptance remains Linux amd64. Provider adapters already

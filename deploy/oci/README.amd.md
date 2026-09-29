@@ -1,5 +1,22 @@
 # Linux amd64 AMD OCI extension
 
+Start with the [Docker quick start](QUICKSTART.md), selecting `--profile amd`
+and the actual render node. The operations helper supports `prepare`, `check`,
+`start`, `status`, `logs` and `stop`; use
+[current-release.json](current-release.json) for the current AMD archive and
+immutable image ID. Software and AMD remain profiles of the same Docker delivery.
+
+The small operations toolkit is
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`;
+the existing AMD image archive remains in
+`D:/Code/goby/.artifacts/oci-providers-20260930/amd`. Application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` and both accepted images are unchanged.
+The [operations result](../../docs/development/docker-operations-20260930.md)
+establishes 14 helper tests and the actual software Docker journey with resource
+closure. It does not add AMD GPU or browser acceptance. This guide retains the
+earlier AMD device, tool and build evidence below. Provider credentials are not
+required; further TMDB/OpenSubtitles work and scraper research are deferred.
+
 The [September 30 online-provider increment](../../docs/development/online-providers-20260930.md)
 provides a newer application layer on this accepted AMD image. Its receipt binds
 the new image and application identities; the FFmpeg, drivers and earlier GPU
@@ -33,7 +50,7 @@ container UID/GID `10001:10001`. No registry publication is included.
 PostgreSQL and a reverse proxy may remain external services; they are not
 required to run in Docker.
 
-The selected image is
+The September 29 verification image was
 `sha256:eb0f98427ad6535eb37d4cf744ab0d90d6c2e45f84c64f34a2355e0a7eed713f`.
 Its FFmpeg SHA-256 is
 `3505587e95203e2561a5b0459134847b59aca3665557676a394cdfbca2d14908`;
@@ -41,14 +58,17 @@ the matching ffprobe SHA-256 is
 `5012fcac5d0da7346953312cce9f86cbfa588baf412e3d14acf6e028405f71ad`;
 the unchanged Goby binary SHA-256 is
 `2e296bfd02fdf3f7b740000d0d87563e420d5a099fd20e0aa37b96502f78c004`.
-The delivery consists of `goby-linux-amd64-amd-image.tar`, its build receipt and
+That delivery consists of `goby-linux-amd64-amd-image.tar`, its build receipt and
 hashes, both Compose files, `seccomp.amd.json`, the application environment
-example and operator guides. The selected archive is **890,938,368 bytes** with
+example and operator guides. That archive is **890,938,368 bytes** with
 SHA-256 `4c5bb25118a3d73aa04273647b28a57512f232cfe9c418c01ec66307a7a5332a`.
-The local delivery directory is `D:/Code/goby/.artifacts/oci-amd-20260929`.
+Its historical local directory is `D:/Code/goby/.artifacts/oci-amd-20260929`.
 Both `README.md` and `README.amd.md` are included in the companion files.
 
 ## Image inputs and build boundary
+
+This section preserves the September 29 build inputs. The current release
+catalog above identifies the later accepted application layer for installation.
 
 The exact base image ID is
 `sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab`.

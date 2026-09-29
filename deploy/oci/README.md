@@ -1,5 +1,24 @@
 # Linux amd64 OCI delivery
 
+For installation, start with the [Docker quick start](QUICKSTART.md). The
+operations helper provides `prepare`, `check`, `start`, `status`, `logs` and
+`stop`; [current-release.json](current-release.json) is the shared catalog for
+the currently accepted software and AMD image/archive identities. The
+[operations result](../../docs/development/docker-operations-20260930.md) records
+the 14 helper tests, actual software Docker journey and closed resources.
+It preserves the original failed attempts and the affected recovery repeat.
+No new application image, GPU campaign or browser campaign was created.
+
+The separate small toolkit is
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
+The software image remains in
+`D:/Code/goby/.artifacts/oci-providers-20260930/software`; application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` is unchanged. The toolkit does not
+include another copy of the image archive. The manual configuration, source-build
+and recovery details below remain reference material for the selected profile.
+Further TMDB/OpenSubtitles work and new scraper research are deferred; provider
+credentials are not required by this installation path.
+
 Status: **verified for the selected Linux amd64 software profile**. The actual
 build, archive import, media, encrypted recovery, and image/database upgrade and
 rollback passed. Image identity, hashes, retained failures, and tested boundaries
@@ -21,8 +40,8 @@ PostgreSQL and the reverse proxy may run outside Docker; this policy applies to
 the Goby application deployment.
 
 The [September 30 online-provider increment](../../docs/development/online-providers-20260930.md)
-updates the application on this accepted media image. Use that increment's image
-ID and archive receipt for the newer application. Its
+updates the application on this accepted media image. The current release catalog
+binds that increment's image ID and archive receipt. Its
 [provider guide](README.providers.md) covers MusicBrainz, private provider
 configuration and the optional writable-subtitle overlay. The original receipts
 below retain their September 29 source and recovery evidence.

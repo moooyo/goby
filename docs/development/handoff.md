@@ -1,14 +1,37 @@
-# Goby handoff - September 29, 2026
+# Goby handoff - September 30, 2026
 
-Latest increment, September 30: [credential-free online providers](online-providers-20260930.md)
+Latest increment: [Docker installation and operations](docker-operations-20260930.md)
+has completed verification and owned-resource closure. Start with the
+[Docker quick start](../../deploy/oci/QUICKSTART.md). The helper offers
+`prepare`, `check`, `start`, `status`, `logs` and `stop`, while
+[current-release.json](../../deploy/oci/current-release.json) binds the accepted
+software and AMD archives and immutable image IDs. Application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` is unchanged; no new image was built.
+
+Fourteen helper tests and the composed actual software Docker preparation,
+startup, administrator bootstrap, scan, direct playback, database outage/recovery
+and stop journey passed. The `runtime01`/`runtime02` failures and the limited
+`runtime03` recovery repeat remain explicit. No new GPU or browser campaign ran.
+There are no owned containers or networks; private PostgreSQL on port 55995 is
+stopped. Data and failure evidence are retained, with unrelated services unchanged.
+
+The small toolkit ZIP is
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
+Reuse the existing image archives under
+`D:/Code/goby/.artifacts/oci-providers-20260930/software` and `amd`.
+Git integration is recorded separately from these acceptance receipts.
+Do not continue TMDB/OpenSubtitles or new scraper research: the user deferred
+that work. No provider credentials are required for this operations scope.
+
+Previous completed increment: [credential-free online providers](online-providers-20260930.md)
 are verified and closed. MusicBrainz has a real Docker album workflow; source
 `76d64bf` fixes typed-ID refresh and checks subtitle write admission before a
 quota-bearing download. Both updated Docker archives and their unchanged-tool
 bridge are recorded in the [result manifest](online-providers-results-20260930.json).
 The default media mount stays read-only; optional subtitle writes also mount a
-stable host machine identity read-only. TMDB/OpenSubtitles real online work
-awaits credentials. Do not repeat the accepted MusicBrainz flow solely to start
-that later credentialed scope. Owned resources are closed and evidence retained.
+stable host machine identity read-only. TMDB/OpenSubtitles real online work is
+deferred. MusicBrainz acceptance remains unchanged; do not repeat it solely to
+start a later provider scope. Owned resources are closed and evidence retained.
 
 September 30 delivery decision: **support Docker only**. Use the image archive
 and Compose guides for installation, upgrade and rollback. Software and AMD are
@@ -18,7 +41,8 @@ Read the [delivery policy](../planning/docker-delivery-policy.md) before selecti
 any further packaging work. The choice of external PostgreSQL or proxy deployment
 does not change.
 
-Status: **selected work complete and published**. Software OCI delivery
+Historical September 29 Git checkpoint: **selected work complete and published**.
+Software OCI delivery
 `1e34ae33509d9719561db9bf20df8acdddf09014` and AMD OCI delivery
 `6c574ca5708051f0e48e18ebd99903688a3e13ee` were merged and pushed to `origin/main`.
 Exact remote readback is recorded in the
@@ -27,7 +51,8 @@ that leave Git integration to a separate step retain their original timing.
 The [current execution plan](../planning/current-execution-plan.md#follow-up-work-requires-a-new-scope-selection)
 lists conditional future work; no old controller queue is an active instruction.
 
-The latest completed increment is the [AMD OCI archive/Compose extension](oci-amd-delivery-20260929.md).
+The earlier [AMD OCI archive/Compose extension](oci-amd-delivery-20260929.md)
+retains its original acceptance scope.
 The [result manifest](oci-amd-delivery-results-20260929.json) binds its image,
 FFmpeg, archive, seccomp and actual GPU/HTTP evidence. Seven production-container
 HTTP outputs passed across both hardware axes and exact-size AV1 software
@@ -37,7 +62,8 @@ CT 104 remains running. Data and original failures are retained. Follow the
 [AMD guide](../../deploy/oci/README.amd.md); do not restart accepted campaigns
 without a relevant change. No registry publication or production deployment occurred.
 
-The current completed increment is the [OCI archive and Compose delivery](oci-delivery-20260929.md).
+The earlier [OCI archive and Compose delivery](oci-delivery-20260929.md)
+retains its original acceptance scope.
 The final image uses application source `b9bfa7c`; its digest and downloadable
 archive are bound by the [result manifest](oci-delivery-results-20260929.json).
 Fresh media/recovery and actual schema 29 to 50 upgrade/rollback passed. The

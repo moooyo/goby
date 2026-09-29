@@ -2,16 +2,22 @@
 
 ## Current status
 
-As of September 30, 2026, the revised Phase 3 functional scope, Linux amd64
-software OCI delivery, and selected AMD OCI extension are complete. The latest
-integrated delivery was merged into `main` and pushed at `6c574ca`. Automatic
-intro analysis and BIF previews are implemented and accepted within their
-recorded profiles. The updated provider-capable OCI application binary is built from `76d64bf`;
-image and deployment companion identities are recorded separately.
+The latest increment is the [Docker operations toolkit](development/docker-operations-20260930.md).
+Fourteen helper tests and the actual software Docker preparation, startup,
+administrator bootstrap, scan, direct playback, database outage/recovery and
+stop journey passed; owned resources are closed. The original failed attempts
+and the affected recovery repeat remain distinct. Git integration is recorded
+separately from these acceptance receipts.
+
+The toolkit reuses the accepted software and AMD images. Application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` is unchanged; no new image, GPU
+campaign or browser campaign was needed. Revised Phase 3, automatic intro/BIF
+analysis and the earlier Docker profiles retain their accepted scope.
 
 The [online-provider increment](development/online-providers-20260930.md)
 accepts the selected real MusicBrainz album workflow and offline contracts.
-TMDB/OpenSubtitles live acceptance remains pending credentials. Use the
+The user has deferred TMDB/OpenSubtitles online work and new scraper research;
+credentials are not a current blocker. MusicBrainz acceptance is unchanged. Use the
 [Docker provider guide](../deploy/oci/README.providers.md) for configuration.
 
 The [Docker delivery policy](planning/docker-delivery-policy.md) makes Docker
@@ -37,13 +43,18 @@ Start with these sources of current status and delivery policy:
 
 ## Deployment and use
 
-Choose the Docker operator guide for the intended Linux amd64 profile. Software
+Use the [Docker quick start](../deploy/oci/QUICKSTART.md) as the recommended
+installation entry. `goby-docker.py` exposes `prepare`, `check`, `start`, `status`,
+`logs` and `stop`; [current-release.json](../deploy/oci/current-release.json)
+binds both existing profile archives and immutable image IDs. Software
 and AMD are profiles of one Docker image delivery form. Image acceptance is
 specific to its recorded platform, tools and hardware; an archive or cross-build
 alone does not establish another platform's support.
 
 | Document | Read it for |
 | --- | --- |
+| [Docker quick start](../deploy/oci/QUICKSTART.md) | Prepare an installation and use the installed helper for checking, starting, diagnosing and stopping it |
+| [Current Docker release catalog](../deploy/oci/current-release.json) | Accepted software/AMD image IDs, archive identities and companion hashes |
 | [Software OCI operator guide](../deploy/oci/README.md) | Import the Linux amd64 image archive, configure external PostgreSQL, start Compose, and perform update/rollback |
 | [AMD OCI operator guide](../deploy/oci/README.amd.md) | Import the AMD image and apply the GPU Compose and seccomp companions for the accepted hardware profile |
 | [Transcoding configuration](development/transcoding-configuration.md) | Media tools, hardware selection, runtime limits and cache configuration |
@@ -60,7 +71,11 @@ is not a consumer playback application. The Docker-only policy does not change
 how the external PostgreSQL server or reverse proxy may be deployed. Executables,
 recovery commands and native helpers included in the image are components of
 that image, not additional delivery forms. Consult the selected Docker guide
-before changing the media write policy.
+before changing the media write policy. The toolkit ZIP is
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`;
+it is used with an existing image archive from
+`D:/Code/goby/.artifacts/oci-providers-20260930/software` or `amd`.
+The small toolkit does not duplicate those archives.
 
 ## Functional and compatibility contracts
 
@@ -107,6 +122,8 @@ sources or interpret historical research totals as current test coverage.
 
 | Completed scope | Record and evidence |
 | --- | --- |
+| Docker installation and operations | [Operations result](development/docker-operations-20260930.md); 14 helper tests, composed software runtime journey, retained failures and resource closure; Git integration is recorded separately |
+| Credential-free online providers | [Provider result](development/online-providers-20260930.md); accepted MusicBrainz album flow and offline/configuration scope, retained through unchanged images |
 | Revised Phase 3 functional acceptance | [Closeout](development/phase3-functional-closeout-20260929.md), [results](development/phase3-functional-closeout-results-20260929.json), [publication](development/phase3-functional-publication-20260929.md) |
 | Software OCI archive and Compose | [Delivery record](development/oci-delivery-20260929.md), [results](development/oci-delivery-results-20260929.json) |
 | AMD OCI archive and Compose | [Delivery record](development/oci-amd-delivery-20260929.md), [results](development/oci-amd-delivery-results-20260929.json) |
@@ -140,9 +157,10 @@ published API specification.
 
 ## Optional future work
 
-The selected functional and OCI scopes have no remaining completion gate.
-Further work needs its own chosen scope; the following does not reopen those
-accepted deliveries:
+The selected functional, OCI and operations acceptance scopes are complete.
+Git integration is recorded separately from these acceptance receipts. Further
+product or deployment work needs its own chosen scope; the following does not
+reopen accepted deliveries:
 
 - Production Docker deployment and operations, and registry publication if
   selected. A registry would distribute the same Docker images; it would not
@@ -151,8 +169,9 @@ accepted deliveries:
 - Project licensing and final distribution notices. The project license remains
   undecided; [third-party notices](../THIRD_PARTY_NOTICES.md) describe the retained
   dependency material without granting a complete public-distribution claim.
-- Provider-specific online acceptance, including the selected adapters' actual
-  external services, beyond their existing code and offline coverage.
+- TMDB/OpenSubtitles online acceptance and new scraper research only after the
+  user explicitly resumes that deferred work. The accepted MusicBrainz profile
+  remains unchanged; provider credentials do not block current operations.
 - Additional Docker GPU/driver profiles, a separately selected Linux arm64
   Docker image profile, and client/media combinations beyond the recorded
   Linux amd64 software and AMD profiles.

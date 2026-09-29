@@ -1,0 +1,278 @@
+{
+  "kind": "goby-docker-operations-acceptance",
+  "version": 1,
+  "recordedOn": "2026-09-30",
+  "status": "complete_within_selected_docker_operations_scope",
+  "sourceBaseline": "553c9d456c977c3ad4cb4e7284dec9203cef8107",
+  "application": {
+    "sourceRevision": "76d64bf0087f3cd2e40addde8067f4e6e65b2bac",
+    "sha256": "65f447ef9f74c35134d25e8179f44699b9c62a77bc7ca2145f440a1919bbbfdc",
+    "bytes": 50367426,
+    "changed": false
+  },
+  "deliveryForm": "Docker image archive and Compose only",
+  "currentReleaseCatalog": {
+    "path": "deploy/oci/current-release.json",
+    "identity": {
+      "name": "current-release.json",
+      "bytes": 2023,
+      "sha256": "f2de9f55456f1952008807e16740470df9c166f2f0837ef317a8942766b7ac0a"
+    }
+  },
+  "reusedProfiles": {
+    "software": {
+      "imageId": "sha256:fa13611dbb940a2a876d9f52606d3bc05ccc6364b4f5fc8de19bec86204c3cb4",
+      "archive": {
+        "name": "goby-linux-amd64-image.tar",
+        "bytes": 388846080,
+        "sha256": "f35b29ffb4257f04d607d6d67d61b1dfda290a84f7b83e5db4b0509de0ba92e1"
+      },
+      "companions": [
+        "compose.yaml",
+        "compose.subtitles.yaml",
+        "goby.env.example"
+      ],
+      "companionHashes": {
+        "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
+        "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b"
+      }
+    },
+    "amd": {
+      "imageId": "sha256:a35b7653d262afcf006b95f31f450b58d89ce11b886279e2685a8a2ea0d3178e",
+      "archive": {
+        "name": "goby-linux-amd64-amd-image.tar",
+        "bytes": 941316608,
+        "sha256": "383e372d1ca1aa7caccbf7e81673b5e6c17ac741a902da0e473a27614f5ec767"
+      },
+      "companions": [
+        "compose.yaml",
+        "compose.subtitles.yaml",
+        "goby.env.example",
+        "compose.amd.yaml",
+        "seccomp.amd.json"
+      ],
+      "companionHashes": {
+        "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
+        "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b",
+        "compose.amd.yaml": "a5dad695b2b5f722a20f588759d546fecc3270d86955e003e65a11818a97118e",
+        "seccomp.amd.json": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0"
+      }
+    }
+  },
+  "imagesRebuilt": false,
+  "helper": {
+    "path": "deploy/oci/goby-docker.py",
+    "identity": {
+      "name": "goby-docker.py",
+      "bytes": 38687,
+      "sha256": "4182b2fbcd1f2a38994ebef5ba7f768005efc5efe6455f6c714a4fbda5114d52"
+    },
+    "commands": [
+      "prepare",
+      "check",
+      "start",
+      "status",
+      "logs",
+      "stop"
+    ]
+  },
+  "verificationEnvironment": {
+    "host": "test-env",
+    "platform": "Linux amd64",
+    "dockerVersion": "29.7.2",
+    "composeVersion": "5.5.0",
+    "pythonVersion": "3.13.5",
+    "database": "External isolated PostgreSQL 17",
+    "localExecution": false
+  },
+  "unitTests": {
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "acceptedRun": {
+      "name": "unit04.log",
+      "bytes": 113,
+      "sha256": "4c36b42d0c0aac9cb059f13f02b307b6ea5e30373f1e16b77ebbe954a54cc573"
+    },
+    "earlierRunsRetained": [
+      "unit01.log",
+      "unit02.log",
+      "unit03.log"
+    ]
+  },
+  "preparation": {
+    "directory": "/opt/goby-docker-operations-20260930-01/installation with spaces",
+    "imageId": "sha256:fa13611dbb940a2a876d9f52606d3bc05ccc6364b4f5fc8de19bec86204c3cb4",
+    "message": "Run check, then start. Read the setup token privately from the indicated file.",
+    "profile": "software",
+    "setupTokenFile": "/opt/goby-docker-operations-20260930-01/installation with spaces/setup-token.txt",
+    "status": "prepared"
+  },
+  "runtime": {
+    "kind": "goby-docker-operations-acceptance",
+    "passed": true,
+    "installationPathWithSpaces": true,
+    "existingConfigurationPreserved": true,
+    "unreadableMediaDiagnosed": true,
+    "freshSetupCatalogAndDirectPlayback": true,
+    "actualPortMappingChecked": true,
+    "databaseOutageDiagnosed": true,
+    "restartPersistence": true,
+    "noPrivateOutput": true,
+    "stoppedWithDataRetained": true,
+    "archiveDirectory": "/opt/goby-online-providers-20260930-01/delivery-software",
+    "freshInstallationEvidence": "runtime02.log",
+    "resumedAffectedOutageScope": true,
+    "helperSha256": "4182b2fbcd1f2a38994ebef5ba7f768005efc5efe6455f6c714a4fbda5114d52"
+  },
+  "runtimeEvidenceComposition": {
+    "freshInstallation": "prepare01.json and the accepted prefix in runtime02.log",
+    "affectedOutageAndRecovery": "runtime03.log, resumed against the retained installation",
+    "fullPassingFreshRerunClaim": false,
+    "logIdentities": [
+      {
+        "name": "prepare01.json",
+        "bytes": 408,
+        "sha256": "9a68a29f192e490bc64b2cfa48df21044f02bb8e5cfb0f70a6c1fbf087bf50e8"
+      },
+      {
+        "name": "runtime01.log",
+        "bytes": 691,
+        "sha256": "0bbe2798a46e408f242e262bf27aaaed04d29d87f5ffdf5399f5d014df008be1"
+      },
+      {
+        "name": "runtime02.log",
+        "bytes": 2602,
+        "sha256": "f04491e963c7b619be31bef2bbeb80283919c847fd6344009cf35009afa6f7f5"
+      },
+      {
+        "name": "runtime03.log",
+        "bytes": 2569,
+        "sha256": "76171bd9aa6ea7b16c8e436a660e97f43afd654df1a52dbbbed29ec19408d650"
+      }
+    ],
+    "directPlayBytesSha256": "c618a834014ffb1cbae9d14ef6e33d2bd1dada2b60a12f43e3d4759bc063015f"
+  },
+  "negativeCases": {
+    "kind": "goby-docker-operations-negative-cases",
+    "archiveMismatchRejected": "archive_hash_mismatch",
+    "companionMismatchRejected": "companion_hash_mismatch",
+    "rejectedInstallationNotCreated": true,
+    "preexistingCheckFilePreserved": true,
+    "temporaryCheckContainers": 0
+  },
+  "closure": {
+    "kind": "goby-docker-operations-closure",
+    "ownedContainers": 0,
+    "ownedNetworks": 0,
+    "databaseConnectionsBeforeStop": 0,
+    "postgresStopped": true,
+    "postgresPort": 55995,
+    "dataAndEvidenceRetained": true,
+    "protectedServicesUnchanged": true,
+    "protectedServices": [
+      {
+        "name": "/winvaultwarden-ui-review",
+        "id": "7637bef4bf06c121575af2e4c4968c2315f128be6830590e034cf40d1c085d1d",
+        "pid": 1452,
+        "startedAt": "2026-09-26T13:45:00.745678683Z",
+        "running": true
+      },
+      {
+        "name": "/winvaultwarden-bitwarden-test",
+        "id": "cfc2342951f8300a3090829b21966f92d22a1b20ea6197d7e09776ba4bb7aedb",
+        "pid": 1455,
+        "startedAt": "2026-09-26T13:45:00.755428599Z",
+        "running": true
+      },
+      {
+        "name": "/5gpn-release-gateway-1",
+        "id": "e4aa5102681db11be9122bcdcd59215d4a491d2d0b94c15f42d21b659cc8cb89",
+        "pid": 1467,
+        "startedAt": "2026-09-26T13:45:00.753343083Z",
+        "running": true
+      }
+    ],
+    "productionStopBoundary": "The helper stop command retains its container and network. This extra down operation retires the explicitly owned test fixture only."
+  },
+  "retainedFailures": [
+    {
+      "run": "runtime01",
+      "failure": "The driver expected error.code instead of the helper safeErrorCode field.",
+      "repair": "Corrected the driver assertion before starting the application."
+    },
+    {
+      "run": "runtime02",
+      "failure": "The driver required HTTP 503 on database loss, but the real application exited after losing its database lease.",
+      "repair": "Added bounded sanitized terminal database-loss diagnosis, accepted actual production outcomes and reran the affected outage/recovery scope."
+    }
+  ],
+  "toolkit": {
+    "kind": "goby-docker-toolkit-acceptance",
+    "passed": true,
+    "archive": {
+      "name": "goby-docker-operations.zip",
+      "bytes": 43595,
+      "sha256": "ade6c8c208df67af838b44bf74c68d64121e5961dc5b4e2c373c2a47d1682a4a"
+    },
+    "files": 14,
+    "archiveExtraction": true,
+    "allBundledChecksumsMatch": true,
+    "helperHelp": true,
+    "softwareAndAMDProfileCompanions": true,
+    "packagedGuideFileLinks": true,
+    "applicationRestarted": false,
+    "imagesRebuilt": false,
+    "guideLinkPolicy": "Links outside the flat toolkit refer to the repository main branch."
+  },
+  "boundaries": {
+    "softwareRuntimeJourney": true,
+    "newAMDHardwareCampaign": false,
+    "newBrowserE2ECampaign": false,
+    "newProviderCalls": false,
+    "postgresProvisioningByHelper": false,
+    "automaticUpgradeOrRollback": false,
+    "startupOnHostReboot": "Explicit operator action; restart policy remains no.",
+    "checkDatabaseAuthentication": false,
+    "statusExitZeroMeansReady": false,
+    "existingMediaOwnershipChanged": false
+  },
+  "scraping": {
+    "state": "user_deferred",
+    "credentialsBlockCurrentScope": false,
+    "priorMusicBrainzAcceptancePreserved": true
+  },
+  "localDeliveryDirectory": "D:/Code/goby/.artifacts/docker-operations-20260930",
+  "existingImageDirectory": "D:/Code/goby/.artifacts/oci-providers-20260930",
+  "remoteEvidenceRoot": "/opt/goby-docker-operations-20260930-01",
+  "registryPublished": false,
+  "productionDeployment": false,
+  "gitIntegration": "Recorded separately from frozen image and runtime receipts.",
+  "documentationCheck": {
+    "kind": "goby-current-documentation-link-check",
+    "changedMarkdownFiles": 11,
+    "outgoingLinksChecked": 725,
+    "incomingAnchorLinksChecked": 6,
+    "introducedIssues": [],
+    "inheritedIssues": [],
+    "boundary": "Repository-relative Markdown files and fragments only; external URLs and private absolute evidence paths were not probed."
+  },
+  "evidence": {
+    "archive": {
+      "name": "docker-operations-evidence.zip",
+      "bytes": 55030,
+      "sha256": "1a13b90a4b13b180d45cd19d7e47b7790969fe1f6c68238d70c89e75218d81cd"
+    },
+    "files": 42,
+    "privateValueScanPassed": true,
+    "excluded": [
+      "Private configuration, URLs and setup token",
+      "Database and media data",
+      "Image archives",
+      "Malformed sparse image fixture"
+    ],
+    "retainedRemoteRoot": "/opt/goby-docker-operations-20260930-01"
+  }
+}

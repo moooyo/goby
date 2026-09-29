@@ -7,18 +7,28 @@ outside scope, not unfinished or deferred release tasks.
 
 ## Current selected deliveries
 
-Current disposition, September 29, 2026: **all selected functional and
-archive/Compose deliveries are complete; required acceptance work remaining: 0**.
+Current disposition, September 30, 2026: **the selected functional,
+archive/Compose and operations acceptance scopes are complete; required
+acceptance work remaining: 0**. Git integration is recorded separately from
+these acceptance receipts.
 The records below define the accepted profiles. Completion does not imply a
 production deployment, universal compatibility, or a public distribution license.
 
 | Selected scope | Current result | Authoritative boundary | Required remaining work |
 | --- | --- | --- | --- |
-| Credential-free online providers | Complete within the selected MusicBrainz album and offline/configuration scope | [Provider result](../development/online-providers-20260930.md); both updated Docker application profiles, unchanged media tools and closed resources | TMDB/OpenSubtitles online acceptance is separately pending credentials |
+| Docker installation and operations | Verified and resources closed; Git integration is recorded separately | [Operations result](../development/docker-operations-20260930.md) and [quick start](../../deploy/oci/QUICKSTART.md); 14 helper tests, composed software Docker journey and retained failures. [Current release catalog](../../deploy/oci/current-release.json) binds unchanged software/AMD images and application source `76d64bf`; no new GPU/browser campaign | 0 acceptance gates; Git publication is recorded separately |
+| Credential-free online providers | Complete within the selected MusicBrainz album and offline/configuration scope | [Provider result](../development/online-providers-20260930.md); both updated Docker application profiles, unchanged media tools and closed resources | 0; TMDB/OpenSubtitles online work and new scraper research are explicitly deferred |
 | Revised media-analysis/resilience Phase 3 | Complete, including consolidated verification and closure | [Functional closeout](../development/phase3-functional-closeout-20260929.md) and [publication](../development/phase3-functional-publication-20260929.md); real-media correctness, catalog scale, concurrency, and recorded recovery cases under the revised functional agreement | 0 |
 | Linux amd64 software OCI archive + Compose | Complete | [Software OCI result](../development/oci-delivery-20260929.md); actual import/runtime, encrypted recovery, schema upgrade/rollback, and owned-resource closure | 0 |
 | Linux amd64 AMD OCI archive + Compose | Complete for the recorded device/driver/tool tuple | [AMD OCI result](../development/oci-amd-delivery-20260929.md); actual GPU checks and production HTTP outputs, exact fallback, and owned-resource closure | 0 |
 | Earlier selected compatibility and media-analysis features | Closed within their original recorded scopes | [Four-phase compatibility plan](selected-compatibility-plan-20260920.md) and [intro/BIF acceptance](../development/media-analysis-resilience-phase2-20260921.md); original client, corpus, and adapter limits remain | No reopened gate |
+
+The small operations toolkit is
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
+Image archives remain under `D:/Code/goby/.artifacts/oci-providers-20260930`;
+this increment did not rebuild or duplicate them. Owned containers/networks are
+absent, private PostgreSQL on port 55995 is stopped, and data/failure evidence
+is retained with unrelated services unchanged.
 
 The historical strict 10k/100k capacity profiles, SLOs, two-tier 28-case matrix,
 and original M2-M6 completeness claims are not accepted by this table. They are
@@ -33,7 +43,7 @@ These are separate choices, not a queued implementation or acceptance backlog.
 | Follow-up | Becomes work only when |
 | --- | --- |
 | Docker production deployment and HTTPS | A Docker installation, domain/proxy/TLS topology, and operating environment are selected |
-| Credentialed provider-online acceptance | TMDB/OpenSubtitles credentials are supplied for the selected real workflows; MusicBrainz's accepted album journey is retained |
+| Deferred providers or new scrapers | The user explicitly resumes and selects that scope; provider credentials are not a blocker for completed Docker operations and MusicBrainz's accepted album journey is retained |
 | Public distribution, license, or registry publication | The user selects that publication scope; project-license/distribution decisions belong to that scope |
 | Additional Docker architectures or GPU profiles | A new Docker image architecture or device/driver tuple is explicitly selected; this does not add a native package or another container runtime |
 | Optional extensions or broader performance/capacity claims | A concrete additional feature or qualification profile is selected; existing explicit feature exclusions stay excluded unless the user changes them |

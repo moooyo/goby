@@ -1,12 +1,38 @@
 # Current implementation and delivery status
 
+The September 30 [Docker installation and operations increment](docker-operations-20260930.md)
+has completed its selected verification and resource closure. Start with the
+[Docker quick start](../../deploy/oci/QUICKSTART.md) and the helper's
+`prepare`, `check`, `start`, `status`, `logs` and `stop` commands.
+[current-release.json](../../deploy/oci/current-release.json) binds the existing
+software and AMD archives; application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` and both images are unchanged.
+
+All 14 helper unit tests and the composed actual software Docker journey passed:
+preparation, startup, administrator bootstrap, scan, direct playback, database
+outage/recovery and normal stop. `runtime01`/`runtime02` remain failed attempts;
+`runtime03` supplies the affected recovery repeat, not a relabeled full run.
+Owned containers and networks are absent, private PostgreSQL on port 55995 is
+stopped, and data/failure evidence is retained. Unrelated services are unchanged.
+No new GPU or browser campaign ran. Git integration is recorded separately from
+these acceptance receipts.
+
+The small toolkit is
+`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
+Image archives remain in `D:/Code/goby/.artifacts/oci-providers-20260930/software`
+and `amd`; the toolkit does not duplicate them. The user has deferred further
+TMDB/OpenSubtitles work and new scraper research. MusicBrainz's accepted scope
+is unchanged, and provider credentials are not a current blocker.
+
+## Completed provider and image baseline
+
 The September 30 [credential-free online-provider increment](online-providers-20260930.md)
 is complete within its selected scope. MusicBrainz's real album search, apply,
 typed-ID refresh, administrator precedence, scan and Docker restart persistence
 passed. Application source `76d64bf` updates both Docker profiles while preserving
 their media-tool layers. TMDB and OpenSubtitles have passed selected offline
-contracts and configuration preparation; **their online acceptance still requires
-credentials**. The optional subtitle-write profile and early write admission were
+contracts and configuration preparation; their unaccepted online scope is
+explicitly deferred. The optional subtitle-write profile and early write admission were
 verified locally within Docker. Owned verification containers, network and
 PostgreSQL are closed. See the [result manifest](online-providers-results-20260930.json)
 and [provider guide](../../deploy/oci/README.providers.md).
@@ -23,9 +49,12 @@ complete, integrated and published**. AMD delivery
 remote readback. The [publication record](oci-publication-20260929.md) separates
 Git completion from the immutable image/build/runtime receipts.
 There is no remaining gate in those selected increments. Production deployment,
-credentialed-provider acceptance, public distribution and additional platform/feature
+public distribution and additional platform/feature
 profiles require a new selection; see the
 [current execution plan](../planning/current-execution-plan.md#follow-up-work-requires-a-new-scope-selection).
+
+The September 29 image and application identities below describe their original
+acceptance records; use the current release catalog for installation.
 
 The [AMD OCI extension](oci-amd-delivery-20260929.md) completes the selected
 Linux amd64 AMD archive/Compose profile on the recorded GFX1150/Mesa tuple.

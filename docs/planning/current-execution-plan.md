@@ -1,18 +1,42 @@
 # Current execution plan
 
+## Completed Docker installation and operations: September 30, 2026
+
+The [operations increment](../development/docker-operations-20260930.md) is
+verified and its resources are closed. Baseline `553c9d4` is unchanged apart from
+the operator toolkit and documentation: application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` and both accepted image profiles are
+reused. The [quick start](../../deploy/oci/QUICKSTART.md) is the recommended entry;
+`goby-docker.py` provides `prepare`, `check`, `start`, `status`, `logs` and `stop`.
+[current-release.json](../../deploy/oci/current-release.json) binds both profiles.
+
+Fourteen helper tests and the composed software Docker bootstrap, scan, direct
+playback, database outage/recovery and stop journey passed. Original failures and
+the `runtime03` recovery repeat are retained separately. Owned containers and
+networks are absent, PostgreSQL on port 55995 is stopped, and retained data and
+unrelated services are preserved. No new image, GPU or browser campaign is claimed.
+The toolkit ZIP is `D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`;
+existing image archives remain under `.artifacts/oci-providers-20260930`.
+Git integration is recorded separately from these acceptance receipts.
+
+The user explicitly deferred TMDB/OpenSubtitles online work and additional
+scraper research. Do not restart that work as part of operations delivery;
+credentials are not a current blocker. MusicBrainz's accepted scope remains valid.
+
 ## Completed credential-free online providers: September 30, 2026
 
 The [provider increment](../development/online-providers-20260930.md) completes
 real MusicBrainz album search/apply/refresh and scan/restart persistence through
 Docker, selected offline contracts, and optional writable-subtitle preparation.
 Both Docker profiles carry application source `76d64bf`; media-tool evidence is
-reused only across unchanged bytes. Owned resources are closed. TMDB and
-OpenSubtitles remain pending credentials for actual online acceptance; their
+reused only across unchanged bytes. Owned resources are closed. Online acceptance
+for TMDB and OpenSubtitles is explicitly deferred; their
 offline results are not service compatibility claims.
 
-Status: **the selected functional and OCI delivery scope is complete and
-published; no implementation, acceptance or publication gate remains open**.
-The latest accepted delivery is `6c574ca5708051f0e48e18ebd99903688a3e13ee`.
+Historical September 29 publication checkpoint: **the selected functional and
+original OCI delivery scopes were complete and published** at AMD delivery
+`6c574ca5708051f0e48e18ebd99903688a3e13ee`. This does not claim publication of
+the current operations toolkit.
 See the [current status](../development/current-status.md),
 [OCI publication record](../development/oci-publication-20260929.md), and
 [support matrix](support-and-delivery-matrix.md) for the scope boundaries.
@@ -26,8 +50,8 @@ not deferred release work. Software and AMD remain profiles of that same form.
 
 | Purpose | Work still available | Boundary |
 | --- | --- | --- |
-| Operate a real Docker installation | Select the Docker host, real media and client; configure Compose, persistence, external PostgreSQL, domain/reverse proxy/HTTPS, and verify that installation's playback and recovery | Test-environment acceptance does not establish production deployment |
-| Complete credentialed online providers | Supply private TMDB/OpenSubtitles configuration, then verify the selected real metadata/image and subtitle workflows | MusicBrainz's selected album flow and the offline/configuration work are complete; preserve their evidence |
+| Operate a production Docker installation | Use the completed quick start/helper with the selected real host, media, client and domain/reverse proxy/HTTPS topology | The accepted software operations journey does not establish production deployment |
+| Resume deferred provider work | The user explicitly resumes TMDB/OpenSubtitles online acceptance or new scraper research and selects its finite scope | Not part of current operations work; credentials are not a current blocker and MusicBrainz's accepted scope is unchanged |
 | Publish externally | Select the project license and distribution terms/materials; optionally publish a version or container registry image | Local software and AMD archives are already delivered |
 | Add a Docker image profile | Select and qualify another Docker architecture or GPU/device profile when needed | Current acceptance covers the recorded Linux amd64 software/AMD profiles; no native package or non-Docker runtime is queued |
 | Extend the product | Select a concrete additional feature or client/media combination | Offline packages, general recommendations and game/book media remain unselected; Live TV, DLNA, external channels, group playback and a consumer Web player remain excluded |
