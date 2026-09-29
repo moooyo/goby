@@ -8,17 +8,25 @@ work=/build/media
 evidence=/opt/goby-toolchain-evidence
 progress_patch=/build/toolchain-patches/ffmpeg-progress-copyts-nopts.patch
 progress_harness=/build/toolchain-patches/progress-copyts-nopts
+wakeup_patch=/build/toolchain-patches/ffmpeg-decoder-queue-wakeup.patch
+wakeup_harness=/build/toolchain-patches/decoder-queue-wakeup
 [[ -s "$progress_patch" ]] || { echo 'Missing FFmpeg progress patch.' >&2; exit 1; }
+[[ -s "$wakeup_patch" ]] || { echo 'Missing FFmpeg decoder wakeup patch.' >&2; exit 1; }
 for file in native-regression.c native-regression.mk run-native-regression.py README.md; do
   [[ -s "$progress_harness/$file" ]] || { echo "Missing progress regression input: $file" >&2; exit 1; }
+  [[ -s "$wakeup_harness/$file" ]] || { echo "Missing decoder wakeup regression input: $file" >&2; exit 1; }
 done
 mkdir -m 0700 "$work"
 mkdir -p "$evidence/licenses" "$evidence/sources" "$evidence/toolchain-patches"
-cp "$progress_patch" "$evidence/toolchain-patches/"
+cp "$progress_patch" "$wakeup_patch" "$evidence/toolchain-patches/"
 cp -a "$progress_harness" "$evidence/toolchain-patches/"
+cp -a "$wakeup_harness" "$evidence/toolchain-patches/"
 progress_patch="$evidence/toolchain-patches/ffmpeg-progress-copyts-nopts.patch"
 progress_harness="$evidence/toolchain-patches/progress-copyts-nopts"
+wakeup_patch="$evidence/toolchain-patches/ffmpeg-decoder-queue-wakeup.patch"
+wakeup_harness="$evidence/toolchain-patches/decoder-queue-wakeup"
 sha256sum "$progress_patch" "$progress_harness"/* > "$evidence/progress-patch-inputs.sha256"
+sha256sum "$wakeup_patch" "$wakeup_harness"/* > "$evidence/wakeup-patch-inputs.sha256"
 cd "$work"
 
 curl --fail --location --silent --show-error --retry 3 \
@@ -50,21 +58,28 @@ export PKG_CONFIG_PATH=/opt/nv-codec-headers/lib/pkgconfig
 tar -xJf ffmpeg.tar.xz
 cp -a ffmpeg-9.0.1 ffmpeg-baseline
 cd ffmpeg-9.0.1
-sha256sum fftools/ffmpeg.c > "$evidence/ffmpeg-patch-input.sha256"
+sha256sum fftools/ffmpeg.c fftools/thread_queue.h fftools/thread_queue.c fftools/ffmpeg_sched.c > "$evidence/ffmpeg-patch-input.sha256"
+patch --batch --forward --fuzz=0 -p1 < "$wakeup_patch" > "$evidence/ffmpeg-wakeup-patch.log" 2>&1
 patch --batch --forward --fuzz=0 -p1 < "$progress_patch" > "$evidence/ffmpeg-progress-patch.log" 2>&1
-sha256sum fftools/ffmpeg.c > "$evidence/ffmpeg-patch-output.sha256"
-./configure --prefix=/opt/ffmpeg/9.0.1 \
-  --enable-gpl --enable-libx264 --enable-libass --enable-libmp3lame \
+sha256sum fftools/ffmpeg.c fftools/thread_queue.h fftools/thread_queue.c fftools/ffmpeg_sched.c > "$evidence/ffmpeg-patch-output.sha256"
+mkdir "$work/ffmpeg-build"
+cd "$work/ffmpeg-build"
+"$work/ffmpeg-9.0.1/configure" --prefix=/opt/ffmpeg/9.0.1 \
+  --enable-gpl --enable-libx264 --enable-libx265 --enable-libaom --enable-libzimg \
+  --enable-libass --enable-libmp3lame \
   --enable-libopus --enable-libvorbis --enable-vaapi --enable-libvpl \
   --enable-ffnvcodec --enable-cuvid --enable-nvenc \
   --disable-debug --disable-doc --disable-ffplay > "$evidence/ffmpeg-configure.txt" 2>&1
 make -j "$jobs"
+python3 "$wakeup_harness/run-native-regression.py" \
+  --baseline "$work/ffmpeg-baseline" --candidate "$work/ffmpeg-9.0.1" --build "$work/ffmpeg-build" \
+  --binaries "$work/wakeup-regression-binaries" --evidence "$evidence/wakeup-regression"
 python3 "$progress_harness/run-native-regression.py" \
-  --baseline "$work/ffmpeg-baseline" --candidate "$work/ffmpeg-9.0.1" --build "$work/ffmpeg-9.0.1" \
+  --baseline "$work/ffmpeg-baseline" --candidate "$work/ffmpeg-9.0.1" --build "$work/ffmpeg-build" \
   --binaries "$work/progress-regression-binaries" --evidence "$evidence/progress-regression"
 make install-progs install-data
 cp ffbuild/config.mak "$evidence/ffmpeg-config.mak"
-cp COPYING.* LICENSE.md "$evidence/licenses/"
+cp "$work/ffmpeg-9.0.1"/COPYING.* "$work/ffmpeg-9.0.1/LICENSE.md" "$evidence/licenses/"
 cp "$work/ffmpeg.tar.xz" "$work/ffmpeg.tar.xz.asc" "$work/ffmpeg-devel.asc" \
   "$work/nv-codec-headers.tar.gz" "$evidence/sources/"
 dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' > "$evidence/build-packages.tsv"

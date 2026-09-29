@@ -1,205 +1,171 @@
-# Internal Linux amd64 OCI preparation
+# Linux amd64 OCI delivery
 
-Status: **implementation merged; image build, Compose validation and container
-runtime verification remain pending**. The 12 synthetic artifact-checker methods
-[passed on test-env](../../docs/development/oci-artifact-checker-verification.md).
-That result accepts no actual release input or container. This prepares the first software
-container profile. It does not change the current Programs artifact, deploy a
-candidate, select E11 for another installation, or complete M6.
+Status: **verified for the selected Linux amd64 software profile**. The actual
+build, archive import, media, encrypted recovery, and image/database upgrade and
+rollback passed. Image identity, hashes, retained failures, and tested boundaries
+are recorded in [the delivery result](../../docs/development/oci-delivery-20260929.md).
 
-The profile uses the fixed Debian amd64 manifest and package snapshots in
-[source-pins.json](source-pins.json), a previously verified embedded Goby release,
-FFmpeg/ffprobe 9.0.1 built together, and PostgreSQL 17 client tools. PostgreSQL
-server, media, application secrets and a reverse proxy remain external.
-The selected runtime is a rootful Linux Docker engine without user-namespace
-remapping, using an unprivileged container UID/GID of `10001:10001`. Other
-runtime/user-namespace and architecture profiles require their own verification.
+This delivery consists of a loadable image archive, its SHA-256 and build receipt,
+`compose.yaml`, and `goby.env.example`. It runs on Linux amd64 Docker with Compose
+support for `env_file.format: raw`. The selected profile uses a rootful engine
+without user namespace remapping and container UID/GID `10001:10001`.
+It uses an external PostgreSQL 17 server and does not publish to a registry.
 
-## Build inputs and evidence
+## Build the archive
 
-Select a release only after its required source, ordinary/embedded build and
-asset gates have passed. Supply the independently trusted SHA256 for both
-`goby` and its build `manifest.json`. The input checker binds their bytes,
-manifest relationship and ELF64/amd64 header; it never executes Goby or supplies
-missing source, embedded-asset or client acceptance evidence.
-
-Prepare a fresh private context on the remote Linux build host containing
-exactly these files:
-
-```text
-.dockerignore
-Dockerfile
-build-ffmpeg.sh
-check-artifact.py
-entrypoint.sh
-source-pins.json
-toolchain-patches/ffmpeg-progress-copyts-nopts.patch
-toolchain-patches/progress-copyts-nopts/native-regression.c
-toolchain-patches/progress-copyts-nopts/native-regression.mk
-toolchain-patches/progress-copyts-nopts/run-native-regression.py
-toolchain-patches/progress-copyts-nopts/README.md
-goby
-manifest.json
-```
-
-Copy the first six files from this directory, the `toolchain-patches` inputs from
-[`scripts/test-env/toolchain-patches`](../../scripts/test-env/toolchain-patches),
-and the last two files from the selected verified release, preserving bytes.
-The patch has one canonical repository copy; do not maintain an independent OCI
-variant. The scripts must have LF line endings.
-Keep runtime environment files, application state, keys, browser material and
-private frontend contribution reports outside this context. The included
-`.dockerignore` allows only these inputs. Retain their names, lengths and hashes
-with the build receipt rather than relying on an image tag.
-
-The artifact stage checks the two hashes before installing its Python checker
-dependency. Only successful complete validation produces a fixed stage-dependency
-marker, which precedes the media/runtime package stages. That marker is not an
-independent receipt. Its constant contents are intended to permit FFmpeg layer
-reuse across changing Goby binaries; actual cache behavior remains untested.
-Failed checks retain any partial binding and require a fresh context. A binding
-file alone is insufficient: the checker must exit zero.
-
-The media stage verifies the pinned FFmpeg source hash and selected signing-key
-fingerprint, and the fixed-commit NVIDIA header archive hash, before compiling.
-It uses the existing project's configure flags and one or two compiler jobs.
-Before compiling it applies the recorded copy-timestamp progress patch with
-zero fuzz, preserving an unpatched source snapshot for the deterministic
-[real-reporter gate](../../scripts/test-env/toolchain-patches/progress-copyts-nopts/README.md).
-Both baseline and candidate reporter contracts must pass before the matching
-FFmpeg/ffprobe pair is installed. Patch bytes, source hashes, harness inputs and
-native regression receipts remain in `/usr/share/goby/toolchain/`.
-The runtime image checks actual FFmpeg/ffprobe 9.0.1 and PostgreSQL 17 version
-commands, records executable hashes and package versions, and retains build
-configuration, source archives, recipe files and available upstream legal texts.
-These build-time checks do not prove nonroot execution, media correctness,
-hardware use, backup/restore behavior or complete dependency/legal coverage.
-
-The APT repositories are fixed historical snapshots. `check-valid-until=no`
-permits replay of those snapshots; ordinary archive signatures and package-hash
-verification remain enabled. Public APT retrieval uses HTTP so the slim base
-can bootstrap its CA package. Source archives use HTTPS and their separate
-hash/signature checks. Package availability and the final dependency closure
-still need a real build. `SOURCE_DATE_EPOCH` is fixed, but repeat-build image
-reproducibility has not been demonstrated.
-
-Only after the coordinated heavy-work window and this profile's builder/storage
-prerequisites are ready, the remote Linux invocation has this form:
+Run from a clean source checkout on the Linux build host. Use the project's Go
+toolchain, Node 22.12 or newer, npm, Python 3, Docker and Buildx. Repository
+verification runs on `test-env`. Use fresh output directories for each build.
 
 ```sh
-docker buildx build --builder "$owned_builder" --platform linux/amd64 \
-  --build-arg GOBY_BINARY_SHA256="$verified_binary_sha256" \
-  --build-arg GOBY_BUILD_MANIFEST_SHA256="$verified_manifest_sha256" \
-  --build-arg FFMPEG_BUILD_JOBS=2 \
-  --build-arg SOURCE_DATE_EPOCH=1789430400 \
-  --progress plain --tag "$private_image_tag" \
-  --iidfile "$owned_run/image-id.txt" --load "$oci_context"
+revision="$(git rev-parse HEAD)"
+output="$(mktemp -d /var/tmp/goby-oci-delivery.XXXXXXXX)"
+npm --prefix web/admin ci --no-audit --no-fund
+npm --prefix web/admin run build
+go mod download
+node scripts/build-release.mjs --arch amd64 \
+  --output-dir "$output/release" \
+  --frontend-contributions web/admin/.artifacts/frontend-contributions.json
+python3 scripts/build-oci.py --release-dir "$output/release" \
+  --output-dir "$output/image" --image goby:linux-amd64-local \
+  --revision "$revision" --jobs 2
 ```
 
-Use a separately admitted builder and allocated storage. Budget the builder,
-compiler descendants, image import/export, package caches, layers, source trees,
-logs and failure preservation on their actual filesystems. Limiting only the
-Docker CLI process does not bound daemon or BuildKit work. A cgroup limit or
-point-in-time free-memory reading is not a host reservation. Do not prune a
-shared engine, alter existing candidate egress or create a default daemon/bridge
-as an implicit prerequisite. Engine availability and its owned execution/
-preservation boundary must be established before this command is selected.
-No builder, daemon, image, network or container has been created in this preparation.
+The release builder embeds the administrator UI and builds with `CGO_ENABLED=0`.
+The image builder verifies the binary and manifest, builds its media tools, then
+exports `goby-linux-amd64-image.tar`. It retains logs, `build-receipt.json`,
+`image-id.txt`, `image-inspect.json`, and `SHA256SUMS`; it does not start Goby.
+The frontend contribution report remains a private build sidecar.
 
-## Runtime configuration
+The base is Debian trixie slim, fetched through `mirror.gcr.io` at the exact
+manifest digest
+`sha256:abc9cb88a5587630d7f915f47b23b0668fe250fbfc6457aa4d52b534c1bbf73f`.
+APT uses the fixed `20260915T000000Z` snapshots. See
+[source-pins.json](source-pins.json) for dependency inputs. The mirror changes
+the fetch route, not the selected Debian content.
 
-Use a Compose implementation supporting raw environment files, `init`,
-`bind.create_host_path: false` and the selected resource settings. The
-[Compose specification](https://github.com/compose-spec/compose-spec/blob/main/05-services.md)
-defines those fields; actual compatibility remains to be checked. The
-[compose.yaml](compose.yaml) intentionally requires an already verified local
-image reference, an explicitly reserved loopback port and existing host paths:
+## Load and configure
 
-| Compose variable | Required value |
-| --- | --- |
-| `GOBY_OCI_IMAGE` | Verified local image ID/reference, bound to the new build receipt; pulling is disabled |
-| `GOBY_HOST_PORT` | Unclaimed, explicitly reserved host port for this installation |
-| `GOBY_CONFIG_FILE` | Absolute path to its private runtime `goby.env` |
-| `GOBY_STATE_DIR` | Dedicated persistent state directory |
-| `GOBY_CACHE_DIR` | Dedicated local cache directory |
-| `GOBY_LOG_DIR_HOST` | Dedicated persistent diagnostic-log directory |
-| `GOBY_MEDIA_DIR` | Approved, readable media root; mounted read-only |
+Copy the image archive and companion files to the Docker host. Compare the
+archive digest with the supplied delivery record, then load it from that directory:
 
-Precreate the three private directories with real, non-symlink, mutually distinct
-and non-overlapping paths, ownership `10001:10001` and mode 0700. They must also
-be separate from media and from another installation's state. A bind mount hides
-the image's directory ownership, so image-time `install -d` is not host-volume
-preparation. The entrypoint never recursively chowns, repairs or deletes host
-paths. Parent traversal permissions and any security labeling must permit the
-selected UID. User-namespace remapping changes the host UID contract and is not
-covered by this initial profile.
+```sh
+sha256sum --check SHA256SUMS
+docker image load --input goby-linux-amd64-image.tar
+image_id="$(cat image-id.txt)"
+docker image inspect "$image_id" --format '{{.Id}} {{.Os}}/{{.Architecture}} {{.Config.User}}'
+```
 
-The state volume contains the private master key and the separate sibling
-`recovery`, `recovery-operations` and `backups` stores. Preserve it with the
-matching PostgreSQL state across image changes. Cache remains separately
-disposable only under the application's own lifecycle/ownership rules. The
-application's current defaults allow 20 GiB transcode cache, 8 GiB per job,
-32 GiB backup storage and 8 GiB per backup object; both stores reserve 512 MiB
-free space. These limits and the source/build/layer/log budgets must fit the
-actual allocated filesystems before execution. They are limits, not reserved
-capacity or accepted performance results.
+Use the immutable `sha256:...` image ID recorded in the build receipt. The archive
+is saved by image ID and need not create a tag when loaded. Compose disables pulls.
 
-Create `goby.env` privately from [goby.env.example](goby.env.example), replacing
-all placeholders. Raw env-file mode preserves values rather than interpolating
-`$`; do not add shell quoting or source the file. Supply a unique PostgreSQL 17
-database and an ordinary migration-capable role, never a retained candidate's
-credentials or a superuser. Both normal and optional restoration URLs need the
-explicit TLS root-certificate setting required by the backup layer. The example
-uses the image's CA bundle. A private CA needs a separately reviewed read-only
-certificate mount and corresponding URL path. Full restoration additionally
-needs a distinct database and role.
+Provision a dedicated PostgreSQL 17 database and ordinary owner role. The role
+must be able to migrate Goby's schema; do not use a database superuser. The database
+hostname must be reachable from the container: `localhost` addresses the container
+itself. PostgreSQL, its storage and its backup policy are external to this Compose
+file. Image clients `pg_dump` and `pg_restore` use PostgreSQL major version 17.
 
-Compose fixes the image's tool paths, `/media`, private storage paths, listener,
-embedded-web selection and software codec selection. Those values override the
-runtime env file; do not reuse an old systemd environment and infer equivalent
-behavior. Keep the public HTTPS origin and actual trusted-proxy CIDRs consistent
-with the reverse proxy. Only TCP is exposed on a loopback host port; REST, ranges,
-HLS and WebSocket need the usual proxy behavior. LAN discovery needs a separate
-explicit network profile; host networking is not a universal requirement.
+For a new installation, create private writable directories and a private config:
 
-The container has a read-only root, empty capability set, no new privileges,
-the fixed nonroot identity and a 64 MiB private noexec `/tmp`. The entrypoint
-sets umask 077 and `exec`s Goby; the init process forwards signals and reaps
-children. `/proc/self/fd` and the application's normal process-group/wait
-operations must remain usable under the selected runtime's default security
-policy. No privileged mode or disabled seccomp profile is provided.
+```sh
+sudo install -d -m 0700 /etc/goby
+sudo install -m 0600 goby.env.example /etc/goby/goby.env
+sudo install -d -m 0700 -o 10001 -g 10001 \
+  /srv/goby/state /srv/goby/cache /srv/goby/logs
+```
 
-The initial 2-CPU, 1-GiB/no-swap, 128-PID profile and two-minute stop grace are
-unverified starting budgets. Fifteen seconds inside Goby is not a total shutdown
-guarantee. A forced kill or merely absent container does not prove clean task,
-child-process, lease and database closure. Restart is disabled for the first
-evaluation so failure cannot silently turn into repeated startup attempts.
-The local logging driver is capped independently from Goby's bounded JSONL logs.
+Edit `/etc/goby/goby.env` before startup. Set the database URL, public URL, server
+name and an independent setup token of at least 24 random bytes. Keep the file
+private and out of the image build context. For HTTPS, retain secure cookies and
+set only the actual reverse proxy CIDRs. An isolated direct HTTP installation
+needs its own HTTP public URL and `GOBY_COOKIE_SECURE=false`.
 
-## Required verification and remaining scope
+The existing media directory must be readable and traversable by UID/GID 10001.
+The container mounts it read-only. Keep state, cache and logs separate from media;
+do not recursively change ownership of an existing media collection.
 
-Run the 12 prepared input-checker test methods on `test-env`, then validate
-Compose without printing secret-bearing rendered configuration. Actual image
-verification must bind the image/platform/layers and all retained input/report
-hashes; confirm tool/library loading as UID 10001; complete setup/login, a small
-real-media scan and software H.264/AAC path; verify native backup and isolated
-restore with the selected PostgreSQL/TLS profile; and observe clean stop/start
-with exact state/secret preservation and closed children. Record actual memory,
-disk and capture overhead. None of these checks has run.
+Create `deployment.env` beside `compose.yaml`, filling in the actual image ID and
+paths. This file supplies Compose variables; the separate `goby.env` supplies
+application secrets and settings.
 
-VAAPI/QSV/NVIDIA interfaces may compile into FFmpeg, but this software profile
-contains no device admission or accepted GPU-driver path. Hardware, native
-arm64, host durability, broader capacity/media/client profiles and the remaining
-M2-M6 obligations remain separate open work. The three native stores, existing
-application recovery and all consumed client inputs retain their original scopes.
+```dotenv
+GOBY_OCI_IMAGE=sha256:REPLACE_WITH_RECORDED_IMAGE_ID
+GOBY_CONFIG_FILE=/etc/goby/goby.env
+GOBY_HOST_PORT=8096
+GOBY_STATE_DIR=/srv/goby/state
+GOBY_CACHE_DIR=/srv/goby/cache
+GOBY_LOG_DIR_HOST=/srv/goby/logs
+GOBY_MEDIA_DIR=/srv/media
+GOBY_CPU_LIMIT=2.0
+GOBY_MEMORY_LIMIT=2g
+GOBY_PID_LIMIT=256
+```
 
-External distribution remains blocked by the existing Goby license decision and
-the complete image/application dependency-notice work. Retained FFmpeg/header
-sources and Debian copyright material do not complete that review. No image has
-been published, and this preparation does not request a new license decision.
+Run Compose as an account able to read the private application config:
 
-Independent static reviews covered the Docker stage dependencies, selected
-runtime configuration, input checker and synthetic test contracts. Corrections
-added the complete-check dependency before expensive stages, explicit TLS root
-paths, fixed runtime paths and retention of partial checker output. These reviews
-did not run tests, syntax validators, tool versions, image builds or services.
+```sh
+docker compose --env-file deployment.env -f compose.yaml config --quiet
+docker compose --env-file deployment.env -f compose.yaml up -d
+docker compose --env-file deployment.env -f compose.yaml ps
+docker compose --env-file deployment.env -f compose.yaml logs --tail 100 goby
+```
+
+The host port binds to loopback. Open `/admin/` through the configured reverse
+proxy, or through the selected local HTTP port, and complete administrator setup.
+Check that the expected library is visible and play a known media item. The
+container has a read-only root filesystem and persists state, caches and logs in
+the three host directories. It uses `restart: "no"`; startup after host reboot
+is an explicit operator action for this profile.
+
+Stop gracefully with:
+
+```sh
+docker compose --env-file deployment.env -f compose.yaml stop
+```
+
+## Included media capabilities
+
+FFmpeg/ffprobe 9.0.1 include software H.264 (`libx264`), HEVC (`libx265`), AV1
+(`libaom-av1`), `zscale`/`tonemap`, and subtitle rendering. The image also contains
+the native Chromaprint intro helper and its installed notices. Its exact SHA-256
+is recorded in `/usr/share/goby/media-analysis.json`; Compose enables that file
+and stores analysis artifacts under `/var/cache/goby/analysis`.
+
+Intro analysis and BIF previews use the normal administrator library/task policy.
+Packaging the tools does not automatically schedule every library for analysis.
+Optional source-media rewrite and OCR are disabled in this default read-only
+profile. GPU devices, Vulkan/libplacebo Dolby Vision processing, other container
+runtimes and arm64 are outside this delivery's acceptance scope.
+
+## Update and rollback
+
+1. Verify and load the next archive before changing the running installation.
+   Retain the previous archive, its immutable image ID, and deployment config.
+2. Stop Goby gracefully. Take a consistent PostgreSQL backup and a matching copy
+   of the complete state directory, especially `application-key-master.key`.
+   Retain the private environment file; treat these backups as secrets.
+3. Change only `GOBY_OCI_IMAGE` to the new recorded image ID. Retain the same state,
+   cache, log and media mounts. Run `config --quiet`, then `up -d`, and check login,
+   library visibility and playback. If the old release used an earlier media
+   probe format, run a library scan with `ForceProbe` to refresh the snapshots.
+   The tested schema 29 upgrade needs this step for probe version 6 to 8;
+   original item IDs and user state remain preserved.
+4. To roll back after a schema change, stop the new container and restore the
+   matching pre-update database and state/master-key backup before selecting the
+   previous image. Switching an old binary onto a newly migrated database is not
+   a general rollback method. Preserve failed-update data for diagnosis.
+
+Full application-managed restore also needs its separately provisioned target
+database and `GOBY_RECOVERY_DATABASE_URL`; it is not created by Compose. Do not
+remove persistent directories or use volume-deleting cleanup as part of an update.
+Application-managed restore revokes imported credentials. Sign in again and
+issue replacement application keys after recovery. The master-key file is
+created lazily when the first application key is issued; preserve it once present.
+
+FFmpeg source archives, local patches, build records and dependency package
+versions are retained under `/usr/share/goby/toolchain`; helper notices are under
+`/opt/goby-intro-fingerprint/share/goby-intro-fingerprint`. The collected
+application notices and original texts are under `/usr/share/doc/goby`.
+Goby's project license
+is still undecided, and this internal delivery does not claim complete public
+distribution licensing. No registry publication is part of this workflow.

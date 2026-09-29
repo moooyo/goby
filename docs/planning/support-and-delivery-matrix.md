@@ -1,5 +1,12 @@
 # Support and delivery matrix
 
+The September 29 [OCI delivery](../development/oci-delivery-20260929.md) completes
+the selected Linux amd64 software image archive and Compose profile, including
+actual encrypted recovery and schema 29 to 50 upgrade/rollback. It supersedes
+older blanket OCI deferrals only for that recorded profile. Registry publication,
+GPU container admission, arm64, other runtimes, and full public-distribution
+licensing are not inferred from this acceptance.
+
 The September 20 [selected compatibility plan](selected-compatibility-plan-20260920.md)
 is the current implementation scope. Phase 1 is closed under the user's
 third-party-client adapter boundary; its original Web licensing restriction

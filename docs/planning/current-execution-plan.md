@@ -1,5 +1,15 @@
 # Current execution plan
 
+## OCI archive and Compose delivery complete: September 29, 2026
+
+The user selected the Linux amd64 software image archive and Compose increment.
+The [delivery record](../development/oci-delivery-20260929.md) closes its build,
+import, media, analysis, encrypted recovery, persistence, upgrade/rollback,
+and resource-closure acceptance. The actual restore journey exposed and verified
+a repair preserving configured task policy. Source is `b9bfa7c`; use the
+result manifest for the final image and archive identities. Registry publication,
+GPU/arm64 profiles, and broader performance claims remain separate work.
+
 ## Revised Phase 3 delivery published: September 29, 2026
 
 The accepted delivery `c998e924d166ee9760fa0f4a3b341c1d30b7a53b` was pushed

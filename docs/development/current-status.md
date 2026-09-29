@@ -1,5 +1,15 @@
 # Current implementation and delivery status
 
+The [Linux amd64 OCI delivery](oci-delivery-20260929.md) is complete within its
+software archive/Compose profile. Its final application source is `b9bfa7c`.
+Actual image import, media/analysis, encrypted recovery, container persistence,
+schema 29 to 50 upgrade and backup-based rollback passed. The restore task-policy
+repair passed both affected Go packages and the final container journey.
+Owned containers/network and private PostgreSQL are closed; data is retained.
+Use the [operator guide](../../deploy/oci/README.md) and result manifest for the
+image/archive identities. Registry publication and additional profiles are not
+part of this delivery. Earlier records retain their original scope.
+
 The revised Phase 3 functional scope is complete and published to `origin/main`
 at `c998e924d166ee9760fa0f4a3b341c1d30b7a53b`, with exact remote readback.
 Start with the [September 29 closeout](phase3-functional-closeout-20260929.md)

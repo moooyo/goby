@@ -1,18 +1,20 @@
 {
   "kind": "goby-oci-source-profile",
   "version": 1,
-  "status": "source_draft_unbuilt",
-  "recordedOn": "2026-09-16",
+  "status": "pinned_software_recipe",
+  "recordedOn": "2026-09-29",
+  "acceptanceRecord": "docs/development/oci-delivery-20260929.md",
   "target": { "os": "linux", "arch": "amd64", "mediaProfile": "software" },
   "baseImage": {
     "repository": "docker.io/library/debian",
+    "retrievalRepository": "mirror.gcr.io/library/debian",
     "observedTag": "trixie-slim",
     "registryReportedIndexDigest": "sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132",
     "selectedAmd64ManifestDigest": "sha256:abc9cb88a5587630d7f915f47b23b0668fe250fbfc6457aa4d52b534c1bbf73f",
     "selectedManifestBytes": 1021,
     "manifestUrl": "https://registry-1.docker.io/v2/library/debian/manifests/sha256:abc9cb88a5587630d7f915f47b23b0668fe250fbfc6457aa4d52b534c1bbf73f",
     "officialImageIndex": "https://github.com/docker-library/official-images/blob/master/library/debian",
-    "boundary": "Registry metadata only. No image layer was pulled or inspected, and no root filesystem or runtime property was verified."
+    "boundary": "The retrieval mirror serves the same pinned Docker Official Image manifest. Actual image and runtime evidence is recorded separately for each build."
   },
   "apt": {
     "snapshot": "20260915T000000Z",
@@ -23,8 +25,7 @@
     "observedSecurityReleaseDate": "Mon, 14 Sep 2026 18:36:51 UTC",
     "suites": ["trixie", "trixie-updates", "trixie-security"],
     "components": ["main"],
-    "packageResolutionExecuted": false,
-    "boundary": "The recipe fixes snapshot repositories and retains ordinary APT signature/package-hash verification. Package availability, resolution, installation and final dependency closure remain unverified."
+    "boundary": "The recipe fixes snapshot repositories and retains ordinary APT signature/package-hash verification. Each actual build records the resolved packages and runtime tools."
   },
   "ffmpeg": {
     "version": "9.0.1",
@@ -34,8 +35,15 @@
     "signatureUrl": "https://ffmpeg.org/releases/ffmpeg-9.0.1.tar.xz.asc",
     "keyUrl": "https://ffmpeg.org/ffmpeg-devel.asc",
     "requiredSignerFingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
-    "signatureReverifiedThisPreparation": false,
+    "requiredSoftwareEncoders": ["libx264", "libx265", "libaom-av1"],
+    "requiredSoftwareFilters": ["zscale", "tonemap", "subtitles"],
     "localPatches": [
+      {
+        "source": "scripts/test-env/toolchain-patches/ffmpeg-decoder-queue-wakeup.patch",
+        "contextPath": "toolchain-patches/ffmpeg-decoder-queue-wakeup.patch",
+        "purpose": "Wake a choked decoder when its queue becomes receivable.",
+        "regression": "toolchain-patches/decoder-queue-wakeup/run-native-regression.py"
+      },
       {
         "source": "scripts/test-env/toolchain-patches/ffmpeg-progress-copyts-nopts.patch",
         "contextPath": "toolchain-patches/ffmpeg-progress-copyts-nopts.patch",
@@ -43,7 +51,19 @@
         "regression": "toolchain-patches/progress-copyts-nopts/run-native-regression.py"
       }
     ],
-    "boundary": "The source hash was read from the existing toolchain record. The Docker recipe must verify this hash and signer, record and apply the local patch, and pass the real-reporter native regression before installation."
+    "boundary": "The Docker recipe verifies the recorded source hash and signer, applies both process-control patches, and runs their native regressions before installation. This software profile includes HEVC, AV1, HDR tone mapping and subtitle filters; it does not enable the separate Vulkan/libplacebo Dolby Vision profile or claim device acceptance."
+  },
+  "introFingerprint": {
+    "source": "tools/intro-fingerprint",
+    "contextPath": "intro-fingerprint",
+    "chromaprintVersion": "1.6.1",
+    "chromaprintCommit": "aed8eba2202dd9d7b3b0a56c77904cc805490d72",
+    "vendoredFilePins": "intro-fingerprint/vendor/SHA256SUMS",
+    "build": "CMake Release, static selected Chromaprint and KissFFT sources",
+    "regression": "intro-fingerprint/tests/test_protocol.py",
+    "installedPrefix": "/opt/goby-intro-fingerprint",
+    "configuration": "/usr/share/goby/media-analysis.json",
+    "boundary": "The installed helper and original notices are retained. Its actual executable digest binds the image's default media-analysis configuration."
   },
   "nvCodecHeaders": {
     "tag": "n13.1.15.0",
@@ -55,24 +75,13 @@
     "sha256": "1d2070546de622fd6074a99d4b283e727988b7c3624ef85f97b88962264314d2",
     "retainedArchive": "/opt/goby-test/resumed-delivery-20260913-4cd0f29a0c14/oci-source-capture-20260916-01/nv-codec-headers-0a6fba9a2820628b8103464f4c8753ee05838baa.tar.gz",
     "hashEnvironment": "ssh test-env",
-    "downloadedCodeExecuted": false,
-    "boundary": "Pinned header source and remote data-file hash only; no NVIDIA device, driver or codec execution is established."
+    "boundary": "Pinned build-time interface headers do not establish NVIDIA device, driver or codec execution."
   },
   "applicationArtifact": {
-    "selected": false,
     "requiredKind": "goby-linux-embedded-administrator-build",
     "requiredExternalPins": ["GOBY_BINARY_SHA256", "GOBY_BUILD_MANIFEST_SHA256"],
-    "boundary": "Select a separately verified release. No E11 rebuild, successor artifact selection or candidate transition follows from this recipe."
+    "boundary": "The build receipt binds the selected embedded application and manifest. Source acceptance and container runtime acceptance retain their own records."
   },
   "postgresClients": { "requiredMajor": 17, "selectedPackage": "postgresql-client-17", "serverIncluded": false },
-  "verification": {
-    "artifactTestsRun": false,
-    "composeValidated": false,
-    "imageBuilt": false,
-    "runtimeExecuted": false,
-    "hardwareVerified": false,
-    "reproducibilityVerified": false,
-    "legalCompletenessClaimed": false,
-    "distributionApproved": false
-  }
+  "boundary": "These are recipe inputs, not an acceptance receipt. The build and runtime records establish actual results; GPU support, repeat-build reproducibility, and complete external-distribution licensing are not implied."
 }

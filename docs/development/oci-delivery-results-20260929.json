@@ -1,0 +1,390 @@
+{
+  "all_manifest_source_and_module_inputs_match_commit": true,
+  "application_binary": {
+    "bytes": 50343464,
+    "name": "goby",
+    "sha256": "2e296bfd02fdf3f7b740000d0d87563e420d5a099fd20e0aa37b96502f78c004"
+  },
+  "application_revision": "b9bfa7ccee07e2ae81f70ab90d2121d908734636",
+  "archive": {
+    "bytes": 338467840,
+    "name": "goby-linux-amd64-image.tar",
+    "sha256": "1c3b2f5194c3799b83bac948352dcbfc5ea5411eb8f9dac69894b95fff9fe720"
+  },
+  "boundaries": [
+    "Software profile; no GPU, arm64, other runtime or physical host durability claim.",
+    "The three synthetic episode outcomes establish real extraction and review results, not labeled intro accuracy.",
+    "HEVC/AV1/filter tool outputs were fully decoded; HDR color accuracy is not newly qualified.",
+    "Imported credentials are revoked by native recovery; ordinary replacement and raw pre-upgrade rollback preserve the original application key.",
+    "Schema 29 to 50 upgrades require ForceProbe when upgrading cached media probe version 6 to 8.",
+    "Collected license texts are retained; a project-license decision and full public-distribution licensing are not claimed."
+  ],
+  "build_receipt": {
+    "bytes": 59735,
+    "sha256": "7b6e01c9020deaea5626cc1140ecd3dbfb6865a911e915812ce7c9fde8ed9866"
+  },
+  "checks": {
+    "artifact_checker_tests": 12,
+    "builder_tests": 4,
+    "closure": {
+      "data_and_failure_evidence_retained": true,
+      "existing_running_container_ids_preserved": [
+        "7637bef4bf06",
+        "cfc2342951f8",
+        "e4aa5102681d"
+      ],
+      "other_database_clients_before_stop": 0,
+      "owned_containers": [
+        {
+          "exit_code": 0,
+          "id": "336c0efcf76cde12bd409230695e440b6996dcfe8d43ed688e1bd0b8abbc9550",
+          "image_id": "sha256:6136f9d19e3c923997641e36d75556a392afc29765ccedb0e48d97b0aef6e86c",
+          "name": "/goby-oci-20260929-main-goby-1",
+          "pid": 0,
+          "running": false
+        },
+        {
+          "exit_code": 0,
+          "id": "a01da05011cc2cbabcb2edb942fcb1ffdf5345a98b3cc680b2cde49f3be7994a",
+          "image_id": "sha256:f387f8ef373c02bf08c85e744a288526bc2b6afb78133515ccda6b337aa8bd43",
+          "name": "/goby-oci-20260929-upgrade-goby-1",
+          "pid": 0,
+          "running": false
+        },
+        {
+          "exit_code": 0,
+          "id": "38d3b9f74f6d555084f3b6493c4b9593ce1e3022d2b98a70cc29716601c90f06",
+          "image_id": "sha256:6136f9d19e3c923997641e36d75556a392afc29765ccedb0e48d97b0aef6e86c",
+          "name": "/goby-oci-20260929-main03-goby-1",
+          "pid": 0,
+          "running": false
+        },
+        {
+          "exit_code": 0,
+          "id": "1a7c3f7dd5cf1ca0d8da7d9f91cfbdf9487794282b1efa96314ccbbd27c7c81e",
+          "image_id": "sha256:6136f9d19e3c923997641e36d75556a392afc29765ccedb0e48d97b0aef6e86c",
+          "name": "/goby-oci-20260929-upgrade03-goby-1",
+          "pid": 0,
+          "running": false
+        },
+        {
+          "exit_code": 0,
+          "id": "eec26de65fbac5d1e6914c881211ea81576e76237226e84e078eb2b528b802f5",
+          "image_id": "sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab",
+          "name": "/goby-oci-20260929-main04-goby-1",
+          "pid": 0,
+          "running": false
+        },
+        {
+          "exit_code": 0,
+          "id": "f1ce1f1941e24563a32a716ca6d5e413eeba83f20e7538ffe20de4975eefbbab",
+          "image_id": "sha256:6136f9d19e3c923997641e36d75556a392afc29765ccedb0e48d97b0aef6e86c",
+          "name": "/goby-oci-20260929-upgrade04-goby-1",
+          "pid": 0,
+          "running": false
+        },
+        {
+          "exit_code": 0,
+          "id": "d69fb4cfc68737752c42ccdfb79e67e12fb9e27a247de60b6bc6683260e26353",
+          "image_id": "sha256:f387f8ef373c02bf08c85e744a288526bc2b6afb78133515ccda6b337aa8bd43",
+          "name": "/goby-oci-20260929-upgrade05-goby-1",
+          "pid": 0,
+          "running": false
+        }
+      ],
+      "owned_network_removed": true,
+      "private_postgres_normally_stopped": true,
+      "released_loopback_ports": [
+        55992,
+        28096,
+        28097,
+        28098,
+        28099,
+        28100,
+        28101,
+        28102
+      ],
+      "retained_database_names": [
+        "goby_backup_oci_source",
+        "goby_backup_oci_target",
+        "goby_oci_main",
+        "goby_oci_main03",
+        "goby_oci_main04",
+        "goby_oci_regression",
+        "goby_oci_restore",
+        "goby_oci_restore03",
+        "goby_oci_restore04",
+        "goby_oci_rollback",
+        "goby_oci_rollback03",
+        "goby_oci_rollback04",
+        "goby_oci_rollback05",
+        "goby_oci_upgrade",
+        "goby_oci_upgrade03",
+        "goby_oci_upgrade04",
+        "goby_oci_upgrade05"
+      ]
+    },
+    "embedded-regression.jsonl": {
+      "packages": {
+        "pass": 1
+      },
+      "parents": {
+        "pass": 24
+      },
+      "subtests": {
+        "pass": 37
+      }
+    },
+    "embedded_release_build": "passed",
+    "ffmpeg_native_regressions": [
+      "progress-copyts-nopts",
+      "decoder-queue-wakeup"
+    ],
+    "fingerprint_protocol_tests": 7,
+    "frontend_build": "passed",
+    "ordinary_application_build": "passed",
+    "recovery-task-regression.jsonl": {
+      "packages": {
+        "pass": 2
+      },
+      "parents": {
+        "pass": 131
+      },
+      "subtests": {
+        "pass": 170
+      }
+    },
+    "required_recovery_regressions": [
+      "TestEngineAnalysisRestoreVerifiesRawThenInvalidatesEveryExecutionProof",
+      "TestEngineMixedAnalysisHistoryRetainsV1EvidenceButRevokesItsExecutionProof",
+      "TestEngineV2AnalysisHistoryPreservesRawEvidenceBeforeRevokingAuthority",
+      "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+      "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback",
+      "TestRecoveryManagerApplyRestartAndRollback"
+    ],
+    "runtime-attempt04.jsonl": {
+      "completed": [
+        "bootstrap_and_media",
+        "graceful_recreate",
+        "encrypted_backup_restore_restart_rollback",
+        "final_persistence"
+      ],
+      "event": "result",
+      "failed_phase": null,
+      "failure": null,
+      "image_upgrade_selected": false,
+      "passed": true,
+      "scope": "linux_amd64_software_oci_functional_delivery; no_hardware_capacity_or_registry_publication_claim"
+    },
+    "toolchain_reuse": {
+      "all_five_non_application_executables_identical": true,
+      "application_changed": true,
+      "final_hashes": {
+        "/opt/ffmpeg/9.0.1/bin/ffmpeg": "b0d61d340336ae7260493404a72a6584684f2201eab795204cf2c6ba4c71b5d1",
+        "/opt/ffmpeg/9.0.1/bin/ffprobe": "10624ede2701b47457ed880c12cf72ca25927dd00143f96df170c329a37ecec5",
+        "/opt/goby-intro-fingerprint/bin/goby-intro-fingerprint": "ddaf899d0bbaa98533907910453fb19e0dc573fdb618711de7855b956c27888c",
+        "/usr/lib/postgresql/17/bin/pg_dump": "b5f14f509728e44d97ff876b570c85c9d641fc22898b394ec0f5a923ec6ef793",
+        "/usr/lib/postgresql/17/bin/pg_restore": "6a5c329542ccbb58957edbc8c0aa08e103cb32f8257c1f2d3b8dad19ce947692",
+        "/usr/local/bin/goby": "2e296bfd02fdf3f7b740000d0d87563e420d5a099fd20e0aa37b96502f78c004"
+      }
+    },
+    "upgrade-attempt05.jsonl": {
+      "completed": [
+        "old_image_baseline",
+        "upgraded_image_schema50",
+        "restored_old_image_schema29"
+      ],
+      "event": "result",
+      "failed_phase": null,
+      "failure": null,
+      "passed": true,
+      "scope": "two_movie_actual_oci_schema29_to50_and_preupgrade_dump_restore_rollback"
+    }
+  },
+  "companions": {
+    "README.md": {
+      "bytes": 8477,
+      "sha256": "a308dd6b6664d874c2a5489e882cabd3623f442a05a015ea47a9b5889e310130"
+    },
+    "SHA256SUMS": {
+      "bytes": 93,
+      "sha256": "369bc3b64c5d721cb756d09aadcb8fc8350ad96fdf531a8426e68484a74f302a"
+    },
+    "compose.yaml": {
+      "bytes": 2466,
+      "sha256": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965"
+    },
+    "deployment.env.example": {
+      "bytes": 323,
+      "sha256": "5b1f79ea180aa49a7c58ba60433641c73c21a81c8739750d5bbbc8eabd780194"
+    },
+    "goby.env.example": {
+      "bytes": 1995,
+      "sha256": "ed6f7b14ab4fafeba3f93aa53516555a9905baea905184a85b1f5128516349b9"
+    },
+    "image-id.txt": {
+      "bytes": 71,
+      "sha256": "27d5ff1e355fc66686575ba61128b6d7604eff951973da08dfa94f191bb860c0"
+    },
+    "image-inspect.json": {
+      "bytes": 3927,
+      "sha256": "645ea85ee3944c3d74876ddb6eeca3affd1d658c74709d62b55550474e273d25"
+    },
+    "source-pins.json": {
+      "bytes": 5787,
+      "sha256": "1d1d63e41156084c0c8f343df9d1f6437f023802ce7873ebc34a478e8b07f708"
+    }
+  },
+  "evidence": {
+    "artifact-checker-tests.log": {
+      "bytes": 2021,
+      "sha256": "3bcaeaa40069288a18d97f608457bf43dbd0d773fa639a4039184db47d0e3c31"
+    },
+    "builder-tests-delivery.log": {
+      "bytes": 586,
+      "sha256": "782d50e26196752e9f774b8bcf12e670f5332fd18155ce6ad24ade5c1b2a9d6e"
+    },
+    "embedded-regression.jsonl": {
+      "bytes": 60917,
+      "sha256": "18efe4104502cdea579ba583c51f401080af93e984bd1c09b194c324cf4a4645"
+    },
+    "final-image-load.log": {
+      "bytes": 89,
+      "sha256": "e71364c4373f0e723a6ce496b26e36bbcf76f24a7ead4dcba3010abaff5601a9"
+    },
+    "final-runtime-executables.sha256": {
+      "bytes": 603,
+      "sha256": "84688e69152fe0e6d0dbd32d478da8a4e2fd51f6b4528bbcb3fc02df39a03ed4"
+    },
+    "final-summary.json": {
+      "bytes": 5120,
+      "sha256": "994cfe7cfb33fb513441847760aca4812293928478265aaf1c1f6f889f3b2c08"
+    },
+    "frontend-build.log": {
+      "bytes": 7114,
+      "sha256": "487233ea50d88e4b2d1a946306f7dd03c155bf23eef2d760e41f4ded8c40df35"
+    },
+    "nonroot-codec-results.json": {
+      "bytes": 991,
+      "sha256": "5f7738e93175605d61f4e8bf23374acd01955af5cf5672460d566b25542b58b4"
+    },
+    "nonroot-codecs.log": {
+      "bytes": 949,
+      "sha256": "3a06e7ef9c279002db9ce3c73f990df2fd8b72b054718ad2b290101d693f5cb2"
+    },
+    "nonroot-filters-repeat.log": {
+      "bytes": 418,
+      "sha256": "b11e2cbc5feb282709a3d3578595dd8e629e417f5a318a7fbc9fb208559b2e6f"
+    },
+    "npm-ci.log": {
+      "bytes": 26,
+      "sha256": "ce9de51c5412e28030110606369d65d2af05d80a348e0069fe34bc76ffc0146c"
+    },
+    "ordinary-build-repaired.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "recovery-before-fix-ready.jsonl": {
+      "bytes": 2056,
+      "sha256": "cb7c3f3ef47e7329de401c07cc5d333830bc91cb29bdf2b049d35933aaedcc3b"
+    },
+    "recovery-before-fix.jsonl": {
+      "bytes": 1984,
+      "sha256": "85370a20e884632a33b00f8c054dd7e8c305b7ddc4a00a358e02e67e7f25cb16"
+    },
+    "recovery-task-regression.jsonl": {
+      "bytes": 314485,
+      "sha256": "ee63bfb0ffd41cf2082c28bee8a51f661c5c303be41c59d4c32dd115583c319c"
+    },
+    "release-repaired.log": {
+      "bytes": 305,
+      "sha256": "bbdbbda1956ae8117eaaa651a993a71bc87cd8482cebab4deb1f28f274a8aeb7"
+    },
+    "runtime-attempt01.jsonl": {
+      "bytes": 557,
+      "sha256": "9d3a7efca82382ca6b579fd6b0c820836b684d8b1576515ab6838bc9f16d34dc"
+    },
+    "runtime-attempt02.jsonl": {
+      "bytes": 3458,
+      "sha256": "ddf2aa10dfd69fea827a77e2d3047cf061be5a3e9c3100026fd6e51ce846eb6a"
+    },
+    "runtime-attempt03.jsonl": {
+      "bytes": 4570,
+      "sha256": "f0ae969b54f7c303a5ed20048e03e53c4fe9b5728566f85425bb96435ad11082"
+    },
+    "runtime-attempt04.jsonl": {
+      "bytes": 6566,
+      "sha256": "08833dd05c0e5eee202bad5d724498edd7acfc39432b3d27300fe9ba0448d687"
+    },
+    "upgrade-attempt01.jsonl": {
+      "bytes": 451,
+      "sha256": "58187f1344207a3110713811da4f200626fa409c659f64298fc76b62f318defa"
+    },
+    "upgrade-attempt02.jsonl": {
+      "bytes": 2193,
+      "sha256": "02a48372969291f7165b404d846894b47ea961693c9928b68a2e8f455e76e84b"
+    },
+    "upgrade-attempt03.jsonl": {
+      "bytes": 2385,
+      "sha256": "25b7b2e5a6487ee623cd9fd9b6292098a72fe763a233cbc1b3d07f2e3f4f973e"
+    },
+    "upgrade-attempt04.jsonl": {
+      "bytes": 2892,
+      "sha256": "81cbd9abbc83b9c7d01055ae9b6667f5b3b188a65b44505b74ade710c64dc429"
+    },
+    "upgrade-attempt05.jsonl": {
+      "bytes": 6913,
+      "sha256": "fa3320be2bf476f161314e6b4639186a654b735ac3dbcc1b9a755805a79bb493"
+    }
+  },
+  "image_id": "sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab",
+  "kind": "goby-oci-functional-delivery",
+  "local_delivery_directory": "D:/Code/goby/.artifacts/oci-20260929",
+  "platform": "linux/amd64",
+  "registry_published": false,
+  "remote_evidence_root": "/opt/goby-oci-delivery-20260929-01",
+  "standalone_codec_outputs": {
+    "boundary": "Synthetic tool execution and full decoding; no HDR color-accuracy or subtitle OCR claim.",
+    "outputs": [
+      {
+        "bytes": 7972,
+        "codec": "hevc",
+        "decoded": true,
+        "file": "hevc.mp4",
+        "frames": 3,
+        "sha256": "2f65048090175cd40cd665051107abfd49273a151cd75ca66d4ab9da6221e6c8"
+      },
+      {
+        "bytes": 2696,
+        "codec": "av1",
+        "decoded": true,
+        "file": "av1.mp4",
+        "frames": 3,
+        "sha256": "fc51d1e21faa1501340c88f32a8ab9fc95acdf6637da10ea294260ff9ae0a253"
+      },
+      {
+        "bytes": 4782,
+        "codec": "h264",
+        "decoded": true,
+        "file": "filters02.mp4",
+        "frames": 3,
+        "sha256": "0b9cc2e17c040109603002a2659848f0a2361d36ac10aa9c4cfe6c98d76436ce"
+      },
+      {
+        "bytes": 10959,
+        "codec": "h264",
+        "decoded": true,
+        "file": "subtitles.mp4",
+        "frames": 3,
+        "sha256": "67cd1315c34d53dc413db691f2297dda9e78be34629014774016816755107547"
+      }
+    ],
+    "status": "passed"
+  },
+  "status": "complete_selected_linux_amd64_software_scope",
+  "verified_source_archive": {
+    "bytes": 147804160,
+    "sha256": "05f4d76bdc13600e033f8fa799cb3d15b77cf4dfae65a4e27ee07ff024539e76"
+  },
+  "version": 1
+}

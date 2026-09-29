@@ -1,5 +1,14 @@
 # Goby handoff - September 29, 2026
 
+The current completed increment is the [OCI archive and Compose delivery](oci-delivery-20260929.md).
+The final image uses application source `b9bfa7c`; its digest and downloadable
+archive are bound by the [result manifest](oci-delivery-results-20260929.json).
+Fresh media/recovery and actual schema 29 to 50 upgrade/rollback passed. The
+operator guide includes the required probe refresh for this older upgrade.
+All owned verification containers, the network, and private PostgreSQL are
+closed. Retained databases, failure evidence, and unrelated main-checkout drafts
+remain preserved. No registry publication or production deployment occurred.
+
 The revised Phase 3 functional scope is complete and published to `origin/main`
 at `c998e924d166ee9760fa0f4a3b341c1d30b7a53b`; exact remote readback passed.
 The [publication record](phase3-functional-publication-20260929.md) closes the

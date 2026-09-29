@@ -13,10 +13,10 @@ services:
     stop_signal: SIGTERM
     stop_grace_period: 2m
     restart: "no"
-    cpus: 2.0
-    mem_limit: 1g
-    memswap_limit: 1g
-    pids_limit: 128
+    cpus: ${GOBY_CPU_LIMIT:-2.0}
+    mem_limit: ${GOBY_MEMORY_LIMIT:-2g}
+    memswap_limit: ${GOBY_MEMORY_LIMIT:-2g}
+    pids_limit: ${GOBY_PID_LIMIT:-256}
     env_file:
       - path: ${GOBY_CONFIG_FILE:?Set the private application environment file}
         format: raw
@@ -27,6 +27,7 @@ services:
       GOBY_FFPROBE: /opt/ffmpeg/9.0.1/bin/ffprobe
       GOBY_PG_DUMP: /usr/lib/postgresql/17/bin/pg_dump
       GOBY_PG_RESTORE: /usr/lib/postgresql/17/bin/pg_restore
+      GOBY_MEDIA_ANALYSIS_FILE: /usr/share/goby/media-analysis.json
       GOBY_API_KEY_MASTER_KEY_FILE: /var/lib/goby/application-key-master.key
       GOBY_RECOVERY_STATE_DIR: /var/lib/goby/recovery
       GOBY_RECOVERY_OPERATIONS_DIR: /var/lib/goby/recovery-operations
