@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analysisCurrentCandidate, analysisDraft, analysisRevision, parseAnalysisDraft, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
+import { analysisIntroStatus, analysisDraft, analysisRevision, parseAnalysisDraft, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
 import type { AnalysisCandidate, AnalysisDetection, AnalysisItem, AnalysisMetrics, AnalysisProfile } from './mediaAnalysis.ts';
 
 const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20 };
@@ -20,10 +20,11 @@ function candidate(): AnalysisCandidate {
   } };
 }
 
-test('profile drafts preserve exact saved values and explicit false without client defaults', () => {
+test('processing edits keep exact values and always publish reliable intros', () => {
   const value = { ...profile, AutoPublishIntros: false, MaxSourceBytes: 1, PreviewQuality: 95, FeatureCacheMaxBytes: 512 * 2 ** 20 };
   const draft = analysisDraft(value);
-  assert.deepEqual(parseAnalysisDraft(draft), { errors: {}, profile: value });
+  assert.equal('AutoPublishIntros' in draft, false);
+  assert.deepEqual(parseAnalysisDraft(draft), { errors: {}, profile: { ...value, AutoPublishIntros: true } });
   draft.MaxSourceBytes = '4096';
   assert.equal(value.MaxSourceBytes, 1);
   assert.equal(parseAnalysisDraft(draft).profile?.MaxSourceBytes, 4096);
@@ -65,17 +66,18 @@ test('unavailable runtime and absent detection are data, but malformed accountin
   assert.equal(validAnalysisItems({ Items: [item()], TotalRecordCount: 1, StartIndex: 25, Limit: 25 }, 0, 25), false);
 });
 
-test('manual priority is preserved and stale or unsupported candidates cannot be accepted by the UI', () => {
+test('unreliable candidates never appear as an available playback intro', () => {
   const value = item();
   value.Detection.Status = 'review';
-  value.Detection.Effective = { StartTicks: 0, EndTicks: 100_000_000, Provenance: 'Manual' };
   value.Detection.Candidate = candidate();
-  assert.equal(analysisCurrentCandidate(value), true);
-  assert.equal(value.Detection.Effective.Provenance, 'Manual');
-  assert.equal(analysisCurrentCandidate({ ...value, Type: 'Movie' }), false);
-  assert.equal(analysisCurrentCandidate({ ...value, Detection: { ...value.Detection, Status: 'stale' } }), false);
-  assert.equal(analysisCurrentCandidate({ ...value, SourceRevision: 'replaced' }), false);
-  assert.equal(analysisCurrentCandidate({ ...value, Detection: { ...value.Detection, Candidate: null } }), false);
+  assert.equal(analysisIntroStatus(value), 'No intro detected');
+  assert.equal(analysisIntroStatus({ ...value, Detection: { ...value.Detection, Status: 'qualified' } }), 'No intro detected');
+  value.Detection.Effective = { StartTicks: 0, EndTicks: 100_000_000, Provenance: 'Detected' };
+  assert.equal(analysisIntroStatus(value), 'Intro available');
+  assert.equal(analysisIntroStatus(item()), 'Not analyzed');
+  assert.equal(analysisIntroStatus({ ...item(), Type: 'Movie' }), 'Not applicable');
+  assert.equal(analysisIntroStatus({ ...item(), Detection: { ...detection(), Status: 'stale' } }), 'Needs analysis');
+  assert.equal(analysisIntroStatus({ ...item(), Detection: { ...detection(), Status: 'failed' } }), 'Analysis failed');
 });
 
 test('current candidates require finite visual anchor evidence while stale empty results remain readable', () => {

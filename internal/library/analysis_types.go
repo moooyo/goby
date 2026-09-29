@@ -17,6 +17,8 @@ var (
 type AnalysisFence func(OwnedTx) error
 
 type AnalysisProfile struct {
+	// AutoPublishIntros is retained for historical profile compatibility. New
+	// configuration writes keep it true; each library owns publication policy.
 	AutoPublishIntros      bool
 	PreviewIntervalSeconds int
 	PreviewQuality         int

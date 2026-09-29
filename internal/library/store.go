@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 // New acquires exclusive catalog ownership before recovering interrupted jobs.
@@ -127,6 +128,9 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 	}
 	collectionType, err = normalizeCollectionType(collectionType)
 	if err != nil {
+		return Library{}, err
+	}
+	if err := validateLibraryOptions(collectionType, options); err != nil {
 		return Library{}, err
 	}
 	if len(paths) < 1 || len(paths) > 32 {
@@ -241,6 +245,11 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 	if err := recordCatalogChanges(tx, CatalogChange{Kind: CatalogAdded, ItemID: id, LibraryID: id,
 		IsFolder: true, IsCollectionFolder: true}); err != nil {
 		return Library{}, err
+	}
+	if options.EnableIntroDetection {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.IntroAnalysisRequested); err != nil {
+			return Library{}, err
+		}
 	}
 	finalObservationCtx, cancelFinalObservation := context.WithTimeout(protected, storageObservationTimeout)
 	defer cancelFinalObservation()

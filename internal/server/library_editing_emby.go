@@ -26,8 +26,11 @@ const embeddedArtworkFetcherName = "Goby Embedded Artwork"
 // TypeOptions selects the advertised dynamic Audio image provider. Directory
 // sidecars are local image providers and deliberately do not use this selector.
 type embyLibraryOptionsUpdate struct {
-	DisabledLocalMetadataReaders json.RawMessage
-	TypeOptions                  json.RawMessage
+	DisabledLocalMetadataReaders           json.RawMessage
+	TypeOptions                            json.RawMessage
+	EnableMarkerDetection                  json.RawMessage
+	EnableMarkerDetectionDuringLibraryScan json.RawMessage
+	IntroDetectionFingerprintLength        json.RawMessage
 }
 
 func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
@@ -42,6 +45,12 @@ func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 			value.DisabledLocalMetadataReaders = raw
 		case "typeoptions":
 			value.TypeOptions = raw
+		case "enablemarkerdetection":
+			value.EnableMarkerDetection = raw
+		case "enablemarkerdetectionduringlibraryscan":
+			value.EnableMarkerDetectionDuringLibraryScan = raw
+		case "introdetectionfingerprintlength":
+			value.IntroDetectionFingerprintLength = raw
 		default:
 			return library.ErrInvalidInput
 		}
@@ -50,10 +59,33 @@ func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 }
 
 func (value *embyLibraryOptionsUpdate) native() (*library.LibraryOptionsUpdate, error) {
-	if value == nil || len(value.DisabledLocalMetadataReaders) == 0 && len(value.TypeOptions) == 0 {
+	if value == nil || len(value.DisabledLocalMetadataReaders) == 0 && len(value.TypeOptions) == 0 &&
+		len(value.EnableMarkerDetection) == 0 && len(value.EnableMarkerDetectionDuringLibraryScan) == 0 && len(value.IntroDetectionFingerprintLength) == 0 {
 		return nil, library.ErrInvalidInput
 	}
 	result := &library.LibraryOptionsUpdate{}
+	if len(value.EnableMarkerDetection) != 0 {
+		var enabled *bool
+		if json.Unmarshal(value.EnableMarkerDetection, &enabled) != nil || enabled == nil {
+			return nil, library.ErrInvalidInput
+		}
+		result.EnableIntroDetection = enabled
+	}
+	// Goby has one automatic mode: enabling it covers completed scans and
+	// periodic catch-up. A contradictory upstream two-mode choice is unsupported.
+	if len(value.EnableMarkerDetectionDuringLibraryScan) != 0 {
+		var duringScan *bool
+		if json.Unmarshal(value.EnableMarkerDetectionDuringLibraryScan, &duringScan) != nil || duringScan == nil ||
+			result.EnableIntroDetection == nil || *duringScan != *result.EnableIntroDetection {
+			return nil, library.ErrInvalidInput
+		}
+	}
+	if len(value.IntroDetectionFingerprintLength) != 0 {
+		var minutes *int
+		if json.Unmarshal(value.IntroDetectionFingerprintLength, &minutes) != nil || minutes == nil || *minutes != 10 {
+			return nil, library.ErrInvalidInput
+		}
+	}
 	if len(value.DisabledLocalMetadataReaders) != 0 {
 		var readers []string
 		if json.Unmarshal(value.DisabledLocalMetadataReaders, &readers) != nil || readers == nil || len(readers) > 1 || len(readers) == 1 && !strings.EqualFold(readers[0], "Nfo") {
@@ -111,7 +143,9 @@ func embyEditableLibraryOptions(value library.Library) map[string]any {
 	if library.EffectiveLibraryOptions(value).EnableEmbeddedArtwork {
 		fetchers = append(fetchers, embeddedArtworkFetcherName)
 	}
-	return map[string]any{"DisabledLocalMetadataReaders": disabled, "TypeOptions": []map[string]any{{"Type": "Audio", "ImageFetchers": fetchers, "ImageFetcherOrder": []string{embeddedArtworkFetcherName}}}}
+	intro := library.EffectiveLibraryOptions(value).EnableIntroDetection
+	return map[string]any{"DisabledLocalMetadataReaders": disabled, "TypeOptions": []map[string]any{{"Type": "Audio", "ImageFetchers": fetchers, "ImageFetcherOrder": []string{embeddedArtworkFetcherName}}},
+		"EnableMarkerDetection": intro, "EnableMarkerDetectionDuringLibraryScan": intro, "IntroDetectionFingerprintLength": 10}
 }
 
 func (s *Server) embyLibraryEditing(w http.ResponseWriter, r *http.Request, id string) (library.LibraryEditing, bool) {

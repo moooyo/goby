@@ -96,6 +96,10 @@ func (s *Store) UpdateAnalysisConfiguration(ctx context.Context, actor identity.
 	if err != nil {
 		return AnalysisConfiguration{}, err
 	}
+	// Retain the historical wire field and immutable admission fingerprints.
+	// Current publication is selected per library, so a legacy false value
+	// cannot silently disable an explicitly enabled library's new analysis.
+	input.Profile.AutoPublishIntros = true
 	if err := ValidateAnalysisProfile(input.Profile); err != nil {
 		return AnalysisConfiguration{}, err
 	}

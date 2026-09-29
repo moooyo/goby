@@ -38,6 +38,9 @@ func nativeLibraryCreationOptions(update *library.LibraryOptionsUpdate) library.
 		if update.EnableEmbeddedArtwork != nil {
 			options.EnableEmbeddedArtwork = *update.EnableEmbeddedArtwork
 		}
+		if update.EnableIntroDetection != nil {
+			options.EnableIntroDetection = *update.EnableIntroDetection
+		}
 	}
 	return options
 }

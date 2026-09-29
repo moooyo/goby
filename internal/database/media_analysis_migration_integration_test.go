@@ -54,8 +54,12 @@ func TestMediaAnalysisMigrationPreservesSchema49AndInitializesOnlyDefaults(t *te
 				}
 			}
 			complete := migrationHistory(t, ctx, pool)
-			if err := database.Migrate(ctx, pool); err != nil {
-				t.Fatal(err)
+			if runner == "normal" {
+				if err := database.Migrate(ctx, pool); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				themeOwnersMigrateTo(t, ctx, pool, 50)
 			}
 			if complete != migrationHistory(t, ctx, pool) {
 				t.Fatal("repeat migration altered complete history")

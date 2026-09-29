@@ -63,12 +63,12 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
   const [type, setType] = useState<LibraryInput['CollectionType']>('movies');
   const [pathsText, setPathsText] = useState('');
   const [scan, setScan] = useState(true);
-  const [options, setOptions] = useState({ EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true });
+  const [options, setOptions] = useState({ EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true, EnableIntroDetection: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const [browsing, setBrowsing] = useState(false);
-  const dirty = Boolean(name || pathsText || type !== 'movies' || !scan || !options.EnableLocalMetadata || !options.EnableLocalImages || !options.EnableEmbeddedArtwork);
+  const dirty = Boolean(name || pathsText || type !== 'movies' || !scan || !options.EnableLocalMetadata || !options.EnableLocalImages || !options.EnableEmbeddedArtwork || options.EnableIntroDetection);
   useUserDraftNavigation(dirty && !outcomeUnknown, busy, onNavigationGuardChange, 'Discard the new library draft and leave this page?');
   function close() { if (!busy && (outcomeUnknown || !dirty || window.confirm('Discard the new library draft?'))) onClose(); }
   const paths = [...new Set(pathsText.split(/\r?\n/).map((path) => path.trim()).filter(Boolean))];
@@ -101,9 +101,10 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
             {error != null && <ErrorNotice error={error} />}
             {outcomeUnknown && <Alert severity="warning">The server response could not be confirmed. This library may already have been created. Check the library list before trying again.</Alert>}
             <TextField id="library-name" name="Name" autoFocus required fullWidth label="Library name" value={name} onChange={(event) => setName(event.target.value)} disabled={busy} error={Boolean(fieldError(error, 'Name'))} helperText={fieldError(error, 'Name')} />
-            <TextField id="library-type" name="CollectionType" select required fullWidth label="Content type" value={type} onChange={(event) => setType(event.target.value as LibraryInput['CollectionType'])} disabled={busy} error={Boolean(fieldError(error, 'CollectionType'))} helperText={fieldError(error, 'CollectionType')}>
+            <TextField id="library-type" name="CollectionType" select required fullWidth label="Content type" value={type} onChange={(event) => { const next = event.target.value as LibraryInput['CollectionType']; setType(next); if (next !== 'tvshows') setOptions((current) => ({ ...current, EnableIntroDetection: false })); }} disabled={busy} error={Boolean(fieldError(error, 'CollectionType'))} helperText={fieldError(error, 'CollectionType')}>
               {collectionTypes.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
             </TextField>
+            {type === 'tvshows' && <Box><FormControlLabel control={<Checkbox checked={options.EnableIntroDetection} disabled={busy} onChange={(event) => setOptions({ ...options, EnableIntroDetection: event.target.checked })} />} label="Automatic intro detection" /><Typography variant="body2" color="text.secondary">Analyze episode intros in the background and use reliable matches for playback. If no intro is found, playback stays unchanged. Progress and errors are available in Tasks.</Typography></Box>}
             <TextField id="library-paths" name="Paths" required fullWidth multiline minRows={3} maxRows={6} label="Media directories" value={pathsText} onChange={(event) => setPathsText(event.target.value)} disabled={busy} error={invalidPaths || Boolean(fieldError(error, 'Paths'))} helperText={pathsMessage} slotProps={{ htmlInput: { spellCheck: false, autoCapitalize: 'none' } }} sx={{ '& textarea': { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13 } }} />
             <Button type="button" startIcon={<FolderOpenOutlined />} onClick={() => setBrowsing(true)} disabled={busy || outcomeUnknown} sx={{ alignSelf: 'flex-start' }}>Browse directories</Button>
             <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}><StorageRoots roots={roots} /></Paper>
@@ -253,7 +254,8 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
       setActionError(new Error(`Library ${result.Library.Name} was created, but its first scan could not start. ${result.ScanError.Message} Use Scan library to try again.`));
     } else {
       setActionError(null);
-      setNotice({ message: `Library ${result.Library.Name} created.${result.Job ? ' A scan has been requested.' : ''}`, taskLink: Boolean(result.Job) });
+      const introEnabled = result.Library.CollectionType === 'tvshows' && result.Library.LibraryOptions?.EnableIntroDetection === true;
+      setNotice({ message: `Library ${result.Library.Name} created.${result.Job ? ' A scan has been requested.' : ''}${introEnabled ? ' Automatic intro detection is enabled. Follow background progress in Tasks.' : ''}`, taskLink: Boolean(result.Job) || introEnabled });
     }
     refresh();
   }
@@ -310,13 +312,13 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
             </Stack>
           </Box>
         )}
-        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1, borderTop: 1, borderColor: 'divider', pt: 2 }}><Typography variant="body2" color="text.secondary">Scans and media details refreshes run in the background. Open Tasks to follow their progress.</Typography><Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />} sx={{ flexShrink: 0 }}>View tasks</Button></Stack>
+        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1, borderTop: 1, borderColor: 'divider', pt: 2 }}><Typography variant="body2" color="text.secondary">Scans, media details refreshes, and intro detection run in the background. Open Tasks to follow progress and errors or stop running work.</Typography><Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />} sx={{ flexShrink: 0 }}>View tasks</Button></Stack>
       </Stack>
       {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} onNavigationGuardChange={onNavigationGuardChange} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
       {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}
       {bindingLibrary && <RootBindingDialog key={bindingLibrary.Id} library={bindingLibrary} onClose={() => setBindingLibrary(undefined)} onNavigationGuardChange={onNavigationGuardChange} />}
-      {editingLibrary && <LibraryEditorDialog key={editingLibrary.Id} libraryId={editingLibrary.Id} onClose={() => setEditingLibrary(undefined)} onSaved={(result) => { setEditingLibrary(undefined); refresh(); if (result.ScanError) setActionError(new Error(`Library saved, but the scan could not start. ${result.ScanError.Message}`)); else setNotice({ message: `Library ${result.Library.Name} saved.`, taskLink: Boolean(result.Job) }); }} onNavigationGuardChange={onNavigationGuardChange} />}
+      {editingLibrary && <LibraryEditorDialog key={editingLibrary.Id} libraryId={editingLibrary.Id} onClose={() => setEditingLibrary(undefined)} onSaved={(result) => { setEditingLibrary(undefined); refresh(); const introEnabled = result.Library.CollectionType === 'tvshows' && result.Library.LibraryOptions?.EnableIntroDetection === true; if (result.ScanError) setActionError(new Error(`Library saved, but the scan could not start. ${result.ScanError.Message}`)); else setNotice({ message: `Library ${result.Library.Name} saved.${introEnabled ? ' Automatic intro detection is enabled. Follow background progress in Tasks.' : ''}`, taskLink: Boolean(result.Job) || introEnabled }); }} onNavigationGuardChange={onNavigationGuardChange} />}
       <Snackbar open={Boolean(notice)} autoHideDuration={notice?.taskLink ? 10000 : 6000} onClose={() => setNotice(undefined)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" action={notice?.taskLink ? <Button color="inherit" size="small" onClick={onTasks}>View tasks</Button> : undefined} onClose={() => setNotice(undefined)}>{notice?.message}</Alert></Snackbar>
     </Box>
   );

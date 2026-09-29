@@ -40,6 +40,26 @@ func TestAnalysisConfigurationCASIsIndependentAndNoopStable(t *testing.T) {
 	}
 }
 
+func TestAnalysisConfigurationCanonicalizesLegacyGlobalPublicationFlag(t *testing.T) {
+	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+	actor := metadataEditTestActor(t, ctx, pool, "analysis-legacy-publication-editor")
+	initial, err := store.GetAnalysisConfiguration(ctx, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy := initial.Profile
+	legacy.AutoPublishIntros = false
+	unchanged, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: initial.Revision, Profile: legacy})
+	if err != nil || !reflect.DeepEqual(unchanged, initial) {
+		t.Fatalf("legacy flag disabled library publication or manufactured a revision: %+v %v", unchanged, err)
+	}
+	legacy.PreviewQuality++
+	changed, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: initial.Revision, Profile: legacy})
+	if err != nil || !changed.Profile.AutoPublishIntros || changed.Revision != "2" || changed.Profile.PreviewQuality != legacy.PreviewQuality {
+		t.Fatalf("new profile did not retain canonical publication and a real revision: %+v %v", changed, err)
+	}
+}
+
 func TestAnalysisConfigurationConcurrentCASHasOneWinner(t *testing.T) {
 	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	actor := metadataEditTestActor(t, ctx, pool, "analysis-concurrent-editor")
@@ -95,7 +115,7 @@ func TestAnalysisConfigurationFinalAuthorityFailureRollsBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	profile := initial.Profile
-	profile.AutoPublishIntros = false
+	profile.PreviewQuality++
 	if result, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: initial.Revision, Profile: profile}); !errors.Is(err, ErrForbidden) || result != (AnalysisConfiguration{}) {
 		t.Fatalf("revoked authority committed an analysis profile: %+v: %v", result, err)
 	}

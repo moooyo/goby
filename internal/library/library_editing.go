@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 var ErrLibraryConflict = errors.New("library editing revision changed")
@@ -162,6 +163,9 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 		}
 	}
 	options := applyLibraryOptions(EffectiveLibraryOptions(previous.Library), input.LibraryOptions)
+	if err := validateLibraryOptions(previous.Library.CollectionType, options); err != nil {
+		return LibraryEditing{}, err
+	}
 	paths := previous.Library.Paths
 	if input.Paths != nil {
 		paths = *input.Paths
@@ -321,6 +325,34 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 		}
 		if _, err := tx.Exec(protected, `UPDATE libraries SET name=$2, options=$3, revision=revision+1 WHERE id=$1`, id, name, encodedOptions); err != nil {
 			return LibraryEditing{}, err
+		}
+		previousIntro := EffectiveLibraryOptions(previous.Library).EnableIntroDetection
+		if previousIntro != options.EnableIntroDetection {
+			// Retain detection evidence, but every policy transition requires new
+			// publication, including first opt-in after a legacy global profile.
+			if _, err := tx.Exec(protected, `UPDATE analysis_detections SET auto_published=false
+				WHERE auto_published AND item_id IN (SELECT id FROM items WHERE library_id=$1)`, id); err != nil {
+				return LibraryEditing{}, err
+			}
+		}
+		if !previousIntro && options.EnableIntroDetection {
+			// Opting into automatic detection retires this library's legacy
+			// rejection decisions. Keep the decision rows and all audit records;
+			// explicit markers are independent and remain unchanged.
+			var decisionActor any
+			if administrator != nil {
+				decisionActor = administrator.actor.User.ID
+			}
+			if _, err := tx.Exec(protected, `UPDATE analysis_intro_decisions decision
+				SET rejected=false,revision=GREATEST(decision.revision,
+					COALESCE((SELECT detection.revision FROM analysis_detections detection WHERE detection.item_id=decision.item_id),0))+1,
+					updated_by=$2,updated_at=clock_timestamp()
+				FROM items item WHERE decision.item_id=item.id AND item.library_id=$1 AND decision.rejected`, id, decisionActor); err != nil {
+				return LibraryEditing{}, err
+			}
+			if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.IntroAnalysisRequested); err != nil {
+				return LibraryEditing{}, err
+			}
 		}
 		if name != previous.Library.Name {
 			if _, err := tx.Exec(protected, `UPDATE items SET name=$2, sort_name=$3, updated_at=now() WHERE id=$1 AND library_id=$1`, id, name, strings.ToLower(name)); err != nil {

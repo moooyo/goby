@@ -1,8 +1,10 @@
 # Native media analysis workflow
 
-Status: verification of the declared Phase 2 scope is complete. The corrected
-full client-lifecycle run passed and its worker and observer independently
-closed. The accepted delivery is published on `main`. See the
+Status: the September 30 automatic library workflow is **in implementation and
+verification**. See the [increment record](library-intro-automation-20260930.md).
+Earlier Phase 2 verification is complete at its recorded source; that accepted
+manual-decision UI and client lifecycle do not establish a pass for this changed
+workflow. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
 [recorded results](media-analysis-resilience-phase2-results-20260922.json).
 
@@ -21,26 +23,46 @@ JavaScript safe-number boundary. A conflict or uncertain write preserves the
 draft and requires a fresh revision before another save. Reload keeps the draft
 for review rather than silently overwriting it.
 
+Library creation and editing expose **Automatic intro detection** only for TV
+libraries. `LibraryOptions.EnableIntroDetection` defaults to false, including
+old libraries that lack the field. Enabling it requests background analysis;
+completed scans of enabled libraries request another pass. The normal workflow
+requires no separate intro-start request or candidate approval.
+
+Qualified current matches become available to playback automatically. `review`
+and `no_result` mean that no automatic marker is applied; neither asks the user
+to approve uncertain content. Disabling the option immediately withdraws detected
+markers. Re-enabling waits for new work. Historical Manual/Import markers and
+explicit intro chapters retain their compatibility.
+
+Saved-library notices link to Tasks for progress and errors. The default task
+has a daily interval and a dedicated durable event trigger. Existing custom,
+cleared or disabled task choices remain respected. The Media analysis intro
+section links to library settings and Tasks. `AutoPublishIntros` has no UI
+toggle; profile writes emit its canonical true value.
+
 The preview interval is the requested minimum. Long sources can use a larger
 interval to keep each preview file within the 4096-frame budget. Preview rows
 report the server's actual dimensions, size, frame count, state and failure code;
 they do not infer successful generation from an accepted run request.
 
-Library checkboxes create an explicit scope. Selection is bounded to 64 libraries;
+Preview generation remains manual and independent of the TV intro switch.
+Library checkboxes create an explicit preview scope bounded to 64 libraries;
 individual item actions use the current page's selection of at most 25 items.
 The HTTP API's legal empty-array all-library selection is not triggered by an
-empty UI selection. Intro actions require episodes; previews support movies,
-episodes and videos. Backend admission retains authority over supported media,
-current source state and same-series/same-season comparison cohorts. Force is
-explicit and included in the immutable start request.
+empty UI selection. Previews support movies, episodes and videos. Backend
+admission retains authority over supported media and current source state.
+Force is explicit and included in the immutable preview-start request.
 
 An unconfirmed admission retains the complete request and its UUID under a
 user-scoped browser receipt. The receipt survives in-app navigation and, when
 session storage is available, a reload. Checking that result repeats the same
 request; it does not create a new UUID or silently change its scope or Force
 choice. No run is shown as completed by this receipt.
+Retained receipts from the prior UI can still be resolved; they do not add an
+intro-start button to the current normal workflow.
 
-## Task progress, decisions and cache
+## Task progress, results and cache
 
 The admitted RunId is read using the existing task-run endpoint, with TaskId
 binding checked before display. The page reuses RunProgress and RunStatusChip.
@@ -49,21 +71,15 @@ existing cancel endpoint requests a stop; the page continues to show the task's
 actual state until the service reports a terminal outcome. The Tasks navigation
 opens the existing task workspace. No invented run deep link is used.
 
-Result detail is loaded separately from the list before a decision. It shows:
+Result detail is loaded separately from the list. It shows:
 
-- Recorded status, reasons, source suppression and current effective provenance.
-- Candidate interval, boundary uncertainty and comparison similarity scores.
-- The support set's episode identities and intervals, without displaying content
-  hashes as user-facing explanations or labeling similarity as probability.
+- Recorded intro status, stale/unavailable information and update time.
+- The effective playback interval when one is available.
 - Recorded preview outputs and their explicit failure states.
 
-Accept requires a current qualified/review episode candidate. Confirmation
-explains that acceptance writes a manual marker and can replace an existing
-manual interval. Reject suppresses detection for the current source while
-retaining manual/import/chapter priority. Reset clears the detection decision and
-suppression without promoting stale evidence. Every decision sends the analysis
-revision, current source revision and manual revision returned by the same detail
-read. A conflict blocks another decision until detail is reloaded.
+Accept, reject, reset and manual intro-edit entry points are removed. The result
+view does not present uncertain candidates as a human-review queue. Historical
+data, audit records and compatibility APIs remain available in the backend.
 
 Cache cleanup requires confirmation and the saved configuration revision. The
 receipt reports removed entries/bytes, remaining bytes and retained busy entries.
@@ -72,25 +88,16 @@ claims that busy entries were immediately removed or that original media changed
 
 ## Verification coverage
 
-`web/admin/src/mediaAnalysis.test.ts` contains source-level checks for exact
-profile drafts, bounds, large revisions, malformed/inconsistent response rejection
-and stale/unsupported candidate admission. The remote source-check and mocked
-browser results, with their source bindings, are recorded in the
-[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md).
+Current remote verification must cover the TV-library switch, automatic status,
+progress/errors, absence of candidate-decision/manual-intro controls, retained
+preview actions, revision conflicts and uncertain request recovery. No new
+browser pass is claimed here while this increment is in progress.
 
-`web/admin/e2e/media-analysis.spec.ts` contains seven synthetic-API browser cases:
-
-1. Configuration conflict, preserved draft and exact-revision retry.
-2. Explicit library scope, Force, real task-response progress and stopping state.
-3. Candidate acceptance, dual revision values, manual priority, reject and reset.
-4. Source conflict, reload and stale-candidate rejection.
-5. Cache CAS and retained busy-entry reporting.
-6. Missing tools with disabled starts and visible configuration/results.
-7. Unconfirmed admission across reload with exact request reuse.
-
-These synthetic cases cover the UI and protocol boundary; actual media and the
-complete client lifecycle were also verified within the declared scope,
-including cancellation, pruning and restart. The
+The earlier Phase 2 seven mocked browser cases included manual decisions that
+belonged to that historical UI. Its actual media/skip/cancellation/prune/restart
+journey remains valid at its recorded source. The
 [original cancellation-fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
 remains recorded. The successful successor used the same frozen product and
 labels after the assertion correction; it was not a new unseen accuracy trial.
+The new workflow reuses FH1–FH3 and N1/N2 for automation checks. These are
+previously evaluated sources, not a new unseen accuracy population.

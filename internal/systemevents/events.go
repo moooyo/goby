@@ -12,18 +12,19 @@ import (
 type Event string
 
 const (
-	ServerStarted        Event = "ServerStarted"
-	LibraryChanged       Event = "LibraryChanged"
-	ConfigurationChanged Event = "ConfigurationChanged"
+	ServerStarted          Event = "ServerStarted"
+	LibraryChanged         Event = "LibraryChanged"
+	ConfigurationChanged   Event = "ConfigurationChanged"
+	IntroAnalysisRequested Event = "IntroAnalysisRequested"
 )
 
 func Valid(event Event) bool {
-	return event == ServerStarted || event == LibraryChanged || event == ConfigurationChanged
+	return event == ServerStarted || event == LibraryChanged || event == ConfigurationChanged || event == IntroAnalysisRequested
 }
 
 type Exec func(string, ...any) (pgconn.CommandTag, error)
 
-// Record changes only one of three durable counters. Coalescing needs no
+// Record changes only one of the durable counters. Coalescing needs no
 // unbounded queue, item identity, user data, or notification payload. Rollback
 // rolls back the signal together with its source mutation.
 func Record(exec Exec, event Event) error {

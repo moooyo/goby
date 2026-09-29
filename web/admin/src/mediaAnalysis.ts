@@ -41,7 +41,7 @@ export interface AnalysisRunReceipt { RunId: string; TaskId: string; Admitted: b
 export interface AnalysisPrune { RemovedEntries: number; RemovedBytes: number; RemainingBytes: number; BusyEntries: number }
 export type AnalysisAction = 'accept' | 'reject' | 'reset';
 export type AnalysisNumberField = Exclude<keyof AnalysisProfile, 'AutoPublishIntros'>;
-export type AnalysisDraft = { AutoPublishIntros: boolean } & Record<AnalysisNumberField, string>;
+export type AnalysisDraft = Record<AnalysisNumberField, string>;
 
 export const analysisNumberFields: { key: AnalysisNumberField; label: string; min: number; max: number; help: string }[] = [
   { key: 'PreviewIntervalSeconds', label: 'Preview interval (seconds)', min: 2, max: 120, help: 'Minimum requested spacing: 2–120 seconds. Long media uses a larger interval to stay within 4096 frames per preview file.' },
@@ -99,7 +99,7 @@ export function validAnalysisItems(value: unknown, start: number, limit: number)
     && value.TotalRecordCount >= value.Items.length && value.Items.every(validAnalysisItem) && new Set(value.Items.map((item) => item.Id)).size === value.Items.length;
 }
 export function analysisDraft(profile: AnalysisProfile): AnalysisDraft {
-  return { AutoPublishIntros: profile.AutoPublishIntros, PreviewIntervalSeconds: String(profile.PreviewIntervalSeconds), PreviewQuality: String(profile.PreviewQuality),
+  return { PreviewIntervalSeconds: String(profile.PreviewIntervalSeconds), PreviewQuality: String(profile.PreviewQuality),
     MaxSourceBytes: String(profile.MaxSourceBytes), MaxItemRuntimeSeconds: String(profile.MaxItemRuntimeSeconds), FeatureCacheMaxBytes: String(profile.FeatureCacheMaxBytes) };
 }
 export function parseAnalysisDraft(draft: AnalysisDraft): { profile?: AnalysisProfile; errors: Partial<Record<AnalysisNumberField, string>> } {
@@ -110,10 +110,19 @@ export function parseAnalysisDraft(draft: AnalysisDraft): { profile?: AnalysisPr
     if (!/^\d+$/.test(raw) || !Number.isSafeInteger(value) || value < field.min || value > field.max) errors[field.key] = `Use a whole number from ${field.min.toLocaleString('en-US')} to ${field.max.toLocaleString('en-US')}.`;
     else values[field.key] = value;
   }
-  return Object.keys(errors).length > 0 ? { errors } : { errors, profile: { AutoPublishIntros: draft.AutoPublishIntros, ...values } as AnalysisProfile };
+  return Object.keys(errors).length > 0 ? { errors } : { errors, profile: { AutoPublishIntros: true, ...values } as AnalysisProfile };
 }
 export function analysisTime(ticks: number): string { const seconds = ticks / 10_000_000; return `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(2).padStart(5, '0')}`; }
 export function analysisBytes(bytes: number): string { if (bytes < 1024) return `${bytes} B`; const power = Math.min(4, Math.floor(Math.log(bytes) / Math.log(1024))); return `${(bytes / 1024 ** power).toFixed(1)} ${['B', 'KiB', 'MiB', 'GiB', 'TiB'][power]}`; }
-export function analysisCurrentCandidate(item: AnalysisItem): boolean {
-  return item.Type === 'Episode' && item.Detection.Candidate !== null && item.Detection.SourceRevision === item.SourceRevision && ['qualified', 'review'].includes(item.Detection.Status);
+export function analysisIntroStatus(item: AnalysisItem): string {
+  if (item.Detection.Effective) return 'Intro available';
+  if (item.Type !== 'Episode') return 'Not applicable';
+  switch (item.Detection.Status) {
+    case 'review': case 'no_result': case 'qualified': return 'No intro detected';
+    case 'not_analyzed': return 'Not analyzed';
+    case 'stale': return 'Needs analysis';
+    case 'failed': case 'error': return 'Analysis failed';
+    case 'unavailable': return 'Analysis unavailable';
+    default: return item.Detection.Status.replaceAll('_', ' ');
+  }
 }

@@ -7,7 +7,7 @@ export const durationUnits = { seconds: ticksPerSecond, minutes: 60n * ticksPerS
 export type DurationUnit = keyof typeof durationUnits;
 export interface DurationDraft { value: string; unit: DurationUnit }
 export interface TriggerDraft { key: string; kind: TaskTriggerKind; systemEvent: TaskSystemEvent; interval: DurationDraft; time: string; day: number; runtime: DurationDraft; limitRuntime: boolean }
-export const systemEvents: { value: TaskSystemEvent; label: string }[] = [{ value: 'ServerStarted', label: 'Server started' }, { value: 'LibraryChanged', label: 'Library changed' }, { value: 'ConfigurationChanged', label: 'Configuration changed' }];
+export const systemEvents: { value: TaskSystemEvent; label: string }[] = [{ value: 'ServerStarted', label: 'Server started' }, { value: 'LibraryChanged', label: 'Library changed' }, { value: 'ConfigurationChanged', label: 'Configuration changed' }, { value: 'IntroAnalysisRequested', label: 'Intro detection requested' }];
 export interface ScheduleDraft { timezone: string; triggers: TriggerDraft[] }
 export const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 

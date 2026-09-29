@@ -220,7 +220,7 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
             {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'media-analysis' && <MediaAnalysisPage key={user.Id} currentUserId={user.Id} onTasks={() => navigate('tasks')} onNavigationGuardChange={setNavigationGuard} />}
+            {page === 'media-analysis' && <MediaAnalysisPage key={user.Id} currentUserId={user.Id} onTasks={() => navigate('tasks')} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
             {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
             {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}

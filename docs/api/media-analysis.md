@@ -1,10 +1,16 @@
 # Media analysis
 
-Media analysis is an explicit background task. It does not run during scanning,
-item listing, playback negotiation, or preview HTTP delivery. The task keys are
+Media analysis executes in background tasks. Enabling intro detection in a TV
+library and completing a scan request later analysis through a durable event;
+the scan itself does not perform extraction or matching. Item listing, playback
+negotiation and preview HTTP delivery do not start analysis. The task keys are
 `media.intro_analysis` and `media.preview_generation`. Both use the shared
 `media.analysis` worker group. A task that lacks its configured local tools is
 unavailable; the server does not invent completed work or tool identities.
+
+The September 30 library automation increment is in implementation/verification.
+This contract describes its current source behavior, not a passing result. See
+the [increment record](../development/library-intro-automation-20260930.md).
 
 The native endpoints are documented by their typed request/response structures
 in `internal/server/admin_media_analysis.go`. Configuration writes use the
@@ -12,16 +18,52 @@ independent analysis revision: `PUT /admin/v1/media-analysis/configuration` acce
 `{Revision, Profile}`. Revisions are canonical decimal strings. They are never
 JavaScript numbers, wall-clock timestamps, or generic server settings revisions.
 
+## Library policy and automatic requests
+
+`LibraryOptions.EnableIntroDetection` defaults to `false` and may be enabled only
+for `tvshows` libraries. Missing values in existing library rows mean disabled;
+unrelated options and existing library revisions are preserved by migration.
+The library switch is the current control for automatic intro publication.
+
+Creating an enabled TV library or changing the option from false to true commits
+the durable `IntroAnalysisRequested` event. Successful completion of an enabled
+library's independent or task-owned scan records another request. The task
+manager consumes these requests separately from scanning. Automatic runs select
+only enabled TV libraries; an empty eligible selection does not expand to all
+libraries.
+
+An untouched intro-task definition receives a 24-hour interval and a dedicated
+`IntroAnalysisRequested` trigger. Existing custom schedules, deliberately cleared
+triggers and disabled task definitions are preserved. Thus a saved library option
+does not override an administrator's explicit task scheduling decision.
+
+Disabling the library option immediately withdraws its detected publications.
+Changing it back to true requests new work; it does not reactivate old automatic
+results. Stored evidence remains inspectable, and historical source-valid
+Manual/Import markers and explicit chapter markers retain their precedence.
+
+The Emby library-option mapping uses `EnableMarkerDetection` as the main switch.
+If `EnableMarkerDetectionDuringLibraryScan` is supplied, the main switch must
+also be supplied and both booleans must agree. `IntroDetectionFingerprintLength`
+accepts only the integer `10`, matching the existing ten-minute extraction
+horizon. Responses project both booleans from the single library option and
+project the fixed length; no separate scan-only mode is implemented.
+
 ## Configuration and execution identity
 
 | Profile property | Default | Allowed range |
 | --- | --- | --- |
-| `AutoPublishIntros` | `true` | Boolean |
+| `AutoPublishIntros` | `true` | Legacy Boolean wire field; new writes canonicalize to `true` |
 | `PreviewIntervalSeconds` | `10` | 2–120 |
 | `PreviewQuality` | `80` | 40–95 |
 | `MaxSourceBytes` | 137438953472 | 1–1099511627776 |
 | `MaxItemRuntimeSeconds` | 1200 | 1–7200 |
 | `FeatureCacheMaxBytes` | 134217728 | 1048576–536870912 |
+
+`AutoPublishIntros` remains in stored/wire profiles for compatibility. It is not
+a second current publication switch: new configuration writes normalize it to
+`true`, including requests carrying legacy `false`. The administrator UI does
+not expose it. Historical execution profiles retain their original values.
 
 `MaxItemRuntimeSeconds` limits processing time, not source duration. Indexed media
 duration must be positive and at most 12 hours. `PreviewIntervalSeconds` is a
@@ -92,7 +134,7 @@ the global configured byte limit and an 8192-row ceiling are enforced by LRU
 eviction. Its key binds item, source revision and immutable profile. A conflicting
 whole-content or algorithm identity cannot overwrite an existing key.
 
-## Intro evidence and decisions
+## Intro evidence and compatibility decisions
 
 Detected results live separately from `item_intro_state`. The effective order is:
 
@@ -101,8 +143,15 @@ Detected results live separately from `item_intro_state`. The effective order is
 3. A qualified, enabled, unsuppressed detection with current source, profile,
    cohort and independent support.
 
-The old manual-edit API still accepts only `Manual` and `Import` provenance.
-Workers never write the manual table. The native accept action copies a selected
+Qualified current results become effective automatically for enabled TV
+libraries, subject to the existing source/support checks and precedence.
+`review` and `no_result` do not publish an automatic marker and do not create a
+required human-review step. The normal administrator workflow shows status,
+progress and errors; it has no accept/reject/reset or manual intro editor entry.
+
+Compatibility APIs remain available. The old manual-edit API still accepts only
+`Manual` and `Import` provenance. Workers never write the manual table. The
+retained native accept action copies a selected
 qualified or review candidate into the manual layer through the same source and
 manual-revision CAS. Reject records a source-bound suppression tombstone. Reset
 clears suppression but does not automatically promote an old candidate; rerun
@@ -120,7 +169,10 @@ of the underlying evidence status. Replacement does not carry suppression to new
 source bytes.
 
 The matcher emits integer similarity and coverage measurements, not a calibrated
-accuracy probability. Its initial thresholds are not a claim of measured accuracy.
+accuracy probability. The existing matcher and thresholds are unchanged: at least
+three independent episodes support an automatic result, and extraction uses at
+most the first 600 seconds. This workflow increment does not extend the previously
+accepted episode-level accuracy population.
 Review candidates, competing intervals, missing modalities, insufficient support,
 analysis boundaries and search limits do not auto-publish. A completely exhausted
 comparison budget records `comparison_budget_exceeded` with no candidate and the
@@ -168,6 +220,13 @@ Schema 50 adds `analysis_settings`, `analysis_run_profiles`, `analysis_work`,
 input, profile identity, source authority fields and nonempty analysis child scopes.
 Historical non-analysis tasks retain their original columns and empty analysis
 defaults. Schema 49 and every earlier published migration remain unchanged.
+
+Schema 51 adds the library option and dedicated task event without rewriting
+existing library option rows. Only an old global `auto_publish_intros=false`
+setting is migrated to true: its analysis revision increments, automatic
+detections are withdrawn, and disposable feature/preview references are cleared.
+An already-true setting does not undergo that profile invalidation. Historical
+Manual/Import data, decisions and audit records are preserved.
 
 Normal restart preserves configuration and current derivative references while
 the task manager interrupts stale execution claims. Restore first validates raw

@@ -138,6 +138,19 @@ func (f analysisWorkFixture) claim(t *testing.T, runID, child string) {
 	}
 }
 
+func (f analysisWorkFixture) setIntroDetection(t *testing.T, enabled bool) {
+	t.Helper()
+	current, err := f.store.GetLibraryEditing(f.ctx, f.library.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.store.UpdateLibraryAsAdministrator(f.ctx, f.actor, identity.AdministratorNative, f.library.ID,
+		LibraryUpdate{Revision: fmt.Sprint(current.Library.Revision), LibraryOptions: &LibraryOptionsUpdate{EnableIntroDetection: &enabled}})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestAnalysisAdmissionWindowsHaveOnePublicationOwnerAndFrozenCohorts(t *testing.T) {
 	f := newAnalysisWorkFixture(t, 40)
 	runID, children := f.admit(t, TaskIntroAnalysisKey, nil)
@@ -234,6 +247,7 @@ func analysisFixtureQualifiedResult(t *testing.T, f analysisWorkFixture, work An
 
 func TestAnalysisPublicationRequiresFinalFenceAndCurrentIndependentSources(t *testing.T) {
 	f := newAnalysisWorkFixture(t, 3)
+	f.setIntroDetection(t, true)
 	runID, children := f.admit(t, TaskIntroAnalysisKey, nil)
 	f.claim(t, runID, children[0])
 	fence := f.fence(children[0])

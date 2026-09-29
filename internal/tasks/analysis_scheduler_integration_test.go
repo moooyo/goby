@@ -15,6 +15,7 @@ func TestAnalysisDeferralPreservesEachOccurrenceAndDoesNotBlockOtherScheduledPro
 	for _, kind := range []ScheduleKind{ScheduleStartup, ScheduleInterval, ScheduleSystemEvent} {
 		t.Run(string(kind), func(t *testing.T) {
 			f := newAnalysisTestFixture(t, 0)
+			enableTestIntroLibraries(t, f, "library-1", "library-2")
 			// This key sorts after analysis during startup initialization, so a
 			// provider admitted before the conflict cannot satisfy the witness.
 			const providerKey = "z.analysis_test_provider"
@@ -63,10 +64,12 @@ func TestAnalysisDeferralPreservesEachOccurrenceAndDoesNotBlockOtherScheduledPro
 				t.Fatal(err)
 			}
 			if kind == ScheduleInterval {
-				if _, err := f.pool.Exec(f.ctx, `UPDATE task_triggers SET anchor_at=$2,next_fire_at=$3 WHERE task_id=$1`, analysis.ID, now.Add(-2*time.Second), now.Add(-time.Second)); err != nil {
+				// Replacement retains the default intro triggers as immutable
+				// history. Move only this fixture's active interval into the past.
+				if _, err := f.pool.Exec(f.ctx, `UPDATE task_triggers SET anchor_at=$2,next_fire_at=$3 WHERE task_id=$1 AND retired_at IS NULL AND kind='interval'`, analysis.ID, now.Add(-2*time.Second), now.Add(-time.Second)); err != nil {
 					t.Fatal(err)
 				}
-				if _, err := f.pool.Exec(f.ctx, `UPDATE task_triggers SET anchor_at=$2,next_fire_at=$3 WHERE task_id=$1`, provider.ID, now.Add(-time.Second), now); err != nil {
+				if _, err := f.pool.Exec(f.ctx, `UPDATE task_triggers SET anchor_at=$2,next_fire_at=$3 WHERE task_id=$1 AND retired_at IS NULL AND kind='interval'`, provider.ID, now.Add(-time.Second), now); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -118,8 +121,8 @@ func TestAnalysisDeferralPreservesEachOccurrenceAndDoesNotBlockOtherScheduledPro
 				t.Fatalf("next dispatch did not retry deferred analysis: %v", err)
 			}
 			current, err = f.store.Get(f.ctx, analysis.ID)
-			if err != nil || current.CurrentRun == nil || current.CurrentRun.ID == manual.ID || current.CurrentRun.ActorKind != "system" || current.CurrentRun.AnalysisInput == nil || len(current.CurrentRun.AnalysisInput.LibraryIDs) != 0 {
-				t.Fatalf("retry lost its original system/all-library request: %+v %v", current.CurrentRun, err)
+			if err != nil || current.CurrentRun == nil || current.CurrentRun.ID == manual.ID || current.CurrentRun.ActorKind != "system" || current.CurrentRun.AnalysisInput == nil || len(current.CurrentRun.AnalysisInput.LibraryIDs) != 2 {
+				t.Fatalf("retry lost its enabled-library system request: %+v %v", current.CurrentRun, err)
 			}
 			if len(manager.DeferredAnalyses()) != 0 {
 				t.Fatal("successful retry retained a stale deferral")

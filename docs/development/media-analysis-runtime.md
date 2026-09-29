@@ -1,8 +1,9 @@
 # Media analysis runtime
 
-Implementation contract for phase 2. Verification of the declared scope is
-complete, including the full client lifecycle and independent resource closure.
-The accepted delivery is published on `main`. See the
+Current runtime contract, including the September 30 library automation increment.
+That increment is **in implementation/verification**; see its
+[record](library-intro-automation-20260930.md). Earlier Phase 2 verification is
+complete, including its client lifecycle and independent resource closure. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
 [recorded results](media-analysis-resilience-phase2-results-20260922.json).
 The [original fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
@@ -42,23 +43,41 @@ generation remains usable. No executable path is accepted from an HTTP request.
 
 ## Editable policy and task behavior
 
+TV libraries have a default-false `LibraryOptions.EnableIntroDetection` option.
+It is the current policy control for automatic intro publication. Enabling it
+records a durable `IntroAnalysisRequested` event, as does successful completion
+of independent and task-owned scans of enabled libraries. Extraction and matching
+run in the background task, not in the scanning request.
+
+The first installation of an untouched enabled intro-task definition adds a
+24-hour interval and the dedicated event trigger. Existing custom, cleared or
+disabled schedule choices are preserved. The initial event cursor includes
+requests committed before default-trigger installation. Automatic intro runs
+select only enabled TV libraries; no eligible library means no intro work.
+
 The native media-analysis page stores its own configuration revision in
-PostgreSQL. Defaults are automatic publication enabled, a ten-second minimum
+PostgreSQL. Defaults are a ten-second minimum
 preview interval, quality 80, 128 GiB per source, 1,200 seconds per source task,
 and 128 MiB of persisted compact feature data. Configuration updates require the
 complete profile and its current revision. They withdraw old automatic/preview
 publications and cached features while retaining decisions and audit history.
+The legacy `AutoPublishIntros` Boolean remains in the wire profile, with new
+writes canonicalized to true and no UI toggle. Schema 51 migrates only old false
+settings to true, increments their revision and invalidates their derived
+references. Historical profiles and manual/imported state remain compatible.
 
 The two analysis tasks are published in both native and compatibility task
 collections, including truthful unavailable status when execution is disabled.
 Selection may combine library and item identifiers; selected items must belong
-to the selected libraries. An empty selection means all supported libraries.
+to the selected libraries. Empty explicit selection follows the task's supported
+scope; automatic intro admission remains restricted to enabled TV libraries.
 Request receipts are immutable and can recover a response lost after admission.
 An incompatible active selection/profile returns a conflict. Scheduled conflicts
 defer that occurrence without consuming its event cursor or delaying unrelated
 definitions.
 
-Intro work uses at most 32 same-season sources per child and at most 16 selected
+The unchanged matcher requires at least three independent episodes. Intro work
+uses at most 32 same-season sources per child and at most 16 selected
 episode identities for publication. A source's complete content hash establishes
 independence; a shared opening fingerprint does not establish an independent
 episode. The normalized stream policy selects a default local audio/video stream
@@ -130,6 +149,13 @@ builders and pending publications remain charged. Shutdown cancels admission and
 work, joins actual operations, closes the derivative cache, and then permits the
 catalog owner to close. Timing out a shutdown caller does not complete that work.
 
+Qualified results publish automatically for enabled TV libraries. `review` and
+`no_result` publish no automatic marker and require no human decision. The current
+UI exposes status/progress/errors and preview controls; historical accept/reject/
+reset and Manual/Import APIs remain compatible without UI entry points.
+
+Turning off the library option immediately withdraws detected publications;
+turning it back on requests new work instead of promoting retained evidence.
 Qualified automatic intros are resolved against the target and supporting files
 for single-item details and playback information. Manual/import and explicit
 chapter intervals take precedence. Batch catalog DTOs retain their inexpensive

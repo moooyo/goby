@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 const jobColumns = `id, library_id, status, error, scanned, added, updated, force_probe, created_at, started_at, finished_at,
@@ -280,6 +281,19 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 		if finished.Status == "Completed" {
 			if _, err := tx.Exec("UPDATE libraries SET last_scan_at = clock_timestamp() WHERE id = $1", finished.LibraryID); err != nil {
 				return err
+			}
+			var detectIntros bool
+			if err := tx.QueryRow(`SELECT collection_type='tvshows'
+				AND COALESCE((options->>'EnableIntroDetection')::boolean,false)
+				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros); err != nil {
+				return err
+			}
+			if detectIntros {
+				// A dedicated signal follows both independent and task-owned scans.
+				// It must not re-emit LibraryChanged and recursively schedule scans.
+				if err := systemevents.Record(tx.Exec, systemevents.IntroAnalysisRequested); err != nil {
+					return err
+				}
 			}
 		}
 		return recordScanFinished(tx, finished)

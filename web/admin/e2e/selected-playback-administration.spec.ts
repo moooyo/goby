@@ -203,28 +203,6 @@ async function saveCredentials(page: Page, dialog: Locator, options: { status?: 
   }
 }
 
-async function openIntro(page: Page): Promise<Locator> {
-  await page.goto(`/admin/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: 'Edit metadata for Selected playback movie', exact: true }).click();
-  await page.getByRole('dialog', { name: /^Edit metadata/ }).getByRole('button', { name: 'Manage intro', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Intro interval', exact: true });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByLabel('Intro start (seconds)', { exact: true })).toBeVisible();
-  return dialog;
-}
-
-async function saveIntro(page: Page, dialog: Locator, status = 200): Promise<void> {
-  const [response] = await Promise.all([
-    page.waitForResponse((result) => result.request().method() === 'PUT' && new URL(result.url()).pathname === introPath),
-    dialog.getByRole('button', { name: 'Save intro', exact: true }).click(),
-  ]);
-  expect(response.status()).toBe(status);
-  await expect(dialog.getByRole('button', { name: 'Reload', exact: true }).last()).toBeEnabled();
-  if (status === 200) await expect(dialog.getByLabel('Intro start (seconds)', { exact: true })).toBeEnabled();
-  else await expect(dialog.getByRole('alert').filter({ hasText: /changed|reload/i }).first()).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Save intro', exact: true })).toBeDisabled();
-}
-
 test('local credential changes omit retained secrets and never refill saved secrets', async ({ page, api }) => {
   const dialog = await openCredentials(page);
   await expectEmptyCredentials(dialog);
@@ -411,118 +389,14 @@ test('conflicted discovery preferences keep the draft and require reload before 
   expect(api.writes(preferencesPath)).toHaveLength(1);
 });
 
-test('manual intro edits, JSON imports, and chapter resets bind every mutation to its source', async ({ page, api }) => {
-  const dialog = await openIntro(page);
-  const start = dialog.getByLabel('Intro start (seconds)', { exact: true });
-  const end = dialog.getByLabel('Intro end (seconds)', { exact: true });
-  await expect(start).toHaveValue('1');
-  await expect(end).toHaveValue('6');
-  await start.fill('2.5');
-  await end.fill('12.75');
-  await saveIntro(page, dialog);
-  expect(api.writes(introPath).at(-1)?.body).toEqual({ Revision: '0', SourceRevision: 'source-revision-one', StartTicks: 25_000_000, EndTicks: 127_500_000, Provenance: 'Manual' });
-
-  await dialog.getByLabel('Import intro JSON', { exact: true }).setInputFiles({
-    name: 'intro.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ StartTicks: 50_000_000, EndTicks: 100_000_000 })),
-  });
-  await expect(start).toHaveValue('5');
-  await expect(end).toHaveValue('10');
-  expect(api.writes(introPath)).toHaveLength(1);
-  await saveIntro(page, dialog);
-  expect(api.writes(introPath).at(-1)?.body).toEqual({ Revision: '1', SourceRevision: 'source-revision-one', StartTicks: 50_000_000, EndTicks: 100_000_000, Provenance: 'Import' });
-
-  await dialog.getByRole('button', { name: 'Reset to chapter markers', exact: true }).click();
-  const confirmation = page.getByRole('dialog', { name: 'Reset intro override?', exact: true });
-  await expect(confirmation).toBeVisible();
-  expect(api.writes(introPath)).toHaveLength(2);
-  await confirmation.getByRole('button', { name: 'Reset intro', exact: true }).click();
-  await expect(start).toHaveValue('1');
-  await expect(end).toHaveValue('6');
-  expect(api.writes(introPath).map(({ method, body }) => ({ method, body }))).toEqual([
-    { method: 'PUT', body: { Revision: '0', SourceRevision: 'source-revision-one', StartTicks: 25_000_000, EndTicks: 127_500_000, Provenance: 'Manual' } },
-    { method: 'PUT', body: { Revision: '1', SourceRevision: 'source-revision-one', StartTicks: 50_000_000, EndTicks: 100_000_000, Provenance: 'Import' } },
-    { method: 'DELETE', body: { Revision: '2', SourceRevision: 'source-revision-one' } },
-  ]);
-  expect(api.intro.Override).toBeNull();
-  expect(api.intro.Effective?.Provenance).toBe('Chapter');
-});
-
-test('invalid intro imports preserve the existing draft and never write automatically', async ({ page, api }) => {
-  const dialog = await openIntro(page);
-  const start = dialog.getByLabel('Intro start (seconds)', { exact: true });
-  const end = dialog.getByLabel('Intro end (seconds)', { exact: true });
-  const file = dialog.getByLabel('Import intro JSON', { exact: true });
-  const invalidInterval = 'The import must contain one interval with integer StartTicks and EndTicks within this media duration. An optional Provenance must be Import.';
-  const cases = [
-    { name: 'malformed.json', text: '{', error: 'Choose a JSON file containing one object with StartTicks and EndTicks.' },
-    { name: 'array.json', text: JSON.stringify([{ StartTicks: 10_000_000, EndTicks: 60_000_000 }]), error: invalidInterval },
-    { name: 'outside-duration.json', text: JSON.stringify({ StartTicks: 10_000_000, EndTicks: 1_200_000_001 }), error: invalidInterval },
-  ];
-  for (const [index, input] of cases.entries()) {
-    const draftStart = `${index + 2}.5`;
-    await start.fill(draftStart);
-    await end.fill('12.75');
-    const error = dialog.getByRole('alert').filter({ hasText: input.error });
-    await expect(error).toHaveCount(0);
-    await file.setInputFiles({ name: input.name, mimeType: 'application/json', buffer: Buffer.from(input.text) });
-    await expect(error).toBeVisible();
-    await expect(file).toBeEnabled();
-    await expect(start).toHaveValue(draftStart);
-    await expect(end).toHaveValue('12.75');
-    await expect(dialog.getByRole('button', { name: 'Save intro', exact: true })).toBeEnabled();
-    expect(api.writes()).toEqual([]);
-  }
-  await saveIntro(page, dialog);
-  expect(api.writes(introPath).map((request) => request.body)).toEqual([
-    { Revision: '0', SourceRevision: 'source-revision-one', StartTicks: 45_000_000, EndTicks: 127_500_000, Provenance: 'Manual' },
-  ]);
-});
-
-test('a stale override beyond the current duration stays inactive while current chapter markers load', async ({ page, api }) => {
-  api.intro = {
-    ...api.intro, MediaSourceId: 'replacement-source', SourceRevision: 'source-revision-two', Revision: '3', DurationTicks: 100_000_000,
-    Override: { StartTicks: 100_000_000, EndTicks: 200_000_000, Provenance: 'Manual' },
-    OverrideSource: 'Manual', OverrideStale: true, LastEditedBy: administrator.Id, LastEditedAt: timestamp,
-  };
-  const dialog = await openIntro(page);
-  const source = dialog.getByRole('region', { name: 'Current intro source', exact: true });
-  await expect(source.getByText('Duration: 10 seconds', { exact: true })).toBeVisible();
-  await expect(source.getByText('Active intro: 1\u20136 seconds', { exact: true })).toBeVisible();
-  await expect(source.getByText('Explicit chapter markers: 1\u20136 seconds', { exact: true })).toBeVisible();
-  await expect(source.getByText('Manual override: 10\u201320 seconds', { exact: true })).toBeVisible();
-  await expect(dialog.getByRole('alert').filter({ hasText: 'belongs to an older media source and is inactive' })).toBeVisible();
-  await expect(dialog.getByLabel('Intro start (seconds)', { exact: true })).toHaveValue('1');
-  await expect(dialog.getByLabel('Intro end (seconds)', { exact: true })).toHaveValue('6');
-  await expect(dialog.getByRole('button', { name: 'Save intro', exact: true })).toBeDisabled();
-  await expect(dialog.getByRole('button', { name: 'Reset to chapter markers', exact: true })).toBeEnabled();
-  expect(api.writes()).toEqual([]);
-});
-
-test('a changed media source blocks intro writes and reload replaces the stale source token', async ({ page, api }) => {
-  const dialog = await openIntro(page);
-  const start = dialog.getByLabel('Intro start (seconds)', { exact: true });
-  const end = dialog.getByLabel('Intro end (seconds)', { exact: true });
-  await expect(start).toHaveValue('1');
-  await start.fill('2');
-  await end.fill('8');
-  const chapter: IntroInterval = { StartTicks: 30_000_000, EndTicks: 90_000_000, Provenance: 'Chapter' };
-  api.intro = { ...api.intro, MediaSourceId: 'replacement-source', SourceRevision: 'source-revision-two', Automatic: chapter, Effective: chapter };
-  await saveIntro(page, dialog, 409);
-  await expect(start).toHaveValue('2');
-  await expect(end).toHaveValue('8');
-  await expect(dialog.getByRole('button', { name: 'Reset to chapter markers', exact: true })).toBeDisabled();
-  await expect(dialog.getByLabel('Import intro JSON', { exact: true })).toBeDisabled();
-  expect(api.writes(introPath)).toHaveLength(1);
-
-  page.once('dialog', (prompt) => { void prompt.accept(); });
-  await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
-  await expect(start).toHaveValue('3');
-  await expect(end).toHaveValue('9');
-  await start.fill('4');
-  await end.fill('10');
-  await saveIntro(page, dialog);
-  expect(api.writes(introPath).map((request) => request.body)).toEqual([
-    { Revision: '0', SourceRevision: 'source-revision-one', StartTicks: 20_000_000, EndTicks: 80_000_000, Provenance: 'Manual' },
-    { Revision: '0', SourceRevision: 'source-revision-two', StartTicks: 40_000_000, EndTicks: 100_000_000, Provenance: 'Manual' },
-  ]);
+test('metadata editing has no manual intro correction flow and leaves stored intervals unchanged', async ({ page, api }) => {
+  const retained = structuredClone(api.intro);
+  await page.goto(`/admin/libraries/${library.Id}/items`);
+  await page.getByRole('button', { name: 'Edit metadata for Selected playback movie', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: /^Edit metadata/ });
+  await expect(dialog.getByRole('button', { name: 'Manage artwork', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Manage intro', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: 'Intro interval', exact: true })).toHaveCount(0);
+  expect(api.writes(introPath)).toHaveLength(0);
+  expect(api.intro).toEqual(retained);
 });

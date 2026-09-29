@@ -290,6 +290,7 @@ func TestAnalysisBindingFailureRollsBackRunProfileAndChildSnapshots(t *testing.T
 
 func TestAnalysisSchedulerUsesExplicitSystemAuthorityAndRecoveryFencesOldWork(t *testing.T) {
 	f := newAnalysisTestFixture(t, 0)
+	enableTestIntroLibraries(t, f, "library-1", "library-2")
 	definition := f.definitions[library.TaskIntroAnalysisKey]
 	if _, err := f.store.ReplaceTriggers(f.ctx, f.actor, ReplaceTriggersRequest{TaskID: definition.ID, Revision: definition.Revision, ScheduleTimezone: "UTC", Triggers: []ScheduleRule{{Kind: ScheduleStartup}}}); err != nil {
 		t.Fatal(err)
