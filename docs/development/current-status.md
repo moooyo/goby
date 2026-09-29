@@ -1,5 +1,17 @@
 # Current implementation and delivery status
 
+The [AMD OCI extension](oci-amd-delivery-20260929.md) completes the selected
+Linux amd64 AMD archive/Compose profile on the recorded GFX1150/Mesa tuple.
+Ten actual GPU parent tests (69 subtest nodes) and seven production-container
+HTTP outputs passed, including exact-size AV1 software fallback, real process
+and render-descriptor attribution, immutable plans, and resource cleanup.
+The application binary remains source `b9bfa7c`; only the media image and
+deployment/acceptance companions change. The private engine, observer and
+PostgreSQL are stopped, with data retained and unrelated services preserved.
+Use the [AMD operator guide](../../deploy/oci/README.amd.md) and
+[result manifest](oci-amd-delivery-results-20260929.json). Other GPU/platform
+profiles, registry publication and broader performance claims remain separate.
+
 The [Linux amd64 OCI delivery](oci-delivery-20260929.md) is complete within its
 software archive/Compose profile. Its final application source is `b9bfa7c`.
 Actual image import, media/analysis, encrypted recovery, container persistence,

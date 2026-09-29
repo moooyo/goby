@@ -1,5 +1,15 @@
 # Goby handoff - September 29, 2026
 
+The latest completed increment is the [AMD OCI archive/Compose extension](oci-amd-delivery-20260929.md).
+The [result manifest](oci-amd-delivery-results-20260929.json) binds its image,
+FFmpeg, archive, seccomp and actual GPU/HTTP evidence. Seven production-container
+HTTP outputs passed across both hardware axes and exact-size AV1 software
+fallback. The application bytes remain unchanged from source `b9bfa7c`.
+Owned containers, observer, private Docker engine and PostgreSQL are closed;
+CT 104 remains running. Data and original failures are retained. Follow the
+[AMD guide](../../deploy/oci/README.amd.md); do not restart accepted campaigns
+without a relevant change. No registry publication or production deployment occurred.
+
 The current completed increment is the [OCI archive and Compose delivery](oci-delivery-20260929.md).
 The final image uses application source `b9bfa7c`; its digest and downloadable
 archive are bound by the [result manifest](oci-delivery-results-20260929.json).

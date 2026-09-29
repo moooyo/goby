@@ -1,0 +1,491 @@
+{
+  "kind": "goby-oci-amd-delivery-results",
+  "version": 1,
+  "recordedOn": "2026-09-29",
+  "status": "complete_within_selected_linux_amd64_amd_archive_compose_scope",
+  "imageId": "sha256:eb0f98427ad6535eb37d4cf744ab0d90d6c2e45f84c64f34a2355e0a7eed713f",
+  "archive": {
+    "bytes": 890938368,
+    "name": "goby-linux-amd64-amd-image.tar",
+    "sha256": "4c5bb25118a3d73aa04273647b28a57512f232cfe9c418c01ec66307a7a5332a"
+  },
+  "baseImageId": "sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab",
+  "applicationSource": "b9bfa7ccee07e2ae81f70ab90d2121d908734636",
+  "applicationSha256": "2e296bfd02fdf3f7b740000d0d87563e420d5a099fd20e0aa37b96502f78c004",
+  "imageRecipeRevision": "82741b27661784f2adfa86f14c4e8b5e46ed4c31",
+  "ffmpegSha256": "3505587e95203e2561a5b0459134847b59aca3665557676a394cdfbca2d14908",
+  "ffprobeSha256": "5012fcac5d0da7346953312cce9f86cbfa588baf412e3d14acf6e028405f71ad",
+  "runtimeAccepted": true,
+  "registryPublished": false,
+  "productionDeployment": false,
+  "localDeliveryDirectory": "D:/Code/goby/.artifacts/oci-amd-20260929",
+  "profile": {
+    "architecture": "linux/amd64",
+    "gpu": "AMD GFX1150",
+    "mesa": "25.0.7-2+deb13u1",
+    "driver": "radeonsi",
+    "drm": "3.64",
+    "kernel": "6.17.13-3-pve",
+    "docker": "29.7.2",
+    "compose": "5.5",
+    "user": "10001:10001",
+    "renderNode": "/dev/dri/renderD128",
+    "renderGid": 992,
+    "networkBoundary": "Host network is specific to the isolated nested CT Docker fixture; delivery Compose retains loopback port publishing."
+  },
+  "seccomp": {
+    "engine": "29.7.2",
+    "architecture": "linux/amd64",
+    "capabilities": "all dropped",
+    "default_sha256": "342a876f4cb0e876151af93370a33bdcb199f8a17ed33da740ffa82036ca180d",
+    "amd_sha256": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0",
+    "added_rule": {
+      "names": [
+        "kcmp"
+      ],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [
+        {
+          "index": 2,
+          "value": 0,
+          "op": "SCMP_CMP_EQ"
+        }
+      ]
+    },
+    "all_other_rules_preserved": true
+  },
+  "gpuTests": {
+    "kind": "goby-oci-amd-selected-gpu-tests",
+    "version": 1,
+    "runs": [
+      {
+        "name": "admission02",
+        "log": "admission02.log",
+        "sha256": "91dfb845a479977f3bd9f8b34b4e8e6c05b9a8252045013cc43c6094ea9cbb4a",
+        "parentPasses": 1,
+        "subtestPasses": 5,
+        "failures": 0,
+        "skips": 0,
+        "unfinished": [],
+        "parentNames": [
+          "TestHardwareEncodingActualVAAPIAdmission"
+        ]
+      },
+      {
+        "name": "output-matrix01",
+        "log": "output-matrix01.log",
+        "sha256": "1b67816893d7602cb804b5f665769515951b0a3e4ad6576e48882ff1c86ba162",
+        "parentPasses": 1,
+        "subtestPasses": 42,
+        "failures": 0,
+        "skips": 0,
+        "unfinished": [],
+        "parentNames": [
+          "TestVideoCodecActualVAAPIOutputs"
+        ]
+      },
+      {
+        "name": "media-padding01",
+        "log": "media-padding01.log",
+        "sha256": "227626401a33987edb02aa1ad2e6b92cabeb1c9bc1353d5f1e46ef0cc1e19999",
+        "parentPasses": 1,
+        "subtestPasses": 0,
+        "failures": 0,
+        "skips": 0,
+        "unfinished": [],
+        "parentNames": [
+          "TestHardwareEncodingActualAV1PaddingRejection"
+        ]
+      },
+      {
+        "name": "advanced-paths01",
+        "log": "advanced-paths01.log",
+        "sha256": "2630f80dbeebcebacfcbbd503f501c3f4230a7f8ba3e13ec66894a753ab8431a",
+        "parentPasses": 4,
+        "subtestPasses": 21,
+        "failures": 0,
+        "skips": 0,
+        "unfinished": [],
+        "parentNames": [
+          "TestGPUProducerCancellationRetiresActualFFmpegAndClosesOutput",
+          "TestVideoCodecActualVAAPIAVSyncAfterSeek",
+          "TestVideoCodecActualVAAPIDecodeInputMatrix",
+          "TestAMDVideoProcessingActualHDRAndDeinterlace"
+        ]
+      },
+      {
+        "name": "subtitle01",
+        "log": "subtitle01.log",
+        "sha256": "8c3d495e92ab5ca2b42839b3bb71b90009c1d2d86533079bfc4bc369715958d5",
+        "parentPasses": 1,
+        "subtestPasses": 1,
+        "failures": 0,
+        "skips": 0,
+        "unfinished": [],
+        "parentNames": [
+          "TestProgressiveSubtitleBurnActualSeekAndOffsetPixels"
+        ]
+      },
+      {
+        "name": "server-hardware01",
+        "log": "server-hardware01.log",
+        "sha256": "c019c7a709ecae240d4b5f9a2f9bdbb40b0276bbd20f44bed6570ab08411da00",
+        "parentPasses": 2,
+        "subtestPasses": 0,
+        "failures": 0,
+        "skips": 0,
+        "unfinished": [],
+        "parentNames": [
+          "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+          "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan"
+        ]
+      }
+    ],
+    "parentPasses": 10,
+    "subtestPasses": 69,
+    "boundary": "Subtests include intermediate grouping nodes. Counts are not all unique leaf cases or a full package suite."
+  },
+  "httpCases": [
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 1723715,
+      "case": "decode_only_h264",
+      "codec": "h264",
+      "decode": "vaapi",
+      "encode": "software",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": false,
+      "frames": 1080,
+      "observed_uid": 10001,
+      "render_descriptor": true,
+      "sample_entry": "avc1",
+      "sha256": "d854e6c6bc4732fe661d019ebabb78aa96e1ec9b9f129f1b6d4d87f94cf3a0ad",
+      "software_decode": true,
+      "source_picture_comparison": true
+    },
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 1718111,
+      "case": "decode_only_hevc",
+      "codec": "hevc",
+      "decode": "vaapi",
+      "encode": "software",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": false,
+      "frames": 1080,
+      "observed_uid": 10001,
+      "render_descriptor": true,
+      "sample_entry": "hvc1",
+      "sha256": "4f080d6d611f6ed74fe70ed6ce7f65d7fcff82dcb970864a3f46ed7f4973d6c0",
+      "software_decode": true,
+      "source_picture_comparison": true
+    },
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 1700381,
+      "case": "encode_only_h264",
+      "codec": "h264",
+      "decode": "software",
+      "encode": "vaapi",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": false,
+      "frames": 1080,
+      "observed_uid": 10001,
+      "render_descriptor": true,
+      "sample_entry": "avc1",
+      "sha256": "4937863f257c5ebd8cf6a323f87edbe39e81f9a5bca4d8f6f750bef02b918649",
+      "software_decode": true,
+      "source_picture_comparison": true
+    },
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 1689029,
+      "case": "encode_only_hevc",
+      "codec": "hevc",
+      "decode": "software",
+      "encode": "vaapi",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": false,
+      "frames": 1080,
+      "observed_uid": 10001,
+      "render_descriptor": true,
+      "sample_entry": "hev1",
+      "sha256": "41ad6311b7f18bc43130053bea053fca4e8a501257af9e38b652cfb39a33cd4c",
+      "software_decode": true,
+      "source_picture_comparison": true
+    },
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 1700381,
+      "case": "combined_h264",
+      "codec": "h264",
+      "decode": "vaapi",
+      "encode": "vaapi",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": false,
+      "frames": 1080,
+      "observed_uid": 10001,
+      "render_descriptor": true,
+      "sample_entry": "avc1",
+      "sha256": "4937863f257c5ebd8cf6a323f87edbe39e81f9a5bca4d8f6f750bef02b918649",
+      "software_decode": true,
+      "source_picture_comparison": true
+    },
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 1689029,
+      "case": "combined_hevc",
+      "codec": "hevc",
+      "decode": "vaapi",
+      "encode": "vaapi",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": false,
+      "frames": 1080,
+      "observed_uid": 10001,
+      "render_descriptor": true,
+      "sample_entry": "hev1",
+      "sha256": "41ad6311b7f18bc43130053bea053fca4e8a501257af9e38b652cfb39a33cd4c",
+      "software_decode": true,
+      "source_picture_comparison": true
+    },
+    {
+      "actual_executable_and_arguments": true,
+      "bytes": 157018,
+      "case": "av1_exact_software_fallback",
+      "codec": "av1",
+      "decode": "software",
+      "encode": "software",
+      "event": "http_amd_output_verified",
+      "explicit_stop_cleanup": true,
+      "fallback": true,
+      "frames": 96,
+      "observed_uid": 10001,
+      "render_descriptor": false,
+      "sample_entry": "av01",
+      "sha256": "c5d4f15e6c4c91f2f459cc2f285cc5948f8989c451e1cfe1b069aeab022a31ad",
+      "software_decode": true,
+      "source_picture_comparison": true
+    }
+  ],
+  "httpEvidenceComposition": {
+    "freshBootstrap": "http-attempt01.jsonl",
+    "retainedDatabaseJourney": "http-attempt04.jsonl",
+    "resumeDriver": "resume-http.py",
+    "historyPlansUnchanged": 7,
+    "boundary": "Completed-producer HTTP stop closure is separate from the actual live-GPU cancellation test."
+  },
+  "retainedFailures": [
+    {
+      "attempt": "build01",
+      "reason": "The native negative control lacked the strict Dolby Vision patch."
+    },
+    {
+      "attempt": "build02",
+      "reason": "UID 10001 could not traverse the inherited private prefix."
+    },
+    {
+      "attempt": "admission01",
+      "reason": "Default seccomp blocked kcmp(KCMP_FILE); driver stderr caused strict admission rejection."
+    },
+    {
+      "attempt": "http-attempt01",
+      "reason": "Transient proc descriptor PermissionError stopped the observer after successful fresh setup."
+    },
+    {
+      "attempt": "http-attempt02",
+      "reason": "The private resume wrapper lacked the retained library ID; descriptor diagnostics remained enabled."
+    },
+    {
+      "attempt": "http-attempt03",
+      "reason": "Existing output filenames were preserved; a fresh attempt directory was required."
+    }
+  ],
+  "closure": {
+    "worker": {
+      "kind": "goby-oci-amd-worker-closure",
+      "engine": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "observer": {
+        "MainPID": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "ownedRunningContainers": 0,
+      "ownedContainerRemoved": true,
+      "ownedToolProcesses": [],
+      "ct104RemainsRunning": true,
+      "dataAndEvidenceRetained": true,
+      "configurationChangesToHostOrCT": false
+    },
+    "backend": {
+      "kind": "goby-oci-amd-backend-closure",
+      "port": 55993,
+      "connectionsBeforeStop": 0,
+      "postmasterStopped": true,
+      "dataRetained": true,
+      "protectedServicesUnchanged": true,
+      "protectedServices": [
+        {
+          "name": "/winvaultwarden-ui-review",
+          "id": "7637bef4bf06c121575af2e4c4968c2315f128be6830590e034cf40d1c085d1d",
+          "pid": 1452,
+          "startedAt": "2026-09-26T13:45:00.745678683Z",
+          "running": true
+        },
+        {
+          "name": "/winvaultwarden-bitwarden-test",
+          "id": "cfc2342951f8300a3090829b21966f92d22a1b20ea6197d7e09776ba4bb7aedb",
+          "pid": 1455,
+          "startedAt": "2026-09-26T13:45:00.755428599Z",
+          "running": true
+        },
+        {
+          "name": "/5gpn-release-gateway-1",
+          "id": "e4aa5102681db11be9122bcdcd59215d4a491d2d0b94c15f42d21b659cc8cb89",
+          "pid": 1467,
+          "startedAt": "2026-09-26T13:45:00.753343083Z",
+          "running": true
+        }
+      ]
+    }
+  },
+  "acceptedDrivers": [
+    {
+      "name": "oci-amd-delivery.py",
+      "bytes": 27579,
+      "sha256": "7f7c7d9c64f1ce969934e2820d6d5b72c23fd2a91eb2735efa00119293ac4336"
+    },
+    {
+      "name": "oci-amd-process-observer.py",
+      "bytes": 17229,
+      "sha256": "c7d8bd02edabaee21803bdc5f884169fab1acdb40905802608645069bb3c15a8"
+    }
+  ],
+  "scopeLimits": [
+    "Other GPU devices/drivers",
+    "arm64",
+    "Other container runtimes",
+    "Expanded performance/SLO claims",
+    "New Dolby Vision corpus acceptance",
+    "Registry publication",
+    "Public-distribution license clearance"
+  ],
+  "buildReceiptBoundary": "The immutable build receipt and source pins record the pre-runtime build stage. This separate receipt records acceptance of those exact image bytes and the final deployment companions.",
+  "gitIntegration": "Handled separately; inspect repository history and the final remote-ref readback.",
+  "files": [
+    {
+      "name": "README.amd.md",
+      "bytes": 17440,
+      "sha256": "5d744d42cd88d32e805fcb707cc488bfffd653243ee1f9e92f5a710156ca9957"
+    },
+    {
+      "name": "README.md",
+      "bytes": 8477,
+      "sha256": "a308dd6b6664d874c2a5489e882cabd3623f442a05a015ea47a9b5889e310130"
+    },
+    {
+      "name": "amd-runtime-evidence.tar.gz",
+      "bytes": 10450598,
+      "sha256": "c6fc1ca467dfd7c3870aea307b559924170a9c13b48c4fe26ffb1337061454be"
+    },
+    {
+      "name": "backend-closure.json",
+      "bytes": 905,
+      "sha256": "cf1780539f6104eb47227a6a152c32ff7edfa510a5b3d687e932c57dc7ce8af8"
+    },
+    {
+      "name": "build-receipt.json",
+      "bytes": 36264,
+      "sha256": "5163b6106c3c8a1a9361eaad7a7e7352f4d8fea1e8e12e89c0bc3993fa6ce3aa"
+    },
+    {
+      "name": "compose.amd.yaml",
+      "bytes": 874,
+      "sha256": "a5dad695b2b5f722a20f588759d546fecc3270d86955e003e65a11818a97118e"
+    },
+    {
+      "name": "compose.yaml",
+      "bytes": 2466,
+      "sha256": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965"
+    },
+    {
+      "name": "deployment.amd.env.example",
+      "bytes": 523,
+      "sha256": "3a9493466373f2ace8cc2745560a1ec409e8645893c938a4f77f6d3d29b9a8cf"
+    },
+    {
+      "name": "evidence-index.json",
+      "bytes": 12468,
+      "sha256": "22c1504eddc47b409c7d1819ba41ac4dbb118179ab0a9ddcdee5b6e90043e6be"
+    },
+    {
+      "name": "ffmpeg-build-evidence.tar.gz",
+      "bytes": 12447036,
+      "sha256": "92e5522d1fd6f5ac846ba9407d3a70bd26ebe474b7bea57810331e048cfd17d0"
+    },
+    {
+      "name": "goby-linux-amd64-amd-image.tar",
+      "bytes": 890938368,
+      "sha256": "4c5bb25118a3d73aa04273647b28a57512f232cfe9c418c01ec66307a7a5332a"
+    },
+    {
+      "name": "goby.env.example",
+      "bytes": 1995,
+      "sha256": "ed6f7b14ab4fafeba3f93aa53516555a9905baea905184a85b1f5128516349b9"
+    },
+    {
+      "name": "image-build.log",
+      "bytes": 38632,
+      "sha256": "f7cdbde67509455d9b2d91c693e8578653d1d719f4d5fdec4996e103289703e1"
+    },
+    {
+      "name": "image-id.txt",
+      "bytes": 71,
+      "sha256": "0519866391c3ce8924dc3685e13019ba7f87a6cfa34f0e1a42d80ee50aa9006c"
+    },
+    {
+      "name": "image-inspect.json",
+      "bytes": 4905,
+      "sha256": "4bad9f4cf0c620424cc8b9f316ef681a2f4d4b9312b8616b97aba33f84c2bed3"
+    },
+    {
+      "name": "oci-amd-delivery-20260929.md",
+      "bytes": 10042,
+      "sha256": "13111c1ab22b9ecbc34c02742dc86fed8e61d0a4fc7fb061527ff59474bbe98f"
+    },
+    {
+      "name": "oci-amd-delivery-plan-20260929.md",
+      "bytes": 4900,
+      "sha256": "653810bc8618b48cca30442137fadc5e7c79917a4962d09dbcd52a51a0f1793a"
+    },
+    {
+      "name": "seccomp-provenance.json",
+      "bytes": 494,
+      "sha256": "73c9065c9a8a1382f693b6800e13aafeab53e59ff3f9b64b997e7c72e8b641fb"
+    },
+    {
+      "name": "seccomp.amd.json",
+      "bytes": 10543,
+      "sha256": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0"
+    },
+    {
+      "name": "source-pins.amd.json",
+      "bytes": 5045,
+      "sha256": "e8350520177e1eba9e06d1b5eaa385d95dc34c7d458560cdb7a50dc7c9a938f5"
+    },
+    {
+      "name": "worker-closure.json",
+      "bytes": 433,
+      "sha256": "9acd5be98bf8f82332d9b6cbaeacbbdb9b8c87d00e1c564b982f692cbcf128f8"
+    }
+  ]
+}

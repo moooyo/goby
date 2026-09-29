@@ -1,10 +1,17 @@
 # Support and delivery matrix
 
+The September 29 [AMD OCI extension](../development/oci-amd-delivery-20260929.md)
+also completes the selected Linux amd64 AMD archive/Compose profile. Actual
+GFX1150 VAAPI/Vulkan media, managed hardware axes, seven production-container
+HTTP outputs and resource cleanup passed. This supersedes GPU-container
+deferral only for the recorded device/driver/tool/profile; other GPUs, arm64,
+runtimes, registry publication and performance expansion remain separate.
+
 The September 29 [OCI delivery](../development/oci-delivery-20260929.md) completes
 the selected Linux amd64 software image archive and Compose profile, including
 actual encrypted recovery and schema 29 to 50 upgrade/rollback. It supersedes
 older blanket OCI deferrals only for that recorded profile. Registry publication,
-GPU container admission, arm64, other runtimes, and full public-distribution
+other GPU container profiles, arm64, other runtimes, and full public-distribution
 licensing are not inferred from this acceptance.
 
 The September 20 [selected compatibility plan](selected-compatibility-plan-20260920.md)

@@ -1,6 +1,8 @@
 # Apply after compose.yaml and use the recorded AMD image ID in GOBY_OCI_IMAGE.
 services:
   goby:
+    security_opt:
+      - "seccomp:${GOBY_AMD_SECCOMP_PROFILE:?Set the absolute path to seccomp.amd.json}"
     devices:
       - "${GOBY_AMD_RENDER_NODE:?Set the selected AMD render node}:${GOBY_AMD_RENDER_NODE:?Set the selected AMD render node}:rw"
     group_add:

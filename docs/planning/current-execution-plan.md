@@ -1,5 +1,16 @@
 # Current execution plan
 
+## AMD OCI archive and Compose delivery complete: September 29, 2026
+
+The [AMD delivery record](../development/oci-amd-delivery-20260929.md) closes
+the selected Linux amd64 AMD image, GPU acceptance, seven actual HTTP outputs,
+exact-size AV1 fallback, artifact delivery and owned-resource closure.
+The application remains source `b9bfa7c`. Image and companion identities are
+recorded separately; the seccomp profile adds only `kcmp(KCMP_FILE)` to the
+captured Docker baseline. The [operator guide](../../deploy/oci/README.amd.md)
+describes archive import and both Compose layers. Other GPUs, arm64, registry
+publication and historical performance gates are not automatic follow-up work.
+
 ## OCI archive and Compose delivery complete: September 29, 2026
 
 The user selected the Linux amd64 software image archive and Compose increment.

@@ -148,7 +148,8 @@ def main():
         receipt.update(status="built_and_exported", imageId=image_id,
                        archive={"name": archive.name, **record(archive)})
         (output / "SHA256SUMS").write_text(receipt["archive"]["sha256"] + "  " + archive.name + "\n", encoding="utf-8")
-        for name in ("compose.yaml", "compose.amd.yaml", "goby.env.example", "README.amd.md", "source-pins.amd.json"):
+        for name in ("compose.yaml", "compose.amd.yaml", "goby.env.example", "README.md", "README.amd.md",
+                     "source-pins.amd.json", "seccomp.amd.json"):
             copy_file(RECIPE / name, output / name)
         save()
         print(json.dumps({"status": receipt["status"], "imageId": image_id, "output": str(output)}))
