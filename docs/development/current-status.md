@@ -1,11 +1,13 @@
 # Current implementation and delivery status
 
-Current Phase 3 work follows the [September 29 process/storage recovery record](phase3-process-storage-recovery-20260929.md).
-Actual application SIGKILL, private PostgreSQL immediate restart, and preview
-ENOSPC recovery passed. A reproduced cache-control ENOSPC cleanup defect was
-fixed and verified with real exhaustion and the cache race suite. Earlier
-reconciliation, compound/100k catalog, and mount results remain valid within
-their scopes. Full fault/guest coverage and final regression remain open.
+Current Phase 3 work follows the [September 29 filesystem recovery record](phase3-filesystem-recovery-20260929.md).
+Actual nonroot EACCES and a kernel-blocked metadata syscall both recovered.
+The metadata caller returned while its worker stayed accounted for; healthy
+queries/playback continued and device resume released the worker. Test devices,
+temporary permissions, application processes, and private PostgreSQL are closed.
+Earlier process/ENOSPC, reconciliation, compound/100k catalog, and mount results
+retain their scopes. Local compilation is authorized; runtime verification uses
+`test-env`. Packaged-process/guest coverage and final regression remain open.
 Earlier checkpoints below are not current execution instructions.
 
 ## Active increment: compatibility, media analysis and resilience

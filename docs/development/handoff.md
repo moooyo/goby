@@ -1,13 +1,15 @@
 # Goby handoff - September 29, 2026
 
-For current work, start with the [September 29 process/storage recovery record](phase3-process-storage-recovery-20260929.md).
-Actual application SIGKILL, private PostgreSQL immediate restart, and preview
-ENOSPC recovery passed. A real ENOSPC control-file cleanup defect was repaired
-and reverified; the dedicated PostgreSQL cluster is now stopped. Previous
-reconciliation and compound/catalog milestones retain their scopes. Local
-compilation is allowed and orchestration is simplified. Remaining filesystem,
-guest-lifecycle and final regression work is open. Earlier stopping points and
-environment restrictions below are retained history.
+For current work, start with the [September 29 filesystem recovery record](phase3-filesystem-recovery-20260929.md).
+Actual nonroot permission recovery and dm/ext4-blocked metadata recovery passed.
+Kernel wait, healthy queries/playback, worker retention/release, and unchanged
+durable state were checked. The owned mount/mapper/loop, application processes,
+temporary socket ACL, and private PostgreSQL are closed; raw evidence remains.
+Earlier process/ENOSPC, reconciliation, and compound/catalog milestones retain
+their scopes. Local compilation is allowed and orchestration is simplified.
+Continue with small media-read and real CLI/supervisor cases, then guest lifecycle
+and final regression. Earlier stopping points and environment restrictions below
+are retained history.
 
 ## Historical September 26 checkpoint
 

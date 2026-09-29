@@ -1,5 +1,15 @@
 # Current execution plan
 
+## Completed filesystem recovery: September 29, 2026
+
+The [filesystem recovery record](../development/phase3-filesystem-recovery-20260929.md)
+is the current entry. Actual nonroot permission denial/recovery and a real
+kernel-blocked metadata operation passed their local acceptance cases. Healthy
+queries/media and durable state survived; the blocked worker stayed accounted
+for until device resume. All owned runtime resources are closed. Continue with
+small blocked media-read and actual CLI/supervisor cases, then isolated guest
+lifecycle and final integrated regression. No new product repair was required.
+
 ## Completed process and storage recovery: September 29, 2026
 
 The [process/PostgreSQL/ENOSPC record](../development/phase3-process-storage-recovery-20260929.md)
