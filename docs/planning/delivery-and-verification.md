@@ -1,6 +1,37 @@
 # Delivery plan and remote compatibility verification
 
-Status: **long-term delivery scope; M2-M6 remain incomplete**. Use the
+Current disposition, September 29, 2026: **the selected revised functional
+Phase 3, software OCI, and recorded AMD OCI deliveries are complete; mandatory
+acceptance remainder for those scopes is 0**. Their source/profile boundaries
+are recorded in the [current delivery matrix](support-and-delivery-matrix.md#current-selected-deliveries),
+[functional closeout](../development/phase3-functional-closeout-20260929.md),
+[software OCI result](../development/oci-delivery-20260929.md), and
+[AMD OCI result](../development/oci-amd-delivery-20260929.md).
+
+## Current acceptance agreement
+
+The user's revised functional agreement retains exact identities, permissions,
+safe deletion/rollback, actual media behavior, recovery correctness, and owned-
+resource closure. Historical strict SLOs, constrained capacity profiles, the
+original two-tier 28-case matrix, and old M2-M6/controller prerequisites are not
+gates for that completed scope. They are not silently claimed as passed either.
+Unchanged accepted checks need not be repeated to manufacture a new full matrix.
+
+Production deployment/HTTPS, provider-online, public licensing/registry, native
+packages/arm64/other GPUs, and optional extensions become work only through a
+new selected scope. See [conditional follow-up](support-and-delivery-matrix.md#conditional-follow-up).
+Current user instructions and AGENTS.md govern execution; historical permissions
+below are records of past tasks, not grants for a new task.
+
+## Historical delivery baseline and long-term reference
+
+**The remainder of this document preserves the earlier M0-M7 plan and dated
+execution record.** Its old pending statuses, failures, counts, commands, and
+required-scenario language describe that historical scope. They are not today's
+priority queue or prerequisites for the accepted deliveries above. The broad
+matrices remain references when a new feature, platform, or claim is selected.
+
+Historical checkpoint status: **long-term delivery scope; M2-M6 remain incomplete**. Use the
 [current execution plan](current-execution-plan.md) for work order and the
 [current status](../development/current-status.md) for accepted implementation,
 verification and deployment facts. The 2026-09-13 review prioritized an audited
@@ -212,6 +243,9 @@ reopens the paused mount experiment or narrows its missing acceptance evidence.
 
 ## Milestones and dependencies
 
+Historical M0-M7 completion definitions follow. They are not a list of missing
+work in the current selected functional/archive profiles.
+
 | Milestone | Work | Completion gate |
 | --- | --- | --- |
 | M0: Contract baseline | Pin source revisions, define target reference-server image/version, normalize selected schemas, collect permitted golden exchanges | Reviewed route/auth/DTO matrix and resolved bootstrap contracts; no invented unknown response schemas |
@@ -229,6 +263,10 @@ The target is broad API compatibility; staging prevents claiming full compatibil
 
 ## Verification environment policy
 
+This section records the September 11 task's policy. Its local-execution ban
+and installation authorization do not override a later task's explicit user
+agreement or current AGENTS.md.
+
 The resumed task on 2026-09-11 requires **all verification on the remote host**.
 Local builds, unit/integration tests, validators, smoke tests, server execution,
 HTTP probes, browser checks and FFmpeg/media probes are not authorized. Earlier
@@ -241,6 +279,9 @@ This research task retrieved official documentation, extracted endpoint/schema m
 During implementation, establish the remote repository/work directory and required tools explicitly. Transfer only project files and synthetic/licensed fixtures. Do not assume the remote path, deployed server, credentials, or network topology. A protected test runner should use a dedicated reference Emby installation and a separate Goby installation with independent disposable PostgreSQL databases and state.
 
 ## Development and commit policy
+
+The following direct-main/publication authorization belongs to the historical
+initial-development task; it is not standing authorization for a new task.
 
 The user authorizes direct development on `main` during this initial development stage. Complete each milestone in a reviewable checkpoint, document its build/test evidence and remaining limitations, then create a milestone commit and push it to the configured remote before proceeding to the next milestone. Preserve unrelated user changes and inspect the actual branch/remote state before committing. A partial milestone checkpoint must be labeled partial and must not be reported as passing its completion gate.
 
@@ -258,6 +299,10 @@ M0 documentation maintenance updates the chosen architecture and toolchain witho
 Never use third-party servers listed in downloaded Swagger files as test targets. No client capture, external account, or production library was assumed in this research.
 
 ## Required scenario matrix
+
+This original broad scenario catalogue is a long-term reference, not a current
+mandatory test queue. A newly selected claim uses its relevant cases and actual
+profile; closed scoped deliveries do not require replaying every row.
 
 | Area | Cases | Evidence |
 | --- | --- | --- |
@@ -293,10 +338,10 @@ This is a design checklist for future reviews, not a suite executed during this 
 
 ## Original evidence-gap inventory
 
-This is the initial research inventory, not today's priority queue. Some rows
-now have scoped implementation or reference evidence. Consult the current
-execution plan and status before opening work; retain any broader unsupported
-claim as an open requirement rather than repeating completed research.
+This is the initial research inventory, not today's priority queue. Current
+disposition is in the [selected delivery matrix](support-and-delivery-matrix.md#current-selected-deliveries).
+Broader unsupported claims remain outside accepted scope; selecting one can
+create new work, but its historical open row does not reopen a completed delivery.
 
 | Gap | Resolve before |
 | --- | --- |

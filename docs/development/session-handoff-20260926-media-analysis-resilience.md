@@ -1,5 +1,11 @@
 # Media analysis and resilience handoff - September 26, 2026
 
+This historical source checkpoint was superseded by the completed
+[revised Phase 3 functional closeout](phase3-functional-closeout-20260929.md)
+and [publication](phase3-functional-publication-20260929.md). The failed formal
+capacity scopes retain their original results and are outside that revised
+agreement. Use the [current handoff](handoff.md) for present scope and work order.
+
 ## Closeout decision and acceptance boundary
 
 The user stopped further acceptance work and requested a merge into `main`, a

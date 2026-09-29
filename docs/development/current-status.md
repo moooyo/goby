@@ -1,5 +1,15 @@
 # Current implementation and delivery status
 
+Status: **the selected functional, software OCI and AMD OCI increments are
+complete, integrated and published**. AMD delivery
+`6c574ca5708051f0e48e18ebd99903688a3e13ee` was pushed to `origin/main` with exact
+remote readback. The [publication record](oci-publication-20260929.md) separates
+Git completion from the immutable image/build/runtime receipts.
+There is no remaining gate in those selected increments. Production deployment,
+online-provider acceptance, public distribution and additional platform/feature
+profiles require a new selection; see the
+[current execution plan](../planning/current-execution-plan.md#follow-up-work-requires-a-new-scope-selection).
+
 The [AMD OCI extension](oci-amd-delivery-20260929.md) completes the selected
 Linux amd64 AMD archive/Compose profile on the recorded GFX1150/Mesa tuple.
 Ten actual GPU parent tests (69 subtest nodes) and seven production-container
@@ -768,7 +778,9 @@ The original product-source archive, worker, failed preflight and historical
 candidate metadata remain unchanged. The revised input binds both new
 application identities and all unchanged protected resources explicitly.
 
-## Current gates
+<a id="current-gates"></a>
+
+## Historical gates
 
 This table retains the historical Programs checkpoint's gate wording and
 results. Its "current" identities and next actions are scoped to that
@@ -1243,7 +1255,9 @@ post-workflow outputs. Independent M2-M6 work can advance under its own gates;
 promotion is not a blanket prerequisite. None of these changes waives the
 original client errors, timing gap or full release requirements.
 
-## Selected product and candidate
+<a id="selected-product-and-candidate"></a>
+
+## Historical selected product and candidate
 
 The [audit remediation](audit-remediation-20260913.md) is published as `a623375`.
 The [exit diagnostic increment](exit-diagnostics-20260913.md) preserves known
@@ -1450,7 +1464,9 @@ The consumed TV actor now needs retained-state admission before any future
 rerun, just as movie does. No main service change or complete core acceptance
 is claimed.
 
-## Main and parked investigations
+<a id="main-and-parked-investigations"></a>
+
+## Historical main and parked investigations
 
 The host rebooted at `2026-09-13T06:18:45Z`. The [reboot baseline](resumed-delivery-reboot-baseline.json)
 found source55 and source32 main inactive with their installed bytes retained,
@@ -1543,7 +1559,13 @@ for their original scopes; another run does not freshly reverify all 198 roots.
 The [Goby comparison contract](nextup-goby-comparison-contract.md) requires new
 discriminating evidence or a concrete product decision before reopening.
 
-## Remaining release work
+<a id="remaining-release-work"></a>
+
+## Historical remaining release work
+
+This table belongs to the earlier feature-wave checkpoint. Later functional,
+AMD and OCI records at the top supersede its blanket GPU/OCI and recovery gaps.
+It is retained provenance, not the current release queue.
 
 The selected feature implementations and scoped functional closeout are
 complete. This table keeps the wider release obligations separate from that
@@ -1633,7 +1655,9 @@ archive was hashed remotely. No OCI image was built, pulled or started, and no
 Compose or deployed profile was verified. The synthetic checker result does not prove package resolution, runtime
 dependency closure, reproducibility, media/backup/stop behavior or legal completeness.
 
-## Verification policy
+<a id="verification-policy"></a>
+
+## Historical verification policy
 
 All compilation, formatting tools, tests, browser checks, media probes and runtime
 verification use `ssh test-env`. Local verification requires explicit permission
@@ -1645,7 +1669,9 @@ of the final intended source.
 The fixed media-refresh increment has completed these gates within its recorded
 scope; it does not waive them for later production changes.
 
-## Supported capacity boundaries
+<a id="supported-capacity-boundaries"></a>
+
+## Historical capacity boundaries
 
 Missing-item reconciliation currently requires a complete proof within 4096
 directory handles, 262144 entries, 131072 seen IDs and 64 MiB of observation

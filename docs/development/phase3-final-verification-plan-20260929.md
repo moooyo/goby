@@ -1,8 +1,14 @@
 # Phase 3 final verification entry - September 29, 2026
 
-This is the next step after the accepted
+Status: **executed and closed within the revised functional scope**. Results,
+original failures and affected-package repeats are recorded in the
+[functional closeout](phase3-functional-closeout-20260929.md), followed by its
+[publication](phase3-functional-publication-20260929.md). The commands below are
+the retained execution recipe, not a request to repeat the completed campaign.
+
+This was the next step after the accepted
 [blocked-scan and guest recovery increment](phase3-scan-guest-recovery-20260929.md).
-Use one clean archive of the final committed source on `test-env`. Do not copy
+The recipe uses one clean archive of the final committed source on `test-env`. Do not copy
 unrelated dirty packaging/notices work from the local checkout. Local work may
 compile; the commands below execute remotely.
 

@@ -1,5 +1,14 @@
 # Goby handoff - September 29, 2026
 
+Status: **selected work complete and published**. Software OCI delivery
+`1e34ae33509d9719561db9bf20df8acdddf09014` and AMD OCI delivery
+`6c574ca5708051f0e48e18ebd99903688a3e13ee` were merged and pushed to `origin/main`.
+Exact remote readback is recorded in the
+[OCI publication record](oci-publication-20260929.md). Earlier acceptance reports
+that leave Git integration to a separate step retain their original timing.
+The [current execution plan](../planning/current-execution-plan.md#follow-up-work-requires-a-new-scope-selection)
+lists conditional future work; no old controller queue is an active instruction.
+
 The latest completed increment is the [AMD OCI archive/Compose extension](oci-amd-delivery-20260929.md).
 The [result manifest](oci-amd-delivery-results-20260929.json) binds its image,
 FFmpeg, archive, seccomp and actual GPU/HTTP evidence. Seven production-container
@@ -713,7 +722,9 @@ The [wave verification record](feature-wave-verification-20260919.md) owns the
 source-bound results and final closeout. These checks do not upgrade old
 Programs/W, H1, production-promotion or complete M2–M6 acceptance.
 
-## Product functionality available
+<a id="product-functionality-available"></a>
+
+## Historical product functionality snapshot
 
 Implementation availability and acceptance scope are different. The following
 capabilities exist, with per-increment evidence; this is not a claim of full
@@ -735,7 +746,9 @@ See [implemented API surface](../api/implemented.md),
 [scope](../api/implementation-scope.md), and the
 [support matrix](../planning/support-and-delivery-matrix.md).
 
-## Functionality still missing or intentionally limited
+<a id="functionality-still-missing-or-intentionally-limited"></a>
+
+## Historical missing or limited functionality
 
 1. Text extraction, fonts, supported HLS/progressive burn-in, fixed multiple text
    renditions, standard subtitle-playlist adapters and rolling windows are
@@ -789,7 +802,9 @@ current wave's final acceptance or an instruction to replay historical work.
   The original r09 outer remains failed; its separate business and physical
   reviews do not rewrite the missing original EOF/acceptance flags.
 
-## Exact current H1 stop point
+<a id="exact-current-h1-stop-point"></a>
+
+## Historical H1 stop point
 
 This is the retained, deferred H1 checkpoint. The current feature-wave checks
 do not resume its live continuation or change any original failure flag.
@@ -932,7 +947,13 @@ for a completed startup trace or client acceptance.
   temporary files. Fourteen earlier raw releases are already complete and
   cannot be reclaimed again. No new backing deletion was performed here.
 
-## Work remaining before complete delivery
+<a id="work-remaining-before-complete-delivery"></a>
+
+## Historical work remaining before complete delivery
+
+This earlier list is superseded for the selected functional, AMD and OCI scopes.
+Use the current execution plan for unresolved future selections; do not restart
+the old Programs/H1 chain or reclassify completed work from this list.
 
 These are full-delivery obligations outside the completed feature wave.
 They do not reopen its closed checks or authorize a deferred historical queue.
@@ -950,7 +971,9 @@ They do not reopen its closed checks or authorize a deferred historical queue.
 No completion percentage is assigned: these obligations have different scopes,
 and test counts cannot be converted into a reliable feature-completion ratio.
 
-## Decisions for the user
+<a id="decisions-for-the-user"></a>
+
+## Historical decisions for the user
 
 The alternatives below record the earlier decision point. The user already
 selected the feature wave; this table does not request another decision or
@@ -967,7 +990,9 @@ increment and authorized its merge and push. The earlier decision table is
 historical. An internal release with limited supported
 profiles must not be renamed completion of the full M2–M6 goal.
 
-## Rules for the next session
+<a id="rules-for-the-next-session"></a>
+
+## Historical rules for the next session
 
 Use Chinese for conversation and English for code/comments/documentation.
 Use Windows PowerShell locally. Ordinary tests, builds and runtime/browser probes

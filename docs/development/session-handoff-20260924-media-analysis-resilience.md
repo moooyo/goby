@@ -3,6 +3,8 @@
 The [September 26 handoff](session-handoff-20260926-media-analysis-resilience.md)
 supersedes this document's current-state and resume instructions. This document
 is retained as historical evidence; its scope13 service state is no longer live.
+The later [functional closeout](phase3-functional-closeout-20260929.md) completed
+the revised Phase 3 scope. Use the [current handoff](handoff.md) for continuation.
 
 ## Closeout decision
 

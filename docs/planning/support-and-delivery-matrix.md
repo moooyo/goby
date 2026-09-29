@@ -1,5 +1,50 @@
 # Support and delivery matrix
 
+## Current selected deliveries
+
+Current disposition, September 29, 2026: **all selected functional and
+archive/Compose deliveries are complete; required acceptance work remaining: 0**.
+The records below define the accepted profiles. Completion does not imply a
+production deployment, universal compatibility, or a public distribution license.
+
+| Selected scope | Current result | Authoritative boundary | Required remaining work |
+| --- | --- | --- | --- |
+| Revised media-analysis/resilience Phase 3 | Complete, including consolidated verification and closure | [Functional closeout](../development/phase3-functional-closeout-20260929.md) and [publication](../development/phase3-functional-publication-20260929.md); real-media correctness, catalog scale, concurrency, and recorded recovery cases under the revised functional agreement | 0 |
+| Linux amd64 software OCI archive + Compose | Complete | [Software OCI result](../development/oci-delivery-20260929.md); actual import/runtime, encrypted recovery, schema upgrade/rollback, and owned-resource closure | 0 |
+| Linux amd64 AMD OCI archive + Compose | Complete for the recorded device/driver/tool tuple | [AMD OCI result](../development/oci-amd-delivery-20260929.md); actual GPU checks and production HTTP outputs, exact fallback, and owned-resource closure | 0 |
+| Earlier selected compatibility and media-analysis features | Closed within their original recorded scopes | [Four-phase compatibility plan](selected-compatibility-plan-20260920.md) and [intro/BIF acceptance](../development/media-analysis-resilience-phase2-20260921.md); original client, corpus, and adapter limits remain | No reopened gate |
+
+The historical strict 10k/100k capacity profiles, SLOs, two-tier 28-case matrix,
+and original M2-M6 completeness claims are not accepted by this table. They are
+also not mandatory remainder for the user's revised selected scope. Do not
+restart failed controller chains or repeat whole matrices merely to clear old
+labels. Reuse accepted evidence within its actual source/profile boundaries.
+
+## Conditional follow-up
+
+These are separate choices, not a queued implementation or acceptance backlog.
+
+| Follow-up | Becomes work only when |
+| --- | --- |
+| Production deployment and HTTPS | A real deployment, domain/proxy/TLS topology, and operating environment are selected |
+| Provider-online acceptance | A named provider and its actual credentials/service contract are selected |
+| Public distribution, license, or registry publication | The user selects that publication scope; project-license/distribution decisions belong to that scope |
+| Native release packages, arm64, or additional GPU/runtime profiles | A new artifact, platform, device/driver tuple, or runtime is explicitly selected |
+| Optional extensions or broader performance/capacity claims | A concrete additional feature or qualification profile is selected; existing explicit feature exclusions stay excluded unless the user changes them |
+
+Consult [current status](../development/current-status.md) and the
+[current handoff](../development/handoff.md) for operational disposition. This
+matrix does not itself authorize deployment, external publication, or new tests.
+
+## Historical evidence ledger
+
+**All remaining sections preserve dated decisions and evidence, not current
+gates.** Terms such as current, next, open, pending, required, and remaining
+below refer to their cited checkpoint. Old failures, incomplete matrices, test
+counts, source identities, and client restrictions remain unchanged. Later
+selected acceptance supersedes the work queue without relabeling those results.
+Historical execution/approval rules do not override current user instructions.
+
 The September 29 [AMD OCI extension](../development/oci-amd-delivery-20260929.md)
 also completes the selected Linux amd64 AMD archive/Compose profile. Actual
 GFX1150 VAAPI/Vulkan media, managed hardware axes, seven production-container
@@ -172,6 +217,9 @@ partial evidence, not the latest regression outcome or a passing full suite.
 
 ## Internal candidate gate definitions
 
+Historical G0-G3 rules for the named candidate lineage follow. They are not
+additional gates for the completed [current selected deliveries](#current-selected-deliveries).
+
 | Gate | Required result | Retained evidence | Admission or reuse rule | Required binding |
 | --- | --- | --- | --- | --- |
 | G0: artifact and inputs | One verified successor binary/package, source/build bridge, exact client/browser/media pins and reviewed retained-state inputs | The [A transition decision](../development/e11-candidate-transition-decision.md) retains A's actor lineage and explicit external administrator asset override. Actual artifact/admission results are tracked in current status. | Admit one direct transition only with actual source/build evidence, the declared startup state delta, recovery and final journey contracts. | Admitted current state/runtime, typed episode/subtitle contracts and bounded transition/recovery evidence; readiness is not inferred from this matrix. |
@@ -206,6 +254,10 @@ does not establish a codec profile.
 | W / recorded movie plus external SRT and VTT / A | Historical cues/seek/Off completed, but the saved result does not explain two undefined errors or resolve physical293. | [Subtitle result and response identity](../development/audited-subtitles-client01-review.md), [closeout](../development/audited-subtitles-client01-closeout.json) | Require the typed retained-subtitle entry/closure contract and response-identity/timing gates for the declared SRT/VTT journey. | Admitted latest state and exact client/media pins; use the authoritative queue for entry readiness. | G1 subtitles |
 
 ## Remaining delivery slices
+
+This is the historical long-form matrix. Its open/deferred rows retain their
+original evidence boundaries; they are not today's mandatory remaining work.
+Use [conditional follow-up](#conditional-follow-up) when selecting a new scope.
 
 These rows retain the complete milestone scope. A `Later profile` designation
 keeps an independent acceptance scope; ordering belongs in the immediate queue

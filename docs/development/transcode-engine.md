@@ -10,14 +10,21 @@ legacy selection with progressive output on the same manager, while
 [Progressive video](progressive-video-playback.md) adds standard MP4 URLs and
 ordered Video PlaybackInfo profiles with verified source-clock mapping.
 [Startup configuration](transcoding-configuration.md) enables conversion by default and
-supplies cache, concurrency, output and video-hardware policy. Nonzero video-copy
-seeking, additional timing/format/profile cases, richer subtitles, hard resource
-isolation, actual GPU execution and real-client acceptance remain active work.
+supplies cache, concurrency, output and video-hardware defaults. Supported
+[nonzero video-copy seeking](copy-seek-compatibility.md), modern codecs,
+subtitle processing and selected actual AMD execution are implemented and have
+their recorded acceptance scopes. [Managed execution settings](../api/managed-execution-settings.md)
+can change authorized hardware, threads, CPU quality and tone-mapping choices
+for new admissions; existing jobs retain their captured plans. The
+[revised Phase 3 functional scope](phase3-functional-closeout-20260929.md) and
+selected [software](oci-delivery-20260929.md) and [AMD](oci-amd-delivery-20260929.md)
+OCI profiles are complete. Additional source/client profiles, other hardware
+and strict capacity/SLO requirements remain separate work.
 
-The [M4e/M5a verification](verification-m4e-video-and-users.md) passed the complete
+The historical [M4e/M5a verification](verification-m4e-video-and-users.md) passed its
 Linux race suite, deployed migration and video workflow, and administrator browser
-acceptance. These results do not establish every client workflow; the larger
-conversion and release milestones remain open in [implementation progress](progress.md).
+acceptance. These results retain that source and scope; later delivery boundaries
+are recorded in [current status](current-status.md).
 
 ## Plans and output facts
 
@@ -27,10 +34,11 @@ evaluates explicit progressive audio targets separately from Universal's choice
 to serve a compatible original. `playback.PlanAudioConversion` preserves the
 original evaluation and declared HTTP/HLS TranscodingProfile order for Audio
 PlaybackInfo, selecting the first authorized output that passes profile checks.
-`playback.PlanProgressiveVideo` constructs explicit H.264/AAC fragmented MP4,
+`playback.PlanProgressiveVideo` constructs explicit H.264/HEVC/AV1 fragmented MP4
+with AAC for an existing audio track,
 and `playback.PlanVideoConversion` preserves the declared HTTP/HLS profile order
-for Video PlaybackInfo. Its compatible zero-start copy, mixed copy/encode, and
-encoded-seek candidates remain subject to independent user permissions.
+for Video PlaybackInfo. Its compatible copy, mixed copy/encode, encoded-seek and
+proven copied-seek candidates remain subject to independent user permissions.
 These planners consume authenticated server and user limits supplied by the
 caller, never authorize a user themselves, and start no process during negotiation.
 
@@ -58,8 +66,10 @@ geometry/rate/bitrate targets. Exact targets and ceilings remain independent;
 source metadata is not used to claim facts that an encoder cannot establish.
 
 The HLS planner considers stream copy, audio conversion, video conversion, and their
-combinations against a declared Streaming/HLS/MPEG-TS TranscodingProfile. Initial
-encoded outputs are H.264, AAC LC, and MP3. It selects actual stream indexes and
+combinations against a declared compatible Streaming/HLS TranscodingProfile.
+Supported packaging includes MPEG-TS, fMP4 and finite packed AAC/MP3 audio;
+AV1 requires MP4 rather than MPEG-TS. The [advanced-media contract](advanced-media.md)
+defines the codec, subtitle and adaptive-rendition subset. It selects actual stream indexes and
 applies copy restrictions, source duration, starting ticks, bitrate, audio channel
 and sample-rate limits, dimensions, frame rate, container/codec conditions, and
 supported external text-subtitle declarations. Conditions whose applicability
@@ -73,12 +83,15 @@ and Opus output uses its actual 48 kHz clock. Unknown timing or precision is not
 converted into a guaranteed output fact. The [audio guide](audio-playback.md)
 records source restrictions and deliberately rejected copy combinations.
 
-Progressive video currently outputs MP4/H.264 and AAC for an existing audio track.
+Progressive video outputs MP4 with H.264, HEVC or AV1 and AAC for an existing audio track.
 It can preserve a source without audio but does not silently discard an existing
-audio track. Known compatible H.264/AAC streams can be copied at start zero;
+audio track. Known compatible video/AAC streams can be copied at start zero;
 each encoded stream needs its own current conversion permission. Explicit video
-copy with a nonzero start is declined. A normal H.264 request can choose permitted
-encoding instead. Query fields cannot select arbitrary filters or inject a
+copy with a nonzero start requires the codec-specific random-access, timestamp,
+source and runtime proof in [the copy-seek contract](copy-seek-compatibility.md).
+Eligible standard requests can align to a proven preceding point within ten
+seconds and publish the actual start with `CopyTimestamps=true`; unproven copy
+can use permitted encoding through a normal codec request. Query fields cannot select arbitrary filters or inject a
 source-clock origin or hardware policy into the immutable plan.
 
 The resulting output facts pass the same profile evaluator again. Input facts
@@ -100,10 +113,11 @@ conservative sample/frame bound. Container startup bytes remain within cache
 quotas but are not amortized into a short clip's bitrate estimate. This policy
 does not impose instantaneous HTTP bandwidth limits.
 
-Explicit HDR conversion, unknown high-bit-depth HDR risk, unsupported interlace,
-embedded/bitmap subtitle rendering, unsupported output conditions, and unavailable
-codec/container settings are declined with reasons. Pixel-format conversion is
-not presented as HDR tone mapping. Original `Evaluate` behavior is unchanged.
+Supported HDR conversion, deinterlacing and text/bitmap subtitle rendering use
+the closed software or [AMD processing graphs](amd-video-processing.md).
+Unproven source color/precision, unsupported processing or output conditions,
+and unavailable codec/container settings are declined with reasons. Pixel-format
+conversion is not presented as HDR tone mapping. Original `Evaluate` behavior is unchanged.
 
 ## FFmpeg execution
 
@@ -143,7 +157,8 @@ without truncating that public manifest.
 Audio-only HLS uses exact source duration and output-frame or measured packet
 facts to merge an unproducible short final tail into the preceding segment before
 publishing the timeline. Total duration and global numbering remain coherent,
-and target duration is recomputed. This does not add packed AAC/MP3 HLS or claim
+and target duration is recomputed. The separate finite packed AAC/MP3 path is
+described in [advanced media](advanced-media.md); these timing rules do not claim
 sample-exact gapless presentation.
 
 Progressive mode sends media through nonseekable descriptor 4 into the private
@@ -167,7 +182,7 @@ reconstructed from outward-rounded ticks. WAV writes an accurate RIFF
 header before its PCM payload; only the defined sample-quantization deficit may
 be padded. Excessive, materially short, misaligned or changed source/output fails,
 and unsupported 32-bit RIFF sizes are rejected. Existing libraries, including
-version 4 snapshots, need a normal rescan for current probe version 5. The
+version 4 snapshots, need refresh for the current probe version 8. The
 [audio guide](audio-playback.md#source-duration-and-audio-hls) records proof bounds;
 additional exact-timing input profiles remain work.
 
@@ -203,13 +218,15 @@ job-runtime and resource limits continue to apply; the policy does not provide a
 high-performance random page-seek guarantee. Final execution and HTTP verification
 are recorded separately from these diagnostic findings and the chosen contract.
 
-Progressive video also decodes from the beginning for a nonzero encoded seek.
-For copied video, retained decoder pre-roll and an MP4 edit list are not sufficient
-evidence that a generic client presents the requested start correctly. The
-[independent copy-seek controls](../research/video-copy-seek/README.md) include
-default-consumer failures and a bounded buffered-remux direction, not a shipped
-exception to the nonzero copy rejection. Long prefix decoding remains subject to
-the existing startup, cancellation, runtime, and quota limits.
+Progressive encoded video can skip prefix software decoding when the bounded
+[restart proof](video-fast-seek.md) establishes the selected source window;
+other inputs retain linear decoding. For copied video, retained decoder pre-roll
+and an MP4 edit list alone are not sufficient evidence of the requested start.
+The historical [independent copy-seek controls](../research/video-copy-seek/README.md)
+retain their failures; the later [shipped copy-seek contract](copy-seek-compatibility.md)
+requires source/tool-bound packet and decoded-picture evidence. Long linear
+prefix decoding remains subject to the existing startup, cancellation, runtime,
+and quota limits.
 
 The runner processes `-progress pipe:1` incrementally with a bounded line size;
 normal progress can continue for hours without accumulating memory. Stderr keeps
@@ -236,11 +253,14 @@ Windows build remains useful only for compilation checks.
 | CUDA | Software or NVENC |
 
 VAAPI/QSV device selectors are bounded `/dev/dri/renderD*` paths; CUDA uses a
-bounded device number. Same-backend hardware paths retain device frames through
-the supported scaler. Hardware decode to software encode explicitly downloads
-frames; software decode to hardware encode explicitly uploads them. Mixed
-hardware backends are rejected. Software fallback after a hardware failure is
-not automatic and would need separate resource admission.
+bounded device number. The selected AMD path downloads VAAPI-decoded NV12/P010
+frames for exact CPU resizing, uses Vulkan when required for processing or
+composition, and explicitly uploads frames for VAAPI encoding. Hardware decode
+to software encode also downloads frames. Mixed hardware backends are rejected.
+New VAAPI plans perform [exact encoder admission](hardware-encoding-admission.md);
+a rejected tuple can select the available software encoder of the same codec
+while preserving output constraints. This does not automatically convert a
+failed running job, unavailable device or decoder failure into a software result.
 
 QSV uses a VAAPI-derived device and the pinned FFmpeg version's automatic matching
 decoder selection. QSV `forced_idr` and NVENC `forced-idr` are distinct options.
@@ -248,8 +268,11 @@ The choices were checked against the official [hardware-device guidance](https:/
 [QSV encoder options](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/libavcodec/qsvenc.h),
 and [decoder selection](https://github.com/FFmpeg/FFmpeg/blob/n9.0.1/fftools/ffmpeg_demux.c).
 Command construction and compiled interfaces are not GPU execution evidence.
-The current test host has no GPU; actual hardware decode/encode, drivers, device
-permissions, filters, quality, and concurrent workloads remain unverified.
+VM 101 has no GPU. Selected native AMD results belong to the phase records;
+the [AMD OCI delivery](oci-amd-delivery-20260929.md) separately accepts actual
+container decode/encode, selected processing, exact fallback, HTTP output and
+cleanup on its recorded GFX1150/Mesa profile. Intel/NVIDIA, other driver/device
+tuples and broad concurrency/performance claims remain unverified.
 
 ## Persistence and resource ownership
 
@@ -269,7 +292,7 @@ revisions continue using the canonical identity. Tombstones prevent a removed or
 terminal playback reference from silently creating new work; binding or resolving
 the reference does not update watched state or playback position.
 
-The current schema is 13. Migration `0013_managed_users.sql` adds the management
+The historical M5a checkpoint used schema 13. Migration `0013_managed_users.sql` adds the management
 revision used by [native user administration](../api/admin-users.md). Account and
 password mutations revalidate the administrator in their transaction, protect the
 last enabled administrator, and apply the defined session revocations. Media and
@@ -337,7 +360,10 @@ Video URLs and ordered profiles now use the same manager under the
 [progressive MP4 contract](progressive-video-playback.md), informed by the
 [M4e reference study](../research/video-progressive-reference.md). Native account
 changes are described in the [user-management contract](../api/admin-users.md).
-Additional audio/video timing and profile cases, nonzero video-copy seek,
-packed-audio HLS, richer subtitle/codec profiles, hard worker isolation,
-actual hardware execution, and real third-party-client release acceptance remain
-required. The M4/M5/M6 scope stays active.
+The current supported copy-seek, packed-audio, subtitle/codec and selected AMD
+paths retain the contracts and acceptance boundaries linked above. Use the
+[software OCI guide](../../deploy/oci/README.md) or
+[AMD OCI guide](../../deploy/oci/README.amd.md) for the completed Linux amd64
+archive/Compose profiles. Additional timing/source/client cases, other hardware
+and strict aggregate performance/isolation requirements remain separate work;
+they do not reopen the revised Phase 3 functional closeout.

@@ -1,6 +1,6 @@
 # Toolchain, database, and hardware verification policy
 
-Updated: **2026-09-19, Asia/Shanghai**. Status: **formal amd-media-v3 toolchain built; selected CT AMD and VM CPU/browser scopes verified; phase 2 resource/documentation closeout complete**.
+Updated: **2026-09-29, Asia/Shanghai**. Status: **selected native AMD and VM CPU/browser scopes retained; revised Phase 3 functional scope and Linux amd64 software/AMD OCI deliveries complete within their recorded profiles**.
 
 ## Stable release baseline
 
@@ -78,7 +78,8 @@ media gates; broader GPU acceptance is not implied. See [AMD processing](amd-vid
 [exact hardware encoding admission](hardware-encoding-admission.md) and the
 [phase 1 execution record](amd-media-phase1-20260919.md) for the separate media
 and device gates. Existing native service binaries are not promoted by this
-build record; OCI and non-AMD GPU acceptance remain deferred.
+historical build record. The later [AMD OCI delivery](oci-amd-delivery-20260929.md)
+has its own image and runtime acceptance; non-AMD GPU acceptance remains separate.
 
 ## Phase 2 formal v3 runtime
 
@@ -111,7 +112,7 @@ environment-specific skips, final application artifacts and retention receipts.
 Final owned PostgreSQL/worker closure and documentation are complete. Existing
 production services have not been promoted by these results.
 
-## Copy-timestamp progress successor source
+## Copy-timestamp progress successor and OCI toolchains
 
 The `amd-media-v4` installer source adds the
 [unknown-progress-timestamp repair](../../scripts/test-env/toolchain-patches/progress-copyts-nopts/README.md)
@@ -122,18 +123,52 @@ media timestamp behavior is relaxed.
 
 Its distinct recipe includes the new patch and real-reporter native harness
 hashes, keeps the original decoder queue gate, and publishes a successor prefix
-only after both gates pass. The OCI source recipe includes the same progress
-patch and gate. The earlier v3 binary identities and acceptance records above
-remain historical evidence; these source changes are not an executed v4 build
-or a replacement for actual progressive/compound media acceptance.
+only after both gates pass. The accepted software and AMD OCI recipes include
+the same progress patch and gate. The earlier v3 binary identities and acceptance
+records above remain historical evidence; the new image results do not claim
+that the standalone native v4 installer published or replaced an existing prefix.
+
+The [software OCI delivery](oci-delivery-20260929.md) builds FFmpeg/ffprobe 9.0.1
+with software codec/filter support and the decoder-wakeup and copy-timestamp
+progress fixes. The [AMD extension](oci-amd-delivery-20260929.md) inherits that
+image's unchanged Goby binary, embedded administrator UI, PostgreSQL clients and
+intro helper. It rebuilds FFmpeg/ffprobe with strict Dolby Vision, decoder-wakeup
+and copy-timestamp progress fixes, while retaining the native v3 private libraries
+and matching libplacebo 7.351.0 headers unchanged. These are new media executables,
+not the `c8887f...`/`fddc50...` native v3 pair above.
+
+The selected AMD image installs its tools at `/opt/goby-amd-ffmpeg`; original v3
+input evidence is retained under `metadata/native-v3-input`, and new build,
+patch, native-regression and executable records are under `metadata/amd-oci-build`.
+Its matching FFmpeg and ffprobe SHA-256 values are
+`3505587e95203e2561a5b0459134847b59aca3665557676a394cdfbca2d14908` and
+`5012fcac5d0da7346953312cce9f86cbfa588baf412e3d14acf6e028405f71ad`.
+The separate image receipt binds these tools to actual GPU and HTTP checks on
+GFX1150, Mesa `25.0.7-2+deb13u1` and the recorded Docker profile. The strict Dolby
+Vision patch is present, but this OCI result does not claim a new container Dolby
+Vision acceptance campaign or universal AMD support.
+
+Use the [software OCI operator guide](../../deploy/oci/README.md) or
+[AMD OCI operator guide](../../deploy/oci/README.amd.md) for image loading,
+Compose configuration and actual dependency identities. The AMD guide includes
+single-render-node permissions and the supplied Docker 29.7.2 seccomp profile,
+which preserves its resolved default rules and adds only `kcmp(KCMP_FILE)`.
+No registry publication is included. Frozen source-pins and build receipts retain
+their build-stage status; separate runtime receipts establish acceptance without
+rewriting historical input records. The [Phase 3 closeout](phase3-functional-closeout-20260929.md)
+also retains its own native toolchain and source identities rather than borrowing
+the later image results.
 
 ## Build and test boundary
 
-Ordinary formatting, compilation, production builds, type checks, test suites,
-schema validators, smoke tests, server execution, HTTP probes and software media
-verification run through `ssh test-env`, PVE VM 101. Local verification requires
-explicit authorization in the current task; historical permissions do not carry
-forward automatically.
+Follow the active AGENTS.md and the user's task/session authorization when
+choosing an environment. The default for tests, validators, type checks, smoke
+tests, server execution, HTTP probes and software media verification is
+`ssh test-env`. The September 29 functional work explicitly allowed local
+compilation; that permission did not authorize local tests or runtime checks.
+Routine source/document editing and formatting are not runtime acceptance.
+An old execution recipe does not override newer instructions or require asking
+again for an action already authorized in the current session.
 
 For phase 1 AMD work, the user explicitly approved the independent PVE CT 104
 `goby-amd-worker` as an exception because VM 101 has no `/dev/dri`. Use
@@ -141,9 +176,17 @@ For phase 1 AMD work, the user explicitly approved the independent PVE CT 104
 checks. This unprivileged Debian worker exposes the selected render node to its
 non-root worker account. It does not require moving the GPU out of CT 100,
 restarting VM 101, or changing host device permissions. This verification
-exception does not authorize local testing or establish OCI deployment support.
+exception does not authorize local testing. Worker authorization alone is not
+runtime acceptance; the later [AMD OCI record](oci-amd-delivery-20260929.md)
+supplies the actual selected container results and resource closure.
 
-Outside the approved AMD exception, run unit, integration, compatibility, browser, media, and operational checks through `ssh test-env` on Linux. The user authorizes installing and removing packages/software on that remote environment for this work. Use isolated project databases and synthetic/licensed media fixtures. If the designated environment is unavailable, record the affected checks as blocked and continue only work that does not require those results; do not execute the checks locally.
+Outside the approved AMD exception, run unit, integration, compatibility,
+browser, media and operational checks through `ssh test-env` on Linux unless
+the current task explicitly authorizes another environment. Package changes
+stay within the authorized task scope. Use isolated project databases and
+synthetic/licensed media fixtures. If the designated environment is unavailable
+and local verification is not authorized, record the affected checks as blocked
+and continue independent work; do not silently execute those checks locally.
 
 Linux is the production platform. Local compilation success is evidence of build correctness only and does not prove Linux runtime behavior, PostgreSQL persistence, FFmpeg availability, or client playback.
 
@@ -155,7 +198,7 @@ Deployment must supply a PostgreSQL service, persistent database storage, a leas
 
 ## Hardware decode and encode acceptance
 
-The transcoding implementation must account for hardware decoding as well as encoding. Linux profiles include VAAPI, Intel QSV, and NVIDIA where the installed hardware, drivers, and FFmpeg build permit them. Phase 1 execution targets AMD VAAPI/Vulkan; Intel and NVIDIA acceptance remains deferred. The playback planner must distinguish these capabilities instead of treating an encoder list as a hardware acceleration guarantee.
+The transcoding implementation must account for hardware decoding as well as encoding. Linux command profiles include VAAPI, Intel QSV, and NVIDIA where the installed hardware, drivers, and FFmpeg build permit them. Recorded native and OCI acceptance covers selected AMD VAAPI/Vulkan profiles; Intel and NVIDIA acceptance remains deferred. The playback planner must distinguish these capabilities instead of treating an encoder list as a hardware acceleration guarantee.
 
 | Capability | Required remote evidence |
 | --- | --- |

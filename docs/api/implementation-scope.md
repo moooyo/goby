@@ -1,6 +1,14 @@
 # Emby API implementation scope
 
-Status: **delivery scope**. See the [implemented surface](implemented.md) for current code and test evidence. No real media client has yet been verified against the full planned backend.
+Status: **current scope and historical contract inventory, updated September 29,
+2026**. The selected compatibility, media-analysis, revised functional-recovery,
+and Linux amd64 software/AMD OCI deliveries are complete within their recorded
+boundaries. See the [implemented surface](implemented.md),
+[current status](../development/current-status.md), and
+[current execution plan](../planning/current-execution-plan.md). The route
+selection tables below describe contracts and original implementation order;
+they are not a list of unfinished tasks. Actual client evidence is scoped to
+the recorded versions, adapters and journeys, not full Emby compatibility.
 
 The September 20, 2026 user decision selected the account/playback,
 subtitle/artwork, music/search and management/client-protocol work in the
@@ -13,7 +21,20 @@ contracts and journeys. Live TV, EPG, DVR/scheduled recording, tuners,
 DLNA, external channels and group playback are explicitly excluded, replacing
 their earlier deferred disposition. Other unselected work remains deferred.
 
-The objective is an independent open-source Linux media backend that existing Emby-compatible clients can connect to. This includes browsing and playback APIs even though Goby's own React/MUI website is exclusively an administrator dashboard.
+The later [three-phase increment](../planning/media-analysis-resilience-plan-20260920.md)
+completed selected API/configuration gaps, automatic episode-intro analysis,
+BIF previews and the revised concurrency/recovery scope. The
+[software OCI delivery](../development/oci-delivery-20260929.md) and
+[AMD OCI extension](../development/oci-amd-delivery-20260929.md) subsequently
+completed their Linux amd64 archive/Compose profiles. Earlier blanket deferrals
+do not apply to those accepted scopes. Registry publication, production
+deployment and additional platforms remain separate.
+
+The objective is an independent Linux media backend that existing
+Emby-compatible clients can connect to. This includes browsing and playback
+APIs even though Goby's own React/MUI website is exclusively an administrator
+dashboard. Goby's project license remains undecided; completed internal
+deliveries do not establish complete public-distribution licensing.
 
 The full upstream inventory is [535 operations](catalog.md), with [local request/response models](models.md). That count describes the fixed SDK export, not the complete behavior of every Emby release. The newer baseline is **SDK 4.9.5.0 Release**; see [source provenance](../sources/README.md).
 
@@ -35,7 +56,10 @@ Common protocol flows guide implementation now; a user-provided client shortlist
 | Deferred | Sync/offline packages, unselected optional extensions and separate platform/provider/delivery work | No support claim until scheduled and implemented |
 | Excluded | Live TV/EPG/DVR/tuners, DLNA, external channels, synchronized parties, Emby consumer web application, Emby Connect/cloud identity, Emby package distribution and proprietary binary plugin compatibility | Explicitly outside the user-selected product scope |
 
-P0 and P1 are implementation order, not a redefinition of the final goal. A direct-play MVP does not constitute a general Emby replacement. Revisit deferred features as compatibility coverage expands. Do not return successful empty results merely to inflate endpoint coverage.
+P0 and P1 describe the original implementation order, not current completion
+status or a promise of complete upstream parity. Deferred features require a
+new scope decision. Do not return successful empty results merely to inflate
+endpoint coverage.
 
 One bounded client-navigation addition is the
 [Programs query for the current zero-EPG-source profile](../development/live-tv-programs.md).
@@ -99,7 +123,12 @@ HTTP route presence is only part of P0. Seed supported movie, series, episode, m
 | Devices and remote session commands | [DeviceService](services/DeviceService.md), [SessionsService](services/SessionsService.md) command/viewing/queue routes | Advertised command capabilities, user ownership, administrator override policy, event delivery |
 | Operations | Task triggers, partial settings, log lines, supported encoder options, system restart/shutdown | Configuration reload semantics, supervisor integration, auditable privileged actions |
 
-P1 transcoding starts with software profiles, then adds individually tested hardware profiles. Both correctness and sustained resource limits are release requirements. See [playback and transcoding](../research/playback-and-transcoding.md).
+Software and selected AMD profiles have recorded acceptance, including the
+Linux amd64 OCI deliveries. Additional device, driver and media combinations
+need their own evidence. Historical strict capacity/SLO targets are outside
+the revised functional closeout; further performance claims require an explicit
+profile. See [playback and transcoding](../research/playback-and-transcoding.md)
+and the [current closeout boundaries](../development/phase3-functional-closeout-20260929.md#claims-outside-this-closeout).
 
 ## Protocols outside the REST inventory
 
@@ -121,10 +150,12 @@ These behaviors do not appear as a complete set of operations in Swagger. They m
 | External channels | Explicitly excluded by the September 20 user decision; integrated metadata/image/subtitle providers are a separate capability |
 | Metadata/image/subtitle provider online acceptance | Deferred; existing integrated adapters are retained |
 | Party/group synchronization | Explicitly excluded by the September 20 user decision; ordinary remote session commands are retained |
-| BackupApi | Evaluate for P2 only after confirming upstream plugin/core provenance and supported archive format; build native Goby backup first |
+| BackupApi | Upstream plugin/core provenance and archive compatibility remain unselected; native Goby encrypted backup/recovery is already implemented and has separate accepted evidence |
 | PluginService | Optional future Goby extension registry; no implied compatibility with Emby binary plugins |
 | External notifications, local music Similar/InstantMix, intro skipping | Delivered within the four-phase plan's recorded scopes: GobyWebhookV1, local metadata discovery and sourced intro intervals; no vendor push or arbitrary client parity is implied |
-| General recommendations, automatic intro detection, BIF previews, themes, game/book media | Deferred; not implied by the selected music and intro-skip work |
+| Automatic episode-intro analysis and BIF previews | Delivered in [Phase 2](../development/media-analysis-resilience-phase2-20260921.md); source-bound tasks, review/override, actual skip and named preview-consumer evidence retain the recorded corpus and client limits. Movie/isolated-episode content detection is not inferred |
+| Theme media | Local theme-resource scanning, ownership, authorized ThemeMedia reads and delivery are implemented; the [theme record](../development/verification-m3e-theme.md) retains its source-specific acceptance. General recommendation or arbitrary-client behavior is not implied |
+| General recommendations and game/book media | Deferred; not implied by local Similar/InstantMix, theme media or episode-intro analysis |
 | WebAppService and consumer web player | Excluded: Goby provides only its own administrator dashboard |
 | ConnectService and Emby cloud registration | Excluded: use Goby local accounts and configured server URLs |
 | PackageService / Emby package installation | Excluded: Goby releases and extensions need their own distribution mechanism |
@@ -142,8 +173,8 @@ substitute Jellyfin contracts for missing Emby evidence.
 | `GET /Users` | Newer `GET /Users/Query`; keep response array/envelope differences separate |
 | `GET /Library/VirtualFolders` | Newer `GET /Library/VirtualFolders/Query`; add old form only with a target fixture |
 | `GET /System/Logs` and `GET /System/Logs/Log` | Newer `/System/Logs/Query` and `/System/Logs/{Name}` |
-| `GET /Search/Hints` | Absent from newer export; use `SearchTerm` on item queries; add an explicit Hints adapter when required |
-| Root routes without `/emby` | Not implied by the narrative base URL; examine real client requests before adding aliases |
+| `GET /Search/Hints` | Implemented as an authenticated [legacy adapter](search-hints.md), including its root alias; recorded selected-phase acceptance does not establish that every client invokes or interprets it |
+| Root routes without `/emby` | The [selected compatibility namespace](selected-management.md#literal-aliases-and-library-removal-refresh) supports root aliases and declared case-insensitive literals; opaque IDs and escaped segment boundaries retain their meaning |
 | XML and alternate authentication/header forms | Official docs describe multiple transports; JSON-first delivery must not claim XML until matching it is implemented and tested |
 
 Maintain a versioned compatibility profile with each alias's evidence and fixtures. Never change a shared handler's response shape simply because a newer endpoint looks similar.

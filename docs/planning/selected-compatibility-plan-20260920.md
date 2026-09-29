@@ -9,6 +9,29 @@ Execution uses `codex/selected-client-compatibility` in an isolated checkout.
 The completed increment was fast-forward merged and pushed to `origin/main` at
 `d3d043e19b9233e5d0b373ae42145f5189bda08d`; the remote ref was read back. This
 publication record does not add client/platform coverage or imply deployment.
+
+## Current scope supersession
+
+As of September 29, the [revised functional Phase 3](../development/phase3-functional-closeout-20260929.md),
+[software OCI archive/Compose](../development/oci-delivery-20260929.md), and
+[selected AMD OCI profile](../development/oci-amd-delivery-20260929.md) are complete,
+with **0 required acceptance items remaining for those selected deliveries**.
+Automatic intro detection and source-bound BIF previews were separately accepted
+in [media-analysis Phase 2](../development/media-analysis-resilience-phase2-20260921.md).
+Their old deferral in this September 20 plan no longer describes current status.
+
+Phase numbers below belong to this completed compatibility increment, not a
+new queue for the later resilience work. Historical failures and client/corpus
+limits remain at their original scope. Production HTTPS, provider-online,
+public licensing/registry, native packages/arm64/other GPUs, and optional
+extensions are [conditional follow-up](support-and-delivery-matrix.md#conditional-follow-up),
+not missing gates for the completed scope.
+
+## Recorded September 20 execution agreement
+
+The following authorization describes that completed task only. Current
+AGENTS.md and task-specific user instructions govern any new execution.
+
 The user authorized local compilation and unit tests, remote integration/E2E on
 `test-env`, and merge to `main` plus push after all four phases are complete.
 Within each phase, implement all delivery code before running the consolidated
@@ -22,9 +45,10 @@ below. Existing implementations and accepted results remain the baseline.
 
 | Disposition | Scope |
 | --- | --- |
-| Selected now | Four functional phases below, including their native administration, applicable compatibility adapters, remote verification and documentation |
+| Completed September 20 selection | Four functional phases below, including their native administration, applicable compatibility adapters, remote verification and documentation |
 | Explicitly excluded by the user | Live TV, EPG, DVR/scheduled recording, tuners, DLNA, external channels and group/synchronized playback |
-| Still deferred | Offline synchronization/download packages, OCI delivery/playback/upgrade/recovery/public HTTPS, non-AMD hardware, native arm64, provider-specific online acceptance, broader capacity/storage-fault/host-durability profiles, unrelated extensions, licensing and external release decisions |
+| Subsequently completed selected scope | Automatic intro/BIF, revised functional resilience Phase 3, Linux amd64 software OCI archive/Compose, and the recorded AMD OCI archive/Compose profile; use the later acceptance records above |
+| Conditional, unselected follow-up | Production deployment/HTTPS, provider-specific online acceptance, public licensing/registry decisions, native release packages, arm64/other GPU profiles, offline synchronization/download packages, and other optional extensions |
 | Existing exclusions retained | Consumer web player, Emby Connect/cloud identity, Emby package installation and proprietary binary-plugin compatibility |
 
 Exclusion is a product scope decision, not a postponed milestone. Do not add
@@ -33,9 +57,13 @@ Existing generic dynamic sources, HLS, bounded time shifting, remote session
 commands and the zero-source Programs adapter remain supported within their
 current contracts; this decision does not request their removal. External
 channels are distinct from the already integrated metadata/subtitle providers.
-General recommendation engines, automatic intro detection, BIF previews, themes
-and game/book media remain deferred; local music Similar/InstantMix and skipping
-explicitly sourced intro intervals are selected here.
+Local music Similar/InstantMix and skipping explicitly sourced intro intervals
+were selected here. Automatic intro detection and BIF previews were completed
+by the later selected media-analysis increment. General recommendation engines,
+themes, and game/book media were unselected in this plan; any later selection
+keeps its own scope and evidence rather than reopening these four phases.
+Historical strict capacity and complete fault-matrix claims remain outside the
+revised functional closeout, not automatic prerequisites for a new unrelated task.
 
 ## Delivery sequence
 
@@ -148,6 +176,10 @@ Likewise, exposing CPU/AMD settings does not add non-AMD hardware acceptance.
 Full original Emby Web parity outside the selected journeys remains separate.
 
 ## Common acceptance and handoff rules
+
+These are the original rules for the completed four-phase increment. They retain
+the original verification/approval boundary; they do not authorize new local
+tests or require repeating accepted work under the current agreement.
 
 - Complete all code for a phase before consolidated verification. Local
   compilation and unit tests are authorized. Integration tests, actual media

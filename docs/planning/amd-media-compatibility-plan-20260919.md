@@ -200,8 +200,11 @@ authorize production promotion, publication or unrelated cleanup.
 
 ## Explicitly deferred work
 
-OCI playback and container deployment/upgrade/recovery remain deferred by the
-user's latest decision. Non-AMD GPU execution, native arm64, broader host/storage
+OCI was deferred when this plan was selected. The later
+[software OCI delivery](../development/oci-delivery-20260929.md) and
+[selected AMD OCI extension](../development/oci-amd-delivery-20260929.md)
+separately completed their archive/Compose and recorded runtime scopes.
+Non-AMD GPU execution, native arm64, broader host/storage
 delivery claims and external release decisions remain independent obligations.
 Provider-specific online acceptance remains under the existing deferral unless
 the user changes it; new music and subtitle source integration must preserve

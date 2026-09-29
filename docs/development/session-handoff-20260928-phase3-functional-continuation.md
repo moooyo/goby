@@ -1,6 +1,10 @@
 # Media analysis Phase 3 functional continuation - September 28, 2026
 
-For the current stopping point, read the [September 29 reconciliation handoff](session-handoff-20260929-phase3-functional-reconciliation.md). This document remains the historical source and admission record for the earlier continuation.
+This is a historical source and admission record. The later
+[September 29 reconciliation handoff](session-handoff-20260929-phase3-functional-reconciliation.md)
+was followed by the completed [functional closeout](phase3-functional-closeout-20260929.md)
+and publication. Use the [current handoff](handoff.md) for the present scope;
+the stopping points and resume instructions below are no longer active.
 
 This follows `session-handoff-20260928-media-analysis-resilience.md`. The
 selected product revision remains `c5d08bec44a8c3bf58045b51fba92ce82a43a22b`

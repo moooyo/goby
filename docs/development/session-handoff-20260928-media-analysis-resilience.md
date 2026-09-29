@@ -1,5 +1,11 @@
 # Media analysis Phase 3 handoff - September 28, 2026
 
+This historical source checkpoint was superseded by the completed
+[revised Phase 3 functional closeout](phase3-functional-closeout-20260929.md)
+and [publication](phase3-functional-publication-20260929.md). Its pending items
+and runtime identities remain dated evidence. Use the [current handoff](handoff.md)
+for continuation; no old verification campaign is active by implication.
+
 ## Closeout and source revision
 
 The user stopped new Phase 3 dispatches, requested that the completed code be

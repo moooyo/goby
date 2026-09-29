@@ -1,6 +1,6 @@
 # Running Goby during development
 
-The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated MPEG-TS HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes provide original, progressive, or MPEG-TS HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. Additional audio timing/input/profile cases, packed-audio HLS, broader subtitles/formats, hard resource isolation, actual GPU execution, and complete client acceptance remain unfinished; this is not yet a production media replacement. The dashboard remains an administrator interface without a consumer web player.
+The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion, including the selected fMP4, packed-audio and adaptive paths in [advanced media](advanced-media.md). Universal and legacy audio routes provide original, progressive, or HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. The [revised Phase 3 functional scope](phase3-functional-closeout-20260929.md) and selected [software](oci-delivery-20260929.md) and [AMD](oci-amd-delivery-20260929.md) OCI profiles are complete. Additional source/client profiles, other hardware, and strict capacity/SLO requirements remain separate work. The dashboard remains an administrator interface without a consumer web player.
 
 The completed M5i observability increment adds transactional activity history,
 bounded sanitized diagnostic files, four native and four Emby activity/log GET routes, and the
@@ -9,12 +9,12 @@ React/MUI administrator-only page at `/admin/observability`. See the
 [storage and operating notes](observability.md). The historical M5i schema was
 **22**: migration `0022` adds the initially empty `activity_entries`
 table without backfilling business history or requiring a media rescan.
-The probe cache version remains **6**. The complete remote race suite, source
+At that M5i checkpoint, the probe cache version was **6**. Its remote race suite, source
 and build reconciliation, real browser/restart acceptance, protected upgrade,
 and deployed workflow passed. That accepted deployment was M5i at
 schema 22. See [M5i verification](verification-m5i-observability.md) for the
-retained evidence and limits. This completes the observability increment;
-the broader M4, M5, and M6 milestones and full product goal remain open.
+retained evidence and limits. These are historical observability results;
+[current status](current-status.md) records the later functional and delivery closeouts.
 
 The [M5h configuration increment](verification-m5h-configuration.md) adds four
 stored name modes and an independent compatibility width ceiling to the existing
@@ -22,7 +22,11 @@ stored name modes and an independent compatibility width ceiling to the existing
 and old business row across 28 tables. The Settings page manages the name, four
 native output ceilings, and the additional width ceiling with revision checks.
 Five Emby ConfigurationService routes expose supported fields backed by this
-same state. Hardware/resource controls remain startup-only. Neither the M5g
+same state. Hardware/resource controls were startup-only at that checkpoint.
+Current [managed execution settings](../api/managed-execution-settings.md) can
+select an authorized AMD device, decoder/encoder, thread count, CPU quality and
+tone-mapping policy for new admissions; device authorization and resource quotas
+remain deployment-owned. Neither the M5g
 settings migration nor its M5h extension requires a media rescan. The preceding
 [M5f task increment](verification-m5f-tasks.md) adds durable library-wide
 tasks, schedule rules, request receipts, and owned scan-child associations.
@@ -47,15 +51,17 @@ Later on September 16, the user selected historical temporary directories for
 removal and added another 25 GiB to the virtual disk. The
 [reviewed maintenance](test-env-root-maintenance-20260916.md) removed all 138
 selected directories and grew the root partition/ext4 filesystem online. The
-disk is now 122 GiB; `df` reported approximately 120G total and 44G available
-after that operation. Recheck capacity before each new worker.
+disk was 122 GiB at that checkpoint; `df` reported approximately 120G total and
+44G available after that operation. These are historical operational observations,
+not current capacity or workspace reservations. Recheck capacity before each new worker.
 
 Subsequent [Go cache](m5h-go-cache-relocation.json) and
 [inactive dependency](m5h-dependency-relocation.json) relocations moved verified
 contents from tmpfs to persistent storage while retaining the original paths as
 symlinks. The shared extracted Emby package and active services were preserved.
-Use persistent `exec-work-m5i` storage for new large temporary build inputs, and
-serialize memory-heavy verification on this shared host. Historical relocation
+The M5i run used persistent `exec-work-m5i` storage for large temporary build
+inputs. Select an owned workspace from the current task's environment and capacity
+assessment for new work, and serialize memory-heavy verification on a shared host. Historical relocation
 operators must not be replayed after normal cache or dependency use resumes.
 
 ## Build inputs
@@ -63,13 +69,16 @@ operators must not be replayed after normal cache or dependency use resumes.
 - Go 1.27.1; the module pins the supported toolchain minimum.
 - PostgreSQL, verified here with 17.11; connect using `GOBY_DATABASE_URL`.
 - Node compatible with the locked frontend dependencies. The initial frontend was built with Node 26.1.0; see [frontend instructions](../../web/admin/README.md).
-- FFmpeg/ffprobe 9.0.1. Scans use ffprobe for source metadata and bounded audio timing inspection; copied-video HLS uses packet seekpoints. Original playback serves unchanged bytes; supported HLS and progressive audio/video conversion share bounded FFmpeg workers. Video hardware decode/encode can be configured but actual GPU execution remains unverified.
+- FFmpeg/ffprobe 9.0.1 from the same recorded build. Scans use ffprobe for source metadata and bounded audio timing inspection; copied-video HLS uses packet seekpoints. Original playback serves unchanged bytes; supported HLS and progressive audio/video conversion share bounded FFmpeg workers. Selected actual AMD decode, encode, processing and HTTP paths passed in the [AMD OCI delivery](oci-amd-delivery-20260929.md); other device/driver profiles require their own evidence.
 
 The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactional migrations. There is no SQLite driver or SQLite storage mode.
 
 ## Build invocation from Windows
 
-Run compilation inside a newly prepared remote workspace through `ssh test-env`. The commands below describe the build steps within that workspace; they are not authorization for local execution:
+Choose the compilation and formatting environment from the active `AGENTS.md`
+instructions and current task authorization. The commands below describe the
+usual Linux build steps in a prepared workspace; they do not independently
+authorize local execution:
 
 ```text
 npm --prefix web/admin ci
@@ -77,12 +86,20 @@ npm --prefix web/admin run build
 go build ./...
 ```
 
-Compilation and formatting also require the remote environment. Run tests, validators, runtime
-probes, browser acceptance, and FFmpeg checks through `ssh test-env` unless
-the current task separately authorizes local verification. If `test-env` is
-unavailable, that verification is blocked; do not fall back to local execution.
+Tests, validators, runtime probes, browser acceptance and FFmpeg checks default
+to `ssh test-env`. Permission to compile locally does not authorize local tests
+or runtime probes; those require their own explicit task authorization. Use the
+approved CT 104 exception for AMD work as described in [the toolchain policy](toolchain.md).
+If the selected remote environment is unavailable and local verification has not
+been authorized, report verification as blocked rather than falling back locally.
 
 ## Linux deployment
+
+For the delivered Linux amd64 archives, use the [software OCI guide](../../deploy/oci/README.md)
+or [AMD OCI guide](../../deploy/oci/README.amd.md). Both use an external PostgreSQL
+service; the AMD profile also requires its selected render node and supplied
+seccomp profile. Their acceptance records bind the actual image, media tools and
+runtime. The following steps describe a native systemd installation.
 
 1. Build the frontend with the locked npm dependencies and build the Go binary for Linux with the pinned toolchain.
 2. For an ordinary build, install the binary as `/usr/local/bin/goby` and the complete `web/admin/dist` directory as `/usr/share/goby/admin`. The [embedded administrator build](embedded-administrator-build.md) includes those assets in the binary; omit `GOBY_WEB_DIR` to select them. A nonempty explicit value keeps using the external directory in either build mode. [Focused remote checks and build artifacts](embedded-administrator-verification.json) are recorded; deployment acceptance remains separate.
@@ -97,7 +114,7 @@ unavailable, that verification is blocked; do not fall back to local execution.
 
 An empty `GOBY_SETUP_TOKEN` prevents startup until setup has completed. After initialization, the deployment secret can be removed from the environment and the service restarted. Never include a real database password or setup token in Git.
 
-The systemd unit deliberately does not hide every device with `PrivateDevices=true`; configured VAAPI/QSV/CUDA/NVENC paths require the corresponding render/NVIDIA device access. Device access is not granted automatically, and actual hardware execution remains unverified on the current test host.
+The systemd unit deliberately does not hide every device with `PrivateDevices=true`; configured VAAPI/QSV/CUDA/NVENC paths require the corresponding render/NVIDIA device access. Device access is not granted automatically. VM 101 has no render device; selected AMD verification uses the separately approved CT 104 worker. Native and OCI results retain their recorded device, toolchain and deployment boundaries.
 
 ## Configuration
 
@@ -151,8 +168,11 @@ publish to new requests, and the four native ceilings govern new planning.
 `Encoding.TranscodingMaxWidth` adds an independent ceiling: a positive value
 combines with native width by taking the smaller value, while zero removes only
 the additional ceiling. It does not clear the native width or other limits.
-Already registered outputs retain their concrete plans. Other resource and
-hardware settings still require a deployment change and restart. See
+Already registered outputs retain their concrete plans. Managed hardware,
+thread, CPU quality and tone-mapping selections apply to new admissions through
+[Runtime settings](../api/managed-execution-settings.md). Device authorization,
+cache paths and concurrency/storage quotas still require deployment configuration
+and restart. See
 [settings operation](settings.md) for transaction, request-snapshot, and recovery
 semantics and the [configuration adapter](../api/configuration.md) for its narrow
 supported projection and atomic section-write contract.
@@ -161,15 +181,15 @@ Progressive audio uses these same process, queue, cache and reader budgets; it n
 
 Configure media roots before creating a library. The service must be able to traverse and read those directories; the root endpoint checks actual directory readability under the service identity. Libraries can select only directories within the configured roots. An unavailable mount prevents its scan, retains existing catalog data, and does not prevent the identity/dashboard service from starting.
 
-The scanner supports movie, TV, music, and mixed libraries, with two concurrent probe workers and a bounded queue. Library deletion removes its items, image records, and entity associations while preserving files. Shared/orphan entity identities remain stored but are hidden from browsing unless associated with visible items. Filesystem deletion is not implemented. Symbolic links within scan traversal are skipped; registered root components are opened through anchored directory handles. Network URL/manifest sources are not accepted as ordinary self-contained media files.
+The scanner supports movie, TV, music, and mixed libraries, with two concurrent probe workers and a bounded queue. Library deletion removes its items, image records, and entity associations while preserving files. Shared/orphan entity identities remain stored but are hidden from browsing unless associated with visible items. The separate [media deletion workflow](media-deletion-recovery.md) can delete an eligible ordinary indexed media file under current deletion policy, source/root checks and recovery; removing a library or virtual collection does not imply deleting its media files. [Item capabilities](../api/item-capabilities.md) describe the current eligibility limits. Symbolic links within scan traversal are skipped; registered root components are opened through anchored directory handles. Network URL/manifest sources are not accepted as ordinary self-contained media files.
 
 The scanner also reads [local NFO metadata](local-metadata.md). A normal library scan detects sidecar changes even when media probing is cached. Valid sidecar removal restores scanner-derived values; malformed or inaccessible sidecars retain the last valid metadata with a warning. Schema migration `0003` stores these local overrides separately from probe data. No new configuration variable is required.
 
-Migration `0004` backfills persistent genre/tag/studio/person identities from stored NFO data. Migration `0005` stores [local artwork](local-artwork.md); existing files become indexed during a library scan. Image conversion uses a bounded in-memory cache and needs no writable cache directory. Indexed image contents are public under the compatible ImageService contract; image enumeration still requires authentication and library access. No arbitrary path or URL can be requested through the image-content route.
+Migration `0004` backfills persistent genre/tag/studio/person identities from stored NFO data. Migration `0005` stores [local artwork](local-artwork.md); existing files become indexed during a library scan. Image conversion uses a bounded in-memory cache and needs no writable cache directory. Current media/entity image contents and enumeration require current catalog access, including cached and conditional responses. Historical reference captures of public image contents do not describe this policy; eligible public-login avatars have their separate narrow rule. No arbitrary path or URL can be requested through the image-content route.
 
-Migration `0006` adds durable playback sessions and user state. Probe version 2 introduced Linux ctime and extra codec facts needed for original-file delivery; version 3 introduced exact audio timing, version 4 extended its supported Ogg subset, version 5 added independent container-origin facts, and current version 6 adds optional private H.264 restart evidence. Older snapshots remain unavailable for media/subtitle reads until rescanned. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Database upgrades do not automatically schedule scans.
+Migration `0006` adds durable playback sessions and user state. Probe version 2 introduced Linux ctime and extra codec facts needed for original-file delivery; version 3 introduced exact audio timing, version 4 extended its supported Ogg subset, version 5 added independent container-origin facts, and version 6 added optional private H.264 restart evidence. The current probe cache version is **8**, as recorded in the [software OCI upgrade](oci-delivery-20260929.md). Older snapshots remain unavailable for media/subtitle reads until refreshed. See [direct playback](direct-playback.md) for endpoints, current capabilities, and session/resume policy. Database upgrades do not automatically schedule scans.
 
-Migration `0007` adds validated client capability snapshots to authentication sessions; `0008` adds validated player hints to playback sessions. These upgrades need no new configuration or rescan beyond the earlier probe-version requirement. [Client sessions](client-sessions.md) distinguishes online presence, login expiration, current playback, and supported declarations. [NextUp](next-up.md) documents series-directed behavior and the remaining global-query reference gap.
+Migration `0007` adds validated client capability snapshots to authentication sessions; `0008` adds validated player hints to playback sessions. These upgrades need no new configuration or rescan beyond the earlier probe-version requirement. [Client sessions](client-sessions.md) distinguishes online presence, login expiration, current playback, and supported declarations. [NextUp](next-up.md) documents the implemented series-directed and global continuation policies, their selected Phase 3 acceptance, and the retained historical reference-compatibility boundary for global results.
 
 Migration `0009` adds indexed [external subtitles](external-subtitles.md). Run a normal library scan to discover existing SRT/WebVTT sidecars; no FFmpeg extraction is needed for these standalone text formats. Every subtitle download checks the current source and account permissions, including before returning 304. Native VTT uses wire Codec=vtt, and both native and converted delivery URLs carry the current user's token.
 
@@ -177,15 +197,15 @@ Migration `0009` adds indexed [external subtitles](external-subtitles.md). Run a
 
 Migration `0010` adds durable encoding-job records for the [conversion engine](transcode-engine.md); `0011` expands bounded plan JSON to 128 KiB for immutable VOD source cut points. The [HLS adapter](hls-playback.md) now connects playback negotiation to full-duration manifests, authenticated segments, stable global numbering, seek production, and encoding cleanup for video and audio HLS. Compatible results advertise the supported delivery after applying the configured limits and current user permissions. Negotiation does not start an encoder; workers start when segment production is needed.
 
-Migrations `0010` and `0011` alone require no rescan beyond the probe-version requirement. Enabled conversion initializes its owned cache and recovers interrupted job records during startup. Output revisions and timelines remain in memory, so clients must prepare playback again after a restart; durable authentication and user progress remain in PostgreSQL. Live/adaptive playlists, fMP4 HLS, packed-audio HLS, and HLS subtitle delivery remain outside the implemented HLS subset. Progressive fragmented MP4 audio and video are separate HTTP outputs.
+Migrations `0010` and `0011` alone require no rescan beyond the probe-version requirement. Enabled conversion initializes its owned cache and recovers interrupted job records during startup. Output revisions and timelines remain in memory, so clients must prepare playback again after a restart; durable authentication and user progress remain in PostgreSQL. Later increments added selected adaptive/fMP4 HLS, finite packed-audio HLS and subtitle delivery under the [advanced-media contract](advanced-media.md), plus bounded dynamic-source playback and time-shift in [Phase 2](amd-media-phase2-20260919.md). Progressive fragmented MP4 audio and video remain separate HTTP outputs.
 
 Migration `0012` adds [client playback references](client-playback-references.md). Universal clients can supply a fresh `PlaySessionId` without calling PlaybackInfo first. The nonce binds to a canonical server play inside the complete user/authentication-session/device scope and one item/source. Reuse cannot retarget a stopped, expired, or tombstoned reference. Reports and cleanup resolve owned aliases to the same canonical identity; preparing a reference does not mark content played.
 
-Run a normal scan of existing libraries after upgrading to **probe cache version 6**, including libraries last scanned with version 5. Optional [video restart analysis](video-fast-seek.md) runs during scanning even when conversion is disabled; unsupported analysis preserves ordinary media facts. A same-version scan still reuses unchanged cached data, so missing indexes or a changed FFmpeg binary do not alone force rebuilding them. Runtime proof rejects stale evidence and retains linear decoding. Existing `FormatStartKnown` and signed `FormatStartTicks` fields preserve explicit zero separately from a missing container clock. They do not borrow the audio presentation origin or infer a container clock from packet timestamps. Exact audio/Ogg sample timing remains independent. Older snapshots are not accepted by media or subtitle reads until rescanned. Current metadata with unproven audio timing can still support original-file delivery; Matroska/WebM's quantized packet clock remains outside the exact audio-only conversion subset, not a blanket exclusion from video conversion. Metadata, artwork, identities and user state remain in PostgreSQL.
+Refresh existing libraries after upgrading to **probe cache version 8**. The [accepted OCI upgrade](oci-delivery-20260929.md) used an explicit `ForceProbe` scan for its version-6 snapshots. Optional [video restart analysis](video-fast-seek.md) runs during scanning even when conversion is disabled; unsupported analysis preserves ordinary media facts. A same-version scan still reuses unchanged cached data, so missing indexes or a changed FFmpeg binary do not alone force rebuilding them. Runtime proof rejects stale evidence and retains linear decoding. Existing `FormatStartKnown` and signed `FormatStartTicks` fields preserve explicit zero separately from a missing container clock. They do not borrow the audio presentation origin or infer a container clock from packet timestamps. Exact audio/Ogg sample timing remains independent. Older snapshots are not accepted by media or subtitle reads until refreshed. Current metadata with unproven audio timing can still support original-file delivery; Matroska/WebM's quantized packet clock remains outside the exact audio-only conversion subset, not a blanket exclusion from video conversion. Metadata, artwork, identities and user state remain in PostgreSQL.
 
 Migration `0013` adds a user-management revision with default 1. [Native user management](../api/admin-users.md) provides complete account/policy updates and password reset with optimistic conflict detection, transaction-time administrator checks, final-enabled-administrator protection and session revocation. The revision is a decimal string on the wire. This migration does not schedule the separate probe-version scan.
 
-Migration `0014` adds `item_metadata_state`, initializes it for existing items and supplies an insert trigger for new catalog rows. It preserves the previous NFO projection and every pre-existing table row. [Native metadata editing](../api/admin-metadata.md) stores automatic snapshots, manual overrides, locked values and revisions separately; effective item columns and entity links change in the same catalog transaction. This upgrade needs no new configuration and no probe rescan. Media/NFO files remain unchanged by editor writes. The complete administrator milestone, including provider integration and backup/restore, remains open.
+Migration `0014` adds `item_metadata_state`, initializes it for existing items and supplies an insert trigger for new catalog rows. It preserves the previous NFO projection and every pre-existing table row. [Native metadata editing](../api/admin-metadata.md) stores automatic snapshots, manual overrides, locked values and revisions separately; effective item columns and entity links change in the same catalog transaction. This upgrade needs no new configuration and no probe rescan. Media/NFO files remain unchanged by editor writes. Later [backup and recovery](backup-recovery.md) functionality passed the selected [Phase 3](phase3-functional-closeout-20260929.md) and [software OCI](oci-delivery-20260929.md) workflows. Real online-provider acceptance remains a separate scope; this historical migration is not an open backup/restore task.
 
 M5c [login-session administration](../api/admin-sessions.md) was introduced against the existing schema-14 authentication records without a migration or probe rescan. The Sessions page lists and filters native administrator (`admin`) and ordinary Emby (`emby`) login history and revokes one selected login; current administrator authorization is checked in the transaction. Application-key parent credentials also use the database's `sessions` table after migration 16, but they remain on the API keys management surface and are excluded from the native login-session list. Self-revocation signs the dashboard out. Active login validity is distinct from online presence, and a single login revocation does not block a later sign-in on the same device.
 
@@ -193,13 +213,13 @@ Migration `0015` adds the persisted `force_probe` scan-job mode with a false def
 
 The [audio adapter](audio-playback.md) implements Universal and legacy stream selection, while [Audio PlaybackInfo](audio-profile-playback.md) adds ordered HTTP/HLS DeviceProfiles and rechecks applicable conditions on projected output facts. The response preserves original MediaSource DTOs and emits a standard progressive URL with concrete output settings; negotiation starts or reserves no progressive encoding job. GET rechecks current source and permissions and accepts client-side `StartTimeTicks` changes for seeking. Its reader follows private append-only `stream.bin` until durable completion and the final bytes; partial failure aborts the HTTP response instead of reporting a normal end. Progressive HEAD starts no encoder and reports no estimated length. Integer source samples determine accurate WAV headers and output bounds, and audio HLS merges unproducible short tails while preserving total timeline duration. Additional audio timing/profile cases remain separate work.
 
-[Progressive video](progressive-video-playback.md) uses the same manager and the ordinary `/emby/Videos/{Id}/stream.mp4` route. Ordered video profiles select supported HTTP or HLS output. The MP4 subset supports H.264/AAC copy or encoding at zero start and H.264 encoding for nonzero seeks; copied-video nonzero seek is declined. [Verified video seeking](video-fast-seek.md) can skip prefix software video decoding when private restart evidence and runtime proof are valid. Other inputs retain linear decoding, and audio history remains linear, so long seeks can still hit the 45-second startup deadline. General copied-video seeking, HDR tone mapping, and actual GPU execution remain unverified.
+[Progressive video](progressive-video-playback.md) uses the same manager and the ordinary `/emby/Videos/{Id}/stream.mp4` route. Ordered video profiles select supported HTTP or HLS output. The MP4 subset supports H.264/HEVC/AV1 video and AAC for existing audio, including permitted encoding and compatible copy. Nonzero [copied-video seeking](copy-seek-compatibility.md) requires codec-specific random-access and source/tool-bound proof; eligible standard planning may align to a proven preceding point within ten seconds and publish `CopyTimestamps=true`. [Verified encoded seeking](video-fast-seek.md) can skip prefix software video decoding when private restart evidence and runtime proof are valid. Other inputs retain linear decoding, and encoded audio history remains linear, so long seeks can still hit the 45-second startup deadline. Selected software HDR and [AMD processing](amd-video-processing.md) are implemented; actual selected container GPU/HTTP results are recorded in the [AMD OCI delivery](oci-amd-delivery-20260929.md), without claiming arbitrary source or client compatibility.
 
 One catalog writer process may own a PostgreSQL database/schema at a time. It holds a dedicated advisory-lock session and executes short catalog/job write transactions on that same session. Use a direct PostgreSQL connection or a session-preserving connection pool; transaction/statement pooling is unsupported. If the session is lost, old work cannot reconnect through the pool and overwrite a successor's state. Restart the service to recover ownership; `/readyz` reports the lost session. Ordinary request or task cancellation does not interrupt a started short write transaction or discard the owner connection.
 
 Database upgrades use the startup deadline rather than the ordinary 15-second statement limit. The migration transaction temporarily disables `statement_timeout`, including while it waits for the migration lock, and restores the connection setting on commit or rollback. A caller deadline, service termination, or the migration's 30-minute upper bound still cancels the work. Connection establishment retains its shorter limits. Increase `GOBY_STARTUP_TIMEOUT` for a large metadata backfill before starting the service; this setting is not a guarantee that an arbitrary catalog finishes within that budget.
 
-Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8 bytes and are hashed with bcrypt; ordinary client accounts may be created without a password. Such accounts must still authenticate to receive a token. Username uniqueness uses Unicode simple case folding. The native password-reset contract requires a nonempty replacement. Full user-policy coverage and user deletion remain planned work.
+Administrator passwords must be nonempty. Passwords may contain at most 72 UTF-8 bytes and are hashed with bcrypt; ordinary client accounts may be created without a password. Such accounts must still authenticate to receive a token. Username uniqueness uses Unicode simple case folding. The native password-reset contract requires a nonempty replacement. The current supported policy subset and revision-checked [account deletion](../api/admin-users.md#account-deletion) are implemented. Deletion protects the last enabled administrator and retires the removed account's authority while preserving shared media, libraries and independent application keys; unsupported policy fields are not implied.
 
 ## Test deployment
 
@@ -338,9 +358,14 @@ Remote test commands, after loading the protected test environment:
 go test -race -count=1 ./...
 ```
 
-The M4c playback-reference capacity test uses a separate PostgreSQL 17.11 cluster at `127.0.0.1:15432`, prepared by [prepare-postgres-scratch.sh](../../scripts/test-env/prepare-postgres-scratch.sh). Its data, socket and log directories live in the independently owned 1 GiB `/dev/shm/goby-pg-m4c` tmpfs; the dedicated `goby_test` role has no superuser, role-creation, database-creation or replication privileges. This cluster is disposable verification storage, not a replacement for the service's persistent PostgreSQL database on port 5432. Repeated preparation checks the owner marker, mount, cluster and listener identities without rotating credentials or rebuilding data.
+The historical M4c playback-reference capacity test used a separate PostgreSQL 17.11 cluster at `127.0.0.1:15432`, prepared by [prepare-postgres-scratch.sh](../../scripts/test-env/prepare-postgres-scratch.sh). Its data, socket and log directories used the independently owned 1 GiB `/dev/shm/goby-pg-m4c` tmpfs; the dedicated `goby_test` role had no superuser, role-creation, database-creation or replication privileges. This was disposable verification storage, not a replacement for the service's persistent PostgreSQL database on port 5432. Repeated preparation checks the owner marker, mount, cluster and listener identities without rotating credentials or rebuilding data.
 
-For that capacity check, run the following inside the remote SSH shell from the transferred repository. Load the original environment first, then the root-only override; only the two Goby database URLs change, leaving toolchain and FFmpeg settings intact:
+The following historical command is retained to explain that capacity check.
+Its ports, cache paths, credentials and workspace are not current deployment
+instructions. Before any reuse, establish ownership and availability for the
+current task; do not treat `exec-work-m5i` or the old tmpfs paths as a new
+reservation. The original command loaded the base environment before its
+root-only database override:
 
 ```sh
 bash scripts/test-env/prepare-postgres-scratch.sh
@@ -367,7 +392,7 @@ filesystem from an old path spelling or replay the historical relocation
 operators. Bind explicit current cache paths and include their actual disk usage
 in the selected worker's capacity budget.
 
-The current host also has an owned 768 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700. It retains private verification evidence and isolated browser artifacts. M5i Go verification uses the separate root-owned directory `/opt/goby-test/exec-work-m5i` on the persistent filesystem for `GOTMPDIR` and `TMPDIR`; older increment directories retain their historical artifacts. This avoids exhausting the evidence tmpfs without changing the shared `/dev/shm` mount's execution policy. Both current directories are dedicated to verification and are not application media or persistent business-data locations.
+The historical M5i environment also had an owned 768 MiB tmpfs at `/opt/goby-test/exec-scratch`, mounted with `nosuid,nodev` and mode 0700, for private evidence and isolated browser artifacts. M5i Go verification used the separate root-owned persistent directory `/opt/goby-test/exec-work-m5i` for `GOTMPDIR` and `TMPDIR`. This avoided exhausting the evidence tmpfs without changing the shared `/dev/shm` execution policy. These recorded paths are verification history, not current writable-workspace assignments or application media/business-data locations.
 
 See [environment evidence](test-env.md) for exact installed versions and the distinction between compiled hardware interfaces and real hardware execution.
 

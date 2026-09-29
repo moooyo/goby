@@ -1,5 +1,13 @@
 # Media analysis Phase 3 functional handoff - September 29, 2026
 
+Status: **historical checkpoint, superseded by the completed functional scope**.
+The prepared repair and subsequent acceptance were completed in the
+[September 29 functional closeout](phase3-functional-closeout-20260929.md) and
+[publication record](phase3-functional-publication-20260929.md). Software and
+AMD OCI delivery followed. Use the [current handoff](handoff.md) for continuation;
+the unverified/pending statements and resume sequence below describe this earlier
+checkpoint only. Original failed results and source identities are unchanged.
+
 This handoff follows [the September 28 functional continuation](session-handoff-20260928-phase3-functional-continuation.md). The user asked to stop after recording progress and resume later. It records a failed functional run and a prepared, **unverified** product repair; it does not claim 10,000-item functional or capacity acceptance.
 
 ## Repository and execution state

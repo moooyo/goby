@@ -1,5 +1,24 @@
 # Implementation progress
 
+The selected functional and OCI delivery scope is **complete and published**.
+Use [current status](current-status.md) and the
+[current execution plan](../planning/current-execution-plan.md) for active scope.
+The latest published delivery is `6c574ca`; the
+[OCI publication record](oci-publication-20260929.md) records Git integration.
+
+| Completed increment | Accepted record |
+| --- | --- |
+| Media analysis: automatic episode intros and source-bound BIF previews | [Phase 2 closeout](media-analysis-resilience-phase2-20260921.md) |
+| Revised Phase 3 functional and recovery scope | [Functional closeout](phase3-functional-closeout-20260929.md) |
+| Linux amd64 software OCI archive and Compose | [Software delivery](oci-delivery-20260929.md) |
+| Selected AMD VAAPI/Vulkan OCI archive and Compose | [AMD delivery](oci-amd-delivery-20260929.md) |
+
+The remainder is a historical ledger. Its old schema/probe versions, PIDs,
+pending items and environment observations belong to their recorded dates.
+They do not establish current runtime state or reopen completed work.
+
+## Historical September 20 AMD/media checkpoint
+
 The approved [three-phase AMD/media compatibility plan](../planning/amd-media-compatibility-plan-20260919.md)
 is complete within its recorded boundaries. Implementation used
 `codex/amd-media-compatibility`; the current branch is `main`, following the
@@ -2122,7 +2141,9 @@ queries, registered files, and always-sanitized snapshots. The separately
 reported product full suite, browser, and deployment acceptance have passed
 within their recorded scopes; they are not results of this reference study.
 
-## Environment observations
+<a id="environment-observations"></a>
+
+## Historical environment observations
 
 `test-env` is a Debian 13 Linux host. The earlier root-capacity pressure has been resolved: after the user expanded its virtual disk to 97 GiB, online `growpart` and `resize2fs` grew the root partition and ext4 filesystem. At the [2026-09-10 observation](test-env-disk-growth.json), root reported roughly 96G total and 60G available. Root identity/start and boot partitions were preserved; the original Emby PID 3131777 and main Goby PID 3535438 were unchanged. Go caches now use persistent root-disk storage under `/opt/goby-test/go-caches-m5h` through their original `/dev/shm` path symlinks; media scratch remains separate. No GPU device was present in the recorded `/dev/dri` and `/dev/nvidia0` inspection, so actual GPU execution remains unverified.
 

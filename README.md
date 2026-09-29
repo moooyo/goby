@@ -1,53 +1,91 @@
 # Goby
 
-Goby is an open-source media server under development for Linux, implemented in Go, with an Emby-compatible API and a React + Material UI administrator dashboard.
+Goby is a Linux media server with an Emby-compatible API, implemented in Go with
+PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration;
+playback uses supported third-party clients. The project license has not yet
+been selected.
 
-The backend provides media streaming and playback-state APIs for supported existing-client workflows. The dashboard manages server administration and is being expanded across users, libraries, metadata, sessions, transcoding, system settings, activity, and diagnostic logs. It does not include a web player or a consumer media browsing application.
+The selected compatibility, media-analysis, resilience, and Linux amd64 OCI
+deliveries are complete within their recorded acceptance boundaries. Start with
+[current status](docs/development/current-status.md) and the
+[current execution plan](docs/planning/current-execution-plan.md). Older dated
+records preserve their original results and failures; they are not a cumulative
+list of current tasks.
 
-Implementation is underway using PostgreSQL, Go 1.27.1, and FFmpeg 9.0.1. It now includes authentication, a persistent media catalog, safe file probing, bounded scans, local NFO metadata, persistent genre/tag/studio/person identities, indexed artwork, library-level access control, initial Emby browsing, original-file playback with durable user state, external SRT/WebVTT, client-session capabilities and player-state projection, user-state events and initial remote control, NextUp queries, and React/MUI user/library/task administration. Authenticated MPEG-TS HLS supports full VOD manifests, stable segment numbers, seeking, remux, and supported audio/video conversion. Universal and legacy audio routes select original files, supported progressive audio, or MPEG-TS HLS while binding client-generated playback references to an authenticated owner. Conversion shares configurable resource limits; video hardware decoding and encoding can be selected independently.
+## Implemented features
 
-Audio and Video PlaybackInfo select progressive HTTP or HLS in the client's declared profile order, check projected output constraints, and return executable, authenticated media URLs. Progressive video supports bounded H.264/AAC fragmented MP4, compatible stream copy at a zero start, and permitted encoded seeks using the verified source format clock. Nonzero video-copy seeks remain explicitly unsupported. Additional input/timing profiles, packed-audio HLS, broader subtitle/output formats and events, hard resource isolation, actual GPU execution, and complete third-party-client acceptance remain unfinished. See [progressive video](docs/development/progressive-video-playback.md), [audio profile negotiation](docs/development/audio-profile-playback.md), [Universal and progressive audio](docs/development/audio-playback.md), [client playback references](docs/development/client-playback-references.md), [HLS playback](docs/development/hls-playback.md), and [implementation progress](docs/development/progress.md).
+| Area | Current selected scope |
+| --- | --- |
+| Library and accounts | Persistent media identities and user state, bounded scans, local NFO metadata, artwork, library permissions, account/device/session management, playlists and collections, music discovery, Search/Hints and NextUp. See the [implemented API surface](docs/api/implemented.md). |
+| Playback | Authenticated direct and Range delivery, progressive and HLS remux/transcode, selected H.264/HEVC/AV1 outputs, TS/fMP4/packed-audio HLS, text and bitmap subtitle processing, and source-proven nonzero copy seeking. [Media contracts](docs/development/advanced-media.md) define the supported combinations. |
+| Media analysis | Background episode-intro detection, administrator review and overrides, source-bound BIF seek previews, cancellation, cache management and restart recovery. [Media analysis](docs/api/media-analysis.md) and [seek previews](docs/api/seek-previews.md) define the contracts. Accuracy and consumer acceptance remain limited to the [recorded Phase 2 corpus and journeys](docs/development/media-analysis-resilience-phase2-20260921.md). |
+| Administration | Users, libraries, metadata editing, activity/logs, scheduled tasks, managed CPU/AMD selection and encoding settings, notifications, and backup/recovery. [Managed execution settings](docs/api/managed-execution-settings.md) distinguish changes for new work from listener settings that require restart. |
+| Recovery | Native encrypted backups, restore planning, activation/rollback and an offline CLI, plus accepted migration, process/database restart, selected storage-fault and isolated guest-recovery scenarios. See [backup and recovery](docs/development/backup-recovery.md) and the [functional closeout](docs/development/phase3-functional-closeout-20260929.md). |
 
-[Native user management](docs/api/admin-users.md) adds revision-checked account edits, library/playback policy, disable/enable, and password reset, with last-enabled-administrator protection and transactional session revocation. It is a Goby administrator API, not complete Emby user-mutation support. Existing original-file responses periodically revalidate access and can interrupt blocked writes after confirmed revocation; this is not instantaneous termination, and transient database/storage errors retain an existing grant.
+AMD decode, encode and GPU processing have actual execution evidence for the
+recorded devices, drivers and media combinations. Hardware and software fallback
+retain their separate boundaries; an AMD result does not establish support for
+every GPU or codec tuple. See the [AMD media contract](docs/development/amd-video-processing.md).
 
-The [native metadata editor](docs/api/admin-metadata.md) adds library-scoped management lists and a persistent administrator layer over scanned filename/NFO values. Manual changes and field locks survive refresh, and restoring automatic values is explicit. Revisions also protect against source changes, while inactive settings after item reclassification remain visible and removable. These native guarantees are separate from the documented Emby mutation behavior.
+## Run Goby
 
-[Administrator login sessions](docs/api/admin-sessions.md) can be listed, filtered and individually revoked from the dashboard. Revocation is checked and committed against the current administrator, then closes the selected session's live subscriptions and conversion scope. Other logins remain usable, and self-revocation returns the dashboard to login. Active login status is distinct from online presence.
+The current container deliveries are importable image archives with Compose
+profiles. They include the embedded administrator dashboard and use an external
+PostgreSQL 17 server.
 
-[Application keys](docs/api/application-keys.md) add native list/create/reveal/revoke administration and Emby-compatible key management. These are independent, non-expiring server credentials with distinct userless client contexts, rather than user-owned logins. Parent revocation retires all its contexts and live WebSockets. Explicit target-user catalog access follows that user's library ACLs; userless playback keeps personal state separate. Secret recovery uses `GOBY_API_KEY_MASTER_KEY_FILE`, defaulting to `application-key-master.key` in the process working directory. Use a persistent private directory and a service-owned, mode-0600, 32-byte master file; safe first creation is lazy. Database backups must retain the matching master. See [key operations and recovery](docs/development/application-keys.md).
+- [Linux amd64 software image and Compose guide](deploy/oci/README.md): archive
+  import, database configuration, persistent paths, startup, backup, upgrade and
+  rollback. The [delivery record](docs/development/oci-delivery-20260929.md)
+  binds the accepted image, tools and application source.
+- [Linux amd64 AMD image and Compose extension](deploy/oci/README.amd.md): device
+  selection, numeric render-group access, media settings and the recorded
+  GFX1150/Mesa profile. The [AMD delivery record](docs/development/oci-amd-delivery-20260929.md)
+  binds its actual GPU and production-container HTTP results.
+- [Development build and run guide](docs/development/running.md): source-based
+  setup. [Toolchain policy](docs/development/toolchain.md) describes the required
+  Go, PostgreSQL and media-tool dependencies.
 
-[Device administration](docs/api/devices.md) adds a native Devices page and six non-camera Emby DeviceService operations. Ordinary logins are grouped by reported device ID while retaining separate user authority. Names use revision-checked overrides; removal revokes that device generation's ordinary credentials and preserves history. A later login registers a new generation. Native administrator sessions and the shared application-key server-device family remain separate. See [device registry operations](docs/development/devices.md).
+Both OCI profiles passed archive loading and runtime acceptance. The software
+profile also passed encrypted recovery, persistence, a schema 29-to-50 upgrade
+and backup-based rollback. The AMD extension retains the same application bytes.
+These archive deliveries do not establish registry publication or a production
+deployment.
 
-[Task execution and scheduling](docs/api/tasks.md) adds eight native administrator and six Emby ScheduledTaskService operations. The current executor performs normal full-library scans with durable run identities, request receipts, per-library children, cancellation, schedule preview, and interval/daily/weekly/startup rules. Task definitions, executions, and existing scan history remain separate. The administrator UI manages this work without adding a consumer player. See [task operations](docs/development/tasks.md).
+## Scope and future work
 
-[Native settings](docs/api/settings.md) provides revision-checked read, complete override replacement, and selective reset. Four persisted server-name modes distinguish deployment, custom, empty, and unset names. The five native overrides and separate `Encoding.TranscodingMaxWidth` state share atomic publication; six reset selectors preserve unselected settings. Existing registered conversion plans retain their concrete settings. Hardware and resource controls remain startup-only. The five [ConfigurationService routes](docs/api/configuration.md) expose only `ServerName`, read-only `IsStartupWizardCompleted`, and the encoding width field. See [settings operation](docs/development/settings.md) and [configuration compatibility](docs/development/configuration-compatibility.md).
+There is no remaining implementation or acceptance gate in the completed selected
+scopes. Further work requires a separately selected delivery or feature scope:
+provider-specific online acceptance, additional clients and media combinations,
+other GPU/driver profiles, native arm64, other container runtimes, current-version
+native systemd distribution, registry publication, or production/public-HTTPS
+deployment. Provider adapters already exist; their online acceptance remains
+deferred.
 
-[Activity and diagnostic logs](docs/api/observability.md) are complete and deployed in M5i: four native administrator and four Emby GET routes, transactional activity records, bounded safe JSONL storage, and a React/MUI Activity and Server logs page. Native and compatibility pagination differ; downloads use fixed snapshots and bounded authorization rechecks. The [full remote race suite](docs/development/m5i-full-race-summary.json) passed **1380 top-level tests across 17 tested packages**, with zero skips or race findings. [Browser acceptance](docs/development/m5i-observability-browser.json) passed 11 scenario checks in 12.400443 seconds plus two exact 29-table restarts. [Protected deployment](docs/development/m5i-deployment-evidence.json) and the [0.776-second main-service workflow](docs/development/m5i-deployed-observability.json) passed. That M5i checkpoint used schema **22**/probe **6**, PID **3668655**, and 54 current administrator assets. See [implementation and acceptance boundaries](docs/development/observability.md) and [current progress](docs/development/progress.md).
+Historical strict capacity/SLO profiles, the complete old fault matrix and
+physical power-loss durability were not accepted by the revised functional
+closeout. Offline synchronization, general recommendations and game/book media
+remain unselected. These boundaries do not reopen completed functional or OCI
+journeys.
 
-[Native encrypted backup and recovery](docs/development/backup-recovery.md) is complete and deployed in M5j. It includes the administrator backup page, durable operations, verified restore planning, activation/rollback and an offline CLI. The [final Linux race suite](docs/development/m5j-final-full-race.json) passed **1605 tests across 24 packages**; the [real browser/process recovery journey](docs/development/m5j-runtime-acceptance.json), [protected deployment](docs/development/m5j-deployment-evidence.json), and [main backup/download/logout workflow](docs/development/m5j-deployed-backup-workflow.json) passed. That accepted historical deployment was M5j/schema23/probe6 with 57 assets. The [current status](docs/development/current-status.md) records the newer candidate/primary versions and audit remediation. The archive excludes media and deployment credentials. Emby BackupRestore/plugin compatibility remains unsupported. The [handoff](docs/development/handoff.md) records this round's closeout and remaining scope.
+Live TV/EPG/DVR/tuners, DLNA, external channels, synchronized group playback,
+a consumer web player, Emby Connect/cloud identity, Emby package installation and
+proprietary binary-plugin compatibility are explicitly outside the selected
+product scope. See the [implementation scope](docs/api/implementation-scope.md)
+for the distinction between implemented, deferred and excluded capabilities.
 
-At the preceding M5i checkpoint, the database schema was **22**, through `0022_activity_entries.sql`. The migration adds the initially empty activity table while preserving the 28 old tables and settings state; no history is inferred. Private diagnostic files are separate from PostgreSQL and use a service-owned Linux log directory. The live workflow retained two revoked sessions, one device, and six activity entries, and restored every original settings value while advancing its revision from 6 to 8. Probe cache version **6** remains unchanged. [Verified video seeking](docs/development/video-fast-seek.md) can skip prefix software video decoding while retaining linear audio history; unsupported or stale evidence uses the preceding linear path. Rescan libraries after upgrading older probe caches; the activity/settings migrations require no rescan. See [build/run instructions](docs/development/running.md) and [transcoding configuration](docs/development/transcoding-configuration.md).
+## Documentation and licensing
 
-The preceding [M5h configuration increment](docs/development/verification-m5h-configuration.md) passed **1252 top-level race tests across fourteen packages, zero test skips and no race findings**, 16 browser checks with two 28-table restarts, protected deployment with an actual isolated 28-table restore, and the main-service workflow. The 0.901-second live workflow writes the supported compatibility fields, revokes its Emby credential with an independent `401` barrier, restores the original native state with CAS, and revokes its native credential with a final barrier. Old rows in the other 27 tables remain exact; two revoked sessions and one device remain as new history, and settings revision/update time remain advanced. Earlier [M5g native settings](docs/development/verification-m5g-settings.md) and [M5f task acceptance](docs/development/verification-m5f-tasks.md) remain completed increments. M4, M5, M6, and the complete planned server remain unfinished. Broader configuration fields/sections, additional task executors, providers, product backup/restore, hardware execution, and full client acceptance remain open.
+The [documentation guide](docs/README.md), [API inventory](docs/api/implemented.md)
+and [Linux architecture](docs/architecture/linux-go-react.md) provide detailed
+contracts and source references. The official research baseline is the pinned
+Emby SDK 4.9.5.0 export; its 535-operation inventory describes upstream contracts,
+not a count of implemented or accepted Goby operations. Historical research and
+deployment evidence remains available through [source provenance](docs/sources/README.md)
+and the [handoff](docs/development/handoff.md).
 
-Start with the [documentation guide](docs/README.md), the [implementation scope](docs/api/implementation-scope.md), and the [Linux architecture](docs/architecture/linux-go-react.md).
-
-The primary research baseline is the official Emby SDK **4.9.5.0 Release**, pinned to commit `bdd0dd7c0801f6e069dff2795d80cddae6f91791`. Its API export contains **535 HTTP operations across 422 paths**, grouped into **70 services**, and **333 schema definitions**. These are upstream inventory counts, not Goby implementation counts.
-
-The official reference corpus contains **2462 sanitized records**. The [activity/log study](docs/research/observability-reference.md) adds 96 to the preceding 2366: 94 complete HTTP exchanges, one initial connection-refused readiness record, and one audit. All 76 capture HTTP exchanges are complete; the other records belong to setup and independent cleanup. The [reference report](docs/development/m5i-observability-reference.json) is research evidence, not M5i product acceptance. The earlier [4K encoding-width study](docs/research/encoding-width-reference.md) added 61 records: 12 setup, two operator-cleanup, 44 capture HTTP, two probe, and one audit record. The preceding [fresh configuration mutation study](docs/research/configuration-mutation-reference.md) brought the corpus from 2051 to 2305 with 254 records: 17 setup and 237 capture records. The [configuration read study](docs/research/configuration-reference.md) contributed 86 records at its earlier checkpoint. The preceding [fresh ScheduledTasks mutation study](docs/research/scheduled-tasks-mutation-reference.md) brought the corpus to 1965. The earlier [task read study](docs/research/scheduled-tasks-reference.md), [key-device](docs/research/key-devices-reference.md), [ordinary user-device](docs/research/devices-reference.md), [application-key management](docs/research/api-key-reference.md), [playback](docs/research/api-key-playback-reference.md), [client-context](docs/research/api-key-context-reference.md), and [target-scope](docs/research/api-key-scope-reference.md) evidence remain intact. Supporting probes and observations count as records, not additional endpoints or successful client workflows.
-
-Configuration research distinguishes administrator objects from the ordinary viewer's total-configuration `200 {}` response; named encoding/devices/DLNA reads return viewer `403`. The earlier fresh study observes a mixed invalid partial update returning `500` after a name change remains visible in the same process. Its three key-authorized write controls are complete baseline no-ops returning `204`; changed-value key writes and restart persistence are not established by that study. M5h implements its documented narrow field set, not the full reference objects with 60 total fields and 17 encoding fields.
-
-The separate official-reference width study converts the same 4K source using software `libx264`: configured width 1280 produces 1280x720, while zero produces 3840x2160; both outputs contain eight frames and pass complete decoding. This supports the bounded inference that zero removes the extra width cap in that sampled flow. It does not disable every other output limit or establish behavior for all clients. See the [research report](docs/research/encoding-width-reference.md) and [execution evidence](docs/development/m5h-encoding-width-reference.json).
-
-Device research observes shared registration across ordinary users/clients, custom-name clearing, and selected-device login revocation. In the fresh key study, deleting one shared server device revoked both tested keys, although three cached client-session DTOs remained visible. Hidden header-specific device lookup/deletion and key-device recreation remain unverified reference behavior. Goby's accepted M5e contract documents its own generation and projection rules; broader device and Session wire equivalence remain incomplete.
-
-The initial ScheduledTasks read study records 22 definitions, all sampled as `Idle`. The separate fresh study observes real starts, both running-stop forms returning `204` and then `Cancelled`, idle-stop `500`, and bounded trigger updates. Scheduled firing, weekly/system-event execution, DST, maximum-runtime enforcement, and key authority remain unverified reference behavior. Goby's [task implementation](docs/development/tasks.md) has its own accepted scheduling and authorization contract; the reference gaps do not become claims of full Emby timer or client equivalence.
-
-The older static Swagger browser is separately recorded because it exposes a different API surface. Neither document proves that all released clients will work without behavioral testing.
-
-Third-party legal texts and actual font attribution are collected in
+Existing third-party texts and attribution are collected in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and its
 [versioned inventory](docs/development/third-party-notices-inventory.json).
-Collection is incomplete, Goby's project license remains undecided, and the
-packaging and external-distribution gates remain open.
+The OCI images include the recorded notices and original license texts. Goby's
+project-license decision and complete public-distribution licensing remain open;
+internal artifact acceptance does not settle either question.

@@ -1,5 +1,29 @@
 # Current execution plan
 
+Status: **the selected functional and OCI delivery scope is complete and
+published; no implementation, acceptance or publication gate remains open**.
+The latest accepted delivery is `6c574ca5708051f0e48e18ebd99903688a3e13ee`.
+See the [current status](../development/current-status.md),
+[OCI publication record](../development/oci-publication-20260929.md), and
+[support matrix](support-and-delivery-matrix.md) for the scope boundaries.
+
+## Follow-up work requires a new scope selection
+
+| Purpose | Work still available | Boundary |
+| --- | --- | --- |
+| Operate a real installation | Select the target host, real media and client; configure persistence, external PostgreSQL, domain/reverse proxy/HTTPS, and verify that installation's playback and recovery | Test-environment acceptance does not establish production deployment |
+| Use online providers | Verify the existing TMDB, MusicBrainz and OpenSubtitles adapters against selected online services | Adapter implementation is already present |
+| Publish externally | Select the project license and distribution terms/materials; optionally publish a version or container registry image | Local software and AMD archives are already delivered |
+| Add a delivery platform | Build and accept a current native systemd release, native arm64, or another GPU/device/runtime profile when needed | Historical native packages and the selected AMD tuple keep their existing evidence |
+| Extend the product | Select a concrete additional feature or client/media combination | Offline packages, general recommendations and game/book media remain unselected; Live TV, DLNA, external channels, group playback and a consumer Web player remain excluded |
+
+Keep the agreed functional performance scope. Strict historical capacity/SLO
+profiles and the full original fault matrix do not become prerequisites for
+these completed deliveries. Reuse accepted unchanged evidence and run only
+checks justified by a newly selected change or deployment.
+
+## Completed delivery summary
+
 ## AMD OCI archive and Compose delivery complete: September 29, 2026
 
 The [AMD delivery record](../development/oci-amd-delivery-20260929.md) closes
@@ -18,7 +42,8 @@ The [delivery record](../development/oci-delivery-20260929.md) closes its build,
 import, media, analysis, encrypted recovery, persistence, upgrade/rollback,
 and resource-closure acceptance. The actual restore journey exposed and verified
 a repair preserving configured task policy. Source is `b9bfa7c`; use the
-result manifest for the final image and archive identities. Registry publication,
+result manifest for the final image and archive identities. The AMD extension
+above separately closes its recorded GPU profile. Registry publication, other
 GPU/arm64 profiles, and broader performance claims remain separate work.
 
 ## Revised Phase 3 delivery published: September 29, 2026
@@ -42,6 +67,13 @@ affected-package repeats. No product repair was needed in this final increment.
 There is no remaining gate in this revised functional sequence. Historical
 strict capacity/SLO/matrix and release-packaging claims remain outside its scope;
 the older entries below are execution history, not new pending tasks.
+
+## Historical execution entries
+
+The entries below preserve the work order and stopping points recorded at each
+date. Their instructions, pending flags, identities and resource observations
+are historical. They neither describe a currently running campaign nor add
+tasks to the completed scope above.
 
 ## Completed blocked-scan and guest recovery: September 29, 2026
 
@@ -770,7 +802,9 @@ stay closed; a new client journey still needs a discriminating question or a
 justified correction, and main promotion retains both acceptance and recovery
 requirements.
 
-## Review conclusion
+<a id="review-conclusion"></a>
+
+## Historical review conclusion
 
 The delivery direction remains appropriate: verify the product, admit an
 isolated candidate, establish supported real-client behavior and recovery
@@ -864,7 +898,9 @@ part of this closure. Do not queue these consumed recovery operations again.
 Preserve the page-error rule
 and every failure; do not extend the generic observation framework.
 
-## Accepted baseline
+<a id="accepted-baseline"></a>
+
+## Historical accepted baseline
 
 | Area | Accepted result | Remaining limit |
 | --- | --- | --- |
@@ -891,7 +927,9 @@ All earlier rows remain preserved. Later inputs bind this closed state, not
 the earlier episode or audio snapshots. Ownership/cleanup closure does not
 resolve the separately recorded media cancellation timing discrepancy.
 
-## Immediate queue
+<a id="immediate-queue"></a>
+
+## Historical immediate queue
 
 Historical queue: the entries in this section preserve the earlier Programs
 execution checkpoint and consumed inputs. They are separate from the completed
@@ -1296,7 +1334,9 @@ Do not reset accounts, use a null baseline, reuse stale movie05 state, or add
 per-attempt constants. Overlapping coverage closes another gate only when its
 complete declared checks and overall closeout pass. Episode01 does not qualify.
 
-## Remaining work and dependencies
+<a id="remaining-work-and-dependencies"></a>
+
+## Historical remaining work and dependencies
 
 Historical/full-delivery dependencies: these obligations retain their recorded
 scope and are not a claim that the three selected feature areas remain
@@ -1359,7 +1399,9 @@ main plan and runners remain superseded. A new-binary schema27 restore migrates
 to schema28 and does not establish old-binary rollback. A cancelled ready
 restore retains its inactive staged database; bind that occupied state explicitly.
 
-## Gate boundaries
+<a id="gate-boundaries"></a>
+
+## Historical gate boundaries
 
 | Gate | Blocks | Independent work that remains possible |
 | --- | --- | --- |
@@ -1385,7 +1427,9 @@ condition blocks affected promotion until resolved. Missing hardware blocks
 its profile, not unrelated software checks. License/notices must close before
 external distribution. A limited internal release is not M2-M6 completion.
 
-## Execution and verification
+<a id="execution-and-verification"></a>
+
+## Historical execution and verification policy
 
 All tests, builds, validators and runtime/media/browser checks run through
 `ssh test-env`; no local fallback is authorized. Read-only reviews may run in

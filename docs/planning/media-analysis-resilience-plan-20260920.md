@@ -39,8 +39,11 @@ The `ui-ux-pro-max` skill remains disabled.
 
 Live TV, EPG, DVR/scheduled recording, tuners, DLNA, external channels and group
 playback remain explicitly excluded. Other unselected features and delivery
-profiles remain deferred, including offline synchronization, OCI, provider-online
-acceptance and additional hardware/platforms. Existing generic dynamic sources
+profiles remain deferred, including offline synchronization, provider-online
+acceptance and additional hardware/platforms. The original OCI deferral was
+subsequently closed for the [Linux amd64 software](../development/oci-delivery-20260929.md)
+and [selected AMD](../development/oci-amd-delivery-20260929.md) archive/Compose
+profiles. Those are separate accepted increments. Existing generic dynamic sources
 and time shifting retain their contracts. Original Emby Web commercial gating
 is not an acceptance gate for the selected server adapters; actual supported
 consumer coverage must still be recorded truthfully.
