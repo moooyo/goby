@@ -4,18 +4,18 @@ For installation, start with the [Docker quick start](QUICKSTART.md). The
 operations helper provides `prepare`, `check`, `start`, `status`, `logs` and
 `stop`; [current-release.json](current-release.json) is the shared catalog for
 the current software and AMD image/archive identities. The
-[library intro automation result](../../docs/development/library-intro-automation-20260930.md)
-and [result manifest](../../docs/development/library-intro-automation-results-20260930.json)
-record the updated application, focused checks and actual automatic workflow.
+[BIF automation and intro assessment result](../../docs/development/bif-intro-expansion-20260930.md)
+and [result manifest](../../docs/development/bif-intro-expansion-results-20260930.json)
+record the updated application, focused checks and actual automatic preview workflow.
 Git integration is recorded separately. The earlier
 [operations result](../../docs/development/docker-operations-20260930.md) retains
 its 14 helper tests, original software journey, failed attempts and closure.
 
 The separate small toolkit is
-`D:/Code/goby/.artifacts/intro-automation-20260930/goby-docker-operations.zip`.
+`D:/Code/goby/.artifacts/bif-intro-20260930/goby-docker-operations.zip`.
 The software image is in
-`D:/Code/goby/.artifacts/intro-automation-20260930/software`; application source
-is `95607ffa505c7a9368b1bfd8ec3d545d009285d3`, with schema 51. The toolkit does not
+`D:/Code/goby/.artifacts/bif-intro-20260930/software`; application source
+is `0014befd68420e593f0855cdd1c0991f3079abfc`, with schema 52. The toolkit does not
 include another copy of the image archive. The manual configuration, source-build
 and recovery details below remain reference material for the selected profile.
 Further TMDB/OpenSubtitles work and new scraper research are deferred; provider
@@ -177,8 +177,21 @@ The server processes enabled libraries in the background, including after a
 successful scan, and makes qualified intervals available for playback. No review
 or manual-correction step is required; unmatched episodes play unchanged. Open
 Tasks for progress, failures and stop controls. The unchanged detector needs at
-least three independent episodes and examines the first 600 seconds. BIF previews
-retain their separate manual generation controls.
+least three independent episodes and examines the first 600 seconds.
+
+Enable **Automatic seek previews** in a Movies, TV shows or Mixed media library.
+The schema 52 `EnablePreviewGeneration` option defaults to false for existing
+libraries. Enablement, successful scans and preview-profile changes request
+background generation; the default schedule combines daily work and request
+events. Tasks shows progress, failures and stop controls. No manual selection,
+build or Force step is required. Disabling the option retains existing valid
+previews. The default interval is still 10 seconds and BIF delivery is unchanged.
+
+The broader intro assessment did not establish broader recognition support:
+all 12 reviewed positive cases were missed, while three NASA short-ident negative
+cases produced no false positives. Detector v3 and its thresholds are unchanged.
+Short intros and differing audio/video versions still need recognition work;
+the earlier The Big Picture acceptance remains limited to its original scope.
 Optional source-media rewrite and OCR are disabled in this default read-only
 profile. GPU devices, Vulkan/libplacebo Dolby Vision processing, other container
 runtimes and arm64 are outside this delivery's acceptance scope.
@@ -198,6 +211,8 @@ runtimes and arm64 are outside this delivery's acceptance scope.
    original item IDs and user state remain preserved.
    Schema 51 leaves the new intro-detection option off for existing libraries;
    enable it in the desired TV library settings after upgrading.
+   Schema 52 similarly leaves automatic seek previews off until enabled for
+   a Movies, TV shows or Mixed media library; existing intro settings are retained.
 4. To roll back after a schema change, stop the new container and restore the
    matching pre-update database and state/master-key backup before selecting the
    previous image. Switching an old binary onto a newly migrated database is not

@@ -7,12 +7,12 @@ and the actual render node. The operations helper supports `prepare`, `check`,
 immutable image ID. Software and AMD remain profiles of the same Docker delivery.
 
 The small operations toolkit is
-`D:/Code/goby/.artifacts/intro-automation-20260930/goby-docker-operations.zip`;
+`D:/Code/goby/.artifacts/bif-intro-20260930/goby-docker-operations.zip`;
 the current AMD image archive is in
-`D:/Code/goby/.artifacts/intro-automation-20260930/amd`. Both profiles use
-application source `95607ffa505c7a9368b1bfd8ec3d545d009285d3` and schema 51.
-The [automation result](../../docs/development/library-intro-automation-20260930.md)
-and [manifest](../../docs/development/library-intro-automation-results-20260930.json)
+`D:/Code/goby/.artifacts/bif-intro-20260930/amd`. Both profiles use
+application source `0014befd68420e593f0855cdd1c0991f3079abfc` and schema 52.
+The [BIF automation and intro assessment result](../../docs/development/bif-intro-expansion-20260930.md)
+and [manifest](../../docs/development/bif-intro-expansion-results-20260930.json)
 bind the updated application evidence. Git integration is recorded separately.
 The prior helper, provider and AMD device/tool receipts retain their original
 scopes; this application update does not establish another GPU profile.
@@ -24,7 +24,21 @@ libraries are analyzed in the background and qualified matches are used without
 review or manual correction. An unmatched episode plays unchanged. Existing
 libraries default to off after upgrade; Tasks shows progress, failures and stop
 controls. The detector still requires at least three independent episodes and
-examines the first 600 seconds. Preview generation remains a separate manual action.
+examines the first 600 seconds.
+
+For **Automatic seek previews**, enable the separate library option in Movies,
+TV shows or Mixed media. It defaults to off after upgrade. Background work is
+requested by enablement, successful scans and preview-profile changes, with a
+daily/event default schedule. Tasks retains progress and errors; disabling
+generation keeps existing valid previews. Manual build/Force controls are no
+longer the normal workflow, and the default 10-second interval is unchanged.
+
+The expanded intro assessment is complete, but recognition extension is not
+accepted: all 12 reviewed positive cases were missed, and three NASA short-ident
+negative cases produced no false positives. Detector v3 and thresholds were not
+changed. Short intros and differing audio/video versions still need improvement.
+Neither this assessment nor BIF automation broadens the prior GPU or The Big
+Picture recognition scope.
 
 The earlier [online-provider increment](../../docs/development/online-providers-20260930.md)
 records the source `76d64bf` application layer. Its image and source identities

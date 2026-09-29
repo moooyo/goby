@@ -5,8 +5,11 @@ PostgreSQL and FFmpeg. Its React + Material UI dashboard is for administration;
 playback uses supported third-party clients. The project license has not yet
 been selected.
 
-The selected compatibility, media-analysis, resilience, and Linux amd64 OCI
-deliveries are complete within their recorded acceptance boundaries. Start with
+Automatic seek-preview generation is complete within its selected scope.
+The expanded intro assessment is complete, but broader intro recognition has
+not passed: short intros and differing audio/video versions still need improvement.
+Earlier compatibility, resilience and Docker deliveries retain their recorded
+acceptance boundaries. Start with
 [current status](docs/development/current-status.md) and the
 [current execution plan](docs/planning/current-execution-plan.md). Older dated
 records preserve their original results and failures; they are not a cumulative
@@ -24,7 +27,7 @@ support boundary.
 | --- | --- |
 | Library and accounts | Persistent media identities and user state, bounded scans, local NFO metadata, artwork, library permissions, account/device/session management, playlists and collections, music discovery, Search/Hints and NextUp. See the [implemented API surface](docs/api/implemented.md). |
 | Playback | Authenticated direct and Range delivery, progressive and HLS remux/transcode, selected H.264/HEVC/AV1 outputs, TS/fMP4/packed-audio HLS, text and bitmap subtitle processing, and source-proven nonzero copy seeking. [Media contracts](docs/development/advanced-media.md) define the supported combinations. |
-| Media analysis | Enable **Automatic intro detection** in a TV library to analyze episodes in the background and use qualified results for playback. There is no review or manual-correction step; no detected intro means no change to playback. Tasks exposes progress, failures and stopping. Manual BIF preview generation remains available. See the [library automation record](docs/development/library-intro-automation-20260930.md), [media-analysis contract](docs/api/media-analysis.md) and [seek previews](docs/api/seek-previews.md). |
+| Media analysis | Enable **Automatic intro detection** in a TV library and **Automatic seek previews** in a Movies, TV shows or Mixed media library. Both run in the background; Tasks exposes progress, failures and stopping. Qualified intros are available for playback without manual review; no match leaves playback unchanged. Turning off preview generation retains existing valid previews. See the [current result](docs/development/bif-intro-expansion-20260930.md), [media-analysis contract](docs/api/media-analysis.md) and [seek previews](docs/api/seek-previews.md). |
 | Administration | Users, libraries, metadata editing, activity/logs, scheduled tasks, managed CPU/AMD selection and encoding settings, notifications, and backup/recovery. [Managed execution settings](docs/api/managed-execution-settings.md) distinguish changes for new work from listener settings that require restart. |
 | Recovery | Goby encrypted backups, restore planning, activation/rollback and an offline CLI available inside the image, plus accepted migration, process/database restart, selected storage-fault and isolated guest-recovery scenarios. See [backup and recovery](docs/development/backup-recovery.md) and the [functional closeout](docs/development/phase3-functional-closeout-20260929.md). |
 
@@ -43,22 +46,22 @@ image IDs, archives and companions. Both profiles include the embedded
 administrator dashboard and use an external PostgreSQL 17 server.
 
 The current archives are under
-`D:/Code/goby/.artifacts/intro-automation-20260930/software` and `amd`, with
+`D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`, with
 `goby-docker-operations.zip` in their parent directory. Both image profiles carry
-application source `95607ffa505c7a9368b1bfd8ec3d545d009285d3` and schema 51.
-The [automation result](docs/development/library-intro-automation-20260930.md)
-and [manifest](docs/development/library-intro-automation-results-20260930.json)
+application source `0014befd68420e593f0855cdd1c0991f3079abfc` and schema 52.
+The [BIF automation and intro assessment result](docs/development/bif-intro-expansion-20260930.md)
+and [manifest](docs/development/bif-intro-expansion-results-20260930.json)
 bind current evidence and artifacts. Git integration is recorded separately.
 The earlier [operations record](docs/development/docker-operations-20260930.md)
 retains the helper's 14-test and software operations evidence at its original scope.
 
-After creating or upgrading a TV library, open its settings and enable
-**Automatic intro detection**. Existing libraries default to off. Background
-analysis runs for enabled libraries and after their successful scans; Tasks
-shows progress and errors. Reliable intervals are made available to compatible
-players without an administrator decision. The detector still needs at least
-three independent episodes and considers the first 600 seconds; this workflow
-does not broaden the earlier corpus or client acceptance.
+Open library settings to enable the desired automatic features. The new
+`EnablePreviewGeneration` option defaults to false, including for existing
+libraries after upgrade. Enabling it, completing a scan or changing the preview
+profile requests background work; the default task schedule also runs daily.
+There is no separate select/build/Force step in the administrator workflow.
+Existing valid previews survive disabling the option and container recreation.
+The default preview interval remains 10 seconds and the playback protocol is unchanged.
 
 - [Linux amd64 software image and Compose guide](deploy/oci/README.md): archive
   import, database configuration, persistent paths, startup, backup, upgrade and
@@ -93,8 +96,15 @@ configuration and optional subtitle write access. MusicBrainz acceptance is
 unchanged. The user has deferred TMDB/OpenSubtitles online work and new scraper
 research; their credentials are not a requirement or blocker for Docker operations.
 
-There is no remaining implementation or acceptance gate in the completed selected
-scopes. Further work requires a separately selected delivery or feature scope:
+Intro recognition remains substantive unfinished work. In the expanded assessment,
+15 evaluable files from five series included 12 visually/source-reviewed positive
+intros: all 12 returned `no_result` and were missed. Three NASA short-ident negative
+cases produced no false positives. Detector v3 and its thresholds were unchanged;
+this is an assessment, not a recognition improvement or accepted support expansion.
+The earlier The Big Picture evidence remains valid for its original scope and
+cannot be generalized to these sources.
+
+Other work requires a separately selected delivery or feature scope:
 additional clients and media combinations,
 other GPU/driver profiles within Docker, an additional Docker image architecture
 such as Linux arm64, registry distribution, or production/public-HTTPS

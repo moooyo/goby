@@ -1,6 +1,41 @@
 # Goby handoff - September 30, 2026
 
-Latest increment: [automatic TV-library intros](library-intro-automation-20260930.md).
+Latest increment: [automatic BIF previews and expanded intro assessment](bif-intro-expansion-20260930.md).
+BIF automation is complete; the accuracy assessment is complete, but recognition
+extension remains unaccepted. Short intros and differing audio/video versions
+are substantive remaining work.
+
+Application candidate `0014befd68420e593f0855cdd1c0991f3079abfc` uses schema 52.
+Enable **Automatic seek previews** in a Movies, TV shows or Mixed media library;
+its new option defaults to off. Enablement, successful scans and profile changes
+request background work, with a daily/event default schedule. Tasks exposes
+progress, failures and stopping. There is no required manual build/Force step.
+Disabling the option preserves existing valid previews. BIF delivery and the
+default 10-second interval remain unchanged.
+
+The selected BIF checks report 168 backend, 13 Node and 33 UI passes; one historical
+fixture-dependent UI skip is retained. The actual Docker journey passed enabled
+generation, scan reuse, rebuilding after a 10-to-20-second interval change,
+and retention through disable/container recreation. Counts are scoped and do not
+claim a new full-product suite or GPU profile.
+
+The unchanged detector v3 missed all 12 reviewed positive intros among 15
+evaluable files from five series. Three NASA short-ident negative cases produced
+no false positives. Missing-audio N386 remains separately recorded; N390 was
+frozen as its next natural replacement before matching. No thresholds were
+changed. Retain the previous The Big Picture acceptance only at its original
+scope; the new misses are not passing recognition results.
+
+Read the [result manifest](bif-intro-expansion-results-20260930.json) for current
+image/archive identities and closure. Software and AMD archives are under
+`D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`, with the toolkit
+ZIP in their parent directory. The [quick start](../../deploy/oci/QUICKSTART.md)
+and [current catalog](../../deploy/oci/current-release.json) select this version.
+Git integration is recorded separately. Docker remains the sole delivery form;
+provider work stays deferred.
+
+## Previous schema 51 intro-automation checkpoint
+Previous increment: [automatic TV-library intros](library-intro-automation-20260930.md).
 The user workflow is a single **Automatic intro detection** checkbox in TV
 library settings. Enabled libraries are analyzed in the background; qualified
 results are used directly and absent/unreliable results do nothing. No manual

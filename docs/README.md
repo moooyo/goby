@@ -2,22 +2,32 @@
 
 ## Current status
 
-The latest increment is [automatic TV-library intro detection](development/library-intro-automation-20260930.md).
-Enable **Automatic intro detection** in a TV library's settings; eligible
-episodes are processed in the background and qualified intervals are used
-without review or manual correction. Unmatched episodes play unchanged. Tasks
-shows progress, failures and stop controls. Existing libraries default to off
-after upgrading to schema 51 and require this explicit opt-in.
+The latest [BIF automation and intro assessment increment](development/bif-intro-expansion-20260930.md)
+uses application candidate `0014befd68420e593f0855cdd1c0991f3079abfc`, schema 52.
+BIF automation is complete within its scope. The expanded intro assessment is
+complete, but broader recognition remains unaccepted and requires improvement.
 
-Current software and AMD Docker application profiles use source
-`95607ffa505c7a9368b1bfd8ec3d545d009285d3`. The
-[result manifest](development/library-intro-automation-results-20260930.json)
-binds current images, focused verification, the actual automatic workflow and
-resource disposition. The recorded 135 focused Go parent passes and 27 UI
-passes are scoped evidence, not a new full-product suite; one historical
-fixture-dependent UI skip remains explicit. Git integration is recorded separately.
-The detector still needs at least three independent episodes and examines the
-first 600 seconds. This workflow does not expand its prior accuracy or client scope.
+Enable **Automatic seek previews** in a Movies, TV shows or Mixed media library.
+The new option defaults to false. Enablement, successful scans and profile changes
+request background generation, with daily/event defaults. Tasks retains progress,
+failures and stop controls; no manual build/Force step is needed. Disabling
+preview generation preserves existing valid outputs. The 10-second default and
+BIF delivery protocol are unchanged.
+
+The [result manifest](development/bif-intro-expansion-results-20260930.json)
+records 168 focused backend checks, 13 Node tests and 33 UI passes, with one
+historical fixture-dependent UI skip. The actual Docker generation, scan reuse,
+10-to-20-second profile rebuild, disable and recreation journey passed.
+These are scoped results, not a full-product or new GPU acceptance claim.
+
+The expanded intro sample has 15 evaluable files from five series. All 12
+visually/source-reviewed positive intros returned `no_result` and were missed;
+three NASA short-ident negative cases had no false positives. N386's missing
+audio is retained separately; N390 was frozen as its next natural replacement
+before matching. Detector v3 and thresholds are unchanged. Short intros and
+differing audio/video versions still need recognition improvements. The earlier
+The Big Picture evidence remains valid only within its original scope.
+Git integration is recorded separately.
 
 The earlier [Docker operations toolkit](development/docker-operations-20260930.md)
 retains its 14 helper tests, software operations journey and resource closure
@@ -71,7 +81,7 @@ alone does not establish another platform's support.
 | [Application-key operations](development/application-keys.md) | Persistent master-key ownership and restoring a database with its matching master key |
 | [Native backup and recovery](development/backup-recovery.md) | Encrypted archives, durable operations, offline recovery and generation switching |
 | [Media-analysis runtime](development/media-analysis-runtime.md) | Native intro helper, analysis inventory, cache and execution lifecycle |
-| [Media-analysis administrator UI](development/media-analysis-native-ui.md) | TV-library automation, results, task progress and manual preview generation |
+| [Media-analysis administrator UI](development/media-analysis-native-ui.md) | Library intro/preview automation, generated outputs, task progress and errors |
 | [Media-analysis recovery](development/media-analysis-recovery.md) | Analysis state and artifact behavior during backup, restore and restart |
 
 The OCI deliveries include an embedded React/MUI administrator dashboard,
@@ -82,9 +92,9 @@ how the external PostgreSQL server or reverse proxy may be deployed. Executables
 recovery commands and native helpers included in the image are components of
 that image, not additional delivery forms. Consult the selected Docker guide
 before changing the media write policy. The toolkit ZIP is
-`D:/Code/goby/.artifacts/intro-automation-20260930/goby-docker-operations.zip`;
+`D:/Code/goby/.artifacts/bif-intro-20260930/goby-docker-operations.zip`;
 it is used with the matching current image archive from
-`D:/Code/goby/.artifacts/intro-automation-20260930/software` or `amd`.
+`D:/Code/goby/.artifacts/bif-intro-20260930/software` or `amd`.
 The small toolkit does not duplicate those archives.
 
 ## Functional and compatibility contracts
@@ -130,8 +140,10 @@ The result manifests retain the detailed counts, hashes, failed attempts,
 repeats and exclusions; this guide does not combine counts across different
 sources or interpret historical research totals as current test coverage.
 
-| Completed scope | Record and evidence |
+| Scope | Record and evidence |
 | --- | --- |
+| Automatic BIF previews | [Current result](development/bif-intro-expansion-20260930.md) and [manifest](development/bif-intro-expansion-results-20260930.json); completed library-driven generation, reuse, configuration rebuild and retention scope |
+| Expanded intro recognition | The same record preserves the completed assessment and all 12 missed positive cases; recognition extension is not accepted and short/variant intros need improvement |
 | Automatic TV-library intros | [Automation result](development/library-intro-automation-20260930.md) and [manifest](development/library-intro-automation-results-20260930.json); library opt-in, background results, automatic scan follow-up, disable/restart behavior and focused UI/task checks |
 | Docker installation and operations | [Operations result](development/docker-operations-20260930.md); 14 helper tests, composed software runtime journey, retained failures and resource closure; Git integration is recorded separately |
 | Credential-free online providers | [Provider result](development/online-providers-20260930.md); accepted MusicBrainz album flow and offline/configuration scope at source `76d64bf`; original image receipts are preserved |
@@ -166,12 +178,16 @@ JSON snapshots can be read offline. Their sample server addresses and incomplete
 upstream schema metadata are research inputs, not deployment settings or Goby's
 published API specification.
 
+## Remaining recognition work
+
+BIF automation is complete, but recognition of short intros and differing
+audio/video versions remains substantive unfinished work after the expanded
+assessment. Git integration is recorded separately.
+
 ## Optional future work
 
-The selected functional, OCI and operations acceptance scopes are complete.
-Git integration is recorded separately from these acceptance receipts. Further
-product or deployment work needs its own chosen scope; the following does not
-reopen accepted deliveries:
+The directions below remain separate from recognition work and do not reopen
+older accepted deliveries:
 
 - Production Docker deployment and operations, and registry publication if
   selected. A registry would distribute the same Docker images; it would not

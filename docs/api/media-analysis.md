@@ -1,17 +1,22 @@
 # Media analysis
 
-Media analysis executes in background tasks. Enabling intro detection in a TV
-library and completing a scan request later analysis through a durable event;
+Media analysis executes in background tasks. Library options independently
+enable automatic intro detection and automatic seek previews. Enabling an option
+or completing a scan requests later work through its dedicated durable event;
 the scan itself does not perform extraction or matching. Item listing, playback
 negotiation and preview HTTP delivery do not start analysis. The task keys are
 `media.intro_analysis` and `media.preview_generation`. Both use the shared
 `media.analysis` worker group. A task that lacks its configured local tools is
 unavailable; the server does not invent completed work or tool identities.
 
-The September 30 library automation increment is **complete within its selected
-scope**. Backend, UI, actual Docker verification and owned-resource closure passed.
-Delivery identities and the machine-readable receipt are recorded in the
-[increment record](../development/library-intro-automation-20260930.md).
+The schema-52 automatic BIF workflow has passed its selected backend, UI and
+actual Docker checks. The expanded intro assessment is complete, but broader
+recognition is not accepted: v3 missed all 12 source-reviewed openings among 15
+evaluable originals and correctly abstained on three short-ident negatives.
+No accuracy improvement is claimed. See the
+[BIF and intro checkpoint](../development/bif-intro-expansion-20260930.md).
+The earlier automatic-intro delivery retains its completed, source-bound scope
+in the [previous increment record](../development/library-intro-automation-20260930.md).
 
 The native endpoints are documented by their typed request/response structures
 in `internal/server/admin_media_analysis.go`. Configuration writes use the
@@ -25,6 +30,9 @@ JavaScript numbers, wall-clock timestamps, or generic server settings revisions.
 for `tvshows` libraries. Missing values in existing library rows mean disabled;
 unrelated options and existing library revisions are preserved by migration.
 The library switch is the current control for automatic intro publication.
+`LibraryOptions.EnablePreviewGeneration` independently defaults to `false` for
+`movies`, `tvshows` and `mixed` libraries; it cannot be enabled for music libraries.
+The native UI calls this second switch **Automatic seek previews**.
 
 Creating an enabled TV library or changing the option from false to true commits
 the durable `IntroAnalysisRequested` event. Successful completion of an enabled
@@ -33,12 +41,19 @@ manager consumes these requests separately from scanning. Automatic runs select
 only enabled TV libraries; an empty eligible selection does not expand to all
 libraries.
 
-An untouched intro-task definition receives a 24-hour interval and a dedicated
-`IntroAnalysisRequested` trigger. Existing custom schedules, deliberately cleared
-triggers and disabled task definitions are preserved. Thus a saved library option
-does not override an administrator's explicit task scheduling decision.
+Creating a preview-enabled library, a false-to-true preview edit, or successful
+completion of its independent or task-owned scan commits
+`PreviewGenerationRequested`. Automatic preview admission selects only eligible
+preview-enabled libraries. The intro and preview counters are independent, and
+neither empty automatic selection becomes an all-library request.
 
-Disabling the library option immediately withdraws its detected publications.
+Each untouched analysis-task definition receives a 24-hour interval and its
+dedicated event trigger. Existing custom schedules, deliberately cleared triggers
+and disabled task definitions are preserved. Thus a saved library option does not
+override an administrator's explicit task scheduling decision. A request arriving
+during an active analysis run remains pending for a fresh source snapshot.
+
+Disabling the intro library option immediately withdraws its detected publications.
 Changing it back to true requests new work; it does not reactivate old automatic
 results. Stored evidence remains inspectable, and historical source-valid
 Manual/Import markers and explicit chapter markers retain their precedence.
@@ -46,12 +61,22 @@ An explicit false-to-true transition retires that library's legacy rejection
 flags, advances their decision revisions and retains the decision rows and audit
 history. It still requires fresh publication rather than promoting old evidence.
 
+Disabling preview generation prevents new automatic admission and publication;
+it leaves existing source-valid BIF and thumbnail references readable. It is not
+a cache-clear operation. Source/profile invalidation, explicit clear and cache
+eviction retain their ordinary effects. Explicit compatibility preview-start APIs
+remain available independently of the automatic option.
+
 The Emby library-option mapping uses `EnableMarkerDetection` as the main switch.
 If `EnableMarkerDetectionDuringLibraryScan` is supplied, the main switch must
 also be supplied and both booleans must agree. `IntroDetectionFingerprintLength`
 accepts only the integer `10`, matching the existing ten-minute extraction
 horizon. Responses project both booleans from the single library option and
 project the fixed length; no separate scan-only mode is implemented.
+The preview mapping uses `EnableChapterImageExtraction`; if
+`ExtractChapterImagesDuringLibraryScan` is supplied, the main preview switch must
+also be supplied and both booleans must agree. Both response fields project the
+single preview-generation option.
 
 ## Configuration and execution identity
 
@@ -82,6 +107,12 @@ preserves the revision and derived references. Invalidation emits a bounded
 library resynchronization covering the configuration's whole catalog audience;
 it does not claim that every item changed. Notification journal capacity errors
 roll back the configuration and its invalidation atomically.
+
+A real profile change also commits a fresh request for each analysis kind with
+enabled libraries: `IntroAnalysisRequested` and/or `PreviewGenerationRequested`.
+The newly admitted work captures the new profile. A no-op update creates neither
+an invalidation nor a rebuild request. A preview interval or quality change thus
+requests automatic rebuilding without a manual start.
 
 Cache root and disk quota are startup configuration. Paths and receiver secrets
 do not enter this profile. Admission receives an already inspected tool inventory
@@ -173,10 +204,16 @@ of the underlying evidence status. Replacement does not carry suppression to new
 source bytes.
 
 The matcher emits integer similarity and coverage measurements, not a calibrated
-accuracy probability. The existing matcher and thresholds are unchanged: at least
+accuracy probability. The production candidate retains `introdetect-v3` and its
+existing thresholds: at least
 three independent episodes support an automatic result, and extraction uses at
-most the first 600 seconds. This workflow increment does not extend the previously
-accepted episode-level accuracy population.
+most the first 600 seconds. The [expanded evaluation](../development/bif-intro-expansion-20260930.md)
+returned `no_result` for all 15 evaluable new originals: 12 missed source-reviewed
+openings and three correct short-ident negatives, with zero qualified outputs
+and zero false positives. Precision and boundary error are undefined because no
+interval was emitted. Short and variant openings remain demonstrated limitations
+of this selected population. Unadopted calibration experiments do not change the
+production contract or expand accepted recognition coverage.
 Review candidates, competing intervals, missing modalities, insufficient support,
 analysis boundaries and search limits do not auto-publish. A completely exhausted
 comparison budget records `comparison_budget_exceeded` with no candidate and the
@@ -232,13 +269,19 @@ detections are withdrawn, and disposable feature/preview references are cleared.
 An already-true setting does not undergo that profile invalidation. Historical
 Manual/Import data, decisions and audit records are preserved.
 
+Schema 52 adds the default-false preview library option and independent
+`PreviewGenerationRequested` event. Existing library option rows, revisions and
+prior schedule choices are retained. It does not replace the BIF format or the
+source/profile-bound preview storage contract.
+
 Normal restart preserves configuration and current derivative references while
 the task manager interrupts stale execution claims. Graceful shutdown of unfinished
-automatic intro work records a new durable request. Startup recovery does the
-same for abandoned automatic runs after a crash, atomically with interruption of
-the old claims. The replacement admission evaluates current library policy; it
-does not resume old execution authority. Explicit user stops and manual runs do
-not generate automatic replacement work.
+automatic intro or preview work records its corresponding durable request.
+Startup recovery does the same for abandoned automatic runs after a crash,
+atomically with interruption of the old claims. The replacement admission
+evaluates current library policy; it
+does not resume old execution authority. Explicit user stops, maximum-runtime
+stops and manual runs do not generate automatic replacement work.
 
 Restore first validates raw
 stored profiles, binary features, timeline bounds, result/audit shapes and all
@@ -248,4 +291,5 @@ and clears feature-cache rows and preview references. It preserves immutable job
 and source history, decisions, preview-clear tombstones and detection audit.
 Manual intro state retains its existing source-validity rules. Restored source
 roots require fresh validation; old worker authority is never replayed. Derived
-files may be absent on the destination and must be regenerated explicitly.
+files may be absent on the destination and require newly admitted generation
+after source-root validation; old archived references are not reused as proof.

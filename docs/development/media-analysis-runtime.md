@@ -1,10 +1,14 @@
 # Media analysis runtime
 
-Current runtime contract, including the September 30 library automation increment.
-That increment is **complete within its selected scope**, including backend,
-UI, actual Docker verification and owned-resource closure. Delivery identities
-and the machine-readable receipt are bound by its
-[record](library-intro-automation-20260930.md). Earlier Phase 2 verification is
+Current runtime contract, including schema-52 automatic seek previews. The BIF
+workflow is **verified within its selected scope**. The expanded intro assessment
+is complete, but broader recognition is **not accepted**: all 12 source-reviewed
+openings were missed, while three short-ident negatives correctly received no
+intro. The [current checkpoint](bif-intro-expansion-20260930.md)
+separates those outcomes and binds the application candidate. The previous
+automatic-intro increment retains its completed backend, UI, Docker and
+resource-closure scope in its [record](library-intro-automation-20260930.md).
+Earlier Phase 2 verification is
 complete, including its client lifecycle and independent resource closure. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
 [recorded results](media-analysis-resilience-phase2-results-20260922.json).
@@ -51,16 +55,25 @@ records a durable `IntroAnalysisRequested` event, as does successful completion
 of independent and task-owned scans of enabled libraries. Extraction and matching
 run in the background task, not in the scanning request.
 
-The first installation of an untouched enabled intro-task definition adds a
-24-hour interval and the dedicated event trigger. Existing custom, cleared or
-disabled schedule choices are preserved. The initial event cursor includes
-requests committed before default-trigger installation. Automatic intro runs
-select only enabled TV libraries; no eligible library means no intro work.
-Graceful shutdown of unfinished automatic intro work persists a replacement
-request. Startup recovery also requests fresh admission for abandoned automatic
-runs after a crash. Old claims become interrupted; current library policy is
-re-evaluated for new work. Explicit user stops and manual runs do not create
-automatic retries.
+Movie, TV and mixed video libraries independently expose default-false
+`LibraryOptions.EnablePreviewGeneration`, labelled **Automatic seek previews**.
+Enabling it and completing independent or task-owned scans record
+`PreviewGenerationRequested`. Intro and preview requests have separate durable
+counters. Neither scan performs the extraction itself.
+
+The first installation of each untouched enabled analysis-task definition adds a
+24-hour interval and its dedicated event trigger. Existing custom, cleared or
+disabled schedule choices are preserved. Initial event cursors include requests
+committed before default-trigger installation. Automatic intro runs select only
+enabled TV libraries; automatic preview runs select only preview-enabled movie,
+TV and mixed libraries. An empty eligible set never becomes an all-library scan
+or analysis. Events that overlap active work retain a request for a fresh snapshot.
+
+Graceful shutdown of unfinished automatic intro or preview work persists its
+corresponding replacement request. Startup recovery also requests fresh admission
+for abandoned automatic runs after a crash. Old claims become interrupted;
+current library policy is re-evaluated for new work. Explicit user stops,
+maximum-runtime stops and manual runs do not create automatic retries.
 
 The native media-analysis page stores its own configuration revision in
 PostgreSQL. Defaults are a ten-second minimum
@@ -68,22 +81,30 @@ preview interval, quality 80, 128 GiB per source, 1,200 seconds per source task,
 and 128 MiB of persisted compact feature data. Configuration updates require the
 complete profile and its current revision. They withdraw old automatic/preview
 publications and cached features while retaining decisions and audit history.
+A real profile change also commits the relevant intro and preview requests for
+enabled libraries. For example, a preview interval change from ten to twenty
+seconds rebuilds all three widths through a new automatic run. A no-op CAS does
+not invalidate references or emit a rebuild request.
 The legacy `AutoPublishIntros` Boolean remains in the wire profile, with new
 writes canonicalized to true and no UI toggle. Schema 51 migrates only old false
 settings to true, increments their revision and invalidates their derived
 references. Historical profiles and manual/imported state remain compatible.
+Schema 52 adds the preview option and its event without rewriting existing library
+rows or replacing administrator schedule choices. Missing preview options on
+older rows mean disabled.
 
 The two analysis tasks are published in both native and compatibility task
 collections, including truthful unavailable status when execution is disabled.
 Selection may combine library and item identifiers; selected items must belong
 to the selected libraries. Empty explicit selection follows the task's supported
-scope; automatic intro admission remains restricted to enabled TV libraries.
+scope; automatic admission remains restricted to libraries enabled for that kind.
 Request receipts are immutable and can recover a response lost after admission.
 An incompatible active selection/profile returns a conflict. Scheduled conflicts
 defer that occurrence without consuming its event cursor or delaying unrelated
 definitions.
 
-The unchanged matcher requires at least three independent episodes. Intro work
+The unchanged `introdetect-v3` matcher requires at least three independent
+episodes. Intro work
 uses at most 32 same-season sources per child and at most 16 selected
 episode identities for publication. A source's complete content hash establishes
 independence; a shared opening fingerprint does not establish an independent
@@ -91,6 +112,13 @@ episode. The normalized stream policy selects a default local audio/video stream
 first, then its original stream index. External tracks and attached pictures are
 excluded. A current source-bound feature cache can avoid repeated extraction.
 Force requests repeat extraction.
+The completed expanded assessment returned `no_result` for all 15 evaluable
+originals: 12 missed source-reviewed openings, three correct short-ident negatives,
+zero qualified intervals and zero false positives. Precision and boundary error
+are undefined without emitted intervals. Calibration experiments and held-out
+series retain separate roles. No experiment was adopted and no quality gate was
+relaxed; short/variant openings and insufficient consistent audiovisual evidence
+remain limitations rather than accepted expanded recognition.
 
 Intro extraction admits at most the first 600 seconds. Its visual request covers
 only complete sampling intervals within that horizon: with the default 500 ms
@@ -112,6 +140,14 @@ all width variants.
 Reuse and HTTP delivery also bind database dimensions and exact nominal/actual
 timeline hashes to the same generation's sealed application manifest. A valid
 BIF hash alone cannot authorize unrelated metadata from a corrupted reference.
+
+The preview library option governs future automatic admission and publication,
+not access to existing valid derivatives. Disabling it preserves current BIF and
+thumbnail references, including across normal recreation. A running automatic
+worker rechecks the policy before publication and cannot publish after a completed
+opt-out. Source/profile invalidation, explicit clearing and cache eviction still
+withdraw affected references. Compatible explicit preview requests remain
+independent of this automatic option.
 
 Preview work admits one source per child and writes three width variants. The
 effective whole-second interval is the greater of the configured interval and
@@ -158,10 +194,12 @@ catalog owner to close. Timing out a shutdown caller does not complete that work
 
 Qualified results publish automatically for enabled TV libraries. `review` and
 `no_result` publish no automatic marker and require no human decision. The current
-UI exposes status/progress/errors and preview controls; historical accept/reject/
-reset and Manual/Import APIs remain compatible without UI entry points.
+UI exposes library switches, status/progress/errors, configuration and cache
+controls. Normal manual preview-start and Force controls are removed; retained
+request receipts can still be resolved. Historical accept/reject/reset,
+Manual/Import and explicit preview-start APIs remain compatible.
 
-Turning off the library option immediately withdraws detected publications;
+Turning off the intro library option immediately withdraws detected publications;
 turning it back on requests new work instead of promoting retained evidence.
 An explicit false-to-true transition retires the library's legacy rejection
 flags, advances decision revisions and preserves decision/audit records. Manual,
@@ -175,7 +213,8 @@ is hidden without making ordinary playback fail.
 
 Restore invalidates automatic publication proofs and discards feature/preview
 references tied to the earlier runtime. Settings, manual state and audit history
-remain durable. See the
+remain durable. Regeneration uses a new admission after current source-root
+validation rather than reviving an archived execution. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) for actual
 verification outcomes and the [recovery contract](media-analysis-recovery.md)
 for archive and normalization boundaries.

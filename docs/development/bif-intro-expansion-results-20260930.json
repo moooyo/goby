@@ -1,0 +1,650 @@
+{
+  "kind": "goby-bif-and-intro-assessment-delivery",
+  "version": 1,
+  "recordedOn": "2026-09-30",
+  "status": "bif_automation_complete_intro_assessment_complete_broader_recognition_not_accepted",
+  "baseline": "869c6654f6c5dd5d2430a4ae405b3c17428c953f",
+  "application": {
+    "bytes": 52410067,
+    "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+    "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc"
+  },
+  "schemaVersion": 52,
+  "deliveryForm": "Docker images and Compose only",
+  "bifWorkflow": {
+    "libraryOption": "EnablePreviewGeneration",
+    "default": false,
+    "collections": [
+      "movies",
+      "tvshows",
+      "mixed"
+    ],
+    "requests": [
+      "library_enable",
+      "completed_scan",
+      "changed_analysis_profile"
+    ],
+    "defaultPeriodHours": 24,
+    "dedicatedEvent": "PreviewGenerationRequested",
+    "existingAdministratorSchedulesPreserved": true,
+    "disabledLibrariesExcludedFromAutomaticWork": true,
+    "disabledAutomaticWorkCannotPublishNewOutput": true,
+    "disableRetainsValidExistingBIF": true,
+    "manualGenerationControls": false,
+    "compatibleManualAPIsRetained": true,
+    "progressAndFailures": "Tasks",
+    "interruptedAutomaticWork": "new request with current policy; explicit cancellation/timeout/manual work are not replayed"
+  },
+  "backendChecks": {
+    "environment": "test-env",
+    "localVerification": false,
+    "passedParents": 168,
+    "failures": 0,
+    "skips": 0,
+    "byPackage": {
+      "backuppg": 24,
+      "database": 11,
+      "library": 72,
+      "server": 20,
+      "tasks": 41
+    },
+    "runs": [
+      {
+        "name": "test-backuppg-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 24,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-backuppg-01.log",
+          "bytes": 12447,
+          "sha256": "5c38f1b8b207fc23bcea6a838ea04097d53454527e5c7096c12684fd9d92898c"
+        }
+      },
+      {
+        "name": "test-database-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 11,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-database-01.log",
+          "bytes": 14777,
+          "sha256": "ddbf6baa26cbec92e686a900ba81e4f35c1e21ce2f5201ae65ebb884e14918b2"
+        }
+      },
+      {
+        "name": "test-library-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 72,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-library-01.log",
+          "bytes": 19433,
+          "sha256": "0aea5c687000e311d0f59a1139860b31dc835af394dda8d39813b8fcebb6feff"
+        }
+      },
+      {
+        "name": "test-server-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 20,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-server-01.log",
+          "bytes": 5200,
+          "sha256": "499cb5b16d17126dc31b27501983c53dbdeedb7899ae113f4e5efdb54ee025d6"
+        }
+      },
+      {
+        "name": "test-tasks-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 41,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-tasks-01.log",
+          "bytes": 15073,
+          "sha256": "08967519e596f44e193b5b515e6a99e7b095bd628dba1d283c102cc1602018ee"
+        }
+      }
+    ]
+  },
+  "frontendChecks": {
+    "nodePasses": 13,
+    "nodeSkips": 0,
+    "buildPassed": true,
+    "browserPasses": 33,
+    "browserSkips": 1,
+    "skipBoundary": "Historical full Phase 3 server/restart fixture was not configured and is outside this increment.",
+    "actualDockerUI": {
+      "passed": true,
+      "actualDockerApplication": true,
+      "existingDisabledLibraryRead": true,
+      "manualCorrectionControls": 0,
+      "pageErrors": 0,
+      "librarySettingsChanged": false,
+      "screenshots": [
+        "actual-library-settings.png",
+        "actual-media-analysis.png"
+      ]
+    }
+  },
+  "bifRuntime": {
+    "passed": true,
+    "log": {
+      "name": "preview-runtime-01.log",
+      "bytes": 12812,
+      "sha256": "ad8c5cc874afc798b2a91d29e9a17f6898f27a1fdb49ded0a6a4064cae7894ff"
+    },
+    "phases": [
+      "enable",
+      "rescan",
+      "configuration",
+      "disable"
+    ],
+    "widths": [
+      240,
+      320,
+      400
+    ],
+    "bifTimelineAndJPEG": true,
+    "thumbnailSetAndTaggedJPEG": true,
+    "httpRange": true,
+    "cacheReuseAfterOrdinaryScan": true,
+    "configurationIntervalSeconds": [
+      10,
+      20
+    ],
+    "configurationChangeRebuiltAutomatically": true,
+    "oldImageTagsRetired": true,
+    "disableRetainedExactBytes": true,
+    "recreationRetainedPreviewsAndPolicy": true,
+    "disabledControlLibraryNotGenerated": true,
+    "manualAnalysisStartRequests": 0,
+    "forcedWork": 0,
+    "newClientDragCampaign": false
+  },
+  "introAssessment": {
+    "kind": "goby-expanded-intro-source-assessment",
+    "status": "assessment_complete_broader_recognition_not_accepted",
+    "detector": "introdetect-v3",
+    "productionOptionsChanged": false,
+    "humanAnnotation": false,
+    "reviewMethod": "independent assistant source visual review; OSB additionally uses a disclosed machine-ASR hypothesis",
+    "directAudioListening": false,
+    "reviewedOriginalEpisodes": 16,
+    "evaluatedOriginalEpisodes": 15,
+    "series": 5,
+    "initialSelection": 12,
+    "explicitSupplementalRobinEpisodes": 3,
+    "nextChronologicalNASAAudioReplacement": 1,
+    "excludedOriginal": {
+      "case": "N386",
+      "reason": "missing_audio_in_both_medium_and_original_encodes",
+      "initialExtractionFailed": true,
+      "countedAsCorrectAbstention": false,
+      "replacementReviewedBeforeFirstNASAMatcher": true,
+      "replacement": "N390"
+    },
+    "counts": {
+      "detected": 0,
+      "miss": 12,
+      "false_positive": 0,
+      "correct_abstention": 3
+    },
+    "allEvaluatedReturnedNoResult": true,
+    "publishedIntervals": 0,
+    "positiveOpeningRecall": {
+      "numerator": 0,
+      "denominator": 12
+    },
+    "precision": null,
+    "boundaryError": null,
+    "protectedContentOverlap": 0,
+    "metricBoundary": "No predicted interval means precision and timing error are undefined, not perfect. Zero overlap follows from publishing nothing.",
+    "groups": [
+      {
+        "series": "beverly-hillbillies",
+        "role": "calibration",
+        "caseCount": 3,
+        "labelsSha256": "e423655b8aa48acfd9a25af819a978cf42a93356c255ca8b3d27a712125ddb93",
+        "rawResultSha256": "f66cf38749e47fb40d2aa36c065a1c52ef4130116ea0849d9f028fd7bd4b3c00",
+        "resultFile": "beverly-v3-01.json",
+        "labelFile": "labels-beverly.json",
+        "episodes": [
+          {
+            "episodeKey": "beverly-hillbillies:1",
+            "sourceSHA256": "dfbe4cf37afad226fe1248c32388d37591434fa5e3907acbfaf382c656b7d229",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "beverly-hillbillies:2",
+            "sourceSHA256": "c7796c3c8a0e9f4ec4d8924ab2d62183660baaf0c9603e87fe1e95eb828eef7d",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "insufficient_audio_coverage"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "beverly-hillbillies:7",
+            "sourceSHA256": "ecddcca8e6a15a53381932044e9a7a07d7d45b4ef3b5cdb3feddf1abdb234e7c",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "insufficient_audio_coverage"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          }
+        ]
+      },
+      {
+        "series": "hubblecast",
+        "role": "calibration",
+        "caseCount": 3,
+        "labelsSha256": "9bafd77e7bd19037b5306d75375cce8f133697a9041a7fffb4728637e6daf316",
+        "rawResultSha256": "17f6e43a192a6964f36c56b76db82c4fb184b9cc980c13f267de60e77d4b0171",
+        "resultFile": "hubble-v3-01.json",
+        "labelFile": "labels-hubble.json",
+        "episodes": [
+          {
+            "episodeKey": "hubblecast:114",
+            "sourceSHA256": "5ac23b23d9c8ad5aeadb97ef658f7932b188031bdb762047ed8d09eebd647a5b",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "insufficient_audio_coverage"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "hubblecast:116",
+            "sourceSHA256": "8650f39ac6ab8b962ececdf09b56048cd3a0983a806d7aab6d5ebbd6f5989cfd",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "candidate_search_limited",
+              "insufficient_audio_coverage",
+              "insufficient_visual_coverage",
+              "low_audio_entropy"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "hubblecast:118",
+            "sourceSHA256": "5b254818ac18e08af7af6150880c0715cd8477c507385104b380b3c46af4853f",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "candidate_search_limited",
+              "insufficient_audio_coverage",
+              "insufficient_visual_coverage",
+              "low_audio_entropy"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          }
+        ]
+      },
+      {
+        "series": "one-step-beyond",
+        "role": "held_out_series",
+        "caseCount": 3,
+        "labelsSha256": "6d26358960c2bd3a31f5ddbb3f4e71b934d57b097262a637156bd9effa497b68",
+        "rawResultSha256": "56d6e847ed49799521d0eadcf5da3c22511e20c2e57e08b93258b92938e4b6dd",
+        "resultFile": "one-step-beyond-v3-01.json",
+        "labelFile": "labels-osb.json",
+        "episodes": [
+          {
+            "episodeKey": "one-step-beyond:1",
+            "sourceSHA256": "241367645b14cd5076478ca2908e3b8a07537cb8f5b1bd526a756228fd163f9f",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "one-step-beyond:2",
+            "sourceSHA256": "103b38857270bb0e489a928fcfeec621f381befb8915350145466aaa7adb0c1c",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "one-step-beyond:3",
+            "sourceSHA256": "984c8827aaedd152d2e1e65b0c1952fb9a448f044739fcc2976ef4af82bff24f",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          }
+        ]
+      },
+      {
+        "series": "robin-hood",
+        "role": "supplemental_frozen_assessment",
+        "caseCount": 3,
+        "labelsSha256": "44ae52cde42aea9397388ace0ac99dd045dd075d39cf2aae65aa670904471832",
+        "rawResultSha256": "24f53c3d4ad7c38140a982b838820d557f1e0f9b408c50c553481ec59a249e92",
+        "resultFile": "robin-v3-01.json",
+        "labelFile": "labels-robin.json",
+        "episodes": [
+          {
+            "episodeKey": "robin-hood:10",
+            "sourceSHA256": "4619cb47b42d6b33ac733544d17190eb66a06afd20d2956eef7d39503598acbd",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "insufficient_audio_coverage"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "robin-hood:11",
+            "sourceSHA256": "95735afac3f3ebcb3d1019adc41f1375e8913b7bac0ea5a790e0dbe94aa9e179",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "insufficient_audio_coverage"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          },
+          {
+            "episodeKey": "robin-hood:12",
+            "sourceSHA256": "c7d01b3fae3d8c366bf20d0b34c0b724910454f166a427fd154fed895ad9530e",
+            "sourceReviewedOpening": true,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "miss"
+          }
+        ]
+      },
+      {
+        "series": "space-to-ground",
+        "role": "held_out_series",
+        "caseCount": 3,
+        "labelsSha256": "78028f7714974cfa1ed94cbd536f336d5d4a36e47ffae98a4fc74308819782ec",
+        "rawResultSha256": "157f7be820da2a4bc4b6542bd73ed817b77e419fa7022b049093bffbeb343f86",
+        "resultFile": "space-to-ground-v3-01.json",
+        "labelFile": "labels-nasa-audio.json",
+        "episodes": [
+          {
+            "episodeKey": "space-to-ground:388",
+            "sourceSHA256": "977b4d61cb294afbb06581c03fba98d43680f0317b90a59463c4d5fd0aee4a4c",
+            "sourceReviewedOpening": false,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "correct_abstention"
+          },
+          {
+            "episodeKey": "space-to-ground:389",
+            "sourceSHA256": "cadf3bc114069eff0434589ae2ebd4e1ce9d32c40b94e6aa192e46815e6632d4",
+            "sourceReviewedOpening": false,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "correct_abstention"
+          },
+          {
+            "episodeKey": "space-to-ground:390",
+            "sourceSHA256": "2fb4e07474d6e822ba05b5a8aed6defcd5fd4c89fb5f0d308bce904d7d017aeb",
+            "sourceReviewedOpening": false,
+            "status": "no_result",
+            "reasons": [
+              "no_repeated_interval"
+            ],
+            "publishedInterval": null,
+            "outcome": "correct_abstention"
+          }
+        ]
+      }
+    ],
+    "calibrationExperiments": [
+      {
+        "name": "MinDuration10_AutoMin15",
+        "acceptedForProduction": false,
+        "result": "No improvement on Beverly Hillbillies"
+      },
+      {
+        "name": "MinSupport2",
+        "acceptedForProduction": false,
+        "result": "Rejected by existing option validation before analysis"
+      }
+    ],
+    "diagnostic": {
+      "scope": "B1/B2/B7 calibration only",
+      "acceptedForProduction": false,
+      "finding": "B1 lacks a supported common audio interval with either other encode. B2/B7 retain one audiovisual pair but fail visual anchors/coverage; its proposed tail overlaps source-reviewed protected content. No confirmed implementation defect justified relaxing publication gates."
+    },
+    "recognitionExpansionAccepted": false,
+    "accuracyImprovementClaim": false,
+    "limitations": [
+      "Short title sequences and different opening/audio versions remain missed.",
+      "Two held-out series and a targeted supplement do not establish broad television accuracy.",
+      "Private matcher cohorts preserve unknown seasons and do not invent library-season metadata.",
+      "No source media or source ASR transcript is redistributed."
+    ]
+  },
+  "introAssessmentRecord": "docs/development/intro-accuracy-assessment-20260930.json",
+  "introRecognitionExpansionAccepted": false,
+  "introAlgorithmChanged": false,
+  "remainingRecognitionWork": [
+    "Short opening recognition",
+    "Different opening/audio version recognition"
+  ],
+  "amdApplication": {
+    "passed": true,
+    "imageId": "sha256:ba4a9bbdcfe10f693f092a9268a00494bbadc6e38b4003f8a9751dddb3dfae9e",
+    "actualStartup": true,
+    "catalogAndDisabledPolicyPreserved": true,
+    "actualUIScreenshots": true,
+    "newGPUAcceptanceClaim": false,
+    "axes": "software"
+  },
+  "images": {
+    "software": {
+      "kind": "goby-bif-intro-image-delivery",
+      "profile": "software",
+      "baseImageId": "sha256:24aca9db2d30ab8d2e0e7275bbdc4b4d395d355c99a79e0d5421353345b86ce9",
+      "imageId": "sha256:743cb1a66e41c2343a0e0659fe8ed68d5225c18a3c9c43f3452c0f41a8420b1d",
+      "applicationSha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+      "baseLayersUnchanged": true,
+      "additionalApplicationLayers": 1,
+      "application": {
+        "bytes": 52410067,
+        "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+        "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc"
+      },
+      "archive": {
+        "name": "goby-linux-amd64-image.tar",
+        "bytes": 492652032,
+        "sha256": "fe563c9d798fe8c5d4a5ff8f5e0bd5ca366355ef555e50472c47f9b181ab21eb"
+      },
+      "companionHashes": {
+        "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
+        "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b"
+      },
+      "actualImportPassed": true,
+      "newGPUAcceptanceClaim": false
+    },
+    "amd": {
+      "kind": "goby-bif-intro-image-delivery",
+      "profile": "amd",
+      "baseImageId": "sha256:3a8467bcbb97c82b4675b16d06364a3b27a06c9605df2f6374e0f95ede1e12b7",
+      "imageId": "sha256:ba4a9bbdcfe10f693f092a9268a00494bbadc6e38b4003f8a9751dddb3dfae9e",
+      "applicationSha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+      "baseLayersUnchanged": true,
+      "additionalApplicationLayers": 1,
+      "application": {
+        "bytes": 52410067,
+        "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+        "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc"
+      },
+      "archive": {
+        "name": "goby-linux-amd64-amd-image.tar",
+        "bytes": 1045122560,
+        "sha256": "c779923d5ab44ad98cce60871a516987abab7456a1713370a8c7c4ee66e0a132"
+      },
+      "companionHashes": {
+        "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
+        "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b",
+        "compose.amd.yaml": "a5dad695b2b5f722a20f588759d546fecc3270d86955e003e65a11818a97118e",
+        "seccomp.amd.json": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0"
+      },
+      "actualImportPassed": true,
+      "newGPUAcceptanceClaim": false
+    }
+  },
+  "toolkit": {
+    "passed": true,
+    "archive": {
+      "name": "goby-docker-operations.zip",
+      "bytes": 45858,
+      "sha256": "a86b1baeb3f7a736d847b1752ba72a256a2387467d23abf75e76fe138de53503"
+    },
+    "files": 14,
+    "extractionAndChecksums": true,
+    "helperUnchanged": true,
+    "bothCurrentProfileCompanions": true,
+    "packagedGuideLinks": true,
+    "helperOriginalAcceptance": "docs/development/docker-operations-results-20260930.json"
+  },
+  "closure": {
+    "kind": "goby-bif-intro-resource-closure",
+    "ownedContainers": 0,
+    "ownedComposeNetworks": 0,
+    "databaseConnectionsBeforeStop": 0,
+    "postgresStopped": true,
+    "postgresPort": 55997,
+    "httpPort": 38964,
+    "dataAndEvidenceRetained": true,
+    "protectedServicesUnchanged": true,
+    "protectedServices": [
+      {
+        "name": "/winvaultwarden-ui-review",
+        "id": "7637bef4bf06c121575af2e4c4968c2315f128be6830590e034cf40d1c085d1d",
+        "pid": 1452,
+        "startedAt": "2026-09-26T13:45:00.745678683Z",
+        "running": true
+      },
+      {
+        "name": "/winvaultwarden-bitwarden-test",
+        "id": "cfc2342951f8300a3090829b21966f92d22a1b20ea6197d7e09776ba4bb7aedb",
+        "pid": 1455,
+        "startedAt": "2026-09-26T13:45:00.755428599Z",
+        "running": true
+      },
+      {
+        "name": "/5gpn-release-gateway-1",
+        "id": "e4aa5102681db11be9122bcdcd59215d4a491d2d0b94c15f42d21b659cc8cb89",
+        "pid": 1467,
+        "startedAt": "2026-09-26T13:45:00.753343083Z",
+        "running": true
+      }
+    ]
+  },
+  "retainedFailures": [
+    {
+      "attempt": "compile-server-01",
+      "cause": "A new test formatted an already-string revision as int64.",
+      "resolution": "Corrected only the fixture; compile-server-02 and test-server-01 passed."
+    },
+    {
+      "attempt": "source-review-01",
+      "cause": "Direct test-env HTTPS to the public archive failed with a TLS EOF.",
+      "resolution": "Fetched the same selected sources through the workstation and verified/decode them on test-env."
+    },
+    {
+      "attempt": "source-review-02",
+      "cause": "The output duration omitted one final filtered frame that showinfo had logged.",
+      "resolution": "Bound the frame inventory to actual emitted JPEGs and require discarded timestamps beyond the horizon."
+    },
+    {
+      "attempt": "space-to-ground-extract-01",
+      "cause": "N386 lacked an audio stream. Its original encode also lacked audio.",
+      "resolution": "Retained both unavailable encodes and used next chronological N390, labeled before the first NASA matcher call."
+    },
+    {
+      "attempt": "two-source calibration option experiment",
+      "cause": "The current matcher rejects MinSupport 2 during option validation.",
+      "resolution": "No such analysis ran and no parameter change was adopted."
+    }
+  ],
+  "localDeliveryDirectory": "D:/Code/goby/.artifacts/bif-intro-20260930",
+  "remoteEvidenceRoot": "/opt/goby-bif-intro-20260930-01",
+  "registryPublished": false,
+  "productionDeployment": false,
+  "newGPUAcceptanceClaim": false,
+  "sourceMediaRedistributed": false,
+  "scraping": "user_deferred",
+  "gitIntegration": "Recorded separately from immutable application and acceptance receipts.",
+  "documentationCheck": {
+    "kind": "goby-current-documentation-link-check",
+    "changedMarkdownFiles": 14,
+    "outgoingLinksChecked": 779,
+    "incomingAnchorLinksChecked": 6,
+    "introducedIssues": [],
+    "inheritedIssues": [],
+    "boundary": "Repository-relative Markdown files and fragments only; external URLs and private absolute evidence paths were not probed."
+  },
+  "evidence": {
+    "archive": {
+      "name": "bif-intro-evidence.zip",
+      "bytes": 481317,
+      "sha256": "36f2798165b74e20add738016fd6112e33f08279bc1616095cfef487bc5d2852"
+    },
+    "files": 116,
+    "privateValueScanPassed": true,
+    "excluded": [
+      "Private credentials/configuration",
+      "Database data",
+      "Source media",
+      "Image archives"
+    ]
+  }
+}

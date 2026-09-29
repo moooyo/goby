@@ -1,9 +1,9 @@
 # Docker quick start
 
-Use the current schema 51 software or AMD Docker image and its matching
+Use the current schema 52 software or AMD Docker image and its matching
 `current-release.json`. Both application profiles use source
-`95607ffa505c7a9368b1bfd8ec3d545d009285d3` for automatic TV-library intros.
-The repository result is `docs/development/library-intro-automation-20260930.md`;
+`0014befd68420e593f0855cdd1c0991f3079abfc` for automatic library seek previews.
+The repository result is `docs/development/bif-intro-expansion-20260930.md`;
 Git integration is recorded separately. The earlier Docker operations journey,
 14 helper tests and closure remain evidence for the existing helper contract.
 Further online-provider work is deferred and no provider credentials are required.
@@ -19,9 +19,9 @@ container. Existing media must be readable/traversable by UID/GID `10001:10001`.
 
 Extract `goby-docker-operations.zip` into `/download`; its top-level directory is
 `goby-docker-operations/`. The current toolkit is in
-`D:/Code/goby/.artifacts/intro-automation-20260930`, with software and AMD archives
+`D:/Code/goby/.artifacts/bif-intro-20260930`, with software and AMD archives
 in its `software` and `amd` subdirectories. Copy the selected current image archive
-to the separate `/download/profile` directory. Earlier provider/operations images
+to the separate `/download/profile` directory. Earlier provider/intro-automation images
 do not include this automation change. The small toolkit does not contain
 duplicate images. `current-release.json`
 binds the archive hash and immutable image ID; the helper prefers a manifest in
@@ -80,7 +80,22 @@ non-root with a read-only root filesystem. `restart: "no"` means startup after a
 host reboot is an explicit operator action. `stop` retains the container, its
 network and persistent data; it does not retire the installation.
 
-## Enable automatic intros
+## Enable automatic processing
+
+### Automatic seek previews
+
+For seek previews, create or edit a **Movies**, **TV shows** or **Mixed media**
+library and enable **Automatic seek previews**. The new option defaults to off,
+including for existing libraries after the schema 52 upgrade. Enablement,
+successful scans and preview-profile changes request background generation;
+the default task schedule also runs daily. There is no separate manual build or
+Force step. The default preview interval remains 10 seconds.
+
+Turning this option off stops new automatic generation and retains existing
+valid previews, including after container recreation. Open **Tasks** to follow
+progress, read errors or stop work; **Media analysis** shows generated outputs.
+
+### Enable automatic intros
 
 Create or edit a **TV shows** library and enable **Automatic intro detection**.
 The setting defaults to off, including for libraries that existed before the
@@ -93,10 +108,16 @@ still needs at least three independent episodes and examines the first 600
 seconds. Compatible players consume the resulting intro markers; this does not
 promise that every player implements automatic skipping.
 
-Open **Tasks** to follow progress, read failures or stop running work. Media
-analysis shows current results and retains manual BIF preview generation.
+Open **Tasks** to follow progress, read failures or stop running intro work.
+Media analysis shows current results and the library-settings entry.
 Disabling the library option withdraws detected markers; re-enabling requests
 fresh work. No scraper or provider credentials are required.
+
+Intro accuracy remains limited. The expanded assessment missed all 12 reviewed
+positive intros; three NASA short-ident negative cases produced no false
+positives. Detector v3 and its thresholds are unchanged. Short intros and
+differing audio/video versions need further recognition improvements; BIF
+automation does not establish broader intro support.
 
 ## Update manually
 

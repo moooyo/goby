@@ -1,8 +1,51 @@
 # Current execution plan
 
-## Automatic TV-library intro workflow: September 30, 2026
+## BIF automation complete; intro recognition extension remains open
 
-The [current increment](../development/library-intro-automation-20260930.md)
+The [current result](../development/bif-intro-expansion-20260930.md) and
+[manifest](../development/bif-intro-expansion-results-20260930.json) separate
+completed BIF automation from completed accuracy assessment and unaccepted
+recognition extension. Application candidate is
+`0014befd68420e593f0855cdd1c0991f3079abfc`, schema 52.
+
+`EnablePreviewGeneration` defaults to false and applies to Movies, TV shows and
+Mixed media libraries. Enabling it, successful scans and preview-profile changes
+request background generation; untouched default scheduling is daily plus
+`PreviewGenerationRequested`. The UI uses library settings and Tasks rather than
+manual build/Force controls. Disabling generation retains existing valid previews.
+Default spacing remains 10 seconds and the BIF protocol is unchanged.
+
+BIF verification has 168 focused backend checks, 13 Node tests and 33 UI passes,
+with one historical fixture-dependent UI skip. The actual Docker enable, scan
+reuse, profile 10-to-20-second rebuild, disable and recreation journey passed.
+These results establish that finite automation scope, not all product coverage.
+
+Expanded accuracy assessment has 15 evaluable files from five series: all 12
+reviewed positive intros were missed with `no_result`; three NASA short-ident
+negative cases had no false positives. N386's missing audio remains a separate
+preparation result. N390 was selected and frozen before the first matcher run.
+Detector v3 and thresholds are unchanged, and prior The Big Picture acceptance
+retains its original limits.
+
+The next substantive recognition task is to improve detection of short intros
+and versions with differing audio/video using the retained miss evidence, then verify the
+affected behavior. Do not mark the extension accepted merely because evaluation
+completed, or rerun unchanged controller/capacity matrices as a substitute for
+that work.
+
+Current software and AMD archives are under
+`D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`; their parent
+contains `goby-docker-operations.zip`. Use the
+[current catalog](../../deploy/oci/current-release.json) and
+[quick start](../../deploy/oci/QUICKSTART.md). Git integration is recorded separately.
+Docker-only delivery and the deferral of TMDB/OpenSubtitles/new scraper work remain.
+
+## Previous schema 51 automatic TV-library intro workflow
+
+The following checkpoint preserves its original source and evidence; its
+then-manual preview controls have been replaced by the current library option.
+
+The [schema 51 increment](../development/library-intro-automation-20260930.md)
 implements library opt-in followed by background analysis and direct use of
 qualified results. No review or manual correction is required. No reliable
 result means playback stays unchanged. Tasks exposes progress, failures and

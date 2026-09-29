@@ -1,6 +1,46 @@
 # Current implementation and delivery status
 
-The current increment is [automatic TV-library intro detection](library-intro-automation-20260930.md).
+The current [BIF automation and intro assessment increment](bif-intro-expansion-20260930.md)
+uses application candidate `0014befd68420e593f0855cdd1c0991f3079abfc`, schema 52.
+**BIF automation is complete within its selected scope. The expanded accuracy
+assessment is complete; broader intro recognition is not accepted.**
+
+Enable **Automatic seek previews** in a Movies, TV shows or Mixed media library.
+`EnablePreviewGeneration` defaults to false, including existing libraries.
+Enablement, successful scans and preview-profile changes request background
+work; the default schedule combines daily runs with `PreviewGenerationRequested`.
+Tasks shows progress, failures and stop controls. Manual selection/build/Force
+is no longer the main UI flow. Disabling generation retains existing valid
+previews. The default 10-second interval and BIF service protocol are unchanged.
+
+The selected BIF evidence includes 168 backend checks, 13 Node tests and 33 UI
+passes, plus one historical fixture-dependent UI skip. Actual Docker enablement,
+scan reuse, a 10-to-20-second profile rebuild, and disable/container recreation
+passed. These focused results are not a new full-product or GPU campaign.
+
+The expanded intro assessment covered 15 evaluable files from five series.
+All 12 visually/source-reviewed positive cases returned `no_result` and were
+missed; three NASA short-ident negative cases produced no false positives.
+N386 had no audio and remains a separate preparation result. Its next natural
+episode, N390, was frozen as the replacement before the first matcher execution.
+Detector v3 and thresholds were unchanged. The old The Big Picture evidence
+remains valid within its original scope and cannot be extrapolated to these cases.
+**Recognition of short intros and differing audio/video versions still needs
+improvement.** Evaluation completion is not recognition-extension acceptance.
+
+The [result manifest](bif-intro-expansion-results-20260930.json) binds source,
+artifacts, evidence and closure. Current archives are under
+`D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`; their parent
+contains `goby-docker-operations.zip`. Use the
+[current release catalog](../../deploy/oci/current-release.json) and
+[quick start](../../deploy/oci/QUICKSTART.md). Git integration is recorded separately.
+TMDB/OpenSubtitles and new scraper research remain deferred.
+
+## Previous schema 51 intro-automation checkpoint
+
+The earlier notes below retain their own source, images and acceptance boundary.
+
+The schema 51 increment is [automatic TV-library intro detection](library-intro-automation-20260930.md).
 Enable **Automatic intro detection** in a TV library; background work publishes
 qualified matches without review or manual correction. An unmatched episode
 plays unchanged. Tasks retains progress, failures and stop controls. Successful

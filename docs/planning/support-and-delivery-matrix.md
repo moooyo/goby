@@ -7,31 +7,38 @@ outside scope, not unfinished or deferred release tasks.
 
 ## Current selected deliveries
 
-The current application increment is [automatic TV-library intro detection](../development/library-intro-automation-20260930.md)
-at source `95607ffa505c7a9368b1bfd8ec3d545d009285d3`, schema 51. A TV-library
-checkbox enables background work and direct qualified-result publication;
-unmatched episodes play unchanged. Progress, errors and stopping remain in Tasks.
-There is no review/correction workflow. Existing libraries default to off after
-upgrade. The requirement for three independent episodes and the first 600 seconds
-of analysis remains unchanged.
+Current application candidate: `0014befd68420e593f0855cdd1c0991f3079abfc`,
+schema 52. The [BIF automation and intro assessment result](../development/bif-intro-expansion-20260930.md)
+and [manifest](../development/bif-intro-expansion-results-20260930.json) distinguish
+**completed BIF automation**, **completed accuracy assessment**, and
+**unaccepted recognition extension**. Git integration is recorded separately.
 
-Its focused checks report 135 Go parent passes, 27 UI passes and one historical
-fixture-dependent UI skip. Actual Docker enablement, automatic scan follow-up,
-and disable/container recreation passed their selected workflow. The
-[manifest](../development/library-intro-automation-results-20260930.json) records
-artifacts and closure; these results do not expand earlier accuracy, client or
-GPU scope. Git integration is recorded separately.
+`EnablePreviewGeneration` defaults to false in Movies, TV shows and Mixed media
+libraries. Enablement, scans and profile changes request background work, with
+daily/event defaults. Tasks supplies progress, errors and stopping. The UI no
+longer requires manual build/Force controls. Disabling generation retains valid
+previews; the default interval and delivery protocol are unchanged.
 
-The earlier selected functional, archive/Compose and operations scopes retain
-their completed acceptance with no reopened gates. The current automation row
-links its own delivery disposition. Git integration is recorded separately from
-acceptance receipts.
-The records below define the accepted profiles. Completion does not imply a
-production deployment, universal compatibility, or a public distribution license.
+BIF has 168 focused backend checks, 13 Node tests and 33 UI passes, plus one
+historical fixture-dependent UI skip. The actual Docker enable/reuse/profile
+rebuild/disable/recreation journey passed its finite scope. These counts do not
+establish every product, client or hardware profile.
+
+The expanded intro assessment contains 15 evaluable files from five series:
+12 reviewed positive cases were all missed with `no_result`; three NASA
+short-ident negative cases produced no false positives. Missing-audio N386 is
+recorded separately, with N390 frozen as its replacement before matching.
+Detector v3 and thresholds are unchanged. **Short-intro and differing audio/video
+version recognition remain substantive unfinished work.** Earlier The Big Picture
+acceptance stays valid at its original scope and cannot establish this extension.
+Earlier completed delivery rows remain closed; the new recognition gap is not
+an instruction to reopen historical capacity or fault matrices.
 
 | Selected scope | Current result | Authoritative boundary | Required remaining work |
 | --- | --- | --- | --- |
-| Automatic TV-library intro workflow | Focused checks and actual automatic workflow passed | [Automation result](../development/library-intro-automation-20260930.md) and [manifest](../development/library-intro-automation-results-20260930.json); current source, artifacts and closure are recorded together | Use the current result for final delivery disposition; no broader matrix is implied |
+| Automatic BIF previews | Complete within the selected automation scope | [Current result](../development/bif-intro-expansion-20260930.md) and [manifest](../development/bif-intro-expansion-results-20260930.json); source, artifacts, focused checks and actual Docker workflow | No additional BIF acceptance gate within this scope |
+| Expanded intro recognition | Assessment complete; recognition extension not accepted | All 12 reviewed positives missed; three short-ident negatives had no false positives; detector v3 and thresholds unchanged | Improve short intros and differing audio/video versions, then verify affected recognition behavior |
+| Automatic TV-library intro workflow | Schema 51 automation workflow accepted at its recorded scope | [Prior automation result](../development/library-intro-automation-20260930.md) and [manifest](../development/library-intro-automation-results-20260930.json) retain their original source, artifacts and closure | Workflow acceptance remains valid; broader recognition gaps are listed separately above |
 | Docker installation and operations | Verified and resources closed at its original checkpoint | [Operations result](../development/docker-operations-20260930.md); 14 helper tests and software operations journey at source `76d64bf`. The [quick start](../../deploy/oci/QUICKSTART.md) and [current catalog](../../deploy/oci/current-release.json) now select the later automation application | No repeated helper or historical runtime gate |
 | Credential-free online providers | Complete within the selected MusicBrainz album and offline/configuration scope | [Provider result](../development/online-providers-20260930.md); both updated Docker application profiles, unchanged media tools and closed resources | 0; TMDB/OpenSubtitles online work and new scraper research are explicitly deferred |
 | Revised media-analysis/resilience Phase 3 | Complete, including consolidated verification and closure | [Functional closeout](../development/phase3-functional-closeout-20260929.md) and [publication](../development/phase3-functional-publication-20260929.md); real-media correctness, catalog scale, concurrency, and recorded recovery cases under the revised functional agreement | 0 |
@@ -40,7 +47,7 @@ production deployment, universal compatibility, or a public distribution license
 | Earlier selected compatibility and media-analysis features | Closed within their original recorded scopes | [Four-phase compatibility plan](selected-compatibility-plan-20260920.md) and [intro/BIF acceptance](../development/media-analysis-resilience-phase2-20260921.md); original client, corpus, and adapter limits remain | No reopened gate |
 
 Current software and AMD archives are under
-`D:/Code/goby/.artifacts/intro-automation-20260930/software` and `amd`.
+`D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`.
 Their parent directory contains `goby-docker-operations.zip`. The earlier
 operations and provider directories retain their original archives and evidence;
 their unchanged-application statements do not describe the current update.
