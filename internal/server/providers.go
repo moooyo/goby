@@ -9,7 +9,6 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -96,6 +95,8 @@ func (s *Server) providerError(w http.ResponseWriter, r *http.Request, err error
 		apiError(w, r, http.StatusBadGateway, "provider_unavailable", "The provider could not complete this request.")
 	case errors.Is(err, library.ErrSourceChanged):
 		apiError(w, r, http.StatusConflict, "source_changed", "The media source changed. Search for subtitles again.")
+	case errors.Is(err, library.ErrSubtitleTargetNotWritable):
+		apiError(w, r, http.StatusConflict, "subtitle_target_not_writable", "The media directory is not writable by Goby. Configure a writable media mount before downloading subtitles.")
 	default:
 		s.adminMetadataError(w, r, err)
 	}
@@ -214,12 +215,7 @@ func (s *Server) adminProviderRefresh(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if selection.ID == "" {
-		for name, id := range detail.Effective.ProviderIDs {
-			if strings.EqualFold(name, selection.Provider) {
-				selection.ID = id
-				break
-			}
-		}
+		selection.ID = providers.MetadataID(selection.Provider, detail.Type, detail.Effective.ProviderIDs)
 	}
 	if selection.ID == "" {
 		apiError(w, r, http.StatusConflict, "provider_match_required", "Select a provider match before refreshing this item.")
@@ -360,12 +356,17 @@ func (s *Server) adminProviderSubtitleDownload(w http.ResponseWriter, r *http.Re
 		s.providerError(w, r, providers.ErrNotFound)
 		return
 	}
+	sourceTag, err := s.library.CheckWritableSubtitleTarget(ctx, actor, detail.ItemID, "")
+	if err != nil {
+		s.providerError(w, r, err)
+		return
+	}
 	download, err := client.DownloadSubtitle(ctx, *selected)
 	if err != nil {
 		s.providerError(w, r, err)
 		return
 	}
-	if err := s.library.RegisterDownloadedSubtitle(ctx, actor, detail.ItemID, download); err != nil {
+	if err := s.library.RegisterDownloadedSubtitleForSource(ctx, actor, detail.ItemID, sourceTag, download); err != nil {
 		s.providerError(w, r, err)
 		return
 	}

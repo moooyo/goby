@@ -101,23 +101,7 @@ func (s *Store) refreshProviderTaskItem(ctx context.Context, client *providers.C
 		return false, err
 	}
 	selection := providers.Selection{Provider: provider, Type: query.Type, Language: query.Language}
-	key := provider
-	if provider == "musicbrainz" {
-		switch query.Type {
-		case "MusicAlbum":
-			key = "MusicBrainzReleaseGroup"
-		case "MusicArtist":
-			key = "MusicBrainzArtist"
-		case "Audio":
-			key = "MusicBrainzRecording"
-		}
-	}
-	for name, value := range query.ProviderIDs {
-		if strings.EqualFold(name, key) {
-			selection.ID = value
-			break
-		}
-	}
+	selection.ID = providers.MetadataID(provider, query.Type, query.ProviderIDs)
 	if selection.ID == "" {
 		if strings.TrimSpace(query.Name) == "" {
 			return false, nil
@@ -275,6 +259,9 @@ func (s *Store) downloadProviderTaskItem(ctx context.Context, client *providers.
 			continue
 		}
 		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if _, err := s.checkWritableSubtitleTarget(ctx, nil, itemID, sourceTag); err != nil {
 			return err
 		}
 		download, err := client.DownloadSubtitle(ctx, selected)

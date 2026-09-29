@@ -192,6 +192,10 @@ func (s *Server) embyProviderSubtitleDownload(w http.ResponseWriter, r *http.Req
 		s.providerError(w, r, library.ErrSourceChanged)
 		return
 	}
+	if _, err := s.library.CheckWritableSubtitleTarget(ctx, actor, claims.ItemID, claims.SourceTag); err != nil {
+		s.providerError(w, r, err)
+		return
+	}
 	download, err := providers.New(s.onlineProviderConfig()).DownloadSubtitle(ctx, claims.Selection)
 	if err != nil {
 		s.providerError(w, r, err)

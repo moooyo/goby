@@ -25,6 +25,10 @@ import (
 
 var providerSubtitleWorkers = make(chan struct{}, 4)
 
+// ErrSubtitleTargetNotWritable distinguishes an unusable sidecar destination
+// before a caller spends a provider's download quota.
+var ErrSubtitleTargetNotWritable = errors.New("subtitle destination is not writable")
+
 type providerSubtitleSnapshot struct {
 	primary         indexedMediaSource
 	mediaJSON       []byte
@@ -48,6 +52,125 @@ type preparedProviderSubtitle struct {
 	candidate           subtitleCandidate
 	relativePath        string
 	digest              string
+}
+
+// CheckWritableSubtitleTarget performs an early, authorized write check and
+// returns the exact source tag checked. An empty expected tag selects the
+// current source; a nonempty tag must still match. A successful check does not
+// reserve the directory or replace publication's source and authority checks.
+func (s *Store) CheckWritableSubtitleTarget(ctx context.Context, actor identity.Principal, itemID, expectedSourceTag string) (string, error) {
+	if (actor.Kind != "admin" && actor.Kind != "emby") || actor.ApplicationKeyID != 0 || actor.ClientSessionID != "" ||
+		!metadataIdentifier(actor.User.ID) || !metadataIdentifier(actor.SessionID) {
+		return "", ErrForbidden
+	}
+	return s.checkWritableSubtitleTarget(ctx, &actor, itemID, expectedSourceTag)
+}
+
+// A nil actor is reserved for the store's internal scheduled provider work.
+func (s *Store) checkWritableSubtitleTarget(ctx context.Context, actor *identity.Principal, itemID, expectedSourceTag string) (string, error) {
+	if ctx == nil || !metadataIdentifier(itemID) || len(expectedSourceTag) > 256 {
+		return "", ErrInvalidInput
+	}
+	if s == nil || s.pool == nil {
+		return "", ErrUnavailable
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	result, err := runSubtitleWorker(ctx, providerSubtitleWorkers, func() (result SubtitleContent, err error) {
+		snapshot, err := s.readProviderSubtitleSnapshot(ctx, actor, itemID)
+		if err != nil {
+			return SubtitleContent{}, err
+		}
+		tag := mediaSnapshotTag(snapshot.primary)
+		if expectedSourceTag != "" && tag != expectedSourceTag {
+			return SubtitleContent{}, ErrSourceChanged
+		}
+		prepared, err := s.openProviderSubtitleTarget(snapshot)
+		if err != nil {
+			return SubtitleContent{}, err
+		}
+		defer func() { err = errors.Join(err, prepared.closeTarget()) }()
+		if err := prepared.verify(ctx, nil); err != nil {
+			return SubtitleContent{}, err
+		}
+		if err := probeWritableSubtitleParent(ctx, prepared.parent); err != nil {
+			return SubtitleContent{}, err
+		}
+		if err := prepared.verify(ctx, nil); err != nil {
+			return SubtitleContent{}, err
+		}
+		current, err := s.readProviderSubtitleSnapshot(ctx, actor, itemID)
+		if err != nil {
+			return SubtitleContent{}, err
+		}
+		if !snapshot.same(current) {
+			return SubtitleContent{}, ErrSourceChanged
+		}
+		return SubtitleContent{Info: Subtitle{Tag: tag}}, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return result.Info.Tag, nil
+}
+
+// A real exclusive create checks mount flags and effective filesystem access,
+// including ACLs. Cleanup ignores cancellation, checks the private name against
+// the still-open inode, and contributes close or removal failures to the error.
+func probeWritableSubtitleParent(ctx context.Context, parent *os.Root) (err error) {
+	if ctx == nil || parent == nil {
+		return ErrInvalidInput
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	var nonce [16]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
+		return fmt.Errorf("prepare subtitle preflight name: %w", err)
+	}
+	name := ".goby-provider-subtitle-check-" + hex.EncodeToString(nonce[:]) + ".tmp"
+	file, err := parent.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return fmt.Errorf("%w: %w: create subtitle preflight file: %w", ErrUnavailable, ErrSubtitleTargetNotWritable, err)
+	}
+	info, statErr := file.Stat()
+	defer func() {
+		// A transient first fstat failure must not prevent a second attempt to
+		// identify our descriptor before removing the private name and closing.
+		if info == nil {
+			var retryErr error
+			info, retryErr = file.Stat()
+			err = errors.Join(err, retryErr)
+		}
+		err = errors.Join(err, removeSubtitlePreflightFile(parent, name, info), file.Close())
+		if err != nil {
+			err = fmt.Errorf("%w: %w: subtitle preflight did not complete: %w", ErrUnavailable, ErrSubtitleTargetNotWritable, err)
+		}
+	}()
+	if statErr != nil {
+		return statErr
+	}
+	if !info.Mode().IsRegular() || info.Mode().Perm()&0o077 != 0 || info.Size() != 0 {
+		return ErrSourceChanged
+	}
+	return ctx.Err()
+}
+
+func removeSubtitlePreflightFile(parent *os.Root, name string, expected os.FileInfo) error {
+	if expected == nil {
+		return fmt.Errorf("subtitle preflight file identity is unavailable")
+	}
+	current, err := parent.Lstat(name)
+	if err != nil {
+		return fmt.Errorf("inspect subtitle preflight cleanup: %w", err)
+	}
+	if !current.Mode().IsRegular() || !os.SameFile(current, expected) {
+		return ErrSourceChanged
+	}
+	if err := parent.Remove(name); err != nil {
+		return fmt.Errorf("remove subtitle preflight file: %w", err)
+	}
+	return nil
 }
 
 // RegisterDownloadedSubtitle accepts catalog identity and validated provider
@@ -209,40 +332,75 @@ func (snapshot providerSubtitleSnapshot) same(other providerSubtitleSnapshot) bo
 		first.mediaFile.ModifiedAt.Equal(second.mediaFile.ModifiedAt) && bytes.Equal(snapshot.mediaJSON, other.mediaJSON)
 }
 
+func (s *Store) openProviderSubtitleTarget(snapshot providerSubtitleSnapshot) (prepared *preparedProviderSubtitle, err error) {
+	prepared = &preparedProviderSubtitle{snapshot: snapshot}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, prepared.closeTarget())
+			prepared = nil
+		}
+	}()
+	prepared.lease, err = s.leaseLibraryRoot(snapshot.primary.root)
+	if err != nil {
+		return prepared, err
+	}
+	prepared.root, err = prepared.lease.Open()
+	if err != nil {
+		return prepared, err
+	}
+	path := filepath.FromSlash(snapshot.primary.relativePath)
+	prepared.parent, err = openRegisteredRoot(prepared.root, filepath.Dir(path))
+	if err != nil {
+		return prepared, fmt.Errorf("%w: subtitle parent cannot be opened", ErrUnavailable)
+	}
+	before, err := prepared.parent.Lstat(filepath.Base(path))
+	if err != nil || !snapshot.primary.matches(before) {
+		return prepared, fmt.Errorf("%w: subtitle primary changed", ErrUnavailable)
+	}
+	prepared.primary, err = openScanFile(prepared.parent, filepath.Base(path))
+	if err != nil {
+		return prepared, fmt.Errorf("%w: subtitle primary cannot be opened safely", ErrUnavailable)
+	}
+	prepared.primaryInfo, err = prepared.primary.Stat()
+	if err != nil || !snapshot.primary.matches(prepared.primaryInfo) || !sameMediaSourceFile(before, prepared.primaryInfo) {
+		return prepared, fmt.Errorf("%w: subtitle primary changed while opening", ErrUnavailable)
+	}
+	return prepared, nil
+}
+
+func (prepared *preparedProviderSubtitle) closeTarget() error {
+	var err error
+	if prepared.primary != nil {
+		err = errors.Join(err, prepared.primary.Close())
+		prepared.primary = nil
+	}
+	if prepared.parent != nil {
+		err = errors.Join(err, prepared.parent.Close())
+		prepared.parent = nil
+	}
+	if prepared.root != nil {
+		err = errors.Join(err, prepared.root.Close())
+		prepared.root = nil
+	}
+	if prepared.lease != nil {
+		err = errors.Join(err, prepared.lease.Close())
+		prepared.lease = nil
+	}
+	return err
+}
+
 func (s *Store) prepareProviderSubtitle(ctx context.Context, snapshot providerSubtitleSnapshot, remoteID, language, codec string, forced, hearingImpaired bool, data []byte) (*preparedProviderSubtitle, error) {
-	prepared := &preparedProviderSubtitle{snapshot: snapshot}
+	prepared, err := s.openProviderSubtitleTarget(snapshot)
+	if err != nil {
+		return nil, err
+	}
 	success := false
 	defer func() {
 		if !success {
 			prepared.close()
 		}
 	}()
-	var err error
-	prepared.lease, err = s.leaseLibraryRoot(snapshot.primary.root)
-	if err != nil {
-		return nil, err
-	}
-	prepared.root, err = prepared.lease.Open()
-	if err != nil {
-		return nil, err
-	}
 	path := filepath.FromSlash(snapshot.primary.relativePath)
-	prepared.parent, err = openRegisteredRoot(prepared.root, filepath.Dir(path))
-	if err != nil {
-		return nil, fmt.Errorf("%w: subtitle parent cannot be opened", ErrUnavailable)
-	}
-	before, err := prepared.parent.Lstat(filepath.Base(path))
-	if err != nil || !snapshot.primary.matches(before) {
-		return nil, fmt.Errorf("%w: subtitle primary changed", ErrUnavailable)
-	}
-	prepared.primary, err = openScanFile(prepared.parent, filepath.Base(path))
-	if err != nil {
-		return nil, fmt.Errorf("%w: subtitle primary cannot be opened safely", ErrUnavailable)
-	}
-	prepared.primaryInfo, err = prepared.primary.Stat()
-	if err != nil || !snapshot.primary.matches(prepared.primaryInfo) || !sameMediaSourceFile(before, prepared.primaryInfo) {
-		return nil, fmt.Errorf("%w: subtitle primary changed while opening", ErrUnavailable)
-	}
 	stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	digest := sha256.Sum256([]byte(remoteID))
 	suffix := "." + language + ".opensubtitles-" + hex.EncodeToString(digest[:])
