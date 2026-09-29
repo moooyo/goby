@@ -1,13 +1,14 @@
 # Current implementation and delivery status
 
-Current Phase 3 work follows the [September 29 filesystem recovery record](phase3-filesystem-recovery-20260929.md).
-Actual nonroot EACCES and a kernel-blocked metadata syscall both recovered.
-The metadata caller returned while its worker stayed accounted for; healthy
-queries/playback continued and device resume released the worker. Test devices,
-temporary permissions, application processes, and private PostgreSQL are closed.
-Earlier process/ENOSPC, reconciliation, compound/100k catalog, and mount results
-retain their scopes. Local compilation is authorized; runtime verification uses
-`test-env`. Packaged-process/guest coverage and final regression remain open.
+Current Phase 3 work follows the [September 29 media-read/CLI recovery record](phase3-read-cli-recovery-20260929.md).
+Actual payload-read cancellation/recovery and real CLI/systemd restart cases
+passed. A reproduced startup defect after PostgreSQL crash recovery is fixed:
+other-session temporary scan relations no longer count as foreign durable scope.
+Before/after regression, backup/restore, and the retained deployment's complete
+restart journey passed. Owned services, devices, and private PostgreSQL are closed.
+Earlier filesystem, process/ENOSPC, reconciliation, and compound/catalog results
+retain their scopes. Local compilation is authorized; runtime checks use
+`test-env`. Scan cancellation, guest lifecycle, and final regression remain open.
 Earlier checkpoints below are not current execution instructions.
 
 ## Active increment: compatibility, media analysis and resilience

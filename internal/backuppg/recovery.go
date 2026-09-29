@@ -261,11 +261,15 @@ func InspectBindingTransaction(ctx context.Context, tx pgx.Tx, schema string) (R
 
 func validateRecoveryScope(ctx context.Context, tx pgx.Tx, schema string) error {
 	var foreign bool
+	// Another session's temporary relations, including crash remnants awaiting
+	// PostgreSQL cleanup, are not durable foreign scope. Require both temporary
+	// persistence and PostgreSQL's namespace identity; names alone grant nothing.
 	err := tx.QueryRow(ctx, `SELECT EXISTS(
 	 SELECT 1 FROM pg_catalog.pg_database WHERE datname=current_database() AND NOT pg_catalog.pg_has_role(datdba,'USAGE')
 	 UNION ALL
 	 SELECT 1 FROM pg_catalog.pg_namespace n WHERE n.nspname<>$1 AND n.nspname !~ '^pg_' AND n.nspname<>'information_schema'
 	 UNION ALL SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname<>$1 AND n.nspname NOT IN ('pg_catalog','pg_toast','information_schema')
+	 AND NOT (c.relpersistence='t' AND pg_catalog.pg_is_other_temp_schema(n.oid))
 	 UNION ALL SELECT 1 FROM pg_catalog.pg_extension WHERE extname<>'plpgsql'
 	 UNION ALL SELECT 1 FROM pg_catalog.pg_event_trigger
 	 UNION ALL SELECT 1 FROM pg_catalog.pg_foreign_server

@@ -1,5 +1,16 @@
 # Current execution plan
 
+## Completed media-read and CLI recovery: September 29, 2026
+
+The [media-read/CLI recovery record](../development/phase3-read-cli-recovery-20260929.md)
+is the current entry. Actual payload read/cancellation/recovery passed. The real
+CLI and systemd journey exposed PostgreSQL temporary scan remnants being treated
+as foreign persistent scope after a crash. The minimal repair, focused negative
+coverage, backup/restore regression, and complete retained-deployment restart
+journey passed. Owned runtime resources are closed. Continue with blocked-scan
+cancellation and isolated guest lifecycle, then consolidated regression and
+migration/backup/recovery composition; relaxed performance gates remain in effect.
+
 ## Completed filesystem recovery: September 29, 2026
 
 The [filesystem recovery record](../development/phase3-filesystem-recovery-20260929.md)

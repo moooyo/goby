@@ -1,15 +1,15 @@
 # Goby handoff - September 29, 2026
 
-For current work, start with the [September 29 filesystem recovery record](phase3-filesystem-recovery-20260929.md).
-Actual nonroot permission recovery and dm/ext4-blocked metadata recovery passed.
-Kernel wait, healthy queries/playback, worker retention/release, and unchanged
-durable state were checked. The owned mount/mapper/loop, application processes,
-temporary socket ACL, and private PostgreSQL are closed; raw evidence remains.
-Earlier process/ENOSPC, reconciliation, and compound/catalog milestones retain
-their scopes. Local compilation is allowed and orchestration is simplified.
-Continue with small media-read and real CLI/supervisor cases, then guest lifecycle
-and final regression. Earlier stopping points and environment restrictions below
-are retained history.
+For current work, start with the [September 29 media-read/CLI recovery record](phase3-read-cli-recovery-20260929.md).
+Actual blocked payload-read recovery and the real CLI's normal stop, SIGKILL
+restart, and PostgreSQL-loss supervisor recovery passed. The actual entry point
+exposed a startup rejection of PostgreSQL's crashed-session temporary relations;
+the focused fix and complete retained-state repeat passed. The runtime unit,
+fault devices, socket ACL, and private PostgreSQL are closed, and its original
+network configuration is restored. Evidence and deployment data remain intact.
+Earlier milestones retain their scopes. Continue with blocked-scan cancellation,
+isolated guest lifecycle, then final integrated verification. Local compilation
+is allowed; tests remain on `test-env`. Earlier stopping points below are history.
 
 ## Historical September 26 checkpoint
 
