@@ -3,13 +3,9 @@
 ARG GOBY_AMD_BASE_IMAGE
 FROM ${GOBY_AMD_BASE_IMAGE} AS amd-media-build
 
-ARG FFMPEG_BUILD_JOBS=2
 ENV SOURCE_DATE_EPOCH=1789430400
 USER 0:0
 COPY amd-toolchain/ /opt/goby-amd-ffmpeg/
-COPY libplacebo-headers/ /build/libplacebo-include/libplacebo/
-COPY build-amd-ffmpeg.sh /build/build-amd-ffmpeg.sh
-COPY toolchain-patches/ /build/toolchain-patches/
 
 # Verify the native input before rebuilding FFmpeg with all three fixes.
 RUN printf '%s  /usr/local/bin/goby\n' 2e296bfd02fdf3f7b740000d0d87563e420d5a099fd20e0aa37b96502f78c004 | sha256sum --check --strict - \
@@ -22,8 +18,14 @@ RUN printf '%s  /usr/local/bin/goby\n' 2e296bfd02fdf3f7b740000d0d87563e420d5a099
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       build-essential ca-certificates curl gnupg libaom-dev libass-dev libdrm-dev libmp3lame-dev \
       libnuma-dev libopus-dev libssl-dev libva-dev libvorbis-dev libvpl-dev libvulkan-dev \
-      libx264-dev libx265-dev libzimg-dev nasm patch patchelf pkg-config python3 xz-utils yasm \
-    && GOBY_FFMPEG_BUILD_JOBS="$FFMPEG_BUILD_JOBS" bash /build/build-amd-ffmpeg.sh
+      libx264-dev libx265-dev libzimg-dev nasm patch patchelf pkg-config python3 xz-utils yasm
+
+# Keep package installation cached when the build script or patches change.
+COPY libplacebo-headers/ /build/libplacebo-include/libplacebo/
+COPY build-amd-ffmpeg.sh /build/build-amd-ffmpeg.sh
+COPY toolchain-patches/ /build/toolchain-patches/
+ARG FFMPEG_BUILD_JOBS=2
+RUN GOBY_FFMPEG_BUILD_JOBS="$FFMPEG_BUILD_JOBS" bash /build/build-amd-ffmpeg.sh
 
 FROM ${GOBY_AMD_BASE_IMAGE} AS runtime
 ARG GOBY_AMD_RECIPE_REVISION

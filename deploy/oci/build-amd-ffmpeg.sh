@@ -85,11 +85,15 @@ mkdir nv-codec-headers
 tar -xzf nv-codec-headers.tar.gz --strip-components=1 -C nv-codec-headers
 make -C nv-codec-headers PREFIX=/opt/nv-codec-headers install
 tar -xJf ffmpeg.tar.xz
-cp -a ffmpeg-9.0.1 ffmpeg-baseline
 cd ffmpeg-9.0.1
 patched_files=(libavfilter/vf_libplacebo.c fftools/ffmpeg.c fftools/thread_queue.h fftools/thread_queue.c fftools/ffmpeg_sched.c)
 sha256sum "${patched_files[@]}" > "$evidence/ffmpeg-patch-input.sha256"
-for patch in "$strict_patch" "$wakeup_patch" "$progress_patch"; do
+patch --batch --forward --fuzz=0 -p1 < "$evidence/toolchain-patches/$strict_patch" > "$evidence/$strict_patch.log" 2>&1
+# Both negative controls retain the identical strict Dolby Vision implementation.
+# Only the scheduler and progress fixes differ from their candidate counterparts.
+sha256sum "${patched_files[@]}" > "$evidence/ffmpeg-negative-control.sha256"
+cp -a "$work/ffmpeg-9.0.1" "$work/ffmpeg-baseline"
+for patch in "$wakeup_patch" "$progress_patch"; do
   patch --batch --forward --fuzz=0 -p1 < "$evidence/toolchain-patches/$patch" > "$evidence/$patch.log" 2>&1
 done
 sha256sum "${patched_files[@]}" > "$evidence/ffmpeg-patch-output.sha256"
