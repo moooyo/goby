@@ -1,0 +1,221 @@
+{
+  "kind": "goby-online-provider-acceptance",
+  "version": 1,
+  "recordedOn": "2026-09-30",
+  "status": "complete_within_selected_credential_free_scope",
+  "sourceRevision": "76d64bf0087f3cd2e40addde8067f4e6e65b2bac",
+  "application": {
+    "bytes": 50367426,
+    "sha256": "65f447ef9f74c35134d25e8179f44699b9c62a77bc7ca2145f440a1919bbbfdc"
+  },
+  "deliveryForm": "Docker image archive and Compose only",
+  "providers": {
+    "musicbrainz": {
+      "onlineStatus": "accepted_selected_album_workflow",
+      "item": "Kind of Blue",
+      "releaseGroupId": "8e8a594f-2175-38c7-a871-abb68ec363e7",
+      "syntheticLocalAudio": true,
+      "realUpstreamCalls": true,
+      "firstTypedIDRefresh": true,
+      "searchApplyRefresh": true,
+      "administratorPrecedence": true,
+      "staleRevisionAndDisabledAdmission": true,
+      "scanAndDockerRecreationPersistence": true,
+      "albumAndAudioIDsPreserved": true
+    },
+    "tmdb": {
+      "onlineStatus": "pending_credentials",
+      "offlineContractsPassed": true
+    },
+    "opensubtitles": {
+      "onlineStatus": "pending_credentials",
+      "offlineContractsPassed": true,
+      "localSidecarLifecyclePassed": true,
+      "realServiceDownloadClaim": false
+    }
+  },
+  "regressions": {
+    "parentPasses": 34,
+    "subtestPasses": 20,
+    "failures": 0,
+    "skips": 0,
+    "runs": [
+      {
+        "package": "providers",
+        "log": "regression-providers-01.log",
+        "sha256": "014e1c41ce47d80bfbeaa42cddb2b0b88db7d4e73ebcbb9e426050b39ce854e2",
+        "acceptedParentPasses": 17,
+        "acceptedSubtestPasses": 15,
+        "compositionNote": "All selected terminal tests passed."
+      },
+      {
+        "package": "config",
+        "log": "regression-config-01.log",
+        "sha256": "8ca6c503828fa32f2190eb515859d5af73a28502ad8df4a34c737d47a9874075",
+        "acceptedParentPasses": 2,
+        "acceptedSubtestPasses": 0,
+        "compositionNote": "All selected terminal tests passed."
+      },
+      {
+        "package": "library",
+        "log": "regression-library-01.log",
+        "sha256": "ccdc29762aecec63cec759af6e567f83ba799c07993ba6c9044b241d91bd2b12",
+        "acceptedParentPasses": 4,
+        "acceptedSubtestPasses": 0,
+        "compositionNote": "Only four unchanged metadata tests are reused; the failed original preflight group is replaced by regression-library-03."
+      },
+      {
+        "package": "library",
+        "log": "regression-library-03.log",
+        "sha256": "f0fc24057f472f7d5c71690e2ec574f7f0ff929dabb41bd4332d6dd8e75a19dd",
+        "acceptedParentPasses": 5,
+        "acceptedSubtestPasses": 0,
+        "compositionNote": "All selected terminal tests passed."
+      },
+      {
+        "package": "server",
+        "log": "regression-server-01.log",
+        "sha256": "c5cbb8409a5006738bbc88e9b1fb74b0e04f597c387c7682c5ec71099210a9c2",
+        "acceptedParentPasses": 6,
+        "acceptedSubtestPasses": 5,
+        "compositionNote": "All selected terminal tests passed."
+      }
+    ],
+    "retainedFailure": "regression-library-01 failed recoverable deletion because the container did not supply a stable machine identity; other unchanged metadata cases remain separately accepted.",
+    "nonrootIdentity": "10001:10001",
+    "actualReadOnlyMountAndPermissionDenial": true
+  },
+  "images": {
+    "software": {
+      "profile": "software",
+      "baseImageId": "sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab",
+      "imageId": "sha256:fa13611dbb940a2a876d9f52606d3bc05ccc6364b4f5fc8de19bec86204c3cb4",
+      "applicationSha256": "65f447ef9f74c35134d25e8179f44699b9c62a77bc7ca2145f440a1919bbbfdc",
+      "sourceRevision": "76d64bf0087f3cd2e40addde8067f4e6e65b2bac",
+      "archive": {
+        "name": "goby-linux-amd64-image.tar",
+        "bytes": 388846080,
+        "sha256": "f35b29ffb4257f04d607d6d67d61b1dfda290a84f7b83e5db4b0509de0ba92e1"
+      },
+      "actualImportPassed": true,
+      "baseLayersUnchanged": true,
+      "additionalApplicationLayers": 2,
+      "mediaToolsUnchanged": {
+        "/opt/ffmpeg/9.0.1/bin/ffmpeg": "b0d61d340336ae7260493404a72a6584684f2201eab795204cf2c6ba4c71b5d1",
+        "/opt/ffmpeg/9.0.1/bin/ffprobe": "10624ede2701b47457ed880c12cf72ca25927dd00143f96df170c329a37ecec5",
+        "/usr/lib/postgresql/17/bin/pg_dump": "b5f14f509728e44d97ff876b570c85c9d641fc22898b394ec0f5a923ec6ef793",
+        "/usr/lib/postgresql/17/bin/pg_restore": "6a5c329542ccbb58957edbc8c0aa08e103cb32f8257c1f2d3b8dad19ce947692"
+      },
+      "newGPUAcceptanceClaim": false
+    },
+    "amd": {
+      "profile": "amd",
+      "baseImageId": "sha256:eb0f98427ad6535eb37d4cf744ab0d90d6c2e45f84c64f34a2355e0a7eed713f",
+      "imageId": "sha256:a35b7653d262afcf006b95f31f450b58d89ce11b886279e2685a8a2ea0d3178e",
+      "applicationSha256": "65f447ef9f74c35134d25e8179f44699b9c62a77bc7ca2145f440a1919bbbfdc",
+      "sourceRevision": "76d64bf0087f3cd2e40addde8067f4e6e65b2bac",
+      "archive": {
+        "name": "goby-linux-amd64-amd-image.tar",
+        "bytes": 941316608,
+        "sha256": "383e372d1ca1aa7caccbf7e81673b5e6c17ac741a902da0e473a27614f5ec767"
+      },
+      "actualImportPassed": true,
+      "baseLayersUnchanged": true,
+      "additionalApplicationLayers": 2,
+      "mediaToolsUnchanged": {
+        "/opt/ffmpeg/9.0.1/bin/ffmpeg": "b0d61d340336ae7260493404a72a6584684f2201eab795204cf2c6ba4c71b5d1",
+        "/opt/ffmpeg/9.0.1/bin/ffprobe": "10624ede2701b47457ed880c12cf72ca25927dd00143f96df170c329a37ecec5",
+        "/usr/lib/postgresql/17/bin/pg_dump": "b5f14f509728e44d97ff876b570c85c9d641fc22898b394ec0f5a923ec6ef793",
+        "/usr/lib/postgresql/17/bin/pg_restore": "6a5c329542ccbb58957edbc8c0aa08e103cb32f8257c1f2d3b8dad19ce947692",
+        "/opt/goby-amd-ffmpeg/bin/ffmpeg": "3505587e95203e2561a5b0459134847b59aca3665557676a394cdfbca2d14908",
+        "/opt/goby-amd-ffmpeg/bin/ffprobe": "5012fcac5d0da7346953312cce9f86cbfa588baf412e3d14acf6e028405f71ad"
+      },
+      "newGPUAcceptanceClaim": false
+    }
+  },
+  "amdApplication": {
+    "actualStartupAndMusicBrainzRefresh": true,
+    "inheritedMetadataPreserved": true,
+    "cleanExit": true,
+    "gpuReexecution": false,
+    "evidence": "artifacts/amd-application01.jsonl",
+    "boundary": "The application sequence completed and closed before the separate overlay config checker raised KeyError for an omitted false field."
+  },
+  "subtitleOverlay": {
+    "readOnlyRoot": true,
+    "user": "10001:10001",
+    "writableMediaCreateAndRemove": true,
+    "stableMachineIdentityReadOnly": true,
+    "providerCredentialsNotConfigured": true,
+    "realOpenSubtitlesAcceptance": false,
+    "configurationAndLocalPublicationOnly": true,
+    "normalizationBoundary": "Compose omits the default false read_only field from normalized writable mounts."
+  },
+  "closure": {
+    "kind": "goby-online-provider-resource-closure",
+    "ownedContainers": 0,
+    "ownedComposeNetworks": 0,
+    "databaseConnectionsBeforeStop": 0,
+    "postgresStopped": true,
+    "postgresPort": 55994,
+    "httpPort": 38961,
+    "dataAndEvidenceRetained": true,
+    "protectedServicesUnchanged": true,
+    "protectedServices": [
+      {
+        "name": "/winvaultwarden-ui-review",
+        "id": "7637bef4bf06c121575af2e4c4968c2315f128be6830590e034cf40d1c085d1d",
+        "pid": 1452,
+        "startedAt": "2026-09-26T13:45:00.745678683Z",
+        "running": true
+      },
+      {
+        "name": "/winvaultwarden-bitwarden-test",
+        "id": "cfc2342951f8300a3090829b21966f92d22a1b20ea6197d7e09776ba4bb7aedb",
+        "pid": 1455,
+        "startedAt": "2026-09-26T13:45:00.755428599Z",
+        "running": true
+      },
+      {
+        "name": "/5gpn-release-gateway-1",
+        "id": "e4aa5102681db11be9122bcdcd59215d4a491d2d0b94c15f42d21b659cc8cb89",
+        "pid": 1467,
+        "startedAt": "2026-09-26T13:45:00.753343083Z",
+        "running": true
+      }
+    ]
+  },
+  "retainedFailures": [
+    {
+      "name": "baseline01",
+      "expectedDefect": "The old delivered image rejected typed MusicBrainz ID without provenance with provider_match_required."
+    },
+    {
+      "name": "regression-library-01",
+      "failure": "The fixture image lacked stable /etc/machine-id for recoverable sidecar deletion; the optional writable profile now mounts host identity read-only."
+    },
+    {
+      "name": "images01/software-build",
+      "failure": "Unsupported --help was used as a CLI probe. Application compilation passed and its exact binary was reused."
+    },
+    {
+      "name": "amd-application01 overlay stage",
+      "failure": "Compose normalizes writable mounts by omitting read_only:false; only the corrected overlay stage was repeated."
+    },
+    {
+      "name": "initial export inventory",
+      "failure": "The first inventory expected one new layer, but COPY plus the verification RUN produce two. No archive had been written; final receipts record both."
+    }
+  ],
+  "frontendBoundary": "Byte-identical accepted administrator assets and unchanged production frontend sources were reused; no new browser or frontend build claim.",
+  "evidenceArchive": {
+    "name": "online-provider-evidence.tar.gz",
+    "bytes": 41878,
+    "sha256": "1dd4bcdb72a58fff5a2dad08ebcea41744b750f80b9bcee5f11dcc40b0c24074",
+    "files": 47
+  },
+  "localDeliveryDirectory": "D:/Code/goby/.artifacts/oci-providers-20260930",
+  "registryPublished": false,
+  "productionDeployment": false,
+  "gitIntegration": "Handled separately from frozen image/runtime receipts."
+}

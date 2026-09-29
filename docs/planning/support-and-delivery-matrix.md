@@ -14,6 +14,7 @@ production deployment, universal compatibility, or a public distribution license
 
 | Selected scope | Current result | Authoritative boundary | Required remaining work |
 | --- | --- | --- | --- |
+| Credential-free online providers | Complete within the selected MusicBrainz album and offline/configuration scope | [Provider result](../development/online-providers-20260930.md); both updated Docker application profiles, unchanged media tools and closed resources | TMDB/OpenSubtitles online acceptance is separately pending credentials |
 | Revised media-analysis/resilience Phase 3 | Complete, including consolidated verification and closure | [Functional closeout](../development/phase3-functional-closeout-20260929.md) and [publication](../development/phase3-functional-publication-20260929.md); real-media correctness, catalog scale, concurrency, and recorded recovery cases under the revised functional agreement | 0 |
 | Linux amd64 software OCI archive + Compose | Complete | [Software OCI result](../development/oci-delivery-20260929.md); actual import/runtime, encrypted recovery, schema upgrade/rollback, and owned-resource closure | 0 |
 | Linux amd64 AMD OCI archive + Compose | Complete for the recorded device/driver/tool tuple | [AMD OCI result](../development/oci-amd-delivery-20260929.md); actual GPU checks and production HTTP outputs, exact fallback, and owned-resource closure | 0 |
@@ -32,7 +33,7 @@ These are separate choices, not a queued implementation or acceptance backlog.
 | Follow-up | Becomes work only when |
 | --- | --- |
 | Docker production deployment and HTTPS | A Docker installation, domain/proxy/TLS topology, and operating environment are selected |
-| Provider-online acceptance | A named provider and its actual credentials/service contract are selected |
+| Credentialed provider-online acceptance | TMDB/OpenSubtitles credentials are supplied for the selected real workflows; MusicBrainz's accepted album journey is retained |
 | Public distribution, license, or registry publication | The user selects that publication scope; project-license/distribution decisions belong to that scope |
 | Additional Docker architectures or GPU profiles | A new Docker image architecture or device/driver tuple is explicitly selected; this does not add a native package or another container runtime |
 | Optional extensions or broader performance/capacity claims | A concrete additional feature or qualification profile is selected; existing explicit feature exclusions stay excluded unless the user changes them |

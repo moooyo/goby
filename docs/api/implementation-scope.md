@@ -168,7 +168,7 @@ These behaviors do not appear as a complete set of operations in Swagger. They m
 | DLNA profiles, discovery and SOAP services | Explicitly excluded by the September 20 user decision; this does not remove ordinary server discovery |
 | Sync/offline downloads | Deferred: transfer/job/package semantics exceed simple authorized file download |
 | External channels | Explicitly excluded by the September 20 user decision; integrated metadata/image/subtitle providers are a separate capability |
-| Metadata/image/subtitle provider online acceptance | Deferred; existing integrated adapters are retained |
+| Metadata/image/subtitle provider online acceptance | MusicBrainz's selected album workflow is [accepted](../development/online-providers-20260930.md); TMDB/OpenSubtitles live workflows remain pending credentials, with offline contracts and configuration prepared |
 | Party/group synchronization | Explicitly excluded by the September 20 user decision; ordinary remote session commands are retained |
 | BackupApi | Upstream plugin/core provenance and archive compatibility remain unselected; native Goby encrypted backup/recovery is already implemented and has separate accepted evidence |
 | PluginService | Optional future Goby extension registry; no implied compatibility with Emby binary plugins |

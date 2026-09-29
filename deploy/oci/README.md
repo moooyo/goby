@@ -20,6 +20,13 @@ It uses an external PostgreSQL 17 server and does not publish to a registry.
 PostgreSQL and the reverse proxy may run outside Docker; this policy applies to
 the Goby application deployment.
 
+The [September 30 online-provider increment](../../docs/development/online-providers-20260930.md)
+updates the application on this accepted media image. Use that increment's image
+ID and archive receipt for the newer application. Its
+[provider guide](README.providers.md) covers MusicBrainz, private provider
+configuration and the optional writable-subtitle overlay. The original receipts
+below retain their September 29 source and recovery evidence.
+
 ## Build the archive
 
 Run from a clean source checkout on the Linux build host. Use the project's Go

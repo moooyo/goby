@@ -1,5 +1,15 @@
 # Goby handoff - September 29, 2026
 
+Latest increment, September 30: [credential-free online providers](online-providers-20260930.md)
+are verified and closed. MusicBrainz has a real Docker album workflow; source
+`76d64bf` fixes typed-ID refresh and checks subtitle write admission before a
+quota-bearing download. Both updated Docker archives and their unchanged-tool
+bridge are recorded in the [result manifest](online-providers-results-20260930.json).
+The default media mount stays read-only; optional subtitle writes also mount a
+stable host machine identity read-only. TMDB/OpenSubtitles real online work
+awaits credentials. Do not repeat the accepted MusicBrainz flow solely to start
+that later credentialed scope. Owned resources are closed and evidence retained.
+
 September 30 delivery decision: **support Docker only**. Use the image archive
 and Compose guides for installation, upgrade and rollback. Software and AMD are
 profiles of this single delivery form. Native/systemd packages and non-Docker

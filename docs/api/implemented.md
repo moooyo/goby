@@ -222,8 +222,11 @@ credentials, and process budgets remain deployment settings. See the
 [closed decoder](../../internal/server/admin_settings_management.go#L10) and
 [runtime effects](../../internal/server/settings_dtos.go#L29).
 
-Provider adapters are integrated in source, but provider-specific acceptance
-is **user-deferred**. The native API exposes `GET /admin/v1/providers`,
+Provider adapters are integrated. The September 30
+[provider increment](../development/online-providers-20260930.md) verifies the
+selected real MusicBrainz album workflow and focused offline provider contracts.
+TMDB and OpenSubtitles online acceptance is **pending credentials**; their
+offline/configuration results are not actual-service acceptance. The native API exposes `GET /admin/v1/providers`,
 `GET /admin/v1/items/{id}/providers/provenance`, POST operations at
 `.../providers/search`, `apply`, `refresh`, `images`, `image`,
 `subtitles/search`, and `subtitles/download`, and

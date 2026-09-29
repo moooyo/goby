@@ -1,0 +1,17 @@
+# Opt in only for a media directory where Goby may publish subtitle sidecars.
+# Apply after compose.yaml (and compose.amd.yaml if selected).
+services:
+  goby:
+    volumes:
+      - type: bind
+        source: ${GOBY_MEDIA_DIR:?Set the approved writable media directory}
+        target: /media
+        read_only: false
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${GOBY_MACHINE_ID_FILE:-/etc/machine-id}
+        target: /etc/machine-id
+        read_only: true
+        bind:
+          create_host_path: false

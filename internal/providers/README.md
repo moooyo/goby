@@ -6,6 +6,12 @@ disabled until the management setting enables it and the corresponding private
 server configuration is present. Public status responses expose readiness and
 attribution, never credentials.
 
+The [September 30 acceptance](../../docs/development/online-providers-20260930.md)
+covers a real MusicBrainz album workflow through Docker and focused offline
+contracts for all three adapters. TMDB and OpenSubtitles still require credentials
+for live acceptance. Follow the [Docker provider guide](../../deploy/oci/README.providers.md);
+`Configured` reports configuration availability, not a live connectivity test.
+
 ## Credentials and service contracts
 
 - TMDB uses an API Read Access Token in the Authorization header. Movie and TV
@@ -45,6 +51,10 @@ Online refresh uses optimistic metadata revisions. Automatic matching accepts
 only a unique exact title and, when available, matching year; ambiguous searches
 require explicit selection.
 
+Before a quota-bearing subtitle download, Goby checks the authorized target
+directory with an exclusive temporary-file create and cleanup. Read-only mounts
+or denied write access are rejected early. This does not reserve the directory;
+the source and current authority are checked again during publication.
 Downloaded subtitles are parsed before publication, written through held media
 root descriptors, and published without replacing existing files. Catalog,
 session, policy, source identity, and filesystem observations are checked again

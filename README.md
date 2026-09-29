@@ -63,13 +63,19 @@ this policy does not prescribe their deployment method.
 
 ## Scope and future work
 
+The [credential-free online-provider increment](docs/development/online-providers-20260930.md)
+also accepts MusicBrainz album search, metadata application/refresh and Docker
+restart persistence. The [provider guide](deploy/oci/README.providers.md) covers
+configuration and optional subtitle write access. TMDB and OpenSubtitles have
+offline contract coverage; their real online acceptance awaits credentials.
+
 There is no remaining implementation or acceptance gate in the completed selected
 scopes. Further work requires a separately selected delivery or feature scope:
-provider-specific online acceptance, additional clients and media combinations,
+credentialed TMDB/OpenSubtitles online acceptance, additional clients and media combinations,
 other GPU/driver profiles within Docker, an additional Docker image architecture
 such as Linux arm64, registry distribution, or production/public-HTTPS
 deployment. Current acceptance remains Linux amd64. Provider adapters already
-exist; their online acceptance remains deferred.
+exist; only the recorded MusicBrainz online profile is currently accepted.
 
 Standalone binaries, systemd installation packages, DEB/RPM packages, Windows
 installers and other native packages are unsupported delivery forms, not

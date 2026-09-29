@@ -152,7 +152,8 @@ def main():
                        archive={"name": archive.name, **record(archive)})
         (output / "SHA256SUMS").write_text(
             receipt["archive"]["sha256"] + "  " + archive.name + "\n", encoding="utf-8")
-        for name in ("compose.yaml", "goby.env.example", "README.md", "source-pins.json"):
+        for name in ("compose.yaml", "compose.subtitles.yaml", "goby.env.example", "README.md",
+                     "README.providers.md", "source-pins.json"):
             copy_file(RECIPE / name, output / name)
         save_receipt()
         print(json.dumps({"status": receipt["status"], "imageId": image_id, "output": str(output)}))

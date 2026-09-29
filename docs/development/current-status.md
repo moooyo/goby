@@ -1,18 +1,29 @@
 # Current implementation and delivery status
 
+The September 30 [credential-free online-provider increment](online-providers-20260930.md)
+is complete within its selected scope. MusicBrainz's real album search, apply,
+typed-ID refresh, administrator precedence, scan and Docker restart persistence
+passed. Application source `76d64bf` updates both Docker profiles while preserving
+their media-tool layers. TMDB and OpenSubtitles have passed selected offline
+contracts and configuration preparation; **their online acceptance still requires
+credentials**. The optional subtitle-write profile and early write admission were
+verified locally within Docker. Owned verification containers, network and
+PostgreSQL are closed. See the [result manifest](online-providers-results-20260930.json)
+and [provider guide](../../deploy/oci/README.providers.md).
+
 Delivery policy, September 30, 2026: **Docker is the only supported delivery
 form**, currently image archives with Compose for the software and selected AMD
 profiles. Native binaries/systemd packages, OS installers and non-Docker runtimes
 are outside scope, not outstanding release work. See the
 [delivery policy](../planning/docker-delivery-policy.md).
 
-Status: **the selected functional, software OCI and AMD OCI increments are
+Previous delivery status: **the selected functional, software OCI and AMD OCI increments are
 complete, integrated and published**. AMD delivery
 `6c574ca5708051f0e48e18ebd99903688a3e13ee` was pushed to `origin/main` with exact
 remote readback. The [publication record](oci-publication-20260929.md) separates
 Git completion from the immutable image/build/runtime receipts.
 There is no remaining gate in those selected increments. Production deployment,
-online-provider acceptance, public distribution and additional platform/feature
+credentialed-provider acceptance, public distribution and additional platform/feature
 profiles require a new selection; see the
 [current execution plan](../planning/current-execution-plan.md#follow-up-work-requires-a-new-scope-selection).
 

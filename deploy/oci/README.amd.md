@@ -1,5 +1,11 @@
 # Linux amd64 AMD OCI extension
 
+The [September 30 online-provider increment](../../docs/development/online-providers-20260930.md)
+provides a newer application layer on this accepted AMD image. Its receipt binds
+the new image and application identities; the FFmpeg, drivers and earlier GPU
+evidence below retain their original boundaries. See the
+[provider guide](README.providers.md) for configuration and subtitle write access.
+
 Status: **COMPLETE within the selected Linux amd64 AMD archive/Compose scope**.
 The recipe extends the separately verified software image with AMD VAAPI
 drivers, Mesa Vulkan drivers and a rebuilt FFmpeg that

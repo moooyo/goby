@@ -1,5 +1,15 @@
 # Current execution plan
 
+## Completed credential-free online providers: September 30, 2026
+
+The [provider increment](../development/online-providers-20260930.md) completes
+real MusicBrainz album search/apply/refresh and scan/restart persistence through
+Docker, selected offline contracts, and optional writable-subtitle preparation.
+Both Docker profiles carry application source `76d64bf`; media-tool evidence is
+reused only across unchanged bytes. Owned resources are closed. TMDB and
+OpenSubtitles remain pending credentials for actual online acceptance; their
+offline results are not service compatibility claims.
+
 Status: **the selected functional and OCI delivery scope is complete and
 published; no implementation, acceptance or publication gate remains open**.
 The latest accepted delivery is `6c574ca5708051f0e48e18ebd99903688a3e13ee`.
@@ -17,7 +27,7 @@ not deferred release work. Software and AMD remain profiles of that same form.
 | Purpose | Work still available | Boundary |
 | --- | --- | --- |
 | Operate a real Docker installation | Select the Docker host, real media and client; configure Compose, persistence, external PostgreSQL, domain/reverse proxy/HTTPS, and verify that installation's playback and recovery | Test-environment acceptance does not establish production deployment |
-| Use online providers | Verify the existing TMDB, MusicBrainz and OpenSubtitles adapters against selected online services | Adapter implementation is already present |
+| Complete credentialed online providers | Supply private TMDB/OpenSubtitles configuration, then verify the selected real metadata/image and subtitle workflows | MusicBrainz's selected album flow and the offline/configuration work are complete; preserve their evidence |
 | Publish externally | Select the project license and distribution terms/materials; optionally publish a version or container registry image | Local software and AMD archives are already delivered |
 | Add a Docker image profile | Select and qualify another Docker architecture or GPU/device profile when needed | Current acceptance covers the recorded Linux amd64 software/AMD profiles; no native package or non-Docker runtime is queued |
 | Extend the product | Select a concrete additional feature or client/media combination | Offline packages, general recommendations and game/book media remain unselected; Live TV, DLNA, external channels, group playback and a consumer Web player remain excluded |

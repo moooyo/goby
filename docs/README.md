@@ -6,8 +6,13 @@ As of September 30, 2026, the revised Phase 3 functional scope, Linux amd64
 software OCI delivery, and selected AMD OCI extension are complete. The latest
 integrated delivery was merged into `main` and pushed at `6c574ca`. Automatic
 intro analysis and BIF previews are implemented and accepted within their
-recorded profiles. The current OCI application binary is built from `b9bfa7c`;
+recorded profiles. The updated provider-capable OCI application binary is built from `76d64bf`;
 image and deployment companion identities are recorded separately.
+
+The [online-provider increment](development/online-providers-20260930.md)
+accepts the selected real MusicBrainz album workflow and offline contracts.
+TMDB/OpenSubtitles live acceptance remains pending credentials. Use the
+[Docker provider guide](../deploy/oci/README.providers.md) for configuration.
 
 The [Docker delivery policy](planning/docker-delivery-policy.md) makes Docker
 Engine images the only official delivery form. The current image archive and
