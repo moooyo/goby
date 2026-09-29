@@ -1,15 +1,15 @@
 # Goby handoff - September 29, 2026
 
-For current work, start with the [September 29 media-read/CLI recovery record](phase3-read-cli-recovery-20260929.md).
-Actual blocked payload-read recovery and the real CLI's normal stop, SIGKILL
-restart, and PostgreSQL-loss supervisor recovery passed. The actual entry point
-exposed a startup rejection of PostgreSQL's crashed-session temporary relations;
-the focused fix and complete retained-state repeat passed. The runtime unit,
-fault devices, socket ACL, and private PostgreSQL are closed, and its original
-network configuration is restored. Evidence and deployment data remain intact.
-Earlier milestones retain their scopes. Continue with blocked-scan cancellation,
-isolated guest lifecycle, then final integrated verification. Local compilation
-is allowed; tests remain on `test-env`. Earlier stopping points below are history.
+For current work, start with the [September 29 blocked-scan/guest recovery record](phase3-scan-guest-recovery-20260929.md).
+Blocked-scan cancellation, real dedicated-guest reboot/reset, and late mounting
+passed. The nested guest is powered off with disks and evidence retained; its
+media boot policy is restored. Scan devices, processes, and private PostgreSQL
+are closed. Earlier product repairs retain their accepted scopes. Continue
+directly with the [final verification entry](phase3-final-verification-plan-20260929.md)
+for consolidated regression and migration/backup/recovery composition.
+Local compilation is allowed; runtime work stays on `test-env`. The guest uses
+the verified cloud image's kernel/initrd directly and does not establish firmware
+or physical-host recovery. Earlier stopping points below are retained history.
 
 ## Historical September 26 checkpoint
 

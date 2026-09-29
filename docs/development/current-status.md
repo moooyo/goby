@@ -1,14 +1,13 @@
 # Current implementation and delivery status
 
-Current Phase 3 work follows the [September 29 media-read/CLI recovery record](phase3-read-cli-recovery-20260929.md).
-Actual payload-read cancellation/recovery and real CLI/systemd restart cases
-passed. A reproduced startup defect after PostgreSQL crash recovery is fixed:
-other-session temporary scan relations no longer count as foreign durable scope.
-Before/after regression, backup/restore, and the retained deployment's complete
-restart journey passed. Owned services, devices, and private PostgreSQL are closed.
-Earlier filesystem, process/ENOSPC, reconciliation, and compound/catalog results
-retain their scopes. Local compilation is authorized; runtime checks use
-`test-env`. Scan cancellation, guest lifecycle, and final regression remain open.
+Current Phase 3 work follows the [September 29 blocked-scan/guest recovery record](phase3-scan-guest-recovery-20260929.md).
+Actual blocked-scan cancellation and isolated guest reboot, QMP reset, and late
+media mounting passed. The original catalog, UserData, settings, and binding
+survived; late mounting recovered within the same application process. No new
+product repair was required. The dedicated guest, fault devices, scan processes,
+and private PostgreSQL are closed. Earlier repairs and acceptance scopes remain
+valid. Local compilation is authorized; runtime work stays on `test-env`.
+Next: consolidated regression and migration/backup/recovery composition.
 Earlier checkpoints below are not current execution instructions.
 
 ## Active increment: compatibility, media analysis and resilience

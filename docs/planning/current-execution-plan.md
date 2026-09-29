@@ -1,5 +1,17 @@
 # Current execution plan
 
+## Completed blocked-scan and guest recovery: September 29, 2026
+
+The [blocked-scan/guest record](../development/phase3-scan-guest-recovery-20260929.md)
+is the current entry. Real scan cancellation retained its blocked worker and
+reservations until disk recovery, then drained and rescanned successfully.
+An owned nested guest passed normal reboot, QMP reset, and late original-volume
+mounting with preserved data and new work. All owned runtimes are closed. No
+product repair was needed. Use the [final verification entry](../development/phase3-final-verification-plan-20260929.md)
+for consolidated regression and representative migration/backup/recovery
+composition; preserve accepted scopes and avoid
+restarting historical controller chains without a relevant product change.
+
 ## Completed media-read and CLI recovery: September 29, 2026
 
 The [media-read/CLI recovery record](../development/phase3-read-cli-recovery-20260929.md)
