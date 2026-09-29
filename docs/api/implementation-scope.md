@@ -1,6 +1,6 @@
 # Emby API implementation scope
 
-Status: **current scope and historical contract inventory, updated September 29,
+Status: **current scope and historical contract inventory, updated September 30,
 2026**. The selected compatibility, media-analysis, revised functional-recovery,
 and Linux amd64 software/AMD OCI deliveries are complete within their recorded
 boundaries. See the [implemented surface](implemented.md),
@@ -28,7 +28,7 @@ BIF previews and the revised concurrency/recovery scope. The
 [AMD OCI extension](../development/oci-amd-delivery-20260929.md) subsequently
 completed their Linux amd64 archive/Compose profiles. Earlier blanket deferrals
 do not apply to those accepted scopes. Registry publication, production
-deployment and additional platforms remain separate.
+deployment and additional Docker image profiles remain separate.
 
 The objective is an independent Linux media backend that existing
 Emby-compatible clients can connect to. This includes browsing and playback
@@ -37,6 +37,25 @@ dashboard. Goby's project license remains undecided; completed internal
 deliveries do not establish complete public-distribution licensing.
 
 The full upstream inventory is [535 operations](catalog.md), with [local request/response models](models.md). That count describes the fixed SDK export, not the complete behavior of every Emby release. The newer baseline is **SDK 4.9.5.0 Release**; see [source provenance](../sources/README.md).
+
+## Official delivery form
+
+The [September 30 Docker delivery policy](../planning/docker-delivery-policy.md)
+selects a Goby image running on Docker Engine as the only official delivery
+form. The current delivery uses an importable image archive and Docker Compose.
+Software and AMD are profiles of that one form, currently accepted on Linux
+amd64 within their recorded boundaries.
+
+Standalone binaries, systemd installation packages, DEB/RPM packages, Windows
+installers and other native packages are unsupported, not deferred obligations.
+Native builds remain development tools and historical fixtures. Non-Docker
+runtimes are not promised. Any future arm64 work must be selected as a Docker
+image profile; current platform support does not expand through this policy.
+
+The CLI, FFmpeg/ffprobe and native analysis helper included in an image are image
+components, not separate delivery forms. Registry publication is an optional
+distribution channel for the same images and has not occurred. Deployment of
+the external PostgreSQL server or reverse proxy is not prescribed by this policy.
 
 ## What compatibility means
 
@@ -53,7 +72,8 @@ Common protocol flows guide implementation now; a user-provided client shortlist
 | P0 | Server setup, users/policy, library ingestion, client login/browse, direct video/audio playback, basic subtitles, progress, administrator operations | The tested direct-play workflows and media profiles only |
 | P1 | Remux/transcode/HLS, full playback lifecycle, broader music/TV experience, richer user data, metadata management, client aliases/events | The exact tested client versions and feature/media profiles |
 | P2 | Additional upstream features needed for broader feature coverage | Only each feature that passes its acceptance matrix |
-| Deferred | Sync/offline packages, unselected optional extensions and separate platform/provider/delivery work | No support claim until scheduled and implemented |
+| Deferred | Sync/offline packages, unselected optional extensions, additional Docker image profiles, provider online acceptance and production deployment | No support claim until scheduled and implemented |
+| Unsupported delivery forms | Standalone binaries, systemd/native packages, DEB/RPM, Windows installers and non-Docker runtimes | Neither supported nor deferred obligations; native builds are development or historical-fixture artifacts |
 | Excluded | Live TV/EPG/DVR/tuners, DLNA, external channels, synchronized parties, Emby consumer web application, Emby Connect/cloud identity, Emby package distribution and proprietary binary plugin compatibility | Explicitly outside the user-selected product scope |
 
 P0 and P1 describe the original implementation order, not current completion
@@ -158,7 +178,7 @@ These behaviors do not appear as a complete set of operations in Swagger. They m
 | General recommendations and game/book media | Deferred; not implied by local Similar/InstantMix, theme media or episode-intro analysis |
 | WebAppService and consumer web player | Excluded: Goby provides only its own administrator dashboard |
 | ConnectService and Emby cloud registration | Excluded: use Goby local accounts and configured server URLs |
-| PackageService / Emby package installation | Excluded: Goby releases and extensions need their own distribution mechanism |
+| PackageService / Emby package installation | Excluded: Goby's official application delivery is a Docker image; this does not implement Emby package distribution or binary-plugin installation |
 
 Unsupported features need an explicit capability decision and appropriate error
 behavior. Supported Goby local features are free, and the authenticated feature

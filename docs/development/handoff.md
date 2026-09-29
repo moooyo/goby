@@ -1,5 +1,13 @@
 # Goby handoff - September 29, 2026
 
+September 30 delivery decision: **support Docker only**. Use the image archive
+and Compose guides for installation, upgrade and rollback. Software and AMD are
+profiles of this single delivery form. Native/systemd packages and non-Docker
+runtimes are not a future release backlog; older records remain historical.
+Read the [delivery policy](../planning/docker-delivery-policy.md) before selecting
+any further packaging work. The choice of external PostgreSQL or proxy deployment
+does not change.
+
 Status: **selected work complete and published**. Software OCI delivery
 `1e34ae33509d9719561db9bf20df8acdddf09014` and AMD OCI delivery
 `6c574ca5708051f0e48e18ebd99903688a3e13ee` were merged and pushed to `origin/main`.

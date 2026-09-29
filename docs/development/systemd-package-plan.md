@@ -1,5 +1,12 @@
 # Internal amd64 embedded systemd package
 
+Disposition, September 30, 2026: **historical native-package work; not a supported
+delivery form**. The [Docker-only policy](../planning/docker-delivery-policy.md)
+removes native/systemd packages from current and deferred release obligations.
+The original build and installation evidence below is retained unchanged; its
+old pending steps are not a queue to resume. Use the
+[Docker operator guide](../../deploy/oci/README.md) for supported installation.
+
 Status: remote package builds, focused checks, independent review and build
 resource closure passed. The first installation prepared successfully but its
 runtime controller failed before Goby started. Owned services stopped, and the

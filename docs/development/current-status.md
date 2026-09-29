@@ -1,5 +1,11 @@
 # Current implementation and delivery status
 
+Delivery policy, September 30, 2026: **Docker is the only supported delivery
+form**, currently image archives with Compose for the software and selected AMD
+profiles. Native binaries/systemd packages, OS installers and non-Docker runtimes
+are outside scope, not outstanding release work. See the
+[delivery policy](../planning/docker-delivery-policy.md).
+
 Status: **the selected functional, software OCI and AMD OCI increments are
 complete, integrated and published**. AMD delivery
 `6c574ca5708051f0e48e18ebd99903688a3e13ee` was pushed to `origin/main` with exact

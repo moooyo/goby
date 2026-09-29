@@ -1,5 +1,13 @@
 # Running Goby during development
 
+Effective **2026-09-30**, [Docker Engine images are the only supported Goby deployment form](../planning/docker-delivery-policy.md).
+Current delivery uses image archives and Compose, with software and AMD profiles.
+Registry publication is an optional distribution channel. Source builds and
+native execution remain internal development/verification tools; standalone
+binary and systemd installation packages are unsupported and are not future
+delivery work. Historical native procedures and results below retain their
+original evidence scope.
+
 The current implementation supports PostgreSQL initialization, administrator setup/login, users, media libraries, bounded scans, local NFO metadata, persistent catalog entities, indexed local artwork, task control, original-file playback, external SRT/WebVTT, durable per-user playback state, client capabilities/session views, user-state events, initial remote control, and NextUp queries. Authenticated HLS adds full VOD manifests, seeking, remux, and supported audio/video conversion, including the selected fMP4, packed-audio and adaptive paths in [advanced media](advanced-media.md). Universal and legacy audio routes provide original, progressive, or HLS delivery with scoped client playback references; Audio and Video PlaybackInfo select supported HTTP/HLS TranscodingProfiles in their declared order. The dashboard also manages metadata, login sessions, ordinary devices, and independent application keys. The [revised Phase 3 functional scope](phase3-functional-closeout-20260929.md) and selected [software](oci-delivery-20260929.md) and [AMD](oci-amd-delivery-20260929.md) OCI profiles are complete. Additional source/client profiles, other hardware, and strict capacity/SLO requirements remain separate work. The dashboard remains an administrator interface without a consumer web player.
 
 The completed M5i observability increment adds transactional activity history,
@@ -78,7 +86,7 @@ The source uses pgx/v5 with bounded pooling, parameterized SQL, and transactiona
 Choose the compilation and formatting environment from the active `AGENTS.md`
 instructions and current task authorization. The commands below describe the
 usual Linux build steps in a prepared workspace; they do not independently
-authorize local execution:
+authorize local execution or produce a supported standalone installation:
 
 ```text
 npm --prefix web/admin ci
@@ -93,13 +101,25 @@ approved CT 104 exception for AMD work as described in [the toolchain policy](to
 If the selected remote environment is unavailable and local verification has not
 been authorized, report verification as blocked rather than falling back locally.
 
-## Linux deployment
+<a id="linux-deployment"></a>
 
-For the delivered Linux amd64 archives, use the [software OCI guide](../../deploy/oci/README.md)
-or [AMD OCI guide](../../deploy/oci/README.amd.md). Both use an external PostgreSQL
-service; the AMD profile also requires its selected render node and supplied
-seccomp profile. Their acceptance records bind the actual image, media tools and
-runtime. The following steps describe a native systemd installation.
+## Supported Docker deployment
+
+Use the [software Docker guide](../../deploy/oci/README.md) or
+[AMD Docker guide](../../deploy/oci/README.amd.md) for the supported Linux amd64
+image archive and Compose delivery. These are profiles of the same Docker Engine
+deployment form. The AMD profile also requires its selected render node and
+supplied seccomp profile. Their acceptance records bind the actual image, media
+tools and runtime. PostgreSQL and a reverse proxy may run as external services;
+the [delivery policy](../planning/docker-delivery-policy.md) does not require them
+to run in Docker.
+
+### Historical native systemd procedure - unsupported
+
+The following original procedure is retained for historical context and internal
+development reference. It is not a supported installation path or future package
+commitment. Use the Docker guides above for current deployment; retained native
+test evidence does not change that support boundary.
 
 1. Build the frontend with the locked npm dependencies and build the Go binary for Linux with the pinned toolchain.
 2. For an ordinary build, install the binary as `/usr/local/bin/goby` and the complete `web/admin/dist` directory as `/usr/share/goby/admin`. The [embedded administrator build](embedded-administrator-build.md) includes those assets in the binary; omit `GOBY_WEB_DIR` to select them. A nonempty explicit value keeps using the external directory in either build mode. [Focused remote checks and build artifacts](embedded-administrator-verification.json) are recorded; deployment acceptance remains separate.
@@ -422,12 +442,14 @@ Native dashboard logins remain independently managed. These upgrades preserve
 probe-cache version 6 and do not issue or require a rescan; see
 [device implementation and migration details](devices.md).
 
-The supplied systemd unit creates its persistent state directory with mode
+The historical systemd unit created its persistent state directory with mode
 `0700`. The default application-key master file is created lazily there with
 mode `0600` by the service user. If selecting another path, create its private
 parent directory and grant that exact directory in the service sandbox.
 Preserve this master file together with PostgreSQL backups; replacing it cannot
 recover existing encrypted keys. Normal logins remain usable if the key vault
 is unavailable, and metadata-only key listing and revocation do not decrypt
-secrets. Product backup/restore and master-key rotation are separate unfinished
-features.
+secrets. Current Docker state-directory setup is described in the supported
+operator guides above. Selected product backup/restore workflows are complete in
+the [software OCI record](oci-delivery-20260929.md); master-key rotation remains
+a separate feature boundary.

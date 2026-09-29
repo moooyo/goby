@@ -1,5 +1,11 @@
 # Embedded administrator build
 
+Current delivery policy: [Docker only](../planning/docker-delivery-policy.md),
+selected September 30, 2026. Embedded administrator builds remain useful as
+Docker image inputs and development artifacts. Native binary/systemd archives
+are not supported releases or deferred packaging work. The dated build and
+installation observations below retain their historical scope.
+
 Historical checkpoint: **focused remote checks, actual amd64 embedded build,
 arm64 cross-build and artifact/resource closure passed**, 2026-09-14.
 This is partial M6 evidence.
@@ -13,7 +19,7 @@ and candidate admission for the changed version remain separate requirements;
 the selected baseline's earlier 2,270-test result is not inherited. Native
 arm64, OCI, GPU, license and distribution obligations remain open.
 
-The current [internal systemd package increment](systemd-package-plan.md)
+The historical [internal systemd package increment](systemd-package-plan.md)
 follows the accepted M5 checkpoint `5faf854`. Its optional `--package systemd`
 implementation, embedded-compatible environment example and manual installation
 instructions have passed [current package build verification](systemd-package-build-verification.json):

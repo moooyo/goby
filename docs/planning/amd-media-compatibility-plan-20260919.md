@@ -204,8 +204,11 @@ OCI was deferred when this plan was selected. The later
 [software OCI delivery](../development/oci-delivery-20260929.md) and
 [selected AMD OCI extension](../development/oci-amd-delivery-20260929.md)
 separately completed their archive/Compose and recorded runtime scopes.
-Non-AMD GPU execution, native arm64, broader host/storage
-delivery claims and external release decisions remain independent obligations.
+Under the September 30 [Docker-only policy](docker-delivery-policy.md),
+additional architectures and non-AMD GPU support may be selected only as further
+Docker image profiles. Native/systemd packages are outside the delivery scope,
+not independent release obligations. Broader host/storage claims and external
+release decisions remain separate optional selections.
 Provider-specific online acceptance remains under the existing deferral unless
 the user changes it; new music and subtitle source integration must preserve
 that distinction.

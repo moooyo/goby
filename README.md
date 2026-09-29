@@ -12,6 +12,12 @@ deliveries are complete within their recorded acceptance boundaries. Start with
 records preserve their original results and failures; they are not a cumulative
 list of current tasks.
 
+Goby's only official delivery form is a Docker image running on Docker Engine.
+The current delivery is an importable image archive with Docker Compose;
+software and AMD are profiles of that same delivery form. The
+[Docker delivery policy](docs/planning/docker-delivery-policy.md) defines this
+support boundary.
+
 ## Implemented features
 
 | Area | Current selected scope |
@@ -20,7 +26,7 @@ list of current tasks.
 | Playback | Authenticated direct and Range delivery, progressive and HLS remux/transcode, selected H.264/HEVC/AV1 outputs, TS/fMP4/packed-audio HLS, text and bitmap subtitle processing, and source-proven nonzero copy seeking. [Media contracts](docs/development/advanced-media.md) define the supported combinations. |
 | Media analysis | Background episode-intro detection, administrator review and overrides, source-bound BIF seek previews, cancellation, cache management and restart recovery. [Media analysis](docs/api/media-analysis.md) and [seek previews](docs/api/seek-previews.md) define the contracts. Accuracy and consumer acceptance remain limited to the [recorded Phase 2 corpus and journeys](docs/development/media-analysis-resilience-phase2-20260921.md). |
 | Administration | Users, libraries, metadata editing, activity/logs, scheduled tasks, managed CPU/AMD selection and encoding settings, notifications, and backup/recovery. [Managed execution settings](docs/api/managed-execution-settings.md) distinguish changes for new work from listener settings that require restart. |
-| Recovery | Native encrypted backups, restore planning, activation/rollback and an offline CLI, plus accepted migration, process/database restart, selected storage-fault and isolated guest-recovery scenarios. See [backup and recovery](docs/development/backup-recovery.md) and the [functional closeout](docs/development/phase3-functional-closeout-20260929.md). |
+| Recovery | Goby encrypted backups, restore planning, activation/rollback and an offline CLI available inside the image, plus accepted migration, process/database restart, selected storage-fault and isolated guest-recovery scenarios. See [backup and recovery](docs/development/backup-recovery.md) and the [functional closeout](docs/development/phase3-functional-closeout-20260929.md). |
 
 AMD decode, encode and GPU processing have actual execution evidence for the
 recorded devices, drivers and media combinations. Hardware and software fallback
@@ -29,9 +35,9 @@ every GPU or codec tuple. See the [AMD media contract](docs/development/amd-vide
 
 ## Run Goby
 
-The current container deliveries are importable image archives with Compose
-profiles. They include the embedded administrator dashboard and use an external
-PostgreSQL 17 server.
+Use Docker Engine and the Docker Compose guide for the selected Linux amd64
+image profile. Both profiles include the embedded administrator dashboard and
+use an external PostgreSQL 17 server.
 
 - [Linux amd64 software image and Compose guide](deploy/oci/README.md): archive
   import, database configuration, persistent paths, startup, backup, upgrade and
@@ -41,25 +47,35 @@ PostgreSQL 17 server.
   selection, numeric render-group access, media settings and the recorded
   GFX1150/Mesa profile. The [AMD delivery record](docs/development/oci-amd-delivery-20260929.md)
   binds its actual GPU and production-container HTTP results.
-- [Development build and run guide](docs/development/running.md): source-based
-  setup. [Toolchain policy](docs/development/toolchain.md) describes the required
-  Go, PostgreSQL and media-tool dependencies.
 
 Both OCI profiles passed archive loading and runtime acceptance. The software
 profile also passed encrypted recovery, persistence, a schema 29-to-50 upgrade
 and backup-based rollback. The AMD extension retains the same application bytes.
 These archive deliveries do not establish registry publication or a production
-deployment.
+deployment. A future registry would provide another distribution channel for
+the same Docker images, not another delivery form. No registry publication has
+occurred.
+
+The application executable, recovery CLI, FFmpeg/ffprobe and native analysis
+helper inside the image are image components, not standalone supported
+deliverables. PostgreSQL and the reverse proxy remain external dependencies;
+this policy does not prescribe their deployment method.
 
 ## Scope and future work
 
 There is no remaining implementation or acceptance gate in the completed selected
 scopes. Further work requires a separately selected delivery or feature scope:
 provider-specific online acceptance, additional clients and media combinations,
-other GPU/driver profiles, native arm64, other container runtimes, current-version
-native systemd distribution, registry publication, or production/public-HTTPS
-deployment. Provider adapters already exist; their online acceptance remains
-deferred.
+other GPU/driver profiles within Docker, an additional Docker image architecture
+such as Linux arm64, registry distribution, or production/public-HTTPS
+deployment. Current acceptance remains Linux amd64. Provider adapters already
+exist; their online acceptance remains deferred.
+
+Standalone binaries, systemd installation packages, DEB/RPM packages, Windows
+installers and other native packages are unsupported delivery forms, not
+deferred work. Non-Docker runtimes are not promised. Native builds remain useful
+for development and historical verification fixtures; their existence does not
+create a supported installation option.
 
 Historical strict capacity/SLO profiles, the complete old fault matrix and
 physical power-loss durability were not accepted by the revised functional
@@ -82,6 +98,10 @@ Emby SDK 4.9.5.0 export; its 535-operation inventory describes upstream contract
 not a count of implemented or accepted Goby operations. Historical research and
 deployment evidence remains available through [source provenance](docs/sources/README.md)
 and the [handoff](docs/development/handoff.md).
+
+The [development build and run guide](docs/development/running.md) and
+[toolchain policy](docs/development/toolchain.md) support contributor work and
+verification fixtures. They do not define additional official delivery forms.
 
 Existing third-party texts and attribution are collected in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and its

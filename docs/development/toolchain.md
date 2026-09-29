@@ -1,5 +1,11 @@
 # Toolchain, database, and hardware verification policy
 
+Delivery policy, September 30, 2026: [Docker is the only supported delivery
+form](../planning/docker-delivery-policy.md). Native application/tool builds and
+verification fixtures described here are development or image-building inputs;
+they do not establish separate native binary/systemd packages or non-Docker
+runtime support. Software and AMD remain profiles within the Docker delivery.
+
 Updated: **2026-09-29, Asia/Shanghai**. Status: **selected native AMD and VM CPU/browser scopes retained; revised Phase 3 functional scope and Linux amd64 software/AMD OCI deliveries complete within their recorded profiles**.
 
 ## Stable release baseline

@@ -5,11 +5,20 @@ build, archive import, media, encrypted recovery, and image/database upgrade and
 rollback passed. Image identity, hashes, retained failures, and tested boundaries
 are recorded in [the delivery result](../../docs/development/oci-delivery-20260929.md).
 
+Effective **2026-09-30**, Docker Engine images are Goby's only supported
+deployment form under the [Docker delivery policy](../../docs/planning/docker-delivery-policy.md).
+The software and AMD variants are profiles of that same delivery form. Current
+delivery uses an image archive and Compose; a registry is an optional distribution
+channel. Standalone binary and systemd installation packages are unsupported and
+are not future delivery work.
+
 This delivery consists of a loadable image archive, its SHA-256 and build receipt,
 `compose.yaml`, and `goby.env.example`. It runs on Linux amd64 Docker with Compose
 support for `env_file.format: raw`. The selected profile uses a rootful engine
 without user namespace remapping and container UID/GID `10001:10001`.
 It uses an external PostgreSQL 17 server and does not publish to a registry.
+PostgreSQL and the reverse proxy may run outside Docker; this policy applies to
+the Goby application deployment.
 
 ## Build the archive
 
@@ -32,6 +41,9 @@ python3 scripts/build-oci.py --release-dir "$output/release" \
 ```
 
 The release builder embeds the administrator UI and builds with `CGO_ENABLED=0`.
+Its binary is an intermediate image-build input, not a supported standalone
+installation package. Source builds and native execution remain available for
+internal development and verification.
 The image builder verifies the binary and manifest, builds its media tools, then
 exports `goby-linux-amd64-image.tar`. It retains logs, `build-receipt.json`,
 `image-id.txt`, `image-inspect.json`, and `SHA256SUMS`; it does not start Goby.

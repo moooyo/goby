@@ -2,12 +2,18 @@
 
 ## Current status
 
-As of September 29, 2026, the revised Phase 3 functional scope, Linux amd64
+As of September 30, 2026, the revised Phase 3 functional scope, Linux amd64
 software OCI delivery, and selected AMD OCI extension are complete. The latest
 integrated delivery was merged into `main` and pushed at `6c574ca`. Automatic
 intro analysis and BIF previews are implemented and accepted within their
 recorded profiles. The current OCI application binary is built from `b9bfa7c`;
 image and deployment companion identities are recorded separately.
+
+The [Docker delivery policy](planning/docker-delivery-policy.md) makes Docker
+Engine images the only official delivery form. The current image archive and
+Docker Compose workflow has software and AMD profiles. Native installation
+packages and non-Docker runtimes are not supported alternatives or deferred
+delivery obligations.
 
 These deliveries do not establish a production deployment. Their verification
 runtimes are closed, with data and evidence retained. Earlier documents may
@@ -15,17 +21,19 @@ contain then-current schema numbers, worker identities, incomplete milestone
 labels, or instructions to resume a campaign. Those are historical checkpoints,
 not instructions to reopen completed work.
 
-Start with these three sources of current status:
+Start with these sources of current status and delivery policy:
 
 | Document | Read it for |
 | --- | --- |
 | [Current status](development/current-status.md) | Completed implementation and acceptance, supported profiles, and deployment boundaries |
 | [Development handoff](development/handoff.md) | Latest delivery, retained artifacts, closed resources, and continuation context |
 | [Current execution plan](planning/current-execution-plan.md) | Completed selected scopes and the distinction between current work and historical plans |
+| [Docker delivery policy](planning/docker-delivery-policy.md) | The single official delivery form, current Docker profiles, and unsupported installation forms |
 
 ## Deployment and use
 
-Choose the operator guide for the intended runtime profile. Image acceptance is
+Choose the Docker operator guide for the intended Linux amd64 profile. Software
+and AMD are profiles of one Docker image delivery form. Image acceptance is
 specific to its recorded platform, tools and hardware; an archive or cross-build
 alone does not establish another platform's support.
 
@@ -33,21 +41,21 @@ alone does not establish another platform's support.
 | --- | --- |
 | [Software OCI operator guide](../deploy/oci/README.md) | Import the Linux amd64 image archive, configure external PostgreSQL, start Compose, and perform update/rollback |
 | [AMD OCI operator guide](../deploy/oci/README.amd.md) | Import the AMD image and apply the GPU Compose and seccomp companions for the accepted hardware profile |
-| [Build and run](development/running.md) | Application startup configuration, PostgreSQL, migrations and development execution |
 | [Transcoding configuration](development/transcoding-configuration.md) | Media tools, hardware selection, runtime limits and cache configuration |
 | [Application-key operations](development/application-keys.md) | Persistent master-key ownership and restoring a database with its matching master key |
 | [Native backup and recovery](development/backup-recovery.md) | Encrypted archives, durable operations, offline recovery and generation switching |
 | [Media-analysis runtime](development/media-analysis-runtime.md) | Native intro helper, analysis inventory, cache and execution lifecycle |
 | [Media-analysis administrator UI](development/media-analysis-native-ui.md) | Analysis policy, tasks, progress, decisions and preview management |
 | [Media-analysis recovery](development/media-analysis-recovery.md) | Analysis state and artifact behavior during backup, restore and restart |
-| [Linux systemd installation](../deploy/linux/INSTALL.md) | The separate native installation contract and its stated package boundaries |
-| [Toolchain and hardware policy](development/toolchain.md) | Tool sources and profile-specific build and runtime requirements |
 
 The OCI deliveries include an embedded React/MUI administrator dashboard,
 FFmpeg/ffprobe and PostgreSQL client tools. The PostgreSQL server, media,
 application secrets and reverse proxy are external. The administrator dashboard
-is not a consumer playback application. Consult the selected guide before using
-an older deployment recipe or changing the media write policy.
+is not a consumer playback application. The Docker-only policy does not change
+how the external PostgreSQL server or reverse proxy may be deployed. Executables,
+recovery commands and native helpers included in the image are components of
+that image, not additional delivery forms. Consult the selected Docker guide
+before changing the media write policy.
 
 ## Functional and compatibility contracts
 
@@ -75,6 +83,15 @@ Emby route examples are relative to `/emby` unless a document says otherwise.
 `/admin` and `/admin/v1` are Goby namespaces. Reference research and product
 contracts serve different purposes; a captured reference response is not a
 claim that Goby implements or accepts every behavior of that server.
+
+## Development
+
+The [build and run guide](development/running.md) documents source-based
+development, configuration and migrations. The
+[toolchain and hardware policy](development/toolchain.md) records build inputs
+and profile-specific requirements. Native builds and fixture processes are
+development tools; they do not define a supported binary or native-package
+installation path.
 
 ## Acceptance records and history
 
@@ -104,6 +121,7 @@ current closeouts above.
 | --- | --- |
 | Implementation chronology | [Progress history](development/progress.md), historical sections in [current status](development/current-status.md) and [handoff](development/handoff.md) |
 | Earlier administration increments | [Devices](development/verification-m5e-devices.md), [tasks](development/verification-m5f-tasks.md), [settings](development/verification-m5g-settings.md), [configuration](development/verification-m5h-configuration.md), [observability](development/verification-m5i-observability.md), [backup/recovery](development/backup-recovery.md) |
+| Native installation and packaging history | [Linux systemd installation](../deploy/linux/INSTALL.md) and its dated package evidence are retained history; native packages are no longer a supported or deferred delivery form |
 | Original research inventory | [Source provenance](sources/README.md), [API catalog](api/catalog.md), [machine-readable inventory](api/inventory.json), [data models](api/models.md) |
 | Reference-server observations | [Reference baseline](research/reference-server.md), [client compatibility](research/client-compatibility.md), [playback and transcoding](research/playback-and-transcoding.md), [administrator/Linux study](research/admin-dashboard-and-linux.md) |
 | Focused reference studies | [Configuration](research/configuration-reference.md), [configuration mutation](research/configuration-mutation-reference.md), [encoding width](research/encoding-width-reference.md), [observability](research/observability-reference.md), [task reads](research/scheduled-tasks-reference.md), [task mutation](research/scheduled-tasks-mutation-reference.md) |
@@ -121,16 +139,18 @@ The selected functional and OCI scopes have no remaining completion gate.
 Further work needs its own chosen scope; the following does not reopen those
 accepted deliveries:
 
-- Production installation and operations for a real deployment, and registry
-  publication if selected. The completed archive/Compose deliveries do not claim
-  that either has occurred.
+- Production Docker deployment and operations, and registry publication if
+  selected. A registry would distribute the same Docker images; it would not
+  introduce another delivery form. The completed archive/Compose profiles do
+  not claim that either has occurred.
 - Project licensing and final distribution notices. The project license remains
   undecided; [third-party notices](../THIRD_PARTY_NOTICES.md) describe the retained
   dependency material without granting a complete public-distribution claim.
 - Provider-specific online acceptance, including the selected adapters' actual
   external services, beyond their existing code and offline coverage.
-- Additional GPU/driver profiles, native arm64 acceptance, and client/media
-  combinations beyond the recorded software and AMD profiles.
+- Additional Docker GPU/driver profiles, a separately selected Linux arm64
+  Docker image profile, and client/media combinations beyond the recorded
+  Linux amd64 software and AMD profiles.
 - Historical strict capacity/SLO targets, the complete fault matrix, sustained
   overload and physical power-loss coverage, if those requirements are selected
   again. They are outside the revised Phase 3 functional closeout.
@@ -141,3 +161,6 @@ accepted deliveries:
 Live TV/EPG/DVR/tuners, DLNA, external channels, group playback, a consumer Web
 player and Emby cloud services remain explicitly excluded from the selected
 scope. They are not unfinished implementation obligations for these deliveries.
+Standalone binaries, systemd packages, DEB/RPM packages, Windows installers and
+other native packages are also outside the delivery policy. They are not a
+future-work queue, and non-Docker runtimes carry no support promise.

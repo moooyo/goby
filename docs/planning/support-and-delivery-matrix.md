@@ -1,5 +1,10 @@
 # Support and delivery matrix
 
+The September 30 [delivery decision](docker-delivery-policy.md) supports **Docker
+only**. Images, archive distribution and Compose are the supported delivery path;
+software and AMD are image profiles. Native packages and non-Docker runtimes are
+outside scope, not unfinished or deferred release tasks.
+
 ## Current selected deliveries
 
 Current disposition, September 29, 2026: **all selected functional and
@@ -26,10 +31,10 @@ These are separate choices, not a queued implementation or acceptance backlog.
 
 | Follow-up | Becomes work only when |
 | --- | --- |
-| Production deployment and HTTPS | A real deployment, domain/proxy/TLS topology, and operating environment are selected |
+| Docker production deployment and HTTPS | A Docker installation, domain/proxy/TLS topology, and operating environment are selected |
 | Provider-online acceptance | A named provider and its actual credentials/service contract are selected |
 | Public distribution, license, or registry publication | The user selects that publication scope; project-license/distribution decisions belong to that scope |
-| Native release packages, arm64, or additional GPU/runtime profiles | A new artifact, platform, device/driver tuple, or runtime is explicitly selected |
+| Additional Docker architectures or GPU profiles | A new Docker image architecture or device/driver tuple is explicitly selected; this does not add a native package or another container runtime |
 | Optional extensions or broader performance/capacity claims | A concrete additional feature or qualification profile is selected; existing explicit feature exclusions stay excluded unless the user changes them |
 
 Consult [current status](../development/current-status.md) and the
@@ -44,6 +49,8 @@ below refer to their cited checkpoint. Old failures, incomplete matrices, test
 counts, source identities, and client restrictions remain unchanged. Later
 selected acceptance supersedes the work queue without relabeling those results.
 Historical execution/approval rules do not override current user instructions.
+Historical native installation results remain evidence; their old remaining-work
+rows do not create obligations under the Docker-only delivery policy.
 
 The September 29 [AMD OCI extension](../development/oci-amd-delivery-20260929.md)
 also completes the selected Linux amd64 AMD archive/Compose profile. Actual

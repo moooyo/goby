@@ -7,14 +7,19 @@ See the [current status](../development/current-status.md),
 [OCI publication record](../development/oci-publication-20260929.md), and
 [support matrix](support-and-delivery-matrix.md) for the scope boundaries.
 
+The September 30 [Docker-only delivery decision](docker-delivery-policy.md)
+fixes Docker images with Compose as the only supported delivery form. Native
+binary/systemd/OS packages and non-Docker runtimes are outside the delivery scope,
+not deferred release work. Software and AMD remain profiles of that same form.
+
 ## Follow-up work requires a new scope selection
 
 | Purpose | Work still available | Boundary |
 | --- | --- | --- |
-| Operate a real installation | Select the target host, real media and client; configure persistence, external PostgreSQL, domain/reverse proxy/HTTPS, and verify that installation's playback and recovery | Test-environment acceptance does not establish production deployment |
+| Operate a real Docker installation | Select the Docker host, real media and client; configure Compose, persistence, external PostgreSQL, domain/reverse proxy/HTTPS, and verify that installation's playback and recovery | Test-environment acceptance does not establish production deployment |
 | Use online providers | Verify the existing TMDB, MusicBrainz and OpenSubtitles adapters against selected online services | Adapter implementation is already present |
 | Publish externally | Select the project license and distribution terms/materials; optionally publish a version or container registry image | Local software and AMD archives are already delivered |
-| Add a delivery platform | Build and accept a current native systemd release, native arm64, or another GPU/device/runtime profile when needed | Historical native packages and the selected AMD tuple keep their existing evidence |
+| Add a Docker image profile | Select and qualify another Docker architecture or GPU/device profile when needed | Current acceptance covers the recorded Linux amd64 software/AMD profiles; no native package or non-Docker runtime is queued |
 | Extend the product | Select a concrete additional feature or client/media combination | Offline packages, general recommendations and game/book media remain unselected; Live TV, DLNA, external channels, group playback and a consumer Web player remain excluded |
 
 Keep the agreed functional performance scope. Strict historical capacity/SLO

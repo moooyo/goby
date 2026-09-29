@@ -1,4 +1,24 @@
-# Internal Linux amd64 systemd candidate
+# Historical Linux amd64 systemd installation procedure
+
+<a id="internal-linux-amd64-systemd-candidate"></a>
+
+Status: **UNSUPPORTED HISTORICAL DELIVERY**, effective **2026-09-30**.
+Goby's only supported deployment form is a Docker Engine image with the current
+archive/Compose delivery described in the
+[Docker delivery policy](../../docs/planning/docker-delivery-policy.md).
+Use the [software Docker guide](../oci/README.md) or
+[AMD Docker guide](../oci/README.amd.md) for current installation.
+
+Standalone binary and systemd installation packages are unsupported and are not
+future delivery work. The original internal procedure below is retained with its
+historical package layout, commands and evidence boundaries; it is not a current
+installation recommendation. Source builds and native execution for internal
+development or verification remain allowed under the active task instructions.
+Existing scripts and code remain historical or internal tools rather than a
+product delivery commitment. PostgreSQL and a reverse proxy may remain external
+to Docker.
+
+## Original internal procedure
 
 This package is for internal evaluation. Goby's project license and complete
 distribution notices remain unresolved; possession of this archive does not

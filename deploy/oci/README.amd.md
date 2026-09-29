@@ -12,11 +12,20 @@ failures and accepted boundaries are in
 [the delivery record](../../docs/development/oci-amd-delivery-20260929.md) and
 [its result manifest](../../docs/development/oci-amd-delivery-results-20260929.json).
 
+Effective **2026-09-30**, the [Docker delivery policy](../../docs/planning/docker-delivery-policy.md)
+supports Docker Engine images as the sole Goby deployment form. AMD and software
+are two profiles of that form, delivered through image archives and Compose.
+A registry is an optional distribution channel. The native toolchain reused by
+this image is a build input; it does not create a supported standalone binary or
+systemd installation package.
+
 Use this guide with [the base deployment guide](README.md). The same external
 PostgreSQL 17 service, private state/cache/log directories, read-only media mount,
 embedded administrator UI and archive-based delivery apply. The selected runtime
 uses a rootful Docker engine without user namespace remapping, Linux amd64, and
 container UID/GID `10001:10001`. No registry publication is included.
+PostgreSQL and a reverse proxy may remain external services; they are not
+required to run in Docker.
 
 The selected image is
 `sha256:eb0f98427ad6535eb37d4cf744ab0d90d6c2e45f84c64f34a2355e0a7eed713f`.

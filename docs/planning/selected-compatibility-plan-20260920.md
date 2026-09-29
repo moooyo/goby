@@ -22,8 +22,10 @@ Their old deferral in this September 20 plan no longer describes current status.
 
 Phase numbers below belong to this completed compatibility increment, not a
 new queue for the later resilience work. Historical failures and client/corpus
-limits remain at their original scope. Production HTTPS, provider-online,
-public licensing/registry, native packages/arm64/other GPUs, and optional
+limits remain at their original scope. The September 30
+[Docker-only policy](docker-delivery-policy.md) excludes native packages and
+non-Docker runtimes from current delivery obligations. Docker production HTTPS,
+provider-online, public licensing/registry, additional Docker architectures/GPU profiles, and optional
 extensions are [conditional follow-up](support-and-delivery-matrix.md#conditional-follow-up),
 not missing gates for the completed scope.
 
@@ -48,7 +50,7 @@ below. Existing implementations and accepted results remain the baseline.
 | Completed September 20 selection | Four functional phases below, including their native administration, applicable compatibility adapters, remote verification and documentation |
 | Explicitly excluded by the user | Live TV, EPG, DVR/scheduled recording, tuners, DLNA, external channels and group/synchronized playback |
 | Subsequently completed selected scope | Automatic intro/BIF, revised functional resilience Phase 3, Linux amd64 software OCI archive/Compose, and the recorded AMD OCI archive/Compose profile; use the later acceptance records above |
-| Conditional, unselected follow-up | Production deployment/HTTPS, provider-specific online acceptance, public licensing/registry decisions, native release packages, arm64/other GPU profiles, offline synchronization/download packages, and other optional extensions |
+| Conditional, unselected follow-up | Docker production deployment/HTTPS, provider-specific online acceptance, public licensing/registry decisions, additional Docker architectures/GPU profiles, offline synchronization/download packages, and other optional extensions |
 | Existing exclusions retained | Consumer web player, Emby Connect/cloud identity, Emby package installation and proprietary binary-plugin compatibility |
 
 Exclusion is a product scope decision, not a postponed milestone. Do not add

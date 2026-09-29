@@ -10,6 +10,12 @@ are recorded in the [current delivery matrix](support-and-delivery-matrix.md#cur
 
 ## Current acceptance agreement
 
+The September 30 [Docker-only delivery policy](docker-delivery-policy.md)
+supersedes earlier native-package and multi-runtime delivery plans. Current
+installation, upgrade and rollback support is through Docker images and Compose.
+Native systemd/OS packages and non-Docker runtimes are outside the release scope,
+not pending qualification gates.
+
 The user's revised functional agreement retains exact identities, permissions,
 safe deletion/rollback, actual media behavior, recovery correctness, and owned-
 resource closure. Historical strict SLOs, constrained capacity profiles, the
@@ -17,8 +23,8 @@ original two-tier 28-case matrix, and old M2-M6/controller prerequisites are not
 gates for that completed scope. They are not silently claimed as passed either.
 Unchanged accepted checks need not be repeated to manufacture a new full matrix.
 
-Production deployment/HTTPS, provider-online, public licensing/registry, native
-packages/arm64/other GPUs, and optional extensions become work only through a
+Docker production deployment/HTTPS, provider-online, public licensing/registry,
+additional Docker architectures/GPU profiles, and optional extensions become work only through a
 new selected scope. See [conditional follow-up](support-and-delivery-matrix.md#conditional-follow-up).
 Current user instructions and AGENTS.md govern execution; historical permissions
 below are records of past tasks, not grants for a new task.
