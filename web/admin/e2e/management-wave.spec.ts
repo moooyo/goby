@@ -140,15 +140,16 @@ const test = base.extend<{ api: ManagementMock }>({
 test.use({ serviceWorkers: 'block' });
 
 async function openPlaylist(page: Page): Promise<void> {
-  await page.goto('/admin/collections');
+  await page.goto('/admin/media/collections');
   await expect(page.getByRole('heading', { name: 'Playlists and collections', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Manage Repeatable playlist', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Manage playlist', exact: true }).getByRole('textbox', { name: /^Playlist name/ })).toHaveValue('Repeatable playlist');
 }
 
 async function openSources(page: Page): Promise<void> {
-  await page.goto(`/admin/libraries/${library.Id}/items`);
-  await page.getByRole('button', { name: 'Online sources for Catalog feature', exact: true }).click();
+  await page.goto(`/admin/media/libraries/${library.Id}/items`);
+  await page.getByRole('button', { name: 'More actions for Catalog feature', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Online sources', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Online sources · Catalog feature', exact: true }).getByRole('button', { name: 'Search metadata', exact: true })).toBeEnabled();
 }
 
@@ -302,19 +303,22 @@ test('management settings retain every draft field after a rejected save and sub
     api.settings = { ...api.settings, Revision: '2', Management: input.Management };
     await json(route, api.settings);
   });
-  await page.goto('/admin/settings');
-  const panel = page.getByRole('region', { name: 'Metadata, subtitles, and tasks', exact: true });
-  await expect(panel).toBeVisible();
+  await page.goto('/admin/settings/metadata');
+  const panel = page.getByRole('main');
+  await expect(panel.getByRole('region', { name: 'Online lookups', exact: true })).toBeVisible();
+  await expect(panel.getByRole('region', { name: 'Metadata language and region', exact: true })).toBeVisible();
+  await expect(panel.getByRole('region', { name: 'Subtitle downloads', exact: true })).toBeVisible();
+  await expect(panel.getByRole('region', { name: 'Task resources and cache', exact: true })).toBeVisible();
   await panel.getByRole('switch', { name: 'Enable internet providers', exact: true }).uncheck();
   await panel.getByRole('textbox', { name: 'Preferred metadata language', exact: true }).fill('fr');
   await panel.getByRole('textbox', { name: 'Metadata country', exact: true }).fill('FR');
   await panel.getByRole('textbox', { name: 'Subtitle download languages', exact: true }).fill('fr\n\nen\nfr');
   await panel.getByRole('switch', { name: 'Download movie subtitles', exact: true }).check();
   await panel.getByRole('switch', { name: 'Download episode subtitles', exact: true }).check();
-  await panel.getByRole('textbox', { name: 'Concurrent provider and cache workers', exact: true }).fill('4');
-  await panel.getByRole('textbox', { name: 'Cache retention (days)', exact: true }).fill('60');
+  await panel.getByRole('textbox', { name: 'Concurrent workers', exact: true }).fill('4');
+  await panel.getByRole('textbox', { name: 'Cache retention', exact: true }).fill('60');
   await panel.getByRole('textbox', { name: 'Maximum cache entries', exact: true }).fill('2500');
-  const save = page.getByRole('button', { name: 'Save settings', exact: true });
+  const save = page.getByRole('button', { name: 'Save changes', exact: true });
   await save.click();
   await expect(panel.getByText('Review task concurrency before saving again.', { exact: true })).toBeVisible();
   await expect(panel.getByRole('switch', { name: 'Enable internet providers', exact: true })).not.toBeChecked();
@@ -323,22 +327,27 @@ test('management settings retain every draft field after a rejected save and sub
   await expect(panel.getByRole('textbox', { name: 'Subtitle download languages', exact: true })).toHaveValue('fr\n\nen\nfr');
   await expect(panel.getByRole('switch', { name: 'Download movie subtitles', exact: true })).toBeChecked();
   await expect(panel.getByRole('switch', { name: 'Download episode subtitles', exact: true })).toBeChecked();
-  await expect(panel.getByRole('textbox', { name: 'Concurrent provider and cache workers', exact: true })).toHaveValue('4');
-  await expect(panel.getByRole('textbox', { name: 'Cache retention (days)', exact: true })).toHaveValue('60');
+  await expect(panel.getByRole('textbox', { name: 'Concurrent workers', exact: true })).toHaveValue('4');
+  await expect(panel.getByRole('textbox', { name: 'Cache retention', exact: true })).toHaveValue('60');
   await expect(panel.getByRole('textbox', { name: 'Maximum cache entries', exact: true })).toHaveValue('2500');
-  await expect(page.getByRole('textbox', { name: 'Words removed from sort names', exact: true })).toHaveValue('The\nAn');
+  await page.getByRole('tab', { name: 'General', exact: true }).click();
+  const sorting = page.getByRole('region', { name: 'Library sorting', exact: true });
+  await expect(sorting.locator('.MuiChip-label')).toHaveText(['The', 'An']);
   await expect(save).toBeEnabled();
   expect(api.writes()).toHaveLength(1);
   const expectedInput: SettingsUpdateInput = {
     Revision: '1', Overrides: api.settings.Overrides, ServerNameMode: 'deployment', Encoding: { TranscodingMaxWidth: 0 }, Management: expectedManagement, Sorting: retainedSorting,
   };
   expect(api.writes()[0].body).toEqual(expectedInput);
+  await page.getByRole('tab', { name: 'Metadata & subtitles', exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: 'Subtitle download languages', exact: true })).toHaveValue('fr\n\nen\nfr');
   await save.click();
   await expect(page.getByText('Settings saved.', { exact: true })).toBeVisible();
-  await expect(page.getByText('No unsaved changes', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^All settings saved · Revision 2 · Updated /)).toBeVisible();
   await expect(save).toBeDisabled();
   await expect(panel.getByRole('textbox', { name: 'Subtitle download languages', exact: true })).toHaveValue('fr\nen');
-  await expect(page.getByRole('textbox', { name: 'Words removed from sort names', exact: true })).toHaveValue('The\nAn');
+  await page.getByRole('tab', { name: 'General', exact: true }).click();
+  await expect(sorting.locator('.MuiChip-label')).toHaveText(['The', 'An']);
   expect(api.writes().map((request) => request.body)).toEqual([expectedInput, expectedInput]);
 });
 
@@ -355,7 +364,7 @@ test('legacy user policies preserve safe defaults and expanded drafts until vali
     user = { ...administrator, ...input, Revision: '2' };
     await json(route, { User: user, CurrentSessionRevoked: false });
   });
-  await page.goto('/admin/users');
+  await page.goto('/admin/access/users');
   await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
   const save = dialog.getByRole('button', { name: 'Save changes', exact: true });
@@ -438,7 +447,7 @@ test('an unavailable feature catalog preserves unlisted restrictions while other
     user = { ...administrator, ...input, Revision: '2' };
     await json(route, { User: user, CurrentSessionRevoked: false });
   });
-  await page.goto('/admin/users');
+  await page.goto('/admin/access/users');
   await page.getByRole('button', { name: 'Manage Synthetic administrator', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Manage user', exact: true });
   await expect(dialog.getByText('Feature choices are unavailable. Existing restrictions are retained, and other account settings can still be edited.', { exact: true })).toBeVisible();

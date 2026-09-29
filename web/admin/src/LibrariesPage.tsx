@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, MenuItem, Paper, Skeleton, Snackbar, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, IconButton, ListItemIcon, Menu, MenuItem, Paper, Skeleton, Snackbar, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import FolderOpenOutlined from '@mui/icons-material/FolderOpenOutlined';
@@ -10,6 +10,12 @@ import VideoLibraryOutlined from '@mui/icons-material/VideoLibraryOutlined';
 import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
 import ListAltRounded from '@mui/icons-material/ListAltRounded';
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
+import MovieOutlined from '@mui/icons-material/MovieOutlined';
+import LiveTvOutlined from '@mui/icons-material/LiveTvOutlined';
+import LibraryMusicOutlined from '@mui/icons-material/LibraryMusicOutlined';
+import PermMediaOutlined from '@mui/icons-material/PermMediaOutlined';
+import StorageOutlined from '@mui/icons-material/StorageOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { Library, LibraryInput, LibraryResponse, LibrariesResponse, StorageRootsResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
@@ -19,6 +25,7 @@ import { LibraryEditorDialog } from './LibraryEditorDialog';
 import { DirectoryPickerDialog } from './DirectoryPickerDialog';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
+import { MediaIconTile, mediaPanelSx, mediaSelected, mediaSurface } from './MediaPagePrimitives';
 
 const collectionTypes: { value: LibraryInput['CollectionType']; label: string }[] = [
   { value: 'movies', label: 'Movies' },
@@ -31,25 +38,25 @@ function collectionName(value: string) {
   return collectionTypes.find((type) => type.value === value)?.label ?? value;
 }
 
-function scanDate(value: string | null) {
+function scanDate(value: string | null, dateOnly = false) {
   if (!value) return 'Not scanned yet';
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, { dateStyle: 'medium', ...(dateOnly ? {} : { timeStyle: 'short' as const }) });
 }
 
-function StorageRoots({ roots }: { roots: StorageRootsResponse }) {
+function StorageRoots({ roots, compact = false }: { roots: StorageRootsResponse; compact?: boolean }) {
   if (!roots.Configured || roots.Items.length === 0) {
     return <Alert severity="warning">No media directories are configured. Configure the allowed media paths in your server deployment, then refresh this page.</Alert>;
   }
   return (
     <Box>
-      <Typography variant="body2" sx={{ fontWeight: 650, mb: 0.5 }}>Configured media directories</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>Library paths must be inside these directories on the server.</Typography>
+      {compact && <><Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Configured media directories</Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>Library paths must be inside these directories on the server.</Typography></>}
       <Stack spacing={1}>
         {roots.Items.map((root) => (
-          <Stack key={root.Path} direction="row" sx={{ gap: 1, justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Typography variant="body2" sx={{ fontFamily: 'ui-monospace, Consolas, monospace', overflowWrap: 'anywhere', minWidth: 0 }}>{root.Path}</Typography>
-            <Chip size="small" variant="outlined" color={root.Available ? 'success' : 'warning'} label={root.Available ? 'Available' : 'Unavailable'} />
+          <Stack key={root.Path} direction="row" sx={{ gap: 1.5, alignItems: 'center', bgcolor: 'background.paper', px: 2, py: 1.2, borderRadius: '12px' }}>
+            <StorageOutlined sx={{ color: 'text.secondary', fontSize: 18, flexShrink: 0 }} />
+            <Typography variant="body2" title={root.Path} sx={{ fontFamily: '"JetBrains Mono Variable", Consolas, monospace', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{root.Path}</Typography>
+            <Chip size="small" color={root.Available ? 'success' : 'warning'} label={root.Available ? 'Available' : 'Unavailable'} />
           </Stack>
         ))}
       </Stack>
@@ -92,9 +99,9 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
   }
 
   return (
-    <><Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="create-library-title">
+    <><Dialog open onClose={close} fullWidth maxWidth="sm" aria-labelledby="create-library-title" slotProps={{ paper: { sx: { maxWidth: 560 } } }}>
       <Box component="form" onSubmit={submit} aria-busy={busy}>
-        <DialogTitle id="create-library-title" sx={{ px: 3, pt: 3, pb: 0.5 }}><Typography component="span" variant="h3">Create library</Typography></DialogTitle>
+        <DialogTitle id="create-library-title" sx={{ px: 3, pt: 3, pb: 0.5 }}>Create library</DialogTitle>
         <DialogContent sx={{ px: 3, pt: '12px !important' }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Group media directories into a library for your connected clients.</Typography>
           <Stack spacing={2.5}>
@@ -104,9 +111,9 @@ function CreateLibraryDialog({ roots, onClose, onCreated, onNavigationGuardChang
             <TextField id="library-type" name="CollectionType" select required fullWidth label="Content type" value={type} onChange={(event) => setType(event.target.value as LibraryInput['CollectionType'])} disabled={busy} error={Boolean(fieldError(error, 'CollectionType'))} helperText={fieldError(error, 'CollectionType')}>
               {collectionTypes.map((option) => <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>)}
             </TextField>
-            <TextField id="library-paths" name="Paths" required fullWidth multiline minRows={3} maxRows={6} label="Media directories" value={pathsText} onChange={(event) => setPathsText(event.target.value)} disabled={busy} error={invalidPaths || Boolean(fieldError(error, 'Paths'))} helperText={pathsMessage} slotProps={{ htmlInput: { spellCheck: false, autoCapitalize: 'none' } }} sx={{ '& textarea': { fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 13 } }} />
-            <Button type="button" startIcon={<FolderOpenOutlined />} onClick={() => setBrowsing(true)} disabled={busy || outcomeUnknown} sx={{ alignSelf: 'flex-start' }}>Browse directories</Button>
-            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}><StorageRoots roots={roots} /></Paper>
+            <Box><TextField id="library-paths" name="Paths" required fullWidth multiline minRows={2} maxRows={6} label="Media directories" value={pathsText} onChange={(event) => setPathsText(event.target.value)} disabled={busy} error={invalidPaths || Boolean(fieldError(error, 'Paths'))} helperText={pathsMessage} slotProps={{ htmlInput: { spellCheck: false, autoCapitalize: 'none' } }} sx={{ '& textarea': { fontFamily: '"JetBrains Mono Variable", Consolas, monospace', fontSize: 13 } }} />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}><Button type="button" size="small" startIcon={<FolderOpenOutlined />} onClick={() => setBrowsing(true)} disabled={busy || outcomeUnknown}>Browse directories</Button></Box></Box>
+            <Paper sx={{ p: 2, bgcolor: 'background.paper', borderRadius: '16px' }}><StorageRoots roots={roots} compact /></Paper>
             <Box component="section" aria-label="Library options"><Stack spacing={1}>
               <FormControlLabel control={<Checkbox checked={options.EnableLocalMetadata} disabled={busy || outcomeUnknown} onChange={(event) => setOptions({ ...options, EnableLocalMetadata: event.target.checked })} />} label="Import local metadata files" />
               <FormControlLabel control={<Checkbox checked={options.EnableLocalImages} disabled={busy || outcomeUnknown} onChange={(event) => setOptions({ ...options, EnableLocalImages: event.target.checked })} />} label="Import local artwork" />
@@ -216,6 +223,7 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
   const [unconfirmedRefreshes, setUnconfirmedRefreshes] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<{ message: string; taskLink: boolean }>();
+  const [menu, setMenu] = useState<{ anchor: HTMLElement; library: Library }>();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -260,15 +268,20 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
 
   return (
     <Box aria-busy={loading}>
-      <PageHeading title="Libraries" description="Choose the media directories your server keeps in its catalog." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreating(true)} disabled={!canCreate}>Create library</Button>} />
-      <Stack spacing={3}>
+      <PageHeading title="Libraries" description="Choose the media directories your server keeps in its catalog. Scans and media details refreshes run in the background." action={<Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="outlined" startIcon={<PlaylistAddCheckRounded />} onClick={onTasks}>View tasks</Button><Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreating(true)} disabled={!canCreate}>Create library</Button></Stack>} />
+      <Stack spacing={2.5}>
         {error != null && <ErrorNotice error={error} retry={refresh} />}
         {actionError != null && <ErrorNotice error={actionError} />}
-        <Paper variant="outlined" sx={{ p: { xs: 2.5, sm: 3 } }}>
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2 }}><Typography component="h2" variant="h4">Storage access</Typography><Button size="small" startIcon={<RefreshRounded />} disabled={loading} onClick={refresh}>Refresh</Button></Stack>
-          {rootsError != null && <ErrorNotice error={rootsError} retry={refresh} />}
-          {!roots && loading && <Skeleton variant="rounded" height={62} aria-label="Loading configured media directories" />}
-          {roots && <StorageRoots roots={roots} />}
+        <Paper component="section" sx={{ p: 2.5, bgcolor: mediaSurface, borderRadius: '20px', display: 'grid', gridTemplateColumns: { xs: '1fr', md: '250px minmax(0, 1fr)' }, gap: 3 }}>
+          <Box>
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}><Typography component="h2" variant="h4">Storage access</Typography><Tooltip title="Refresh storage access"><IconButton size="small" aria-label="Refresh storage access" disabled={loading} onClick={refresh}><RefreshRounded sx={{ fontSize: 18 }} /></IconButton></Tooltip></Stack>
+            <Typography variant="body2" color="text.secondary">Library paths must be inside the configured media directories on this server. Deployment settings control this access.</Typography>
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            {rootsError != null && <ErrorNotice error={rootsError} retry={refresh} />}
+            {!roots && loading && <Skeleton variant="rounded" height={62} aria-label="Loading configured media directories" />}
+            {roots && <StorageRoots roots={roots} />}
+          </Box>
         </Paper>
         {!libraries && loading && <Stack spacing={2} role="status" aria-label="Loading libraries"><Skeleton variant="rounded" height={180} /><Skeleton variant="rounded" height={180} /></Stack>}
         {libraries && libraries.Items.length === 0 && (
@@ -282,36 +295,36 @@ export function LibrariesPage({ onTasks, onManageItems, onNavigationGuardChange 
         {libraries && libraries.Items.length > 0 && (
           <Box>
             <Stack direction="row" sx={{ gap: 1, alignItems: 'center', mb: 2 }}><Typography component="h2" variant="h4">Your libraries</Typography><Chip size="small" label={libraries.TotalRecordCount.toLocaleString()} /></Stack>
-            <Stack component="ul" aria-label="Media libraries" spacing={2} sx={{ listStyle: 'none', p: 0, m: 0 }}>
+            <Box component="ul" aria-label="Media libraries" sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 400px), 1fr))', gap: 2, listStyle: 'none', p: 0, m: 0 }}>
               {libraries.Items.map((library) => (
-                <Paper component="li" key={library.Id} variant="outlined" sx={{ p: { xs: 2.5, sm: 3 } }}>
-                  <Stack direction={{ xs: 'column', lg: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', lg: 'center' }, gap: 2 }}>
-                    <Stack direction="row" sx={{ gap: 1.5, alignItems: 'center', minWidth: 0 }}>
-                      <Box sx={{ bgcolor: '#E8F3F3', color: 'primary.main', borderRadius: 2, p: 1.3, display: 'flex' }}><VideoLibraryOutlined /></Box>
-                      <Box sx={{ minWidth: 0 }}><Typography component="h3" variant="h3" sx={{ overflowWrap: 'anywhere' }}>{library.Name}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>{collectionName(library.CollectionType)}</Typography></Box>
-                    </Stack>
-                    <Stack direction="row" sx={{ gap: 1, flexShrink: 0, flexWrap: 'wrap', maxWidth: '100%' }}>
-                      <Button size="small" startIcon={<EditOutlined />} onClick={() => setEditingLibrary(library)} aria-label={`Edit library ${library.Name}`}>Edit library</Button>
-                      <Button variant="contained" size="small" startIcon={<ListAltRounded />} onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`}>Manage items</Button>
-                      <Button size="small" color="secondary" startIcon={<FolderOpenOutlined />} onClick={() => setBindingLibrary(library)} aria-label={`Storage bindings for ${library.Name}`}>Storage bindings</Button>
-                      <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)}>{scanning.has(library.Id) ? 'Requesting...' : 'Scan library'}</Button>
-                      <Button size="small" color="secondary" startIcon={<RestartAltRounded />} onClick={() => setRefreshingMedia(library)} disabled={scanning.has(library.Id)} aria-label={`Refresh media details for ${library.Name}`}>Refresh media details</Button>
-                      <Button size="small" color="secondary" startIcon={<DeleteOutlineRounded />} onClick={() => setDeleting(library)} disabled={scanning.has(library.Id)}>Delete</Button>
-                    </Stack>
+                <Paper component="li" key={library.Id} variant="outlined" sx={{ ...mediaPanelSx, p: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                    <MediaIconTile size={48}>{library.CollectionType === 'movies' ? <MovieOutlined /> : library.CollectionType === 'tvshows' ? <LiveTvOutlined /> : library.CollectionType === 'music' ? <LibraryMusicOutlined /> : <PermMediaOutlined />}</MediaIconTile>
+                    <Box sx={{ minWidth: 0, flex: 1 }}><Typography component="h3" sx={{ fontSize: 16, fontWeight: 600, overflowWrap: 'anywhere' }}>{library.Name}</Typography><Typography variant="body2" color="text.secondary">{collectionName(library.CollectionType)}</Typography></Box>
+                    <Button variant="outlined" size="small" startIcon={scanning.has(library.Id) ? <CircularProgress size={16} color="inherit" /> : <RefreshRounded />} onClick={() => void scanLibrary(library)} aria-label={`Scan library ${library.Name}`} disabled={scanning.has(library.Id) || unconfirmedRefreshes.has(library.Id)} sx={{ minHeight: 36, px: 1.5 }}>{scanning.has(library.Id) ? 'Starting...' : 'Scan'}</Button>
+                    <IconButton aria-label={`More actions for ${library.Name}`} aria-haspopup="menu" aria-controls={menu?.library.Id === library.Id ? 'library-actions-menu' : undefined} aria-expanded={menu?.library.Id === library.Id ? true : undefined} onClick={(event) => setMenu({ anchor: event.currentTarget, library })} sx={{ ml: -0.5, mr: -1 }}><MoreVertRounded /></IconButton>
                   </Stack>
-                  {unconfirmedRefreshes.has(library.Id) && <Alert severity="warning" sx={{ mt: 2 }} action={<Button color="inherit" size="small" onClick={onTasks}>View tasks</Button>}>A media details refresh request could not be confirmed. Check Tasks before starting another scan or refresh.</Alert>}
-                  <Stack spacing={1} sx={{ mt: 2.5, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-                    {library.Paths.map((path) => <Stack key={path} direction="row" sx={{ alignItems: 'flex-start', gap: 1 }}><FolderOpenOutlined sx={{ fontSize: 18, color: 'text.secondary', mt: 0.2, flexShrink: 0 }} /><Typography variant="body2" sx={{ fontFamily: 'ui-monospace, Consolas, monospace', overflowWrap: 'anywhere', minWidth: 0 }}>{path}</Typography></Stack>)}
+                  {unconfirmedRefreshes.has(library.Id) && <Alert severity="warning" action={<Button color="inherit" size="small" onClick={onTasks}>View tasks</Button>}>A media details refresh request could not be confirmed. Check Tasks before starting another scan or refresh.</Alert>}
+                  <Stack spacing={0.75} sx={{ p: 1.5, bgcolor: mediaSurface, borderRadius: '12px' }}>
+                    {library.Paths.map((path) => <Stack key={path} direction="row" sx={{ alignItems: 'center', gap: 1 }}><FolderOpenOutlined sx={{ fontSize: 18, color: 'text.secondary', flexShrink: 0 }} /><Typography variant="body2" title={path} sx={{ fontFamily: '"JetBrains Mono Variable", Consolas, monospace', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{path}</Typography></Stack>)}
                   </Stack>
-                  <Divider sx={{ my: 2 }} />
-                  <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 0.5, justifyContent: 'space-between' }}><Typography variant="body2" color="text.secondary">Last scan: {scanDate(library.LastScanAt)}</Typography><Typography variant="caption" color="text.secondary">Created {scanDate(library.CreatedAt)}</Typography></Stack>
+                  <Stack direction="row" sx={{ gap: 1.5, alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ minWidth: 0 }}>Last scan <Box component="span" sx={{ color: 'text.primary' }}>{scanDate(library.LastScanAt)}</Box> · Created {scanDate(library.CreatedAt, true)}</Typography>
+                    <Button size="small" startIcon={<ListAltRounded />} onClick={() => onManageItems(library)} aria-label={`Manage items in ${library.Name}`} sx={{ flexShrink: 0, minHeight: 36, px: 1.5, bgcolor: mediaSelected, color: '#0F2A57', '&:hover': { bgcolor: '#C8D8F2' } }}>Manage items</Button>
+                  </Stack>
                 </Paper>
               ))}
-            </Stack>
+            </Box>
           </Box>
         )}
-        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 1, borderTop: 1, borderColor: 'divider', pt: 2 }}><Typography variant="body2" color="text.secondary">Scans and media details refreshes run in the background. Open Tasks to follow their progress.</Typography><Button onClick={onTasks} startIcon={<PlaylistAddCheckRounded />} sx={{ flexShrink: 0 }}>View tasks</Button></Stack>
       </Stack>
+      <Menu id="library-actions-menu" anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(undefined)} slotProps={{ paper: { sx: { minWidth: 228, borderRadius: '12px', bgcolor: '#EEF2F9', '& .MuiMenuItem-root': { minHeight: 44 } } } }}>
+        <MenuItem onClick={() => { setEditingLibrary(menu?.library); setMenu(undefined); }}><ListItemIcon><EditOutlined fontSize="small" /></ListItemIcon>Edit library</MenuItem>
+        <MenuItem onClick={() => { setBindingLibrary(menu?.library); setMenu(undefined); }}><ListItemIcon><FolderOpenOutlined fontSize="small" /></ListItemIcon>Storage bindings</MenuItem>
+        <MenuItem disabled={Boolean(menu && scanning.has(menu.library.Id))} onClick={() => { setRefreshingMedia(menu?.library); setMenu(undefined); }}><ListItemIcon><RestartAltRounded fontSize="small" /></ListItemIcon>Refresh media details</MenuItem>
+        <Divider />
+        <MenuItem disabled={Boolean(menu && scanning.has(menu.library.Id))} onClick={() => { setDeleting(menu?.library); setMenu(undefined); }} sx={{ color: 'error.main' }}><ListItemIcon sx={{ color: 'inherit' }}><DeleteOutlineRounded fontSize="small" /></ListItemIcon>Delete library</MenuItem>
+      </Menu>
       {creating && roots && <CreateLibraryDialog roots={roots} onClose={() => { setCreating(false); refresh(); }} onCreated={libraryCreated} onNavigationGuardChange={onNavigationGuardChange} />}
       {deleting && <DeleteLibraryDialog library={deleting} onClose={() => setDeleting(undefined)} onDeleted={() => { setNotice({ message: `Library ${deleting.Name} deleted. Media files were kept.`, taskLink: false }); setDeleting(undefined); refresh(); }} />}
       {refreshingMedia && <RefreshMediaDialog library={refreshingMedia} outcomeUnknown={unconfirmedRefreshes.has(refreshingMedia.Id)} onUnknown={() => setUnconfirmedRefreshes((ids) => new Set(ids).add(refreshingMedia.Id))} onClose={() => setRefreshingMedia(undefined)} onStarted={() => { setNotice({ message: `Media details refresh requested for ${refreshingMedia.Name}.`, taskLink: true }); setRefreshingMedia(undefined); }} onTasks={onTasks} />}

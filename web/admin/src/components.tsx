@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
-import WavesRounded from '@mui/icons-material/WavesRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { ApiError } from './api';
 import { colors } from './theme';
@@ -8,8 +7,8 @@ import { colors } from './theme';
 export function Brand({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
   return (
     <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center', color: light ? 'white' : colors.deep }}>
-      <Box aria-hidden="true" sx={{ display: 'grid', placeItems: 'center', width: 39, height: 39, borderRadius: '12px', backgroundColor: light ? '#FFFFFF16' : '#007E8710' }}>
-        <WavesRounded sx={{ fontSize: 27 }} />
+      <Box aria-hidden="true" sx={{ display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: '14px', backgroundColor: colors.primary, color: 'white', fontSize: 20, fontWeight: 700 }}>
+        G
       </Box>
       <Box>
         <Typography component="span" sx={{ fontFamily: '"Manrope Variable", sans-serif', fontSize: compact ? 25 : 28, lineHeight: 1, fontWeight: 780, letterSpacing: '-0.055em' }}>goby</Typography>
@@ -50,10 +49,10 @@ export function LoadingView({ label = 'Connecting to your server' }: { label?: s
 
 export function PageHeading({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return (
-    <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 3.5 }}>
-      <Box>
-        <Typography variant="h2" component="h1">{title}</Typography>
-        <Typography color="text.secondary" sx={{ mt: 0.8 }}>{description}</Typography>
+    <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, gap: 2, mb: 2.5 }}>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography component="h2" className="visually-hidden">{title}</Typography>
+        <Typography color="text.secondary" variant="body1">{description}</Typography>
       </Box>
       {action}
     </Stack>

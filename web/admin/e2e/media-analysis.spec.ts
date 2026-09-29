@@ -93,27 +93,34 @@ test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 async function open(page: Page): Promise<void> { await page.goto('/admin/media-analysis'); await expect(page.getByRole('heading', { name: 'Media analysis', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Review analysis for Opening episode' })).toBeEnabled(); }
 
 test('configuration conflicts preserve a complete draft and reload the exact revision before retry', async ({ page, api }) => {
-  await open(page); await page.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('1');
-  await expect(page.getByRole('button', { name: 'Save analysis configuration' })).toBeDisabled(); expect(api.writes()).toHaveLength(0);
-  await page.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('20');
-  await page.getByRole('switch', { name: 'Automatically publish qualified detected intros' }).uncheck();
+  await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
+  await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('1');
+  await expect(configuration.getByRole('button', { name: 'Save analysis configuration' })).toBeDisabled(); expect(api.writes()).toHaveLength(0);
+  await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('20');
+  await configuration.getByRole('switch', { name: 'Automatically publish qualified detected intros' }).uncheck();
   api.overview.Configuration.Revision = '9007199254740995';
-  await page.getByRole('button', { name: 'Save analysis configuration' }).click();
-  await expect(page.getByRole('button', { name: 'Reload latest and keep draft' })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true })).toHaveValue('20');
-  await page.getByRole('button', { name: 'Reload latest and keep draft' }).click();
-  await expect(page.getByText('Revision 9007199254740995.', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: 'Save analysis configuration' }).click();
-  await expect(page.getByText('Analysis configuration saved. New runs use this profile.')).toBeVisible();
+  await configuration.getByRole('button', { name: 'Save analysis configuration' }).click();
+  await expect(configuration.getByText('Configuration changed.', { exact: true })).toBeVisible();
+  await expect(configuration.getByRole('button', { name: 'Reload latest and keep draft' })).toBeVisible();
+  await expect(configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true })).toHaveValue('20');
+  await configuration.getByRole('button', { name: 'Reload latest and keep draft' }).click();
+  await expect(configuration.getByText('Revision 9007199254740995.', { exact: false })).toBeVisible();
+  await configuration.getByRole('button', { name: 'Save analysis configuration' }).click();
+  await expect(configuration.getByText('Analysis configuration saved. New runs use this profile.')).toBeVisible();
   const writes = api.writes('/admin/v1/media-analysis/configuration'); expect(writes).toHaveLength(2);
   expect(writes[1].body).toEqual({ Revision: '9007199254740995', Profile: { ...profile, PreviewIntervalSeconds: 20, AutoPublishIntros: false } });
 });
 
 test('explicit library scope and Force create a recorded run and stop remains pending until workers finish', async ({ page, api }) => {
-  await open(page); await expect(page.getByRole('button', { name: 'Analyze library intros' })).toBeDisabled();
+  await open(page); await expect(page.getByRole('button', { name: 'Start analysis' })).toBeDisabled();
   await page.getByRole('checkbox', { name: 'Series library', exact: true }).check();
-  await page.getByRole('checkbox', { name: 'Force rebuild existing analysis and previews' }).check();
-  await page.getByRole('button', { name: 'Analyze library intros' }).click();
+  await page.getByRole('button', { name: 'Run options', exact: true }).click();
+  const options = page.getByRole('dialog', { name: 'Run options', exact: true });
+  await options.getByRole('checkbox', { name: 'Force rebuild existing analysis and previews' }).check();
+  await options.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Analysis type' })).toHaveText('Intro analysis');
+  await page.getByRole('button', { name: 'Start analysis' }).click();
   const progress = page.getByRole('region', { name: 'Analysis task progress' });
   await expect(progress).toContainText('1 of 3 work items finished');
   const input = api.writes('/admin/v1/media-analysis/runs')[0].body as AnalysisRunInput;
@@ -123,7 +130,7 @@ test('explicit library scope and Force create a recorded run and stop remains pe
   api.run = { ...api.run, State: 'cancelled', TerminalChildren: 3, CancelledChildren: 2, FinishedAt: stamp };
   await progress.getByRole('button', { name: 'Refresh progress' }).click(); await expect(progress).toContainText('Cancelled'); await expect(progress).toContainText('3 of 3 work items finished');
   expect(api.writes('/admin/v1/task-runs/analysis-run-1/cancel')).toHaveLength(1);
-  await page.getByRole('button', { name: 'Open tasks', exact: true }).click(); await expect(page).toHaveURL(/\/admin\/tasks$/);
+  await page.getByRole('button', { name: 'Open tasks', exact: true }).click(); await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
 });
 
 test('candidate review uses both CAS values, retains manual priority through rejection and supports reset', async ({ page, api }) => {
@@ -159,16 +166,22 @@ test('source conflict blocks another decision until a real reload exposes the st
 
 test('cache cleanup reports retained busy entries and uses the saved configuration CAS', async ({ page, api }) => {
   await open(page); const cache = page.getByRole('region', { name: 'Analysis cache', exact: true });
-  await expect(cache).toContainText('Active readers: 2'); await cache.getByRole('button', { name: 'Prune analysis cache' }).click();
-  await page.getByRole('dialog', { name: 'Prune the analysis cache?' }).getByRole('button', { name: 'Prune eligible entries' }).click();
-  await expect(cache).toContainText('2 busy entries were retained'); expect(api.writes('/admin/v1/media-analysis/cache/prune')[0].body).toEqual({ Revision: '9007199254740993' });
+  await expect(cache).toContainText('Ready 3'); await expect(cache).toContainText('Building 1'); await expect(cache).toContainText('Pending 1');
+  await cache.getByRole('button', { name: 'Manage cache' }).click();
+  const cleanup = page.getByRole('dialog', { name: 'Prune the analysis cache?' });
+  await expect(cleanup).toContainText('Active readers: 2');
+  await cleanup.getByRole('button', { name: 'Prune eligible entries' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: '2 busy entries were retained' })).toBeVisible(); expect(api.writes('/admin/v1/media-analysis/cache/prune')[0].body).toEqual({ Revision: '9007199254740993' });
 });
 
 test('missing tools disable work without hiding configuration or source results', async ({ page, api }) => {
   api.overview.Runtime = { Configured: false, IntroAvailable: false, PreviewAvailable: false, Reasons: ['missing_ffmpeg', 'fingerprint_tool_unavailable'], Cache: null };
   await open(page); await expect(page.getByText('missing ffmpeg', { exact: true })).toBeVisible(); await page.getByRole('checkbox', { name: 'Series library', exact: true }).check();
-  await expect(page.getByRole('button', { name: 'Analyze library intros' })).toBeDisabled(); await expect(page.getByRole('button', { name: 'Build library previews' })).toBeDisabled();
-  await expect(page.getByRole('textbox', { name: 'Preview image quality', exact: true })).toBeEnabled(); expect(api.writes()).toHaveLength(0);
+  await expect(page.getByRole('button', { name: 'Start analysis' })).toBeDisabled();
+  await page.getByRole('combobox', { name: 'Analysis type' }).click(); await page.getByRole('option', { name: 'Seek previews', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Start analysis' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Analysis configuration', exact: true }).getByRole('textbox', { name: 'Preview image quality', exact: true })).toBeEnabled(); expect(api.writes()).toHaveLength(0);
 });
 
 test('an unconfirmed admission survives reload and retries exactly the same frozen request', async ({ page, api }) => {

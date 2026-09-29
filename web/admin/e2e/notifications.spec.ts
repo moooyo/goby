@@ -53,7 +53,7 @@ test('receiver enrollment uses exact CAS and never refills the saved credential'
   await page.getByRole('switch', { name: 'Enable notifications', exact: true }).check(); await save(page);
   expect(api.writes[0].body).toEqual({ Revision: '9007199254740993', Enabled: true, Endpoint: 'https://receiver.example/goby', AllowedNetworks: [], ReceiverCredential: replacement });
   await expect(secret).toHaveCount(0); await credentialAction(page, 'Replace credential'); await expect(secret).toHaveValue('');
-  await expect(page.getByRole('region', { name: 'Notification receiver status', exact: true })).toContainText('Receiver credential configured');
+  await expect(page.getByRole('region', { name: 'Notification receiver status', exact: true }).getByText('Configured', { exact: true })).toBeVisible();
 });
 
 test('keeping and clearing the receiver credential use distinct request shapes', async ({ page, api }) => {
@@ -63,7 +63,7 @@ test('keeping and clearing the receiver credential use distinct request shapes',
   await credentialAction(page, 'Clear credential'); await expect(page.getByRole('button', { name: 'Save notifications', exact: true })).toBeDisabled();
   await page.getByRole('switch', { name: 'Enable notifications', exact: true }).uncheck(); await save(page);
   expect(api.writes[1].body.ReceiverCredential).toBe(''); expect(api.settings.HasReceiverCredential).toBe(false);
-  await expect(page.getByRole('region', { name: 'Notification receiver status', exact: true })).toContainText('No receiver credential configured');
+  await expect(page.getByRole('region', { name: 'Notification receiver status', exact: true }).getByText('Not configured', { exact: true })).toBeVisible();
 });
 
 test('invalid receiver URLs, missing credentials, and oversized allowlists prevent writes', async ({ page, api }) => {
@@ -103,3 +103,27 @@ test('a response containing a credential cannot be displayed as editable setting
   await page.goto('/admin/notifications'); await expect(page.getByRole('alert')).toContainText('notification settings response is incomplete');
   await expect(page.getByRole('region', { name: 'Notification receiver settings', exact: true })).toHaveCount(0); await expect(page.locator('body')).not.toContainText(replacement); expect(api.writes).toEqual([]);
 });
+
+for (const viewport of [{ width: 1440, height: 1000 }, { width: 375, height: 812 }]) {
+  test(`notification receiver layout and draft guard at ${viewport.width}px`, async ({ page, api }, testInfo) => {
+    await page.setViewportSize(viewport);
+    api.settings = { ...api.settings, Enabled: true, Endpoint: 'https://receiver.example/goby', HasReceiverCredential: true, PendingCount: 3, AllowedNetworks: ['192.168.1.0/24', '10.8.0.0/16'] };
+    await open(page);
+    await expect(page.getByRole('region', { name: 'Notification receiver status', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`notifications-${viewport.width}.png`), fullPage: true });
+    await page.getByRole('textbox', { name: 'Receiver endpoint', exact: true }).fill('https://receiver.example/changed');
+    await expect(page.getByRole('status')).toContainText('1 unsaved change');
+    const saveButton = page.getByRole('button', { name: 'Save notifications', exact: true });
+    await saveButton.scrollIntoViewIfNeeded();
+    await expect(saveButton).toBeInViewport();
+    page.once('dialog', (dialog) => { void dialog.dismiss(); });
+    await page.getByRole('tab', { name: 'Activity & logs', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Notification receiver status', exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Receiver endpoint', exact: true })).toHaveValue('https://receiver.example/changed');
+    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: 'Receiver endpoint', exact: true })).toHaveValue('https://receiver.example/goby');
+    await expect(saveButton).toBeDisabled();
+    expect(api.writes).toEqual([]);
+  });
+}

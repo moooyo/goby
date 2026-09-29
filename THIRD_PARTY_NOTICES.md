@@ -1,8 +1,8 @@
 # Third-party notices
 
 Status: **INCOMPLETE; external distribution is not approved**. Prepared on
-2026-09-14 for the currently locked dependencies and retained administrator
-assets. Goby's own project license has not been selected. This file neither
+2026-09-14, with dashboard font notices updated on 2026-09-30 for the currently
+locked dependencies and administrator assets. Goby's own project license has not been selected. This file neither
 creates a project license nor grants rights to distribute Goby.
 
 The original third-party legal texts are preserved under
@@ -18,20 +18,24 @@ copyright-source references, font mappings and unresolved entries.
 - All 11 current go.mod requirements have exact-version legal texts. The
   inventory also retains 12 additional module/version entries from go.sum,
   distinguishing full module checksums from historical go.mod-only entries.
-- All 154 npm lock paths are listed, including production, development and
-  platform-optional entries. All 87 production-classified entries have legal
-  texts; 110 entries in total have matching cached package metadata and texts.
+- All 155 npm lock paths are listed, including production, development and
+  platform-optional entries. All 88 production-classified entries have legal
+  texts; 111 entries in total have matching cached package metadata and texts.
   Classification follows the lockfile and does not determine which code is
   present in a generated JavaScript bundle.
 - Go 1.27.1 build-toolchain notices are included with its LICENSE and PATENTS.
   This broad collection includes toolchain commands and test data; it does not
   claim that every included component is linked into the Goby executable.
-- Nine actual WOFF2 assets are bound by SHA256 and byte length to the retained
-  frontend build and the exact Fontsource package files. The two font-family
-  licenses and copyright notices are retained below.
+- The current dashboard's 113 WOFF2 assets are bound by SHA256 and byte length
+  to the existing local frontend build and exact Fontsource package files.
+  Its three font-family licenses and copyright notices are retained below.
+  The earlier nine-asset Manrope/Public Sans mapping remains historical evidence
+  in the inventory, along with the original Public Sans legal texts.
 
-Collection read existing test-env metadata, legal files and saved build evidence.
-It installed nothing and ran no builds, browsers, services or application code.
+The initial collection read existing test-env metadata, legal files and saved
+build evidence. The dashboard update read existing local package metadata,
+legal files and built font assets. Notice collection installed nothing and ran
+no builds, browsers, services or application code.
 No reference-client source or database was read. Go h1 values are recorded and,
 where available, compared with cache ziphash metadata; full module h1 values and
 npm tarball integrity were not recomputed. This is not a complete binary SBOM.
@@ -121,8 +125,9 @@ not only the package's short declaration.
 | @emotion/use-insertion-effect-with-fallbacks | 1.2.0 | production | MIT | [LICENSE](third_party/licenses/npm/@emotion/use-insertion-effect-with-fallbacks@1.2.0/LICENSE) |
 | @emotion/utils | 1.4.2 | production | MIT | [LICENSE](third_party/licenses/npm/@emotion/utils@1.4.2/LICENSE) |
 | @emotion/weak-memoize | 0.4.0 | production | MIT | [LICENSE](third_party/licenses/npm/@emotion/weak-memoize@0.4.0/LICENSE) |
+| @fontsource-variable/jetbrains-mono | 5.3.0 | production | OFL-1.1 | [LICENSE](third_party/licenses/npm/@fontsource-variable/jetbrains-mono@5.3.0/LICENSE) |
 | @fontsource-variable/manrope | 5.3.0 | production | OFL-1.1 | [LICENSE](third_party/licenses/npm/@fontsource-variable/manrope@5.3.0/LICENSE) |
-| @fontsource-variable/public-sans | 5.3.0 | production | OFL-1.1 | [LICENSE](third_party/licenses/npm/@fontsource-variable/public-sans@5.3.0/LICENSE) |
+| @fontsource-variable/noto-sans-sc | 5.3.0 | production | OFL-1.1 | [LICENSE](third_party/licenses/npm/@fontsource-variable/noto-sans-sc@5.3.0/LICENSE) |
 | @jridgewell/gen-mapping | 0.3.13 | production | MIT | [LICENSE](third_party/licenses/npm/@jridgewell/gen-mapping@0.3.13/LICENSE) |
 | @jridgewell/resolve-uri | 3.1.2 | production | MIT | [LICENSE](third_party/licenses/npm/@jridgewell/resolve-uri@3.1.2/LICENSE) |
 | @jridgewell/sourcemap-codec | 1.6.0 | production | MIT | [LICENSE](third_party/licenses/npm/@jridgewell/sourcemap-codec@1.6.0/LICENSE) |
@@ -212,13 +217,21 @@ not only the package's short declaration.
 
 | Family / exact package | Built assets | License and original copyright notice |
 | --- | --- | --- |
+| JetBrains Mono / @fontsource-variable/jetbrains-mono 5.3.0 | Six normal variable-weight WOFF2 subsets | [SIL Open Font License 1.1 and copyright](third_party/licenses/npm/font-evidence/jetbrains-mono-5.3.0-LICENSE): Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono); retain the complete package notice, including its additional italic-font attribution |
 | Manrope / @fontsource-variable/manrope 5.3.0 | Six normal variable-weight WOFF2 subsets | [SIL Open Font License 1.1 and copyright](third_party/licenses/npm/font-evidence/manrope-5.3.0-LICENSE): Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope) |
-| Public Sans / @fontsource-variable/public-sans 5.3.0 | Three normal variable-weight WOFF2 subsets | [SIL Open Font License 1.1 and copyright](third_party/licenses/npm/font-evidence/public-sans-5.3.0-LICENSE): Copyright 2015 The Public Sans Project Authors (https://github.com/uswds/public-sans); retain the complete package notice, including its additional italic-font attribution |
+| Noto Sans SC / @fontsource-variable/noto-sans-sc 5.3.0 | 101 normal variable-weight WOFF2 subsets | [SIL Open Font License 1.1 and original attribution](third_party/licenses/npm/font-evidence/noto-sans-sc-5.3.0-LICENSE): Google Inc. |
 
-These are self-hosted assets from the retained 57-file administrator build, not
-remote font-service requests. The inventory preserves each actual source/dist
-hash and byte length. Package upstream URLs are recorded declarations; no wider
-font release history or naming-rights conclusion is inferred.
+These are self-hosted assets from the existing local dashboard build. The
+inventory preserves each actual source/dist hash and byte length. Package
+upstream URLs are recorded declarations; no wider font release history or
+naming-rights conclusion is inferred. The Noto Sans SC attribution above is
+preserved exactly as supplied in that package's LICENSE.
+
+Public Sans is no longer a dashboard dependency. Its original
+[package LICENSE](third_party/licenses/npm/@fontsource-variable/public-sans@5.3.0/LICENSE)
+and [font evidence copy](third_party/licenses/npm/font-evidence/public-sans-5.3.0-LICENSE)
+remain for the historical administrator build; the old build and verification
+records do not establish the contents of the current dashboard.
 
 ## Explicit unresolved scope
 

@@ -1,11 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { ApiError, isAbortError } from './api';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
 import { analysisBytes, analysisCurrentCandidate, analysisTime } from './mediaAnalysis';
 import type { AnalysisAction, AnalysisDetection, AnalysisItem, AnalysisItems } from './mediaAnalysis';
 import { mediaAnalysisApi } from './mediaAnalysisApi';
+import { mediaPanelSx, MediaSearchField, mediaSelected, mediaSelectSx } from './MediaPagePrimitives';
+
+function statusLabel(status: string) { const value = status.replaceAll('_', ' '); return value.charAt(0).toUpperCase() + value.slice(1); }
+function statusTone(status: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
+  if (['ready', 'qualified', 'published'].includes(status)) return 'success';
+  if (['review', 'stale', 'suppressed'].includes(status)) return 'warning';
+  if (['failed', 'error'].includes(status)) return 'error';
+  if (['building', 'running', 'pending', 'queued'].includes(status)) return 'info';
+  return 'default';
+}
+
+function IntroStatus({ detection }: { detection: AnalysisDetection }) {
+  return <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
+    {detection.Effective && <Chip size="small" color="success" label={`Intro ${analysisTime(detection.Effective.StartTicks)}–${analysisTime(detection.Effective.EndTicks)}`} />}
+    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+      {(!detection.Effective || ['review', 'stale', 'failed', 'error'].includes(detection.Status)) && <Chip size="small" color={statusTone(detection.Status)} label={statusLabel(detection.Status)} />}
+      {detection.Suppressed && <Chip size="small" color="warning" label="Detected intro suppressed" />}
+    </Stack>
+    {detection.Effective && <Typography variant="caption" color="text.secondary">{statusLabel(detection.Effective.Provenance)}</Typography>}
+  </Stack>;
+}
+
+function PreviewStatus({ previews }: { previews: AnalysisItem['Previews'] }) {
+  if (previews.length === 0) return <Chip size="small" label="Not generated" />;
+  const counts = new Map<string, number>();
+  for (const preview of previews) counts.set(preview.Status, (counts.get(preview.Status) ?? 0) + 1);
+  return <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>{Array.from(counts, ([status, count]) => <Chip key={status} size="small" color={statusTone(status)} label={status === 'ready' && count === previews.length ? 'Generated' : `${statusLabel(status)}${previews.length > 1 ? ` · ${count}` : ''}`} />)}</Stack>;
+}
 
 function IntervalText({ interval }: { interval: { StartTicks: number; EndTicks: number } }) {
   return <>{analysisTime(interval.StartTicks)}–{analysisTime(interval.EndTicks)}</>;
@@ -108,23 +137,58 @@ export function MediaAnalysisResults({ libraries, disabled, introAvailable, prev
     return () => controller.abort();
   }, [libraryId, query, page, revision, refresh]);
   const chosen = data?.Items.filter((item) => selected.includes(item.Id)) ?? [];
-  return <Paper component="section" aria-labelledby="analysis-results-title" variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
-    <Stack spacing={2.5}>
-      <Typography component="h2" variant="h3" id="analysis-results-title">Analysis results</Typography>
-      <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }}><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField select label="Filter library" value={libraryId} disabled={disabled} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} sx={{ minWidth: 180 }}><MenuItem value="">All libraries</MenuItem>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
-        <TextField label="Search media" value={search} onChange={(event) => setSearch(event.target.value)} fullWidth disabled={disabled} slotProps={{ htmlInput: { maxLength: 256 } }} /><Button type="submit" variant="outlined" disabled={disabled || loading}>Search</Button><Button disabled={disabled || loading} onClick={() => setRevision((value) => value + 1)}>Refresh results</Button>
-      </Stack></Box>
-      {error != null && <ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} />}
-      {loading && <Box role="status" aria-label="Loading media analysis items"><Skeleton height={54} /><Skeleton height={54} /></Box>}
-      {data?.Items.length === 0 && <Typography color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography>}
-      {data && data.Items.length > 0 && <>
-        <TableContainer><Table aria-label="Media analysis items"><TableHead><TableRow><TableCell padding="checkbox"><Checkbox slotProps={{ input: { 'aria-label': 'Select all visible media' } }} disabled={disabled} checked={selected.length === data.Items.length} indeterminate={selected.length > 0 && selected.length < data.Items.length} onChange={(event) => setSelected(event.target.checked ? data.Items.map((item) => item.Id) : [])} /></TableCell><TableCell>Item</TableCell><TableCell>Intro analysis</TableCell><TableCell>Previews</TableCell><TableCell>Review</TableCell></TableRow></TableHead><TableBody>{data.Items.map((item) => <TableRow key={item.Id}><TableCell padding="checkbox"><Checkbox slotProps={{ input: { 'aria-label': `Select ${item.Name}` } }} disabled={disabled} checked={selected.includes(item.Id)} onChange={(event) => setSelected((values) => event.target.checked ? [...values, item.Id] : values.filter((id) => id !== item.Id))} /></TableCell><TableCell component="th" scope="row" sx={{ overflowWrap: 'anywhere' }}>{item.Name}<Typography component="div" variant="caption" color="text.secondary">{item.Type}</Typography></TableCell><TableCell>{item.Detection.Status.replaceAll('_', ' ')}{item.Detection.Suppressed && <Typography variant="caption" component="div">Suppressed for this source</Typography>}{item.Detection.Effective && <Typography variant="caption" component="div">{item.Detection.Effective.Provenance} · <IntervalText interval={item.Detection.Effective} /></Typography>}</TableCell><TableCell>{item.Previews.filter((preview) => preview.Status === 'ready').length} ready / {item.Previews.length} recorded</TableCell><TableCell><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`Review analysis for ${item.Name}`}>Review</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>
-        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button disabled={disabled || !introAvailable || chosen.length === 0 || chosen.some((item) => item.Type !== 'Episode')} onClick={() => onRun('intro', [], selected)}>Analyze selected episodes</Button><Button disabled={disabled || !previewAvailable || chosen.length === 0 || chosen.some((item) => !['Movie', 'Episode', 'Video'].includes(item.Type))} onClick={() => onRun('previews', [], selected)}>Build selected previews</Button></Stack>
-        <Typography variant="caption" color="text.secondary">Selections apply to this page. Intro analysis requires episodes; previews support movies, episodes, and videos. The Force rebuild choice above applies to both actions.</Typography>
-      </>}
-      {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} />}
+  const toggleItem = (id: string, checked: boolean) => setSelected((values) => checked ? [...values, id] : values.filter((value) => value !== id));
+  const selectAll = <Checkbox slotProps={{ input: { 'aria-label': 'Select all visible media' } }} disabled={disabled} checked={Boolean(data?.Items.length) && selected.length === data?.Items.length} indeterminate={selected.length > 0 && selected.length < (data?.Items.length ?? 0)} onChange={(event) => setSelected(event.target.checked ? data?.Items.map((item) => item.Id) ?? [] : [])} />;
+  return <Paper component="section" aria-labelledby="analysis-results-title" variant="outlined" sx={mediaPanelSx}>
+    <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'stretch', md: 'center' }, gap: 2, p: 2.5 }}>
+      <Typography component="h2" variant="h3" id="analysis-results-title" sx={{ flex: 1 }}>Analysis results</Typography>
+      <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }} sx={{ width: { xs: '100%', md: 'auto' } }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5, alignItems: { xs: 'stretch', sm: 'center' } }}>
+          <TextField select label="Filter library" size="small" value={libraryId} disabled={disabled} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">All libraries</MenuItem>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
+          <Box sx={{ width: { xs: '100%', sm: 260 } }}><MediaSearchField label="Search media" value={search} onChange={setSearch} disabled={disabled} maxLength={256} /></Box>
+          <Tooltip title="Refresh results"><span><IconButton aria-label="Refresh results" disabled={disabled || loading} onClick={() => setRevision((value) => value + 1)}><RefreshRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
+        </Stack>
+      </Box>
     </Stack>
+    {error != null && <Box sx={{ px: 2.5, pb: 2.5 }}><ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} /></Box>}
+    {loading && <Box role="status" aria-label="Loading media analysis items" sx={{ px: 2.5, pb: 2.5 }}><Skeleton height={54} /><Skeleton height={54} /></Box>}
+    {data?.Items.length === 0 && <Box sx={{ mx: 2.5, mb: 2.5, p: 4, textAlign: 'center', border: '1px dashed', borderColor: 'divider', borderRadius: '12px' }}><Typography variant="body2" color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography></Box>}
+    {data && data.Items.length > 0 && <>
+      {selected.length > 0 && <Box sx={{ px: 2.5, py: 1, bgcolor: mediaSelected }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'stretch', md: 'center' }, gap: 1 }}>
+          <Typography role="status" aria-atomic="true" variant="body2" sx={{ flex: 1, fontWeight: 600, color: '#0F2A57' }}>{selected.length} {selected.length === 1 ? 'item' : 'items'} selected</Typography>
+          <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+            <Button size="small" disabled={disabled || !introAvailable || chosen.some((item) => item.Type !== 'Episode')} onClick={() => onRun('intro', [], selected)}>Analyze selected episodes</Button>
+            <Button size="small" disabled={disabled || !previewAvailable || chosen.some((item) => !['Movie', 'Episode', 'Video'].includes(item.Type))} onClick={() => onRun('previews', [], selected)}>Build selected previews</Button>
+          </Stack>
+        </Stack>
+      </Box>}
+      <TableContainer sx={{ borderRadius: 0, display: { xs: 'none', md: 'block' } }}>
+        <Table aria-label="Media analysis items" sx={{ '& td, & th': { px: 2.5 }, '& .MuiTableCell-paddingCheckbox': { width: 44, pr: 0, pl: 1.5 } }}>
+          <TableHead><TableRow><TableCell padding="checkbox">{selectAll}</TableCell><TableCell sx={{ width: '46%' }}>Item</TableCell><TableCell sx={{ width: '30%' }}>Intro analysis</TableCell><TableCell>Seek previews</TableCell></TableRow></TableHead>
+          <TableBody>{data.Items.map((item) => <TableRow key={item.Id} selected={selected.includes(item.Id)} hover sx={{ '&.Mui-selected': { bgcolor: 'transparent' }, '&.Mui-selected:hover': { bgcolor: '#F3F6FB' } }}>
+            <TableCell padding="checkbox"><Checkbox slotProps={{ input: { 'aria-label': `Select ${item.Name}` } }} disabled={disabled} checked={selected.includes(item.Id)} onChange={(event) => toggleItem(item.Id, event.target.checked)} /></TableCell>
+            <TableCell component="th" scope="row"><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`Review analysis for ${item.Name}`} sx={{ color: 'text.primary', display: 'block', minHeight: 0, minWidth: 0, p: 0, borderRadius: 0.5, textAlign: 'left', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></TableCell>
+            <TableCell><IntroStatus detection={item.Detection} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell>
+          </TableRow>)}</TableBody>
+        </Table>
+      </TableContainer>
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        <Stack direction="row" sx={{ alignItems: 'center', px: 1.5, py: 0.5, bgcolor: '#F6F8FC' }}>{selectAll}<Typography variant="caption" color="text.secondary">Select all visible media</Typography></Stack>
+        {data.Items.map((item) => <Box key={item.Id} sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 0.5 }}>
+            <Checkbox slotProps={{ input: { 'aria-label': `Select ${item.Name}` } }} disabled={disabled} checked={selected.includes(item.Id)} onChange={(event) => toggleItem(item.Id, event.target.checked)} sx={{ ml: -1, mt: -0.75 }} />
+            <Box sx={{ minWidth: 0, flex: 1 }}><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`Review analysis for ${item.Name}`} sx={{ minHeight: 0, p: 0, color: 'text.primary', textAlign: 'left', overflowWrap: 'anywhere', fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></Box>
+          </Stack>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1.5, pl: 3.5 }}>
+            <Stack spacing={0.75}><Typography variant="caption" color="text.secondary">Intro analysis</Typography><IntroStatus detection={item.Detection} /></Stack>
+            <Stack spacing={0.75} sx={{ alignItems: 'flex-start' }}><Typography variant="caption" color="text.secondary">Seek previews</Typography><PreviewStatus previews={item.Previews} /></Stack>
+          </Box>
+        </Box>)}
+      </Box>
+      {selected.length > 0 && <Typography variant="caption" color="text.secondary" component="p" sx={{ px: 2.5, py: 1.5 }}>Selections apply to this page. Intro analysis requires episodes; previews support movies, episodes, and videos. The Force rebuild choice in Run options applies to both actions.</Typography>}
+    </>}
+    {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} sx={{ borderTop: '1px solid', borderColor: 'divider' }} />}
     {detail && <AnalysisItemDialog id={detail} onClose={() => setDetail(undefined)} onChanged={() => setRevision((value) => value + 1)} onBusyChange={onBusyChange} />}
   </Paper>;
 }

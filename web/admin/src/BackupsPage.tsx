@@ -1,23 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, Paper, Skeleton, Stack, TablePagination, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, IconButton, LinearProgress, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddRounded from '@mui/icons-material/AddRounded';
 import DownloadRounded from '@mui/icons-material/DownloadRounded';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import RestoreRounded from '@mui/icons-material/RestoreRounded';
 import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
+import VerifiedUserRounded from '@mui/icons-material/VerifiedUserRounded';
 import { adminApi, ApiError, isAbortError } from './api';
 import { backupsApi, newBackupRequestId, validateBackupPassphrase } from './backupsApi';
 import type { BackupPage, BackupView, OperationPage, OperationView, SourceView, StatusView } from './backupsApi';
 import { backupAttemptMatchesOperation, backupAttemptResolvedByOperation, readBackupAttempt, removeBackupAttempt, sameBackupAttempt, storeBackupAttempt } from './backupReceipts';
 import type { BackupAttempt, BackupReceiptScope } from './backupReceipts';
 import { ErrorNotice, PageHeading } from './components';
+import { colors } from './theme';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
 
 const pageSize = 25;
-const sectionSpacing = { p: { xs: 2.5, sm: 3 } };
+const sectionSpacing = { p: { xs: 2, sm: 2.5 } };
+const paginationStyles = {
+  borderTop: 1, borderColor: 'divider',
+  '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: 2 },
+  '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } },
+};
 const recoveryMessages: Record<string, string> = {
   storage_unavailable: 'Backup storage is unavailable. Ask the server operator to check the backup storage configuration.',
   tools_unavailable: 'Backup tools are unavailable. Ask the server operator to install the required recovery tools.',
@@ -89,7 +97,7 @@ function passphraseIssue(value: string): string | undefined {
   catch { return 'Use 12–1024 UTF-8 bytes. Some characters use more than one byte. Invalid text characters are not allowed.'; }
 }
 function StateChip({ state }: { state: string }) {
-  return <Chip size="small" variant="outlined" label={readableState(state)} color={state === 'completed' || state === 'ready' ? 'success' : state === 'failed' || state === 'interrupted' ? 'error' : state === 'running' || state === 'applying' ? 'primary' : 'default'} />;
+  return <Chip size="small" label={readableState(state)} color={state === 'completed' || state === 'ready' ? 'success' : state === 'failed' || state === 'interrupted' ? 'error' : state === 'running' || state === 'applying' ? 'primary' : 'default'} />;
 }
 function Digest({ value }: { value: string }) {
   return <Typography component="div" variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>SHA-256: <span className="mono">{value || 'Available when the backup is ready'}</span></Typography>;
@@ -553,10 +561,13 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
   const admissionBusy = unavailable || Boolean(snapshot?.status.Busy);
   const operations = snapshot ? [ ...(tracked && !snapshot.operations.Items.some((operation) => operation.Id === tracked.Id) ? [tracked] : []), ...snapshot.operations.Items.map((operation) => tracked?.Id === operation.Id ? tracked : operation) ] : [];
   const recovering = operations.some((operation) => (operation.Kind === 'restore' || operation.Kind === 'rollback') && (operation.State === 'applying' || operation.Phase === 'activation' || operation.Phase === 'rollback')) || unknownAttempt?.Kind === 'restore' || unknownAttempt?.Kind === 'rollback';
+  const latestUsableBackup = snapshot?.backups.Items.filter((backup) => backup.State === 'ready' && backup.Verified)
+    .reduce<BackupView | undefined>((latest, backup) => !latest || Date.parse(backup.CreatedAt) > Date.parse(latest.CreatedAt) ? backup : latest, undefined);
+  const partialBackupList = Boolean(snapshot && snapshot.backups.TotalRecordCount > snapshot.backups.Items.length);
   const callbacks: AdmissionCallbacks = { onAttempt: beginAttempt, onRejected: clearAttempt, onAccepted: accepted, onUnknown: unknown, onClose: () => setDialog(undefined), onNavigationGuardChange };
   return <>
     <PageHeading title="Backups & recovery" description="Keep encrypted server backups and review recovery changes before applying them." action={<Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button variant="outlined" startIcon={<UploadFileRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'import' })}>Import backup</Button><Button variant="contained" startIcon={<AddRounded />} disabled={admissionBusy} onClick={() => setDialog({ kind: 'create' })}>Create backup</Button></Stack>} />
-    <Stack spacing={3}>
+    <Stack spacing={2.5}>
       {loadError != null && <ErrorNotice error={loadError} retry={reload} />}
       {actionError != null && <ErrorNotice error={actionError} retry={reload} />}
       {notice && <Alert severity="info" role="status" onClose={() => setNotice('')}>{notice}</Alert>}
@@ -564,45 +575,113 @@ export function BackupsPage({ currentUserId, onNavigationGuardChange }: { curren
       {recovering && <Alert severity="warning">Recovery is in progress or awaiting confirmation. If the connection drops, reconnect and sign in with the restored account passwords when asked. Check the completed job after signing in; admission and disconnection do not confirm a successful restore.</Alert>}
       {!snapshot && loading && <Stack role="status" aria-label="Loading backups" spacing={2}><Skeleton variant="rounded" height={140} /><Skeleton variant="rounded" height={250} /></Stack>}
       {snapshot && <>
-        <Paper component="section" aria-labelledby="backup-status-heading" variant="outlined" sx={sectionSpacing}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', gap: 2 }}><Box><Typography id="backup-status-heading" variant="h3" component="h2">Recovery readiness</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>Encrypted backups include server data and settings. Keep copies outside this server.</Typography></Box><Button startIcon={<RefreshRounded />} onClick={reload} disabled={loading} sx={{ alignSelf: 'flex-start' }}>Reconnect</Button></Stack>
-          <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mt: 2 }}><Chip size="small" variant="outlined" color={snapshot.status.Available ? 'success' : 'warning'} label={snapshot.status.Available ? 'Backups available' : 'Backups unavailable'} /><Chip size="small" variant="outlined" color={snapshot.status.RestoreAvailable ? 'success' : 'warning'} label={snapshot.status.RestoreAvailable ? 'Restore configured' : 'Restore unavailable'} />{snapshot.status.Busy && <Chip size="small" color="primary" variant="outlined" label="Recovery job in progress" />}{loadError != null && <Chip size="small" color="warning" label="Last confirmed data" />}</Stack>
+        <Paper component="section" aria-labelledby="backup-status-heading" sx={{ ...sectionSpacing, borderRadius: '20px', bgcolor: colors.surface }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1.8fr) minmax(170px, 1fr) minmax(150px, 0.7fr) auto' }, alignItems: 'center', gap: 2.5 }}>
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
+              <Box sx={{ display: 'grid', placeItems: 'center', width: 48, height: 48, borderRadius: '14px', flexShrink: 0, bgcolor: snapshot.status.Available && snapshot.status.RestoreAvailable ? 'success.light' : 'warning.light', color: snapshot.status.Available && snapshot.status.RestoreAvailable ? 'success.dark' : 'warning.dark' }}><VerifiedUserRounded /></Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography id="backup-status-heading" variant="h3" component="h2">Recovery readiness</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Encrypted backups include server data and settings, without media files. Keep copies outside this server.</Typography>
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                  <Chip size="small" color={snapshot.status.Available ? 'success' : 'warning'} label={snapshot.status.Available ? 'Backups available' : 'Backups unavailable'} />
+                  <Chip size="small" color={snapshot.status.RestoreAvailable ? 'success' : 'warning'} label={snapshot.status.RestoreAvailable ? 'Restore configured' : 'Restore unavailable'} />
+                  {snapshot.status.Busy && <Chip size="small" color="primary" label="Recovery job in progress" />}
+                  {loadError != null && <Chip size="small" color="warning" label="Last confirmed data" />}
+                </Stack>
+              </Box>
+            </Stack>
+            <Box sx={{ pl: { xs: 0, lg: 2.5 }, borderLeft: { lg: 1 }, borderColor: { lg: 'divider' }, minWidth: 0 }}>
+              <Typography variant="caption" color="text.secondary">{partialBackupList ? 'Latest verified on this page' : 'Latest verified backup'}</Typography>
+              <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{latestUsableBackup ? dateTime(latestUsableBackup.CreatedAt) : 'No verified backup'}</Typography>
+              <Typography variant="caption" color="text.secondary">{latestUsableBackup ? `${bytes(latestUsableBackup.SizeBytes)} · Verified` : 'Create a backup or verify an import.'}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Retained rollback copies</Typography>
+              <Typography variant="body1" sx={{ mt: 0.5, fontWeight: 600 }}>{snapshot.status.Rollback.Available ? '1 retained' : 'None available'}</Typography>
+              <Typography variant="caption" color="text.secondary">{snapshot.status.Rollback.Available ? 'Retained from an earlier restore' : 'Kept when applying a restore'}</Typography>
+            </Box>
+            <Tooltip title="Reconnect"><span><IconButton aria-label="Reconnect" onClick={reload} disabled={loading}><RefreshRounded /></IconButton></span></Tooltip>
+          </Box>
           {!snapshot.status.Available && <Alert severity="warning" sx={{ mt: 2 }}>{recoveryMessages[snapshot.status.UnavailableReason] || 'Backup service is unavailable. Ask the server operator to check its configuration.'}</Alert>}
           {!snapshot.status.RestoreAvailable && <Alert severity="info" sx={{ mt: 2 }}>{recoveryMessages[snapshot.status.RestoreUnavailableReason] || 'Restore is currently unavailable. Ask the server operator to check recovery setup.'}</Alert>}
-          <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 2, m: 0, mt: 2.5 }}>
+        </Paper>
+        <Paper component="section" aria-labelledby="backups-heading" variant="outlined" aria-busy={loading} sx={{ overflow: 'hidden' }}>
+          <Box sx={sectionSpacing}>
+            <Stack direction="row" sx={{ gap: 1, alignItems: 'center' }}><Typography id="backups-heading" variant="h3" component="h2">Backups</Typography><Chip size="small" label={snapshot.backups.TotalRecordCount.toLocaleString()} /></Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Downloads are available when a backup is ready. Planning a restore verifies imported files.</Typography>
+          </Box>
+          {snapshot.backups.Items.length === 0 ? <Box sx={{ ...sectionSpacing, pt: 0 }}><Typography variant="body2" color="text.secondary">No backups yet. Create an encrypted backup of this server or import a Goby backup file.</Typography></Box> : <TableContainer sx={{ borderRadius: 0, position: 'relative' }}>
+            <Table aria-label="Backups" sx={{ tableLayout: 'fixed', display: { xs: 'block', md: 'table' } }}>
+              <TableHead sx={{ display: { xs: 'block', md: 'table-header-group' }, position: { xs: 'absolute', md: 'static' }, width: { xs: '1px', md: 'auto' }, height: { xs: '1px', md: 'auto' }, overflow: { xs: 'hidden', md: 'visible' }, clipPath: { xs: 'inset(50%)', md: 'none' } }}><TableRow>
+                <TableCell sx={{ width: '39%' }}>Backup</TableCell><TableCell sx={{ width: '12%' }}>Size</TableCell><TableCell sx={{ width: '16%' }}>Status</TableCell><TableCell align="right" sx={{ width: '33%' }}>Actions</TableCell>
+              </TableRow></TableHead>
+              <TableBody sx={{ display: { xs: 'block', md: 'table-row-group' } }}>
+                {snapshot.backups.Items.map((backup) => <TableRow key={backup.Id} data-testid={`backup-${backup.Id}`} sx={{ display: { xs: 'grid', md: 'table-row' }, gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', borderTop: { xs: `1px solid ${colors.divider}`, md: 0 }, '& > td': { minWidth: 0, borderBottom: { xs: 0, md: `1px solid ${colors.divider}` }, px: { xs: 2, sm: 2.5 } } }}>
+                  <TableCell sx={{ gridColumn: '1 / -1', verticalAlign: 'top' }}>
+                    <Box component="details" sx={{ color: 'text.secondary', fontSize: 12, '& summary': { cursor: 'pointer', width: 'fit-content', color: 'text.primary' }, '&[open] summary': { mb: 0.75 } }}>
+                      <Box component="summary" aria-label={`Details for backup ${backup.Id}`}><Typography component="span" variant="body2" className="mono" sx={{ overflowWrap: 'anywhere', fontWeight: 500 }}>{backup.Id}</Typography></Box>
+                      <Typography variant="caption" component="div" sx={{ mb: 0.5 }}>Created {dateTime(backup.CreatedAt)}</Typography><Digest value={backup.SHA256} />
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.4, overflowWrap: 'anywhere' }}>{backup.Kind === 'generated' ? 'Created here' : 'Imported'}{backup.Source ? ` · ${backup.Source.ServerName || 'Unnamed server'}` : ''}</Typography>
+                    {backup.ErrorCode && <Alert severity={backup.State === 'cancelled' ? 'info' : 'error'} sx={{ mt: 1.5 }}>{recoveryMessages[backup.ErrorCode] || 'This backup could not be completed. Check its job before trying again.'}</Alert>}
+                  </TableCell>
+                  <TableCell sx={{ verticalAlign: 'top', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', pt: { xs: 0, md: 2 } }}><Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', md: 'none' }, mb: 0.5 }}>Size</Typography>{bytes(backup.SizeBytes)}</TableCell>
+                  <TableCell sx={{ verticalAlign: 'top', pt: { xs: 0, md: 2 } }}><Stack sx={{ alignItems: 'flex-start', gap: 0.75 }}><StateChip state={backup.State} /><Typography variant="caption" color={backup.Verified ? 'text.secondary' : 'warning.dark'}>{backup.Verified ? 'Verified' : 'Not verified'}</Typography></Stack></TableCell>
+                  <TableCell align="right" sx={{ gridColumn: '1 / -1', verticalAlign: 'top', pt: { xs: 0, md: 1.25 } }}>
+                    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, justifyContent: { xs: 'flex-start', md: 'flex-end' }, '& .MuiButton-root': { px: 1.25 } }}>
+                      <Button size="small" startIcon={<DownloadRounded />} disabled={unavailable || backup.State !== 'ready'} onClick={() => void download(backup)}>Download</Button>
+                      <Button size="small" startIcon={<RestoreRounded />} disabled={admissionBusy || !snapshot.status.RestoreAvailable || backup.State !== 'ready'} onClick={() => setDialog({ kind: 'plan', backup, status: snapshot.status })}>Plan restore</Button>
+                      <Tooltip title="Delete backup"><span><IconButton aria-label="Delete backup" size="small" disabled={admissionBusy || ['writing', 'deleting'].includes(backup.State)} onClick={() => setDialog({ kind: 'delete', backup })} sx={{ color: 'error.main', width: 36, height: 36 }}><DeleteOutlineRounded sx={{ fontSize: 18 }} /></IconButton></span></Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>)}
+              </TableBody>
+            </Table>
+          </TableContainer>}
+          <TablePagination component="div" count={snapshot.backups.TotalRecordCount} page={Math.floor(backupStart / pageSize)} rowsPerPage={pageSize} rowsPerPageOptions={[pageSize]} onPageChange={(_, page) => setBackupStart(page * pageSize)} labelRowsPerPage="Backups per page" sx={paginationStyles} />
+          <Box component="dl" sx={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', m: 0, px: 2.5, py: 1.5, bgcolor: colors.surface, borderTop: 1, borderColor: 'divider' }}>
             {[
               ['Storage used', `${bytes(snapshot.status.Storage.Bytes)} of ${bytes(snapshot.status.Limits.MaxStoredBytes)}`],
               ['Stored backups', `${snapshot.status.Storage.Objects.toLocaleString()} of ${snapshot.status.Limits.MaxBackups.toLocaleString()}`],
               ['Maximum backup size', bytes(snapshot.status.Limits.MaxBackupBytes)],
-            ].map(([label, value]) => <Box key={label}><Typography component="dt" variant="caption" color="text.secondary">{label}</Typography><Typography component="dd" variant="body2" sx={{ m: 0, mt: 0.3, fontWeight: 650, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography></Box>)}
+            ].map(([label, value]) => <Box key={label} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}><Typography component="dt" variant="caption" color="text.secondary">{label}:</Typography><Typography component="dd" variant="caption" sx={{ m: 0, fontVariantNumeric: 'tabular-nums' }}>{value}</Typography></Box>)}
           </Box>
         </Paper>
-        <Paper component="section" aria-labelledby="backups-heading" variant="outlined" aria-busy={loading}>
-          <Box sx={sectionSpacing}><Typography id="backups-heading" variant="h3" component="h2">Backups</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>Downloads are available when a backup is ready. Planning a restore verifies imported files.</Typography></Box>
-          {snapshot.backups.Items.length === 0 ? <Box sx={{ ...sectionSpacing, pt: 0 }}><Typography variant="body2" color="text.secondary">No backups yet. Create an encrypted backup of this server or import a Goby backup file.</Typography></Box> : <Box component="ul" aria-label="Backups" sx={{ m: 0, p: 0, listStyle: 'none' }}>
-            {snapshot.backups.Items.map((backup) => <Box component="li" key={backup.Id} data-testid={`backup-${backup.Id}`} sx={{ ...sectionSpacing, borderTop: 1, borderColor: 'divider' }}>
-              <Stack direction={{ xs: 'column', lg: 'row' }} sx={{ justifyContent: 'space-between', gap: 2 }}><Box sx={{ minWidth: 0 }}><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}><Typography variant="h4" component="h3">{dateTime(backup.CreatedAt)}</Typography><StateChip state={backup.State} /><Chip variant="outlined" size="small" label={backup.Verified ? 'Verified' : 'Not verified'} /></Stack><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{backup.Kind === 'generated' ? 'Created here' : 'Imported'} · {bytes(backup.SizeBytes)}{backup.Source ? ` · ${backup.Source.ServerName || 'Unnamed server'}` : ''}</Typography><Typography variant="caption" className="mono" color="text.secondary" component="div" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{backup.Id}</Typography></Box>
-                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, alignItems: 'flex-start', flexShrink: 0 }}><Button size="small" startIcon={<DownloadRounded />} disabled={unavailable || backup.State !== 'ready'} onClick={() => void download(backup)}>Download</Button><Button size="small" disabled={admissionBusy || !snapshot.status.RestoreAvailable || backup.State !== 'ready'} onClick={() => setDialog({ kind: 'plan', backup, status: snapshot.status })}>Plan restore</Button><Button size="small" color="error" disabled={admissionBusy || ['writing', 'deleting'].includes(backup.State)} onClick={() => setDialog({ kind: 'delete', backup })}>Delete backup</Button></Stack>
-              </Stack><Box sx={{ mt: 1.5 }}><Digest value={backup.SHA256} /></Box>{backup.ErrorCode && <Alert severity={backup.State === 'cancelled' ? 'info' : 'error'} sx={{ mt: 2 }}>{recoveryMessages[backup.ErrorCode] || 'This backup could not be completed. Check its job before trying again.'}</Alert>}
-            </Box>)}
-          </Box>}
-          <TablePagination component="div" count={snapshot.backups.TotalRecordCount} page={Math.floor(backupStart / pageSize)} rowsPerPage={pageSize} rowsPerPageOptions={[pageSize]} onPageChange={(_, page) => setBackupStart(page * pageSize)} labelRowsPerPage="Backups per page" sx={{ borderTop: 1, borderColor: 'divider', '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 1, sm: 2 } }, '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } } }} />
-        </Paper>
-        <Paper component="section" aria-labelledby="backup-jobs-heading" variant="outlined" aria-busy={loading}>
-          <Box sx={sectionSpacing}><Stack direction="row" sx={{ gap: 1, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}><Typography id="backup-jobs-heading" tabIndex={-1} variant="h3" component="h2">Backup jobs</Typography><Typography variant="caption" color="text.secondary" role="status">{polling ? 'Checking active jobs automatically' : 'Showing the last confirmed state'}</Typography></Stack><Typography variant="body2" color="text.secondary" sx={{ mt: 0.6 }}>An accepted request starts a job. Review its state to confirm the outcome.</Typography></Box>
-          {operations.length === 0 ? <Box sx={{ ...sectionSpacing, pt: 0 }}><Typography variant="body2" color="text.secondary">No backup or recovery jobs have been recorded.</Typography></Box> : <Box component="ul" aria-label="Backup jobs" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-            {operations.map((operation) => <Box component="li" key={operation.Id} data-testid={`operation-${operation.Id}`} sx={{ ...sectionSpacing, borderTop: 1, borderColor: 'divider' }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 2, justifyContent: 'space-between' }}><Box sx={{ minWidth: 0 }}><Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}><Typography variant="h4" component="h3">{kindLabels[operation.Kind]}</Typography><StateChip state={operation.State} /></Stack><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{phaseLabels[operation.Phase]} · Updated {dateTime(operation.UpdatedAt)}</Typography><Typography variant="caption" component="div" className="mono" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{operation.Id}</Typography></Box><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, flexShrink: 0, alignItems: 'flex-start' }}>{operation.Kind === 'restore' && <Button size="small" disabled={Boolean(actionBusy)} onClick={() => setDialog({ kind: 'inspect', operationId: operation.Id })}>Inspect plan</Button>}{operation.CanCancel && <Button size="small" color="error" disabled={Boolean(actionBusy) || Boolean(loadError) || loading} onClick={() => void cancel(operation)}>Cancel job</Button>}</Stack></Stack>
-              {operation.State === 'ready' && operation.CanApply && <Alert severity="info" sx={{ mt: 2 }}>The backup was checked and the restore plan is ready. Inspect its source and settings before applying it.</Alert>}
-              {operation.ErrorCode && <Alert severity={operation.State === 'cancelled' ? 'info' : 'error'} sx={{ mt: 2 }}>{recoveryMessages[operation.ErrorCode] || 'This job did not complete. Refresh its state and review the current server before trying again.'}</Alert>}
-              {operation.State === 'completed' && (operation.Kind === 'restore' || operation.Kind === 'rollback') && <Alert severity="success" sx={{ mt: 2 }}>The server records this recovery job as completed. Reconnect to confirm access and review your server data before resuming normal work.</Alert>}
-            </Box>)}
-          </Box>}
-          <TablePagination component="div" count={snapshot.operations.TotalRecordCount} page={Math.floor(operationStart / pageSize)} rowsPerPage={pageSize} rowsPerPageOptions={[pageSize]} onPageChange={(_, page) => setOperationStart(page * pageSize)} labelRowsPerPage="Jobs per page" sx={{ borderTop: 1, borderColor: 'divider', '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 1, sm: 2 } }, '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } } }} />
-        </Paper>
-        <Paper component="section" aria-labelledby="rollback-heading" variant="outlined" sx={sectionSpacing}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', gap: 2 }}><Box><Stack direction="row" sx={{ gap: 1, alignItems: 'center' }}><ShieldOutlined color="primary" /><Typography id="rollback-heading" variant="h3" component="h2">Retained rollback copy</Typography></Stack><Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 720 }}>{snapshot.status.Rollback.Available ? `A retained copy of ${snapshot.status.Rollback.ServerName || 'this server'}${snapshot.status.Rollback.CreatedAt ? ` from ${dateTime(snapshot.status.Rollback.CreatedAt)}` : ''} is available. Rolling back requires confirmation and signs everyone out.` : recoveryMessages[snapshot.status.Rollback.UnavailableReason] || 'No verified rollback copy is available. Applying a restore preserves the previously active server for recovery.'}</Typography></Box><Button variant="outlined" color="secondary" startIcon={<RestoreRounded />} disabled={admissionBusy || !snapshot.status.Rollback.Available || !snapshot.status.RestoreAvailable} onClick={() => setDialog({ kind: 'rollback', status: snapshot.status })} sx={{ alignSelf: 'flex-start', flexShrink: 0 }}>Roll back</Button></Stack>
-        </Paper>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))', gap: 2.5, alignItems: 'start' }}>
+          <Paper component="section" aria-labelledby="backup-jobs-heading" variant="outlined" aria-busy={loading} sx={{ minWidth: 0, overflow: 'hidden' }}>
+            <Box sx={sectionSpacing}>
+              <Stack direction="row" sx={{ gap: 1, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}><Typography id="backup-jobs-heading" tabIndex={-1} variant="h3" component="h2">Backup jobs</Typography><Typography variant="caption" color="text.secondary" role="status">{polling ? 'Checking active jobs automatically' : 'Showing the last confirmed state'}</Typography></Stack>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>An accepted request starts a job. Review its state to confirm the outcome.</Typography>
+            </Box>
+            {operations.length === 0 ? <Box sx={{ ...sectionSpacing, pt: 0 }}><Typography variant="body2" color="text.secondary">No backup or recovery jobs have been recorded.</Typography></Box> : <Box component="ul" aria-label="Backup jobs" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+              {operations.map((operation) => <Box component="li" key={operation.Id} data-testid={`operation-${operation.Id}`} sx={{ ...sectionSpacing, borderTop: 1, borderColor: 'divider' }}>
+                <Stack direction="row" sx={{ gap: 1, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}><Typography variant="h4" component="h3" sx={{ fontSize: 14 }}>{kindLabels[operation.Kind]}</Typography><StateChip state={operation.State} /></Stack>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{phaseLabels[operation.Phase]}</Typography>
+                {activeOperation(operation) && <LinearProgress aria-label={`${kindLabels[operation.Kind]} in progress`} sx={{ mt: 1.25, mb: 1.5, '@media (prefers-reduced-motion: reduce)': { '& .MuiLinearProgress-bar': { animation: 'none' } } }} />}
+                <Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.5 }}>Updated {dateTime(operation.UpdatedAt)}</Typography>
+                <Typography variant="caption" component="div" className="mono" color="text.secondary" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{operation.Id}</Typography>
+                {(operation.Kind === 'restore' || operation.CanCancel) && <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, mt: 1, mx: -1.25, '& .MuiButton-root': { px: 1.25 } }}>
+                  {operation.Kind === 'restore' && <Button size="small" disabled={Boolean(actionBusy)} onClick={() => setDialog({ kind: 'inspect', operationId: operation.Id })}>Inspect plan</Button>}
+                  {operation.CanCancel && <Button size="small" color="error" disabled={Boolean(actionBusy) || Boolean(loadError) || loading} onClick={() => void cancel(operation)}>Cancel job</Button>}
+                </Stack>}
+                {operation.State === 'ready' && operation.CanApply && <Alert severity="info" sx={{ mt: 2 }}>The backup was checked and the restore plan is ready. Inspect its source and settings before applying it.</Alert>}
+                {operation.ErrorCode && <Alert severity={operation.State === 'cancelled' ? 'info' : 'error'} sx={{ mt: 2 }}>{recoveryMessages[operation.ErrorCode] || 'This job did not complete. Refresh its state and review the current server before trying again.'}</Alert>}
+                {operation.State === 'completed' && (operation.Kind === 'restore' || operation.Kind === 'rollback') && <Alert severity="success" sx={{ mt: 2 }}>The server records this recovery job as completed. Reconnect to confirm access and review your server data before resuming normal work.</Alert>}
+              </Box>)}
+            </Box>}
+            <TablePagination component="div" count={snapshot.operations.TotalRecordCount} page={Math.floor(operationStart / pageSize)} rowsPerPage={pageSize} rowsPerPageOptions={[pageSize]} onPageChange={(_, page) => setOperationStart(page * pageSize)} labelRowsPerPage="Jobs per page" sx={paginationStyles} />
+          </Paper>
+          <Paper component="section" aria-labelledby="rollback-heading" variant="outlined" sx={{ ...sectionSpacing, minWidth: 0 }}>
+            <Stack direction="row" sx={{ gap: 1, alignItems: 'center' }}><ShieldOutlined color="primary" sx={{ fontSize: 20 }} /><Typography id="rollback-heading" variant="h3" component="h2">Retained rollback copy</Typography></Stack>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{snapshot.status.Rollback.Available ? `A retained copy of ${snapshot.status.Rollback.ServerName || 'this server'}${snapshot.status.Rollback.CreatedAt ? ` from ${dateTime(snapshot.status.Rollback.CreatedAt)}` : ''} is available. Rolling back requires confirmation and signs everyone out.` : recoveryMessages[snapshot.status.Rollback.UnavailableReason] || 'No verified rollback copy is available. Applying a restore preserves the previously active server for recovery.'}</Typography>
+            {snapshot.status.Rollback.Available && <Box sx={{ p: 2, mt: 2, borderRadius: '12px', bgcolor: colors.surface }}>
+              <Stack direction="row" sx={{ gap: 1, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}><Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{snapshot.status.Rollback.ServerName || 'This server'}</Typography><Chip size="small" color="success" label="Available" /></Stack>
+              {snapshot.status.Rollback.CreatedAt && <Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.75 }}>{dateTime(snapshot.status.Rollback.CreatedAt)}</Typography>}
+              <Typography variant="caption" component="div" className="mono" color="text.secondary" sx={{ mt: 0.75, overflowWrap: 'anywhere' }}>{snapshot.status.Rollback.Generation}</Typography>
+            </Box>}
+            <Button variant="outlined" startIcon={<RestoreRounded />} disabled={admissionBusy || !snapshot.status.Rollback.Available || !snapshot.status.RestoreAvailable} onClick={() => setDialog({ kind: 'rollback', status: snapshot.status })} sx={{ mt: 2 }}>Roll back</Button>
+          </Paper>
+        </Box>
       </>}
     </Stack>
     {(dialog?.kind === 'create' || dialog?.kind === 'import') && snapshot && <BackupAdmissionDialog {...callbacks} kind={dialog.kind} status={snapshot.status} />}

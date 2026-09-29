@@ -97,8 +97,9 @@ const panel = (page: Page) => page.getByRole('region', { name: 'Media diagnostic
 const history = (page: Page) => panel(page).getByRole('table', { name: 'Recent media diagnostic runs', exact: true });
 
 async function openDiagnostics(page: Page): Promise<void> {
-  await page.goto('/admin/settings');
+  await page.goto('/admin/settings/hardware');
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Hardware acceleration', exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(panel(page)).toBeVisible();
   await expect(panel(page).getByRole('button', { name: 'Refresh diagnostics', exact: true })).toBeEnabled();
 }
