@@ -1,12 +1,41 @@
 # Goby handoff - September 30, 2026
 
-Latest increment: [Docker installation and operations](docker-operations-20260930.md)
+Latest increment: [automatic TV-library intros](library-intro-automation-20260930.md).
+The user workflow is a single **Automatic intro detection** checkbox in TV
+library settings. Enabled libraries are analyzed in the background; qualified
+results are used directly and absent/unreliable results do nothing. No manual
+review or correction is required. Progress, failures and stopping remain in Tasks;
+manual BIF preview generation remains separate.
+
+The current Docker application source is
+`95607ffa505c7a9368b1bfd8ec3d545d009285d3`, schema 51. Existing libraries remain
+off after upgrading until explicitly enabled. Successful scans request automatic
+follow-up; disable withdraws detected markers, and re-enable requires new work.
+The requirement for at least three independent episodes and the first 600 seconds
+of analysis is unchanged. Earlier corpus and client acceptance is not broadened.
+
+The actual Docker journey produced three qualified and two expected no-result
+outcomes through library enablement, followed by an automatic run after scanning,
+then disable/container recreation without detected markers. Focused checks have
+135 Go parent passes and 27 UI passes; one historical fixture-dependent UI skip
+is retained. These counts are not full-product totals. Read the
+[result manifest](library-intro-automation-results-20260930.json) for final
+artifact identities, evidence and owned-resource closure.
+
+Use the [quick start](../../deploy/oci/QUICKSTART.md) and
+[current release catalog](../../deploy/oci/current-release.json). Current images
+are under `D:/Code/goby/.artifacts/intro-automation-20260930/software` and `amd`;
+the matching `goby-docker-operations.zip` is in the parent directory. Git
+integration is recorded separately. TMDB/OpenSubtitles and new scraper research
+remain deferred; credentials are not a blocker for this workflow.
+
+Previous completed increment: [Docker installation and operations](docker-operations-20260930.md)
 has completed verification and owned-resource closure. Start with the
 [Docker quick start](../../deploy/oci/QUICKSTART.md). The helper offers
 `prepare`, `check`, `start`, `status`, `logs` and `stop`, while
-[current-release.json](../../deploy/oci/current-release.json) binds the accepted
-software and AMD archives and immutable image IDs. Application source
-`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` is unchanged; no new image was built.
+the checkpoint catalog bound software and AMD archives at application source
+`76d64bf0087f3cd2e40addde8067f4e6e65b2bac`. No new image was built during that
+operations-only increment. Current application/archive identities are listed above.
 
 Fourteen helper tests and the composed actual software Docker preparation,
 startup, administrator bootstrap, scan, direct playback, database outage/recovery
@@ -15,9 +44,9 @@ and stop journey passed. The `runtime01`/`runtime02` failures and the limited
 There are no owned containers or networks; private PostgreSQL on port 55995 is
 stopped. Data and failure evidence are retained, with unrelated services unchanged.
 
-The small toolkit ZIP is
+That operations toolkit ZIP is retained at
 `D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
-Reuse the existing image archives under
+Its original image archives are retained under
 `D:/Code/goby/.artifacts/oci-providers-20260930/software` and `amd`.
 Git integration is recorded separately from these acceptance receipts.
 Do not continue TMDB/OpenSubtitles or new scraper research: the user deferred

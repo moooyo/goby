@@ -2,13 +2,15 @@ export interface LibraryOptions {
   EnableLocalMetadata: boolean;
   EnableLocalImages: boolean;
   EnableEmbeddedArtwork?: boolean;
+  EnableIntroDetection?: boolean;
 }
 
 export function validLibraryOptions(value: unknown): value is LibraryOptions {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
   return 'EnableLocalMetadata' in value && typeof value.EnableLocalMetadata === 'boolean'
     && 'EnableLocalImages' in value && typeof value.EnableLocalImages === 'boolean'
-    && (!('EnableEmbeddedArtwork' in value) || typeof value.EnableEmbeddedArtwork === 'boolean');
+    && (!('EnableEmbeddedArtwork' in value) || typeof value.EnableEmbeddedArtwork === 'boolean')
+    && (!('EnableIntroDetection' in value) || typeof value.EnableIntroDetection === 'boolean');
 }
 
 export function completeLibraryOptions(value: LibraryOptions): Required<LibraryOptions> {
@@ -16,5 +18,6 @@ export function completeLibraryOptions(value: LibraryOptions): Required<LibraryO
     EnableLocalMetadata: value.EnableLocalMetadata,
     EnableLocalImages: value.EnableLocalImages,
     EnableEmbeddedArtwork: value.EnableEmbeddedArtwork ?? true,
+    EnableIntroDetection: value.EnableIntroDetection ?? false,
   };
 }

@@ -1,6 +1,6 @@
 import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Page, Request, Route } from '@playwright/test';
-import type { TaskRun } from '../src/api';
+import type { TaskChild, TaskDefinition, TaskRun } from '../src/api';
 import type { AnalysisItem, AnalysisOverview, AnalysisProfile, AnalysisRunInput } from '../src/mediaAnalysis';
 
 // These browser checks use an explicit synthetic API. They cover the native
@@ -18,9 +18,9 @@ function overview(): AnalysisOverview {
 function item(): AnalysisItem {
   return { Id: 'episode-1', Name: 'Opening episode', Type: 'Episode', LibraryId: 'library-series', MediaSourceId: 'media-1', SourceRevision: 'source-current', Previews: [
     { Width: 320, Height: 180, Size: 32768, FrameCount: 12, Status: 'ready', FailureCode: '', UpdatedAt: stamp },
-  ], Detection: { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'review', Reasons: ['short_interval_requires_review'], Suppressed: false, UpdatedAt: stamp,
-    Effective: { StartTicks: 0, EndTicks: 100_000_000, Provenance: 'Manual' },
-    Candidate: { Interval: { StartTicks: 100_000_000, EndTicks: 400_000_000 }, GroupID: 'comparison-group', Status: 'review', Reasons: ['short_interval_requires_review'], Metrics: {
+  ], Detection: { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'qualified', Reasons: [], Suppressed: false, UpdatedAt: stamp,
+    Effective: { StartTicks: 100_000_000, EndTicks: 400_000_000, Provenance: 'Detected' },
+    Candidate: { Interval: { StartTicks: 100_000_000, EndTicks: 400_000_000 }, GroupID: 'comparison-group', Status: 'qualified', Reasons: [], Metrics: {
       AudioAgreementPermille: 920, AudioInformativePermille: 750, AudioSimilarityPermille: 930, AudioSamples: 100, AudioDistinct: 40,
       VisualAgreementPermille: 940, VisualSimilarityPermille: 950, VisualCoveragePermille: 900, VisualSamples: 40, VisualTransitions: 8,
       VisualChangeCoveragePermille: 500, VisualDominancePermille: 200, BoundaryUncertaintyTicks: 10_000_000, PairCount: 3,
@@ -38,9 +38,16 @@ function run(): TaskRun {
 async function json(route: Route, value: unknown, status = 200): Promise<void> { await route.fulfill({ status, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify(value) }); }
 interface Captured { method: string; path: string; body: unknown; csrf?: string }
 class AnalysisAPI {
-  overview = overview(); item = item(); run = run(); requests: Captured[] = []; unexpected: string[] = [];
+  overview = overview(); item = item(); run = run(); children: TaskChild[] = []; showIntroTask = false; requests: Captured[] = []; unexpected: string[] = [];
   handlers = new Map<string, (route: Route, request: Request) => Promise<void>>();
   writes(path?: string): Captured[] { return this.requests.filter((value) => value.method !== 'GET' && (!path || value.path === path)); }
+  introTask(): TaskDefinition {
+    const active = ['pending', 'running', 'stopping'].includes(this.run.State);
+    return { Id: this.run.TaskId, Key: 'media.intro_analysis', Name: 'Automatic intro detection', Description: 'Analyze enabled TV libraries in the background.', Category: 'Media analysis',
+      IsHidden: false, Enabled: true, Revision: '1', ScheduleTimezone: 'UTC', CurrentRun: active ? this.run : null, LastRun: active ? null : this.run, NextRunAt: null,
+      Triggers: [{ Id: 'intro-trigger', Kind: 'system_event', SystemEvent: 'IntroAnalysisRequested', IntervalTicks: null, TimeOfDayTicks: null, DayOfWeek: null, MaxRuntimeTicks: null, NextFireAt: null, CalculationError: '' }],
+    };
+  }
   async install(context: BrowserContext): Promise<void> {
     await context.route(/\/admin\/v1(?:\/|\?|$)/, async (route, request) => {
       const url = new URL(request.url()); const path = url.pathname; const method = request.method();
@@ -51,11 +58,17 @@ class AnalysisAPI {
         if (path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
         if (path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrf });
         if (path === '/admin/v1/libraries') return json(route, { Items: [{ Id: 'library-series', Name: 'Series library', CollectionType: 'tvshows', Paths: [], CreatedAt: stamp, LastScanAt: stamp }], TotalRecordCount: 1 });
+        if (path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/synthetic/media', Available: true }] });
         if (path === '/admin/v1/media-analysis') return json(route, this.overview);
         if (path === '/admin/v1/media-analysis/items') return json(route, { Items: [this.item], TotalRecordCount: 1, StartIndex: Number(url.searchParams.get('StartIndex')), Limit: Number(url.searchParams.get('Limit')) });
         if (path === '/admin/v1/media-analysis/items/episode-1') return json(route, this.item);
-        if (path === '/admin/v1/task-runs/analysis-run-1') return json(route, { Run: this.run, Children: { Items: [], TotalRecordCount: 0, StartIndex: 0, Limit: 25 } });
-        if (path === '/admin/v1/tasks') return json(route, { Items: [], TotalRecordCount: 0 });
+        if (path === '/admin/v1/task-runs/analysis-run-1') {
+          const start = Number(url.searchParams.get('StartIndex') ?? '0');
+          const limit = Number(url.searchParams.get('Limit') ?? '50');
+          return json(route, { Run: this.run, Children: { Items: this.children.slice(start, start + limit), TotalRecordCount: this.children.length, StartIndex: start, Limit: limit } });
+        }
+        if (path === '/admin/v1/tasks') return json(route, { Items: this.showIntroTask ? [this.introTask()] : [], TotalRecordCount: this.showIntroTask ? 1 : 0 });
+        if (path === '/admin/v1/tasks/analysis-task-1') return json(route, { Task: this.introTask() });
       }
       if (method === 'PUT' && path === '/admin/v1/media-analysis/configuration') {
         const input = captured.body as { Revision: string; Profile: AnalysisProfile };
@@ -68,15 +81,6 @@ class AnalysisAPI {
         return json(route, { RunId: this.run.Id, TaskId: this.run.TaskId, Admitted: true }, 202);
       }
       if (method === 'POST' && path === '/admin/v1/task-runs/analysis-run-1/cancel') { this.run.State = 'stopping'; this.run.StopRequestedAt = stamp; return json(route, { Run: this.run }); }
-      if (method === 'POST' && path === '/admin/v1/media-analysis/items/episode-1/decision') {
-        const input = captured.body as { Revision: string; SourceRevision: string; ManualRevision: string; Action: string };
-        if (input.Revision !== this.item.Detection.Revision || input.SourceRevision !== this.item.SourceRevision || input.ManualRevision !== this.item.Detection.ManualRevision) return json(route, { Error: { Code: 'revision_conflict', Message: 'The source or manual intro changed.' } }, 409);
-        this.item.Detection.Revision = (BigInt(input.Revision) + 1n).toString();
-        if (input.Action === 'accept') { this.item.Detection.Effective = { ...this.item.Detection.Candidate!.Interval, Provenance: 'Manual' }; this.item.Detection.ManualRevision = (BigInt(input.ManualRevision) + 1n).toString(); }
-        if (input.Action === 'reject') this.item.Detection.Suppressed = true;
-        if (input.Action === 'reset') this.item.Detection.Suppressed = false;
-        return json(route, this.item.Detection);
-      }
       if (method === 'POST' && path === '/admin/v1/media-analysis/cache/prune') {
         if ((captured.body as { Revision: string }).Revision !== this.overview.Configuration.Revision) return json(route, { Error: { Code: 'revision_conflict', Message: 'Configuration changed.' } }, 409);
         return json(route, { RemovedEntries: 1, RemovedBytes: 1024, RemainingBytes: 5 * 2 ** 20, BusyEntries: 2 });
@@ -90,15 +94,16 @@ const test = base.extend<{ api: AnalysisAPI }>({ api: async ({ context, page }, 
   expect(api.unexpected).toEqual([]); expect(errors).toEqual([]); expect(api.writes().every((value) => value.csrf === csrf)).toBe(true);
 } });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
-async function open(page: Page): Promise<void> { await page.goto('/admin/media-analysis'); await expect(page.getByRole('heading', { name: 'Media analysis', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Review analysis for Opening episode' })).toBeEnabled(); }
+async function open(page: Page): Promise<void> { await page.goto('/admin/media-analysis'); await expect(page.getByRole('heading', { name: 'Media analysis', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'View analysis for Opening episode' })).toBeEnabled(); }
 
-test('configuration conflicts preserve a complete draft and reload the exact revision before retry', async ({ page, api }) => {
+test('configuration conflicts preserve preview edits and publication stays automatic', async ({ page, api }) => {
+  api.overview.Configuration.Profile.AutoPublishIntros = false;
   await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
   const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
   await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('1');
   await expect(configuration.getByRole('button', { name: 'Save analysis configuration' })).toBeDisabled(); expect(api.writes()).toHaveLength(0);
   await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('20');
-  await configuration.getByRole('switch', { name: 'Automatically publish qualified detected intros' }).uncheck();
+  await expect(configuration.getByRole('switch', { name: 'Automatically publish qualified detected intros' })).toHaveCount(0);
   api.overview.Configuration.Revision = '9007199254740995';
   await configuration.getByRole('button', { name: 'Save analysis configuration' }).click();
   await expect(configuration.getByText('Configuration changed.', { exact: true })).toBeVisible();
@@ -109,22 +114,21 @@ test('configuration conflicts preserve a complete draft and reload the exact rev
   await configuration.getByRole('button', { name: 'Save analysis configuration' }).click();
   await expect(configuration.getByText('Analysis configuration saved. New runs use this profile.')).toBeVisible();
   const writes = api.writes('/admin/v1/media-analysis/configuration'); expect(writes).toHaveLength(2);
-  expect(writes[1].body).toEqual({ Revision: '9007199254740995', Profile: { ...profile, PreviewIntervalSeconds: 20, AutoPublishIntros: false } });
+  expect(writes[1].body).toEqual({ Revision: '9007199254740995', Profile: { ...profile, PreviewIntervalSeconds: 20, AutoPublishIntros: true } });
 });
 
-test('explicit library scope and Force create a recorded run and stop remains pending until workers finish', async ({ page, api }) => {
-  await open(page); await expect(page.getByRole('button', { name: 'Start analysis' })).toBeDisabled();
+test('preview scope and rebuild retain recorded progress and truthful stop handling', async ({ page, api }) => {
+  await open(page); await expect(page.getByRole('button', { name: 'Build library previews' })).toBeDisabled();
   await page.getByRole('checkbox', { name: 'Series library', exact: true }).check();
   await page.getByRole('button', { name: 'Run options', exact: true }).click();
   const options = page.getByRole('dialog', { name: 'Run options', exact: true });
-  await options.getByRole('checkbox', { name: 'Force rebuild existing analysis and previews' }).check();
+  await options.getByRole('checkbox', { name: 'Rebuild existing previews' }).check();
   await options.getByRole('button', { name: 'Done', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Analysis type' })).toHaveText('Intro analysis');
-  await page.getByRole('button', { name: 'Start analysis' }).click();
+  await page.getByRole('button', { name: 'Build library previews' }).click();
   const progress = page.getByRole('region', { name: 'Analysis task progress' });
   await expect(progress).toContainText('1 of 3 work items finished');
   const input = api.writes('/admin/v1/media-analysis/runs')[0].body as AnalysisRunInput;
-  expect(input).toMatchObject({ Kind: 'intro', LibraryIds: ['library-series'], ItemIds: [], Force: true }); expect(input.RequestId).toMatch(/^[0-9a-f-]{36}$/);
+  expect(input).toMatchObject({ Kind: 'previews', LibraryIds: ['library-series'], ItemIds: [], Force: true }); expect(input.RequestId).toMatch(/^[0-9a-f-]{36}$/);
   await progress.getByRole('button', { name: 'Request stop', exact: true }).click();
   await expect(progress).toContainText('The task remains active until its workers finish'); await expect(progress).toContainText('1 of 3 work items finished');
   api.run = { ...api.run, State: 'cancelled', TerminalChildren: 3, CancelledChildren: 2, FinishedAt: stamp };
@@ -133,37 +137,35 @@ test('explicit library scope and Force create a recorded run and stop remains pe
   await page.getByRole('button', { name: 'Open tasks', exact: true }).click(); await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
 });
 
-test('candidate review uses both CAS values, retains manual priority through rejection and supports reset', async ({ page, api }) => {
-  await open(page); await page.getByRole('button', { name: 'Review analysis for Opening episode' }).click();
+test('available intros show only the playback interval and preserve seek previews', async ({ page, api }) => {
+  await open(page); await page.getByRole('button', { name: 'View analysis for Opening episode' }).click();
   const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true });
-  await expect(detail).toContainText('Supporting episodes (3)'); await expect(detail).toContainText('Audio similarity: 930 / 1000'); await expect(detail).toContainText('Manual');
-  await expect(detail).toContainText('Confirmed visual coverage: 87.5%'); await expect(detail).toContainText('Longest unconfirmed gap: 2.50 seconds');
-  await detail.getByRole('button', { name: 'Accept candidate', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Accept this candidate as a manual intro?' }).getByRole('button', { name: 'Accept as manual intro' }).click();
-  await expect(detail).toContainText('0:10.00–0:40.00 · Manual');
-  expect(api.writes('/admin/v1/media-analysis/items/episode-1/decision')[0].body).toEqual({ Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Action: 'accept' });
-  await detail.getByRole('button', { name: 'Reject detected intro', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Reject this detected intro?' }).getByRole('button', { name: 'Reject detected intro' }).click();
-  await expect(detail).toContainText('Detected intro suppressed for this source'); await expect(detail).toContainText('0:10.00–0:40.00 · Manual');
-  await detail.getByRole('button', { name: 'Reset detection decision', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Reset this detection decision?' }).getByRole('button', { name: 'Reset detection decision' }).click();
-  await expect(detail.getByText('Detected intro suppressed for this source')).toHaveCount(0);
-  expect(api.writes('/admin/v1/media-analysis/items/episode-1/decision').map((value) => (value.body as { Action: string }).Action)).toEqual(['accept', 'reject', 'reset']);
+  await expect(detail).toContainText('Intro available');
+  await expect(detail).toContainText('0:10.00–0:40.00');
+  await expect(detail.getByRole('table', { name: 'Preview outputs' })).toContainText('320 × 180');
+  await expect(detail.getByRole('button', { name: /Accept|Reject|Reset/ })).toHaveCount(0);
+  await expect(detail.getByText(/Supporting episodes|similarity|visual coverage|manual intro/i)).toHaveCount(0);
+  expect(api.writes()).toHaveLength(0);
 });
 
-test('source conflict blocks another decision until a real reload exposes the stale result', async ({ page, api }) => {
-  await open(page); await page.getByRole('button', { name: 'Review analysis for Opening episode' }).click();
-  const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true }); await expect(detail.getByRole('button', { name: 'Accept candidate', exact: true })).toBeEnabled();
-  api.item.SourceRevision = 'replaced-source'; api.item.Detection.SourceRevision = 'replaced-source'; api.item.Detection.Status = 'stale';
-  api.item.Detection.Candidate = null; api.item.Detection.Reasons = ['algorithm_changed'];
-  await detail.getByRole('button', { name: 'Accept candidate', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Accept this candidate as a manual intro?' }).getByRole('button', { name: 'Accept as manual intro' }).click();
-  await expect(detail.getByRole('button', { name: 'Reload result', exact: true })).toBeVisible(); await expect(detail.getByRole('button', { name: 'Accept candidate', exact: true })).toBeDisabled();
-  await detail.getByRole('button', { name: 'Reload result', exact: true }).click(); await expect(detail).toContainText('The recorded evidence is stale');
-  await expect(detail.getByRole('heading', { name: 'Detected candidate', exact: true })).toHaveCount(0);
-  await expect(detail.getByRole('button', { name: 'Accept candidate', exact: true })).toBeDisabled(); expect(api.writes('/admin/v1/media-analysis/items/episode-1/decision')).toHaveLength(1);
+test('unreliable and stale results leave playback alone while failures stay visible', async ({ page, api }) => {
+  api.item.Detection.Status = 'review'; api.item.Detection.Effective = null;
+  await open(page); await page.getByRole('button', { name: 'View analysis for Opening episode' }).click();
+  const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true });
+  await expect(detail).toContainText('No intro detected');
+  await expect(detail).toContainText('No intro is applied. Playback stays unchanged.');
+  await expect(detail.getByText('0:10.00–0:40.00', { exact: true })).toHaveCount(0);
+  api.item.SourceRevision = 'replaced-source'; api.item.Detection.SourceRevision = 'replaced-source'; api.item.Detection.Status = 'stale'; api.item.Detection.Candidate = null;
+  await detail.getByRole('button', { name: 'Refresh result', exact: true }).click();
+  await expect(detail).toContainText('Needs analysis');
+  await expect(detail).toContainText('The previous analysis is no longer current.');
+  api.item.Detection.Status = 'failed'; api.item.Detection.Reasons = ['source_unavailable'];
+  await detail.getByRole('button', { name: 'Refresh result', exact: true }).click();
+  await expect(detail).toContainText('Analysis failed');
+  await expect(detail.getByRole('alert')).toContainText('source unavailable');
+  await expect(detail.getByRole('button', { name: /Accept|Reject|Reset/ })).toHaveCount(0);
+  expect(api.writes()).toHaveLength(0);
 });
-
 test('cache cleanup reports retained busy entries and uses the saved configuration CAS', async ({ page, api }) => {
   await open(page); const cache = page.getByRole('region', { name: 'Analysis cache', exact: true });
   await expect(cache).toContainText('Ready 3'); await expect(cache).toContainText('Building 1'); await expect(cache).toContainText('Pending 1');
@@ -177,9 +179,8 @@ test('cache cleanup reports retained busy entries and uses the saved configurati
 test('missing tools disable work without hiding configuration or source results', async ({ page, api }) => {
   api.overview.Runtime = { Configured: false, IntroAvailable: false, PreviewAvailable: false, Reasons: ['missing_ffmpeg', 'fingerprint_tool_unavailable'], Cache: null };
   await open(page); await expect(page.getByText('missing ffmpeg', { exact: true })).toBeVisible(); await page.getByRole('checkbox', { name: 'Series library', exact: true }).check();
-  await expect(page.getByRole('button', { name: 'Start analysis' })).toBeDisabled();
-  await page.getByRole('combobox', { name: 'Analysis type' }).click(); await page.getByRole('option', { name: 'Seek previews', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Start analysis' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Build library previews' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Open library settings', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Configure', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Analysis configuration', exact: true }).getByRole('textbox', { name: 'Preview image quality', exact: true })).toBeEnabled(); expect(api.writes()).toHaveLength(0);
 });
@@ -200,4 +201,45 @@ test('an unconfirmed admission survives reload and retries exactly the same froz
   await expect(page.getByRole('region', { name: 'Analysis task progress' })).toContainText('1 of 3 work items finished');
   const writes = api.writes('/admin/v1/media-analysis/runs'); expect(writes).toHaveLength(2); expect(writes[1].body).toEqual(writes[0].body);
   expect(writes[0].body).toMatchObject({ Kind: 'previews', LibraryIds: [], ItemIds: ['episode-1'], Force: false });
+});
+
+test('intro analysis directs users to TV library settings without manual admission or review', async ({ page, api }) => {
+  await open(page);
+  await page.getByRole('checkbox', { name: 'Select Opening episode', exact: true }).check();
+  await expect(page.getByRole('button', { name: 'Analyze library intros' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Analyze selected episodes' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Analysis type' })).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: 'Automatically publish qualified detected intros' })).toHaveCount(0);
+  const automatic = page.getByRole('region', { name: 'Automatic intro detection', exact: true });
+  await expect(automatic).toContainText('If no intro is found, playback stays unchanged.');
+  await automatic.getByRole('button', { name: 'Open library settings', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/media\/libraries$/);
+  await expect(page.getByRole('heading', { name: 'Libraries', exact: true })).toBeVisible();
+  expect(api.writes()).toHaveLength(0);
+});
+
+test('automatic intro tasks expose the new event, progress, failures and stop control', async ({ page, api }) => {
+  api.showIntroTask = true; api.run.Source = 'system_event'; api.run.CompletedChildren = 0; api.run.FailedChildren = 1;
+  api.children = [{ Id: 'intro-child-1', RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library', Ordinal: 0, State: 'failed', ScanJobId: null,
+    Scanned: 0, Added: 0, Updated: 0, ErrorCode: 'source_unavailable', ErrorMessage: 'An episode could not be read.', CreatedAt: stamp, StartedAt: stamp, FinishedAt: stamp }];
+  for (const ordinal of [1, 2]) api.children.push({ Id: `intro-child-${ordinal + 1}`, RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library',
+    Ordinal: ordinal, State: ordinal === 1 ? 'running' : 'queued', ScanJobId: null, Scanned: 0, Added: 0, Updated: 0, ErrorCode: '', ErrorMessage: '',
+    CreatedAt: stamp, StartedAt: ordinal === 1 ? stamp : null, FinishedAt: null });
+  await open(page); await page.getByRole('button', { name: 'View intro tasks', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
+  await expect(page.getByText('When intro detection requested', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'View current run', exact: true }).click();
+  const detail = page.getByRole('dialog', { name: 'Run details · Automatic intro detection', exact: true });
+  await expect(detail).toContainText('1 of 3 work items finished');
+  await expect(detail).toContainText('An episode could not be read.');
+  await detail.getByRole('button', { name: 'Stop run', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Stop this run?', exact: true }).getByRole('button', { name: 'Stop run', exact: true }).click();
+  await expect(detail).toContainText('Stopping the remaining work.');
+  api.run.State = 'cancelled'; api.run.TerminalChildren = 3; api.run.CancelledChildren = 2; api.run.FinishedAt = stamp;
+  api.children = api.children.map((child) => child.State === 'failed' ? child : { ...child, State: 'cancelled', FinishedAt: stamp });
+  await detail.getByRole('button', { name: 'Refresh run', exact: true }).click();
+  await expect(detail).toContainText('3 of 3 work items finished');
+  await expect(detail.getByRole('button', { name: 'Stop run', exact: true })).toHaveCount(0);
+  expect(api.writes('/admin/v1/media-analysis/runs')).toHaveLength(0);
+  expect(api.writes('/admin/v1/task-runs/analysis-run-1/cancel')).toHaveLength(1);
 });

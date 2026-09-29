@@ -32,6 +32,7 @@ type AnalysisAdmissionBinding struct {
 	ConfigurationFingerprint string
 	Bind                     func(library.OwnedTx, string) error
 	SnapshotChildren         func(library.OwnedTx, string) (int64, error)
+	emptyTargets             bool
 }
 
 func isAnalysisTask(key string) bool {
@@ -177,7 +178,15 @@ func (s *Store) prepareAnalysisAdmission(tx library.OwnedTx, key, source string,
 	if !isAnalysisTask(key) {
 		return AnalysisAdmissionBinding{}, nil, nil
 	}
-	libraries, err := analysisLibraries(tx, input)
+	automaticIntro := key == library.TaskIntroAnalysisKey && actor == nil &&
+		(source == "schedule" || source == "startup" || source == "system_event")
+	var libraries []analysisLibrary
+	var err error
+	if automaticIntro {
+		libraries, err = automaticIntroLibraries(tx, input)
+	} else {
+		libraries, err = analysisLibraries(tx, input)
+	}
 	if err != nil {
 		return AnalysisAdmissionBinding{}, nil, err
 	}
@@ -197,7 +206,44 @@ func (s *Store) prepareAnalysisAdmission(tx library.OwnedTx, key, source string,
 	if !analysisFingerprintPattern.MatchString(binding.ConfigurationFingerprint) || binding.Bind == nil {
 		return AnalysisAdmissionBinding{}, nil, fmt.Errorf("%w: analysis profile binding is incomplete", ErrInvalidInput)
 	}
+	// Bind the actual configuration even for an empty automatic selection, but
+	// never pass that empty selection to the all-library child snapshot callback.
+	binding.emptyTargets = automaticIntro && len(libraries) == 0
 	return binding, libraries, nil
+}
+
+func automaticIntroLibraries(tx library.OwnedTx, input *library.AnalysisSelection) ([]analysisLibrary, error) {
+	if input == nil || len(input.ItemIDs) != 0 || len(input.LibraryIDs) != 0 || input.Force {
+		return nil, ErrInvalidInput
+	}
+	rows, err := tx.Query(`SELECT id,name FROM libraries
+		WHERE collection_type='tvshows' AND options->'EnableIntroDetection'='true'::jsonb
+		ORDER BY id LIMIT 65`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	libraries := []analysisLibrary{}
+	ids := []string{}
+	for rows.Next() {
+		var entry analysisLibrary
+		if err := rows.Scan(&entry.ID, &entry.Name); err != nil {
+			return nil, err
+		}
+		libraries = append(libraries, entry)
+		ids = append(ids, entry.ID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	// Keep the existing bounded selection contract. Never silently truncate a
+	// larger enabled set or reinterpret an empty set as all physical libraries.
+	normalized, err := library.NormalizeAnalysisSelection(library.AnalysisSelection{LibraryIDs: ids})
+	if err != nil {
+		return nil, err
+	}
+	*input = normalized
+	return libraries, nil
 }
 
 func (s *Store) bindAnalysisChildren(tx library.OwnedTx, runID, key string, input *library.AnalysisSelection, binding AnalysisAdmissionBinding, libraries []analysisLibrary) (int64, error) {
@@ -206,6 +252,9 @@ func (s *Store) bindAnalysisChildren(tx library.OwnedTx, runID, key string, inpu
 	}
 	if err := binding.Bind(tx, runID); err != nil {
 		return 0, err
+	}
+	if binding.emptyTargets {
+		return 0, nil
 	}
 	var count int64
 	if binding.SnapshotChildren != nil {

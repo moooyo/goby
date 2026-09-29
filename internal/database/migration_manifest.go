@@ -74,6 +74,7 @@ var publishedMigrations = [...]publishedMigration{
 	{48, "0048_notifications.sql", "f2e67f5e47e61634c4f407d417a0e54464ad1294da932c2ffbc34b439bcd558c"},
 	{49, "0049_sorting_and_tv_audit.sql", "fc32b3a69ab5d90dc9b6073714007d9de0376d9e5cac9cdf061469da740b03e3"},
 	{50, "0050_media_analysis.sql", "2142a6038c6a12199d15f6f1ba2a954e29b2680a55ae90b83a82100d9064b482"},
+	{51, "0051_library_intro_automation.sql", "9e18bcbc59a9399a1a4193b934d0e64245bc3fa035b6a489ea118d91876c5045"},
 }
 
 func validatePublishedMigrations(available []migration) error {

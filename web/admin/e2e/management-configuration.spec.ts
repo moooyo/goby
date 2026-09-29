@@ -2,6 +2,7 @@ import { expect, test as base } from '@playwright/test';
 import type { BrowserContext, Locator, Page, Request, Route } from '@playwright/test';
 import type { Library, LibraryInput, ManagedUser, UpdateUserInput, UserPolicy } from '../src/api';
 import type { DeletionFolder } from '../src/deletionFoldersApi';
+import type { EditableLibrary, LibraryUpdate } from '../src/libraryManagementApi';
 
 const timestamp = '2026-09-20T00:00:00Z';
 const csrf = 'synthetic-management-configuration-csrf';
@@ -47,7 +48,7 @@ class ConfigurationAPI {
         }
       }
       if (method === 'POST' && path === '/admin/v1/libraries') {
-        const input = request.postDataJSON() as LibraryInput; const created = { ...library, Id: 'created-library', Name: input.Name, CollectionType: input.CollectionType, Paths: input.Paths };
+        const input = request.postDataJSON() as LibraryInput; const created = { ...library, Id: 'created-library', Name: input.Name, CollectionType: input.CollectionType, Paths: input.Paths, LibraryOptions: input.LibraryOptions };
         this.libraries.push(created); return json(route, { Library: created }, 201);
       }
       if (method === 'PUT' && path === userPath) {
@@ -74,7 +75,7 @@ test('new libraries explicitly save both local import choices before any scan', 
   await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill('Local import choices'); await dialog.getByRole('textbox', { name: 'Media directories', exact: true }).fill('/synthetic/media/choice');
   await dialog.getByRole('checkbox', { name: 'Import local metadata files', exact: true }).uncheck(); await dialog.getByRole('checkbox', { name: 'Import local artwork', exact: true }).uncheck(); await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).uncheck();
   await dialog.getByRole('button', { name: 'Create library', exact: true }).click(); await expect(dialog).not.toBeVisible();
-  expect(api.writes).toHaveLength(1); expect(api.writes[0].body).toEqual({ Name: 'Local import choices', CollectionType: 'movies', Paths: ['/synthetic/media/choice'], Scan: false, LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: true } });
+  expect(api.writes).toHaveLength(1); expect(api.writes[0].body).toEqual({ Name: 'Local import choices', CollectionType: 'movies', Paths: ['/synthetic/media/choice'], Scan: false, LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: true, EnableIntroDetection: false } });
 });
 
 test('deletion grants come from current folder choices while legacy values and inactive categories survive unrelated edits', async ({ page, api }) => {
@@ -105,4 +106,75 @@ test('a malformed folder response cannot introduce file grants and does not eras
   await picker.getByRole('button', { name: 'Done choosing folders', exact: true }).click();
   await dialog.getByRole('textbox', { name: 'Simultaneous stream limit', exact: true }).fill('2'); await saveUser(page, dialog);
   expect((api.writes[0].body as UpdateUserInput).Policy.EnableContentDeletionFromFolders).toEqual(['/legacy/media/path', 'unresolved-folder-id']);
+});
+
+test('TV library creation opts into background intro detection without a separate analysis action', async ({ page, api }) => {
+  await page.goto('/admin/libraries');
+  await page.getByRole('button', { name: 'Create library', exact: true }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Create library', exact: true });
+  const toggle = dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true });
+  await expect(toggle).toHaveCount(0);
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
+  await page.getByRole('option', { name: 'TV shows', exact: true }).click();
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await expect(dialog).toContainText('If no intro is found, playback stays unchanged.');
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
+  await page.getByRole('option', { name: 'Movies', exact: true }).click();
+  await expect(toggle).toHaveCount(0);
+  await dialog.getByRole('combobox', { name: 'Content type', exact: true }).click();
+  await page.getByRole('option', { name: 'TV shows', exact: true }).click();
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await dialog.getByRole('textbox', { name: 'Library name', exact: true }).fill('Automatic series');
+  await dialog.getByRole('textbox', { name: 'Media directories', exact: true }).fill('/synthetic/media/series');
+  await dialog.getByRole('checkbox', { name: /^Scan after creating/ }).uncheck();
+  expect(api.writes).toHaveLength(0);
+  await dialog.getByRole('button', { name: 'Create library', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'Automatic intro detection is enabled.' })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'Automatic intro detection is enabled.' }).getByRole('button', { name: 'View tasks', exact: true })).toBeVisible();
+  expect(api.writes).toHaveLength(1);
+  expect(api.writes[0]).toMatchObject({ method: 'POST', path: '/admin/v1/libraries', body: {
+    Name: 'Automatic series', CollectionType: 'tvshows', Paths: ['/synthetic/media/series'], Scan: false,
+    LibraryOptions: { EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true, EnableIntroDetection: true },
+  } });
+});
+
+test('TV library settings preserve and disable intro automation through the library revision', async ({ page, api }) => {
+  let saved: EditableLibrary = { ...library, Name: 'Series settings', CollectionType: 'tvshows', Revision: '9007199254740993',
+    LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: true, EnableEmbeddedArtwork: false, EnableIntroDetection: false },
+    RegisteredPaths: [{ Id: 'series-root', Path: '/synthetic/media', ItemCount: 3 }],
+  };
+  api.libraries = [saved];
+  const target = `/admin/v1/libraries/${saved.Id}`;
+  api.handlers.set(`GET ${target}`, async (route) => json(route, { Library: saved }));
+  api.handlers.set(`PATCH ${target}`, async (route, request) => {
+    const input = request.postDataJSON() as LibraryUpdate;
+    expect(input.Revision).toBe(saved.Revision);
+    saved = { ...saved, ...input, Revision: (BigInt(saved.Revision) + 1n).toString() };
+    api.libraries = [saved];
+    return json(route, { Library: saved });
+  });
+  await page.goto('/admin/libraries');
+  await page.getByRole('button', { name: 'More actions for Series settings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  let dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
+  await expect(dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true })).not.toBeChecked();
+  await dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Save library', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'Automatic intro detection is enabled.' })).toBeVisible();
+  expect(api.writes[0].body).toMatchObject({ Revision: '9007199254740993', Scan: false,
+    LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: true, EnableEmbeddedArtwork: false, EnableIntroDetection: true },
+  });
+  await page.getByRole('button', { name: 'More actions for Series settings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
+  dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
+  await expect(dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true })).toBeChecked();
+  await dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true }).uncheck();
+  await dialog.getByRole('button', { name: 'Save library', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  expect(api.writes).toHaveLength(2);
+  expect(api.writes[1]).toMatchObject({ method: 'PATCH', path: target, body: { Revision: '9007199254740994', LibraryOptions: { EnableIntroDetection: false } } });
 });

@@ -3,10 +3,15 @@
 The selected phase 1 implementation uses schema 43. Its backend, migration,
 recovery, administrator and supported original-client journeys have composed
 results. The user accepted adapter delivery for third-party clients without
-requiring resolution of original Web commercial licensing. Its blocked enabled
-intro modes remain recorded limitations. See the
+requiring resolution of original Web commercial licensing. Its historical blocked
+original-client intro modes remain recorded limitations. See the
 [execution record](../development/selected-compatibility-phase1-20260920.md).
-This contract does not claim deployment or full original-client parity.
+Later media analysis added detected intro markers; the September 30 automatic
+library workflow is **complete within its selected scope**, including backend,
+UI, actual Docker verification and owned-resource closure. See the
+[current intro contract](media-analysis.md) and
+[increment record](../development/library-intro-automation-20260930.md).
+This contract does not claim full original-client parity.
 
 ## Separate credentials and profile state
 
@@ -68,9 +73,22 @@ an invalidation identity, not a credential. Replacement/reprobe cannot transfer
 an old override. Stale overrides stay inspectable, while current explicit
 chapters may supply the effective interval. Changed unrescanned media is unavailable.
 
-Only an unambiguous IntroStart/IntroEnd chapter pair supplies an automatic
-interval. An ordinary Opening chapter is not detection; content detection stays
-deferred. Effective SDK MarkerType entries appear consistently in item Chapters
+Effective precedence is a source-valid Manual/Import interval, then an
+unambiguous IntroStart/IntroEnd chapter pair, then a qualified current detected
+interval from an enabled TV library. An ordinary Opening chapter is not
+detection. `LibraryOptions.EnableIntroDetection` defaults to false; enabling it
+requests background analysis, and completed scans request another pass.
+Disabling it immediately withdraws detected markers; re-enabling waits for new
+work. Historical manual/imported and chapter intervals are retained.
+An explicit false-to-true library transition retires legacy rejection flags while
+preserving their decision/audit history; it does not require an old rejection to
+be reset through the removed UI.
+
+Qualified results require no approval. `review` and `no_result` provide no
+automatic playback marker and do not require the user to review a candidate.
+The administrator UI retains progress/status/errors while removing candidate
+decisions and manual intro editing. The compatibility APIs above remain valid.
+Effective SDK MarkerType entries appear consistently in item Chapters
 and PlaybackInfo MediaSource.Chapters. IntroSkipMode accepts None, ShowButton
 and AutoSkip. The client owns the seek; the server does not also rewrite the
 requested start or playback report.

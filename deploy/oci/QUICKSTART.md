@@ -1,11 +1,13 @@
 # Docker quick start
 
-Status: **COMPLETE within the selected Docker operations scope**. The actual
-software Docker journey, 14 helper unit tests and owned-resource closure passed.
-This guide reuses the accepted software or AMD image; no image rebuild is needed.
+Use the current schema 51 software or AMD Docker image and its matching
+`current-release.json`. Both application profiles use source
+`95607ffa505c7a9368b1bfd8ec3d545d009285d3` for automatic TV-library intros.
+The repository result is `docs/development/library-intro-automation-20260930.md`;
+Git integration is recorded separately. The earlier Docker operations journey,
+14 helper tests and closure remain evidence for the existing helper contract.
 Further online-provider work is deferred and no provider credentials are required.
-The repository report is `docs/development/docker-operations-20260930.md`;
-the instructions and linked local guides below are included in the toolkit.
+The instructions and linked local guides below are included in the toolkit.
 
 ## Prepare once
 
@@ -16,10 +18,12 @@ the toolkit does not install PostgreSQL. Its address must be reachable from the
 container. Existing media must be readable/traversable by UID/GID `10001:10001`.
 
 Extract `goby-docker-operations.zip` into `/download`; its top-level directory is
-`goby-docker-operations/`. Keep the selected profile's existing image archive in
-the separate `/download/profile` directory. Already downloaded
-software/AMD archives do not need to be downloaded again; the small toolkit does
-not contain duplicate images. `current-release.json`
+`goby-docker-operations/`. The current toolkit is in
+`D:/Code/goby/.artifacts/intro-automation-20260930`, with software and AMD archives
+in its `software` and `amd` subdirectories. Copy the selected current image archive
+to the separate `/download/profile` directory. Earlier provider/operations images
+do not include this automation change. The small toolkit does not contain
+duplicate images. `current-release.json`
 binds the archive hash and immutable image ID; the helper prefers a manifest in
 the release directory, then the one beside itself. Store the one-line database
 URL in `/private/db-url`, with permissions `0600` or stricter. Keep it out of
@@ -75,6 +79,24 @@ URL and reverse proxy using the [full guide](README.md). The container stays
 non-root with a read-only root filesystem. `restart: "no"` means startup after a
 host reboot is an explicit operator action. `stop` retains the container, its
 network and persistent data; it does not retire the installation.
+
+## Enable automatic intros
+
+Create or edit a **TV shows** library and enable **Automatic intro detection**.
+The setting defaults to off, including for libraries that existed before the
+schema 51 upgrade. Once enabled, background work analyzes eligible episodes;
+successful library scans request another analysis automatically.
+
+Qualified matches become available for playback without approval or manual
+correction. If no reliable match is found, playback stays unchanged. The detector
+still needs at least three independent episodes and examines the first 600
+seconds. Compatible players consume the resulting intro markers; this does not
+promise that every player implements automatic skipping.
+
+Open **Tasks** to follow progress, read failures or stop running work. Media
+analysis shows current results and retains manual BIF preview generation.
+Disabling the library option withdraws detected markers; re-enabling requests
+fresh work. No scraper or provider credentials are required.
 
 ## Update manually
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, LinearProgress, MenuItem, Paper, Skeleton, Stack, Switch, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, LinearProgress, Paper, Skeleton, Stack, TextField, Tooltip, Typography } from '@mui/material';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import CheckRounded from '@mui/icons-material/CheckRounded';
 import PauseCircleOutlineRounded from '@mui/icons-material/PauseCircleOutlineRounded';
@@ -14,7 +14,7 @@ import { analysisBytes, analysisDraft, analysisNumberFields, parseAnalysisDraft 
 import type { AnalysisDraft, AnalysisOverview, AnalysisPrune, AnalysisRunInput, AnalysisRunReceipt } from './mediaAnalysis';
 import { mediaAnalysisApi } from './mediaAnalysisApi';
 import { MediaAnalysisResults } from './MediaAnalysisResults';
-import { mediaPanelSx, mediaSelectSx, mediaSurface } from './MediaPagePrimitives';
+import { mediaPanelSx, mediaSurface } from './MediaPagePrimitives';
 import { isActiveTaskRun, RunProgress, RunStatusChip } from './TaskRunDialog';
 import { useTaskResource } from './useTaskResource';
 import { useUserDraftNavigation } from './userDraftNavigation';
@@ -49,20 +49,19 @@ function AvailabilityChip({ available, label }: { available: boolean; label: str
   return <Chip size="small" icon={available ? <CheckCircleRounded /> : <PauseCircleOutlineRounded />} label={label} sx={{ height: 28, borderRadius: '6px', bgcolor: 'background.paper', fontSize: 12, '& .MuiChip-icon': { fontSize: 17, color: available ? 'success.main' : 'text.secondary' } }} />;
 }
 
-export function MediaAnalysisPage({ currentUserId, onTasks, onNavigationGuardChange }: { currentUserId: string; onTasks: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
+export function MediaAnalysisPage({ currentUserId, onTasks, onLibraries, onNavigationGuardChange }: { currentUserId: string; onTasks: () => void; onLibraries: () => void; onNavigationGuardChange: UserNavigationGuardChange }) {
   const [overview, setOverview] = useState<AnalysisOverview>(); const [draft, setDraft] = useState<AnalysisDraft>(); const [libraries, setLibraries] = useState<Library[]>([]);
   const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState<unknown>(); const [loadRevision, setLoadRevision] = useState(0); const preserveDraft = useRef(false);
-  const [busy, setBusy] = useState<string>(); const [detailBusy, setDetailBusy] = useState(false); const mutation = useRef<AbortController | undefined>(undefined);
+  const [busy, setBusy] = useState<string>(); const mutation = useRef<AbortController | undefined>(undefined);
   const [error, setError] = useState<unknown>(); const [reloadRequired, setReloadRequired] = useState(false); const [notice, setNotice] = useState('');
   const [libraryIds, setLibraryIds] = useState<string[]>([]); const [force, setForce] = useState(false); const [pending, setPending] = useState<AnalysisRunInput | undefined>(() => previousReceipt(currentUserId));
   const [receipt, setReceipt] = useState<AnalysisRunReceipt>(); const [runError, setRunError] = useState<unknown>(); const [resultsRevision, setResultsRevision] = useState(0);
   const [pruning, setPruning] = useState(false); const [pruned, setPruned] = useState<AnalysisPrune>(); const finished = useRef('');
   const [configurationOpen, setConfigurationOpen] = useState(false);
   const [runOptionsOpen, setRunOptionsOpen] = useState(false);
-  const [analysisKind, setAnalysisKind] = useState<'intro' | 'previews'>('intro');
   const parsed = draft ? parseAnalysisDraft(draft) : undefined;
   const dirty = Boolean(draft && overview && JSON.stringify(draft) !== JSON.stringify(analysisDraft(overview.Configuration.Profile)));
-  const locked = Boolean(busy) || detailBusy;
+  const locked = Boolean(busy);
   const blocked = locked || loading || loadError != null || reloadRequired;
   useUserDraftNavigation(dirty || Boolean(pending), locked, onNavigationGuardChange, 'Leave media analysis with unsaved changes or an unconfirmed run request? Your run receipt will be retained.');
   useEffect(() => () => mutation.current?.abort(), []);
@@ -126,7 +125,7 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onNavigationGuardCha
   const cache = overview?.Runtime.Cache;
   const cachePercent = cache && cache.MaxBytes > 0 ? Math.min(100, cache.TotalBytes / cache.MaxBytes * 100) : 0;
   return <Box>
-    <PageHeading title="Media analysis" description="Detect repeated episode intros, review source-bound results, and generate seek previews." action={<Button variant="outlined" startIcon={<PlaylistPlayRounded />} onClick={onTasks}>Open tasks</Button>} />
+    <PageHeading title="Media analysis" description="View automatic intro results and task progress, and generate seek previews." action={<Button variant="outlined" startIcon={<PlaylistPlayRounded />} onClick={onTasks}>Open tasks</Button>} />
     <Stack spacing={2.5}>
       {loadError != null && <ErrorNotice error={loadError} retry={() => reload(Boolean(draft))} />}
       {error != null && <ErrorNotice error={error} />}
@@ -168,29 +167,34 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onNavigationGuardCha
             </Stack>
           </Paper>
         </Box>
+        <Paper component="section" aria-labelledby="analysis-intro-title" variant="outlined" sx={{ ...mediaPanelSx, p: 2.5 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'stretch', md: 'center' }, gap: 2 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}><Typography component="h2" variant="h3" id="analysis-intro-title">Automatic intro detection</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Enable Automatic intro detection in a TV library's settings. Episodes are analyzed in the background and reliable matches become available for playback. If no intro is found, playback stays unchanged.</Typography><Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>View progress, failures, and stop running analysis in Tasks.</Typography></Box>
+            <Stack direction="row" sx={{ gap: 1, flexWrap: 'wrap' }}><Button variant="contained" onClick={onLibraries}>Open library settings</Button><Button variant="outlined" onClick={onTasks}>View intro tasks</Button></Stack>
+          </Stack>
+        </Paper>
         <Paper component="section" aria-labelledby="analysis-run-title" variant="outlined" sx={{ ...mediaPanelSx, p: 2.5 }}>
           <Stack spacing={1.5}>
-            <Box><Typography component="h2" variant="h3" id="analysis-run-title">Run analysis</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Choose libraries, or select individual items below. The server checks media eligibility and records unsupported or unavailable work. Intro comparison can read other episodes in the same authorized season as supporting evidence.</Typography></Box>
+            <Box><Typography component="h2" variant="h3" id="analysis-run-title">Generate seek previews</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Choose libraries, or select individual items below, to build seek previews.</Typography></Box>
             {dirty && <Alert severity="info" action={<Button color="inherit" onClick={() => setConfigurationOpen(true)}>Review draft</Button>}>Save or discard the configuration draft before starting work or pruning the cache.</Alert>}
             <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'stretch', md: 'center' }, gap: 2 }}>
-              <Box role="group" aria-label="Libraries to analyze" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, flex: 1 }}>
+              <Box role="group" aria-label="Libraries for previews" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, flex: 1 }}>
                 {libraries.length === 0 ? <Typography variant="body2" color="text.secondary">No libraries are available. Add and scan a library first.</Typography> : libraries.map((library) => {
                   const selected = libraryIds.includes(library.Id);
                   return <Chip key={library.Id} component="button" type="button" role="checkbox" aria-checked={selected} label={library.Name} icon={selected ? <CheckRounded /> : undefined} disabled={blocked || Boolean(pending) || !selected && libraryIds.length >= 64} onClick={() => setLibraryIds((ids) => selected ? ids.filter((id) => id !== library.Id) : [...ids, library.Id])} variant={selected ? 'filled' : 'outlined'} sx={{ height: 32, borderRadius: '8px', fontSize: 13, bgcolor: selected ? '#D8E4FA' : 'background.paper', color: selected ? '#0F2A57' : 'text.secondary', borderColor: '#C1C7D2', '& .MuiChip-icon': { fontSize: 17, color: 'inherit' } }} />;
                 })}
               </Box>
               <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                <TextField select label="Analysis type" size="small" value={analysisKind} disabled={blocked || Boolean(pending)} onChange={(event) => setAnalysisKind(event.target.value as 'intro' | 'previews')} sx={mediaSelectSx}><MenuItem value="intro">Intro analysis</MenuItem><MenuItem value="previews">Seek previews</MenuItem></TextField>
                 <Tooltip title={force ? 'Run options: force rebuild enabled' : 'Run options'}><span><IconButton aria-label="Run options" color={force ? 'primary' : 'default'} onClick={() => setRunOptionsOpen(true)} disabled={blocked || Boolean(pending)}><TuneRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
-                <Button variant="contained" startIcon={busy === 'start' ? <CircularProgress size={16} color="inherit" /> : <PlayArrowRounded />} disabled={blocked || dirty || Boolean(pending) || libraryIds.length === 0 || (analysisKind === 'intro' ? !overview.Runtime.IntroAvailable : !overview.Runtime.PreviewAvailable)} onClick={() => void start(analysisKind, libraryIds, [])}>Start analysis</Button>
+                <Button variant="contained" startIcon={busy === 'start' ? <CircularProgress size={16} color="inherit" /> : <PlayArrowRounded />} disabled={blocked || dirty || Boolean(pending) || libraryIds.length === 0 || !overview.Runtime.PreviewAvailable} onClick={() => void start('previews', libraryIds, [])}>Build library previews</Button>
               </Stack>
             </Stack>
-            {force && <Typography variant="caption" color="text.secondary">Force rebuild is enabled for library and selected-item actions.</Typography>}
+            {force && <Typography variant="caption" color="text.secondary">Rebuild is enabled for library and selected-item previews.</Typography>}
             {pending && <Alert severity="warning">A {pending.Kind === 'intro' ? 'intro analysis' : 'preview generation'} request is unconfirmed: {pending.LibraryIds.length} libraries, {pending.ItemIds.length} items; Force {pending.Force ? 'enabled' : 'disabled'}. Reuse its request ID to retrieve its result before starting other work.<Button disabled={blocked || dirty} color="inherit" onClick={() => void start(pending.Kind, pending.LibraryIds, pending.ItemIds, pending)}>Check run request</Button></Alert>}
             {receipt && <Box role="region" aria-label="Analysis task progress" sx={{ p: 2, borderRadius: '12px', bgcolor: mediaSurface }}><Stack spacing={1.5}><Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>Run {receipt.RunId}</Typography>{run.loading && !run.data && <Typography role="status">Loading recorded task progress...</Typography>}{run.error != null && <ErrorNotice error={run.error} retry={run.reload} />}{runError != null && <ErrorNotice error={runError} retry={() => { setRunError(undefined); run.reload(); }} />}{run.data && <><RunStatusChip state={run.data.Run.State} /><RunProgress run={run.data.Run} />{run.data.Run.State === 'stopping' && <Alert severity="info">Stop requested. The task remains active until its workers finish.</Alert>}{run.data.Run.ErrorMessage && <Alert severity="error">{run.data.Run.ErrorMessage}</Alert>}{run.data.Children.Items.filter((child) => child.ErrorCode || child.ErrorMessage).map((child) => <Alert severity="warning" key={child.Id}>{child.LibraryName || 'Work item'}: {child.ErrorMessage || child.ErrorCode}</Alert>)}</>}<Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button disabled={locked || run.loading || !run.data || !isActiveTaskRun(run.data.Run) || run.data.Run.State === 'stopping' || runError != null} onClick={() => void stop()}>Request stop</Button><Button disabled={locked || run.loading} onClick={() => { setRunError(undefined); run.reload(); }}>Refresh progress</Button><Button onClick={onTasks}>View tasks</Button></Stack></Stack></Box>}
           </Stack>
         </Paper>
-        <MediaAnalysisResults libraries={libraries} disabled={blocked || dirty || Boolean(pending)} introAvailable={overview.Runtime.IntroAvailable} previewAvailable={overview.Runtime.PreviewAvailable} refresh={resultsRevision} onRun={(kind, ids, items) => void start(kind, ids, items)} onBusyChange={setDetailBusy} />
+        <MediaAnalysisResults libraries={libraries} disabled={blocked || dirty || Boolean(pending)} previewAvailable={overview.Runtime.PreviewAvailable} refresh={resultsRevision} onRun={(kind, ids, items) => void start(kind, ids, items)} />
         <Dialog open={configurationOpen} onClose={() => { if (!locked) setConfigurationOpen(false); }} fullWidth maxWidth="md" aria-labelledby="analysis-configuration-title">
           <DialogTitle id="analysis-configuration-title">Analysis configuration</DialogTitle>
           <DialogContent>
@@ -200,7 +204,7 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onNavigationGuardCha
                 {error != null && <ErrorNotice error={error} />}
                 {reloadRequired && <Alert severity="warning">The change could not be confirmed or the configuration changed. Your draft is preserved.<Button color="inherit" disabled={loading || locked} onClick={() => reload(true)}>Reload latest and keep draft</Button></Alert>}
                 {notice && <Alert severity="success">{notice}</Alert>}
-                <Box><FormControlLabel label="Automatically publish qualified detected intros" control={<Switch checked={draft.AutoPublishIntros} disabled={blocked} onChange={(event) => setDraft({ ...draft, AutoPublishIntros: event.target.checked })} />} /><Typography variant="body2" color="text.secondary">Manual, imported, and chapter markers retain priority. Review-only candidates require an explicit decision.</Typography></Box>
+                <Typography variant="body2" color="text.secondary">TV library settings control automatic intro detection. Reliable matches are used automatically; these processing and preview settings apply to new work.</Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>{analysisNumberFields.map((field) => <TextField key={field.key} label={field.label} value={draft[field.key]} disabled={blocked} onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })} error={Boolean(parsed?.errors[field.key])} helperText={parsed?.errors[field.key] ?? field.help} slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 16, autoComplete: 'off' } }} />)}</Box>
                 <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button disabled={blocked} onClick={() => setDraft(analysisDraft(overview.Configuration.Defaults))}>Use default profile</Button><Button disabled={locked || loading} onClick={() => { setDraft(analysisDraft(overview.Configuration.Profile)); setNotice('Draft discarded. The last confirmed profile is shown.'); }}>Discard draft</Button></Stack>
                 {dirty && <Typography role="status" variant="caption" color="text.secondary">The configuration has unsaved changes. Closing this dialog keeps the draft.</Typography>}
@@ -212,7 +216,7 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onNavigationGuardCha
       </>}
     </Stack>
     <Dialog open={runOptionsOpen} onClose={() => { if (!locked) setRunOptionsOpen(false); }} fullWidth maxWidth="xs" aria-labelledby="analysis-run-options-title">
-      <DialogTitle id="analysis-run-options-title">Run options</DialogTitle><DialogContent><FormControlLabel label="Force rebuild existing analysis and previews" control={<Checkbox checked={force} disabled={blocked || Boolean(pending)} onChange={(event) => setForce(event.target.checked)} />} /><Typography variant="body2" color="text.secondary">This choice applies to library runs and selected-item actions.</Typography></DialogContent><DialogActions><Button disabled={locked} onClick={() => setRunOptionsOpen(false)}>Done</Button></DialogActions>
+      <DialogTitle id="analysis-run-options-title">Run options</DialogTitle><DialogContent><FormControlLabel label="Rebuild existing previews" control={<Checkbox checked={force} disabled={blocked || Boolean(pending)} onChange={(event) => setForce(event.target.checked)} />} /><Typography variant="body2" color="text.secondary">This choice applies to library runs and selected-item previews.</Typography></DialogContent><DialogActions><Button disabled={locked} onClick={() => setRunOptionsOpen(false)}>Done</Button></DialogActions>
     </Dialog>
     <Dialog open={pruning} onClose={() => { if (!locked) setPruning(false); }} fullWidth maxWidth="sm" aria-labelledby="analysis-prune-title">
       <DialogTitle id="analysis-prune-title">Prune the analysis cache?</DialogTitle>

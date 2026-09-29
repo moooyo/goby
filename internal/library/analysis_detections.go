@@ -26,6 +26,10 @@ type AnalysisAuditEvidence struct {
 	Decision *AnalysisDecision
 }
 
+const analysisIntroLibraryPolicySQL = `SELECT collection_type='tvshows'
+	AND COALESCE((options->>'EnableIntroDetection')::boolean,false)
+	FROM libraries WHERE id=$1`
+
 func analysisAbstentionReason(reason string) bool {
 	switch reason {
 	case "insufficient_cohort", "unsupported_item_type", "unsupported_hierarchy", "source_unavailable", "analysis_limit", "comparison_budget_exceeded", "cancelled":
@@ -254,6 +258,12 @@ func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]Ana
 	if err != nil || profileRevision < 1 {
 		return ErrInvalidInput
 	}
+	var libraryEnabled bool
+	// Serialize publication with library policy updates. Manual task admission
+	// remains compatible, but a disabled library cannot publish a detected intro.
+	if err := tx.QueryRow(analysisIntroLibraryPolicySQL+` FOR SHARE`, work.LibraryID).Scan(&libraryEnabled); err != nil {
+		return err
+	}
 	changes := []CatalogChange{}
 	for _, source := range work.Sources {
 		if !source.Target {
@@ -282,7 +292,7 @@ func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]Ana
 		if previous == math.MaxInt64 {
 			return ErrAnalysisConflict
 		}
-		auto := value.Episode.Status == introdetect.Qualified && work.Profile.AutoPublishIntros && !suppressed
+		auto := libraryEnabled && value.Episode.Status == introdetect.Qualified && work.Profile.AutoPublishIntros && !suppressed
 		if _, err := tx.Exec(`INSERT INTO analysis_detections(item_id,revision,source_revision,profile_fingerprint,profile_revision,publication_epoch,child_id,cohort_revision,status,result,start_ticks,end_ticks,auto_published)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(item_id) DO UPDATE SET revision=EXCLUDED.revision,source_revision=EXCLUDED.source_revision,
    profile_fingerprint=EXCLUDED.profile_fingerprint,profile_revision=EXCLUDED.profile_revision,publication_epoch=EXCLUDED.publication_epoch,child_id=EXCLUDED.child_id,
@@ -406,8 +416,14 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 	if stale != "" {
 		result.Status = "stale"
 		result.Reasons = append(result.Reasons, stale)
-	} else if proof.active && !result.Suppressed && result.Effective == nil && start != nil && end != nil {
-		result.Effective = &IntroInterval{StartTicks: *start, EndTicks: *end, Provenance: "Detected"}
+	} else if proof.active && result.Status == "qualified" && !result.Suppressed && result.Effective == nil && start != nil && end != nil {
+		var libraryEnabled bool
+		if err := tx.QueryRow(ctx, analysisIntroLibraryPolicySQL, source.LibraryID).Scan(&libraryEnabled); err != nil {
+			return result, err
+		}
+		if libraryEnabled {
+			result.Effective = &IntroInterval{StartTicks: *start, EndTicks: *end, Provenance: "Detected"}
+		}
 	}
 	return result, nil
 }

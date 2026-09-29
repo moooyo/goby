@@ -3,23 +3,25 @@
 For installation, start with the [Docker quick start](QUICKSTART.md). The
 operations helper provides `prepare`, `check`, `start`, `status`, `logs` and
 `stop`; [current-release.json](current-release.json) is the shared catalog for
-the currently accepted software and AMD image/archive identities. The
-[operations result](../../docs/development/docker-operations-20260930.md) records
-the 14 helper tests, actual software Docker journey and closed resources.
-It preserves the original failed attempts and the affected recovery repeat.
-No new application image, GPU campaign or browser campaign was created.
+the current software and AMD image/archive identities. The
+[library intro automation result](../../docs/development/library-intro-automation-20260930.md)
+and [result manifest](../../docs/development/library-intro-automation-results-20260930.json)
+record the updated application, focused checks and actual automatic workflow.
+Git integration is recorded separately. The earlier
+[operations result](../../docs/development/docker-operations-20260930.md) retains
+its 14 helper tests, original software journey, failed attempts and closure.
 
 The separate small toolkit is
-`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
-The software image remains in
-`D:/Code/goby/.artifacts/oci-providers-20260930/software`; application source
-`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` is unchanged. The toolkit does not
+`D:/Code/goby/.artifacts/intro-automation-20260930/goby-docker-operations.zip`.
+The software image is in
+`D:/Code/goby/.artifacts/intro-automation-20260930/software`; application source
+is `95607ffa505c7a9368b1bfd8ec3d545d009285d3`, with schema 51. The toolkit does not
 include another copy of the image archive. The manual configuration, source-build
 and recovery details below remain reference material for the selected profile.
 Further TMDB/OpenSubtitles work and new scraper research are deferred; provider
 credentials are not required by this installation path.
 
-Status: **verified for the selected Linux amd64 software profile**. The actual
+The original software profile was verified within its selected scope. Its actual
 build, archive import, media, encrypted recovery, and image/database upgrade and
 rollback passed. Image identity, hashes, retained failures, and tested boundaries
 are recorded in [the delivery result](../../docs/development/oci-delivery-20260929.md).
@@ -39,9 +41,9 @@ It uses an external PostgreSQL 17 server and does not publish to a registry.
 PostgreSQL and the reverse proxy may run outside Docker; this policy applies to
 the Goby application deployment.
 
-The [September 30 online-provider increment](../../docs/development/online-providers-20260930.md)
-updates the application on this accepted media image. The current release catalog
-binds that increment's image ID and archive receipt. Its
+The earlier [online-provider increment](../../docs/development/online-providers-20260930.md)
+updated the application at source `76d64bf`. Its original image and source receipts
+remain historical; use the current release catalog for installation. Its
 [provider guide](README.providers.md) covers MusicBrainz, private provider
 configuration and the optional writable-subtitle overlay. The original receipts
 below retain their September 29 source and recovery evidence.
@@ -169,8 +171,14 @@ the native Chromaprint intro helper and its installed notices. Its exact SHA-256
 is recorded in `/usr/share/goby/media-analysis.json`; Compose enables that file
 and stores analysis artifacts under `/var/cache/goby/analysis`.
 
-Intro analysis and BIF previews use the normal administrator library/task policy.
-Packaging the tools does not automatically schedule every library for analysis.
+Enable **Automatic intro detection** in each desired TV library. Existing
+libraries remain off after the schema 51 upgrade until that setting is enabled.
+The server processes enabled libraries in the background, including after a
+successful scan, and makes qualified intervals available for playback. No review
+or manual-correction step is required; unmatched episodes play unchanged. Open
+Tasks for progress, failures and stop controls. The unchanged detector needs at
+least three independent episodes and examines the first 600 seconds. BIF previews
+retain their separate manual generation controls.
 Optional source-media rewrite and OCR are disabled in this default read-only
 profile. GPU devices, Vulkan/libplacebo Dolby Vision processing, other container
 runtimes and arm64 are outside this delivery's acceptance scope.
@@ -188,6 +196,8 @@ runtimes and arm64 are outside this delivery's acceptance scope.
    probe format, run a library scan with `ForceProbe` to refresh the snapshots.
    The tested schema 29 upgrade needs this step for probe version 6 to 8;
    original item IDs and user state remain preserved.
+   Schema 51 leaves the new intro-detection option off for existing libraries;
+   enable it in the desired TV library settings after upgrading.
 4. To roll back after a schema change, stop the new container and restore the
    matching pre-update database and state/master-key backup before selecting the
    previous image. Switching an old binary onto a newly migrated database is not

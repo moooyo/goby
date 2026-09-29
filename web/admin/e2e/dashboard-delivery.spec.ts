@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import type { ApplicationKeysResponse, CreateApplicationKeyResponse, Job, JobsResponse, LibraryResponse, MetadataDetail, MetadataItemsResponse, ServerSettings } from '../src/api';
 
@@ -302,7 +302,7 @@ test('dashboard delivery uses real media, durable settings, application keys, an
     if (tab === 'Libraries') {
       await page.getByRole('button', { name: `Manage items in ${libraryName}`, exact: true }).click();
       await expect(page.getByRole('list', { name: 'Library items', exact: true })).toBeVisible();
-      await expect(page.getByRole('list', { name: 'Library items', exact: true }).getByRole('listitem')).toHaveCount(fixture.movies);
+      await expect(page.getByRole('list', { name: 'Library items', exact: true }).getByRole('listitem')).toHaveCount(items.TotalRecordCount);
       await noOverflow();
       await capture('delivery-library-items-mobile.png');
     }
@@ -313,5 +313,7 @@ test('dashboard delivery uses real media, durable settings, application keys, an
   expect(pageErrors).toEqual([]);
   expect(failedAPI).toEqual([]);
   expect(consoleErrors).toEqual([]);
-  await testInfo.attach('delivery-evidence.json', { body: Buffer.from(JSON.stringify({ checks, pageErrors, failedAPI, consoleErrors }, null, 2)), contentType: 'application/json' });
+  const evidencePath = testInfo.outputPath('delivery-evidence.json');
+  await writeFile(evidencePath, JSON.stringify({ checks, pageErrors, failedAPI, consoleErrors }, null, 2) + '\n', 'utf8');
+  await testInfo.attach('delivery-evidence.json', { path: evidencePath, contentType: 'application/json' });
 });

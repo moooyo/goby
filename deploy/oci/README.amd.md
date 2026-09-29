@@ -7,23 +7,32 @@ and the actual render node. The operations helper supports `prepare`, `check`,
 immutable image ID. Software and AMD remain profiles of the same Docker delivery.
 
 The small operations toolkit is
-`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`;
-the existing AMD image archive remains in
-`D:/Code/goby/.artifacts/oci-providers-20260930/amd`. Application source
-`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` and both accepted images are unchanged.
-The [operations result](../../docs/development/docker-operations-20260930.md)
-establishes 14 helper tests and the actual software Docker journey with resource
-closure. It does not add AMD GPU or browser acceptance. This guide retains the
-earlier AMD device, tool and build evidence below. Provider credentials are not
-required; further TMDB/OpenSubtitles work and scraper research are deferred.
+`D:/Code/goby/.artifacts/intro-automation-20260930/goby-docker-operations.zip`;
+the current AMD image archive is in
+`D:/Code/goby/.artifacts/intro-automation-20260930/amd`. Both profiles use
+application source `95607ffa505c7a9368b1bfd8ec3d545d009285d3` and schema 51.
+The [automation result](../../docs/development/library-intro-automation-20260930.md)
+and [manifest](../../docs/development/library-intro-automation-results-20260930.json)
+bind the updated application evidence. Git integration is recorded separately.
+The prior helper, provider and AMD device/tool receipts retain their original
+scopes; this application update does not establish another GPU profile.
+Provider credentials are not required; further TMDB/OpenSubtitles work and
+scraper research are deferred.
 
-The [September 30 online-provider increment](../../docs/development/online-providers-20260930.md)
-provides a newer application layer on this accepted AMD image. Its receipt binds
-the new image and application identities; the FFmpeg, drivers and earlier GPU
+Enable **Automatic intro detection** in a TV library's settings. Enabled
+libraries are analyzed in the background and qualified matches are used without
+review or manual correction. An unmatched episode plays unchanged. Existing
+libraries default to off after upgrade; Tasks shows progress, failures and stop
+controls. The detector still requires at least three independent episodes and
+examines the first 600 seconds. Preview generation remains a separate manual action.
+
+The earlier [online-provider increment](../../docs/development/online-providers-20260930.md)
+records the source `76d64bf` application layer. Its image and source identities
+remain historical; the FFmpeg, drivers and earlier GPU
 evidence below retain their original boundaries. See the
 [provider guide](README.providers.md) for configuration and subtitle write access.
 
-Status: **COMPLETE within the selected Linux amd64 AMD archive/Compose scope**.
+The original AMD archive/Compose scope was completed within its recorded bounds.
 The recipe extends the separately verified software image with AMD VAAPI
 drivers, Mesa Vulkan drivers and a rebuilt FFmpeg that
 retains all three required media fixes. The previously accepted native

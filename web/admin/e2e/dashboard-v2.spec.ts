@@ -3,13 +3,22 @@ import type { BrowserContext, Page, Request, Route } from '@playwright/test';
 import type { ActivityEntry, ServerSettings, SettingsUpdateInput } from '../src/api';
 import type { RuntimeSettings } from '../src/runtimeSettings';
 import type { SystemStatus } from '../src/systemStatusApi';
+import type { AnalysisItem } from '../src/mediaAnalysis';
 
 // These tests exercise the complete dashboard against explicit synthetic API
 // responses. Only frontend assets reach the server; no real mutation is sent.
 const stamp = '2026-09-30T08:00:00Z';
 const csrf = 'synthetic-dashboard-v2-csrf';
 const administrator = { Id: 'a'.repeat(32), Name: 'Dashboard administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: stamp };
-const library = { Id: 'b'.repeat(32), Name: 'Feature films', CollectionType: 'movies', Paths: ['D:\\Media\\Movies'], CreatedAt: stamp, LastScanAt: stamp };
+const library = { Id: 'b'.repeat(32), Name: 'Feature films', CollectionType: 'movies', Paths: ['D:\\Media\\Movies'], CreatedAt: stamp, LastScanAt: stamp,
+  LibraryOptions: { EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true, EnableIntroDetection: false } };
+const seriesLibrary = { ...library, Id: 'c'.repeat(32), Name: 'TV series', CollectionType: 'tvshows', Paths: ['D:\\Media\\Series'], LibraryOptions: { ...library.LibraryOptions, EnableIntroDetection: true } };
+const analysisItem: AnalysisItem = {
+  Id: 'episode-one', Name: 'Opening episode', Type: 'Episode', LibraryId: seriesLibrary.Id, MediaSourceId: 'source-one', SourceRevision: 'source-revision-one',
+  Detection: { ItemId: 'episode-one', Revision: '1', ManualRevision: '0', SourceRevision: 'source-revision-one', Status: 'qualified', Reasons: [],
+    Candidate: null, Effective: { StartTicks: 100_000_000, EndTicks: 400_000_000, Provenance: 'Detected' }, Suppressed: false, UpdatedAt: stamp },
+  Previews: [{ Width: 320, Height: 180, Size: 32768, FrameCount: 12, Status: 'ready', FailureCode: '', UpdatedAt: stamp }],
+};
 
 function runtime(): RuntimeSettings {
   const defaults = {
@@ -88,7 +97,7 @@ class DashboardAPI {
       if (method === 'GET') {
         if (path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
         if (path === '/admin/v1/session') return json(route, { User: administrator, CSRFToken: csrf });
-        if (path === '/admin/v1/overview') return json(route, { Server: { Id: 'd'.repeat(32), Name: 'Goby living room', Version: '0.1.0' }, Database: { Status: 'ok' }, Counts: { Users: 2, Libraries: 1, Items: 1240, ActiveSessions: 3 }, Runtime: { GoVersion: 'go1.26.1' }, Features: { LibraryManagement: true, Playback: true, Transcoding: true, ApplicationKeys: true } });
+        if (path === '/admin/v1/overview') return json(route, { Server: { Id: 'd'.repeat(32), Name: 'Goby living room', Version: '0.1.0' }, Database: { Status: 'ok' }, Counts: { Users: 2, Libraries: 2, Items: 1240, ActiveSessions: 3 }, Runtime: { GoVersion: 'go1.26.1' }, Features: { LibraryManagement: true, Playback: true, Transcoding: true, ApplicationKeys: true } });
         if (path === '/admin/v1/system/status') return json(route, this.status);
         if (path === '/admin/v1/activity') return json(route, { ...paged(activities), RetentionDays: 30 });
         if (path === '/admin/v1/logs') return json(route, { ...paged([]), Status: { Healthy: true, Degraded: false, Closed: false, MaxFileBytes: '1048576', MaxFiles: 10, RetentionDays: 30, MinFreeBytes: '0', Format: 'jsonl' } });
@@ -97,7 +106,7 @@ class DashboardAPI {
         if (path === '/admin/v1/devices') return json(route, paged([{ Id: '101', Revision: '1', ReportedDeviceId: 'living-room-tv', Name: 'Living room TV', ReportedName: 'Android TV', CustomName: 'Living room TV', AppName: 'Goby TV', AppVersion: '1.0', LastUserId: administrator.Id, LastUserName: administrator.Name, CreatedAt: stamp, LastSeenAt: stamp, IpAddress: '192.0.2.4', ActiveLoginCount: 1 }]));
         if (path === '/admin/v1/sessions') return json(route, paged([{ Id: 'f'.repeat(32), UserId: administrator.Id, UserName: administrator.Name, UserIsAdministrator: true, UserIsDisabled: false, Kind: 'admin', Client: 'Goby dashboard', DeviceId: '', DeviceName: 'Desktop browser', ApplicationVersion: '0.1.0', CreatedAt: stamp, LastSeenAt: stamp, ExpiresAt: '2026-10-01T08:00:00Z', RevokedAt: null, Status: 'active', IsCurrent: true }]));
         if (path === '/admin/v1/api-keys') return json(route, paged([{ Id: '201', AppName: 'Home automation', CreatedAt: stamp, LastUsedAt: stamp, RevokedAt: null, CreatedBy: administrator.Id, IPAddress: '192.0.2.5', Status: 'active' }]));
-        if (path === '/admin/v1/libraries') return json(route, { Items: [library], TotalRecordCount: 1 });
+        if (path === '/admin/v1/libraries') return json(route, { Items: [library, seriesLibrary], TotalRecordCount: 2 });
         if (path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: 'D:\\Media', Available: true }] });
         if (path === `/admin/v1/libraries/${library.Id}/items`) return json(route, { Library: library, ...paged([{ Id: 'film-one', LibraryId: library.Id, ParentId: '', ParentName: '', Name: 'The feature film', Type: 'Movie', Path: 'D:\\Media\\Movies\\Feature.mkv', IsFolder: false, ProductionYear: 2025, IndexNumber: null, ParentIndexNumber: null, HasOverrides: false, LockedFieldCount: 0 }]) });
         if (path === '/admin/v1/entities') return json(route, paged([{ Id: 'person-one', Name: 'Alex Morgan', Type: 'Person' }]));
@@ -114,7 +123,8 @@ class DashboardAPI {
           const profile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20 };
           return json(route, { Configuration: { Revision: '1', Profile: profile, Defaults: profile, UpdatedAt: stamp }, Runtime: { Configured: true, IntroAvailable: true, PreviewAvailable: true, Reasons: [], Cache: { ReadyEntries: 3, BuildingEntries: 0, PendingPublications: 0, Readers: 0, ReadyBytes: 4 * 2 ** 20, ReservedBytes: 0, ControlBytes: 1024, TotalBytes: 4 * 2 ** 20 + 1024, MaxBytes: 128 * 2 ** 20 } } });
         }
-        if (path === '/admin/v1/media-analysis/items') return json(route, paged([]));
+        if (path === '/admin/v1/media-analysis/items') return json(route, paged(!url.searchParams.get('LibraryId') || url.searchParams.get('LibraryId') === seriesLibrary.Id ? [analysisItem] : []));
+        if (path === `/admin/v1/media-analysis/items/${analysisItem.Id}`) return json(route, analysisItem);
       }
       if (method === 'PUT' && path === '/admin/v1/settings') {
         const input = captured.body as SettingsUpdateInput;
@@ -165,6 +175,7 @@ async function ready(page: Page, destination: typeof destinations[number]): Prom
   if (destination.tab) await expect(page.getByRole('tab', { name: destination.tab, exact: true })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('main').getByText(destination.text, { exact: false }).filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByRole('main').locator('[aria-busy="true"]')).toHaveCount(0);
+  if (destination.path === '/admin/media/analysis') await expect(page.getByRole('button', { name: `View analysis for ${analysisItem.Name}`, exact: true })).toBeVisible();
   await expect(page.getByRole('main')).not.toContainText(/invalid response|response is incomplete|No dashboard fixture|Loading settings/);
 }
 
@@ -198,6 +209,34 @@ for (const viewport of [{ width: 1440, height: 834 }, { width: 375, height: 812 
     });
   });
 }
+
+for (const viewport of [{ width: 1440, height: 834 }, { width: 375, height: 812 }]) test(`${viewport.width}px automatic intro results preserve the library and task workflows`, async ({ page, api }, testInfo) => {
+  await page.setViewportSize(viewport);
+  await page.goto('/admin/media/analysis'); await ready(page, destinations[4]);
+  const automatic = page.getByRole('region', { name: 'Automatic intro detection', exact: true });
+  await expect(automatic).toContainText('If no intro is found, playback stays unchanged.');
+  await expect(page.getByRole('button', { name: /Analyze library intros|Analyze selected episodes/ })).toHaveCount(0);
+  await expect(page.getByRole('switch', { name: 'Automatically publish qualified detected intros', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: `View analysis for ${analysisItem.Name}`, exact: true }).click();
+  const result = page.getByRole('dialog', { name: analysisItem.Name, exact: true });
+  await expect(result).toContainText('Intro available');
+  await expect(result).toContainText('0:10.00–0:40.00');
+  const outputs = result.getByRole(viewport.width < 840 ? 'list' : 'table', { name: 'Preview outputs', exact: true });
+  await expect(outputs).toContainText('320 × 180');
+  await expect(outputs).toContainText('12');
+  await expect(outputs).toContainText('32.0 KiB');
+  await expect(outputs.getByText('ready', { exact: true })).toBeVisible();
+  await expect(result.getByRole('button', { name: /Accept|Reject|Reset/ })).toHaveCount(0);
+  await noOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath(`media-analysis-result-${viewport.width === 1440 ? 'desktop' : 'mobile'}.png`), animations: 'disabled' });
+  await result.getByRole('button', { name: 'Close', exact: true }).click();
+  await automatic.getByRole('button', { name: 'Open library settings', exact: true }).click(); await ready(page, destinations[1]);
+  await expect(page).toHaveURL(/\/admin\/media\/libraries$/);
+  await page.getByRole('tab', { name: 'Media analysis', exact: true }).click(); await ready(page, destinations[4]);
+  await automatic.getByRole('button', { name: 'View intro tasks', exact: true }).click(); await ready(page, destinations[9]);
+  await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
+  expect(api.writes()).toEqual([]);
+});
 
 test('legacy routes retain their destination, query, fragment and active navigation', async ({ page, api }) => {
   test.setTimeout(120_000);

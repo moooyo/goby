@@ -1,21 +1,75 @@
 package library
 
-// LibraryOptions contains only settings with a scanner consumer. Disabling an
-// importer retains previously accepted source facts and administrator overrides.
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"strings"
+)
+
+// LibraryOptions contains scanner and automatic-analysis policy. Importer
+// changes retain source facts; intro detection is opt-in for TV libraries.
 type LibraryOptions struct {
 	EnableLocalMetadata   bool
 	EnableLocalImages     bool
 	EnableEmbeddedArtwork bool
+	EnableIntroDetection  bool
 }
 
 type LibraryOptionsUpdate struct {
 	EnableLocalMetadata   *bool
 	EnableLocalImages     *bool
 	EnableEmbeddedArtwork *bool
+	EnableIntroDetection  *bool
+}
+
+// UnmarshalJSON preserves omission while rejecting null, duplicate aliases and
+// unsupported switches rather than acknowledging a setting without a consumer.
+func (value *LibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	opening, err := decoder.Token()
+	if err != nil || opening != json.Delim('{') {
+		return ErrInvalidInput
+	}
+	*value = LibraryOptionsUpdate{}
+	fields := map[string]**bool{"enablelocalmetadata": &value.EnableLocalMetadata,
+		"enablelocalimages": &value.EnableLocalImages, "enableembeddedartwork": &value.EnableEmbeddedArtwork,
+		"enableintrodetection": &value.EnableIntroDetection}
+	seen := make(map[string]bool, len(fields))
+	for decoder.More() {
+		name, err := decoder.Token()
+		key, ok := name.(string)
+		key = strings.ToLower(key)
+		if err != nil || !ok || fields[key] == nil || seen[key] {
+			return ErrInvalidInput
+		}
+		var raw json.RawMessage
+		var enabled bool
+		if decoder.Decode(&raw) != nil || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) || json.Unmarshal(raw, &enabled) != nil {
+			return ErrInvalidInput
+		}
+		*fields[key] = &enabled
+		seen[key] = true
+	}
+	if closing, err := decoder.Token(); err != nil || closing != json.Delim('}') {
+		return ErrInvalidInput
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return ErrInvalidInput
+	}
+	return nil
 }
 
 func DefaultLibraryOptions() LibraryOptions {
 	return LibraryOptions{EnableLocalMetadata: true, EnableLocalImages: true, EnableEmbeddedArtwork: true}
+}
+
+func validateLibraryOptions(collectionType string, options LibraryOptions) error {
+	if options.EnableIntroDetection && collectionType != "tvshows" {
+		return fmt.Errorf("%w: intro detection is supported only for TV libraries", ErrInvalidInput)
+	}
+	return nil
 }
 
 // A nil options pointer represents the historical scanner defaults. This also
@@ -37,6 +91,9 @@ func applyLibraryOptions(previous LibraryOptions, update *LibraryOptionsUpdate) 
 		}
 		if update.EnableEmbeddedArtwork != nil {
 			previous.EnableEmbeddedArtwork = *update.EnableEmbeddedArtwork
+		}
+		if update.EnableIntroDetection != nil {
+			previous.EnableIntroDetection = *update.EnableIntroDetection
 		}
 	}
 	return previous

@@ -142,8 +142,9 @@ func deviceLegacyTableSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 
 func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *pgxpool.Pool, tables []deviceLegacyTable) {
 	t.Helper()
-	var expandedArtworkOptions bool
-	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=49)`).Scan(&expandedArtworkOptions); err != nil {
+	var expandedArtworkOptions, introAutomation bool
+	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=49),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=51)`).Scan(&expandedArtworkOptions, &introAutomation); err != nil {
 		t.Fatal("read the selected library-option migration boundary")
 	}
 	for _, table := range tables {
@@ -157,6 +158,27 @@ func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *
 					THEN jsonb_set(source_row,'{options}',(source_row->'options')||'{"EnableEmbeddedArtwork":true}'::jsonb) ELSE source_row END AS projected
 					FROM jsonb_array_elements($1::jsonb) retained(source_row)) expected`, table.snapshot).Scan(&expected); err != nil {
 				t.Fatal("derive the exact specified library-option migration")
+			}
+		}
+		if introAutomation && table.name == "task_system_events" {
+			var alreadyPresent bool
+			if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) value
+				WHERE value->>'name'='IntroAnalysisRequested')`, table.snapshot).Scan(&alreadyPresent); err != nil {
+				t.Fatal("read the historical intro-event inventory")
+			}
+			if !alreadyPresent {
+				// Schema51 adds exactly one neutral counter. Preserve all original
+				// rows byte-for-byte and validate the new row before appending it.
+				var neutral bool
+				if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_system_events
+					WHERE name='IntroAnalysisRequested' AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)`).Scan(&neutral); err != nil || !neutral {
+					t.Fatal("schema51 failed to initialize its neutral intro-request counter")
+				}
+				if err := pool.QueryRow(ctx, `SELECT jsonb_agg(value ORDER BY value::text)::text FROM (
+					SELECT value FROM jsonb_array_elements($1::jsonb) value UNION ALL
+					SELECT to_jsonb(event) FROM task_system_events event WHERE name='IntroAnalysisRequested') expected`, table.snapshot).Scan(&expected); err != nil {
+					t.Fatal("derive the exact appended intro-request counter")
+				}
 			}
 		}
 		if after := deviceLegacyTableSnapshot(t, ctx, pool, table); after != expected {

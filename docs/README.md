@@ -2,17 +2,27 @@
 
 ## Current status
 
-The latest increment is the [Docker operations toolkit](development/docker-operations-20260930.md).
-Fourteen helper tests and the actual software Docker preparation, startup,
-administrator bootstrap, scan, direct playback, database outage/recovery and
-stop journey passed; owned resources are closed. The original failed attempts
-and the affected recovery repeat remain distinct. Git integration is recorded
-separately from these acceptance receipts.
+The latest increment is [automatic TV-library intro detection](development/library-intro-automation-20260930.md).
+Enable **Automatic intro detection** in a TV library's settings; eligible
+episodes are processed in the background and qualified intervals are used
+without review or manual correction. Unmatched episodes play unchanged. Tasks
+shows progress, failures and stop controls. Existing libraries default to off
+after upgrading to schema 51 and require this explicit opt-in.
 
-The toolkit reuses the accepted software and AMD images. Application source
-`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` is unchanged; no new image, GPU
-campaign or browser campaign was needed. Revised Phase 3, automatic intro/BIF
-analysis and the earlier Docker profiles retain their accepted scope.
+Current software and AMD Docker application profiles use source
+`95607ffa505c7a9368b1bfd8ec3d545d009285d3`. The
+[result manifest](development/library-intro-automation-results-20260930.json)
+binds current images, focused verification, the actual automatic workflow and
+resource disposition. The recorded 135 focused Go parent passes and 27 UI
+passes are scoped evidence, not a new full-product suite; one historical
+fixture-dependent UI skip remains explicit. Git integration is recorded separately.
+The detector still needs at least three independent episodes and examines the
+first 600 seconds. This workflow does not expand its prior accuracy or client scope.
+
+The earlier [Docker operations toolkit](development/docker-operations-20260930.md)
+retains its 14 helper tests, software operations journey and resource closure
+on its original application. Revised Phase 3, intro/BIF and earlier image/tool
+receipts remain historical evidence within their own source boundaries.
 
 The [online-provider increment](development/online-providers-20260930.md)
 accepts the selected real MusicBrainz album workflow and offline contracts.
@@ -26,8 +36,8 @@ Docker Compose workflow has software and AMD profiles. Native installation
 packages and non-Docker runtimes are not supported alternatives or deferred
 delivery obligations.
 
-These deliveries do not establish a production deployment. Their verification
-runtimes are closed, with data and evidence retained. Earlier documents may
+These deliveries do not establish a production deployment. Use the current
+result record for owned-resource closure and retained evidence. Earlier documents may
 contain then-current schema numbers, worker identities, incomplete milestone
 labels, or instructions to resume a campaign. Those are historical checkpoints,
 not instructions to reopen completed work.
@@ -46,7 +56,7 @@ Start with these sources of current status and delivery policy:
 Use the [Docker quick start](../deploy/oci/QUICKSTART.md) as the recommended
 installation entry. `goby-docker.py` exposes `prepare`, `check`, `start`, `status`,
 `logs` and `stop`; [current-release.json](../deploy/oci/current-release.json)
-binds both existing profile archives and immutable image IDs. Software
+binds both current profile archives and immutable image IDs. Software
 and AMD are profiles of one Docker image delivery form. Image acceptance is
 specific to its recorded platform, tools and hardware; an archive or cross-build
 alone does not establish another platform's support.
@@ -61,7 +71,7 @@ alone does not establish another platform's support.
 | [Application-key operations](development/application-keys.md) | Persistent master-key ownership and restoring a database with its matching master key |
 | [Native backup and recovery](development/backup-recovery.md) | Encrypted archives, durable operations, offline recovery and generation switching |
 | [Media-analysis runtime](development/media-analysis-runtime.md) | Native intro helper, analysis inventory, cache and execution lifecycle |
-| [Media-analysis administrator UI](development/media-analysis-native-ui.md) | Analysis policy, tasks, progress, decisions and preview management |
+| [Media-analysis administrator UI](development/media-analysis-native-ui.md) | TV-library automation, results, task progress and manual preview generation |
 | [Media-analysis recovery](development/media-analysis-recovery.md) | Analysis state and artifact behavior during backup, restore and restart |
 
 The OCI deliveries include an embedded React/MUI administrator dashboard,
@@ -72,9 +82,9 @@ how the external PostgreSQL server or reverse proxy may be deployed. Executables
 recovery commands and native helpers included in the image are components of
 that image, not additional delivery forms. Consult the selected Docker guide
 before changing the media write policy. The toolkit ZIP is
-`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`;
-it is used with an existing image archive from
-`D:/Code/goby/.artifacts/oci-providers-20260930/software` or `amd`.
+`D:/Code/goby/.artifacts/intro-automation-20260930/goby-docker-operations.zip`;
+it is used with the matching current image archive from
+`D:/Code/goby/.artifacts/intro-automation-20260930/software` or `amd`.
 The small toolkit does not duplicate those archives.
 
 ## Functional and compatibility contracts
@@ -122,8 +132,9 @@ sources or interpret historical research totals as current test coverage.
 
 | Completed scope | Record and evidence |
 | --- | --- |
+| Automatic TV-library intros | [Automation result](development/library-intro-automation-20260930.md) and [manifest](development/library-intro-automation-results-20260930.json); library opt-in, background results, automatic scan follow-up, disable/restart behavior and focused UI/task checks |
 | Docker installation and operations | [Operations result](development/docker-operations-20260930.md); 14 helper tests, composed software runtime journey, retained failures and resource closure; Git integration is recorded separately |
-| Credential-free online providers | [Provider result](development/online-providers-20260930.md); accepted MusicBrainz album flow and offline/configuration scope, retained through unchanged images |
+| Credential-free online providers | [Provider result](development/online-providers-20260930.md); accepted MusicBrainz album flow and offline/configuration scope at source `76d64bf`; original image receipts are preserved |
 | Revised Phase 3 functional acceptance | [Closeout](development/phase3-functional-closeout-20260929.md), [results](development/phase3-functional-closeout-results-20260929.json), [publication](development/phase3-functional-publication-20260929.md) |
 | Software OCI archive and Compose | [Delivery record](development/oci-delivery-20260929.md), [results](development/oci-delivery-results-20260929.json) |
 | AMD OCI archive and Compose | [Delivery record](development/oci-amd-delivery-20260929.md), [results](development/oci-amd-delivery-results-20260929.json) |

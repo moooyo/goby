@@ -85,6 +85,9 @@ func newAnalysisProjectionFixture(t *testing.T) analysisProjectionFixture {
 	if err := f.app.taskManager.Close(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := f.pool.Exec(f.ctx, `UPDATE libraries SET options=jsonb_set(options,'{EnableIntroDetection}','true'::jsonb) WHERE id=$1`, fixture.libraryID); err != nil {
+		t.Fatal("enable detected-intro projection for the isolated fixture", err)
+	}
 	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
 		FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64),
 		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "projection-fixture-v1"}
@@ -388,4 +391,37 @@ func TestAnalysisIntroProjectionReachesHTTPChaptersRespectsManualAndWithdrawsCha
 	if err := f.pool.QueryRow(f.ctx, `SELECT revision,(SELECT count(*) FROM analysis_intro_audit WHERE item_id=$1) FROM analysis_detections WHERE item_id=$1`, f.ids[0]).Scan(&revision, &audits); err != nil || revision != 1 || audits != 1 {
 		t.Fatal("read-time source invalidation rewrote or erased the stored evidence")
 	}
+}
+
+func TestAnalysisIntroLibraryPolicyImmediatelyWithdrawsHTTPMarkers(t *testing.T) {
+	f := newAnalysisProjectionFixture(t)
+	f.seedQualified(t)
+	f.assertHTTPMarkers(t, map[string]int64{"IntroStart": 10 * media.TicksPerSecond, "IntroEnd": 45 * media.TicksPerSecond})
+	changePolicy := func(enabled bool) {
+		t.Helper()
+		current, err := f.app.library.GetLibraryEditing(f.ctx, f.libraryID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = f.app.library.UpdateLibraryAsAdministrator(f.ctx, f.actor, identity.AdministratorNative, f.libraryID,
+			library.LibraryUpdate{Revision: fmt.Sprint(current.Library.Revision),
+				LibraryOptions: &library.LibraryOptionsUpdate{EnableIntroDetection: &enabled}})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	changePolicy(false)
+	f.assertHTTPMarkers(t, map[string]int64{})
+	f.manual(t, false)
+	f.assertHTTPMarkers(t, map[string]int64{"IntroStart": 7 * media.TicksPerSecond, "IntroEnd": 17 * media.TicksPerSecond})
+	f.manual(t, true)
+	f.assertHTTPMarkers(t, map[string]int64{})
+	changePolicy(true)
+	f.assertHTTPMarkers(t, map[string]int64{})
+	changePolicy(false)
+	if err := os.WriteFile(f.paths[0], []byte("replacement-chapter-source-with-explicit-boundaries"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	f.rescan(t)
+	f.assertHTTPMarkers(t, map[string]int64{"IntroStart": 5 * media.TicksPerSecond, "IntroEnd": 15 * media.TicksPerSecond})
 }
