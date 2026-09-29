@@ -31,7 +31,6 @@ FROM ${GOBY_AMD_BASE_IMAGE} AS runtime
 ARG GOBY_AMD_RECIPE_REVISION
 USER 0:0
 COPY --from=amd-media-build /opt/goby-amd-ffmpeg/ /opt/goby-amd-ffmpeg/
-COPY Dockerfile.amd build-amd-ffmpeg.sh source-pins.amd.json /usr/share/goby/recipe/
 
 # Drivers remain runtime packages; compiler and development packages stay behind.
 # Compiled interfaces establish availability, not actual GPU execution.
@@ -47,7 +46,9 @@ RUN cd /opt/goby-amd-ffmpeg \
     && sha256sum /usr/lib/x86_64-linux-gnu/dri/radeonsi_drv_video.so > /usr/share/goby/amd-runtime/vaapi-driver.sha256 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN /opt/goby-amd-ffmpeg/bin/ffmpeg -version > /usr/share/goby/amd-runtime/ffmpeg-version.txt \
+COPY Dockerfile.amd build-amd-ffmpeg.sh source-pins.amd.json /usr/share/goby/recipe/
+RUN chmod -R a+rX /opt/goby-amd-ffmpeg \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -version > /usr/share/goby/amd-runtime/ffmpeg-version.txt \
     && grep -Eq '^ffmpeg version 9\.0\.1([ -]|$)' /usr/share/goby/amd-runtime/ffmpeg-version.txt \
     && /opt/goby-amd-ffmpeg/bin/ffprobe -version > /usr/share/goby/amd-runtime/ffprobe-version.txt \
     && grep -Eq '^ffprobe version 9\.0\.1([ -]|$)' /usr/share/goby/amd-runtime/ffprobe-version.txt \
@@ -81,3 +82,5 @@ LABEL org.opencontainers.image.title="Goby internal AMD candidate" \
     io.goby.oci.amd-recipe-revision="$GOBY_AMD_RECIPE_REVISION"
 # The inherited application revision remains b9bfa7ccee07e2ae81f70ab90d2121d908734636.
 USER 10001:10001
+RUN /opt/goby-amd-ffmpeg/bin/ffmpeg -version > /dev/null \
+    && /opt/goby-amd-ffmpeg/bin/ffprobe -version > /dev/null
