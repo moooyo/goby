@@ -1,5 +1,14 @@
 # Current execution plan
 
+## Completed process and storage recovery: September 29, 2026
+
+The [process/PostgreSQL/ENOSPC record](../development/phase3-process-storage-recovery-20260929.md)
+is the current entry. Actual application SIGKILL, private PostgreSQL immediate
+restart, and preview ENOSPC recovery passed. A real cache-control ENOSPC cleanup
+defect was repaired; its full cache race suite and affected recovery cases passed.
+Continue with small owned filesystem-blocking/permission cases, then remaining
+guest lifecycle and final integrated verification. Shared services stay protected.
+
 ## Completed compound and catalog continuation: September 29, 2026
 
 The [compound/catalog/recovery record](../development/phase3-concurrency-recovery-20260929.md)

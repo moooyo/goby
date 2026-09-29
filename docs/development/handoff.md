@@ -1,12 +1,13 @@
 # Goby handoff - September 29, 2026
 
-For current work, start with the [September 29 compound/catalog/recovery record](phase3-concurrency-recovery-20260929.md).
-The reconciliation milestone and its continuation on `test-env` are complete:
-20/10,000-media scans, small real-media concurrency, 100k SQL-catalog isolation
-and its same-server media composition, plus selected PG/mount recovery passed.
-Local compilation is allowed and orchestration is simplified. Full recovery
-coverage and final regression remain open. Earlier stopping points and environment
-restrictions below are retained history.
+For current work, start with the [September 29 process/storage recovery record](phase3-process-storage-recovery-20260929.md).
+Actual application SIGKILL, private PostgreSQL immediate restart, and preview
+ENOSPC recovery passed. A real ENOSPC control-file cleanup defect was repaired
+and reverified; the dedicated PostgreSQL cluster is now stopped. Previous
+reconciliation and compound/catalog milestones retain their scopes. Local
+compilation is allowed and orchestration is simplified. Remaining filesystem,
+guest-lifecycle and final regression work is open. Earlier stopping points and
+environment restrictions below are retained history.
 
 ## Historical September 26 checkpoint
 

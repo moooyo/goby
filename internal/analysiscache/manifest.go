@@ -112,7 +112,48 @@ func writeControl(root *os.Root, name string, data []byte) error {
 	if writeErr == nil {
 		writeErr = file.Sync()
 	}
-	return errors.Join(writeErr, file.Close())
+	var cleanupErr error
+	if writeErr != nil {
+		cleanupErr = removeFailedControl(root, name, file)
+	}
+	return errors.Join(writeErr, cleanupErr, file.Close())
+}
+
+// Only the writer that exclusively created this control file may remove its
+// incomplete bytes. Keep its descriptor open through removal, and retain any
+// replaced or unverifiable name for the ordinary fail-closed recovery path.
+func removeFailedControl(root *os.Root, name string, created *os.File) (resultErr error) {
+	held, err := created.Stat()
+	if err != nil {
+		return errors.Join(ErrUnsafe, err)
+	}
+	heldIdentity, err := fileIdentity(held)
+	if err != nil {
+		return err
+	}
+	current, err := openRegular(root, name, os.O_RDONLY, 0)
+	if err != nil {
+		return errors.Join(ErrUnsafe, err)
+	}
+	defer func() { resultErr = errors.Join(resultErr, current.Close()) }()
+	opened, err := current.Stat()
+	if err != nil {
+		return errors.Join(ErrUnsafe, err)
+	}
+	named, err := root.Lstat(name)
+	if err != nil {
+		return errors.Join(ErrUnsafe, err)
+	}
+	for _, info := range []os.FileInfo{opened, named} {
+		identity, err := fileIdentity(info)
+		if err != nil || !info.Mode().IsRegular() || !os.SameFile(held, info) || identity != heldIdentity {
+			return errors.Join(ErrUnsafe, err)
+		}
+	}
+	if err := root.Remove(name); err != nil {
+		return err
+	}
+	return syncDirectory(root)
 }
 
 func decodeCanonical(data []byte, target any) error {
