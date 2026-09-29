@@ -1,7 +1,9 @@
 # Media analysis runtime
 
 Current runtime contract, including the September 30 library automation increment.
-That increment is **in implementation/verification**; see its
+That increment is **complete within its selected scope**, including backend,
+UI, actual Docker verification and owned-resource closure. Delivery identities
+and the machine-readable receipt are bound by its
 [record](library-intro-automation-20260930.md). Earlier Phase 2 verification is
 complete, including its client lifecycle and independent resource closure. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
@@ -54,6 +56,11 @@ The first installation of an untouched enabled intro-task definition adds a
 disabled schedule choices are preserved. The initial event cursor includes
 requests committed before default-trigger installation. Automatic intro runs
 select only enabled TV libraries; no eligible library means no intro work.
+Graceful shutdown of unfinished automatic intro work persists a replacement
+request. Startup recovery also requests fresh admission for abandoned automatic
+runs after a crash. Old claims become interrupted; current library policy is
+re-evaluated for new work. Explicit user stops and manual runs do not create
+automatic retries.
 
 The native media-analysis page stores its own configuration revision in
 PostgreSQL. Defaults are a ten-second minimum
@@ -156,6 +163,9 @@ reset and Manual/Import APIs remain compatible without UI entry points.
 
 Turning off the library option immediately withdraws detected publications;
 turning it back on requests new work instead of promoting retained evidence.
+An explicit false-to-true transition retires the library's legacy rejection
+flags, advances decision revisions and preserves decision/audit records. Manual,
+imported and chapter markers remain independent.
 Qualified automatic intros are resolved against the target and supporting files
 for single-item details and playback information. Manual/import and explicit
 chapter intervals take precedence. Batch catalog DTOs retain their inexpensive

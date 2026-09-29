@@ -1,10 +1,12 @@
 # Native media analysis workflow
 
-Status: the September 30 automatic library workflow is **in implementation and
-verification**. See the [increment record](library-intro-automation-20260930.md).
-Earlier Phase 2 verification is complete at its recorded source; that accepted
-manual-decision UI and client lifecycle do not establish a pass for this changed
-workflow. See the
+Status: the September 30 automatic library workflow is **complete within its
+selected scope**: 27 UI checks and 11 Node checks passed, with one historical
+full-Phase-3 UI skip and no Node skips. Actual Docker UI checks and owned-resource
+closure also passed. The machine-readable receipt is linked from the
+[increment record](library-intro-automation-20260930.md).
+Earlier Phase 2 verification retains its original source and manual-decision
+UI/client-lifecycle scope. See the
 [Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
 [recorded results](media-analysis-resilience-phase2-results-20260922.json).
 
@@ -34,6 +36,8 @@ and `no_result` mean that no automatic marker is applied; neither asks the user
 to approve uncertain content. Disabling the option immediately withdraws detected
 markers. Re-enabling waits for new work. Historical Manual/Import markers and
 explicit intro chapters retain their compatibility.
+An explicit false-to-true transition retires legacy rejection flags while keeping
+their decision/audit history, so the new flow does not require a hidden reset step.
 
 Saved-library notices link to Tasks for progress and errors. The default task
 has a daily interval and a dedicated durable event trigger. Existing custom,
@@ -88,10 +92,21 @@ claims that busy entries were immediately removed or that original media changed
 
 ## Verification coverage
 
-Current remote verification must cover the TV-library switch, automatic status,
-progress/errors, absence of candidate-decision/manual-intro controls, retained
-preview actions, revision conflicts and uncertain request recovery. No new
-browser pass is claimed here while this increment is in progress.
+The current remote UI campaign passed 27 checks and retained one historical
+full-Phase-3 skip. All 11 Node checks passed without skips.
+It covers the changed library/analysis workflow, including automatic status and
+the removed candidate-decision/manual-intro controls; exact campaign evidence and
+retained failures are bound by the increment record. The separate real Docker
+journey used library-option writes and automatic tasks, with no analysis-start
+or candidate-decision request. It verified published playback intervals, safe
+no-result handling, scan-triggered repetition and disable/recreate behavior.
+
+The actual AMD-image UI check also passed login, visibility of the TV-library
+switch and absence of human-correction controls. Its first two attempts timed
+out because the fixture's exact Username label omitted the required-field
+asterisk. Using the project's existing `/^Username/` locator passed without a
+product change; the original logs remain retained. This application/UI check
+used software axes and did not repeat GPU verification.
 
 The earlier Phase 2 seven mocked browser cases included manual decisions that
 belonged to that historical UI. Its actual media/skip/cancellation/prune/restart
@@ -99,5 +114,5 @@ journey remains valid at its recorded source. The
 [original cancellation-fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
 remains recorded. The successful successor used the same frozen product and
 labels after the assertion correction; it was not a new unseen accuracy trial.
-The new workflow reuses FH1–FH3 and N1/N2 for automation checks. These are
+The new workflow reused FH1–FH3 and N1/N2 for automation checks. These are
 previously evaluated sources, not a new unseen accuracy population.

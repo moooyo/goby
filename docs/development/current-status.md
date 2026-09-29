@@ -1,12 +1,39 @@
 # Current implementation and delivery status
 
+The current increment is [automatic TV-library intro detection](library-intro-automation-20260930.md).
+Enable **Automatic intro detection** in a TV library; background work publishes
+qualified matches without review or manual correction. An unmatched episode
+plays unchanged. Tasks retains progress, failures and stop controls. Successful
+scans of enabled libraries request follow-up analysis automatically.
+
+Application source `95607ffa505c7a9368b1bfd8ec3d545d009285d3` introduces schema 51.
+Existing libraries default to off after upgrade and must be explicitly enabled.
+The current [release catalog](../../deploy/oci/current-release.json) binds the
+updated software and AMD images. Archives are under
+`D:/Code/goby/.artifacts/intro-automation-20260930/software` and `amd`, with
+`goby-docker-operations.zip` in their parent directory.
+
+The selected checks report 135 focused Go parent passes and 27 UI passes, with
+one historical external-fixture UI skip. The actual Docker journey enabled a
+library and produced three qualified results and two expected no-results without
+manual analysis or decision requests, then exercised scan-triggered follow-up and
+disable/container recreation with no detected markers. These are workflow
+results on the reused corpus, not a new detector accuracy or full-product claim.
+The algorithm still needs at least three independent episodes and examines the
+first 600 seconds. The [result manifest](library-intro-automation-results-20260930.json)
+binds current evidence, artifacts and resource closure. Git integration is recorded
+separately. TMDB/OpenSubtitles and new scraper research remain deferred.
+
+## Previous Docker operations acceptance
+
 The September 30 [Docker installation and operations increment](docker-operations-20260930.md)
 has completed its selected verification and resource closure. Start with the
 [Docker quick start](../../deploy/oci/QUICKSTART.md) and the helper's
 `prepare`, `check`, `start`, `status`, `logs` and `stop` commands.
-[current-release.json](../../deploy/oci/current-release.json) binds the existing
-software and AMD archives; application source
-`76d64bf0087f3cd2e40addde8067f4e6e65b2bac` and both images are unchanged.
+At that checkpoint the catalog bound software and AMD archives with application
+source `76d64bf0087f3cd2e40addde8067f4e6e65b2bac`; that operations-only work
+did not rebuild its images. The current catalog now selects the later
+intro-automation application shown above.
 
 All 14 helper unit tests and the composed actual software Docker journey passed:
 preparation, startup, administrator bootstrap, scan, direct playback, database

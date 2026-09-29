@@ -1,0 +1,597 @@
+{
+  "kind": "goby-library-intro-automation-acceptance",
+  "version": 1,
+  "recordedOn": "2026-09-30",
+  "status": "complete_within_selected_library_intro_automation_scope",
+  "baseline": "40e02bb6c1755654355706c99b888702da3faaff",
+  "application": {
+    "bytes": 51382640,
+    "sha256": "b85fa1ecd2cbe8b56643abfdffc8e312bcf346d7f27d488767fecabe69805838",
+    "sourceRevision": "95607ffa505c7a9368b1bfd8ec3d545d009285d3"
+  },
+  "schemaVersion": 51,
+  "deliveryForm": "Docker images and Compose only",
+  "workflow": {
+    "libraryOption": "EnableIntroDetection",
+    "default": false,
+    "collectionType": "tvshows",
+    "onEnable": "durable background request",
+    "afterCompletedScan": "durable background request",
+    "defaultPeriodHours": 24,
+    "existingScheduleChoicesPreserved": true,
+    "qualifiedResultsUsedAutomatically": true,
+    "humanCorrectionControls": false,
+    "reviewAndNoResultPublished": false,
+    "progressAndFailuresInTasks": true,
+    "disabledLibrariesExcluded": true,
+    "disableWithdrawsDetectedMarkers": true,
+    "reenableRetiresLegacyRejection": true,
+    "automaticInterruptedWorkGetsFreshRequest": true,
+    "manualAndExplicitStopReplayed": false,
+    "legacyMarkerDataAndAPIsRetained": true
+  },
+  "regressions": {
+    "environment": "test-env",
+    "localVerification": false,
+    "composedParentPasses": 135,
+    "unresolvedFailures": 0,
+    "skippedParents": 0,
+    "byPackage": {
+      "backuppg": 21,
+      "database": 10,
+      "library": 64,
+      "server": 10,
+      "tasks": 30
+    },
+    "runs": [
+      {
+        "name": "test-backuppg-01",
+        "exitCode": 1,
+        "parentResults": {
+          "pass": 11,
+          "fail": 7,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-backuppg-01.log",
+          "bytes": 12340,
+          "sha256": "fecff6419878d77b0e3b9f74211b9b080b54922222b5907f9c30aa90d58a188a"
+        }
+      },
+      {
+        "name": "test-backuppg-02",
+        "exitCode": 1,
+        "parentResults": {
+          "pass": 19,
+          "fail": 2,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-backuppg-02.log",
+          "bytes": 12184,
+          "sha256": "ccbe0b2a1272f4f9dc9b900725886e63c474ecdb12903fc143f25337df7ebd8b"
+        }
+      },
+      {
+        "name": "test-backuppg-03",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 2,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-backuppg-03.log",
+          "bytes": 325,
+          "sha256": "7e02dca999483b5334229fa0c650443642f9d490f77b982bfcc2ff1f92ad5267"
+        }
+      },
+      {
+        "name": "test-database-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 3,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-database-01.log",
+          "bytes": 1201,
+          "sha256": "4f46f0c2fdcbbb243ebaffa6f9c9036051f1f74e0c122c5d0bd1cb9990f1aa92"
+        }
+      },
+      {
+        "name": "test-database-02",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 7,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-database-02.log",
+          "bytes": 12849,
+          "sha256": "fc23c6d5c191a661d46eb1a0a5d0b3884a909a8172df0158ab31f5c22c5901b7"
+        }
+      },
+      {
+        "name": "test-library-01",
+        "exitCode": 1,
+        "parentResults": {
+          "pass": 56,
+          "fail": 6,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-library-01.log",
+          "bytes": 14881,
+          "sha256": "849dadab5e0eb3cb2284c76e05711ba5f1c65a1e8dce474a9ef90f45041b6f8b"
+        }
+      },
+      {
+        "name": "test-library-02",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 6,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-library-02.log",
+          "bytes": 933,
+          "sha256": "b7aaa275fe5af0cc4d66f281c1ac2b89e39ccd4f6cbb3c92c8204c926a948890"
+        }
+      },
+      {
+        "name": "test-library-03",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 2,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-library-03.log",
+          "bytes": 309,
+          "sha256": "2baa016ce3c8f6fc9e70c490f814a3531a8c1f29fe4b6359778ed14e19a2636c"
+        }
+      },
+      {
+        "name": "test-server-01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 10,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-server-01.log",
+          "bytes": 2739,
+          "sha256": "eb92e1321ffd3f52b5dc136665b7fc9db2f5ef5e6cdf5ee451b95bc4bb9229d8"
+        }
+      },
+      {
+        "name": "test-tasks-01",
+        "exitCode": 1,
+        "parentResults": {
+          "pass": 26,
+          "fail": 1,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-tasks-01.log",
+          "bytes": 9427,
+          "sha256": "962f8f55e0b93191b07f9fce68a3f8f688296707dd7e46e67885efc23eb22e5d"
+        }
+      },
+      {
+        "name": "test-tasks-02",
+        "exitCode": 1,
+        "parentResults": {
+          "pass": 2,
+          "fail": 1,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-tasks-02.log",
+          "bytes": 2341,
+          "sha256": "09cd2cd0a962ed7f8c09f46eb4fa3c1c8ce6ba85fb5289c03fc2ef856a98da92"
+        }
+      },
+      {
+        "name": "test-tasks-03",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 2,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-tasks-03.log",
+          "bytes": 713,
+          "sha256": "ddba108df867918d2c758863b8b8ff00e7cc602b4ae8ac1ff590f632a2743c7c"
+        }
+      }
+    ],
+    "composition": "Later affected tests replace the same earlier failing parents; unchanged passes are reused. This is not a whole-repository test count."
+  },
+  "frontend": {
+    "nodePasses": 11,
+    "nodeSkips": 0,
+    "buildPassed": true,
+    "browserPasses": 27,
+    "browserSkips": 1,
+    "skipBoundary": "Historical full Phase 3 server/restart fixture was not configured; it is outside this increment.",
+    "browserComposition": "ui-browser-02 contains 26 passes, one skip and one failing new fixture. ui-browser-03 replaces only that failing fixture with one pass.",
+    "actualDockerUI": {
+      "passed": true,
+      "actualDockerApplication": true,
+      "existingDisabledLibraryRead": true,
+      "manualCorrectionControls": 0,
+      "pageErrors": 0,
+      "librarySettingsChanged": false,
+      "screenshots": [
+        "actual-library-settings.png",
+        "actual-media-analysis.png"
+      ]
+    }
+  },
+  "runtime": {
+    "passed": true,
+    "log": {
+      "name": "runtime-01.log",
+      "bytes": 5503,
+      "sha256": "9a962526f8d6f80f407344f50739a9b202a89712d401a8aa96fa1fdd3215dabd"
+    },
+    "phases": [
+      "enable",
+      "rescan",
+      "disable"
+    ],
+    "independentPositiveEpisodes": 3,
+    "insufficientEvidenceSources": 2,
+    "disabledLibraryEpisodes": 3,
+    "positiveQualifiedAndPlaybackMarkers": 3,
+    "negativeMarkers": 0,
+    "disabledMarkers": 0,
+    "manualAnalysisStartRequests": 0,
+    "manualDecisionRequests": 0,
+    "enableAndRescanAutomaticRuns": [
+      {
+        "children": 3,
+        "enabled_library_only": true,
+        "event": "automatic_run_completed",
+        "phase": "enable",
+        "run_id": "842ba1b011031cfcd0951761cb22b6be",
+        "source": "system_event"
+      },
+      {
+        "children": 3,
+        "enabled_library_only": true,
+        "event": "automatic_run_completed",
+        "phase": "rescan",
+        "run_id": "0a71069f44122afd86b4136d9596bfb7",
+        "source": "system_event"
+      }
+    ],
+    "outcomes": [
+      {
+        "event": "intro_outcome",
+        "fixture": "positive",
+        "item_id": "e91886aec9b8e3fd5a30e4fc215b7ba9",
+        "manual_decision": false,
+        "phase": "enable",
+        "playback_markers": {
+          "EndTicks": 358788598,
+          "StartTicks": 35035035
+        },
+        "reasons": [],
+        "status": "qualified"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "positive",
+        "item_id": "3699cd05aa37f947a3723e1f79cb4c6b",
+        "manual_decision": false,
+        "phase": "enable",
+        "playback_markers": {
+          "EndTicks": 363740978,
+          "StartTicks": 39987415
+        },
+        "reasons": [],
+        "status": "qualified"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "positive",
+        "item_id": "5b6ef8c421ce61d50f42bcc679b2d3d9",
+        "manual_decision": false,
+        "phase": "enable",
+        "playback_markers": {
+          "EndTicks": 360026693,
+          "StartTicks": 36273130
+        },
+        "reasons": [],
+        "status": "qualified"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "negative",
+        "item_id": "9904e9edaec8a7b0aae6dbd00332a0f8",
+        "manual_decision": false,
+        "phase": "enable",
+        "playback_markers": null,
+        "reasons": [
+          "insufficient_cohort"
+        ],
+        "status": "no_result"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "negative",
+        "item_id": "df832179bd2527fa0e0c987ccbf9cd99",
+        "manual_decision": false,
+        "phase": "enable",
+        "playback_markers": null,
+        "reasons": [
+          "insufficient_cohort"
+        ],
+        "status": "no_result"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "positive",
+        "item_id": "e91886aec9b8e3fd5a30e4fc215b7ba9",
+        "manual_decision": false,
+        "phase": "rescan",
+        "playback_markers": {
+          "EndTicks": 358788598,
+          "StartTicks": 35035035
+        },
+        "reasons": [],
+        "status": "qualified"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "positive",
+        "item_id": "3699cd05aa37f947a3723e1f79cb4c6b",
+        "manual_decision": false,
+        "phase": "rescan",
+        "playback_markers": {
+          "EndTicks": 363740978,
+          "StartTicks": 39987415
+        },
+        "reasons": [],
+        "status": "qualified"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "positive",
+        "item_id": "5b6ef8c421ce61d50f42bcc679b2d3d9",
+        "manual_decision": false,
+        "phase": "rescan",
+        "playback_markers": {
+          "EndTicks": 360026693,
+          "StartTicks": 36273130
+        },
+        "reasons": [],
+        "status": "qualified"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "negative",
+        "item_id": "9904e9edaec8a7b0aae6dbd00332a0f8",
+        "manual_decision": false,
+        "phase": "rescan",
+        "playback_markers": null,
+        "reasons": [
+          "insufficient_cohort"
+        ],
+        "status": "no_result"
+      },
+      {
+        "event": "intro_outcome",
+        "fixture": "negative",
+        "item_id": "df832179bd2527fa0e0c987ccbf9cd99",
+        "manual_decision": false,
+        "phase": "rescan",
+        "playback_markers": null,
+        "reasons": [
+          "insufficient_cohort"
+        ],
+        "status": "no_result"
+      }
+    ],
+    "disableAndRecreatePersisted": true,
+    "actualCrashInjection": false,
+    "sourceBoundary": "Reused accepted FH1-FH3 and N1-N2 sources. No new accuracy population or broad series generalization.",
+    "matcherChanged": false,
+    "minimumIndependentEpisodes": 3,
+    "analyzedPrefixSeconds": 600
+  },
+  "amdApplication": {
+    "passed": true,
+    "imageId": "sha256:3a8467bcbb97c82b4675b16d06364a3b27a06c9605df2f6374e0f95ede1e12b7",
+    "actualStartup": true,
+    "catalogAndDisabledPolicyPreserved": true,
+    "actualUIScreenshots": true,
+    "newGPUAcceptanceClaim": false,
+    "axes": "software"
+  },
+  "images": {
+    "software": {
+      "kind": "goby-intro-automation-image-delivery",
+      "profile": "software",
+      "baseImageId": "sha256:fa13611dbb940a2a876d9f52606d3bc05ccc6364b4f5fc8de19bec86204c3cb4",
+      "imageId": "sha256:24aca9db2d30ab8d2e0e7275bbdc4b4d395d355c99a79e0d5421353345b86ce9",
+      "applicationSha256": "b85fa1ecd2cbe8b56643abfdffc8e312bcf346d7f27d488767fecabe69805838",
+      "baseLayersUnchanged": true,
+      "additionalApplicationLayers": 1,
+      "application": {
+        "bytes": 51382640,
+        "sha256": "b85fa1ecd2cbe8b56643abfdffc8e312bcf346d7f27d488767fecabe69805838",
+        "sourceRevision": "95607ffa505c7a9368b1bfd8ec3d545d009285d3"
+      },
+      "archive": {
+        "name": "goby-linux-amd64-image.tar",
+        "bytes": 440235520,
+        "sha256": "3062c7114a8a63c78cb592c7c0d17a3a60fca06a485d61437105ca70df86d768"
+      },
+      "companionHashes": {
+        "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
+        "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b"
+      },
+      "actualImportPassed": true,
+      "newGPUAcceptanceClaim": false
+    },
+    "amd": {
+      "kind": "goby-intro-automation-image-delivery",
+      "profile": "amd",
+      "baseImageId": "sha256:a35b7653d262afcf006b95f31f450b58d89ce11b886279e2685a8a2ea0d3178e",
+      "imageId": "sha256:3a8467bcbb97c82b4675b16d06364a3b27a06c9605df2f6374e0f95ede1e12b7",
+      "applicationSha256": "b85fa1ecd2cbe8b56643abfdffc8e312bcf346d7f27d488767fecabe69805838",
+      "baseLayersUnchanged": true,
+      "additionalApplicationLayers": 1,
+      "application": {
+        "bytes": 51382640,
+        "sha256": "b85fa1ecd2cbe8b56643abfdffc8e312bcf346d7f27d488767fecabe69805838",
+        "sourceRevision": "95607ffa505c7a9368b1bfd8ec3d545d009285d3"
+      },
+      "archive": {
+        "name": "goby-linux-amd64-amd-image.tar",
+        "bytes": 992706048,
+        "sha256": "4061ddb4ea39fcfcc2f37d099fe288aa770fc6325b85af2ec3da9e165352942a"
+      },
+      "companionHashes": {
+        "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
+        "compose.subtitles.yaml": "dccc18e2e20ee0fb18d46daec575375b80ef30b3f3d1a07dbccb633204381a0a",
+        "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b",
+        "compose.amd.yaml": "a5dad695b2b5f722a20f588759d546fecc3270d86955e003e65a11818a97118e",
+        "seccomp.amd.json": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0"
+      },
+      "actualImportPassed": true,
+      "newGPUAcceptanceClaim": false
+    }
+  },
+  "toolkit": {
+    "passed": true,
+    "archive": {
+      "name": "goby-docker-operations.zip",
+      "bytes": 44672,
+      "sha256": "b55b71bdfe7aec41dfe01b33c3ee7bdf529ac3859d88d4ef096717581866ead0"
+    },
+    "files": 14,
+    "extractionAndChecksums": true,
+    "helperUnchanged": true,
+    "bothCurrentProfileCompanions": true,
+    "packagedGuideLinks": true,
+    "helperOriginalAcceptance": "docs/development/docker-operations-results-20260930.json"
+  },
+  "closure": {
+    "kind": "goby-intro-automation-resource-closure",
+    "ownedContainers": 0,
+    "ownedComposeNetworks": 0,
+    "databaseConnectionsBeforeStop": 0,
+    "postgresStopped": true,
+    "postgresPort": 55996,
+    "httpPort": 38963,
+    "dataAndEvidenceRetained": true,
+    "protectedServicesUnchanged": true,
+    "protectedServices": [
+      {
+        "name": "/winvaultwarden-ui-review",
+        "id": "7637bef4bf06c121575af2e4c4968c2315f128be6830590e034cf40d1c085d1d",
+        "pid": 1452,
+        "startedAt": "2026-09-26T13:45:00.745678683Z",
+        "running": true
+      },
+      {
+        "name": "/winvaultwarden-bitwarden-test",
+        "id": "cfc2342951f8300a3090829b21966f92d22a1b20ea6197d7e09776ba4bb7aedb",
+        "pid": 1455,
+        "startedAt": "2026-09-26T13:45:00.755428599Z",
+        "running": true
+      },
+      {
+        "name": "/5gpn-release-gateway-1",
+        "id": "e4aa5102681db11be9122bcdcd59215d4a491d2d0b94c15f42d21b659cc8cb89",
+        "pid": 1467,
+        "startedAt": "2026-09-26T13:45:00.753343083Z",
+        "running": true
+      }
+    ]
+  },
+  "retainedFailures": [
+    {
+      "attempt": "test-library-01",
+      "reason": "Six historical fixture files were not mounted in the test container working directory.",
+      "resolution": "Mounted the frozen source tree; only those six parents repeated in test-library-02."
+    },
+    {
+      "attempt": "test-tasks-01",
+      "reason": "The interval fixture also updated a retired default event trigger.",
+      "resolution": "Restricted the fixture update to live interval rules; affected parent passed in test-tasks-02."
+    },
+    {
+      "attempt": "test-tasks-02",
+      "reason": "The startup fixture resubmitted a server-owned interval anchor.",
+      "resolution": "Cleared server-owned schedule inputs; affected parent passed in test-tasks-03."
+    },
+    {
+      "attempt": "test-backuppg-01",
+      "reason": "The new schema recovery catalog had not yet been exported.",
+      "resolution": "Generated schema-51-postgresql-17.json from a real isolated PostgreSQL 17 database."
+    },
+    {
+      "attempt": "test-backuppg-02",
+      "reason": "Two assertions expected a null event timestamp or omitted the single newly seeded event.",
+      "resolution": "Matched the exact documented migration effect while preserving all original rows; affected parents passed in test-backuppg-03."
+    },
+    {
+      "attempt": "ui-build-01",
+      "reason": "Copied dependency executable links were dereferenced.",
+      "resolution": "Restored the matching dependency links; unchanged application build passed in ui-build-02."
+    },
+    {
+      "attempt": "ui-browser-02",
+      "reason": "The task-details mock returned Limit 25 for an actual Limit 50 request.",
+      "resolution": "Corrected mock pagination and child state counts; only the affected case repeated successfully."
+    },
+    {
+      "attempt": "actual-ui / actual-ui-02",
+      "reason": "Exact username label lookup missed the required-field suffix.",
+      "resolution": "Used the existing username/password label prefix convention; actual-ui-03 passed without product changes."
+    }
+  ],
+  "localDeliveryDirectory": "D:/Code/goby/.artifacts/intro-automation-20260930",
+  "remoteEvidenceRoot": "/opt/goby-intro-automation-20260930-01",
+  "scraping": "user_deferred",
+  "registryPublished": false,
+  "productionDeployment": false,
+  "gitIntegration": "Recorded separately from frozen application and runtime receipts.",
+  "documentationCheck": {
+    "kind": "goby-current-documentation-link-check",
+    "changedMarkdownFiles": 15,
+    "outgoingLinksChecked": 759,
+    "incomingAnchorLinksChecked": 6,
+    "introducedIssues": [],
+    "inheritedIssues": [],
+    "boundary": "Repository-relative Markdown files and fragments only; external URLs and private absolute evidence paths were not probed."
+  },
+  "evidence": {
+    "archive": {
+      "name": "intro-automation-evidence.zip",
+      "bytes": 542067,
+      "sha256": "83f0d7bbf41d6e6a295b10f0b803365ee7d947b66114a0d4c109b1b5b01b3964"
+    },
+    "files": 96,
+    "privateValueScanPassed": true,
+    "excluded": [
+      "Private credentials/configuration",
+      "Database data",
+      "Source media",
+      "Image archives"
+    ]
+  }
+}

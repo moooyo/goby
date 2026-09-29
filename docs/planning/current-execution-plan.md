@@ -1,5 +1,35 @@
 # Current execution plan
 
+## Automatic TV-library intro workflow: September 30, 2026
+
+The [current increment](../development/library-intro-automation-20260930.md)
+implements library opt-in followed by background analysis and direct use of
+qualified results. No review or manual correction is required. No reliable
+result means playback stays unchanged. Tasks exposes progress, failures and
+stopping; preview generation keeps its existing manual workflow.
+
+Application source `95607ffa505c7a9368b1bfd8ec3d545d009285d3` uses schema 51.
+Old libraries default to off and require the TV-library checkbox. Successful
+scans request another run; disabling withdraws detected markers. The detector
+still requires at least three independent episodes and examines the first 600 seconds.
+
+The focused verification records 135 Go parent passes and 27 UI passes, with one
+historical fixture-dependent UI skip. Actual Docker enablement produced three
+qualified and two expected no-result outcomes, scan-triggered follow-up ran,
+and disable/container recreation retained no detected markers. This is selected
+workflow evidence, not a complete product suite or a new holdout accuracy claim.
+Use the [result manifest](../development/library-intro-automation-results-20260930.json)
+for current artifacts, resource closure and evidence. Git integration is recorded
+separately.
+
+[current-release.json](../../deploy/oci/current-release.json) binds the updated
+software and AMD profiles under `D:/Code/goby/.artifacts/intro-automation-20260930`;
+the same directory contains the matching operations toolkit ZIP. The
+[quick start](../../deploy/oci/QUICKSTART.md) is the installation entry.
+TMDB/OpenSubtitles and new scraper research remain deferred.
+
+## Earlier operations and provider acceptance
+
 ## Completed Docker installation and operations: September 30, 2026
 
 The [operations increment](../development/docker-operations-20260930.md) is
@@ -8,7 +38,8 @@ the operator toolkit and documentation: application source
 `76d64bf0087f3cd2e40addde8067f4e6e65b2bac` and both accepted image profiles are
 reused. The [quick start](../../deploy/oci/QUICKSTART.md) is the recommended entry;
 `goby-docker.py` provides `prepare`, `check`, `start`, `status`, `logs` and `stop`.
-[current-release.json](../../deploy/oci/current-release.json) binds both profiles.
+The catalog at that checkpoint bound both original profiles; the current
+catalog now points to the later intro-automation application above.
 
 Fourteen helper tests and the composed software Docker bootstrap, scan, direct
 playback, database outage/recovery and stop journey passed. Original failures and

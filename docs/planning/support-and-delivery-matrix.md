@@ -7,28 +7,43 @@ outside scope, not unfinished or deferred release tasks.
 
 ## Current selected deliveries
 
-Current disposition, September 30, 2026: **the selected functional,
-archive/Compose and operations acceptance scopes are complete; required
-acceptance work remaining: 0**. Git integration is recorded separately from
-these acceptance receipts.
+The current application increment is [automatic TV-library intro detection](../development/library-intro-automation-20260930.md)
+at source `95607ffa505c7a9368b1bfd8ec3d545d009285d3`, schema 51. A TV-library
+checkbox enables background work and direct qualified-result publication;
+unmatched episodes play unchanged. Progress, errors and stopping remain in Tasks.
+There is no review/correction workflow. Existing libraries default to off after
+upgrade. The requirement for three independent episodes and the first 600 seconds
+of analysis remains unchanged.
+
+Its focused checks report 135 Go parent passes, 27 UI passes and one historical
+fixture-dependent UI skip. Actual Docker enablement, automatic scan follow-up,
+and disable/container recreation passed their selected workflow. The
+[manifest](../development/library-intro-automation-results-20260930.json) records
+artifacts and closure; these results do not expand earlier accuracy, client or
+GPU scope. Git integration is recorded separately.
+
+The earlier selected functional, archive/Compose and operations scopes retain
+their completed acceptance with no reopened gates. The current automation row
+links its own delivery disposition. Git integration is recorded separately from
+acceptance receipts.
 The records below define the accepted profiles. Completion does not imply a
 production deployment, universal compatibility, or a public distribution license.
 
 | Selected scope | Current result | Authoritative boundary | Required remaining work |
 | --- | --- | --- | --- |
-| Docker installation and operations | Verified and resources closed; Git integration is recorded separately | [Operations result](../development/docker-operations-20260930.md) and [quick start](../../deploy/oci/QUICKSTART.md); 14 helper tests, composed software Docker journey and retained failures. [Current release catalog](../../deploy/oci/current-release.json) binds unchanged software/AMD images and application source `76d64bf`; no new GPU/browser campaign | 0 acceptance gates; Git publication is recorded separately |
+| Automatic TV-library intro workflow | Focused checks and actual automatic workflow passed | [Automation result](../development/library-intro-automation-20260930.md) and [manifest](../development/library-intro-automation-results-20260930.json); current source, artifacts and closure are recorded together | Use the current result for final delivery disposition; no broader matrix is implied |
+| Docker installation and operations | Verified and resources closed at its original checkpoint | [Operations result](../development/docker-operations-20260930.md); 14 helper tests and software operations journey at source `76d64bf`. The [quick start](../../deploy/oci/QUICKSTART.md) and [current catalog](../../deploy/oci/current-release.json) now select the later automation application | No repeated helper or historical runtime gate |
 | Credential-free online providers | Complete within the selected MusicBrainz album and offline/configuration scope | [Provider result](../development/online-providers-20260930.md); both updated Docker application profiles, unchanged media tools and closed resources | 0; TMDB/OpenSubtitles online work and new scraper research are explicitly deferred |
 | Revised media-analysis/resilience Phase 3 | Complete, including consolidated verification and closure | [Functional closeout](../development/phase3-functional-closeout-20260929.md) and [publication](../development/phase3-functional-publication-20260929.md); real-media correctness, catalog scale, concurrency, and recorded recovery cases under the revised functional agreement | 0 |
 | Linux amd64 software OCI archive + Compose | Complete | [Software OCI result](../development/oci-delivery-20260929.md); actual import/runtime, encrypted recovery, schema upgrade/rollback, and owned-resource closure | 0 |
 | Linux amd64 AMD OCI archive + Compose | Complete for the recorded device/driver/tool tuple | [AMD OCI result](../development/oci-amd-delivery-20260929.md); actual GPU checks and production HTTP outputs, exact fallback, and owned-resource closure | 0 |
 | Earlier selected compatibility and media-analysis features | Closed within their original recorded scopes | [Four-phase compatibility plan](selected-compatibility-plan-20260920.md) and [intro/BIF acceptance](../development/media-analysis-resilience-phase2-20260921.md); original client, corpus, and adapter limits remain | No reopened gate |
 
-The small operations toolkit is
-`D:/Code/goby/.artifacts/docker-operations-20260930/goby-docker-operations.zip`.
-Image archives remain under `D:/Code/goby/.artifacts/oci-providers-20260930`;
-this increment did not rebuild or duplicate them. Owned containers/networks are
-absent, private PostgreSQL on port 55995 is stopped, and data/failure evidence
-is retained with unrelated services unchanged.
+Current software and AMD archives are under
+`D:/Code/goby/.artifacts/intro-automation-20260930/software` and `amd`.
+Their parent directory contains `goby-docker-operations.zip`. The earlier
+operations and provider directories retain their original archives and evidence;
+their unchanged-application statements do not describe the current update.
 
 The historical strict 10k/100k capacity profiles, SLOs, two-tier 28-case matrix,
 and original M2-M6 completeness claims are not accepted by this table. They are

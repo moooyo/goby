@@ -8,9 +8,10 @@ negotiation and preview HTTP delivery do not start analysis. The task keys are
 `media.analysis` worker group. A task that lacks its configured local tools is
 unavailable; the server does not invent completed work or tool identities.
 
-The September 30 library automation increment is in implementation/verification.
-This contract describes its current source behavior, not a passing result. See
-the [increment record](../development/library-intro-automation-20260930.md).
+The September 30 library automation increment is **complete within its selected
+scope**. Backend, UI, actual Docker verification and owned-resource closure passed.
+Delivery identities and the machine-readable receipt are recorded in the
+[increment record](../development/library-intro-automation-20260930.md).
 
 The native endpoints are documented by their typed request/response structures
 in `internal/server/admin_media_analysis.go`. Configuration writes use the
@@ -41,6 +42,9 @@ Disabling the library option immediately withdraws its detected publications.
 Changing it back to true requests new work; it does not reactivate old automatic
 results. Stored evidence remains inspectable, and historical source-valid
 Manual/Import markers and explicit chapter markers retain their precedence.
+An explicit false-to-true transition retires that library's legacy rejection
+flags, advances their decision revisions and retains the decision rows and audit
+history. It still requires fresh publication rather than promoting old evidence.
 
 The Emby library-option mapping uses `EnableMarkerDetection` as the main switch.
 If `EnableMarkerDetectionDuringLibraryScan` is supplied, the main switch must
@@ -229,7 +233,14 @@ An already-true setting does not undergo that profile invalidation. Historical
 Manual/Import data, decisions and audit records are preserved.
 
 Normal restart preserves configuration and current derivative references while
-the task manager interrupts stale execution claims. Restore first validates raw
+the task manager interrupts stale execution claims. Graceful shutdown of unfinished
+automatic intro work records a new durable request. Startup recovery does the
+same for abandoned automatic runs after a crash, atomically with interruption of
+the old claims. The replacement admission evaluates current library policy; it
+does not resume old execution authority. Explicit user stops and manual runs do
+not generate automatic replacement work.
+
+Restore first validates raw
 stored profiles, binary features, timeline bounds, result/audit shapes and all
 cross-table authority facts. Normalization then increments the positive restoration
 epoch, rejecting bigint overflow atomically, disables every automatic detection,

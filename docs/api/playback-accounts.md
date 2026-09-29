@@ -7,7 +7,8 @@ requiring resolution of original Web commercial licensing. Its historical blocke
 original-client intro modes remain recorded limitations. See the
 [execution record](../development/selected-compatibility-phase1-20260920.md).
 Later media analysis added detected intro markers; the September 30 automatic
-library workflow is in implementation/verification. See the
+library workflow is **complete within its selected scope**, including backend,
+UI, actual Docker verification and owned-resource closure. See the
 [current intro contract](media-analysis.md) and
 [increment record](../development/library-intro-automation-20260930.md).
 This contract does not claim full original-client parity.
@@ -79,6 +80,9 @@ detection. `LibraryOptions.EnableIntroDetection` defaults to false; enabling it
 requests background analysis, and completed scans request another pass.
 Disabling it immediately withdraws detected markers; re-enabling waits for new
 work. Historical manual/imported and chapter intervals are retained.
+An explicit false-to-true library transition retires legacy rejection flags while
+preserving their decision/audit history; it does not require an old rejection to
+be reset through the removed UI.
 
 Qualified results require no approval. `review` and `no_result` provide no
 automatic playback marker and do not require the user to review a candidate.
