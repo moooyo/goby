@@ -1,0 +1,81 @@
+# Internal AMD extension of the separately verified Linux amd64 software image.
+# The builder binds this private local alias to the recorded immutable base ID.
+ARG GOBY_AMD_BASE_IMAGE
+FROM ${GOBY_AMD_BASE_IMAGE} AS amd-media-build
+
+ARG FFMPEG_BUILD_JOBS=2
+ENV SOURCE_DATE_EPOCH=1789430400
+USER 0:0
+COPY amd-toolchain/ /opt/goby-amd-ffmpeg/
+COPY libplacebo-headers/ /build/libplacebo-include/libplacebo/
+COPY build-amd-ffmpeg.sh /build/build-amd-ffmpeg.sh
+COPY toolchain-patches/ /build/toolchain-patches/
+
+# Verify the native input before rebuilding FFmpeg with all three fixes.
+RUN printf '%s  /usr/local/bin/goby\n' 2e296bfd02fdf3f7b740000d0d87563e420d5a099fd20e0aa37b96502f78c004 | sha256sum --check --strict - \
+    && printf '%s  /opt/goby-amd-ffmpeg/bin/ffmpeg\n%s  /opt/goby-amd-ffmpeg/bin/ffprobe\n' \
+      c8887f1a2b5a6777c1285fd7514049ec175947048d82e4b3700e44115da34843 \
+      fddc50127245a7a836b5fb6789e1606ebe9e12bcf3c9e2fab5b32bfb7a0b703f | sha256sum --check --strict - \
+    && cd /opt/goby-amd-ffmpeg \
+    && sha256sum --check --strict metadata/installed-files.sha256 \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      build-essential ca-certificates curl gnupg libaom-dev libass-dev libdrm-dev libmp3lame-dev \
+      libnuma-dev libopus-dev libssl-dev libva-dev libvorbis-dev libvpl-dev libvulkan-dev \
+      libx264-dev libx265-dev libzimg-dev nasm patch patchelf pkg-config python3 xz-utils yasm \
+    && GOBY_FFMPEG_BUILD_JOBS="$FFMPEG_BUILD_JOBS" bash /build/build-amd-ffmpeg.sh
+
+FROM ${GOBY_AMD_BASE_IMAGE} AS runtime
+ARG GOBY_AMD_RECIPE_REVISION
+USER 0:0
+COPY --from=amd-media-build /opt/goby-amd-ffmpeg/ /opt/goby-amd-ffmpeg/
+COPY Dockerfile.amd build-amd-ffmpeg.sh source-pins.amd.json /usr/share/goby/recipe/
+
+# Drivers remain runtime packages; compiler and development packages stay behind.
+# Compiled interfaces establish availability, not actual GPU execution.
+RUN cd /opt/goby-amd-ffmpeg \
+    && sha256sum --check --strict metadata/installed-files.sha256 \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      mesa-va-drivers mesa-vulkan-drivers libvulkan1 vainfo \
+    && install -d -m 0755 /usr/share/goby/amd-runtime \
+    && dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' > /usr/share/goby/amd-runtime/runtime-packages.tsv \
+    && dpkg-query -L mesa-va-drivers mesa-vulkan-drivers libvulkan1 vainfo > /usr/share/goby/amd-runtime/driver-package-files.txt \
+    && test -f /usr/lib/x86_64-linux-gnu/dri/radeonsi_drv_video.so \
+    && sha256sum /usr/lib/x86_64-linux-gnu/dri/radeonsi_drv_video.so > /usr/share/goby/amd-runtime/vaapi-driver.sha256 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN /opt/goby-amd-ffmpeg/bin/ffmpeg -version > /usr/share/goby/amd-runtime/ffmpeg-version.txt \
+    && grep -Eq '^ffmpeg version 9\.0\.1([ -]|$)' /usr/share/goby/amd-runtime/ffmpeg-version.txt \
+    && /opt/goby-amd-ffmpeg/bin/ffprobe -version > /usr/share/goby/amd-runtime/ffprobe-version.txt \
+    && grep -Eq '^ffprobe version 9\.0\.1([ -]|$)' /usr/share/goby/amd-runtime/ffprobe-version.txt \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -buildconf > /usr/share/goby/amd-runtime/ffmpeg-buildconf.txt 2>&1 \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -hwaccels > /usr/share/goby/amd-runtime/ffmpeg-hwaccels.txt 2>&1 \
+    && grep -Eq '^vaapi$' /usr/share/goby/amd-runtime/ffmpeg-hwaccels.txt \
+    && grep -Eq '^vulkan$' /usr/share/goby/amd-runtime/ffmpeg-hwaccels.txt \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -encoders > /usr/share/goby/amd-runtime/ffmpeg-encoders.txt 2>&1 \
+    && for encoder in libx264 libx265 libaom-av1 h264_vaapi hevc_vaapi av1_vaapi; do \
+      grep -Eq "[[:space:]]$encoder[[:space:]]" /usr/share/goby/amd-runtime/ffmpeg-encoders.txt || exit 1; \
+    done \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -filters > /usr/share/goby/amd-runtime/ffmpeg-filters.txt 2>&1 \
+    && for filter in libplacebo subtitles zscale tonemap bwdif overlay hwdownload hwupload; do \
+      grep -Eq "[[:space:]]$filter[[:space:]]" /usr/share/goby/amd-runtime/ffmpeg-filters.txt || exit 1; \
+    done \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -h filter=libplacebo > /usr/share/goby/amd-runtime/libplacebo-filter.txt 2>&1 \
+    && for option in inputs apply_dolbyvision strict_dolbyvision strict_dolbyvision_profile deinterlace; do \
+      grep -Eq "[[:space:]]$option[[:space:]]" /usr/share/goby/amd-runtime/libplacebo-filter.txt || exit 1; \
+    done \
+    && sha256sum /usr/local/bin/goby /opt/goby-amd-ffmpeg/bin/ffmpeg /opt/goby-amd-ffmpeg/bin/ffprobe \
+      > /usr/share/goby/amd-runtime/runtime-executables.sha256 \
+    && chmod 0644 /usr/share/goby/recipe/Dockerfile.amd /usr/share/goby/recipe/build-amd-ffmpeg.sh \
+      /usr/share/goby/recipe/source-pins.amd.json
+
+ENV GOBY_FFMPEG=/opt/goby-amd-ffmpeg/bin/ffmpeg \
+    GOBY_FFPROBE=/opt/goby-amd-ffmpeg/bin/ffprobe \
+    LIBVA_DRIVER_NAME=radeonsi
+LABEL org.opencontainers.image.title="Goby internal AMD candidate" \
+    io.goby.oci.profile="linux-amd64-amd-vaapi-vulkan" \
+    io.goby.oci.base-image-id="sha256:ff9beeb782aea48dbb19630712b67824c6ef775c5886b7bac9ef856fb5c5dcab" \
+    io.goby.oci.amd-recipe-revision="$GOBY_AMD_RECIPE_REVISION"
+# The inherited application revision remains b9bfa7ccee07e2ae81f70ab90d2121d908734636.
+USER 10001:10001

@@ -1,0 +1,15 @@
+# Apply after compose.yaml and use the recorded AMD image ID in GOBY_OCI_IMAGE.
+services:
+  goby:
+    devices:
+      - "${GOBY_AMD_RENDER_NODE:?Set the selected AMD render node}:${GOBY_AMD_RENDER_NODE:?Set the selected AMD render node}:rw"
+    group_add:
+      - "${GOBY_AMD_RENDER_GID:?Set the numeric group ID of the selected render node}"
+    environment:
+      GOBY_FFMPEG: /opt/goby-amd-ffmpeg/bin/ffmpeg
+      GOBY_FFPROBE: /opt/goby-amd-ffmpeg/bin/ffprobe
+      GOBY_HW_DECODER: ${GOBY_AMD_DECODER:-vaapi}
+      GOBY_HW_ENCODER: ${GOBY_AMD_ENCODER:-vaapi}
+      GOBY_HW_DEVICE: ${GOBY_AMD_RENDER_NODE:?Set the selected AMD render node}
+      GOBY_ALLOWED_AMD_DEVICES: ${GOBY_AMD_RENDER_NODE:?Set the selected AMD render node}
+      LIBVA_DRIVER_NAME: radeonsi
