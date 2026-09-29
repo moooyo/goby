@@ -39,6 +39,21 @@ function IntervalText({ interval }: { interval: { StartTicks: number; EndTicks: 
 }
 function RecordedTime({ value }: { value: string }) { return value.startsWith('0001-') ? <>Not recorded</> : <time dateTime={value}>{new Date(value).toLocaleString()}</time>; }
 
+function PreviewOutputs({ previews }: { previews: AnalysisItem['Previews'] }) {
+  if (previews.length === 0) return <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>No preview outputs recorded.</Typography>;
+  return <>
+    <Stack component="ul" aria-label="Preview outputs" spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' }, listStyle: 'none', p: 0, mt: 1.5, mb: 0 }}>
+      {previews.map((preview, index) => <Paper component="li" key={`${preview.Width}-${index}`} sx={{ p: 2, borderRadius: '12px' }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1 }}><Typography variant="body2" sx={{ fontWeight: 600 }}>{preview.Width} × {preview.Height}</Typography><Chip size="small" color={statusTone(preview.Status)} label={preview.Status} /></Stack>
+        <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 16px', my: 1.5, '& dt': { color: 'text.secondary' }, '& dd': { m: 0, textAlign: 'right', overflowWrap: 'anywhere' } }}><Typography component="dt" variant="caption">Frames</Typography><Typography component="dd" variant="caption">{preview.FrameCount}</Typography><Typography component="dt" variant="caption">Size</Typography><Typography component="dd" variant="caption">{analysisBytes(preview.Size)}</Typography></Box>
+        {preview.FailureCode && <Typography variant="caption" component="p" color="error.main" sx={{ mb: 1, overflowWrap: 'anywhere' }}>{preview.FailureCode.replaceAll('_', ' ')}</Typography>}
+        <Typography variant="caption" color="text.secondary" component="p">Updated <RecordedTime value={preview.UpdatedAt} /></Typography>
+      </Paper>)}
+    </Stack>
+    <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}><Table size="small" aria-label="Preview outputs"><TableHead><TableRow><TableCell>Dimensions</TableCell><TableCell>Frames</TableCell><TableCell>Size</TableCell><TableCell>Status</TableCell></TableRow></TableHead><TableBody>{previews.map((preview, index) => <TableRow key={`${preview.Width}-${index}`}><TableCell>{preview.Width} × {preview.Height}</TableCell><TableCell>{preview.FrameCount}</TableCell><TableCell>{analysisBytes(preview.Size)}</TableCell><TableCell>{preview.Status}{preview.FailureCode && <Typography variant="caption" component="div">{preview.FailureCode.replaceAll('_', ' ')}</Typography>}<Typography variant="caption" component="div"><RecordedTime value={preview.UpdatedAt} /></Typography></TableCell></TableRow>)}</TableBody></Table></TableContainer>
+  </>;
+}
+
 function DetectionSummary({ item }: { item: AnalysisItem }) {
   const detection = item.Detection;
   const failed = ['failed', 'error', 'unavailable'].includes(detection.Status);
@@ -71,7 +86,7 @@ function AnalysisItemDialog({ id, onClose }: { id: string; onClose: () => void }
       {loadError != null && <ErrorNotice error={loadError} retry={() => setRevision((value) => value + 1)} />}
       {item && !loading && <>
         <DetectionSummary item={item} />
-        <Box><Typography variant="h4" component="h3">Preview outputs</Typography>{item.Previews.length === 0 ? <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>No preview outputs recorded.</Typography> : <TableContainer><Table size="small" aria-label="Preview outputs"><TableHead><TableRow><TableCell>Dimensions</TableCell><TableCell>Frames</TableCell><TableCell>Size</TableCell><TableCell>Status</TableCell></TableRow></TableHead><TableBody>{item.Previews.map((preview, index) => <TableRow key={`${preview.Width}-${index}`}><TableCell>{preview.Width} × {preview.Height}</TableCell><TableCell>{preview.FrameCount}</TableCell><TableCell>{analysisBytes(preview.Size)}</TableCell><TableCell>{preview.Status}{preview.FailureCode && <Typography variant="caption" component="div">{preview.FailureCode.replaceAll('_', ' ')}</Typography>}<Typography variant="caption" component="div"><RecordedTime value={preview.UpdatedAt} /></Typography></TableCell></TableRow>)}</TableBody></Table></TableContainer>}</Box>
+        <Box><Typography variant="h4" component="h3">Preview outputs</Typography><PreviewOutputs previews={item.Previews} /></Box>
       </>}
     </Stack></DialogContent>
     <DialogActions><Button disabled={loading} onClick={() => setRevision((value) => value + 1)}>Refresh result</Button><Button onClick={onClose}>Close</Button></DialogActions>

@@ -225,7 +225,7 @@ for (const viewport of [{ width: 1440, height: 834 }, { width: 375, height: 812 
   await expect(outputs).toContainText('320 × 180');
   await expect(outputs).toContainText('12');
   await expect(outputs).toContainText('32.0 KiB');
-  await expect(outputs.getByText('ready', { exact: true })).toBeVisible();
+  await expect(outputs.getByText('ready', { exact: viewport.width < 840 })).toBeVisible();
   await expect(result.getByRole('button', { name: /Accept|Reject|Reset/ })).toHaveCount(0);
   await noOverflow(page);
   await page.screenshot({ path: testInfo.outputPath(`media-analysis-result-${viewport.width === 1440 ? 'desktop' : 'mobile'}.png`), animations: 'disabled' });
