@@ -9,9 +9,10 @@ import (
 )
 
 var (
-	ErrAnalysisConflict      = errors.New("media analysis revision conflict")
-	ErrAnalysisSourceChanged = errors.New("media analysis source or cohort changed")
-	ErrAnalysisSuppressed    = errors.New("media analysis result suppressed")
+	ErrAnalysisConflict        = errors.New("media analysis revision conflict")
+	ErrAnalysisSourceChanged   = errors.New("media analysis source or cohort changed")
+	ErrAnalysisSuppressed      = errors.New("media analysis result suppressed")
+	ErrAnalysisPreviewDisabled = errors.New("automatic preview generation is disabled for this library")
 )
 
 type AnalysisFence func(OwnedTx) error

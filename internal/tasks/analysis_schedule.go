@@ -9,16 +9,42 @@ import (
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
+type analysisAutomationPolicy struct {
+	event       systemevents.Event
+	option      string
+	collections []string
+}
+
+func analysisAutomation(key string) analysisAutomationPolicy {
+	switch key {
+	case library.TaskIntroAnalysisKey:
+		return analysisAutomationPolicy{systemevents.IntroAnalysisRequested, "EnableIntroDetection", []string{"tvshows"}}
+	case library.TaskPreviewGenerationKey:
+		return analysisAutomationPolicy{systemevents.PreviewGenerationRequested, "EnablePreviewGeneration", []string{"movies", "tvshows", "mixed"}}
+	default:
+		return analysisAutomationPolicy{}
+	}
+}
+
+func (s *Store) installAnalysisSchedules(tx library.OwnedTx) error {
+	for _, key := range []string{library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey} {
+		if err := s.installAnalysisSchedule(tx, key); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Definition revision and retained trigger history distinguish an untouched
 // definition from a schedule the administrator replaced or deliberately cleared.
-func (s *Store) installIntroSchedule(tx library.OwnedTx) error {
-	if _, present := s.executors.lookup(library.TaskIntroAnalysisKey); !present {
+func (s *Store) installAnalysisSchedule(tx library.OwnedTx, key string) error {
+	if _, present := s.executors.lookup(key); !present {
 		return nil
 	}
 	var definition Definition
 	err := decodeRow(tx.QueryRow(`SELECT to_jsonb(d) FROM task_definitions d
 		WHERE key=$1 AND enabled AND revision=1
-		AND NOT EXISTS(SELECT 1 FROM task_triggers t WHERE t.task_id=d.id) FOR UPDATE`, library.TaskIntroAnalysisKey), &definition)
+		AND NOT EXISTS(SELECT 1 FROM task_triggers t WHERE t.task_id=d.id) FOR UPDATE`, key), &definition)
 	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
@@ -45,16 +71,16 @@ func (s *Store) installIntroSchedule(tx library.OwnedTx) error {
 		(id,task_id,schedule_revision,position,kind,interval_ticks,anchor_at,next_fire_at,created_at,updated_at)
 		VALUES($1,$2,$3,0,'interval',$4,$5,$6,$5,$5)`, intervalID, definition.ID, definition.Revision+1,
 		24*60*60*ScheduleTicksPerSecond, now, now.Add(24*time.Hour)); err != nil {
-		return fmt.Errorf("install default intro interval: %w", err)
+		return fmt.Errorf("install default analysis interval for %s: %w", key, err)
 	}
 	// Start at zero so a committed enable/scan request preceding installation is
 	// still delivered. Later administrator replacements use the current cursor.
 	_, err = tx.Exec(`INSERT INTO task_triggers
 		(id,task_id,schedule_revision,position,kind,system_event,last_event_sequence,created_at,updated_at)
 		VALUES($1,$2,$3,1,'system_event',$4,0,$5,$5)`, eventID, definition.ID, definition.Revision+1,
-		string(systemevents.IntroAnalysisRequested), now)
+		string(analysisAutomation(key).event), now)
 	if err != nil {
-		return fmt.Errorf("install default intro event: %w", err)
+		return fmt.Errorf("install default analysis event for %s: %w", key, err)
 	}
 	return nil
 }

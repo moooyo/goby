@@ -124,7 +124,7 @@ func TestAnalysisKnownDependencyFailureWithdrawsOnlyAffectedAdmission(t *testing
 		library.TaskIntroAnalysisKey:     {Version: library.AnalysisExecutionProfileVersion, Available: true},
 		library.TaskPreviewGenerationKey: {Version: library.AnalysisExecutionProfileVersion, Available: true},
 	}
-	for _, err := range []error{context.Canceled, context.DeadlineExceeded, library.ErrAnalysisSourceChanged, analysiscache.ErrLimit} {
+	for _, err := range []error{context.Canceled, context.DeadlineExceeded, library.ErrAnalysisSourceChanged, library.ErrAnalysisPreviewDisabled, analysiscache.ErrLimit} {
 		runtime.rememberFailure(library.TaskIntroAnalysisKey, err)
 		profile, profileErr := runtime.executionProfile(library.TaskIntroAnalysisKey)
 		if profileErr != nil || !profile.Available {

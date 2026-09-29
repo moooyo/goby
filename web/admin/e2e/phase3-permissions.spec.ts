@@ -7,7 +7,7 @@ const csrf = 'phase3-synthetic-csrf';
 const library = {
   Id: 'phase3-library', Name: 'Permission library', CollectionType: 'music',
   Paths: ['/media/music'], CreatedAt: '2026-09-19T00:00:00Z', LastScanAt: null,
-  Revision: '9007199254740993', LibraryOptions: { EnableLocalMetadata: true, EnableLocalImages: true, EnableIntroDetection: false },
+  Revision: '9007199254740993', LibraryOptions: { EnableLocalMetadata: true, EnableLocalImages: true, EnableIntroDetection: false, EnablePreviewGeneration: false },
   RegisteredPaths: [{ Id: 'phase3-root', Path: '/media/music', ItemCount: 1 }],
 };
 interface Captured { method: string; path: string; csrf?: string; body: unknown }

@@ -58,22 +58,29 @@ func assertHistoricalRecoveryFacts(t *testing.T, ctx context.Context, source, ta
 			if historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion) != migrated {
 				t.Error("migration changed historical library rows beyond the declared embedded-artwork default")
 			}
-		} else if table.Name == "task_system_events" && expected.SchemaVersion < 51 && actual.SchemaVersion >= 51 {
-			// Migration 51 appends one neutral event row. Preserve every original
-			// field and timestamp exactly, and reject any other added row.
+		} else if table.Name == "task_system_events" && expected.SchemaVersion < 52 && actual.SchemaVersion >= 51 {
+			// Only the known migration suffix appends neutral event rows. Preserve
+			// every original field and timestamp, and reject any other addition.
+			added := []string{}
+			if expected.SchemaVersion < 51 && actual.SchemaVersion >= 51 {
+				added = append(added, "IntroAnalysisRequested")
+			}
+			if expected.SchemaVersion < 52 && actual.SchemaVersion >= 52 {
+				added = append(added, "PreviewGenerationRequested")
+			}
 			before := historicalArchiveRows(t, ctx, source, table.Name, expected.SchemaVersion)
 			after := historicalArchiveRows(t, ctx, target, table.Name, expected.SchemaVersion)
 			var retained bool
 			if err := source.QueryRow(ctx, `SELECT
 				(SELECT COALESCE(jsonb_agg(entry ORDER BY entry::text),'[]'::jsonb)
 				 FROM jsonb_array_elements($2::jsonb) restored(entry)
-				 WHERE entry->>'name'<>'IntroAnalysisRequested')=$1::jsonb
-				AND jsonb_array_length($2::jsonb)=jsonb_array_length($1::jsonb)+1
+				 WHERE NOT (entry->>'name'=ANY($3::text[])))=$1::jsonb
+				AND jsonb_array_length($2::jsonb)=jsonb_array_length($1::jsonb)+cardinality($3::text[])
 				AND (SELECT count(*) FROM jsonb_array_elements($2::jsonb) restored(entry)
-				 WHERE entry->>'name'='IntroAnalysisRequested'
+				 WHERE entry->>'name'=ANY($3::text[])
 				 AND entry->'sequence'='0'::jsonb AND entry->>'lifecycle_key'=''
-				 AND entry->'occurred_at' IS NOT NULL AND entry->'occurred_at'<>'null'::jsonb)=1`, before, after).Scan(&retained); err != nil || !retained {
-				t.Errorf("migration changed original event rows or added non-neutral intro event state: %v", err)
+				 AND entry->'occurred_at' IS NOT NULL AND entry->'occurred_at'<>'null'::jsonb)=cardinality($3::text[])`, before, after, added).Scan(&retained); err != nil || !retained {
+				t.Errorf("migration changed original event rows or added non-neutral analysis event state: %v", err)
 			}
 		} else if table.Name != "schema_migrations" && equalJSON(table, currentTable) {
 			if !equalJSON(fact, targetFact) {

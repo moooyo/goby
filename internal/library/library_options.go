@@ -9,19 +9,21 @@ import (
 )
 
 // LibraryOptions contains scanner and automatic-analysis policy. Importer
-// changes retain source facts; intro detection is opt-in for TV libraries.
+// changes retain source facts; intro detection and preview generation are opt-in.
 type LibraryOptions struct {
-	EnableLocalMetadata   bool
-	EnableLocalImages     bool
-	EnableEmbeddedArtwork bool
-	EnableIntroDetection  bool
+	EnableLocalMetadata     bool
+	EnableLocalImages       bool
+	EnableEmbeddedArtwork   bool
+	EnableIntroDetection    bool
+	EnablePreviewGeneration bool
 }
 
 type LibraryOptionsUpdate struct {
-	EnableLocalMetadata   *bool
-	EnableLocalImages     *bool
-	EnableEmbeddedArtwork *bool
-	EnableIntroDetection  *bool
+	EnableLocalMetadata     *bool
+	EnableLocalImages       *bool
+	EnableEmbeddedArtwork   *bool
+	EnableIntroDetection    *bool
+	EnablePreviewGeneration *bool
 }
 
 // UnmarshalJSON preserves omission while rejecting null, duplicate aliases and
@@ -35,7 +37,7 @@ func (value *LibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 	*value = LibraryOptionsUpdate{}
 	fields := map[string]**bool{"enablelocalmetadata": &value.EnableLocalMetadata,
 		"enablelocalimages": &value.EnableLocalImages, "enableembeddedartwork": &value.EnableEmbeddedArtwork,
-		"enableintrodetection": &value.EnableIntroDetection}
+		"enableintrodetection": &value.EnableIntroDetection, "enablepreviewgeneration": &value.EnablePreviewGeneration}
 	seen := make(map[string]bool, len(fields))
 	for decoder.More() {
 		name, err := decoder.Token()
@@ -69,6 +71,9 @@ func validateLibraryOptions(collectionType string, options LibraryOptions) error
 	if options.EnableIntroDetection && collectionType != "tvshows" {
 		return fmt.Errorf("%w: intro detection is supported only for TV libraries", ErrInvalidInput)
 	}
+	if options.EnablePreviewGeneration && collectionType != "movies" && collectionType != "tvshows" && collectionType != "mixed" {
+		return fmt.Errorf("%w: preview generation is supported only for movie, TV and mixed video libraries", ErrInvalidInput)
+	}
 	return nil
 }
 
@@ -94,6 +99,9 @@ func applyLibraryOptions(previous LibraryOptions, update *LibraryOptionsUpdate) 
 		}
 		if update.EnableIntroDetection != nil {
 			previous.EnableIntroDetection = *update.EnableIntroDetection
+		}
+		if update.EnablePreviewGeneration != nil {
+			previous.EnablePreviewGeneration = *update.EnablePreviewGeneration
 		}
 	}
 	return previous

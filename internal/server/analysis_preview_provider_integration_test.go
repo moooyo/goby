@@ -306,6 +306,28 @@ func TestAnalysisPreviewProviderHTTPAliasesUseRealSealedCacheAndMissingContracts
 	assertAnalysisProviderIdle(t, fixture)
 }
 
+func TestAnalysisPreviewProviderKeepsSealedBIFReadableAfterGenerationOptOut(t *testing.T) {
+	fixture := newAnalysisProviderFixture(t, true)
+	f := fixture.stream.f
+	for _, enabled := range []bool{true, false} {
+		current, err := f.app.library.GetLibraryEditing(f.ctx, fixture.stream.video.libraryID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = f.app.library.UpdateLibraryAsAdministrator(f.ctx, fixture.administrator, identity.AdministratorNative,
+			fixture.stream.video.libraryID, library.LibraryUpdate{Revision: current.Library.Revision,
+				LibraryOptions: &library.LibraryOptionsUpdate{EnablePreviewGeneration: &enabled}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := fixture.request(t, http.MethodGet, fixture.bifPath(), nil)
+		if response.Code != http.StatusOK || !bytes.Equal(response.Body.Bytes(), fixture.archives[400]) {
+			t.Fatal("generation policy changed existing source-bound BIF bytes")
+		}
+		assertAnalysisProviderIdle(t, fixture)
+	}
+}
+
 func TestAnalysisPreviewProviderRejectsRevokedAuthorityBeforeCachedResponses(t *testing.T) {
 	for _, mode := range []string{"playback_policy", "viewer_credential"} {
 		t.Run(mode, func(t *testing.T) {

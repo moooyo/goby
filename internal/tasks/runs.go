@@ -302,19 +302,19 @@ func stopLocked(tx library.OwnedTx, actor *Actor, run Run, reason string) (Run, 
 	if err := recordTaskScanCancellations(tx, scanIDs); err != nil {
 		return Run{}, err
 	}
-	if run.StopRequestedAt == nil && effectiveReason == "shutdown" && automaticIntroRun(run) {
+	if run.StopRequestedAt == nil && effectiveReason == "shutdown" && automaticAnalysisRun(run) {
 		// The manager stops scheduling before its shutdown sweep. Persist the
 		// next admission now, because graceful cleanup can finish the old run
 		// before RecoverRuns sees it. Repeated stops retain the first request.
-		if err := systemevents.Record(tx.Exec, systemevents.IntroAnalysisRequested); err != nil {
+		if err := systemevents.Record(tx.Exec, analysisAutomation(run.TaskKey).event); err != nil {
 			return Run{}, err
 		}
 	}
 	return refreshRun(tx, run.ID)
 }
 
-func automaticIntroRun(run Run) bool {
-	return run.TaskKey == library.TaskIntroAnalysisKey && run.ActorKind == "system" &&
+func automaticAnalysisRun(run Run) bool {
+	return isAnalysisTask(run.TaskKey) && run.ActorKind == "system" &&
 		(run.Source == "schedule" || run.Source == "startup" || run.Source == "system_event")
 }
 
@@ -464,7 +464,7 @@ func persistTotals(tx library.OwnedTx, runID string, state RunState, code, messa
 
 // RecoverRuns runs only after scanner startup recovery and before scheduling.
 // It never resumes an old execution or invents missing scan outcomes. Abandoned
-// automatic intro work requests a new admission with current library policy.
+// automatic analysis work requests a new admission with current library policy.
 func (s *Store) RecoverRuns(ctx context.Context) error {
 	return s.owner.WithOwnedTx(ctx, func(tx library.OwnedTx) error {
 		rows, err := tx.Query(`SELECT id FROM task_runs WHERE state IN ('pending','running','stopping')
@@ -476,12 +476,12 @@ func (s *Store) RecoverRuns(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		var requestIntro bool
-		if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM task_runs
-			WHERE id=ANY($1::text[]) AND task_key=$2
+		var requestIntro, requestPreview bool
+		if err := tx.QueryRow(`SELECT COALESCE(bool_or(task_key=$2),false),COALESCE(bool_or(task_key=$3),false)
+			FROM task_runs WHERE id=ANY($1::text[])
 			AND source IN ('schedule','startup','system_event') AND actor_kind='system'
-			AND stop_reason IN ('','shutdown'))`, ids, library.TaskIntroAnalysisKey).Scan(&requestIntro); err != nil {
-			return fmt.Errorf("inspect abandoned automatic intro work: %w", err)
+			AND stop_reason IN ('','shutdown')`, ids, library.TaskIntroAnalysisKey, library.TaskPreviewGenerationKey).Scan(&requestIntro, &requestPreview); err != nil {
+			return fmt.Errorf("inspect abandoned automatic analysis work: %w", err)
 		}
 		for _, id := range ids {
 			if err := lockRunChildrenAndScans(tx, id); err != nil {
@@ -513,7 +513,12 @@ func (s *Store) RecoverRuns(ctx context.Context) error {
 		if requestIntro {
 			// Recovery and the replacement request commit together. A retry sees
 			// terminal old runs and cannot issue this signal a second time.
-			return systemevents.Record(tx.Exec, systemevents.IntroAnalysisRequested)
+			if err := systemevents.Record(tx.Exec, systemevents.IntroAnalysisRequested); err != nil {
+				return err
+			}
+		}
+		if requestPreview {
+			return systemevents.Record(tx.Exec, systemevents.PreviewGenerationRequested)
 		}
 		return nil
 	})

@@ -423,12 +423,12 @@ func (s *Store) admitScheduledOccurrence(tx library.OwnedTx, definition Definiti
 		if err != nil {
 			return err
 		}
-		if definition.Key == library.TaskIntroAnalysisKey && source == "system_event" ||
+		if source == "system_event" ||
 			!sameAnalysisInput(active.AnalysisInput, input) || active.AnalysisConfigFingerprint != binding.ConfigurationFingerprint {
 			// Retain this due occurrence for a later bounded scheduler retry;
-			// never claim that a differently scoped run consumed it. Intro events
+			// never claim that a differently scoped run consumed it. Analysis events
 			// also need a fresh snapshot after an otherwise identical active run:
-			// a scan may have committed new episodes since that run was admitted.
+			// a scan may have committed new media since that run was admitted.
 			return &analysisAdmissionDeferred{AnalysisDeferral: AnalysisDeferral{TaskID: definition.ID, TaskKey: definition.Key, TriggerID: trigger.ID, Source: source}}
 		}
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/systemevents"
 )
 
 // DefaultAnalysisProfile is independent of playback and general server settings.
@@ -149,6 +150,9 @@ func (s *Store) UpdateAnalysisConfiguration(ctx context.Context, actor identity.
 			if err := analysisInvalidateCatalog(tx); err != nil {
 				return err
 			}
+			if err := requestAnalysisProfileRebuild(tx); err != nil {
+				return err
+			}
 		}
 		if err := analysisContext(ctx); err != nil {
 			return err
@@ -163,4 +167,26 @@ func (s *Store) UpdateAnalysisConfiguration(ctx context.Context, actor identity.
 		return AnalysisConfiguration{}, err
 	}
 	return result, nil
+}
+
+func requestAnalysisProfileRebuild(tx OwnedTx) error {
+	var intros, previews bool
+	if err := tx.QueryRow(`SELECT
+		EXISTS(SELECT 1 FROM libraries WHERE collection_type='tvshows'
+			AND COALESCE((options->>'EnableIntroDetection')::boolean,false)),
+		EXISTS(SELECT 1 FROM libraries WHERE collection_type IN ('movies','tvshows','mixed')
+			AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false))`).Scan(&intros, &previews); err != nil {
+		return err
+	}
+	for _, request := range []struct {
+		enabled bool
+		event   systemevents.Event
+	}{{intros, systemevents.IntroAnalysisRequested}, {previews, systemevents.PreviewGenerationRequested}} {
+		if request.enabled {
+			if err := systemevents.Record(tx.Exec, request.event); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

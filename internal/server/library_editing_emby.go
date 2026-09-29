@@ -31,6 +31,8 @@ type embyLibraryOptionsUpdate struct {
 	EnableMarkerDetection                  json.RawMessage
 	EnableMarkerDetectionDuringLibraryScan json.RawMessage
 	IntroDetectionFingerprintLength        json.RawMessage
+	EnableChapterImageExtraction           json.RawMessage
+	ExtractChapterImagesDuringLibraryScan  json.RawMessage
 }
 
 func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
@@ -51,6 +53,10 @@ func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 			value.EnableMarkerDetectionDuringLibraryScan = raw
 		case "introdetectionfingerprintlength":
 			value.IntroDetectionFingerprintLength = raw
+		case "enablechapterimageextraction":
+			value.EnableChapterImageExtraction = raw
+		case "extractchapterimagesduringlibraryscan":
+			value.ExtractChapterImagesDuringLibraryScan = raw
 		default:
 			return library.ErrInvalidInput
 		}
@@ -60,7 +66,8 @@ func (value *embyLibraryOptionsUpdate) UnmarshalJSON(data []byte) error {
 
 func (value *embyLibraryOptionsUpdate) native() (*library.LibraryOptionsUpdate, error) {
 	if value == nil || len(value.DisabledLocalMetadataReaders) == 0 && len(value.TypeOptions) == 0 &&
-		len(value.EnableMarkerDetection) == 0 && len(value.EnableMarkerDetectionDuringLibraryScan) == 0 && len(value.IntroDetectionFingerprintLength) == 0 {
+		len(value.EnableMarkerDetection) == 0 && len(value.EnableMarkerDetectionDuringLibraryScan) == 0 && len(value.IntroDetectionFingerprintLength) == 0 &&
+		len(value.EnableChapterImageExtraction) == 0 && len(value.ExtractChapterImagesDuringLibraryScan) == 0 {
 		return nil, library.ErrInvalidInput
 	}
 	result := &library.LibraryOptionsUpdate{}
@@ -83,6 +90,22 @@ func (value *embyLibraryOptionsUpdate) native() (*library.LibraryOptionsUpdate, 
 	if len(value.IntroDetectionFingerprintLength) != 0 {
 		var minutes *int
 		if json.Unmarshal(value.IntroDetectionFingerprintLength, &minutes) != nil || minutes == nil || *minutes != 10 {
+			return nil, library.ErrInvalidInput
+		}
+	}
+	if len(value.EnableChapterImageExtraction) != 0 {
+		var enabled *bool
+		if json.Unmarshal(value.EnableChapterImageExtraction, &enabled) != nil || enabled == nil {
+			return nil, library.ErrInvalidInput
+		}
+		result.EnablePreviewGeneration = enabled
+	}
+	// Preview extraction likewise has one automatic mode. This controls future
+	// background generation, not access to already generated preview images.
+	if len(value.ExtractChapterImagesDuringLibraryScan) != 0 {
+		var duringScan *bool
+		if json.Unmarshal(value.ExtractChapterImagesDuringLibraryScan, &duringScan) != nil || duringScan == nil ||
+			result.EnablePreviewGeneration == nil || *duringScan != *result.EnablePreviewGeneration {
 			return nil, library.ErrInvalidInput
 		}
 	}
@@ -144,8 +167,10 @@ func embyEditableLibraryOptions(value library.Library) map[string]any {
 		fetchers = append(fetchers, embeddedArtworkFetcherName)
 	}
 	intro := library.EffectiveLibraryOptions(value).EnableIntroDetection
+	previews := library.EffectiveLibraryOptions(value).EnablePreviewGeneration
 	return map[string]any{"DisabledLocalMetadataReaders": disabled, "TypeOptions": []map[string]any{{"Type": "Audio", "ImageFetchers": fetchers, "ImageFetcherOrder": []string{embeddedArtworkFetcherName}}},
-		"EnableMarkerDetection": intro, "EnableMarkerDetectionDuringLibraryScan": intro, "IntroDetectionFingerprintLength": 10}
+		"EnableMarkerDetection": intro, "EnableMarkerDetectionDuringLibraryScan": intro, "IntroDetectionFingerprintLength": 10,
+		"EnableChapterImageExtraction": previews, "ExtractChapterImagesDuringLibraryScan": previews}
 }
 
 func (s *Server) embyLibraryEditing(w http.ResponseWriter, r *http.Request, id string) (library.LibraryEditing, bool) {

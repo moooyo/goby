@@ -38,7 +38,7 @@ func New(pool *pgxpool.Pool, owner library.OwnedTransactions, registries ...*Exe
 }
 
 // Reconcile registers executable definitions and installs the initial automatic
-// intro schedule. It never creates a run or replaces administrator choices.
+// analysis schedules. It never creates a run or replaces administrator choices.
 func (s *Store) Reconcile(ctx context.Context) error {
 	definitions := []struct{ id, key, embyKey, name, description, category string }{
 		{"", LibraryScanKey, LibraryScanEmbyKey, "Scan media library", "Scan all registered media libraries.", "Library"},
@@ -77,7 +77,7 @@ func (s *Store) Reconcile(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("disable unavailable task definitions: %w", err)
 		}
-		return s.installIntroSchedule(tx)
+		return s.installAnalysisSchedules(tx)
 	})
 }
 

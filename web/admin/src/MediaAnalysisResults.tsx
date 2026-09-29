@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Box, Button, Checkbox, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
 import { isAbortError } from './api';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
@@ -51,22 +51,20 @@ function AnalysisItemDialog({ id, onClose }: { id: string; onClose: () => void }
   </Dialog>;
 }
 
-export function MediaAnalysisResults({ libraries, disabled, previewAvailable, refresh, onRun }: {
-  libraries: Library[]; disabled: boolean; previewAvailable: boolean; refresh: number;
-  onRun: (kind: 'previews', libraryIds: string[], itemIds: string[]) => void;
+export function MediaAnalysisResults({ libraries, disabled, refresh }: {
+  libraries: Library[]; disabled: boolean; refresh: number;
 }) {
   const [libraryId, setLibraryId] = useState(''); const [search, setSearch] = useState(''); const [query, setQuery] = useState(''); const [page, setPage] = useState(0);
   const [data, setData] = useState<AnalysisItems>(); const [error, setError] = useState<unknown>(); const [loading, setLoading] = useState(true); const [revision, setRevision] = useState(0);
-  const [selected, setSelected] = useState<string[]>([]); const [detail, setDetail] = useState<string>();
+  const [detail, setDetail] = useState<string>();
   useEffect(() => {
-    const controller = new AbortController(); setLoading(true); setError(undefined); setData(undefined); setSelected([]);
+    const controller = new AbortController(); setLoading(true); setError(undefined); setData(undefined);
     void mediaAnalysisApi.items(libraryId, query, page * 25, { signal: controller.signal }).then((value) => {
       if (controller.signal.aborted) return;
       if (page > 0 && page * 25 >= value.TotalRecordCount) setPage(Math.max(0, Math.ceil(value.TotalRecordCount / 25) - 1)); else setData(value);
     }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setError(cause); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [libraryId, query, page, revision, refresh]);
-  const chosen = data?.Items.filter((item) => selected.includes(item.Id)) ?? [];
   return <Paper component="section" aria-labelledby="analysis-results-title" variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
     <Stack spacing={2.5}>
       <Typography component="h2" variant="h3" id="analysis-results-title">Analysis results</Typography>
@@ -78,9 +76,7 @@ export function MediaAnalysisResults({ libraries, disabled, previewAvailable, re
       {loading && <Box role="status" aria-label="Loading media analysis items"><Skeleton height={54} /><Skeleton height={54} /></Box>}
       {data?.Items.length === 0 && <Typography color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography>}
       {data && data.Items.length > 0 && <>
-        <TableContainer><Table aria-label="Media analysis items"><TableHead><TableRow><TableCell padding="checkbox"><Checkbox slotProps={{ input: { 'aria-label': 'Select all visible media' } }} disabled={disabled} checked={selected.length === data.Items.length} indeterminate={selected.length > 0 && selected.length < data.Items.length} onChange={(event) => setSelected(event.target.checked ? data.Items.map((item) => item.Id) : [])} /></TableCell><TableCell>Item</TableCell><TableCell>Intro analysis</TableCell><TableCell>Previews</TableCell><TableCell>Details</TableCell></TableRow></TableHead><TableBody>{data.Items.map((item) => <TableRow key={item.Id}><TableCell padding="checkbox"><Checkbox slotProps={{ input: { 'aria-label': `Select ${item.Name}` } }} disabled={disabled} checked={selected.includes(item.Id)} onChange={(event) => setSelected((values) => event.target.checked ? [...values, item.Id] : values.filter((id) => id !== item.Id))} /></TableCell><TableCell component="th" scope="row" sx={{ overflowWrap: 'anywhere' }}>{item.Name}<Typography component="div" variant="caption" color="text.secondary">{item.Type}</Typography></TableCell><TableCell>{analysisIntroStatus(item)}{item.Detection.Effective && <Typography variant="caption" component="div"><IntervalText interval={item.Detection.Effective} /></Typography>}</TableCell><TableCell>{item.Previews.filter((preview) => preview.Status === 'ready').length} ready / {item.Previews.length} recorded</TableCell><TableCell><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`View analysis for ${item.Name}`}>View</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>
-        <Button sx={{ alignSelf: 'flex-start' }} disabled={disabled || !previewAvailable || chosen.length === 0 || chosen.some((item) => !['Movie', 'Episode', 'Video'].includes(item.Type))} onClick={() => onRun('previews', [], selected)}>Build selected previews</Button>
-        <Typography variant="caption" color="text.secondary">Selections apply to this page. Previews support movies, episodes, and videos. The rebuild choice above applies to selected previews.</Typography>
+        <TableContainer><Table aria-label="Media analysis items"><TableHead><TableRow><TableCell>Item</TableCell><TableCell>Intro analysis</TableCell><TableCell>Previews</TableCell><TableCell>Details</TableCell></TableRow></TableHead><TableBody>{data.Items.map((item) => <TableRow key={item.Id}><TableCell component="th" scope="row" sx={{ overflowWrap: 'anywhere' }}>{item.Name}<Typography component="div" variant="caption" color="text.secondary">{item.Type}</Typography></TableCell><TableCell>{analysisIntroStatus(item)}{item.Detection.Effective && <Typography variant="caption" component="div"><IntervalText interval={item.Detection.Effective} /></Typography>}</TableCell><TableCell>{item.Previews.filter((preview) => preview.Status === 'ready').length} ready / {item.Previews.length} recorded</TableCell><TableCell><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`View analysis for ${item.Name}`}>View</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>
       </>}
       {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} />}
     </Stack>

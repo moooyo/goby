@@ -9,7 +9,7 @@ import (
 )
 
 func TestSystemEventRulesHaveNoCalendarAndRejectUnsupportedOSSignals(t *testing.T) {
-	for _, event := range []systemevents.Event{systemevents.ServerStarted, systemevents.LibraryChanged, systemevents.ConfigurationChanged, systemevents.IntroAnalysisRequested} {
+	for _, event := range []systemevents.Event{systemevents.ServerStarted, systemevents.LibraryChanged, systemevents.ConfigurationChanged, systemevents.IntroAnalysisRequested, systemevents.PreviewGenerationRequested} {
 		rule := ScheduleRule{Kind: ScheduleSystemEvent, SystemEvent: event}
 		if err := ValidateSchedule(rule); err != nil {
 			t.Fatal(err)

@@ -142,9 +142,10 @@ func deviceLegacyTableSnapshot(t *testing.T, ctx context.Context, pool *pgxpool.
 
 func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *pgxpool.Pool, tables []deviceLegacyTable) {
 	t.Helper()
-	var expandedArtworkOptions, introAutomation bool
+	var expandedArtworkOptions, introAutomation, previewAutomation bool
 	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=49),
-		EXISTS(SELECT 1 FROM schema_migrations WHERE version=51)`).Scan(&expandedArtworkOptions, &introAutomation); err != nil {
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=51),
+		EXISTS(SELECT 1 FROM schema_migrations WHERE version=52)`).Scan(&expandedArtworkOptions, &introAutomation, &previewAutomation); err != nil {
 		t.Fatal("read the selected library-option migration boundary")
 	}
 	for _, table := range tables {
@@ -160,24 +161,32 @@ func assertDeviceLegacyTablesPreserved(t *testing.T, ctx context.Context, pool *
 				t.Fatal("derive the exact specified library-option migration")
 			}
 		}
-		if introAutomation && table.name == "task_system_events" {
-			var alreadyPresent bool
-			if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) value
-				WHERE value->>'name'='IntroAnalysisRequested')`, table.snapshot).Scan(&alreadyPresent); err != nil {
-				t.Fatal("read the historical intro-event inventory")
-			}
-			if !alreadyPresent {
-				// Schema51 adds exactly one neutral counter. Preserve all original
-				// rows byte-for-byte and validate the new row before appending it.
-				var neutral bool
-				if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_system_events
-					WHERE name='IntroAnalysisRequested' AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)`).Scan(&neutral); err != nil || !neutral {
-					t.Fatal("schema51 failed to initialize its neutral intro-request counter")
+		if table.name == "task_system_events" {
+			for _, addition := range []struct {
+				applied bool
+				name    string
+			}{{introAutomation, "IntroAnalysisRequested"}, {previewAutomation, "PreviewGenerationRequested"}} {
+				if !addition.applied {
+					continue
 				}
-				if err := pool.QueryRow(ctx, `SELECT jsonb_agg(value ORDER BY value::text)::text FROM (
-					SELECT value FROM jsonb_array_elements($1::jsonb) value UNION ALL
-					SELECT to_jsonb(event) FROM task_system_events event WHERE name='IntroAnalysisRequested') expected`, table.snapshot).Scan(&expected); err != nil {
-					t.Fatal("derive the exact appended intro-request counter")
+				var alreadyPresent bool
+				if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) value
+					WHERE value->>'name'=$2)`, expected, addition.name).Scan(&alreadyPresent); err != nil {
+					t.Fatal("read the historical analysis-event inventory")
+				}
+				if !alreadyPresent {
+					// Each migration adds exactly its one neutral counter. Preserve
+					// all original rows and validate each addition before appending.
+					var neutral bool
+					if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_system_events
+						WHERE name=$1 AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)`, addition.name).Scan(&neutral); err != nil || !neutral {
+						t.Fatalf("migration failed to initialize neutral analysis counter %s", addition.name)
+					}
+					if err := pool.QueryRow(ctx, `SELECT jsonb_agg(value ORDER BY value::text)::text FROM (
+						SELECT value FROM jsonb_array_elements($1::jsonb) value UNION ALL
+						SELECT to_jsonb(event) FROM task_system_events event WHERE name=$2) expected`, expected, addition.name).Scan(&expected); err != nil {
+						t.Fatal("derive the exact appended analysis-request counter")
+					}
 				}
 			}
 		}

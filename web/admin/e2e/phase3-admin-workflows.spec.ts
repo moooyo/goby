@@ -243,7 +243,7 @@ test('phase 3 administration workflows persist through conflicts and restart', a
     await library.getByRole('button', { name: 'Save library', exact: true }).click();
     const savedLibrary = await payload<{ Library: EditableLibrary }>(response);
     expect(savedLibrary.Library.Paths).toEqual([fixture.LibraryPath, fixture.WritableDirectory]);
-    expect(savedLibrary.Library.LibraryOptions).toMatchObject({ EnableLocalMetadata: false, EnableLocalImages: false, EnableIntroDetection: false });
+    expect(savedLibrary.Library.LibraryOptions).toMatchObject({ EnableLocalMetadata: false, EnableLocalImages: false, EnableIntroDetection: false, EnablePreviewGeneration: false });
     await expect(library).not.toBeVisible();
     result.Checks.LibrarySaved = true;
     await stage(fixture, result, 'library');

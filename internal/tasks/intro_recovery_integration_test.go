@@ -9,29 +9,28 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/library"
-	"github.com/moooyo/goby/internal/systemevents"
 )
 
-func introRequestSequence(t *testing.T, f *analysisTestFixture) int64 {
+func analysisRequestSequence(t *testing.T, f *analysisTestFixture, key string) int64 {
 	t.Helper()
 	var sequence int64
 	if err := f.pool.QueryRow(f.ctx, `SELECT sequence FROM task_system_events WHERE name=$1`,
-		string(systemevents.IntroAnalysisRequested)).Scan(&sequence); err != nil {
+		string(analysisAutomation(key).event)).Scan(&sequence); err != nil {
 		t.Fatal(err)
 	}
 	return sequence
 }
 
-func admitTestAutomaticIntro(t *testing.T, f *analysisTestFixture, source string) Run {
+func admitTestAutomaticAnalysis(t *testing.T, f *analysisTestFixture, key, source string) Run {
 	t.Helper()
-	definition := f.definitions[library.TaskIntroAnalysisKey]
+	definition := f.definitions[key]
 	now, err := f.store.ScheduleClock(f.ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	switch source {
 	case "system_event":
-		recordTestIntroRequest(t, f)
+		recordTestAnalysisRequest(t, f, key)
 		_, err = f.store.DispatchSystemEvents(f.ctx, 10)
 	case "schedule":
 		if _, err := f.pool.Exec(f.ctx, `UPDATE task_triggers SET anchor_at=$2,next_fire_at=$3
@@ -59,14 +58,14 @@ func admitTestAutomaticIntro(t *testing.T, f *analysisTestFixture, source string
 			err = f.store.InitializeSchedules(f.ctx, now)
 		}
 	default:
-		t.Fatal("unsupported automatic intro fixture source")
+		t.Fatal("unsupported automatic analysis fixture source")
 	}
 	if err != nil {
 		t.Fatal(err)
 	}
 	current, err := f.store.Get(f.ctx, definition.ID)
 	if err != nil || current.CurrentRun == nil || current.CurrentRun.Source != source {
-		t.Fatalf("automatic intro fixture was not admitted: %+v %v", current, err)
+		t.Fatalf("automatic analysis fixture was not admitted: %+v %v", current, err)
 	}
 	run, err := f.store.BeginRun(f.ctx, current.CurrentRun.ID)
 	if err != nil {
@@ -75,11 +74,11 @@ func admitTestAutomaticIntro(t *testing.T, f *analysisTestFixture, source string
 	return run
 }
 
-func claimTestIntroWork(t *testing.T, f *analysisTestFixture, run Run) Child {
+func claimTestAnalysisWork(t *testing.T, f *analysisTestFixture, run Run) Child {
 	t.Helper()
 	children := f.children(t, run)
 	if len(children) != 1 {
-		t.Fatalf("expected one intro recovery child: %+v", children)
+		t.Fatalf("expected one analysis recovery child: %+v", children)
 	}
 	token, err := randomID()
 	if err != nil {
@@ -92,20 +91,25 @@ func claimTestIntroWork(t *testing.T, f *analysisTestFixture, run Run) Child {
 }
 
 func TestIntroRecoveryRequestsFreshAutomaticWorkOnce(t *testing.T) {
+	testAnalysisRecoveryRequestsFreshWork(t, library.TaskIntroAnalysisKey)
+}
+
+func testAnalysisRecoveryRequestsFreshWork(t *testing.T, key string) {
+	t.Helper()
 	for _, source := range []string{"schedule", "startup", "system_event"} {
 		t.Run(source, func(t *testing.T) {
 			f := newAnalysisTestFixture(t, 1)
-			enableTestIntroLibraries(t, f, "library-1")
-			old := admitTestAutomaticIntro(t, f, source)
-			child := claimTestIntroWork(t, f, old)
-			before := introRequestSequence(t, f)
+			enableTestAutomaticLibraries(t, f, key, "library-1")
+			old := admitTestAutomaticAnalysis(t, f, key, source)
+			child := claimTestAnalysisWork(t, f, old)
+			before := analysisRequestSequence(t, f, key)
 			if err := f.store.RecoverRuns(f.ctx); err != nil {
 				t.Fatal(err)
 			}
 			if err := f.store.RecoverRuns(f.ctx); err != nil {
 				t.Fatal(err)
 			}
-			if after := introRequestSequence(t, f); after != before+1 {
+			if after := analysisRequestSequence(t, f, key); after != before+1 {
 				t.Fatalf("recovery lost or duplicated its replacement request: %d -> %d", before, after)
 			}
 			retained, err := f.store.GetRun(f.ctx, old.ID)
@@ -117,10 +121,10 @@ func TestIntroRecoveryRequestsFreshAutomaticWorkOnce(t *testing.T) {
 			if len(children) != 1 || children[0].ID != child.ID || children[0].State != ChildInterrupted {
 				t.Fatal("abandoned child audit was replaced")
 			}
-			if _, err := f.pool.Exec(f.ctx, `UPDATE libraries SET options=options||'{"EnableIntroDetection":false}'::jsonb WHERE id='library-1'`); err != nil {
+			if _, err := f.pool.Exec(f.ctx, `UPDATE libraries SET options=options||jsonb_build_object($1::text,false) WHERE id='library-1'`, analysisAutomation(key).option); err != nil {
 				t.Fatal(err)
 			}
-			enableTestIntroLibraries(t, f, "library-2")
+			enableTestAutomaticLibraries(t, f, key, "library-2")
 			if changed, err := f.store.DispatchSystemEvents(f.ctx, 10); err != nil || !changed {
 				t.Fatalf("recovery did not admit fresh work: %t %v", changed, err)
 			}
@@ -134,18 +138,23 @@ func TestIntroRecoveryRequestsFreshAutomaticWorkOnce(t *testing.T) {
 }
 
 func TestIntroRecoveryDoesNotReplayManualOrExplicitlyStoppedWork(t *testing.T) {
+	testAnalysisRecoveryDoesNotReplayExplicitStops(t, library.TaskIntroAnalysisKey)
+}
+
+func testAnalysisRecoveryDoesNotReplayExplicitStops(t *testing.T, key string) {
+	t.Helper()
 	for _, reason := range []string{"administrator", "max_runtime", "manual_crash", "manual_shutdown"} {
 		t.Run(reason, func(t *testing.T) {
 			f := newAnalysisTestFixture(t, 1)
-			enableTestIntroLibraries(t, f, "library-1")
+			enableTestAutomaticLibraries(t, f, key, "library-1")
 			var run Run
 			if reason == "manual_crash" || reason == "manual_shutdown" {
-				run = f.start(t, library.TaskIntroAnalysisKey, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
+				run = f.start(t, key, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
 			} else {
-				run = admitTestAutomaticIntro(t, f, "system_event")
+				run = admitTestAutomaticAnalysis(t, f, key, "system_event")
 			}
-			claimTestIntroWork(t, f, run)
-			before := introRequestSequence(t, f)
+			claimTestAnalysisWork(t, f, run)
+			before := analysisRequestSequence(t, f, key)
 			var err error
 			switch reason {
 			case "administrator":
@@ -161,7 +170,7 @@ func TestIntroRecoveryDoesNotReplayManualOrExplicitlyStoppedWork(t *testing.T) {
 			if err := f.store.RecoverRuns(f.ctx); err != nil {
 				t.Fatal(err)
 			}
-			if after := introRequestSequence(t, f); after != before {
+			if after := analysisRequestSequence(t, f, key); after != before {
 				t.Fatalf("an explicit stop or manual run generated automatic work: %d -> %d", before, after)
 			}
 			if changed, err := f.store.DispatchSystemEvents(f.ctx, 10); err != nil || changed {
@@ -172,9 +181,14 @@ func TestIntroRecoveryDoesNotReplayManualOrExplicitlyStoppedWork(t *testing.T) {
 }
 
 func TestIntroGracefulShutdownRetainsRequestForNextScheduler(t *testing.T) {
+	testAnalysisGracefulShutdownRetainsRequest(t, library.TaskIntroAnalysisKey)
+}
+
+func testAnalysisGracefulShutdownRetainsRequest(t *testing.T, key string) {
+	t.Helper()
 	f := newAnalysisTestFixture(t, 1)
-	enableTestIntroLibraries(t, f, "library-1")
-	executor := f.executors[library.TaskIntroAnalysisKey]
+	enableTestAutomaticLibraries(t, f, key, "library-1")
+	executor := f.executors[key]
 	executor.release = make(chan struct{})
 	manager, err := NewManager(f.store, f.owner, ManagerOptions{ReconcileInterval: 250 * time.Millisecond})
 	if err != nil {
@@ -187,7 +201,7 @@ func TestIntroGracefulShutdownRetainsRequestForNextScheduler(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	recordTestIntroRequest(t, f)
+	recordTestAnalysisRequest(t, f, key)
 	manager.Wake()
 	work := analysisReceiveWork(t, executor)
 	ctx, cancel := context.WithTimeout(f.ctx, 10*time.Second)

@@ -152,12 +152,16 @@ func assertPhase3HistoricalSystemEventDefaults(t *testing.T, ctx context.Context
 	t.Helper()
 	var valid bool
 	if err := pool.QueryRow(ctx, `SELECT
-		(SELECT count(*) FROM task_system_events)=3+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=51) THEN 1 ELSE 0 END
+		(SELECT count(*) FROM task_system_events)=3
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=51) THEN 1 ELSE 0 END
+			+CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=52) THEN 1 ELSE 0 END
 		AND (SELECT count(*) FROM task_system_events WHERE name IN
 			('ServerStarted','LibraryChanged','ConfigurationChanged') AND sequence=0
 			AND lifecycle_key='' AND occurred_at IS NOT NULL)=3
 		AND (SELECT count(*) FROM task_system_events WHERE name='IntroAnalysisRequested'
 			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=51) THEN 1 ELSE 0 END
+		AND (SELECT count(*) FROM task_system_events WHERE name='PreviewGenerationRequested'
+			AND sequence=0 AND lifecycle_key='' AND occurred_at IS NOT NULL)=CASE WHEN EXISTS(SELECT 1 FROM schema_migrations WHERE version=52) THEN 1 ELSE 0 END
 		AND NOT EXISTS(SELECT 1 FROM task_system_event_receipts)
 		AND EXISTS(SELECT 1 FROM task_triggers WHERE id=repeat('7',32)
 			AND kind='startup' AND system_event IS NULL AND last_event_sequence=0)`).Scan(&valid); err != nil || !valid {

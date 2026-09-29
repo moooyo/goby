@@ -354,6 +354,12 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 				return LibraryEditing{}, err
 			}
 		}
+		if !EffectiveLibraryOptions(previous.Library).EnablePreviewGeneration && options.EnablePreviewGeneration {
+			if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.PreviewGenerationRequested); err != nil {
+				return LibraryEditing{}, err
+			}
+		}
+		// Disabling generation preserves already published previews and caches.
 		if name != previous.Library.Name {
 			if _, err := tx.Exec(protected, `UPDATE items SET name=$2, sort_name=$3, updated_at=now() WHERE id=$1 AND library_id=$1`, id, name, strings.ToLower(name)); err != nil {
 				return LibraryEditing{}, err

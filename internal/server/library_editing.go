@@ -41,6 +41,9 @@ func nativeLibraryCreationOptions(update *library.LibraryOptionsUpdate) library.
 		if update.EnableIntroDetection != nil {
 			options.EnableIntroDetection = *update.EnableIntroDetection
 		}
+		if update.EnablePreviewGeneration != nil {
+			options.EnablePreviewGeneration = *update.EnablePreviewGeneration
+		}
 	}
 	return options
 }

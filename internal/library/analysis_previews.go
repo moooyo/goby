@@ -21,6 +21,31 @@ const (
 	analysisPreviewMaxBytes          int64 = 128 << 20
 )
 
+const analysisPreviewLibraryPolicySQL = `SELECT collection_type IN ('movies','tvshows','mixed')
+	AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false)
+	FROM libraries WHERE id=$1`
+
+func checkAutomaticPreviewPublication(tx OwnedTx, work AnalysisWork) error {
+	var automatic bool
+	if err := tx.QueryRow(`SELECT actor_kind='system' AND source IN ('schedule','startup','system_event')
+		FROM task_runs WHERE id=$1 AND task_key=$2`, work.RunID, TaskPreviewGenerationKey).Scan(&automatic); err != nil {
+		return err
+	}
+	if !automatic {
+		return nil
+	}
+	var enabled bool
+	// Keep this lock through commit so a completed opt-out cannot race a new
+	// automatic publication. Existing preview references remain readable.
+	if err := tx.QueryRow(analysisPreviewLibraryPolicySQL+` FOR SHARE`, work.LibraryID).Scan(&enabled); err != nil {
+		return err
+	}
+	if !enabled {
+		return ErrAnalysisPreviewDisabled
+	}
+	return nil
+}
+
 func analysisPreviewHex(value string) bool {
 	if len(value) != 64 || strings.ToLower(value) != value {
 		return false
@@ -205,6 +230,9 @@ func (s *Store) PublishAnalysisPreview(ctx context.Context, childID string, fenc
 	return s.withAnalysisWork(ctx, childID, fence, func(tx OwnedTx, work AnalysisWork) error {
 		source, previews, err := prepareAnalysisPreviewPublications(work, values)
 		if err != nil {
+			return err
+		}
+		if err := checkAutomaticPreviewPublication(tx, work); err != nil {
 			return err
 		}
 		for _, preview := range previews {

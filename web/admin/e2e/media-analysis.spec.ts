@@ -38,14 +38,14 @@ function run(): TaskRun {
 async function json(route: Route, value: unknown, status = 200): Promise<void> { await route.fulfill({ status, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' }, body: JSON.stringify(value) }); }
 interface Captured { method: string; path: string; body: unknown; csrf?: string }
 class AnalysisAPI {
-  overview = overview(); item = item(); run = run(); children: TaskChild[] = []; showIntroTask = false; requests: Captured[] = []; unexpected: string[] = [];
+  overview = overview(); item = item(); run = run(); children: TaskChild[] = []; showTask = false; taskKind: 'intro' | 'previews' = 'intro'; requests: Captured[] = []; unexpected: string[] = [];
   handlers = new Map<string, (route: Route, request: Request) => Promise<void>>();
   writes(path?: string): Captured[] { return this.requests.filter((value) => value.method !== 'GET' && (!path || value.path === path)); }
-  introTask(): TaskDefinition {
+  task(): TaskDefinition {
     const active = ['pending', 'running', 'stopping'].includes(this.run.State);
-    return { Id: this.run.TaskId, Key: 'media.intro_analysis', Name: 'Automatic intro detection', Description: 'Analyze enabled TV libraries in the background.', Category: 'Media analysis',
+    return { Id: this.run.TaskId, Key: this.taskKind === 'intro' ? 'media.intro_analysis' : 'media.preview_generation', Name: this.taskKind === 'intro' ? 'Automatic intro detection' : 'Automatic seek previews', Description: 'Process enabled libraries in the background.', Category: 'Media analysis',
       IsHidden: false, Enabled: true, Revision: '1', ScheduleTimezone: 'UTC', CurrentRun: active ? this.run : null, LastRun: active ? null : this.run, NextRunAt: null,
-      Triggers: [{ Id: 'intro-trigger', Kind: 'system_event', SystemEvent: 'IntroAnalysisRequested', IntervalTicks: null, TimeOfDayTicks: null, DayOfWeek: null, MaxRuntimeTicks: null, NextFireAt: null, CalculationError: '' }],
+      Triggers: [{ Id: 'intro-trigger', Kind: 'system_event', SystemEvent: this.taskKind === 'intro' ? 'IntroAnalysisRequested' : 'PreviewGenerationRequested', IntervalTicks: null, TimeOfDayTicks: null, DayOfWeek: null, MaxRuntimeTicks: null, NextFireAt: null, CalculationError: '' }],
     };
   }
   async install(context: BrowserContext): Promise<void> {
@@ -67,8 +67,8 @@ class AnalysisAPI {
           const limit = Number(url.searchParams.get('Limit') ?? '50');
           return json(route, { Run: this.run, Children: { Items: this.children.slice(start, start + limit), TotalRecordCount: this.children.length, StartIndex: start, Limit: limit } });
         }
-        if (path === '/admin/v1/tasks') return json(route, { Items: this.showIntroTask ? [this.introTask()] : [], TotalRecordCount: this.showIntroTask ? 1 : 0 });
-        if (path === '/admin/v1/tasks/analysis-task-1') return json(route, { Task: this.introTask() });
+        if (path === '/admin/v1/tasks') return json(route, { Items: this.showTask ? [this.task()] : [], TotalRecordCount: this.showTask ? 1 : 0 });
+        if (path === '/admin/v1/tasks/analysis-task-1') return json(route, { Task: this.task() });
       }
       if (method === 'PUT' && path === '/admin/v1/media-analysis/configuration') {
         const input = captured.body as { Revision: string; Profile: AnalysisProfile };
@@ -114,23 +114,19 @@ test('configuration conflicts preserve preview edits and publication stays autom
   expect(writes[1].body).toEqual({ Revision: '9007199254740995', Profile: { ...profile, PreviewIntervalSeconds: 20, AutoPublishIntros: true } });
 });
 
-test('preview scope and rebuild retain recorded progress and truthful stop handling', async ({ page, api }) => {
-  await open(page); await expect(page.getByRole('button', { name: 'Build library previews' })).toBeDisabled();
-  await page.getByRole('checkbox', { name: 'Series library', exact: true }).check();
-  await page.getByRole('checkbox', { name: 'Rebuild existing previews' }).check();
-  await page.getByRole('button', { name: 'Build library previews' }).click();
-  const progress = page.getByRole('region', { name: 'Analysis task progress' });
-  await expect(progress).toContainText('1 of 3 work items finished');
-  const input = api.writes('/admin/v1/media-analysis/runs')[0].body as AnalysisRunInput;
-  expect(input).toMatchObject({ Kind: 'previews', LibraryIds: ['library-series'], ItemIds: [], Force: true }); expect(input.RequestId).toMatch(/^[0-9a-f-]{36}$/);
-  await progress.getByRole('button', { name: 'Request stop', exact: true }).click();
-  await expect(progress).toContainText('The task remains active until its workers finish'); await expect(progress).toContainText('1 of 3 work items finished');
-  api.run = { ...api.run, State: 'cancelled', TerminalChildren: 3, CancelledChildren: 2, FinishedAt: stamp };
-  await progress.getByRole('button', { name: 'Refresh progress' }).click(); await expect(progress).toContainText('Cancelled'); await expect(progress).toContainText('3 of 3 work items finished');
-  expect(api.writes('/admin/v1/task-runs/analysis-run-1/cancel')).toHaveLength(1);
-  await page.getByRole('button', { name: 'Open tasks', exact: true }).click(); await expect(page).toHaveURL(/\/admin\/tasks$/);
+test('seek previews have a library automation entry instead of manual generation controls', async ({ page, api }) => {
+  await open(page);
+  const automation = page.getByRole('region', { name: 'Automatic media processing', exact: true });
+  const previews = page.getByRole('region', { name: 'Automatic seek previews', exact: true });
+  await expect(previews).toContainText('Movies, TV shows, or Mixed media library');
+  await expect(previews).toContainText('Turning the option off keeps existing valid previews.');
+  await expect(page.getByRole('button', { name: /Build library previews|Build selected previews/ })).toHaveCount(0);
+  await expect(page.getByRole('checkbox', { name: /Rebuild existing previews|Select Opening episode|Series library/ })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Previous run request', exact: true })).toHaveCount(0);
+  await automation.getByRole('button', { name: 'Open library settings', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/libraries$/);
+  expect(api.writes()).toHaveLength(0);
 });
-
 test('available intros show only the playback interval and preserve seek previews', async ({ page, api }) => {
   await open(page); await page.getByRole('button', { name: 'View analysis for Opening episode' }).click();
   const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true });
@@ -169,36 +165,39 @@ test('cache cleanup reports retained busy entries and uses the saved configurati
 
 test('missing tools disable work without hiding configuration or source results', async ({ page, api }) => {
   api.overview.Runtime = { Configured: false, IntroAvailable: false, PreviewAvailable: false, Reasons: ['missing_ffmpeg', 'fingerprint_tool_unavailable'], Cache: null };
-  await open(page); await expect(page.getByText('missing ffmpeg', { exact: true })).toBeVisible(); await page.getByRole('checkbox', { name: 'Series library', exact: true }).check();
-  await expect(page.getByRole('button', { name: 'Build library previews' })).toBeDisabled();
+  await open(page); await expect(page.getByText('missing ffmpeg', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Build library previews' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open library settings', exact: true })).toBeEnabled();
   await expect(page.getByRole('textbox', { name: 'Preview image quality', exact: true })).toBeEnabled(); expect(api.writes()).toHaveLength(0);
 });
 
-test('an unconfirmed admission survives reload and retries exactly the same frozen request', async ({ page, api }) => {
+test('a historical unconfirmed request survives reload and retries only its original receipt', async ({ page, api }) => {
+  const pending: AnalysisRunInput = { Kind: 'previews', RequestId: '12345678-1234-4234-8234-123456789abc', LibraryIds: [], ItemIds: ['episode-1'], Force: false };
+  await page.addInitScript(({ key, pending }) => { if (!sessionStorage.getItem('receipt-seeded')) { sessionStorage.setItem(key, JSON.stringify(pending)); sessionStorage.setItem('receipt-seeded', 'true'); } },
+    { key: `goby.media-analysis.admission.${encodeURIComponent(administrator.Id)}`, pending });
   let attempts = 0;
   api.handlers.set('POST /admin/v1/media-analysis/runs', async (route, request) => {
     const input = request.postDataJSON() as AnalysisRunInput; api.run.RequestId = input.RequestId;
     if (attempts++ === 0) return route.abort('failed');
     return json(route, { RunId: api.run.Id, TaskId: api.run.TaskId, Admitted: false });
   });
-  await open(page); await page.getByRole('checkbox', { name: 'Select Opening episode', exact: true }).check();
-  await page.getByRole('button', { name: 'Build selected previews' }).click();
-  await expect(page.getByRole('button', { name: 'Check run request' })).toBeVisible();
+  await open(page); await expect(page.getByRole('button', { name: 'Check run request' })).toBeVisible();
+  expect(api.writes('/admin/v1/media-analysis/runs')).toHaveLength(0);
+  await page.getByRole('button', { name: 'Check run request' }).click();
+  await expect(page.getByRole('button', { name: 'Check run request' })).toBeEnabled();
   page.once('dialog', (dialog) => void dialog.accept());
   await page.reload(); await expect(page.getByRole('button', { name: 'Check run request' })).toBeEnabled(); expect(api.writes('/admin/v1/media-analysis/runs')).toHaveLength(1);
   await page.getByRole('button', { name: 'Check run request' }).click();
   await expect(page.getByRole('region', { name: 'Analysis task progress' })).toContainText('1 of 3 work items finished');
-  const writes = api.writes('/admin/v1/media-analysis/runs'); expect(writes).toHaveLength(2); expect(writes[1].body).toEqual(writes[0].body);
-  expect(writes[0].body).toMatchObject({ Kind: 'previews', LibraryIds: [], ItemIds: ['episode-1'], Force: false });
+  const writes = api.writes('/admin/v1/media-analysis/runs'); expect(writes).toHaveLength(2); expect(writes[0].body).toEqual(pending); expect(writes[1].body).toEqual(pending);
+  expect(writes.every((value) => (value.body as AnalysisRunInput).RequestId === pending.RequestId)).toBe(true);
 });
-
 test('intro analysis directs users to TV library settings without manual admission or review', async ({ page, api }) => {
   await open(page);
   await expect(page.getByRole('button', { name: 'Analyze library intros' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Analyze selected episodes' })).toHaveCount(0);
   await expect(page.getByRole('switch', { name: 'Automatically publish qualified detected intros' })).toHaveCount(0);
-  const automatic = page.getByRole('region', { name: 'Automatic intro detection', exact: true });
+  const automatic = page.getByRole('region', { name: 'Automatic media processing', exact: true });
   await expect(automatic).toContainText('If no intro is found, playback stays unchanged.');
   await automatic.getByRole('button', { name: 'Open library settings', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/libraries$/);
@@ -207,13 +206,13 @@ test('intro analysis directs users to TV library settings without manual admissi
 });
 
 test('automatic intro tasks expose the new event, progress, failures and stop control', async ({ page, api }) => {
-  api.showIntroTask = true; api.run.Source = 'system_event'; api.run.CompletedChildren = 0; api.run.FailedChildren = 1;
+  api.showTask = true; api.run.Source = 'system_event'; api.run.CompletedChildren = 0; api.run.FailedChildren = 1;
   api.children = [{ Id: 'intro-child-1', RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library', Ordinal: 0, State: 'failed', ScanJobId: null,
     Scanned: 0, Added: 0, Updated: 0, ErrorCode: 'source_unavailable', ErrorMessage: 'An episode could not be read.', CreatedAt: stamp, StartedAt: stamp, FinishedAt: stamp }];
   for (const ordinal of [1, 2]) api.children.push({ Id: `intro-child-${ordinal + 1}`, RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library',
     Ordinal: ordinal, State: ordinal === 1 ? 'running' : 'queued', ScanJobId: null, Scanned: 0, Added: 0, Updated: 0, ErrorCode: '', ErrorMessage: '',
     CreatedAt: stamp, StartedAt: ordinal === 1 ? stamp : null, FinishedAt: null });
-  await open(page); await page.getByRole('button', { name: 'View intro tasks', exact: true }).click();
+  await open(page); await page.getByRole('button', { name: 'View background tasks', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/tasks$/);
   await expect(page.getByText('When intro detection requested', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'View current run', exact: true }).click();
@@ -230,4 +229,30 @@ test('automatic intro tasks expose the new event, progress, failures and stop co
   await expect(detail.getByRole('button', { name: 'Stop run', exact: true })).toHaveCount(0);
   expect(api.writes('/admin/v1/media-analysis/runs')).toHaveLength(0);
   expect(api.writes('/admin/v1/task-runs/analysis-run-1/cancel')).toHaveLength(1);
+});
+
+test('automatic preview tasks expose the new event and generated outputs without manual admission', async ({ page, api }) => {
+  api.showTask = true; api.taskKind = 'previews'; api.run.Source = 'system_event';
+  api.run.TotalChildren = 1; api.run.TerminalChildren = 0; api.run.CompletedChildren = 0;
+  api.item.Previews = [];
+  api.children = [{ Id: 'preview-child-1', RunId: api.run.Id, LibraryId: 'library-series', LibraryName: 'Series library', Ordinal: 0, State: 'running', ScanJobId: null,
+    Scanned: 0, Added: 0, Updated: 0, ErrorCode: '', ErrorMessage: '', CreatedAt: stamp, StartedAt: stamp, FinishedAt: null }];
+  await open(page); await page.getByRole('button', { name: 'View background tasks', exact: true }).click();
+  await expect(page.getByText('When seek preview generation requested', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'View current run', exact: true }).click();
+  const detail = page.getByRole('dialog', { name: 'Run details · Automatic seek previews', exact: true });
+  await expect(detail).toContainText('0 of 1 work items finished');
+  api.run.State = 'completed'; api.run.TerminalChildren = 1; api.run.CompletedChildren = 1; api.run.FinishedAt = stamp;
+  api.children[0] = { ...api.children[0], State: 'completed', FinishedAt: stamp };
+  api.item.Previews = [{ Width: 320, Height: 180, Size: 32768, FrameCount: 12, Status: 'ready', FailureCode: '', UpdatedAt: stamp },
+    { Width: 400, Height: 225, Size: 0, FrameCount: 0, Status: 'failed', FailureCode: 'source_unavailable', UpdatedAt: stamp }];
+  await detail.getByRole('button', { name: 'Refresh run', exact: true }).click();
+  await expect(detail).toContainText('1 of 1 work items finished');
+  await expect(detail.getByRole('button', { name: 'Stop run', exact: true })).toHaveCount(0);
+  await page.goto('/admin/media-analysis');
+  await page.getByRole('button', { name: 'View analysis for Opening episode' }).click();
+  const output = page.getByRole('dialog', { name: 'Opening episode', exact: true }).getByRole('table', { name: 'Preview outputs', exact: true });
+  await expect(output).toContainText('320 × 180'); await expect(output).toContainText('ready');
+  await expect(output).toContainText('source unavailable');
+  expect(api.writes('/admin/v1/media-analysis/runs')).toHaveLength(0);
 });

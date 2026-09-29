@@ -251,6 +251,11 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 			return Library{}, err
 		}
 	}
+	if options.EnablePreviewGeneration {
+		if err := systemevents.Record((catalogActivityTx{tx: tx}).Exec, systemevents.PreviewGenerationRequested); err != nil {
+			return Library{}, err
+		}
+	}
 	finalObservationCtx, cancelFinalObservation := context.WithTimeout(protected, storageObservationTimeout)
 	defer cancelFinalObservation()
 	for _, registration := range roots {

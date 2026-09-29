@@ -14,36 +14,53 @@ import (
 
 func enableTestIntroLibraries(t *testing.T, f *analysisTestFixture, ids ...string) {
 	t.Helper()
-	if _, err := f.pool.Exec(f.ctx, `UPDATE libraries SET collection_type='tvshows',
-		options=options||'{"EnableIntroDetection":true}'::jsonb WHERE id=ANY($1::text[])`, ids); err != nil {
+	enableTestAutomaticLibraries(t, f, library.TaskIntroAnalysisKey, ids...)
+}
+
+func enableTestAutomaticLibraries(t *testing.T, f *analysisTestFixture, key string, ids ...string) {
+	t.Helper()
+	policy := analysisAutomation(key)
+	if policy.event == "" {
+		t.Fatal("unsupported analysis automation fixture")
+	}
+	if _, err := f.pool.Exec(f.ctx, `UPDATE libraries
+		SET collection_type=CASE WHEN $2::text='EnableIntroDetection' THEN 'tvshows' ELSE collection_type END,
+		options=options||jsonb_build_object($2::text,true) WHERE id=ANY($1::text[])`, ids, policy.option); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func recordTestIntroRequest(t *testing.T, f *analysisTestFixture) {
 	t.Helper()
+	recordTestAnalysisRequest(t, f, library.TaskIntroAnalysisKey)
+}
+
+func recordTestAnalysisRequest(t *testing.T, f *analysisTestFixture, key string) {
+	t.Helper()
 	if err := f.owner.WithOwnedTx(f.ctx, func(tx library.OwnedTx) error {
-		return systemevents.Record(tx.Exec, systemevents.IntroAnalysisRequested)
+		return systemevents.Record(tx.Exec, analysisAutomation(key).event)
 	}); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestIntroDefaultScheduleInstallsOnceAndPreservesAdministratorDecisions(t *testing.T) {
+	testDefaultAnalysisSchedule(t, library.TaskIntroAnalysisKey)
+}
+
+func testDefaultAnalysisSchedule(t *testing.T, key string) {
+	t.Helper()
 	f := newAnalysisTestFixture(t, 0)
-	definition := f.definitions[library.TaskIntroAnalysisKey]
+	definition := f.definitions[key]
 	if definition.Revision != 2 || len(definition.Triggers) != 2 {
-		t.Fatalf("default intro schedule was not installed: %+v", definition)
+		t.Fatalf("default analysis schedule was not installed: %+v", definition)
 	}
 	interval, event := definition.Triggers[0], definition.Triggers[1]
 	if interval.Kind != string(ScheduleInterval) || interval.IntervalTicks == nil ||
 		*interval.IntervalTicks != 86400*ScheduleTicksPerSecond || interval.AnchorAt == nil || interval.NextFireAt == nil ||
 		interval.NextFireAt.Sub(*interval.AnchorAt) != 24*time.Hour || event.Kind != string(ScheduleSystemEvent) ||
-		event.SystemEvent == nil || *event.SystemEvent != string(systemevents.IntroAnalysisRequested) || event.LastEventSequence != 0 {
-		t.Fatal("default intro schedule has the wrong interval or event cursor")
-	}
-	if len(f.definitions[library.TaskPreviewGenerationKey].Triggers) != 0 {
-		t.Fatal("intro defaults changed the preview schedule")
+		event.SystemEvent == nil || *event.SystemEvent != string(analysisAutomation(key).event) || event.LastEventSequence != 0 {
+		t.Fatal("default analysis schedule has the wrong interval or event cursor")
 	}
 	if err := f.store.Reconcile(f.ctx); err != nil {
 		t.Fatal(err)
@@ -54,7 +71,7 @@ func TestIntroDefaultScheduleInstallsOnceAndPreservesAdministratorDecisions(t *t
 	for _, scenario := range []string{"custom", "cleared", "empty_legacy_choice", "disabled"} {
 		t.Run(scenario, func(t *testing.T) {
 			f := newAnalysisTestFixture(t, 0)
-			definition := f.definitions[library.TaskIntroAnalysisKey]
+			definition := f.definitions[key]
 			switch scenario {
 			case "custom", "cleared":
 				rules := []ScheduleRule{}
@@ -145,8 +162,13 @@ func TestAutomaticIntroAdmissionUsesOnlyEnabledTelevisionLibraries(t *testing.T)
 }
 
 func TestAutomaticIntroEmptySetNeverInvokesAllLibrarySnapshot(t *testing.T) {
+	testAutomaticAnalysisEmptySet(t, library.TaskIntroAnalysisKey)
+}
+
+func testAutomaticAnalysisEmptySet(t *testing.T, key string) {
+	t.Helper()
 	f := newAnalysisTestFixture(t, 1)
-	entry := f.store.executors.entries[library.TaskIntroAnalysisKey]
+	entry := f.store.executors.entries[key]
 	entry.Executor = &genericTestExecutor{available: false}
 	prepare := entry.AnalysisAdmission
 	entry.AnalysisAdmission = func(tx library.OwnedTx, request AnalysisAdmissionRequest) (AnalysisAdmissionBinding, error) {
@@ -156,12 +178,12 @@ func TestAutomaticIntroEmptySetNeverInvokesAllLibrarySnapshot(t *testing.T) {
 		}
 		return binding, err
 	}
-	f.store.executors.entries[library.TaskIntroAnalysisKey] = entry
-	recordTestIntroRequest(t, f)
+	f.store.executors.entries[key] = entry
+	recordTestAnalysisRequest(t, f, key)
 	if changed, err := f.store.DispatchSystemEvents(f.ctx, 10); err != nil || !changed {
 		t.Fatalf("empty event was not consumed safely: %t %v", changed, err)
 	}
-	definition, err := f.store.Get(f.ctx, f.definitions[library.TaskIntroAnalysisKey].ID)
+	definition, err := f.store.Get(f.ctx, f.definitions[key].ID)
 	if err != nil || definition.CurrentRun != nil || definition.LastRun == nil || definition.LastRun.State != RunCompleted || definition.LastRun.TotalChildren != 0 {
 		t.Fatalf("empty selection did not finish without work: %+v %v", definition, err)
 	}
@@ -171,15 +193,20 @@ func TestAutomaticIntroEmptySetNeverInvokesAllLibrarySnapshot(t *testing.T) {
 }
 
 func TestIntroRequestDuringIdenticalRunIsDeferredAndCoalescedAfterCompletion(t *testing.T) {
+	testAnalysisRequestDeferral(t, library.TaskIntroAnalysisKey)
+}
+
+func testAnalysisRequestDeferral(t *testing.T, key string) {
+	t.Helper()
 	f := newAnalysisTestFixture(t, 1)
-	enableTestIntroLibraries(t, f, "library-1")
-	manual := f.start(t, library.TaskIntroAnalysisKey, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
-	recordTestIntroRequest(t, f)
-	recordTestIntroRequest(t, f)
+	enableTestAutomaticLibraries(t, f, key, "library-1")
+	manual := f.start(t, key, &library.AnalysisSelection{LibraryIDs: []string{"library-1"}})
+	recordTestAnalysisRequest(t, f, key)
+	recordTestAnalysisRequest(t, f, key)
 	changed, err := f.store.DispatchSystemEvents(f.ctx, 10)
 	var deferred *AnalysisDeferrals
 	if changed || !errors.As(err, &deferred) || len(deferred.Items) != 1 {
-		t.Fatalf("identical active scope swallowed the new intro request: %t %v", changed, err)
+		t.Fatalf("identical active scope swallowed the new analysis request: %t %v", changed, err)
 	}
 	var receipts int
 	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM task_system_event_receipts WHERE task_id=$1`, manual.TaskID).Scan(&receipts); err != nil || receipts != 0 {
@@ -189,7 +216,7 @@ func TestIntroRequestDuringIdenticalRunIsDeferredAndCoalescedAfterCompletion(t *
 		t.Fatal(err)
 	}
 	if changed, err := f.store.DispatchSystemEvents(f.ctx, 10); err != nil || !changed {
-		t.Fatalf("retained intro request did not resume: %t %v", changed, err)
+		t.Fatalf("retained analysis request did not resume: %t %v", changed, err)
 	}
 	definition, err := f.store.Get(f.ctx, manual.TaskID)
 	if err != nil || definition.CurrentRun == nil || definition.CurrentRun.ID == manual.ID {
@@ -204,15 +231,20 @@ func TestIntroRequestDuringIdenticalRunIsDeferredAndCoalescedAfterCompletion(t *
 }
 
 func TestIntroCommittedRequestSurvivesSchedulerRestartWithoutCursorCatchup(t *testing.T) {
+	testAnalysisRestartCursor(t, library.TaskIntroAnalysisKey)
+}
+
+func testAnalysisRestartCursor(t *testing.T, key string) {
+	t.Helper()
 	f := newAnalysisTestFixture(t, 1)
-	recordTestIntroRequest(t, f)
+	recordTestAnalysisRequest(t, f, key)
 	if changed, err := f.store.DispatchSystemEvents(f.ctx, 10); err != nil || !changed {
 		t.Fatalf("consume the earlier empty request: %t %v", changed, err)
 	}
-	definition := f.definitions[library.TaskIntroAnalysisKey]
+	definition := f.definitions[key]
 	triggerID := definition.Triggers[1].ID
-	enableTestIntroLibraries(t, f, "library-1")
-	recordTestIntroRequest(t, f)
+	enableTestAutomaticLibraries(t, f, key, "library-1")
+	recordTestAnalysisRequest(t, f, key)
 	reloaded, err := New(f.pool, f.owner, f.store.executors)
 	if err != nil {
 		t.Fatal(err)
@@ -233,10 +265,10 @@ func TestIntroCommittedRequestSurvivesSchedulerRestartWithoutCursorCatchup(t *te
 	var cursor, sequence int64
 	if err := f.pool.QueryRow(f.ctx, `SELECT t.last_event_sequence,e.sequence FROM task_triggers t
 		JOIN task_system_events e ON e.name=t.system_event WHERE t.id=$1`, triggerID).Scan(&cursor, &sequence); err != nil || cursor != 1 || sequence != 2 {
-		t.Fatalf("startup consumed the offline intro request: cursor=%d sequence=%d error=%v", cursor, sequence, err)
+		t.Fatalf("startup consumed the offline analysis request: cursor=%d sequence=%d error=%v", cursor, sequence, err)
 	}
 	if changed, err := reloaded.DispatchSystemEvents(f.ctx, 10); err != nil || !changed {
-		t.Fatalf("offline intro request was not dispatched after restart: %t %v", changed, err)
+		t.Fatalf("offline analysis request was not dispatched after restart: %t %v", changed, err)
 	}
 	current, err := reloaded.Get(f.ctx, definition.ID)
 	if err != nil || current.CurrentRun == nil || current.CurrentRun.TotalChildren != 1 ||
@@ -260,6 +292,7 @@ func TestIntroPolicyDoesNotChangeManualOrPreviewSelections(t *testing.T) {
 		t.Fatal(err)
 	}
 	preview := f.definitions[library.TaskPreviewGenerationKey]
+	enableTestAutomaticLibraries(t, f, library.TaskPreviewGenerationKey, "library-1", "library-2")
 	if _, err := f.store.ReplaceTriggers(f.ctx, f.actor, ReplaceTriggersRequest{TaskID: preview.ID, Revision: preview.Revision,
 		ScheduleTimezone: "UTC", Triggers: []ScheduleRule{{Kind: ScheduleStartup}}}); err != nil {
 		t.Fatal(err)

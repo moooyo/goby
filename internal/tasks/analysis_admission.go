@@ -178,12 +178,12 @@ func (s *Store) prepareAnalysisAdmission(tx library.OwnedTx, key, source string,
 	if !isAnalysisTask(key) {
 		return AnalysisAdmissionBinding{}, nil, nil
 	}
-	automaticIntro := key == library.TaskIntroAnalysisKey && actor == nil &&
+	automatic := actor == nil &&
 		(source == "schedule" || source == "startup" || source == "system_event")
 	var libraries []analysisLibrary
 	var err error
-	if automaticIntro {
-		libraries, err = automaticIntroLibraries(tx, input)
+	if automatic {
+		libraries, err = automaticAnalysisLibraries(tx, key, input)
 	} else {
 		libraries, err = analysisLibraries(tx, input)
 	}
@@ -208,17 +208,21 @@ func (s *Store) prepareAnalysisAdmission(tx library.OwnedTx, key, source string,
 	}
 	// Bind the actual configuration even for an empty automatic selection, but
 	// never pass that empty selection to the all-library child snapshot callback.
-	binding.emptyTargets = automaticIntro && len(libraries) == 0
+	binding.emptyTargets = automatic && len(libraries) == 0
 	return binding, libraries, nil
 }
 
-func automaticIntroLibraries(tx library.OwnedTx, input *library.AnalysisSelection) ([]analysisLibrary, error) {
+func automaticAnalysisLibraries(tx library.OwnedTx, key string, input *library.AnalysisSelection) ([]analysisLibrary, error) {
 	if input == nil || len(input.ItemIDs) != 0 || len(input.LibraryIDs) != 0 || input.Force {
 		return nil, ErrInvalidInput
 	}
+	policy := analysisAutomation(key)
+	if policy.event == "" {
+		return nil, ErrInvalidInput
+	}
 	rows, err := tx.Query(`SELECT id,name FROM libraries
-		WHERE collection_type='tvshows' AND options->'EnableIntroDetection'='true'::jsonb
-		ORDER BY id LIMIT 65`)
+		WHERE collection_type=ANY($1::text[]) AND options->$2::text='true'::jsonb AND id<>$3
+		ORDER BY id LIMIT 65`, policy.collections, policy.option, library.CollectionsLibraryID)
 	if err != nil {
 		return nil, err
 	}

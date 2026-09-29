@@ -44,7 +44,12 @@ func (executor mediaAnalysisTaskExecutor) admission(tx library.OwnedTx, request 
 
 func (executor mediaAnalysisTaskExecutor) Execute(ctx context.Context, task tasks.Work, progress func(tasks.Progress) error) (resultErr error) {
 	r := executor.runtime
-	defer func() { r.rememberFailure(executor.key, resultErr) }()
+	defer func() {
+		if errors.Is(resultErr, library.ErrAnalysisPreviewDisabled) {
+			resultErr = errors.Join(tasks.ErrUnavailable, resultErr)
+		}
+		r.rememberFailure(executor.key, resultErr)
+	}()
 	if task.TaskKey != executor.key || !executor.Available() || progress == nil {
 		return tasks.ErrUnavailable
 	}

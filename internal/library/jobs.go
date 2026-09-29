@@ -282,16 +282,23 @@ func (s *Store) finishTask(task *scanTask, status, message string) error {
 			if _, err := tx.Exec("UPDATE libraries SET last_scan_at = clock_timestamp() WHERE id = $1", finished.LibraryID); err != nil {
 				return err
 			}
-			var detectIntros bool
+			var detectIntros, generatePreviews bool
 			if err := tx.QueryRow(`SELECT collection_type='tvshows'
-				AND COALESCE((options->>'EnableIntroDetection')::boolean,false)
-				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros); err != nil {
+				AND COALESCE((options->>'EnableIntroDetection')::boolean,false),
+				collection_type IN ('movies','tvshows','mixed')
+				AND COALESCE((options->>'EnablePreviewGeneration')::boolean,false)
+				FROM libraries WHERE id=$1`, finished.LibraryID).Scan(&detectIntros, &generatePreviews); err != nil {
 				return err
 			}
 			if detectIntros {
 				// A dedicated signal follows both independent and task-owned scans.
 				// It must not re-emit LibraryChanged and recursively schedule scans.
 				if err := systemevents.Record(tx.Exec, systemevents.IntroAnalysisRequested); err != nil {
+					return err
+				}
+			}
+			if generatePreviews {
+				if err := systemevents.Record(tx.Exec, systemevents.PreviewGenerationRequested); err != nil {
 					return err
 				}
 			}
