@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/database"
 )
 
@@ -18,7 +21,97 @@ const (
 	scanReconciliationMaxDepth = 128
 	// Cover row slices, closure/ancestor maps, proof scratch and removal facts.
 	scanReconciliationItemBytes = 1536
+	// The final transaction can perform several independent filesystem proofs.
+	// Keep their aggregate limit below the owned transaction's 20-second lifetime
+	// while preserving the separate five-second limit on each observation worker.
+	scanReconciliationProofTimeout  = 12 * time.Second
+	scanReconciliationRollbackSpace = 5 * time.Second
 )
+
+func scanReconciliationProofDeadline(now, ownerDeadline time.Time) time.Time {
+	deadline := now.Add(scanReconciliationProofTimeout)
+	ownerSafeDeadline := ownerDeadline.Add(-scanReconciliationRollbackSpace)
+	if ownerSafeDeadline.Before(deadline) {
+		return ownerSafeDeadline
+	}
+	return deadline
+}
+
+func scanReconciliationProofContext(ctx context.Context, tx OwnedTx) (context.Context, context.CancelFunc, error) {
+	// withOwnedTxCallback supplies this view for every production call. A
+	// different transaction cannot prove the protected owner's deadline.
+	view, ok := tx.(*ownedCallbackTx)
+	if ctx == nil {
+		return nil, nil, ErrInvalidInput
+	}
+	if !ok || view.catalog == nil || view.catalog.ctx == nil {
+		return nil, nil, ErrUnavailable
+	}
+	ownerDeadline, ok := view.catalog.ctx.Deadline()
+	if !ok {
+		return nil, nil, ErrUnavailable
+	}
+	deadline := scanReconciliationProofDeadline(time.Now(), ownerDeadline)
+	if !deadline.After(time.Now()) {
+		return nil, nil, context.DeadlineExceeded
+	}
+	proofCtx, cancel := context.WithDeadline(ctx, deadline)
+	if err := proofCtx.Err(); err != nil {
+		cancel()
+		return nil, nil, err
+	}
+	return proofCtx, cancel, nil
+}
+
+func scanReconciliationFailureClass(err error) string {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return "deadline_exceeded"
+	case errors.Is(err, context.Canceled):
+		return "canceled"
+	case errors.Is(err, errScanReconciliationStagingBudget):
+		return "staging_budget"
+	case errors.Is(err, errScanReconciliationStagingState):
+		return "staging_state"
+	case errors.Is(err, errStorageObservationUnavailable):
+		return "storage_observation_unavailable"
+	case errors.Is(err, errScanReconciliationEvidenceBudget):
+		return "evidence_budget"
+	case errors.Is(err, errScanReconciliationEvidenceUnavailable):
+		return "evidence_unavailable"
+	case errors.Is(err, ErrTaskScanInactive):
+		return "scan_inactive"
+	case errors.Is(err, ErrRootBindingConflict):
+		return "root_binding_conflict"
+	case errors.Is(err, ErrInvalidInput):
+		return "invalid_input"
+	}
+	var postgresError *pgconn.PgError
+	if errors.As(err, &postgresError) {
+		return "postgres"
+	}
+	if errors.Is(err, ErrUnavailable) {
+		return "unavailable"
+	}
+	return "other"
+}
+
+func reportScanReconciliationIssue(jobID, stage string, err error, started, proofStarted time.Time, retained bool) {
+	proofElapsed := int64(-1)
+	if !proofStarted.IsZero() {
+		proofElapsed = time.Since(proofStarted).Milliseconds()
+	}
+	attributes := []any{"event", "scan.reconciliation.issue", "job_id", jobID,
+		"stage", stage, "error_class", scanReconciliationFailureClass(err),
+		"elapsed_ms", time.Since(started).Milliseconds(), "proof_elapsed_ms", proofElapsed,
+		"proof_limit_ms", int64(scanReconciliationProofTimeout / time.Millisecond),
+		"owner_unavailable", errors.Is(err, ErrUnavailable), "retained", retained}
+	if retained {
+		slog.Info("Scan reconciliation retained missing catalog records", attributes...)
+		return
+	}
+	slog.Warn("Scan reconciliation failed", attributes...)
+}
 
 // Only marked observation failures can become a skipped deletion pass. A
 // database or rollback failure joined by the owned transaction remains fatal.
@@ -187,7 +280,22 @@ func readScanReconciliationItems(tx OwnedTx, budget *scanReconciliationBudgetSta
 // reconcileMissingScanItems follows all root walks, accepted cross-root moves
 // and collection-theme completion. Its proof is bounded observation, not an
 // atomic lock shared by the filesystem and PostgreSQL. No media is removed.
-func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence, musicParents map[string]bool, staged ...*scanReconciliationStaging) ([]string, error) {
+func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence, musicParents map[string]bool, staged ...*scanReconciliationStaging) (result []string, resultErr error) {
+	started := time.Now()
+	proofStarted := time.Time{}
+	stage := "scope"
+	jobID := ""
+	if task != nil {
+		jobID = task.job.ID
+	}
+	defer func() {
+		if resultErr != nil {
+			retained := task != nil && task.ctx != nil && task.ctx.Err() == nil &&
+				scanReconciliationObservationOnly(resultErr)
+			reportScanReconciliationIssue(jobID, stage, resultErr, started, proofStarted,
+				retained)
+		}
+	}()
 	if s == nil {
 		return nil, ErrUnavailable
 	}
@@ -206,6 +314,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		}
 	}
 	budget := &scanReconciliationBudgetState{}
+	stage = "root_capture"
 	roots, err := scanReconciliationCapturedRoots(task.ctx, library.ID, captures, budget)
 	if err != nil {
 		return nil, err
@@ -223,6 +332,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	}
 	// Wait for ownership without blocking root admission, then recheck the
 	// task and configured roots under Store.mu. The callback never reacquires it.
+	stage = "owner_admission"
 	raw, err := s.beginOwnedAdmission(task.ctx, false)
 	if err != nil {
 		return nil, err
@@ -235,18 +345,25 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	}
 	var albums []string
 	err = s.withOwnedTxCallback(raw, func(tx OwnedTx) error {
-		// Share one wall-clock observation allowance across this transaction.
-		// Filesystem stalls must leave time to roll back on the healthy owner
-		// connection rather than consume its independent SQL lifetime.
-		proofCtx, cancelProof := context.WithTimeout(task.ctx, storageObservationTimeout)
+		// Share a bounded allowance across all proofs in this transaction while
+		// retaining time for rollback before the owned SQL context expires.
+		stage = "proof_context"
+		proofStarted = time.Now()
+		proofCtx, cancelProof, err := scanReconciliationProofContext(task.ctx, tx)
+		if err != nil {
+			return err
+		}
 		defer cancelProof()
+		stage = "task_lock"
 		if err := lockScanReconciliationTask(tx, task, library.ID); err != nil {
 			return err
 		}
+		stage = "root_validation"
 		if err := validateScanReconciliationRoots(tx, library, roots); err != nil {
 			return err
 		}
 		if staging != nil {
+			stage = "sealed_staging"
 			_, scanID, stagedLibrary := staging.Scope()
 			if scanID != task.job.ID || stagedLibrary != library.ID {
 				return ErrInvalidInput
@@ -255,6 +372,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 				return err
 			}
 		}
+		stage = "anti_join"
 		page, err := readScanReconciliationPage(tx, library.ID, "", true, staging)
 		if err != nil {
 			return err
@@ -262,9 +380,11 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		if len(page) == 0 {
 			return task.ctx.Err()
 		}
+		stage = "predelete_revalidation"
 		if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
 			return err
 		}
+		stage = "candidate_proof"
 		members, err := collectScanReconciliationCandidates(tx, proofCtx, library.ID, roots, evidence, staging, budget, page)
 		if err != nil {
 			return err
@@ -272,9 +392,11 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		if len(members) == 0 {
 			return task.ctx.Err()
 		}
+		stage = "descendant_proof"
 		if err := expandScanReconciliation(tx, proofCtx, library.ID, roots, evidence, budget, members, staging); err != nil {
 			return err
 		}
+		stage = "ancestor_readback"
 		ancestors, err := readScanReconciliationAncestors(tx, library.ID, roots, budget, members)
 		if err != nil {
 			return err
@@ -284,24 +406,29 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 			return err
 		}
 		ids := scanReconciliationIDs(members)
+		stage = "seen_membership"
 		seen, err := scanReconciliationSeen(tx, staging, evidence, ids)
 		if err != nil {
 			return err
 		}
+		stage = "auxiliary_snapshot"
 		before, err := readAuxiliaryCatalogSnapshot(task.ctx, raw, ids)
 		if err != nil {
 			return err
 		}
+		stage = "precommit_revalidation"
 		if err := validateScanReconciliationRoots(tx, library, roots); err != nil {
 			return err
 		}
 		if err := revalidateScanReconciliation(proofCtx, captures, evidence); err != nil {
 			return err
 		}
+		stage = "absence_proof"
 		if err := proveScanReconciliationMembers(proofCtx, library.ID, roots, evidence, members, seen); err != nil {
 			return err
 		}
 		if _, supportsMusic := s.prober.(interface{ MusicMetadataVersion() int }); supportsMusic {
+			stage = "music_preflight"
 			// Preflight the exact post-deletion album membership before committing
 			// any removal. Keep the caller's pending refresh set unchanged until
 			// the owned transaction succeeds and returns its surviving albums.
@@ -347,6 +474,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 				facts = append(facts, item.fact())
 			}
 		}
+		stage = "remove_publication"
 		if err := recordCollectionSourceRemovals(raw, facts); err != nil {
 			return err
 		}
@@ -357,9 +485,11 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		for id := range roots {
 			rootIDs = append(rootIDs, id)
 		}
+		stage = "delete"
 		if _, err := tx.Exec(`DELETE FROM items WHERE id=ANY($1::text[]) AND library_id=$2 AND root_id=ANY($3::text[])`, ids, library.ID, rootIDs); err != nil {
 			return err
 		}
+		stage = "deletion_readback"
 		var retained bool
 		if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM items WHERE id=ANY($1::text[]))`, ids).Scan(&retained); err != nil {
 			return err
@@ -370,6 +500,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		if err := before.record(task.ctx, raw, nil); err != nil {
 			return err
 		}
+		stage = "postdelete_revalidation"
 		if err := lockScanReconciliationTask(tx, task, library.ID); err != nil {
 			return err
 		}
@@ -384,6 +515,11 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		}
 		// SQL uses the owned transaction's protected context. Cancellation of
 		// the original scan must still roll back even after successful DELETE.
+		stage = "final_proof_deadline"
+		if err := proofCtx.Err(); err != nil {
+			return err
+		}
+		stage = "commit"
 		return task.ctx.Err()
 	})
 	if err != nil {

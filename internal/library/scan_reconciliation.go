@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"time"
 )
 
 // scanReconciliationPass retains every root approval before any root is walked.
@@ -158,6 +159,7 @@ func (pass *scanReconciliationPass) collector() *scanReconciliationEvidence {
 }
 
 func (pass *scanReconciliationPass) finish(s *Store, task *scanTask, library Library, complete bool, musicParents map[string]bool) (string, error) {
+	started := time.Now()
 	if err := task.ctx.Err(); err != nil {
 		return "", err
 	}
@@ -165,19 +167,25 @@ func (pass *scanReconciliationPass) finish(s *Store, task *scanTask, library Lib
 		return "", nil
 	}
 	const retained = "; missing catalog records were retained because complete storage and directory evidence could not be established"
-	if pass.evidence.Err() != nil {
+	if err := pass.evidence.Err(); err != nil {
+		reportScanReconciliationIssue(task.job.ID, "evidence_readiness", err, started, time.Time{}, true)
 		return retained, nil
 	}
 	if err := pass.evidence.requireComplete(task.ctx); err != nil {
 		if task.ctx.Err() != nil {
 			return "", task.ctx.Err()
 		}
+		reportScanReconciliationIssue(task.job.ID, "evidence_complete", err, started, time.Time{}, true)
 		return retained, nil
 	}
 	if pass.staging == nil {
-		return "", errors.New("complete scan has no accepted-identity staging")
+		err := errors.New("complete scan has no accepted-identity staging")
+		reportScanReconciliationIssue(task.job.ID, "staging_unavailable", err, started, time.Time{}, false)
+		return "", err
 	}
+	sealStarted := time.Now()
 	if err := pass.staging.Seal(task.ctx); err != nil {
+		reportScanReconciliationIssue(task.job.ID, "staging_seal", err, sealStarted, time.Time{}, false)
 		return "", err
 	}
 	parents, err := s.reconcileMissingScanItems(task, library, pass.captures, pass.evidence, musicParents, pass.staging)

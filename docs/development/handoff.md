@@ -1,6 +1,12 @@
-# Goby handoff - September 26, 2026
+# Goby handoff - September 29, 2026
 
-## Resume here
+For current work, start with the [September 29 functional repair record](phase3-functional-repair-20260929.md).
+The smaller functional milestone on `test-env` is complete: focused checks and
+the 20-media and 10,000-media HTTP journeys passed. Local compilation was allowed
+and orchestration was simplified. Strict capacity and fault acceptance remain
+open. The stopping points and environment restrictions below are retained history.
+
+## Historical September 26 checkpoint
 
 The user stopped acceptance work and requested a checkpoint merge/push and a
 handoff. The product checkpoint is

@@ -1226,19 +1226,44 @@ class Actor:
                 self.lanes[name]["completed"] = True
                 self.lanes[name]["last_progress_monotonic_ns"] = time.monotonic_ns()
 
+    def query_result(self, query, label):
+        suffix = "/" + query["kind"].capitalize() if query["kind"] in {"resume", "latest"} else ""
+        path = "/emby/Users/" + self.c["user_id"] + "/Items" + suffix + "?" + urlencode(query["params"])
+        result, _, _, _ = self.http(label, "GET", path)
+        if query["kind"] == "latest":
+            items = result
+            total = len(items) if type(items) is list else None
+        else:
+            items = result.get("Items") if type(result) is dict else None
+            total = result.get("TotalRecordCount") if type(result) is dict else None
+        need(type(items) is list and type(total) is int and total >= len(items) and
+             all(type(item) is dict and type(item.get("Id")) is str and item["Id"] for item in items),
+             "query_response_shape")
+        ids = [item["Id"] for item in items]
+        need(len(set(ids)) == len(ids), "query_response_duplicate")
+        return total, ids
+
     def query_loop(self, worker, done):
         while not done.is_set() and not self.stop.is_set():
             for query in self.c["queries"][self.phase]:
                 if done.is_set() or self.stop.is_set():
                     break
-                suffix = "/" + query["kind"].capitalize() if query["kind"] in {"resume", "latest"} else ""
-                path = "/emby/Users/" + self.c["user_id"] + "/Items" + suffix + "?" + urlencode(query["params"])
-                result, _, _, _ = self.http("query-" + query["id"], "GET", path)
-                items = result if query["kind"] == "latest" else result.get("Items")
-                total = len(items) if query["kind"] == "latest" else result.get("TotalRecordCount")
-                need(type(items) is list and total == query["total"] and [item.get("Id") for item in items] == query["ids"], "query_exact_result")
+                total, ids = self.query_result(query, "query-" + query["id"])
+                if self.phase == "incremental":
+                    # One addition and one deletion can become visible at
+                    # different points of the scan. Keep page identity exact.
+                    need(ids == query["ids"] and abs(total - query["total"]) <= 1,
+                         "query_incremental_transition")
+                else:
+                    need(total == query["total"] and ids == query["ids"], "query_exact_result")
                 with self.lock:
                     self.lanes["search-%d" % worker]["last_progress_monotonic_ns"] = time.monotonic_ns()
+
+    def verify_settled_queries(self):
+        need(self.phase == "incremental", "settled_query_phase")
+        for query in self.c["queries"][self.phase]:
+            total, ids = self.query_result(query, "settled-query-" + query["id"])
+            need(total == query["total"] and ids == query["ids"], "query_exact_result")
 
     def scan(self):
         active = {}
@@ -1664,6 +1689,7 @@ class Actor:
         need(elapsed <= self.m["thresholds"]["scan_seconds"], "scan_latency_threshold")
         if phase == "incremental":
             self.verify_increment()
+            self.verify_settled_queries()
         catalog = self.snapshot()
         need(catalog["catalog_count"] == self.c["catalog_expected"][phase], "settled_catalog_exact_count")
         self.e.event("catalog_exact_count", phase=phase, count=catalog["catalog_count"], file_items=catalog["file_items"], nonfile_items=catalog["nonfile_items"])
@@ -1705,13 +1731,25 @@ class Actor:
                 selected = [event for event in events if event["kind"] == "playback_bytes" and event["mode"] == mode and event["seeking"] == seeking]
                 need(selected and any(interval_overlap((event["start_ns"], event["end_ns"]), span) for event in selected for span in intervals["scan"]), "playback_scan_overlap_missing")
         for mode in ("remux", "transcode"):
-            source = next(play["path"] for play in self.c["playback"] if play["mode"] == mode)
-            processes = [proc for proc in list(self.procs.values()) if proc["phase"] == phase and source in proc["source_paths"] and proc["executable"] == self.c["tools"]["ffmpeg"]]
-            need(any(proc["work_intervals"] for proc in processes), "actual_media_child_missing")
+            self.verify_playback_child(phase, mode, events)
         sorting = [(event["start_ns"], event["end_ns"]) for event in http if event["label"] == "sorting-rebuild"]
         editing = [(event["start_ns"], event["end_ns"]) for event in http if event["label"] == "metadata-edit"]
         need(all_overlap([sorting, editing, intervals["scan"]]) > 0, "sorting_metadata_scan_overlap_missing")
         self.e.event("compound_overlap", phase=phase, productive_overlap_ms=overlap_ms, analysis_admission_overlapped=True)
+
+    def verify_playback_child(self, phase, mode, events):
+        source = next(play["path"] for play in self.c["playback"] if play["mode"] == mode)
+        processes = [proc for proc in list(self.procs.values()) if proc["phase"] == phase and source in proc["source_paths"] and proc["executable"] == self.c["tools"]["ffmpeg"]]
+        if mode == "remux":
+            # A copy-only remux can finish between two process polls. Bind a
+            # live child to a verified media response instead of requiring
+            # a sampled CPU-tick increase from that same short-lived PID.
+            responses = [event for event in events if event["kind"] == "playback_bytes" and event["mode"] == mode]
+            need(any(proc["kind"] == "playback" and "copy" in proc["command"]
+                     and any(event["start_ns"] <= proc["first_ns"] <= event["end_ns"] for event in responses)
+                     for proc in processes), "actual_media_child_missing")
+        else:
+            need(any(proc["work_intervals"] for proc in processes), "actual_media_child_missing")
 
     def close_playback(self):
         for identity in list(self.plays):

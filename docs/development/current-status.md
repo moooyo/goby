@@ -1,5 +1,11 @@
 # Current implementation and delivery status
 
+Current Phase 3 work follows the [September 29 functional repair record](phase3-functional-repair-20260929.md):
+local compilation, six focused remote Go tests, 73 workload tests, and both the
+20-media and 10,000-media HTTP journeys passed. This repair milestone is complete.
+Strict capacity and fault acceptance remain open. Earlier checkpoints below
+retain their original scope and are not current execution instructions.
+
 ## Active increment: compatibility, media analysis and resilience
 
 The user authorized the [three-phase plan](../planning/media-analysis-resilience-plan-20260920.md)

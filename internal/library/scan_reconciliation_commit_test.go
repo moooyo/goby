@@ -7,7 +7,46 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
+
+func TestScanReconciliationProofDeadlineReservesOwnedTransaction(t *testing.T) {
+	now := time.Unix(1_700_000_000, 0)
+	for _, test := range []struct {
+		name          string
+		ownerLifetime time.Duration
+		wantLifetime  time.Duration
+	}{
+		{"normal owner lifetime", 20 * time.Second, 12 * time.Second},
+		{"shortened owner lifetime", 14 * time.Second, 9 * time.Second},
+		{"no rollback space", 5 * time.Second, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := scanReconciliationProofDeadline(now, now.Add(test.ownerLifetime))
+			if want := now.Add(test.wantLifetime); !got.Equal(want) {
+				t.Fatalf("proof deadline = %v, want %v", got, want)
+			}
+			if got.After(now.Add(scanReconciliationProofTimeout)) ||
+				got.After(now.Add(test.ownerLifetime-scanReconciliationRollbackSpace)) {
+				t.Fatal("proof deadline exceeded its safety bounds")
+			}
+		})
+	}
+}
+
+func TestScanReconciliationFailureClassDistinguishesDeadlineAndStorageUnavailable(t *testing.T) {
+	for _, test := range []struct {
+		err  error
+		want string
+	}{
+		{errors.Join(context.DeadlineExceeded, ErrUnavailable), "deadline_exceeded"},
+		{scanReconciliationObservationFailure{errStorageObservationUnavailable}, "storage_observation_unavailable"},
+	} {
+		if got := scanReconciliationFailureClass(test.err); got != test.want {
+			t.Fatalf("failure class = %q, want %q", got, test.want)
+		}
+	}
+}
 
 func TestScanReconciliationObservationClassificationPreservesFatalErrors(t *testing.T) {
 	observation := scanReconciliationUnavailable("changed directory")

@@ -314,6 +314,113 @@ class OverlapTests(unittest.TestCase):
         self.assertEqual(ACTOR.media_process_kind(["ffmpeg", "-c:v", "copy"]), "playback")
 
 
+class QueryTransitionTests(unittest.TestCase):
+    def setUp(self):
+        self.actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        self.actor.phase = "incremental"
+        self.query = {"id": "page", "kind": "exact_total", "params": {"StartIndex": 0, "Limit": 2},
+                      "total": 10000, "ids": ["first", "second"]}
+        self.actor.c = {"user_id": "user", "queries": {phase: [self.query] for phase in ACTOR.PHASES}}
+        self.actor.lock = threading.RLock()
+        self.actor.lanes = {"search-0": {"last_progress_monotonic_ns": 0}}
+        self.actor.stop = threading.Event()
+        self.actor.http = mock.Mock()
+
+    def respond(self, total, ids):
+        self.actor.http.return_value = {"Items": [{"Id": identity} for identity in ids],
+                                        "TotalRecordCount": total}, {}, (1, 2), None
+
+    def query_once(self, total, ids):
+        done = threading.Event()
+        self.respond(total, ids)
+        self.actor.http.reset_mock()
+        self.actor.http.side_effect = lambda *args: done.set() or self.actor.http.return_value
+        self.actor.query_loop(0, done)
+        self.actor.http.assert_called_once_with("query-page", "GET", "/emby/Users/user/Items?StartIndex=0&Limit=2")
+
+    def test_incremental_totals_allow_one_transient_add_or_delete_with_exact_page(self):
+        for total in (9999, 10000, 10001):
+            with self.subTest(total=total):
+                self.query_once(total, ["first", "second"])
+                self.assertGreater(self.actor.lanes["search-0"]["last_progress_monotonic_ns"], 0)
+
+    def test_incremental_tolerance_cannot_hide_extra_rows_or_changed_page_identity(self):
+        for total, ids, failure in (
+                (9998, ["first", "second"], "query_incremental_transition"),
+                (10002, ["first", "second"], "query_incremental_transition"),
+                (10001, ["second", "first"], "query_incremental_transition"),
+                (9999, ["first", "replacement"], "query_incremental_transition"),
+                (10000, ["first", "first"], "query_response_duplicate")):
+            with self.subTest(total=total, ids=ids):
+                with self.assertRaisesRegex(ACTOR.Failure, failure):
+                    self.query_once(total, ids)
+
+    def test_settled_queries_restore_exact_total_and_ordered_identity(self):
+        self.respond(10000, ["first", "second"])
+        self.actor.verify_settled_queries()
+        self.actor.http.assert_called_once_with("settled-query-page", "GET", "/emby/Users/user/Items?StartIndex=0&Limit=2")
+        for total, ids in ((9999, ["first", "second"]), (10001, ["first", "second"]),
+                           (10000, ["second", "first"]), (10000, ["first", "replacement"])):
+            with self.subTest(total=total, ids=ids):
+                self.respond(total, ids)
+                with self.assertRaisesRegex(ACTOR.Failure, "query_exact_result"):
+                    self.actor.verify_settled_queries()
+
+    def test_cold_and_cached_queries_keep_exact_totals(self):
+        for phase in ("cold", "cached"):
+            self.actor.phase = phase
+            for total in (9999, 10001):
+                with self.subTest(phase=phase, total=total):
+                    with self.assertRaisesRegex(ACTOR.Failure, "query_exact_result"):
+                        self.query_once(total, ["first", "second"])
+
+
+class PlaybackChildWitnessTests(unittest.TestCase):
+    def setUp(self):
+        self.actor = ACTOR.Actor.__new__(ACTOR.Actor)
+        self.actor.c = {"tools": {"ffmpeg": "/tools/ffmpeg"}, "playback": [
+            {"mode": "remux", "path": "/owned/remux.mp4"},
+            {"mode": "transcode", "path": "/owned/transcode.mp4"}]}
+        self.process = {"phase": "incremental", "source_paths": ["/owned/remux.mp4"],
+                        "executable": "/tools/ffmpeg", "kind": "playback", "command": ["ffmpeg", "-c:v", "copy"],
+                        "first_ns": 15, "work_intervals": []}
+        self.response = {"kind": "playback_bytes", "mode": "remux", "start_ns": 10, "end_ns": 20}
+        self.actor.procs = {"child": self.process}
+
+    def test_short_copy_child_needs_no_cpu_delta_when_observed_during_media_response(self):
+        for observed in (10, 15, 20):
+            with self.subTest(first_ns=observed):
+                self.process["first_ns"] = observed
+                self.actor.verify_playback_child("incremental", "remux", [self.response])
+                self.assertEqual(self.process["work_intervals"], [])
+
+    def test_remux_rejects_unbound_children_or_missing_matching_media_response(self):
+        for changes in ({"phase": "cached"}, {"source_paths": ["/owned/other.mp4"]},
+                        {"executable": "/other/ffmpeg"}, {"kind": "intro"},
+                        {"command": ["ffmpeg", "-c:v", "h264"]}, {"first_ns": 9}, {"first_ns": 21}):
+            with self.subTest(process_changes=changes):
+                self.actor.procs = {"child": {**self.process, **changes}}
+                with self.assertRaisesRegex(ACTOR.Failure, "actual_media_child_missing"):
+                    self.actor.verify_playback_child("incremental", "remux", [self.response])
+        self.actor.procs = {"child": self.process}
+        for responses in ([], [{**self.response, "mode": "transcode"}], [{**self.response, "kind": "http"}]):
+            with self.subTest(responses=responses):
+                with self.assertRaisesRegex(ACTOR.Failure, "actual_media_child_missing"):
+                    self.actor.verify_playback_child("incremental", "remux", responses)
+        self.actor.procs = {}
+        with self.assertRaisesRegex(ACTOR.Failure, "actual_media_child_missing"):
+            self.actor.verify_playback_child("incremental", "remux", [self.response])
+
+    def test_transcode_still_requires_observed_productive_work(self):
+        self.process["source_paths"] = ["/owned/transcode.mp4"]
+        self.process["command"] = ["ffmpeg", "-c:v", "h264"]
+        response = {**self.response, "mode": "transcode"}
+        with self.assertRaisesRegex(ACTOR.Failure, "actual_media_child_missing"):
+            self.actor.verify_playback_child("incremental", "transcode", [response])
+        self.process["work_intervals"] = [(12, 18)]
+        self.actor.verify_playback_child("incremental", "transcode", [response])
+
+
 class PrivilegedObserverBoundaryTests(unittest.TestCase):
     def reference(self, suffix="process-observer.json",
                   source="/opt/goby-phase3-runtime-setup-20260922-01/process-observer.py"):

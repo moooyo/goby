@@ -1,5 +1,15 @@
 # Current execution plan
 
+## Completed local functional repair: September 29, 2026
+
+The [functional repair record](../development/phase3-functional-repair-20260929.md)
+is the current execution entry. The user authorized local compilation, remote
+tests on `test-env`, relaxed performance gates, and simpler test orchestration.
+The focused reconciliation repair, 20-media HTTP journey, and 10,000-media
+functional confirmation passed. This milestone is complete. Strict capacity,
+fault campaigns, and final54 are deferred from it. Earlier environment and
+controller requirements below describe their historical campaigns.
+
 ## Paused media-analysis and resilience increment: September 24, 2026
 
 The approved [three-phase plan](media-analysis-resilience-plan-20260920.md) retains
