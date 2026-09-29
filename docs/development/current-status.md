@@ -1,13 +1,15 @@
 # Current implementation and delivery status
 
-Current Phase 3 work follows the [September 29 blocked-scan/guest recovery record](phase3-scan-guest-recovery-20260929.md).
-Actual blocked-scan cancellation and isolated guest reboot, QMP reset, and late
-media mounting passed. The original catalog, UserData, settings, and binding
-survived; late mounting recovered within the same application process. No new
-product repair was required. The dedicated guest, fault devices, scan processes,
-and private PostgreSQL are closed. Earlier repairs and acceptance scopes remain
-valid. Local compilation is authorized; runtime work stays on `test-env`.
-Next: consolidated regression and migration/backup/recovery composition.
+The revised Phase 3 functional scope is complete; start with the
+[September 29 closeout](phase3-functional-closeout-20260929.md).
+Composed final Go coverage has 4,339 parent passes, zero unresolved failures,
+and explicit skips. Embedded tests, frontend/Node/Python checks, both Linux
+builds, migration/backup/recovery composition, and resource closure passed.
+An incomplete FFmpeg inventory caused the retained first-attempt failures;
+complete affected-package repeats resolved them without product changes.
+Historical strict capacity/SLO, full fault-matrix, and release-packaging claims
+remain outside this functional closeout. No verification runtime remains active;
+no deployment occurred.
 Earlier checkpoints below are not current execution instructions.
 
 ## Active increment: compatibility, media analysis and resilience

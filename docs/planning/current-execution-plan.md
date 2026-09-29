@@ -1,5 +1,17 @@
 # Current execution plan
 
+## Revised Phase 3 functional scope complete: September 29, 2026
+
+The [functional closeout](../development/phase3-functional-closeout-20260929.md)
+records the completed final composition: 4,339 ordinary Go parent passes,
+explicit skips and zero unresolved failures, embedded tests, frontend/Node/Python
+checks, both application builds, and normal owned-resource closure. The complete
+FFmpeg inventory resolved the retained first-attempt media failures through
+affected-package repeats. No product repair was needed in this final increment.
+There is no remaining gate in this revised functional sequence. Historical
+strict capacity/SLO/matrix and release-packaging claims remain outside its scope;
+the older entries below are execution history, not new pending tasks.
+
 ## Completed blocked-scan and guest recovery: September 29, 2026
 
 The [blocked-scan/guest record](../development/phase3-scan-guest-recovery-20260929.md)

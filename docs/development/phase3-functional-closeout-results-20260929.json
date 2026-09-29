@@ -1,0 +1,956 @@
+{
+  "status": "complete_revised_phase3_functional_scope",
+  "source_revision": "1bc71f1",
+  "source_archive_sha256": "93eb537b9cafe92d9bde7c5948cd85078979b2b9931e4af2278a7a16b7f6ee28",
+  "ordinary_initial_attempt": {
+    "exit_code": 1,
+    "parents": {
+      "pass": 4329,
+      "skip": 30,
+      "fail": 10
+    },
+    "subtests": {
+      "pass": 12112,
+      "fail": 38,
+      "skip": 1
+    },
+    "packages": {
+      "pass": 31,
+      "skip": 2,
+      "fail": 2
+    },
+    "started": "2026-09-29T20:26:40.901502035+08:00",
+    "finished": "2026-09-29T20:57:17.767702537+08:00"
+  },
+  "affected_complete_package_repeat": {
+    "exit_code": 0,
+    "parents": {
+      "pass": 1899,
+      "skip": 27
+    },
+    "subtests": {
+      "pass": 5210,
+      "skip": 1
+    },
+    "packages": {
+      "pass": 3
+    },
+    "started": "2026-09-29T21:01:43.558945318+08:00",
+    "finished": "2026-09-29T21:12:34.520651878+08:00"
+  },
+  "ordinary_composition": {
+    "parents": {
+      "pass": 4339,
+      "skip": 30
+    },
+    "subtests": {
+      "pass": 12162,
+      "skip": 1
+    },
+    "packages": {
+      "pass": 33,
+      "skip": 2
+    },
+    "unresolved_failures": 0,
+    "unresolved_tests": 0,
+    "replacement_packages": [
+      "github.com/moooyo/goby/internal/media",
+      "github.com/moooyo/goby/internal/server",
+      "github.com/moooyo/goby/internal/transcode"
+    ],
+    "parent_sets_match_initial_attempt": true
+  },
+  "embedded_cmd_suite": {
+    "exit_code": 0,
+    "parents": {
+      "pass": 24
+    },
+    "subtests": {
+      "pass": 37
+    },
+    "packages": {
+      "pass": 1
+    },
+    "started": "2026-09-29T21:12:35.368542742+08:00",
+    "finished": "2026-09-29T21:12:35.438071758+08:00"
+  },
+  "node_groups": [
+    {
+      "tests": 28,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "tests": 14,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "python_workload": {
+    "tests": 73,
+    "failed": 0
+  },
+  "required_integration_results": [
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "test": "TestMediaAnalysisMigrationPreservesSchema49AndInitializesOnlyDefaults",
+      "outcome": "pass",
+      "elapsed_seconds": 0.64
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "test": "TestMigrateWaitsPastPoolStatementTimeoutAndRestoresSameConnection",
+      "outcome": "pass",
+      "elapsed_seconds": 0.65
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "test": "TestMigrateRespectsCallerCancellationAndRestoresPoolTimeout",
+      "outcome": "pass",
+      "elapsed_seconds": 1.19
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "test": "TestMigrateFailureRollsBackDDLAndRestoresStatementTimeout",
+      "outcome": "pass",
+      "elapsed_seconds": 0.02
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "test": "TestPostgreSQLBackupConsistentSnapshotAndRestore",
+      "outcome": "pass",
+      "elapsed_seconds": 1.53
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "test": "TestPostgreSQLSnapshotRejectsSchemaDrift",
+      "outcome": "pass",
+      "elapsed_seconds": 1.76
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "test": "TestRecoveryBindingIgnoresOtherSessionTemporaryRelations",
+      "outcome": "pass",
+      "elapsed_seconds": 0.05
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverydb",
+      "test": "TestRecoveryDatabaseStoreIntegration",
+      "outcome": "pass",
+      "elapsed_seconds": 41.26
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "test": "TestRecoveryManagerApplyRestartAndRollback",
+      "outcome": "pass",
+      "elapsed_seconds": 10.93
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "test": "TestRecoveryManagerSchema23EncryptedArchiveApplyRestartAndRollback",
+      "outcome": "pass",
+      "elapsed_seconds": 11.85
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "test": "TestRecoveryManagerSchema24EncryptedArchiveApplyRestartAndRollback",
+      "outcome": "pass",
+      "elapsed_seconds": 11.1
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "test": "TestEngineAnalysisRestoreVerifiesRawThenInvalidatesEveryExecutionProof",
+      "outcome": "pass",
+      "elapsed_seconds": 3.46
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "test": "TestCatalogRealMediaCapacityScanAndCachedRescan",
+      "outcome": "pass",
+      "elapsed_seconds": 245.13
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPModernVideoEncodingProducesDeclaredMediaAndExactSeek",
+      "outcome": "pass",
+      "elapsed_seconds": 2.45
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPModernHLSCopyKeepsSourceTimelineAcrossRandomAccess",
+      "outcome": "pass",
+      "elapsed_seconds": 2.13
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestVideoCodecActualSoftwareOutputs",
+      "outcome": "pass",
+      "elapsed_seconds": 3.62
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestVideoFiltersActualHDRPixelsMetadataAndCadence",
+      "outcome": "pass",
+      "elapsed_seconds": 0.31
+    }
+  ],
+  "explicit_skips": [
+    {
+      "package": "github.com/moooyo/goby/internal/analysiscache",
+      "test": "TestCacheRealENOSPCDuringOwnerInitializationRecovers",
+      "level": "parent",
+      "reason": "enospc_integration_test.go:24: set GOBY_PHASE3_CACHE_ENOSPC=1 in an isolated bounded tmpfs namespace"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "test": "TestRootBindingFullScanMountNamespaceHelper",
+      "level": "parent",
+      "reason": "root_binding_full_scan_mount_namespace_test.go:41: the full-scan mount scenario requires its explicit reviewed opt-in scope"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "test": "TestScanReconciliationStagedHighDirectoryFanoutDeletionProof",
+      "level": "parent",
+      "reason": "scan_reconciliation_fanout_integration_test.go:19: set GOBY_SCAN_RECONCILIATION_FANOUT=1 for the high-fanout proof"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "test": "TestDolbyVisionActualRPUCoverageCRCAndNativeSyntax",
+      "level": "parent",
+      "reason": "dolby_vision_probe_linux_test.go:114: the generated complete Dolby Vision fixtures and pinned tools are required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "test": "TestHardwareEncodingActualAV1PaddingRejection",
+      "level": "parent",
+      "reason": "hardware_encoding_linux_test.go:42: GOBY_VAAPI_EXPECT_AV1_PADDING=1 selects a worker with independently observed AV1 padding"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "test": "TestHardwareEncodingActualVAAPIAdmission",
+      "level": "parent",
+      "reason": "hardware_encoding_linux_test.go:15: GOBY_VAAPI_DEVICE, GOBY_VAAPI_VIDEO_CODECS, GOBY_FFMPEG, and GOBY_FFPROBE are required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "test": "TestRecognizeBitmapSubtitlesActualFixtures",
+      "level": "parent",
+      "reason": "bitmap_subtitle_fixture_test.go:311: set GOBY_BITMAP_OCR_FIXTURES and GOBY_BITMAP_OCR_CONFIG for real Linux OCR acceptance"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPBindingActualIPv6AuthenticatesAtObservedEndpoint",
+      "level": "parent",
+      "reason": "runtime_http_binding_integration_test.go:270: GOBY_TEST_HTTP_BINDING=1 is required for remote HTTP binding acceptance"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPBindingActualRestartAuthenticatesAndPreservesPendingChoice",
+      "level": "parent",
+      "reason": "runtime_http_binding_integration_test.go:164: GOBY_TEST_HTTP_BINDING=1 is required for remote HTTP binding acceptance"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPHardwareAV1PaddingFallsBackToExactSoftwareOutput",
+      "level": "parent",
+      "reason": "hardware_encoding_media_integration_test.go:20: GOBY_TEST_VAAPI_EXPECT_AV1_PADDING=1 selects a worker with independently observed AV1 padding"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPManagedAMDSelectionExecutesRealMediaAndRetainsAdmittedPlan",
+      "level": "parent",
+      "reason": "managed_execution_media_integration_test.go:20: GOBY_TEST_VAAPI_DEVICE selects the explicitly admitted AMD worker"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3BlockedMetadataRecovery",
+      "level": "parent",
+      "reason": "phase3_blocked_metadata_integration_test.go:33: GOBY_PHASE3_BLOCKED_METADATA=1 is required for actual blocked metadata"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3BlockedReadRecovery",
+      "level": "parent",
+      "reason": "phase3_blocked_read_integration_test.go:33: GOBY_PHASE3_BLOCKED_READ=1 is required for actual blocked media reads"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3BlockedScanCancellationRecovery",
+      "level": "parent",
+      "reason": "phase3_blocked_scan_cancel_integration_test.go:33: GOBY_PHASE3_BLOCKED_SCAN_CANCEL=1 is required for actual blocked metadata"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3CompoundFunctionalMedia",
+      "level": "parent",
+      "reason": "phase3_compound_functional_integration_test.go:32: set GOBY_PHASE3_COMPOUND=1 for the real compound media journey"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3LocalFunctionalReconciliation",
+      "level": "parent",
+      "reason": "phase3_local_functional_integration_test.go:36: set GOBY_PHASE3_FUNCTIONAL=1 for the real-media reconciliation journey"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3NonrootPermissionRecovery",
+      "level": "parent",
+      "reason": "phase3_permission_recovery_integration_test.go:27: set GOBY_PHASE3_PERMISSION_RECOVERY=1 for real nonroot permission recovery"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3ParentScopeDiagnostic",
+      "level": "parent",
+      "reason": "phase3_parent_scope_diagnostic_test.go:21: GOBY_PHASE3_PARENT_DIAGNOSTIC=1 is required for the parent-scope diagnostic"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3PreviewENOSPCRecovery",
+      "level": "parent",
+      "reason": "phase3_preview_enospc_integration_test.go:33: GOBY_PHASE3_ENOSPC=1 is required for the isolated real ENOSPC scenario"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3ProcessAndPostgresRestartRecovery",
+      "level": "parent",
+      "reason": "phase3_process_recovery_integration_test.go:205: set GOBY_PHASE3_PROCESS_RECOVERY=1 for real process/database recovery"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "test": "TestHTTPPhase3RecoveryProcessHelper",
+      "level": "parent",
+      "reason": "phase3_process_recovery_integration_test.go:46: private child-process configuration is required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestAMDVideoProcessingActualHDRAndDeinterlace",
+      "level": "parent",
+      "reason": "video_gpu_filters_linux_test.go:81: an explicitly selected AMD VAAPI device is required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestBitmapSubtitleActualGPUClockCanvasAndClear",
+      "level": "parent",
+      "reason": "bitmap_subtitle_gpu_linux_test.go:21: an explicitly selected AMD VAAPI device is required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestDolbyVisionActualRPUChangesPixelsAndProducesSDRAndHDR10",
+      "level": "parent",
+      "reason": "video_gpu_filters_linux_test.go:143: a licensed residual-free Dolby Vision fixture and AMD device are required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestDolbyVisionStrictRendererRejectsActualNonzeroResidual",
+      "level": "parent",
+      "reason": "video_gpu_filters_linux_test.go:208: a licensed nonzero-residual Dolby Vision fixture and AMD device are required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestGPUProducerCancellationRetiresActualFFmpegAndClosesOutput",
+      "level": "parent",
+      "reason": "gpu_cancellation_linux_test.go:24: an explicitly selected AMD VAAPI device is required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestLiveAMDActualBitmapPublicationClockAndCancellation",
+      "level": "parent",
+      "reason": "live_amd_linux_test.go:31: an explicitly selected AMD VAAPI device is required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestProgressiveSubtitleBurnActualSeekAndOffsetPixels/vulkan-vaapi",
+      "level": "subtest",
+      "reason": "video_gpu_filters_linux_test.go:48: an explicitly selected AMD VAAPI device is required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestVideoCodecActualVAAPIAVSyncAfterSeek",
+      "level": "parent",
+      "reason": "video_codec_avsync_linux_test.go:25: GOBY_VAAPI_DEVICE and GOBY_VAAPI_VIDEO_CODECS are required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestVideoCodecActualVAAPIDecodeInputMatrix",
+      "level": "parent",
+      "reason": "video_codec_linux_test.go:177: GOBY_VAAPI_DEVICE and GOBY_VAAPI_VIDEO_CODECS are required"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "test": "TestVideoCodecActualVAAPIOutputs",
+      "level": "parent",
+      "reason": "video_codec_linux_test.go:29: GOBY_VAAPI_DEVICE and the hardware-supported GOBY_VAAPI_VIDEO_CODECS list are required"
+    }
+  ],
+  "package_results": [
+    {
+      "package": "github.com/moooyo/goby/cmd/goby",
+      "outcome": "pass",
+      "elapsed_seconds": 0.072,
+      "parents": {
+        "pass": 24
+      },
+      "subtests": {
+        "pass": 37
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/cmd/goby-notification-receiver",
+      "outcome": "skip",
+      "elapsed_seconds": 0,
+      "parents": {},
+      "subtests": {},
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/activity",
+      "outcome": "pass",
+      "elapsed_seconds": 3.336,
+      "parents": {
+        "pass": 29
+      },
+      "subtests": {
+        "pass": 277
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/analysiscache",
+      "outcome": "pass",
+      "elapsed_seconds": 0.499,
+      "parents": {
+        "pass": 30,
+        "skip": 1
+      },
+      "subtests": {
+        "pass": 26
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/artwork",
+      "outcome": "pass",
+      "elapsed_seconds": 0.527,
+      "parents": {
+        "pass": 47
+      },
+      "subtests": {
+        "pass": 131
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupformat",
+      "outcome": "pass",
+      "elapsed_seconds": 1.825,
+      "parents": {
+        "pass": 14
+      },
+      "subtests": {
+        "pass": 99
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backuppg",
+      "outcome": "pass",
+      "elapsed_seconds": 97.142,
+      "parents": {
+        "pass": 134
+      },
+      "subtests": {
+        "pass": 577
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/backupstore",
+      "outcome": "pass",
+      "elapsed_seconds": 0.942,
+      "parents": {
+        "pass": 32
+      },
+      "subtests": {
+        "pass": 62
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/bif",
+      "outcome": "pass",
+      "elapsed_seconds": 0.008,
+      "parents": {
+        "pass": 35
+      },
+      "subtests": {
+        "pass": 85
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/config",
+      "outcome": "pass",
+      "elapsed_seconds": 0.048,
+      "parents": {
+        "pass": 69
+      },
+      "subtests": {
+        "pass": 726
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/database",
+      "outcome": "pass",
+      "elapsed_seconds": 17.913,
+      "parents": {
+        "pass": 69
+      },
+      "subtests": {
+        "pass": 347
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/diagnostics",
+      "outcome": "pass",
+      "elapsed_seconds": 0.5,
+      "parents": {
+        "pass": 45
+      },
+      "subtests": {
+        "pass": 135
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/dynamicsource",
+      "outcome": "pass",
+      "elapsed_seconds": 0.818,
+      "parents": {
+        "pass": 26
+      },
+      "subtests": {
+        "pass": 6
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/events",
+      "outcome": "pass",
+      "elapsed_seconds": 0.41,
+      "parents": {
+        "pass": 25
+      },
+      "subtests": {
+        "pass": 21
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/identity",
+      "outcome": "pass",
+      "elapsed_seconds": 151.594,
+      "parents": {
+        "pass": 197
+      },
+      "subtests": {
+        "pass": 406
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/introdetect",
+      "outcome": "pass",
+      "elapsed_seconds": 0.095,
+      "parents": {
+        "pass": 105
+      },
+      "subtests": {
+        "pass": 107
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/library",
+      "outcome": "pass",
+      "elapsed_seconds": 610.188,
+      "parents": {
+        "pass": 982,
+        "skip": 2
+      },
+      "subtests": {
+        "pass": 2249
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/lifecycle",
+      "outcome": "pass",
+      "elapsed_seconds": 0.556,
+      "parents": {
+        "pass": 17
+      },
+      "subtests": {
+        "pass": 17
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/media",
+      "outcome": "pass",
+      "elapsed_seconds": 12.743,
+      "parents": {
+        "pass": 554,
+        "skip": 4
+      },
+      "subtests": {
+        "pass": 1852
+      },
+      "source_log": "go-media-repeat.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/metadata",
+      "outcome": "pass",
+      "elapsed_seconds": 0.065,
+      "parents": {
+        "pass": 22
+      },
+      "subtests": {
+        "pass": 219
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/notificationjournal",
+      "outcome": "pass",
+      "elapsed_seconds": 0.003,
+      "parents": {
+        "pass": 3
+      },
+      "subtests": {},
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/notifications",
+      "outcome": "pass",
+      "elapsed_seconds": 0.004,
+      "parents": {
+        "pass": 4
+      },
+      "subtests": {},
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/playback",
+      "outcome": "pass",
+      "elapsed_seconds": 0.11,
+      "parents": {
+        "pass": 231
+      },
+      "subtests": {
+        "pass": 569
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/providers",
+      "outcome": "pass",
+      "elapsed_seconds": 0.003,
+      "parents": {
+        "pass": 4
+      },
+      "subtests": {},
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recovery",
+      "outcome": "pass",
+      "elapsed_seconds": 139.418,
+      "parents": {
+        "pass": 39
+      },
+      "subtests": {
+        "pass": 68
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverycontrol",
+      "outcome": "pass",
+      "elapsed_seconds": 0.629,
+      "parents": {
+        "pass": 16
+      },
+      "subtests": {
+        "pass": 39
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/recoverydb",
+      "outcome": "pass",
+      "elapsed_seconds": 41.272,
+      "parents": {
+        "pass": 12
+      },
+      "subtests": {
+        "pass": 194
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/server",
+      "outcome": "pass",
+      "elapsed_seconds": 554.728,
+      "parents": {
+        "pass": 1014,
+        "skip": 14
+      },
+      "subtests": {
+        "pass": 2323
+      },
+      "source_log": "go-media-repeat.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/settings",
+      "outcome": "pass",
+      "elapsed_seconds": 26.075,
+      "parents": {
+        "pass": 55
+      },
+      "subtests": {
+        "pass": 141
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/storagebinding",
+      "outcome": "pass",
+      "elapsed_seconds": 0.09,
+      "parents": {
+        "pass": 11
+      },
+      "subtests": {
+        "pass": 248
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/subtitle",
+      "outcome": "pass",
+      "elapsed_seconds": 0.116,
+      "parents": {
+        "pass": 48
+      },
+      "subtests": {
+        "pass": 62
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/systemevents",
+      "outcome": "skip",
+      "elapsed_seconds": 0,
+      "parents": {},
+      "subtests": {},
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/tasks",
+      "outcome": "pass",
+      "elapsed_seconds": 54.381,
+      "parents": {
+        "pass": 92
+      },
+      "subtests": {
+        "pass": 102
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/timeshift",
+      "outcome": "pass",
+      "elapsed_seconds": 0.879,
+      "parents": {
+        "pass": 23
+      },
+      "subtests": {
+        "pass": 2
+      },
+      "source_log": "go-ordinary.log"
+    },
+    {
+      "package": "github.com/moooyo/goby/internal/transcode",
+      "outcome": "pass",
+      "elapsed_seconds": 82.687,
+      "parents": {
+        "pass": 331,
+        "skip": 9
+      },
+      "subtests": {
+        "pass": 1035,
+        "skip": 1
+      },
+      "source_log": "go-media-repeat.log"
+    }
+  ],
+  "stages": [
+    {
+      "stage": "npm-ci",
+      "exit_code": 0,
+      "finished": "2026-09-29T20:26:25+08:00"
+    },
+    {
+      "stage": "frontend-build",
+      "exit_code": 0,
+      "finished": "2026-09-29T20:26:29+08:00"
+    },
+    {
+      "stage": "node-typescript",
+      "exit_code": 0,
+      "finished": "2026-09-29T20:26:29+08:00"
+    },
+    {
+      "stage": "node-build-release",
+      "exit_code": 0,
+      "finished": "2026-09-29T20:26:30+08:00"
+    },
+    {
+      "stage": "python-workload",
+      "exit_code": 0,
+      "finished": "2026-09-29T20:26:30+08:00"
+    },
+    {
+      "stage": "python-drivers",
+      "exit_code": 0,
+      "finished": "2026-09-29T20:26:30+08:00"
+    },
+    {
+      "stage": "go-ordinary",
+      "exit_code": 1,
+      "finished": "2026-09-29T20:57:17+08:00"
+    },
+    {
+      "stage": "go-media-repeat",
+      "exit_code": 0,
+      "finished": "2026-09-29T21:12:34+08:00"
+    },
+    {
+      "stage": "go-embedded",
+      "exit_code": 0,
+      "finished": "2026-09-29T21:12:35+08:00"
+    },
+    {
+      "stage": "build-ordinary",
+      "exit_code": 0,
+      "finished": "2026-09-29T21:12:50+08:00"
+    },
+    {
+      "stage": "build-embedded",
+      "exit_code": 0,
+      "finished": "2026-09-29T21:12:50+08:00"
+    }
+  ],
+  "builds": [
+    {
+      "name": "goby",
+      "bytes": 48981764,
+      "sha256": "c17348cbbff18b08eca15c9bacfb08cffe8c524c9d7062e003d9318bb8acc2c0"
+    },
+    {
+      "name": "goby-embedded",
+      "bytes": 50416088,
+      "sha256": "6fe23e32d39865e4585d9de32ff2638b1334f0b6839c9fa19b4b009e2f9bcb77"
+    }
+  ],
+  "evidence": {
+    "go-ordinary.log": {
+      "sha256": "52df55a4238dd3cad5879a2f1140ae03517e64ff5cf3c891dbaa0c7635c61ca3",
+      "bytes": 17630172
+    },
+    "go-media-repeat.log": {
+      "sha256": "0bf5037ecbd54d094c916fa0bf48e9c9467381bfc49b17017a2783c2b41a38c2",
+      "bytes": 7358532
+    },
+    "go-embedded.log": {
+      "sha256": "429cb913f3ec4a7dc0d530f4ae66dfe3149f233592966a8bc591bbac9a50fe0b",
+      "bytes": 60912
+    },
+    "frontend-build.log": {
+      "sha256": "12ffd40717c4eab678f7be7c63217a5c0b89b24f542d077a3e2e0834044cbd73",
+      "bytes": 7114
+    },
+    "node-typescript.log": {
+      "sha256": "6cbf3d5a6e7a43144cabd62de5daba62ff7123c8e67b6dc3de548c01ea18899f",
+      "bytes": 6032
+    },
+    "node-build-release.log": {
+      "sha256": "19f18ec9e32c1fe24eee55dfa57f0dcc280b3abcf1d208354925921d8ea14c23",
+      "bytes": 2577
+    },
+    "python-workload.log": {
+      "sha256": "d707e79f12ea9ad7b6e35908a9ae7b4c8bc31999254d31b9877d15894f28003c",
+      "bytes": 172
+    },
+    "python-drivers.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "build-ordinary.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "build-embedded.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "toolchain.log": {
+      "sha256": "00a9680c5ef2c9082f5639e23697934af4483b5bc23db4e93ff7e10ef7fa3c6b",
+      "bytes": 392
+    },
+    "corrected-media-toolchain.log": {
+      "sha256": "7d5fa677c3eea142076f7c40a26e308a4925b9e8a79d8765f070ce5f068b4209",
+      "bytes": 49076
+    },
+    "build-metadata.txt": {
+      "sha256": "1d18a4612277361c8b6f0982690a93899385af677f747f634ec0da411a6f4098",
+      "bytes": 2391
+    },
+    "stages.tsv": {
+      "sha256": "597401fcc0ab255a8b85ea07f35d1d42b80ec8bebe0c209581b18706c14b56f6",
+      "bytes": 466
+    },
+    "final-closure.log": {
+      "sha256": "d2ea10db6a69d09d62f28af099d93c91b8e7b1dbd0e6144bbdb16cf320971418",
+      "bytes": 477
+    }
+  },
+  "resource_closure": {
+    "passed": true,
+    "other_client_sessions": 0,
+    "owned_test_and_build_workers": 0,
+    "private_postgresql": "normally_stopped",
+    "socket": "absent",
+    "tcp_port": 55991,
+    "tcp_port_released": true,
+    "databases_and_evidence_retained": true,
+    "shared_services_changed": false
+  },
+  "media_toolchains": {
+    "initial": {
+      "prefix": "/opt/goby-toolchains/ffmpeg-9.0.1",
+      "missing_required_features": [
+        "libx265",
+        "libaom-av1",
+        "zscale"
+      ]
+    },
+    "corrected": {
+      "prefix": "/opt/goby-amd-media-20260919-50f45177f297/toolchains/ffmpeg-9.0.1-goby-cb8b6d298456",
+      "ffmpeg_sha256": "c8887f1a2b5a6777c1285fd7514049ec175947048d82e4b3700e44115da34843",
+      "ffprobe_sha256": "fddc50127245a7a836b5fb6789e1606ebe9e12bcf3c9e2fab5b32bfb7a0b703f"
+    }
+  }
+}

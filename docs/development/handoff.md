@@ -1,15 +1,16 @@
 # Goby handoff - September 29, 2026
 
-For current work, start with the [September 29 blocked-scan/guest recovery record](phase3-scan-guest-recovery-20260929.md).
-Blocked-scan cancellation, real dedicated-guest reboot/reset, and late mounting
-passed. The nested guest is powered off with disks and evidence retained; its
-media boot policy is restored. Scan devices, processes, and private PostgreSQL
-are closed. Earlier product repairs retain their accepted scopes. Continue
-directly with the [final verification entry](phase3-final-verification-plan-20260929.md)
-for consolidated regression and migration/backup/recovery composition.
-Local compilation is allowed; runtime work stays on `test-env`. The guest uses
-the verified cloud image's kernel/initrd directly and does not establish firmware
-or physical-host recovery. Earlier stopping points below are retained history.
+The revised Phase 3 functional scope is complete. Read the
+[September 29 closeout](phase3-functional-closeout-20260929.md) and its
+[result manifest](phase3-functional-closeout-results-20260929.json).
+Final ordinary Go evidence composes 4,339 parent passes with zero unresolved
+failures after replacing three packages affected by an incomplete FFmpeg build.
+The original failure remains recorded. Embedded tests, both builds, and real
+migration/backup/recovery composition passed; owned workers and PostgreSQL are
+closed. Guest disks and all earlier evidence remain inactive and retained.
+Do not restart completed campaigns without a relevant change or a new request.
+Strict historical capacity/SLO/matrix and release packaging are not claimed.
+Earlier stopping points below are retained history.
 
 ## Historical September 26 checkpoint
 

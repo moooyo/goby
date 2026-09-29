@@ -28,9 +28,18 @@ Required environment:
 
 Use Go 1.27.1 and a Node version supporting type stripping and the frontend's
 engine constraint. Do not inherit destructive `GOBY_PHASE3_*` opt-in flags.
+Version 9.0.1 alone is insufficient: preflight the software encoders `libx264`,
+`libx265`, and `libaom-av1`, plus `zscale`, `tonemap`, and subtitle filters.
+The recorded complete `9.0.1-goby-cb8b6d298456` build is suitable; the smaller
+`/opt/goby-toolchains/ffmpeg-9.0.1` build lacks modern encoders and `zscale`.
+Keep the selected prefix first on PATH as well as setting both explicit tool
+variables, and record executable hashes with the results.
 With packages and test cases serialized and fixture cleanup successful, the
-backup pair can be reused by `backuppg`, `recoverydb`, and `recovery`; the old
-runner's seven-database layout is not a prerequisite for this sequence.
+backup pair can be used in the order `backuppg`, `recovery`, then `recoverydb`.
+The last package intentionally retains its restored target even after success;
+do not subsequently reuse that pair for an empty-target fixture. A failed
+fixture also remains available for diagnosis. The old runner's seven-database
+layout is not a prerequisite for this ordered sequence.
 
 ## Commands
 
@@ -54,6 +63,9 @@ includes migrations and migration rollback/timeouts, real dump/restore and
 historical schema restoration, the temporary-relation regression, whole-database
 recovery binding/lease boundaries, and encrypted recovery apply/restart/rollback.
 These provide the representative migration/backup/recovery composition.
+Its existing `TestCatalogRealMediaCapacityScanAndCachedRescan` also creates
+10,688 catalog items. That is part of the ordinary suite and is distinct from
+rerunning the already accepted standalone Phase 3 capacity campaigns.
 
 ## Closeout rules
 
