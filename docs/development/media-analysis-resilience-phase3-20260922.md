@@ -1,5 +1,7 @@
 # Phase 3: Large-library concurrency and fault/restart recovery
 
+The [September 29 functional reconciliation handoff](session-handoff-20260929-phase3-functional-reconciliation.md) is the current stopping point. The status and runtime identities below are historical.
+
 Current closeout, September 26: product revision `cd91390a78ec5b03831a77dbd4ac97265d116847`
 and its documentation are being checkpointed at the user's request. Acceptance
 work is paused; complete 10k/100k, 28 real fault cases including six boot
