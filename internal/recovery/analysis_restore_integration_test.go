@@ -161,6 +161,8 @@ func seedAnalysisRecoveryFixture(t *testing.T, f *engineRecoveryFixture) {
 }
 
 const analysisRecoveryRetainedSQL = `SELECT jsonb_build_object(
+	'definitions',(SELECT jsonb_agg(to_jsonb(d) ORDER BY id) FROM task_definitions d),
+	'triggers',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM task_triggers t),
 	'settings',(SELECT to_jsonb(s)-'publication_epoch' FROM analysis_settings s),
 	'profiles',(SELECT jsonb_agg(to_jsonb(p) ORDER BY run_id) FROM analysis_run_profiles p),
 	'work',(SELECT jsonb_agg(to_jsonb(w) ORDER BY child_id) FROM analysis_work w),
@@ -176,6 +178,12 @@ func TestEngineAnalysisRestoreVerifiesRawThenInvalidatesEveryExecutionProof(t *t
 	defer releaseRecoveryEngineTestMemory()
 	f := newEngineRecoveryFixture(t)
 	seedAnalysisRecoveryFixture(t, f)
+	// Preserve both enabled and already-disabled task policy while revoking
+	// old execution authority. Startup owns actual executor reconciliation.
+	if _, err := f.source.Exec(f.ctx, `UPDATE task_definitions SET enabled=false,revision=7
+		WHERE key='media.preview_generation'`); err != nil {
+		t.Fatal("seed an explicitly disabled retained preview definition")
+	}
 	before := recoveryEngineJSONState(t, f.ctx, f.source, analysisRecoveryRetainedSQL)
 	manifest, metadata := f.create(t)
 	reader, err := f.objects.Snapshot(f.ctx, metadata.ID)
@@ -219,7 +227,7 @@ func TestEngineAnalysisRestoreVerifiesRawThenInvalidatesEveryExecutionProof(t *t
 		t.Fatalf("analysis restore counts=%+v error=%v", result, err)
 	}
 	if after := recoveryEngineJSONState(t, f.ctx, f.target, analysisRecoveryRetainedSQL); after != before {
-		t.Fatal("analysis recovery changed explicit settings, manual state, immutable admission or audit evidence")
+		t.Fatal("analysis recovery changed task definitions, schedules, explicit settings, manual state, immutable admission or audit evidence")
 	}
 	var safe bool
 	if f.target.QueryRow(f.ctx, `SELECT NOT EXISTS(SELECT 1 FROM analysis_previews) AND NOT EXISTS(SELECT 1 FROM analysis_feature_cache)

@@ -212,9 +212,10 @@ func normalizeRestoredWork(ctx context.Context, pool *pgxpool.Pool, cfg config.C
 	if err != nil {
 		return ErrUnavailable
 	}
-	if err := store.Reconcile(ctx); err != nil {
-		return ErrArchive
-	}
+	// This temporary store has no application executor registry. Reconciliation
+	// here would disable every restored non-scan definition and overwrite its
+	// configured revision. The real application reconciles with its complete
+	// registry at startup; recovery only interrupts retained executable work.
 	if err := store.RecoverRuns(ctx); err != nil {
 		return ErrArchive
 	}
