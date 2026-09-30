@@ -16,7 +16,7 @@ RUN printf '%s  /usr/local/bin/goby\n' 2e296bfd02fdf3f7b740000d0d87563e420d5a099
     && sha256sum --check --strict metadata/installed-files.sha256 \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      build-essential ca-certificates curl gnupg libaom-dev libass-dev libdrm-dev libmp3lame-dev \
+      build-essential ca-certificates curl gnupg libaom-dev libass-dev libchromaprint-dev libdrm-dev libmp3lame-dev \
       libnuma-dev libopus-dev libssl-dev libva-dev libvorbis-dev libvpl-dev libvulkan-dev \
       libx264-dev libx265-dev libzimg-dev nasm patch patchelf pkg-config python3 xz-utils yasm
 
@@ -38,7 +38,7 @@ RUN cd /opt/goby-amd-ffmpeg \
     && sha256sum --check --strict metadata/installed-files.sha256 \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      mesa-va-drivers mesa-vulkan-drivers libvulkan1 vainfo \
+      libchromaprint1 mesa-va-drivers mesa-vulkan-drivers libvulkan1 vainfo \
     && install -d -m 0755 /usr/share/goby/amd-runtime \
     && dpkg-query -W -f='${binary:Package}\t${Version}\t${Architecture}\n' > /usr/share/goby/amd-runtime/runtime-packages.tsv \
     && dpkg-query -L mesa-va-drivers mesa-vulkan-drivers libvulkan1 vainfo > /usr/share/goby/amd-runtime/driver-package-files.txt \
@@ -53,6 +53,13 @@ RUN chmod -R a+rX /opt/goby-amd-ffmpeg \
     && /opt/goby-amd-ffmpeg/bin/ffprobe -version > /usr/share/goby/amd-runtime/ffprobe-version.txt \
     && grep -Eq '^ffprobe version 9\.0\.1([ -]|$)' /usr/share/goby/amd-runtime/ffprobe-version.txt \
     && /opt/goby-amd-ffmpeg/bin/ffmpeg -buildconf > /usr/share/goby/amd-runtime/ffmpeg-buildconf.txt 2>&1 \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -muxers > /usr/share/goby/amd-runtime/ffmpeg-muxers.txt 2>&1 \
+    && grep -Eq '[[:space:]]chromaprint[[:space:]]' /usr/share/goby/amd-runtime/ffmpeg-muxers.txt \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -h muxer=chromaprint > /usr/share/goby/amd-runtime/chromaprint-options.txt 2>&1 \
+    && grep -Eq '[[:space:]]-?fp_format[[:space:]]' /usr/share/goby/amd-runtime/chromaprint-options.txt \
+    && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -loglevel error -f lavfi -i 'sine=frequency=440:sample_rate=48000' \
+      -t 6 -ac 2 -f chromaprint -fp_format raw /usr/share/goby/amd-runtime/chromaprint.raw \
+    && test -s /usr/share/goby/amd-runtime/chromaprint.raw \
     && /opt/goby-amd-ffmpeg/bin/ffmpeg -hide_banner -hwaccels > /usr/share/goby/amd-runtime/ffmpeg-hwaccels.txt 2>&1 \
     && grep -Eq '^vaapi$' /usr/share/goby/amd-runtime/ffmpeg-hwaccels.txt \
     && grep -Eq '^vulkan$' /usr/share/goby/amd-runtime/ffmpeg-hwaccels.txt \

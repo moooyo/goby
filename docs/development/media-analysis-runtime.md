@@ -1,28 +1,20 @@
 # Media analysis runtime
 
-The current source adds [detector v5](intro-quality-round2-20260930.md), explicit
-calibrated visual evidence and GAFB v3 refinement storage. The existing Docker catalog retains the
-schema-52/v3 delivery described below; no replacement image is claimed here.
+Current intro execution uses the in-process Go port of Intro Skipper 12.0.4.0,
+commit `6e0cb179007ac4c16cd9f358e9a617e791e9bf06`, with raw FFmpeg Chromaprint
+extraction. The [port record](intro-skipper-port-20261001.md) separates matching
+parity, production extraction and integration verification. New work uses
+execution version 6, GAFB v4 and schema 54. A Jellyfin host or C# runtime is not
+required. Source/toolchain recipe updates do not claim a newly built or deployed
+Docker image.
 
-Current runtime contract, including schema-52 automatic seek previews. The BIF
-workflow is **verified within its selected scope**. The expanded intro assessment
-is complete, but broader recognition is **not accepted**: all 12 source-reviewed
-openings were missed, while three short-ident negatives correctly received no
-intro. Short and variant opening recognition remains to be improved. The
-[current checkpoint](bif-intro-expansion-20260930.md) separates those outcomes and
-binds final application source `33445db2e2e64b6871116332c44605261a1bf2d4`.
-Both final software and AMD profiles passed actual UI and exact retained-BIF
-checks. Final owned-resource closure passed: zero owned containers, Compose
-networks and database clients, private PostgreSQL stopped, protected services
-unchanged. Artifact export and Git publication have separate receipts. The previous
-automatic-intro increment retains its completed backend, UI, Docker and
-resource-closure scope in its [record](library-intro-automation-20260930.md).
-Earlier Phase 2 verification is
-complete, including its client lifecycle and independent resource closure. See the
-[Phase 2 execution record](media-analysis-resilience-phase2-20260921.md) and
-[recorded results](media-analysis-resilience-phase2-results-20260922.json).
-The [original fixture failure](media-analysis-resilience-phase2-20260921.md#first-fourteen-source-run-and-cancellation-fixture-correction)
-remains part of that history.
+The earlier schema-52 [BIF and intro checkpoint](bif-intro-expansion-20260930.md)
+retains its verified software/AMD UI and BIF scope, original v3 intro misses and
+resource-closure evidence. Later
+[v5 refinement](intro-quality-round2-20260930.md) and the
+[native Intro Skipper evaluation](intro-skipper-native-evaluation-20261001.md)
+remain separate algorithm records. None of those historical measurements is
+silently relabeled as a new production integration result.
 
 ## Deployment inventory
 
@@ -38,7 +30,7 @@ For example:
   "cacheMaxEntries": 512,
   "maxEntryBytes": 536870912,
   "maxFileBytes": 134217728,
-  "fingerprintPath": "/opt/goby/bin/goby-intro-fingerprint"
+  "introFFmpegPath": "/opt/ffmpeg/9.0.1/bin/ffmpeg"
 }
 ```
 
@@ -47,14 +39,23 @@ other caches, operation scratch, diagnostics and recovery stores. The configured
 limits count file lengths and reservations, not filesystem allocation units.
 Leave free-space margin for metadata and the underlying filesystem.
 
-An optional `fingerprintSHA256` pins the helper's exact lowercase SHA-256.
-The runtime also captures FFmpeg and FFprobe hashes at startup and binds jobs to
-the held executable identities. The analysis profile currently requires Linux,
-FFmpeg 9.0.1 and FFprobe 9.0.1. See the
-[fingerprint helper](../../tools/intro-fingerprint/README.md) for its pinned
-Chromaprint/KissFFT source, license notices, build and protocol. Missing helper
-availability prevents intro execution while independently available preview
-generation remains usable. No executable path is accepted from an HTTP request.
+`introFFmpegPath` is optional. It selects the executable used for raw intro
+fingerprints; omission falls back to the main configured FFmpeg path. An optional
+`introFFmpegSHA256` requires that explicit path and pins its lowercase SHA-256.
+The executable must expose the `chromaprint` muxer with raw output, algorithm 1
+and a disabled silence threshold. Startup captures and revalidates the admitted
+tool identity, and jobs bind the effective intro binary in `FingerprintSHA256`.
+A missing muxer makes intro execution unavailable; it does not authorize the
+legacy helper or an alternate extraction recipe as a silent fallback.
+
+The existing FFmpeg/FFprobe inventory and preview requirements remain separate.
+`fingerprintPath` and `fingerprintSHA256` remain supported deployment fields for
+the [legacy fingerprint helper](../../tools/intro-fingerprint/README.md), but
+that helper is not required by new Intro Skipper extraction. Current extraction
+uses Linux descriptor-based execution and held source/tool identities. No tool
+path is accepted from an HTTP request. Verify a configured binary's capabilities
+against the updated source recipe; an earlier deployed image need not contain
+the newly required muxer.
 
 ## Editable policy and task behavior
 
@@ -102,6 +103,16 @@ Schema 52 adds the preview option and its event without rewriting existing libra
 rows or replacing administrator schedule choices. Missing preview options on
 older rows mean disabled.
 
+The dashboard also edits all seven `Profile.IntroSkipper` settings. Defaults
+are 25 percent, ten minutes, a 15–120-second intro duration range, six differing
+fingerprint bits, a 3.5-second matching gap and an inverted-index shift of two.
+The [API contract](../api/media-analysis.md#configuration-and-execution-identity)
+lists their exact units and bounds. These are upstream matching/extraction
+options; there is no custom boundary-offset control. Schema 54 installs the
+default options without advancing the current revision or publication epoch,
+clearing derivatives or withdrawing existing source-valid v5 markers. Historical
+execution versions 1–5 remain readable with their original admission hashes.
+
 The two analysis tasks are published in both native and compatibility task
 collections, including truthful unavailable status when execution is disabled.
 Selection may combine library and item identifiers; selected items must belong
@@ -112,43 +123,36 @@ An incompatible active selection/profile returns a conflict. Scheduled conflicts
 defer that occurrence without consuming its event cursor or delaying unrelated
 definitions.
 
-The source `introdetect-v5` matcher requires at least three independent
-episodes. Intro work
-uses at most 32 same-season sources per child and at most 16 selected
-episode identities for publication. A source's complete content hash establishes
-independence; a shared opening fingerprint does not establish an independent
-episode. The normalized stream policy selects a default local audio/video stream
-first, then its original stream index. External tracks and attached pictures are
-excluded. A current source-bound feature cache can avoid repeated extraction.
-Force requests repeat extraction.
-The v5 visual fallback applies only when the acoustic pipeline found no group.
-It uses the first 120 seconds or first half of an episode and requires an
-8-to-90-second fixed-clock, complete pairwise witness. The luma descriptor and
-new extraction profile prevent reuse of old hash-only evidence as current visual
-evidence; the cache codec still reads GAFB v1/v2 without synthesizing new fields.
-An independent 16x16 raster stream covers only the first 120 seconds at 100 ms.
-It shares source/tool/timestamp admission and the extraction deadline. Explicitly
-proven cadence insufficiency may omit only the refinement stream; other failures
-still invalidate extraction. One fixed spatial transform per source and a final
-0.3-second boundary guard are recorded in the calibrated audit.
-The [v5 evaluation](intro-quality-round2-20260930.md) passed the first new positive
-and negative cohorts while retaining known misses and recall regressions. The
-earlier failed v4 three-episode positive cohort remains its original result.
-The prior v3 assessment's zero qualified intervals remains historical evidence,
-not an estimate of this source candidate's accuracy.
+The `intro-skipper-v1` matcher requires an independent pair. Intro work retains
+at most 32 same-season sources per child and at most 16 selected publication
+targets. Episode keys establish original-work identity; distinct complete-file
+hashes additionally prevent duplicate content from counting twice. The task
+retains admitted cohort order because the upstream first-valid-pair decision
+is order-sensitive.
 
-Intro extraction admits at most the first 600 seconds. Its visual request covers
-only complete sampling intervals within that horizon: with the default 500 ms
-interval, a 137.005-second source requests visual samples before 137.0 seconds.
-It does not invent a frame at 137.0 seconds or copy an earlier frame into that
-slot. A source shorter than one sampling interval has no admissible intro visual
-window. `IntroFeatures.WindowTicks` remains the overall admitted audio horizon;
-`VisualWindowTicks` records the visual request's relative end separately.
-The fixed `intro-visual-complete-slots-v1` policy participates in the extraction
-profile, so historical profiles cannot silently supply current feature data.
-Generic visual requests and explicit end times retain their strict slot contract.
-Missing internal slots, truncated bytes, unmatched timestamps and decoder errors
-still reject extraction; this rule changes the intro request, not those checks.
+Current audio selection prefers the local stream with the greatest channel
+count, then the lowest original stream index. The extraction helper can apply
+upstream preferred-language fallback, but the current task requests no language
+preference. Default-track flags add no priority. External tracks and attached
+pictures are excluded. Extraction uses stereo `-f chromaprint -fp_format raw`.
+The full raw sequence remains on the upstream fingerprint clock, without
+source-PTS shifts or trimming to the old audiovisual bins.
+
+At defaults, sources shorter than five minutes use their full duration;
+otherwise the requested window is the first 25 percent, capped at ten minutes.
+The admitted profile freezes the configured percentage, time limit and matcher
+options. GAFB v4 stores up to 5,000 raw words, exact extraction horizon and
+source/profile bindings. It cannot contain legacy visual, refinement or audio
+uncertainty fields. Historical GAFB v1–v3 remain readable; a new job cannot reuse
+them as raw fingerprints. A current source-bound v4 cache can avoid repeated
+extraction, while Force requests repeat it.
+
+The port keeps the upstream `start <= 5 seconds` snap to zero and actual
+two-source support. It omits `TimeAdjustmentHelper`, chapter/silence adjustment,
+keyframe and end snapping, custom offsets, visual confirmation and three-source
+quality gates. The three protected-range overlap cases in the retained native
+assessment remain known behavior under the stricter offline reference policy;
+they do not become an extra runtime rejection rule.
 
 Preview tasks similarly reuse only a complete set of current variants whose
 actual sealed bytes and BIF indexes pass acquisition. A missing variant causes

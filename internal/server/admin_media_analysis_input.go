@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/tasks"
 )
@@ -86,7 +88,52 @@ func adminMediaAnalysisRevision(raw json.RawMessage, name string, allowZero bool
 	return text
 }
 
-var adminMediaAnalysisProfileFields = []string{"AutoPublishIntros", "PreviewIntervalSeconds", "PreviewQuality", "MaxSourceBytes", "MaxItemRuntimeSeconds", "FeatureCacheMaxBytes"}
+var adminMediaAnalysisProfileFields = []string{"AutoPublishIntros", "PreviewIntervalSeconds", "PreviewQuality", "MaxSourceBytes", "MaxItemRuntimeSeconds", "FeatureCacheMaxBytes", "IntroSkipper"}
+
+var adminMediaAnalysisIntroSkipperFields = []string{"AnalysisPercent", "AnalysisLengthLimit", "MinimumIntroDuration", "MaximumIntroDuration", "MaximumFingerprintPointDifferences", "MaximumTimeSkip", "InvertedIndexShift"}
+
+func decodeAdminMediaAnalysisIntroSkipper(raw json.RawMessage, invalid map[string]string) introskipper.Options {
+	var result introskipper.Options
+	const prefix = "Profile.IntroSkipper"
+	values, objectErrors := adminTaskObject(raw, adminMediaAnalysisIntroSkipperFields, adminMediaAnalysisIntroSkipperFields, prefix)
+	for field, message := range objectErrors {
+		invalid[field] = message
+	}
+	if len(objectErrors) != 0 {
+		return result
+	}
+	for _, field := range []struct {
+		name             string
+		minimum, maximum int64
+		target           *int
+	}{
+		{"AnalysisPercent", 1, 50, &result.AnalysisPercent},
+		{"AnalysisLengthLimit", 1, 10, &result.AnalysisLengthLimit},
+		{"MinimumIntroDuration", 1, 600, &result.MinimumIntroDuration},
+		{"MaximumIntroDuration", 1, 600, &result.MaximumIntroDuration},
+		{"MaximumFingerprintPointDifferences", 0, 32, &result.MaximumFingerprintPointDifferences},
+		{"InvertedIndexShift", 0, 32, &result.InvertedIndexShift},
+	} {
+		var number int64
+		name := prefix + "." + field.name
+		adminMediaAnalysisValue(values[field.name], name, &number, invalid)
+		if number < field.minimum || number > field.maximum {
+			invalid[name] = "Supply an integer JSON number within the documented Intro Skipper range."
+		}
+		if invalid[name] == "" {
+			*field.target = int(number)
+		}
+	}
+	const timeSkip = prefix + ".MaximumTimeSkip"
+	adminMediaAnalysisValue(values["MaximumTimeSkip"], timeSkip, &result.MaximumTimeSkip, invalid)
+	if math.IsNaN(result.MaximumTimeSkip) || math.IsInf(result.MaximumTimeSkip, 0) || result.MaximumTimeSkip < 0 || result.MaximumTimeSkip > 30 {
+		invalid[timeSkip] = "Supply a finite JSON number between 0 and 30 seconds."
+	}
+	if invalid[prefix+".MinimumIntroDuration"] == "" && invalid[prefix+".MaximumIntroDuration"] == "" && result.MaximumIntroDuration < result.MinimumIntroDuration {
+		invalid[prefix+".MaximumIntroDuration"] = "Maximum intro duration must be at least the minimum intro duration."
+	}
+	return result
+}
 
 func decodeAdminMediaAnalysisConfiguration(w http.ResponseWriter, r *http.Request) (library.AnalysisConfigurationUpdate, bool) {
 	var result library.AnalysisConfigurationUpdate
@@ -101,6 +148,7 @@ func decodeAdminMediaAnalysisConfiguration(w http.ResponseWriter, r *http.Reques
 		invalid[field] = message
 	}
 	if len(profileErrors) == 0 {
+		result.Profile.IntroSkipper = decodeAdminMediaAnalysisIntroSkipper(profile["IntroSkipper"], invalid)
 		adminMediaAnalysisValue(profile["AutoPublishIntros"], "Profile.AutoPublishIntros", &result.Profile.AutoPublishIntros, invalid)
 		for _, field := range []struct {
 			name             string

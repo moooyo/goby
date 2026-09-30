@@ -1,4 +1,53 @@
-# Pure episode intro matching
+# Episode intro matching
+
+## Current Intro Skipper execution
+
+`internal/introskipper` implements `intro-skipper-v1`, a mechanical Go port of
+Intro Skipper 12.0.4.0 Introduction raw-candidate matching, pinned to commit
+`6e0cb179007ac4c16cd9f358e9a617e791e9bf06`. The derived package is GPL-3.0-only.
+It runs inside Goby without a Jellyfin host or C# runtime. The
+[port record](intro-skipper-port-20261001.md) describes extraction, configuration,
+versioned storage, provenance and verification status.
+
+`Analyze(ctx, Cohort, Options)` accepts the caller's ordered cohort of 2–32
+independent episodes and complete raw `uint32` fingerprint arrays. It preserves
+upstream inverted-index ordering, Hamming and gap tests, first-valid-pair
+selection, strictly-longer replacement and the intrinsic start-at-or-before-
+five-seconds snap to zero. Its time step is the upstream binary64 expression
+`4096 / 11025 / 3`; conversion to 100 ns ticks uses midpoint-to-even rounding.
+The accepted pair is stored with each candidate even if its peer later acquires
+a different final candidate. This is pair support, not a three-episode clique.
+
+The port does not call `TimeAdjustmentHelper`: chapter/silence adjustment,
+keyframe snapping and end snapping are excluded. It adds no custom time offset,
+source-PTS correction, visual confirmation or offline-label quality gate.
+Goby retains bounded execution, cancellation, independently admitted episode
+and whole-content identities, and publication authorization. Invalid input,
+cancellation and resource exhaustion return no partial successful result.
+
+The seven matching/extraction settings are exposed in `Profile.IntroSkipper`;
+the [API contract](../api/media-analysis.md#configuration-and-execution-identity)
+records their defaults, units and bounds. Matching-gap parameters do not act as
+manual boundary offsets. New admissions use execution 6 and GAFB v4 raw
+fingerprint storage. Schema 54 adds these settings without invalidating existing
+source-valid v5 markers or rewriting old execution fingerprints.
+
+The native adjustment-disabled 19-episode comparison produced six candidates
+and thirteen empty results. The earlier raw matcher comparison reproduced all
+twelve endpoints exactly at 100 ns precision. The three native protected-range
+crossings remain recorded; upstream parity does not imply compliance with the
+stricter historical corpus target policy or establish fresh accuracy. Production
+extraction and integration validation are tracked separately in the port record.
+
+## Historical audiovisual matcher: v3 record
+
+The remainder of this document preserves the earlier `internal/introdetect`
+v3 specification and acceptance record. Its three-source, audiovisual and
+publication statements apply to that historical algorithm. Later v4/v5 work is
+recorded in the [intro quality](intro-quality-20260930.md) and
+[v5 refinement](intro-quality-round2-20260930.md) records. Those algorithms and
+storage readers remain available for historical evidence; new Intro Skipper
+execution does not inherit their acceptance gates.
 
 `internal/introdetect` implements `introdetect-v3`, a pure Go, deterministic matcher. It does not open
 media, run tools, access a database, infer episode identity from titles, or
@@ -24,7 +73,7 @@ labels, slide the visual band grid or fit a separate phase to each frame.
 Historical v1 and v2 wire semantics have independent storage decoders and do
 not acquire current publication authority.
 
-## Input contract
+### Input contract
 
 All times are signed 64-bit, 100 ns media ticks relative to the original media
 timeline. Audio samples contain a Chromaprint-like `uint32` fingerprint and
@@ -65,7 +114,7 @@ identity. An unavailable earlier-sorting alias cannot displace a usable one.
 Unused aliases are reported as `duplicate_identity`. Contradictory snapshots with the same
 SourceKey are invalid. Different profiles are not compared.
 
-## Search and confirmation
+### Search and confirmation
 
 1. Sort episode identities canonically. Partition identity aliases and check
    profile-compatible independent support. No title or filename heuristic is
@@ -213,7 +262,7 @@ maximum-clique solver. It can abstain even when a more expensive search could
 find additional support. Each retained group nevertheless has direct pairwise
 evidence for all of its members.
 
-## Results and provisional defaults
+### Results and provisional defaults
 
 `qualified` means the admitted feature profile met the configured gates; it is
 not a calibrated probability or proof of narrative semantics. `review` retains
@@ -309,7 +358,7 @@ intro in these features: the matcher has no semantic model that can prove
 otherwise. Real labeled negatives and an accepted calibration profile are
 required before operational publication claims.
 
-## Acceptance boundary
+### Acceptance boundary
 
 Historical v1 and v2 JSON and their qualification rules remain explicitly
 versioned in the storage layer. New admission fingerprints bind v3 and its full Options;

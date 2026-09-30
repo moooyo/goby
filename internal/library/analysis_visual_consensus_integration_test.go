@@ -4,7 +4,6 @@ package library
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"math/rand"
 	"os"
@@ -16,7 +15,7 @@ import (
 	"github.com/moooyo/goby/internal/media"
 )
 
-func TestAnalysisVisualConsensusSurvivesFeatureCacheAndPublication(t *testing.T) {
+func TestAnalysisHistoricalVisualConsensusSurvivesCacheAndRestore(t *testing.T) {
 	f := newAnalysisWorkFixture(t, 5)
 	f.setIntroDetection(t, true)
 	run, children := f.admit(t, TaskIntroAnalysisKey, nil)
@@ -30,6 +29,7 @@ func TestAnalysisVisualConsensusSurvivesFeatureCacheAndPublication(t *testing.T)
 	if err != nil || len(work.Sources) != 5 {
 		t.Fatalf("read the admitted independent sources: %v", err)
 	}
+	work = analysisHistoricalVisualWork(t, work)
 	sort.Slice(work.Sources, func(i, j int) bool { return work.Sources[i].EpisodeKey < work.Sources[j].EpisodeKey })
 
 	// A complete opening shares its first thirteen seconds with two sources
@@ -88,21 +88,7 @@ func TestAnalysisVisualConsensusSurvivesFeatureCacheAndPublication(t *testing.T)
 			features.Refinement = append(features.Refinement, introdetect.RefinementSample{
 				Ticks: int64(frame) * media.TicksPerSecond / 10, Raster: observation})
 		}
-		if err := f.store.PutAnalysisFeatures(f.ctx, child, source.ItemID, fence, features); err != nil {
-			t.Fatalf("store source-bound refinement observations: %v", err)
-		}
-		var payload []byte
-		if err := f.pool.QueryRow(f.ctx, `SELECT payload FROM analysis_feature_cache WHERE item_id=$1 AND profile_fingerprint=$2`,
-			source.ItemID, work.ConfigurationFingerprint).Scan(&payload); err != nil {
-			t.Fatal(err)
-		}
-		if len(payload) < 6 || string(payload[:4]) != "GAFB" || binary.LittleEndian.Uint16(payload[4:6]) != 3 {
-			t.Fatal("the production cache did not persist refinement observations with GAFB v3")
-		}
-		cached, found, err := f.store.GetAnalysisFeatures(f.ctx, child, source.ItemID, fence)
-		if err != nil || !found || !reflect.DeepEqual(cached, features) {
-			t.Fatalf("the durable cache changed independent raster observations: found=%v error=%v", found, err)
-		}
+		cached := analysisHistoricalVisualCache(t, f, work, source, features)
 		cohort.Episodes = append(cohort.Episodes, introdetect.Episode{
 			EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: cached.ContentSHA256,
 			AlgorithmProfile: cached.AlgorithmProfile, DurationTicks: source.DurationTicks,
@@ -165,9 +151,7 @@ func TestAnalysisVisualConsensusSurvivesFeatureCacheAndPublication(t *testing.T)
 		}
 		candidates[episode.SourceKey] = candidate
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, child, fence, result); err != nil {
-		t.Fatalf("publish actual recovered matcher output after a durable cache round trip: %v", err)
-	}
+	seedAnalysisHistoricalVisualResult(t, f, child, fence, work, result)
 	for _, source := range work.Sources {
 		candidate := candidates[source.SourceRevision]
 		item, err := f.store.GetAnalysisItem(f.ctx, f.actor, source.ItemID)

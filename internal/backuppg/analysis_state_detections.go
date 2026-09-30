@@ -16,7 +16,7 @@ type analysisStateEvidence struct {
 	DurationTicks  int64
 }
 
-func validateAnalysisDetectionState(ctx context.Context, tx pgx.Tx) error {
+func validateAnalysisDetectionState(ctx context.Context, tx pgx.Tx, version int64) error {
 	if err := analysisStateRows(ctx, tx, `SELECT detection.item_id,detection.source_revision,detection.status,detection.result,detection.start_ticks,detection.end_ticks,
 		source.episode_key,source.duration_ticks,COALESCE((SELECT jsonb_agg(jsonb_build_object(
 		'ItemID',refs.source_item_id,'SourceRevision',refs.source_revision,'EpisodeKey',refs.episode_key,
@@ -31,6 +31,10 @@ func validateAnalysisDetectionState(ctx context.Context, tx pgx.Tx) error {
 		var duration int64
 		if err := rows.Scan(&item, &source, &status, &raw, &start, &end, &episode, &duration, &refs); err != nil {
 			return classifyResourceStateError(ctx, err)
+		}
+		var wire struct{ Version string }
+		if len(raw) > 131072 || json.Unmarshal(raw, &wire) != nil || !validAnalysisStateResultVersion(wire.Version, version) {
+			return ErrSchema
 		}
 		if !validAnalysisStateDetection(item, source, episode, duration, status, raw, start, end, refs) {
 			return ErrSchema
@@ -61,7 +65,7 @@ func validateAnalysisDetectionState(ctx context.Context, tx pgx.Tx) error {
 		if !analysisStateIdentifier(item, 256, false) || !analysisStateIdentifier(source, 256, false) || !analysisStateIdentifier(actor, 256, true) || profile != "" && !analysisStateDigest(profile) || err != nil {
 			return ErrSchema
 		}
-		if evidence.Result != nil && evidence.Result.Episode.SourceKey != source {
+		if evidence.Result != nil && (!validAnalysisStateResultVersion(evidence.Result.Version, version) || evidence.Result.Episode.SourceKey != source) {
 			return ErrSchema
 		}
 		if evidence.Decision != nil && evidence.Decision.SourceRevision != source {

@@ -121,7 +121,7 @@ func TestStoredAnalysisVisualEvidenceKeepsClosedJSONShape(t *testing.T) {
 func analysisVisualDetectionTestWork() (AnalysisWork, introdetect.Result) {
 	value := analysisVisualDetectionTestValue()
 	candidate := value.Episode.Candidates[0]
-	execution := analysisAdmissionTestIntroExecution()
+	execution := analysisLegacyTestIntroExecution()
 	work := AnalysisWork{TaskKey: TaskIntroAnalysisKey, ScopeKey: "visual-scope", Execution: execution}
 	groupMetrics := *candidate.VisualEvidence
 	result := introdetect.Result{Version: introdetect.Version, CohortKey: work.ScopeKey, Options: execution.DetectorOptions,

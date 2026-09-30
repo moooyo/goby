@@ -28,6 +28,8 @@ type MediaAnalysisConfig struct {
 	MaxFileBytes      int64  `json:"maxFileBytes"`
 	FingerprintPath   string `json:"fingerprintPath,omitempty"`
 	FingerprintSHA256 string `json:"fingerprintSHA256,omitempty"`
+	IntroFFmpegPath   string `json:"introFFmpegPath,omitempty"`
+	IntroFFmpegSHA256 string `json:"introFFmpegSHA256,omitempty"`
 }
 
 func loadMediaAnalysis() (MediaAnalysisConfig, error) {
@@ -74,6 +76,7 @@ func parseMediaAnalysis(data []byte) (MediaAnalysisConfig, error) {
 		"cacheMaxBytes": &value.CacheMaxBytes, "cacheMaxEntries": &value.CacheMaxEntries,
 		"maxEntryBytes": &value.MaxEntryBytes, "maxFileBytes": &value.MaxFileBytes,
 		"fingerprintPath": &value.FingerprintPath, "fingerprintSHA256": &value.FingerprintSHA256,
+		"introFFmpegPath": &value.IntroFFmpegPath, "introFFmpegSHA256": &value.IntroFFmpegSHA256,
 	}
 	seen := make(map[string]bool, len(fields))
 	for decoder.More() {
@@ -136,6 +139,15 @@ func (value MediaAnalysisConfig) Validate() error {
 		digest, err := hex.DecodeString(value.FingerprintSHA256)
 		if value.FingerprintPath == "" || err != nil || len(digest) != 32 || strings.ToLower(value.FingerprintSHA256) != value.FingerprintSHA256 {
 			return errors.New("fingerprintSHA256 must bind a configured tool with a lowercase SHA-256 digest")
+		}
+	}
+	if value.IntroFFmpegPath != "" && (!recoveryExecutable(value.IntroFFmpegPath) || !path.IsAbs(value.IntroFFmpegPath)) {
+		return errors.New("introFFmpegPath must be a canonical absolute executable path")
+	}
+	if value.IntroFFmpegSHA256 != "" {
+		digest, err := hex.DecodeString(value.IntroFFmpegSHA256)
+		if value.IntroFFmpegPath == "" || err != nil || len(digest) != 32 || strings.ToLower(value.IntroFFmpegSHA256) != value.IntroFFmpegSHA256 {
+			return errors.New("introFFmpegSHA256 must bind a configured tool with a lowercase SHA-256 digest")
 		}
 	}
 	return nil

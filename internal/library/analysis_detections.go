@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -188,7 +189,7 @@ func normalizeAnalysisEpisode(episode introdetect.EpisodeResult) introdetect.Epi
 }
 
 func validateAnalysisResultForWork(work AnalysisWork, result introdetect.Result) (map[string]AnalysisStoredResult, error) {
-	if work.TaskKey != TaskIntroAnalysisKey || !work.Execution.Available || ValidateAnalysisExecutionProfile(work.Execution) != nil || result.Version != work.Execution.DetectorVersion || result.CohortKey != work.ScopeKey || result.Options != work.Execution.DetectorOptions || result.Comparisons < 0 || result.Comparisons > result.Options.MaxComparisons || len(result.Episodes) != len(work.Sources) || len(result.Groups) > result.Options.MaxGroups {
+	if work.TaskKey != TaskIntroAnalysisKey || !work.Execution.Available || validateAnalysisLegacyResultExecution(work.Execution) != nil || result.Version != work.Execution.DetectorVersion || result.CohortKey != work.ScopeKey || result.Options != work.Execution.DetectorOptions || result.Comparisons < 0 || result.Comparisons > result.Options.MaxComparisons || len(result.Episodes) != len(work.Sources) || len(result.Groups) > result.Options.MaxGroups {
 		return nil, ErrInvalidInput
 	}
 	expected := map[string]AnalysisSource{}
@@ -266,19 +267,41 @@ func (s *Store) PublishAnalysisAbstention(ctx context.Context, childID string, f
 		if work.TaskKey != TaskIntroAnalysisKey {
 			return ErrInvalidInput
 		}
-		values := map[string]AnalysisStoredResult{}
+		values := map[string]AnalysisStoredIntroSkipperResult{}
 		for _, source := range work.Sources {
-			values[source.ItemID] = AnalysisStoredResult{Version: introdetect.Version, Episode: introdetect.EpisodeResult{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, Status: introdetect.NoResult, Reasons: []introdetect.Reason{}, Candidates: []introdetect.Candidate{}}, Reason: reason}
+			values[source.ItemID] = AnalysisStoredIntroSkipperResult{Version: introskipper.Version, Options: work.Profile.IntroSkipper,
+				Episode: introskipper.EpisodeResult{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision,
+					DurationTicks: source.DurationTicks, Status: introskipper.NoResult, Reasons: []string{}}, Reason: reason}
 		}
-		return publishAnalysisResults(tx, work, values)
+		return publishAnalysisIntroSkipperResults(tx, work, values)
 	})
 }
 
 func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]AnalysisStoredResult) error {
-	if work.TaskKey != TaskIntroAnalysisKey || ValidateAnalysisExecutionProfile(work.Execution) != nil ||
+	if work.TaskKey != TaskIntroAnalysisKey || validateAnalysisLegacyResultExecution(work.Execution) != nil ||
 		work.Execution.Available && work.Execution.DetectorVersion != introdetect.Version {
 		return ErrInvalidInput
 	}
+	records := make(map[string]analysisPublicationResult, len(values))
+	for itemID, value := range values {
+		if validateAnalysisStoredResult(value) != nil || !work.Execution.Available && value.Reason == "" {
+			return ErrInvalidInput
+		}
+		raw, err := json.Marshal(value)
+		if err != nil {
+			return ErrInvalidInput
+		}
+		records[itemID] = analysisPublicationResult{Raw: raw, Facts: analysisCurrentResultFacts(value)}
+	}
+	return publishAnalysisResultRecords(tx, work, records)
+}
+
+type analysisPublicationResult struct {
+	Raw   json.RawMessage
+	Facts AnalysisStoredResultFacts
+}
+
+func publishAnalysisResultRecords(tx OwnedTx, work AnalysisWork, records map[string]analysisPublicationResult) error {
 	profileRevision, err := analysisRevision(work.ConfigurationRevision)
 	if err != nil || profileRevision < 1 {
 		return ErrInvalidInput
@@ -294,18 +317,19 @@ func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]Ana
 		if !source.Target {
 			continue
 		}
-		value, exists := values[source.ItemID]
+		record, exists := records[source.ItemID]
+		value, raw := record.Facts, record.Raw
 		// An unavailable execution can record a library abstention in the
 		// current result format, but cannot supply matcher qualification facts.
-		if !exists || validateAnalysisStoredResult(value) != nil || !work.Execution.Available && value.Reason == "" {
+		if !exists || len(raw) > 131072 || !work.Execution.Available && value.Reason == "" {
 			return ErrInvalidInput
 		}
-		raw, err := json.Marshal(value)
-		if err != nil || len(raw) > 131072 {
-			return ErrInvalidInput
+		var start, end *int64
+		if len(value.Episode.Candidates) != 0 {
+			interval := value.Episode.Candidates[0].Interval
+			start, end = &interval.StartTicks, &interval.EndTicks
 		}
-		start, end := analysisStoredInterval(value)
-		if ValidateStoredAnalysisResult(raw, string(value.Episode.Status), start, end) != nil {
+		if ValidateStoredAnalysisResult(raw, value.Episode.Status, start, end) != nil {
 			return ErrInvalidInput
 		}
 		var previous int64
@@ -317,7 +341,7 @@ func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]Ana
 		if previous == math.MaxInt64 {
 			return ErrAnalysisConflict
 		}
-		auto := libraryEnabled && value.Episode.Status == introdetect.Qualified && work.Profile.AutoPublishIntros && !suppressed
+		auto := libraryEnabled && value.Episode.Status == "qualified" && work.Profile.AutoPublishIntros && !suppressed
 		if _, err := tx.Exec(`INSERT INTO analysis_detections(item_id,revision,source_revision,profile_fingerprint,profile_revision,publication_epoch,child_id,cohort_revision,status,result,start_ticks,end_ticks,auto_published)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(item_id) DO UPDATE SET revision=EXCLUDED.revision,source_revision=EXCLUDED.source_revision,
    profile_fingerprint=EXCLUDED.profile_fingerprint,profile_revision=EXCLUDED.profile_revision,publication_epoch=EXCLUDED.publication_epoch,child_id=EXCLUDED.child_id,
@@ -348,7 +372,10 @@ func publishAnalysisResults(tx OwnedTx, work AnalysisWork, values map[string]Ana
 				return err
 			}
 		}
-		evidence, _ := json.Marshal(AnalysisAuditEvidence{Result: &value})
+		evidence, _ := json.Marshal(struct {
+			Result   json.RawMessage
+			Decision *AnalysisDecision
+		}{Result: raw})
 		if len(evidence) > 131072 {
 			return ErrInvalidInput
 		}
@@ -408,12 +435,18 @@ func readAnalysisDetection(ctx context.Context, tx pgx.Tx, access libraryAccess,
 	}
 	// Retired algorithm claims remain auditable without inventing current metrics
 	// or making old qualification effective under unchanged settings and sources.
-	if current == nil {
+	if current == nil && facts.Version != introskipper.Version {
 		result.Status = "stale"
 		result.Reasons = append(result.Reasons, "algorithm_changed")
 		return result, nil
 	}
-	if len(current.Episode.Candidates) > 0 {
+	if facts.Version == introskipper.Version {
+		var native AnalysisStoredIntroSkipperResult
+		if analysisStrictJSON(raw, &native) != nil {
+			return result, ErrUnavailable
+		}
+		result.IntroSkipperCandidate = native.Episode.Candidate
+	} else if len(current.Episode.Candidates) > 0 {
 		candidate := current.Episode.Candidates[0]
 		result.Candidate = &candidate
 	}

@@ -36,11 +36,15 @@ const (
 )
 
 // EncodeAnalysisFeatures encodes a bounded feature snapshot for the supplied
-// source duration. Version 3 appends a refinement count to the version 2 header,
+// source duration. Raw Intro Skipper fingerprints use version 4. Historical
+// features use version 3, which appends a refinement count to the version 2 header,
 // then stores the UTF-8 profile, audio bins, visual samples, and refinement
 // samples in that order, with little-endian numeric fields. Refinement records
 // contain an original source-relative timestamp and 256 raw grayscale bytes.
 func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byte, error) {
+	if len(value.RawFingerprint) != 0 || value.FingerprintEndSeconds != 0 {
+		return encodeRawAnalysisFeatures(value, sourceDuration)
+	}
 	window, err := analysisFeaturesWindow(sourceDuration)
 	if err != nil {
 		return nil, err
@@ -125,8 +129,9 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 }
 
 // DecodeAnalysisFeatures validates and decodes a complete feature snapshot.
-// Missing evidence is represented by nonnil empty audio and visual slices.
-// Versions 1 and 2 remain readable without acquiring refinement evidence.
+// Historical missing evidence uses nonnil empty audio and visual slices.
+// Versions 1 and 2 remain readable without acquiring refinement evidence;
+// version 4 contains only raw fingerprints and leaves legacy slices nil.
 // Reading historical bytes never promotes their extraction profile.
 func DecodeAnalysisFeatures(payload []byte, sourceDuration int64) (AnalysisFeatures, error) {
 	return readAnalysisFeatures(payload, sourceDuration, true)
@@ -151,6 +156,9 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 		return AnalysisFeatures{}, fmt.Errorf("%w: unsupported analysis feature format", ErrInvalidInput)
 	}
 	version := binary.LittleEndian.Uint16(payload[4:6])
+	if version == analysisFeaturesVersionV4 {
+		return readRawAnalysisFeatures(payload, sourceDuration, materialize)
+	}
 	visualSize := analysisFeaturesVisualSize
 	headerSize := analysisFeaturesHeaderSizeV1V2
 	maximumPayload := analysisFeaturesMaxPayloadV1V2
@@ -351,7 +359,7 @@ func (s *Store) GetAnalysisFeatures(ctx context.Context, childID, itemID string,
 		}
 		var err error
 		result, found, err = loadAnalysisFeatureCache(tx, source, work.ConfigurationFingerprint)
-		if err == nil && found && result.AlgorithmProfile != work.Execution.IntroProfile {
+		if err == nil && found && !analysisFeaturesMatchWork(result, source, work) {
 			_, err = tx.Exec(`DELETE FROM analysis_feature_cache WHERE cache_key=$1`, analysisFeatureCacheKey(source, work.ConfigurationFingerprint))
 			result, found = AnalysisFeatures{}, false
 		}
@@ -414,6 +422,9 @@ func (s *Store) PutAnalysisFeatures(ctx context.Context, childID, itemID string,
 		source, allowed := FindAnalysisSource(work, itemID)
 		if !allowed {
 			return ErrAnalysisSourceChanged
+		}
+		if !analysisFeaturesMatchWork(value, source, work) {
+			return ErrInvalidInput
 		}
 		return putAnalysisFeatureCache(tx, source, work.ConfigurationFingerprint, work.Profile, value)
 	})

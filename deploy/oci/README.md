@@ -177,6 +177,15 @@ the native Chromaprint intro helper and its installed notices. Its exact SHA-256
 is recorded in `/usr/share/goby/media-analysis.json`; Compose enables that file
 and stores analysis artifacts under `/var/cache/goby/analysis`.
 
+The October 1 Intro Skipper recipe update explicitly enables FFmpeg's
+`chromaprint` muxer with `libchromaprint-dev` at build time and
+`libchromaprint1` at runtime, both from the fixed Debian snapshot. This library
+is separate from the retained helper's vendored Chromaprint 1.6.1. New builds
+record the library version, copyright notice, muxer options and a short raw
+fingerprint in `/usr/share/goby/toolchain`. The updated image has not been built
+or accepted by this source change; previous delivery results remain historical.
+Availability gates do not establish fingerprint parity with a reference build.
+
 Enable **Automatic intro detection** in each desired TV library. Existing
 libraries remain off after the schema 51 upgrade until that setting is enabled.
 The server processes enabled libraries in the background, including after a

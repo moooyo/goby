@@ -18,6 +18,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -61,14 +62,14 @@ func ValidateAnalysisExecutionProfile(value AnalysisExecutionProfile) error {
 		}
 		return nil
 	}
-	if value.UnavailableReason != "" || !analysisSHA(value.FFmpegSHA256) || !analysisSHA(value.FFprobeSHA256) {
+	if value.UnavailableReason != "" || !analysisSHA(value.FFmpegSHA256) {
 		return ErrInvalidInput
 	}
 	if value.IntroProfile != "" {
-		if !analysisSHA(value.FingerprintSHA256) || !analysisOpaque(value.IntroProfile, 512) || value.DetectorVersion != introdetect.Version || value.DetectorOptions != introdetect.DefaultOptions() || value.VisualIntervalTicks != media.TicksPerSecond/2 || value.PreviewProfile != "" || len(value.PreviewWidths) != 0 {
+		if value.FingerprintSHA256 != value.FFmpegSHA256 || value.FFprobeSHA256 != "" || !analysisOpaque(value.IntroProfile, 512) || value.DetectorVersion != introskipper.Version || value.DetectorOptions != (introdetect.Options{}) || introskipper.ValidateOptions(value.IntroSkipperOptions) != nil || value.VisualIntervalTicks != 0 || value.PreviewProfile != "" || len(value.PreviewWidths) != 0 {
 			return ErrInvalidInput
 		}
-	} else if value.FingerprintSHA256 != "" || value.DetectorVersion != "" || value.DetectorOptions != (introdetect.Options{}) || value.VisualIntervalTicks != 0 || value.PreviewProfile != media.PreviewAnalysisProfile || !reflect.DeepEqual(value.PreviewWidths, []int{240, 320, 400}) {
+	} else if !analysisSHA(value.FFprobeSHA256) || value.FingerprintSHA256 != "" || value.DetectorVersion != "" || value.DetectorOptions != (introdetect.Options{}) || value.IntroSkipperOptions != (introskipper.Options{}) || value.VisualIntervalTicks != 0 || value.PreviewProfile != media.PreviewAnalysisProfile || !reflect.DeepEqual(value.PreviewWidths, []int{240, 320, 400}) {
 		return ErrInvalidInput
 	}
 	return nil
@@ -238,9 +239,19 @@ func ValidateStoredAnalysisAdmission(profileRaw, executionRaw []byte, revision, 
 		}
 		return nil
 	}
+	if wire.Version == analysisStoredExecutionVersionV5 {
+		var profile analysisStoredProfileV5
+		var execution analysisStoredExecutionV5
+		if analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil ||
+			validateAnalysisProfileV5(profile) != nil || validateAnalysisExecutionProfileV5(execution) != nil ||
+			analysisAdmissionFingerprintV5(profile, execution, revision, epoch) != fingerprint {
+			return ErrInvalidInput
+		}
+		return nil
+	}
 	var profile AnalysisProfile
 	var execution AnalysisExecutionProfile
-	if wire.Version != AnalysisExecutionProfileVersion || analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil || ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil || analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {
+	if wire.Version != AnalysisExecutionProfileVersion || analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil || ValidateAnalysisProfile(profile) != nil || ValidateAnalysisExecutionProfile(execution) != nil || execution.Available && execution.IntroProfile != "" && execution.IntroSkipperOptions != profile.IntroSkipper || analysisAdmissionFingerprint(profile, execution, revision, epoch) != fingerprint {
 		return ErrInvalidInput
 	}
 	return nil
@@ -265,6 +276,14 @@ func PrepareAnalysis(tx OwnedTx, taskKey string, selection AnalysisSelection, ex
 	configuration, err := scanAnalysisConfiguration(tx.QueryRow(`SELECT ` + analysisConfigurationColumns + ` FROM analysis_settings WHERE id=1 FOR SHARE`))
 	if err != nil {
 		return AnalysisAdmissionBinding{}, err
+	}
+	// Admission binds the persisted options under the same configuration lock;
+	// tool discovery may have captured defaults before this transaction began.
+	if execution.Available && taskKey == TaskIntroAnalysisKey {
+		execution.IntroSkipperOptions = configuration.Profile.IntroSkipper
+		if err := ValidateAnalysisExecutionProfile(execution); err != nil {
+			return AnalysisAdmissionBinding{}, err
+		}
 	}
 	revision, _ := strconv.ParseInt(configuration.Revision, 10, 64)
 	var epoch int64
@@ -428,7 +447,7 @@ func snapshotAnalysisChildren(tx OwnedTx, runID, taskKey string, selection Analy
 					for _, source := range window {
 						independent[source.EpisodeKey] = true
 					}
-					if len(independent) < 3 {
+					if len(independent) < 2 {
 						reason = "insufficient_cohort"
 					}
 				}

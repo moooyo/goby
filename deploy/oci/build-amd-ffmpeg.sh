@@ -101,7 +101,7 @@ mkdir "$work/ffmpeg-build"
 cd "$work/ffmpeg-build"
 "$work/ffmpeg-9.0.1/configure" --prefix="$prefix" \
   --enable-gpl --enable-libx264 --enable-libx265 --enable-libaom --enable-libzimg \
-  --enable-libass --enable-libmp3lame --enable-libopus --enable-libvorbis \
+  --enable-libass --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-chromaprint \
   --enable-libplacebo --enable-vulkan --enable-libdrm --enable-vaapi --enable-libvpl \
   --enable-ffnvcodec --enable-cuvid --enable-nvenc \
   --extra-ldflags="-Wl,-rpath,'\$\$ORIGIN/../lib' -Wl,-rpath-link,$prefix/lib" \
@@ -124,6 +124,10 @@ if grep -Fq 'not found' "$evidence/runtime-linkage.txt"; then
   echo 'The rebuilt FFmpeg runtime has missing shared libraries.' >&2
   exit 1
 fi
+pkg-config --modversion libchromaprint > "$evidence/chromaprint-version.txt"
+cp /usr/share/doc/libchromaprint1/copyright "$evidence/licenses/chromaprint.copyright"
+"$prefix/bin/ffmpeg" -hide_banner -muxers > "$evidence/ffmpeg-muxers.txt" 2>&1
+grep -Eq '[[:space:]]chromaprint[[:space:]]' "$evidence/ffmpeg-muxers.txt"
 cp ffbuild/config.mak "$evidence/ffmpeg-config.mak"
 cp ffbuild/config.log "$evidence/ffmpeg-config.log"
 cp "$work/ffmpeg-9.0.1"/COPYING.* "$work/ffmpeg-9.0.1/LICENSE.md" "$evidence/licenses/"

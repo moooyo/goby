@@ -7,10 +7,11 @@ import type { AnalysisItem, AnalysisOverview, AnalysisProfile, AnalysisRunInput 
 // workflow and request boundaries, not detector accuracy or media execution.
 const stamp = '2026-09-21T00:00:00Z';
 const csrf = 'synthetic-analysis-csrf';
-const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20 };
+const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20,
+  IntroSkipper: { AnalysisPercent: 25, AnalysisLengthLimit: 10, MinimumIntroDuration: 15, MaximumIntroDuration: 120, MaximumFingerprintPointDifferences: 6, MaximumTimeSkip: 3.5, InvertedIndexShift: 2 } };
 const administrator = { Id: 'analysis-admin', Name: 'Analysis administrator', IsAdministrator: true, IsDisabled: false, HasPassword: true, CreatedAt: stamp };
 function overview(): AnalysisOverview {
-  return { Configuration: { Revision: '9007199254740993', Profile: { ...profile }, Defaults: { ...profile }, UpdatedAt: stamp }, Runtime: {
+  return { Configuration: { Revision: '9007199254740993', Profile: structuredClone(profile), Defaults: structuredClone(profile), UpdatedAt: stamp }, Runtime: {
     Configured: true, IntroAvailable: true, PreviewAvailable: true, Reasons: [],
     Cache: { ReadyEntries: 3, BuildingEntries: 1, PendingPublications: 1, Readers: 2, ReadyBytes: 4 * 2 ** 20, ReservedBytes: 2 ** 20, ControlBytes: 1024, TotalBytes: 5 * 2 ** 20 + 1024, MaxBytes: 128 * 2 ** 20 },
   } };
@@ -18,7 +19,7 @@ function overview(): AnalysisOverview {
 function item(): AnalysisItem {
   return { Id: 'episode-1', Name: 'Opening episode', Type: 'Episode', LibraryId: 'library-series', MediaSourceId: 'media-1', SourceRevision: 'source-current', Previews: [
     { Width: 320, Height: 180, Size: 32768, FrameCount: 12, Status: 'ready', FailureCode: '', UpdatedAt: stamp },
-  ], Detection: { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'qualified', Reasons: [], Suppressed: false, UpdatedAt: stamp,
+  ], Detection: { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'qualified', Reasons: [], IntroSkipperCandidate: null, Suppressed: false, UpdatedAt: stamp,
     Effective: { StartTicks: 100_000_000, EndTicks: 400_000_000, Provenance: 'Detected' },
     Candidate: { Interval: { StartTicks: 100_000_000, EndTicks: 400_000_000 }, GroupID: 'comparison-group', Status: 'qualified', Reasons: [], Metrics: {
       AudioAgreementPermille: 920, AudioInformativePermille: 750, AudioSimilarityPermille: 930, AudioSamples: 100, AudioDistinct: 40,
@@ -96,25 +97,103 @@ const test = base.extend<{ api: AnalysisAPI }>({ api: async ({ context, page }, 
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
 async function open(page: Page): Promise<void> { await page.goto('/admin/media/analysis'); await expect(page.getByRole('heading', { name: 'Media analysis', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'View analysis for Opening episode' })).toBeEnabled(); }
 
-test('configuration conflicts preserve preview edits and publication stays automatic', async ({ page, api }) => {
+test('configuration conflicts preserve preview and Intro Skipper edits', async ({ page, api }, testInfo) => {
   api.overview.Configuration.Profile.AutoPublishIntros = false;
   await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
   const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
   await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('1');
   await expect(configuration.getByRole('button', { name: 'Save analysis configuration' })).toBeDisabled(); expect(api.writes()).toHaveLength(0);
   await configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true }).fill('20');
+  await configuration.getByRole('textbox', { name: 'Episode audio to analyze (%)', exact: true }).fill('30');
+  await configuration.getByRole('button', { name: 'Advanced audio matching', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('intro-skipper-configuration-desktop.png'), animations: 'disabled' });
+  await configuration.getByRole('textbox', { name: 'Maximum match gap (seconds)', exact: true }).fill('3.75');
   await expect(configuration.getByRole('switch', { name: 'Automatically publish qualified detected intros' })).toHaveCount(0);
   api.overview.Configuration.Revision = '9007199254740995';
   await configuration.getByRole('button', { name: 'Save analysis configuration' }).click();
   await expect(configuration.getByText('Configuration changed.', { exact: true })).toBeVisible();
   await expect(configuration.getByRole('button', { name: 'Reload latest and keep draft' })).toBeVisible();
   await expect(configuration.getByRole('textbox', { name: 'Preview interval (seconds)', exact: true })).toHaveValue('20');
+  await expect(configuration.getByRole('textbox', { name: 'Episode audio to analyze (%)', exact: true })).toHaveValue('30');
+  await expect(configuration.getByRole('textbox', { name: 'Maximum match gap (seconds)', exact: true })).toHaveValue('3.75');
   await configuration.getByRole('button', { name: 'Reload latest and keep draft' }).click();
   await expect(configuration.getByText('Revision 9007199254740995.', { exact: false })).toBeVisible();
   await configuration.getByRole('button', { name: 'Save analysis configuration' }).click();
   await expect(configuration.getByText('Analysis configuration saved. New runs use this profile.')).toBeVisible();
   const writes = api.writes('/admin/v1/media-analysis/configuration'); expect(writes).toHaveLength(2);
-  expect(writes[1].body).toEqual({ Revision: '9007199254740995', Profile: { ...profile, PreviewIntervalSeconds: 20, AutoPublishIntros: true } });
+  expect(writes[1].body).toEqual({ Revision: '9007199254740995', Profile: { ...profile, PreviewIntervalSeconds: 20, AutoPublishIntros: true,
+    IntroSkipper: { ...profile.IntroSkipper, AnalysisPercent: 30, MaximumTimeSkip: 3.75 } } });
+});
+
+test('Intro Skipper controls validate ranges and expose server errors beside the field', async ({ page, api }) => {
+  await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
+  const minimum = configuration.getByRole('textbox', { name: 'Minimum intro duration (seconds)', exact: true });
+  const maximum = configuration.getByRole('textbox', { name: 'Maximum intro duration (seconds)', exact: true });
+  const save = configuration.getByRole('button', { name: 'Save analysis configuration', exact: true });
+  await minimum.fill('121');
+  await expect(minimum).toHaveAccessibleDescription('The minimum must not exceed the maximum intro duration.');
+  await expect(maximum).toHaveAccessibleDescription('The maximum must be at least the minimum intro duration.');
+  await expect(save).toBeDisabled();
+  await maximum.fill('121');
+  await configuration.getByRole('button', { name: 'Advanced audio matching', exact: true }).click();
+  const gap = configuration.getByRole('textbox', { name: 'Maximum match gap (seconds)', exact: true });
+  await gap.fill('30.1');
+  await expect(gap).toHaveAccessibleDescription('Use a number from 0 to 30.');
+  await expect(save).toBeDisabled();
+  await gap.fill('0');
+  await configuration.getByRole('button', { name: 'Advanced audio matching', exact: true }).click();
+  api.handlers.set('PUT /admin/v1/media-analysis/configuration', async (route) => json(route, { Error: { Code: 'invalid_input', Message: 'Check the media analysis request fields.', Fields: { 'Profile.IntroSkipper.MaximumTimeSkip': 'Check the matching gap for this profile.' } } }, 400));
+  await save.click();
+  await expect(gap).toBeVisible();
+  await expect(gap).toHaveAccessibleDescription('Check the matching gap for this profile.');
+  await expect(gap).toHaveValue('0');
+  api.handlers.delete('PUT /admin/v1/media-analysis/configuration');
+  await gap.fill(''); await gap.pressSequentially('3.25'); await expect(gap).toHaveValue('3.25'); await save.click();
+  await expect(configuration.getByText('Analysis configuration saved. New runs use this profile.')).toBeVisible();
+  expect(api.writes('/admin/v1/media-analysis/configuration')[1].body).toEqual({ Revision: '9007199254740993', Profile: { ...profile,
+    IntroSkipper: { ...profile.IntroSkipper, MinimumIntroDuration: 121, MaximumIntroDuration: 121, MaximumTimeSkip: 3.25 } } });
+});
+
+test('Intro Skipper drafts, defaults, and keyboard disclosure work on a narrow screen', async ({ page, api }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  api.overview.Configuration.Profile.IntroSkipper = { ...profile.IntroSkipper, AnalysisPercent: 30, MaximumTimeSkip: 4.25 };
+  await open(page); await page.getByRole('button', { name: 'Configure', exact: true }).click();
+  const configuration = page.getByRole('dialog', { name: 'Analysis configuration', exact: true });
+  const percent = configuration.getByRole('textbox', { name: 'Episode audio to analyze (%)', exact: true });
+  const advanced = configuration.getByRole('button', { name: 'Advanced audio matching', exact: true });
+  const gap = configuration.getByRole('textbox', { name: 'Maximum match gap (seconds)', exact: true });
+  await expect(percent).toHaveValue('30'); await expect(gap).not.toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('intro-skipper-configuration-mobile.png'), animations: 'disabled' });
+  await advanced.focus(); await page.keyboard.press('Enter');
+  await expect(advanced).toHaveAttribute('aria-expanded', 'true'); await expect(gap).toHaveValue('4.25');
+  await gap.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('intro-skipper-configuration-mobile-advanced.png'), animations: 'disabled' });
+  await gap.fill('5.5'); await configuration.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('button', { name: 'Configure •', exact: true }).click();
+  await advanced.click();
+  await expect(gap).toHaveValue('5.5');
+  await configuration.getByRole('button', { name: 'Discard draft', exact: true }).click();
+  await expect(gap).toHaveValue('4.25');
+  await configuration.getByRole('button', { name: 'Use default profile', exact: true }).click();
+  await expect(percent).toHaveValue('25'); await expect(gap).toHaveValue('3.5');
+  expect(await configuration.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await configuration.getByRole('button', { name: 'Save analysis configuration', exact: true }).click();
+  await expect(configuration.getByText('Analysis configuration saved. New runs use this profile.')).toBeVisible();
+  expect(api.writes('/admin/v1/media-analysis/configuration')).toHaveLength(1);
+  expect(api.writes('/admin/v1/media-analysis/configuration')[0].body).toEqual({ Revision: '9007199254740993', Profile: profile });
+});
+
+test('published Intro Skipper candidates display the playback interval without visual metrics', async ({ page, api }) => {
+  api.item.Detection.Candidate = null;
+  api.item.Detection.IntroSkipperCandidate = { Interval: { StartTicks: 100_000_000, EndTicks: 400_000_000 }, UpstreamCommit: '6e0cb179007ac4c16cd9f358e9a617e791e9bf06',
+    Support: [1, 2].map((index) => ({ EpisodeKey: `episode-${index}`, SourceKey: `source-${index}`, ContentIdentity: `content-${index}`, AlgorithmProfile: 'intro-skipper-audio', Interval: { StartTicks: 100_000_000, EndTicks: 400_000_000 } })) };
+  await open(page); await page.getByRole('button', { name: 'View analysis for Opening episode', exact: true }).click();
+  const detail = page.getByRole('dialog', { name: 'Opening episode', exact: true });
+  await expect(detail.getByText('Playback intro', { exact: true })).toBeVisible();
+  await expect(detail.getByText('0:10.00–0:40.00', { exact: true })).toBeVisible();
+  await expect(detail.getByText(/Supporting episodes|similarity|visual coverage|confidence/i)).toHaveCount(0);
+  expect(api.writes()).toHaveLength(0);
 });
 
 test('seek previews have a library automation entry instead of manual generation controls', async ({ page, api }) => {

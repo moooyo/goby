@@ -16,7 +16,7 @@ const seriesLibrary = { ...library, Id: 'c'.repeat(32), Name: 'TV series', Colle
 const analysisItem: AnalysisItem = {
   Id: 'episode-one', Name: 'Opening episode', Type: 'Episode', LibraryId: seriesLibrary.Id, MediaSourceId: 'source-one', SourceRevision: 'source-revision-one',
   Detection: { ItemId: 'episode-one', Revision: '1', ManualRevision: '0', SourceRevision: 'source-revision-one', Status: 'qualified', Reasons: [],
-    Candidate: null, Effective: { StartTicks: 100_000_000, EndTicks: 400_000_000, Provenance: 'Detected' }, Suppressed: false, UpdatedAt: stamp },
+    Candidate: null, IntroSkipperCandidate: null, Effective: { StartTicks: 100_000_000, EndTicks: 400_000_000, Provenance: 'Detected' }, Suppressed: false, UpdatedAt: stamp },
   Previews: [{ Width: 320, Height: 180, Size: 32768, FrameCount: 12, Status: 'ready', FailureCode: '', UpdatedAt: stamp }],
 };
 
@@ -120,7 +120,8 @@ class DashboardAPI {
         if (path === '/admin/v1/backups/status') return json(route, { Available: true, UnavailableReason: '', RestoreAvailable: true, RestoreUnavailableReason: '', Busy: false, ActiveOperationId: '', GenerationRevision: '1', Limits: { MaxBackupBytes: '1073741824', MaxStoredBytes: '4294967296', MaxBackups: 10, MinPassphraseBytes: 12, MaxPassphraseBytes: 1024 }, Storage: { Bytes: '0', Objects: 0 }, Rollback: { Available: false, MustReplace: false, CreatedAt: null, ServerName: '', Generation: '', UnavailableReason: '' } });
         if (path === '/admin/v1/backups' || path === '/admin/v1/backup-operations') return json(route, paged([]));
         if (path === '/admin/v1/media-analysis') {
-          const profile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20 };
+          const profile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20,
+            IntroSkipper: { AnalysisPercent: 25, AnalysisLengthLimit: 10, MinimumIntroDuration: 15, MaximumIntroDuration: 120, MaximumFingerprintPointDifferences: 6, MaximumTimeSkip: 3.5, InvertedIndexShift: 2 } };
           return json(route, { Configuration: { Revision: '1', Profile: profile, Defaults: profile, UpdatedAt: stamp }, Runtime: { Configured: true, IntroAvailable: true, PreviewAvailable: true, Reasons: [], Cache: { ReadyEntries: 3, BuildingEntries: 0, PendingPublications: 0, Readers: 0, ReadyBytes: 4 * 2 ** 20, ReservedBytes: 0, ControlBytes: 1024, TotalBytes: 4 * 2 ** 20 + 1024, MaxBytes: 128 * 2 ** 20 } } });
         }
         if (path === '/admin/v1/media-analysis/items') return json(route, paged(!url.searchParams.get('LibraryId') || url.searchParams.get('LibraryId') === seriesLibrary.Id ? [analysisItem] : []));
@@ -214,6 +215,7 @@ for (const viewport of [{ width: 1440, height: 834 }, { width: 375, height: 812 
   await page.setViewportSize(viewport);
   await page.goto('/admin/media/analysis'); await ready(page, destinations[4]);
   const automatic = page.getByRole('region', { name: 'Automatic intro detection', exact: true });
+  const automation = page.getByRole('region', { name: 'Automatic media processing', exact: true });
   await expect(automatic).toContainText('If no intro is found, playback stays unchanged.');
   await expect(page.getByRole('button', { name: /Analyze library intros|Analyze selected episodes/ })).toHaveCount(0);
   await expect(page.getByRole('switch', { name: 'Automatically publish qualified detected intros', exact: true })).toHaveCount(0);
@@ -230,10 +232,10 @@ for (const viewport of [{ width: 1440, height: 834 }, { width: 375, height: 812 
   await noOverflow(page);
   await page.screenshot({ path: testInfo.outputPath(`media-analysis-result-${viewport.width === 1440 ? 'desktop' : 'mobile'}.png`), animations: 'disabled' });
   await result.getByRole('button', { name: 'Close', exact: true }).click();
-  await automatic.getByRole('button', { name: 'Open library settings', exact: true }).click(); await ready(page, destinations[1]);
+  await automation.getByRole('button', { name: 'Open library settings', exact: true }).click(); await ready(page, destinations[1]);
   await expect(page).toHaveURL(/\/admin\/media\/libraries$/);
   await page.getByRole('tab', { name: 'Media analysis', exact: true }).click(); await ready(page, destinations[4]);
-  await automatic.getByRole('button', { name: 'View intro tasks', exact: true }).click(); await ready(page, destinations[9]);
+  await automation.getByRole('button', { name: 'View background tasks', exact: true }).click(); await ready(page, destinations[9]);
   await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
   expect(api.writes()).toEqual([]);
 });

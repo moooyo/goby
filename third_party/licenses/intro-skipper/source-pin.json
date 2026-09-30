@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/intro-skipper/intro-skipper",
+  "commit": "6e0cb179007ac4c16cd9f358e9a617e791e9bf06",
+  "release": "12.0.4.0",
+  "license": "GPL-3.0-only",
+  "derivedPackage": "internal/introskipper",
+  "sourceFiles": [
+    "IntroSkipper/Analyzers/ChromaprintAnalyzer.cs",
+    "IntroSkipper/Configuration/PluginConfiguration.cs",
+    "IntroSkipper/Data/ChromaprintConstants.cs",
+    "IntroSkipper/Data/Segment.cs",
+    "IntroSkipper/Data/TimeRange.cs",
+    "IntroSkipper/Data/TickConversions.cs",
+    "IntroSkipper/Manager/QueueManager.cs",
+    "LICENSE"
+  ],
+  "scope": "Introduction raw-candidate matching after caller admission and raw fingerprint extraction",
+  "automaticBoundaryAdjustmentIncluded": false,
+  "intrinsicFiveSecondStartSnapIncluded": true,
+  "upstreamDefaultsPreserved": true,
+  "executionBoundsAdded": true
+}

@@ -101,7 +101,7 @@ export TMPDIR="$work"
 
 ffmpeg_flags=(
   --enable-gpl --enable-libx264 --enable-libx265 --enable-libaom
-  --enable-libass --enable-libmp3lame --enable-libopus --enable-libvorbis
+  --enable-libass --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-chromaprint
   --enable-libzimg --enable-libplacebo --enable-vulkan --enable-libdrm
   --enable-vaapi --enable-libvpl --enable-ffnvcodec --enable-cuvid --enable-nvenc
   --disable-debug --disable-doc --disable-ffplay
@@ -166,7 +166,7 @@ if [[ -e "$GO_PREFIX" || -L "$GO_PREFIX" ]]; then
 fi
 
 packages=(
-  build-essential ca-certificates curl git gnupg glslang-dev libaom-dev libass-dev
+  build-essential ca-certificates curl git gnupg glslang-dev libaom-dev libass-dev libchromaprint-dev
   libdrm-dev liblcms2-dev libmp3lame-dev libnuma-dev libopus-dev libssl-dev
   libva-dev libvorbis-dev libvpl-dev libvulkan-dev libx264-dev libx265-dev libzimg-dev
   meson nasm ninja-build patch patchelf pkg-config python3 python3-jinja2 python3-markupsafe
@@ -331,7 +331,7 @@ if (( build_ffmpeg )); then
     printf 'nv_codec_commit=%s\nnv_codec_tag_signature=unsigned\n' "$NV_CODEC_COMMIT"
     printf 'nv_codec_archive_sha256=%s\n' "$(git -C "$work/nv-codec-headers" archive HEAD | sha256sum | cut -d ' ' -f 1)"
   } > "$evidence/sources.txt"
-  for dependency in aom x264 x265 libass libdrm lcms2 opus vorbis vorbisenc libva vpl vulkan zimg ffnvcodec libplacebo; do
+  for dependency in aom x264 x265 libass libchromaprint libdrm lcms2 opus vorbis vorbisenc libva vpl vulkan zimg ffnvcodec libplacebo; do
     dependency_version=$(pkg-config --modversion "$dependency")
     printf '%s\t%s\n' "$dependency" "$dependency_version"
   done > "$evidence/pkg-config-versions.tsv"
@@ -383,7 +383,7 @@ if (( build_ffmpeg )); then
     [[ ! -f "$license" ]] || cp "$license" "$staged/metadata/licenses/libplacebo/"
   done
   python3 "$RUNTIME_HELPER" "$staged" \
-    --required-library libvulkan.so.1 --required-library libplacebo.so.351
+    --required-library libvulkan.so.1 --required-library libplacebo.so.351 --required-library libchromaprint.so.1
   # Verify the relocated closure without depending on the temporary build libs.
   env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -buildconf > "$staged/metadata/ffmpeg-buildconf.txt" 2>&1
   for flag in "${ffmpeg_flags[@]}"; do
@@ -396,6 +396,15 @@ if (( build_ffmpeg )); then
   env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -hide_banner -encoders > "$staged/metadata/encoders.txt" 2>&1
   env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -hide_banner -filters > "$staged/metadata/filters.txt" 2>&1
   env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -hide_banner -hwaccels > "$staged/metadata/hwaccels.txt" 2>&1
+  env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -hide_banner -muxers > "$staged/metadata/muxers.txt" 2>&1
+  grep -Eq '[[:space:]]chromaprint[[:space:]]' "$staged/metadata/muxers.txt"
+  env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -hide_banner -h muxer=chromaprint \
+    > "$staged/metadata/chromaprint-options.txt" 2>&1
+  grep -Eq '[[:space:]]-?fp_format[[:space:]]' "$staged/metadata/chromaprint-options.txt"
+  env -u LD_LIBRARY_PATH "$staged/bin/ffmpeg" -hide_banner -loglevel error \
+    -f lavfi -i 'sine=frequency=440:sample_rate=48000' -t 6 -ac 2 \
+    -f chromaprint -fp_format raw "$staged/metadata/chromaprint.raw"
+  [[ -s "$staged/metadata/chromaprint.raw" ]]
   for encoder in libx264 libx265 libaom-av1 h264_vaapi hevc_vaapi av1_vaapi; do
     grep -Eq "[[:space:]]$encoder[[:space:]]" "$staged/metadata/encoders.txt"
   done

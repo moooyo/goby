@@ -93,8 +93,8 @@ func TestPostgreSQLAnalysisRefinementPayloadPreservesVersionedBoundsThroughRawRe
 		}
 	}
 	archive, facts := sourceArchive(t, ctx, source, options)
-	if facts.SchemaVersion != 53 {
-		t.Fatalf("the refinement archive is not bound to schema 53: %d", facts.SchemaVersion)
+	if facts.SchemaVersion != currentRecoveryVersion(t) {
+		t.Fatalf("the refinement archive is not bound to the current schema: %d", facts.SchemaVersion)
 	}
 	if _, err := Restore(ctx, source, target, archive, facts, options); err != nil {
 		t.Fatalf("restore the actual large refinement cache through the verified archive: %v", err)

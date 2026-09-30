@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { analysisIntroStatus, analysisDraft, analysisRevision, parseAnalysisDraft, validAnalysisConfiguration, validAnalysisDetection, validAnalysisItems, validAnalysisOverview, validAnalysisProfile } from './mediaAnalysis.ts';
-import type { AnalysisCandidate, AnalysisDetection, AnalysisItem, AnalysisMetrics, AnalysisProfile } from './mediaAnalysis.ts';
+import type { AnalysisCandidate, AnalysisDetection, AnalysisItem, AnalysisMetrics, AnalysisProfile, IntroSkipperCandidate } from './mediaAnalysis.ts';
 
-const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20 };
+const profile: AnalysisProfile = { AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80, MaxSourceBytes: 128 * 2 ** 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 * 2 ** 20,
+  IntroSkipper: { AnalysisPercent: 25, AnalysisLengthLimit: 10, MinimumIntroDuration: 15, MaximumIntroDuration: 120, MaximumFingerprintPointDifferences: 6, MaximumTimeSkip: 3.5, InvertedIndexShift: 2 } };
 const stamp = '2026-09-21T00:00:00Z';
 function detection(): AnalysisDetection {
-  return { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'not_analyzed', Reasons: ['not_analyzed'], Candidate: null, Effective: null, Suppressed: false, UpdatedAt: '0001-01-01T00:00:00Z' };
+  return { ItemId: 'episode-1', Revision: '9007199254740993', ManualRevision: '9007199254740994', SourceRevision: 'source-current', Status: 'not_analyzed', Reasons: ['not_analyzed'], Candidate: null, IntroSkipperCandidate: null, Effective: null, Suppressed: false, UpdatedAt: '0001-01-01T00:00:00Z' };
 }
 function item(): AnalysisItem { return { Id: 'episode-1', Name: 'Pilot', Type: 'Episode', LibraryId: 'library-1', MediaSourceId: 'media-source-1', SourceRevision: 'source-current', Detection: detection(), Previews: [] }; }
 function candidate(): AnalysisCandidate {
@@ -20,7 +21,7 @@ function candidate(): AnalysisCandidate {
   } };
 }
 
-test('processing edits keep exact values and always publish reliable intros', () => {
+test('processing edits keep exact values and retain automatic publication', () => {
   const value = { ...profile, AutoPublishIntros: false, MaxSourceBytes: 1, PreviewQuality: 95, FeatureCacheMaxBytes: 512 * 2 ** 20 };
   const draft = analysisDraft(value);
   assert.equal('AutoPublishIntros' in draft, false);
@@ -40,6 +41,46 @@ test('processing bounds reject empty, fractional, exponential and out-of-range e
   }
   assert.equal(validAnalysisProfile({ ...profile, AutoPublishIntros: null }), false);
   assert.equal(validAnalysisProfile({ ...profile, PreviewQuality: '80' }), false);
+});
+
+test('Intro Skipper fields retain decimal gaps and never mutate the saved profile', () => {
+  const draft = analysisDraft(profile);
+  assert.equal(draft.IntroSkipper.MaximumTimeSkip, '3.5');
+  draft.IntroSkipper.MaximumTimeSkip = '3.75';
+  draft.IntroSkipper.MaximumFingerprintPointDifferences = '0';
+  draft.IntroSkipper.InvertedIndexShift = '32';
+  const parsed = parseAnalysisDraft(draft);
+  assert.deepEqual(parsed.errors, {});
+  assert.deepEqual(parsed.profile?.IntroSkipper, { ...profile.IntroSkipper, MaximumTimeSkip: 3.75, MaximumFingerprintPointDifferences: 0, InvertedIndexShift: 32 });
+  assert.equal(profile.IntroSkipper.MaximumTimeSkip, 3.5);
+  assert.equal(validAnalysisProfile(parsed.profile), true);
+});
+
+test('Intro Skipper rejects incomplete contracts and unsupported numeric values', () => {
+  assert.equal(validAnalysisProfile({ ...profile, IntroSkipper: undefined }), false);
+  for (const key of Object.keys(profile.IntroSkipper)) {
+    assert.equal(validAnalysisProfile({ ...profile, IntroSkipper: { ...profile.IntroSkipper, [key]: undefined } }), false, key);
+  }
+  for (const [key, values] of Object.entries({ AnalysisPercent: ['', '0', '51', '2.5', '2e1'], AnalysisLengthLimit: ['0', '11'], MinimumIntroDuration: ['0', '601'], MaximumIntroDuration: ['0', '601'], MaximumFingerprintPointDifferences: ['-1', '33'], MaximumTimeSkip: ['', '-1', '30.01', 'NaN', 'Infinity', '3e0', '3,5'], InvertedIndexShift: ['-1', '33'] })) {
+    for (const value of values) {
+      const result = parseAnalysisDraft({ ...analysisDraft(profile), IntroSkipper: { ...analysisDraft(profile).IntroSkipper, [key]: value } });
+      assert.equal(result.profile, undefined, `${key}=${value}`);
+      assert.ok(result.errors[`IntroSkipper.${key}` as keyof typeof result.errors]);
+    }
+  }
+  for (const value of [NaN, Infinity, -Infinity, '3.5', -1, 30.1]) assert.equal(validAnalysisProfile({ ...profile, IntroSkipper: { ...profile.IntroSkipper, MaximumTimeSkip: value } }), false);
+});
+
+test('Intro Skipper minimum and maximum duration errors identify both fields', () => {
+  const draft = analysisDraft(profile);
+  draft.IntroSkipper.MinimumIntroDuration = '121';
+  const invalid = parseAnalysisDraft(draft);
+  assert.equal(invalid.profile, undefined);
+  assert.ok(invalid.errors['IntroSkipper.MinimumIntroDuration']);
+  assert.ok(invalid.errors['IntroSkipper.MaximumIntroDuration']);
+  assert.equal(validAnalysisProfile({ ...profile, IntroSkipper: { ...profile.IntroSkipper, MinimumIntroDuration: 121 } }), false);
+  draft.IntroSkipper.MaximumIntroDuration = '121';
+  assert.deepEqual(parseAnalysisDraft(draft).errors, {});
 });
 
 test('configuration and decision revisions remain exact decimal strings across the safe-number boundary', () => {
@@ -88,4 +129,19 @@ test('current candidates require finite visual anchor evidence while stale empty
   assert.equal(validAnalysisDetection({ ...current, Candidate: { ...current.Candidate, Metrics: incomplete } }), false);
   assert.equal(validAnalysisDetection({ ...current, Candidate: { ...current.Candidate, Metrics: { ...current.Candidate.Metrics, VisualAnchorCount: Infinity } } }), false);
   assert.equal(validAnalysisDetection({ ...detection(), Status: 'stale', Reasons: ['algorithm_changed'] }), true);
+});
+
+test('Intro Skipper candidates use their actual audio pair without visual evidence or implied publication', () => {
+  const candidate: IntroSkipperCandidate = { Interval: { StartTicks: 20_000_000, EndTicks: 200_000_000 }, UpstreamCommit: '6e0cb179007ac4c16cd9f358e9a617e791e9bf06',
+    Support: [1, 2].map((index) => ({ EpisodeKey: `episode-${index}`, SourceKey: `source-${index}`, ContentIdentity: `content-${index}`, AlgorithmProfile: 'intro-skipper-audio', Interval: { StartTicks: 20_000_000, EndTicks: 200_000_000 } })) };
+  const current = { ...detection(), Status: 'qualified', IntroSkipperCandidate: candidate };
+  assert.equal(validAnalysisDetection(current), true);
+  assert.equal(analysisIntroStatus({ ...item(), Detection: current }), 'No intro detected');
+  assert.equal(analysisIntroStatus({ ...item(), Detection: { ...current, Effective: { ...candidate.Interval, Provenance: 'Detected' } } }), 'Intro available');
+  assert.equal(validAnalysisDetection({ ...current, IntroSkipperCandidate: { ...candidate, Support: [] } }), false);
+  assert.equal(validAnalysisDetection({ ...current, IntroSkipperCandidate: { ...candidate, Support: [candidate.Support[0], candidate.Support[0]] } }), false);
+  assert.equal(validAnalysisDetection({ ...current, IntroSkipperCandidate: { ...candidate, UpstreamCommit: '' } }), false);
+  assert.equal(validAnalysisDetection({ ...current, IntroSkipperCandidate: { ...candidate, Support: candidate.Support.map((support) => ({ ...support, AlgorithmProfile: '' })) } }), false);
+  assert.equal(validAnalysisDetection({ ...current, Candidate: {} }), false);
+  assert.equal(validAnalysisDetection({ ...detection(), IntroSkipperCandidate: undefined }), false);
 });

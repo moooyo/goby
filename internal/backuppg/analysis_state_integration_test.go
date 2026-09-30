@@ -5,6 +5,7 @@ package backuppg
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,21 +13,48 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moooyo/goby/internal/introdetect"
 	"github.com/moooyo/goby/internal/library"
 )
 
+// The retired v5 detector package remains frozen. Keep the execution envelope
+// frozen here as well so archive fixtures cannot acquire native runtime fields.
+type analysisArchiveV5Execution struct {
+	Version             int
+	Available           bool
+	UnavailableReason   string
+	FFmpegSHA256        string
+	FFprobeSHA256       string
+	FingerprintSHA256   string
+	DetectorVersion     string
+	DetectorOptions     introdetect.Options
+	VisualIntervalTicks int64
+	PreviewProfile      string
+	PreviewWidths       []int
+	IntroProfile        string
+}
+
 func seedAnalysisArchiveState(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
-	profile := library.DefaultAnalysisProfile()
-	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"}
+	// This seed is also used by schema 50 historical archive tests. Keep its
+	// exact v5 wire shape independent of the current runtime and profile fields.
+	profile := struct {
+		AutoPublishIntros      bool
+		PreviewIntervalSeconds int
+		PreviewQuality         int
+		MaxSourceBytes         int64
+		MaxItemRuntimeSeconds  int
+		FeatureCacheMaxBytes   int64
+	}{true, 10, 80, 128 << 30, 1200, 128 << 20}
+	execution := analysisArchiveV5Execution{Version: 5, UnavailableReason: "not_configured"}
 	profileRaw, _ := json.Marshal(profile)
 	executionRaw, _ := json.Marshal(execution)
 	bound, _ := json.Marshal(struct {
 		Version         int
 		Revision, Epoch int64
-		Profile         library.AnalysisProfile
-		Execution       library.AnalysisExecutionProfile
-	}{library.AnalysisExecutionProfileVersion, 1, 1, profile, execution})
+		Profile         json.RawMessage
+		Execution       json.RawMessage
+	}{5, 1, 1, profileRaw, executionRaw})
 	digest := sha256.Sum256(bound)
 	fingerprint := hex.EncodeToString(digest[:])
 	run := strings.Repeat("b", 32)
@@ -63,6 +91,13 @@ func seedAnalysisArchiveState(t *testing.T, ctx context.Context, pool *pgxpool.P
 	if err != nil {
 		t.Fatal("encode bounded retained feature evidence")
 	}
+	// Schema 50 admitted codecs 1 and 2. This empty feature fixture contains no
+	// refinement, so retain its original v2 header instead of the current codec.
+	if len(payload) < 60 || binary.LittleEndian.Uint16(payload[4:6]) != 3 {
+		t.Fatal("the legacy feature fixture requires an explicit codec update")
+	}
+	payload = append(payload[:56], payload[60:]...)
+	binary.LittleEndian.PutUint16(payload[4:6], 2)
 	key := analysisStateFeatureKey("analysis-history-item", "retired-source", fingerprint)
 	if _, err := pool.Exec(ctx, `INSERT INTO analysis_feature_cache(cache_key,item_id,source_revision,profile_fingerprint,content_sha256,algorithm_profile,duration_ticks,payload,bytes)
 		VALUES($1,'analysis-history-item','retired-source',$2,$3,$4,300000000,$5,$6)`, key, fingerprint, content, feature.AlgorithmProfile, payload, len(payload)); err != nil {

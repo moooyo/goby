@@ -14,7 +14,8 @@ import (
 	"github.com/moooyo/goby/internal/tasks"
 )
 
-const analysisConfigurationBodyForTest = `{"Revision":"1","Profile":{"AutoPublishIntros":true,"PreviewIntervalSeconds":10,"PreviewQuality":80,"MaxSourceBytes":137438953472,"MaxItemRuntimeSeconds":1200,"FeatureCacheMaxBytes":134217728}}`
+const analysisIntroSkipperBodyForTest = `{"AnalysisPercent":25,"AnalysisLengthLimit":10,"MinimumIntroDuration":15,"MaximumIntroDuration":120,"MaximumFingerprintPointDifferences":6,"MaximumTimeSkip":3.5,"InvertedIndexShift":2}`
+const analysisConfigurationBodyForTest = `{"Revision":"1","Profile":{"AutoPublishIntros":true,"PreviewIntervalSeconds":10,"PreviewQuality":80,"MaxSourceBytes":137438953472,"MaxItemRuntimeSeconds":1200,"FeatureCacheMaxBytes":134217728,"IntroSkipper":` + analysisIntroSkipperBodyForTest + `}}`
 const analysisRunBodyForTest = `{"Kind":"intro","RequestId":"retry-1","LibraryIds":["library-b","library-a"],"ItemIds":["item-b","item-a"],"Force":true}`
 const analysisDecisionBodyForTest = `{"Revision":"0","SourceRevision":"intro-source-v1-current","ManualRevision":"0","Action":"reset"}`
 

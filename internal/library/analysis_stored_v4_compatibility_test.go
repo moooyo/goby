@@ -9,8 +9,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/moooyo/goby/internal/introdetect"
 )
 
 func analysisV4Literal(t *testing.T, name string) []byte {
@@ -94,19 +92,20 @@ func TestStoredAnalysisV4AdmissionPreservesCanonicalFingerprints(t *testing.T) {
 				!errors.Is(ValidateAnalysisExecutionProfile(execution), ErrInvalidInput) {
 				t.Fatal("historical execution acquired current worker authority")
 			}
-			// New admission uses a new identity even with the same managed
-			// settings, tools and extraction profile; old feature keys miss.
+			// Current admission has its own native execution and settings
+			// identity; historical feature keys cannot acquire new semantics.
 			execution.Version = AnalysisExecutionProfileVersion
 			if execution.IntroProfile != "" {
-				execution.DetectorVersion = introdetect.Version
+				execution.DetectorVersion = analysisAdmissionTestIntroExecution().DetectorVersion
 				if !errors.Is(ValidateAnalysisExecutionProfile(execution), ErrInvalidInput) {
 					t.Fatal("changing version labels made frozen v4 Options executable")
 				}
-				execution.DetectorOptions = introdetect.DefaultOptions()
+				execution = analysisAdmissionTestIntroExecution()
 			}
 			if err := ValidateAnalysisExecutionProfile(execution); err != nil {
 				t.Fatal(err)
 			}
+			profile.IntroSkipper = DefaultAnalysisProfile().IntroSkipper
 			current := analysisAdmissionFingerprint(profile, execution, 7, 3)
 			source := AnalysisSource{ItemID: "same-item", SourceRevision: "same-source"}
 			if current == fixture.fingerprint || analysisFeatureCacheKey(source, current) == analysisFeatureCacheKey(source, fixture.fingerprint) {

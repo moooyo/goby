@@ -9,7 +9,7 @@ import (
 	"github.com/moooyo/goby/internal/analysiscache"
 	"github.com/moooyo/goby/internal/config"
 	"github.com/moooyo/goby/internal/identity"
-	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 )
@@ -68,7 +68,8 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 	}
 	r.cache = cache
 	r.extractor = media.AnalysisExtractor{FFmpegPath: server.cfg.FFmpegPath, FFprobePath: server.cfg.FFprobePath,
-		FingerprintPath: r.configuration.FingerprintPath, ExpectedFingerprintSHA256: r.configuration.FingerprintSHA256}
+		FingerprintPath: r.configuration.FingerprintPath, ExpectedFingerprintSHA256: r.configuration.FingerprintSHA256,
+		IntroFFmpegPath: r.configuration.IntroFFmpegPath, ExpectedIntroFFmpegSHA256: r.configuration.IntroFFmpegSHA256}
 	availability, err := r.extractor.Availability(ctx)
 	if err != nil {
 		cancel()
@@ -78,6 +79,7 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 	r.extractor.FFmpegPath, r.extractor.ExpectedFFmpegSHA256 = availability.FFmpegPath, availability.FFmpegSHA256
 	r.extractor.FFprobePath, r.extractor.ExpectedFFprobeSHA256 = availability.FFprobePath, availability.FFprobeSHA256
 	r.extractor.FingerprintPath, r.extractor.ExpectedFingerprintSHA256 = availability.FingerprintPath, availability.FingerprintSHA256
+	r.extractor.IntroFFmpegPath, r.extractor.ExpectedIntroFFmpegSHA256 = availability.IntroFFmpegPath, availability.IntroFFmpegSHA256
 	r.setUnavailableProfiles("dependencies_unavailable")
 	if availability.PreviewAvailable {
 		r.profiles[library.TaskPreviewGenerationKey] = library.AnalysisExecutionProfile{
@@ -85,18 +87,17 @@ func newMediaAnalysisRuntime(ctx context.Context, server *Server) (*mediaAnalysi
 			FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256,
 			PreviewProfile: media.PreviewAnalysisProfile, PreviewWidths: []int{240, 320, 400}}
 	}
-	if availability.AudioAvailable && availability.VisualAvailable {
-		profile, err := media.IntroAlgorithmProfile(availability, media.TicksPerSecond/2)
+	if availability.IntroSkipperAvailable {
+		profile, err := media.IntroSkipperAlgorithmProfile(availability)
 		if err != nil {
 			cancel()
 			return nil, errors.Join(err, cache.Close(context.Background()))
 		}
 		r.profiles[library.TaskIntroAnalysisKey] = library.AnalysisExecutionProfile{
 			Version: library.AnalysisExecutionProfileVersion, Available: true,
-			FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256,
-			FingerprintSHA256: availability.FingerprintSHA256, DetectorVersion: introdetect.Version,
-			DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2,
-			IntroProfile: profile + analysisStreamSelectionProfile}
+			FFmpegSHA256:      availability.IntroFFmpegSHA256,
+			FingerprintSHA256: availability.IntroFFmpegSHA256, DetectorVersion: introskipper.Version,
+			IntroSkipperOptions: introskipper.DefaultOptions(), IntroProfile: profile}
 	}
 	return r, nil
 }
@@ -184,7 +185,7 @@ func (r *mediaAnalysisRuntime) Status() adminMediaAnalysisRuntimeStatus {
 		result.Reasons = append(result.Reasons, "not_configured")
 	} else {
 		seen := make(map[string]bool)
-		for _, reason := range []string{r.availability.AudioReason, r.availability.VideoReason, introFailure, previewFailure} {
+		for _, reason := range []string{r.availability.IntroSkipperReason, r.availability.VideoReason, introFailure, previewFailure} {
 			if reason != "" && !seen[reason] {
 				result.Reasons = append(result.Reasons, reason)
 				seen[reason] = true

@@ -66,7 +66,7 @@ mkdir "$work/ffmpeg-build"
 cd "$work/ffmpeg-build"
 "$work/ffmpeg-9.0.1/configure" --prefix=/opt/ffmpeg/9.0.1 \
   --enable-gpl --enable-libx264 --enable-libx265 --enable-libaom --enable-libzimg \
-  --enable-libass --enable-libmp3lame \
+  --enable-libass --enable-libmp3lame --enable-chromaprint \
   --enable-libopus --enable-libvorbis --enable-vaapi --enable-libvpl \
   --enable-ffnvcodec --enable-cuvid --enable-nvenc \
   --disable-debug --disable-doc --disable-ffplay > "$evidence/ffmpeg-configure.txt" 2>&1
@@ -78,6 +78,10 @@ python3 "$progress_harness/run-native-regression.py" \
   --baseline "$work/ffmpeg-baseline" --candidate "$work/ffmpeg-9.0.1" --build "$work/ffmpeg-build" \
   --binaries "$work/progress-regression-binaries" --evidence "$evidence/progress-regression"
 make install-progs install-data
+pkg-config --modversion libchromaprint > "$evidence/chromaprint-version.txt"
+cp /usr/share/doc/libchromaprint1/copyright "$evidence/licenses/chromaprint.copyright"
+/opt/ffmpeg/9.0.1/bin/ffmpeg -hide_banner -muxers > "$evidence/ffmpeg-muxers.txt" 2>&1
+grep -Eq '[[:space:]]chromaprint[[:space:]]' "$evidence/ffmpeg-muxers.txt"
 cp ffbuild/config.mak "$evidence/ffmpeg-config.mak"
 cp "$work/ffmpeg-9.0.1"/COPYING.* "$work/ffmpeg-9.0.1/LICENSE.md" "$evidence/licenses/"
 cp "$work/ffmpeg.tar.xz" "$work/ffmpeg.tar.xz.asc" "$work/ffmpeg-devel.asc" \

@@ -29,9 +29,11 @@ var (
 // cache publication, retention and application of any detected boundaries.
 type AnalysisExtractor struct {
 	FFmpegPath                string
+	IntroFFmpegPath           string
 	FFprobePath               string
 	FingerprintPath           string
 	ExpectedFFmpegSHA256      string
+	ExpectedIntroFFmpegSHA256 string
 	ExpectedFFprobeSHA256     string
 	ExpectedFingerprintSHA256 string
 	Limits                    AnalysisLimits

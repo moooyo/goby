@@ -99,6 +99,43 @@ func TestAnalysisConfigurationConcurrentCASHasOneWinner(t *testing.T) {
 	}
 }
 
+func TestAnalysisConfigurationIntroSkipperOptionsPersistWithCAS(t *testing.T) {
+	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+	actor := metadataEditTestActor(t, ctx, pool, "analysis-intro-skipper-editor")
+	initial, err := store.GetAnalysisConfiguration(ctx, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile := initial.Profile
+	profile.IntroSkipper.AnalysisPercent = 30
+	profile.IntroSkipper.MaximumTimeSkip = 2.75
+	profile.IntroSkipper.InvertedIndexShift = 0
+	changed, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: initial.Revision, Profile: profile})
+	if err != nil || changed.Revision != "2" || changed.Profile != profile || changed.Defaults != initial.Defaults {
+		t.Fatalf("upstream options did not produce one durable configuration revision: %+v %v", changed, err)
+	}
+	read, err := store.GetAnalysisConfiguration(ctx, actor)
+	if err != nil || !reflect.DeepEqual(read, changed) {
+		t.Fatalf("upstream options were lost after reloading the configuration: %+v %v", read, err)
+	}
+	unchanged, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: changed.Revision, Profile: profile})
+	if err != nil || !reflect.DeepEqual(unchanged, changed) {
+		t.Fatalf("identical upstream options changed revision or timestamp: %+v %v", unchanged, err)
+	}
+	if _, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: initial.Revision, Profile: initial.Profile}); !errors.Is(err, ErrAnalysisConflict) {
+		t.Fatalf("a stale editor overwrote the upstream options: %v", err)
+	}
+	invalid := profile
+	invalid.IntroSkipper.MaximumIntroDuration = invalid.IntroSkipper.MinimumIntroDuration - 1
+	if _, err := store.UpdateAnalysisConfiguration(ctx, actor, AnalysisConfigurationUpdate{Revision: changed.Revision, Profile: invalid}); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("inverted duration bounds passed configuration validation: %v", err)
+	}
+	read, err = store.GetAnalysisConfiguration(ctx, actor)
+	if err != nil || !reflect.DeepEqual(read, changed) {
+		t.Fatalf("a rejected configuration changed durable options: %+v %v", read, err)
+	}
+}
+
 func TestAnalysisConfigurationFinalAuthorityFailureRollsBack(t *testing.T) {
 	ctx, pool, store, _, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	actor := metadataEditTestActor(t, ctx, pool, "analysis-final-authority-editor")

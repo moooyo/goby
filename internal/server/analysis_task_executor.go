@@ -6,13 +6,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
-const analysisStreamSelectionProfile = ";selection=default-index-v1"
 const analysisIntroCohortTimeout = 2 * time.Hour
 
 type mediaAnalysisTaskExecutor struct {
@@ -64,6 +63,9 @@ func (executor mediaAnalysisTaskExecutor) Execute(ctx context.Context, task task
 		return err
 	}
 	execution, err := r.executionProfile(executor.key)
+	if executor.key == library.TaskIntroAnalysisKey && execution.Available {
+		execution.IntroSkipperOptions = work.Profile.IntroSkipper
+	}
 	if err != nil || !reflect.DeepEqual(execution, work.Execution) || work.TaskKey != task.TaskKey ||
 		work.RunID != task.RunID || work.ChildID != task.ChildID || work.LibraryID != task.LibraryID ||
 		work.ScopeKey != task.AnalysisScopeKey || work.ConfigurationFingerprint != task.AnalysisConfigFingerprint {
@@ -91,23 +93,19 @@ func (r *mediaAnalysisRuntime) executeIntroAnalysis(ctx context.Context, task ta
 	ctx, cancelCohort := context.WithTimeout(ctx, analysisIntroCohortTimeout)
 	defer cancelCohort()
 	task = task.WithContext(ctx)
-	if len(work.Sources) == 0 || len(work.Sources) > work.Execution.DetectorOptions.MaxEpisodes {
+	if len(work.Sources) < 2 || len(work.Sources) > introskipper.MaxEpisodes {
 		return library.ErrInvalidInput
 	}
-	cohort := introdetect.Cohort{Key: work.ScopeKey, Episodes: make([]introdetect.Episode, 0, len(work.Sources))}
-	abstentions := make(map[string]introdetect.Reason)
+	cohort := introskipper.Cohort{Key: work.ScopeKey, Episodes: make([]introskipper.Episode, 0, len(work.Sources))}
 	for index, source := range work.Sources {
-		features, reason, err := r.introSourceFeatures(ctx, task, work, source)
+		features, err := r.introSourceFeatures(ctx, task, work, source)
 		if err != nil {
 			return err
 		}
-		cohort.Episodes = append(cohort.Episodes, introdetect.Episode{
+		cohort.Episodes = append(cohort.Episodes, introskipper.Episode{
 			EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: features.ContentSHA256,
 			AlgorithmProfile: features.AlgorithmProfile, DurationTicks: source.DurationTicks,
-			AudioBoundaryUncertaintyTicks: features.AudioBoundaryUncertaintyTicks, Audio: features.Audio, Visual: features.Visual, Refinement: features.Refinement})
-		if reason != "" {
-			abstentions[source.SourceRevision] = reason
-		}
+			Fingerprint: features.RawFingerprint})
 		if err := progress(tasks.Progress{Processed: int64(index + 1)}); err != nil {
 			return err
 		}
@@ -115,27 +113,15 @@ func (r *mediaAnalysisRuntime) executeIntroAnalysis(ctx context.Context, task ta
 	matching, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	publicationTask := task.WithContext(matching)
-	result, err := introdetect.Analyze(matching, cohort, work.Execution.DetectorOptions)
+	result, err := introskipper.Analyze(matching, cohort, work.Execution.IntroSkipperOptions)
 	if err != nil {
-		if errors.Is(err, introdetect.ErrLimit) {
+		if errors.Is(err, introskipper.ErrLimit) {
 			withdrawErr := r.server.library.PublishAnalysisAbstention(matching, task.ChildID, publicationTask.Fence, "comparison_budget_exceeded")
 			return errors.Join(err, withdrawErr)
 		}
 		return err
 	}
-	for index := range result.Episodes {
-		episode := &result.Episodes[index]
-		if reason := abstentions[episode.SourceKey]; reason != "" && episode.Status == introdetect.NoResult && len(episode.Candidates) == 0 {
-			found := false
-			for _, existing := range episode.Reasons {
-				found = found || existing == reason
-			}
-			if !found {
-				episode.Reasons = append(episode.Reasons, reason)
-			}
-		}
-	}
-	if err := r.server.library.PublishIntroAnalysis(matching, task.ChildID, publicationTask.Fence, result); err != nil {
+	if err := r.server.library.PublishIntroSkipperAnalysis(matching, task.ChildID, publicationTask.Fence, result); err != nil {
 		return err
 	}
 	var targets int64
@@ -147,66 +133,64 @@ func (r *mediaAnalysisRuntime) executeIntroAnalysis(ctx context.Context, task ta
 	return progress(tasks.Progress{Processed: int64(len(work.Sources)), Updated: targets})
 }
 
-func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (library.AnalysisFeatures, introdetect.Reason, error) {
+func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (library.AnalysisFeatures, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(work.Profile.MaxItemRuntimeSeconds)*time.Second)
 	defer cancel()
 	task = task.WithContext(ctx)
 	file, opened, err := r.server.library.OpenAnalysisSource(ctx, task.ChildID, source.ItemID, task.Fence)
 	if err != nil {
-		return library.AnalysisFeatures{}, "", err
+		return library.AnalysisFeatures{}, err
 	}
 	defer file.Close()
 	if opened.Item.Media == nil || opened.Size != source.Size || opened.Size > work.Profile.MaxSourceBytes ||
 		opened.Item.Media.DurationTicks != source.DurationTicks {
-		return library.AnalysisFeatures{}, "", media.ErrAnalysisUnproven
+		return library.AnalysisFeatures{}, media.ErrAnalysisUnproven
 	}
 	value, cached, err := r.server.library.GetAnalysisFeatures(ctx, task.ChildID, source.ItemID, task.Fence)
 	if err != nil {
-		return library.AnalysisFeatures{}, "", err
+		return library.AnalysisFeatures{}, err
 	}
 	if cached {
-		if value.AlgorithmProfile != work.Execution.IntroProfile {
-			return library.AnalysisFeatures{}, "", library.ErrAnalysisSourceChanged
+		if value.AlgorithmProfile != work.Execution.IntroProfile || len(value.RawFingerprint) == 0 ||
+			value.FingerprintEndSeconds != introskipper.FingerprintEndSeconds(source.DurationTicks, work.Execution.IntroSkipperOptions) {
+			return library.AnalysisFeatures{}, library.ErrAnalysisSourceChanged
 		}
-		return value, "", nil
+		return value, nil
 	}
 	digest, err := analysisSourceDigest(ctx, file, source.Size, work.Profile.MaxSourceBytes)
 	if err != nil {
-		return library.AnalysisFeatures{}, "", err
+		return library.AnalysisFeatures{}, err
 	}
 	value = library.AnalysisFeatures{ContentSHA256: digest, AlgorithmProfile: work.Execution.IntroProfile,
-		Audio: []introdetect.AudioSample{}, Visual: []introdetect.VisualSample{}, Refinement: []introdetect.RefinementSample{}}
+		RawFingerprint: []uint32{}}
 	info := *opened.Item.Media
-	audio, hasAudio := analysisStream(info, "audio")
-	video, hasVideo := analysisStream(info, "video")
+	audio, hasAudio := media.SelectIntroSkipperAudioStream(info, "", true)
 	if !hasAudio {
-		return value, introdetect.MissingAudio, nil
-	}
-	if !hasVideo {
-		return value, introdetect.MissingVisual, nil
+		return value, nil
 	}
 	extractor := r.extractor
 	extractor.Limits.Timeout = time.Duration(work.Profile.MaxItemRuntimeSeconds) * time.Second
-	features, err := extractor.ExtractIntro(ctx, file, info, media.IntroAnalysisRequest{
-		AudioStreamIndex: audio, VideoStreamIndex: video, VisualIntervalTicks: work.Execution.VisualIntervalTicks})
+	features, err := extractor.ExtractIntroSkipper(ctx, file, info, media.IntroSkipperAnalysisRequest{
+		AudioStreamIndex: audio, Options: work.Execution.IntroSkipperOptions})
 	if err != nil {
-		if ctx.Err() == nil && errors.Is(err, media.ErrAnalysisUnproven) {
-			return value, introdetect.Reason("source_timeline_unproven"), nil
+		if ctx.Err() == nil && errors.Is(err, media.ErrIntroSkipperFingerprintUnavailable) {
+			return value, nil
 		}
-		return library.AnalysisFeatures{}, "", err
+		return library.AnalysisFeatures{}, err
 	}
-	if features.AlgorithmProfile+analysisStreamSelectionProfile != work.Execution.IntroProfile ||
-		features.ToolFacts.FFmpegSHA256 != work.Execution.FFmpegSHA256 ||
-		features.ToolFacts.FFprobeSHA256 != work.Execution.FFprobeSHA256 ||
-		features.ToolFacts.FingerprintSHA256 != work.Execution.FingerprintSHA256 {
-		return library.AnalysisFeatures{}, "", media.ErrAnalysisUnavailable
+	if features.AlgorithmProfile != work.Execution.IntroProfile || features.FFmpegSHA256 != work.Execution.FingerprintSHA256 ||
+		features.FingerprintEndSeconds != introskipper.FingerprintEndSeconds(source.DurationTicks, work.Execution.IntroSkipperOptions) {
+		return library.AnalysisFeatures{}, media.ErrAnalysisUnavailable
 	}
-	value.Audio, value.Visual, value.Refinement = features.Audio, features.Visual, features.Refinement
-	value.AudioBoundaryUncertaintyTicks = features.AudioBoundaryUncertaintyTicks
+	value.RawFingerprint, value.FingerprintEndSeconds = features.RawFingerprint, features.FingerprintEndSeconds
+	if len(value.RawFingerprint) == 0 {
+		value.RawFingerprint = []uint32{}
+		return value, nil
+	}
 	if err := r.server.library.PutAnalysisFeatures(ctx, task.ChildID, source.ItemID, task.Fence, value); err != nil {
-		return library.AnalysisFeatures{}, "", err
+		return library.AnalysisFeatures{}, err
 	}
-	return value, "", nil
+	return value, nil
 }
 
 func (r *mediaAnalysisRuntime) executePreviewAnalysis(ctx context.Context, task tasks.Work, work library.AnalysisWork, progress func(tasks.Progress) error) error {

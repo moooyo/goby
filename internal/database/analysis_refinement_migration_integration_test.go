@@ -40,7 +40,7 @@ func TestAnalysisRefinementMigrationPreservesSchema52AndExpandsOnlyPayloadCapaci
 			if err := pool.QueryRow(ctx, `SELECT to_jsonb(c)::text||c.xmin::text FROM analysis_feature_cache c`).Scan(&cacheBefore); err != nil {
 				t.Fatal(err)
 			}
-			if err := pool.QueryRow(ctx, `SELECT to_jsonb(s)::text||s.xmin::text FROM analysis_settings s`).Scan(&settingsBefore); err != nil {
+			if err := pool.QueryRow(ctx, `SELECT (to_jsonb(s)-'intro_skipper_options')::text||s.xmin::text FROM analysis_settings s`).Scan(&settingsBefore); err != nil {
 				t.Fatal(err)
 			}
 			if runner == "normal" {
@@ -59,7 +59,7 @@ func TestAnalysisRefinementMigrationPreservesSchema52AndExpandsOnlyPayloadCapaci
 			if err := pool.QueryRow(ctx, `SELECT to_jsonb(c)::text||c.xmin::text FROM analysis_feature_cache c`).Scan(&cacheAfter); err != nil || cacheAfter != cacheBefore {
 				t.Fatalf("schema53 rewrote existing cache bytes or metadata: %v", err)
 			}
-			if err := pool.QueryRow(ctx, `SELECT to_jsonb(s)::text||s.xmin::text FROM analysis_settings s`).Scan(&settingsAfter); err != nil || settingsAfter != settingsBefore {
+			if err := pool.QueryRow(ctx, `SELECT (to_jsonb(s)-'intro_skipper_options')::text||s.xmin::text FROM analysis_settings s`).Scan(&settingsAfter); err != nil || settingsAfter != settingsBefore {
 				t.Fatalf("schema53 changed the aggregate cache budget or configuration: %v", err)
 			}
 			for _, size := range []int{1, 262145, 513892, 524288} {

@@ -32,6 +32,48 @@ func analysisStateDigest(value string) bool {
 	return err == nil
 }
 
+func validateAnalysisStateProfile(profile library.AnalysisProfile, optionsRaw []byte, version int64) error {
+	if version < 54 {
+		if len(optionsRaw) != 0 {
+			return ErrSchema
+		}
+		return library.ValidateLegacyAnalysisProfile(profile)
+	}
+	options, err := library.DecodeAnalysisIntroSkipperOptions(optionsRaw)
+	if err != nil {
+		return ErrSchema
+	}
+	profile.IntroSkipper = options
+	return library.ValidateAnalysisProfile(profile)
+}
+
+func validAnalysisStateExecutionVersion(raw []byte, schemaVersion int64) bool {
+	var wire struct{ Version int }
+	if len(raw) == 0 || len(raw) > 131072 || json.Unmarshal(raw, &wire) != nil {
+		return false
+	}
+	maximum := 5
+	if schemaVersion >= 54 {
+		maximum = 6
+	}
+	return wire.Version >= 1 && wire.Version <= maximum
+}
+
+func validAnalysisStateResultVersion(version string, schemaVersion int64) bool {
+	return schemaVersion >= 54 || version != "intro-skipper-v1"
+}
+
+func validAnalysisStateFeatureVersion(payload []byte, schemaVersion int64) bool {
+	codec, err := library.AnalysisFeaturesCodecVersion(payload)
+	maximum := uint16(2)
+	if schemaVersion >= 54 {
+		maximum = 4
+	} else if schemaVersion >= 53 {
+		maximum = 3
+	}
+	return err == nil && codec <= maximum
+}
+
 func decodeAnalysisStateSelection(raw []byte) (library.AnalysisSelection, bool) {
 	var input library.AnalysisSelection
 	if len(raw) == 0 || len(raw) > 65536 {
@@ -121,7 +163,7 @@ func validateAnalysisTaskState(ctx context.Context, tx pgx.Tx) error {
 	})
 }
 
-func validateAnalysisAdmissionState(ctx context.Context, tx pgx.Tx) error {
+func validateAnalysisAdmissionState(ctx context.Context, tx pgx.Tx, version int64) error {
 	if err := analysisStateRows(ctx, tx, `SELECT profile,execution,configuration_revision,publication_epoch,fingerprint FROM analysis_run_profiles ORDER BY run_id`, func(rows pgx.Rows) error {
 		var profile, execution []byte
 		var revision, epoch int64
@@ -129,7 +171,7 @@ func validateAnalysisAdmissionState(ctx context.Context, tx pgx.Tx) error {
 		if err := rows.Scan(&profile, &execution, &revision, &epoch, &fingerprint); err != nil {
 			return classifyResourceStateError(ctx, err)
 		}
-		if library.ValidateStoredAnalysisAdmission(profile, execution, revision, epoch, fingerprint) != nil {
+		if !validAnalysisStateExecutionVersion(execution, version) || library.ValidateStoredAnalysisAdmission(profile, execution, revision, epoch, fingerprint) != nil {
 			return ErrSchema
 		}
 		return nil
@@ -182,6 +224,9 @@ func validateAnalysisFeatureState(ctx context.Context, tx pgx.Tx, version int64)
 			return classifyResourceStateError(ctx, err)
 		}
 		if !analysisStateIdentifier(item, 256, false) || !analysisStateIdentifier(source, 256, false) || !analysisStateDigest(profile) || key != analysisStateFeatureKey(item, source, profile) || size != int64(len(payload)) {
+			return ErrSchema
+		}
+		if !validAnalysisStateFeatureVersion(payload, version) {
 			return ErrSchema
 		}
 		decoded, err := library.DecodeAnalysisFeatures(payload, duration)

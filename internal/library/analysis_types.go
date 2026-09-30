@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 )
 
 var (
@@ -26,6 +27,7 @@ type AnalysisProfile struct {
 	MaxSourceBytes         int64
 	MaxItemRuntimeSeconds  int
 	FeatureCacheMaxBytes   int64
+	IntroSkipper           introskipper.Options
 }
 
 type AnalysisConfiguration struct {
@@ -55,6 +57,7 @@ type AnalysisExecutionProfile struct {
 	PreviewProfile      string
 	PreviewWidths       []int
 	IntroProfile        string
+	IntroSkipperOptions introskipper.Options
 }
 
 type AnalysisAdmissionBinding struct {
@@ -107,6 +110,8 @@ type AnalysisFeatures struct {
 	Audio                         []introdetect.AudioSample
 	Visual                        []introdetect.VisualSample
 	Refinement                    []introdetect.RefinementSample
+	RawFingerprint                []uint32
+	FingerprintEndSeconds         float64
 }
 
 type AnalysisPreview struct {
@@ -144,16 +149,17 @@ type AnalysisPreviewPublication struct {
 }
 
 type AnalysisDetection struct {
-	ItemID         string `json:"ItemId"`
-	Revision       string
-	ManualRevision string
-	SourceRevision string
-	Status         string
-	Reasons        []string
-	Candidate      *introdetect.Candidate
-	Effective      *IntroInterval
-	Suppressed     bool
-	UpdatedAt      time.Time
+	ItemID                string `json:"ItemId"`
+	Revision              string
+	ManualRevision        string
+	SourceRevision        string
+	Status                string
+	Reasons               []string
+	Candidate             *introdetect.Candidate
+	IntroSkipperCandidate *introskipper.Candidate
+	Effective             *IntroInterval
+	Suppressed            bool
+	UpdatedAt             time.Time
 }
 
 type AnalysisDecision struct {

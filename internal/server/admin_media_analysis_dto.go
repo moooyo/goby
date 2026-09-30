@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/library"
 )
 
@@ -70,6 +71,11 @@ func adminMediaAnalysisDetectionDTO(value library.AnalysisDetection) library.Ana
 		candidate.Reasons = append([]introdetect.Reason{}, candidate.Reasons...)
 		candidate.Support = append([]introdetect.Support{}, candidate.Support...)
 		value.Candidate = &candidate
+	}
+	if value.IntroSkipperCandidate != nil {
+		candidate := *value.IntroSkipperCandidate
+		candidate.Support = append([]introskipper.Support{}, candidate.Support...)
+		value.IntroSkipperCandidate = &candidate
 	}
 	return value
 }

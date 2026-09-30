@@ -9,14 +9,21 @@ import (
 	"testing"
 
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
 func analysisAdmissionTestIntroExecution() AnalysisExecutionProfile {
 	return AnalysisExecutionProfile{Version: AnalysisExecutionProfileVersion, Available: true,
+		FFmpegSHA256: strings.Repeat("a1", 32), FingerprintSHA256: strings.Repeat("a1", 32),
+		DetectorVersion: introskipper.Version, IntroSkipperOptions: introskipper.DefaultOptions(), IntroProfile: "intro-skipper-extraction-v1"}
+}
+
+func analysisLegacyTestIntroExecution() AnalysisExecutionProfile {
+	return AnalysisExecutionProfile{Version: 5, Available: true,
 		FFmpegSHA256: strings.Repeat("a1", 32), FFprobeSHA256: strings.Repeat("b2", 32), FingerprintSHA256: strings.Repeat("c3", 32),
 		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(),
-		VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "intro-extraction-v1"}
+		VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "intro-extraction-v5"}
 }
 
 func analysisAdmissionTestPreviewExecution() AnalysisExecutionProfile {
@@ -54,9 +61,12 @@ func TestAnalysisExecutionProfileRequiresTheClosedAvailableContract(t *testing.T
 		func(p *AnalysisExecutionProfile) { p.FFmpegSHA256 = strings.Repeat("g", 64) },
 		func(p *AnalysisExecutionProfile) { p.FFprobeSHA256 = strings.Repeat("b", 63) },
 		func(p *AnalysisExecutionProfile) { p.FingerprintSHA256 = "" },
+		func(p *AnalysisExecutionProfile) { p.FingerprintSHA256 = strings.Repeat("c3", 32) },
+		func(p *AnalysisExecutionProfile) { p.FFprobeSHA256 = strings.Repeat("b2", 32) },
 		func(p *AnalysisExecutionProfile) { p.DetectorVersion = "different-detector" },
 		func(p *AnalysisExecutionProfile) { p.DetectorOptions.MaxComparisons-- },
-		func(p *AnalysisExecutionProfile) { p.DetectorOptions = introdetect.Options{} },
+		func(p *AnalysisExecutionProfile) { p.IntroSkipperOptions = introskipper.Options{} },
+		func(p *AnalysisExecutionProfile) { p.IntroSkipperOptions.MaximumIntroDuration = 0 },
 		func(p *AnalysisExecutionProfile) { p.VisualIntervalTicks = media.TicksPerSecond },
 		func(p *AnalysisExecutionProfile) { p.IntroProfile = " leading-profile" },
 		func(p *AnalysisExecutionProfile) { p.IntroProfile = "profile\u0085" },
@@ -75,6 +85,7 @@ func TestAnalysisExecutionProfileRequiresTheClosedAvailableContract(t *testing.T
 		func(p *AnalysisExecutionProfile) { p.FingerprintSHA256 = strings.Repeat("c3", 32) },
 		func(p *AnalysisExecutionProfile) { p.DetectorVersion = introdetect.Version },
 		func(p *AnalysisExecutionProfile) { p.DetectorOptions = introdetect.DefaultOptions() },
+		func(p *AnalysisExecutionProfile) { p.IntroSkipperOptions = introskipper.DefaultOptions() },
 		func(p *AnalysisExecutionProfile) { p.VisualIntervalTicks = media.TicksPerSecond / 2 },
 		func(p *AnalysisExecutionProfile) { p.IntroProfile = "intro-extraction-v1" },
 		func(p *AnalysisExecutionProfile) { p.PreviewProfile = "" },
@@ -109,6 +120,7 @@ func TestAnalysisExecutionUnavailableProfilesCarryOnlyAReason(t *testing.T) {
 			func(p *AnalysisExecutionProfile) { p.PreviewWidths = []int{} },
 			func(p *AnalysisExecutionProfile) { p.DetectorVersion = introdetect.Version },
 			func(p *AnalysisExecutionProfile) { p.DetectorOptions.MinSupport = 3 },
+			func(p *AnalysisExecutionProfile) { p.IntroSkipperOptions = introskipper.DefaultOptions() },
 			func(p *AnalysisExecutionProfile) { p.VisualIntervalTicks = 1 },
 		} {
 			invalid := profile
@@ -154,10 +166,10 @@ func TestStoredAnalysisAdmissionRequiresExactCompleteJSON(t *testing.T) {
 		{"execution missing", profileRaw, bytes.Replace(executionRaw, []byte(`"UnavailableReason":"",`), nil, 1)},
 		{"execution unknown", profileRaw, append([]byte(`{"Unknown":0,`), executionRaw[1:]...)},
 		{"nested detector case", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes"`), []byte(`"maxEpisodes"`), 1)},
-		{"nested detector duplicate", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes":32`), []byte(`"MaxEpisodes":32,"MaxEpisodes":32`), 1)},
-		{"nested detector missing", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes":32,`), nil, 1)},
+		{"nested detector duplicate", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes":0`), []byte(`"MaxEpisodes":0,"MaxEpisodes":0`), 1)},
+		{"nested detector missing", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes":0,`), nil, 1)},
 		{"nested detector unknown", profileRaw, bytes.Replace(executionRaw, []byte(`"DetectorOptions":{`), []byte(`"DetectorOptions":{"Unknown":0,`), 1)},
-		{"nested detector null", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes":32`), []byte(`"MaxEpisodes":null`), 1)},
+		{"nested detector null", profileRaw, bytes.Replace(executionRaw, []byte(`"MaxEpisodes":0`), []byte(`"MaxEpisodes":null`), 1)},
 		{"null profile", []byte(`null`), executionRaw},
 		{"null execution", profileRaw, []byte(`null`)},
 		{"trailing JSON", profileRaw, append(append([]byte(nil), executionRaw...), []byte(` {}`)...)},

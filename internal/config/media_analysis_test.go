@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -20,6 +21,72 @@ func TestMediaAnalysisDeploymentSeparatesPreviewAndFingerprintAvailability(t *te
 	}
 	if _, err := parseMediaAnalysis([]byte(`{}`)); err != nil {
 		t.Fatal("zero deployment inventory must remain disabled")
+	}
+}
+
+func TestMediaAnalysisDeploymentRetainsIndependentIntroFFmpegInventory(t *testing.T) {
+	const executable = "/opt/goby/intro/bin/ffmpeg"
+	for _, fields := range []string{
+		`"introFFmpegPath":"` + executable + `"`,
+		`"introFFmpegPath":"` + executable + `","introFFmpegSHA256":"` + strings.Repeat("b", 64) + `"`,
+		`"introFFmpegPath":"` + executable + `","introFFmpegSHA256":"` + strings.Repeat("b", 64) + `","fingerprintPath":"/opt/goby/fingerprint","fingerprintSHA256":"` + strings.Repeat("a", 64) + `"`,
+	} {
+		value, err := parseMediaAnalysis([]byte(`{"enabled":true,"cacheDirectory":"/cache",` + fields + `}`))
+		if err != nil || value.IntroFFmpegPath != executable {
+			t.Fatalf("the independent intro decoder inventory was not retained: %+v, %v", value, err)
+		}
+		if strings.Contains(fields, "introFFmpegSHA256") && value.IntroFFmpegSHA256 != strings.Repeat("b", 64) {
+			t.Fatal("the intro decoder digest was confused with the fingerprint helper digest")
+		}
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		roundTrip, err := parseMediaAnalysis(encoded)
+		if err != nil || roundTrip != value {
+			t.Fatalf("trusted deployment JSON lost its independent decoder binding: %+v, %v", roundTrip, err)
+		}
+	}
+	value, err := parseMediaAnalysis([]byte(`{"enabled":true,"cacheDirectory":"/cache"}`))
+	if err != nil || value.IntroFFmpegPath != "" || value.IntroFFmpegSHA256 != "" {
+		t.Fatal("preview-only deployment invented an intro decoder inventory")
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil || strings.Contains(string(encoded), "introFFmpeg") {
+		t.Fatalf("empty optional decoder inventory was serialized: %s, %v", encoded, err)
+	}
+}
+
+func TestMediaAnalysisDeploymentRejectsInvalidIntroFFmpegBindings(t *testing.T) {
+	for _, fields := range []string{
+		`"introFFmpegPath":"ffmpeg"`,
+		`"introFFmpegPath":"/"`,
+		`"introFFmpegPath":"/opt/../ffmpeg"`,
+		`"introFFmpegPath":"/opt//ffmpeg"`,
+		`"introFFmpegPath":"C:\\tools\\ffmpeg.exe"`,
+		`"introFFmpegPath":"/opt/ffmpeg\n"`,
+		`"introFFmpegPath":null`,
+		`"introFFmpegPath":42`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegPath":"/other/ffmpeg"`,
+		`"introFFmpegPath":"/opt/ffmpeg","\u0069ntroFFmpegPath":"/other/ffmpeg"`,
+		`"IntroFFmpegPath":"/opt/ffmpeg"`,
+		`"introFFmpegSHA256":"` + strings.Repeat("b", 64) + `"`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegSHA256":null`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegSHA256":"` + strings.Repeat("B", 64) + `"`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegSHA256":"` + strings.Repeat("g", 64) + `"`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegSHA256":"` + strings.Repeat("b", 63) + `"`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegSHA256":"` + strings.Repeat("b", 65) + `"`,
+		`"introFFmpegPath":"/opt/ffmpeg","introFFmpegSHA256":"` + strings.Repeat("b", 64) + `","introFFmpegSHA256":"` + strings.Repeat("a", 64) + `"`,
+	} {
+		value, err := parseMediaAnalysis([]byte(`{"enabled":true,"cacheDirectory":"/cache",` + fields + `}`))
+		if err == nil || value != (MediaAnalysisConfig{}) {
+			t.Fatalf("an invalid intro decoder binding returned execution inventory: %s, %+v, %v", fields, value, err)
+		}
+	}
+	for _, fields := range []string{`"introFFmpegPath":"/opt/ffmpeg"`, `"introFFmpegSHA256":"` + strings.Repeat("b", 64) + `"`} {
+		if _, err := parseMediaAnalysis([]byte(`{"enabled":false,` + fields + `}`)); err == nil {
+			t.Fatal("disabled analysis retained an executable intro decoder inventory")
+		}
 	}
 }
 

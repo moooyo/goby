@@ -17,13 +17,15 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
-	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/tasks"
 )
 
 type analysisProjectionProber struct{}
+
+const analysisProjectionIntroProfile = "projection-fixture-v1"
 
 func (analysisProjectionProber) CacheVersion() int { return media.CurrentProbeVersion }
 func (analysisProjectionProber) ProbeFile(ctx context.Context, file *os.File) (media.Info, error) {
@@ -89,8 +91,8 @@ func newAnalysisProjectionFixture(t *testing.T) analysisProjectionFixture {
 		t.Fatal("enable detected-intro projection for the isolated fixture", err)
 	}
 	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
-		FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64),
-		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: media.TicksPerSecond / 2, IntroProfile: "projection-fixture-v1"}
+		FFmpegSHA256: strings.Repeat("a", 64), FingerprintSHA256: strings.Repeat("a", 64),
+		DetectorVersion: introskipper.Version, IntroSkipperOptions: introskipper.DefaultOptions(), IntroProfile: analysisProjectionIntroProfile}
 	registry, err := tasks.NewExecutorRegistry(tasks.ExecutorRegistration{Key: library.TaskIntroAnalysisKey, Name: "Projection evidence fixture", Executor: analysisHTTPNoWorkExecutor{},
 		AnalysisAdmission: func(tx library.OwnedTx, request tasks.AnalysisAdmissionRequest) (tasks.AnalysisAdmissionBinding, error) {
 			binding, err := library.PrepareAnalysis(tx, request.TaskKey, request.Selection, execution)
@@ -199,14 +201,14 @@ func (f analysisProjectionFixture) seedQualified(t *testing.T) {
 		Scan(&child, &cohort, &fingerprint, &profileRevision, &epoch); err != nil {
 		t.Fatal(err)
 	}
-	rows, err := f.pool.Query(f.ctx, `SELECT item_id,library_id,root_id,source_revision,hierarchy_revision,episode_key FROM analysis_work_sources WHERE child_id=$1 ORDER BY position`, child)
+	rows, err := f.pool.Query(f.ctx, `SELECT item_id,library_id,root_id,source_revision,hierarchy_revision,episode_key,duration_ticks FROM analysis_work_sources WHERE child_id=$1 ORDER BY position`, child)
 	if err != nil {
 		t.Fatal(err)
 	}
 	sources := []library.AnalysisSource{}
 	for rows.Next() {
 		var source library.AnalysisSource
-		if err := rows.Scan(&source.ItemID, &source.LibraryID, &source.RootID, &source.SourceRevision, &source.HierarchyRevision, &source.EpisodeKey); err != nil {
+		if err := rows.Scan(&source.ItemID, &source.LibraryID, &source.RootID, &source.SourceRevision, &source.HierarchyRevision, &source.EpisodeKey, &source.DurationTicks); err != nil {
 			rows.Close()
 			t.Fatal(err)
 		}
@@ -217,8 +219,8 @@ func (f analysisProjectionFixture) seedQualified(t *testing.T) {
 	if err != nil || len(sources) != 3 {
 		t.Fatal("admission did not capture three independent real episode sources")
 	}
-	supports := make([]introdetect.Support, 0, len(sources))
-	interval := introdetect.Interval{StartTicks: 10 * media.TicksPerSecond, EndTicks: 45 * media.TicksPerSecond}
+	supports := make([]introskipper.Support, 0, len(sources))
+	interval := introskipper.Interval{StartTicks: 10 * media.TicksPerSecond, EndTicks: 45 * media.TicksPerSecond}
 	target := -1
 	for index, source := range sources {
 		var path string
@@ -230,7 +232,8 @@ func (f analysisProjectionFixture) seedQualified(t *testing.T) {
 			t.Fatal(err)
 		}
 		digest := sha256.Sum256(content)
-		supports = append(supports, introdetect.Support{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: hex.EncodeToString(digest[:]), Interval: interval})
+		supports = append(supports, introskipper.Support{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision,
+			ContentIdentity: hex.EncodeToString(digest[:]), AlgorithmProfile: analysisProjectionIntroProfile, Interval: interval})
 		if source.ItemID == f.ids[0] {
 			target = index
 		}
@@ -238,20 +241,31 @@ func (f analysisProjectionFixture) seedQualified(t *testing.T) {
 	if target < 0 {
 		t.Fatal("admitted cohort omitted its actual publication target")
 	}
-	metrics := introdetect.Metrics{AudioAgreementPermille: 1000, AudioInformativePermille: 1000, AudioSimilarityPermille: 1000,
-		AudioSamples: 100, AudioDistinct: 100, VisualAgreementPermille: 1000, VisualSimilarityPermille: 1000, VisualCoveragePermille: 1000,
-		VisualSamples: 35, VisualTransitions: 34, VisualChangeCoveragePermille: 1000, VisualDominancePermille: 100, PairCount: 3}
-	metrics.VisualAnchorCount, metrics.VisualMinBandMatchedPermille, metrics.VisualMatchedTimePermille = 35, 1000, 1000
-	metrics.VisualDistinctStates, metrics.VisualDominantStatePermille = 8, 125
-	value := library.AnalysisStoredResult{Version: introdetect.Version, Episode: introdetect.EpisodeResult{
+	peer := 0
+	if target == peer {
+		peer = 1
+	}
+	pair := make([]introskipper.Support, 0, 2)
+	for index, support := range supports {
+		if index == target || index == peer {
+			pair = append(pair, support)
+		}
+	}
+	// The candidate has one actual ordered pair; the source table still binds
+	// every admitted cohort member for source-change invalidation.
+	value := library.AnalysisStoredIntroSkipperResult{Version: introskipper.Version, Options: introskipper.DefaultOptions(), Episode: introskipper.EpisodeResult{
 		EpisodeKey: supports[target].EpisodeKey, SourceKey: supports[target].SourceKey, ContentIdentity: supports[target].ContentIdentity,
-		Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Candidates: []introdetect.Candidate{{Interval: interval,
-			GroupID: "projection-qualified-evidence", Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Metrics: metrics, Support: supports}}}}
+		AlgorithmProfile: analysisProjectionIntroProfile, DurationTicks: sources[target].DurationTicks,
+		Status: introskipper.Qualified, Reasons: []string{}, Candidate: &introskipper.Candidate{Interval: interval,
+			UpstreamCommit: introskipper.UpstreamCommit, Support: pair}}}
 	raw, err := json.Marshal(value)
 	if err != nil || library.ValidateStoredAnalysisResult(raw, "qualified", &interval.StartTicks, &interval.EndTicks) != nil {
 		t.Fatal("qualified projection fixture is not valid stored evidence")
 	}
-	evidence, err := json.Marshal(library.AnalysisAuditEvidence{Result: &value})
+	evidence, err := json.Marshal(struct {
+		Result   json.RawMessage
+		Decision *library.AnalysisDecision
+	}{Result: raw})
 	if err != nil || library.ValidateStoredAnalysisAudit(evidence, "qualified") != nil {
 		t.Fatal("qualified projection fixture is not valid audit evidence")
 	}

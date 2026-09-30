@@ -48,7 +48,7 @@ COPY toolchain-patches/ /build/toolchain-patches/
 COPY intro-fingerprint/ /build/intro-fingerprint/
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      build-essential ca-certificates cmake curl gnupg libaom-dev libass-dev libdrm-dev libmp3lame-dev \
+      build-essential ca-certificates cmake curl gnupg libaom-dev libass-dev libchromaprint-dev libdrm-dev libmp3lame-dev \
       libnuma-dev libopus-dev libssl-dev libva-dev libvorbis-dev libvpl-dev \
       libx264-dev libx265-dev libzimg-dev nasm patch pkg-config python3 xz-utils yasm \
     && GOBY_FFMPEG_BUILD_JOBS="$FFMPEG_BUILD_JOBS" bash /build/build-ffmpeg.sh \
@@ -61,7 +61,7 @@ COPY --from=artifact /artifact-inputs.valid /usr/share/goby/artifact-inputs.vali
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       ca-certificates fonts-dejavu-core passwd postgresql-client-17 \
-      libaom3 libass9 libbz2-1.0 libdrm2 liblzma5 libmp3lame0 libnuma1 libopus0 \
+      libaom3 libass9 libbz2-1.0 libchromaprint1 libdrm2 liblzma5 libmp3lame0 libnuma1 libopus0 \
       libstdc++6 libva2 libva-drm2 libva-x11-2 libvorbis0a libvorbisenc2 \
       libvpl2 libx264-164 libx265-215 libzimg2 zlib1g \
     && groupadd --gid 10001 goby \
@@ -95,6 +95,13 @@ RUN chmod 0755 /usr/local/bin/goby-entrypoint \
     && grep -Eq '[[:space:]]zscale[[:space:]]' /usr/share/goby/toolchain/runtime-ffmpeg-filters.txt \
     && grep -Eq '[[:space:]]tonemap[[:space:]]' /usr/share/goby/toolchain/runtime-ffmpeg-filters.txt \
     && grep -Eq '[[:space:]]subtitles[[:space:]]' /usr/share/goby/toolchain/runtime-ffmpeg-filters.txt \
+    && /opt/ffmpeg/9.0.1/bin/ffmpeg -hide_banner -muxers > /usr/share/goby/toolchain/runtime-ffmpeg-muxers.txt 2>&1 \
+    && grep -Eq '[[:space:]]chromaprint[[:space:]]' /usr/share/goby/toolchain/runtime-ffmpeg-muxers.txt \
+    && /opt/ffmpeg/9.0.1/bin/ffmpeg -hide_banner -h muxer=chromaprint > /usr/share/goby/toolchain/runtime-chromaprint-options.txt 2>&1 \
+    && grep -Eq '[[:space:]]-?fp_format[[:space:]]' /usr/share/goby/toolchain/runtime-chromaprint-options.txt \
+    && /opt/ffmpeg/9.0.1/bin/ffmpeg -hide_banner -loglevel error -f lavfi -i 'sine=frequency=440:sample_rate=48000' \
+      -t 6 -ac 2 -f chromaprint -fp_format raw /usr/share/goby/toolchain/runtime-chromaprint.raw \
+    && test -s /usr/share/goby/toolchain/runtime-chromaprint.raw \
     && /opt/goby-intro-fingerprint/bin/goby-intro-fingerprint --describe > /usr/share/goby/toolchain/runtime-fingerprint-description.json \
     && fingerprint_sha256=$(sha256sum /opt/goby-intro-fingerprint/bin/goby-intro-fingerprint | cut -d ' ' -f 1) \
     && printf '{"enabled":true,"cacheDirectory":"/var/cache/goby/analysis","fingerprintPath":"/opt/goby-intro-fingerprint/bin/goby-intro-fingerprint","fingerprintSHA256":"%s"}\n' "$fingerprint_sha256" > /usr/share/goby/media-analysis.json \

@@ -65,6 +65,19 @@
     "configuration": "/usr/share/goby/media-analysis.json",
     "boundary": "The installed helper and original notices are retained. Its actual executable digest binds the image's default media-analysis configuration."
   },
+  "introSkipperExtraction": {
+    "addedOn": "2026-10-01",
+    "status": "source_recipe_only_not_built",
+    "configureFlag": "--enable-chromaprint",
+    "pkgConfigModule": "libchromaprint",
+    "buildPackage": "libchromaprint-dev",
+    "runtimePackage": "libchromaprint1",
+    "packageSource": "The fixed Debian snapshot above",
+    "versionRecord": "/usr/share/goby/toolchain/chromaprint-version.txt",
+    "muxerRecord": "/usr/share/goby/toolchain/runtime-ffmpeg-muxers.txt",
+    "rawSmokeRecord": "/usr/share/goby/toolchain/runtime-chromaprint.raw",
+    "boundary": "This recipe extension uses the Debian Chromaprint library through FFmpeg's raw muxer, separately from the retained vendored intro helper. Earlier image acceptance does not cover this extension. Muxer and synthetic raw-output gates establish availability only; reference-corpus extraction parity requires separate verification."
+  },
   "nvCodecHeaders": {
     "tag": "n13.1.15.0",
     "annotatedTagObject": "a807fd4b35442891306b7ba23a300581302fa76d",

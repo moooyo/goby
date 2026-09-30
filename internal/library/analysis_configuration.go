@@ -2,6 +2,7 @@ package library
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/systemevents"
 )
 
@@ -17,12 +19,32 @@ func DefaultAnalysisProfile() AnalysisProfile {
 	return AnalysisProfile{
 		AutoPublishIntros: true, PreviewIntervalSeconds: 10, PreviewQuality: 80,
 		MaxSourceBytes: 128 << 30, MaxItemRuntimeSeconds: 1200, FeatureCacheMaxBytes: 128 << 20,
+		IntroSkipper: introskipper.DefaultOptions(),
 	}
 }
 
 // ValidateAnalysisProfile is shared by configuration writes and archive validation.
 // The complete profile is required; zero values never imply omitted defaults.
 func ValidateAnalysisProfile(profile AnalysisProfile) error {
+	if err := validateAnalysisProfileLimits(profile); err != nil {
+		return err
+	}
+	if err := introskipper.ValidateOptions(profile.IntroSkipper); err != nil {
+		return fmt.Errorf("%w: invalid Intro Skipper options: %v", ErrInvalidInput, err)
+	}
+	return nil
+}
+
+// ValidateLegacyAnalysisProfile validates the frozen pre-Intro-Skipper profile.
+// Historical archives must not acquire defaults that change admission hashes.
+func ValidateLegacyAnalysisProfile(profile AnalysisProfile) error {
+	if profile.IntroSkipper != (introskipper.Options{}) {
+		return fmt.Errorf("%w: unexpected Intro Skipper options in a historical profile", ErrInvalidInput)
+	}
+	return validateAnalysisProfileLimits(profile)
+}
+
+func validateAnalysisProfileLimits(profile AnalysisProfile) error {
 	if profile.PreviewIntervalSeconds < 2 || profile.PreviewIntervalSeconds > 120 ||
 		profile.PreviewQuality < 40 || profile.PreviewQuality > 95 ||
 		profile.MaxSourceBytes < 1 || profile.MaxSourceBytes > 1<<40 ||
@@ -33,22 +55,36 @@ func ValidateAnalysisProfile(profile AnalysisProfile) error {
 	return nil
 }
 
+// DecodeAnalysisIntroSkipperOptions preserves the exact closed settings shape
+// when reading durable JSONB or validating an archive outside the live store.
+func DecodeAnalysisIntroSkipperOptions(raw []byte) (introskipper.Options, error) {
+	var options introskipper.Options
+	if len(raw) == 0 || len(raw) > 4096 || analysisStrictJSON(raw, &options) != nil ||
+		introskipper.ValidateOptions(options) != nil {
+		return introskipper.Options{}, ErrInvalidInput
+	}
+	return options, nil
+}
+
 const analysisConfigurationColumns = `revision,auto_publish_intros,preview_interval_seconds,preview_quality,
-	max_source_bytes,max_item_runtime_seconds,feature_cache_max_bytes,updated_at`
+	max_source_bytes,max_item_runtime_seconds,feature_cache_max_bytes,intro_skipper_options,updated_at`
 
 func scanAnalysisConfiguration(row rowScanner) (AnalysisConfiguration, error) {
 	var result AnalysisConfiguration
 	var revision int64
+	var optionsRaw []byte
 	err := row.Scan(&revision, &result.Profile.AutoPublishIntros, &result.Profile.PreviewIntervalSeconds,
 		&result.Profile.PreviewQuality, &result.Profile.MaxSourceBytes, &result.Profile.MaxItemRuntimeSeconds,
-		&result.Profile.FeatureCacheMaxBytes, &result.UpdatedAt)
+		&result.Profile.FeatureCacheMaxBytes, &optionsRaw, &result.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return AnalysisConfiguration{}, fmt.Errorf("%w: media analysis configuration is missing", ErrUnavailable)
 	}
 	if err != nil {
 		return AnalysisConfiguration{}, err
 	}
-	if revision < 1 || ValidateAnalysisProfile(result.Profile) != nil || result.UpdatedAt.IsZero() {
+	result.Profile.IntroSkipper, err = DecodeAnalysisIntroSkipperOptions(optionsRaw)
+	if err != nil ||
+		revision < 1 || ValidateAnalysisProfile(result.Profile) != nil || result.UpdatedAt.IsZero() {
 		return AnalysisConfiguration{}, fmt.Errorf("%w: invalid stored media analysis configuration", ErrUnavailable)
 	}
 	result.Revision = strconv.FormatInt(revision, 10)
@@ -127,12 +163,16 @@ func (s *Store) UpdateAnalysisConfiguration(ctx context.Context, actor identity.
 				return ErrAnalysisConflict
 			}
 			profile := input.Profile
+			optionsRaw, err := json.Marshal(profile.IntroSkipper)
+			if err != nil {
+				return fmt.Errorf("%w: invalid Intro Skipper options", ErrInvalidInput)
+			}
 			result, err = scanAnalysisConfiguration(tx.QueryRow(`UPDATE analysis_settings SET
 				revision=revision+1,auto_publish_intros=$2,preview_interval_seconds=$3,preview_quality=$4,
-				max_source_bytes=$5,max_item_runtime_seconds=$6,feature_cache_max_bytes=$7,updated_at=clock_timestamp()
+				max_source_bytes=$5,max_item_runtime_seconds=$6,feature_cache_max_bytes=$7,intro_skipper_options=$8,updated_at=clock_timestamp()
 				WHERE id=1 AND revision=$1 RETURNING `+analysisConfigurationColumns,
 				revision, profile.AutoPublishIntros, profile.PreviewIntervalSeconds, profile.PreviewQuality,
-				profile.MaxSourceBytes, profile.MaxItemRuntimeSeconds, profile.FeatureCacheMaxBytes))
+				profile.MaxSourceBytes, profile.MaxItemRuntimeSeconds, profile.FeatureCacheMaxBytes, optionsRaw))
 			if err != nil {
 				return err
 			}

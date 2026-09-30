@@ -4,7 +4,6 @@ package library
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"math/rand"
@@ -31,7 +30,7 @@ func analysisCalibratedPipelineRaster(random *rand.Rand) [256]byte {
 	return raster
 }
 
-func TestAnalysisCalibratedMatcherOutputSurvivesFeatureCacheAndPublication(t *testing.T) {
+func TestAnalysisHistoricalCalibratedMatcherEvidenceSurvivesCacheAndRestore(t *testing.T) {
 	f := newAnalysisWorkFixture(t, 3)
 	f.setIntroDetection(t, true)
 	run, children := f.admit(t, TaskIntroAnalysisKey, nil)
@@ -45,6 +44,7 @@ func TestAnalysisCalibratedMatcherOutputSurvivesFeatureCacheAndPublication(t *te
 	if err != nil || len(work.Sources) != 3 {
 		t.Fatalf("read admitted refinement sources: %v", err)
 	}
+	work = analysisHistoricalVisualWork(t, work)
 
 	// These 16x16 observations repeat a nonperiodic ten-second action sequence
 	// at distinct 100 ms source-clock offsets. Surrounding rasters are independent.
@@ -86,21 +86,7 @@ func TestAnalysisCalibratedMatcherOutputSurvivesFeatureCacheAndPublication(t *te
 			features.Refinement = append(features.Refinement, introdetect.RefinementSample{Ticks: int64(frame) * step, Raster: raster})
 		}
 		bounds[source.SourceRevision] = introdetect.Interval{StartTicks: int64(start) * step, EndTicks: int64(start+len(opening)-1) * step}
-		if err := f.store.PutAnalysisFeatures(f.ctx, child, source.ItemID, fence, features); err != nil {
-			t.Fatalf("cache source-bound refinement rasters: %v", err)
-		}
-		var payload []byte
-		if err := f.pool.QueryRow(f.ctx, `SELECT payload FROM analysis_feature_cache
-			WHERE item_id=$1 AND profile_fingerprint=$2`, source.ItemID, work.ConfigurationFingerprint).Scan(&payload); err != nil {
-			t.Fatal(err)
-		}
-		if len(payload) < 6 || string(payload[:4]) != "GAFB" || binary.LittleEndian.Uint16(payload[4:6]) != 3 {
-			t.Fatal("refinement evidence was not persisted as GAFB v3")
-		}
-		cached, found, err := f.store.GetAnalysisFeatures(f.ctx, child, source.ItemID, fence)
-		if err != nil || !found || !reflect.DeepEqual(cached, features) {
-			t.Fatalf("the durable cache changed refinement bytes, timestamps or identity: found=%v error=%v", found, err)
-		}
+		cached := analysisHistoricalVisualCache(t, f, work, source, features)
 		cohort.Episodes = append(cohort.Episodes, introdetect.Episode{
 			EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: cached.ContentSHA256,
 			AlgorithmProfile: cached.AlgorithmProfile, DurationTicks: source.DurationTicks,
@@ -143,9 +129,7 @@ func TestAnalysisCalibratedMatcherOutputSurvivesFeatureCacheAndPublication(t *te
 		}
 		candidates[episode.SourceKey] = candidate
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, child, fence, result); err != nil {
-		t.Fatalf("publish the matcher output from cached refinement: %v", err)
-	}
+	seedAnalysisHistoricalVisualResult(t, f, child, fence, work, result)
 	for _, source := range work.Sources {
 		item, err := f.store.GetAnalysisItem(f.ctx, f.actor, source.ItemID)
 		candidate := candidates[source.SourceRevision]

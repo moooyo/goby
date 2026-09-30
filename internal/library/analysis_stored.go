@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 )
 
 // Historical facts deliberately contain no matcher metrics. An observation
@@ -180,6 +181,15 @@ func decodeAnalysisStoredResult(raw []byte) (AnalysisStoredResultFacts, *Analysi
 			return AnalysisStoredResultFacts{}, nil, ErrInvalidInput
 		}
 		return analysisV4ResultFacts(value), nil, nil
+	}
+	if version.Version == introskipper.Version {
+		var value AnalysisStoredIntroSkipperResult
+		if analysisStrictJSON(raw, &value) != nil || validateAnalysisStoredIntroSkipperResult(value) != nil {
+			return AnalysisStoredResultFacts{}, nil, ErrInvalidInput
+		}
+		// The legacy pointer represents only v5 metrics. Native facts remain
+		// independent; their active reader decodes the native candidate below.
+		return analysisIntroSkipperResultFacts(value), nil, nil
 	}
 	if version.Version != introdetect.Version {
 		return AnalysisStoredResultFacts{}, nil, ErrInvalidInput

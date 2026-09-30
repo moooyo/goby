@@ -218,7 +218,7 @@ func (s *Store) GetAnalysisItem(ctx context.Context, actor identity.Principal, i
 		return AnalysisItem{}, err
 	}
 	stale = stale || before.SourceRevision != result.SourceRevision || before.Detection.Revision != result.Detection.Revision
-	if stale && result.Detection.Candidate != nil {
+	if stale && (result.Detection.Candidate != nil || result.Detection.IntroSkipperCandidate != nil) {
 		result.Detection.Status = "stale"
 		result.Detection.Reasons = append(result.Detection.Reasons, "source_changed")
 		if result.Detection.Effective != nil && result.Detection.Effective.Provenance == "Detected" {
@@ -355,16 +355,21 @@ func (s *Store) DecideAnalysisIntro(ctx context.Context, actor identity.Principa
 		return AnalysisDetection{}, ErrAnalysisConflict
 	}
 	if input.Action == "accept" {
-		if current.ItemType != "Episode" || detection.Candidate == nil || detection.Status != "qualified" && detection.Status != "review" {
+		if current.ItemType != "Episode" || detection.Candidate == nil && detection.IntroSkipperCandidate == nil || detection.Status != "qualified" && detection.Status != "review" {
 			return AnalysisDetection{}, ErrAnalysisConflict
 		}
 		record, err := readIntroRecord(ctx, tx, itemID, false)
 		if err != nil {
 			return AnalysisDetection{}, err
 		}
-		candidate := detection.Candidate.Interval
+		var start, end int64
+		if detection.IntroSkipperCandidate != nil {
+			start, end = detection.IntroSkipperCandidate.Interval.StartTicks, detection.IntroSkipperCandidate.Interval.EndTicks
+		} else {
+			start, end = detection.Candidate.Interval.StartTicks, detection.Candidate.Interval.EndTicks
+		}
 		err = writeItemIntroEditCAS(ctx, tx, actor, record, IntroEdit{Revision: input.ManualRevision, SourceRevision: input.SourceRevision,
-			StartTicks: candidate.StartTicks, EndTicks: candidate.EndTicks, Provenance: "Manual"}, false)
+			StartTicks: start, EndTicks: end, Provenance: "Manual"}, false)
 		if errors.Is(err, ErrIntroRevisionConflict) {
 			return AnalysisDetection{}, ErrAnalysisConflict
 		}

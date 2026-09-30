@@ -16,6 +16,49 @@ func analysisCacheTestFeatures() AnalysisFeatures {
 		Visual: []introdetect.VisualSample{{Ticks: 0, Hash: 0x12345678, Contrast: 400}}}
 }
 
+func TestAnalysisFeatureCachePreservesRawSequenceAndExtractionHorizon(t *testing.T) {
+	ctx, pool, store, root, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+	collection := libraryIntegrationCreate(t, ctx, store, "Raw analysis cache", "mixed", root)
+	source := AnalysisSource{ItemID: "analysis-raw-cache-item", SourceRevision: strings.Repeat("b2", 32), DurationTicks: 120 * introdetect.TicksPerSecond}
+	if _, err := pool.Exec(ctx, `INSERT INTO items(id,library_id,name,sort_name,type) VALUES($1,$2,'Raw cache source','raw cache source','Video')`, source.ItemID, collection.ID); err != nil {
+		t.Fatal(err)
+	}
+	profile, fingerprint := DefaultAnalysisProfile(), strings.Repeat("c3", 32)
+	value := analysisRawFeaturesFixture()
+	value.FingerprintEndSeconds = 120
+	if err := store.WithOwnedTx(ctx, func(tx OwnedTx) error {
+		return putAnalysisFeatureCache(tx, source, fingerprint, profile, value)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.WithOwnedTx(ctx, func(tx OwnedTx) error {
+		read, found, err := loadAnalysisFeatureCache(tx, source, fingerprint)
+		if err != nil || !found || !reflect.DeepEqual(read, value) {
+			t.Fatalf("raw cache round trip lost extraction facts: %+v %v %v", read, found, err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// A v4 count cannot be reinterpreted as a valid empty historical snapshot.
+	if _, err := pool.Exec(ctx, `UPDATE analysis_feature_cache SET payload=set_byte(payload,60,0) WHERE item_id=$1`, source.ItemID); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.WithOwnedTx(ctx, func(tx OwnedTx) error {
+		value, found, err := loadAnalysisFeatureCache(tx, source, fingerprint)
+		if err != nil || found || !reflect.DeepEqual(value, AnalysisFeatures{}) {
+			t.Fatalf("corrupt raw cache returned usable evidence: %+v %v %v", value, found, err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM analysis_feature_cache WHERE item_id=$1`, source.ItemID).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("corrupt raw cache was not removed: count=%d error=%v", count, err)
+	}
+}
+
 func TestAnalysisFeatureCacheBindsSourceProfileAndImmutableContent(t *testing.T) {
 	ctx, pool, store, root, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	collection := libraryIntegrationCreate(t, ctx, store, "Analysis cache", "mixed", root)

@@ -129,6 +129,15 @@ copy-timestamp-progress native regressions. It uses the captured libplacebo ABI
 and leaves the private library files unchanged. Compiler and development packages
 stay outside the final runtime image.
 
+The October 1 Intro Skipper recipe extension also enables FFmpeg's
+`chromaprint` muxer using the snapshot's `libchromaprint-dev`. It explicitly
+installs `libchromaprint1` in the final stage because the fixed base image
+predates this dependency. Captured native libraries remain unchanged. Build
+metadata records the Chromaprint version and copyright notice; final-stage gates
+record muxer options and generate a short raw fingerprint. This source extension
+has not been built or accepted, and does not extend the earlier image's runtime
+acceptance or establish reference-corpus fingerprint parity.
+
 The final stage installs `mesa-va-drivers`, `mesa-vulkan-drivers`, `libvulkan1`
 and `vainfo` from the base image's fixed `20260915T000000Z` Debian snapshots. It
 records actual runtime packages and compiled VAAPI/Vulkan/libplacebo features

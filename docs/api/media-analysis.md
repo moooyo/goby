@@ -1,12 +1,13 @@
 # Media analysis
 
-The current source includes [detector v5 spatial refinement](../development/intro-quality-round2-20260930.md).
-Its visual fallback carries optional `Candidate.VisualEvidence` and zero joint
-audio/visual `Metrics`; `MeasurementPolicy` distinguishes coarse and calibrated
-evidence, and `CalibrationDigest` binds the latter's fixed geometry/clock audit.
-Qualified evidence still requires three independent episodes and current
-publication authority. The existing Docker catalog remains the v3 checkpoint
-described below. Broader recognition is still limited.
+Current intro execution uses the pure Go `internal/introskipper` port of
+Intro Skipper 12.0.4.0, pinned to
+`6e0cb179007ac4c16cd9f358e9a617e791e9bf06`. It preserves the upstream Introduction
+raw-candidate matcher, including pair support and its at-most-five-second start
+snap. It runs inside Goby without a Jellyfin or C# runtime. See the
+[port record](../development/intro-skipper-port-20261001.md) for scope and
+verification status. Source recipes have changed; a new built or deployed image
+is not implied by this API contract.
 
 Media analysis executes in background tasks. Library options independently
 enable automatic intro detection and automatic seek previews. Enabling an option
@@ -17,16 +18,13 @@ negotiation and preview HTTP delivery do not start analysis. The task keys are
 `media.analysis` worker group. A task that lacks its configured local tools is
 unavailable; the server does not invent completed work or tool identities.
 
-The schema-52 automatic BIF workflow has passed its selected backend, UI and
-actual Docker checks. The expanded intro assessment is complete, but broader
-recognition is not accepted: v3 missed all 12 source-reviewed openings among 15
-evaluable originals and correctly abstained on three short-ident negatives.
-No accuracy improvement is claimed; short and variant opening recognition remains
-to be improved. Final application source
-`33445db2e2e64b6871116332c44605261a1bf2d4` includes the dashboard integration;
-both software and AMD profiles passed actual UI and exact retained-BIF checks,
-and owned-resource closure passed. See the
-[BIF and intro checkpoint](../development/bif-intro-expansion-20260930.md).
+The earlier schema-52 automatic BIF workflow passed its selected backend, UI
+and actual Docker checks at source `33445db2e2e64b6871116332c44605261a1bf2d4`.
+Its v3 intro assessment missed all 12 source-reviewed openings among 15
+evaluable originals and abstained on three short-ident negatives. That remains
+historical evidence in the
+[BIF and intro checkpoint](../development/bif-intro-expansion-20260930.md),
+separate from the current implementation and its known upstream behavior.
 The earlier automatic-intro delivery retains its completed, source-bound scope
 in the [previous increment record](../development/library-intro-automation-20260930.md).
 
@@ -82,9 +80,11 @@ remain available independently of the automatic option.
 The Emby library-option mapping uses `EnableMarkerDetection` as the main switch.
 If `EnableMarkerDetectionDuringLibraryScan` is supplied, the main switch must
 also be supplied and both booleans must agree. `IntroDetectionFingerprintLength`
-accepts only the integer `10`, matching the existing ten-minute extraction
-horizon. Responses project both booleans from the single library option and
-project the fixed length; no separate scan-only mode is implemented.
+accepts only the legacy integer `10`, representing the maximum ten-minute
+extraction horizon. Actual new-work windows use `Profile.IntroSkipper`; this
+compatibility field does not edit those options. Responses project both booleans
+from the single library option and project the fixed length; no separate
+scan-only mode is implemented.
 The preview mapping uses `EnableChapterImageExtraction`; if
 `ExtractChapterImagesDuringLibraryScan` is supplied, the main preview switch must
 also be supplied and both booleans must agree. Both response fields project the
@@ -100,6 +100,21 @@ single preview-generation option.
 | `MaxSourceBytes` | 137438953472 | 1–1099511627776 |
 | `MaxItemRuntimeSeconds` | 1200 | 1–7200 |
 | `FeatureCacheMaxBytes` | 134217728 | 1048576–536870912 |
+| `IntroSkipper.AnalysisPercent` | `25` | Integer 1–50, percent |
+| `IntroSkipper.AnalysisLengthLimit` | `10` | Integer 1–10, minutes |
+| `IntroSkipper.MinimumIntroDuration` | `15` | Integer 1–600, seconds |
+| `IntroSkipper.MaximumIntroDuration` | `120` | Integer from `MinimumIntroDuration` through 600, seconds |
+| `IntroSkipper.MaximumFingerprintPointDifferences` | `6` | Integer 0–32, differing fingerprint bits |
+| `IntroSkipper.MaximumTimeSkip` | `3.5` | Finite number 0–30, seconds between matching points |
+| `IntroSkipper.InvertedIndexShift` | `2` | Integer 0–32, neighboring fingerprint-key radius |
+
+`Profile.IntroSkipper` and all seven fields are required on configuration
+writes. The dashboard exposes the same options and units. Missing values are
+not defaulted during a write; zero remains meaningful for the three options
+whose ranges include it. `MaximumTimeSkip` is a matching-gap parameter, not an
+intro start/end offset. There are no custom boundary-offset controls. Duration
+limits preserve the pinned upstream selection rule, including its asymmetric
+right-hand candidate maximum check.
 
 `AutoPublishIntros` remains in stored/wire profiles for compatibility. It is not
 a second current publication switch: new configuration writes normalize it to
@@ -129,11 +144,14 @@ requests automatic rebuilding without a manual start.
 Cache root and disk quota are startup configuration. Paths and receiver secrets
 do not enter this profile. Admission receives an already inspected tool inventory
 and performs no filesystem access or process invocation inside its SQL owner.
-The immutable fingerprint includes the complete profile, its revision, restoration
-epoch, execution version, FFmpeg/FFprobe identities, and either the preview policy
-or the fingerprint library, detector options, stream selection and audiovisual
-sampling policy. The intro execution uses the fixed versioned default detector
-options and 0.5-second visual sampling. Available preview execution advertises
+The immutable fingerprint includes the complete profile, its revision,
+restoration epoch, execution version 6, FFmpeg/FFprobe identities, and either
+the preview policy or the Intro Skipper extraction profile and exact seven
+matcher options. For intro execution, `FingerprintSHA256` binds the effective
+Chromaprint-capable FFmpeg executable, `DetectorVersion` is `intro-skipper-v1`,
+and `IntroSkipperOptions` equals the admitted `Profile.IntroSkipper`.
+`DetectorOptions` and `VisualIntervalTicks` carry no legacy audiovisual policy
+in this execution. Available preview execution advertises
 exactly widths 240, 320 and 400. An unavailable execution snapshot contains only
 version, availability and one fixed reason; it has no fabricated hash values.
 
@@ -175,11 +193,15 @@ bounded early-return source-worker behavior.
 The executor supplies a complete-file SHA-256 after a bounded full read and verifies
 its held source before and after extraction. A prefix fingerprint is not content
 identity. Duplicate episode, source, or complete-content identities do not count as
-independent support. The feature cache uses a versioned compact binary codec, not
-JSON. Each payload is at most 256 KiB, with 8192 audio bins and 4096 visual samples;
-the global configured byte limit and an 8192-row ceiling are enforced by LRU
-eviction. Its key binds item, source revision and immutable profile. A conflicting
-whole-content or algorithm identity cannot overwrite an existing key.
+independent support. The feature cache uses a versioned compact binary codec,
+not JSON. New intro extraction writes GAFB v4 with up to 5,000 complete raw
+`uint32` fingerprint points, the exact binary64 extraction horizon, profile
+and complete-content digest. It does not mix in legacy audio bins, visual
+samples or uncertainty. The current payload ceiling is 512 KiB; GAFB v1/v2
+retain their historical 256 KiB limits. V1–v3 remain readable in their original
+formats. The configured global byte limit and 8,192-row ceiling are enforced
+by LRU eviction. Cache keys bind item, source revision and immutable profile;
+old visual features cannot serve as raw fingerprint data for a new job.
 
 ## Intro evidence and compatibility decisions
 
@@ -215,29 +237,36 @@ because they are empty. A rejection is represented by `Suppressed`, independentl
 of the underlying evidence status. Replacement does not carry suppression to new
 source bytes.
 
-The matcher emits integer similarity and coverage measurements, not a calibrated
-accuracy probability. Source detector v5 retains the acoustic evidence policy
-and adds a separately measured visual fallback when no acoustic group exists.
-Extraction uses at most the first 600 seconds; visual fallback searches at most
-the first 120 seconds or first half of the episode, with 8-to-90-second intervals.
-The refinement route uses independent 100-millisecond source rasters and one
-fixed spatial transform per source. It removes a 0.3-second uncertainty band
-from final boundaries and remeasures every supporting pair before publication.
-Both routes require at least three independent episodes. `VisualEvidence`
-records visual-only measurements without inventing acoustic support. Same or
-nested support witnesses select one existing complete group per episode;
-crossing or disjoint windows do not publish. See the
-[v5 result](../development/intro-quality-round2-20260930.md) for exact policy,
-successful new cohorts and remaining development misses. The earlier v4 first
-positive cohort remains failed in its original record. The prior [v3 expanded evaluation](../development/bif-intro-expansion-20260930.md)
-remains the original zero-of-twelve positive result; its absence of emitted
-intervals made precision and boundary error undefined. The current Docker
-catalog still uses that earlier detector and does not include this source change.
-Review candidates, competing intervals, missing modalities, insufficient support,
-analysis boundaries and search limits do not auto-publish. A completely exhausted
-comparison budget records `comparison_budget_exceeded` with no candidate and the
-task still reports the failure. A source that cannot be opened or completely
-hashed fails the child instead of inventing a no-result content identity.
+New detections expose `IntroSkipperCandidate` with `Interval`, `UpstreamCommit`
+and the actual two-member `Support` pair. Each support entry retains episode,
+source, whole-content and algorithm identities and its winning-pair interval.
+The peer's eventual final candidate can differ from that recorded pair.
+Legacy detections retain `Candidate`, including historical visual evidence;
+the two candidate fields are not populated together. New pair evidence is not
+converted into visual metrics or a three-episode consensus claim.
+
+The current matcher requires two distinct episode/source/content identities
+and retains ordered first-valid-pair behavior. The default audio window is the
+whole source below five minutes; otherwise it is the first 25 percent, capped
+at ten minutes. The configurable values above replace those defaults in new
+admissions. Stereo raw Chromaprint points keep the upstream clock
+`4096 / 11025 / 3` seconds per point. The matcher retains its intrinsic
+`start <= 5 seconds` snap to zero. It adds no source-PTS correction, custom
+offset, visual verification, three-source clique, chapter/silence adjustment,
+keyframe snap or end-snap postprocessing.
+
+Current automatic publication uses that upstream candidate behavior with
+Goby's source, task, profile and authorization fences. The retained
+[native evaluation](../development/intro-skipper-native-evaluation-20261001.md)
+found three protected-content overlap cases under the stricter corpus reference
+policy. Those measurements remain visible; they are not an additional online
+quality gate that changes upstream candidate selection. A resource failure
+returns no partial candidate. Exhausting the comparison budget records
+`comparison_budget_exceeded` and the task still reports failure. A source that
+cannot be opened or completely hashed fails the child instead of inventing
+a no-result content identity. Historical
+[v5 audiovisual policy](../development/intro-quality-round2-20260930.md) remains
+readable and is separate from this execution.
 
 Single-item and playback delivery resolve actual target and support sources under
 current authorization before advertising a detected interval. A hidden, removed,
@@ -292,6 +321,15 @@ Schema 52 adds the default-false preview library option and independent
 `PreviewGenerationRequested` event. Existing library option rows, revisions and
 prior schedule choices are retained. It does not replace the BIF format or the
 source/profile-bound preview storage contract.
+
+Schema 53 added GAFB v3 refinement storage. Schema 54 adds the closed
+`analysis_settings.intro_skipper_options` object with the seven upstream
+defaults. The migration does not increment configuration revisions or
+publication epochs, rewrite old executions, clear derivatives or withdraw
+existing source-valid v5 detected markers. Historical executions 1–5 and
+GAFB v1–v3 retain their original decoders and hashes. New work uses execution
+6 and GAFB v4. A later real profile update still performs the ordinary atomic
+invalidation and rebuild request described above.
 
 Normal restart preserves configuration and current derivative references while
 the task manager interrupts stale execution claims. Graceful shutdown of unfinished

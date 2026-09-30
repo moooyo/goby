@@ -32,13 +32,20 @@ func validateAnalysisState(ctx context.Context, tx pgx.Tx, version int64) error 
 		return ErrSchema
 	}
 	var profile library.AnalysisProfile
-	if err := tx.QueryRow(ctx, `SELECT auto_publish_intros,preview_interval_seconds,preview_quality,max_source_bytes,
-		max_item_runtime_seconds,feature_cache_max_bytes FROM analysis_settings WHERE id=1`).Scan(
+	columns := `SELECT auto_publish_intros,preview_interval_seconds,preview_quality,max_source_bytes,
+		max_item_runtime_seconds,feature_cache_max_bytes`
+	var optionsRaw []byte
+	values := []any{
 		&profile.AutoPublishIntros, &profile.PreviewIntervalSeconds, &profile.PreviewQuality, &profile.MaxSourceBytes,
-		&profile.MaxItemRuntimeSeconds, &profile.FeatureCacheMaxBytes); err != nil {
+		&profile.MaxItemRuntimeSeconds, &profile.FeatureCacheMaxBytes}
+	if version >= 54 {
+		columns += `,intro_skipper_options`
+		values = append(values, &optionsRaw)
+	}
+	if err := tx.QueryRow(ctx, columns+` FROM analysis_settings WHERE id=1`).Scan(values...); err != nil {
 		return classifyResourceStateError(ctx, err)
 	}
-	profileErr := library.ValidateAnalysisProfile(profile)
+	profileErr := validateAnalysisStateProfile(profile, optionsRaw, version)
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -46,9 +53,11 @@ func validateAnalysisState(ctx context.Context, tx pgx.Tx, version int64) error 
 		return ErrSchema
 	}
 	for _, validate := range []func(context.Context, pgx.Tx) error{
-		validateAnalysisTaskState, validateAnalysisAdmissionState,
+		validateAnalysisTaskState,
+		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisAdmissionState(ctx, tx, version) },
 		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisFeatureState(ctx, tx, version) },
-		validateAnalysisPreviewState, validateAnalysisDetectionState,
+		validateAnalysisPreviewState,
+		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisDetectionState(ctx, tx, version) },
 	} {
 		if err := validate(ctx, tx); err != nil {
 			return err
@@ -109,7 +118,17 @@ const analysisStateRelationsSQL = `SELECT
 			WHEN profile.execution->>'Version'='2' THEN 'introdetect-v2'
 			WHEN profile.execution->>'Version'='3' THEN 'introdetect-v3'
 			WHEN profile.execution->>'Version'='4' THEN 'introdetect-v4'
-			WHEN profile.execution->>'Version'='5' THEN 'introdetect-v5' ELSE '' END
+			WHEN profile.execution->>'Version'='5' THEN 'introdetect-v5'
+			WHEN profile.execution->>'Version'='6' THEN 'intro-skipper-v1' ELSE '' END
+		OR (detection.result->>'Version'='intro-skipper-v1' AND
+			(detection.result->'Options' IS DISTINCT FROM profile.profile->'IntroSkipper'
+			OR (profile.execution->'Available'='true'::jsonb AND
+				detection.result->'Options' IS DISTINCT FROM profile.execution->'IntroSkipperOptions')
+			OR detection.result->'Episode'->'DurationTicks' IS DISTINCT FROM to_jsonb(source.duration_ticks)
+			OR (detection.result->>'Reason'='' AND
+				detection.result->'Episode'->>'AlgorithmProfile' IS DISTINCT FROM profile.execution->>'IntroProfile')
+			OR EXISTS(SELECT 1 FROM jsonb_array_elements(COALESCE(detection.result->'Episode'->'Candidate'->'Support','[]'::jsonb)) support
+				WHERE support->>'AlgorithmProfile' IS DISTINCT FROM profile.execution->>'IntroProfile')))
 		OR (detection.result->>'Reason'='' AND profile.execution->'Available' IS DISTINCT FROM 'true'::jsonb)
 		OR (detection.auto_published AND (detection.publication_epoch<>settings.publication_epoch
 		OR detection.profile_revision<>settings.revision OR NOT settings.auto_publish_intros)))

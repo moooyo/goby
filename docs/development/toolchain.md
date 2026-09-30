@@ -31,6 +31,23 @@ of its [zscale filter](https://ffmpeg.org/ffmpeg-filters.html#zscale).
 
 ## Phase 1 private media toolchain
 
+### Intro Skipper extraction recipe update
+
+The October 1, 2026 source recipes enable `--enable-chromaprint` in the software
+OCI, AMD OCI and private test toolchains. They use Debian's `libchromaprint-dev`
+and `libchromaprint1`; this is independent of the legacy helper's vendored
+Chromaprint 1.6.1. The OCI recipes retain the fixed Debian snapshot and record
+the resolved package and library versions. The private installer records the
+package versions and bundles `libchromaprint.so.1` with its transitive library
+closure and copyright notice.
+
+New builds check the `chromaprint` muxer and its `fp_format` option and generate
+a short stereo raw fingerprint after relocation or in the final image stage.
+These gates establish extraction availability. Reference-corpus comparisons
+must separately establish parity with the selected Intro Skipper reference
+toolchain. This recipe update has not built or accepted a replacement image or
+installed toolchain; the historical records below retain their original scope.
+
 The phase 1 installer adds `libx265` for HEVC and `libaom-av1` for AV1, alongside
 the existing H.264/audio encoders. The AV1 implementation uses libaom because
 the engine requires arbitrary forced keyframe timestamps for independent HLS

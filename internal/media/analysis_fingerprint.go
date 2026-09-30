@@ -40,18 +40,22 @@ type AudioFingerprintMetadata struct {
 }
 
 type AnalysisAvailability struct {
-	AudioAvailable    bool
-	VisualAvailable   bool
-	PreviewAvailable  bool
-	FFmpegPath        string
-	FFmpegSHA256      string
-	FFprobePath       string
-	FFprobeSHA256     string
-	FingerprintPath   string
-	FingerprintSHA256 string
-	Fingerprint       AudioFingerprintMetadata
-	AudioReason       string
-	VideoReason       string
+	IntroSkipperAvailable bool
+	IntroFFmpegPath       string
+	IntroFFmpegSHA256     string
+	IntroSkipperReason    string
+	AudioAvailable        bool
+	VisualAvailable       bool
+	PreviewAvailable      bool
+	FFmpegPath            string
+	FFmpegSHA256          string
+	FFprobePath           string
+	FFprobeSHA256         string
+	FingerprintPath       string
+	FingerprintSHA256     string
+	Fingerprint           AudioFingerprintMetadata
+	AudioReason           string
+	VideoReason           string
 }
 
 func parseAnalysisFingerprint(data []byte, mode string) (AudioFingerprintMetadata, error) {
@@ -187,6 +191,9 @@ func (e AnalysisExtractor) Availability(ctx context.Context) (AnalysisAvailabili
 		return result, err
 	}
 	defer release()
+	if err := e.introSkipperAvailability(bounded, &result); err != nil {
+		return result, err
+	}
 	ffmpeg, err := analysisOpenToolExpected(bounded, e.FFmpegPath, e.ExpectedFFmpegSHA256)
 	if err != nil {
 		result.AudioReason, result.VideoReason = "ffmpeg_unavailable", "ffmpeg_unavailable"

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -298,19 +298,19 @@ func TestAnalysisCurrentUnavailableAdmissionCanPublishOnlyTruthfulAbstention(t *
 			var valid bool
 			if err := f.pool.QueryRow(f.ctx, `SELECT count(*)=3 AND bool_and(status='no_result' AND NOT auto_published
 				AND result->>'Version'=$1 AND result->>'Reason'='source_unavailable'
-				AND result#>'{Episode,Candidates}'='[]'::jsonb AND result#>'{Episode,Reasons}'='[]'::jsonb
-				AND result#>>'{Episode,ContentIdentity}'='') FROM analysis_detections`, introdetect.Version).Scan(&valid); err != nil || !valid {
+				AND result#>'{Episode,Candidate}'='null'::jsonb AND result#>'{Episode,Reasons}'='[]'::jsonb
+				AND result#>>'{Episode,ContentIdentity}'='') FROM analysis_detections`, introskipper.Version).Scan(&valid); err != nil || !valid {
 				t.Fatal("unavailable abstention introduced candidate, content, or automatic evidence")
 			}
 			result := analysisFixtureQualifiedResult(t, f, work)
-			if err := f.store.PublishIntroAnalysis(f.ctx, children[0], fence, result); !errors.Is(err, ErrInvalidInput) {
+			if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, result); !errors.Is(err, ErrInvalidInput) {
 				t.Fatalf("unavailable admission published a fabricated qualified result: %v", err)
 			}
 		})
 	}
 }
 
-func TestAnalysisPublicationBindsEachCandidateToItsExactGroupEvidence(t *testing.T) {
+func TestAnalysisLegacyResultValidationBindsEachCandidateToItsExactGroupEvidence(t *testing.T) {
 	f := newAnalysisWorkFixture(t, 3)
 	run, children := f.admit(t, TaskIntroAnalysisKey, nil)
 	f.claim(t, run, children[0])
@@ -318,9 +318,11 @@ func TestAnalysisPublicationBindsEachCandidateToItsExactGroupEvidence(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Validate the retained v5 result contract without admitting a v5 worker.
+	work.Execution = analysisLegacyTestIntroExecution()
 	for _, field := range []string{"metrics", "reasons"} {
 		t.Run(field, func(t *testing.T) {
-			result := analysisFixtureQualifiedResult(t, f, work)
+			result := analysisFixtureLegacyQualifiedResult(t, f, work)
 			if _, err := validateAnalysisResultForWork(work, result); err != nil {
 				t.Fatal("complete current fixture must be valid before changing its group evidence")
 			}

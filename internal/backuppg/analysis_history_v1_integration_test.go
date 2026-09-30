@@ -72,7 +72,7 @@ func seedAnalysisArchiveV1History(t *testing.T, ctx context.Context, pool *pgxpo
 	// Unavailable admissions retain only an abstention from their own envelope.
 	unavailableCanonical := `{"Version":1,"Revision":1,"Epoch":1,"Profile":` + analysisArchiveV1Profile + `,"Execution":` + analysisArchiveV1Unavailable + `}`
 	unavailableDigest := sha256.Sum256([]byte(unavailableCanonical))
-	currentUnavailable, currentFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
+	currentUnavailable, currentFingerprint := analysisArchiveV5Admission(t, analysisArchiveV5Execution{Version: 5, UnavailableReason: "not_configured"})
 	v2Unavailable, v2Fingerprint := analysisArchiveV2Admission(t, "unavailable")
 	v3Unavailable, v3Fingerprint := analysisArchiveV3Admission(t, "unavailable")
 	v4Unavailable, v4Fingerprint := analysisArchiveV4Admission(t, "unavailable")
@@ -143,20 +143,20 @@ func analysisArchiveV1AdmissionFingerprint(execution string) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func analysisArchiveCurrentAdmission(t *testing.T, execution library.AnalysisExecutionProfile) (string, string) {
+func analysisArchiveV5Admission(t *testing.T, execution analysisArchiveV5Execution) (string, string) {
 	t.Helper()
 	raw, err := json.Marshal(execution)
 	if err != nil {
-		t.Fatal("encode the current execution fixture")
+		t.Fatal("encode the frozen v5 execution fixture")
 	}
 	canonical, err := json.Marshal(struct {
 		Version         int
 		Revision, Epoch int64
-		Profile         library.AnalysisProfile
-		Execution       library.AnalysisExecutionProfile
-	}{library.AnalysisExecutionProfileVersion, 1, 1, library.DefaultAnalysisProfile(), execution})
+		Profile         json.RawMessage
+		Execution       analysisArchiveV5Execution
+	}{5, 1, 1, json.RawMessage(analysisArchiveV1Profile), execution})
 	if err != nil {
-		t.Fatal("encode the current canonical admission")
+		t.Fatal("encode the frozen v5 canonical admission")
 	}
 	digest := sha256.Sum256(canonical)
 	return string(raw), hex.EncodeToString(digest[:])
@@ -266,13 +266,13 @@ func TestPostgreSQLAnalysisHistoryRequiresMatchingAdmissionAndResultVersions(t *
 	ctx, source, _, options := recoveryFixture(t)
 	seedAnalysisArchiveState(t, ctx, source)
 	v1Fingerprint := seedAnalysisArchiveV1History(t, ctx, source)
-	if introdetect.Version != "introdetect-v5" || library.AnalysisExecutionProfileVersion != 5 {
-		t.Fatal("mixed-version witness requires the current v5 execution contract")
+	if introdetect.Version != "introdetect-v5" {
+		t.Fatal("mixed-version witness requires the frozen v5 detector contract")
 	}
-	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
+	execution := analysisArchiveV5Execution{Version: 5, Available: true,
 		FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64),
 		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: 5000000, IntroProfile: "archive-intro-v5"}
-	currentRaw, currentFingerprint := analysisArchiveCurrentAdmission(t, execution)
+	currentRaw, currentFingerprint := analysisArchiveV5Admission(t, execution)
 	v2Raw, v2Fingerprint := analysisArchiveV2Admission(t, "intro")
 	v3Raw, v3Fingerprint := analysisArchiveV3Admission(t, "intro")
 	v4Raw, v4Fingerprint := analysisArchiveV4Admission(t, "intro")
@@ -288,7 +288,7 @@ func TestPostgreSQLAnalysisHistoryRequiresMatchingAdmissionAndResultVersions(t *
 	v2Unavailable, v2UnavailableFingerprint := analysisArchiveV2Admission(t, "unavailable")
 	v3Unavailable, v3UnavailableFingerprint := analysisArchiveV3Admission(t, "unavailable")
 	v4Unavailable, v4UnavailableFingerprint := analysisArchiveV4Admission(t, "unavailable")
-	currentUnavailable, currentUnavailableFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
+	currentUnavailable, currentUnavailableFingerprint := analysisArchiveV5Admission(t, analysisArchiveV5Execution{Version: 5, UnavailableReason: "not_configured"})
 	var tests []struct {
 		name, execution, fingerprint, result string
 		valid                                bool

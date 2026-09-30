@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -218,7 +219,7 @@ func TestAnalysisLeafSelectionUsesSupportWithoutPublishingOtherEpisodes(t *testi
 	}
 }
 
-func analysisFixtureQualifiedResult(t *testing.T, f analysisWorkFixture, work AnalysisWork) introdetect.Result {
+func analysisFixtureLegacyQualifiedResult(t *testing.T, f analysisWorkFixture, work AnalysisWork) introdetect.Result {
 	t.Helper()
 	interval := introdetect.Interval{StartTicks: 10 * media.TicksPerSecond, EndTicks: 45 * media.TicksPerSecond}
 	supports := []introdetect.Support{}
@@ -238,9 +239,44 @@ func analysisFixtureQualifiedResult(t *testing.T, f analysisWorkFixture, work An
 	metrics.VisualAnchorCount, metrics.VisualMinBandMatchedPermille, metrics.VisualMatchedTimePermille = 35, 1000, 1000
 	metrics.VisualDistinctStates, metrics.VisualDominantStatePermille = 8, 125
 	group := introdetect.Group{ID: "fixture-independent-evidence", AlgorithmProfile: work.Execution.IntroProfile, Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Members: supports, Metrics: metrics}
-	result := introdetect.Result{Version: introdetect.Version, CohortKey: work.ScopeKey, Options: work.Execution.DetectorOptions, Groups: []introdetect.Group{group}, Episodes: []introdetect.EpisodeResult{}}
+	result := introdetect.Result{Version: introdetect.Version, CohortKey: work.ScopeKey, Options: introdetect.DefaultOptions(), Groups: []introdetect.Group{group}, Episodes: []introdetect.EpisodeResult{}}
 	for _, support := range supports {
 		result.Episodes = append(result.Episodes, introdetect.EpisodeResult{EpisodeKey: support.EpisodeKey, SourceKey: support.SourceKey, ContentIdentity: support.ContentIdentity, Status: introdetect.Qualified, Reasons: []introdetect.Reason{}, Candidates: []introdetect.Candidate{{Interval: interval, GroupID: group.ID, Status: group.Status, Reasons: []introdetect.Reason{}, Metrics: metrics, Support: supports}}})
+	}
+	return result
+}
+
+func analysisFixtureQualifiedResult(t *testing.T, f analysisWorkFixture, work AnalysisWork) introskipper.Result {
+	t.Helper()
+	interval := introskipper.Interval{StartTicks: 10 * media.TicksPerSecond, EndTicks: 45 * media.TicksPerSecond}
+	supports := make([]introskipper.Support, len(work.Sources))
+	for index, source := range work.Sources {
+		var path string
+		if err := f.pool.QueryRow(f.ctx, `SELECT path FROM items WHERE id=$1`, source.ItemID).Scan(&path); err != nil {
+			t.Fatal(err)
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		digest := sha256.Sum256(raw)
+		supports[index] = introskipper.Support{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision,
+			ContentIdentity: hex.EncodeToString(digest[:]), AlgorithmProfile: work.Execution.IntroProfile, Interval: interval}
+	}
+	if len(supports) < 2 {
+		t.Fatal("a qualified native fixture requires an independent pair")
+	}
+	result := introskipper.Result{Version: introskipper.Version, CohortKey: work.ScopeKey, Options: work.Profile.IntroSkipper,
+		Episodes: make([]introskipper.EpisodeResult, len(work.Sources))}
+	for index, source := range work.Sources {
+		pair := []introskipper.Support{supports[0], supports[index]}
+		if index == 0 {
+			pair[1] = supports[1]
+		}
+		result.Episodes[index] = introskipper.EpisodeResult{EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision,
+			ContentIdentity: supports[index].ContentIdentity, AlgorithmProfile: work.Execution.IntroProfile, DurationTicks: source.DurationTicks,
+			Status: introskipper.Qualified, Reasons: []string{}, Candidate: &introskipper.Candidate{Interval: interval,
+				UpstreamCommit: introskipper.UpstreamCommit, Support: pair}}
 	}
 	return result
 }
@@ -269,14 +305,14 @@ func TestAnalysisPublicationRequiresFinalFenceAndCurrentIndependentSources(t *te
 		}
 		return nil
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, children[0], rejecting, result); !errors.Is(err, ErrForbidden) {
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], rejecting, result); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("publication did not honor its final fence: %v", err)
 	}
 	var detections, audits int
 	if err := f.pool.QueryRow(f.ctx, `SELECT (SELECT count(*) FROM analysis_detections),(SELECT count(*) FROM analysis_intro_audit)`).Scan(&detections, &audits); err != nil || detections != 0 || audits != 0 {
 		t.Fatal("failed publication partially committed", err)
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, children[0], fence, result); err != nil {
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, result); err != nil {
 		t.Fatal(err)
 	}
 	intro, err := f.store.ResolveAnalysisIntroFor(f.ctx, Subject{UserID: f.viewer}, work.Sources[0].ItemID, "")
@@ -297,6 +333,34 @@ func TestAnalysisPublicationRequiresFinalFenceAndCurrentIndependentSources(t *te
 	}
 	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM analysis_intro_audit`).Scan(&audits); err != nil || audits != 3 {
 		t.Fatalf("source invalidation rewrote detection audit: %d %v", audits, err)
+	}
+}
+
+func TestAnalysisNativePairAdmissionAndAdministrativeAcceptance(t *testing.T) {
+	f := newAnalysisWorkFixture(t, 2)
+	f.setIntroDetection(t, true)
+	run, children := f.admit(t, TaskIntroAnalysisKey, nil)
+	if len(children) != 1 {
+		t.Fatal("two episodes did not produce one bounded cohort")
+	}
+	f.claim(t, run, children[0])
+	fence := f.fence(children[0])
+	work, err := f.store.GetAnalysisWork(f.ctx, children[0], fence)
+	if err != nil || work.Reason != "" || len(work.Sources) != 2 {
+		t.Fatalf("native admission retained a legacy three-source minimum: %+v %v", work, err)
+	}
+	result := analysisFixtureQualifiedResult(t, f, work)
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, result); err != nil {
+		t.Fatal(err)
+	}
+	item, err := f.store.GetAnalysisItem(f.ctx, f.actor, work.Sources[0].ItemID)
+	if err != nil || item.Detection.Candidate != nil || item.Detection.IntroSkipperCandidate == nil || len(item.Detection.IntroSkipperCandidate.Support) != 2 {
+		t.Fatalf("native candidate borrowed legacy evidence: %+v %v", item.Detection, err)
+	}
+	accepted, err := f.store.DecideAnalysisIntro(f.ctx, f.actor, item.ID, analysisDecisionForTest(item, "accept"))
+	if err != nil || accepted.Effective == nil || accepted.Effective.Provenance != "Manual" ||
+		accepted.Effective.StartTicks != result.Episodes[0].Candidate.Interval.StartTicks || accepted.Effective.EndTicks != result.Episodes[0].Candidate.Interval.EndTicks {
+		t.Fatalf("administrator could not accept a native interval: %+v %v", accepted, err)
 	}
 }
 

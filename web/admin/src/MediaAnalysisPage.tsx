@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, LinearProgress, Paper, Skeleton, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, LinearProgress, Paper, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import PauseCircleOutlineRounded from '@mui/icons-material/PauseCircleOutlineRounded';
 import PlaylistPlayRounded from '@mui/icons-material/PlaylistPlayRounded';
@@ -7,7 +7,8 @@ import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { Library, TaskRunDetail } from './api';
 import { ErrorNotice, PageHeading } from './components';
-import { analysisBytes, analysisDraft, analysisNumberFields, parseAnalysisDraft } from './mediaAnalysis';
+import { AnalysisConfigurationFields } from './AnalysisConfigurationFields';
+import { analysisBytes, analysisDraft, parseAnalysisDraft } from './mediaAnalysis';
 import type { AnalysisDraft, AnalysisOverview, AnalysisPrune, AnalysisRunInput, AnalysisRunReceipt } from './mediaAnalysis';
 import { mediaAnalysisApi } from './mediaAnalysisApi';
 import { MediaAnalysisResults } from './MediaAnalysisResults';
@@ -141,7 +142,7 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onLibraries, onNavig
                 <AvailabilityChip available={overview.Runtime.IntroAvailable} label={overview.Runtime.IntroAvailable ? 'Intro analysis available' : 'Intro analysis unavailable'} />
                 <AvailabilityChip available={overview.Runtime.PreviewAvailable} label={overview.Runtime.PreviewAvailable ? 'Previews available' : 'Previews unavailable'} />
               </Stack>
-              <Typography variant="caption" color="text.secondary">Configuration revision {overview.Configuration.Revision}. Saved values apply to new work; existing jobs retain their profile.</Typography>
+              <Typography variant="caption" color="text.secondary">Configuration revision {overview.Configuration.Revision}. Changed settings queue fresh work for enabled libraries.</Typography>
               {overview.Runtime.Reasons.length > 0 && <Alert severity="info"><Box component="ul" sx={{ m: 0, pl: 2 }}>{overview.Runtime.Reasons.map((reason, index) => <li key={`${reason}-${index}`}>{reason.replaceAll('_', ' ')}</li>)}</Box></Alert>}
             </Stack>
           </Paper>
@@ -165,7 +166,7 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onLibraries, onNavig
               <Typography component="h2" variant="h3" id="analysis-automation-title">Automatic media processing</Typography>
               <Box component="section" aria-labelledby="analysis-intro-title" sx={{ mt: 1.5 }}>
                 <Typography component="h3" variant="body1" id="analysis-intro-title" sx={{ fontWeight: 600 }}>Automatic intro detection</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Enable Automatic intro detection in a TV library's settings. Episodes are analyzed in the background and reliable matches become available for playback. If no intro is found, playback stays unchanged.</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>Enable Automatic intro detection in a TV library's settings. Episodes are analyzed in the background and matched intros become available for playback. If no intro is found, playback stays unchanged.</Typography>
               </Box>
               <Box component="section" aria-labelledby="analysis-preview-title" sx={{ mt: 1.5 }}>
                 <Typography component="h3" variant="body1" id="analysis-preview-title" sx={{ fontWeight: 600 }}>Automatic seek previews</Typography>
@@ -187,12 +188,12 @@ export function MediaAnalysisPage({ currentUserId, onTasks, onLibraries, onNavig
           <DialogContent>
             <Box component="form" id="analysis-configuration-form" onSubmit={(event) => { event.preventDefault(); void save(); }}>
               <Stack spacing={2.5} sx={{ pt: 0.5 }}>
-                <Typography variant="body2" color="text.secondary">Revision {overview.Configuration.Revision}. Saved values apply to newly admitted work; existing jobs retain their profile. Configuration remains editable when processing is unavailable.</Typography>
+                <Typography variant="body2" color="text.secondary">Revision {overview.Configuration.Revision}. Saving changed settings invalidates previous analysis results and queues fresh work for enabled libraries. Configuration remains editable when processing is unavailable.</Typography>
                 {error != null && <ErrorNotice error={error} />}
                 {reloadRequired && <Alert severity="warning">The change could not be confirmed or the configuration changed. Your draft is preserved.<Button color="inherit" disabled={loading || locked} onClick={() => reload(true)}>Reload latest and keep draft</Button></Alert>}
                 {notice && <Alert severity="success">{notice}</Alert>}
-                <Typography variant="body2" color="text.secondary">Library settings control automatic intro detection and seek previews. These processing limits and preview settings apply to new work.</Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>{analysisNumberFields.map((field) => <TextField key={field.key} label={field.label} value={draft[field.key]} disabled={blocked} onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })} error={Boolean(parsed?.errors[field.key])} helperText={parsed?.errors[field.key] ?? field.help} slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 16, autoComplete: 'off' } }} />)}</Box>
+                <AnalysisConfigurationFields draft={draft} errors={parsed?.errors ?? {}} mutationError={error} disabled={blocked}
+                  onChange={(value) => { setDraft(value); if (!reloadRequired) setError(undefined); }} />
                 <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}><Button disabled={blocked} onClick={() => setDraft(analysisDraft(overview.Configuration.Defaults))}>Use default profile</Button><Button disabled={locked || loading} onClick={() => { setDraft(analysisDraft(overview.Configuration.Profile)); setNotice('Draft discarded. The last confirmed profile is shown.'); }}>Discard draft</Button></Stack>
                 {dirty && <Typography role="status" variant="caption" color="text.secondary">The configuration has unsaved changes. Closing this dialog keeps the draft.</Typography>}
               </Stack>

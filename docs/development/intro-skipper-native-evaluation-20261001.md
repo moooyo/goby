@@ -1,12 +1,32 @@
 # Native Intro Skipper evaluation
 
+## Status update: 2026-10-01 Go port
+
+The subsequent integration decision selects the pinned upstream Introduction
+raw-candidate behavior in Goby, implemented as a mechanical Go port with
+dashboard options and no production Jellyfin/C# dependency. The intrinsic
+at-most-five-second start snap remains; optional chapter, silence, keyframe and
+end adjustments are excluded. The prior raw-matcher parity comparison on these
+19 episodes reproduced six candidates, thirteen empty results and all twelve
+candidate endpoints exactly at 100 ns resolution.
+
+The three protected-content overlap cases and all measurements below remain
+unchanged. They describe the stricter reference-policy assessment and are not
+an additional runtime veto on the selected upstream behavior. Production
+extraction parity and integrated verification are recorded separately in the
+[Go port record](intro-skipper-port-20261001.md); earlier matcher parity does not
+establish those results. The remainder of this document retains the native
+evaluation and its decision at that earlier checkpoint.
+
+## Historical evaluation outcome
+
 Intro Skipper can run without a detector fork, but the two evaluated
 configurations do not meet Goby's current automatic-skip acceptance criteria.
 The official plugin returned six introductions in the selected 19-episode
 corpus. Three crossed frozen protected-content ranges by substantial amounts.
 Disabling configurable boundary adjustment reduced those crossings but did
-not remove them. No Intro Skipper integration or Goby algorithm change was
-made after this result.
+not remove them. At that evaluation checkpoint, no Intro Skipper integration
+or Goby algorithm change had been made.
 
 This is a deliberately difficult, already observed development corpus, not a
 random sample or an estimate of Intro Skipper's quality on general libraries.
@@ -45,7 +65,8 @@ search window is the whole file below five minutes; otherwise it is the first
 
 No local tests, runtime probes, builds or decoding ran. Local operations only
 downloaded/transferred public artifacts, read source and wrote orchestration
-or documentation. No upstream matching code was modified or copied into Goby.
+or documentation. During that native evaluation, no upstream matching code was
+modified or copied into Goby.
 
 ## Frozen corpus and admission
 
@@ -174,7 +195,7 @@ upstream reuse architecture would host Jellyfin plus the official plugin and
 consume its HTTP segments, with a small library/identity adapter. That avoids
 maintaining a detector fork but still adds a host and integration surface.
 
-Under the current frozen reference policy, neither evaluated configuration
+Under that frozen reference policy, neither evaluated configuration
 supports direct automatic adoption. The substantial protection crossings are
 the primary blocker, not B7's quarter-second shortfall. The user's preference
 for upstream reuse is retained: this finding does not authorize resuming a

@@ -464,7 +464,7 @@ func TestDecodeAnalysisFeaturesRejectsMalformedBinary(t *testing.T) {
 		mutate func([]byte)
 	}{
 		{"bad magic", func(p []byte) { p[0] = 'X' }},
-		{"unknown version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 4) }},
+		{"unknown version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 5) }},
 		{"maximum version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], math.MaxUint16) }},
 		{"wrong legacy layout", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 1) }},
 		{"wrong version two layout", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 2) }},

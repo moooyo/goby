@@ -5,7 +5,7 @@ package library
 import (
 	"testing"
 
-	"github.com/moooyo/goby/internal/introdetect"
+	"github.com/moooyo/goby/internal/introskipper"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -18,7 +18,7 @@ func TestAnalysisDisabledLibraryRetainsManualRunEvidenceWithoutPublishing(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, children[0], fence, analysisFixtureQualifiedResult(t, f, work)); err != nil {
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, analysisFixtureQualifiedResult(t, f, work)); err != nil {
 		t.Fatal("compatible manual execution failed for a disabled library", err)
 	}
 	var retained bool
@@ -44,7 +44,7 @@ func TestAnalysisLibraryPolicyWithdrawsDetectedWithoutErasingExplicitMarkers(t *
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, children[0], fence, analysisFixtureQualifiedResult(t, f, work)); err != nil {
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, analysisFixtureQualifiedResult(t, f, work)); err != nil {
 		t.Fatal(err)
 	}
 	source := work.Sources[0]
@@ -90,52 +90,47 @@ func TestAnalysisLibraryPolicyWithdrawsDetectedWithoutErasingExplicitMarkers(t *
 	}
 }
 
-func TestAnalysisEnabledLibraryDoesNotPublishReviewOrNoResult(t *testing.T) {
-	for _, status := range []introdetect.Status{introdetect.Review, introdetect.NoResult} {
-		t.Run(string(status), func(t *testing.T) {
-			f := newAnalysisWorkFixture(t, 3)
-			f.setIntroDetection(t, true)
-			run, children := f.admit(t, TaskIntroAnalysisKey, nil)
-			f.claim(t, run, children[0])
-			fence := f.fence(children[0])
-			work, err := f.store.GetAnalysisWork(f.ctx, children[0], fence)
-			if err != nil {
-				t.Fatal(err)
-			}
-			result := analysisFixtureQualifiedResult(t, f, work)
-			template := analysisDetectionTestValue(status).Episode
-			if status == introdetect.NoResult {
-				result.Groups = []introdetect.Group{}
-			} else {
-				group := &result.Groups[0]
-				group.Status, group.Reasons = status, template.Reasons
-				group.Metrics = template.Candidates[0].Metrics
-				for index := range group.Members {
-					group.Members[index].Interval = template.Candidates[0].Support[index].Interval
-				}
-			}
-			for index := range result.Episodes {
-				episode := &result.Episodes[index]
-				episode.Status, episode.Reasons = status, template.Reasons
-				episode.Candidates = []introdetect.Candidate{}
-				if status == introdetect.Review {
-					group := result.Groups[0]
-					episode.Candidates = []introdetect.Candidate{{Interval: group.Members[index].Interval,
-						GroupID: group.ID, Status: status, Reasons: group.Reasons, Metrics: group.Metrics, Support: group.Members}}
-				}
-			}
-			if err := f.store.PublishIntroAnalysis(f.ctx, children[0], fence, result); err != nil {
-				t.Fatal("retain completed non-qualified analysis", err)
-			}
-			var retained bool
-			if err := f.pool.QueryRow(f.ctx, `SELECT count(*)=3 AND bool_and(status=$1 AND NOT auto_published)
-				FROM analysis_detections`, string(status)).Scan(&retained); err != nil || !retained {
-				t.Fatal("non-qualified analysis became an automatic intro", err)
-			}
-			if value, err := f.store.ResolveAnalysisIntroFor(f.ctx, Subject{UserID: f.viewer}, work.Sources[0].ItemID, ""); err != nil || value != nil {
-				t.Fatalf("non-qualified result reached playback: %+v %v", value, err)
-			}
-		})
+func TestAnalysisEnabledLibraryDoesNotPublishNativeNoResult(t *testing.T) {
+	f := newAnalysisWorkFixture(t, 3)
+	f.setIntroDetection(t, true)
+	run, children := f.admit(t, TaskIntroAnalysisKey, nil)
+	f.claim(t, run, children[0])
+	fence := f.fence(children[0])
+	work, err := f.store.GetAnalysisWork(f.ctx, children[0], fence)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := analysisFixtureQualifiedResult(t, f, work)
+	for index := range result.Episodes {
+		episode := &result.Episodes[index]
+		episode.Status, episode.Reasons, episode.Candidate = introskipper.NoResult, []string{introskipper.NoRepeatedInterval}, nil
+	}
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, result); err != nil {
+		t.Fatal("retain completed non-qualified analysis", err)
+	}
+	var retained bool
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*)=3 AND bool_and(status='no_result' AND NOT auto_published)
+		FROM analysis_detections`).Scan(&retained); err != nil || !retained {
+		t.Fatal("non-qualified analysis became an automatic intro", err)
+	}
+	if value, err := f.store.ResolveAnalysisIntroFor(f.ctx, Subject{UserID: f.viewer}, work.Sources[0].ItemID, ""); err != nil || value != nil {
+		t.Fatalf("non-qualified result reached playback: %+v %v", value, err)
+	}
+}
+
+func TestAnalysisEnabledLibraryDoesNotPublishRetainedV5Review(t *testing.T) {
+	f := newAnalysisAdminFixture(t)
+	if _, err := f.pool.Exec(f.ctx, `UPDATE libraries SET options=jsonb_set(options,'{EnableIntroDetection}','true'::jsonb) WHERE id=$1`, f.libraryID); err != nil {
+		t.Fatal(err)
+	}
+	item := f.seedReview(t)
+	const viewer = "legacy-review-policy-viewer"
+	libraryIntegrationUser(t, f.ctx, f.pool, viewer, false, false, []string{f.libraryID})
+	if value, err := f.store.ResolveAnalysisIntroFor(f.ctx, Subject{UserID: viewer}, item.ID, ""); err != nil || value != nil {
+		t.Fatalf("retained v5 review reached playback: %+v %v", value, err)
+	}
+	if item.Detection.Status != "review" || item.Detection.Candidate == nil || item.Detection.IntroSkipperCandidate != nil {
+		t.Fatal("retained review lost its original v5 evidence")
 	}
 }
 
@@ -162,7 +157,7 @@ func TestAnalysisLibraryReenableRetiresLegacyRejectionBeforeFreshPublication(t *
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.store.PublishIntroAnalysis(f.ctx, children[0], fence, analysisFixtureQualifiedResult(t, f, work)); err != nil {
+	if err := f.store.PublishIntroSkipperAnalysis(f.ctx, children[0], fence, analysisFixtureQualifiedResult(t, f, work)); err != nil {
 		t.Fatal(err)
 	}
 	value, err := f.store.ResolveAnalysisIntroFor(f.ctx, Subject{UserID: f.viewer}, item.ID, "")
