@@ -92,12 +92,15 @@ const test = base.extend<{ api: RuntimeAPI }>({ api: async ({ context, page }, u
   expect(api.unexpected).toEqual([]); expect(errors).toEqual([]); expect(api.writes().every((request) => request.csrf === csrf)).toBe(true);
 } });
 test.use({ serviceWorkers: 'block', trace: 'off', video: 'off' });
-async function openSettings(page: Page): Promise<void> { await page.goto('/admin/settings'); await expect(page.getByRole('region', { name: 'HTTP listener', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Reload settings', exact: true })).toBeEnabled(); }
+async function openSettings(page: Page, section: 'general' | 'hardware' | 'transcode' = 'hardware'): Promise<void> { await page.goto('/admin/settings/' + section); await expect(page.getByRole('region', { name: section === 'general' ? 'HTTP listener' : section === 'hardware' ? 'Hardware acceleration' : 'Output planning limits', exact: true })).toBeVisible(); await expect(page.getByRole('button', { name: 'Reload settings', exact: true })).toBeEnabled(); }
 const group = (page: Page, name: string) => page.getByRole('region', { name, exact: true });
-async function override(region: Locator, name: string): Promise<void> { await region.getByRole('switch', { name: `Use deployment default for ${name}`, exact: true }).uncheck(); }
+async function override(region: Locator, name: string): Promise<void> {
+  if (['http port', 'bind address', 'maximum width'].includes(name.toLowerCase())) await region.getByRole('checkbox', { name: `Use deployment default for ${name.toLowerCase()}`, exact: true }).uncheck();
+  else await region.getByRole('button', { name: `Customize ${name.toLowerCase()}`, exact: true }).click();
+}
 async function select(page: Page, region: Locator, label: string, choice: string): Promise<void> { await region.getByRole('combobox', { name: label, exact: true }).click(); await page.getByRole('option', { name: choice, exact: true }).click(); }
 async function save(page: Page, status = 200): Promise<void> {
-  const [response] = await Promise.all([page.waitForResponse((value) => value.request().method() === 'PUT' && new URL(value.url()).pathname === settingsPath), page.getByRole('button', { name: 'Save settings', exact: true }).click()]);
+  const [response] = await Promise.all([page.waitForResponse((value) => value.request().method() === 'PUT' && new URL(value.url()).pathname === settingsPath), page.getByRole('button', { name: 'Save changes', exact: true }).click()]);
   expect(response.status()).toBe(status);
   if (status === 200) await expect(page.getByText('Settings saved.', { exact: true })).toBeVisible();
   else await expect(page.getByRole('button', { name: 'Reload latest settings', exact: true })).toBeVisible();
@@ -105,14 +108,14 @@ async function save(page: Page, status = 200): Promise<void> {
 }
 
 test('network changes retain the active listener and send a complete nullable group with exact CAS', async ({ page, api }) => {
-  await openSettings(page); const listener = group(page, 'HTTP listener');
+  await openSettings(page, 'general'); const listener = group(page, 'HTTP listener');
   await override(listener, 'HTTP port'); await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('9097');
   await save(page);
   expect((api.writes()[0].body as SettingsUpdateInput).Revision).toBe('9007199254740993');
   expect((api.writes()[0].body as SettingsUpdateInput).Runtime).toEqual({ Network: { BindHost: null, HttpPort: 9097 } });
   await expect(listener).toContainText('127.0.0.1 · Port 8096'); await expect(listener).toContainText('127.0.0.1 · Port 9097');
   await expect(listener.getByRole('alert')).toContainText('requires a service restart');
-  expect(new URL(page.url()).pathname).toBe('/admin/settings');
+  expect(new URL(page.url()).pathname).toBe('/admin/settings/general');
   expect(api.writes().every((request) => request.path === settingsPath && request.method === 'PUT')).toBe(true);
 });
 
@@ -123,8 +126,8 @@ test('codec choices, explicit false, and null reset preserve separate override m
   await override(tone, 'software tone mapping'); await tone.getByRole('switch', { name: 'Enable software tone mapping', exact: true }).uncheck();
   await save(page);
   expect((api.writes()[0].body as SettingsUpdateInput).Runtime).toEqual({ H264: { Preset: 'slow', RateControl: 'capped_crf', CRF: 20 }, SoftwareToneMapping: false });
-  await codec.getByRole('switch', { name: 'Use deployment default for H.264 CPU encoding', exact: true }).check();
-  await tone.getByRole('switch', { name: 'Use deployment default for software tone mapping', exact: true }).check();
+  await codec.getByRole('button', { name: 'Use deployment default for h.264 cpu encoding', exact: true }).click();
+  await tone.getByRole('button', { name: 'Use deployment default for software tone mapping', exact: true }).click();
   await save(page);
   expect((api.writes()[1].body as SettingsUpdateInput).Runtime).toEqual({ H264: null, SoftwareToneMapping: null });
   await expect(tone.getByRole('switch', { name: 'Enable software tone mapping', exact: true })).toBeChecked();
@@ -133,7 +136,7 @@ test('codec choices, explicit false, and null reset preserve separate override m
 test('only reported available AMD devices can be selected and no device path is submitted', async ({ page, api }) => {
   await openSettings(page); const hardware = group(page, 'Hardware acceleration');
   await override(hardware, 'hardware acceleration'); await select(page, hardware, 'Video decoding', 'AMD VA-API'); await select(page, hardware, 'Video encoding', 'AMD VA-API');
-  await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
   await hardware.getByRole('combobox', { name: 'AMD device', exact: true }).click();
   await expect(page.getByRole('option', { name: 'Offline fixture GPU (unavailable)', exact: true })).toBeDisabled();
   await page.getByRole('option', { name: 'AMD fixture GPU', exact: true }).click(); await save(page);
@@ -155,14 +158,15 @@ test('legacy deployment hardware and an unavailable saved device are displayed w
 });
 
 test('invalid ports, literal addresses, thread counts, and CRF values cannot be saved', async ({ page, api }) => {
-  await openSettings(page); const listener = group(page, 'HTTP listener');
-  await override(listener, 'HTTP port'); await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('0'); await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
-  await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('65536'); await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
-  await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('8097'); await override(listener, 'bind address'); await listener.getByRole('textbox', { name: 'Bind address', exact: true }).fill('example.com'); await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
+  await openSettings(page, 'general'); const listener = group(page, 'HTTP listener');
+  await override(listener, 'HTTP port'); await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('0'); await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('65536'); await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
+  await listener.getByRole('textbox', { name: 'HTTP port', exact: true }).fill('8097'); await override(listener, 'bind address'); await listener.getByRole('textbox', { name: 'Bind address', exact: true }).fill('example.com'); await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
   await listener.getByRole('textbox', { name: 'Bind address', exact: true }).fill('127.0.0.1');
-  const threads = group(page, 'Threads per job'); await override(threads, 'threads per job'); await threads.getByRole('textbox', { name: 'Threads per job', exact: true }).fill('65'); await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
+  await page.getByRole('tab', { name: 'Hardware acceleration', exact: true }).click();
+  const threads = group(page, 'Threads per job'); await override(threads, 'threads per job'); await threads.getByRole('textbox', { name: 'Threads per job', exact: true }).fill('65'); await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
   await threads.getByRole('textbox', { name: 'Threads per job', exact: true }).fill('4');
-  const codec = group(page, 'HEVC CPU encoding'); await override(codec, 'HEVC CPU encoding'); await select(page, codec, 'HEVC rate control', 'Capped CRF'); await codec.getByRole('textbox', { name: 'HEVC CRF', exact: true }).fill('17'); await expect(page.getByRole('button', { name: 'Save settings', exact: true })).toBeDisabled();
+  const codec = group(page, 'HEVC CPU encoding'); await override(codec, 'HEVC CPU encoding'); await select(page, codec, 'HEVC rate control', 'Capped CRF'); await codec.getByRole('textbox', { name: 'HEVC CRF', exact: true }).fill('17'); await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled();
   expect(api.writes()).toEqual([]);
 });
 
@@ -172,14 +176,14 @@ test('runtime revision conflicts keep the draft and require an explicit reload b
   await expect(threads.getByRole('textbox', { name: 'Threads per job', exact: true })).toHaveValue('6'); await expect(threads.getByRole('textbox', { name: 'Threads per job', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'Reload latest settings', exact: true }).click();
   await page.getByRole('dialog', { name: 'Discard unsaved settings changes?', exact: true }).getByRole('button', { name: 'Discard draft and reload', exact: true }).click();
-  await expect(threads.getByRole('switch', { name: 'Use deployment default for threads per job', exact: true })).toBeChecked();
+  await expect(threads.getByRole('button', { name: 'Use deployment default for threads per job', exact: true })).toHaveAttribute('aria-pressed', 'true');
   expect(api.writes()).toHaveLength(1);
 });
 
 test('an invalid mutation response locks runtime controls until the saved state is reloaded', async ({ page, api }) => {
   api.handlers.set(`PUT ${settingsPath}`, async (route, request) => { api.apply(request.postDataJSON() as SettingsUpdateInput); await json(route, { ...api.settings, Runtime: { ...api.settings.Runtime, Effective: { Network: { BindHost: '', HttpPort: 8096 } } } }); });
   await openSettings(page); const threads = group(page, 'Threads per job'); await override(threads, 'threads per job'); await threads.getByRole('textbox', { name: 'Threads per job', exact: true }).fill('8');
-  await page.getByRole('button', { name: 'Save settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('The result could not be confirmed.', { exact: false })).toBeVisible();
   await expect(threads.getByRole('textbox', { name: 'Threads per job', exact: true })).toHaveValue('8'); await expect(threads.getByRole('textbox', { name: 'Threads per job', exact: true })).toBeDisabled();
   expect(api.writes()).toHaveLength(1);
@@ -187,7 +191,7 @@ test('an invalid mutation response locks runtime controls until the saved state 
 
 test('an unrelated output limit edit omits Runtime and retains every runtime override', async ({ page, api }) => {
   api.settings.Runtime!.Overrides.Network = { BindHost: null, HttpPort: null };
-  await openSettings(page); const width = group(page, 'Maximum width'); await override(width, 'maximum width'); await width.getByRole('textbox', { name: 'Maximum width', exact: true }).fill('1280'); await save(page);
+  await openSettings(page, 'transcode'); const width = group(page, 'Output planning limits'); await override(width, 'maximum width'); await width.getByRole('textbox', { name: 'Maximum width', exact: true }).fill('1280'); await save(page);
   expect(api.writes()[0].body).not.toHaveProperty('Runtime');
   expect(api.settings.Runtime!.Overrides).toEqual({ ...noRuntimeOverrides, Network: { BindHost: null, HttpPort: null } });
 });

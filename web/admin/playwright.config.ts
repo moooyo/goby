@@ -11,6 +11,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.GOBY_SMOKE_BASE_URL ?? 'http://127.0.0.1:18096',
     headless: true,
+    channel: process.env.GOBY_BROWSER_CHANNEL,
     screenshot: 'only-on-failure',
     // Authentication requests contain secrets, so do not capture network traces.
     trace: 'off',

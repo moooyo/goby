@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Paper, Skeleton, Snackbar, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, InputAdornment, Paper, Skeleton, Snackbar, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import AddRounded from '@mui/icons-material/AddRounded';
 import BlockOutlined from '@mui/icons-material/BlockOutlined';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
@@ -9,15 +9,20 @@ import KeyRounded from '@mui/icons-material/KeyRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SelectAllRounded from '@mui/icons-material/SelectAllRounded';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
+import CloseRounded from '@mui/icons-material/CloseRounded';
+import SearchRounded from '@mui/icons-material/SearchRounded';
+import TuneRounded from '@mui/icons-material/TuneRounded';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { ApplicationKey, ApplicationKeysResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError } from './formFields';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
+import { AccessBadge, AccessDetails, AccessIconTile, AccessTableHeader, accessSearchSx, accessTableSx } from './accessVisuals';
 
 function dateTime(value: string): string {
-  return new Date(value).toLocaleString(undefined, {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
@@ -34,37 +39,33 @@ function inputIssue(value: string): string | undefined {
 }
 
 function KeyStatus({ apiKey }: { apiKey: ApplicationKey }) {
-  return <Chip label={apiKey.Status === 'active' ? 'Active' : 'Revoked'} size="small" variant="outlined" color={apiKey.Status === 'active' ? 'success' : 'default'} />;
+  return <AccessBadge label={apiKey.Status === 'active' ? 'Active' : 'Revoked'} tone={apiKey.Status === 'active' ? 'success' : 'neutral'} />;
 }
 
 function KeyIdentity({ apiKey }: { apiKey: ApplicationKey }) {
   return (
-    <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-      <Typography variant="body2" sx={{ fontWeight: 650 }}>{apiKey.AppName}</Typography>
-      <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>Key ID: <span className="mono">{apiKey.Id}</span></Typography>
-      <Typography component="div" variant="caption" color="text.secondary">Server-wide access</Typography>
-    </Box>
+    <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+      <AccessIconTile><KeyRounded /></AccessIconTile>
+      <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>{apiKey.AppName}</Typography>
+        <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.35 }}>No user context</Typography>
+      </Box>
+    </Stack>
   );
 }
 
 function KeyHistory({ apiKey }: { apiKey: ApplicationKey }) {
-  const events: [string, string | null][] = [
-    ['Created', apiKey.CreatedAt],
-    ['Last used', apiKey.LastUsedAt],
-    ...(apiKey.RevokedAt ? [['Revoked', apiKey.RevokedAt] as [string, string]] : []),
-  ];
   return (
-    <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: 'max-content minmax(0, 1fr)', columnGap: 1.5, rowGap: 0.6 }}>
-      {events.map(([label, value]) => (
-        <Box key={label} sx={{ display: 'contents' }}>
-          <Typography component="dt" variant="caption" color="text.secondary">{label}</Typography>
-          <Typography component="dd" variant="caption" sx={{ m: 0, overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}>{value ? <time dateTime={value} title={value}>{dateTime(value)}</time> : 'Never'}</Typography>
-        </Box>
-      ))}
-      <Typography component="dt" variant="caption" color="text.secondary">IP address</Typography>
-      <Typography component="dd" variant="caption" className="mono" sx={{ m: 0, overflowWrap: 'anywhere' }}>{apiKey.IPAddress || 'Not recorded'}</Typography>
-      <Typography component="dt" variant="caption" color="text.secondary">Created by</Typography>
-      <Typography component="dd" variant="caption" sx={{ m: 0, overflowWrap: 'anywhere' }}>{apiKey.CreatedBy ? <span className="mono">{apiKey.CreatedBy}</span> : 'Not recorded'}</Typography>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography variant="body2" sx={{ fontSize: 13 }}>Created <Box component="time" dateTime={apiKey.CreatedAt} title={apiKey.CreatedAt} sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{dateTime(apiKey.CreatedAt)}</Box></Typography>
+      <Typography variant="caption" component="div" color="text.secondary">Last used {apiKey.LastUsedAt ? <Box component="time" dateTime={apiKey.LastUsedAt} title={apiKey.LastUsedAt} sx={{ whiteSpace: 'nowrap' }}>{dateTime(apiKey.LastUsedAt)}</Box> : 'Never'}</Typography>
+      <AccessDetails label="Key details">
+        <Typography variant="caption" component="div" sx={{ overflowWrap: 'anywhere' }}>Key ID: <span className="mono">{apiKey.Id}</span></Typography>
+        <Typography variant="caption" component="div" sx={{ overflowWrap: 'anywhere' }}>IP address: <span className="mono">{apiKey.IPAddress || 'Not recorded'}</span></Typography>
+        <Typography variant="caption" component="div" sx={{ overflowWrap: 'anywhere' }}>Created by: <span className="mono">{apiKey.CreatedBy || 'Not recorded'}</span></Typography>
+        {apiKey.RevokedAt && <Typography variant="caption" component="div">Revoked <Box component="time" dateTime={apiKey.RevokedAt} title={apiKey.RevokedAt} sx={{ whiteSpace: 'nowrap' }}>{dateTime(apiKey.RevokedAt)}</Box></Typography>}
+        <Typography variant="caption" component="div">Server-wide access</Typography>
+      </AccessDetails>
     </Box>
   );
 }
@@ -72,9 +73,9 @@ function KeyHistory({ apiKey }: { apiKey: ApplicationKey }) {
 function KeyActions({ apiKey, onReveal, onRevoke }: { apiKey: ApplicationKey; onReveal: (apiKey: ApplicationKey) => void; onRevoke: (apiKey: ApplicationKey) => void }) {
   if (apiKey.Status === 'revoked') return null;
   return (
-    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+    <Stack direction="row" sx={{ justifyContent: { xs: 'flex-start', lg: 'flex-end' }, flexWrap: 'wrap', gap: 0.5 }}>
       <Button size="small" startIcon={<VisibilityOutlined />} onClick={() => onReveal(apiKey)} aria-label={`Reveal key for ${apiKey.AppName}`} sx={{ px: 1 }}>Reveal key</Button>
-      <Button size="small" color="error" startIcon={<BlockOutlined />} onClick={() => onRevoke(apiKey)} aria-label={`Revoke key for ${apiKey.AppName}`} sx={{ px: 1 }}>Revoke key</Button>
+      <Button size="small" color="error" onClick={() => onRevoke(apiKey)} aria-label={`Revoke key for ${apiKey.AppName}`} sx={{ px: 1 }}>Revoke</Button>
     </Stack>
   );
 }
@@ -89,20 +90,20 @@ function KeysList({ items, onReveal, onRevoke }: { items: ApplicationKey[]; onRe
               <KeyIdentity apiKey={apiKey} />
               <KeyStatus apiKey={apiKey} />
             </Stack>
-            <Box sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: 'background.default' }}><KeyHistory apiKey={apiKey} /></Box>
+            <Box sx={{ mt: 2, p: 1.5, borderRadius: '12px', bgcolor: '#F3F6FB' }}><KeyHistory apiKey={apiKey} /></Box>
             {apiKey.Status === 'active' && <Box sx={{ mt: 1.5, ml: -1 }}><KeyActions apiKey={apiKey} onReveal={onReveal} onRevoke={onRevoke} /></Box>}
           </Box>
         ))}
       </Box>
       <TableContainer sx={{ display: { xs: 'none', lg: 'block' } }}>
-        <Table aria-label="Application API keys" sx={{ minWidth: 800, tableLayout: 'fixed' }}>
-          <TableHead><TableRow><TableCell sx={{ pl: 3, width: '30%' }}>Application</TableCell><TableCell sx={{ width: '40%' }}>Key history</TableCell><TableCell sx={{ pr: 3, width: '30%' }}>Access</TableCell></TableRow></TableHead>
+        <Table aria-label="Application API keys" sx={{ minWidth: 800, tableLayout: 'fixed', ...accessTableSx }}>
+          <TableHead><TableRow><TableCell sx={{ width: '40%' }}>Application</TableCell><TableCell sx={{ width: '35%' }}>Key history</TableCell><TableCell align="right" sx={{ width: '25%' }}>Access</TableCell></TableRow></TableHead>
           <TableBody>
             {items.map((apiKey) => (
-              <TableRow key={apiKey.Id} sx={{ '& > .MuiTableCell-root': { verticalAlign: 'top' } }}>
+              <TableRow key={apiKey.Id}>
                 <TableCell component="th" scope="row" sx={{ pl: 3 }}><KeyIdentity apiKey={apiKey} /></TableCell>
                 <TableCell><KeyHistory apiKey={apiKey} /></TableCell>
-                <TableCell sx={{ pr: 3 }}><KeyStatus apiKey={apiKey} />{apiKey.Status === 'active' && <Box sx={{ mt: 1, ml: -1 }}><KeyActions apiKey={apiKey} onReveal={onReveal} onRevoke={onRevoke} /></Box>}</TableCell>
+                <TableCell align="right">{apiKey.Status === 'revoked' ? <KeyStatus apiKey={apiKey} /> : <KeyActions apiKey={apiKey} onReveal={onReveal} onRevoke={onRevoke} />}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -349,7 +350,7 @@ function RevokeApiKeyDialog({ apiKey, onClose, onRevoked, onRefresh, onNavigatio
 
 export function ApiKeysPage({ onNavigationGuardChange }: { onNavigationGuardChange: UserNavigationGuardChange }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [query, setQuery] = useState({ searchTerm: '', includeRevoked: false, page: 0, pageSize: 50 });
+  const [query, setQuery] = useState({ searchTerm: '', includeRevoked: true, page: 0, pageSize: 50 });
   const [loaded, setLoaded] = useState<{ requestKey: string; result: ApplicationKeysResponse }>();
   const [failure, setFailure] = useState<{ requestKey: string; cause: unknown }>();
   const [revision, setRevision] = useState(0);
@@ -357,12 +358,13 @@ export function ApiKeysPage({ onNavigationGuardChange }: { onNavigationGuardChan
   const [revealing, setRevealing] = useState<ApplicationKey>();
   const [revoking, setRevoking] = useState<ApplicationKey>();
   const [notice, setNotice] = useState('');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const requestKey = JSON.stringify([query.searchTerm, query.includeRevoked, query.page, query.pageSize, revision]);
   const data = loaded?.requestKey === requestKey ? loaded.result : undefined;
   const failed = failure?.requestKey === requestKey;
   const loading = !data && !failed;
   const queryError = failed ? failure?.cause : null;
-  const canClear = Boolean(searchTerm || query.searchTerm || query.includeRevoked);
+  const canClear = Boolean(searchTerm || query.searchTerm || !query.includeRevoked);
   const searchIssue = inputIssue(searchTerm);
 
   useEffect(() => {
@@ -402,7 +404,7 @@ export function ApiKeysPage({ onNavigationGuardChange }: { onNavigationGuardChan
 
   function clearFilters() {
     setSearchTerm('');
-    setQuery((current) => ({ ...current, searchTerm: '', includeRevoked: false, page: 0 }));
+    setQuery((current) => ({ ...current, searchTerm: '', includeRevoked: true, page: 0 }));
   }
 
   function applySearch(event: FormEvent<HTMLFormElement>) {
@@ -413,21 +415,24 @@ export function ApiKeysPage({ onNavigationGuardChange }: { onNavigationGuardChan
 
   return (
     <Box aria-busy={loading}>
-      <PageHeading title="API keys" description="Manage application access to your server." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreating(true)}>Create API key</Button>} />
-      <Alert severity="info" sx={{ mb: 3 }}>API keys grant server-wide access independently of user accounts. Use a separate key for each application so you can revoke its access when needed.</Alert>
+      <PageHeading title="API keys" description="Manage application access. API keys grant server-wide access independently of user accounts and remain valid until revoked." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreating(true)}>Create API key</Button>} />
       {failed && <Box sx={{ mb: 3 }}><ErrorNotice error={queryError} retry={refresh} /></Box>}
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, px: { xs: 2.5, sm: 3 }, py: 2.2 }}>
-          <Stack direction="row" sx={{ alignItems: 'center', gap: 1.2 }}><Typography variant="h4" component="h2">Application keys</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: 'background.default' }} />}</Stack>
-          <Button size="small" startIcon={<RefreshRounded />} onClick={refresh} disabled={loading}>Refresh</Button>
-        </Stack>
-        <Box component="form" onSubmit={applySearch} sx={{ px: { xs: 2.5, sm: 3 }, pb: 2.5 }}>
-          <TextField id="api-keys-search" name="SearchTerm" label="Search API keys" fullWidth value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} error={Boolean(searchIssue || fieldError(queryError, 'SearchTerm'))} helperText={searchIssue ?? fieldError(queryError, 'SearchTerm') ?? 'Search by application name.'} slotProps={{ htmlInput: { autoComplete: 'off', spellCheck: false } }} />
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+      <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: '20px' }}>
+        <AccessTableHeader title="Application keys" count={data?.TotalRecordCount}>
+          <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 0.75 }}>
+            <Box component="form" onSubmit={applySearch} sx={{ flex: 1, minWidth: 0 }}>
+              <TextField id="api-keys-search" name="SearchTerm" placeholder="Search by application name" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} error={Boolean(searchIssue || fieldError(queryError, 'SearchTerm'))} helperText={searchIssue ?? fieldError(queryError, 'SearchTerm')} sx={accessSearchSx} slotProps={{ htmlInput: { 'aria-label': 'Search API keys', autoComplete: 'off', spellCheck: false }, input: { startAdornment: <InputAdornment position="start"><SearchRounded sx={{ fontSize: 18 }} /></InputAdornment>, endAdornment: searchTerm ? <InputAdornment position="end"><IconButton size="small" aria-label="Clear key search" onClick={() => { setSearchTerm(''); setQuery((current) => ({ ...current, searchTerm: '', page: 0 })); }} edge="end"><CloseRounded sx={{ fontSize: 16 }} /></IconButton></InputAdornment> : undefined } }} />
+            </Box>
+            <Tooltip title="More filters"><IconButton aria-label="More filters" aria-expanded={filtersExpanded} aria-controls="api-key-filters" onClick={() => setFiltersExpanded((value) => !value)} color={filtersExpanded || !query.includeRevoked ? 'primary' : 'default'}><TuneRounded sx={{ fontSize: 20 }} /></IconButton></Tooltip>
+            <Tooltip title="Refresh API keys"><span><IconButton onClick={refresh} disabled={loading} aria-label="Refresh API keys"><RefreshRounded sx={{ fontSize: 19 }} /></IconButton></span></Tooltip>
+          </Stack>
+        </AccessTableHeader>
+        <Collapse in={filtersExpanded}>
+          <Stack id="api-key-filters" direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, px: { xs: 2, sm: 3 }, pb: 2 }}>
             <FormControlLabel control={<Switch checked={query.includeRevoked} onChange={(event) => setQuery((current) => ({ ...current, includeRevoked: event.target.checked, page: 0 }))} />} label="Include revoked" />
             <Button color="secondary" startIcon={<FilterAltOffOutlined />} onClick={clearFilters} disabled={!canClear}>Clear filters</Button>
           </Stack>
-        </Box>
+        </Collapse>
         {loading && <Stack spacing={1} sx={{ p: 3, borderTop: 1, borderColor: 'divider' }} role="status" aria-live="polite" aria-label="Loading API keys"><Skeleton height={70} /><Skeleton height={70} /><Skeleton height={70} /></Stack>}
         {data && data.Items.length === 0 && (
           <Stack spacing={1.5} sx={{ alignItems: 'center', p: { xs: 3, sm: 5 }, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>
@@ -454,7 +459,7 @@ export function ApiKeysPage({ onNavigationGuardChange }: { onNavigationGuardChan
           sx={{ borderTop: 1, borderColor: 'divider', '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 2, sm: 3 }, py: 1, gap: 0.5 }, '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } }, '& .MuiTablePagination-actions': { ml: { xs: 1, sm: 2 } } }}
         />}
       </Paper>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Times use your local time zone. Last used shows the latest recorded activity, not whether an application is connected.</Typography>
+      <Box sx={{ mt: 2 }}><AccessDetails label="About application access"><Typography variant="caption">Use a separate key for each application so you can revoke its access when needed. Times use your local time zone. Last used shows the latest recorded activity, not whether an application is connected.</Typography></AccessDetails></Box>
       {creating && <CreateApiKeyDialog
         onClose={() => setCreating(false)}
         onCreated={(apiKey) => { setNotice(`API key created for ${apiKey.AppName}.`); refresh(); }}

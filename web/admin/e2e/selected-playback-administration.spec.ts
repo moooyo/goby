@@ -165,7 +165,7 @@ async function openCredentials(page: Page, visit = true): Promise<Locator> {
   await user.getByRole('button', { name: 'Manage local credentials', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Local credentials', exact: true });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('checkbox', { name: 'Enable local password', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('switch', { name: 'Enable local password', exact: true })).toBeVisible();
   return dialog;
 }
 
@@ -206,7 +206,7 @@ async function saveCredentials(page: Page, dialog: Locator, options: { status?: 
 test('local credential changes omit retained secrets and never refill saved secrets', async ({ page, api }) => {
   const dialog = await openCredentials(page);
   await expectEmptyCredentials(dialog);
-  await dialog.getByRole('checkbox', { name: 'Enable local password', exact: true }).uncheck();
+  await dialog.getByRole('switch', { name: 'Enable local password', exact: true }).uncheck();
   await saveCredentials(page, dialog);
   await expectEmptyCredentials(dialog);
   expect(api.writes(credentialsPath).map((request) => request.body)).toEqual([{ Revision: '1', EnableLocalPassword: false }]);
@@ -216,7 +216,7 @@ test('local credential changes omit retained secrets and never refill saved secr
   const localPassword = 'synthetic-local-password';
   await dialog.getByLabel('New local password', { exact: true }).fill(localPassword);
   await dialog.getByLabel('Confirm local password', { exact: true }).fill(localPassword);
-  await dialog.getByRole('checkbox', { name: 'Enable local password', exact: true }).check();
+  await dialog.getByRole('switch', { name: 'Enable local password', exact: true }).check();
   await saveCredentials(page, dialog);
   await expectEmptyCredentials(dialog);
   expect(api.writes(credentialsPath).at(-1)?.body).toEqual({ Revision: '2', EnableLocalPassword: true, LocalPassword: localPassword });
@@ -234,7 +234,7 @@ test('local credential changes omit retained secrets and never refill saved secr
 test('clearing local credentials sends only the explicitly cleared secret', async ({ page, api }) => {
   const dialog = await openCredentials(page);
   await dialog.getByRole('button', { name: 'Clear local password', exact: true }).click();
-  await expect(dialog.getByRole('checkbox', { name: 'Enable local password', exact: true })).not.toBeChecked();
+  await expect(dialog.getByRole('switch', { name: 'Enable local password', exact: true })).not.toBeChecked();
   expect(api.writes()).toEqual([]);
   await saveCredentials(page, dialog);
   expect(api.writes(credentialsPath).at(-1)?.body).toEqual({ Revision: '1', EnableLocalPassword: false, LocalPassword: '' });
@@ -262,9 +262,9 @@ test('a local credential revision conflict blocks writes until the latest status
 
   page.once('dialog', (prompt) => { void prompt.accept(); });
   await dialog.getByRole('button', { name: 'Reload', exact: true }).last().click();
-  await expect(dialog.getByRole('checkbox', { name: 'Enable local password', exact: true })).not.toBeChecked();
+  await expect(dialog.getByRole('switch', { name: 'Enable local password', exact: true })).not.toBeChecked();
   await expectEmptyCredentials(dialog);
-  await dialog.getByRole('checkbox', { name: 'Enable local password', exact: true }).check();
+  await dialog.getByRole('switch', { name: 'Enable local password', exact: true }).check();
   await saveCredentials(page, dialog);
   expect(api.writes(credentialsPath).at(-1)?.body).toEqual({ Revision: '2', EnableLocalPassword: true });
   expect(api.writes(credentialsPath)).toHaveLength(2);

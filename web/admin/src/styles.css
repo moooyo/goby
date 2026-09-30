@@ -17,7 +17,7 @@ input {
 }
 
 :focus-visible {
-  outline: 3px solid #42aab1;
+  outline: 3px solid #1f5fbf;
   outline-offset: 3px;
 }
 
@@ -34,7 +34,7 @@ input {
   white-space: nowrap;
   border-radius: 6px;
   background: white;
-  color: #193a46;
+  color: #181c23;
 }
 
 .skip-link:focus {
@@ -46,8 +46,31 @@ input {
 }
 
 .mono {
-  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-family: "JetBrains Mono Variable", "Cascadia Code", Consolas, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dashboard-content {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scroll-padding-block: 20px 100px;
+}
+
+.dashboard-content:hover,
+.dashboard-content:focus-within {
+  scrollbar-color: #c3cad6 transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

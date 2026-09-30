@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Box, Button, Checkbox, Chip, FormControl, InputLabel, LinearProgress, ListItemText, MenuItem, OutlinedInput, Paper, Select, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { Box, Breadcrumbs, Button, Checkbox, Chip, FormControl, IconButton, InputLabel, LinearProgress, ListItemText, Menu, MenuItem, OutlinedInput, Paper, Select, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Tooltip, Typography } from '@mui/material';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import FilterAltOffOutlined from '@mui/icons-material/FilterAltOffOutlined';
 import LockOutlined from '@mui/icons-material/LockOutlined';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
-import SearchRounded from '@mui/icons-material/SearchRounded';
+import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
+import NavigateNextRounded from '@mui/icons-material/NavigateNextRounded';
 import VideoLibraryOutlined from '@mui/icons-material/VideoLibraryOutlined';
 import { adminApi, isAbortError } from './api';
 import type { MetadataItemSummary, MetadataItemsResponse } from './api';
-import { ErrorNotice, PageHeading } from './components';
+import { ErrorNotice } from './components';
 import { MetadataEditorDialog } from './MetadataEditorDialog';
 import { EpisodeRosterDialog } from './EpisodeRosterDialog';
 import { OnlineSourcesDialog } from './OnlineSourcesDialog';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
+import { MediaSearchField, mediaPanelSx, mediaSelectSx } from './MediaPagePrimitives';
 
 const itemTypes = [
   { value: 'Movie', label: 'Movie' },
@@ -45,9 +47,9 @@ function ItemIdentity({ name, path, parentId, parentName, position }: { name: st
   const context = [parentName, position].filter(Boolean).join(' · ');
   return (
     <Box sx={{ minWidth: 0 }}>
-      <Typography variant="body2" sx={{ fontWeight: 650, overflowWrap: 'anywhere' }}>{name || 'Untitled item'}</Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{name || 'Untitled item'}</Typography>
       {context && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25, overflowWrap: 'anywhere' }}>{context}</Typography>}
-      {(path || (parentId && !parentName)) && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontFamily: 'ui-monospace, Consolas, monospace', overflowWrap: 'anywhere', mt: 0.5 }}>{path || `Parent: ${parentId}`}</Typography>}
+      {(path || (parentId && !parentName)) && <Typography variant="caption" color="text.secondary" title={path || `Parent: ${parentId}`} sx={{ display: 'block', fontFamily: '"JetBrains Mono Variable", Consolas, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11, mt: 0.25 }}>{path || `Parent: ${parentId}`}</Typography>}
     </Box>
   );
 }
@@ -55,8 +57,8 @@ function ItemIdentity({ name, path, parentId, parentName, position }: { name: st
 function MetadataStatus({ hasOverrides, lockedFieldCount }: { hasOverrides: boolean; lockedFieldCount: number }) {
   return (
     <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
-      <Chip size="small" variant="outlined" color={hasOverrides ? 'primary' : 'default'} label={hasOverrides ? 'Manual overrides' : 'No manual overrides'} />
-      {lockedFieldCount > 0 && <Chip size="small" variant="outlined" icon={<LockOutlined />} label={`${lockedFieldCount} locked`} />}
+      {(hasOverrides || lockedFieldCount === 0) && <Chip size="small" color={hasOverrides ? 'info' : 'default'} label={hasOverrides ? 'Edited' : 'Automatic'} />}
+      {lockedFieldCount > 0 && <Chip size="small" color="warning" icon={<LockOutlined />} label={`${lockedFieldCount} locked`} />}
     </Stack>
   );
 }
@@ -66,9 +68,10 @@ function ItemsLoading() {
 }
 
 function ItemsList({ items, onEdit, onSources, onRoster }: { items: MetadataItemSummary[]; onEdit: (itemId: string) => void; onSources: (itemId: string) => void; onRoster: (item: MetadataItemSummary) => void }) {
+  const [menu, setMenu] = useState<{ anchor: HTMLElement; item: MetadataItemSummary }>();
   return (
     <>
-      <Box component="ul" aria-label="Library items" sx={{ display: { xs: 'block', lg: 'none' }, listStyle: 'none', p: 0, m: 0 }}>
+      <Box component="ul" aria-label="Library items" sx={{ display: { xs: 'block', md: 'none' }, listStyle: 'none', p: 0, m: 0 }}>
         {items.map((item) => (
           <Box component="li" key={item.Id} sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}>
             <Stack direction="row" sx={{ gap: 1, mb: 1, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -83,31 +86,32 @@ function ItemsList({ items, onEdit, onSources, onRoster }: { items: MetadataItem
           </Box>
         ))}
       </Box>
-      <TableContainer sx={{ display: { xs: 'none', lg: 'block' } }}>
-        <Table aria-label="Library items" sx={{ minWidth: 760 }}>
-          <TableHead><TableRow><TableCell sx={{ pl: 3, width: '42%' }}>Name</TableCell><TableCell>Type</TableCell><TableCell>Year</TableCell><TableCell>Metadata</TableCell><TableCell align="right" sx={{ pr: 3 }}>Edit</TableCell></TableRow></TableHead>
+      <TableContainer sx={{ display: { xs: 'none', md: 'block' }, borderRadius: 0 }}>
+        <Table aria-label="Library items" sx={{ tableLayout: 'fixed' }}>
+          <TableHead><TableRow><TableCell sx={{ pl: 3 }}>Name</TableCell><TableCell sx={{ width: '13%' }}>Type</TableCell><TableCell sx={{ width: '10%' }}>Year</TableCell><TableCell sx={{ width: '23%' }}>Metadata</TableCell><TableCell align="right" sx={{ px: 2, width: 112 }}>Edit</TableCell></TableRow></TableHead>
           <TableBody>
             {items.map((item) => (
               <TableRow key={item.Id}>
                 <TableCell component="th" scope="row" sx={{ pl: 3, maxWidth: 440 }}><ItemIdentity name={item.Name} path={item.Path} parentId={item.ParentId} parentName={item.ParentName} position={itemPosition(item)} /></TableCell>
-                <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2">{itemTypeName(item.Type)}</Typography></TableCell>
+                <TableCell><Typography variant="body2">{itemTypeName(item.Type)}</Typography></TableCell>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2" color="text.secondary">{item.ProductionYear ?? '—'}</Typography></TableCell>
                 <TableCell><MetadataStatus hasOverrides={item.HasOverrides} lockedFieldCount={item.LockedFieldCount} /></TableCell>
-                <TableCell align="right" sx={{ pr: 3, whiteSpace: 'nowrap' }}><Stack sx={{ alignItems: 'flex-end' }}><Button size="small" startIcon={<EditOutlined />} onClick={() => onEdit(item.Id)} aria-label={`Edit metadata for ${item.Name}`}>Edit metadata</Button><Button size="small" onClick={() => onSources(item.Id)} aria-label={`Online sources for ${item.Name}`}>Online sources</Button>{item.Type === 'Series' && <Button size="small" onClick={() => onRoster(item)} aria-label={`Episode roster for ${item.Name}`}>Episode roster</Button>}</Stack></TableCell>
+                <TableCell align="right" sx={{ px: 2, whiteSpace: 'nowrap' }}><Tooltip title="Edit metadata"><IconButton onClick={() => onEdit(item.Id)} aria-label={`Edit metadata for ${item.Name}`}><EditOutlined sx={{ fontSize: 19 }} /></IconButton></Tooltip><IconButton onClick={(event) => setMenu({ anchor: event.currentTarget, item })} aria-label={`More actions for ${item.Name}`} aria-haspopup="menu" aria-expanded={menu?.item.Id === item.Id}><MoreVertRounded sx={{ fontSize: 19 }} /></IconButton></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+      <Menu anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(undefined)}><MenuItem onClick={() => { if (menu) onSources(menu.item.Id); setMenu(undefined); }}>Online sources</MenuItem>{menu?.item.Type === 'Series' && <MenuItem onClick={() => { onRoster(menu.item); setMenu(undefined); }}>Episode roster</MenuItem>}</Menu>
     </>
   );
 }
 
 function ItemFilters({ searchTitle, types, loading, canClear, onSearchTitleChange, onTypesChange, onSearch, onClear }: { searchTitle: string; types: ItemType[]; loading: boolean; canClear: boolean; onSearchTitleChange: (value: string) => void; onTypesChange: (value: ItemType[]) => void; onSearch: (event: FormEvent<HTMLFormElement>) => void; onClear: () => void }) {
   return (
-    <Box component="form" onSubmit={onSearch} sx={{ px: { xs: 2.5, sm: 3 }, pb: 2.5, display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 230px', lg: 'minmax(0, 1fr) 230px auto' }, gap: 2, alignItems: 'start' }}>
-      <TextField id="items-search-title" name="SearchTerm" fullWidth label="Search title" value={searchTitle} onChange={(event) => onSearchTitleChange(event.target.value)} helperText="Searches item names in this library." slotProps={{ htmlInput: { autoComplete: 'off' } }} />
-      <FormControl fullWidth>
+    <Box component="form" onSubmit={onSearch} sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
+      <Box sx={{ width: { xs: '100%', sm: 330 } }}><MediaSearchField label="Search title" value={searchTitle} onChange={onSearchTitleChange} disabled={loading} /></Box>
+      <FormControl size="small" sx={mediaSelectSx}>
         <InputLabel id="items-types-label" shrink>Types</InputLabel>
         <Select<ItemType[]>
           id="items-types"
@@ -126,10 +130,7 @@ function ItemFilters({ searchTitle, types, loading, canClear, onSearchTitleChang
           {itemTypes.map((type) => <MenuItem key={type.value} value={type.value}><Checkbox size="small" checked={types.includes(type.value)} /><ListItemText primary={type.label} /></MenuItem>)}
         </Select>
       </FormControl>
-      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, pt: { xs: 0, lg: 1 }, gridColumn: { xs: 'auto', md: '1 / -1', lg: 'auto' } }}>
-        <Button type="submit" variant="outlined" startIcon={<SearchRounded />} disabled={loading}>Search</Button>
-        <Button color="secondary" onClick={onClear} disabled={!canClear} startIcon={<FilterAltOffOutlined />}>Clear filters</Button>
-      </Stack>
+      {canClear && <Button color="secondary" onClick={onClear} startIcon={<FilterAltOffOutlined />}>Clear filters</Button>}
     </Box>
   );
 }
@@ -197,21 +198,21 @@ function LibraryItemsView({ libraryId, onLibraries, onNavigationGuardChange }: M
   }
 
   return (
-    <Box aria-busy={loading} sx={{ '& h1': { overflowWrap: 'anywhere' } }}>
-      <Button color="secondary" startIcon={<ArrowBackRounded />} onClick={onLibraries} sx={{ mb: 2, ml: -1, px: 1 }}>Back to libraries</Button>
-      <PageHeading title={libraryName} description="Review catalog entries and edit the metadata your clients display." />
+    <Box aria-busy={loading}>
+      <Typography component="h2" className="visually-hidden">{libraryName}</Typography>
+      <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 2.5 }}>
+        <IconButton aria-label="Back to libraries" onClick={onLibraries} sx={{ ml: -1 }}><ArrowBackRounded sx={{ fontSize: 20 }} /></IconButton>
+        <Breadcrumbs aria-label="Library navigation" separator={<NavigateNextRounded sx={{ fontSize: 16 }} />} sx={{ '& .MuiBreadcrumbs-li': { minWidth: 0 } }}>
+          <Button onClick={onLibraries} sx={{ p: 0, minWidth: 0, minHeight: 32 }}>Libraries</Button>
+          <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{libraryName}</Typography>
+        </Breadcrumbs>
+        <Typography color="text.secondary" sx={{ flex: '1 1 300px', ml: { sm: 1 }, fontSize: 14 }}>Review catalog entries and edit the metadata your clients display.</Typography>
+        <Tooltip title="Refresh library items"><IconButton onClick={refresh} disabled={loading} aria-label="Refresh library items"><RefreshRounded sx={{ fontSize: 20 }} /></IconButton></Tooltip>
+      </Stack>
       {failed && <Box sx={{ mb: 3 }}><ErrorNotice error={failure?.cause} retry={refresh} /></Box>}
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, px: { xs: 2.5, sm: 3 }, py: 2.2 }}>
-          <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1.2 }}>
-            <Typography variant="h4" component="h2">{filtered ? 'Matching items' : 'Library items'}</Typography>
-            {data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: 'background.default' }} />}
-            {data && loading && <Typography variant="caption" color="text.secondary" role="status" aria-live="polite">Refreshing items...</Typography>}
-          </Stack>
-          <Button size="small" onClick={refresh} disabled={loading} startIcon={<RefreshRounded />}>Refresh</Button>
-        </Stack>
+      <Paper variant="outlined" sx={mediaPanelSx}>
         <ItemFilters searchTitle={searchTitle} types={query.types} loading={loading} canClear={Boolean(searchTitle || filtered)} onSearchTitleChange={setSearchTitle} onTypesChange={(types) => setQuery((current) => ({ ...current, searchTerm: searchTitle.trim(), types, page: 0 }))} onSearch={search} onClear={clearFilters} />
-        <Box sx={{ height: 3 }}>{data && loading && <LinearProgress aria-label="Refreshing library items" sx={{ height: 3 }} />}</Box>
+        {data && loading && <LinearProgress aria-label="Refreshing library items" sx={{ height: 3 }} />}
         {!data && loading && <ItemsLoading />}
         {data && data.Items.length === 0 && (
           <Stack spacing={1.5} sx={{ alignItems: 'center', p: { xs: 3, sm: 5 }, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>

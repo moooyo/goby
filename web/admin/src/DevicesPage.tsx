@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Skeleton, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, Paper, Skeleton, Snackbar, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DevicesOutlined from '@mui/icons-material/DevicesOutlined';
@@ -8,17 +8,33 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 import FilterAltOffOutlined from '@mui/icons-material/FilterAltOffOutlined';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import SearchRounded from '@mui/icons-material/SearchRounded';
+import CloseRounded from '@mui/icons-material/CloseRounded';
+import DesktopWindowsRounded from '@mui/icons-material/DesktopWindowsRounded';
+import SmartphoneRounded from '@mui/icons-material/SmartphoneRounded';
+import TabletMacRounded from '@mui/icons-material/TabletMacRounded';
+import TvRounded from '@mui/icons-material/TvRounded';
 import { adminApi, ApiError, isAbortError } from './api';
 import type { DeleteDeviceResponse, Device, DevicesResponse } from './api';
 import { ErrorNotice, PageHeading } from './components';
 import { fieldError } from './formFields';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
+import { AccessBadge, AccessDetails, AccessIconTile, AccessTableHeader, accessSearchSx, accessTableSx } from './accessVisuals';
 
 function dateTime(value: string): string {
-  return new Date(value).toLocaleString(undefined, {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
+}
+
+function DeviceIcon({ device }: { device: Device }) {
+  const identity = `${device.ReportedName} ${device.AppName}`.toLowerCase();
+  if (/ipad|tablet/.test(identity)) return <TabletMacRounded />;
+  if (/iphone|phone|ios/.test(identity)) return <SmartphoneRounded />;
+  if (/tv|television|roku|firestick/.test(identity)) return <TvRounded />;
+  if (/desktop|windows|mac|linux|pc/.test(identity)) return <DesktopWindowsRounded />;
+  return <DevicesOutlined />;
 }
 
 function inputIssue(value: string): string | undefined {
@@ -45,50 +61,51 @@ function MutationRecovery({ error }: { error: unknown }) {
 
 function DeviceIdentity({ device }: { device: Device }) {
   return (
-    <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-      <Typography variant="body2" sx={{ fontWeight: 650 }}>{device.Name}</Typography>
-      {device.CustomName !== null && <Typography variant="caption" color="primary.main">Custom name</Typography>}
-      <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>Reported name: {device.ReportedName || 'Not reported'}</Typography>
-      <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 1 }}>Client device ID: <span className="mono">{device.ReportedDeviceId}</span></Typography>
-    </Box>
+    <Stack direction="row" sx={{ minWidth: 0, alignItems: 'center', gap: 1.5 }}>
+      <AccessIconTile><DeviceIcon device={device} /></AccessIconTile>
+      <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+        <Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>{device.Name}</Typography>
+          {device.CustomName !== null && <AccessBadge label="Renamed" />}
+        </Stack>
+        <Typography component="div" variant="caption" color="text.secondary" className="mono" sx={{ mt: 0.35, fontSize: 11 }} aria-label={`Client device ID: ${device.ReportedDeviceId}`}>{device.ReportedDeviceId}</Typography>
+        {device.CustomName !== null && <Typography component="div" variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>Reported name: {device.ReportedName || 'Not reported'}</Typography>}
+      </Box>
+    </Stack>
   );
 }
 
 function DeviceApplication({ device }: { device: Device }) {
   return (
     <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-      <Typography variant="body2">{device.AppName || 'Application not reported'}</Typography>
-      <Typography variant="caption" color="text.secondary">{device.AppVersion ? `Version ${device.AppVersion}` : 'Version not reported'}</Typography>
-      <Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 1.5 }}>Last user</Typography>
-      <Typography variant="body2" title={device.LastUserId ?? undefined}>{device.LastUserName || device.LastUserId || 'Not recorded'}</Typography>
+      <Typography variant="body2">{device.AppName || 'Application not reported'}{device.AppVersion ? ` ${device.AppVersion}` : ''}</Typography>
+      <Typography component="div" variant="caption" color="text.secondary" title={device.LastUserId ?? undefined} sx={{ mt: 0.35 }}>{device.LastUserName || device.LastUserId || 'No user recorded'}</Typography>
     </Box>
   );
 }
 
 function DeviceHistory({ device }: { device: Device }) {
   return (
-    <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: 'max-content minmax(0, 1fr)', columnGap: 1.5, rowGap: 0.6 }}>
-      {([['Last activity', device.LastSeenAt], ['Registered', device.CreatedAt]] as const).map(([label, value]) => (
-        <Box key={label} sx={{ display: 'contents' }}>
-          <Typography component="dt" variant="caption" color="text.secondary">{label}</Typography>
-          <Typography component="dd" variant="caption" sx={{ m: 0, overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}><time dateTime={value} title={value}>{dateTime(value)}</time></Typography>
-        </Box>
-      ))}
-      <Typography component="dt" variant="caption" color="text.secondary">IP address</Typography>
-      <Typography component="dd" variant="caption" className="mono" sx={{ m: 0, overflowWrap: 'anywhere' }}>{device.IpAddress || 'Not recorded'}</Typography>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography variant="body2" sx={{ fontSize: 13 }}>Last activity <Box component="time" dateTime={device.LastSeenAt} title={device.LastSeenAt} sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{dateTime(device.LastSeenAt)}</Box></Typography>
+      <Typography variant="caption" color="text.secondary" component="div">Registered <Box component="time" dateTime={device.CreatedAt} title={device.CreatedAt} sx={{ whiteSpace: 'nowrap' }}>{dateTime(device.CreatedAt)}</Box></Typography>
+      <AccessDetails label="Connection details">
+        <Typography variant="caption" component="div" sx={{ mb: 0.5 }}>IP address: <span className="mono">{device.IpAddress || 'Not recorded'}</span></Typography>
+        <DeviceLogins device={device} />
+      </AccessDetails>
     </Box>
   );
 }
 
 function DeviceLogins({ device }: { device: Device }) {
-  return <Chip size="small" variant="outlined" label={`${device.ActiveLoginCount.toLocaleString()} policy-eligible ${device.ActiveLoginCount === 1 ? 'login' : 'logins'}`} sx={{ maxWidth: '100%', height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.4 } }} />;
+  return <AccessBadge label={`${device.ActiveLoginCount.toLocaleString()} policy-eligible ${device.ActiveLoginCount === 1 ? 'login' : 'logins'}`} sx={{ maxWidth: '100%', height: 'auto', '& .MuiChip-label': { whiteSpace: 'normal', py: 0.4 } }} />;
 }
 
 function DeviceActions({ device, onRename, onRemove }: { device: Device; onRename: (device: Device) => void; onRemove: (device: Device) => void }) {
   return (
-    <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-      <Button size="small" startIcon={<EditOutlined />} onClick={() => onRename(device)} aria-label={`Rename ${device.Name}`} sx={{ px: 1 }}>Rename</Button>
-      <Button size="small" color="error" startIcon={<DeleteOutlineRounded />} onClick={() => onRemove(device)} aria-label={`Remove device ${device.Name}`} sx={{ px: 1 }}>Remove device</Button>
+    <Stack direction="row" sx={{ justifyContent: { xs: 'flex-start', lg: 'flex-end' }, flexWrap: 'wrap', gap: 0.5 }}>
+      <Button size="small" onClick={() => onRename(device)} aria-label={`Rename ${device.Name}`} sx={{ px: 1 }}>Rename</Button>
+      <Button size="small" color="error" onClick={() => onRemove(device)} aria-label={`Remove device ${device.Name}`} sx={{ px: 1 }}>Remove</Button>
     </Stack>
   );
 }
@@ -99,26 +116,23 @@ function DevicesList({ items, onRename, onRemove }: { items: Device[]; onRename:
       <Box component="ul" aria-label="Registered devices" sx={{ display: { xs: 'block', lg: 'none' }, listStyle: 'none', p: 0, m: 0 }}>
         {items.map((device) => (
           <Box component="li" key={device.Id} sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}>
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1.5 }}>
-              <DeviceIdentity device={device} />
-              <DeviceLogins device={device} />
-            </Stack>
+            <DeviceIdentity device={device} />
             <Box sx={{ mt: 2 }}><DeviceApplication device={device} /></Box>
-            <Box sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: 'background.default' }}><DeviceHistory device={device} /></Box>
+            <Box sx={{ mt: 2, p: 1.5, borderRadius: '12px', bgcolor: '#F3F6FB' }}><DeviceHistory device={device} /></Box>
             <Box sx={{ mt: 1.5, ml: -1 }}><DeviceActions device={device} onRename={onRename} onRemove={onRemove} /></Box>
           </Box>
         ))}
       </Box>
       <TableContainer sx={{ display: { xs: 'none', lg: 'block' } }}>
-        <Table aria-label="Registered devices" sx={{ minWidth: 850, tableLayout: 'fixed' }}>
-          <TableHead><TableRow><TableCell sx={{ pl: 3, width: '31%' }}>Device</TableCell><TableCell sx={{ width: '20%' }}>Application and user</TableCell><TableCell sx={{ width: '28%' }}>Activity</TableCell><TableCell sx={{ pr: 3, width: '21%' }}>Manage</TableCell></TableRow></TableHead>
+        <Table aria-label="Registered devices" sx={{ minWidth: 850, tableLayout: 'fixed', ...accessTableSx }}>
+          <TableHead><TableRow><TableCell sx={{ width: '33%' }}>Device</TableCell><TableCell sx={{ width: '23%' }}>Application and user</TableCell><TableCell sx={{ width: '29%' }}>Activity</TableCell><TableCell align="right" sx={{ width: '15%' }}>Actions</TableCell></TableRow></TableHead>
           <TableBody>
             {items.map((device) => (
-              <TableRow key={device.Id} sx={{ '& > .MuiTableCell-root': { verticalAlign: 'top' } }}>
+              <TableRow key={device.Id}>
                 <TableCell component="th" scope="row" sx={{ pl: 3 }}><DeviceIdentity device={device} /></TableCell>
                 <TableCell><DeviceApplication device={device} /></TableCell>
                 <TableCell><DeviceHistory device={device} /></TableCell>
-                <TableCell sx={{ pr: 3 }}><DeviceLogins device={device} /><Box sx={{ mt: 1, ml: -1 }}><DeviceActions device={device} onRename={onRename} onRemove={onRemove} /></Box></TableCell>
+                <TableCell align="right"><DeviceActions device={device} onRename={onRename} onRemove={onRemove} /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -308,6 +322,14 @@ export function DevicesPage({ onNavigationGuardChange }: { onNavigationGuardChan
   const canClear = Boolean(searchTerm || query.searchTerm);
 
   useEffect(() => {
+    if (searchIssue) return;
+    const timer = window.setTimeout(() => {
+      setQuery((current) => current.searchTerm === searchTerm ? current : { ...current, searchTerm, page: 0 });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchTerm, searchIssue]);
+
+  useEffect(() => {
     const controller = new AbortController();
     setLoaded(undefined);
     setFailure(undefined);
@@ -354,20 +376,17 @@ export function DevicesPage({ onNavigationGuardChange }: { onNavigationGuardChan
 
   return (
     <Box aria-busy={loading}>
-      <PageHeading title="Devices" description="Manage devices registered when users sign in to compatible clients." />
+      <PageHeading title="Devices" description="Manage devices registered by compatible clients. Rename devices or remove their associated sign-ins." />
       {failed && <Box sx={{ mb: 3 }}><ErrorNotice error={queryError} retry={refresh} /></Box>}
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, px: { xs: 2.5, sm: 3 }, py: 2.2 }}>
-          <Stack direction="row" sx={{ alignItems: 'center', gap: 1.2 }}><Typography variant="h4" component="h2">Registered devices</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: 'background.default' }} />}</Stack>
-          <Button size="small" startIcon={<RefreshRounded />} onClick={refresh} disabled={loading}>Refresh devices</Button>
-        </Stack>
-        <Box component="form" onSubmit={applySearch} sx={{ px: { xs: 2.5, sm: 3 }, pb: 2.5 }}>
-          <TextField id="devices-search" name="SearchTerm" inputRef={searchInput} label="Search devices" fullWidth value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} error={Boolean(searchIssue || fieldError(queryError, 'SearchTerm'))} helperText={searchIssue ?? fieldError(queryError, 'SearchTerm') ?? 'Matches literal text in device names, client device IDs, application names, and last users.'} slotProps={{ htmlInput: { autoComplete: 'off', spellCheck: false } }} />
-          <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1, mt: 2 }}>
-            <Button type="submit" variant="outlined" startIcon={<SearchRounded />} disabled={Boolean(searchIssue)}>Search devices</Button>
-            <Button color="secondary" startIcon={<FilterAltOffOutlined />} onClick={clearSearch} disabled={!canClear}>Clear search</Button>
+      <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: '20px' }}>
+        <AccessTableHeader title="Registered devices" count={data?.TotalRecordCount}>
+          <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 0.75 }}>
+            <Box component="form" onSubmit={applySearch} sx={{ flex: 1, minWidth: 0 }}>
+              <TextField id="devices-search" name="SearchTerm" inputRef={searchInput} placeholder="Search device, ID, app, or user" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} error={Boolean(searchIssue || fieldError(queryError, 'SearchTerm'))} helperText={searchIssue ?? fieldError(queryError, 'SearchTerm')} sx={accessSearchSx} slotProps={{ htmlInput: { 'aria-label': 'Search devices', autoComplete: 'off', spellCheck: false }, input: { startAdornment: <InputAdornment position="start"><IconButton type="submit" size="small" aria-label="Search devices" disabled={Boolean(searchIssue)} edge="start"><SearchRounded sx={{ fontSize: 18 }} /></IconButton></InputAdornment>, endAdornment: canClear ? <InputAdornment position="end"><IconButton size="small" aria-label="Clear search" onClick={clearSearch} edge="end"><CloseRounded sx={{ fontSize: 16 }} /></IconButton></InputAdornment> : undefined } }} />
+            </Box>
+            <Tooltip title="Refresh devices"><span><IconButton onClick={refresh} disabled={loading} aria-label="Refresh devices"><RefreshRounded sx={{ fontSize: 19 }} /></IconButton></span></Tooltip>
           </Stack>
-        </Box>
+        </AccessTableHeader>
         {loading && <Stack spacing={1} sx={{ p: 3, borderTop: 1, borderColor: 'divider' }} role="status" aria-live="polite" aria-label="Loading devices"><Skeleton height={90} /><Skeleton height={90} /><Skeleton height={90} /></Stack>}
         {data && data.Items.length === 0 && (
           <Stack spacing={1.5} sx={{ alignItems: 'center', p: { xs: 3, sm: 5 }, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>
@@ -394,7 +413,7 @@ export function DevicesPage({ onNavigationGuardChange }: { onNavigationGuardChan
           sx={{ borderTop: 1, borderColor: 'divider', '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 2, sm: 3 }, py: 1, gap: 0.5 }, '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } }, '& .MuiTablePagination-actions': { ml: { xs: 1, sm: 2 } } }}
         />}
       </Paper>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, px: 0.5 }}>Policy-eligible logins satisfy the stored account, credential, device, schedule, and lockout rules at the time of this view. Actual requests also depend on their connection context. Times use your local time zone.</Typography>
+      <Box sx={{ mt: 2 }}><AccessDetails label="About device activity"><Typography variant="caption">Policy-eligible logins satisfy the stored account, credential, device, schedule, and lockout rules at the time of this view. Actual requests also depend on their connection context. Times use your local time zone.</Typography></AccessDetails></Box>
       {renaming && <RenameDeviceDialog key={renaming.Id} device={renaming} onClose={() => setRenaming(undefined)} onSaved={(device) => { setNotice(`Device name saved as ${device.Name}.`); closeAndRefresh(); }} onRefresh={closeAndRefresh} onNavigationGuardChange={onNavigationGuardChange} />}
       {removing && <RemoveDeviceDialog key={removing.Id} device={removing} onClose={() => setRemoving(undefined)} onRemoved={(result) => { setNotice(`Device removed. ${result.RevokedLoginCount.toLocaleString()} client ${result.RevokedLoginCount === 1 ? 'login' : 'logins'} signed out.`); closeAndRefresh(); }} onRefresh={closeAndRefresh} onNavigationGuardChange={onNavigationGuardChange} />}
       <Snackbar open={Boolean(notice) && !renaming && !removing} autoHideDuration={6000} onClose={() => setNotice('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}><Alert severity="success" variant="filled" onClose={() => setNotice('')} sx={{ width: '100%', overflowWrap: 'anywhere' }}>{notice}</Alert></Snackbar>

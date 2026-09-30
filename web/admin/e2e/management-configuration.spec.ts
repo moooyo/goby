@@ -157,7 +157,8 @@ test('TV library settings preserve and disable intro automation through the libr
     return json(route, { Library: saved });
   });
   await page.goto('/admin/libraries');
-  await page.getByRole('button', { name: 'Edit library Series settings', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions for Series settings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true })).not.toBeChecked();
   await dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true }).check();
@@ -167,7 +168,8 @@ test('TV library settings preserve and disable intro automation through the libr
   expect(api.writes[0].body).toMatchObject({ Revision: '9007199254740993', Scan: false,
     LibraryOptions: { EnableLocalMetadata: false, EnableLocalImages: true, EnableEmbeddedArtwork: false, EnableIntroDetection: true, EnablePreviewGeneration: false },
   });
-  await page.getByRole('button', { name: 'Edit library Series settings', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions for Series settings', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true })).toBeChecked();
   await dialog.getByRole('checkbox', { name: 'Automatic intro detection', exact: true }).uncheck();
@@ -237,7 +239,8 @@ test('editing seek preview automation preserves intro and import settings and ex
     return json(route, { Library: saved });
   });
   await page.goto('/admin/libraries');
-  await page.getByRole('button', { name: 'Edit library Series previews', exact: true }).click();
+  await page.getByRole('button', { name: 'More actions for Series previews', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true })).not.toBeChecked();
   await expect(dialog).toContainText('Turning this off keeps existing valid previews.');
@@ -247,7 +250,13 @@ test('editing seek preview automation preserves intro and import settings and ex
   expect(api.writes[0].body).toMatchObject({ Revision: '9007199254740993', Scan: false, LibraryOptions: {
     EnableLocalMetadata: false, EnableLocalImages: false, EnableEmbeddedArtwork: false, EnableIntroDetection: true, EnablePreviewGeneration: true,
   } });
-  await page.getByRole('button', { name: 'Edit library Series previews', exact: true }).click();
+  api.handlers.set('GET /admin/v1/tasks', async (route) => json(route, { Items: [], TotalRecordCount: 0 }));
+  await page.getByRole('alert').filter({ hasText: 'Automatic seek previews are enabled.' }).getByRole('button', { name: 'View tasks', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/system\/tasks$/);
+  await expect(page.getByRole('tab', { name: 'Available tasks', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.goto('/admin/media/libraries');
+  await page.getByRole('button', { name: 'More actions for Series previews', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Edit library', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Edit library', exact: true });
   await expect(dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true })).toBeChecked();
   await dialog.getByRole('checkbox', { name: 'Automatic seek previews', exact: true }).uncheck();

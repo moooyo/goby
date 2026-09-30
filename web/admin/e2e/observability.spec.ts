@@ -312,11 +312,12 @@ test('isolated activity, safe diagnostic files, native downloads, and read-only 
     let activity = await readActivity(await initialResponse, secrets);
     await visibleActivity(page, activity);
     await expect(page.getByRole('heading', { name: 'Activity & logs', exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Activity & logs', exact: true })).toHaveAttribute('href', '/admin/observability');
-    await expect(page.getByRole('link', { name: 'Activity & logs', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('tab', { name: 'Activity & logs', exact: true })).toHaveAttribute('href', '/admin/system/observability');
+    await expect(page.getByRole('tab', { name: 'Activity & logs', exact: true })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('tab', { name: 'Activity', exact: true })).toHaveAttribute('aria-selected', 'true');
 
     await test.step('read real settings activity through filters, stable paging, and manual refresh', async () => {
+      await page.getByRole('button', { name: 'Filter activity', exact: true }).click();
       await choose(page, 'Action', 'Settings updated');
       activity = (await applyFilters(page, secrets, { Action: fixture.Activity.Action })).value;
       expect(activity.TotalRecordCount).toBeGreaterThanOrEqual(fixture.Activity.MinimumCount);

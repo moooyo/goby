@@ -207,7 +207,7 @@ async function choose(page: Page, parent: Locator, label: string, option: string
 async function openOperations(page: Page): Promise<Locator> {
   await page.addInitScript(() => window.history.replaceState({ ...window.history.state, tasksTab: 'media-processing' }, ''));
   const response = page.waitForResponse((entry) => entry.request().method() === 'GET' && new URL(entry.url()).pathname === operationsPath);
-  await page.goto('/admin/tasks');
+  await page.goto('/admin/system/tasks');
   expect((await response).status()).toBe(200);
   await expect(page.getByRole('tab', { name: 'Media processing', exact: true })).toHaveAttribute('aria-selected', 'true');
   const panel = page.getByRole('tabpanel', { name: 'Media processing', exact: true });
@@ -224,7 +224,7 @@ async function openOperation(page: Page, id: string): Promise<Locator> {
 }
 
 async function openPreparation(page: Page): Promise<Locator> {
-  await page.goto(`/admin/libraries/${library.Id}/items`);
+  await page.goto(`/admin/media/libraries/${library.Id}/items`);
   await page.getByRole('button', { name: 'Edit metadata for Synthetic subtitle movie', exact: true }).click();
   await page.getByRole('dialog', { name: /^Edit metadata/ }).getByRole('button', { name: 'Media processing', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Prepare media processing', exact: true });

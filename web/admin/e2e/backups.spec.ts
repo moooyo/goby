@@ -109,7 +109,7 @@ class BackupMock {
       }
       const captured = { method: request.method(), path: url.pathname, url: request.url(), headers: request.headers(), body, json: payload };
       this.requests.push(captured);
-      const paginated = captured.method === 'GET' && ['/admin/v1/backups', '/admin/v1/backup-operations'].includes(captured.path);
+      const paginated = captured.method === 'GET' && ['/admin/v1/backups', '/admin/v1/backup-operations', '/admin/v1/activity'].includes(captured.path);
       const invalidQuery = url.search && (!paginated || [...url.searchParams].some(([name, value]) => {
         const number = Number(value);
         return !['StartIndex', 'Limit'].includes(name) || url.searchParams.getAll(name).length !== 1
@@ -133,6 +133,16 @@ class BackupMock {
           Database: { Status: 'ready' }, Counts: { Users: 1, Libraries: 0, Items: 0, ActiveSessions: 1 },
           Runtime: { GoVersion: 'test' },
           Features: { LibraryManagement: true, Playback: true, Transcoding: false, ApplicationKeys: true },
+        });
+        if (captured.path === '/admin/v1/system/status') return json(route, {
+          Timestamp: timestamp, UptimeSeconds: 60, Host: { OS: 'test', Architecture: 'test', CPUCount: 1 },
+          CPU: { UsagePercent: null, Load1: null, Load5: null, Load15: null },
+          Memory: { TotalBytes: null, UsedBytes: null, CachedBytes: null, SwapUsedBytes: null },
+          Storage: { TotalBytes: null, UsedBytes: null, Complete: true, Volumes: [] },
+          Transcoding: { Available: false, Active: null, Limit: 0, HardwareActive: null, SoftwareActive: null },
+        });
+        if (captured.path === '/admin/v1/activity') return json(route, {
+          Items: [], TotalRecordCount: 0, StartIndex: Number(url.searchParams.get('StartIndex') ?? 0), Limit: Number(url.searchParams.get('Limit') ?? 25), RetentionDays: 30,
         });
         if (captured.path === '/admin/v1/backups/status') return json(route, this.status);
         if (captured.path === '/admin/v1/backups' || captured.path === '/admin/v1/backup-operations') {
@@ -266,7 +276,7 @@ test('create preserves the exact passphrase, clears it, and treats 202 as admiss
   expect(request.json).toEqual({ RequestId: expect.stringMatching(/^[0-9a-f]{32}$/), Passphrase: exactPassphrase });
   expect(api.mutations('/admin/v1/backups')).toHaveLength(1);
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
-  expect(await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }))).toEqual({ local: {}, session: {} });
+  expect(await page.evaluate(() => ({ local: { ...localStorage }, session: Object.fromEntries(Object.entries(sessionStorage).filter(([key]) => key !== 'goby.dashboard.tabs')) }))).toEqual({ local: {}, session: {} });
   const readsBeforeCompletion = api.requests.filter((item) => item.method === 'GET' && item.path === '/admin/v1/backup-operations').length;
   api.operations = [operation({ RequestId: request.json!.RequestId as string, State: 'completed', Phase: 'finished', CanCancel: false, Source: source() })];
   api.backups = [backup()];
@@ -638,7 +648,7 @@ test('an unresolved activation survives navigation and reload, and stays scoped 
 
   await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Backups & recovery', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'System', exact: true }).click();
   await inspectBlocked();
   await page.reload();
   await inspectBlocked();
@@ -890,16 +900,22 @@ for (const rejection of [{ status: 401, code: 'unauthorized' }, { status: 403, c
 test('mobile backup cards and confirmation dialogs fit the viewport and support keyboard access', async ({ page, api }, testInfo) => {
   api.backups = [backup({ Source: source({ ServerName: 'A deliberately long archive server name that must wrap on mobile screens' }) })];
   api.operations = [operation()];
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 1440, height: 834 });
+  await openBackups(page);
+  await page.screenshot({ path: testInfo.outputPath('backups-desktop.png'), fullPage: true, animations: 'disabled' });
+  await page.setViewportSize({ width: 375, height: 844 });
   await openBackups(page);
   await expect(backupCard(page)).toBeVisible();
   await expect(jobCard(page)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  const navigationLink = page.getByRole('link', { name: 'Backups & recovery', exact: true });
+  await page.screenshot({ path: testInfo.outputPath('backups-mobile.png'), fullPage: true, animations: 'disabled' });
+  await backupCard(page).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('backups-mobile-data.png'), fullPage: true, animations: 'disabled' });
+  const navigationLink = page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'System', exact: true });
   await navigationLink.focus();
   await navigationLink.press('Enter');
-  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
+  await expect(navigationLink).toBeFocused();
+  await expect(page.getByRole('tab', { name: 'Backups & recovery', exact: true })).toHaveAttribute('aria-selected', 'true');
   const create = page.getByRole('button', { name: 'Create backup', exact: true });
   await create.focus();
   await create.press('Enter');

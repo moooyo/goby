@@ -107,9 +107,8 @@ function Section({ title, description, children }: { title: string; description:
 
 function PermissionSwitch({ id, label, description, checked, disabled, error, onChange }: { id: string; label: string; description: string; checked: boolean; disabled: boolean; error?: string; onChange: (checked: boolean) => void }) {
   return (
-    <Box>
-      <FormControlLabel sx={{ m: 0, width: '100%', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }} labelPlacement="start" control={<Switch checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} slotProps={{ input: { 'aria-describedby': `${id}-help` } }} />} label={<Typography variant="body2" sx={{ fontWeight: 650, pt: 0.8 }}>{label}</Typography>} />
-      <Typography id={`${id}-help`} variant="body2" color={error ? 'error.main' : 'text.secondary'}>{error ?? description}</Typography>
+    <Box sx={{ p: 1.5, borderRadius: '16px', bgcolor: colors.paper, border: 1, borderColor: colors.fog }}>
+      <FormControlLabel sx={{ m: 0, width: '100%', justifyContent: 'space-between', alignItems: 'center', gap: 2, '& .MuiFormControlLabel-label': { minWidth: 0 } }} labelPlacement="start" control={<Switch checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} slotProps={{ input: { id, 'aria-labelledby': `${id}-label`, 'aria-describedby': `${id}-help` } }} />} label={<Box component="span"><Typography component="span" id={`${id}-label`} variant="body1" sx={{ display: 'block', fontWeight: 600 }}>{label}</Typography><Typography component="span" id={`${id}-help`} variant="body2" color={error ? 'error.main' : 'text.secondary'} sx={{ display: 'block', mt: 0.5 }}>{error ?? description}</Typography></Box>} />
     </Box>
   );
 }
@@ -354,18 +353,18 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
 
   return (
     <>
-      <Dialog open fullWidth maxWidth="md" fullScreen={fullScreen} onClose={() => requestAction('close')} aria-labelledby="manage-user-title" slotProps={{ paper: { sx: { ...(fullScreen ? { borderRadius: 0 } : {}), maxWidth: fullScreen ? undefined : 820 } } }}>
+      <Dialog open fullWidth maxWidth="md" fullScreen={fullScreen} onClose={() => requestAction('close')} aria-labelledby="manage-user-title" slotProps={{ paper: { sx: { ...(fullScreen ? { borderRadius: 0, m: 0 } : {}), maxWidth: fullScreen ? undefined : 820 } } }}>
         <Box component="form" onSubmit={submit} aria-busy={busy || loading} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: fullScreen ? '100%' : undefined, overflow: 'hidden' }}>
-          <DialogTitle id="manage-user-title" sx={{ px: { xs: 2.5, sm: 3 }, pt: 3, pb: 1 }}><Typography component="span" variant="h3">Manage user</Typography></DialogTitle>
+          <DialogTitle id="manage-user-title" sx={{ px: { xs: 2.5, sm: 3 }, pt: 3, pb: 2 }}>Manage user</DialogTitle>
           <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pt: '8px !important' }}>
-            <Stack spacing={3}>
+            <Stack spacing={2.5}>
               {loadError != null && <ErrorNotice error={loadError} retry={() => requestAction('reload')} />}
               {!draft && loading && <Stack role="status" aria-label="Loading user details" spacing={2}><Skeleton variant="rounded" height={116} /><Skeleton height={70} /><Skeleton height={90} /><Skeleton height={150} /></Stack>}
               {!draft && !loading && loadError != null && <Typography variant="body2" color="text.secondary">Reload this user to view and edit account details.</Typography>}
               {draft && user && (
                 <>
-                  <Paper component="section" aria-label="Permission overview" variant="outlined" sx={{ p: 2.5, bgcolor: colors.canvas, borderLeft: `3px solid ${colors.sea}` }}>
-                    <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 2 }}><Box sx={{ minWidth: 0 }}><Typography variant="overline" color="text.secondary">Permission overview</Typography><Typography variant="h3" component="h2" sx={{ overflowWrap: 'anywhere' }}>{draft.Name || 'Unnamed user'}</Typography></Box><Chip size="small" variant="outlined" color={draft.IsDisabled ? 'default' : 'success'} label={draft.IsDisabled ? 'Disabled' : 'Active'} /></Stack>
+                  <Paper component="section" aria-label="Permission overview" variant="outlined" sx={{ p: 2, bgcolor: colors.surface }}>
+                    <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1.5 }}><Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Permission overview</Typography><Typography variant="h3" component="h3" sx={{ mt: 0.5, fontSize: 20, lineHeight: '28px', overflowWrap: 'anywhere' }}>{draft.Name || 'Unnamed user'}</Typography></Box><Chip size="small" color={draft.IsDisabled ? 'default' : 'success'} label={draft.IsDisabled ? 'Disabled' : 'Active'} /></Stack>
                     <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1.5fr 1fr' }, gap: { xs: 1.5, sm: 2 } }}>
                       {[['Account', draft.IsAdministrator ? 'Administrator' : 'Member'], ['Library access', librarySummary], ['Playback', draft.Policy.EnableMediaPlayback ? 'Allowed' : 'Blocked']].map(([label, value]) => <Box key={label}><Typography component="dt" variant="caption" color="text.secondary">{label}</Typography><Typography component="dd" variant="body2" sx={{ m: 0, fontWeight: 650 }}>{value}</Typography></Box>)}
                     </Box>
@@ -388,7 +387,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                       {draft.IsAdministrator && <Alert severity="info">Administrators can access every library. The choices below are saved for member access and take effect if administrator access is removed.</Alert>}
                       <PermissionSwitch id="managed-user-all-libraries" label="All libraries" description="Include every current library and any libraries added later." checked={draft.Policy.EnableAllFolders} disabled={disabled} onChange={(value) => changePolicy('EnableAllFolders', value)} error={fieldError(error, 'Policy.EnableAllFolders')} />
                       {(!draft.Policy.EnableAllFolders || unavailableFolderIds.length > 0 || Boolean(folderError)) && (
-                        <Box>
+                        <Box sx={{ p: 1.5, borderRadius: '16px', bgcolor: colors.paper }}>
                           {draft.Policy.EnableAllFolders && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>These saved selections apply when All libraries is turned off. Remove any unavailable libraries to keep this configuration valid.</Typography>}
                           {librariesError != null && <ErrorNotice error={librariesError} retry={() => setLibraryRevision((value) => value + 1)} />}
                           {librariesLoading && !libraries && <Stack role="status" aria-label="Loading available libraries"><Skeleton height={40} /><Skeleton height={40} /></Stack>}
@@ -402,7 +401,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
                   </Section>
                   <Divider />
                   <Section title="Playback permissions" description="Control the playback methods available to this account.">
-                    <Stack spacing={2}>
+                    <Stack spacing={1.5}>
                       {playbackSettings.map((setting) => <PermissionSwitch key={setting.key} id={`managed-user-${setting.key}`} label={setting.label} description={setting.description} checked={draft.Policy[setting.key]} disabled={disabled} onChange={(value) => changePolicy(setting.key, value)} error={fieldError(error, `Policy.${setting.key}`)} />)}
                       {!draft.Policy.EnableMediaPlayback && <Typography variant="body2" color="text.secondary">Remuxing and transcoding settings are retained and apply when media playback is enabled.</Typography>}
                     </Stack>
@@ -427,7 +426,7 @@ export function ManagedUserDialog({ userId, currentUserId, onClose, onUpdated, o
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: { xs: 2.5, sm: 3 }, py: 2, borderTop: 1, borderColor: 'divider', gap: 1, flexWrap: 'wrap' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>{loading ? 'Loading user...' : dirty ? 'Unsaved changes' : user ? 'All changes saved' : ''}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto', width: { xs: '100%', sm: 'auto' } }}>{loading ? 'Loading user...' : dirty ? 'Unsaved changes' : user ? 'All changes saved' : ''}</Typography>
             <Button onClick={() => requestAction('close')} disabled={busy || deleteBusy} color="secondary">Close</Button>
             <Button type="submit" variant="contained" disabled={disabled || !draft?.Name.trim() || !parsedPolicy?.policy || !dirty || blocked} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <SaveOutlined />}>{busy ? 'Saving changes...' : 'Save changes'}</Button>
           </DialogActions>

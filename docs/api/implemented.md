@@ -167,6 +167,7 @@ That earlier M5i deployment used schema 22/probe 6 and PID 3668655. See the
 | `PUT /admin/v1/tasks/{id}/triggers` | Cookie, CSRF, exact `{Revision, ScheduleTimezone, Triggers}`, no query | `200 {Task}`; full revision-checked schedule replacement |
 | `POST /admin/v1/tasks/{id}/triggers/preview` | Cookie, CSRF, exact `{ScheduleTimezone, Triggers}`, no query | `200 {ServerTime, Items}`; three future times per timed rule or a startup event, without mutation |
 | `GET /admin/v1/overview` | Administrator cookie | Server identity, database status, real account/session counts, current feature flags |
+| `GET /admin/v1/system/status` | Administrator cookie | [Host CPU, memory, configured media filesystem capacity, uptime, and occupied conversion slots](admin-system-status.md); unavailable measurements remain null |
 | `GET /admin/v1/capabilities` | Administrator cookie | Implementation flags and pinned toolchain targets; unavailable media/hardware features report false |
 | `GET /admin/v1/users` | Administrator cookie | `{Items: User[], TotalRecordCount}` |
 | `POST /admin/v1/users` | Cookie, CSRF header, `{Name, Password, IsAdministrator}` | `201 {User}` |

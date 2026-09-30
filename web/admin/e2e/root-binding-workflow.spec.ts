@@ -67,6 +67,9 @@ class RootBindingMock {
       this.requests.push(captured);
       const handler = this.handlers.get(`${captured.method} ${captured.path}`);
       if (handler && !url.search) return handler(route, request);
+      if (captured.method === 'GET' && captured.path === '/admin/v1/activity' && url.search === '?StartIndex=0&Limit=6') {
+        return json(route, { Items: [], TotalRecordCount: 0 });
+      }
       if (captured.method === 'GET' && !url.search) {
         if (captured.path === '/admin/v1/bootstrap') return json(route, { Initialized: true });
         if (captured.path === '/admin/v1/session') return json(route, {
@@ -77,6 +80,14 @@ class RootBindingMock {
           Database: { Status: 'ready' }, Counts: { Users: 1, Libraries: 1, Items: 0, ActiveSessions: 1 },
           Runtime: { GoVersion: 'test' },
           Features: { LibraryManagement: true, Playback: true, Transcoding: false, ApplicationKeys: true },
+        });
+        if (captured.path === '/admin/v1/system/status') return json(route, {
+          Timestamp: timestamp, UptimeSeconds: 60,
+          Host: { OS: 'linux', Architecture: 'amd64', CPUCount: 4 },
+          CPU: { UsagePercent: null, Load1: null, Load5: null, Load15: null },
+          Memory: { TotalBytes: null, UsedBytes: null, CachedBytes: null, SwapUsedBytes: null },
+          Storage: { TotalBytes: null, UsedBytes: null, Complete: false, Volumes: [] },
+          Transcoding: { Available: false, Active: null, Limit: null, HardwareActive: null, SoftwareActive: null },
         });
         if (captured.path === '/admin/v1/libraries') return json(route, { Items: [{ ...library, Paths: this.roots.map((item) => item.Path) }], TotalRecordCount: 1 });
         if (captured.path === '/admin/v1/storage/roots') return json(route, { Configured: true, Items: [{ Path: '/media', Available: true }] });
@@ -106,8 +117,13 @@ const consent = (page: Page) => dialog(page).getByRole('checkbox', { name: /^I u
 const submit = (page: Page) => dialog(page).getByRole('button', { name: /^(Bind storage|Accept replacement)$/ });
 
 async function openBindings(page: Page): Promise<void> {
-  await page.goto('/admin/libraries');
-  await page.getByRole('button', { name: `Storage bindings for ${library.Name}`, exact: true }).click();
+  await page.goto('/admin/media/libraries');
+  await openBindingsMenu(page);
+}
+
+async function openBindingsMenu(page: Page): Promise<void> {
+  await page.getByRole('button', { name: `More actions for ${library.Name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Storage bindings', exact: true }).click();
   await expect(dialog(page)).toBeVisible();
 }
 
@@ -167,8 +183,8 @@ test('a pending root approval blocks browser history and unloading until its out
   try {
     await page.goto('/admin/');
     await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
-    await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Libraries', exact: true }).click();
-    await page.getByRole('button', { name: `Storage bindings for ${library.Name}`, exact: true }).click();
+    await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Media', exact: true }).click();
+    await openBindingsMenu(page);
     await expect(dialog(page)).toBeVisible();
     await expect(submit(page)).toBeDisabled();
     expect(await beforeUnloadBlocked()).toBe(false);
@@ -181,7 +197,7 @@ test('a pending root approval blocks browser history and unloading until its out
     await expect(dialog(page)).toBeVisible();
     expect(await beforeUnloadBlocked()).toBe(true);
     await page.goBack({ waitUntil: 'commit' });
-    await expect(page).toHaveURL(/\/admin\/libraries$/);
+    await expect(page).toHaveURL(/\/admin\/media\/libraries$/);
     await expect(dialog(page)).toBeVisible();
     expect(replyFinished).toBe(false);
     expect(api.puts()).toHaveLength(1);
@@ -228,7 +244,7 @@ test('replacement review shows all boundary changes and fits a narrow viewport w
   await page.screenshot({ path: testInfo.outputPath('root-binding-desktop.png'), fullPage: true, animations: 'disabled' });
   await page.setViewportSize({ width: 390, height: 844 });
   await dialog(page).getByRole('button', { name: 'Close', exact: true }).click();
-  await page.getByRole('button', { name: `Storage bindings for ${library.Name}`, exact: true }).click();
+  await openBindingsMenu(page);
   const selection = dialog(page).getByRole('combobox', { name: /^Registered root/ });
   const storageStatus = dialog(page).getByText('Storage changed', { exact: true });
   const refresh = dialog(page).getByRole('button', { name: 'Refresh observation', exact: true });

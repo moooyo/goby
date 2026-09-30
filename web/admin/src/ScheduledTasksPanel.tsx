@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, Chip, CircularProgress, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, LinearProgress, Paper, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import ScheduleOutlined from '@mui/icons-material/ScheduleOutlined';
-import WorkHistoryOutlined from '@mui/icons-material/WorkHistoryOutlined';
+import HistoryRounded from '@mui/icons-material/HistoryRounded';
+import EditCalendarRounded from '@mui/icons-material/EditCalendarRounded';
+import StopRounded from '@mui/icons-material/StopRounded';
+import SyncRounded from '@mui/icons-material/SyncRounded';
+import SubtitlesRounded from '@mui/icons-material/SubtitlesRounded';
+import CleaningServicesRounded from '@mui/icons-material/CleaningServicesRounded';
+import EditNoteRounded from '@mui/icons-material/EditNoteRounded';
 import { adminApi, isAbortError } from './api';
 import type { TaskDefinition, TaskRun } from './api';
 import { ErrorNotice } from './components';
 import { ScheduleEditor } from './ScheduleEditor';
 import { describeTrigger, scheduleDate } from './taskSchedule';
-import { isActiveTaskRun, RunProgress, RunStatusChip, TaskRunDialog, TaskTimestamp } from './TaskRunDialog';
+import { isActiveTaskRun, RunStatusChip, TaskRunDialog, TaskTimestamp } from './TaskRunDialog';
+import type { TaskPanelStatus } from './TasksPage';
 import { useTaskResource } from './useTaskResource';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
@@ -47,16 +54,45 @@ function requestUUID(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange }: { currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange }) {
+function TaskIcon({ task }: { task: TaskDefinition }) {
+  const name = `${task.Id} ${task.Name}`.toLowerCase();
+  if (name.includes('subtitle')) return <SubtitlesRounded />;
+  if (name.includes('cache') || name.includes('clean')) return <CleaningServicesRounded />;
+  if (name.includes('metadata')) return <EditNoteRounded />;
+  return <SyncRounded />;
+}
+
+function CurrentProgress({ run }: { run: TaskRun }) {
+  const progress = run.TotalChildren > 0 ? Math.min(100, run.TerminalChildren / run.TotalChildren * 100) : undefined;
+  return <Box sx={{ minWidth: 0 }}>
+    <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+      <LinearProgress variant={progress === undefined ? 'indeterminate' : 'determinate'} value={progress} aria-label="Task work progress" aria-valuetext={progress === undefined ? 'Preparing work items' : `${run.TerminalChildren} of ${run.TotalChildren} work items finished`} sx={{ flex: 1, height: 5, borderRadius: 3, bgcolor: '#DCE4F2' }} />
+      <Typography variant="caption" sx={{ fontVariantNumeric: 'tabular-nums', color: 'text.primary' }}>{progress === undefined ? run.State === 'pending' ? 'Queued' : 'Running' : `${Math.round(progress)}%`}</Typography>
+    </Stack>
+    <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.75 }}>{run.State === 'stopping' ? 'Stopping remaining work' : run.TotalChildren > 0 ? `${run.TerminalChildren.toLocaleString()} / ${run.TotalChildren.toLocaleString()} work items finished` : 'Preparing work items'}{run.Scanned > 0 ? ` · ${run.Scanned.toLocaleString()} processed` : ''}</Typography>
+  </Box>;
+}
+
+export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange, onStatusChange }: { currentUserId: string; onNavigationGuardChange: UserNavigationGuardChange; onStatusChange?: (status: TaskPanelStatus) => void }) {
   const [starting, setStarting] = useState<string>();
+  const [stopping, setStopping] = useState<string>();
+  const [stopCandidate, setStopCandidate] = useState<{ task: TaskDefinition; run: TaskRun }>();
+  const [stopError, setStopError] = useState<unknown>();
   const [startErrors, setStartErrors] = useState<Record<string, unknown>>({});
   const [pending, setPending] = useState<Map<string, string>>(new Map());
   const [editing, setEditing] = useState<string>();
   const [viewing, setViewing] = useState<{ task: TaskDefinition; run?: TaskRun; notice?: string; confirmedRequestId?: string }>();
   const mutation = useRef<AbortController | undefined>(undefined);
   const load = useCallback((signal: AbortSignal) => adminApi.getTasks({ signal }), []);
-  const resource = useTaskResource({ key: currentUserId, load, poll: alwaysPoll, enabled: !starting });
-  useUserDraftNavigation(false, Boolean(starting), onNavigationGuardChange);
+  const busy = Boolean(starting || stopping);
+  const resource = useTaskResource({ key: currentUserId, load, poll: alwaysPoll, enabled: !busy });
+  const stopTask = stopCandidate ? resource.data?.Items.find((task) => task.Id === stopCandidate.task.Id) : undefined;
+  const stopRun = stopCandidate ? [stopTask?.CurrentRun, stopTask?.LastRun].find((run) => run?.Id === stopCandidate.run.Id) ?? stopCandidate.run : undefined;
+  const statusMessage = resource.error != null ? 'Automatic updates stopped after a request error.' : resource.paused ? 'Updates pause while this tab is hidden.' : busy ? 'Updates resume after this request.' : 'Task status updates every 5 seconds.';
+  useEffect(() => {
+    onStatusChange?.({ message: statusMessage, active: !resource.paused && !busy && resource.error == null, refresh: resource.reload, refreshing: resource.loading || busy, refreshLabel: 'Refresh tasks' });
+  }, [onStatusChange, statusMessage, resource.paused, resource.error, resource.loading, resource.reload, busy]);
+  useUserDraftNavigation(false, busy, onNavigationGuardChange);
   useEffect(() => () => mutation.current?.abort(), []);
   useEffect(() => {
     if (!resource.data) return;
@@ -95,34 +131,72 @@ export function ScheduledTasksPanel({ currentUserId, onNavigationGuardChange }: 
     }
   }
 
+  async function stop() {
+    if (mutation.current || !stopCandidate || !stopRun || !isActiveTaskRun(stopRun) || stopRun.State === 'stopping') return;
+    const controller = new AbortController();
+    mutation.current = controller;
+    setStopping(stopCandidate.task.Id);
+    setStopError(undefined);
+    try {
+      const result = await adminApi.cancelTaskRun(stopRun.Id, { signal: controller.signal });
+      if (!controller.signal.aborted) {
+        setViewing({ task: stopCandidate.task, run: result.Run, notice: 'The server acknowledged the stop request. Review the run to confirm its final state.' });
+        setStopCandidate(undefined);
+        resource.reload();
+      }
+    } catch (error) {
+      if (!controller.signal.aborted && !isAbortError(error)) setStopError(error);
+    } finally {
+      if (mutation.current === controller) mutation.current = undefined;
+      if (!controller.signal.aborted) setStopping(undefined);
+    }
+  }
+
   return <Stack spacing={2.5}>
-    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-      <Box><Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}><Typography component="h2" variant="h4">Available tasks</Typography>{resource.data && <Chip size="small" label={resource.data.TotalRecordCount.toLocaleString()} />}</Stack><Typography variant="caption" color="text.secondary">{resource.error != null ? 'Automatic updates stopped after a request error.' : resource.paused ? 'Updates pause while this tab is hidden.' : 'Task status updates every 5 seconds.'}</Typography></Box>
-      <Button size="small" startIcon={<RefreshRounded />} onClick={resource.reload} disabled={resource.loading || Boolean(starting)}>Refresh tasks</Button>
-    </Stack>
+    {!onStatusChange && <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+      <Typography variant="caption" color="text.secondary">{statusMessage}</Typography>
+      <Button size="small" startIcon={<RefreshRounded />} onClick={resource.reload} disabled={resource.loading || busy}>Refresh tasks</Button>
+    </Stack>}
     {resource.error != null && <ErrorNotice error={resource.error} retry={resource.reload} />}
-    {!resource.data && resource.loading && <Stack role="status" aria-label="Loading available tasks" spacing={2}><Skeleton variant="rounded" height={220} /><Skeleton variant="rounded" height={220} /></Stack>}
-    {resource.data?.Items.length === 0 && <Paper variant="outlined" sx={{ p: 4 }}><Typography variant="h3" component="h3">No available tasks</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>No task definitions are available on this server. Scan history remains available in its tab.</Typography></Paper>}
-    {resource.data && <Stack component="ul" aria-label="Available server tasks" spacing={2.5} sx={{ p: 0, m: 0, listStyle: 'none' }}>{resource.data.Items.map((task) => <Paper key={task.Id} component="li" variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
-      <Stack spacing={2.5}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5 }}><Box sx={{ minWidth: 0 }}>{task.Category && <Typography variant="overline" color="text.secondary">{task.Category}</Typography>}<Typography component="h3" variant="h3" sx={{ overflowWrap: 'anywhere' }}>{task.Name}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, overflowWrap: 'anywhere' }}>{task.Description}</Typography></Box><Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75 }}><Chip size="small" variant="outlined" label={task.Enabled ? 'Enabled' : 'Disabled'} color={task.Enabled ? 'success' : 'default'} />{task.IsHidden && <Chip size="small" variant="outlined" label="Hidden" />}</Stack></Stack>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 2.5 }}>
-          <Box sx={{ minWidth: 0 }}><Typography variant="caption" color="text.secondary">Schedule · {task.ScheduleTimezone}</Typography>{task.Triggers.length > 0 ? <Box component="ul" sx={{ m: 0, mt: 0.75, pl: 2.5 }}>{task.Triggers.map((trigger) => <Box key={trigger.Id} component="li" sx={{ overflowWrap: 'anywhere', mb: 0.75 }}><Typography variant="body2">{describeTrigger(trigger)}</Typography>{trigger.CalculationError && <Alert severity="warning" sx={{ mt: 1, '& .MuiAlert-message': { minWidth: 0, overflowWrap: 'anywhere' } }}>This trigger is paused because its next occurrence could not be calculated. Edit and save the schedule to adjust it.<Typography variant="caption" component="div" sx={{ mt: 0.5 }}>{trigger.CalculationError}</Typography></Alert>}</Box>)}</Box> : <Typography variant="body2" sx={{ mt: 0.75 }}>Manual starts only</Typography>}<Typography variant="caption" color="text.secondary" component="p" sx={{ m: 0, mt: 1.5, overflowWrap: 'anywhere' }}>Next run: {!task.Enabled ? 'Task is disabled' : task.NextRunAt ? scheduleDate(task.NextRunAt, task.ScheduleTimezone) : 'No timed occurrence'}</Typography></Box>
-          <Box sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
-            {task.CurrentRun ? <Stack spacing={1.5}><Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}><Typography variant="body2" sx={{ fontWeight: 650 }}>Current run</Typography><RunStatusChip state={task.CurrentRun.State} /></Stack><RunProgress run={task.CurrentRun} compact /><Box><Button size="small" sx={{ ml: -1, px: 1 }} onClick={() => setViewing({ task, run: task.CurrentRun! })}>View current run</Button></Box></Stack>
-              : task.LastRun ? <Stack spacing={1}><Stack direction="row" sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 1 }}><Typography variant="body2" sx={{ fontWeight: 650 }}>Last run</Typography><RunStatusChip state={task.LastRun.State} /></Stack><Typography variant="caption" color="text.secondary"><TaskTimestamp value={task.LastRun.FinishedAt ?? task.LastRun.CreatedAt} /></Typography><RunProgress run={task.LastRun} compact /></Stack>
-                : <Typography variant="body2" color="text.secondary">This task has not run yet.</Typography>}
+    {!resource.data && resource.loading && <Paper variant="outlined" role="status" aria-label="Loading available tasks" sx={{ borderRadius: '20px', overflow: 'hidden', px: 3 }}>{[0, 1, 2, 3].map((row) => <Skeleton key={row} height={90} />)}</Paper>}
+    {resource.data?.Items.length === 0 && <Paper variant="outlined" sx={{ p: 5, borderStyle: 'dashed', borderRadius: '20px', textAlign: 'center' }}><SyncRounded sx={{ fontSize: 32, color: 'text.disabled', mb: 1.5 }} /><Typography component="h2" sx={{ fontSize: 16, fontWeight: 600 }}>No available tasks</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>No task definitions are available on this server. Scan history remains available in its tab.</Typography></Paper>}
+    {resource.data && resource.data.Items.length > 0 && <Paper component="ul" variant="outlined" aria-label="Available server tasks" sx={{ p: 0, m: 0, listStyle: 'none', borderRadius: '20px', overflow: 'hidden' }}>{resource.data.Items.map((task) => {
+      const current = task.CurrentRun;
+      const recovering = pending.has(task.Id);
+      const running = Boolean(current && isActiveTaskRun(current));
+      const primaryLabel = starting === task.Id ? 'Requesting run...' : recovering ? 'Check start result' : running ? current?.State === 'stopping' ? 'Stopping run...' : 'Stop run' : 'Start task';
+      const nextRun = !task.Enabled ? 'Task is disabled' : task.NextRunAt ? scheduleDate(task.NextRunAt, task.ScheduleTimezone) : 'No timed occurrence';
+      return <Box component="li" key={task.Id} sx={{ borderBottom: 1, borderColor: 'divider', '&:last-child': { borderBottom: 0 }, '&:hover': { bgcolor: '#F7F9FD' } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '48px minmax(0, 1fr)', md: '48px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) 136px' }, gap: { xs: '16px', md: '20px' }, alignItems: 'center', px: { xs: 2, sm: 3 }, py: 2.25 }}>
+          <Box aria-hidden="true" sx={{ width: 48, height: 48, borderRadius: '12px', display: 'grid', placeItems: 'center', bgcolor: '#F3F6FB', color: 'text.secondary', alignSelf: { xs: 'start', md: 'center' }, '& svg': { fontSize: 24 } }}><TaskIcon task={task} /></Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography component="h3" sx={{ fontSize: 14, fontWeight: 600, lineHeight: '20px', overflowWrap: 'anywhere' }}>{task.Name}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: 13, lineHeight: '20px', overflowWrap: 'anywhere' }}>{task.Description}</Typography>
+            {(!task.Enabled || task.IsHidden) && <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>{!task.Enabled && <Chip size="small" label="Disabled" />}{task.IsHidden && <Chip size="small" label="Hidden" />}</Stack>}
           </Box>
+          <Box sx={{ minWidth: 0, gridColumn: { xs: '2', md: 'auto' } }}>
+            {task.Triggers.length ? <Stack direction="row" sx={{ gap: 0.75, flexWrap: 'wrap' }}>{task.Triggers.map((trigger) => <Tooltip key={trigger.Id} title={`${task.ScheduleTimezone} · Next run: ${nextRun}`}><Chip variant="outlined" size="small" icon={<ScheduleOutlined />} label={describeTrigger(trigger)} color={trigger.CalculationError ? 'warning' : 'default'} sx={{ maxWidth: '100%', height: 'auto', minHeight: 24, fontSize: 11, borderRadius: '6px', bgcolor: '#FFFFFF', '& .MuiChip-icon': { fontSize: 14 }, '& .MuiChip-label': { py: 0.4, whiteSpace: 'normal', overflowWrap: 'anywhere' } }} /></Tooltip>)}</Stack> : <Typography variant="caption" color="text.secondary">Manual starts only</Typography>}
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, fontSize: 11, overflowWrap: 'anywhere' }}>Next run: {nextRun}</Typography>
+          </Box>
+          <Box sx={{ minWidth: 0, gridColumn: { xs: '1 / -1', sm: '2', md: 'auto' } }}>
+            {current ? <Box><CurrentProgress run={current} /><Button size="small" sx={{ px: 0, minHeight: 24, mt: 0.25, fontSize: 11, justifyContent: 'flex-start' }} onClick={() => setViewing({ task, run: current })}>View current run</Button></Box>
+              : task.LastRun ? <Stack spacing={0.75} sx={{ alignItems: 'flex-start' }}><Tooltip title={<TaskTimestamp value={task.LastRun.FinishedAt ?? task.LastRun.CreatedAt} />}><Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: '100%' }}>Last run <TaskTimestamp value={task.LastRun.FinishedAt ?? task.LastRun.CreatedAt} /></Typography></Tooltip><Box sx={{ '& .MuiChip-root': { height: 22, fontSize: 11, borderRadius: '6px' } }}><RunStatusChip state={task.LastRun.State} /></Box></Stack>
+                : <Typography variant="caption" color="text.secondary">This task has not run yet.</Typography>}
+          </Box>
+          <Stack direction="row" sx={{ gap: 0.5, justifyContent: { xs: 'flex-end', md: 'center' }, gridColumn: { xs: '1 / -1', md: 'auto' } }}>
+            <Tooltip title={primaryLabel}><span><IconButton aria-label={primaryLabel} disabled={busy || (!recovering && (running ? current?.State === 'stopping' : !task.Enabled))} onClick={() => { if (running && current && !recovering) { setStopError(undefined); setStopCandidate({ task, run: current }); } else void start(task); }} sx={{ width: 40, height: 40, bgcolor: '#D8E4FA', color: '#0F2A57', '&:hover': { bgcolor: '#C7D8F5' }, '&.Mui-disabled': { bgcolor: '#E4E8F0' } }}>{starting === task.Id || stopping === task.Id ? <CircularProgress size={18} color="inherit" /> : recovering ? <RefreshRounded sx={{ fontSize: 20 }} /> : running ? <StopRounded sx={{ fontSize: 20 }} /> : <PlayArrowRounded sx={{ fontSize: 22 }} />}</IconButton></span></Tooltip>
+            <Tooltip title="Edit schedule"><span><IconButton aria-label="Edit schedule" onClick={() => setEditing(task.Id)} disabled={busy} sx={{ width: 40, height: 40 }}><EditCalendarRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
+            <Tooltip title="View runs"><span><IconButton aria-label="View runs" onClick={() => setViewing({ task })} disabled={busy} sx={{ width: 40, height: 40 }}><HistoryRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
+          </Stack>
         </Box>
-        {startErrors[task.Id] != null && <ErrorNotice error={startErrors[task.Id]} />}
-        {pending.has(task.Id) && starting !== task.Id && <Alert severity="warning">A start request has not been confirmed. Check its result before starting another run. The same request will be reused.</Alert>}
-        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-          <Button variant="contained" startIcon={starting === task.Id ? <CircularProgress size={16} color="inherit" /> : pending.has(task.Id) ? <RefreshRounded /> : <PlayArrowRounded />} disabled={Boolean(starting) || (!pending.has(task.Id) && (!task.Enabled || Boolean(task.CurrentRun)))} onClick={() => void start(task)}>{starting === task.Id ? 'Requesting run...' : pending.has(task.Id) ? 'Check start result' : 'Start task'}</Button>
-          <Button variant="outlined" startIcon={<WorkHistoryOutlined />} onClick={() => setViewing({ task })} disabled={Boolean(starting)}>View runs</Button>
-          <Button startIcon={<ScheduleOutlined />} onClick={() => setEditing(task.Id)} disabled={Boolean(starting)}>Edit schedule</Button>
-        </Stack>
-      </Stack>
-    </Paper>)}</Stack>}
+        {(startErrors[task.Id] != null || (recovering && starting !== task.Id) || task.Triggers.some((trigger) => trigger.CalculationError)) && <Stack spacing={1} sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
+          {startErrors[task.Id] != null && <ErrorNotice error={startErrors[task.Id]} />}
+          {recovering && starting !== task.Id && <Alert severity="warning">A start request has not been confirmed. Check its result before starting another run. The same request will be reused.</Alert>}
+          {task.Triggers.filter((trigger) => trigger.CalculationError).map((trigger) => <Alert key={trigger.Id} severity="warning" sx={{ '& .MuiAlert-message': { minWidth: 0, overflowWrap: 'anywhere' } }}>This trigger is paused because its next occurrence could not be calculated. Edit and save the schedule to adjust it.<Typography variant="caption" component="div" sx={{ mt: 0.5 }}>{describeTrigger(trigger)}: {trigger.CalculationError}</Typography></Alert>)}
+        </Stack>}
+      </Box>;
+    })}</Paper>}
+    {stopCandidate && stopRun && <Dialog open onClose={busy ? undefined : () => setStopCandidate(undefined)} fullWidth maxWidth="sm" aria-labelledby="stop-task-title"><DialogTitle id="stop-task-title">Stop this run?</DialogTitle><DialogContent><Stack spacing={2}><Typography variant="body2" color="text.secondary">Stops the remaining work for {stopCandidate.task.Name}. Changes from completed work remain in the catalog.</Typography>{!isActiveTaskRun(stopRun) && <Alert severity="info">This run has already ended.</Alert>}{stopError != null && <><ErrorNotice error={stopError} /><Typography variant="body2" color="text.secondary">The stop request could not be confirmed. Retry for this same run, or close and refresh its status.</Typography></>}</Stack></DialogContent><DialogActions><Button disabled={busy} onClick={() => setStopCandidate(undefined)}>{isActiveTaskRun(stopRun) ? 'Keep run' : 'Close'}</Button><Button variant="contained" color="error" disabled={busy || !isActiveTaskRun(stopRun) || stopRun.State === 'stopping'} startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <StopRounded />} onClick={() => void stop()}>{busy ? 'Requesting stop...' : 'Stop run'}</Button></DialogActions></Dialog>}
     {editing && <ScheduleEditor key={editing} taskId={editing} onClose={() => setEditing(undefined)} onSaved={resource.reload} onNavigationGuardChange={onNavigationGuardChange} />}
     {viewing && <TaskRunDialog key={`${viewing.task.Id}:${viewing.run?.Id ?? 'history'}`} task={viewing.task} initialRun={viewing.run} notice={viewing.notice} onClose={() => { setViewing(undefined); resource.reload(); }} onChanged={resource.reload} onNavigationGuardChange={onNavigationGuardChange} />}
   </Stack>;

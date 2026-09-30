@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Paper, Skeleton, Snackbar, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, Paper, Skeleton, Snackbar, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 import PersonAddAltRounded from '@mui/icons-material/PersonAddAltRounded';
 import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded';
-import ShieldOutlined from '@mui/icons-material/ShieldOutlined';
+import AdminPanelSettingsRounded from '@mui/icons-material/AdminPanelSettingsRounded';
+import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded';
 import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
 import { adminApi, ApiError, isAbortError } from './api';
@@ -13,6 +14,7 @@ import { fieldError, PasswordField } from './formFields';
 import { ManagedUserDialog, UnsavedChangesDialog } from './ManagedUserDialog';
 import { useUserDraftNavigation } from './userDraftNavigation';
 import type { UserNavigationGuardChange } from './userDraftNavigation';
+import { AccessBadge, AccessTableHeader, accessTableSx } from './accessVisuals';
 
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase();
@@ -62,9 +64,9 @@ function CreateUserDialog({ open, onClose, onCreated, onNavigationGuardChange }:
 
   return (
     <>
-    <Dialog open={open} onClose={requestClose} fullWidth maxWidth="sm" aria-labelledby="create-user-title">
+    <Dialog open={open} onClose={requestClose} fullWidth maxWidth="sm" aria-labelledby="create-user-title" slotProps={{ paper: { sx: { maxWidth: 520 } } }}>
       <Box component="form" onSubmit={submit} aria-busy={busy}>
-        <DialogTitle id="create-user-title" sx={{ px: 3, pt: 3, pb: 0.5 }}><Typography component="span" variant="h3">Create user</Typography></DialogTitle>
+        <DialogTitle id="create-user-title" sx={{ px: 3, pt: 3, pb: 0.5 }}>Create user</DialogTitle>
         <DialogContent sx={{ px: 3, pt: '12px !important' }}>
           <Typography color="text.secondary" variant="body2" sx={{ mb: 3 }}>Give someone an account on your media server.</Typography>
           <Stack spacing={2.5}>
@@ -72,9 +74,8 @@ function CreateUserDialog({ open, onClose, onCreated, onNavigationGuardChange }:
             {outcomeUnknown && <Alert severity="warning">The response could not be confirmed. This user may already have been created. Check the user list before trying again.</Alert>}
             <TextField id="new-user-name" name="Name" autoFocus fullWidth required label="Username" value={name} onChange={(event) => setName(event.target.value)} disabled={busy} autoComplete="off" error={Boolean(fieldError(error, 'Name'))} helperText={fieldError(error, 'Name')} slotProps={{ htmlInput: { autoCapitalize: 'none', spellCheck: false } }} />
             <PasswordField id="new-user-password" name="Password" fullWidth required label="Password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={busy} autoComplete="new-password" error={passwordTooLong || Boolean(fieldError(error, 'Password'))} helperText={fieldError(error, 'Password') ?? (passwordTooLong ? 'Use at most 72 UTF-8 bytes for the password.' : 'Choose a unique password of at most 72 UTF-8 bytes.')} />
-            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'background.default', border: 1, borderColor: 'divider' }}>
-              <FormControlLabel control={<Switch checked={administrator} onChange={(event) => setAdministrator(event.target.checked)} disabled={busy} slotProps={{ input: { 'aria-describedby': 'administrator-help' } }} />} label={<Typography sx={{ fontWeight: 600 }}>Administrator access</Typography>} />
-              <Typography id="administrator-help" color="text.secondary" variant="body2" sx={{ mt: 0.25 }}>Administrators can manage all server settings and users.</Typography>
+            <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'background.paper' }}>
+              <FormControlLabel sx={{ m: 0, width: '100%', gap: 2, justifyContent: 'space-between' }} labelPlacement="start" control={<Switch checked={administrator} onChange={(event) => setAdministrator(event.target.checked)} disabled={busy} slotProps={{ input: { 'aria-describedby': 'administrator-help' } }} />} label={<Box><Typography variant="body2" sx={{ fontWeight: 600 }}>Administrator access</Typography><Typography id="administrator-help" color="text.secondary" variant="caption" component="div" sx={{ mt: 0.5 }}>Administrators can manage all server settings and users, and sign in to this dashboard.</Typography></Box>} />
             </Box>
           </Stack>
         </DialogContent>
@@ -130,11 +131,10 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
     <Box aria-busy={loading}>
       <PageHeading title="Users" description="Manage the people who can access your server." action={<Button variant="contained" startIcon={<PersonAddAltRounded />} onClick={() => setCreating(true)}>Create user</Button>} />
       {error != null && <Box sx={{ mb: 3 }}><ErrorNotice error={error} retry={refresh} /></Box>}
-      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1, px: { xs: 2, sm: 3 }, py: 2.2 }}>
-          <Stack direction="row" sx={{ alignItems: 'center', gap: 1.2 }}><Typography variant="h4" component="h2">All users</Typography>{data && <Chip label={data.TotalRecordCount.toLocaleString()} size="small" sx={{ bgcolor: 'background.default' }} />}</Stack>
-          <Button size="small" onClick={refresh} disabled={loading} startIcon={<RefreshRounded />}>Refresh</Button>
-        </Stack>
+      <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: '20px' }}>
+        <AccessTableHeader title="All users" count={data?.TotalRecordCount}>
+          <Tooltip title="Refresh users"><span><IconButton onClick={refresh} disabled={loading} aria-label="Refresh users" size="small"><RefreshRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
+        </AccessTableHeader>
         {!data && loading && <Stack spacing={1} sx={{ p: 3, pt: 0 }} role="status" aria-label="Loading users"><Skeleton height={54} /><Skeleton height={54} /><Skeleton height={54} /></Stack>}
         {data && data.Items.length === 0 && (
           <Stack spacing={1.5} sx={{ alignItems: 'center', p: 5, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>
@@ -149,12 +149,12 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
             {data.Items.map((user) => (
               <Box component="li" key={user.Id} sx={{ p: 2.5, borderTop: 1, borderColor: 'divider' }}>
                 <Stack direction="row" sx={{ gap: 1.2, alignItems: 'flex-start' }}>
-                  <Avatar sx={{ width: 34, height: 34, fontSize: 11, fontWeight: 650, bgcolor: user.IsAdministrator ? '#E0F0F1' : '#EDF1F4', color: user.IsAdministrator ? 'primary.dark' : 'text.secondary' }}>{initials(user.Name)}</Avatar>
+                  <Avatar sx={{ width: 36, height: 36, fontSize: 12, fontWeight: 600, bgcolor: user.IsAdministrator ? '#D8E4FA' : '#E4E8F0', color: user.IsAdministrator ? '#0F2A57' : 'text.secondary' }}>{initials(user.Name)}</Avatar>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography variant="body2" sx={{ fontWeight: 650, overflowWrap: 'anywhere' }}>{user.Name}</Typography>
                     <Typography variant="caption" color="text.secondary">{user.IsAdministrator ? 'Administrator' : 'Member'}{user.Id === currentUser.Id ? ' · You' : ''}</Typography>
                   </Box>
-                  <Chip size="small" label={user.IsDisabled ? 'Disabled' : 'Active'} variant="outlined" color={user.IsDisabled ? 'default' : 'success'} />
+                  <AccessBadge label={user.IsDisabled ? 'Disabled' : 'Active'} tone={user.IsDisabled ? 'neutral' : 'success'} />
                 </Stack>
                 <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1, mt: 2 }}>
                   <Typography variant="caption" color={user.HasPassword ? 'text.secondary' : 'warning.main'}>{user.HasPassword ? 'Password set' : 'Password not set'}</Typography>
@@ -167,20 +167,20 @@ export function UsersPage({ currentUser, onCurrentUserUpdated, onNavigationGuard
         )}
         {data && data.Items.length > 0 && (
           <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
-            <Table aria-label="Server users" sx={{ minWidth: 650 }}>
+            <Table aria-label="Server users" sx={{ minWidth: 650, ...accessTableSx }}>
               <TableHead><TableRow><TableCell sx={{ pl: 3 }}>User</TableCell><TableCell>Access</TableCell><TableCell>Status</TableCell><TableCell>Password</TableCell><TableCell>Created</TableCell><TableCell align="right" sx={{ pr: 3 }}>Manage</TableCell></TableRow></TableHead>
               <TableBody>
                 {data.Items.map((user) => (
                   <TableRow key={user.Id}>
                     <TableCell component="th" scope="row" sx={{ pl: 3 }}>
                       <Stack direction="row" sx={{ alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ width: 36, height: 36, fontSize: 12, fontWeight: 650, bgcolor: user.IsAdministrator ? '#E0F0F1' : '#EDF1F4', color: user.IsAdministrator ? 'primary.dark' : 'text.secondary' }}>{initials(user.Name)}</Avatar>
+                        <Avatar sx={{ width: 36, height: 36, fontSize: 12, fontWeight: 600, bgcolor: user.IsAdministrator ? '#D8E4FA' : '#E4E8F0', color: user.IsAdministrator ? '#0F2A57' : 'text.secondary' }}>{initials(user.Name)}</Avatar>
                         <Box sx={{ minWidth: 0 }}><Typography variant="body2" sx={{ fontWeight: 650, overflowWrap: 'anywhere', maxWidth: 250 }}>{user.Name}</Typography>{user.Id === currentUser.Id && <Typography variant="caption" color="text.secondary">You</Typography>}</Box>
                       </Stack>
                     </TableCell>
-                    <TableCell><Stack direction="row" sx={{ alignItems: 'center', gap: 0.6 }}>{user.IsAdministrator && <ShieldOutlined sx={{ fontSize: 16, color: 'primary.main' }} />}<Typography variant="body2">{user.IsAdministrator ? 'Administrator' : 'Member'}</Typography></Stack></TableCell>
-                    <TableCell><Chip size="small" label={user.IsDisabled ? 'Disabled' : 'Active'} variant="outlined" color={user.IsDisabled ? 'default' : 'success'} /></TableCell>
-                    <TableCell><Typography variant="body2" color={user.HasPassword ? 'text.secondary' : 'warning.main'}>{user.HasPassword ? 'Set' : 'Not set'}</Typography></TableCell>
+                    <TableCell><Stack direction="row" sx={{ alignItems: 'center', gap: 0.75 }}>{user.IsAdministrator && <AdminPanelSettingsRounded sx={{ fontSize: 17, color: 'primary.main' }} />}<Typography variant="body2">{user.IsAdministrator ? 'Administrator' : 'Member'}</Typography></Stack></TableCell>
+                    <TableCell><AccessBadge label={user.IsDisabled ? 'Disabled' : 'Active'} tone={user.IsDisabled ? 'neutral' : 'success'} /></TableCell>
+                    <TableCell><Stack direction="row" sx={{ alignItems: 'center', gap: 0.5, color: user.HasPassword ? 'text.secondary' : '#8A5A00' }}>{!user.HasPassword && <WarningAmberRounded sx={{ fontSize: 15 }} />}<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{user.HasPassword ? 'Set' : 'Not set'}</Typography></Stack></TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}><Typography variant="body2" color="text.secondary">{createdDate(user.CreatedAt)}</Typography></TableCell>
                     <TableCell align="right" sx={{ pr: 3 }}><Button size="small" startIcon={<ManageAccountsOutlined />} onClick={() => setManaging(user)} aria-label={`Manage ${user.Name}`}>Manage</Button></TableCell>
                   </TableRow>

@@ -1,5 +1,17 @@
 import { randomBytes } from 'node:crypto';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+async function openUsers(page: Page) {
+  await page.getByRole('navigation', { name: 'Administration' }).getByRole('link', { name: 'Access', exact: true }).click();
+  await page.getByRole('tab', { name: 'Users', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/access\/users$/);
+  await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
+}
+
+async function signOut(page: Page, name: string) {
+  await page.getByRole('button', { name: `Account: ${name}`, exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+}
 
 test('administrator setup, users, persistent session, and mobile navigation', async ({ page, context }, testInfo) => {
   const name = process.env.GOBY_SMOKE_NAME;
@@ -32,18 +44,20 @@ test('administrator setup, users, persistent session, and mobile navigation', as
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
   await expect(page.getByText('PostgreSQL', { exact: true })).toBeVisible();
-  await expect(page.getByText('connected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Database healthy', { exact: true })).toBeVisible();
   await capture('overview-desktop.png');
 
   const cookie = (await context.cookies()).find((item) => item.name === 'goby_session');
   expect(cookie?.httpOnly).toBe(true);
   expect(cookie?.sameSite).toBe('Strict');
   expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
-  expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual([]);
+  // Only navigation preferences are persisted; authentication stays in the HTTP-only cookie.
+  expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual(['goby.dashboard.tabs']);
+  expect(await page.evaluate(() => JSON.parse(sessionStorage.getItem('goby.dashboard.tabs')!))).toEqual({
+    overview: 'overview', media: 'libraries', access: 'users', system: 'tasks', settings: 'settings',
+  });
 
-  await page.getByRole('link', { name: 'Users', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/users$/);
-  await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
+  await openUsers(page);
   await page.getByRole('button', { name: 'Create user', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Create user' });
   await expect(dialog).toBeVisible();
@@ -59,7 +73,7 @@ test('administrator setup, users, persistent session, and mobile navigation', as
   await expect(memberRow.getByText('Active', { exact: true })).toBeVisible();
   await capture('users-desktop.png');
 
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await signOut(page, name);
   await expect(page.getByRole('heading', { name: 'Sign in to Goby' })).toBeVisible();
   expect((await context.cookies()).some((item) => item.name === 'goby_session')).toBe(false);
   await page.getByLabel(/^Username/).fill(name);
@@ -71,16 +85,16 @@ test('administrator setup, users, persistent session, and mobile navigation', as
   await expect(page.getByRole('row').filter({ has: page.getByText(memberName, { exact: true }) })).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Open navigation' }).click();
+  const mobileNavigation = page.getByRole('navigation', { name: 'Administration' });
+  await expect(mobileNavigation).toBeVisible();
+  await expect(mobileNavigation.getByRole('link')).toHaveCount(5);
   await capture('navigation-mobile.png');
-  await page.getByRole('link', { name: 'Overview', exact: true }).click();
+  await mobileNavigation.getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
   await expect(page.getByText('PostgreSQL', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await capture('overview-mobile.png');
-  await page.getByRole('button', { name: 'Open navigation' }).click();
-  await page.getByRole('link', { name: 'Users', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
+  await openUsers(page);
   await expect(page.getByRole('list', { name: 'Server users' }).getByText(memberName, { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await capture('users-mobile.png');
@@ -101,7 +115,7 @@ test('a stale tab cannot replay a mutation under another administrator', async (
   await page.getByLabel(/^Username/).fill(name);
   await page.getByLabel(/^Password/).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await page.getByRole('link', { name: 'Users', exact: true }).click();
+  await openUsers(page);
 
   const otherName = `browser-admin-${Date.now()}`;
   const otherPassword = randomBytes(24).toString('base64url');
@@ -121,7 +135,7 @@ test('a stale tab cannot replay a mutation under another administrator', async (
   const otherTab = await context.newPage();
   otherTab.on('pageerror', (error) => pageErrors.push(error.message));
   await otherTab.goto('/admin/');
-  await otherTab.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await signOut(otherTab, name);
   await otherTab.getByLabel(/^Username/).fill(otherName);
   await otherTab.getByLabel(/^Password/).fill(otherPassword);
   await otherTab.getByRole('button', { name: 'Sign in', exact: true }).click();

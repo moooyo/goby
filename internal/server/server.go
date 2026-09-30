@@ -22,6 +22,7 @@ import (
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/notifications"
 	"github.com/moooyo/goby/internal/settings"
+	"github.com/moooyo/goby/internal/systemstatus"
 	"github.com/moooyo/goby/internal/tasks"
 	"github.com/moooyo/goby/internal/transcode"
 )
@@ -66,6 +67,7 @@ type Server struct {
 	recovery             adminRecoveryManager
 	activityCancel       context.CancelFunc
 	activityDone         chan struct{}
+	hostStatus           systemStatusReader
 }
 
 // Option attaches dependencies whose lifetime is owned by the process entry
@@ -145,6 +147,7 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 	}
 	app.startActivityRetention()
 	app.initializeNotifications()
+	app.hostStatus = systemstatus.New(cfg.MediaRoots)
 	return app, nil
 }
 
@@ -217,6 +220,9 @@ func (s *Server) initializeTasks(ctx context.Context) error {
 }
 
 func (s *Server) Close(ctx context.Context) error {
+	if collector, ok := s.hostStatus.(interface{ Close() }); ok {
+		collector.Close()
+	}
 	s.notificationRuntime.BeginClose()
 	s.mediaAnalysis.BeginClose()
 	if s.mediaOperations != nil {
@@ -240,6 +246,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/v1/session", s.requireAdmin(s.adminSession))
 	mux.HandleFunc("DELETE /admin/v1/session", s.requireAdmin(s.adminLogout))
 	mux.HandleFunc("GET /admin/v1/overview", s.requireAdmin(s.overview))
+	mux.HandleFunc("GET /admin/v1/system/status", s.requireAdmin(s.adminSystemStatus))
 	mux.HandleFunc("GET /admin/v1/capabilities", s.requireAdmin(s.capabilities))
 	mux.HandleFunc("GET /admin/v1/users", s.requireAdmin(s.users))
 	mux.HandleFunc("POST /admin/v1/users", s.requireAdmin(s.createUser))

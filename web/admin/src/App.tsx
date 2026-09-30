@@ -1,29 +1,24 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { Avatar, Box, Button, Chip, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Paper, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
+import { Avatar, Box, Button, ButtonBase, Divider, Menu, MenuItem, Paper, Skeleton, Stack, Tab, Tabs, Typography } from '@mui/material';
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined';
-import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded';
+import SpaceDashboardRounded from '@mui/icons-material/SpaceDashboardRounded';
 import VideoLibraryOutlined from '@mui/icons-material/VideoLibraryOutlined';
-import SensorsRounded from '@mui/icons-material/SensorsRounded';
-import DevicesOutlined from '@mui/icons-material/DevicesOutlined';
-import KeyRounded from '@mui/icons-material/KeyRounded';
-import PlaylistAddCheckRounded from '@mui/icons-material/PlaylistAddCheckRounded';
+import VideoLibraryRounded from '@mui/icons-material/VideoLibraryRounded';
+import PeopleOutlineRounded from '@mui/icons-material/PeopleOutlineRounded';
+import PeopleRounded from '@mui/icons-material/PeopleRounded';
+import MonitorHeartOutlined from '@mui/icons-material/MonitorHeartOutlined';
+import MonitorHeartRounded from '@mui/icons-material/MonitorHeartRounded';
 import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
-import HistoryRounded from '@mui/icons-material/HistoryRounded';
-import BackupOutlined from '@mui/icons-material/BackupOutlined';
-import CloudOutlined from '@mui/icons-material/CloudOutlined';
-import QueueMusicRounded from '@mui/icons-material/QueueMusicRounded';
-import ImageOutlined from '@mui/icons-material/ImageOutlined';
-import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
+import SettingsRounded from '@mui/icons-material/SettingsRounded';
 import LogoutRounded from '@mui/icons-material/LogoutRounded';
-import MenuRounded from '@mui/icons-material/MenuRounded';
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import { adminApi, ApiError, clearSession, isAbortError, onSessionExpired } from './api';
 import type { User } from './api';
 import { Brand, ErrorNotice, LoadingView } from './components';
 import { colors } from './theme';
 import type { UserNavigationGuard } from './userDraftNavigation';
-
+import { groups, groupForPage, metadataLibraryFromLocation, pageFromLocation, pageURL, readLastTabs, settingsSection } from './dashboardNavigation';
+import type { Group, LastTabs, Page } from './dashboardNavigation';
 const AuthPage = lazy(() => import('./AuthPage').then((module) => ({ default: module.AuthPage })));
 const OverviewPage = lazy(() => import('./OverviewPage').then((module) => ({ default: module.OverviewPage })));
 const UsersPage = lazy(() => import('./UsersPage').then((module) => ({ default: module.UsersPage })));
@@ -42,87 +37,32 @@ const CatalogArtworkPage = lazy(() => import('./CatalogArtworkPage').then((modul
 const NotificationsPage = lazy(() => import('./NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
 const MediaAnalysisPage = lazy(() => import('./MediaAnalysisPage').then((module) => ({ default: module.MediaAnalysisPage })));
 
-type Page = 'overview' | 'users' | 'libraries' | 'tasks' | 'metadata' | 'sessions' | 'devices' | 'api-keys' | 'settings' | 'observability' | 'backups' | 'providers' | 'collections' | 'artwork' | 'notifications' | 'media-analysis';
 type AppState =
   | { mode: 'loading' }
   | { mode: 'error'; error: unknown }
   | { mode: 'setup' }
   | { mode: 'login'; name?: string; notice?: string }
   | { mode: 'ready'; user: User };
+const groupIcons = {
+  overview: [SpaceDashboardOutlined, SpaceDashboardRounded],
+  media: [VideoLibraryOutlined, VideoLibraryRounded],
+  access: [PeopleOutlineRounded, PeopleRounded],
+  system: [MonitorHeartOutlined, MonitorHeartRounded],
+  settings: [SettingsOutlined, SettingsRounded],
+};
 
-const sidebarWidth = 240;
-const pageTitles: Record<Page, string> = { overview: 'Overview', users: 'Users', libraries: 'Libraries', tasks: 'Tasks', metadata: 'Library items', sessions: 'Sessions', devices: 'Devices', 'api-keys': 'API keys', settings: 'Settings', observability: 'Activity & logs', backups: 'Backups & recovery', providers: 'Online providers', collections: 'Playlists & collections', artwork: 'Catalog artwork', notifications: 'Notifications', 'media-analysis': 'Media analysis' };
-
-function metadataLibraryFromLocation(): string | undefined {
-  const match = /^\/admin\/libraries\/([^/]+)\/items\/?$/.exec(window.location.pathname);
-  if (!match) return undefined;
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return undefined;
-  }
-}
-
-function pageFromLocation(): Page {
-  const path = window.location.pathname.replace(/\/+$/, '');
-  if (metadataLibraryFromLocation() !== undefined) return 'metadata';
-  if (path.endsWith('/users')) return 'users';
-  if (path.endsWith('/libraries')) return 'libraries';
-  if (path.endsWith('/tasks')) return 'tasks';
-  if (path.endsWith('/sessions')) return 'sessions';
-  if (path.endsWith('/devices')) return 'devices';
-  if (path.endsWith('/api-keys')) return 'api-keys';
-  if (path.endsWith('/settings')) return 'settings';
-  if (path.endsWith('/observability')) return 'observability';
-  if (path.endsWith('/backups')) return 'backups';
-  if (path.endsWith('/providers')) return 'providers';
-  if (path.endsWith('/collections')) return 'collections';
-  if (path.endsWith('/artwork')) return 'artwork';
-  if (path.endsWith('/notifications')) return 'notifications';
-  if (path.endsWith('/media-analysis')) return 'media-analysis';
-  return 'overview';
-}
-
-function pageURL(page: Page, libraryId?: string): string {
-  if (page === 'metadata') return libraryId ? `/admin/libraries/${encodeURIComponent(libraryId)}/items` : '/admin/libraries';
-  return page === 'overview' ? '/admin/' : `/admin/${page}`;
-}
-
-function Navigation({ page, navigate }: { page: Page; navigate: (page: Page, event?: MouseEvent<HTMLAnchorElement>) => void }) {
-  const selectedPage = page === 'metadata' ? 'libraries' : page;
-  return (
-    <Stack component="nav" aria-label="Administration" sx={{ height: '100%', overflowY: 'auto', bgcolor: colors.deep, color: 'white', p: 2.5 }}>
-      <Box sx={{ px: 0.75, pt: 1, pb: 5 }}><Brand light /></Box>
-      <Typography variant="overline" sx={{ px: 1.5, mb: 1, color: '#92B6C1' }}>Workspace</Typography>
-      <List disablePadding sx={{ '& .MuiListItemButton-root': { borderRadius: 2, minHeight: 46, px: 1.5, mb: 0.6, color: '#BCD1D8', '&.Mui-selected': { bgcolor: '#FFFFFF14', color: 'white', boxShadow: 'inset 3px 0 0 #72C5C2' }, '&.Mui-selected:hover': { bgcolor: '#FFFFFF1C' }, '&:hover': { bgcolor: '#FFFFFF0B' } }, '& .MuiListItemIcon-root': { minWidth: 34, color: 'inherit' }, '& .MuiListItemText-primary': { fontSize: 13, fontWeight: 580 } }}>
-        {[
-          { id: 'overview' as const, label: 'Overview', icon: SpaceDashboardOutlined },
-          { id: 'users' as const, label: 'Users', icon: PeopleOutlineRounded },
-          { id: 'libraries' as const, label: 'Libraries', icon: VideoLibraryOutlined },
-          { id: 'artwork' as const, label: 'Catalog artwork', icon: ImageOutlined },
-          { id: 'collections' as const, label: 'Playlists & collections', icon: QueueMusicRounded },
-          { id: 'tasks' as const, label: 'Tasks', icon: PlaylistAddCheckRounded },
-          { id: 'media-analysis' as const, label: 'Media analysis', icon: VideoLibraryOutlined },
-          { id: 'providers' as const, label: 'Online providers', icon: CloudOutlined },
-          { id: 'sessions' as const, label: 'Sessions', icon: SensorsRounded },
-          { id: 'devices' as const, label: 'Devices', icon: DevicesOutlined },
-          { id: 'api-keys' as const, label: 'API keys', icon: KeyRounded },
-          { id: 'observability' as const, label: 'Activity & logs', icon: HistoryRounded },
-          { id: 'notifications' as const, label: 'Notifications', icon: NotificationsOutlined },
-          { id: 'backups' as const, label: 'Backups & recovery', icon: BackupOutlined },
-          { id: 'settings' as const, label: 'Settings', icon: SettingsOutlined },
-        ].map(({ id, label, icon: Icon }) => (
-          <ListItemButton key={id} component="a" href={pageURL(id)} selected={selectedPage === id} aria-current={selectedPage === id ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(id, event)}>
-            <ListItemIcon><Icon sx={{ fontSize: 21 }} /></ListItemIcon><ListItemText primary={label} />
-          </ListItemButton>
-        ))}
-      </List>
-      <Box sx={{ mt: 'auto', pt: 4 }}>
-        <Divider sx={{ borderColor: '#FFFFFF1A', mb: 2 }} />
-        <Stack direction="row" sx={{ alignItems: 'center', gap: 0.8, px: 0.75 }}><Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#72C5C2' }} /><Typography variant="body2" sx={{ fontSize: 11, color: '#ACC6CE' }}>Goby administrator workspace</Typography></Stack>
-      </Box>
-    </Stack>
-  );
+function Navigation({ selected, lastTabs, navigate }: { selected: Group; lastTabs: LastTabs; navigate: (page: Page, event?: MouseEvent<HTMLAnchorElement>) => void }) {
+  return <Box component="nav" aria-label="Administration" sx={{ display: 'flex', flexDirection: { xs: 'row', md: 'column' }, alignItems: 'center', flexShrink: 0, width: { xs: '100%', md: 88 }, pt: { xs: 0, md: 2.5 }, pb: { xs: 'env(safe-area-inset-bottom)', md: 0 }, gap: { xs: 0, md: 1 }, bgcolor: colors.canvas }}>
+    <Box aria-label="Goby" sx={{ display: { xs: 'none', md: 'grid' }, placeItems: 'center', width: 44, height: 44, borderRadius: '14px', bgcolor: colors.primary, color: 'white', fontSize: 20, fontWeight: 700, mb: 1.5 }}>G</Box>
+    {groups.map((group) => {
+      const active = selected === group.id;
+      const Icon = groupIcons[group.id][active ? 1 : 0];
+      return <ButtonBase key={group.id} component="a" href={pageURL(lastTabs[group.id])} aria-current={active ? 'page' : undefined} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(lastTabs[group.id], event)} sx={{ minWidth: 0, width: { xs: '20%', md: 80 }, minHeight: 64, display: 'flex', flexDirection: 'column', gap: 0.5, py: 1, borderRadius: 2, color: colors.muted, '&:hover .rail-indicator': { bgcolor: active ? '#C7D8F5' : 'rgba(24,28,35,.08)' }, '&.Mui-focusVisible': { outline: `3px solid ${colors.primary}`, outlineOffset: -3 } }}>
+        <Box className="rail-indicator" sx={{ width: 56, height: 32, borderRadius: '16px', display: 'grid', placeItems: 'center', bgcolor: active ? colors.secondaryContainer : 'transparent', color: active ? colors.deep : colors.muted }}><Icon sx={{ fontSize: 24 }} /></Box>
+        <Typography component="span" sx={{ fontSize: 12, lineHeight: '16px', fontWeight: active ? 700 : 500, color: active ? colors.ink : 'inherit' }}>{group.label}</Typography>
+      </ButtonBase>;
+    })}
+  </Box>;
 }
 
 function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: () => void; onUserUpdated: (user: User) => void }) {
@@ -132,17 +72,40 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
   const currentMetadataLibrary = useRef(metadataLibraryId);
   const navigationGuard = useRef<UserNavigationGuard | undefined>(undefined);
   const setNavigationGuard = useCallback((guard: UserNavigationGuard | undefined) => { navigationGuard.current = guard; }, []);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const focusAfterDrawer = useRef(false);
-  const menuButton = useRef<HTMLButtonElement>(null);
+  const settingsBusyRef = useRef(false);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const onSettingsBusyChange = useCallback((busy: boolean) => { settingsBusyRef.current = busy; setSettingsBusy(busy); }, []);
+  const [lastTabs, setLastTabs] = useState<LastTabs>(readLastTabs);
+  const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null);
+  const [serverName, setServerName] = useState('Goby server');
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const content = useRef<HTMLElement>(null);
+  const group = groupForPage(page);
+  const section = settingsSection(page);
+  const activeTab = page === 'metadata' ? 'libraries' : page;
 
   useEffect(() => {
+    if (!accountAnchor) return;
+    const controller = new AbortController();
+    void adminApi.getOverview({ signal: controller.signal }).then((overview) => {
+      if (!controller.signal.aborted) setServerName(overview.Server.Name);
+    }).catch(() => { /* Account actions remain available if server details cannot load. */ });
+    return () => controller.abort();
+  }, [accountAnchor]);
+
+  useEffect(() => {
+    const canonical = pageURL(currentPage.current, currentMetadataLibrary.current);
+    if (window.location.pathname !== canonical) window.history.replaceState(window.history.state, '', canonical + window.location.search + window.location.hash);
     const changed = () => {
       const next = pageFromLocation();
       const nextLibrary = metadataLibraryFromLocation();
-      if ((next !== currentPage.current || nextLibrary !== currentMetadataLibrary.current) && navigationGuard.current && !navigationGuard.current()) {
+      const internalSettings = settingsSection(currentPage.current) && settingsSection(next);
+      if (internalSettings && settingsBusyRef.current && next !== currentPage.current) {
+        window.history.pushState(null, '', pageURL(currentPage.current, currentMetadataLibrary.current));
+        return;
+      }
+      if ((next !== currentPage.current || nextLibrary !== currentMetadataLibrary.current) && !internalSettings && navigationGuard.current && !navigationGuard.current()) {
         window.history.pushState(null, '', pageURL(currentPage.current, currentMetadataLibrary.current));
         return;
       }
@@ -150,94 +113,91 @@ function Dashboard({ user, onLogout, onUserUpdated }: { user: User; onLogout: ()
       currentMetadataLibrary.current = nextLibrary;
       setPage(next);
       setMetadataLibraryId(nextLibrary);
+      content.current?.scrollTo({ top: 0 });
     };
     window.addEventListener('popstate', changed);
     return () => window.removeEventListener('popstate', changed);
   }, []);
 
   useEffect(() => {
-    document.title = `${pageTitles[page]} · Goby administration`;
-  }, [page]);
+    document.title = `${group.tabs.find((tab) => tab.page === activeTab)?.label ?? group.title} · Goby administration`;
+    setLastTabs((previous) => {
+      const next = { ...previous, [group.id]: activeTab };
+      try { window.sessionStorage.setItem('goby.dashboard.tabs', JSON.stringify(next)); } catch { /* Storage is optional. */ }
+      return next;
+    });
+  }, [page, group, activeTab]);
 
-  function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>, libraryId?: string, state?: { tasksTab: 'history' }) {
+  function navigate(next: Page, event?: MouseEvent<HTMLAnchorElement>, libraryId?: string, state?: { tasksTab: 'history' | 'available' }) {
     if (event && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0)) return;
     event?.preventDefault();
     const changing = page !== next || metadataLibraryId !== libraryId;
-    if (changing && navigationGuard.current && !navigationGuard.current()) return;
+    const internalSettings = section && settingsSection(next);
+    if (changing && internalSettings && settingsBusyRef.current) return;
+    if (changing && !internalSettings && navigationGuard.current && !navigationGuard.current()) return;
     if (changing) window.history.pushState(state ?? null, '', pageURL(next, libraryId));
     currentPage.current = next;
     currentMetadataLibrary.current = libraryId;
     setPage(next);
     setMetadataLibraryId(libraryId);
-    setMobileOpen(false);
     if (changing) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      if (mobileOpen) focusAfterDrawer.current = true;
-      else requestAnimationFrame(() => document.getElementById('main-content')?.focus());
+      content.current?.scrollTo({ top: 0, behavior: 'instant' });
+      requestAnimationFrame(() => content.current?.focus());
     }
   }
-
   async function signOut() {
-    if (signingOut) return;
-    if (navigationGuard.current && !navigationGuard.current()) return;
+    if (signingOut || (navigationGuard.current && !navigationGuard.current())) return;
     setSigningOut(true);
     setError(null);
-    try {
-      await adminApi.logout();
-      onLogout();
-    } catch (cause) {
-      if (!isAbortError(cause)) setError(cause);
-    } finally {
-      setSigningOut(false);
-    }
+    try { await adminApi.logout(); onLogout(); }
+    catch (cause) { if (!isAbortError(cause)) setError(cause); }
+    finally { setSigningOut(false); setAccountAnchor(null); }
   }
 
-  return (
-    <Box sx={{ minHeight: '100dvh' }}>
-      <a className="skip-link" href="#main-content">Skip to content</a>
-      <Box sx={{ position: 'fixed', inset: '0 auto 0 0', width: sidebarWidth, display: { xs: 'none', md: 'block' } }}><Navigation page={page} navigate={navigate} /></Box>
-      <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} slotProps={{ root: { disableRestoreFocus: true }, transition: { onExited: () => { if (focusAfterDrawer.current) { focusAfterDrawer.current = false; document.getElementById('main-content')?.focus(); } else menuButton.current?.focus(); } } }} sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: sidebarWidth, border: 0 } }}><Navigation page={page} navigate={navigate} /></Drawer>
-      <Box sx={{ ml: { md: `${sidebarWidth}px` } }}>
-        <Stack component="header" direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1, minHeight: 77, px: { xs: 2, sm: 3, lg: 5 }, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-          <Stack direction="row" sx={{ alignItems: 'center', gap: 1, minWidth: 0 }}>
-            <IconButton ref={menuButton} onClick={() => { focusAfterDrawer.current = false; setMobileOpen(true); }} aria-label="Open navigation" sx={{ display: { md: 'none' }, ml: -1 }}><MenuRounded /></IconButton>
-            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>Administration</Typography>
-            <ChevronRightRounded sx={{ display: { xs: 'none', sm: 'block' }, color: '#A3B7BF', fontSize: 15 }} />
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>{pageTitles[page]}</Typography>
-          </Stack>
-          <Stack direction="row" sx={{ alignItems: 'center', gap: { xs: 0.8, sm: 1.5 }, minWidth: 0 }}>
-            <Avatar sx={{ bgcolor: '#E1EEF0', color: colors.deep, width: 31, height: 31, fontSize: 11, fontWeight: 650 }}>{user.Name.trim().slice(0, 2).toUpperCase()}</Avatar>
-            <Typography variant="body2" noWrap sx={{ maxWidth: 160, display: { xs: 'none', sm: 'block' } }}>{user.Name}</Typography>
-            <Chip label="Admin" size="small" variant="outlined" sx={{ display: { xs: 'none', lg: 'flex' }, color: 'text.secondary' }} />
-            <Tooltip title="Sign out"><IconButton aria-label="Sign out" onClick={signOut} disabled={signingOut} size="small" sx={{ ml: 0.5 }}><LogoutRounded sx={{ fontSize: 19 }} /></IconButton></Tooltip>
-          </Stack>
-        </Stack>
-        <Box component="main" id="main-content" tabIndex={-1} sx={{ p: { xs: 2.5, sm: 3, lg: 5 }, maxWidth: 1460, mx: 'auto', outline: 'none' }}>
-          {error != null && <Box sx={{ mb: 3 }}><ErrorNotice error={error} /></Box>}
-          <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={3}><Skeleton height={64} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
-            {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} />}
-            {page === 'users' && <UsersPage currentUser={user} onCurrentUserUpdated={onUserUpdated} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'media-analysis' && <MediaAnalysisPage key={user.Id} currentUserId={user.Id} onTasks={() => navigate('tasks')} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'settings' && <SettingsPage currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'observability' && <ObservabilityPage />}
-            {page === 'backups' && <BackupsPage key={user.Id} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
-            {page === 'providers' && <ProvidersPage />}
-                {page === 'collections' && <CollectionsPage onNavigationGuardChange={setNavigationGuard} />}
-                {page === 'artwork' && <CatalogArtworkPage onNavigationGuardChange={setNavigationGuard} />}
-                {page === 'notifications' && <NotificationsPage onNavigationGuardChange={setNavigationGuard} />}
-          </Suspense>
-        </Box>
+  return <Box sx={{ height: '100dvh', display: 'flex', flexDirection: { xs: 'column-reverse', md: 'row' }, overflow: 'hidden', bgcolor: colors.canvas }}>
+    <a className="skip-link" href="#main-content">Skip to content</a>
+    <Navigation selected={group.id} lastTabs={lastTabs} navigate={navigate} />
+    <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, m: { xs: '8px 8px 0', md: '8px 8px 8px 0' }, bgcolor: 'background.paper', borderRadius: '24px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Stack component="header" direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2, p: { xs: '14px 16px', md: '14px 20px 14px 32px' }, minHeight: 68 }}>
+        <Typography component="h1" sx={{ fontSize: 22, lineHeight: '28px', fontWeight: 500 }}>{group.title}</Typography>
+        <ButtonBase aria-label={`Account: ${user.Name}`} aria-haspopup="menu" aria-expanded={Boolean(accountAnchor)} aria-controls={accountAnchor ? 'account-menu' : undefined} onClick={(event) => setAccountAnchor(event.currentTarget)} sx={{ gap: 1.25, pl: 1.5, pr: 0.5, py: 0.5, borderRadius: '20px', height: 40, '&:hover': { bgcolor: colors.surface }, '&.Mui-focusVisible': { outline: `3px solid ${colors.primary}` } }}>
+          <Typography variant="body2" noWrap sx={{ maxWidth: { xs: 100, sm: 180 } }}>{user.Name}</Typography>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: colors.secondaryContainer, color: colors.deep, fontSize: 12, fontWeight: 700 }}>{user.Name.trim().slice(0, 2).toUpperCase()}</Avatar>
+        </ButtonBase>
+        <Menu id="account-menu" anchorEl={accountAnchor} open={Boolean(accountAnchor)} onClose={() => setAccountAnchor(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }} slotProps={{ paper: { sx: { width: 264, borderRadius: '16px', mt: 1 } } }}>
+          <Stack direction="row" sx={{ gap: 1.5, px: 2, py: 1.5, alignItems: 'center' }}><Avatar sx={{ bgcolor: colors.secondaryContainer, color: colors.deep }}>{user.Name.trim().slice(0, 2).toUpperCase()}</Avatar><Box sx={{ minWidth: 0 }}><Typography noWrap sx={{ fontWeight: 600 }}>{user.Name}</Typography><Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>Administrator · {serverName}</Typography></Box></Stack>
+          <Divider />
+          <MenuItem onClick={() => void signOut()} disabled={signingOut} sx={{ gap: 1.5, mx: 1, mt: 1, borderRadius: 2 }}><LogoutRounded sx={{ fontSize: 20 }} />{signingOut ? 'Signing out…' : 'Sign out'}</MenuItem>
+        </Menu>
+      </Stack>
+      {group.tabs.length > 0 && <Tabs value={activeTab} aria-label={`${group.title} pages`} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile sx={{ px: { xs: 0, md: 2 }, flexShrink: 0, borderBottom: 1, borderColor: 'divider', '& .MuiTabs-list': { gap: 0.5 } }}>
+        {group.tabs.map((tab) => <Tab component="a" href={pageURL(tab.page)} key={tab.page} value={tab.page} label={tab.label} disabled={settingsBusy && tab.page !== page} onClick={(event: MouseEvent<HTMLAnchorElement>) => navigate(tab.page, event)} />)}
+      </Tabs>}
+      {group.tabs.length === 0 && <Divider />}
+      <Box component="main" id="main-content" ref={content} className="dashboard-content" tabIndex={-1} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', p: { xs: '20px 16px 24px', md: '24px 32px 32px' }, outline: 'none' }}>
+        {error != null && <Box sx={{ mb: 2.5 }}><ErrorNotice error={error} /></Box>}
+        <Suspense fallback={<Stack role="status" aria-label="Loading page" spacing={2.5}><Skeleton height={40} width="45%" /><Skeleton variant="rounded" height={160} /><Skeleton variant="rounded" height={240} /></Stack>}>
+          {page === 'overview' && <OverviewPage user={user} onUsers={() => navigate('users')} onLibraries={() => navigate('libraries')} onItems={() => navigate('libraries')} onSessions={() => navigate('sessions')} onActivity={() => navigate('observability')} />}
+          {page === 'users' && <UsersPage currentUser={user} onCurrentUserUpdated={onUserUpdated} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'libraries' && <LibrariesPage onTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'history' })} onBackgroundTasks={() => navigate('tasks', undefined, undefined, { tasksTab: 'available' })} onManageItems={(library) => navigate('metadata', undefined, library.Id)} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'metadata' && metadataLibraryId && <MetadataItemsPage key={metadataLibraryId} libraryId={metadataLibraryId} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'tasks' && <TasksPage onLibraries={() => navigate('libraries')} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'media-analysis' && <MediaAnalysisPage key={user.Id} currentUserId={user.Id} onTasks={() => navigate('tasks')} onLibraries={() => navigate('libraries')} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'sessions' && <SessionsPage onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'devices' && <DevicesPage onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'api-keys' && <ApiKeysPage onNavigationGuardChange={setNavigationGuard} />}
+          {section && <SettingsPage section={section} currentUserId={user.Id} onProviders={() => navigate('providers')} onBusyChange={onSettingsBusyChange} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'observability' && <ObservabilityPage />}
+          {page === 'backups' && <BackupsPage key={user.Id} currentUserId={user.Id} onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'providers' && <ProvidersPage />}
+          {page === 'collections' && <CollectionsPage onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'artwork' && <CatalogArtworkPage onNavigationGuardChange={setNavigationGuard} />}
+          {page === 'notifications' && <NotificationsPage onNavigationGuardChange={setNavigationGuard} />}
+        </Suspense>
       </Box>
     </Box>
-  );
+  </Box>;
 }
-
 export function App() {
   const [state, setState] = useState<AppState>({ mode: 'loading' });
   const [revision, setRevision] = useState(0);

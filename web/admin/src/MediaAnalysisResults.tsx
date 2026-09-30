@@ -1,16 +1,58 @@
 import { useEffect, useState } from 'react';
-import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import { isAbortError } from './api';
 import type { Library } from './api';
 import { ErrorNotice } from './components';
 import { analysisBytes, analysisIntroStatus, analysisTime } from './mediaAnalysis';
 import type { AnalysisItem, AnalysisItems } from './mediaAnalysis';
 import { mediaAnalysisApi } from './mediaAnalysisApi';
+import { mediaPanelSx, MediaSearchField, mediaSelectSx } from './MediaPagePrimitives';
+
+function statusLabel(status: string) { const value = status.replaceAll('_', ' '); return value.charAt(0).toUpperCase() + value.slice(1); }
+function statusTone(status: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
+  if (['ready', 'qualified', 'published'].includes(status)) return 'success';
+  if (['review', 'stale', 'suppressed'].includes(status)) return 'warning';
+  if (['failed', 'error'].includes(status)) return 'error';
+  if (['building', 'running', 'pending', 'queued'].includes(status)) return 'info';
+  return 'default';
+}
+
+function IntroStatus({ item }: { item: AnalysisItem }) {
+  const detection = item.Detection;
+  const tone = detection.Effective ? 'success' : ['failed', 'error', 'unavailable'].includes(detection.Status) ? 'error' : ['queued', 'running'].includes(detection.Status) ? 'info' : 'default';
+  return <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
+    <Chip size="small" color={tone} label={analysisIntroStatus(item)} />
+    {detection.Effective && <Typography variant="caption" color="text.secondary"><IntervalText interval={detection.Effective} /></Typography>}
+  </Stack>;
+}
+
+function PreviewStatus({ previews }: { previews: AnalysisItem['Previews'] }) {
+  if (previews.length === 0) return <Chip size="small" label="Not generated" />;
+  const counts = new Map<string, number>();
+  for (const preview of previews) counts.set(preview.Status, (counts.get(preview.Status) ?? 0) + 1);
+  return <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>{Array.from(counts, ([status, count]) => <Chip key={status} size="small" color={statusTone(status)} label={status === 'ready' && count === previews.length ? 'Generated' : `${statusLabel(status)}${previews.length > 1 ? ` · ${count}` : ''}`} />)}</Stack>;
+}
 
 function IntervalText({ interval }: { interval: { StartTicks: number; EndTicks: number } }) {
   return <>{analysisTime(interval.StartTicks)}–{analysisTime(interval.EndTicks)}</>;
 }
 function RecordedTime({ value }: { value: string }) { return value.startsWith('0001-') ? <>Not recorded</> : <time dateTime={value}>{new Date(value).toLocaleString()}</time>; }
+
+function PreviewOutputs({ previews }: { previews: AnalysisItem['Previews'] }) {
+  if (previews.length === 0) return <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>No preview outputs recorded.</Typography>;
+  return <>
+    <Stack component="ul" aria-label="Preview outputs" spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' }, listStyle: 'none', p: 0, mt: 1.5, mb: 0 }}>
+      {previews.map((preview, index) => <Paper component="li" key={`${preview.Width}-${index}`} sx={{ p: 2, borderRadius: '12px' }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1 }}><Typography variant="body2" sx={{ fontWeight: 600 }}>{preview.Width} × {preview.Height}</Typography><Chip size="small" color={statusTone(preview.Status)} label={preview.Status} /></Stack>
+        <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 16px', my: 1.5, '& dt': { color: 'text.secondary' }, '& dd': { m: 0, textAlign: 'right', overflowWrap: 'anywhere' } }}><Typography component="dt" variant="caption">Frames</Typography><Typography component="dd" variant="caption">{preview.FrameCount}</Typography><Typography component="dt" variant="caption">Size</Typography><Typography component="dd" variant="caption">{analysisBytes(preview.Size)}</Typography></Box>
+        {preview.FailureCode && <Typography variant="caption" component="p" color="error.main" sx={{ mb: 1, overflowWrap: 'anywhere' }}>{preview.FailureCode.replaceAll('_', ' ')}</Typography>}
+        <Typography variant="caption" color="text.secondary" component="p">Updated <RecordedTime value={preview.UpdatedAt} /></Typography>
+      </Paper>)}
+    </Stack>
+    <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}><Table size="small" aria-label="Preview outputs"><TableHead><TableRow><TableCell>Dimensions</TableCell><TableCell>Frames</TableCell><TableCell>Size</TableCell><TableCell>Status</TableCell></TableRow></TableHead><TableBody>{previews.map((preview, index) => <TableRow key={`${preview.Width}-${index}`}><TableCell>{preview.Width} × {preview.Height}</TableCell><TableCell>{preview.FrameCount}</TableCell><TableCell>{analysisBytes(preview.Size)}</TableCell><TableCell>{preview.Status}{preview.FailureCode && <Typography variant="caption" component="div">{preview.FailureCode.replaceAll('_', ' ')}</Typography>}<Typography variant="caption" component="div"><RecordedTime value={preview.UpdatedAt} /></Typography></TableCell></TableRow>)}</TableBody></Table></TableContainer>
+  </>;
+}
 
 function DetectionSummary({ item }: { item: AnalysisItem }) {
   const detection = item.Detection;
@@ -44,7 +86,7 @@ function AnalysisItemDialog({ id, onClose }: { id: string; onClose: () => void }
       {loadError != null && <ErrorNotice error={loadError} retry={() => setRevision((value) => value + 1)} />}
       {item && !loading && <>
         <DetectionSummary item={item} />
-        <Box><Typography variant="h4" component="h3">Preview outputs</Typography>{item.Previews.length === 0 ? <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>No preview outputs recorded.</Typography> : <TableContainer><Table size="small" aria-label="Preview outputs"><TableHead><TableRow><TableCell>Dimensions</TableCell><TableCell>Frames</TableCell><TableCell>Size</TableCell><TableCell>Status</TableCell></TableRow></TableHead><TableBody>{item.Previews.map((preview, index) => <TableRow key={`${preview.Width}-${index}`}><TableCell>{preview.Width} × {preview.Height}</TableCell><TableCell>{preview.FrameCount}</TableCell><TableCell>{analysisBytes(preview.Size)}</TableCell><TableCell>{preview.Status}{preview.FailureCode && <Typography variant="caption" component="div">{preview.FailureCode.replaceAll('_', ' ')}</Typography>}<Typography variant="caption" component="div"><RecordedTime value={preview.UpdatedAt} /></Typography></TableCell></TableRow>)}</TableBody></Table></TableContainer>}</Box>
+        <Box><Typography variant="h4" component="h3">Preview outputs</Typography><PreviewOutputs previews={item.Previews} /></Box>
       </>}
     </Stack></DialogContent>
     <DialogActions><Button disabled={loading} onClick={() => setRevision((value) => value + 1)}>Refresh result</Button><Button onClick={onClose}>Close</Button></DialogActions>
@@ -65,21 +107,43 @@ export function MediaAnalysisResults({ libraries, disabled, refresh }: {
     }).catch((cause: unknown) => { if (!controller.signal.aborted && !isAbortError(cause)) setError(cause); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [libraryId, query, page, revision, refresh]);
-  return <Paper component="section" aria-labelledby="analysis-results-title" variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
-    <Stack spacing={2.5}>
-      <Typography component="h2" variant="h3" id="analysis-results-title">Analysis results</Typography>
-      <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }}><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField select label="Filter library" value={libraryId} disabled={disabled} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} sx={{ minWidth: 180 }}><MenuItem value="">All libraries</MenuItem>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
-        <TextField label="Search media" value={search} onChange={(event) => setSearch(event.target.value)} fullWidth disabled={disabled} slotProps={{ htmlInput: { maxLength: 256 } }} /><Button type="submit" variant="outlined" disabled={disabled || loading}>Search</Button><Button disabled={disabled || loading} onClick={() => setRevision((value) => value + 1)}>Refresh results</Button>
-      </Stack></Box>
-      {error != null && <ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} />}
-      {loading && <Box role="status" aria-label="Loading media analysis items"><Skeleton height={54} /><Skeleton height={54} /></Box>}
-      {data?.Items.length === 0 && <Typography color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography>}
-      {data && data.Items.length > 0 && <>
-        <TableContainer><Table aria-label="Media analysis items"><TableHead><TableRow><TableCell>Item</TableCell><TableCell>Intro analysis</TableCell><TableCell>Previews</TableCell><TableCell>Details</TableCell></TableRow></TableHead><TableBody>{data.Items.map((item) => <TableRow key={item.Id}><TableCell component="th" scope="row" sx={{ overflowWrap: 'anywhere' }}>{item.Name}<Typography component="div" variant="caption" color="text.secondary">{item.Type}</Typography></TableCell><TableCell>{analysisIntroStatus(item)}{item.Detection.Effective && <Typography variant="caption" component="div"><IntervalText interval={item.Detection.Effective} /></Typography>}</TableCell><TableCell>{item.Previews.filter((preview) => preview.Status === 'ready').length} ready / {item.Previews.length} recorded</TableCell><TableCell><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`View analysis for ${item.Name}`}>View</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>
-      </>}
-      {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} />}
+  return <Paper component="section" aria-labelledby="analysis-results-title" variant="outlined" sx={mediaPanelSx}>
+    <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { xs: 'stretch', md: 'center' }, gap: 2, p: 2.5 }}>
+      <Typography component="h2" variant="h3" id="analysis-results-title" sx={{ flex: 1 }}>Analysis results</Typography>
+      <Box component="form" onSubmit={(event) => { event.preventDefault(); setQuery(search.trim()); setPage(0); }} sx={{ width: { xs: '100%', md: 'auto' } }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1.5, alignItems: { xs: 'stretch', sm: 'center' } }}>
+          <TextField select label="Filter library" size="small" value={libraryId} disabled={disabled} onChange={(event) => { setLibraryId(event.target.value); setPage(0); }} slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }} sx={mediaSelectSx}><MenuItem value="">All libraries</MenuItem>{libraries.map((library) => <MenuItem key={library.Id} value={library.Id}>{library.Name}</MenuItem>)}</TextField>
+          <Box sx={{ width: { xs: '100%', sm: 260 } }}><MediaSearchField label="Search media" value={search} onChange={setSearch} disabled={disabled} maxLength={256} /></Box>
+          <Tooltip title="Refresh results"><span><IconButton aria-label="Refresh results" disabled={disabled || loading} onClick={() => setRevision((value) => value + 1)}><RefreshRounded sx={{ fontSize: 20 }} /></IconButton></span></Tooltip>
+        </Stack>
+      </Box>
     </Stack>
+    {error != null && <Box sx={{ px: 2.5, pb: 2.5 }}><ErrorNotice error={error} retry={() => setRevision((value) => value + 1)} /></Box>}
+    {loading && <Box role="status" aria-label="Loading media analysis items" sx={{ px: 2.5, pb: 2.5 }}><Skeleton height={54} /><Skeleton height={54} /></Box>}
+    {data?.Items.length === 0 && <Box sx={{ mx: 2.5, mb: 2.5, p: 4, textAlign: 'center', border: '1px dashed', borderColor: 'divider', borderRadius: '12px' }}><Typography variant="body2" color="text.secondary">No matching media. Scan a supported library or change the filters.</Typography></Box>}
+    {data && data.Items.length > 0 && <>
+      <TableContainer sx={{ borderRadius: 0, display: { xs: 'none', md: 'block' } }}>
+        <Table aria-label="Media analysis items" sx={{ '& td, & th': { px: 2.5 } }}>
+          <TableHead><TableRow><TableCell sx={{ width: '46%' }}>Item</TableCell><TableCell sx={{ width: '30%' }}>Intro analysis</TableCell><TableCell>Seek previews</TableCell></TableRow></TableHead>
+          <TableBody>{data.Items.map((item) => <TableRow key={item.Id} hover>
+            <TableCell component="th" scope="row"><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`View analysis for ${item.Name}`} sx={{ color: 'text.primary', display: 'block', minHeight: 0, minWidth: 0, p: 0, borderRadius: 0.5, textAlign: 'left', overflowWrap: 'anywhere', fontSize: 13, fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography component="div" variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></TableCell>
+            <TableCell><IntroStatus item={item} /></TableCell><TableCell><PreviewStatus previews={item.Previews} /></TableCell>
+          </TableRow>)}</TableBody>
+        </Table>
+      </TableContainer>
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        {data.Items.map((item) => <Box key={item.Id} sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Stack direction="row" sx={{ alignItems: 'flex-start', gap: 0.5 }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}><Button disabled={disabled} onClick={() => setDetail(item.Id)} aria-label={`View analysis for ${item.Name}`} sx={{ minHeight: 0, p: 0, color: 'text.primary', textAlign: 'left', overflowWrap: 'anywhere', fontWeight: 600 }}>{item.Name || 'Untitled media'}</Button><Typography variant="caption" component="div" color="text.secondary" sx={{ mt: 0.25 }}>{libraries.find((library) => library.Id === item.LibraryId)?.Name ?? 'Unknown library'} · {item.Type}</Typography></Box>
+          </Stack>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1.5 }}>
+            <Stack spacing={0.75}><Typography variant="caption" color="text.secondary">Intro analysis</Typography><IntroStatus item={item} /></Stack>
+            <Stack spacing={0.75} sx={{ alignItems: 'flex-start' }}><Typography variant="caption" color="text.secondary">Seek previews</Typography><PreviewStatus previews={item.Previews} /></Stack>
+          </Box>
+        </Box>)}
+      </Box>
+    </>}
+    {data && <TablePagination component="div" count={data.TotalRecordCount} page={page} rowsPerPage={25} rowsPerPageOptions={[25]} disabled={disabled || loading} onPageChange={(_, value) => setPage(value)} sx={{ borderTop: '1px solid', borderColor: 'divider' }} />}
     {detail && <AnalysisItemDialog id={detail} onClose={() => setDetail(undefined)} />}
   </Paper>;
 }
