@@ -1,0 +1,328 @@
+{
+  "kind": "goby-intro-quality-round5",
+  "status": "research_complete_candidate_not_adopted",
+  "productionBaseline": "4817cb3",
+  "branch": "codex/intro-quality",
+  "productionAlgorithmChanged": false,
+  "productionSchemaChanged": false,
+  "productionDependenciesChanged": false,
+  "checkedInChangeScope": "documentation_only",
+  "environment": "test-env",
+  "localVerificationExecuted": false,
+  "localDownloadOnlyTransportUsed": true,
+  "extraction": {
+    "sources": [
+      {
+        "id": "B1",
+        "manifestSHA256": "203ce880ee292b3d74344b721e93badb6e41e1ee621b6dc840773f3d006d9c62",
+        "sourceSHA256": "dfbe4cf37afad226fe1248c32388d37591434fa5e3907acbfaf382c656b7d229",
+        "frames": 1200,
+        "rawSHA256": "5d22b43a62ab40fec235e9d28d072917cf0f71a5a4b056fc4efcea689dd14a1f",
+        "gzipSHA256": "002e570c7abdcf0cd017c188ac719f403a94d1ab7f53ce336f76e32f6ceb64a2"
+      },
+      {
+        "id": "B2",
+        "manifestSHA256": "8c7899795864b91126e9e07a162bc8edcb49d392c250e69a21e80ed3129788d6",
+        "sourceSHA256": "c7796c3c8a0e9f4ec4d8924ab2d62183660baaf0c9603e87fe1e95eb828eef7d",
+        "frames": 1200,
+        "rawSHA256": "8e8727f4751dff0502b15d6dff293d5881f44d6177cabdb2af6ec0d18eacb1fe",
+        "gzipSHA256": "be8418b721c08674a67795565c8e71a4ef8be4fc6f2c630ce0a6eee1e0bf6cc0"
+      },
+      {
+        "id": "B7",
+        "manifestSHA256": "0047bccbffb6ca2b417de73846bcfd59409544ff263148bee6e97270966b2b5b",
+        "sourceSHA256": "ecddcca8e6a15a53381932044e9a7a07d7d45b4ef3b5cdb3feddf1abdb234e7c",
+        "frames": 1200,
+        "rawSHA256": "c2ac42e589c5307c3ea148d2875c6b831af2129b863b570706ab364163c05f19",
+        "gzipSHA256": "b909d8b68ec6d03e5138425c3d6e16c5fec8617399bb8c2a522efb8b24915d4d"
+      },
+      {
+        "id": "O1",
+        "manifestSHA256": "d712a535ad08eaaa3c80fabd26356ae038f02fd4636ad1fbfc68293e40d17aae",
+        "sourceSHA256": "241367645b14cd5076478ca2908e3b8a07537cb8f5b1bd526a756228fd163f9f",
+        "frames": 1200,
+        "rawSHA256": "6dbfe3eec8a884d65f482ba31878e976ed3c34638e15c0714aec9e7730e71479",
+        "gzipSHA256": "30b970d5c270d5c72eeaf1a9e2f649667eac4215bc45d6923d50b06bb6d41949"
+      },
+      {
+        "id": "O2",
+        "manifestSHA256": "974aba66c9265e546cb41c236e345a3bfa846533bb14cb7ae9acb06ccd6807ec",
+        "sourceSHA256": "103b38857270bb0e489a928fcfeec621f381befb8915350145466aaa7adb0c1c",
+        "frames": 1200,
+        "rawSHA256": "a7eb2761bc97b22ee49b1c2a989a3aede7015a5bacea99e38a3f32294425afa3",
+        "gzipSHA256": "236b50f55c923c017335a6a01986342fcc6e83e8e92792110d4eea8ecf241eb2"
+      },
+      {
+        "id": "O3",
+        "manifestSHA256": "88a93272449359c57f18b95942e6eef0bd565ffcda31533d1e49295e41e58b94",
+        "sourceSHA256": "984c8827aaedd152d2e1e65b0c1952fb9a448f044739fcc2976ef4af82bff24f",
+        "frames": 1200,
+        "rawSHA256": "d541a033780435c258ecd7050ee1c6d10945d68c6fa0516df7f9d58cf4541711",
+        "gzipSHA256": "6ca0315ab536ff115debb21e671ab5dc0e33513053ce10eb03470191bc1ca6c9"
+      },
+      {
+        "id": "N388",
+        "manifestSHA256": "82e53f62e6d7dede4fee560341d4012d7b338076744eb27e426286f1ffcfdcae",
+        "sourceSHA256": "977b4d61cb294afbb06581c03fba98d43680f0317b90a59463c4d5fd0aee4a4c",
+        "frames": 1200,
+        "rawSHA256": "c7199b4369c6c50c15f9b6d9f5445c885a858aba440700747aaa915d76bda28b",
+        "gzipSHA256": "94c47dba8d5d3c0c7ca6844003aff0a674d2173d9a6c3e7f4ac8bdf8d043f669"
+      },
+      {
+        "id": "N389",
+        "manifestSHA256": "0a795236aa02140cb36383eda62bda0adcfb1ada8f90ca223e93d469b84ac29d",
+        "sourceSHA256": "cadf3bc114069eff0434589ae2ebd4e1ce9d32c40b94e6aa192e46815e6632d4",
+        "frames": 1200,
+        "rawSHA256": "2aed348a231021cbc16d11d3904d4cd166a1e8696f38fc8b0f9004357a1fd03b",
+        "gzipSHA256": "bc4879603ede6b180a0b737c960ce9b02614b642af653645a8aef385ba7b6d12"
+      },
+      {
+        "id": "N390",
+        "manifestSHA256": "502d658b15a1ca760fb1e50a8301e2f9ce85b28bdbca3f70d7b6632e35b57bc6",
+        "sourceSHA256": "2fb4e07474d6e822ba05b5a8aed6defcd5fd4c89fb5f0d308bce904d7d017aeb",
+        "frames": 1200,
+        "rawSHA256": "0e7dcce4d5cabe3ad5ee1f687f464c9753c85fc58ea6655fbc8b501abc3f8219",
+        "gzipSHA256": "d7c2c7b526ba3b627b688bfb14a85b0cb5d205749c96796a935625952f6b1042"
+      },
+      {
+        "id": "H114",
+        "manifestSHA256": "261903a612ebdde28820562450e492387dcff9e5874e8d887f595ae175885d83",
+        "sourceSHA256": "5ac23b23d9c8ad5aeadb97ef658f7932b188031bdb762047ed8d09eebd647a5b",
+        "frames": 1200,
+        "rawSHA256": "0be3d8907d1b2bead1e2a40cbc96f4ccfdf6d4c2d47f00238a93c93058c42e39",
+        "gzipSHA256": "288da9ddffdac5ae3bcc0f102d01c8983a0682bf32c3e7234f1531218a075ad8"
+      },
+      {
+        "id": "H116",
+        "manifestSHA256": "9830316eef4caa45a077660c9524533a1814b84247254a8be711518e8e762de1",
+        "sourceSHA256": "8650f39ac6ab8b962ececdf09b56048cd3a0983a806d7aab6d5ebbd6f5989cfd",
+        "frames": 1200,
+        "rawSHA256": "a368e16d5262384712fdc6c2ca9f387b92917304db4347ff101e372209d0d726",
+        "gzipSHA256": "9ed11689c539846d8ac8d5b2f904edab99d2a5294b49b5fa2fd0d67a5364ef35"
+      },
+      {
+        "id": "H118",
+        "manifestSHA256": "d438d91ef509b66af65da9c62293cd7287a985bf27f92d35416ee9ce83ba042a",
+        "sourceSHA256": "5b254818ac18e08af7af6150880c0715cd8477c507385104b380b3c46af4853f",
+        "frames": 1200,
+        "rawSHA256": "72727c9f7e57c3659633487c2f4b6f375aa49bac1d1c8c856b3ad0e9d995a975",
+        "gzipSHA256": "26dff3eef246a613d9e5a496656b9f80b7aa52c646fc2b1d1e844ca8edd4711c"
+      }
+    ],
+    "width": 96,
+    "height": 96,
+    "cadenceMilliseconds": 100,
+    "prefixSeconds": 120,
+    "actualRawBytes": 132710400,
+    "compressedRawBytes": 89656430,
+    "sourceToolAndPTSAdmissionComplete": true,
+    "newSourceMediaDownloaded": false
+  },
+  "localPatch": {
+    "fixedRegions": 25,
+    "independentSourcesPerCohort": 3,
+    "fullCliqueBeforePerPatchCoverage": true,
+    "sameDirectionMotionAcrossBothTimesAndAllSources": true,
+    "nominationRevision": "Removed instantaneous four-region motion seed only; final gates unchanged.",
+    "realCohorts": [
+      {
+        "cohort": "beverly",
+        "completed": true,
+        "groups": 0,
+        "work": {
+          "patchComparisons": 168979477,
+          "clockLookups": 36309600,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 77
+        }
+      },
+      {
+        "cohort": "nasa",
+        "completed": true,
+        "groups": 0,
+        "work": {
+          "patchComparisons": 132346870,
+          "clockLookups": 34567200,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 6
+        }
+      },
+      {
+        "cohort": "osb",
+        "completed": true,
+        "groups": 0,
+        "work": {
+          "patchComparisons": 136916952,
+          "clockLookups": 34567200,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 0
+        }
+      },
+      {
+        "cohort": "hubble",
+        "completed": true,
+        "groups": 0,
+        "work": {
+          "patchComparisons": 132080357,
+          "clockLookups": 34567200,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 3
+        }
+      }
+    ],
+    "allRealDecisionsAndWorkEqualBeforeAndAfterCache": true,
+    "realCompleteGroups": 0,
+    "newIndependentAccuracyEvidence": false
+  },
+  "privatePosteriorCache": {
+    "primitiveAndOracleParentsPassed": 20,
+    "tableBytes": 1048576,
+    "allocationBoundBytes": 1049600,
+    "fixedClockScope": true,
+    "exactOracleEquivalencePassed": true,
+    "lookupBudgetCharged": true,
+    "movingSynthetic": {
+      "completed": true,
+      "groups": 1,
+      "work": {
+        "patchComparisons": 166570443,
+        "clockLookups": 39137331,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 3
+      },
+      "cache": {
+        "contexts": 1,
+        "queries": 2001672,
+        "fullHits": 1991988,
+        "partialHits": 0,
+        "fallbackQueries": 0,
+        "computedPatchComparisons": 242100,
+        "avoidedPatchComparisons": 49799700,
+        "allocationBoundBytes": 1049600
+      },
+      "strictContainmentPassed": false,
+      "returnedBoundsSeconds": [
+        [
+          18.7,
+          28.1
+        ],
+        [
+          25.7,
+          35.1
+        ],
+        [
+          32.7,
+          42.1
+        ]
+      ],
+      "knownSharedBoundsSeconds": [
+        [
+          20,
+          28
+        ],
+        [
+          27,
+          35
+        ],
+        [
+          34,
+          42
+        ]
+      ],
+      "leadingOverreachSeconds": 1.3,
+      "trailingOverreachSeconds": 0.1
+    },
+    "staticAndDifferentContentControlsCompleteWithNoGroup": true,
+    "safePositiveTestStillFailed": true,
+    "originalBudgetFailurePreserved": true
+  },
+  "orbPointProbe": {
+    "pointCount": 9,
+    "pairCount": 27,
+    "nativeFrames": 27,
+    "parametersFrozenBeforeOneRun": true,
+    "opencvWheelVersion": "4.13.0.92",
+    "numpyVersion": "2.5.3",
+    "inlierCycles": {
+      "beverly": [
+        3,
+        5,
+        1
+      ],
+      "nasa": [
+        14,
+        2,
+        0
+      ],
+      "osb": [
+        2,
+        1,
+        1
+      ]
+    },
+    "intervalOrMotionOrRecognitionClaim": false,
+    "firstTwoBeverlyB1PairsCentralInliers": 0,
+    "resultSHA256": "5a7658ac2d77ea82339978b4205befd129c0aefa59a16d08d99bee3a7b7c2091",
+    "originalDownloadTimeoutAndSameWheelTransportPreserved": true
+  },
+  "sourceScope": {
+    "labelsChanged": false,
+    "assistantVisualInspection": true,
+    "humanOrDirectAudioReviewClaim": false,
+    "threeWaySharedInteriorShorterThanSomeFullOpeningTargets": true,
+    "approximateEnvelopeIsNotAnExactRecallCeiling": true,
+    "pairwiseSupportUnionIsNotACompleteThreeSourceWitness": true
+  },
+  "adoptionBlockers": [
+    "No complete real groups in the selected fixed-patch search.",
+    "Point correspondences also occur in narrative and static controls.",
+    "The clean moving synthetic output crosses known shared boundaries."
+  ],
+  "closure": {
+    "timeUTC": "2026-09-30T17:03:25.654441+00:00",
+    "ownedPostgresStarted": false,
+    "previousRoundPostgresStillStopped": true,
+    "remainingOwnedContainers": [],
+    "remainingFramePartFiles": [],
+    "temporaryOpenCVDirectoryRemoved": true,
+    "globalDependenciesModified": false,
+    "sourceMediaAndAuditedFramesRetained": true,
+    "failedAndAcceptedEvidenceRetained": true,
+    "authoritativeSourceTreesRetained": true,
+    "sharedCachesDeleted": false
+  },
+  "evidenceSHA256": {
+    "frames/complete-extraction-summary.json": "0a123e31b9eb0adbd105643fb23b3d98291ecbc6c1c3233838102f8cd98b8bda",
+    "transport-reclamation.json": "1f1dc49e696e2cba5430b4ff543834066cf58920470125c1b8622f13efa7ddc2",
+    "local-features/actions-freeze01.json": "08769d9cd40c293ad0d54562860f5cd267ab794c485f2d609885240539441b15",
+    "local-features/action-probes01.json": "1862f3a95d7c2d7a07e861ba85f3a9694586c578e576fc1cce02260e724a9f6b",
+    "local-features/prefix-freeze01.json": "d984eae880639c29b28a3c83c8cad62db4f9ccf2d895f06a71b79044d3304bfb",
+    "local-features/prefix-launch01-failure.json": "3a0e29aaea5fe63aeedf48b3ed1fed4f9309e28017603c24db6ad31d1bef41e6",
+    "local-features/prefix-summary02.json": "54a7defe001f0a8af640d868f5cf65de3cfd75306bea59b626cec51df1ae90af",
+    "local-features/nomination2-freeze.json": "647ccc8d6c0892487529d5cb155ed7a931ea1f4612479597b29f611dcc1a1384",
+    "local-features/nomination2-source.diff": "6dde9b90a67423bdd66e2957db0ac89860fe585e0c4beaad876b3b2a4a3e1578",
+    "local-features/nomination2-summary.json": "a77aab8b644535daf03ad33be815192644221f6cafbe193e40ad4e46c377cb67",
+    "local-features/pipeline-sanity01-summary.json": "4fa7e553a51af24578fc1f3fa848c104512933a2bcaa564deea2f3acf6e3b3e2",
+    "local-features/pipeline-sanity01-evidence.json": "ecb7076f88f5e490f4ce1394898f8c570f8c6ae31e18ab5b8af93af8a1b4e9f6",
+    "local-features/cache3-freeze.json": "01a007039489bf120179a34296300970ad43ec9cf960285a2eed5f6981519da1",
+    "local-features/cache3-source.diff": "1cec6306af4be65e38a7576d6f09c8b8cfdebcf5aafc987763dae7a62c502aad",
+    "local-features/cache3-evidence.json": "1a4f9ec34a625aa454f4953c4d5224c0dd2aa1c88ec4110a2a45bd18edee59e2",
+    "local-features/cache3-real-equivalence.json": "cd26fb94b65e6b195fb1eb82f140dbaf3c04fe931341d1040e468d9e728190e4",
+    "local-features/pipeline-sanity-cache3-summary.json": "0aa35b8e132467f7e5d2c4593fa0bce8cb501bec640826dcbc1f6d983bb7878c",
+    "local-features/cache3-report.md": "f28bdc274c09cb1e9e346c51a4f302d1921aa76ed14cb07590869756a2a6b392",
+    "source-scope/beverly-common-source-scope.md": "3fd378e009e7c675592b54adc1d795c5957960c3faed8fc741a72e35291efb88",
+    "source-scope/b2-tail-correspondence.json": "6efe74b6414047afb951beb36a14f83379821e04d5f0b590e50f2b389cd568e2",
+    "keypoint-probe/evidence-archive.tar.gz": "b9373898ccf02ccc0b6fb4115502d05a5de9d44d56b72aaeb1c7f3323de54113",
+    "keypoint-probe/archive-inventory.json": "7c01c4ea339c26af7044388e472e90522d290eddcc46aed9a5f8ecfbfbc0d38a",
+    "keypoint-probe/closure.json": "9d17a07a92218898921e3e5b94e0a5bfabc02ff62f32ad304dfeb155858d34ef",
+    "resource-closure.json": "f485d78df67ec6895b132b038efbb7540b3f3e137d871217ef723372d21c6dfb"
+  },
+  "delivery": {
+    "localDocumentationCommitOnly": true,
+    "merged": false,
+    "pushed": false,
+    "dockerCatalogChanged": false,
+    "deployed": false,
+    "originalCheckoutUnrelatedChangesModified": false
+  }
+}

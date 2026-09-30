@@ -1,15 +1,26 @@
 # Current execution plan
 
-## Visual evaluation diagnostics complete within the selected scope
+## Local-feature investigation complete; boundary and support evidence next
+
+The [fifth study](intro-quality-round5-plan-20260930.md) did not justify a
+production change. Its [result](../development/intro-quality-round5-20260930.md)
+records complete high-resolution extraction, failed local-patch discovery,
+non-discriminating point correspondences, an experimental budget repair and a
+remaining synthetic boundary failure. Keep this candidate in research.
+Before another feature expansion, establish strictly contained positive
+boundary controls and enough independent same-variant source support for full
+opening targets. Do not extrapolate a shared interior to unobserved head/tail
+content or count local keypoint cycles as a safe skip interval.
+
+## Latest implementation: visual evaluation diagnostics
 
 The [fourth increment](intro-quality-round4-plan-20260930.md) closes the missing
 visual-fallback trace and preserves complete matcher results across all 33
 retained cases. Its [result](../development/intro-quality-round4-20260930.md)
 records source-level Beverly action correspondences and four bounded
 descriptor mechanisms that did not justify a product recognition change.
-The next recognition task is a bounded higher-resolution, region-preserving
-representation experiment, with scene-motion and foreground controls against
-credit-only or static-background matching. A viable candidate still requires
+The higher-resolution representation experiment proposed by that increment
+is recorded in the fifth study above. A viable future candidate still requires
 new frozen episode evaluation. No recall gain or new Docker delivery is claimed.
 
 ## Previous common-interior intro recovery increment

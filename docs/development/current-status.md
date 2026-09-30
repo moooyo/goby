@@ -1,5 +1,18 @@
 # Current implementation and delivery status
 
+## Latest investigation: local correspondence and boundary limits
+
+The [fifth intro-quality study](intro-quality-round5-20260930.md) is complete
+without a production recognition change. Twelve existing sources received
+audited 96-by-96 observations. A fixed local-patch method and an isolated
+nomination correction produced no complete groups; ORB point matches also
+occurred in narrative/static controls. A private posterior cache repaired a
+synthetic pipeline budget defect, but the returned window still crossed the
+known shared segment, so its strict safe-positive check failed. All original
+failures are retained. Source review also distinguishes the shorter three-way
+shared interior from each complete opening. Detector v5/schema 53 and the
+fourth increment's corpus diagnostics remain the latest implementation.
+
 ## Latest unreleased source: visual evaluation diagnostics
 
 The [fourth intro-quality increment](intro-quality-round4-20260930.md) adds
