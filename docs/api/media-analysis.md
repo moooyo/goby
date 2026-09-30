@@ -1,5 +1,11 @@
 # Media analysis
 
+The current source includes [detector v4 and resumable corpus tooling](../development/intro-quality-20260930.md).
+Its visual fallback carries optional `Candidate.VisualEvidence` and zero joint
+audio/visual `Metrics`; qualified evidence still requires three independent
+episodes and current publication authority. The existing Docker catalog remains
+the v3 checkpoint described below. Broader recognition is still limited.
+
 Media analysis executes in background tasks. Library options independently
 enable automatic intro detection and automatic seek previews. Enabling an option
 or completing a scan requests later work through its dedicated durable event;
@@ -208,16 +214,19 @@ of the underlying evidence status. Replacement does not carry suppression to new
 source bytes.
 
 The matcher emits integer similarity and coverage measurements, not a calibrated
-accuracy probability. The production candidate retains `introdetect-v3` and its
-existing thresholds: at least
-three independent episodes support an automatic result, and extraction uses at
-most the first 600 seconds. The [expanded evaluation](../development/bif-intro-expansion-20260930.md)
-returned `no_result` for all 15 evaluable new originals: 12 missed source-reviewed
-openings and three correct short-ident negatives, with zero qualified outputs
-and zero false positives. Precision and boundary error are undefined because no
-interval was emitted. Short and variant openings remain demonstrated limitations
-of this selected population. Unadopted calibration experiments do not change the
-production contract or expand accepted recognition coverage.
+accuracy probability. Source detector v4 retains the acoustic evidence policy
+and adds a separately measured visual fallback when no acoustic group exists.
+Extraction uses at most the first 600 seconds; visual fallback searches at most
+the first 120 seconds or first half of the episode, with 8-to-90-second intervals.
+Both routes require at least three independent episodes. `VisualEvidence`
+records visual-only measurements without inventing acoustic support. Same or
+nested support witnesses select one existing complete group per episode;
+crossing or disjoint windows do not publish. See the
+[v4 result](../development/intro-quality-20260930.md) for exact policy and the
+failed new positive cohort. The prior [v3 expanded evaluation](../development/bif-intro-expansion-20260930.md)
+remains the original zero-of-twelve positive result; its absence of emitted
+intervals made precision and boundary error undefined. The current Docker
+catalog still uses that earlier detector and does not include this source change.
 Review candidates, competing intervals, missing modalities, insufficient support,
 analysis boundaries and search limits do not auto-publish. A completely exhausted
 comparison budget records `comparison_budget_exceeded` with no candidate and the

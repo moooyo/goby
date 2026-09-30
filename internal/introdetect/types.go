@@ -6,7 +6,7 @@ import "errors"
 
 const (
 	TicksPerSecond int64 = 10_000_000
-	Version              = "introdetect-v3"
+	Version              = "introdetect-v4"
 )
 
 var (
@@ -24,11 +24,16 @@ type AudioSample struct {
 
 // VisualSample must use actual presentation time, including for VFR sources.
 // Contrast is grayscale luminance standard deviation divided by 255, times
-// 1000. Hash is a consistently oriented 64-bit perceptual image hash.
+// 1000. Hash is a consistently oriented 64-bit perceptual image hash. Luma is
+// an 8 by 8 row-major grid of cell means, centered and normalized to a standard
+// deviation of 32, then rounded and saturated to +/-127. LumaKnown separates
+// an absent or spatially flat descriptor from measured evidence.
 type VisualSample struct {
-	Ticks    int64
-	Hash     uint64
-	Contrast uint16
+	Ticks     int64
+	Hash      uint64
+	Contrast  uint16
+	Luma      [64]int8
+	LumaKnown bool
 }
 
 // Identities are trusted caller facts, not inferred from names or fingerprints.
@@ -204,12 +209,13 @@ type Support struct {
 }
 
 type Candidate struct {
-	Interval Interval
-	GroupID  string
-	Status   Status
-	Reasons  []Reason
-	Metrics  Metrics
-	Support  []Support
+	Interval       Interval
+	GroupID        string
+	Status         Status
+	Reasons        []Reason
+	Metrics        Metrics
+	Support        []Support
+	VisualEvidence *VisualSequenceMetrics `json:",omitempty"`
 }
 
 type EpisodeResult struct {
@@ -228,6 +234,7 @@ type Group struct {
 	Reasons          []Reason
 	Members          []Support
 	Metrics          Metrics
+	VisualEvidence   *VisualSequenceMetrics `json:",omitempty"`
 	// Only the in-process matcher needs the chosen global source-clock map.
 	// Group IDs bind it; it is not reconstructed from untrusted JSON.
 	alignmentOffsets []int64

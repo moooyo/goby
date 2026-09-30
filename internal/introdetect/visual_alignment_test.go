@@ -66,7 +66,7 @@ func TestVisualPhaseSweepMatchesExhaustiveIntegerClockOracle(t *testing.T) {
 				if side == 1 && random.next()%2 == 0 {
 					hash = episodes[0].Visual[int(random.next()%uint64(len(episodes[0].Visual)))].Hash
 				}
-				episodes[side].Visual = append(episodes[side].Visual, VisualSample{tick, hash, contrast})
+				episodes[side].Visual = append(episodes[side].Visual, VisualSample{Ticks: tick, Hash: hash, Contrast: contrast})
 			}
 		}
 		var windows [2]Interval
@@ -97,11 +97,11 @@ func TestVisualPhaseSweepRetainsExactClockEdgesAndEmptyInputs(t *testing.T) {
 		audio     audioMatch
 		tolerance int64
 	}{
-		{"simultaneous_events", []VisualSample{{0, 1, 200}, {4, 2, 200}, {8, 3, 200}}, []VisualSample{{0, 2, 200}, {4, 3, 200}, {8, 1, 200}}, audioMatch{a: Interval{0, 8}, b: Interval{0, 8}}, 5},
-		{"odd_midpoints", []VisualSample{{0, 1, 200}, {3, 2, 200}, {7, 3, 200}}, []VisualSample{{1, 2, 200}, {4, 3, 200}, {8, 1, 200}}, audioMatch{a: Interval{0, 7}, b: Interval{1, 8}}, 5},
-		{"outside_window_nearest", []VisualSample{{3, 1, 200}, {7, 2, 200}}, []VisualSample{{1, 1, 200}, {5, 2, 200}, {9, 1, 200}}, audioMatch{a: Interval{3, 7}, b: Interval{5, 5}}, 4},
-		{"empty_source", nil, []VisualSample{{0, 1, 200}}, audioMatch{a: Interval{0, 5}, b: Interval{0, 5}}, 5},
-		{"empty_target", []VisualSample{{0, 1, 200}, {3, 2, 200}}, nil, audioMatch{a: Interval{0, 5}, b: Interval{0, 5}}, 5},
+		{"simultaneous_events", []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}, {Ticks: 4, Hash: 2, Contrast: 200}, {Ticks: 8, Hash: 3, Contrast: 200}}, []VisualSample{{Ticks: 0, Hash: 2, Contrast: 200}, {Ticks: 4, Hash: 3, Contrast: 200}, {Ticks: 8, Hash: 1, Contrast: 200}}, audioMatch{a: Interval{0, 8}, b: Interval{0, 8}}, 5},
+		{"odd_midpoints", []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}, {Ticks: 3, Hash: 2, Contrast: 200}, {Ticks: 7, Hash: 3, Contrast: 200}}, []VisualSample{{Ticks: 1, Hash: 2, Contrast: 200}, {Ticks: 4, Hash: 3, Contrast: 200}, {Ticks: 8, Hash: 1, Contrast: 200}}, audioMatch{a: Interval{0, 7}, b: Interval{1, 8}}, 5},
+		{"outside_window_nearest", []VisualSample{{Ticks: 3, Hash: 1, Contrast: 200}, {Ticks: 7, Hash: 2, Contrast: 200}}, []VisualSample{{Ticks: 1, Hash: 1, Contrast: 200}, {Ticks: 5, Hash: 2, Contrast: 200}, {Ticks: 9, Hash: 1, Contrast: 200}}, audioMatch{a: Interval{3, 7}, b: Interval{5, 5}}, 4},
+		{"empty_source", nil, []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}}, audioMatch{a: Interval{0, 5}, b: Interval{0, 5}}, 5},
+		{"empty_target", []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}, {Ticks: 3, Hash: 2, Contrast: 200}}, nil, audioMatch{a: Interval{0, 5}, b: Interval{0, 5}}, 5},
 	} {
 		t.Run(fixture.name, func(t *testing.T) {
 			a, b := Episode{Visual: fixture.a}, Episode{Visual: fixture.b}
@@ -118,8 +118,8 @@ func TestVisualPhaseSweepRetainsExactClockEdgesAndEmptyInputs(t *testing.T) {
 
 func TestVisualPhaseCannotExpandTheOriginalAudioCorridor(t *testing.T) {
 	h0, h1 := stateAnchorTestHash(1), stateAnchorTestHash(2)
-	a := Episode{Visual: []VisualSample{{0, h0, 200}, {30, h1, 200}}}
-	b := Episode{Visual: []VisualSample{{3, ^h0, 200}, {14, h0, 200}, {38, ^h1, 200}, {40, h1, 200}}}
+	a := Episode{Visual: []VisualSample{{Ticks: 0, Hash: h0, Contrast: 200}, {Ticks: 30, Hash: h1, Contrast: 200}}}
+	b := Episode{Visual: []VisualSample{{Ticks: 3, Hash: ^h0, Contrast: 200}, {Ticks: 14, Hash: h0, Contrast: 200}, {Ticks: 38, Hash: ^h1, Contrast: 200}, {Ticks: 40, Hash: h1, Contrast: 200}}}
 	o := DefaultOptions()
 	o.VisualAlignmentTicks = 10
 	value, err := alignVisual(a, b, audioMatch{a: Interval{0, 30}, b: Interval{0, 40}}, 0, o, v2TestBudget())
@@ -130,14 +130,14 @@ func TestVisualPhaseCannotExpandTheOriginalAudioCorridor(t *testing.T) {
 
 func TestVisualPhaseTiesUseTheClosestStablePhaseThenSignedOrder(t *testing.T) {
 	hash := stateAnchorTestHash(1)
-	a := Episode{Visual: []VisualSample{{10, hash, 200}}}
+	a := Episode{Visual: []VisualSample{{Ticks: 10, Hash: hash, Contrast: 200}}}
 	for _, fixture := range []struct {
 		name            string
 		b               []VisualSample
 		tolerance, want int64
 	}{
-		{"negative_interval_endpoint", []VisualSample{{0, hash, 200}, {8, ^hash, 200}}, 10, -7},
-		{"equal_absolute_phases", []VisualSample{{1, hash, 200}, {10, ^hash, 200}, {19, hash, 200}}, 9, -5},
+		{"negative_interval_endpoint", []VisualSample{{Ticks: 0, Hash: hash, Contrast: 200}, {Ticks: 8, Hash: ^hash, Contrast: 200}}, 10, -7},
+		{"equal_absolute_phases", []VisualSample{{Ticks: 1, Hash: hash, Contrast: 200}, {Ticks: 10, Hash: ^hash, Contrast: 200}, {Ticks: 19, Hash: hash, Contrast: 200}}, 9, -5},
 	} {
 		t.Run(fixture.name, func(t *testing.T) {
 			o := DefaultOptions()
@@ -153,8 +153,8 @@ func TestVisualPhaseTiesUseTheClosestStablePhaseThenSignedOrder(t *testing.T) {
 func TestVisualPhaseCannotStitchDifferentLocalOffsets(t *testing.T) {
 	var a, b Episode
 	for i := 0; i < 10; i++ {
-		a.Visual = append(a.Visual, VisualSample{int64(i * 4), stateAnchorTestHash(i), 200})
-		b.Visual = append(b.Visual, VisualSample{int64(i * 4), stateAnchorTestHash(i + 32), 200})
+		a.Visual = append(a.Visual, VisualSample{Ticks: int64(i * 4), Hash: stateAnchorTestHash(i), Contrast: 200})
+		b.Visual = append(b.Visual, VisualSample{Ticks: int64(i * 4), Hash: stateAnchorTestHash(i + 32), Contrast: 200})
 	}
 	for i := 1; i <= 3; i++ {
 		b.Visual[i+1].Hash = a.Visual[i].Hash
@@ -179,8 +179,8 @@ func TestVisualPhaseCannotStitchDifferentLocalOffsets(t *testing.T) {
 
 func TestVisualPhaseScoreDoesNotImproveByDroppingWeakObservations(t *testing.T) {
 	for _, dark := range []bool{false, true} {
-		a := Episode{Visual: []VisualSample{{0, stateAnchorTestHash(0), 200}, {10, stateAnchorTestHash(1), 200}, {20, stateAnchorTestHash(2), 200}}}
-		b := Episode{Visual: []VisualSample{{0, a.Visual[0].Hash ^ 255, 200}, {10, a.Visual[1].Hash ^ 255, 200}, {20, a.Visual[0].Hash, 200}}}
+		a := Episode{Visual: []VisualSample{{Ticks: 0, Hash: stateAnchorTestHash(0), Contrast: 200}, {Ticks: 10, Hash: stateAnchorTestHash(1), Contrast: 200}, {Ticks: 20, Hash: stateAnchorTestHash(2), Contrast: 200}}}
+		b := Episode{Visual: []VisualSample{{Ticks: 0, Hash: a.Visual[0].Hash ^ 255, Contrast: 200}, {Ticks: 10, Hash: a.Visual[1].Hash ^ 255, Contrast: 200}, {Ticks: 20, Hash: a.Visual[0].Hash, Contrast: 200}}}
 		if dark {
 			b.Visual[1].Contrast = 0
 		}
@@ -191,8 +191,8 @@ func TestVisualPhaseScoreDoesNotImproveByDroppingWeakObservations(t *testing.T) 
 			t.Fatalf("one perfect selected pair displaced stronger full-window evidence: dark=%v alignment=%#v error=%v", dark, value, err)
 		}
 	}
-	a := Episode{Visual: []VisualSample{{0, 1, 0}, {1, 1, 200}}}
-	b := Episode{Visual: []VisualSample{{0, 1, 200}}}
+	a := Episode{Visual: []VisualSample{{Ticks: 0, Hash: 1, Contrast: 0}, {Ticks: 1, Hash: 1, Contrast: 200}}}
+	b := Episode{Visual: []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}}}
 	o := DefaultOptions()
 	o.VisualAlignmentTicks = 1
 	value, err := alignVisual(a, b, audioMatch{a: Interval{0, 1}, b: Interval{0, 1}}, 0, o, v2TestBudget())
@@ -205,8 +205,8 @@ func TestVisualPhaseSharedMapPreservesEndpointEvidenceAndResidualUncertainty(t *
 	var a, b Episode
 	for i := 0; i <= 60; i++ {
 		tick, hash := int64(i)*TicksPerSecond/2, stateAnchorTestHash(i/8)
-		a.Visual = append(a.Visual, VisualSample{tick, hash, 200})
-		b.Visual = append(b.Visual, VisualSample{tick + 8*TicksPerSecond/10, hash, 200})
+		a.Visual = append(a.Visual, VisualSample{Ticks: tick, Hash: hash, Contrast: 200})
+		b.Visual = append(b.Visual, VisualSample{Ticks: tick + 8*TicksPerSecond/10, Hash: hash, Contrast: 200})
 	}
 	audio := audioMatch{a: Interval{0, 30 * TicksPerSecond}, b: Interval{0, 31 * TicksPerSecond}}
 	o := DefaultOptions()
@@ -227,8 +227,8 @@ func TestVisualPhaseSharedMapPreservesEndpointEvidenceAndResidualUncertainty(t *
 func TestVisualPhaseBudgetAndCancellationNeverReturnPartialWinners(t *testing.T) {
 	var a, b Episode
 	for i := 0; i < 20; i++ {
-		a.Visual = append(a.Visual, VisualSample{int64(i * 3), stateAnchorTestHash(i), 200})
-		b.Visual = append(b.Visual, VisualSample{int64(i*3 + 2), stateAnchorTestHash(i), 200})
+		a.Visual = append(a.Visual, VisualSample{Ticks: int64(i * 3), Hash: stateAnchorTestHash(i), Contrast: 200})
+		b.Visual = append(b.Visual, VisualSample{Ticks: int64(i*3 + 2), Hash: stateAnchorTestHash(i), Contrast: 200})
 	}
 	o := DefaultOptions()
 	o.VisualAlignmentTicks = 8

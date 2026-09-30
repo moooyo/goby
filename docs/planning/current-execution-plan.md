@@ -1,5 +1,15 @@
 # Current execution plan
 
+## Intro-quality source increment
+
+The selected [intro quality and corpus-tooling plan](intro-quality-plan-20260930.md)
+has completed implementation and focused verification. Its
+[results](../development/intro-quality-20260930.md) preserve the failed new
+positive cohort and distinguish a later mixed-support regression from unseen
+accuracy. Broader short/variant recognition remains open. Further recognition
+work should improve descriptor or scene-alignment robustness and use new frozen
+evaluation material. The current Docker release catalog is unchanged.
+
 ## BIF automation complete; intro recognition extension remains open
 
 The [current result](../development/bif-intro-expansion-20260930.md) and

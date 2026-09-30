@@ -45,7 +45,7 @@ func testEpisode(number int, duration int64, openings ...testOpening) Episode {
 		tick = stop
 	}
 	for tick := int64(0); tick < window; tick += TicksPerSecond {
-		e.Visual = append(e.Visual, VisualSample{tick, random.next(), 200})
+		e.Visual = append(e.Visual, VisualSample{Ticks: tick, Hash: random.next(), Contrast: 200})
 	}
 	for _, opening := range openings {
 		end := min(window, opening.start+opening.duration)
@@ -78,7 +78,7 @@ func testEpisode(number int, duration int64, openings ...testOpening) Episode {
 			if (tick-opening.start)/TicksPerSecond%2 == 0 {
 				sharedState = shared.next()
 			}
-			visual = append(visual, VisualSample{tick, sharedState, 200})
+			visual = append(visual, VisualSample{Ticks: tick, Hash: sharedState, Contrast: 200})
 		}
 		sort.Slice(visual, func(i, j int) bool { return visual[i].Ticks < visual[j].Ticks })
 		e.Visual = visual
@@ -431,7 +431,7 @@ func TestAnalyzeUnmatchedVisualPulsesCannotSupplySceneEvidence(t *testing.T) {
 					hash = 0xaaaaaaaaaaaaaaaa ^ (uint64(0xffff) << uint((i-1)*16))
 				}
 			}
-			e.Visual = append(e.Visual, VisualSample{tick, hash, 200})
+			e.Visual = append(e.Visual, VisualSample{Ticks: tick, Hash: hash, Contrast: 200})
 		}
 		cohort.Episodes = append(cohort.Episodes, e)
 	}
@@ -541,7 +541,7 @@ func TestAnalyzeUsesIrregularVisualTimestamps(t *testing.T) {
 			actual := position*(TicksPerSecond/2) + position%3*(TicksPerSecond/7)
 			// The frame's state is sampled at its actual relative presentation
 			// time, including when jitter crosses a two-second scene boundary.
-			observations = append(observations, VisualSample{starts[i] + actual, states[actual/(2*TicksPerSecond)], 200})
+			observations = append(observations, VisualSample{Ticks: starts[i] + actual, Hash: states[actual/(2*TicksPerSecond)], Contrast: 200})
 		}
 		sort.Slice(observations, func(a, b int) bool { return observations[a].Ticks < observations[b].Ticks })
 		cohort.Episodes[i].Visual = observations

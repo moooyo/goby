@@ -27,8 +27,8 @@ func visualCostGateFixture(t *testing.T) (Episode, Episode, audioMatch) {
 			}
 		}
 		tick := int64(i) * TicksPerSecond
-		a.Visual = append(a.Visual, VisualSample{tick, right ^ d, 200})
-		b.Visual = append(b.Visual, VisualSample{tick, right, 200})
+		a.Visual = append(a.Visual, VisualSample{Ticks: tick, Hash: right ^ d, Contrast: 200})
+		b.Visual = append(b.Visual, VisualSample{Ticks: tick, Hash: right, Contrast: 200})
 	}
 	audio, reason, err := measureAudioRun(a, b, matched, 0, 123, DefaultOptions(), v2TestBudget())
 	if err != nil || audio == nil || reason != "" || len(audio.reasons) != 0 || audio.metrics.AudioAgreementPermille != 1000 ||
@@ -83,7 +83,7 @@ func visualProjectionCycleFixture(t *testing.T) ([]Episode, map[[2]int]pairMatch
 		left, right := stateAnchorTestHash(i), stateAnchorTestHash((i+63)%64)
 		middle := left&0xffffffff00000000 | right&0x00000000ffffffff
 		for source, hash := range []uint64{left, middle, right} {
-			episodes[source].Visual = append(episodes[source].Visual, VisualSample{int64(i) * TicksPerSecond, hash, 200})
+			episodes[source].Visual = append(episodes[source].Visual, VisualSample{Ticks: int64(i) * TicksPerSecond, Hash: hash, Contrast: 200})
 		}
 	}
 	o, budget := DefaultOptions(), v2TestBudget()
@@ -145,8 +145,8 @@ func TestVisualProjectionDoesNotErodeACompleteCorrespondenceCycle(t *testing.T) 
 
 func TestVisualProjectionFilteringRetainsRawPositionsAndBothClocks(t *testing.T) {
 	second := TicksPerSecond
-	a := Episode{Visual: []VisualSample{{0, 1, 200}, {second / 5, 2, 200}, {second / 2, 3, 200}, {second, 4, 200}}}
-	b := Episode{Visual: []VisualSample{{0, 1, 200}, {second / 2, 3, 200}, {second, 4, 200}}}
+	a := Episode{Visual: []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}, {Ticks: second / 5, Hash: 2, Contrast: 200}, {Ticks: second / 2, Hash: 3, Contrast: 200}, {Ticks: second, Hash: 4, Contrast: 200}}}
+	b := Episode{Visual: []VisualSample{{Ticks: 0, Hash: 1, Contrast: 200}, {Ticks: second / 2, Hash: 3, Contrast: 200}, {Ticks: second, Hash: 4, Contrast: 200}}}
 	full := audioMatch{a: Interval{0, second}, b: Interval{0, second}}
 	o := DefaultOptions()
 	original, err := materializeVisualPhase(a, b, full, 0, 0, o, v2TestBudget())

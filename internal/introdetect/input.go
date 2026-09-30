@@ -76,7 +76,7 @@ func validateInput(ctx context.Context, c Cohort, o Options) ([]Episode, error) 
 			return nil, fmt.Errorf("%w: invalid episode identity or duration", ErrInvalidInput)
 		}
 		// Budget the in-memory feature representation, including alignment.
-		featureBytes := int64(len(e.Audio))*24 + int64(len(e.Visual))*24 + int64(len(e.EpisodeKey)+len(e.SourceKey)+len(e.ContentIdentity)+len(e.AlgorithmProfile))
+		featureBytes := int64(len(e.Audio))*24 + int64(len(e.Visual))*88 + int64(len(e.EpisodeKey)+len(e.SourceKey)+len(e.ContentIdentity)+len(e.AlgorithmProfile))
 		if len(e.Audio) > o.MaxAudioSamples || len(e.Visual) > o.MaxVisualSamples || featureBytes > int64(o.MaxFeatureBytes) {
 			return nil, fmt.Errorf("%w: feature budget for episode %d", ErrLimit, index)
 		}
@@ -98,6 +98,11 @@ func validateInput(ctx context.Context, c Cohort, o Options) ([]Episode, error) 
 		for _, sample := range e.Visual {
 			if sample.Ticks <= previousTick || sample.Ticks < 0 || sample.Ticks >= end || sample.Contrast > 1000 {
 				return nil, fmt.Errorf("%w: invalid visual timeline or contrast", ErrInvalidInput)
+			}
+			for _, value := range sample.Luma {
+				if value == -128 || !sample.LumaKnown && value != 0 {
+					return nil, fmt.Errorf("%w: invalid visual luminance descriptor", ErrInvalidInput)
+				}
 			}
 			previousTick = sample.Ticks
 		}

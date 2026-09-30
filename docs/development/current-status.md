@@ -1,5 +1,18 @@
 # Current implementation and delivery status
 
+## Unreleased source increment: intro quality and corpus tooling
+
+The [intro-quality increment](intro-quality-20260930.md) adds detector v4's
+bounded visual fallback, resumable corpus evaluation and v3 history compatibility.
+Focused checks and development builds passed. Known expanded positives improve
+from zero to three of twelve; the new three-episode positive cohort still misses
+all three. New negative controls have no observed false positives. The mixed
+support-pool follow-up is reported separately and is not unseen accuracy evidence.
+Broader recognition remains open. The accepted Docker catalog below is unchanged;
+this source increment does not claim replacement images or deployment.
+
+## Current Docker delivery
+
 The current [BIF automation and intro assessment increment](bif-intro-expansion-20260930.md)
 uses the dashboard-integrated application source
 `33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.

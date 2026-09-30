@@ -15,9 +15,9 @@ import (
 
 const (
 	MaxVisualAnalysisTicks = 600 * TicksPerSecond
-	// VisualHashProfile fixes the raster, cell partition, comparison, and RMS
-	// definition. A cache must include this profile and the actual sample ticks.
-	VisualHashProfile  = "gray32-dhash9x8-rms-v1"
+	// VisualHashProfile fixes the raster, hash partition, RMS, and normalized
+	// luma descriptor. A cache must include it and the actual sample ticks.
+	VisualHashProfile  = "gray32-dhash9x8-rms-luma8x8-z32-v2"
 	analysisVisualSide = 32
 )
 
@@ -91,7 +91,8 @@ func (extractor AnalysisExtractor) ExtractVisual(ctx context.Context, file *os.F
 		int64(plan.frames*plan.width*plan.height), log, func(reader io.Reader) error {
 			return readAnalysisVisualFrames(processContext, reader, log, func(frame analysisVisualFrame, gray []byte) error {
 				hash, contrast := analysisVisualHash(gray)
-				samples = append(samples, introdetect.VisualSample{Ticks: frame.actual, Hash: hash, Contrast: contrast})
+				luma, lumaKnown := analysisVisualLuma(gray)
+				samples = append(samples, introdetect.VisualSample{Ticks: frame.actual, Hash: hash, Contrast: contrast, Luma: luma, LumaKnown: lumaKnown})
 				return nil
 			})
 		}, tool.file)
@@ -202,4 +203,43 @@ func analysisVisualHash(gray []byte) (uint64, uint16) {
 		}
 	}
 	return hash, contrast
+}
+
+// analysisVisualLuma retains spatial luminance magnitudes that a binary
+// gradient hash discards. Each entry is the mean of one 4 by 4 cell, centered
+// by the 64-cell mean and divided by their population standard deviation.
+// Scaling by 32, rounding away from zero, and saturating at +/-127 bounds the
+// descriptor. Affine brightness changes preserve it until clipping occurs.
+// A spatial standard deviation below one luma level is unobservable even when
+// fine raster texture gives the original frame appreciable contrast.
+func analysisVisualLuma(gray []byte) (luma [64]int8, known bool) {
+	if len(gray) != analysisVisualSide*analysisVisualSide {
+		return luma, false
+	}
+	var cells [64]float64
+	var sum, squared float64
+	for row := 0; row < 8; row++ {
+		for column := 0; column < 8; column++ {
+			var cellSum int
+			for y := row * 4; y < (row+1)*4; y++ {
+				for x := column * 4; x < (column+1)*4; x++ {
+					cellSum += int(gray[y*analysisVisualSide+x])
+				}
+			}
+			value := float64(cellSum) / 16
+			cells[row*8+column] = value
+			sum += value
+			squared += value * value
+		}
+	}
+	mean := sum / 64
+	variance := max(0, squared/64-mean*mean)
+	if variance < 1 {
+		return luma, false
+	}
+	scale := 32 / math.Sqrt(variance)
+	for index, value := range cells {
+		luma[index] = int8(max(-127, min(127, math.Round((value-mean)*scale))))
+	}
+	return luma, true
 }

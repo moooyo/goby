@@ -18,10 +18,12 @@ import (
 
 const (
 	analysisFeaturesMagic           = "GAFB"
-	analysisFeaturesVersion         = 1
+	analysisFeaturesVersion         = 2
+	analysisFeaturesVersionV1       = 1
 	analysisFeaturesHeaderSize      = 56
 	analysisFeaturesAudioSize       = 20
-	analysisFeaturesVisualSize      = 18
+	analysisFeaturesVisualSizeV1    = 18
+	analysisFeaturesVisualSize      = 83
 	analysisFeaturesMaxPayloadBytes = 256 << 10
 	analysisFeaturesMaxProfileBytes = 512
 	analysisFeaturesMaxAudio        = 8192
@@ -29,8 +31,9 @@ const (
 )
 
 // EncodeAnalysisFeatures encodes a bounded feature snapshot for the supplied
-// source duration. Version 1 stores a fixed header, UTF-8 profile, audio bins,
-// and visual samples in that order, with little-endian numeric fields.
+// source duration. Version 2 stores a fixed header, UTF-8 profile, audio bins,
+// and visual samples in that order, with little-endian numeric fields. Each
+// visual sample adds a one-byte presence flag and 64 signed luminance cells.
 func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byte, error) {
 	window, err := analysisFeaturesWindow(sourceDuration)
 	if err != nil {
@@ -90,6 +93,12 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 		binary.LittleEndian.PutUint64(payload[offset:offset+8], uint64(sample.Ticks))
 		binary.LittleEndian.PutUint64(payload[offset+8:offset+16], sample.Hash)
 		binary.LittleEndian.PutUint16(payload[offset+16:offset+18], sample.Contrast)
+		if sample.LumaKnown {
+			payload[offset+18] = 1
+		}
+		for index, cell := range sample.Luma {
+			payload[offset+19+index] = byte(cell)
+		}
 		offset += analysisFeaturesVisualSize
 	}
 	return payload, nil
@@ -97,6 +106,8 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 
 // DecodeAnalysisFeatures validates and decodes a complete feature snapshot.
 // Missing evidence is represented by nonnil empty audio and visual slices.
+// Version 1 snapshots remain readable with absent luminance evidence; reading
+// them never changes their bytes or promotes their extraction profile.
 func DecodeAnalysisFeatures(payload []byte, sourceDuration int64) (AnalysisFeatures, error) {
 	return readAnalysisFeatures(payload, sourceDuration, true)
 }
@@ -116,7 +127,16 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 	if len(payload) < analysisFeaturesHeaderSize || len(payload) > analysisFeaturesMaxPayloadBytes {
 		return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis feature payload size", ErrInvalidInput)
 	}
-	if string(payload[:4]) != analysisFeaturesMagic || binary.LittleEndian.Uint16(payload[4:6]) != analysisFeaturesVersion {
+	if string(payload[:4]) != analysisFeaturesMagic {
+		return AnalysisFeatures{}, fmt.Errorf("%w: unsupported analysis feature format", ErrInvalidInput)
+	}
+	version := binary.LittleEndian.Uint16(payload[4:6])
+	visualSize := analysisFeaturesVisualSize
+	switch version {
+	case analysisFeaturesVersionV1:
+		visualSize = analysisFeaturesVisualSizeV1
+	case analysisFeaturesVersion:
+	default:
 		return AnalysisFeatures{}, fmt.Errorf("%w: unsupported analysis feature format", ErrInvalidInput)
 	}
 	profileBytes := binary.LittleEndian.Uint16(payload[6:8])
@@ -129,7 +149,7 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 		return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis feature lengths", ErrInvalidInput)
 	}
 	size := analysisFeaturesHeaderSize + int(profileBytes) +
-		int(audioCount)*analysisFeaturesAudioSize + int(visualCount)*analysisFeaturesVisualSize
+		int(audioCount)*analysisFeaturesAudioSize + int(visualCount)*visualSize
 	if len(payload) != size {
 		return AnalysisFeatures{}, fmt.Errorf("%w: analysis feature payload length does not match its header", ErrInvalidInput)
 	}
@@ -173,6 +193,15 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 			Hash:     binary.LittleEndian.Uint64(payload[offset+8 : offset+16]),
 			Contrast: binary.LittleEndian.Uint16(payload[offset+16 : offset+18]),
 		}
+		if version == analysisFeaturesVersion {
+			if payload[offset+18] > 1 {
+				return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis luminance flag %d", ErrInvalidInput, index)
+			}
+			sample.LumaKnown = payload[offset+18] == 1
+			for cell := range sample.Luma {
+				sample.Luma[cell] = int8(payload[offset+19+cell])
+			}
+		}
 		if !validAnalysisVisualSample(sample, previousTick, window) {
 			return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis visual sample %d", ErrInvalidInput, index)
 		}
@@ -180,7 +209,7 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 		if materialize {
 			value.Visual[index] = sample
 		}
-		offset += analysisFeaturesVisualSize
+		offset += visualSize
 	}
 	return value, nil
 }
@@ -215,6 +244,14 @@ func validAnalysisAudioSample(sample introdetect.AudioSample, previousEnd, windo
 }
 
 func validAnalysisVisualSample(sample introdetect.VisualSample, previousTick, window int64) bool {
+	if !sample.LumaKnown && sample.Luma != ([64]int8{}) {
+		return false
+	}
+	for _, cell := range sample.Luma {
+		if cell == -128 {
+			return false
+		}
+	}
 	return sample.Ticks >= 0 && sample.Ticks > previousTick && sample.Ticks < window && sample.Contrast <= 1000
 }
 

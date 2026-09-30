@@ -46,7 +46,7 @@ func TestVisualStatesWithinContinuousMatchedAnchorsNeedNotRemainStationary(t *te
 		if i == 4 || i == 5 || i == 16 || i == 17 || i == 28 || i == 29 {
 			state = 3
 		}
-		a.Visual = append(a.Visual, VisualSample{int64(i) * TicksPerSecond / 2, states[state], 200})
+		a.Visual = append(a.Visual, VisualSample{Ticks: int64(i) * TicksPerSecond / 2, Hash: states[state], Contrast: 200})
 	}
 	b := a
 	evidence, err := measureVisualV2(a, b, audioMatch{a: Interval{0, 20 * TicksPerSecond}, b: Interval{0, 20 * TicksPerSecond}}, 0, DefaultOptions(), v2TestBudget())
@@ -63,7 +63,7 @@ func TestVisualDominanceCountsTransitionObservationsConsistently(t *testing.T) {
 		if i%6 >= 4 {
 			state = 1 + i/6%3
 		}
-		a.Visual = append(a.Visual, VisualSample{int64(i) * TicksPerSecond, states[state], 200})
+		a.Visual = append(a.Visual, VisualSample{Ticks: int64(i) * TicksPerSecond, Hash: states[state], Contrast: 200})
 	}
 	evidence, err := measureVisualV2(a, a, audioMatch{a: Interval{0, 24 * TicksPerSecond}, b: Interval{0, 24 * TicksPerSecond}}, 0, DefaultOptions(), v2TestBudget())
 	if err != nil || evidence.metrics.VisualDistinctStates != 4 || evidence.metrics.VisualDominantStatePermille != 680 {

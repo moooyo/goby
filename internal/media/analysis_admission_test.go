@@ -78,6 +78,20 @@ func TestAnalysisIntroProfileSeparatesHistoricalPartialSlotExtraction(t *testing
 	}
 }
 
+func TestAnalysisIntroProfileSeparatesHistoricalHashOnlyExtraction(t *testing.T) {
+	available := analysisTestAvailability()
+	current, err := IntroAlgorithmProfile(available, TicksPerSecond/2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	previous := fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=gray32-dhash9x8-rms-v1;geometry=%s;ffprobe=%s;visual_interval_ticks=%d;visual_sampling=%s",
+		analysisAudioProfile(available.Fingerprint), available.FFmpegSHA256, available.FingerprintSHA256,
+		AnalysisGeometryProfile, available.FFprobeSHA256, TicksPerSecond/2, IntroVisualSamplingProfile)
+	if current == previous || !strings.Contains(current, ";visual=gray32-dhash9x8-rms-luma8x8-z32-v2;") {
+		t.Fatalf("normalized luma extraction reused the historical hash-only profile: %q", current)
+	}
+}
+
 func TestAnalysisIntroAdmissionPinsBothSerialPhasesWithoutAdoptingNewBytes(t *testing.T) {
 	available := analysisTestAvailability()
 	original := AnalysisExtractor{FFmpegPath: "/tool/ffmpeg", ExpectedFFmpegSHA256: available.FFmpegSHA256}

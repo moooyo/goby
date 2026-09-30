@@ -100,12 +100,14 @@ func analysisStrictJSON(raw []byte, output any) error {
 				return ErrInvalidInput
 			}
 			fields := map[string]reflect.Type{}
+			required := map[string]bool{}
 			for index := 0; index < kind.NumField(); index++ {
 				field := kind.Field(index)
 				if !field.IsExported() {
 					continue
 				}
-				name := strings.Split(field.Tag.Get("json"), ",")[0]
+				tag := strings.Split(field.Tag.Get("json"), ",")
+				name := tag[0]
 				if name == "-" {
 					continue
 				}
@@ -113,6 +115,12 @@ func analysisStrictJSON(raw []byte, output any) error {
 					name = field.Name
 				}
 				fields[name] = field.Type
+				required[name] = true
+				for _, option := range tag[1:] {
+					if option == "omitempty" {
+						required[name] = false
+					}
+				}
 			}
 			seen := map[string]bool{}
 			for decoder.More() {
@@ -130,8 +138,10 @@ func analysisStrictJSON(raw []byte, output any) error {
 					return err
 				}
 			}
-			if len(seen) != len(fields) {
-				return ErrInvalidInput
+			for name, needed := range required {
+				if needed && !seen[name] {
+					return ErrInvalidInput
+				}
 			}
 			end, err := decoder.Token()
 			if err != nil || end != json.Delim('}') {
@@ -204,6 +214,16 @@ func ValidateStoredAnalysisAdmission(profileRaw, executionRaw []byte, revision, 
 		if analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil ||
 			validateAnalysisProfileV2(profile) != nil || validateAnalysisExecutionProfileV2(execution) != nil ||
 			analysisAdmissionFingerprintV2(profile, execution, revision, epoch) != fingerprint {
+			return ErrInvalidInput
+		}
+		return nil
+	}
+	if wire.Version == analysisStoredExecutionVersionV3 {
+		var profile analysisStoredProfileV3
+		var execution analysisStoredExecutionV3
+		if analysisStrictJSON(profileRaw, &profile) != nil || analysisStrictJSON(executionRaw, &execution) != nil ||
+			validateAnalysisProfileV3(profile) != nil || validateAnalysisExecutionProfileV3(execution) != nil ||
+			analysisAdmissionFingerprintV3(profile, execution, revision, epoch) != fingerprint {
 			return ErrInvalidInput
 		}
 		return nil

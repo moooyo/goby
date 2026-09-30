@@ -1,0 +1,255 @@
+{
+  "kind": "goby-intro-quality-increment",
+  "status": "selected_implementation_verified_broader_recognition_not_accepted",
+  "baseline": "cfa12ff1d02dfe4ae3d3bd910aaadedeff16cbf7",
+  "branch": "codex/intro-quality",
+  "schema": 52,
+  "detector": "introdetect-v4",
+  "executionVersion": 4,
+  "featureCodecVersion": 2,
+  "historicalExecutionReaders": [
+    1,
+    2,
+    3
+  ],
+  "dockerReleaseCatalogChanged": false,
+  "productionDeployment": false,
+  "registryPublication": false,
+  "build": {
+    "applicationSHA256": "3547daaa3c851590ea921dbdc26abdcac5ca1e118de280dddd9adb48e8eaf17d",
+    "corpusOperatorSHA256": "3e17fee18c8828997774c7e81e78c431900fd7891a7af1b0de80407d18ef9fa8",
+    "boundary": "Development builds only; no replacement supported Docker artifact."
+  },
+  "candidateFreezeSHA256": "b826e5742d16e4ca557e4f5573aa0bf058972ceb5b934c57b570da553adc4aad",
+  "verification": [
+    {
+      "scope": "introdetect final with race",
+      "parentsPassed": 129,
+      "parentsSkipped": 0,
+      "parentsFailed": 0
+    },
+    {
+      "scope": "media composed package and actual Docker",
+      "uniqueParentsPassed": 531,
+      "parentsSkipped": 32,
+      "parentsFailed": 0,
+      "actualDockerParentsPassed": 79,
+      "actualDockerSkipped": 0,
+      "boundary": "Unrelated hardware/external profiles remain unverified."
+    },
+    {
+      "scope": "corpus operator with race",
+      "parentsPassed": 14,
+      "parentsFailed": 0
+    },
+    {
+      "scope": "library analysis composed",
+      "uniqueParentsPassed": 94,
+      "parentsSkipped": 0,
+      "parentsFailed": 0,
+      "affectedFinalRepeatPassed": 3,
+      "newFinalParent": 1
+    },
+    {
+      "scope": "backup history and version relations",
+      "parentsPassed": 12,
+      "parentsSkipped": 0,
+      "parentsFailed": 0
+    },
+    {
+      "scope": "recovery engine historical state",
+      "parentsPassed": 3,
+      "parentsSkipped": 0,
+      "parentsFailed": 0
+    },
+    {
+      "scope": "server and task integration before publication-only repair",
+      "serverParentsPassed": 57,
+      "taskParentsPassed": 30,
+      "parentsSkipped": 0,
+      "parentsFailed": 0,
+      "boundary": "The final publication repair is covered by final detector and library-pipeline checks; this earlier source scope is retained."
+    }
+  ],
+  "accuracy": {
+    "labelMethod": "Assistant source-only visual review with disclosed sampling and uncertainty; no human annotation or direct audio review.",
+    "boundaryToleranceSeconds": 5,
+    "protectedBoundarySerializationToleranceSeconds": 1e-06,
+    "knownExpandedCorpus": {
+      "positiveOriginals": 12,
+      "negativeOriginals": 3,
+      "v3Detected": 0,
+      "v4Detected": 3,
+      "v4Missed": 9,
+      "falsePositive": 0,
+      "correctAbstention": 3,
+      "role": "development and regression"
+    },
+    "newPositiveCohort": {
+      "cases": [
+        "R13",
+        "R14",
+        "R15"
+      ],
+      "detected": 0,
+      "missed": 3,
+      "firstEvaluation": "failed",
+      "finalRepeatSameResult": true,
+      "newSeriesClaim": false
+    },
+    "newNegativeCohort": {
+      "cases": [
+        "N391",
+        "N392",
+        "N393"
+      ],
+      "falsePositive": 0,
+      "correctAbstention": 3,
+      "finalRepeatSameResult": true
+    },
+    "supplementalMixedSupport": {
+      "cases": [
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15"
+      ],
+      "qualified": [
+        "R12",
+        "R14",
+        "R15"
+      ],
+      "competingIntervals": [
+        "R10",
+        "R11"
+      ],
+      "missed": [
+        "R13"
+      ],
+      "newEpisodeDetections": 2,
+      "newEpisodeTotal": 3,
+      "unseenAccuracyClaim": false,
+      "interpretation": "Post-observation follow-up with known support; complete witnesses selected without unioning groups."
+    }
+  },
+  "retainedFailures": [
+    "First positive Docker attempt could not lock UID-10001 checkpoint from capability-dropped UID 0; matcher did not run.",
+    "First independent positive holdout returned three misses.",
+    "Original v3 misses and earlier failed preparations remain retained."
+  ],
+  "corpusActual": {
+    "selected": 4,
+    "extracted": 3,
+    "excludedMissingAudio": 1,
+    "excludedCountedAsNegative": false,
+    "resumeCheckpointAndFeatureBytesUnchanged": true,
+    "allAttemptCounts": 1,
+    "newExtractionProfile": true
+  },
+  "evidence": {
+    "candidate-freeze01.json": {
+      "sha256": "4d1b0dbde426ad5f2d9cff2921b3265d6ad4092aee4c4459f710f3d11b717a86",
+      "bytes": 13352
+    },
+    "candidate-freeze02.json": {
+      "sha256": "b826e5742d16e4ca557e4f5573aa0bf058972ceb5b934c57b570da553adc4aad",
+      "bytes": 13634
+    },
+    "core-tests-01.json": {
+      "sha256": "1ca69ff678907e2ed3a473d9aeb22b869bc85d7c0076cc9d4416ad540bae28b7",
+      "bytes": 2647972
+    },
+    "media-docker-final01.log": {
+      "sha256": "582e2df2c1bd86165bced9ca8a87007fa9d131ca9916c638d0c0a31123bea88d",
+      "bytes": 39913
+    },
+    "intro-final02.log": {
+      "sha256": "e3c39715ae56a3eb4d3fd8a779b8ba0d216bd46f4409cb3bf1e478cb88f25e3a",
+      "bytes": 259525
+    },
+    "pipeline-final02.log": {
+      "sha256": "b8943e5099643623440383a6054b4c9d7f3b5f1c391f6debb169f070d1b3aa00",
+      "bytes": 3597
+    },
+    "corpus-final02.log": {
+      "sha256": "c079d61b32e3fc9d4b3c34985c5e8d4fcfe1bd09bb72407f2b8c0315b0bfd112",
+      "bytes": 35
+    },
+    "build-final02.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "corpus-build-final02.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "version-library-tests.json": {
+      "sha256": "20e36e9ef78b1f3c11e214f0474b9bb02f131cd3d8093aa879f8c4f15390bee3",
+      "bytes": 281130
+    },
+    "version-backup-tests.json": {
+      "sha256": "cc5294b4a1c0f8766d894f5c411e4e5b7c33aafeeb6975dc27bba4bfdcd1a6b9",
+      "bytes": 99643
+    },
+    "version-recovery-tests.json": {
+      "sha256": "bb4a8d8345a9f975bea73bf4e495ecec58ae622284730389011d41fe4c2fefe4",
+      "bytes": 15510
+    },
+    "server-task-intro-results01.json": {
+      "sha256": "0162e2a1802b897fb91f178683bbb48c55e268fcf2d24ec19c8937b414992c89",
+      "bytes": 1335
+    },
+    "server-task-source01-binding.json": {
+      "sha256": "47fe0d8ae6a3b310108d1f5bef6ea96ccc16499ffdb121db93932bfa21315bda",
+      "bytes": 1248736
+    },
+    "holdout/results/candidate-final02.json": {
+      "sha256": "39e589ca84eb00e1b2d108cc9c1dfbc05e47a206fcf9e2e3efe5f8fc4484bad4",
+      "bytes": 7806
+    },
+    "holdout/results/candidate-final03.json": {
+      "sha256": "39e589ca84eb00e1b2d108cc9c1dfbc05e47a206fcf9e2e3efe5f8fc4484bad4",
+      "bytes": 7806
+    },
+    "holdout-negative/results/candidate-final01.json": {
+      "sha256": "3029327402c352b4b6235513f21f1e4c107a4e5f1176d0c845fb99153757d532",
+      "bytes": 11379
+    },
+    "holdout-negative/results/candidate-final02.json": {
+      "sha256": "3029327402c352b4b6235513f21f1e4c107a4e5f1176d0c845fb99153757d532",
+      "bytes": 11379
+    },
+    "holdout-stage-diagnostic-publication-repair.json": {
+      "sha256": "bbcacc162de3d7e6a599494b1ccf20393f0e7458b54c460bbf94614e7e7def9c",
+      "bytes": 98766
+    },
+    "corpus-independent-score.json": {
+      "sha256": "67a34182758bfd9dbd2cf8b8d3f485f3e7ae75aa60f50d04d65b56741851d8f2",
+      "bytes": 45815
+    },
+    "corpus-final02/acceptance-summary.json": {
+      "sha256": "52d1dd1bc94e111b20cd0139d32baeacf3927b5fcb4da60bbd47e449e65b25cc",
+      "bytes": 2408
+    },
+    "resource-closure.json": {
+      "sha256": "9ba401878e7a124d8a7177f956a4517d0ec5a5695c68751cffda4d615dfa494e",
+      "bytes": 292
+    },
+    "source-correspondence.json": {
+      "sha256": "d89b6093e22bfd81860a22a037bb6dcf29c1dbdb166fbdce20036a6b0f6d55eb",
+      "bytes": 133
+    }
+  },
+  "resourceClosure": {
+    "status": "passed",
+    "observedAtUTC": "2026-09-30T12:17:58.609582+00:00",
+    "ownedContainersRemaining": [],
+    "ownedNetworksRemaining": [],
+    "ownedPostgreSQLStopped": true,
+    "ownedDatabaseClientsBeforeStop": 0,
+    "dataAndEvidenceRetained": true,
+    "unrelatedServicesModified": false
+  }
+}

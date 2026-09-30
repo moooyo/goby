@@ -10,6 +10,10 @@ import (
 // Resource exhaustion and cancellation return no partially publishable result.
 // The caller must separately revalidate source identities and publication rights.
 func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error) {
+	return analyze(ctx, cohort, options, nil)
+}
+
+func analyze(ctx context.Context, cohort Cohort, options Options, diagnostics *diagnosticsCollector) (Result, error) {
 	if ctx == nil {
 		return Result{}, fmt.Errorf("%w: context is required", ErrInvalidInput)
 	}
@@ -76,13 +80,16 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 			if !independent[j] || len(b.Audio) == 0 || len(b.Visual) == 0 || a.AlgorithmProfile != b.AlgorithmProfile {
 				continue
 			}
+			diagnostics.beginPair(a, b)
 			offsets, limited, err := voteOffsets(a, b, indexes[j], o, budget)
 			if err != nil {
 				return Result{}, err
 			}
+			diagnostics.nominatedOffsets(len(offsets), limited)
 			var hypotheses []pairMatch
 			for _, offset := range offsets {
-				runs, reasons, err := alignedAudio(a, b, offset, o, budget)
+				diagnostics.beginOffset(offset)
+				runs, reasons, err := alignedAudioWithDiagnostics(a, b, offset, o, budget, diagnostics)
 				if err != nil {
 					return Result{}, err
 				}
@@ -95,6 +102,7 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 					if err != nil {
 						return Result{}, err
 					}
+					diagnostics.visualResult(match, reason)
 					if reason != "" {
 						result.Episodes[i].Reasons = addReason(result.Episodes[i].Reasons, reason)
 						result.Episodes[j].Reasons = addReason(result.Episodes[j].Reasons, reason)
@@ -116,6 +124,7 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 			if err != nil {
 				return Result{}, err
 			}
+			diagnostics.pairHypotheses(len(found))
 			if limited {
 				limitedSources[a.SourceKey], limitedSources[b.SourceKey] = true, true
 				result.Episodes[i].Reasons = addReason(result.Episodes[i].Reasons, CandidateSearchLimited)
@@ -133,6 +142,16 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 	if err != nil {
 		return Result{}, err
 	}
+	var visualSelection map[string]string
+	if len(groups) == 0 {
+		groups, visualSelection, err = visualFallbackGroups(cohort, episodes, o, limitedSources, budget)
+		if err != nil {
+			return Result{}, err
+		}
+		if len(groups) != 0 {
+			independent = sequenceIndependent(episodes)
+		}
+	}
 	// Limited searches in a different pair can hide a competing hypothesis.
 	// Keep this source-wide uncertainty even when a clean clique was found.
 	for i := range groups {
@@ -144,17 +163,29 @@ func Analyze(ctx context.Context, cohort Cohort, options Options) (Result, error
 		}
 	}
 	result.Groups = groups
+	diagnostics.groups(len(groups))
 	for i, episode := range episodes {
 		entry := &result.Episodes[i]
+		if selected, observed := visualSelection[episode.SourceKey]; observed && selected == "" {
+			entry.Reasons = addReason(entry.Reasons, CompetingIntervals)
+		}
 		if !independent[i] {
 			continue
 		}
 		for _, group := range groups {
+			if group.VisualEvidence != nil && visualSelection[episode.SourceKey] != group.ID {
+				continue
+			}
 			for _, member := range group.Members {
 				if member.SourceKey == episode.SourceKey {
+					var visualEvidence *VisualSequenceMetrics
+					if group.VisualEvidence != nil {
+						copyEvidence := *group.VisualEvidence
+						visualEvidence = &copyEvidence
+					}
 					entry.Candidates = append(entry.Candidates, Candidate{Interval: member.Interval, GroupID: group.ID,
 						Status: group.Status, Reasons: append([]Reason{}, group.Reasons...), Metrics: group.Metrics,
-						Support: append([]Support{}, group.Members...)})
+						Support: append([]Support{}, group.Members...), VisualEvidence: visualEvidence})
 				}
 			}
 		}

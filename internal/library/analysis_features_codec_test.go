@@ -25,12 +25,13 @@ func analysisFeaturesCodecFixture() AnalysisFeatures {
 		},
 		Visual: []introdetect.VisualSample{
 			{Ticks: 0, Hash: math.MaxUint64, Contrast: 0},
-			{Ticks: 2 * introdetect.TicksPerSecond, Hash: 0x123456789abcdef0, Contrast: 1000},
+			{Ticks: 2 * introdetect.TicksPerSecond, Hash: 0x123456789abcdef0, Contrast: 1000,
+				Luma: [64]int8{127, -127, -1, 0, 1}, LumaKnown: true},
 		},
 	}
 }
 
-func TestAnalysisFeaturesCodecUsesVersionedCompactBinary(t *testing.T) {
+func TestAnalysisFeaturesCodecPreservesVersionOneFixture(t *testing.T) {
 	value := AnalysisFeatures{
 		ContentSHA256: strings.Repeat("0", 64), AlgorithmProfile: "p",
 		AudioBoundaryUncertaintyTicks: 0x010203,
@@ -48,6 +49,49 @@ func TestAnalysisFeaturesCodecUsesVersionedCompactBinary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	before := bytes.Clone(want)
+	decoded, err := DecodeAnalysisFeatures(want, 2*introdetect.TicksPerSecond)
+	if err != nil || !reflect.DeepEqual(decoded, value) {
+		t.Fatalf("golden decoded as %+v, error = %v", decoded, err)
+	}
+	if err := ValidateStoredAnalysisFeatures(want, 2*introdetect.TicksPerSecond); err != nil {
+		t.Fatalf("golden rejected by stored validation: %v", err)
+	}
+	if !bytes.Equal(want, before) || decoded.Visual[0].LumaKnown || decoded.Visual[0].Luma != ([64]int8{}) {
+		t.Fatal("historical snapshot was changed or acquired luminance evidence")
+	}
+	payload, err := EncodeAnalysisFeatures(decoded, 2*introdetect.TicksPerSecond)
+	if err != nil || binary.LittleEndian.Uint16(payload[4:6]) != 2 {
+		t.Fatalf("historical snapshot was not re-encoded as v2: %v", err)
+	}
+	again, err := DecodeAnalysisFeatures(payload, 2*introdetect.TicksPerSecond)
+	if err != nil || !reflect.DeepEqual(again, value) {
+		t.Fatalf("historical snapshot changed after explicit re-encoding: %v", err)
+	}
+	for length := 0; length < len(want); length++ {
+		assertAnalysisFeaturesPayloadRejected(t, want[:length], 2*introdetect.TicksPerSecond)
+	}
+	assertAnalysisFeaturesPayloadRejected(t, append(bytes.Clone(want), 0), 2*introdetect.TicksPerSecond)
+}
+
+func TestAnalysisFeaturesCodecUsesVersionTwoCompactBinary(t *testing.T) {
+	value := AnalysisFeatures{
+		ContentSHA256: strings.Repeat("0", 64), AlgorithmProfile: "p",
+		AudioBoundaryUncertaintyTicks: 0x010203,
+		Audio:                         []introdetect.AudioSample{{StartTicks: 0, EndTicks: 0x01020304, Fingerprint: 0x89abcdef}},
+		Visual: []introdetect.VisualSample{{Ticks: 0, Hash: 0xfedcba9876543210, Contrast: 1000,
+			Luma: [64]int8{127, -127, -1, 0, 1}, LumaKnown: true}},
+	}
+	// Independent wire bytes cover signed cells and the explicit presence flag.
+	want, err := hex.DecodeString(
+		"474146420200010001000000010000000302010000000000" +
+			"0000000000000000000000000000000000000000000000000000000000000000" +
+			"70" +
+			"00000000000000000403020100000000efcdab89" +
+			"00000000000000001032547698badcfee803017f81ff0001" + strings.Repeat("00", 59))
+	if err != nil {
+		t.Fatal(err)
+	}
 	payload, err := EncodeAnalysisFeatures(value, 2*introdetect.TicksPerSecond)
 	if err != nil || !bytes.Equal(payload, want) {
 		t.Fatalf("encoded bytes = %x, want %x, error = %v", payload, want, err)
@@ -58,6 +102,49 @@ func TestAnalysisFeaturesCodecUsesVersionedCompactBinary(t *testing.T) {
 	}
 	if err := ValidateStoredAnalysisFeatures(want, 2*introdetect.TicksPerSecond); err != nil {
 		t.Fatalf("golden rejected by stored validation: %v", err)
+	}
+}
+
+func TestAnalysisFeaturesCodecReadsMaximumVersionOneSnapshot(t *testing.T) {
+	// Freeze the old layout independently: its full sample counts fit within
+	// 256 KiB even though the larger v2 visual representation would not.
+	payload := make([]byte, 238136)
+	copy(payload, "GAFB")
+	binary.LittleEndian.PutUint16(payload[4:6], 1)
+	binary.LittleEndian.PutUint16(payload[6:8], 512)
+	binary.LittleEndian.PutUint32(payload[8:12], 8192)
+	binary.LittleEndian.PutUint32(payload[12:16], 4096)
+	copy(payload[56:568], strings.Repeat("p", 512))
+	offset := 568
+	for index := 0; index < 8192; index++ {
+		binary.LittleEndian.PutUint64(payload[offset:offset+8], uint64(index))
+		binary.LittleEndian.PutUint64(payload[offset+8:offset+16], uint64(index+1))
+		binary.LittleEndian.PutUint32(payload[offset+16:offset+20], uint32(index))
+		offset += 20
+	}
+	for index := 0; index < 4096; index++ {
+		binary.LittleEndian.PutUint64(payload[offset:offset+8], uint64(index))
+		binary.LittleEndian.PutUint64(payload[offset+8:offset+16], uint64(index))
+		binary.LittleEndian.PutUint16(payload[offset+16:offset+18], 1000)
+		offset += 18
+	}
+	before := bytes.Clone(payload)
+	decoded, err := DecodeAnalysisFeatures(payload, introdetect.TicksPerSecond)
+	if err != nil || len(decoded.Audio) != 8192 || len(decoded.Visual) != 4096 {
+		t.Fatalf("maximum v1 snapshot was not preserved: %v", err)
+	}
+	for index, sample := range decoded.Audio {
+		if sample != (introdetect.AudioSample{StartTicks: int64(index), EndTicks: int64(index + 1), Fingerprint: uint32(index)}) {
+			t.Fatalf("historical audio sample %d changed", index)
+		}
+	}
+	for index, sample := range decoded.Visual {
+		if sample != (introdetect.VisualSample{Ticks: int64(index), Hash: uint64(index), Contrast: 1000}) {
+			t.Fatalf("historical visual sample %d changed or acquired luminance evidence", index)
+		}
+	}
+	if err := ValidateStoredAnalysisFeatures(payload, introdetect.TicksPerSecond); err != nil || !bytes.Equal(payload, before) {
+		t.Fatalf("historical payload was invalidated or changed: %v", err)
 	}
 }
 
@@ -113,10 +200,10 @@ func TestAnalysisFeaturesCodecRoundTripAndCanonicalEmptyEvidence(t *testing.T) {
 
 func TestAnalysisFeaturesCodecAcceptsExactBounds(t *testing.T) {
 	value := analysisFeaturesCodecFixture()
-	value.AlgorithmProfile = strings.Repeat("\u03b1", 256)
+	value.AlgorithmProfile = strings.Repeat("\u03b1", 237)
 	value.AudioBoundaryUncertaintyTicks = 30 * introdetect.TicksPerSecond
 	value.Audio = make([]introdetect.AudioSample, 8192)
-	value.Visual = make([]introdetect.VisualSample, 4096)
+	value.Visual = make([]introdetect.VisualSample, 1178)
 	for index := range value.Audio {
 		value.Audio[index] = introdetect.AudioSample{StartTicks: int64(index), EndTicks: int64(index + 1), Fingerprint: uint32(index)}
 	}
@@ -124,7 +211,7 @@ func TestAnalysisFeaturesCodecAcceptsExactBounds(t *testing.T) {
 		value.Visual[index] = introdetect.VisualSample{Ticks: int64(index), Hash: uint64(index), Contrast: 1000}
 	}
 	payload, err := EncodeAnalysisFeatures(value, media.MaxAnalysisDurationTicks)
-	if err != nil || len(payload) != 238136 || len(payload) > 256<<10 {
+	if err != nil || len(payload) != 256<<10 {
 		t.Fatalf("maximum snapshot has %d bytes, error = %v", len(payload), err)
 	}
 	decoded, err := DecodeAnalysisFeatures(payload, media.MaxAnalysisDurationTicks)
@@ -134,6 +221,11 @@ func TestAnalysisFeaturesCodecAcceptsExactBounds(t *testing.T) {
 	if err := ValidateStoredAnalysisFeatures(payload, media.MaxAnalysisDurationTicks); err != nil {
 		t.Fatal(err)
 	}
+	value.AlgorithmProfile += "p"
+	if encoded, err := EncodeAnalysisFeatures(value, media.MaxAnalysisDurationTicks); !errors.Is(err, ErrInvalidInput) || encoded != nil {
+		t.Fatalf("one byte beyond the payload limit was accepted: %v", err)
+	}
+	value.AlgorithmProfile = strings.Repeat("\u03b1", 256)
 	for _, duration := range []int64{1, 2 * introdetect.TicksPerSecond, 600 * introdetect.TicksPerSecond, media.MaxAnalysisDurationTicks} {
 		window := min(duration, 600*introdetect.TicksPerSecond)
 		value.Audio = []introdetect.AudioSample{{StartTicks: max(0, window-2*introdetect.TicksPerSecond), EndTicks: window}}
@@ -146,6 +238,32 @@ func TestAnalysisFeaturesCodecAcceptsExactBounds(t *testing.T) {
 		if err != nil || !reflect.DeepEqual(decoded, value) {
 			t.Fatalf("duration %d boundary failed round trip: %v", duration, err)
 		}
+	}
+}
+
+func TestAnalysisFeaturesCodecFitsProductionWindow(t *testing.T) {
+	value := analysisFeaturesCodecFixture()
+	value.AlgorithmProfile = strings.Repeat("p", 512)
+	value.Audio = make([]introdetect.AudioSample, 4800)
+	value.Visual = make([]introdetect.VisualSample, 1200)
+	for index := range value.Audio {
+		value.Audio[index] = introdetect.AudioSample{StartTicks: int64(index) * introdetect.TicksPerSecond / 8,
+			EndTicks: int64(index+1) * introdetect.TicksPerSecond / 8, Fingerprint: uint32(index)}
+	}
+	for index := range value.Visual {
+		value.Visual[index] = introdetect.VisualSample{Ticks: int64(index) * introdetect.TicksPerSecond / 2,
+			Hash: uint64(index), Contrast: 1000, LumaKnown: true, Luma: [64]int8{127, -127}}
+	}
+	payload, err := EncodeAnalysisFeatures(value, 600*introdetect.TicksPerSecond)
+	if err != nil || len(payload) != 196168 {
+		t.Fatalf("production window has %d bytes, error = %v", len(payload), err)
+	}
+	decoded, err := DecodeAnalysisFeatures(payload, 600*introdetect.TicksPerSecond)
+	if err != nil || !reflect.DeepEqual(decoded, value) {
+		t.Fatalf("production window failed complete round trip: %v", err)
+	}
+	if err := ValidateStoredAnalysisFeatures(payload, 600*introdetect.TicksPerSecond); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -173,6 +291,7 @@ func TestEncodeAnalysisFeaturesRejectsInvalidSnapshots(t *testing.T) {
 		{"excess uncertainty", func(v *AnalysisFeatures) { v.AudioBoundaryUncertaintyTicks = 30*introdetect.TicksPerSecond + 1 }},
 		{"excess audio count", func(v *AnalysisFeatures) { v.Audio = make([]introdetect.AudioSample, 8193) }},
 		{"excess visual count", func(v *AnalysisFeatures) { v.Visual = make([]introdetect.VisualSample, 4097) }},
+		{"bounded counts exceed payload", func(v *AnalysisFeatures) { v.Visual = make([]introdetect.VisualSample, 4096) }},
 		{"negative audio start", func(v *AnalysisFeatures) { v.Audio[0].StartTicks = -1 }},
 		{"negative audio end", func(v *AnalysisFeatures) { v.Audio[0].EndTicks = -1 }},
 		{"empty audio bin", func(v *AnalysisFeatures) { v.Audio[0].EndTicks = v.Audio[0].StartTicks }},
@@ -191,6 +310,8 @@ func TestEncodeAnalysisFeaturesRejectsInvalidSnapshots(t *testing.T) {
 		{"visual at duration", func(v *AnalysisFeatures) { v.Visual[1].Ticks = 10 * introdetect.TicksPerSecond }},
 		{"visual after duration", func(v *AnalysisFeatures) { v.Visual[1].Ticks = 10*introdetect.TicksPerSecond + 1 }},
 		{"excess contrast", func(v *AnalysisFeatures) { v.Visual[0].Contrast = 1001 }},
+		{"absent luminance with cells", func(v *AnalysisFeatures) { v.Visual[1].LumaKnown = false }},
+		{"luminance below normalized range", func(v *AnalysisFeatures) { v.Visual[1].Luma[0] = -128 }},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -234,7 +355,9 @@ func TestDecodeAnalysisFeaturesRejectsMalformedBinary(t *testing.T) {
 		mutate func([]byte)
 	}{
 		{"bad magic", func(p []byte) { p[0] = 'X' }},
-		{"unknown version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 2) }},
+		{"unknown version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 3) }},
+		{"maximum version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], math.MaxUint16) }},
+		{"wrong legacy layout", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 1) }},
 		{"zero version", func(p []byte) { binary.LittleEndian.PutUint16(p[4:6], 0) }},
 		{"empty profile", func(p []byte) { binary.LittleEndian.PutUint16(p[6:8], 0) }},
 		{"long profile", func(p []byte) { binary.LittleEndian.PutUint16(p[6:8], 513) }},
@@ -252,6 +375,10 @@ func TestDecodeAnalysisFeaturesRejectsMalformedBinary(t *testing.T) {
 		{"blank profile", func(p []byte) { copy(p[56:audioOffset], strings.Repeat(" ", len(value.AlgorithmProfile))) }},
 		{"excess contrast", func(p []byte) { binary.LittleEndian.PutUint16(p[visualOffset+16:visualOffset+18], 1001) }},
 		{"maximum contrast", func(p []byte) { binary.LittleEndian.PutUint16(p[visualOffset+16:visualOffset+18], math.MaxUint16) }},
+		{"unknown luminance flag", func(p []byte) { p[visualOffset+18] = 2 }},
+		{"maximum luminance flag", func(p []byte) { p[visualOffset+18] = 255 }},
+		{"absent luminance with cells", func(p []byte) { p[visualOffset+83+18] = 0 }},
+		{"luminance below normalized range", func(p []byte) { p[visualOffset+83+19] = 0x80 }},
 	}
 	for _, test := range mutations {
 		t.Run(test.name, func(t *testing.T) {
@@ -278,11 +405,11 @@ func TestDecodeAnalysisFeaturesRejectsMalformedBinary(t *testing.T) {
 		{"maximum audio end", audioOffset + 28, math.MaxInt64},
 		{"negative visual tick", visualOffset, -1},
 		{"minimum visual tick", visualOffset, math.MinInt64},
-		{"duplicate visual tick", visualOffset + 18, 0},
+		{"duplicate visual tick", visualOffset + 83, 0},
 		{"unordered visual ticks", visualOffset, 3 * introdetect.TicksPerSecond},
-		{"visual at duration", visualOffset + 18, duration},
-		{"visual after duration", visualOffset + 18, duration + 1},
-		{"maximum visual tick", visualOffset + 18, math.MaxInt64},
+		{"visual at duration", visualOffset + 83, duration},
+		{"visual after duration", visualOffset + 83, duration + 1},
+		{"maximum visual tick", visualOffset + 83, math.MaxInt64},
 	}
 	for _, test := range fields {
 		t.Run(test.name, func(t *testing.T) {

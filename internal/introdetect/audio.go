@@ -191,6 +191,10 @@ type audioMatch struct {
 }
 
 func alignedAudio(a, b Episode, offset int64, o Options, budget *workBudget) ([]audioMatch, []Reason, error) {
+	return alignedAudioWithDiagnostics(a, b, offset, o, budget, nil)
+}
+
+func alignedAudioWithDiagnostics(a, b Episode, offset int64, o Options, budget *workBudget, diagnostics *diagnosticsCollector) ([]audioMatch, []Reason, error) {
 	matched := make([]int, len(a.Audio))
 	for i := range matched {
 		matched[i] = -1
@@ -219,7 +223,7 @@ func alignedAudio(a, b Episode, offset int64, o Options, budget *workBudget) ([]
 		if first < 0 {
 			return nil
 		}
-		match, reason, err := measureAudioRun(a, b, matched, first, last, o, budget)
+		match, reason, err := measureAudioRunWithDiagnostics(a, b, matched, first, last, o, budget, diagnostics)
 		if err != nil {
 			return err
 		}
@@ -252,17 +256,27 @@ func alignedAudio(a, b Episode, offset int64, o Options, budget *workBudget) ([]
 }
 
 func measureAudioRun(a, b Episode, matched []int, first, last int, o Options, budget *workBudget) (*audioMatch, Reason, error) {
+	return measureAudioRunWithDiagnostics(a, b, matched, first, last, o, budget, nil)
+}
+
+func measureAudioRunWithDiagnostics(a, b Episode, matched []int, first, last int, o Options, budget *workBudget, diagnostics *diagnosticsCollector) (*audioMatch, Reason, error) {
+	diagnostics.audioStage(diagnosticAudioRaw, "")
 	arange := Interval{a.Audio[first].StartTicks, a.Audio[last].EndTicks}
 	brange := Interval{b.Audio[matched[first]].StartTicks, b.Audio[matched[last]].EndTicks}
 	duration := arange.EndTicks - arange.StartTicks
 	if duration < o.MinDurationTicks {
+		diagnostics.audioStage(diagnosticAudioRawShort, "")
 		return nil, "", nil
 	}
 	if duration > o.MaxDurationTicks || brange.EndTicks-brange.StartTicks > o.MaxDurationTicks {
+		diagnostics.audioStage(diagnosticAudioRawRejected, OverlongRepeat)
 		return nil, OverlongRepeat, nil
 	}
 	// A safe interior cannot erase failed discovery gates on the full run.
 	if _, reason, err := measureMatchedAudioEvidence(a, b, matched, first, last, arange, brange, o, budget); err != nil || reason != "" {
+		if err == nil {
+			diagnostics.audioStage(diagnosticAudioRawRejected, reason)
+		}
 		return nil, reason, err
 	}
 	guard := max(a.AudioBoundaryUncertaintyTicks, b.AudioBoundaryUncertaintyTicks)
@@ -271,10 +285,14 @@ func measureAudioRun(a, b Episode, matched []int, first, last int, o Options, bu
 	brange.StartTicks += guard
 	brange.EndTicks -= guard
 	if arange.EndTicks-arange.StartTicks < o.MinDurationTicks || brange.EndTicks-brange.StartTicks < o.MinDurationTicks {
+		diagnostics.audioStage(diagnosticAudioGuardedShort, "")
 		return nil, "", nil
 	}
 	metrics, reason, err := measureMatchedAudioEvidence(a, b, matched, first, last, arange, brange, o, budget)
 	if err != nil || reason != "" {
+		if err == nil {
+			diagnostics.audioStage(diagnosticAudioGuardedRejected, reason)
+		}
 		return nil, reason, err
 	}
 	metrics.BoundaryUncertaintyTicks = guard
@@ -285,5 +303,6 @@ func measureAudioRun(a, b Episode, matched []int, first, last int, o Options, bu
 		b.Audio[matched[last]].EndTicks >= min(b.DurationTicks, o.WindowTicks)-o.AudioAlignmentTicks {
 		reasons = addReason(reasons, AnalysisBoundary)
 	}
+	diagnostics.audioStage(diagnosticAudioAccepted, "")
 	return &audioMatch{arange, brange, metrics, reasons}, "", nil
 }

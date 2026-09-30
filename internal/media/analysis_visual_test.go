@@ -342,6 +342,83 @@ func TestAnalysisVisualHashContrastAndOrientation(t *testing.T) {
 	}
 }
 
+func TestAnalysisVisualLumaNormalizesAffineBrightness(t *testing.T) {
+	original, adjusted := make([]byte, 32*32), make([]byte, 32*32)
+	for y := 0; y < 32; y++ {
+		for x := 0; x < 32; x++ {
+			value := byte(20 + (y/4)*8 + x/4)
+			original[y*32+x], adjusted[y*32+x] = value, value*2+20
+		}
+	}
+	luma, known := analysisVisualLuma(original)
+	changed, changedKnown := analysisVisualLuma(adjusted)
+	if !known || !changedKnown || luma != changed {
+		t.Fatalf("affine brightness altered the normalized spatial descriptor: %v/%v", known, changedKnown)
+	}
+	if luma[0] >= 0 || luma[63] <= 0 || luma[0] != -luma[63] || luma[7] >= luma[8] {
+		t.Fatalf("row-major orientation or centering changed: %v", luma)
+	}
+}
+
+func TestAnalysisVisualLumaRejectsSpatiallyFlatOrIncompleteFrames(t *testing.T) {
+	texture := make([]byte, 32*32)
+	for index := range texture {
+		texture[index] = byte((index % 2) * 255)
+	}
+	for _, raster := range [][]byte{nil, make([]byte, 32*32-1), bytes.Repeat([]byte{177}, 32*32), texture} {
+		if luma, known := analysisVisualLuma(raster); known || luma != ([64]int8{}) {
+			t.Fatalf("missing or spatially flat frame acquired a descriptor: %v/%v", known, luma)
+		}
+	}
+	if _, contrast := analysisVisualHash(texture); contrast != 500 {
+		t.Fatal("fine texture fixture must retain raster contrast")
+	}
+}
+
+func TestAnalysisVisualLumaDistinguishesIdenticalGradientHashes(t *testing.T) {
+	horizontal, diagonal := make([]byte, 32*32), make([]byte, 32*32)
+	for y := 0; y < 32; y++ {
+		for x := 0; x < 32; x++ {
+			horizontal[y*32+x] = byte(160 - x*4)
+			diagonal[y*32+x] = byte(80 - x*2 + y*5)
+		}
+	}
+	firstHash, _ := analysisVisualHash(horizontal)
+	secondHash, _ := analysisVisualHash(diagonal)
+	first, firstKnown := analysisVisualLuma(horizontal)
+	second, secondKnown := analysisVisualLuma(diagonal)
+	var squared int
+	for index := range first {
+		difference := int(first[index]) - int(second[index])
+		squared += difference * difference
+	}
+	if firstHash != secondHash || !firstKnown || !secondKnown || squared <= 64*32*32 {
+		t.Fatalf("luminance magnitudes did not separate identical gradient hashes: %x/%x, squared=%d", firstHash, secondHash, squared)
+	}
+}
+
+func TestAnalysisVisualLumaSaturatesWithoutSignedOverflow(t *testing.T) {
+	raster := make([]byte, 32*32)
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 4; x++ {
+			raster[y*32+x] = 255
+		}
+	}
+	positive, positiveKnown := analysisVisualLuma(raster)
+	for index := range raster {
+		raster[index] = 255 - raster[index]
+	}
+	negative, negativeKnown := analysisVisualLuma(raster)
+	if !positiveKnown || !negativeKnown || positive[0] != 127 || negative[0] != -127 {
+		t.Fatalf("isolated extreme cell did not saturate: %v/%v", positive, negative)
+	}
+	for index := range positive {
+		if positive[index] != -negative[index] {
+			t.Fatal("contrast inversion lost descriptor symmetry")
+		}
+	}
+}
+
 func TestAnalysisPTSUsesExactRationalsAndRejectsUnknownValues(t *testing.T) {
 	base := big.NewRat(1, 90000)
 	if ticks, err := analysisVisualTicks(90001, base, TicksPerSecond); err != nil || ticks != 111 {

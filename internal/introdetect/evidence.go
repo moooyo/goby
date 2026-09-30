@@ -9,6 +9,18 @@ func ValidateCandidateEvidence(candidate Candidate, options Options) bool {
 	if err != nil || candidate.Status != Qualified && candidate.Status != Review || !validEvidenceMetrics(candidate.Metrics) {
 		return false
 	}
+	if candidate.VisualEvidence != nil {
+		m := *candidate.VisualEvidence
+		duration := candidate.Interval.EndTicks - candidate.Interval.StartTicks
+		return candidate.Metrics == (Metrics{}) && len(candidate.Reasons) == 0 &&
+			candidate.Status == Qualified && candidate.Interval.StartTicks >= 0 &&
+			candidate.Interval.EndTicks <= visualSequencePrefix && duration >= visualSequenceMinimum &&
+			duration <= visualSequenceMaximum && m.Samples >= 16 && m.Samples <= 4096 &&
+			m.CoveragePermille >= 850 && m.CoveragePermille <= 1000 && m.Transitions >= 3 && m.Transitions < m.Samples &&
+			m.DistinctStates >= 4 && m.DistinctStates <= m.Samples && m.DominantStatePermille >= 0 && m.DominantStatePermille <= 650 &&
+			m.MaxLumaRMSPermille >= 0 && m.MaxLumaRMSPermille <= 550 && m.MaxCenterRMSPermille >= 0 && m.MaxCenterRMSPermille <= 650 &&
+			m.MaxGapTicks > 0 && m.MaxGapTicks <= visualSequenceGap && m.PairCount >= 3 && m.PairCount <= 496
+	}
 	if candidate.Status == Review {
 		return true
 	}

@@ -64,8 +64,19 @@ func analysisInterval(interval introdetect.Interval, duration int64) bool {
 }
 func validateAnalysisCandidate(candidate introdetect.Candidate) bool {
 	options := introdetect.DefaultOptions()
+	minimum, maximum, window := options.MinDurationTicks, options.MaxDurationTicks, options.WindowTicks
+	pairs := candidate.Metrics.PairCount
+	if candidate.VisualEvidence != nil {
+		minimum, maximum, window = 8*media.TicksPerSecond, 90*media.TicksPerSecond, 120*media.TicksPerSecond
+		pairs = candidate.VisualEvidence.PairCount
+		if candidate.Metrics != (introdetect.Metrics{}) {
+			return false
+		}
+	} else if candidate.Metrics.AudioDistinct < 12 || candidate.Metrics.AudioSamples < candidate.Metrics.AudioDistinct {
+		return false
+	}
 	duration := candidate.Interval.EndTicks - candidate.Interval.StartTicks
-	if !analysisInterval(candidate.Interval, 600*media.TicksPerSecond) || duration < options.MinDurationTicks || duration > options.MaxDurationTicks || !analysisOpaque(candidate.GroupID, 256) || candidate.Status != introdetect.Qualified && candidate.Status != introdetect.Review || !validateAnalysisReasons(candidate.Reasons) || !introdetect.ValidateCandidateEvidence(candidate, options) || len(candidate.Support) < options.MinSupport || len(candidate.Support) > 32 || candidate.Metrics.AudioDistinct < 12 || candidate.Metrics.AudioSamples < candidate.Metrics.AudioDistinct || candidate.Metrics.PairCount != len(candidate.Support)*(len(candidate.Support)-1)/2 {
+	if !analysisInterval(candidate.Interval, window) || duration < minimum || duration > maximum || !analysisOpaque(candidate.GroupID, 256) || candidate.Status != introdetect.Qualified && candidate.Status != introdetect.Review || !validateAnalysisReasons(candidate.Reasons) || !introdetect.ValidateCandidateEvidence(candidate, options) || len(candidate.Support) < options.MinSupport || len(candidate.Support) > 32 || pairs != len(candidate.Support)*(len(candidate.Support)-1)/2 {
 		return false
 	}
 	episodes, sources, contents := map[string]bool{}, map[string]bool{}, map[string]bool{}
@@ -76,7 +87,10 @@ func validateAnalysisCandidate(candidate introdetect.Candidate) bool {
 	}
 	for _, support := range candidate.Support {
 		span := support.Interval.EndTicks - support.Interval.StartTicks
-		if !analysisOpaque(support.EpisodeKey, 512) || !analysisOpaque(support.SourceKey, 256) || !analysisSHA(support.ContentIdentity) || !analysisInterval(support.Interval, 600*media.TicksPerSecond) || span < options.MinDurationTicks || span > options.MaxDurationTicks || (candidate.Status == introdetect.Qualified && span < options.AutoMinDurationTicks) || episodes[support.EpisodeKey] || sources[support.SourceKey] || contents[support.ContentIdentity] {
+		if candidate.VisualEvidence != nil && span != duration {
+			return false
+		}
+		if !analysisOpaque(support.EpisodeKey, 512) || !analysisOpaque(support.SourceKey, 256) || !analysisSHA(support.ContentIdentity) || !analysisInterval(support.Interval, window) || span < minimum || span > maximum || (candidate.VisualEvidence == nil && candidate.Status == introdetect.Qualified && span < options.AutoMinDurationTicks) || episodes[support.EpisodeKey] || sources[support.SourceKey] || contents[support.ContentIdentity] {
 			return false
 		}
 		episodes[support.EpisodeKey] = true
@@ -165,12 +179,16 @@ func normalizeAnalysisEpisode(episode introdetect.EpisodeResult) introdetect.Epi
 	for index := range episode.Candidates {
 		episode.Candidates[index].Reasons = append([]introdetect.Reason{}, episode.Candidates[index].Reasons...)
 		episode.Candidates[index].Support = append([]introdetect.Support{}, episode.Candidates[index].Support...)
+		if episode.Candidates[index].VisualEvidence != nil {
+			visual := *episode.Candidates[index].VisualEvidence
+			episode.Candidates[index].VisualEvidence = &visual
+		}
 	}
 	return episode
 }
 
 func validateAnalysisResultForWork(work AnalysisWork, result introdetect.Result) (map[string]AnalysisStoredResult, error) {
-	if work.TaskKey != TaskIntroAnalysisKey || !work.Execution.Available || result.Version != work.Execution.DetectorVersion || result.CohortKey != work.ScopeKey || result.Options != work.Execution.DetectorOptions || result.Comparisons < 0 || result.Comparisons > result.Options.MaxComparisons || len(result.Episodes) != len(work.Sources) || len(result.Groups) > result.Options.MaxGroups {
+	if work.TaskKey != TaskIntroAnalysisKey || !work.Execution.Available || ValidateAnalysisExecutionProfile(work.Execution) != nil || result.Version != work.Execution.DetectorVersion || result.CohortKey != work.ScopeKey || result.Options != work.Execution.DetectorOptions || result.Comparisons < 0 || result.Comparisons > result.Options.MaxComparisons || len(result.Episodes) != len(work.Sources) || len(result.Groups) > result.Options.MaxGroups {
 		return nil, ErrInvalidInput
 	}
 	expected := map[string]AnalysisSource{}
@@ -200,15 +218,15 @@ func validateAnalysisResultForWork(work AnalysisWork, result introdetect.Result)
 		for _, candidate := range episode.Candidates {
 			group, exists := groups[candidate.GroupID]
 			if !exists || group.Status != candidate.Status || group.AlgorithmProfile != work.Execution.IntroProfile ||
-				group.Metrics != candidate.Metrics || !reflect.DeepEqual(group.Reasons, candidate.Reasons) || !reflect.DeepEqual(group.Members, candidate.Support) {
+				group.Metrics != candidate.Metrics || !reflect.DeepEqual(group.VisualEvidence, candidate.VisualEvidence) || !reflect.DeepEqual(group.Reasons, candidate.Reasons) || !reflect.DeepEqual(group.Members, candidate.Support) {
 				return nil, ErrInvalidInput
 			}
-			if !analysisInterval(candidate.Interval, source.DurationTicks) {
+			if !analysisCandidateSourceInterval(candidate, candidate.Interval, source.DurationTicks) {
 				return nil, ErrInvalidInput
 			}
 			for _, support := range candidate.Support {
 				member, exists := expected[support.SourceKey]
-				if !exists || member.EpisodeKey != support.EpisodeKey || !analysisInterval(support.Interval, member.DurationTicks) {
+				if !exists || member.EpisodeKey != support.EpisodeKey || !analysisCandidateSourceInterval(candidate, support.Interval, member.DurationTicks) {
 					return nil, ErrInvalidInput
 				}
 			}
@@ -216,6 +234,13 @@ func validateAnalysisResultForWork(work AnalysisWork, result introdetect.Result)
 		values[source.ItemID] = value
 	}
 	return values, nil
+}
+
+func analysisCandidateSourceInterval(candidate introdetect.Candidate, interval introdetect.Interval, duration int64) bool {
+	if candidate.VisualEvidence != nil {
+		duration = min(duration/2, 120*media.TicksPerSecond)
+	}
+	return analysisInterval(interval, duration)
 }
 
 func (s *Store) PublishIntroAnalysis(ctx context.Context, childID string, fence AnalysisFence, result introdetect.Result) error {

@@ -1,5 +1,16 @@
 # Goby handoff - September 30, 2026
 
+Latest source work: [intro quality and resumable corpus evaluation](intro-quality-20260930.md).
+Detector v4, bounded diagnostics, new visual feature storage and v3 historical
+read/restore support have focused verification. Recognition gains remain narrow:
+three of twelve known positives, zero of three new positives in their independent
+cohort, and zero observed false positives in the three new negatives. The later
+mixed-support publication repair and its limits are recorded separately. Existing
+Docker images below remain the accepted installation inputs; no new image or
+deployment is claimed by this source increment.
+
+## Current Docker delivery checkpoint
+
 Latest increment: [automatic BIF previews and expanded intro assessment](bif-intro-expansion-20260930.md).
 BIF automation is complete; the accuracy assessment is complete, but recognition
 extension remains unaccepted. Short intros and differing audio/video versions

@@ -1,5 +1,9 @@
 # Media analysis runtime
 
+The current source adds [detector v4](intro-quality-20260930.md), explicit visual
+evidence and GAFB v2 feature storage. The existing Docker catalog retains the
+schema-52/v3 delivery described below; no replacement image is claimed here.
+
 Current runtime contract, including schema-52 automatic seek previews. The BIF
 workflow is **verified within its selected scope**. The expanded intro assessment
 is complete, but broader recognition is **not accepted**: all 12 source-reviewed
@@ -108,7 +112,7 @@ An incompatible active selection/profile returns a conflict. Scheduled conflicts
 defer that occurrence without consuming its event cursor or delaying unrelated
 definitions.
 
-The unchanged `introdetect-v3` matcher requires at least three independent
+The source `introdetect-v4` matcher requires at least three independent
 episodes. Intro work
 uses at most 32 same-season sources per child and at most 16 selected
 episode identities for publication. A source's complete content hash establishes
@@ -117,13 +121,15 @@ episode. The normalized stream policy selects a default local audio/video stream
 first, then its original stream index. External tracks and attached pictures are
 excluded. A current source-bound feature cache can avoid repeated extraction.
 Force requests repeat extraction.
-The completed expanded assessment returned `no_result` for all 15 evaluable
-originals: 12 missed source-reviewed openings, three correct short-ident negatives,
-zero qualified intervals and zero false positives. Precision and boundary error
-are undefined without emitted intervals. Calibration experiments and held-out
-series retain separate roles. No experiment was adopted and no quality gate was
-relaxed; short/variant openings and insufficient consistent audiovisual evidence
-remain limitations rather than accepted expanded recognition.
+The v4 visual fallback applies only when the acoustic pipeline found no group.
+It uses the first 120 seconds or first half of an episode and requires an
+8-to-90-second fixed-clock, complete pairwise witness. The luma descriptor and
+new extraction profile prevent reuse of old hash-only evidence as current visual
+evidence; the cache codec still reads GAFB v1 without synthesizing new fields.
+The [v4 evaluation](intro-quality-20260930.md) improves three known positives but
+retains nine known misses and the failed three-episode new positive cohort.
+The prior v3 assessment's zero qualified intervals remains historical evidence,
+not an estimate of this source candidate's accuracy.
 
 Intro extraction admits at most the first 600 seconds. Its visual request covers
 only complete sampling intervals within that horizon: with the default 500 ms
