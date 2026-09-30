@@ -1,0 +1,188 @@
+{
+  "kind": "goby-intro-quality-round3",
+  "status": "selected_recall_repair_verified_with_remaining_misses",
+  "baseline": "23c27d1",
+  "branch": "codex/intro-quality",
+  "detector": "introdetect-v5",
+  "executionVersion": 5,
+  "schema": 53,
+  "featureCodec": 3,
+  "policy": {
+    "maxComparisons": 200000000,
+    "maxFeatureBytes": 786432,
+    "geometryFixedPerSource": true,
+    "boundaryGuardSeconds": 0.3,
+    "originalSimilarityGatesUnchanged": true,
+    "recovery": "remeasure complete witnesses within every original source intersection"
+  },
+  "ownedCodeSHA256": {
+    "internal/introdetect/visual_sequence_publish.go": "d470bc2119a8fce44a352a6f90e22ad852dbe7e61702aea5518ac1f80ae67295",
+    "internal/introdetect/visual_sequence_consensus.go": "a255e3a618dcacb688db8050c8e5d84f257c6fd61e81c893ce14f4bec7991730",
+    "internal/introdetect/visual_sequence_consensus_test.go": "adea275c19b8ed029f7670c13d4b05fb6fc6aff3cb018d1b383dab21f2263fb9",
+    "internal/library/analysis_visual_consensus_integration_test.go": "d506d6bdd2b738e171bd7bc3484d219a64ad2eb22b5eca91b179fbd2324ed0c6"
+  },
+  "builds": {
+    "applicationSHA256": "eae04471d7064a1cddafc242de1795bae6498d4c9ab0a954540c5e5687e5fdca",
+    "corpusOperatorSHA256": "354a216d97df3b49229038646b5d10d88c76d538a8bdd0adee8b6743a6f557b4",
+    "developmentBuildsOnly": true,
+    "buildExitCodes": [
+      0,
+      0
+    ]
+  },
+  "verification": {
+    "environment": "test-env",
+    "localVerificationRun": false,
+    "detectorRaceParentsPassed": 157,
+    "detectorRaceFailures": 0,
+    "detectorRaceSkips": 0,
+    "realPostgresCacheToConsensusToPublicationToPlaybackRacePassed": true,
+    "integrationUsesSyntheticRasterObservations": true,
+    "preFixRegressionControl": "expected failure: competing_intervals",
+    "productionCodeMatchesFrozenCandidate": true,
+    "localOwnedCodeMatchesVerifiedBytes": true,
+    "gofmtClean": true,
+    "finalRetainedCohorts": 8,
+    "historicalUnchangedSuitesReusedWithoutNewPassClaims": true
+  },
+  "accuracy": {
+    "previouslySeen": {
+      "caseCount": 27,
+      "positiveCases": 18,
+      "safePositiveHits": 9,
+      "positiveMisses": 9,
+      "negativeCases": 9,
+      "correctNegativeAbstentions": 9,
+      "falsePositiveCases": 0,
+      "protectedOverlapViolationIntervals": 0,
+      "maximumEndpointErrorSeconds": 2.6101747,
+      "sourceIdentityVerifiedCases": 24
+    },
+    "newFirstEpisodeEvaluation": {
+      "cases": [
+        "R19",
+        "R20",
+        "R21",
+        "N398",
+        "N399",
+        "N400"
+      ],
+      "positive": 3,
+      "safeHits": 3,
+      "negative": 3,
+      "correctAbstentions": 3,
+      "protectedOverlapViolations": 0,
+      "maximumEndpointErrorSeconds": 2.5935776
+    },
+    "previousQualifiedR10ThroughR13Unchanged": true,
+    "restoredMixedCohortCases": [
+      "R14",
+      "R15"
+    ],
+    "newIndependentCases": 6,
+    "mixedRepeatedObservationsAddedToDenominator": 0,
+    "remainingPositiveMisses": [
+      "B1",
+      "B2",
+      "B7",
+      "H114",
+      "H116",
+      "H118",
+      "O1",
+      "O2",
+      "O3"
+    ],
+    "newSeriesOrPopulationAccuracyClaim": false,
+    "scoringPolicy": {
+      "endpointToleranceSeconds": 5.0,
+      "serializationEpsilonSeconds": 1e-06,
+      "fiveSecondToleranceAppliesTo": "Positive target start and end error only.",
+      "protectionRule": "Every raw overlap with explicit protected ranges, protected interval categories, title markers, or excluded additional segments is recorded. Any overlap above one microsecond is a violation.",
+      "targetRule": "Frozen semantic targets are preserved, including Hubble opening-title blocks and One Step Beyond sponsored openings. A negative is determined by label content, never the directory name.",
+      "safeHitRule": "Exactly one published interval, both endpoints within five seconds, and no protected-content violation.",
+      "emptyOutputRule": "Abstention does not establish positive recognition. Precision and endpoint error are null for no output."
+    },
+    "limitations": [
+      "Assistant source labels are not human ground truth and have no direct audio listening.",
+      "Finite non-random cases do not establish new-series, new-season, or population accuracy.",
+      "Protection conclusions are bounded by retained labels and sampled source review.",
+      "Nine positive regression cases from Beverly Hillbillies, Hubblecast, and One Step Beyond remain misses; their original positive target definitions were not changed.",
+      "Original N388 through N390 labels lack source SHA-256 fields; the other twenty-four retained source identities are label-verified.",
+      "All twenty-seven retained cases have been available for development and are not an unseen generalization estimate.",
+      "The six new cases are reported separately and retain the rendition, replacement, and source-review context disclosures in their dedicated summary."
+    ]
+  },
+  "corpus": {
+    "newSourcesExtracted": 6,
+    "newSourcesExcluded": 0,
+    "newSourcesFailed": 0,
+    "refinementCountPerSource": 1200,
+    "exactResumeReuse": true,
+    "attemptsPerSource": 1,
+    "extractionProfileUnchanged": true,
+    "batchComparisons": {
+      "robin-hood": 18206666,
+      "space-to-ground": 3746509
+    }
+  },
+  "selection": {
+    "labelsFrozenBeforeCandidateRun": true,
+    "candidateFrozenBeforeFirstMatcher": true,
+    "uniformRobinRendition": "512Kb MPEG4",
+    "unavailableN397ReplacedBeforeReviewByN400": true,
+    "sourceReviewCoordinatorPriorAlgorithmContextExposed": true,
+    "sourceReviewersFreshContextWithoutAlgorithmOutputsOrThresholds": true,
+    "humanAnnotationOrDirectAudioReviewClaim": false,
+    "receiptCorrectionChangedLabelsOrSources": false,
+    "sourceMediaRedistributed": false
+  },
+  "closure": {
+    "timeUTC": "2026-09-30T15:06:27.173588+00:00",
+    "ownedPostgresPort": 56000,
+    "clientSessionsBeforeStop": 0,
+    "postgresStopped": true,
+    "ownedPortListening": false,
+    "remainingOwnedContainers": [],
+    "ownedCustomNetworksCreated": 0,
+    "sourceMediaPreserved": true,
+    "databasesPreserved": true,
+    "failedAndAcceptedEvidencePreserved": true,
+    "sharedGlobalGoCacheTouched": false
+  },
+  "reclaimedRecoverableTransportBytes": 302643200,
+  "evidenceSHA256": {
+    "candidate-freeze01.json": "579ffb5a7fedd69b685a059021d94b4341702c0542e1a6837249e06ffe195ef2",
+    "final-public-development.json": "1aec2a2a1ea1b1cacbecd0feeced5f3ff196cbdff5050a649afdeea536699a3a",
+    "final-public-development-summary.json": "7e250d4646c2c35499c76743fd01ede63f705480597d1bc5283df2bad0435d7c",
+    "final-public-source-binding.json": "5f1a9e943ccfdbbe91dd411103d88ce2cbe0a7c7b3832c6b3484d8bd220d9e35",
+    "intro-final-race.json": "6328688a57dd8ea5014764e16cc8415b81faa675ce9adf954fc31eced05c6485",
+    "intro-final-race.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publish-consensus-integration.log": "93ad41822930a4d9c191632e0b20d28ed5ed2e7bf944b4b4bb85d80ef549b274",
+    "publish-consensus-pre-fix-control.log": "55d9d77ac2e6ab0d343d02bfc1b656daf6540b557b95e5ffc71ff933131935fd",
+    "publish-consensus-regression-control.json": "08fd88764b939173446b0bc035e6c14676afa4023de418bb48cae50d49015517",
+    "heldout-run-summary.json": "616c9ac1459fea7e52396b3222f49ef682c56f72602ad9841b521509eccbdc15",
+    "heldout-results/robin-hood-first.json": "fca2916b8092bccb9d3da8d92bc14daa3c86d9f3654ae55aeea078bde03262ea",
+    "heldout-results/space-to-ground-first.json": "756c847578913e7cf4d3b60f7ee96db177c07fb53abfd7378b61170cb699efde",
+    "scoring/round3-final-independent-summary.json": "e4cb3571b325fdf16e3d5c5fb5cf27a93acefee464f2f3f68f4b2b47d8af6ddf",
+    "scoring/round3-new-six-first-independent-summary.json": "d778beba91e73b0f8903e49dd416389cfd22b31bb86abc688285de3aa2905d72",
+    "holdout/freeze-manifest-v2.json": "13ebb394e1f95bb29ccbb6c24d9f66817810b769d1526c806bad1312c0136b71",
+    "holdout/labels.json": "0f03ee889b1702ac610eb6a4d264282342558cee5b6750db5759a0702c6e8edd",
+    "holdout/sources.json": "83dd2bcade8fc65efed90e87256084e9f52bcceb88296a332b2b4ceaec6359e3",
+    "evaluation-inputs/sources.json": "a934e3fea912afa1767be426c6790bfdafc4f405f1257ff55ba251bded63769a",
+    "beverly-pair-diagnostics.json": "c48eb370a37c24fa6e35e31824d5e64fb8b19301c443af2fae6c037113274115",
+    "extended-geometry-necessary.json": "e1ebf8ccedf85448d884a6c8752797c069e7c084f733aba9d5c53ce6e147cb4a",
+    "extended-geometry-necessary.log": "14fe8677efcdbaf48ead9637bdc4f5b01aa775047a687d620989fad1d3cffdb4",
+    "resource-closure.json": "7300d2c150f01e818bc0c98faf6d30c92b2e3c979753862223fe81a9986be4a1",
+    "transport-reclamation.json": "f0f233d29739f54596a0397726c1330e0237b53624caf2894dc1f6aaa5d8cc84",
+    "app-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "corpus-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "delivery": {
+    "localCommitOnly": true,
+    "merged": false,
+    "pushed": false,
+    "dockerCatalogChanged": false,
+    "deployed": false,
+    "originalCheckoutUnrelatedChangesModified": false
+  }
+}

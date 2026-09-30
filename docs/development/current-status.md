@@ -1,13 +1,26 @@
 # Current implementation and delivery status
 
-## Latest unreleased source: spatial intro refinement
+## Latest unreleased source: common-interior intro recovery
+
+The [third intro-quality increment](intro-quality-round3-20260930.md) repairs
+R14/R15's mixed-cohort recall regression without changing existing qualified
+results. Its first new three-positive and three-negative cohorts passed with
+no protected-content overlap. The final 27 retained cases have nine safe
+positive hits, nine positive misses and nine correct negative abstentions;
+the new six are reported separately. Beverly, Hubblecast and One Step Beyond
+remain missed families. Final detector race checks, real PostgreSQL
+cache-to-publication/playback integration, development builds and resource
+closure passed. Detector v5/schema 53 remain unreleased source; the accepted
+Docker artifacts below have not changed.
+
+## Previous unreleased source: spatial intro refinement
 
 The [second intro-quality increment](intro-quality-round2-20260930.md) adds
 detector v5, independently audited dense visual refinement, schema 53/GAFB v3
 storage and frozen v4 history. Its first new three-positive and three-negative
 cohorts passed with no protected-content overlap. The 21 known development cases
-still contain 11 positive misses; R14/R15 have a documented mixed-cohort recall
-regression. This is bounded evidence, not arbitrary-series accuracy. Focused
+then contained 11 positive misses; R14/R15 had the mixed-cohort recall
+regression repaired above. This is bounded evidence, not arbitrary-series accuracy. Focused
 verification, development builds and owned-resource closure passed. Existing
 Docker installation artifacts remain unchanged.
 

@@ -1,0 +1,2219 @@
+{
+  "schemaVersion": 1,
+  "reviewKind": "independent_round_three_final_scope_summary",
+  "matcherExecutedByThisReview": false,
+  "productCodeModified": false,
+  "evaluationEnvironment": "authorized_remote_test_environment",
+  "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+  "aggregationSourceSHA256": "c59fd44204f0dba8277ca522ca636098b885f0ec0c05ccaecfcb1150da1ad0c3",
+  "aggregationHelperSHA256": "afe61e29b89f6d6e66c09485a161c12a01fb69fdfa25f91ddd2ebf9cde1d1e39",
+  "candidateFreezeEvidenceSHA256": "579ffb5a7fedd69b685a059021d94b4341702c0542e1a6837249e06ffe195ef2",
+  "candidateBinarySHA256": "354a216d97df3b49229038646b5d10d88c76d538a8bdd0adee8b6743a6f557b4",
+  "finalResultEvidenceSHA256": "1aec2a2a1ea1b1cacbecd0feeced5f3ff196cbdff5050a649afdeea536699a3a",
+  "finalSourceBindingEvidenceSHA256": "5f1a9e943ccfdbbe91dd411103d88ce2cbe0a7c7b3832c6b3484d8bd220d9e35",
+  "finalRunReceiptEvidenceSHA256": "7e250d4646c2c35499c76743fd01ede63f705480597d1bc5283df2bad0435d7c",
+  "finalSourceBindingMatchesCandidateFreeze": true,
+  "labelEvidenceSHA256": {
+    "originalRobin": "44ae52cde42aea9397388ace0ac99dd045dd075d39cf2aae65aa670904471832",
+    "roundOneRobin": "02708d0eeb371d89d1394235530b3953b94026960b417f79633e4ffb9d6d2548",
+    "originalNasa": "78028f7714974cfa1ed94cbd536f336d5d4a36e47ffae98a4fc74308819782ec",
+    "roundOneNasa": "40ec8fe4575b4e6f20e60971242f851585a87d76408d80e2566122de072c2327",
+    "roundTwoSix": "f868e3f33b732fc890ce74be9f482d939423d2d558b70c4970adf9eccab67d40",
+    "originalBeverly": "e423655b8aa48acfd9a25af819a978cf42a93356c255ca8b3d27a712125ddb93",
+    "originalHubble": "9bafd77e7bd19037b5306d75375cce8f133697a9041a7fffb4728637e6daf316",
+    "originalOsb": "6d26358960c2bd3a31f5ddbb3f4e71b934d57b097262a637156bd9effa497b68"
+  },
+  "policy": {
+    "endpointToleranceSeconds": 5.0,
+    "serializationEpsilonSeconds": 1e-06,
+    "fiveSecondToleranceAppliesTo": "Positive target start and end error only.",
+    "protectionRule": "Every raw overlap with explicit protected ranges, protected interval categories, title markers, or excluded additional segments is recorded. Any overlap above one microsecond is a violation.",
+    "targetRule": "Frozen semantic targets are preserved, including Hubble opening-title blocks and One Step Beyond sponsored openings. A negative is determined by label content, never the directory name.",
+    "safeHitRule": "Exactly one published interval, both endpoints within five seconds, and no protected-content violation.",
+    "emptyOutputRule": "Abstention does not establish positive recognition. Precision and endpoint error are null for no output."
+  },
+  "finalTwentySevenPreviouslySeenRegression": {
+    "caseCount": 27,
+    "positiveCases": 18,
+    "safePositiveHits": 9,
+    "positiveMisses": 9,
+    "negativeCases": 9,
+    "correctNegativeAbstentions": 9,
+    "falsePositiveCases": 0,
+    "publishedIntervalCount": 9,
+    "protectedOverlapViolationIntervals": 0,
+    "boundaryFailureIntervals": 0,
+    "roundingTouchIntervals": 0,
+    "maximumEndpointErrorSeconds": 2.6101747,
+    "sourceIdentityVerifiedCases": 24,
+    "caseOutcomes": {
+      "R10": "safe_hit",
+      "R11": "safe_hit",
+      "R12": "safe_hit",
+      "R13": "safe_hit",
+      "R14": "safe_hit",
+      "R15": "safe_hit",
+      "N388": "correct_abstention",
+      "N389": "correct_abstention",
+      "N390": "correct_abstention",
+      "N391": "correct_abstention",
+      "N392": "correct_abstention",
+      "N393": "correct_abstention",
+      "R16": "safe_hit",
+      "R17": "safe_hit",
+      "R18": "safe_hit",
+      "N394": "correct_abstention",
+      "N395": "correct_abstention",
+      "N396": "correct_abstention",
+      "B1": "miss",
+      "B2": "miss",
+      "B7": "miss",
+      "H114": "miss",
+      "H116": "miss",
+      "H118": "miss",
+      "O1": "miss",
+      "O2": "miss",
+      "O3": "miss"
+    },
+    "scoreEvidenceSHA256": "0120e9a3f44ca96aae43337865a2d47e38ef9fc0ee1c26ec10153f92d7ee9104",
+    "familyBreakdown": {
+      "retainedRobinSix": {
+        "caseCount": 6,
+        "positiveCases": 6,
+        "safePositiveHits": 6,
+        "positiveMisses": 0,
+        "negativeCases": 0,
+        "correctNegativeAbstentions": 0,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 6,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": 2.2182652,
+        "sourceIdentityVerifiedCases": 6,
+        "caseOutcomes": {
+          "R10": "safe_hit",
+          "R11": "safe_hit",
+          "R12": "safe_hit",
+          "R13": "safe_hit",
+          "R14": "safe_hit",
+          "R15": "safe_hit"
+        }
+      },
+      "retainedNasaSix": {
+        "caseCount": 6,
+        "positiveCases": 0,
+        "safePositiveHits": 0,
+        "positiveMisses": 0,
+        "negativeCases": 6,
+        "correctNegativeAbstentions": 6,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 0,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": null,
+        "sourceIdentityVerifiedCases": 3,
+        "caseOutcomes": {
+          "N388": "correct_abstention",
+          "N389": "correct_abstention",
+          "N390": "correct_abstention",
+          "N391": "correct_abstention",
+          "N392": "correct_abstention",
+          "N393": "correct_abstention"
+        }
+      },
+      "priorRoundRobinRegression": {
+        "caseCount": 3,
+        "positiveCases": 3,
+        "safePositiveHits": 3,
+        "positiveMisses": 0,
+        "negativeCases": 0,
+        "correctNegativeAbstentions": 0,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 3,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": 2.6101747,
+        "sourceIdentityVerifiedCases": 3,
+        "caseOutcomes": {
+          "R16": "safe_hit",
+          "R17": "safe_hit",
+          "R18": "safe_hit"
+        }
+      },
+      "priorRoundNasaRegression": {
+        "caseCount": 3,
+        "positiveCases": 0,
+        "safePositiveHits": 0,
+        "positiveMisses": 0,
+        "negativeCases": 3,
+        "correctNegativeAbstentions": 3,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 0,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": null,
+        "sourceIdentityVerifiedCases": 3,
+        "caseOutcomes": {
+          "N394": "correct_abstention",
+          "N395": "correct_abstention",
+          "N396": "correct_abstention"
+        }
+      },
+      "beverlyPositiveRegression": {
+        "caseCount": 3,
+        "positiveCases": 3,
+        "safePositiveHits": 0,
+        "positiveMisses": 3,
+        "negativeCases": 0,
+        "correctNegativeAbstentions": 0,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 0,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": null,
+        "sourceIdentityVerifiedCases": 3,
+        "caseOutcomes": {
+          "B1": "miss",
+          "B2": "miss",
+          "B7": "miss"
+        }
+      },
+      "hubblePositiveRegression": {
+        "caseCount": 3,
+        "positiveCases": 3,
+        "safePositiveHits": 0,
+        "positiveMisses": 3,
+        "negativeCases": 0,
+        "correctNegativeAbstentions": 0,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 0,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": null,
+        "sourceIdentityVerifiedCases": 3,
+        "caseOutcomes": {
+          "H114": "miss",
+          "H116": "miss",
+          "H118": "miss"
+        }
+      },
+      "oneStepBeyondPositiveRegression": {
+        "caseCount": 3,
+        "positiveCases": 3,
+        "safePositiveHits": 0,
+        "positiveMisses": 3,
+        "negativeCases": 0,
+        "correctNegativeAbstentions": 0,
+        "falsePositiveCases": 0,
+        "publishedIntervalCount": 0,
+        "protectedOverlapViolationIntervals": 0,
+        "boundaryFailureIntervals": 0,
+        "roundingTouchIntervals": 0,
+        "maximumEndpointErrorSeconds": null,
+        "sourceIdentityVerifiedCases": 3,
+        "caseOutcomes": {
+          "O1": "miss",
+          "O2": "miss",
+          "O3": "miss"
+        }
+      }
+    },
+    "cases": [
+      {
+        "caseId": "R10",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              0.800417,
+              15.3126828
+            ],
+            "boundaryErrorsSeconds": [
+              0.3,
+              0.2002442
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            15.512927
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              17.014178,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_context",
+            "intervalSeconds": [
+              17.014178,
+              24.020017
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R11",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              0.7032497,
+              15.2155155
+            ],
+            "boundaryErrorsSeconds": [
+              0.2027492,
+              0.3
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.5005005,
+            15.5155155
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.018018,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.018018,
+              24.024024
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R12",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              0.7170141,
+              13.5031693
+            ],
+            "boundaryErrorsSeconds": [
+              0.2165971,
+              0.0080897
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            13.511259
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              31.025855,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              13.511259,
+              28.52377
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              14.011676,
+              28.023353
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_context",
+            "intervalSeconds": [
+              31.025855,
+              37.030859
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R13",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              2.7186822,
+              16.8183627
+            ],
+            "boundaryErrorsSeconds": [
+              2.2182652,
+              0.6962328
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            17.5145955
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              32.026689,
+              600.0
+            ]
+          },
+          {
+            "labelField": "protectedSponsorSeconds",
+            "kind": "protectedSponsorSeconds",
+            "intervalSeconds": [
+              18.015013,
+              31.025855
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              17.5145955,
+              30.525438
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              18.015013,
+              30.025021
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_context",
+            "intervalSeconds": [
+              32.026689,
+              39.032527
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R14",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.1236807,
+              13.5116945
+            ],
+            "boundaryErrorsSeconds": [
+              0.6231802,
+              2.003821
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.5005005,
+            15.5155155
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.018018,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.018018,
+              24.024024
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R15",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.2210606,
+              13.6138138
+            ],
+            "boundaryErrorsSeconds": [
+              0.7205601,
+              1.9017017
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.5005005,
+            15.5155155
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.018018,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.018018,
+              24.024024
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N388",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": false,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              136.733333
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N389",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": false,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              170.033333
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N390",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": false,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              148.366667
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N391",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              166.933333
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              13.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N392",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              134.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              11.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "editorial_information_card",
+            "intervalSeconds": [
+              47.0,
+              52.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N393",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              143.166667
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              12.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "editorial_information_card",
+            "intervalSeconds": [
+              104.0,
+              110.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R16",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.1340283,
+              14.0035863
+            ],
+            "boundaryErrorsSeconds": [
+              0.6336113,
+              0.5085067
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            14.512093
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              31.025855,
+              600.0
+            ]
+          },
+          {
+            "labelField": "protectedSponsorSeconds",
+            "kind": "protectedSponsorSeconds",
+            "intervalSeconds": [
+              14.512093,
+              29.524604
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              14.512093,
+              29.524604
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              15.01251,
+              29.024187
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              31.025855,
+              38.031693
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R17",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              0.8336113,
+              13.7031693
+            ],
+            "boundaryErrorsSeconds": [
+              0.3331943,
+              1.8097577
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            15.512927
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.015013,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.015013,
+              23.019183
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R18",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.0340283,
+              13.9035863
+            ],
+            "boundaryErrorsSeconds": [
+              0.5336113,
+              2.6101747
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            16.513761
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.015013,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.015013,
+              24.020017
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N394",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              139.066667
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              14.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "editorial_information_card",
+            "intervalSeconds": [
+              42.0,
+              57.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N395",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              163.1
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              19.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "editorial_information_card",
+            "intervalSeconds": [
+              23.0,
+              27.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N396",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              166.466667
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              12.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "B1",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            1.501251,
+            29.524604
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              34.028357,
+              600.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "B2",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            1.501251,
+            21.517932
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              23.019183,
+              600.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "B7",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            0.0,
+            23.5196
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              26.021685,
+              600.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "H114",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            22.02,
+            32.56
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              0.0,
+              22.0
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              32.68,
+              200.04
+            ]
+          },
+          {
+            "labelField": "protectedNonOpeningSeconds",
+            "kind": "protectedNonOpeningSeconds",
+            "intervalSeconds": [
+              210.04,
+              260.24
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "H116",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            29.2,
+            39.6
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              0.0,
+              29.08
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              39.96,
+              210.04
+            ]
+          },
+          {
+            "labelField": "protectedNonOpeningSeconds",
+            "kind": "protectedNonOpeningSeconds",
+            "intervalSeconds": [
+              220.04,
+              273.72
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "H118",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            27.44,
+            37.84
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              0.0,
+              27.32
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              39.04,
+              250.04
+            ]
+          },
+          {
+            "labelField": "protectedNonOpeningSeconds",
+            "kind": "protectedNonOpeningSeconds",
+            "intervalSeconds": [
+              260.04,
+              311.28
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "O1",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            0.0,
+            26.7267
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              26.8268,
+              600.0
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeMarkers",
+            "kind": "episode_title_over_story",
+            "intervalSeconds": [
+              59.059,
+              63.063
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_episode_specific_host_setup",
+            "intervalSeconds": [
+              26.8268,
+              56.222833
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_episode_story",
+            "intervalSeconds": [
+              55.221833,
+              600.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "O2",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            0.0,
+            26.3263
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              26.4264,
+              600.0
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_episode_specific_host_setup",
+            "intervalSeconds": [
+              26.4264,
+              43.109733
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_episode_story",
+            "intervalSeconds": [
+              43.209833,
+              600.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "O3",
+        "labelClass": "positive",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "miss",
+        "labelTargetSeconds": [
+          [
+            0.0,
+            47.5475
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              47.6476,
+              600.0
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeMarkers",
+            "kind": "episode_title_over_story",
+            "intervalSeconds": [
+              107.2071,
+              110.11
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_sponsor_to_episode_transition",
+            "intervalSeconds": [
+              47.6476,
+              51.0
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_episode_specific_host_setup",
+            "intervalSeconds": [
+              48.4484,
+              106.3062
+            ]
+          },
+          {
+            "labelField": "intervals",
+            "kind": "protected_episode_story",
+            "intervalSeconds": [
+              106.4063,
+              600.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "reusedMixedNine": {
+    "caseCount": 9,
+    "positiveCases": 6,
+    "safePositiveHits": 6,
+    "positiveMisses": 0,
+    "negativeCases": 3,
+    "correctNegativeAbstentions": 3,
+    "falsePositiveCases": 0,
+    "publishedIntervalCount": 6,
+    "protectedOverlapViolationIntervals": 0,
+    "boundaryFailureIntervals": 0,
+    "roundingTouchIntervals": 0,
+    "maximumEndpointErrorSeconds": 2.2182652,
+    "sourceIdentityVerifiedCases": 6,
+    "caseOutcomes": {
+      "N388": "correct_abstention",
+      "N389": "correct_abstention",
+      "N390": "correct_abstention",
+      "R10": "safe_hit",
+      "R11": "safe_hit",
+      "R12": "safe_hit",
+      "R13": "safe_hit",
+      "R14": "safe_hit",
+      "R15": "safe_hit"
+    },
+    "scoreEvidenceSHA256": "c61d0dc18f3dcfe989c8c4d4103c61bc49db8c4f58d45e97453f71adf19c6dd4",
+    "additionalUniqueCases": 0,
+    "duplicateComparison": [
+      {
+        "caseId": "N388",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "N389",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "N390",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "R10",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "R11",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "R12",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "R13",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "R14",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      },
+      {
+        "caseId": "R15",
+        "outcomeMatchesPrimary": true,
+        "publishedIntervalsMatchPrimary": true
+      }
+    ]
+  },
+  "earlierDevelopmentRetention": {
+    "summaryEvidenceSHA256": "dcebea773fa4d6629dc1d79476c82a11ea1b207a03537e1d96c8dd94c8493c2f",
+    "resultEvidenceSHA256": "3d7498b9bc9172c5c87b430a8400fc31ffdc966a3c24cf3147b9b66d91690f6e",
+    "status": "Preserved earlier eighteen-case development result; do not add its sample count to the final replay.",
+    "caseComparison": [
+      {
+        "caseId": "R10",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R11",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R12",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R13",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R14",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R15",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N388",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N389",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N390",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N391",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N392",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N393",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R16",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R17",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "R18",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N394",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N395",
+        "scoredCaseMatchesEarlierDevelopment": true
+      },
+      {
+        "caseId": "N396",
+        "scoredCaseMatchesEarlierDevelopment": true
+      }
+    ]
+  },
+  "newIndependentSixFirstAttempt": {
+    "summaryEvidenceSHA256": "d778beba91e73b0f8903e49dd416389cfd22b31bb86abc688285de3aa2905d72",
+    "labelEvidenceSHA256": "0f03ee889b1702ac610eb6a4d264282342558cee5b6750db5759a0702c6e8edd",
+    "sourceManifestEvidenceSHA256": "83dd2bcade8fc65efed90e87256084e9f52bcceb88296a332b2b4ceaec6359e3",
+    "adaptedCorpusSourceManifestEvidenceSHA256": "a934e3fea912afa1767be426c6790bfdafc4f405f1257ff55ba251bded63769a",
+    "sourceLabelFreezeReceiptSHA256": "13ebb394e1f95bb29ccbb6c24d9f66817810b769d1526c806bad1312c0136b71",
+    "caseCount": 6,
+    "positiveCases": 3,
+    "safePositiveHits": 3,
+    "positiveMisses": 0,
+    "negativeCases": 3,
+    "correctNegativeAbstentions": 3,
+    "falsePositiveCases": 0,
+    "publishedIntervalCount": 3,
+    "protectedOverlapViolationIntervals": 0,
+    "boundaryFailureIntervals": 0,
+    "roundingTouchIntervals": 0,
+    "maximumEndpointErrorSeconds": 2.5935776,
+    "sourceIdentityVerifiedCases": 6,
+    "positive": {
+      "scope": "First retained attempt on three new independent Robin Hood episode works, using uniformly preselected 512Kb renditions.",
+      "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+      "resultEvidenceSHA256": "fca2916b8092bccb9d3da8d92bc14daa3c86d9f3654ae55aeea078bde03262ea",
+      "labelEvidenceSHA256": {
+        "roundThreeSix": "0f03ee889b1702ac610eb6a4d264282342558cee5b6750db5759a0702c6e8edd"
+      },
+      "caseCount": 3,
+      "positiveCases": 3,
+      "safePositiveHits": 3,
+      "positiveMisses": 0,
+      "negativeCases": 0,
+      "correctNegativeAbstentions": 0,
+      "falsePositiveCases": 0,
+      "publishedIntervalCount": 3,
+      "boundaryFailureIntervals": 0,
+      "protectedOverlapViolationIntervals": 0,
+      "roundingTouchIntervals": 0,
+      "maximumEndpointErrorSeconds": 2.5935776,
+      "scoreEvidenceSHA256": "f4ea023694af8be0d2c8092fb3ccf71cf408eb537ce698d763a5674071b15738",
+      "executionIdentitySHA256": "323e23090ec7d201b024643c040ab92d6455680c0fe921402205e4317061694f"
+    },
+    "negative": {
+      "scope": "First retained attempt on three new independent Space to Ground short-ident negatives; N400 was selected before source review after bounded discovery did not locate N397.",
+      "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+      "resultEvidenceSHA256": "756c847578913e7cf4d3b60f7ee96db177c07fb53abfd7378b61170cb699efde",
+      "labelEvidenceSHA256": {
+        "roundThreeSix": "0f03ee889b1702ac610eb6a4d264282342558cee5b6750db5759a0702c6e8edd"
+      },
+      "caseCount": 3,
+      "positiveCases": 0,
+      "safePositiveHits": 0,
+      "positiveMisses": 0,
+      "negativeCases": 3,
+      "correctNegativeAbstentions": 3,
+      "falsePositiveCases": 0,
+      "publishedIntervalCount": 0,
+      "boundaryFailureIntervals": 0,
+      "protectedOverlapViolationIntervals": 0,
+      "roundingTouchIntervals": 0,
+      "maximumEndpointErrorSeconds": null,
+      "scoreEvidenceSHA256": "407b06a5de5e37c174f3ed6ac09eee2651be1ba0c7060ed4d2b741aa29073487",
+      "executionIdentitySHA256": "323e23090ec7d201b024643c040ab92d6455680c0fe921402205e4317061694f"
+    },
+    "cases": [
+      {
+        "caseId": "R19",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.2340283,
+              13.9201834
+            ],
+            "boundaryErrorsSeconds": [
+              0.7336113,
+              2.5935776
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            16.513761
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              17.014178,
+              590.492077
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "episode_specific_title",
+            "intervalSeconds": [
+              17.514596,
+              25.521268
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title",
+            "intervalSeconds": [
+              18.015013,
+              25.020851
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_action",
+            "intervalSeconds": [
+              25.521268,
+              590.492077
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_action",
+            "intervalSeconds": [
+              26.021685,
+              590.492077
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R20",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.4340283,
+              14.1201834
+            ],
+            "boundaryErrorsSeconds": [
+              0.9336113,
+              0.3919096
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            14.512093
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              15.01251,
+              590.492077
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "episode_specific_title",
+            "intervalSeconds": [
+              15.512927,
+              23.5196
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title",
+            "intervalSeconds": [
+              16.013344,
+              23.019183
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_action",
+            "intervalSeconds": [
+              23.5196,
+              590.492077
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_action",
+            "intervalSeconds": [
+              24.020017,
+              590.492077
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R21",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              0.6336113,
+              13.3197664
+            ],
+            "boundaryErrorsSeconds": [
+              0.1331943,
+              2.1931606
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            15.512927
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              16.013344,
+              590.492077
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "episode_specific_title",
+            "intervalSeconds": [
+              16.513761,
+              23.5196
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title",
+            "intervalSeconds": [
+              17.014178,
+              23.019183
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_action",
+            "intervalSeconds": [
+              23.5196,
+              590.492077
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_action",
+            "intervalSeconds": [
+              24.020017,
+              590.492077
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N398",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              91.0
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              93.0,
+              140.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              4.5,
+              91.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              5.0,
+              91.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "mid_program_ident",
+            "intervalSeconds": [
+              91.5,
+              92.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "mid_program_ident",
+            "intervalSeconds": [
+              92.0,
+              92.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              92.5,
+              145.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              93.0,
+              140.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "closing_ident",
+            "intervalSeconds": [
+              145.0,
+              151.866667
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "closing_ident",
+            "intervalSeconds": [
+              150.0,
+              150.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N399",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              140.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              4.5,
+              145.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              5.0,
+              140.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "episode_specific_topic_title",
+            "intervalSeconds": [
+              113.5,
+              118.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_topic_title",
+            "intervalSeconds": [
+              114.0,
+              118.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "closing_branding",
+            "intervalSeconds": [
+              145.0,
+              158.9
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "closing_branding",
+            "intervalSeconds": [
+              150.0,
+              150.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N400",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              69.0
+            ]
+          },
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              71.0,
+              117.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              0.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              4.5,
+              69.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              5.0,
+              69.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "mid_program_ident",
+            "intervalSeconds": [
+              69.5,
+              70.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "mid_program_ident",
+            "intervalSeconds": [
+              70.0,
+              70.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              70.5,
+              117.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "narrative_editorial",
+            "intervalSeconds": [
+              71.0,
+              117.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "closing_branding_over_narrative",
+            "intervalSeconds": [
+              114.5,
+              117.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "closing_branding_over_narrative",
+            "intervalSeconds": [
+              115.0,
+              117.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "closing_ident",
+            "intervalSeconds": [
+              117.5,
+              119.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "closing_ident",
+            "intervalSeconds": [
+              118.0,
+              119.0
+            ]
+          }
+        ]
+      }
+    ],
+    "selectionAndReviewDisclosures": {
+      "robinRendition": "All three Robin Hood sources use metadata-listed 512Kb MPEG4 renditions selected uniformly before download and source review. Timing and resolution can differ from prior encodings; source PTS and source hashes define these cases.",
+      "nasaSelectionException": "N397 was not found by bounded official discovery. N398, N399, and N400 were selected before source acquisition, labeling, or candidate execution. The unavailable N397 is not a tested case.",
+      "coordinatorAlgorithmContextExposed": true,
+      "sourceReviewersStartedWithoutInheritedHistory": true,
+      "sourceReviewerAlgorithmOutputsRead": false,
+      "sourceReviewerAlgorithmThresholdsRead": false,
+      "coordinatorExposureDisclosure": "The source-label coordinator had seen prior implementation and score summaries. Two fresh source reviewers without inherited algorithm context supplied all classifications and boundaries; integration retained their case labels and added source metadata only.",
+      "humanReviewed": false,
+      "audioListened": false,
+      "randomSample": false
+    }
+  },
+  "accounting": {
+    "finalRetainedCohortCount": 8,
+    "finalRetainedEpisodeObservations": 36,
+    "finalRetainedIndependentEpisodeWorks": 27,
+    "finalRetainedPositiveDenominator": 18,
+    "finalRetainedNegativeDenominator": 9,
+    "mixedDuplicateObservations": 9,
+    "newIndependentEpisodeWorksFirstAttempt": 6,
+    "newPositiveDenominator": 3,
+    "newNegativeDenominator": 3,
+    "doNotAddMixedOrEarlierReplaysToSampleCount": true,
+    "previousRoundHoldoutsAreNowRegression": true,
+    "beverlyHubbleOsbRemainPositiveTargets": true,
+    "emptyOutputDoesNotEstablishRecognition": true,
+    "harnessSuccessDoesNotMeanAllPositiveCasesWereRecognized": true,
+    "newSeriesGeneralizationEstablished": false,
+    "newSeasonGeneralizationEstablished": false,
+    "populationAccuracyEstablished": false
+  },
+  "limitations": [
+    "Assistant source labels are not human ground truth and have no direct audio listening.",
+    "Finite non-random cases do not establish new-series, new-season, or population accuracy.",
+    "Protection conclusions are bounded by retained labels and sampled source review.",
+    "Nine positive regression cases from Beverly Hillbillies, Hubblecast, and One Step Beyond remain misses; their original positive target definitions were not changed.",
+    "Original N388 through N390 labels lack source SHA-256 fields; the other twenty-four retained source identities are label-verified.",
+    "All twenty-seven retained cases have been available for development and are not an unseen generalization estimate.",
+    "The six new cases are reported separately and retain the rendition, replacement, and source-review context disclosures in their dedicated summary."
+  ]
+}

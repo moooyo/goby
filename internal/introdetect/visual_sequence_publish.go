@@ -43,6 +43,7 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 		return nil, nil, nil
 	}
 	groups := []Group{}
+	witnesses := []VisualSequenceGroup{}
 	for _, value := range visual.Groups {
 		allowed := true
 		for _, member := range value.Members {
@@ -51,37 +52,39 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 		if !allowed {
 			continue
 		}
-		metrics := value.Metrics
-		group := Group{Status: Qualified, Reasons: []Reason{}, Members: append([]Support(nil), value.Members...), VisualEvidence: &metrics}
-		for _, e := range episodes {
-			if e.SourceKey == group.Members[0].SourceKey {
-				group.AlgorithmProfile = e.AlgorithmProfile
-				break
-			}
-		}
-		identity, _ := json.Marshal(struct {
-			Version, Policy, Cohort, Profile string
-			CalibrationDigest                string
-			Members                          []Support
-			Evidence                         VisualSequenceMetrics
-		}{Version, VisualSequenceVersion, cohort.Key, group.AlgorithmProfile, visualCalibrationDigest(value), group.Members, metrics})
-		digest := sha256.Sum256(identity)
-		group.ID = "intro-visual-v5-" + hex.EncodeToString(digest[:])
-		for _, member := range group.Members {
-			candidate := Candidate{Interval: member.Interval, Status: Qualified, Reasons: []Reason{}, Support: group.Members, VisualEvidence: &metrics}
-			if !ValidateCandidateEvidence(candidate, o) {
-				allowed = false
-				break
-			}
-		}
-		if allowed {
+		if group, ok := visualPublicationGroup(value, cohort.Key, episodes, o); ok {
 			groups = append(groups, group)
+			witnesses = append(witnesses, value)
 		}
 	}
 	selection, err := selectVisualWitnesses(groups, budget)
 	if err != nil {
 		return nil, nil, err
 	}
+	recovered, err := recoverVisualConsensus(witnesses, episodes, selection, budget)
+	if err != nil {
+		return nil, nil, err
+	}
+	recoveredGroups := make([]Group, 0, len(recovered))
+	recoveredIDs := map[string]bool{}
+	for _, value := range recovered {
+		if group, ok := visualPublicationGroup(value, cohort.Key, episodes, o); ok {
+			if !recoveredIDs[group.ID] {
+				recoveredGroups = append(recoveredGroups, group)
+				recoveredIDs[group.ID] = true
+			}
+		}
+	}
+	recoveredSelection, err := selectVisualWitnesses(recoveredGroups, budget)
+	if err != nil {
+		return nil, nil, err
+	}
+	for source, groupID := range recoveredSelection {
+		if original, exists := selection[source]; exists && original == "" && groupID != "" {
+			selection[source] = groupID
+		}
+	}
+	groups = append(groups, recoveredGroups...)
 	selectedGroups := make(map[string]bool, len(selection))
 	for _, groupID := range selection {
 		if groupID != "" {
@@ -92,9 +95,39 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 	for _, group := range groups {
 		if selectedGroups[group.ID] {
 			retained = append(retained, group)
+			delete(selectedGroups, group.ID)
 		}
 	}
 	return retained, selection, nil
+}
+
+func visualPublicationGroup(value VisualSequenceGroup, cohort string, episodes []Episode, o Options) (Group, bool) {
+	if len(value.Members) == 0 {
+		return Group{}, false
+	}
+	metrics := value.Metrics
+	group := Group{Status: Qualified, Reasons: []Reason{}, Members: append([]Support(nil), value.Members...), VisualEvidence: &metrics}
+	for _, e := range episodes {
+		if e.SourceKey == group.Members[0].SourceKey {
+			group.AlgorithmProfile = e.AlgorithmProfile
+			break
+		}
+	}
+	identity, _ := json.Marshal(struct {
+		Version, Policy, Cohort, Profile string
+		CalibrationDigest                string
+		Members                          []Support
+		Evidence                         VisualSequenceMetrics
+	}{Version, VisualSequenceVersion, cohort, group.AlgorithmProfile, visualCalibrationDigest(value), group.Members, metrics})
+	digest := sha256.Sum256(identity)
+	group.ID = "intro-visual-v5-" + hex.EncodeToString(digest[:])
+	for _, member := range group.Members {
+		candidate := Candidate{Interval: member.Interval, Status: Qualified, Reasons: []Reason{}, Support: group.Members, VisualEvidence: &metrics}
+		if !ValidateCandidateEvidence(candidate, o) {
+			return Group{}, false
+		}
+	}
+	return group, true
 }
 
 // Each source selects an existing complete witness. Different support cliques

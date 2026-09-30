@@ -1,14 +1,26 @@
 # Current execution plan
 
-## Spatial intro refinement complete within the selected scope
+## Common-interior intro recovery complete within the selected scope
+
+The [third recognition increment](intro-quality-round3-plan-20260930.md)
+restores R14/R15 in the mixed cohort while preserving existing qualified
+results. Its first new three-positive/three-negative evaluation passed with
+no protected-content overlap. The
+[result](../development/intro-quality-round3-20260930.md) records all 27
+retained cases, including nine remaining positive misses. The next useful
+recognition task is a bounded descriptor/scene-correspondence investigation
+for Beverly's version mismatch; a 540-geometry diagnostic did not support
+simply expanding the current spatial grid. Any adopted improvement needs a
+new frozen episode evaluation. The accepted Docker catalog remains unchanged.
+
+## Previous spatial intro refinement increment
 
 The [second recognition increment](intro-quality-round2-plan-20260930.md) is
 implemented and verified. Its first new positive and negative cohorts passed;
 the [result](../development/intro-quality-round2-20260930.md) retains development
-misses, mixed-support recall regressions and platform boundaries. Further work
-should address remaining series/format families and conservative competing-window
-abstentions using another independent evaluation. The accepted Docker catalog
-has not changed.
+misses, its then-observed mixed-support recall regressions and platform
+boundaries. The third increment above resolves those two recall regressions;
+the second increment's original record remains unchanged.
 
 ## Previous intro-quality source increment
 
