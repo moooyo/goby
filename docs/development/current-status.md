@@ -1,5 +1,22 @@
 # Current implementation and delivery status
 
+## Latest external evaluation: native Intro Skipper
+
+The [native Intro Skipper evaluation](intro-skipper-native-evaluation-20261001.md)
+ran official Jellyfin 12.0, Intro Skipper 12.0.4.0 and Jellyfin FFmpeg on the
+designated remote environment without modifying the detector. All 19 existing
+development episodes completed. Six Beverly episodes received segments; one
+passed the historical endpoint/protection rule, while three crossed frozen
+protected-content ranges by 7.76-10.47 seconds. A separately frozen adjustment
+ablation retained the same three protection failures. NASA's three negative
+controls abstained; Hubblecast's three short positive challenges are reported
+separately. This does not support direct automatic adoption under the current
+reference policy. Native HTTP storage/projection worked, but no player or Goby
+integration was performed. The temporary service is stopped and all source
+and result evidence is retained. Upstream reuse without a detector fork remains
+the preferred direction; this finding does not accept further custom matcher
+development or a new release.
+
 ## Latest source increment: complete-target scoring and new source evidence
 
 The [seventh intro-quality increment](intro-quality-round7-20261001.md) adds a

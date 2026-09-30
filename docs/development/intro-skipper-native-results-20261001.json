@@ -1,0 +1,1776 @@
+{
+  "kind": "goby-intro-skipper-native-evaluation",
+  "recordedUTC": "2026-09-30T19:42:52.606010+00:00",
+  "status": "evaluation_complete_direct_automatic_adoption_not_accepted",
+  "sourceBaseline": "2c8c86d",
+  "applicationBaseline": "4817cb3",
+  "environment": "test-env",
+  "localVerificationExecuted": false,
+  "upstreamCodeChanged": false,
+  "gobyAlgorithmChanged": false,
+  "detectorForkCreated": false,
+  "upstream": {
+    "repository": "https://github.com/intro-skipper/intro-skipper",
+    "releaseTag": "12.0/v12.0.4.0",
+    "commit": "6e0cb179007ac4c16cd9f358e9a617e791e9bf06",
+    "dllVersion": "12.0.4.0",
+    "dllSHA256": "f5c10f3453d48bfa210c6c487c67fc3ee7ce4c96c51121b2a6608f8a923399e8",
+    "jellyfinVersion": "12.0.0",
+    "dotnetVersion": "10.0.11",
+    "ffmpegVersion": "8.1.3-Jellyfin",
+    "sourceLicense": "GPL-3.0-only",
+    "nativePluginUsed": true
+  },
+  "population": {
+    "uniqueEpisodes": 19,
+    "ordinaryPositiveTargets": 13,
+    "shortPositiveChallenges": 3,
+    "negativeControls": 3,
+    "independentHeldout": false,
+    "fullSourceFiles": true,
+    "seasonNumbersAreExecutionGroupings": true,
+    "primaryPools": [
+      {
+        "id": "beverly-available-seven",
+        "sourceIds": [
+          "B1",
+          "B2",
+          "B3",
+          "B4",
+          "B5",
+          "B6",
+          "B7"
+        ],
+        "knownSeason": null
+      },
+      {
+        "id": "robin-existing-three",
+        "sourceIds": [
+          "R19",
+          "R20",
+          "R21"
+        ],
+        "knownSeason": null
+      },
+      {
+        "id": "nasa-existing-three",
+        "sourceIds": [
+          "N388",
+          "N389",
+          "N390"
+        ],
+        "knownSeason": null
+      },
+      {
+        "id": "hubble-short-three",
+        "sourceIds": [
+          "H114",
+          "H116",
+          "H118"
+        ],
+        "knownSeason": null
+      },
+      {
+        "id": "osb-s02-three",
+        "sourceIds": [
+          "O1",
+          "O2",
+          "O3"
+        ],
+        "knownSeason": 2
+      }
+    ],
+    "labelsUnchanged": true,
+    "humanReviewed": false,
+    "audioListened": false,
+    "osbMachineAsrAssistanceRetained": true,
+    "scorerFreeze": {
+      "file": "protocol/scorer-freeze.json",
+      "bytes": 2528,
+      "sha256": "91ff5771b6cc28197c26877d74a2bf218369237b4fac3b1a5159a7f1aec22187"
+    }
+  },
+  "runs": [
+    {
+      "runId": "primary01",
+      "kind": "native-default-first",
+      "nativeAnalysisConfigHash": "6908FA7CE6CEDB25",
+      "summary": {
+        "uniqueEpisodes": 19,
+        "completed": 19,
+        "blocked": 0,
+        "segmentBearing": 6,
+        "strictFullTargetMatches": 0,
+        "legacyEndpointHits": 1,
+        "positiveMisses": 16,
+        "negativeFalsePositives": 0,
+        "correctNegativeAbstentions": 3,
+        "protectedOverlapCases": 3,
+        "rawProtectedOverlapUnionSeconds": 27.9816854,
+        "outputsAfterLastAnnotatedEndpoint": 0
+      },
+      "byStratum": {
+        "beverly-newer-positive": {
+          "uniqueEpisodes": 4,
+          "completed": 4,
+          "blocked": 0,
+          "segmentBearing": 3,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 4,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 2,
+          "rawProtectedOverlapUnionSeconds": 20.2252003,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "beverly-old-positive": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 3,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 1,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 1,
+          "rawProtectedOverlapUnionSeconds": 7.7564851,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "hubble-short-opening-challenge": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "nasa-no-automatic-intro": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 0,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 3,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "osb-semantic-positive": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "robin-positive": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        }
+      },
+      "resources": {
+        "startedUTC": "2026-09-30T19:26:13.499810+00:00",
+        "finishedUTC": "2026-09-30T19:26:21.592695+00:00",
+        "wallSeconds": 8.089779489964712,
+        "cpuAffinity": [
+          0,
+          1
+        ],
+        "maximumSampledRSSIncludingChildren": 518160384,
+        "cpuSecondsIncludingReapedChildren": 12.69,
+        "samplingIntervalSeconds": 1,
+        "includesNativeHostAndChildren": true
+      },
+      "cases": [
+        {
+          "id": "B1",
+          "episodeKey": "beverly-hillbillies:1",
+          "sourceSha256": "dfbe4cf37afad226fe1248c32388d37591434fa5e3907acbfaf382c656b7d229",
+          "stratum": "beverly-old-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            29.524604
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": [
+            {
+              "seconds": [
+                7.678065,
+                28.8156623
+              ],
+              "targetCoverageRatio": 0.7542850885830829,
+              "missingHeadSeconds": 6.176814,
+              "missingTailSeconds": 0.7089417,
+              "absoluteEndpointErrorsSeconds": [
+                6.176814,
+                0.7089417
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": true,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": false,
+              "protectedOverlapUnionSeconds": 0
+            }
+          ]
+        },
+        {
+          "id": "B2",
+          "episodeKey": "beverly-hillbillies:2",
+          "sourceSha256": "c7796c3c8a0e9f4ec4d8924ab2d62183660baaf0c9603e87fe1e95eb828eef7d",
+          "stratum": "beverly-old-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            21.517932
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": true,
+          "protectedOverlapUnionSeconds": 7.7564851,
+          "candidates": [
+            {
+              "seconds": [
+                5.4489494,
+                30.7756681
+              ],
+              "targetCoverageRatio": 0.8027795716982251,
+              "missingHeadSeconds": 3.9476984,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                3.9476984,
+                9.2577361
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": true,
+              "protectedOverlapUnionSeconds": 7.7564851
+            }
+          ]
+        },
+        {
+          "id": "B3",
+          "episodeKey": "beverly-hillbillies:3",
+          "sourceSha256": "00154986acf87d2cefcbb4ebcd503db4fd6a4c3fffbe26cd79d2ef4d891eb850",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            26.522102
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "B4",
+          "episodeKey": "beverly-hillbillies:4",
+          "sourceSha256": "8443c69f235ea496eaf7595ebb02ba135a1e9ce162549224aeafdd807262db73",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            2.502085,
+            55.546289
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": [
+            {
+              "seconds": [
+                34.303613,
+                55.6297013
+              ],
+              "targetCoverageRatio": 0.40047119945470383,
+              "missingHeadSeconds": 31.801528,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                31.801528,
+                0.0834123
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": false,
+              "protectedOverlapUnionSeconds": 0
+            }
+          ]
+        },
+        {
+          "id": "B5",
+          "episodeKey": "beverly-hillbillies:5",
+          "sourceSha256": "d97bd6af9e86f0fbd1ff1754da41d23db3f00bd21a7c125756cd300acee85841",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            29.024187
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": true,
+          "protectedOverlapUnionSeconds": 9.7581453,
+          "candidates": [
+            {
+              "seconds": [
+                0,
+                39.2827493
+              ],
+              "targetCoverageRatio": 1,
+              "missingHeadSeconds": 0,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                1.501251,
+                10.2585623
+              ],
+              "strictFullTargetCovered": true,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": true,
+              "protectedOverlapUnionSeconds": 9.7581453
+            }
+          ]
+        },
+        {
+          "id": "B6",
+          "episodeKey": "beverly-hillbillies:6",
+          "sourceSha256": "0402e7e2cf19bb7394ead725b5993653c00d954b14b93d7217524c3b03122c11",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            28.52377
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": true,
+          "protectedOverlapUnionSeconds": 10.467055,
+          "candidates": [
+            {
+              "seconds": [
+                0,
+                40.492076
+              ],
+              "targetCoverageRatio": 1,
+              "missingHeadSeconds": 0,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                1.501251,
+                11.968306
+              ],
+              "strictFullTargetCovered": true,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": true,
+              "protectedOverlapUnionSeconds": 10.467055
+            }
+          ]
+        },
+        {
+          "id": "B7",
+          "episodeKey": "beverly-hillbillies:7",
+          "sourceSha256": "ecddcca8e6a15a53381932044e9a7a07d7d45b4ef3b5cdb3feddf1abdb234e7c",
+          "stratum": "beverly-old-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.0,
+            23.5196
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": true,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": [
+            {
+              "seconds": [
+                0,
+                23.2693797
+              ],
+              "targetCoverageRatio": 0.9893612008707631,
+              "missingHeadSeconds": 0,
+              "missingTailSeconds": 0.2502203,
+              "absoluteEndpointErrorsSeconds": [
+                0,
+                0.2502203
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": true,
+              "legacyEndpointRuleMatch": true,
+              "protectedViolation": false,
+              "protectedOverlapUnionSeconds": 0
+            }
+          ]
+        },
+        {
+          "id": "R19",
+          "episodeKey": "robin-hood:19",
+          "sourceSha256": "4f7cd6513689850b289eabd2c76d7f6d235d5aef0c501f146038184454664258",
+          "stratum": "robin-positive",
+          "poolId": "robin-existing-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.500417,
+            16.513761
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "R20",
+          "episodeKey": "robin-hood:20",
+          "sourceSha256": "4f1fbfa268834636cf6e5a75303cd2b75957735cd451295668a31f39365f30a6",
+          "stratum": "robin-positive",
+          "poolId": "robin-existing-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.500417,
+            14.512093
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "R21",
+          "episodeKey": "robin-hood:21",
+          "sourceSha256": "243dd695a8747f06131be4c38cbef079f7acb8d85bb5a8405eebde85e860f61b",
+          "stratum": "robin-positive",
+          "poolId": "robin-existing-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.500417,
+            15.512927
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "N388",
+          "episodeKey": "space-to-ground:388",
+          "sourceSha256": "977b4d61cb294afbb06581c03fba98d43680f0317b90a59463c4d5fd0aee4a4c",
+          "stratum": "nasa-no-automatic-intro",
+          "poolId": "nasa-existing-three",
+          "labelClass": "negative",
+          "shortOpeningChallenge": false,
+          "targetSeconds": null,
+          "evaluationStatus": "completed",
+          "outcome": "correct_abstention",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "N389",
+          "episodeKey": "space-to-ground:389",
+          "sourceSha256": "cadf3bc114069eff0434589ae2ebd4e1ce9d32c40b94e6aa192e46815e6632d4",
+          "stratum": "nasa-no-automatic-intro",
+          "poolId": "nasa-existing-three",
+          "labelClass": "negative",
+          "shortOpeningChallenge": false,
+          "targetSeconds": null,
+          "evaluationStatus": "completed",
+          "outcome": "correct_abstention",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "N390",
+          "episodeKey": "space-to-ground:390",
+          "sourceSha256": "2fb4e07474d6e822ba05b5a8aed6defcd5fd4c89fb5f0d308bce904d7d017aeb",
+          "stratum": "nasa-no-automatic-intro",
+          "poolId": "nasa-existing-three",
+          "labelClass": "negative",
+          "shortOpeningChallenge": false,
+          "targetSeconds": null,
+          "evaluationStatus": "completed",
+          "outcome": "correct_abstention",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "H114",
+          "episodeKey": "hubblecast:114",
+          "sourceSha256": "5ac23b23d9c8ad5aeadb97ef658f7932b188031bdb762047ed8d09eebd647a5b",
+          "stratum": "hubble-short-opening-challenge",
+          "poolId": "hubble-short-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": true,
+          "targetSeconds": [
+            22.02,
+            32.56
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "H116",
+          "episodeKey": "hubblecast:116",
+          "sourceSha256": "8650f39ac6ab8b962ececdf09b56048cd3a0983a806d7aab6d5ebbd6f5989cfd",
+          "stratum": "hubble-short-opening-challenge",
+          "poolId": "hubble-short-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": true,
+          "targetSeconds": [
+            29.2,
+            39.6
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "H118",
+          "episodeKey": "hubblecast:118",
+          "sourceSha256": "5b254818ac18e08af7af6150880c0715cd8477c507385104b380b3c46af4853f",
+          "stratum": "hubble-short-opening-challenge",
+          "poolId": "hubble-short-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": true,
+          "targetSeconds": [
+            27.44,
+            37.84
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "O1",
+          "episodeKey": "one-step-beyond:s02e01",
+          "sourceSha256": "241367645b14cd5076478ca2908e3b8a07537cb8f5b1bd526a756228fd163f9f",
+          "stratum": "osb-semantic-positive",
+          "poolId": "osb-s02-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            26.7267
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "O2",
+          "episodeKey": "one-step-beyond:s02e02",
+          "sourceSha256": "103b38857270bb0e489a928fcfeec621f381befb8915350145466aaa7adb0c1c",
+          "stratum": "osb-semantic-positive",
+          "poolId": "osb-s02-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            26.3263
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "O3",
+          "episodeKey": "one-step-beyond:s02e03",
+          "sourceSha256": "984c8827aaedd152d2e1e65b0c1952fb9a448f044739fcc2976ef4af82bff24f",
+          "stratum": "osb-semantic-positive",
+          "poolId": "osb-s02-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            47.5475
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        }
+      ],
+      "scoreBinding": {
+        "file": "native/primary01/score.json",
+        "bytes": 29455,
+        "sha256": "67acb1fa12b668d2bb55d4dd61e8327a5f4b4e3c842c5dfa1f35dd2949eb6bfe"
+      },
+      "captureBinding": {
+        "file": "native/primary01/capture.json",
+        "bytes": 18598,
+        "sha256": "cf4839282b46a4d107292d3f981150ed140ba900f277c17e0781f977e18502c1"
+      },
+      "taskResult": {
+        "StartTimeUtc": "2026-09-30T19:26:13.5024162Z",
+        "EndTimeUtc": "2026-09-30T19:26:21.5540655Z",
+        "Status": "Completed",
+        "Name": "Detect and Analyze Media Segments",
+        "Key": "IntroSkipperDetectSegmentsTask",
+        "Id": "eed9a58097ab2f196265820308ec2e1c"
+      }
+    },
+    {
+      "runId": "boundary-ablation01",
+      "kind": "configurable-boundary-adjustment-ablation",
+      "nativeAnalysisConfigHash": "35C9FF6C5530A5E2",
+      "summary": {
+        "uniqueEpisodes": 19,
+        "completed": 19,
+        "blocked": 0,
+        "segmentBearing": 6,
+        "strictFullTargetMatches": 0,
+        "legacyEndpointHits": 1,
+        "positiveMisses": 16,
+        "negativeFalsePositives": 0,
+        "correctNegativeAbstentions": 3,
+        "protectedOverlapCases": 3,
+        "rawProtectedOverlapUnionSeconds": 22.1996274,
+        "outputsAfterLastAnnotatedEndpoint": 0
+      },
+      "byStratum": {
+        "beverly-newer-positive": {
+          "uniqueEpisodes": 4,
+          "completed": 4,
+          "blocked": 0,
+          "segmentBearing": 3,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 4,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 2,
+          "rawProtectedOverlapUnionSeconds": 17.1071853,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "beverly-old-positive": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 3,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 1,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 1,
+          "rawProtectedOverlapUnionSeconds": 5.0924421,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "hubble-short-opening-challenge": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "nasa-no-automatic-intro": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 0,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 3,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "osb-semantic-positive": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        },
+        "robin-positive": {
+          "uniqueEpisodes": 3,
+          "completed": 3,
+          "blocked": 0,
+          "segmentBearing": 0,
+          "strictFullTargetMatches": 0,
+          "legacyEndpointHits": 0,
+          "positiveMisses": 3,
+          "negativeFalsePositives": 0,
+          "correctNegativeAbstentions": 0,
+          "protectedOverlapCases": 0,
+          "rawProtectedOverlapUnionSeconds": 0,
+          "outputsAfterLastAnnotatedEndpoint": 0
+        }
+      },
+      "resources": {
+        "startedUTC": "2026-09-30T19:33:14.790562+00:00",
+        "finishedUTC": "2026-09-30T19:33:15.818543+00:00",
+        "wallSeconds": 1.0244260460021906,
+        "cpuAffinity": [
+          0,
+          1
+        ],
+        "maximumSampledRSSIncludingChildren": 396206080,
+        "cpuSecondsIncludingReapedChildren": 0.3,
+        "samplingIntervalSeconds": 1,
+        "includesNativeHostAndChildren": true
+      },
+      "cases": [
+        {
+          "id": "B1",
+          "episodeKey": "beverly-hillbillies:1",
+          "sourceSha256": "dfbe4cf37afad226fe1248c32388d37591434fa5e3907acbfaf382c656b7d229",
+          "stratum": "beverly-old-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            29.524604
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": [
+            {
+              "seconds": [
+                7.678065,
+                27.9877853
+              ],
+              "targetCoverageRatio": 0.7247426922823975,
+              "missingHeadSeconds": 6.176814,
+              "missingTailSeconds": 1.5368187,
+              "absoluteEndpointErrorsSeconds": [
+                6.176814,
+                1.5368187
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": true,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": false,
+              "protectedOverlapUnionSeconds": 0
+            }
+          ]
+        },
+        {
+          "id": "B2",
+          "episodeKey": "beverly-hillbillies:2",
+          "sourceSha256": "c7796c3c8a0e9f4ec4d8924ab2d62183660baaf0c9603e87fe1e95eb828eef7d",
+          "stratum": "beverly-old-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            21.517932
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": true,
+          "protectedOverlapUnionSeconds": 5.0924421,
+          "candidates": [
+            {
+              "seconds": [
+                5.4489494,
+                28.1116251
+              ],
+              "targetCoverageRatio": 0.8027795716982251,
+              "missingHeadSeconds": 3.9476984,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                3.9476984,
+                6.5936931
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": true,
+              "protectedOverlapUnionSeconds": 5.0924421
+            }
+          ]
+        },
+        {
+          "id": "B3",
+          "episodeKey": "beverly-hillbillies:3",
+          "sourceSha256": "00154986acf87d2cefcbb4ebcd503db4fd6a4c3fffbe26cd79d2ef4d891eb850",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            26.522102
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "B4",
+          "episodeKey": "beverly-hillbillies:4",
+          "sourceSha256": "8443c69f235ea496eaf7595ebb02ba135a1e9ce162549224aeafdd807262db73",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            2.502085,
+            55.546289
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": [
+            {
+              "seconds": [
+                34.303613,
+                54.6133333
+              ],
+              "targetCoverageRatio": 0.38288293099845555,
+              "missingHeadSeconds": 31.801528,
+              "missingTailSeconds": 0.9329557,
+              "absoluteEndpointErrorsSeconds": [
+                31.801528,
+                0.9329557
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": true,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": false,
+              "protectedOverlapUnionSeconds": 0
+            }
+          ]
+        },
+        {
+          "id": "B5",
+          "episodeKey": "beverly-hillbillies:5",
+          "sourceSha256": "d97bd6af9e86f0fbd1ff1754da41d23db3f00bd21a7c125756cd300acee85841",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            29.024187
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": true,
+          "protectedOverlapUnionSeconds": 8.7418813,
+          "candidates": [
+            {
+              "seconds": [
+                0,
+                38.2664853
+              ],
+              "targetCoverageRatio": 1,
+              "missingHeadSeconds": 0,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                1.501251,
+                9.2422983
+              ],
+              "strictFullTargetCovered": true,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": true,
+              "protectedOverlapUnionSeconds": 8.7418813
+            }
+          ]
+        },
+        {
+          "id": "B6",
+          "episodeKey": "beverly-hillbillies:6",
+          "sourceSha256": "0402e7e2cf19bb7394ead725b5993653c00d954b14b93d7217524c3b03122c11",
+          "stratum": "beverly-newer-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            1.501251,
+            28.52377
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": true,
+          "protectedOverlapUnionSeconds": 8.365304,
+          "candidates": [
+            {
+              "seconds": [
+                0,
+                38.390325
+              ],
+              "targetCoverageRatio": 1,
+              "missingHeadSeconds": 0,
+              "missingTailSeconds": 0,
+              "absoluteEndpointErrorsSeconds": [
+                1.501251,
+                9.866555
+              ],
+              "strictFullTargetCovered": true,
+              "strictContainedInTarget": false,
+              "legacyEndpointRuleMatch": false,
+              "protectedViolation": true,
+              "protectedOverlapUnionSeconds": 8.365304
+            }
+          ]
+        },
+        {
+          "id": "B7",
+          "episodeKey": "beverly-hillbillies:7",
+          "sourceSha256": "ecddcca8e6a15a53381932044e9a7a07d7d45b4ef3b5cdb3feddf1abdb234e7c",
+          "stratum": "beverly-old-positive",
+          "poolId": "beverly-available-seven",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.0,
+            23.5196
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 1,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": true,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": [
+            {
+              "seconds": [
+                0,
+                22.6626757
+              ],
+              "targetCoverageRatio": 0.9635655240735387,
+              "missingHeadSeconds": 0,
+              "missingTailSeconds": 0.8569243,
+              "absoluteEndpointErrorsSeconds": [
+                0,
+                0.8569243
+              ],
+              "strictFullTargetCovered": false,
+              "strictContainedInTarget": true,
+              "legacyEndpointRuleMatch": true,
+              "protectedViolation": false,
+              "protectedOverlapUnionSeconds": 0
+            }
+          ]
+        },
+        {
+          "id": "R19",
+          "episodeKey": "robin-hood:19",
+          "sourceSha256": "4f7cd6513689850b289eabd2c76d7f6d235d5aef0c501f146038184454664258",
+          "stratum": "robin-positive",
+          "poolId": "robin-existing-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.500417,
+            16.513761
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "R20",
+          "episodeKey": "robin-hood:20",
+          "sourceSha256": "4f1fbfa268834636cf6e5a75303cd2b75957735cd451295668a31f39365f30a6",
+          "stratum": "robin-positive",
+          "poolId": "robin-existing-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.500417,
+            14.512093
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "R21",
+          "episodeKey": "robin-hood:21",
+          "sourceSha256": "243dd695a8747f06131be4c38cbef079f7acb8d85bb5a8405eebde85e860f61b",
+          "stratum": "robin-positive",
+          "poolId": "robin-existing-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0.500417,
+            15.512927
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "N388",
+          "episodeKey": "space-to-ground:388",
+          "sourceSha256": "977b4d61cb294afbb06581c03fba98d43680f0317b90a59463c4d5fd0aee4a4c",
+          "stratum": "nasa-no-automatic-intro",
+          "poolId": "nasa-existing-three",
+          "labelClass": "negative",
+          "shortOpeningChallenge": false,
+          "targetSeconds": null,
+          "evaluationStatus": "completed",
+          "outcome": "correct_abstention",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "N389",
+          "episodeKey": "space-to-ground:389",
+          "sourceSha256": "cadf3bc114069eff0434589ae2ebd4e1ce9d32c40b94e6aa192e46815e6632d4",
+          "stratum": "nasa-no-automatic-intro",
+          "poolId": "nasa-existing-three",
+          "labelClass": "negative",
+          "shortOpeningChallenge": false,
+          "targetSeconds": null,
+          "evaluationStatus": "completed",
+          "outcome": "correct_abstention",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "N390",
+          "episodeKey": "space-to-ground:390",
+          "sourceSha256": "2fb4e07474d6e822ba05b5a8aed6defcd5fd4c89fb5f0d308bce904d7d017aeb",
+          "stratum": "nasa-no-automatic-intro",
+          "poolId": "nasa-existing-three",
+          "labelClass": "negative",
+          "shortOpeningChallenge": false,
+          "targetSeconds": null,
+          "evaluationStatus": "completed",
+          "outcome": "correct_abstention",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "H114",
+          "episodeKey": "hubblecast:114",
+          "sourceSha256": "5ac23b23d9c8ad5aeadb97ef658f7932b188031bdb762047ed8d09eebd647a5b",
+          "stratum": "hubble-short-opening-challenge",
+          "poolId": "hubble-short-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": true,
+          "targetSeconds": [
+            22.02,
+            32.56
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "H116",
+          "episodeKey": "hubblecast:116",
+          "sourceSha256": "8650f39ac6ab8b962ececdf09b56048cd3a0983a806d7aab6d5ebbd6f5989cfd",
+          "stratum": "hubble-short-opening-challenge",
+          "poolId": "hubble-short-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": true,
+          "targetSeconds": [
+            29.2,
+            39.6
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "H118",
+          "episodeKey": "hubblecast:118",
+          "sourceSha256": "5b254818ac18e08af7af6150880c0715cd8477c507385104b380b3c46af4853f",
+          "stratum": "hubble-short-opening-challenge",
+          "poolId": "hubble-short-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": true,
+          "targetSeconds": [
+            27.44,
+            37.84
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "O1",
+          "episodeKey": "one-step-beyond:s02e01",
+          "sourceSha256": "241367645b14cd5076478ca2908e3b8a07537cb8f5b1bd526a756228fd163f9f",
+          "stratum": "osb-semantic-positive",
+          "poolId": "osb-s02-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            26.7267
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "O2",
+          "episodeKey": "one-step-beyond:s02e02",
+          "sourceSha256": "103b38857270bb0e489a928fcfeec621f381befb8915350145466aaa7adb0c1c",
+          "stratum": "osb-semantic-positive",
+          "poolId": "osb-s02-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            26.3263
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        },
+        {
+          "id": "O3",
+          "episodeKey": "one-step-beyond:s02e03",
+          "sourceSha256": "984c8827aaedd152d2e1e65b0c1952fb9a448f044739fcc2976ef4af82bff24f",
+          "stratum": "osb-semantic-positive",
+          "poolId": "osb-s02-three",
+          "labelClass": "positive",
+          "shortOpeningChallenge": false,
+          "targetSeconds": [
+            0,
+            47.5475
+          ],
+          "evaluationStatus": "completed",
+          "outcome": "miss",
+          "candidateCount": 0,
+          "fullTargetCoverageMatch": false,
+          "legacyEndpointRuleHit": false,
+          "protectedViolation": false,
+          "protectedOverlapUnionSeconds": 0,
+          "candidates": []
+        }
+      ],
+      "scoreBinding": {
+        "file": "native/boundary-ablation01/score.json",
+        "bytes": 29674,
+        "sha256": "e871e78d5f7a3b9a60d379c72146732fd2cecd8ae94b7848bdeaed04ae6d0aaf"
+      },
+      "captureBinding": {
+        "file": "native/boundary-ablation01/capture.json",
+        "bytes": 19198,
+        "sha256": "785046d5fea23e955866108833e0090b48249f187053cdf1b4e9d3c1c76daf02"
+      },
+      "taskResult": {
+        "StartTimeUtc": "2026-09-30T19:33:14.7935004Z",
+        "EndTimeUtc": "2026-09-30T19:33:14.8369888Z",
+        "Status": "Completed",
+        "Name": "Detect and Analyze Media Segments",
+        "Key": "IntroSkipperDetectSegmentsTask",
+        "Id": "eed9a58097ab2f196265820308ec2e1c"
+      }
+    }
+  ],
+  "diagnosticOverrides": {
+    "AdjustIntroBasedOnChapters": {
+      "before": true,
+      "after": false
+    },
+    "AdjustIntroBasedOnSilence": {
+      "before": true,
+      "after": false
+    },
+    "SnapToKeyframe": {
+      "before": true,
+      "after": false
+    },
+    "EndSnapThreshold": {
+      "before": 2,
+      "after": 0
+    }
+  },
+  "ablationLimits": [
+    "Fingerprint caches were reused; warm performance is not another cold result.",
+    "The upstream matcher still internally snaps starts at or before five seconds; this is not pure raw audio output.",
+    "Matching thresholds and labels did not change; default evidence remains immutable."
+  ],
+  "decision": {
+    "directAutomaticUseAccepted": false,
+    "primaryReason": "Three substantial protected-content crossings persist with configurable boundary adjustments disabled.",
+    "B7LegacySuccessRetained": true,
+    "doesNotEstimateGeneralLibraryAccuracy": true,
+    "upstreamReusePreferenceRetained": true,
+    "customDetectorMaintenanceNotResumed": true
+  },
+  "integration": {
+    "nativePluginStoredResponsesVerified": true,
+    "mediaSegmentsAPIProjectionVerified": true,
+    "projectionQueueEmptyAtFinalReadback": true,
+    "playerUITested": false,
+    "gobyIntegrated": false,
+    "standaloneIntroCLIPresentInRelease": false,
+    "noForkArchitecture": "Jellyfin plus the official plugin as a private service, consumed through its HTTP segment API."
+  },
+  "scorerVerification": {
+    "remoteFixturePasses": 15,
+    "independentReadOnlyReview": {
+      "file": "native-evaluation-review.md",
+      "bytes": 10118,
+      "sha256": "58ad44215070033a89f9794a8158394ce4b0c9e9199c0a18ed9f3b3fff5599a2"
+    },
+    "upstreamUnitTestSuiteClaimed": false
+  },
+  "evidenceRoot": "/opt/goby-intro-skipper-eval-20261001",
+  "evidenceFiles": [
+    {
+      "file": "runtime/runtime-summary.json",
+      "bytes": 7949,
+      "sha256": "d3b0e842ba7c182a73c155af0150a13d2743849b4ec0c4c2b7e49affd3a65190"
+    },
+    {
+      "file": "runtime/runtime-files.json",
+      "bytes": 560552,
+      "sha256": "dc78cbac9a3bde30693873c6c87aa35e8cbc2d87d75b6be1b942f698d5c49207"
+    },
+    {
+      "file": "runtime/plugin-release.json",
+      "bytes": 7051,
+      "sha256": "bbd4db2b263713fb338781494bde7d500c819c220c02754185b8205bf9508967"
+    },
+    {
+      "file": "runtime/ffmpeg-release.json",
+      "bytes": 29688,
+      "sha256": "bfb16c6970d98399fc6fb66be84f91fdc71f7abd003158f714b1f49b861c2e78"
+    },
+    {
+      "file": "protocol/freeze.json",
+      "bytes": 2524,
+      "sha256": "d79066678ec412c2dab6519fd9627aad2d40db77d1debf07f4893ce4cb8e925a"
+    },
+    {
+      "file": "protocol/inventory.json",
+      "bytes": 16105,
+      "sha256": "09974def76e227f28a163f7bec864044cb28518ea44c7708954a631c3670c9ff"
+    },
+    {
+      "file": "protocol/labels.json",
+      "bytes": 109070,
+      "sha256": "98773d24ded0ef8c876178b0ccd5e2a6279be359d306f1c557e89dc244818e4a"
+    },
+    {
+      "file": "protocol/scorer-freeze.json",
+      "bytes": 2528,
+      "sha256": "91ff5771b6cc28197c26877d74a2bf218369237b4fac3b1a5159a7f1aec22187"
+    },
+    {
+      "file": "protocol/external_score.py",
+      "bytes": 19957,
+      "sha256": "17e7ff7c9eee0360c1c8929df64d0dd97690c4978f125dc191cecc38b0d15630"
+    },
+    {
+      "file": "protocol/test_external_score.py",
+      "bytes": 9599,
+      "sha256": "cfc29ff3708bc892c8719d52bf729162cf5e42efe9645c8e3a886117c20126af"
+    },
+    {
+      "file": "protocol/scorer-fixtures02.log",
+      "bytes": 2180,
+      "sha256": "1e053c9afc5768010a8e67ed8866e669477d4de1814d87c0e2cbf8d4236b0dc8"
+    },
+    {
+      "file": "native/startup-summary.json",
+      "bytes": 836,
+      "sha256": "d87b6ca7c40021a998b979a919adf2b2d6f5567d6e84a65f1be44d6252b00f81"
+    },
+    {
+      "file": "native/plugins-loaded.json",
+      "bytes": 1830,
+      "sha256": "387ea67ec3f9552bac579feff10556c56ce23042f1b8cfa01ee0877f0033c567"
+    },
+    {
+      "file": "native/startup-preflight-note.json",
+      "bytes": 390,
+      "sha256": "096e60239b560bce3eaf9d8c1212e2be3cd491001318f9d5cffd60003cc495b2"
+    },
+    {
+      "file": "native/startup-listeners-repeat.txt",
+      "bytes": 87,
+      "sha256": "e3b570e235c220c0c6c9323e46db1412ff5de16c16e9f5bf0acc2a697bbfb1c0"
+    },
+    {
+      "file": "harness-clarifications.json",
+      "bytes": 724,
+      "sha256": "f058b5096b1643cc9cddadb3b7f9576aaea07c2356d4f09077268640a06e087e"
+    },
+    {
+      "file": "native/media-enrollment.json",
+      "bytes": 10368,
+      "sha256": "37804cdc4ff5e387b3ec3f71047fb040fe0a5b6ccd6d82581936c05b1c5b4501"
+    },
+    {
+      "file": "native/library-created.json",
+      "bytes": 2037,
+      "sha256": "e76cdf3835dd885f118bb8b7d663fd776125b3f6b01ae0f03fbf210c663b3cea"
+    },
+    {
+      "file": "native/library-scan-complete.json",
+      "bytes": 625,
+      "sha256": "c36cc99ab53f4251d76fb5ac49a9d3d054ee88588b2d65adbcaec65b9bc77191"
+    },
+    {
+      "file": "native/native-mapping.json",
+      "bytes": 14606,
+      "sha256": "8f6cfe196bf8d57c4db0b8a3a58a73ded1d9e1f877da3185dabb81119f2b77e5"
+    },
+    {
+      "file": "native/plugin-configuration-before-run.json",
+      "bytes": 2639,
+      "sha256": "0293a394e87496ce814e41c513cb48e16f0da4db1cfcf372cfa961f7c492ca24"
+    },
+    {
+      "file": "native/boundary-ablation-protocol.json",
+      "bytes": 982,
+      "sha256": "951764e142ddaa7ce046d24b2474fb56e5f9cee22589e435620910687d096295"
+    },
+    {
+      "file": "native/boundary-ablation-config-effective.json",
+      "bytes": 2642,
+      "sha256": "7e391dd32d9742bb8b75ec1e5ac521a062afb79ac82b80340bda12fe46593451"
+    },
+    {
+      "file": "native/projection-readback.json",
+      "bytes": 4245,
+      "sha256": "e5bebc4208cbeb12f516b088896a5208d504c12bff74b1a280db57d82ee6356d"
+    },
+    {
+      "file": "native-evaluation-review.md",
+      "bytes": 10118,
+      "sha256": "58ad44215070033a89f9794a8158394ce4b0c9e9199c0a18ed9f3b3fff5599a2"
+    },
+    {
+      "file": "resource-closure.json",
+      "bytes": 3676,
+      "sha256": "74d1796e7b08d47146dcfbf5d9db37a76a8ec3d7f13a7beb9171869578985fd8"
+    },
+    {
+      "file": "native/primary01/invocation-freeze.json",
+      "bytes": 1222,
+      "sha256": "7d23f790ab20a685142ca83494a70ada96e1d0e6775daaea769d23458c206081"
+    },
+    {
+      "file": "native/primary01/task-complete.json",
+      "bytes": 622,
+      "sha256": "0e37894507f2f42c47b707a13b95bc2494edf58629d0e926765ef9aa087d7b58"
+    },
+    {
+      "file": "native/primary01/segments-export.json",
+      "bytes": 7189,
+      "sha256": "a601444f9d7248866e73b29243fe9d51c6c3ae03454891410eafe72428040e78"
+    },
+    {
+      "file": "native/primary01/plugin-database-snapshot.json",
+      "bytes": 6270,
+      "sha256": "a859aff85e7bf2f215710db084bc196227d976a0ca668dc9c7e0a605baffd8c4"
+    },
+    {
+      "file": "native/primary01/configuration-after.json",
+      "bytes": 2910,
+      "sha256": "abb8ed45d393b33d0bcb82d366cdc02eb53af8eecffba13c4ef708a58729a058"
+    },
+    {
+      "file": "native/primary01/capture.json",
+      "bytes": 18598,
+      "sha256": "cf4839282b46a4d107292d3f981150ed140ba900f277c17e0781f977e18502c1"
+    },
+    {
+      "file": "native/primary01/score.json",
+      "bytes": 29455,
+      "sha256": "67acb1fa12b668d2bb55d4dd61e8327a5f4b4e3c842c5dfa1f35dd2949eb6bfe"
+    },
+    {
+      "file": "native/primary01/score-receipt.json",
+      "bytes": 975,
+      "sha256": "e72f9f956c7bbb89132d99d4ed6c4c28b03d91333b88cbf5c327bd91dbb430fd"
+    },
+    {
+      "file": "native/primary01/resource-measurement.json",
+      "bytes": 2610,
+      "sha256": "f82ccb52ef5826ae591ec3619c0b7d7df83ba592b9d262170954affd8dc439df"
+    },
+    {
+      "file": "native/boundary-ablation01/invocation-freeze.json",
+      "bytes": 1223,
+      "sha256": "4017eb2d0682fdc37d61ee51d2a9e4afb30a0f4a0b2ffa8999121b68b93b7419"
+    },
+    {
+      "file": "native/boundary-ablation01/task-complete.json",
+      "bytes": 622,
+      "sha256": "86ab4abff407f7393c6d4e5b49da45fb26a8360c6a61faef83e76b9b6a9215bb"
+    },
+    {
+      "file": "native/boundary-ablation01/segments-export.json",
+      "bytes": 7379,
+      "sha256": "4044cbd4a449118693ac38ee31a9d721b87b30321e342c3d74f7dc3a93acb205"
+    },
+    {
+      "file": "native/boundary-ablation01/plugin-database-snapshot.json",
+      "bytes": 5280,
+      "sha256": "a46725564882e45107b39a7b8d85852e7f078f0188be222fa7d80cb18970ebd3"
+    },
+    {
+      "file": "native/boundary-ablation01/configuration-after.json",
+      "bytes": 2913,
+      "sha256": "147957ad1b46c457b708e19dfa7075a8fae070f54ec632f4c5f0d7515d3f39f5"
+    },
+    {
+      "file": "native/boundary-ablation01/capture.json",
+      "bytes": 19198,
+      "sha256": "785046d5fea23e955866108833e0090b48249f187053cdf1b4e9d3c1c76daf02"
+    },
+    {
+      "file": "native/boundary-ablation01/score.json",
+      "bytes": 29674,
+      "sha256": "e871e78d5f7a3b9a60d379c72146732fd2cecd8ae94b7848bdeaed04ae6d0aaf"
+    },
+    {
+      "file": "native/boundary-ablation01/score-receipt.json",
+      "bytes": 995,
+      "sha256": "2e7de62899dba63315f10edeaf24b09c8d1cb06a96b723bdc6d3f86de50b013d"
+    },
+    {
+      "file": "native/boundary-ablation01/resource-measurement.json",
+      "bytes": 1003,
+      "sha256": "8ac90f5944b0f689212b0fdd30e2c89cd124dbb742ee03fe8d08c23743931436"
+    }
+  ],
+  "closure": {
+    "closedUTC": "2026-09-30T19:37:04.404959+00:00",
+    "nativeServerStopped": true,
+    "listener28196Absent": true,
+    "remainingRuntimeProcesses": [],
+    "shutdownAPIError": null,
+    "sourceIdentityChecks": [
+      {
+        "id": "B1",
+        "sha256": "dfbe4cf37afad226fe1248c32388d37591434fa5e3907acbfaf382c656b7d229",
+        "identityUnchanged": true
+      },
+      {
+        "id": "B2",
+        "sha256": "c7796c3c8a0e9f4ec4d8924ab2d62183660baaf0c9603e87fe1e95eb828eef7d",
+        "identityUnchanged": true
+      },
+      {
+        "id": "B3",
+        "sha256": "00154986acf87d2cefcbb4ebcd503db4fd6a4c3fffbe26cd79d2ef4d891eb850",
+        "identityUnchanged": true
+      },
+      {
+        "id": "B4",
+        "sha256": "8443c69f235ea496eaf7595ebb02ba135a1e9ce162549224aeafdd807262db73",
+        "identityUnchanged": true
+      },
+      {
+        "id": "B5",
+        "sha256": "d97bd6af9e86f0fbd1ff1754da41d23db3f00bd21a7c125756cd300acee85841",
+        "identityUnchanged": true
+      },
+      {
+        "id": "B6",
+        "sha256": "0402e7e2cf19bb7394ead725b5993653c00d954b14b93d7217524c3b03122c11",
+        "identityUnchanged": true
+      },
+      {
+        "id": "B7",
+        "sha256": "ecddcca8e6a15a53381932044e9a7a07d7d45b4ef3b5cdb3feddf1abdb234e7c",
+        "identityUnchanged": true
+      },
+      {
+        "id": "R19",
+        "sha256": "4f7cd6513689850b289eabd2c76d7f6d235d5aef0c501f146038184454664258",
+        "identityUnchanged": true
+      },
+      {
+        "id": "R20",
+        "sha256": "4f1fbfa268834636cf6e5a75303cd2b75957735cd451295668a31f39365f30a6",
+        "identityUnchanged": true
+      },
+      {
+        "id": "R21",
+        "sha256": "243dd695a8747f06131be4c38cbef079f7acb8d85bb5a8405eebde85e860f61b",
+        "identityUnchanged": true
+      },
+      {
+        "id": "N388",
+        "sha256": "977b4d61cb294afbb06581c03fba98d43680f0317b90a59463c4d5fd0aee4a4c",
+        "identityUnchanged": true
+      },
+      {
+        "id": "N389",
+        "sha256": "cadf3bc114069eff0434589ae2ebd4e1ce9d32c40b94e6aa192e46815e6632d4",
+        "identityUnchanged": true
+      },
+      {
+        "id": "N390",
+        "sha256": "2fb4e07474d6e822ba05b5a8aed6defcd5fd4c89fb5f0d308bce904d7d017aeb",
+        "identityUnchanged": true
+      },
+      {
+        "id": "H114",
+        "sha256": "5ac23b23d9c8ad5aeadb97ef658f7932b188031bdb762047ed8d09eebd647a5b",
+        "identityUnchanged": true
+      },
+      {
+        "id": "H116",
+        "sha256": "8650f39ac6ab8b962ececdf09b56048cd3a0983a806d7aab6d5ebbd6f5989cfd",
+        "identityUnchanged": true
+      },
+      {
+        "id": "H118",
+        "sha256": "5b254818ac18e08af7af6150880c0715cd8477c507385104b380b3c46af4853f",
+        "identityUnchanged": true
+      },
+      {
+        "id": "O1",
+        "sha256": "241367645b14cd5076478ca2908e3b8a07537cb8f5b1bd526a756228fd163f9f",
+        "identityUnchanged": true
+      },
+      {
+        "id": "O2",
+        "sha256": "103b38857270bb0e489a928fcfeec621f381befb8915350145466aaa7adb0c1c",
+        "identityUnchanged": true
+      },
+      {
+        "id": "O3",
+        "sha256": "984c8827aaedd152d2e1e65b0c1952fb9a448f044739fcc2976ef4af82bff24f",
+        "identityUnchanged": true
+      }
+    ],
+    "officialPluginSHA256Unchanged": "f5c10f3453d48bfa210c6c487c67fc3ee7ce4c96c51121b2a6608f8a923399e8",
+    "upstreamCodeModified": false,
+    "gobyImplementationModified": false,
+    "productionIntegrationPerformed": false,
+    "systemPackagesInstalled": false,
+    "dockerResourcesCreated": false,
+    "postgresStarted": false,
+    "sqliteDataAndRawReportsRetained": true,
+    "sourceMediaRetained": true,
+    "sharedCachesDeleted": false,
+    "taskRuntimeAndDataRetainedOnTmpfs": true,
+    "credentialHandling": "Private generated benchmark credentials remain only in the task runtime directory; exclude them from public or repository evidence.",
+    "rootFreeBytes": 169955328
+  },
+  "delivery": {
+    "documentationOnly": true,
+    "productionDeployed": false,
+    "pushed": false,
+    "merged": false,
+    "upstreamIssuesOrPRsSubmitted": false,
+    "sourceMediaFullPrivateLabelsCredentialsAndBinariesCommitted": false
+  }
+}

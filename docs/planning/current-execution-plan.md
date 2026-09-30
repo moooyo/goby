@@ -1,6 +1,27 @@
 # Current execution plan
 
-## Complete-target scoring delivered; candidate-window coverage next
+## Upstream reuse evaluation: direct Intro Skipper adoption not accepted
+
+The user selected evaluation and potential direct use of an upstream detector
+to avoid maintaining a custom detection implementation. The
+[native Intro Skipper result](../development/intro-skipper-native-evaluation-20261001.md)
+completes that first benchmark using official binaries, fixed source labels
+and unchanged matching code. Its default and configurable-adjustment ablation
+both cross protected content in three cases, so neither is accepted for direct
+automatic use. This is evidence on the selected difficult development corpus,
+not a general-library quality estimate.
+
+Preserve the upstream-first direction. Resolve the demonstrated boundary
+failures and product-boundary expectations before any adoption work; an
+upstream improvement or another upstream implementation must pass frozen
+positive and negative evaluation. Do not silently replace the target with a
+shared interior, revise these labels after seeing outputs, or continue the
+previous custom-window optimization merely because this candidate failed.
+No issue/PR submission, detector fork, production integration, push or release
+is included. The tested native sidecar/API architecture is feasible but its
+quality gate remains unmet.
+
+## Previous custom-detector checkpoint: complete-target scoring
 
 The [seventh increment](intro-quality-round7-plan-20261001.md) adds source-bound
 target scoring and new real-source evidence. Its
@@ -10,13 +31,12 @@ execution. All new regional cohorts still miss. The source-selected B3/B5/B6
 follow-up supplies 42 aggregate group-motion-qualified clocks but no passing
 candidate-window appearance support; none reaches the boundary audit.
 
-Next isolate fixed-geometry selection and the 850-per-mille candidate-window
-support failure on that retained development cohort. Keep complete labels,
-protected-content controls and observed-boundary counterexamples unchanged.
-Do not substitute another boundary relaxation or larger corpus campaign for
-diagnosing this earlier gate. Exact full-target variant correspondence remains
-unproven, and new negative controls will be necessary for a changed recognition
-method. Application v5/schema 53 and the Docker catalog remain unchanged.
+That checkpoint proposed isolating fixed-geometry selection and the
+850-per-mille candidate-window support failure. The user's subsequent
+upstream-reuse direction above now takes priority over that custom-detector
+work. Complete labels, protected-content controls and observed-boundary
+counterexamples remain retained. Exact full-target variant correspondence is
+still unproven. Application v5/schema 53 and the Docker catalog remain unchanged.
 
 ## Previous research evaluation delivery
 
