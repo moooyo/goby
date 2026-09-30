@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -138,7 +140,7 @@ func TestAnalysisIntroActualFractionalAudioTailPreservesStrictVisualEnd(t *testi
 	if err != nil {
 		t.Fatalf("default intro extraction rejected proven full visual periods: duration=%d last_video_pts=%d error=%v", info.DurationTicks, sourceVideo[len(sourceVideo)-1], err)
 	}
-	if features.WindowTicks != info.DurationTicks || features.VisualWindowTicks != visualWindow || len(features.Visual) != 60 || len(features.Audio) == 0 {
+	if features.WindowTicks != info.DurationTicks || features.VisualWindowTicks != visualWindow || len(features.Visual) != 60 || len(features.Refinement) != 300 || len(features.Audio) == 0 {
 		t.Fatalf("intro horizons or evidence differ: audio_window=%d visual_window=%d visual_samples=%d audio_samples=%d", features.WindowTicks, features.VisualWindowTicks, len(features.Visual), len(features.Audio))
 	}
 	if features.AudioMetadata.SampleRate <= 0 || features.AudioMetadata.InputSamples <= 30*int64(features.AudioMetadata.SampleRate) {
@@ -157,6 +159,35 @@ func TestAnalysisIntroActualFractionalAudioTailPreservesStrictVisualEnd(t *testi
 	if features.Visual[1].Ticks != 13*TicksPerSecond/videoRate || features.Visual[59].Ticks != 738*TicksPerSecond/videoRate {
 		t.Fatalf("visual samples invented half-second PTS: second=%d last=%d", features.Visual[1].Ticks, features.Visual[59].Ticks)
 	}
+	reference = 0
+	distinctRasters := false
+	for index, sample := range features.Refinement {
+		nominal := int64(index) * TicksPerSecond / 10
+		for reference < len(sourceVideo) && sourceVideo[reference] < nominal {
+			reference++
+		}
+		if reference == len(sourceVideo) || sample.Ticks != sourceVideo[reference] || sample.Ticks >= visualWindow {
+			t.Fatalf("refinement slot %d did not use its first actual source frame: nominal=%d actual=%d reference_index=%d", index, nominal, sample.Ticks, reference)
+		}
+		distinctRasters = distinctRasters || sample.Raster != features.Refinement[0].Raster
+	}
+	if !distinctRasters || features.Refinement[1].Ticks != 3*TicksPerSecond/videoRate {
+		t.Fatal("refinement reused its decode buffer or invented uniform source PTS")
+	}
+	coarse, err := extractor.ExtractVisual(context.Background(), file, info, video.Index, VisualAnalysisOptions{EndTicks: visualWindow, IntervalTicks: visualInterval})
+	if err != nil || !reflect.DeepEqual(features.Visual, coarse) {
+		t.Fatalf("refinement changed the original visual evidence: %v", err)
+	}
+	originalAudio, err := extractor.ExtractAudio(context.Background(), file, info, audio.Index)
+	if err != nil || !reflect.DeepEqual(features.Audio, originalAudio.Samples) || !reflect.DeepEqual(features.AudioMetadata, originalAudio.Metadata) {
+		t.Fatalf("refinement changed the original audio evidence: %v", err)
+	}
+	limited := extractor
+	limited.Limits.MaxVisualSamples = 60
+	failed, err := limited.ExtractIntro(context.Background(), file, info, request)
+	if !errors.Is(err, ErrAnalysisBudget) || !reflect.DeepEqual(failed, IntroFeatures{}) {
+		t.Fatalf("a third-stage refinement failure returned earlier evidence: %+v, %v", failed, err)
+	}
 	strict, err := extractor.ExtractVisual(context.Background(), file, info, video.Index, VisualAnalysisOptions{EndTicks: info.DurationTicks})
 	if !errors.Is(err, ErrAnalysisUnproven) || len(strict) != 0 {
 		t.Fatalf("explicit end silently clipped or duplicated a missing source slot: end=%d last_source_pts=%d samples=%+v error=%v", info.DurationTicks, sourceVideo[len(sourceVideo)-1], strict, err)
@@ -164,10 +195,95 @@ func TestAnalysisIntroActualFractionalAudioTailPreservesStrictVisualEnd(t *testi
 	canceled, cancel := context.WithCancel(context.Background())
 	cancel()
 	stopped, err := extractor.ExtractIntro(canceled, file, info, request)
-	if !errors.Is(err, context.Canceled) || len(stopped.Audio) != 0 || len(stopped.Visual) != 0 || stopped.WindowTicks != 0 || stopped.VisualWindowTicks != 0 {
+	if !errors.Is(err, context.Canceled) || !reflect.DeepEqual(stopped, IntroFeatures{}) {
 		t.Fatalf("canceled intro request returned evidence: %+v, %v", stopped, err)
 	}
 	if position, err := file.Seek(0, io.SeekCurrent); err != nil || position != 17 {
 		t.Fatalf("extraction changed or closed the borrowed descriptor: offset=%d error=%v", position, err)
+	}
+}
+
+func TestAnalysisIntroLowCadenceKeepsOriginalAudioAndCoarseVisual(t *testing.T) {
+	for _, fixture := range []struct {
+		name, source string
+	}{
+		{"five_fps", "testsrc2=size=64x64:rate=5:duration=12"},
+		{"bounded_vfr_gap", "testsrc2=size=64x64:rate=25:duration=12,select='not(between(t,1.04,1.16))'"},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			testAnalysisIntroCadenceFixture(t, fixture.source)
+		})
+	}
+}
+
+func testAnalysisIntroCadenceFixture(t *testing.T, videoSource string) {
+	t.Helper()
+	ffprobe, ffmpeg := audioProbeIntegrationTools(t)
+	fingerprint := os.Getenv("GOBY_INTRO_FINGERPRINT")
+	if fingerprint == "" {
+		t.Skip("set GOBY_INTRO_FINGERPRINT to the separately built pinned PCM helper")
+	}
+	path := filepath.Join(t.TempDir(), "low-cadence.mkv")
+	audioProbeRunFFmpeg(t, ffmpeg,
+		"-f", "lavfi", "-i", videoSource,
+		"-f", "lavfi", "-i", "sine=frequency=631:sample_rate=48000:duration=12",
+		"-map", "0:v:0", "-map", "1:a:0", "-copyts", "-filter_threads", "1",
+		"-fps_mode:v", "passthrough", "-enc_time_base:v", "filter",
+		"-c:v", "ffv1", "-threads:v", "1", "-pix_fmt", "yuv420p", "-c:a", "pcm_s16le", "-threads:a", "1", path)
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	info, err := (Prober{FFprobePath: ffprobe, Timeout: 30 * time.Second}).ProbeFile(context.Background(), file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	audio := audioProbeSingleAudioStream(t, info)
+	video := -1
+	for _, stream := range info.Streams {
+		if stream.CodecType == "video" {
+			video = stream.Index
+		}
+	}
+	extractor := AnalysisExtractor{FFmpegPath: ffmpeg, FFprobePath: ffprobe, FingerprintPath: fingerprint, Limits: AnalysisLimits{Timeout: 30 * time.Second}}
+	request := IntroAnalysisRequest{AudioStreamIndex: audio.Index, VideoStreamIndex: video}
+	features, err := extractor.ExtractIntro(context.Background(), file, info, request)
+	if err != nil || len(features.Audio) == 0 || len(features.Visual) != 24 || features.Refinement != nil || features.RefinementUnavailableReason != RefinementCadenceUnavailableReason {
+		t.Fatalf("a source-valid coarse stream was lost to unsupported dense cadence: audio=%d visual=%d refinement=%d reason=%q error=%v", len(features.Audio), len(features.Visual), len(features.Refinement), features.RefinementUnavailableReason, err)
+	}
+	coarse, err := extractor.ExtractVisual(context.Background(), file, info, video, VisualAnalysisOptions{EndTicks: 12 * TicksPerSecond})
+	if err != nil || !reflect.DeepEqual(features.Visual, coarse) {
+		t.Fatalf("optional refinement altered coarse evidence: %v", err)
+	}
+	originalAudio, err := extractor.ExtractAudio(context.Background(), file, info, audio.Index)
+	if err != nil || !reflect.DeepEqual(features.Audio, originalAudio.Samples) || !reflect.DeepEqual(features.AudioMetadata, originalAudio.Metadata) {
+		t.Fatalf("optional refinement altered audio evidence: %v", err)
+	}
+	if samples, err := extractor.ExtractRefinement(context.Background(), file, info, video); err != ErrRefinementCadenceUnsupported || samples != nil {
+		t.Fatalf("standalone sparse refinement did not retain its exact final outcome: samples=%d error=%v", len(samples), err)
+	}
+	for _, fixture := range []struct {
+		name   string
+		change func(*AnalysisExtractor, *Info)
+	}{
+		{"budget", func(e *AnalysisExtractor, _ *Info) { e.Limits.MaxVisualSamples = 24 }},
+		{"source_revision", func(_ *AnalysisExtractor, i *Info) { i.FileChangeTimeNs-- }},
+		{"unknown_origin", func(_ *AnalysisExtractor, i *Info) { i.FormatStartKnown = false }},
+		{"tool_identity", func(e *AnalysisExtractor, _ *Info) { e.ExpectedFFmpegSHA256 = strings.Repeat("0", 64) }},
+	} {
+		t.Run(fixture.name, func(t *testing.T) {
+			changedExtractor, changedInfo := extractor, info
+			fixture.change(&changedExtractor, &changedInfo)
+			value, err := changedExtractor.ExtractIntro(context.Background(), file, changedInfo, request)
+			if err == nil || err == ErrRefinementCadenceUnsupported || !reflect.DeepEqual(value, IntroFeatures{}) {
+				t.Fatalf("another failure degraded to optional cadence: %+v, %v", value, err)
+			}
+		})
+	}
+	expired, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+	if value, err := extractor.ExtractIntro(expired, file, info, request); !errors.Is(err, context.DeadlineExceeded) || !reflect.DeepEqual(value, IntroFeatures{}) {
+		t.Fatalf("expired extraction returned evidence through the cadence policy: %+v, %v", value, err)
 	}
 }

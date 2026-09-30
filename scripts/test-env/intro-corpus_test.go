@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"syscall"
 	"testing"
@@ -571,4 +572,59 @@ func TestCorpusVisualExperimentIsOptInAndSeparateFromProductionResult(t *testing
 			t.Fatal("invalid corpus produced experimental observations")
 		}
 	})
+}
+
+func TestCorpusRefinementSurvivesExtractionResumeAndCohortAdmission(t *testing.T) {
+	f := newCorpusFixture(t, "ok", "ok", "ok")
+	want := make([]introdetect.RefinementSample, 1200)
+	for index := range want {
+		want[index].Ticks = int64(index) * introdetect.TicksPerSecond / 10
+		for cell := range want[index].Raster {
+			want[index].Raster[cell] = byte(cell)
+		}
+	}
+	want[0].Raster = [256]byte{}
+	extract := f.backend.extract
+	f.backend.extract = func(ctx context.Context, file *os.File, info media.Info, request media.IntroAnalysisRequest) (media.IntroFeatures, error) {
+		result, err := extract(ctx, file, info, request)
+		result.Refinement = append([]introdetect.RefinementSample(nil), want...)
+		result.Audio = make([]introdetect.AudioSample, 4846)
+		result.Visual = make([]introdetect.VisualSample, 1200)
+		for index := range result.Audio {
+			result.Audio[index] = introdetect.AudioSample{StartTicks: int64(index) * 600 * introdetect.TicksPerSecond / 4846,
+				EndTicks: int64(index+1) * 600 * introdetect.TicksPerSecond / 4846, Fingerprint: 0xffffffff}
+		}
+		for index := range result.Visual {
+			result.Visual[index] = introdetect.VisualSample{Ticks: int64(index) * introdetect.TicksPerSecond / 2,
+				Hash: 0xffffffffffffffff, Contrast: 1000, LumaKnown: true}
+			for cell := range result.Visual[index].Luma {
+				result.Visual[index].Luma[cell] = -127
+			}
+		}
+		return result, err
+	}
+	probe := f.backend.probe
+	f.backend.probe = func(ctx context.Context, file *os.File) (media.Info, error) {
+		info, err := probe(ctx, file)
+		info.DurationTicks = 600 * introdetect.TicksPerSecond
+		return info, err
+	}
+	f.run(t, "")
+	before := f.state(t)
+	f.config.resume = true
+	f.run(t, "")
+	after := f.state(t)
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("refinement resume changed the source-bound receipts")
+	}
+	f.config.mode, f.config.resume = "analyze", false
+	f.run(t, "")
+	if len(f.matched) != 3 {
+		t.Fatal("complete refinement cohort was not admitted")
+	}
+	for _, episode := range f.matched {
+		if !reflect.DeepEqual(episode.Refinement, want) {
+			t.Fatal("source refinement bytes or timestamps were discarded before matching")
+		}
+	}
 }

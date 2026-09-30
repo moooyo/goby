@@ -1,0 +1,226 @@
+{
+  "kind": "goby-intro-quality-round2",
+  "status": "selected_increment_verified_with_remaining_recognition_limits",
+  "baseline": "7fb7caa",
+  "branch": "codex/intro-quality",
+  "detector": "introdetect-v5",
+  "executionVersion": 5,
+  "schema": 53,
+  "featureCodec": 3,
+  "historicalExecutionReaders": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "historicalFeatureReaders": [
+    1,
+    2
+  ],
+  "policy": {
+    "refinementPrefixSeconds": 120,
+    "refinementIntervalMilliseconds": 100,
+    "rasterSide": 16,
+    "maximumSamples": 1200,
+    "maxFeatureBytes": 786432,
+    "maxCachePayloadBytes": 524288,
+    "maxComparisons": 200000000,
+    "viewCacheMiB": 128,
+    "similarityThresholdsChanged": false,
+    "boundaryGuardSeconds": 0.3,
+    "geometryFixedPerSource": true,
+    "noPartialResultOnBudgetExhaustion": true
+  },
+  "builds": {
+    "applicationSHA256": "bf8a09b536bd87ebfef79fbbdfe13638cc9937e4565a7821aa3b061c00b27d23",
+    "corpusOperatorSHA256": "390e37b6fb135fb6817590ea6e85bb2c1dd84ba88cac34c8df7e7d1274e44965",
+    "developmentBuildsOnly": true
+  },
+  "verification": {
+    "detectorRaceParentsPassed": 150,
+    "mediaComposedUniqueParentsPassed": 539,
+    "mediaUnrelatedSkipped": 32,
+    "actualMediaParentsPassed": 87,
+    "databaseParentsPassed": 429,
+    "catalogTestGroupsPassed": 5,
+    "libraryComposedUniqueParentsPassed": 108,
+    "backupParentsPassed": 15,
+    "recoveryParentsPassed": 4,
+    "serverParentsPassed": 57,
+    "taskParentsPassed": 30,
+    "corpusRacePassed": true,
+    "unresolvedFailures": 0
+  },
+  "accuracy": {
+    "labelMethod": "Assistant source-only visual assessment with actual PTS and explicit uncertainty, not human annotation or direct audio review.",
+    "endpointToleranceSeconds": 5,
+    "protectedSerializationEpsilonSeconds": 1e-06,
+    "development": {
+      "positive": 15,
+      "negative": 6,
+      "safeHits": 4,
+      "misses": 11,
+      "correctAbstention": 6,
+      "falsePositive": 0,
+      "protectedViolations": 0,
+      "knownRegression": "R14 and R15 in the known mixed-six Robin cohort were qualified by the v4 follow-up and now abstain on calibrated competing windows."
+    },
+    "firstNewPositiveCohort": {
+      "cases": [
+        "R16",
+        "R17",
+        "R18"
+      ],
+      "safeHits": 3,
+      "misses": 0,
+      "protectedViolations": 0,
+      "maxEndpointErrorSeconds": 2.6101747
+    },
+    "firstNewNegativeCohort": {
+      "cases": [
+        "N394",
+        "N395",
+        "N396"
+      ],
+      "correctAbstention": 3,
+      "falsePositive": 0
+    },
+    "newSeriesGeneralizationClaim": false,
+    "randomPopulationClaim": false,
+    "unseenEvaluationRepeated": false
+  },
+  "extraction": {
+    "selectedRecords": 28,
+    "extracted": 27,
+    "excludedMissingAudio": 1,
+    "failed": 0,
+    "refinementSamplesPerSuccess": 1200,
+    "resumesByteIdentical": true,
+    "allAttempts": 1
+  },
+  "retainedFailures": [
+    "Cell-rank/CDF and 8x8 warp prototypes did not meet recognition goals.",
+    "Initial unguarded R12 candidate crossed a sponsor boundary by 0.2919103 seconds; fixed uncertainty guard repaired the complete witness before holdout.",
+    "Initial R18 transfer was incomplete and rejected before decoding; original selection unchanged.",
+    "First combined media check lacked three fixture JSON inputs; unchanged fixtures were transferred and complete package repeat passed."
+  ],
+  "dockerReleaseCatalogChanged": false,
+  "registryPublication": false,
+  "productionDeployment": false,
+  "evidence": {
+    "candidate-freeze01.json": {
+      "bytes": 14578,
+      "sha256": "961383f6e760ddc240d41191fa6f2e6c97c95788399a2b239c57d512861a6d42"
+    },
+    "source-correspondence.json": {
+      "bytes": 224,
+      "sha256": "5b7d9949efe7e81bc11f344a3b673885636434a023ba84da3a8b84991777c411"
+    },
+    "resource-closure.json": {
+      "bytes": 291,
+      "sha256": "d88a85d8b131c51befce693b6588c22c7275f30c7342a1cc053fffc695cf701b"
+    },
+    "intro-final01.json": {
+      "bytes": 291305,
+      "sha256": "7c69f6c50088df05a8b1318d23ce814e98bcff7bcb42c73c2f4d25225c17689e"
+    },
+    "intro-final01.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "media-combined02.json": {
+      "bytes": 2404818,
+      "sha256": "f269ae61e740a24a01ff88e1964ef8e5440a8f3200960a2c115f37f8613b2fe2"
+    },
+    "media-docker-final01.log": {
+      "bytes": 43111,
+      "sha256": "37cf0e4a39b9c740d111a38801c4120c8e2fe65efe01fcb534a8d7a5cf4503af"
+    },
+    "corpus-final01.log": {
+      "bytes": 35,
+      "sha256": "b0e5133f5aa2dac54294ea4c2b9677464ff5a3b68f703dc35a27d510000adc71"
+    },
+    "version-library-tests.json": {
+      "bytes": 341983,
+      "sha256": "493e53105cf1bcc813e5f9edbdb31afaf6a70754cee9748ee56da81047334ab5"
+    },
+    "version-library-v4-final-tests.json": {
+      "bytes": 46307,
+      "sha256": "c9190c3b593a1931955b016264016a6b748066a565b22921095395e4f65c5f29"
+    },
+    "version-backup-tests.json": {
+      "bytes": 132938,
+      "sha256": "540e7e6238e6eeca67232b5ba227055745ca9781a2923775352a322547ddc648"
+    },
+    "version-recovery-tests.json": {
+      "bytes": 24448,
+      "sha256": "228333176a0512fbb7a49f976e130a605cb81200f153f653b8d8db00bf6a5476"
+    },
+    "schema53-database-full-test.log": {
+      "bytes": 470267,
+      "sha256": "c9737c067f5ba0bc9bf4b4dff717edea26530294ff8821a5e9b3023ee9b9d1e1"
+    },
+    "schema53-catalog-test.log": {
+      "bytes": 2052,
+      "sha256": "9347a605432853503aec3c341405141ef0d550eec6b14b28924fbe2026ce0e25"
+    },
+    "schema53-generate.log": {
+      "bytes": 37,
+      "sha256": "104e525699db7571ba1e3dcedf95f75f86afb3479af63e23baf3a975fdb5412d"
+    },
+    "calibrated-integration-results02.json": {
+      "bytes": 2246,
+      "sha256": "54dfde9934174f2ae62cbc1d3de8a8c283eb9eb82ba362b59ec3bd520b566469"
+    },
+    "server-task-source02-binding.json": {
+      "bytes": 308720,
+      "sha256": "78a8dc287652375d7d86b55c51e1ea7269e17e3eef021edbeebd3e5e4f69bb38"
+    },
+    "extraction-optcad2/completion-summary.json": {
+      "bytes": 557,
+      "sha256": "91ed023159853f64389eea49e14880c453f2a86b5af8ea7d732121f37ce1fb95"
+    },
+    "extraction-optcad2/extraction-summary.json": {
+      "bytes": 42144,
+      "sha256": "c3c5ecf7ee09d62c91fe7e5ee566441eb3c512e50c5e29c622a61bfd611c53e6"
+    },
+    "heldout-results/robin-hood-first.json": {
+      "bytes": 23794,
+      "sha256": "50175e87306401d03b3a7d7831eecb09cb673fe0c3ebb7110d4f5344c7d8aa11"
+    },
+    "heldout-results/space-to-ground-first.json": {
+      "bytes": 16857,
+      "sha256": "5f69a4d78b9bd0a8885a51ce497aa50726386afef49fff4c628d8fa14df0df9c"
+    },
+    "scoring/development-pre-guard-score.json": {
+      "bytes": 23997,
+      "sha256": "a728416aecf61556622dae5879b1dbc14f176a062ea1dff694120271c831e9b6"
+    },
+    "scoring/development-guarded-score.json": {
+      "bytes": 23652,
+      "sha256": "fcd4dea6a9732f13c55ed3592cd55a7a748cac7949d0a90ff853d3151155dfb2"
+    },
+    "scoring/holdout-positive-first-score.json": {
+      "bytes": 6384,
+      "sha256": "1b3911de802a48d0674c55a8c99fd83edfe271892ee694e53da29b54907b67cf"
+    },
+    "scoring/holdout-negative-first-score.json": {
+      "bytes": 6009,
+      "sha256": "c8e48f0405bd7503669da1ca3d045aeee64e1bb21956b2d10eeccda33685dba2"
+    },
+    "scoring/round2-independent-summary.json": {
+      "bytes": 21965,
+      "sha256": "d24bc801b17f7d3eaf9d492c1bc0b4fddbc5a29d6a1f8175e9a7742da1dd12ef"
+    }
+  },
+  "resourceClosure": {
+    "status": "passed",
+    "timeUTC": "2026-09-30T14:36:32.079023+00:00",
+    "ownedContainersRemaining": [],
+    "ownedNetworksRemaining": [],
+    "ownedPostgreSQLStopped": true,
+    "databaseClientsBeforeStop": 0,
+    "mediaDatabasesAndEvidenceRetained": true,
+    "unrelatedServicesModified": false
+  }
+}

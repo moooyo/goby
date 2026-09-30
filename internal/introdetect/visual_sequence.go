@@ -9,10 +9,17 @@ import (
 
 // VisualSequenceVersion identifies an experimental, independently measured
 // visual discovery policy. Its observations are not application skip markers.
-const VisualSequenceVersion = "visual-sequence-v1"
+const VisualSequenceVersion = "visual-sequence-v2"
+
+const (
+	VisualMeasurementCoarse     = "coarse-v1"
+	VisualMeasurementCalibrated = "calibrated-r16-v1"
+)
 
 // VisualSequenceMetrics retain visual evidence without inventing audio support.
 type VisualSequenceMetrics struct {
+	MeasurementPolicy     string
+	CalibrationDigest     string
 	Samples               int
 	CoveragePermille      int
 	Transitions           int
@@ -27,14 +34,19 @@ type VisualSequenceMetrics struct {
 type VisualSequenceGroup struct {
 	Members []Support
 	Metrics VisualSequenceMetrics
+	// Calibration is diagnostic evidence only, not publication authority.
+	Calibration     *calibratedVisualAudit `json:",omitempty"`
+	boundaryGuarded bool
 }
 
 type VisualSequenceResult struct {
-	Version       string
-	Experimental  bool
-	Comparisons   int64
-	Groups        []VisualSequenceGroup
-	SearchLimited bool
+	Version             string
+	Experimental        bool
+	Comparisons         int64
+	Groups              []VisualSequenceGroup
+	SearchLimited       bool
+	representatives     []bool
+	hasRefinementQuorum bool
 }
 
 const (
@@ -190,7 +202,7 @@ func sequenceTargets(a, b Episode, offset int64, ar, br Interval, budget *workBu
 // sequenceMeasure always measures a fixed witness, including every unmatched
 // slot. A narrow good interior cannot erase an unsupported gap in that witness.
 func sequenceMeasure(a, b Episode, offset int64, ar, br Interval, budget *workBudget) (VisualSequenceMetrics, bool, error) {
-	m := VisualSequenceMetrics{PairCount: 1}
+	m := VisualSequenceMetrics{PairCount: 1, MeasurementPolicy: VisualMeasurementCoarse}
 	if min(ar.EndTicks-ar.StartTicks, br.EndTicks-br.StartTicks) < visualSequenceMinimum || max(ar.EndTicks-ar.StartTicks, br.EndTicks-br.StartTicks) > visualSequenceMaximum {
 		return m, false, nil
 	}
@@ -220,6 +232,7 @@ func sequenceMeasure(a, b Episode, offset int64, ar, br Interval, budget *workBu
 	}
 	states := [][2]int{}
 	stateCounts := []int{}
+	stateByHashes := make(map[[2]uint64]int)
 	for n, p := range matches {
 		x, y := a.Visual[p[0]], b.Visual[p[1]]
 		total, center := sequenceDistance(x, y)
@@ -234,22 +247,32 @@ func sequenceMeasure(a, b Episode, offset int64, ar, br Interval, budget *workBu
 				m.Transitions++
 			}
 		}
-		state := -1
-		for k, seed := range states {
-			if err := budget.spend(); err != nil {
-				return m, false, err
-			}
-			if bits.OnesCount64(x.Hash^a.Visual[seed[0]].Hash) <= 8 && bits.OnesCount64(y.Hash^b.Visual[seed[1]].Hash) <= 8 {
-				state = k
-				break
-			}
+		if err := budget.spend(); err != nil {
+			return m, false, err
 		}
-		if state < 0 {
-			states = append(states, p)
-			stateCounts = append(stateCounts, 1)
-		} else {
-			stateCounts[state]++
+		hashes := [2]uint64{x.Hash, y.Hash}
+		state, known := stateByHashes[hashes]
+		if !known {
+			state = -1
+			for k, seed := range states {
+				if err := budget.spend(); err != nil {
+					return m, false, err
+				}
+				if bits.OnesCount64(x.Hash^a.Visual[seed[0]].Hash) <= 8 && bits.OnesCount64(y.Hash^b.Visual[seed[1]].Hash) <= 8 {
+					state = k
+					break
+				}
+			}
+			if state < 0 {
+				state = len(states)
+				states = append(states, p)
+				stateCounts = append(stateCounts, 0)
+			}
+			// Representatives only append. The earliest matching state for
+			// an exact hash pair cannot change after more states are added.
+			stateByHashes[hashes] = state
 		}
+		stateCounts[state]++
 	}
 	m.DistinctStates = len(states)
 	for _, count := range stateCounts {
@@ -327,9 +350,69 @@ func DiscoverVisualSequences(ctx context.Context, cohort Cohort, options Options
 	if err != nil {
 		return VisualSequenceResult{}, err
 	}
-	independent := sequenceIndependent(episodes)
+	hasRefinement := false
+	for _, episode := range episodes {
+		hasRefinement = hasRefinement || len(episode.Refinement) > 0
+	}
+	if !hasRefinement {
+		return discoverCoarseSequences(ctx, episodes, o, nil)
+	}
+	refined, err := discoverCalibratedSequences(ctx, episodes, o)
+	if err != nil {
+		return VisualSequenceResult{}, err
+	}
+	remaining := o
+	remaining.MaxComparisons -= refined.Comparisons
+	if remaining.MaxComparisons <= 0 {
+		return VisualSequenceResult{}, ErrLimit
+	}
+	var coarseIndependent []bool
+	if refined.hasRefinementQuorum {
+		coarseIndependent = append([]bool(nil), refined.representatives...)
+		for i, episode := range episodes {
+			if len(episode.Refinement) > 0 {
+				coarseIndependent[i] = false
+			}
+		}
+	}
+	coarse, err := discoverCoarseSequences(ctx, episodes, remaining, coarseIndependent)
+	if err != nil {
+		return VisualSequenceResult{}, err
+	}
+	budget := &workBudget{ctx: ctx, limit: o.MaxComparisons, used: refined.Comparisons + coarse.Comparisons}
+	for _, group := range coarse.Groups {
+		refined.Groups, err = sequenceRetainWitness(refined.Groups, group, o, budget)
+		if err != nil {
+			return VisualSequenceResult{}, err
+		}
+	}
+	refined.Comparisons = budget.used
+	refined.SearchLimited = refined.SearchLimited || coarse.SearchLimited
+	if err := ctx.Err(); err != nil {
+		return VisualSequenceResult{}, err
+	}
+	return refined, nil
+}
+
+func discoverCoarseSequences(ctx context.Context, episodes []Episode, o Options, independent []bool) (VisualSequenceResult, error) {
+	if independent == nil {
+		independent = sequenceIndependent(episodes)
+	}
 	budget := &workBudget{ctx: ctx, limit: o.MaxComparisons}
 	result := VisualSequenceResult{Version: VisualSequenceVersion, Experimental: true, Groups: []VisualSequenceGroup{}}
+	profiles := map[string]int{}
+	for i, episode := range episodes {
+		if independent[i] {
+			profiles[episode.AlgorithmProfile]++
+		}
+	}
+	quorum := false
+	for _, count := range profiles {
+		quorum = quorum || count >= o.MinSupport
+	}
+	if !quorum {
+		return result, nil
+	}
 	pairs := map[[2]int][]sequencePair{}
 	for i, a := range episodes {
 		if !independent[i] {

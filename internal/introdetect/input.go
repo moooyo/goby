@@ -16,7 +16,7 @@ func normalizeOptions(o Options) (Options, error) {
 	}
 	if o.MaxEpisodes < 3 || o.MaxEpisodes > 32 || o.MinSupport < 3 || o.MinSupport > o.MaxEpisodes ||
 		o.MaxAudioSamples < 1 || o.MaxAudioSamples > 8192 || o.MaxVisualSamples < 1 || o.MaxVisualSamples > 4096 ||
-		o.MaxFeatureBytes < 1024 || o.MaxFeatureBytes > 256<<10 || o.MaxComparisons < 1 || o.MaxComparisons > 100_000_000 ||
+		o.MaxFeatureBytes < 1024 || o.MaxFeatureBytes > 768<<10 || o.MaxComparisons < 1 || o.MaxComparisons > 200_000_000 ||
 		o.MaxOffsetCandidates < 1 || o.MaxOffsetCandidates > 12 || o.MaxCandidatesPerPair < 1 || o.MaxCandidatesPerPair > 32 ||
 		o.MaxGroups < 1 || o.MaxGroups > 256 || o.WindowTicks < 15*TicksPerSecond || o.WindowTicks > 600*TicksPerSecond ||
 		o.MinDurationTicks < 5*TicksPerSecond || o.MaxDurationTicks < o.MinDurationTicks || o.MaxDurationTicks > o.WindowTicks ||
@@ -76,8 +76,8 @@ func validateInput(ctx context.Context, c Cohort, o Options) ([]Episode, error) 
 			return nil, fmt.Errorf("%w: invalid episode identity or duration", ErrInvalidInput)
 		}
 		// Budget the in-memory feature representation, including alignment.
-		featureBytes := int64(len(e.Audio))*24 + int64(len(e.Visual))*88 + int64(len(e.EpisodeKey)+len(e.SourceKey)+len(e.ContentIdentity)+len(e.AlgorithmProfile))
-		if len(e.Audio) > o.MaxAudioSamples || len(e.Visual) > o.MaxVisualSamples || featureBytes > int64(o.MaxFeatureBytes) {
+		featureBytes := int64(len(e.Audio))*24 + int64(len(e.Visual))*88 + int64(len(e.Refinement))*264 + int64(len(e.EpisodeKey)+len(e.SourceKey)+len(e.ContentIdentity)+len(e.AlgorithmProfile))
+		if len(e.Audio) > o.MaxAudioSamples || len(e.Visual) > o.MaxVisualSamples || len(e.Refinement) > MaxRefinementSamples || featureBytes > int64(o.MaxFeatureBytes) {
 			return nil, fmt.Errorf("%w: feature budget for episode %d", ErrLimit, index)
 		}
 		end := min(e.DurationTicks, o.WindowTicks)
@@ -106,10 +106,22 @@ func validateInput(ctx context.Context, c Cohort, o Options) ([]Episode, error) 
 			}
 			previousTick = sample.Ticks
 		}
+		previousTick = -1
+		for i, sample := range e.Refinement {
+			if i%128 == 0 {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+			}
+			if sample.Ticks <= previousTick || sample.Ticks < 0 || sample.Ticks >= min(end, RefinementPrefixTicks) {
+				return nil, fmt.Errorf("%w: invalid refinement timeline", ErrInvalidInput)
+			}
+			previousTick = sample.Ticks
+		}
 		if other, exists := sources[e.SourceKey]; exists {
 			p := c.Episodes[other]
 			if p.ContentIdentity != e.ContentIdentity || p.AlgorithmProfile != e.AlgorithmProfile || p.DurationTicks != e.DurationTicks ||
-				p.AudioBoundaryUncertaintyTicks != e.AudioBoundaryUncertaintyTicks || !reflect.DeepEqual(p.Audio, e.Audio) || !reflect.DeepEqual(p.Visual, e.Visual) {
+				p.AudioBoundaryUncertaintyTicks != e.AudioBoundaryUncertaintyTicks || !reflect.DeepEqual(p.Audio, e.Audio) || !reflect.DeepEqual(p.Visual, e.Visual) || !reflect.DeepEqual(p.Refinement, e.Refinement) {
 				return nil, fmt.Errorf("%w: one source key has contradictory feature snapshots", ErrInvalidInput)
 			}
 		}

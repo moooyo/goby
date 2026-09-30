@@ -104,7 +104,7 @@ func (r *mediaAnalysisRuntime) executeIntroAnalysis(ctx context.Context, task ta
 		cohort.Episodes = append(cohort.Episodes, introdetect.Episode{
 			EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: features.ContentSHA256,
 			AlgorithmProfile: features.AlgorithmProfile, DurationTicks: source.DurationTicks,
-			AudioBoundaryUncertaintyTicks: features.AudioBoundaryUncertaintyTicks, Audio: features.Audio, Visual: features.Visual})
+			AudioBoundaryUncertaintyTicks: features.AudioBoundaryUncertaintyTicks, Audio: features.Audio, Visual: features.Visual, Refinement: features.Refinement})
 		if reason != "" {
 			abstentions[source.SourceRevision] = reason
 		}
@@ -175,7 +175,7 @@ func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tas
 		return library.AnalysisFeatures{}, "", err
 	}
 	value = library.AnalysisFeatures{ContentSHA256: digest, AlgorithmProfile: work.Execution.IntroProfile,
-		Audio: []introdetect.AudioSample{}, Visual: []introdetect.VisualSample{}}
+		Audio: []introdetect.AudioSample{}, Visual: []introdetect.VisualSample{}, Refinement: []introdetect.RefinementSample{}}
 	info := *opened.Item.Media
 	audio, hasAudio := analysisStream(info, "audio")
 	video, hasVideo := analysisStream(info, "video")
@@ -201,7 +201,7 @@ func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tas
 		features.ToolFacts.FingerprintSHA256 != work.Execution.FingerprintSHA256 {
 		return library.AnalysisFeatures{}, "", media.ErrAnalysisUnavailable
 	}
-	value.Audio, value.Visual = features.Audio, features.Visual
+	value.Audio, value.Visual, value.Refinement = features.Audio, features.Visual, features.Refinement
 	value.AudioBoundaryUncertaintyTicks = features.AudioBoundaryUncertaintyTicks
 	if err := r.server.library.PutAnalysisFeatures(ctx, task.ChildID, source.ItemID, task.Fence, value); err != nil {
 		return library.AnalysisFeatures{}, "", err

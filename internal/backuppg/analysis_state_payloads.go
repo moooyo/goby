@@ -168,9 +168,13 @@ func analysisStateFeatureKey(item, source, profile string) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func validateAnalysisFeatureState(ctx context.Context, tx pgx.Tx) error {
+func validateAnalysisFeatureState(ctx context.Context, tx pgx.Tx, version int64) error {
+	maximum := "262144"
+	if version >= 53 {
+		maximum = "524288"
+	}
 	return analysisStateRows(ctx, tx, `SELECT cache_key,item_id,source_revision,profile_fingerprint,content_sha256,algorithm_profile,
-		duration_ticks,CASE WHEN octet_length(payload)<=262144 THEN payload END,bytes FROM analysis_feature_cache ORDER BY cache_key`, func(rows pgx.Rows) error {
+		duration_ticks,CASE WHEN octet_length(payload)<=`+maximum+` THEN payload END,bytes FROM analysis_feature_cache ORDER BY cache_key`, func(rows pgx.Rows) error {
 		var key, item, source, profile, content, algorithm string
 		var duration, size int64
 		var payload []byte

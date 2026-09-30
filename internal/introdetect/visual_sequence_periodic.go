@@ -21,9 +21,15 @@ func sequencePeriodic(a, b Episode, matches [][2]int, budget *workBudget) (bool,
 				bits.OnesCount64(ax.Hash^ap.Hash) <= 8 && bits.OnesCount64(bx.Hash^bp.Hash) <= 8 && sequenceClose(ax, ap) && sequenceClose(bx, bp) {
 				repeated++
 			}
-		}
-		if repeated*1000 >= 900*(len(matches)-lag) {
-			return true, nil
+			if repeated*1000 >= 900*(len(matches)-lag) {
+				return true, nil
+			}
+			// Even matching every remaining observation cannot satisfy this
+			// lag. This bound changes work, not the recurrence threshold.
+			remaining := len(matches) - 1 - i
+			if (repeated+remaining)*1000 < 900*(len(matches)-lag) {
+				break
+			}
 		}
 	}
 	return false, nil

@@ -1,5 +1,15 @@
 # Goby handoff - September 30, 2026
 
+Latest source work is now [fixed spatial intro refinement](intro-quality-round2-20260930.md),
+detector v5/schema 53. The first independent same-series three-positive and
+three-negative cohorts passed. Known development misses and mixed-cohort recall
+regressions remain explicit. All selected verification is complete and owned
+workers/PostgreSQL are stopped with data retained. The current Docker catalog
+still selects the earlier accepted images; this source work has not produced a
+replacement image or production deployment.
+
+## Previous v4 source checkpoint
+
 Latest source work: [intro quality and resumable corpus evaluation](intro-quality-20260930.md).
 Detector v4, bounded diagnostics, new visual feature storage and v3 historical
 read/restore support have focused verification. Recognition gains remain narrow:

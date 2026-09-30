@@ -38,6 +38,18 @@ fingerprint protocol metadata, and extraction limits. A changed global identity
 requires a new feature directory. Old feature files without a checkpoint are
 not automatically imported.
 
+Current production extraction also retains the separate refinement raster
+sequence: original timestamps and 16 by 16 grayscale frames from the first
+120 seconds, sampled at 100 ms with at most 1,200 entries. This source-bound
+sequence survives JSON storage, resume, and cohort admission without replacing
+the coarse audio or visual features. An all-zero raster is a black frame;
+an absent refinement sequence does not acquire synthetic evidence.
+When the fully audited source cannot support that sampling cadence, production
+extraction retains its coarse audio/visual evidence and records an empty
+refinement sequence with `RefinementUnavailableReason=source_cadence_unsupported`
+in the private feature JSON. This is distinct from a missing audio/video source
+exclusion. Other source, tool, timing, or extraction failures remain failures.
+
 A cache entry that fails revalidation is recorded as a new failure. It is not
 silently repaired in that run, even with `-retry-failed`; a later explicit
 retry creates a new extraction attempt. Existing features and original failures

@@ -15,6 +15,10 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 	}
 	ready := 0
 	for _, e := range episodes {
+		if len(e.Refinement) >= 16 {
+			ready++
+			continue
+		}
 		for _, s := range e.Visual {
 			if sequenceUsable(s) {
 				ready++
@@ -57,11 +61,12 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 		}
 		identity, _ := json.Marshal(struct {
 			Version, Policy, Cohort, Profile string
+			CalibrationDigest                string
 			Members                          []Support
 			Evidence                         VisualSequenceMetrics
-		}{Version, VisualSequenceVersion, cohort.Key, group.AlgorithmProfile, group.Members, metrics})
+		}{Version, VisualSequenceVersion, cohort.Key, group.AlgorithmProfile, visualCalibrationDigest(value), group.Members, metrics})
 		digest := sha256.Sum256(identity)
-		group.ID = "intro-visual-v4-" + hex.EncodeToString(digest[:])
+		group.ID = "intro-visual-v5-" + hex.EncodeToString(digest[:])
 		for _, member := range group.Members {
 			candidate := Candidate{Interval: member.Interval, Status: Qualified, Reasons: []Reason{}, Support: group.Members, VisualEvidence: &metrics}
 			if !ValidateCandidateEvidence(candidate, o) {

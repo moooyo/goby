@@ -649,7 +649,7 @@ func analyzeCorpus(ctx context.Context, c corpusConfig, backend corpusBackend, c
 				cohort.Episodes = append(cohort.Episodes, introdetect.Episode{EpisodeKey: record.Case.Series + ":" + record.Case.Episode,
 					SourceKey: record.Case.SHA256, ContentIdentity: record.Case.SHA256, AlgorithmProfile: stored.Features.AlgorithmProfile,
 					DurationTicks: stored.Info.DurationTicks, AudioBoundaryUncertaintyTicks: stored.Features.AudioBoundaryUncertaintyTicks,
-					Audio: stored.Features.Audio, Visual: stored.Features.Visual})
+					Audio: stored.Features.Audio, Visual: stored.Features.Visual, Refinement: stored.Features.Refinement})
 			}
 		}
 		report.Cases = append(report.Cases, account)

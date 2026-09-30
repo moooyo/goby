@@ -94,6 +94,7 @@ func TestStoredAnalysisV2AdmissionPreservesCanonicalFingerprints(t *testing.T) {
 			execution.Version = AnalysisExecutionProfileVersion
 			if execution.IntroProfile != "" {
 				execution.DetectorVersion = introdetect.Version
+				execution.DetectorOptions = introdetect.DefaultOptions()
 			}
 			if err := ValidateAnalysisExecutionProfile(execution); err != nil {
 				t.Fatal(err)

@@ -46,7 +46,9 @@ func validateAnalysisState(ctx context.Context, tx pgx.Tx, version int64) error 
 		return ErrSchema
 	}
 	for _, validate := range []func(context.Context, pgx.Tx) error{
-		validateAnalysisTaskState, validateAnalysisAdmissionState, validateAnalysisFeatureState, validateAnalysisPreviewState, validateAnalysisDetectionState,
+		validateAnalysisTaskState, validateAnalysisAdmissionState,
+		func(ctx context.Context, tx pgx.Tx) error { return validateAnalysisFeatureState(ctx, tx, version) },
+		validateAnalysisPreviewState, validateAnalysisDetectionState,
 	} {
 		if err := validate(ctx, tx); err != nil {
 			return err
@@ -106,7 +108,8 @@ const analysisStateRelationsSQL = `SELECT
 			WHEN profile.execution->>'Version'='1' THEN 'introdetect-v1'
 			WHEN profile.execution->>'Version'='2' THEN 'introdetect-v2'
 			WHEN profile.execution->>'Version'='3' THEN 'introdetect-v3'
-			WHEN profile.execution->>'Version'='4' THEN 'introdetect-v4' ELSE '' END
+			WHEN profile.execution->>'Version'='4' THEN 'introdetect-v4'
+			WHEN profile.execution->>'Version'='5' THEN 'introdetect-v5' ELSE '' END
 		OR (detection.result->>'Reason'='' AND profile.execution->'Available' IS DISTINCT FROM 'true'::jsonb)
 		OR (detection.auto_published AND (detection.publication_epoch<>settings.publication_epoch
 		OR detection.profile_revision<>settings.revision OR NOT settings.auto_publish_intros)))

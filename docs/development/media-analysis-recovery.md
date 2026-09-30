@@ -13,18 +13,20 @@ The archive retains facts, not live authority. Validation does not require an ol
 credential to remain enabled, a historical root to remain mounted, or a cache
 file to exist. It checks the stored admission graph and exact payload semantics.
 
-Historical execution versions 1, 2 and 3 use independent frozen admission and
+Historical execution versions 1, 2, 3 and 4 use independent frozen admission and
 result decoders, including their original canonical fingerprints and qualification
-rules. Current execution version 4 does not reinterpret those measurements.
-Unavailable executions map to the matching detector version for all four
+rules. Current execution version 5 does not reinterpret those measurements.
+Unavailable executions map to the matching detector version for all five
 generations. Raw restore validates the original history before normalization
 withdraws publication authority; a stale historical observation cannot become a
 current worker, accepted detection or feature-cache authority.
 
 Current visual fallback candidates retain explicit `VisualEvidence` and zero
-joint acoustic metrics. Current validation checks that evidence without assigning
-it to historical candidates. GAFB v1 remains readable; new writes use GAFB v2 so
-the additional visual descriptor survives a durable cache round trip.
+joint acoustic metrics, with a closed measurement policy and calibration digest.
+Current validation checks that evidence without assigning it to historical
+candidates. GAFB v1/v2 remain readable at their original 256 KiB limit; new writes
+use GAFB v3 with a separate timestamped refinement raster array. Schema 53 permits
+512 KiB cache rows, while older schema validation keeps its original bound.
 
 | State | Required raw invariants |
 | --- | --- |

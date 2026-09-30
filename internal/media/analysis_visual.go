@@ -42,70 +42,90 @@ func (extractor AnalysisExtractor) ExtractVisual(ctx context.Context, file *os.F
 	if err != nil {
 		return nil, err
 	}
-	before, err := analysisCheckSource(file, info)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := errors.Join(videoSeekCheckSource(file, before), ctx.Err()); err != nil {
-			samples, resultErr = nil, err
-		}
-	}()
-	stream, err := analysisVisualStream(info, streamIndex, limits)
-	if err != nil {
-		return nil, err
-	}
 	plan, err := analysisVisualOptions(info, options, limits)
 	if err != nil {
 		return nil, err
 	}
-	processContext, release, err := analysisAcquire(ctx, limits.Timeout)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-	tool, err := analysisOpenToolExpected(processContext, extractor.FFmpegPath, extractor.ExpectedFFmpegSHA256)
-	if err != nil {
-		return nil, err
-	}
-	defer tool.file.Close()
-	if err := analysisValidateFFmpeg(processContext, tool); err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := tool.check(); err != nil {
-			samples, resultErr = nil, err
-		}
-	}()
-	geometry, err := extractor.analysisGeometry(processContext, file, stream, limits)
-	if err != nil {
-		return nil, err
-	}
-	plan.geometry = geometry
-	log, err := newAnalysisVisualLog(info, stream, plan, limits)
-	if err != nil {
-		return nil, err
-	}
 	samples = make([]introdetect.VisualSample, 0, plan.frames)
-	err = runAnalysisStream(processContext, "/proc/self/fd/4", file, buildAnalysisVisualArgs(info, stream, plan, limits), limits.Timeout,
-		int64(plan.frames*plan.width*plan.height), log, func(reader io.Reader) error {
-			return readAnalysisVisualFrames(processContext, reader, log, func(frame analysisVisualFrame, gray []byte) error {
-				hash, contrast := analysisVisualHash(gray)
-				luma, lumaKnown := analysisVisualLuma(gray)
-				samples = append(samples, introdetect.VisualSample{Ticks: frame.actual, Hash: hash, Contrast: contrast, Luma: luma, LumaKnown: lumaKnown})
-				return nil
-			})
-		}, tool.file)
-	if err == nil {
-		err = log.result()
-	}
+	err = extractor.extractVisualPlan(ctx, file, info, streamIndex, plan, limits, func(frame analysisVisualFrame, gray []byte) error {
+		hash, contrast := analysisVisualHash(gray)
+		luma, lumaKnown := analysisVisualLuma(gray)
+		samples = append(samples, introdetect.VisualSample{Ticks: frame.actual, Hash: hash, Contrast: contrast, Luma: luma, LumaKnown: lumaKnown})
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 	return samples, nil
 }
 
+// extractVisualPlan applies the same source, tool, geometry, packet timestamp,
+// and complete-slot proof to every admitted grayscale raster size. Callers
+// discard their collected samples when any final check fails.
+func (extractor AnalysisExtractor) extractVisualPlan(ctx context.Context, file *os.File, info Info, streamIndex int, plan analysisVisualPlan, limits AnalysisLimits, emit func(analysisVisualFrame, []byte) error) (resultErr error) {
+	before, err := analysisCheckSource(file, info)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := errors.Join(videoSeekCheckSource(file, before), ctx.Err()); err != nil {
+			resultErr = err
+		}
+	}()
+	stream, err := analysisVisualStream(info, streamIndex, limits)
+	if err != nil {
+		return err
+	}
+	if plan.width == analysisRefinementSide {
+		if err := analysisRefinementPTSSelection(info, stream, &plan); err != nil {
+			return err
+		}
+	}
+	processContext, release, err := analysisAcquire(ctx, limits.Timeout)
+	if err != nil {
+		return err
+	}
+	defer release()
+	tool, err := analysisOpenToolExpected(processContext, extractor.FFmpegPath, extractor.ExpectedFFmpegSHA256)
+	if err != nil {
+		return err
+	}
+	defer tool.file.Close()
+	if err := analysisValidateFFmpeg(processContext, tool); err != nil {
+		return err
+	}
+	defer func() {
+		if err := tool.check(); err != nil {
+			resultErr = err
+		}
+	}()
+	geometry, err := extractor.analysisGeometry(processContext, file, stream, limits)
+	if err != nil {
+		return err
+	}
+	plan.geometry = geometry
+	log, err := newAnalysisVisualLog(info, stream, plan, limits)
+	if err != nil {
+		return err
+	}
+	err = runAnalysisStream(processContext, "/proc/self/fd/4", file, buildAnalysisVisualArgs(info, stream, plan, limits), limits.Timeout,
+		int64(plan.frames*plan.width*plan.height), log, func(reader io.Reader) error {
+			return readAnalysisVisualFrames(processContext, reader, log, emit)
+		}, tool.file)
+	if err == nil {
+		err = log.result()
+	}
+	return err
+}
+
 func analysisVisualOptions(info Info, options VisualAnalysisOptions, limits AnalysisLimits) (analysisVisualPlan, error) {
+	return analysisVisualRasterOptions(info, options, limits, analysisVisualSide)
+}
+
+func analysisVisualRasterOptions(info Info, options VisualAnalysisOptions, limits AnalysisLimits, side int) (analysisVisualPlan, error) {
+	if side != analysisVisualSide && side != analysisRefinementSide {
+		return analysisVisualPlan{}, fmt.Errorf("%w: invalid analysis raster size", ErrAnalysisUnproven)
+	}
 	if options.EndTicks == 0 {
 		options.EndTicks = min(info.DurationTicks, MaxVisualAnalysisTicks)
 	}
@@ -117,12 +137,12 @@ func analysisVisualOptions(info Info, options VisualAnalysisOptions, limits Anal
 		return analysisVisualPlan{}, fmt.Errorf("%w: invalid visual window or sample interval", ErrAnalysisUnproven)
 	}
 	frames := (options.EndTicks-options.StartTicks-1)/options.IntervalTicks + 1
-	if frames > int64(limits.MaxVisualSamples) || analysisVisualSide*analysisVisualSide > limits.MaxFramePixels ||
-		frames*analysisVisualSide*analysisVisualSide > limits.MaxRawBytes {
+	if frames > int64(limits.MaxVisualSamples) || int64(side*side) > limits.MaxFramePixels ||
+		frames*int64(side*side) > limits.MaxRawBytes {
 		return analysisVisualPlan{}, fmt.Errorf("%w: visual sample plan", ErrAnalysisBudget)
 	}
 	return analysisVisualPlan{start: options.StartTicks, end: options.EndTicks, interval: options.IntervalTicks,
-		frames: int(frames), width: analysisVisualSide, height: analysisVisualSide, pixelFormat: "gray", channels: 1}, nil
+		frames: int(frames), width: side, height: side, pixelFormat: "gray", channels: 1}, nil
 }
 
 func analysisVisualStream(info Info, index int, limits AnalysisLimits) (Stream, error) {
@@ -156,11 +176,15 @@ func buildAnalysisVisualArgs(info Info, stream Stream, plan analysisVisualPlan, 
 		return new(big.Rat).SetFrac(value, big.NewInt(TicksPerSecond)).FloatString(7)
 	}
 	interval := new(big.Rat).SetFrac64(plan.interval, TicksPerSecond).FloatString(7)
+	selection := "gte(t," + absolute(plan.start) + "+selected_n*" + interval + ")"
+	if plan.selectExpression != "" {
+		selection = plan.selectExpression
+	}
 	// trim terminates at the absolute source clock boundary without -ss/-t
 	// rebasing. select's selected_n advances only when a frame is selected.
 	// Integer PTS validation independently checks every nominal slot afterward.
 	filter := plan.geometry.filter() + "sidedata=mode=delete,showinfo@analysis_source=checksum=0,trim=end=" + absolute(plan.end) +
-		",select='gte(t," + absolute(plan.start) + "+selected_n*" + interval + ")'," +
+		",select='" + selection + "'," +
 		"scale=" + strconv.Itoa(plan.width) + ":" + strconv.Itoa(plan.height) + ":flags=area,setsar=1,format=" + plan.pixelFormat
 	return []string{"-hide_banner", "-nostdin", "-nostats", "-loglevel", "repeat+level+info", "-debug_ts", "-xerror",
 		"-max_alloc", "268435456", "-copyts", "-fflags", "+nofillin-genpts", "-threads", "1", "-max_pixels", strconv.FormatInt(limits.MaxSourcePixels, 10),

@@ -150,6 +150,11 @@ func analyze(ctx context.Context, cohort Cohort, options Options, diagnostics *d
 		}
 		if len(groups) != 0 {
 			independent = sequenceIndependent(episodes)
+			for i, episode := range episodes {
+				if _, observed := visualSelection[episode.SourceKey]; observed {
+					independent[i] = true
+				}
+			}
 		}
 	}
 	// Limited searches in a different pair can hide a competing hypothesis.

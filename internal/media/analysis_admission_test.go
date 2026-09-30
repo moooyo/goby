@@ -73,8 +73,26 @@ func TestAnalysisIntroProfileSeparatesHistoricalPartialSlotExtraction(t *testing
 	previous := fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d",
 		analysisAudioProfile(available.Fingerprint), available.FFmpegSHA256, available.FingerprintSHA256,
 		VisualHashProfile, AnalysisGeometryProfile, available.FFprobeSHA256, TicksPerSecond/2)
-	if current == previous || !strings.HasSuffix(current, ";visual_sampling=intro-visual-complete-slots-v1") {
+	if current == previous || !strings.Contains(current, ";visual_sampling=intro-visual-complete-slots-v1;") {
 		t.Fatalf("complete-interval sampling reused the historical extraction profile: %q", current)
+	}
+}
+
+func TestAnalysisIntroProfileSeparatesCoarseOnlyExtraction(t *testing.T) {
+	available := analysisTestAvailability()
+	current, err := IntroAlgorithmProfile(available, TicksPerSecond/2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	previous := fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d;visual_sampling=%s",
+		analysisAudioProfile(available.Fingerprint), available.FFmpegSHA256, available.FingerprintSHA256,
+		VisualHashProfile, AnalysisGeometryProfile, available.FFprobeSHA256, TicksPerSecond/2, IntroVisualSamplingProfile)
+	if current == previous || !strings.HasSuffix(current, ";refinement=r16-120s-100ms-optcad2") {
+		t.Fatalf("refinement extraction reused the historical coarse-only profile: %q", current)
+	}
+	// Production appends a stream-selection policy before storing this key.
+	if len(current)+len(";selection=default-index-v1") > 512 {
+		t.Fatalf("refinement profile leaves no room for stream selection: %d bytes", len(current))
 	}
 }
 

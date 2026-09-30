@@ -162,8 +162,12 @@ type IntroAnalysisRequest struct {
 }
 
 type IntroFeatures struct {
-	Audio                         []introdetect.AudioSample
-	Visual                        []introdetect.VisualSample
+	Audio      []introdetect.AudioSample
+	Visual     []introdetect.VisualSample
+	Refinement []introdetect.RefinementSample
+	// A completely audited cadence shortfall may omit only dense evidence.
+	// All other failures return an empty IntroFeatures value and an error.
+	RefinementUnavailableReason   string
 	AudioBoundaryUncertaintyTicks int64
 	AudioMetadata                 AudioFingerprintMetadata
 	AlgorithmProfile              string
@@ -184,9 +188,11 @@ type AnalysisToolFacts struct {
 	FingerprintSHA256 string
 }
 
-// ExtractIntro shares one deadline across serial audio and visual decoding.
+// ExtractIntro shares one deadline across serial audio, coarse visual, and
+// refinement decoding.
 // An absent audio/video dependency returns an explicit failure, not a fabricated
 // empty successful fingerprint. The cohort layer can classify such abstentions.
+// A fully proven refinement cadence shortfall preserves original coarse evidence.
 func (e AnalysisExtractor) ExtractIntro(ctx context.Context, input *os.File, info Info, request IntroAnalysisRequest) (result IntroFeatures, resultErr error) {
 	if ctx == nil {
 		return result, ErrAnalysisUnavailable
@@ -236,6 +242,15 @@ func (e AnalysisExtractor) ExtractIntro(ctx context.Context, input *os.File, inf
 	if err != nil {
 		return result, err
 	}
+	refinement, err := admitted.ExtractRefinement(bounded, input, info, request.VideoStreamIndex)
+	refinementUnavailableReason := ""
+	if err == ErrRefinementCadenceUnsupported {
+		// Only this exact final outcome authorizes optional evidence. Wrapped
+		// or joined errors may include source, process, tool or timeout failures.
+		refinementUnavailableReason = RefinementCadenceUnavailableReason
+	} else if err != nil {
+		return result, err
+	}
 	identity, err := VideoSeekSourceIdentity(before)
 	if err != nil {
 		return result, err
@@ -243,8 +258,9 @@ func (e AnalysisExtractor) ExtractIntro(ctx context.Context, input *os.File, inf
 	if err := bounded.Err(); err != nil {
 		return IntroFeatures{}, err
 	}
-	return IntroFeatures{Audio: audio.Samples, Visual: visual, AudioBoundaryUncertaintyTicks: audio.BoundaryUncertaintyTicks,
-		AudioMetadata: audio.Metadata, AlgorithmProfile: profile, SourceIdentity: identity, WindowTicks: min(info.DurationTicks, MaxIntroAnalysisTicks),
+	return IntroFeatures{Audio: audio.Samples, Visual: visual, Refinement: refinement, AudioBoundaryUncertaintyTicks: audio.BoundaryUncertaintyTicks,
+		RefinementUnavailableReason: refinementUnavailableReason,
+		AudioMetadata:               audio.Metadata, AlgorithmProfile: profile, SourceIdentity: identity, WindowTicks: min(info.DurationTicks, MaxIntroAnalysisTicks),
 		VisualWindowTicks: visualOptions.EndTicks,
 		ToolFacts:         AnalysisToolFacts{FFmpegSHA256: availability.FFmpegSHA256, FFprobeSHA256: availability.FFprobeSHA256, FingerprintSHA256: availability.FingerprintSHA256}}, nil
 }

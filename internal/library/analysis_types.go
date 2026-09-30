@@ -106,6 +106,7 @@ type AnalysisFeatures struct {
 	AudioBoundaryUncertaintyTicks int64
 	Audio                         []introdetect.AudioSample
 	Visual                        []introdetect.VisualSample
+	Refinement                    []introdetect.RefinementSample
 }
 
 type AnalysisPreview struct {

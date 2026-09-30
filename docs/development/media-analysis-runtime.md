@@ -1,7 +1,7 @@
 # Media analysis runtime
 
-The current source adds [detector v4](intro-quality-20260930.md), explicit visual
-evidence and GAFB v2 feature storage. The existing Docker catalog retains the
+The current source adds [detector v5](intro-quality-round2-20260930.md), explicit
+calibrated visual evidence and GAFB v3 refinement storage. The existing Docker catalog retains the
 schema-52/v3 delivery described below; no replacement image is claimed here.
 
 Current runtime contract, including schema-52 automatic seek previews. The BIF
@@ -112,7 +112,7 @@ An incompatible active selection/profile returns a conflict. Scheduled conflicts
 defer that occurrence without consuming its event cursor or delaying unrelated
 definitions.
 
-The source `introdetect-v4` matcher requires at least three independent
+The source `introdetect-v5` matcher requires at least three independent
 episodes. Intro work
 uses at most 32 same-season sources per child and at most 16 selected
 episode identities for publication. A source's complete content hash establishes
@@ -121,13 +121,19 @@ episode. The normalized stream policy selects a default local audio/video stream
 first, then its original stream index. External tracks and attached pictures are
 excluded. A current source-bound feature cache can avoid repeated extraction.
 Force requests repeat extraction.
-The v4 visual fallback applies only when the acoustic pipeline found no group.
+The v5 visual fallback applies only when the acoustic pipeline found no group.
 It uses the first 120 seconds or first half of an episode and requires an
 8-to-90-second fixed-clock, complete pairwise witness. The luma descriptor and
 new extraction profile prevent reuse of old hash-only evidence as current visual
-evidence; the cache codec still reads GAFB v1 without synthesizing new fields.
-The [v4 evaluation](intro-quality-20260930.md) improves three known positives but
-retains nine known misses and the failed three-episode new positive cohort.
+evidence; the cache codec still reads GAFB v1/v2 without synthesizing new fields.
+An independent 16x16 raster stream covers only the first 120 seconds at 100 ms.
+It shares source/tool/timestamp admission and the extraction deadline. Explicitly
+proven cadence insufficiency may omit only the refinement stream; other failures
+still invalidate extraction. One fixed spatial transform per source and a final
+0.3-second boundary guard are recorded in the calibrated audit.
+The [v5 evaluation](intro-quality-round2-20260930.md) passed the first new positive
+and negative cohorts while retaining known misses and recall regressions. The
+earlier failed v4 three-episode positive cohort remains its original result.
 The prior v3 assessment's zero qualified intervals remains historical evidence,
 not an estimate of this source candidate's accuracy.
 

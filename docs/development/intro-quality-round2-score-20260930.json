@@ -1,0 +1,628 @@
+{
+  "schemaVersion": 1,
+  "reviewKind": "independent_round_two_retained_output_scoring_summary",
+  "matcherExecutedByThisReview": false,
+  "evaluationEnvironment": "authorized_remote_test_environment",
+  "candidateFreezeEvidenceSHA256": "961383f6e760ddc240d41191fa6f2e6c97c95788399a2b239c57d512861a6d42",
+  "frozenSourceLabelEvidenceSHA256": "f868e3f33b732fc890ce74be9f482d939423d2d558b70c4970adf9eccab67d40",
+  "policy": {
+    "endpointToleranceSeconds": 5.0,
+    "serializationEpsilonSeconds": 1e-06,
+    "fiveSecondToleranceAppliesTo": "Positive target start and end error only.",
+    "protectionRule": "Every raw overlap with explicit protected ranges, protected interval categories, title markers, or excluded additional segments is recorded. Any overlap above one microsecond is a violation.",
+    "targetRule": "Frozen semantic targets are preserved, including Hubble opening-title blocks and One Step Beyond sponsored openings. A negative is determined by label content, never the directory name.",
+    "safeHitRule": "Exactly one published interval, both endpoints within five seconds, and no protected-content violation.",
+    "emptyOutputRule": "Abstention does not establish positive recognition. Precision and endpoint error are null for no output."
+  },
+  "failedPreGuardDevelopmentPrototype": {
+    "scope": "failed_pre_guard_development_prototype_not_unseen",
+    "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+    "resultEvidenceSHA256": "d89db80ee4b0909a6d2455128ab5674e0c957c880a5bb04a1de460db671be3fb",
+    "labelEvidenceSHA256": {
+      "old-beverly": "e423655b8aa48acfd9a25af819a978cf42a93356c255ca8b3d27a712125ddb93",
+      "old-hubble": "9bafd77e7bd19037b5306d75375cce8f133697a9041a7fffb4728637e6daf316",
+      "old-osb": "6d26358960c2bd3a31f5ddbb3f4e71b934d57b097262a637156bd9effa497b68",
+      "old-robin": "44ae52cde42aea9397388ace0ac99dd045dd075d39cf2aae65aa670904471832",
+      "old-nasa-audio": "78028f7714974cfa1ed94cbd536f336d5d4a36e47ffae98a4fc74308819782ec",
+      "prior-positive": "02708d0eeb371d89d1394235530b3953b94026960b417f79633e4ffb9d6d2548",
+      "prior-negative": "40ec8fe4575b4e6f20e60971242f851585a87d76408d80e2566122de072c2327"
+    },
+    "caseCount": 21,
+    "positiveCases": 15,
+    "safePositiveHits": 3,
+    "positiveMisses": 12,
+    "negativeCases": 6,
+    "correctNegativeAbstentions": 6,
+    "falsePositiveCases": 0,
+    "publishedIntervalCount": 4,
+    "boundaryFailureIntervals": 0,
+    "protectedOverlapViolationIntervals": 1,
+    "roundingTouchIntervals": 0,
+    "maximumEndpointErrorSeconds": 1.9182652,
+    "scoreEvidenceSHA256": "a728416aecf61556622dae5879b1dbc14f176a062ea1dff694120271c831e9b6",
+    "caseOutcomes": {
+      "B1": "miss",
+      "B2": "miss",
+      "B7": "miss",
+      "H114": "miss",
+      "H116": "miss",
+      "H118": "miss",
+      "O1": "miss",
+      "O2": "miss",
+      "O3": "miss",
+      "R10": "safe_hit",
+      "R11": "safe_hit",
+      "R12": "miss",
+      "R13": "safe_hit",
+      "R14": "miss",
+      "R15": "miss",
+      "N388": "correct_abstention",
+      "N389": "correct_abstention",
+      "N390": "correct_abstention",
+      "N391": "correct_abstention",
+      "N392": "correct_abstention",
+      "N393": "correct_abstention"
+    }
+  },
+  "guardedDevelopment": {
+    "scope": "guarded_twenty_one_case_development_not_unseen",
+    "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+    "resultEvidenceSHA256": "89fddeb4f3e80c0bb5d93c5b1191e9fc6ae61143a6429ac75261d476c7e855db",
+    "labelEvidenceSHA256": {
+      "old-beverly": "e423655b8aa48acfd9a25af819a978cf42a93356c255ca8b3d27a712125ddb93",
+      "old-hubble": "9bafd77e7bd19037b5306d75375cce8f133697a9041a7fffb4728637e6daf316",
+      "old-osb": "6d26358960c2bd3a31f5ddbb3f4e71b934d57b097262a637156bd9effa497b68",
+      "old-robin": "44ae52cde42aea9397388ace0ac99dd045dd075d39cf2aae65aa670904471832",
+      "old-nasa-audio": "78028f7714974cfa1ed94cbd536f336d5d4a36e47ffae98a4fc74308819782ec",
+      "prior-positive": "02708d0eeb371d89d1394235530b3953b94026960b417f79633e4ffb9d6d2548",
+      "prior-negative": "40ec8fe4575b4e6f20e60971242f851585a87d76408d80e2566122de072c2327"
+    },
+    "caseCount": 21,
+    "positiveCases": 15,
+    "safePositiveHits": 4,
+    "positiveMisses": 11,
+    "negativeCases": 6,
+    "correctNegativeAbstentions": 6,
+    "falsePositiveCases": 0,
+    "publishedIntervalCount": 4,
+    "boundaryFailureIntervals": 0,
+    "protectedOverlapViolationIntervals": 0,
+    "roundingTouchIntervals": 0,
+    "maximumEndpointErrorSeconds": 2.2182652,
+    "scoreEvidenceSHA256": "fcd4dea6a9732f13c55ed3592cd55a7a748cac7949d0a90ff853d3151155dfb2",
+    "caseOutcomes": {
+      "B1": "miss",
+      "B2": "miss",
+      "B7": "miss",
+      "H114": "miss",
+      "H116": "miss",
+      "H118": "miss",
+      "O1": "miss",
+      "O2": "miss",
+      "O3": "miss",
+      "R10": "safe_hit",
+      "R11": "safe_hit",
+      "R12": "safe_hit",
+      "R13": "safe_hit",
+      "R14": "miss",
+      "R15": "miss",
+      "N388": "correct_abstention",
+      "N389": "correct_abstention",
+      "N390": "correct_abstention",
+      "N391": "correct_abstention",
+      "N392": "correct_abstention",
+      "N393": "correct_abstention"
+    }
+  },
+  "reusedMixedDevelopmentSubset": {
+    "preGuard": {
+      "scope": "failed_pre_guard_mixed_development_subset_not_unseen",
+      "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+      "resultEvidenceSHA256": "d89db80ee4b0909a6d2455128ab5674e0c957c880a5bb04a1de460db671be3fb",
+      "labelEvidenceSHA256": {
+        "old-beverly": "e423655b8aa48acfd9a25af819a978cf42a93356c255ca8b3d27a712125ddb93",
+        "old-hubble": "9bafd77e7bd19037b5306d75375cce8f133697a9041a7fffb4728637e6daf316",
+        "old-osb": "6d26358960c2bd3a31f5ddbb3f4e71b934d57b097262a637156bd9effa497b68",
+        "old-robin": "44ae52cde42aea9397388ace0ac99dd045dd075d39cf2aae65aa670904471832",
+        "old-nasa-audio": "78028f7714974cfa1ed94cbd536f336d5d4a36e47ffae98a4fc74308819782ec",
+        "prior-positive": "02708d0eeb371d89d1394235530b3953b94026960b417f79633e4ffb9d6d2548",
+        "prior-negative": "40ec8fe4575b4e6f20e60971242f851585a87d76408d80e2566122de072c2327"
+      },
+      "caseCount": 9,
+      "positiveCases": 6,
+      "safePositiveHits": 3,
+      "positiveMisses": 3,
+      "negativeCases": 3,
+      "correctNegativeAbstentions": 3,
+      "falsePositiveCases": 0,
+      "publishedIntervalCount": 4,
+      "boundaryFailureIntervals": 0,
+      "protectedOverlapViolationIntervals": 1,
+      "roundingTouchIntervals": 0,
+      "maximumEndpointErrorSeconds": 1.9182652,
+      "scoreEvidenceSHA256": "95c93ab3ebaae18bf841e6803fe4f0961299e23f61cfe069a9b1a645dedcb8ac",
+      "caseOutcomes": {
+        "R10": "safe_hit",
+        "R11": "safe_hit",
+        "R12": "miss",
+        "R13": "safe_hit",
+        "R14": "miss",
+        "R15": "miss",
+        "N388": "correct_abstention",
+        "N389": "correct_abstention",
+        "N390": "correct_abstention"
+      }
+    },
+    "guarded": {
+      "scope": "guarded_mixed_development_subset_not_unseen",
+      "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+      "resultEvidenceSHA256": "89fddeb4f3e80c0bb5d93c5b1191e9fc6ae61143a6429ac75261d476c7e855db",
+      "labelEvidenceSHA256": {
+        "old-beverly": "e423655b8aa48acfd9a25af819a978cf42a93356c255ca8b3d27a712125ddb93",
+        "old-hubble": "9bafd77e7bd19037b5306d75375cce8f133697a9041a7fffb4728637e6daf316",
+        "old-osb": "6d26358960c2bd3a31f5ddbb3f4e71b934d57b097262a637156bd9effa497b68",
+        "old-robin": "44ae52cde42aea9397388ace0ac99dd045dd075d39cf2aae65aa670904471832",
+        "old-nasa-audio": "78028f7714974cfa1ed94cbd536f336d5d4a36e47ffae98a4fc74308819782ec",
+        "prior-positive": "02708d0eeb371d89d1394235530b3953b94026960b417f79633e4ffb9d6d2548",
+        "prior-negative": "40ec8fe4575b4e6f20e60971242f851585a87d76408d80e2566122de072c2327"
+      },
+      "caseCount": 9,
+      "positiveCases": 6,
+      "safePositiveHits": 4,
+      "positiveMisses": 2,
+      "negativeCases": 3,
+      "correctNegativeAbstentions": 3,
+      "falsePositiveCases": 0,
+      "publishedIntervalCount": 4,
+      "boundaryFailureIntervals": 0,
+      "protectedOverlapViolationIntervals": 0,
+      "roundingTouchIntervals": 0,
+      "maximumEndpointErrorSeconds": 2.2182652,
+      "scoreEvidenceSHA256": "54ad0d00c87737ffe9fa6695dcd01b85f593030f399be92b0496e28985d3a9ff",
+      "caseOutcomes": {
+        "R10": "safe_hit",
+        "R11": "safe_hit",
+        "R12": "safe_hit",
+        "R13": "safe_hit",
+        "R14": "miss",
+        "R15": "miss",
+        "N388": "correct_abstention",
+        "N389": "correct_abstention",
+        "N390": "correct_abstention"
+      }
+    },
+    "additionalUniqueCases": 0
+  },
+  "newIndependentSixEpisodesFirstAttempt": {
+    "scope": "First attempt on six new independent episode works from two already-known series after candidate freezing.",
+    "positive": {
+      "scope": "first_frozen_candidate_new_three_positive_episodes_same_known_series",
+      "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+      "resultEvidenceSHA256": "50175e87306401d03b3a7d7831eecb09cb673fe0c3ebb7110d4f5344c7d8aa11",
+      "labelEvidenceSHA256": {
+        "round2-source-only": "f868e3f33b732fc890ce74be9f482d939423d2d558b70c4970adf9eccab67d40"
+      },
+      "caseCount": 3,
+      "positiveCases": 3,
+      "safePositiveHits": 3,
+      "positiveMisses": 0,
+      "negativeCases": 0,
+      "correctNegativeAbstentions": 0,
+      "falsePositiveCases": 0,
+      "publishedIntervalCount": 3,
+      "boundaryFailureIntervals": 0,
+      "protectedOverlapViolationIntervals": 0,
+      "roundingTouchIntervals": 0,
+      "maximumEndpointErrorSeconds": 2.6101747,
+      "scoreEvidenceSHA256": "1b3911de802a48d0674c55a8c99fd83edfe271892ee694e53da29b54907b67cf",
+      "caseOutcomes": {
+        "R16": "safe_hit",
+        "R17": "safe_hit",
+        "R18": "safe_hit"
+      }
+    },
+    "negative": {
+      "scope": "first_frozen_candidate_new_three_negative_episodes_same_known_series",
+      "scorerSHA256": "570fea17860786571aaa210e17279ca29d0f95f55b1a8376e28942ea4a822a45",
+      "resultEvidenceSHA256": "5f69a4d78b9bd0a8885a51ce497aa50726386afef49fff4c628d8fa14df0df9c",
+      "labelEvidenceSHA256": {
+        "round2-source-only": "f868e3f33b732fc890ce74be9f482d939423d2d558b70c4970adf9eccab67d40"
+      },
+      "caseCount": 3,
+      "positiveCases": 0,
+      "safePositiveHits": 0,
+      "positiveMisses": 0,
+      "negativeCases": 3,
+      "correctNegativeAbstentions": 3,
+      "falsePositiveCases": 0,
+      "publishedIntervalCount": 0,
+      "boundaryFailureIntervals": 0,
+      "protectedOverlapViolationIntervals": 0,
+      "roundingTouchIntervals": 0,
+      "maximumEndpointErrorSeconds": null,
+      "scoreEvidenceSHA256": "c8e48f0405bd7503669da1ca3d045aeee64e1bb21956b2d10eeccda33685dba2",
+      "caseOutcomes": {
+        "N394": "correct_abstention",
+        "N395": "correct_abstention",
+        "N396": "correct_abstention"
+      }
+    },
+    "caseCount": 6,
+    "positiveCases": 3,
+    "safePositiveHits": 3,
+    "negativeCases": 3,
+    "correctNegativeAbstentions": 3,
+    "falsePositiveCases": 0,
+    "protectedOverlapViolationIntervals": 0,
+    "roundingTouchIntervals": 0,
+    "maximumEndpointErrorSeconds": 2.6101747,
+    "cases": [
+      {
+        "caseId": "R16",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.1340283,
+              14.0035863
+            ],
+            "boundaryErrorsSeconds": [
+              0.6336113,
+              0.5085067
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            14.512093
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              31.025855,
+              600.0
+            ]
+          },
+          {
+            "labelField": "protectedSponsorSeconds",
+            "kind": "protectedSponsorSeconds",
+            "intervalSeconds": [
+              14.512093,
+              29.524604
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              14.512093,
+              29.524604
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "sponsor_presentation",
+            "intervalSeconds": [
+              15.01251,
+              29.024187
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              31.025855,
+              38.031693
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R17",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              0.8336113,
+              13.7031693
+            ],
+            "boundaryErrorsSeconds": [
+              0.3331943,
+              1.8097577
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            15.512927
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.015013,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.015013,
+              23.019183
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "R18",
+        "labelClass": "positive",
+        "status": "qualified",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 1,
+        "publishedIntervals": [
+          {
+            "intervalSeconds": [
+              1.0340283,
+              13.9035863
+            ],
+            "boundaryErrorsSeconds": [
+              0.5336113,
+              2.6101747
+            ],
+            "boundaryWithinFiveSeconds": true,
+            "protectedOverlaps": [],
+            "protectedOverlapViolation": false,
+            "safePositiveHit": true
+          }
+        ],
+        "outcome": "safe_hit",
+        "labelTargetSeconds": [
+          [
+            0.500417,
+            16.513761
+          ]
+        ],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              18.015013,
+              600.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "episode_specific_title_card_over_narrative",
+            "intervalSeconds": [
+              18.015013,
+              24.020017
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N394",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              139.066667
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              14.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "editorial_information_card",
+            "intervalSeconds": [
+              42.0,
+              57.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N395",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              163.1
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              19.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "editorial_information_card",
+            "intervalSeconds": [
+              23.0,
+              27.0
+            ]
+          }
+        ]
+      },
+      {
+        "caseId": "N396",
+        "labelClass": "negative",
+        "status": "no_result",
+        "sourceIdentityVerified": true,
+        "publishedIntervalCount": 0,
+        "publishedIntervals": [],
+        "outcome": "correct_abstention",
+        "labelTargetSeconds": [],
+        "protectedZoneInventory": [
+          {
+            "labelField": "protectedNarrativeSeconds",
+            "kind": "protectedNarrativeSeconds",
+            "intervalSeconds": [
+              5.0,
+              166.466667
+            ]
+          },
+          {
+            "labelField": "additionalSegments.estimated",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              1.5,
+              4.5
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "short_program_ident",
+            "intervalSeconds": [
+              2.0,
+              4.0
+            ]
+          },
+          {
+            "labelField": "additionalSegments.observed",
+            "kind": "presenter_lower_third_over_editorial_content",
+            "intervalSeconds": [
+              5.0,
+              12.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retainedFailedPrototypeViolations": [
+    {
+      "caseId": "R12",
+      "publishedIntervals": [
+        {
+          "intervalSeconds": [
+            0.4170141,
+            13.8031693
+          ],
+          "boundaryErrorsSeconds": [
+            0.0834029,
+            0.2919103
+          ],
+          "boundaryWithinFiveSeconds": true,
+          "protectedOverlaps": [
+            {
+              "labelField": "additionalSegments.estimated",
+              "kind": "sponsor_presentation",
+              "intervalSeconds": [
+                13.511259,
+                28.52377
+              ],
+              "rawOverlapSeconds": 0.2919103,
+              "exceedsSerializationEpsilon": true
+            }
+          ],
+          "protectedOverlapViolation": true,
+          "safePositiveHit": false
+        }
+      ]
+    }
+  ],
+  "accounting": {
+    "developmentIsNotUnseen": true,
+    "priorRoundHoldoutIsNowDevelopment": true,
+    "doNotSumDevelopmentAndMixedSubset": true,
+    "newSixContainsIndependentEpisodeWorksNotAlternateEncodes": true,
+    "firstAttemptIsRetained": true,
+    "newSeriesGeneralizationEstablished": false,
+    "newSeasonGeneralizationEstablished": false,
+    "populationAccuracyEstablished": false
+  },
+  "limitations": [
+    "Assistant source labels are not human ground truth and have no direct audio listening.",
+    "Finite non-random cases do not establish new-series, new-season, or population accuracy.",
+    "Protection conclusions are bounded by retained labels and sampled source review.",
+    "Original N388 through N390 labels lack source SHA-256 fields; their source identity is not label-verified. This does not affect the new six cases, whose source identities were verified.",
+    "Published-interval precision does not measure recall. Eleven of fifteen development positives remain misses.",
+    "The candidate-freeze digest records the retained freeze artifact; scoring does not independently attest every matcher execution step."
+  ]
+}

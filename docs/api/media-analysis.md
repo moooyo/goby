@@ -1,10 +1,12 @@
 # Media analysis
 
-The current source includes [detector v4 and resumable corpus tooling](../development/intro-quality-20260930.md).
+The current source includes [detector v5 spatial refinement](../development/intro-quality-round2-20260930.md).
 Its visual fallback carries optional `Candidate.VisualEvidence` and zero joint
-audio/visual `Metrics`; qualified evidence still requires three independent
-episodes and current publication authority. The existing Docker catalog remains
-the v3 checkpoint described below. Broader recognition is still limited.
+audio/visual `Metrics`; `MeasurementPolicy` distinguishes coarse and calibrated
+evidence, and `CalibrationDigest` binds the latter's fixed geometry/clock audit.
+Qualified evidence still requires three independent episodes and current
+publication authority. The existing Docker catalog remains the v3 checkpoint
+described below. Broader recognition is still limited.
 
 Media analysis executes in background tasks. Library options independently
 enable automatic intro detection and automatic seek previews. Enabling an option
@@ -214,16 +216,20 @@ of the underlying evidence status. Replacement does not carry suppression to new
 source bytes.
 
 The matcher emits integer similarity and coverage measurements, not a calibrated
-accuracy probability. Source detector v4 retains the acoustic evidence policy
+accuracy probability. Source detector v5 retains the acoustic evidence policy
 and adds a separately measured visual fallback when no acoustic group exists.
 Extraction uses at most the first 600 seconds; visual fallback searches at most
 the first 120 seconds or first half of the episode, with 8-to-90-second intervals.
+The refinement route uses independent 100-millisecond source rasters and one
+fixed spatial transform per source. It removes a 0.3-second uncertainty band
+from final boundaries and remeasures every supporting pair before publication.
 Both routes require at least three independent episodes. `VisualEvidence`
 records visual-only measurements without inventing acoustic support. Same or
 nested support witnesses select one existing complete group per episode;
 crossing or disjoint windows do not publish. See the
-[v4 result](../development/intro-quality-20260930.md) for exact policy and the
-failed new positive cohort. The prior [v3 expanded evaluation](../development/bif-intro-expansion-20260930.md)
+[v5 result](../development/intro-quality-round2-20260930.md) for exact policy,
+successful new cohorts and remaining development misses. The earlier v4 first
+positive cohort remains failed in its original record. The prior [v3 expanded evaluation](../development/bif-intro-expansion-20260930.md)
 remains the original zero-of-twelve positive result; its absence of emitted
 intervals made precision and boundary error undefined. The current Docker
 catalog still uses that earlier detector and does not include this source change.

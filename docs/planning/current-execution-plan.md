@@ -1,6 +1,16 @@
 # Current execution plan
 
-## Intro-quality source increment
+## Spatial intro refinement complete within the selected scope
+
+The [second recognition increment](intro-quality-round2-plan-20260930.md) is
+implemented and verified. Its first new positive and negative cohorts passed;
+the [result](../development/intro-quality-round2-20260930.md) retains development
+misses, mixed-support recall regressions and platform boundaries. Further work
+should address remaining series/format families and conservative competing-window
+abstentions using another independent evaluation. The accepted Docker catalog
+has not changed.
+
+## Previous intro-quality source increment
 
 The selected [intro quality and corpus-tooling plan](intro-quality-plan-20260930.md)
 has completed implementation and focused verification. Its

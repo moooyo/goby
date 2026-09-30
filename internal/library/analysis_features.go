@@ -18,22 +18,28 @@ import (
 
 const (
 	analysisFeaturesMagic           = "GAFB"
-	analysisFeaturesVersion         = 2
+	analysisFeaturesVersion         = 3
 	analysisFeaturesVersionV1       = 1
-	analysisFeaturesHeaderSize      = 56
+	analysisFeaturesVersionV2       = 2
+	analysisFeaturesHeaderSizeV1V2  = 56
+	analysisFeaturesHeaderSize      = 60
 	analysisFeaturesAudioSize       = 20
 	analysisFeaturesVisualSizeV1    = 18
 	analysisFeaturesVisualSize      = 83
-	analysisFeaturesMaxPayloadBytes = 256 << 10
+	analysisFeaturesRefinementSize  = 264
+	analysisFeaturesMaxPayloadV1V2  = 256 << 10
+	analysisFeaturesMaxPayloadBytes = 512 << 10
 	analysisFeaturesMaxProfileBytes = 512
 	analysisFeaturesMaxAudio        = 8192
 	analysisFeaturesMaxVisual       = 4096
+	analysisFeaturesMaxRefinement   = 1200
 )
 
 // EncodeAnalysisFeatures encodes a bounded feature snapshot for the supplied
-// source duration. Version 2 stores a fixed header, UTF-8 profile, audio bins,
-// and visual samples in that order, with little-endian numeric fields. Each
-// visual sample adds a one-byte presence flag and 64 signed luminance cells.
+// source duration. Version 3 appends a refinement count to the version 2 header,
+// then stores the UTF-8 profile, audio bins, visual samples, and refinement
+// samples in that order, with little-endian numeric fields. Refinement records
+// contain an original source-relative timestamp and 256 raw grayscale bytes.
 func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byte, error) {
 	window, err := analysisFeaturesWindow(sourceDuration)
 	if err != nil {
@@ -49,11 +55,12 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 	if _, err := hex.Decode(digest[:], []byte(value.ContentSHA256)); err != nil {
 		return nil, fmt.Errorf("%w: invalid analysis content hash", ErrInvalidInput)
 	}
-	if len(value.Audio) > analysisFeaturesMaxAudio || len(value.Visual) > analysisFeaturesMaxVisual {
+	if len(value.Audio) > analysisFeaturesMaxAudio || len(value.Visual) > analysisFeaturesMaxVisual || len(value.Refinement) > analysisFeaturesMaxRefinement {
 		return nil, fmt.Errorf("%w: analysis feature counts exceed their limits", ErrInvalidInput)
 	}
 	size := analysisFeaturesHeaderSize + len(value.AlgorithmProfile) +
-		len(value.Audio)*analysisFeaturesAudioSize + len(value.Visual)*analysisFeaturesVisualSize
+		len(value.Audio)*analysisFeaturesAudioSize + len(value.Visual)*analysisFeaturesVisualSize +
+		len(value.Refinement)*analysisFeaturesRefinementSize
 	if size > analysisFeaturesMaxPayloadBytes {
 		return nil, fmt.Errorf("%w: analysis feature payload exceeds its limit", ErrInvalidInput)
 	}
@@ -71,6 +78,13 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 		}
 		previousTick = sample.Ticks
 	}
+	previousTick = -1
+	for index, sample := range value.Refinement {
+		if !validAnalysisRefinementSample(sample, previousTick, min(sourceDuration, 120*introdetect.TicksPerSecond)) {
+			return nil, fmt.Errorf("%w: invalid analysis refinement sample %d", ErrInvalidInput, index)
+		}
+		previousTick = sample.Ticks
+	}
 
 	payload := make([]byte, size)
 	copy(payload[:4], analysisFeaturesMagic)
@@ -80,6 +94,7 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 	binary.LittleEndian.PutUint32(payload[12:16], uint32(len(value.Visual)))
 	binary.LittleEndian.PutUint64(payload[16:24], uint64(value.AudioBoundaryUncertaintyTicks))
 	copy(payload[24:56], digest[:])
+	binary.LittleEndian.PutUint32(payload[56:60], uint32(len(value.Refinement)))
 	offset := analysisFeaturesHeaderSize
 	copy(payload[offset:], value.AlgorithmProfile)
 	offset += len(value.AlgorithmProfile)
@@ -101,13 +116,18 @@ func EncodeAnalysisFeatures(value AnalysisFeatures, sourceDuration int64) ([]byt
 		}
 		offset += analysisFeaturesVisualSize
 	}
+	for _, sample := range value.Refinement {
+		binary.LittleEndian.PutUint64(payload[offset:offset+8], uint64(sample.Ticks))
+		copy(payload[offset+8:offset+analysisFeaturesRefinementSize], sample.Raster[:])
+		offset += analysisFeaturesRefinementSize
+	}
 	return payload, nil
 }
 
 // DecodeAnalysisFeatures validates and decodes a complete feature snapshot.
 // Missing evidence is represented by nonnil empty audio and visual slices.
-// Version 1 snapshots remain readable with absent luminance evidence; reading
-// them never changes their bytes or promotes their extraction profile.
+// Versions 1 and 2 remain readable without acquiring refinement evidence.
+// Reading historical bytes never promotes their extraction profile.
 func DecodeAnalysisFeatures(payload []byte, sourceDuration int64) (AnalysisFeatures, error) {
 	return readAnalysisFeatures(payload, sourceDuration, true)
 }
@@ -124,7 +144,7 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 	if err != nil {
 		return AnalysisFeatures{}, err
 	}
-	if len(payload) < analysisFeaturesHeaderSize || len(payload) > analysisFeaturesMaxPayloadBytes {
+	if len(payload) < analysisFeaturesHeaderSizeV1V2 || len(payload) > analysisFeaturesMaxPayloadBytes {
 		return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis feature payload size", ErrInvalidInput)
 	}
 	if string(payload[:4]) != analysisFeaturesMagic {
@@ -132,12 +152,25 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 	}
 	version := binary.LittleEndian.Uint16(payload[4:6])
 	visualSize := analysisFeaturesVisualSize
+	headerSize := analysisFeaturesHeaderSizeV1V2
+	maximumPayload := analysisFeaturesMaxPayloadV1V2
+	var refinementCount uint32
 	switch version {
 	case analysisFeaturesVersionV1:
 		visualSize = analysisFeaturesVisualSizeV1
+	case analysisFeaturesVersionV2:
 	case analysisFeaturesVersion:
+		headerSize = analysisFeaturesHeaderSize
+		maximumPayload = analysisFeaturesMaxPayloadBytes
+		if len(payload) < headerSize {
+			return AnalysisFeatures{}, fmt.Errorf("%w: incomplete analysis feature header", ErrInvalidInput)
+		}
+		refinementCount = binary.LittleEndian.Uint32(payload[56:60])
 	default:
 		return AnalysisFeatures{}, fmt.Errorf("%w: unsupported analysis feature format", ErrInvalidInput)
+	}
+	if len(payload) > maximumPayload {
+		return AnalysisFeatures{}, fmt.Errorf("%w: analysis feature payload exceeds its version limit", ErrInvalidInput)
 	}
 	profileBytes := binary.LittleEndian.Uint16(payload[6:8])
 	audioCount := binary.LittleEndian.Uint32(payload[8:12])
@@ -145,16 +178,17 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 	// Bound all declared lengths before converting counts, calculating a size,
 	// slicing the profile, or allocating output arrays.
 	if profileBytes == 0 || profileBytes > analysisFeaturesMaxProfileBytes ||
-		audioCount > analysisFeaturesMaxAudio || visualCount > analysisFeaturesMaxVisual {
+		audioCount > analysisFeaturesMaxAudio || visualCount > analysisFeaturesMaxVisual || refinementCount > analysisFeaturesMaxRefinement {
 		return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis feature lengths", ErrInvalidInput)
 	}
-	size := analysisFeaturesHeaderSize + int(profileBytes) +
-		int(audioCount)*analysisFeaturesAudioSize + int(visualCount)*visualSize
+	size := headerSize + int(profileBytes) +
+		int(audioCount)*analysisFeaturesAudioSize + int(visualCount)*visualSize +
+		int(refinementCount)*analysisFeaturesRefinementSize
 	if len(payload) != size {
 		return AnalysisFeatures{}, fmt.Errorf("%w: analysis feature payload length does not match its header", ErrInvalidInput)
 	}
 	uncertainty := int64(binary.LittleEndian.Uint64(payload[16:24]))
-	offset := analysisFeaturesHeaderSize
+	offset := headerSize
 	profile := string(payload[offset : offset+int(profileBytes)])
 	if err := validateAnalysisFeaturesMetadata(profile, uncertainty); err != nil {
 		return AnalysisFeatures{}, err
@@ -168,6 +202,9 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 			AudioBoundaryUncertaintyTicks: uncertainty,
 			Audio:                         make([]introdetect.AudioSample, int(audioCount)),
 			Visual:                        make([]introdetect.VisualSample, int(visualCount)),
+		}
+		if refinementCount > 0 {
+			value.Refinement = make([]introdetect.RefinementSample, int(refinementCount))
 		}
 	}
 	var previousEnd int64
@@ -193,7 +230,7 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 			Hash:     binary.LittleEndian.Uint64(payload[offset+8 : offset+16]),
 			Contrast: binary.LittleEndian.Uint16(payload[offset+16 : offset+18]),
 		}
-		if version == analysisFeaturesVersion {
+		if version >= analysisFeaturesVersionV2 {
 			if payload[offset+18] > 1 {
 				return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis luminance flag %d", ErrInvalidInput, index)
 			}
@@ -211,7 +248,25 @@ func readAnalysisFeatures(payload []byte, sourceDuration int64, materialize bool
 		}
 		offset += visualSize
 	}
+	previousTick = -1
+	refinementWindow := min(sourceDuration, 120*introdetect.TicksPerSecond)
+	for index := 0; index < int(refinementCount); index++ {
+		sample := introdetect.RefinementSample{Ticks: int64(binary.LittleEndian.Uint64(payload[offset : offset+8]))}
+		if !validAnalysisRefinementSample(sample, previousTick, refinementWindow) {
+			return AnalysisFeatures{}, fmt.Errorf("%w: invalid analysis refinement sample %d", ErrInvalidInput, index)
+		}
+		previousTick = sample.Ticks
+		if materialize {
+			copy(sample.Raster[:], payload[offset+8:offset+analysisFeaturesRefinementSize])
+			value.Refinement[index] = sample
+		}
+		offset += analysisFeaturesRefinementSize
+	}
 	return value, nil
+}
+
+func validAnalysisRefinementSample(sample introdetect.RefinementSample, previousTick, window int64) bool {
+	return sample.Ticks >= 0 && sample.Ticks > previousTick && sample.Ticks < window
 }
 
 func analysisFeaturesWindow(sourceDuration int64) (int64, error) {

@@ -44,6 +44,8 @@ func analysisCompatibilityLiteral(t *testing.T, version, name string) []byte {
 		return analysisV2Literal(t, name)
 	case "v3":
 		return analysisV3Literal(t, name)
+	case "v4":
+		return analysisV4Literal(t, name)
 	default:
 		t.Fatal("unsupported historical fixture version")
 		return nil
@@ -89,6 +91,10 @@ func TestAnalysisV2DetectionRemainsReadableButCannotBecomeEffectiveOrAccepted(t 
 
 func TestAnalysisV3DetectionRemainsReadableButCannotBecomeEffectiveOrAccepted(t *testing.T) {
 	checkAnalysisRetiredDetectionCannotBecomeEffectiveOrAccepted(t, "v3")
+}
+
+func TestAnalysisV4DetectionRemainsReadableButCannotBecomeEffectiveOrAccepted(t *testing.T) {
+	checkAnalysisRetiredDetectionCannotBecomeEffectiveOrAccepted(t, "v4")
 }
 
 func checkAnalysisRetiredDetectionCannotBecomeEffectiveOrAccepted(t *testing.T, version string) {
@@ -151,6 +157,10 @@ func TestAnalysisV3DetectionPreservesCurrentExplicitChapterIntro(t *testing.T) {
 	checkAnalysisRetiredDetectionPreservesCurrentChapterIntro(t, "v3")
 }
 
+func TestAnalysisV4DetectionPreservesCurrentExplicitChapterIntro(t *testing.T) {
+	checkAnalysisRetiredDetectionPreservesCurrentChapterIntro(t, "v4")
+}
+
 func checkAnalysisRetiredDetectionPreservesCurrentChapterIntro(t *testing.T, version string) {
 	t.Helper()
 	f := newAnalysisAdminFixture(t)
@@ -187,6 +197,10 @@ func TestAnalysisV2AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
 
 func TestAnalysisV3AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
 	checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t, "v3")
+}
+
+func TestAnalysisV4AdmissionCannotUseAValidCurrentWorkerFence(t *testing.T) {
+	checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t, "v4")
 }
 
 func checkAnalysisRetiredAdmissionCannotUseCurrentWorkerFence(t *testing.T, version string) {

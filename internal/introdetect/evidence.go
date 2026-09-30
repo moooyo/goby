@@ -12,7 +12,7 @@ func ValidateCandidateEvidence(candidate Candidate, options Options) bool {
 	if candidate.VisualEvidence != nil {
 		m := *candidate.VisualEvidence
 		duration := candidate.Interval.EndTicks - candidate.Interval.StartTicks
-		return candidate.Metrics == (Metrics{}) && len(candidate.Reasons) == 0 &&
+		return validVisualMeasurementPolicy(m) && candidate.Metrics == (Metrics{}) && len(candidate.Reasons) == 0 &&
 			candidate.Status == Qualified && candidate.Interval.StartTicks >= 0 &&
 			candidate.Interval.EndTicks <= visualSequencePrefix && duration >= visualSequenceMinimum &&
 			duration <= visualSequenceMaximum && m.Samples >= 16 && m.Samples <= 4096 &&
@@ -25,6 +25,21 @@ func ValidateCandidateEvidence(candidate Candidate, options Options) bool {
 		return true
 	}
 	return len(candidate.Reasons) == 0 && candidate.Interval.EndTicks-candidate.Interval.StartTicks >= o.AutoMinDurationTicks && qualifiedEvidence(candidate.Metrics, o)
+}
+
+func validVisualMeasurementPolicy(metrics VisualSequenceMetrics) bool {
+	if metrics.MeasurementPolicy == VisualMeasurementCoarse {
+		return metrics.CalibrationDigest == ""
+	}
+	if metrics.MeasurementPolicy != VisualMeasurementCalibrated || len(metrics.CalibrationDigest) != 64 {
+		return false
+	}
+	for _, character := range metrics.CalibrationDigest {
+		if !(character >= '0' && character <= '9' || character >= 'a' && character <= 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func validEvidenceMetrics(m Metrics) bool {

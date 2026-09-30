@@ -75,11 +75,13 @@ func seedAnalysisArchiveV1History(t *testing.T, ctx context.Context, pool *pgxpo
 	currentUnavailable, currentFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
 	v2Unavailable, v2Fingerprint := analysisArchiveV2Admission(t, "unavailable")
 	v3Unavailable, v3Fingerprint := analysisArchiveV3Admission(t, "unavailable")
+	v4Unavailable, v4Fingerprint := analysisArchiveV4Admission(t, "unavailable")
 	for _, entry := range []struct{ version, run, scope, execution, fingerprint string }{
 		{"v1", strings.Repeat("d", 32), "analysis:" + strings.Repeat("2", 64), analysisArchiveV1Unavailable, hex.EncodeToString(unavailableDigest[:])},
 		{"v2", strings.Repeat("4", 32), "analysis:" + strings.Repeat("5", 64), v2Unavailable, v2Fingerprint},
 		{"v3", strings.Repeat("c", 32), "analysis:" + strings.Repeat("3", 64), v3Unavailable, v3Fingerprint},
-		{"v4", strings.Repeat("6", 32), "analysis:" + strings.Repeat("7", 64), currentUnavailable, currentFingerprint},
+		{"v4", strings.Repeat("6", 32), "analysis:" + strings.Repeat("7", 64), v4Unavailable, v4Fingerprint},
+		{"v5", strings.Repeat("8", 32), "analysis:" + strings.Repeat("8", 64), currentUnavailable, currentFingerprint},
 	} {
 		item, source := "analysis-history-unavailable-"+entry.version, "unavailable-source-"+entry.version
 		childDigest := sha256.Sum256([]byte(entry.run + ":" + entry.scope))
@@ -234,7 +236,8 @@ func TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecove
 		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='1' AND execution->'Available'='false'::jsonb)=1
 		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='2')=1
 		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='3')=1
-		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='4')=2
+		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='4')=1
+		AND (SELECT count(*) FROM analysis_run_profiles WHERE execution->>'Version'='5')=2
 		AND (SELECT analysis_config_fingerprint=$1 FROM task_runs WHERE id=repeat('e',32))
 		AND (SELECT result=$4::jsonb AND NOT auto_published FROM analysis_detections WHERE item_id='analysis-history-item')
 		AND (SELECT evidence->'Result'=$4::jsonb FROM analysis_intro_audit WHERE item_id='analysis-history-item')`,
@@ -246,9 +249,9 @@ func TestPostgreSQLAnalysisMixedHistoryPreservesV1WireThroughRawRestoreAndRecove
 		analysisArchiveV1BarePreview, analysisArchiveV1AdmissionFingerprint(analysisArchiveV1BarePreview)).Scan(&exact); err != nil || !exact {
 		t.Fatal("raw restore appended geometry claims to an early preview admission")
 	}
-	if err := target.QueryRow(ctx, `SELECT count(*)=4 FROM analysis_detections d
+	if err := target.QueryRow(ctx, `SELECT count(*)=5 FROM analysis_detections d
 		JOIN analysis_work w ON w.child_id=d.child_id JOIN analysis_run_profiles p ON p.run_id=w.run_id
-		WHERE d.item_id IN ('analysis-history-unavailable-v1','analysis-history-unavailable-v2','analysis-history-unavailable-v3','analysis-history-unavailable-v4')
+		WHERE d.item_id IN ('analysis-history-unavailable-v1','analysis-history-unavailable-v2','analysis-history-unavailable-v3','analysis-history-unavailable-v4','analysis-history-unavailable-v5')
 		AND p.execution->'Available'='false'::jsonb AND p.execution->>'DetectorVersion'=''
 		AND d.result->>'Version'='introdetect-v'||(p.execution->>'Version')
 		AND d.status='no_result' AND d.result->>'Reason'='source_unavailable' AND NOT d.auto_published
@@ -263,16 +266,17 @@ func TestPostgreSQLAnalysisHistoryRequiresMatchingAdmissionAndResultVersions(t *
 	ctx, source, _, options := recoveryFixture(t)
 	seedAnalysisArchiveState(t, ctx, source)
 	v1Fingerprint := seedAnalysisArchiveV1History(t, ctx, source)
-	if introdetect.Version != "introdetect-v4" || library.AnalysisExecutionProfileVersion != 4 {
-		t.Fatal("mixed-version witness requires the current v4 execution contract")
+	if introdetect.Version != "introdetect-v5" || library.AnalysisExecutionProfileVersion != 5 {
+		t.Fatal("mixed-version witness requires the current v5 execution contract")
 	}
 	execution := library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, Available: true,
 		FFmpegSHA256: strings.Repeat("a", 64), FFprobeSHA256: strings.Repeat("b", 64), FingerprintSHA256: strings.Repeat("c", 64),
-		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: 5000000, IntroProfile: "archive-intro-v4"}
+		DetectorVersion: introdetect.Version, DetectorOptions: introdetect.DefaultOptions(), VisualIntervalTicks: 5000000, IntroProfile: "archive-intro-v5"}
 	currentRaw, currentFingerprint := analysisArchiveCurrentAdmission(t, execution)
 	v2Raw, v2Fingerprint := analysisArchiveV2Admission(t, "intro")
 	v3Raw, v3Fingerprint := analysisArchiveV3Admission(t, "intro")
-	for _, version := range []string{"v1", "v2", "v3", "v4"} {
+	v4Raw, v4Fingerprint := analysisArchiveV4Admission(t, "intro")
+	for _, version := range []string{"v1", "v2", "v3", "v4", "v5"} {
 		raw := strings.Replace(analysisArchiveV1Result, "introdetect-v1", "introdetect-"+version, 1)
 		if err := library.ValidateStoredAnalysisResult([]byte(raw), "no_result", nil, nil); err != nil {
 			t.Fatalf("cross-version witness must use independently valid result shapes: %v", err)
@@ -283,6 +287,7 @@ func TestPostgreSQLAnalysisHistoryRequiresMatchingAdmissionAndResultVersions(t *
 	}
 	v2Unavailable, v2UnavailableFingerprint := analysisArchiveV2Admission(t, "unavailable")
 	v3Unavailable, v3UnavailableFingerprint := analysisArchiveV3Admission(t, "unavailable")
+	v4Unavailable, v4UnavailableFingerprint := analysisArchiveV4Admission(t, "unavailable")
 	currentUnavailable, currentUnavailableFingerprint := analysisArchiveCurrentAdmission(t, library.AnalysisExecutionProfile{Version: library.AnalysisExecutionProfileVersion, UnavailableReason: "not_configured"})
 	var tests []struct {
 		name, execution, fingerprint, result string
@@ -292,13 +297,15 @@ func TestPostgreSQLAnalysisHistoryRequiresMatchingAdmissionAndResultVersions(t *
 		{"v1_admission", "v1", analysisArchiveV1Execution, v1Fingerprint},
 		{"v2_admission", "v2", v2Raw, v2Fingerprint},
 		{"v3_admission", "v3", v3Raw, v3Fingerprint},
-		{"v4_admission", "v4", currentRaw, currentFingerprint},
+		{"v4_admission", "v4", v4Raw, v4Fingerprint},
+		{"v5_admission", "v5", currentRaw, currentFingerprint},
 		{"unavailable_v1_admission", "v1", analysisArchiveV1Unavailable, analysisArchiveV1AdmissionFingerprint(analysisArchiveV1Unavailable)},
 		{"unavailable_v2_admission", "v2", v2Unavailable, v2UnavailableFingerprint},
 		{"unavailable_v3_admission", "v3", v3Unavailable, v3UnavailableFingerprint},
-		{"unavailable_v4_admission", "v4", currentUnavailable, currentUnavailableFingerprint},
+		{"unavailable_v4_admission", "v4", v4Unavailable, v4UnavailableFingerprint},
+		{"unavailable_v5_admission", "v5", currentUnavailable, currentUnavailableFingerprint},
 	} {
-		for _, version := range []string{"v1", "v2", "v3", "v4", "v999"} {
+		for _, version := range []string{"v1", "v2", "v3", "v4", "v5", "v999"} {
 			tests = append(tests, struct {
 				name, execution, fingerprint, result string
 				valid                                bool
@@ -403,7 +410,7 @@ func TestPostgreSQLUnavailableAnalysisHistoryCannotAcquireMatcherEvidence(t *tes
 	ctx, source, _, options := recoveryFixture(t)
 	seedAnalysisArchiveState(t, ctx, source)
 	seedAnalysisArchiveV1History(t, ctx, source)
-	for _, version := range []string{"v1", "v2", "v3", "v4"} {
+	for _, version := range []string{"v1", "v2", "v3", "v4", "v5"} {
 		for _, test := range []struct{ name, mutation string }{
 			{"qualified", `UPDATE analysis_detections SET status='qualified',start_ticks=0,end_ticks=300000000,result=jsonb_set(result,'{Episode,Status}','"qualified"') WHERE item_id=$1`},
 			{"content_identity", `UPDATE analysis_detections SET result=jsonb_set(result,'{Episode,ContentIdentity}',to_jsonb(repeat('a',64))) WHERE item_id=$1`},

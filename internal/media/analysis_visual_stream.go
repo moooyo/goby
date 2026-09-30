@@ -28,6 +28,10 @@ type analysisVisualPlan struct {
 	pixelFormat          string
 	channels             int
 	geometry             analysisDisplayGeometry
+	selectExpression     string
+	selectorTimeBase     *big.Rat
+	selectorMultiplier   int64
+	optionalRefinement   bool
 }
 
 type analysisVisualFrame struct {
@@ -65,6 +69,7 @@ type analysisVisualLog struct {
 	bytes                        int64
 	err                          error
 	closed                       bool
+	refinementCadenceUnsupported bool
 }
 
 func newAnalysisVisualLog(info Info, stream Stream, plan analysisVisualPlan, limits AnalysisLimits) (*analysisVisualLog, error) {
@@ -140,8 +145,18 @@ func (log *analysisVisualLog) Close(processErr error) {
 		log.err = fmt.Errorf("%w: truncated visual diagnostics", ErrAnalysisUnproven)
 	}
 	if log.err == nil && (log.packets.packets == 0 || log.source.count == 0 ||
-		log.sample.count != log.plan.frames || log.head != len(log.selected)) {
+		log.sample.count != len(log.selected) || log.head != len(log.selected)) {
 		log.err = fmt.Errorf("%w: incomplete visual sample plan", ErrAnalysisUnproven)
+	}
+	if log.err == nil && log.sample.count != log.plan.frames {
+		if log.plan.optionalRefinement {
+			// The decoder's audited EOF proves there are no remaining source
+			// frames for any unfilled tail slots. The outer process runner must
+			// still prove a clean exit before result() can authorize abstention.
+			log.refinementCadenceUnsupported = true
+		} else {
+			log.err = fmt.Errorf("%w: incomplete visual sample plan", ErrAnalysisUnproven)
+		}
 	}
 	close(log.done)
 }
@@ -175,6 +190,32 @@ func (log *analysisVisualLog) result() error {
 	}
 	if !log.closed || len(log.frames) != 0 {
 		return fmt.Errorf("%w: unmatched visual metadata", ErrAnalysisUnproven)
+	}
+	if log.refinementCadenceUnsupported {
+		return ErrRefinementCadenceUnsupported
+	}
+	return nil
+}
+
+// A sparse refinement EOF is acceptable to the raw parser only when every
+// audited output frame has exactly one complete raster. A truncated stream or
+// a stderr/source audit failure cannot be reclassified as insufficient cadence.
+func (log *analysisVisualLog) sparseRefinementEOF(ctx context.Context, frames int) error {
+	if !log.plan.optionalRefinement {
+		return fmt.Errorf("%w: incomplete raw visual frame stream", ErrAnalysisUnproven)
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-log.done:
+	}
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	if log.err != nil {
+		return log.err
+	}
+	if !log.refinementCadenceUnsupported || frames != log.sample.count || len(log.frames) != 0 {
+		return fmt.Errorf("%w: incomplete raw refinement frame stream", ErrAnalysisUnproven)
 	}
 	return nil
 }
@@ -231,6 +272,10 @@ func (log *analysisVisualLog) sourceFrame(fields []string) error {
 	}
 	number, numberErr := strconv.Atoi(fields[1])
 	pts, ptsErr := analysisPTSInteger(fields[2])
+	if log.plan.selectorTimeBase != nil && (state.timeBase.Cmp(log.plan.selectorTimeBase) != 0 ||
+		pts > analysisExactFloatInteger/log.plan.selectorMultiplier || pts < -analysisExactFloatInteger/log.plan.selectorMultiplier) {
+		return fmt.Errorf("%w: refinement selector cannot exactly represent the source timestamp", ErrAnalysisUnproven)
+	}
 	sarNum, sarNumErr := strconv.ParseInt(fields[4], 10, 32)
 	sarDen, sarDenErr := strconv.ParseInt(fields[5], 10, 32)
 	width, widthErr := strconv.Atoi(fields[6])
@@ -273,7 +318,14 @@ func (log *analysisVisualLog) sourceFrame(fields []string) error {
 		return nil
 	}
 	if ticks >= min(nominal+log.plan.interval, log.plan.end) {
-		return fmt.Errorf("%w: source PTS skipped a nominal sample slot", ErrAnalysisUnproven)
+		if !log.plan.optionalRefinement {
+			return fmt.Errorf("%w: source PTS skipped a nominal sample slot", ErrAnalysisUnproven)
+		}
+		// Source frames are audited in strict presentation order, so a later
+		// actual frame proves the intervening nominal slot has no source frame.
+		// Continue the original selected_n policy and audit the complete decode;
+		// neither this observation nor a partial process can authorize fallback.
+		log.refinementCadenceUnsupported = true
 	}
 	log.selected = append(log.selected, analysisVisualFrame{nominal: nominal, actual: ticks, ptsKey: analysisPTSKey(pts, state.timeBase)})
 	return nil
@@ -313,7 +365,7 @@ func readAnalysisVisualFrames(ctx context.Context, input io.Reader, log *analysi
 		n, err := io.ReadFull(input, frame)
 		if err == io.EOF && n == 0 {
 			if index != log.plan.frames {
-				return fmt.Errorf("%w: incomplete raw visual frame stream", ErrAnalysisUnproven)
+				return log.sparseRefinementEOF(ctx, index)
 			}
 			return nil
 		}

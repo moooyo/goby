@@ -66,8 +66,15 @@ func TestLibraryPreviewMigrationPreservesSchema51AndAddsDisabledPolicy(t *testin
 				}
 			}
 			complete := migrationHistory(t, ctx, pool)
-			if err := database.Migrate(ctx, pool); err != nil || complete != migrationHistory(t, ctx, pool) {
-				t.Fatalf("repeat migration changed the complete history: %v", err)
+			if runner == "normal" {
+				if err := database.Migrate(ctx, pool); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				themeOwnersMigrateTo(t, ctx, pool, 52)
+			}
+			if complete != migrationHistory(t, ctx, pool) {
+				t.Fatal("repeat migration changed the complete history")
 			}
 		})
 	}

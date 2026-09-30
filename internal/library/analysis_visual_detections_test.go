@@ -15,7 +15,8 @@ func analysisVisualDetectionTestValue() AnalysisStoredResult {
 	candidate := &value.Episode.Candidates[0]
 	candidate.Metrics = introdetect.Metrics{}
 	candidate.VisualEvidence = &introdetect.VisualSequenceMetrics{
-		Samples: 16, CoveragePermille: 850, Transitions: 3, DistinctStates: 4,
+		MeasurementPolicy: "coarse-v1",
+		Samples:           16, CoveragePermille: 850, Transitions: 3, DistinctStates: 4,
 		DominantStatePermille: 650, MaxLumaRMSPermille: 550, MaxCenterRMSPermille: 650,
 		MaxGapTicks: 21 * media.TicksPerSecond / 10, PairCount: 3,
 	}

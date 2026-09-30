@@ -85,8 +85,8 @@ func TestAnalysisVisualMatcherOutputSurvivesFeatureCacheAndPublication(t *testin
 			WHERE item_id=$1 AND profile_fingerprint=$2`, source.ItemID, work.ConfigurationFingerprint).Scan(&payload); err != nil {
 			t.Fatal(err)
 		}
-		if len(payload) < 6 || string(payload[:4]) != "GAFB" || binary.LittleEndian.Uint16(payload[4:6]) != 2 {
-			t.Fatal("the production feature cache did not persist GAFB v2")
+		if len(payload) < 6 || string(payload[:4]) != "GAFB" || binary.LittleEndian.Uint16(payload[4:6]) != 3 {
+			t.Fatal("the production feature cache did not persist GAFB v3")
 		}
 		cached, found, err := f.store.GetAnalysisFeatures(f.ctx, child, source.ItemID, fence)
 		if err != nil || !found || !reflect.DeepEqual(cached, features) {
@@ -95,7 +95,7 @@ func TestAnalysisVisualMatcherOutputSurvivesFeatureCacheAndPublication(t *testin
 		cohort.Episodes = append(cohort.Episodes, introdetect.Episode{
 			EpisodeKey: source.EpisodeKey, SourceKey: source.SourceRevision, ContentIdentity: cached.ContentSHA256,
 			AlgorithmProfile: cached.AlgorithmProfile, DurationTicks: source.DurationTicks,
-			AudioBoundaryUncertaintyTicks: cached.AudioBoundaryUncertaintyTicks, Audio: cached.Audio, Visual: cached.Visual})
+			AudioBoundaryUncertaintyTicks: cached.AudioBoundaryUncertaintyTicks, Audio: cached.Audio, Visual: cached.Visual, Refinement: cached.Refinement})
 	}
 
 	result, err := introdetect.Analyze(f.ctx, cohort, work.Execution.DetectorOptions)

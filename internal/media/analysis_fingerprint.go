@@ -340,9 +340,9 @@ func IntroAlgorithmProfile(available AnalysisAvailability, visualIntervalTicks i
 	if visualIntervalTicks < TicksPerSecond/10 || visualIntervalTicks > 10*TicksPerSecond {
 		return "", ErrAnalysisUnproven
 	}
-	return fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d;visual_sampling=%s",
+	return fmt.Sprintf("%s:ffmpeg=%s:helper=%s;visual=%s;geometry=%s;ffprobe=%s;visual_interval_ticks=%d;visual_sampling=%s;refinement=%s",
 		analysisAudioProfile(metadata), available.FFmpegSHA256, available.FingerprintSHA256, VisualHashProfile, AnalysisGeometryProfile,
-		available.FFprobeSHA256, visualIntervalTicks, IntroVisualSamplingProfile), nil
+		available.FFprobeSHA256, visualIntervalTicks, IntroVisualSamplingProfile, IntroRefinementProfile), nil
 }
 
 func analysisAudioProfile(metadata AudioFingerprintMetadata) string {

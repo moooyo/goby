@@ -5,8 +5,10 @@ package introdetect
 import "errors"
 
 const (
-	TicksPerSecond int64 = 10_000_000
-	Version              = "introdetect-v4"
+	TicksPerSecond        int64 = 10_000_000
+	Version                     = "introdetect-v5"
+	RefinementPrefixTicks       = 120 * TicksPerSecond
+	MaxRefinementSamples        = 1200
 )
 
 var (
@@ -36,6 +38,14 @@ type VisualSample struct {
 	LumaKnown bool
 }
 
+// RefinementSample retains one source-audited 16 by 16 grayscale raster. It is
+// separate from coarse visual observations used by the acoustic matcher. A
+// missing refinement slice is not reconstructed from a perceptual descriptor.
+type RefinementSample struct {
+	Ticks  int64
+	Raster [256]byte
+}
+
 // Identities are trusted caller facts, not inferred from names or fingerprints.
 // EpisodeKey identifies the episode across encodes. SourceKey binds its indexed
 // source revision. ContentIdentity identifies the complete media content, not
@@ -52,6 +62,7 @@ type Episode struct {
 	AudioBoundaryUncertaintyTicks int64
 	Audio                         []AudioSample
 	Visual                        []VisualSample
+	Refinement                    []RefinementSample
 }
 
 // Cohort is an explicit complete window selected by the caller from one
@@ -113,7 +124,7 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		MaxEpisodes: 32, MaxAudioSamples: 6000, MaxVisualSamples: 2400,
-		MaxFeatureBytes: 256 << 10, MaxComparisons: 100_000_000,
+		MaxFeatureBytes: 768 << 10, MaxComparisons: 200_000_000,
 		MaxOffsetCandidates: 6, MaxCandidatesPerPair: 12, MaxGroups: 128,
 		WindowTicks: 600 * TicksPerSecond, MinDurationTicks: 15 * TicksPerSecond,
 		MaxDurationTicks: 180 * TicksPerSecond, AutoMinDurationTicks: 30 * TicksPerSecond,

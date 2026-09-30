@@ -136,8 +136,15 @@ func sequencePreferWitness(a, b VisualSequenceGroup) bool {
 }
 
 func sequenceGroups(episodes []Episode, independent []bool, pairs map[[2]int][]sequencePair, o Options, budget *workBudget) ([]VisualSequenceGroup, error) {
+	return sequenceGroupsForAnchor(episodes, independent, pairs, o, budget, -1)
+}
+
+func sequenceGroupsForAnchor(episodes []Episode, independent []bool, pairs map[[2]int][]sequencePair, o Options, budget *workBudget, requiredAnchor int) ([]VisualSequenceGroup, error) {
 	groups := []VisualSequenceGroup{}
 	for left := range episodes {
+		if requiredAnchor >= 0 && left != requiredAnchor {
+			continue
+		}
 		for right := left + 1; right < len(episodes); right++ {
 			for _, seed := range pairs[[2]int{left, right}] {
 				if err := budget.spend(); err != nil {

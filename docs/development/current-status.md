@@ -1,6 +1,17 @@
 # Current implementation and delivery status
 
-## Unreleased source increment: intro quality and corpus tooling
+## Latest unreleased source: spatial intro refinement
+
+The [second intro-quality increment](intro-quality-round2-20260930.md) adds
+detector v5, independently audited dense visual refinement, schema 53/GAFB v3
+storage and frozen v4 history. Its first new three-positive and three-negative
+cohorts passed with no protected-content overlap. The 21 known development cases
+still contain 11 positive misses; R14/R15 have a documented mixed-cohort recall
+regression. This is bounded evidence, not arbitrary-series accuracy. Focused
+verification, development builds and owned-resource closure passed. Existing
+Docker installation artifacts remain unchanged.
+
+## Previous unreleased v4 source increment
 
 The [intro-quality increment](intro-quality-20260930.md) adds detector v4's
 bounded visual fallback, resumable corpus evaluation and v3 history compatibility.
