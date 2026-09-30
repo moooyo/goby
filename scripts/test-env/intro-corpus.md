@@ -95,6 +95,19 @@ the same corpus admission checks. It leaves the production `Result` and
 `Diagnostics` unchanged. Visual experiment groups are not application skip
 markers and must not be published as such. The flag is off by default.
 
+`Diagnostics.Visual` observes only the visual fallback actually invoked by the
+production matcher. It distinguishes a skipped fallback from an attempted or
+completed discovery, records calibrated/coarse independent-source quorum, and
+traces calibration, pair, complete-clique, boundary-guard, and ambiguous-source
+selection outcomes. The visual trace has its own 128-entry limit, independent
+of the 512-entry audio trace; aggregate counts remain complete when entries are
+truncated. Pair lookup counts include reused complete scans, with cache hits
+reported separately, and are not counts of unique measurements. Group-search
+rejection means the existing complete-clique search returned no witness, without
+inferring a more specific low-level failure. Diagnostics add no comparison work,
+new search, or remeasurement. On an error, completed branch stages may remain
+visible, but partial diagnostics never authorize publication.
+
 ## Focused verification
 
 The entry point has a build-ignore tag to avoid mixing it with other standalone

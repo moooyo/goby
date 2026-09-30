@@ -339,6 +339,10 @@ func discoverSequencePair(a, b Episode, offset int64, budget *workBudget) ([]seq
 // edges on the same final source-clock intersection. It does not call Analyze,
 // change its thresholds, or authorize application publication.
 func DiscoverVisualSequences(ctx context.Context, cohort Cohort, options Options) (VisualSequenceResult, error) {
+	return discoverVisualSequences(ctx, cohort, options, nil)
+}
+
+func discoverVisualSequences(ctx context.Context, cohort Cohort, options Options, diagnostics *diagnosticsCollector) (VisualSequenceResult, error) {
 	if ctx == nil {
 		return VisualSequenceResult{}, fmt.Errorf("%w: context required", ErrInvalidInput)
 	}
@@ -355,9 +359,9 @@ func DiscoverVisualSequences(ctx context.Context, cohort Cohort, options Options
 		hasRefinement = hasRefinement || len(episode.Refinement) > 0
 	}
 	if !hasRefinement {
-		return discoverCoarseSequences(ctx, episodes, o, nil)
+		return discoverCoarseSequences(ctx, episodes, o, nil, diagnostics)
 	}
-	refined, err := discoverCalibratedSequences(ctx, episodes, o)
+	refined, err := discoverCalibratedSequences(ctx, episodes, o, diagnostics)
 	if err != nil {
 		return VisualSequenceResult{}, err
 	}
@@ -375,7 +379,7 @@ func DiscoverVisualSequences(ctx context.Context, cohort Cohort, options Options
 			}
 		}
 	}
-	coarse, err := discoverCoarseSequences(ctx, episodes, remaining, coarseIndependent)
+	coarse, err := discoverCoarseSequences(ctx, episodes, remaining, coarseIndependent, diagnostics)
 	if err != nil {
 		return VisualSequenceResult{}, err
 	}
@@ -394,7 +398,8 @@ func DiscoverVisualSequences(ctx context.Context, cohort Cohort, options Options
 	return refined, nil
 }
 
-func discoverCoarseSequences(ctx context.Context, episodes []Episode, o Options, independent []bool) (VisualSequenceResult, error) {
+func discoverCoarseSequences(ctx context.Context, episodes []Episode, o Options, independent []bool, diagnostics *diagnosticsCollector) (VisualSequenceResult, error) {
+	diagnostics.visualBranchStarted(VisualMeasurementCoarse)
 	if independent == nil {
 		independent = sequenceIndependent(episodes)
 	}
@@ -410,7 +415,9 @@ func discoverCoarseSequences(ctx context.Context, episodes []Episode, o Options,
 	for _, count := range profiles {
 		quorum = quorum || count >= o.MinSupport
 	}
+	diagnostics.visualQuorum(VisualMeasurementCoarse, independent, independent, quorum)
 	if !quorum {
+		diagnostics.visualBranchCompleted(VisualMeasurementCoarse, result)
 		return result, nil
 	}
 	pairs := map[[2]int][]sequencePair{}
@@ -438,16 +445,21 @@ func discoverCoarseSequences(ctx context.Context, episodes []Episode, o Options,
 					pairs[[2]int{i, j}] = append(pairs[[2]int{i, j}], pair)
 				}
 			}
+			if diagnostics != nil {
+				diagnostics.visualPair(VisualMeasurementCoarse, "", a.SourceKey, b.SourceKey, len(pairs[[2]int{i, j}]), false)
+			}
 		}
 	}
 	groups, err := sequenceGroups(episodes, independent, pairs, o, budget)
 	if err != nil {
 		return VisualSequenceResult{}, err
 	}
+	diagnostics.visualGroupSearch(VisualMeasurementCoarse, "", len(groups))
 	result.Groups = groups
 	result.Comparisons = budget.used
 	if err := ctx.Err(); err != nil {
 		return VisualSequenceResult{}, err
 	}
+	diagnostics.visualBranchCompleted(VisualMeasurementCoarse, result)
 	return result, nil
 }

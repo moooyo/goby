@@ -24,6 +24,10 @@ func newCalibratedPairCache() *calibratedPairCache {
 }
 
 func (cache *calibratedPairCache) get(a, b Episode, geometryA, geometryB calibratedGeometry, o Options, budget *workBudget) ([]sequencePair, error) {
+	return cache.getObserved(a, b, geometryA, geometryB, o, budget, "", nil)
+}
+
+func (cache *calibratedPairCache) getObserved(a, b Episode, geometryA, geometryB calibratedGeometry, o Options, budget *workBudget, anchor string, diagnostics *diagnosticsCollector) ([]sequencePair, error) {
 	if err := budget.ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -60,5 +64,6 @@ func (cache *calibratedPairCache) get(a, b Episode, geometryA, geometryB calibra
 		}
 		result[i] = pair
 	}
+	diagnostics.visualPair(VisualMeasurementCalibrated, anchor, a.SourceKey, b.SourceKey, len(result), exists)
 	return result, nil
 }

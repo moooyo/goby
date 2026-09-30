@@ -9,8 +9,10 @@ import (
 // visualFallbackGroups uses its own complete visual witness only when the
 // acoustic pipeline found no group. Ambiguous visual windows are not published;
 // the diagnostic discovery result retains them for inspection.
-func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited map[string]bool, budget *workBudget) ([]Group, map[string]string, error) {
+func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited map[string]bool, budget *workBudget, diagnostics *diagnosticsCollector) ([]Group, map[string]string, error) {
+	diagnostics.visualConsidered()
 	if o != DefaultOptions() {
+		diagnostics.visualSkipped("non_default_options")
 		return nil, nil, nil
 	}
 	ready := 0
@@ -27,6 +29,7 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 		}
 	}
 	if ready < o.MinSupport {
+		diagnostics.visualSkipped("insufficient_ready_sources")
 		return nil, nil, nil
 	}
 	if budget.used >= budget.limit {
@@ -34,12 +37,17 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 	}
 	remaining := o
 	remaining.MaxComparisons = budget.limit - budget.used
-	visual, err := DiscoverVisualSequences(budget.ctx, cohort, remaining)
+	diagnostics.visualStarted()
+	visual, err := discoverVisualSequences(budget.ctx, cohort, remaining, diagnostics)
 	if err != nil {
 		return nil, nil, err
 	}
 	budget.used += visual.Comparisons
+	if diagnostics != nil {
+		diagnostics.value.Visual.Counts.DiscoveryGroups = len(visual.Groups)
+	}
 	if visual.SearchLimited {
+		diagnostics.visualSkipped("visual_search_limited")
 		return nil, nil, nil
 	}
 	groups := []Group{}
@@ -50,20 +58,29 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 			allowed = allowed && !limited[member.SourceKey]
 		}
 		if !allowed {
+			if diagnostics != nil {
+				diagnostics.value.Visual.Counts.LimitedSourceRejected++
+			}
 			continue
 		}
 		if group, ok := visualPublicationGroup(value, cohort.Key, episodes, o); ok {
 			groups = append(groups, group)
 			witnesses = append(witnesses, value)
+		} else if diagnostics != nil {
+			diagnostics.value.Visual.Counts.PublicationRejected++
 		}
 	}
 	selection, err := selectVisualWitnesses(groups, budget)
 	if err != nil {
 		return nil, nil, err
 	}
+	ambiguous := diagnostics.visualOriginalSelection(selection)
 	recovered, err := recoverVisualConsensus(witnesses, episodes, selection, budget)
 	if err != nil {
 		return nil, nil, err
+	}
+	if diagnostics != nil {
+		diagnostics.value.Visual.Counts.RecoveryGroups = len(recovered)
 	}
 	recoveredGroups := make([]Group, 0, len(recovered))
 	recoveredIDs := map[string]bool{}
@@ -73,6 +90,8 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 				recoveredGroups = append(recoveredGroups, group)
 				recoveredIDs[group.ID] = true
 			}
+		} else if diagnostics != nil {
+			diagnostics.value.Visual.Counts.PublicationRejected++
 		}
 	}
 	recoveredSelection, err := selectVisualWitnesses(recoveredGroups, budget)
@@ -98,6 +117,7 @@ func visualFallbackGroups(cohort Cohort, episodes []Episode, o Options, limited 
 			delete(selectedGroups, group.ID)
 		}
 	}
+	diagnostics.visualCompleted(selection, ambiguous, len(retained))
 	return retained, selection, nil
 }
 

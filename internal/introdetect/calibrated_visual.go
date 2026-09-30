@@ -40,7 +40,8 @@ func calibratedPairHypotheses(a, b Episode, o Options, budget *workBudget) ([]se
 	return result, nil
 }
 
-func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Options) (VisualSequenceResult, error) {
+func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Options, diagnostics *diagnosticsCollector) (VisualSequenceResult, error) {
+	diagnostics.visualBranchStarted(VisualMeasurementCalibrated)
 	budget := &workBudget{ctx: ctx, limit: o.MaxComparisons}
 	viewCache := newCalibratedViewCache()
 	pairCache := newCalibratedPairCache()
@@ -83,8 +84,10 @@ func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Opti
 	for _, count := range profiles {
 		result.hasRefinementQuorum = result.hasRefinementQuorum || count >= o.MinSupport
 	}
+	diagnostics.visualQuorum(VisualMeasurementCalibrated, independent, ready, result.hasRefinementQuorum)
 	if !result.hasRefinementQuorum {
 		result.Comparisons = budget.used
+		diagnostics.visualBranchCompleted(VisualMeasurementCalibrated, result)
 		return result, nil
 	}
 	for anchor, reference := range neutral {
@@ -112,10 +115,11 @@ func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Opti
 			if err != nil {
 				return VisualSequenceResult{}, err
 			}
+			diagnostics.visualCalibration(reference.SourceKey, episodes[node].SourceKey, ok)
 			if !ok {
 				continue
 			}
-			found, err := pairCache.get(reference, estimate.view, identity, estimate.geometry, o, budget)
+			found, err := pairCache.getObserved(reference, estimate.view, identity, estimate.geometry, o, budget, reference.SourceKey, diagnostics)
 			if err != nil {
 				return VisualSequenceResult{}, err
 			}
@@ -131,11 +135,12 @@ func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Opti
 			pairs[[2]int{anchor, node}] = found
 		}
 		if len(members) < o.MinSupport {
+			diagnostics.visualAnchorWithoutQuorum(reference.SourceKey, len(members))
 			continue
 		}
 		for i, left := range members[1:] {
 			for _, right := range members[i+2:] {
-				found, err := pairCache.get(views[left], views[right], geometries[left], geometries[right], o, budget)
+				found, err := pairCache.getObserved(views[left], views[right], geometries[left], geometries[right], o, budget, reference.SourceKey, diagnostics)
 				if err != nil {
 					return VisualSequenceResult{}, err
 				}
@@ -151,11 +156,13 @@ func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Opti
 		if err != nil {
 			return VisualSequenceResult{}, err
 		}
+		diagnostics.visualGroupSearch(VisualMeasurementCalibrated, reference.SourceKey, len(groups))
 		for _, group := range groups {
 			guarded, ok, err := calibratedGuardedWitness(group, views, budget)
 			if err != nil {
 				return VisualSequenceResult{}, err
 			}
+			diagnostics.visualGuard(reference.SourceKey, ok)
 			if !ok {
 				continue
 			}
@@ -173,5 +180,6 @@ func discoverCalibratedSequences(ctx context.Context, episodes []Episode, o Opti
 		return VisualSequenceResult{}, err
 	}
 	result.Comparisons = budget.used
+	diagnostics.visualBranchCompleted(VisualMeasurementCalibrated, result)
 	return result, nil
 }

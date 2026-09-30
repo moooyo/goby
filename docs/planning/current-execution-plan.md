@@ -1,17 +1,29 @@
 # Current execution plan
 
-## Common-interior intro recovery complete within the selected scope
+## Visual evaluation diagnostics complete within the selected scope
+
+The [fourth increment](intro-quality-round4-plan-20260930.md) closes the missing
+visual-fallback trace and preserves complete matcher results across all 33
+retained cases. Its [result](../development/intro-quality-round4-20260930.md)
+records source-level Beverly action correspondences and four bounded
+descriptor mechanisms that did not justify a product recognition change.
+The next recognition task is a bounded higher-resolution, region-preserving
+representation experiment, with scene-motion and foreground controls against
+credit-only or static-background matching. A viable candidate still requires
+new frozen episode evaluation. No recall gain or new Docker delivery is claimed.
+
+## Previous common-interior intro recovery increment
 
 The [third recognition increment](intro-quality-round3-plan-20260930.md)
 restores R14/R15 in the mixed cohort while preserving existing qualified
 results. Its first new three-positive/three-negative evaluation passed with
 no protected-content overlap. The
 [result](../development/intro-quality-round3-20260930.md) records all 27
-retained cases, including nine remaining positive misses. The next useful
-recognition task is a bounded descriptor/scene-correspondence investigation
-for Beverly's version mismatch; a 540-geometry diagnostic did not support
-simply expanding the current spatial grid. Any adopted improvement needs a
-new frozen episode evaluation. The accepted Docker catalog remains unchanged.
+retained cases, including nine remaining positive misses. Its proposed
+Beverly descriptor/scene-correspondence investigation is recorded by the
+fourth increment above. The 540-geometry diagnostic still does not support
+simply expanding the current spatial grid. The accepted Docker catalog remains
+unchanged.
 
 ## Previous spatial intro refinement increment
 

@@ -144,7 +144,7 @@ func analyze(ctx context.Context, cohort Cohort, options Options, diagnostics *d
 	}
 	var visualSelection map[string]string
 	if len(groups) == 0 {
-		groups, visualSelection, err = visualFallbackGroups(cohort, episodes, o, limitedSources, budget)
+		groups, visualSelection, err = visualFallbackGroups(cohort, episodes, o, limitedSources, budget, diagnostics)
 		if err != nil {
 			return Result{}, err
 		}
@@ -156,6 +156,8 @@ func analyze(ctx context.Context, cohort Cohort, options Options, diagnostics *d
 				}
 			}
 		}
+	} else {
+		diagnostics.visualSkipped("audio_groups_available")
 	}
 	// Limited searches in a different pair can hide a competing hypothesis.
 	// Keep this source-wide uncertainty even when a clean clique was found.

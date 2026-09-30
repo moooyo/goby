@@ -1,6 +1,19 @@
 # Current implementation and delivery status
 
-## Latest unreleased source: common-interior intro recovery
+## Latest unreleased source: visual evaluation diagnostics
+
+The [fourth intro-quality increment](intro-quality-round4-20260930.md) adds
+bounded production visual-fallback diagnostics to the corpus report, including
+calibration, pair/group support and ambiguity recovery. Detector and corpus
+race tests passed, and all 33 retained cases have exactly the same complete
+results and comparison counts as the preceding source increment. Beverly
+source inspection confirmed common scene actions under different credit
+overlays, cuts and appearance. Four bounded descriptor mechanisms did not
+produce an acceptable replacement; the nine positive misses remain. This
+increment improves diagnosis and does not claim higher recall or new holdout
+accuracy. The accepted Docker catalog remains unchanged.
+
+## Previous unreleased source: common-interior intro recovery
 
 The [third intro-quality increment](intro-quality-round3-20260930.md) repairs
 R14/R15's mixed-cohort recall regression without changing existing qualified

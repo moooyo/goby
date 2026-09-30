@@ -43,7 +43,7 @@ type PairDiagnostics struct {
 	Offsets          []OffsetDiagnostics
 }
 
-// Diagnostics is an optional bounded trace of the existing audio-led matcher.
+// Diagnostics is an optional bounded trace of the existing production matcher.
 // Completed is false after an error; partial counts never authorize publication.
 // Diagnostics do not consume comparison budget or influence candidate selection.
 type Diagnostics struct {
@@ -54,13 +54,15 @@ type Diagnostics struct {
 	TraceEntries   int
 	TraceTruncated bool
 	Pairs          []PairDiagnostics
+	Visual         VisualFallbackDiagnostics
 }
 
 // AnalyzeWithDiagnostics runs exactly the Analyze pipeline and additionally
 // returns bounded observations. On failure, Result has the same empty value as
 // Analyze while Diagnostics retains only the stages completed before failure.
 func AnalyzeWithDiagnostics(ctx context.Context, cohort Cohort, options Options) (Result, Diagnostics, error) {
-	diagnostics := Diagnostics{Version: Version, TraceLimit: MaxDiagnosticTraceEntries, Pairs: []PairDiagnostics{}}
+	diagnostics := Diagnostics{Version: Version, TraceLimit: MaxDiagnosticTraceEntries, Pairs: []PairDiagnostics{},
+		Visual: VisualFallbackDiagnostics{TraceLimit: MaxVisualDiagnosticTraceEntries, Entries: []VisualDiagnosticEntry{}}}
 	collector := &diagnosticsCollector{value: &diagnostics}
 	result, err := analyze(ctx, cohort, options, collector)
 	diagnostics.Completed = err == nil
