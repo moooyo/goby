@@ -1,0 +1,514 @@
+{
+  "kind": "goby-intro-quality-round6",
+  "recordedAtUTC": "2026-09-30T18:11:32.410957+00:00",
+  "status": "research_tooling_and_observed_boundary_increment_complete",
+  "sourceBaseline": "38943e4",
+  "applicationBaseline": "4817cb3",
+  "branch": "codex/intro-quality",
+  "checkedInChangeScope": [
+    "scripts/test-env/intro-region-eval",
+    "documentation"
+  ],
+  "environment": "test-env",
+  "localVerificationExecuted": false,
+  "productionResult": false,
+  "independentHeldout": false,
+  "newAccuracyClaim": false,
+  "production": {
+    "algorithmChanged": false,
+    "detectorVersion": 5,
+    "executionVersion": 5,
+    "schemaChanged": false,
+    "schemaVersion": 53,
+    "GAFBVersion": 3,
+    "profileChanged": false,
+    "dependenciesChanged": false,
+    "dockerCatalogChanged": false
+  },
+  "implementation": {
+    "sha256": "66e54013928949a4e647aa0a0cf931a308734ac0b3f0035c907a208c185231e8",
+    "files": {
+      "engine_core.go": "5ebb04bf37e424b828adcf0bb1ae8df04392e5e836ea8fca5ef6187d8db113cc",
+      "input.go": "a31465d944753161fd24b81615b6babf19f15136a5dac30d376c68362649916d",
+      "local_prefix_cache3.go": "08bfb5f38e104ec935f9869184a313eceebc77517b9b199eb45bab39efe51af3",
+      "main.go": "393403db8bfb51841b1c9edf7c51bff4bf080c493b603ea1ba9865018e45d1a4",
+      "observed_boundary.go": "642f8df74c7fa6deabc300e0f068b9d547f5a5a23594e49b1b58ee19e835aa3d",
+      "posterior_cache.go": "3c32f6de669fe76668e2785c2a4f4c58f14fee446cd69eeb0ba9ef4dcc101d16",
+      "secureio_linux.go": "65eb6dd07d4b27af66dafa2c9700bc0c5f0fa67f9b93bedd18bb3d1f46381655",
+      "secureio_unsupported.go": "089fade4e1de825f9b03b88df94cb6570fee4af0a6642295f567032e65cd9937"
+    },
+    "hashEncoding": "Sorted non-test Go filenames and content; each field is prefixed by its decimal byte length and a colon."
+  },
+  "sourceBinding": {
+    "file": "final-source-binding.json",
+    "bytes": 4556,
+    "sha256": "5fa83af6b25b7ed16f3063613955efbb60f553dec8984cb99b8ed747bb8db867"
+  },
+  "protocol": {
+    "report": "intro-region-research-v1",
+    "boundary": "observed-common-component-v2",
+    "sourceCount": 3,
+    "episodeKey": "Required caller-established original-episode identity.",
+    "fixedDetectorThresholdsAndWorkBudgets": true,
+    "upstreamAuditTrust": "Exact audit bytes are checked; original media and extractor execution are not re-audited.",
+    "labelsUnchanged": true,
+    "strictProtectedContentScoringUnchanged": true
+  },
+  "verification": {
+    "toolchain": "/opt/goby-toolchains/go1.27.1/bin/go",
+    "module": "Standalone stdlib-only snapshot with repository module path and Go 1.27.1 directive.",
+    "suites": [
+      {
+        "file": "cli-default05.jsonl",
+        "sha256": "e20bfdccf48b8cfef992645b97b2d4ca133a064ee59048d0294574ed9d84785e",
+        "passedParentTestCount": 50,
+        "skipped": [
+          "TestBoundaryPipelineFrozenFixtures"
+        ],
+        "packagePassed": true
+      },
+      {
+        "file": "cli-race03.jsonl",
+        "sha256": "551b20f0e32d843106729ee01acc832a2fb6def3210a58740305713ea5eda6c4",
+        "passedParentTestCount": 50,
+        "skipped": [
+          "TestBoundaryPipelineFrozenFixtures"
+        ],
+        "packagePassed": true
+      },
+      {
+        "file": "cli-pipeline03.jsonl",
+        "sha256": "ff43d44b11e530e8a95260d11270e3ba9ec4993381c35b6a80179ecc39fd56db",
+        "passedParentTestCount": 1,
+        "skipped": [],
+        "packagePassed": true
+      }
+    ],
+    "defaultAndRaceCoverSame50UniqueParentTests": true,
+    "fullPipeline": {
+      "caseCount": 4,
+      "parentTestCount": 1,
+      "race": false,
+      "implementationSHA256": "35d25ba0d5e28f753f2063c2d9007ce1591b89c9b14feea3e6d7f253002b46f9",
+      "changedNonTestFilesAfterRun": [
+        "input.go"
+      ],
+      "reuseScope": "Unchanged engine; final input stat hardening covered by final default/race and actual CLI runs.",
+      "privateEngineWitnessAndWorkEquality": true
+    },
+    "privatePredecessorRace": {
+      "uniquePassedParentCount": 33,
+      "composedEvidence": [
+        "boundary-race02.jsonl",
+        "boundary-source-race03.jsonl"
+      ],
+      "singleAllGreenRunClaim": false
+    },
+    "historicalApplicationDatabaseCapacitySuitesRepeated": false
+  },
+  "syntheticResults": [
+    {
+      "kind": "original-eight-second-moving",
+      "completed": true,
+      "groups": 0,
+      "crossingSourceIntervals": 0,
+      "work": {
+        "patchComparisons": 166849093,
+        "clockLookups": 35295095,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 2
+      },
+      "sourceBounds": []
+    },
+    {
+      "kind": "twelve-second-moving",
+      "completed": true,
+      "groups": 1,
+      "crossingSourceIntervals": 0,
+      "work": {
+        "patchComparisons": 172817809,
+        "clockLookups": 36801137,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 3
+      },
+      "sourceBounds": [
+        [
+          [
+            20,
+            31.9
+          ],
+          [
+            27,
+            38.9
+          ],
+          [
+            34,
+            45.9
+          ]
+        ]
+      ]
+    },
+    {
+      "kind": "shared-static",
+      "completed": true,
+      "groups": 0,
+      "crossingSourceIntervals": 0,
+      "work": {
+        "patchComparisons": 130748118,
+        "clockLookups": 34570800,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 0
+      },
+      "sourceBounds": []
+    },
+    {
+      "kind": "different-content",
+      "completed": true,
+      "groups": 0,
+      "crossingSourceIntervals": 0,
+      "work": {
+        "patchComparisons": 58320598,
+        "clockLookups": 3600,
+        "renderPixels": 251904000,
+        "retainedHypotheses": 0
+      },
+      "sourceBounds": []
+    }
+  ],
+  "actualCLI": {
+    "beverly": {
+      "report": "cli-beverly04.json",
+      "completed": true,
+      "status": "completed-abstention",
+      "groups": 0,
+      "admittedSources": 3,
+      "inputSHA256": "2612561f193aa4487c0024e5b4e933bbc04e27997c89b997f3754d322c1537cb",
+      "derivedFrom": {
+        "manifestPath": "/opt/goby-intro-quality-20260930-round5-01/local-features/beverly-prefix-input01.json",
+        "sha256": "f24cbdf2acb26e76a25eee66dd66217ff7b09340492cb1b4acdf4fda45fdac1d"
+      },
+      "work": {
+        "patchComparisons": 168979477,
+        "clockLookups": 41544000,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 77
+      },
+      "privateEngineExactRepeat": true
+    },
+    "deadline": {
+      "report": "cli-deadline02.json",
+      "exitCode": 1,
+      "completed": false,
+      "status": "deadline-exceeded",
+      "stage": "fixed-geometry-nomination",
+      "deadlineSeconds": 2,
+      "admittedSources": 3,
+      "groups": 0,
+      "note": "The final source-bound report is deadline02, not the older deadline01-summary listed by comparison01."
+    }
+  },
+  "realDevelopmentRepeats": {
+    "sourceCount": 12,
+    "cohortCount": 4,
+    "newSourceMedia": false,
+    "scope": "Repeated known round5 development sources; not independent heldout.",
+    "cases": [
+      {
+        "cohort": "beverly",
+        "exitCode": 0,
+        "complete": true,
+        "groupCount": 0,
+        "stopStage": "complete-clique-window-search",
+        "work": {
+          "patchComparisons": 168979477,
+          "clockLookups": 41544000,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 77
+        },
+        "input": {
+          "file": "beverly-prefix-input01.json",
+          "bytes": 1492,
+          "sha256": "f24cbdf2acb26e76a25eee66dd66217ff7b09340492cb1b4acdf4fda45fdac1d"
+        },
+        "output": {
+          "file": "boundary-final-beverly.json",
+          "bytes": 59130,
+          "sha256": "a03a17d5b13c0a5704f9a60c2b19edcbdc0be026e8113f5004de681d763554cb"
+        }
+      },
+      {
+        "cohort": "nasa",
+        "exitCode": 0,
+        "complete": true,
+        "groupCount": 0,
+        "stopStage": "single-clock-prefix-support",
+        "work": {
+          "patchComparisons": 132346870,
+          "clockLookups": 34570800,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 6
+        },
+        "input": {
+          "file": "nasa-prefix-input01.json",
+          "bytes": 1504,
+          "sha256": "60fdc7226cfee670f2542695c8310ca4ce45eb5356a0de23a5a52173b722e2f2"
+        },
+        "output": {
+          "file": "boundary-final-nasa.json",
+          "bytes": 48960,
+          "sha256": "e8af7012f6d13e55f6aaf2a8077d575e1a9ed2a21254261548f2713055e89d3a"
+        }
+      },
+      {
+        "cohort": "osb",
+        "exitCode": 0,
+        "complete": true,
+        "groupCount": 0,
+        "stopStage": "single-clock-prefix-support",
+        "work": {
+          "patchComparisons": 136916952,
+          "clockLookups": 34570800,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 0
+        },
+        "input": {
+          "file": "osb-prefix-input01.json",
+          "bytes": 1492,
+          "sha256": "9d7e5437197bef7cc107864ce9877bd1431823423085446907fb913f7b503af8"
+        },
+        "output": {
+          "file": "boundary-final-osb.json",
+          "bytes": 48515,
+          "sha256": "62a38d9b038bbdcf163b08f0c0b8a96c5f057b1c6ae421d5b88a8b9683d0399a"
+        }
+      },
+      {
+        "cohort": "hubble",
+        "exitCode": 0,
+        "complete": true,
+        "groupCount": 0,
+        "stopStage": "single-clock-prefix-support",
+        "work": {
+          "patchComparisons": 132080357,
+          "clockLookups": 34570800,
+          "renderPixels": 274944000,
+          "retainedHypotheses": 3
+        },
+        "input": {
+          "file": "hubble-prefix-input01.json",
+          "bytes": 1504,
+          "sha256": "26916cc4b917253f0ca657011e3aa99f397d242e80657a768e2e5ef3d5c48939"
+        },
+        "output": {
+          "file": "boundary-final-hubble.json",
+          "bytes": 48405,
+          "sha256": "cbe7a9c2e56cf44bf3424846590081c543f84229dd60558396874aefba468e63"
+        }
+      }
+    ],
+    "beverlyRecallImproved": false
+  },
+  "retainedFailures": [
+    {
+      "failure": "Round5 original eight-second boundary overreach.",
+      "record": "intro-quality-round5-results-20260930.json",
+      "change": "Original generator retained; new policy requires conservative abstention."
+    },
+    {
+      "failure": "Moving island joined across protected gap.",
+      "record": "boundary-source/boundary1-moving-island-counterexample.jsonl",
+      "change": "Restrict to one continuous complete-support component."
+    },
+    {
+      "failure": "Twenty-second component exceeded lookup budget.",
+      "record": "boundary-source/boundary-oracles02.jsonl",
+      "change": "Exact successful-containing-window dominance; budgets unchanged."
+    },
+    {
+      "failure": "Non-anchor ambiguity could be hidden.",
+      "record": "boundary-source/boundary2-source-counterexample.jsonl",
+      "change": "All-source counterevidence preserved across clocks."
+    },
+    {
+      "failure": "Counterexample expected identical retained child endpoints.",
+      "record": "boundary-source/boundary-race02.jsonl",
+      "change": "Assertion checks global component identity and source disjointness; no engine change."
+    }
+  ],
+  "limitations": [
+    "An exact eight-second shared fixture has only a 7.9-second observation hull and abstains.",
+    "Missing support and real-cadence 0.98/1.02 ownership discontinuities may split all long enough components.",
+    "Observed PTS envelopes do not establish continuous semantic safety or distinguish shared narrative from intros.",
+    "Single-geometry finite-clock discovery is heuristic and not exhaustive.",
+    "Known development repeats and synthetic fixtures do not establish new held-out precision or recall.",
+    "Mandatory distinct episodeKey values depend on upstream facts, not automatic independence detection."
+  ],
+  "reviews": [
+    {
+      "file": "boundary-review/component-addendum.md",
+      "bytes": 6315,
+      "sha256": "c8ce1eeceb9f24a0ca993b3cf11259411127ebb5ef6338e89defb67655062d8a"
+    },
+    {
+      "file": "boundary-review/dominance-review.md",
+      "bytes": 6723,
+      "sha256": "54d1d75fc5185ce94aa1a11a592e0b1ba4ee8e05168d51b3c86e9d511698042f"
+    },
+    {
+      "file": "boundary-review/final-review.md",
+      "bytes": 4091,
+      "sha256": "7f285060e4672d5d3f7bf2b085cd06bf71e17b077b48e06340bf65b27292dfb6"
+    },
+    {
+      "file": "boundary-review/method-review.md",
+      "bytes": 9539,
+      "sha256": "d6d335c80447e9aa62cb36e7acc02605ac1132b102f9e5c09acbafaa98ae59bc"
+    },
+    {
+      "file": "cli-review/final-review.md",
+      "bytes": 10517,
+      "sha256": "c2635b1a4f17b26d09812a83079bc6109b35ca3bd79373c99c86ca37069728cd"
+    }
+  ],
+  "evidenceRoot": "/opt/goby-intro-quality-20261001-round6-01",
+  "evidenceFiles": [
+    {
+      "file": "final-source-binding.json",
+      "bytes": 4556,
+      "sha256": "5fa83af6b25b7ed16f3063613955efbb60f553dec8984cb99b8ed747bb8db867"
+    },
+    {
+      "file": "resource-closure-round6.json",
+      "bytes": 642,
+      "sha256": "df2652a144aca537a6c89ef2461ef0ce2d3a737fda04a14f60938f612a8113aa"
+    },
+    {
+      "file": "final-reviews.tar",
+      "bytes": 43008,
+      "sha256": "d4aa7d8054ed21ebbd4bf47ff017e8c0818a8dbcd77768609f713885dd1c8bd7"
+    },
+    {
+      "file": "cli-final-verification01.json",
+      "bytes": 1064,
+      "sha256": "0a517a4d08deb52d8fcc35fcab85bb8fa6a63a0f3c75e4fd74a3d424ad0d3981"
+    },
+    {
+      "file": "cli-final-comparison01.json",
+      "bytes": 3111,
+      "sha256": "1ac03499c435e96474105e9fff18215b951a8061b4f3fab2d4c5e8971a64d027"
+    },
+    {
+      "file": "cli-default05.jsonl",
+      "bytes": 63328,
+      "sha256": "e20bfdccf48b8cfef992645b97b2d4ca133a064ee59048d0294574ed9d84785e"
+    },
+    {
+      "file": "cli-race03.jsonl",
+      "bytes": 63390,
+      "sha256": "551b20f0e32d843106729ee01acc832a2fb6def3210a58740305713ea5eda6c4"
+    },
+    {
+      "file": "cli-pipeline03.jsonl",
+      "bytes": 2783,
+      "sha256": "ff43d44b11e530e8a95260d11270e3ba9ec4993381c35b6a80179ecc39fd56db"
+    },
+    {
+      "file": "cli-pipeline03.json",
+      "bytes": 221978,
+      "sha256": "5f20207d6d367fbd321e7109b3d971c3df4343d61356f50dd4ee6b5157ffb8d5"
+    },
+    {
+      "file": "cli-beverly04.json",
+      "bytes": 63144,
+      "sha256": "741d8c255a4cbcdd93d56b7097f85a3ec21032e4de4883d2f739d40ae54d5eaf"
+    },
+    {
+      "file": "cli-beverly-episode-adapter01.json",
+      "bytes": 1841,
+      "sha256": "2612561f193aa4487c0024e5b4e933bbc04e27997c89b997f3754d322c1537cb"
+    },
+    {
+      "file": "cli-deadline02.json",
+      "bytes": 24368,
+      "sha256": "675cdf74cc37227b34bbd34c00cb15e2d2e5fb1f07aa9feecba171698f352e87"
+    },
+    {
+      "file": "private-beverly-cli-comparison01.json",
+      "bytes": 59130,
+      "sha256": "44d8fc3f550328c27b65e3cf3207f4e03fe6e457b39dafe4a756212e2601665e"
+    },
+    {
+      "file": "boundary-source/boundary2-final-freeze.json",
+      "bytes": 2948,
+      "sha256": "dd05fa55cf7ef3bfe1f5a52dcb6722d92f07f7e0255849a1d930574e7d6c1214"
+    },
+    {
+      "file": "boundary-source/boundary-final-verification-summary.json",
+      "bytes": 5774,
+      "sha256": "095e9eb62a157e981f4664f464538f756de215b2940ffa2f6a8c7cca5ad6511b"
+    },
+    {
+      "file": "boundary-source/boundary-final-real-summary.json",
+      "bytes": 3024,
+      "sha256": "2743921ee789413d5b935aea9f4ab2aeebed0138ef29b1863db7b94d76c51584"
+    },
+    {
+      "file": "boundary-source/boundary1-moving-island-counterexample.jsonl",
+      "bytes": 1845,
+      "sha256": "285edafac31355ac96c583d62d9229ef43b70285f5ea5a50f9e0c285dcabccc6"
+    },
+    {
+      "file": "boundary-source/boundary-oracles02.jsonl",
+      "bytes": 32999,
+      "sha256": "7854e608e4d90379b31f2368daff918880b605fd54737c1dafe8b757292557a5"
+    },
+    {
+      "file": "boundary-source/boundary2-source-counterexample.jsonl",
+      "bytes": 2162,
+      "sha256": "3bb134058adb4a9aba7cb991a53623bd2b8d884f6518cf90877ae9c6c1a3acbb"
+    },
+    {
+      "file": "boundary-source/boundary-race02.jsonl",
+      "bytes": 42446,
+      "sha256": "b76651dfd5d7b58754de170eded4c872d0d69a5f810eb693caac932ca127ce5a"
+    },
+    {
+      "file": "boundary-source/source-counterevidence-test-amendment.json",
+      "bytes": 417,
+      "sha256": "d0618bd1d561ee0723f527701f883f6753ef83d2b9268258ca1e09055260a984"
+    },
+    {
+      "file": "final-reviews02.tar",
+      "bytes": 43008,
+      "sha256": "d4aa7d8054ed21ebbd4bf47ff017e8c0818a8dbcd77768609f713885dd1c8bd7"
+    }
+  ],
+  "closure": {
+    "timeUTC": "2026-09-30T18:11:32.410957+00:00",
+    "newPostgresStarted": false,
+    "newContainersStarted": false,
+    "ownedContainers": [],
+    "activeEvaluatorProcesses": [],
+    "previousRoundPostgres": {
+      "dataDirectory": "/opt/goby-intro-quality-20260930-round3-01/pgdata",
+      "port": 56000,
+      "pidFileAbsent": true,
+      "listeningPortAbsent": true,
+      "dataRetained": true
+    },
+    "newDependenciesInstalled": false,
+    "sourceMediaAndAuditedFramesRetained": true,
+    "failedAndAcceptedEvidenceRetained": true,
+    "sharedCachesDeleted": false,
+    "freeRootBytesAtClosure": 180314112,
+    "noApplicationOrDatabaseRuntimeProbeExecuted": true
+  },
+  "delivery": {
+    "localCommitOnly": true,
+    "pushed": false,
+    "merged": false,
+    "deployed": false,
+    "privateMediaAndFailureEvidenceCommitted": false
+  },
+  "reviewArchive": "final-reviews02.tar"
+}

@@ -1,18 +1,35 @@
 # Current execution plan
 
-## Local-feature investigation complete; boundary and support evidence next
+## Research evaluation delivered; independent source support next
+
+The [sixth increment](intro-quality-round6-plan-20261001.md) is complete within
+its research/tooling scope. Its
+[result](../development/intro-quality-round6-20261001.md) records contained
+sampled boundaries, gap/ambiguity counterexamples and the reproducible
+`intro-region-eval` command. Final default and race suites each pass 50 parent
+tests; four full-prefix cases pass separately. Real Beverly recognition and
+the other retained misses remain unresolved. Keep application v5/schema 53
+and the accepted Docker catalog unchanged.
+
+Next establish independent same-variant episode support for full opening
+targets, freeze new source-reviewed positive and protected-content controls,
+and evaluate actual recognition. Any attempt to recover gap/speed tolerance
+must also preserve the current boundary/ambiguity controls. A completed
+research run or a sampled shared interior does not authorize skip publication.
+
+## Previous local-feature investigation
 
 The [fifth study](intro-quality-round5-plan-20260930.md) did not justify a
 production change. Its [result](../development/intro-quality-round5-20260930.md)
 records complete high-resolution extraction, failed local-patch discovery,
 non-discriminating point correspondences, an experimental budget repair and a
 remaining synthetic boundary failure. Keep this candidate in research.
-Before another feature expansion, establish strictly contained positive
-boundary controls and enough independent same-variant source support for full
-opening targets. Do not extrapolate a shared interior to unobserved head/tail
+The sixth increment now supplies strictly contained synthetic boundary
+controls; independent same-variant source support for full opening targets
+remains open. Do not extrapolate a shared interior to unobserved head/tail
 content or count local keypoint cycles as a safe skip interval.
 
-## Latest implementation: visual evaluation diagnostics
+## Previous implementation: visual evaluation diagnostics
 
 The [fourth increment](intro-quality-round4-plan-20260930.md) closes the missing
 visual-fallback trace and preserves complete matcher results across all 33

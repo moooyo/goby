@@ -1,6 +1,20 @@
 # Current implementation and delivery status
 
-## Latest investigation: local correspondence and boundary limits
+## Latest source increment: observed boundaries and research evaluation
+
+The [sixth intro-quality increment](intro-quality-round6-20261001.md) delivers
+a reproducible, read-only regional evaluation CLI and repairs the private
+matcher's sampled endpoint overreach. A twelve-second moving fixture returns
+contained observed bounds; the original eight-second case conservatively
+abstains. The final default and race suites each pass 50 parent tests, with
+four complete pipeline cases enabled separately. The actual Beverly CLI run
+matches the frozen engine's result and work counts; all four retained real
+cohorts still return zero groups. Missing observations and ordinary speed
+differences can also cause abstention. This is research tooling and boundary
+evidence, not a recall gain or automatic-skip approval. Application detector
+v5/execution 5/schema 53/GAFB v3 and the accepted Docker catalog are unchanged.
+
+## Previous investigation: local correspondence and boundary limits
 
 The [fifth intro-quality study](intro-quality-round5-20260930.md) is complete
 without a production recognition change. Twelve existing sources received
@@ -11,9 +25,10 @@ synthetic pipeline budget defect, but the returned window still crossed the
 known shared segment, so its strict safe-positive check failed. All original
 failures are retained. Source review also distinguishes the shorter three-way
 shared interior from each complete opening. Detector v5/schema 53 and the
-fourth increment's corpus diagnostics remain the latest implementation.
+fourth increment's corpus diagnostics remain the latest application behavior;
+the sixth increment adds the separate research tool above.
 
-## Latest unreleased source: visual evaluation diagnostics
+## Previous unreleased source: visual evaluation diagnostics
 
 The [fourth intro-quality increment](intro-quality-round4-20260930.md) adds
 bounded production visual-fallback diagnostics to the corpus report, including
