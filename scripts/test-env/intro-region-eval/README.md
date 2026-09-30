@@ -1,9 +1,10 @@
 # Intro region research evaluator
 
-This is a read-only, development research CLI for a frozen cohort of three
-source-only frame extractions. Its only mode is generic full-prefix evaluation.
-It does not connect to a database, write player markers, read detector results,
-or run media extraction. Every report has `productionResult: false` and
+This is a read-only, development research CLI. Evaluation accepts a frozen
+cohort of three source-only frame extractions and uses generic full-prefix
+search. A separate score mode compares retained research reports with frozen
+source labels. It does not connect to a database, write player markers or run
+media extraction. Every report has `productionResult: false` and
 `independentHeldout: false`. Returned groups are **research candidates with
 observed bounds**, not production intro decisions or proof of continuous
 semantic content.
@@ -136,6 +137,116 @@ to extend outer boundaries, and moving islands or multiple distinct segments
 can cause abstention. Sparse observations cannot establish semantic continuity
 between sampled frames. These limitations are not evidence of new accuracy or
 production suitability.
+
+## Frozen source-target scoring
+
+The separate `score` mode reads an existing research report and source-only
+labels. It never calls the matcher, extracts frames or passes labels into
+evaluation. The original command remains compatible (`-mode evaluate` is
+optional). Run scoring on `test-env`:
+
+```sh
+go run ./scripts/test-env/intro-region-eval -mode score \
+  -report /private/reports/frozen-evaluation.json \
+  -report-sha256 EXACT_REPORT_SHA256 \
+  -labels /private/labels/frozen-source-labels.json \
+  -labels-sha256 EXACT_LABEL_SHA256 \
+  -output /private/reports/new-source-target-score.json
+```
+
+The label document is bounded to 1 MiB, contains exactly three cases, rejects
+unknown/duplicate/missing fields, and uses this schema:
+
+```json
+{
+  "schemaVersion": 1,
+  "sourceOnlyReview": true,
+  "detectorOutputsUsed": false,
+  "reviewerKind": "assistant-source-only-visual",
+  "audioReviewed": false,
+  "independentHeldout": false,
+  "cases": [
+    {
+      "id": "episode-01",
+      "episodeKey": "series-name:episode-01",
+      "sourceSha256": "<original media SHA256>",
+      "labelClass": "positive",
+      "targetSeconds": [20, 32],
+      "protectedRanges": [
+        {"kind": "episode-title", "seconds": [33, 40]}
+      ],
+      "sourceLabelEvidenceSha256": "<original source-label evidence SHA256>",
+      "variant": {
+        "key": "",
+        "support": "unknown",
+        "evidenceSha256": "<source-only variant-review evidence SHA256>"
+      },
+      "notes": "Source-only visual review; audio was not assessed."
+    }
+  ]
+}
+```
+
+Provide all three cases; every shown field is mandatory. Positive labels
+contain one complete semantic target, never a matched interior substituted
+after seeing output. Negative labels require `targetSeconds: null` and variant
+support `not-applicable`. An empty protected array is explicit. Preserve all
+original sponsor, narrative, episode-title and excluded-segment ranges when
+mechanically adapting older labels. Overlapping target/protected evidence is
+retained and protection still wins; scoring does not repair conflicting labels.
+Up to 256 protected ranges per case are permitted. Ranges require two increasing
+nonnegative decimal JSON numbers; labels may extend beyond the 120-second
+analysis prefix. Numeric text is bounded to 128 characters and a two-digit
+exponent. Notes and provenance remain bound by the complete label digest.
+
+Variant support is `full-target`, `partial-target`, `unknown`, or
+`not-applicable`. The first two require a canonical nonempty key using the
+episode-key syntax; the others require an empty key. `sameFullTargetVariantDeclared`
+is true only when all three positive cases declare full-target support for the
+same key. This records a caller assertion, not verified independence or an
+inferred common extent. Unknown or partial support never removes positive
+targets from the score. Distinct episode keys and media hashes remain required;
+separate encodes of one original must retain the same key and are rejected.
+
+The scorer checks exact report/label bytes and the source ID, episode key and
+media hash correspondence. It retains the reported input and implementation
+identities separately from its own implementation identity. It validates
+required report fields, source/group array lengths, completion/ambiguity state,
+observed bounds and cheap fixed-protocol invariants. It does not remeasure
+descriptors or authenticate a report's origin, original media, review text or
+provenance hashes. Freeze source selection, labels and candidate implementation
+before first evaluation; a digest or a timestamp alone cannot prove that order.
+
+Every candidate is scored independently. `targetCoverageRatio`, head/tail
+deficits, endpoint errors, outside-target duration and every positive raw
+protected overlap concern the frozen semantic target, not patch coverage.
+Decimal endpoint differences and the one-microsecond protection comparison are
+exact; repeating coverage ratios are rendered to 18 decimal places. Two or more
+candidates are retained and never unioned or reduced to the best label fit.
+The case-level coverage is null for multiple candidates.
+
+`legacyEndpointRuleHit` preserves the historical rule: exactly one candidate,
+both endpoint errors at most five seconds, and no protected overlap above one
+microsecond. `strictFullTargetCovered` is the separate coverage fact;
+`strictContainedInTarget` is the separate no-overreach fact.
+`fullTargetCoverageMatch` requires full coverage within serialization epsilon
+and the legacy endpoint rule. Its outcome is
+`full_target_covered_with_legacy_bounds`, not a claim of exact target boundaries.
+For example, `[20, 31.9]` against `[20, 32]` can pass the legacy endpoint rule
+while remaining an incomplete-target miss with a 0.1-second tail deficit.
+`missReason` identifies missing candidates, protected overlap, multiple
+candidates, incomplete targets or endpoint errors; protected overlap takes
+priority over other miss reasons.
+
+A completed positive abstention is a miss with zero target coverage and null
+endpoint errors. A completed negative abstention is a correct abstention.
+An incomplete evaluation can retain zero to three validated admissions; every
+case is then `blocked`, with no coverage or negative success. The scoring tool
+distinguishes `completed` (its own processing), `evaluationCompleted`, and
+`scoreAvailable`. An invalid input produces no case scores. Score mode exits
+nonzero when inputs are invalid or the original evaluation is blocked. Output
+uses the same private, atomic no-replace writer, and remains research-only with
+`productionResult: false` and `independentHeldout: false`.
 
 ## Verification
 

@@ -1,6 +1,24 @@
 # Current execution plan
 
-## Research evaluation delivered; independent source support next
+## Complete-target scoring delivered; candidate-window coverage next
+
+The [seventh increment](intro-quality-round7-plan-20261001.md) adds source-bound
+target scoring and new real-source evidence. Its
+[result](../development/intro-quality-round7-20261001.md) separates complete
+opening coverage, legacy endpoint tolerance, protected overlap and blocked
+execution. All new regional cohorts still miss. The source-selected B3/B5/B6
+follow-up supplies 42 aggregate group-motion-qualified clocks but no passing
+candidate-window appearance support; none reaches the boundary audit.
+
+Next isolate fixed-geometry selection and the 850-per-mille candidate-window
+support failure on that retained development cohort. Keep complete labels,
+protected-content controls and observed-boundary counterexamples unchanged.
+Do not substitute another boundary relaxation or larger corpus campaign for
+diagnosing this earlier gate. Exact full-target variant correspondence remains
+unproven, and new negative controls will be necessary for a changed recognition
+method. Application v5/schema 53 and the Docker catalog remain unchanged.
+
+## Previous research evaluation delivery
 
 The [sixth increment](intro-quality-round6-plan-20261001.md) is complete within
 its research/tooling scope. Its

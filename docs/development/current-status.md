@@ -1,6 +1,22 @@
 # Current implementation and delivery status
 
-## Latest source increment: observed boundaries and research evaluation
+## Latest source increment: complete-target scoring and new source evidence
+
+The [seventh intro-quality increment](intro-quality-round7-20261001.md) adds a
+separate scoring mode for frozen research reports and source-only labels. It
+distinguishes complete target coverage, the historical endpoint tolerance,
+protected overlap and blocked execution. Default and race suites each pass
+63 parent tests remotely; the matching engine is unchanged. Retained Robin
+R19/R20/R21 and new Beverly B3/B4/B5 produce no regional group. The separately
+source-selected B3/B5/B6 follow-up also misses, but reaches aggregate group
+motion before failing candidate-window appearance coverage. No boundary
+candidate exists in these runs, so relaxing boundary continuity is not a
+supported remedy. New sources, independent assistant visual labels, first
+results and selection amendments are retained. Application v5/execution 5/
+schema 53/GAFB v3 and the accepted Docker catalog remain unchanged; no new
+production recall gain or negative-cohort precision result is claimed.
+
+## Previous source increment: observed boundaries and research evaluation
 
 The [sixth intro-quality increment](intro-quality-round6-20261001.md) delivers
 a reproducible, read-only regional evaluation CLI and repairs the private

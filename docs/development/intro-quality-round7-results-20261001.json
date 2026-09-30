@@ -1,0 +1,871 @@
+{
+  "kind": "goby-intro-quality-round7",
+  "recordedAtUTC": "2026-09-30T18:54:08.489938+00:00",
+  "status": "scoring_and_source_evidence_increment_complete_recognition_gap_open",
+  "sourceBaseline": "c4859ef",
+  "applicationBaseline": "4817cb3",
+  "branch": "codex/intro-quality",
+  "scope": [
+    "separate-source-target-score-mode",
+    "source-only-corpus-expansion",
+    "frozen-regional-development-evaluation",
+    "documentation"
+  ],
+  "environment": "test-env",
+  "localVerificationExecuted": false,
+  "production": {
+    "algorithmChanged": false,
+    "detectorVersion": 5,
+    "executionVersion": 5,
+    "schemaVersion": 53,
+    "GAFBVersion": 3,
+    "profileChanged": false,
+    "dependenciesChanged": false,
+    "dockerCatalogChanged": false
+  },
+  "implementation": {
+    "verifiedAtUTC": "2026-09-30T18:54:08.489938+00:00",
+    "sourceArchive": {
+      "file": "final-package-source.tar",
+      "bytes": 238080,
+      "sha256": "cd42b70747df0543aa75addea170af28c65d5325d50baf31349c91803b2f5cf6"
+    },
+    "all20FilesMatchVerifiedSnapshot": true,
+    "allSourceSHA256": {
+      "boundary_ambiguity_test.go": "6bca0aec82b8cbf377439d57e5ef9b72487de133233dac8076eb18a3bfebcee9",
+      "boundary_pipeline_test.go": "95a4d8207f38129eb1e87d5869b929080c1b0f118453a5987dab7c607b21b116",
+      "engine_core.go": "5ebb04bf37e424b828adcf0bb1ae8df04392e5e836ea8fca5ef6187d8db113cc",
+      "input.go": "a31465d944753161fd24b81615b6babf19f15136a5dac30d376c68362649916d",
+      "input_test.go": "d25605398cfd5245f434e46aa4273b59b0b607d073b83663037beeec67069807",
+      "local_features_test.go": "526be31eab54e146b76d3173edc71eedad09d07c1149ae47af6730783561ec06",
+      "local_prefix_cache3.go": "08bfb5f38e104ec935f9869184a313eceebc77517b9b199eb45bab39efe51af3",
+      "main.go": "d72f615219b1312fe99bea84351dccb172d7d86a5232c6d714417a888bbb2e4a",
+      "nomination_counterexample_test.go": "5d103b003d10f7f4fa24f6f168407ddb803c5c0d46c5ec5e3abe34684c4e7e5d",
+      "observed_boundary.go": "642f8df74c7fa6deabc300e0f068b9d547f5a5a23594e49b1b58ee19e835aa3d",
+      "observed_boundary_test.go": "d00cc4c4699a92814cc1b8810307ed89701fb1462cd606255db63c9b6301d6dd",
+      "posterior_cache.go": "3c32f6de669fe76668e2785c2a4f4c58f14fee446cd69eeb0ba9ef4dcc101d16",
+      "posterior_cache_test.go": "2928e83d70b5a5a8689512ffc4944eed5ac2a9237184cce70056b785499220e0",
+      "README.md": "774b3bf5afde2afb02a7418a3b9bf4366e5144fae844453ddde6d3343a168902",
+      "score.go": "2f920cbd353ce71f28b8e2c48615dcb8d8fc36264150a14511290df28364611e",
+      "score_test.go": "10268f2b6674f731d2db07916cdfe859d1600d5bbbdfab26b6fe596fc5a96dad",
+      "secureio_linux.go": "65eb6dd07d4b27af66dafa2c9700bc0c5f0fa67f9b93bedd18bb3d1f46381655",
+      "secureio_linux_test.go": "c936ca260784e0815d143e1ba786811cb7a59b49d9170ba7b7af86e7053aa3df",
+      "secureio_unsupported.go": "089fade4e1de825f9b03b88df94cb6570fee4af0a6642295f567032e65cd9937",
+      "synthetic_fixture_test.go": "c78444107956828577428b3a059adc31e3d60b81e67692cba9966336878db0fd"
+    },
+    "implementationSHA256": "432443cd9d0a27aee0aea818f55c6ec2a72115a7187824e1454c3d1550ad6076",
+    "implementationFiles": {
+      "engine_core.go": "5ebb04bf37e424b828adcf0bb1ae8df04392e5e836ea8fca5ef6187d8db113cc",
+      "input.go": "a31465d944753161fd24b81615b6babf19f15136a5dac30d376c68362649916d",
+      "local_prefix_cache3.go": "08bfb5f38e104ec935f9869184a313eceebc77517b9b199eb45bab39efe51af3",
+      "main.go": "d72f615219b1312fe99bea84351dccb172d7d86a5232c6d714417a888bbb2e4a",
+      "observed_boundary.go": "642f8df74c7fa6deabc300e0f068b9d547f5a5a23594e49b1b58ee19e835aa3d",
+      "posterior_cache.go": "3c32f6de669fe76668e2785c2a4f4c58f14fee446cd69eeb0ba9ef4dcc101d16",
+      "score.go": "2f920cbd353ce71f28b8e2c48615dcb8d8fc36264150a14511290df28364611e",
+      "secureio_linux.go": "65eb6dd07d4b27af66dafa2c9700bc0c5f0fa67f9b93bedd18bb3d1f46381655",
+      "secureio_unsupported.go": "089fade4e1de825f9b03b88df94cb6570fee4af0a6642295f567032e65cd9937"
+    },
+    "unchangedFromRound6": [
+      "engine_core.go",
+      "input.go",
+      "local_prefix_cache3.go",
+      "observed_boundary.go",
+      "posterior_cache.go",
+      "secureio_linux.go",
+      "secureio_unsupported.go"
+    ],
+    "testLogHashesAndCountsVerified": true,
+    "labelChronologyAndReusedB3B5BytesVerified": true,
+    "noTestsOrMatcherRepeatedDuringBinding": true,
+    "localVerificationExecuted": false
+  },
+  "verification": {
+    "default": {
+      "path": "/opt/goby-intro-quality-20261001-round7-01/scoring/default02.jsonl",
+      "sha256": "45044dfb8b9cc55cb98cf417638b02b738ac9449dbe1adea32a1d717ae9894b2",
+      "passedParentTests": 63,
+      "skippedParentTests": [
+        "TestBoundaryPipelineFrozenFixtures"
+      ],
+      "elapsedSeconds": 5.388,
+      "failedTests": 0
+    },
+    "race": {
+      "path": "/opt/goby-intro-quality-20261001-round7-01/scoring/race02.jsonl",
+      "sha256": "53e2cd102ad5da8eb4b6febab0deecd5d7369750f5dffd7e80ae9ef382c17733",
+      "passedParentTests": 63,
+      "skippedParentTests": [
+        "TestBoundaryPipelineFrozenFixtures"
+      ],
+      "elapsedSeconds": 29.171,
+      "failedTests": 0
+    },
+    "same63UniqueParentTests": true,
+    "newScoreParentTests": 13,
+    "fullPipelineRerun": false,
+    "reuseReason": "Frozen matcher engine files are unchanged; scoring only reads supplied reports.",
+    "applicationDatabaseCapacityRerun": false
+  },
+  "scorePolicy": {
+    "protocol": "intro-region-source-target-score-v1",
+    "legacyEndpointToleranceSeconds": 5,
+    "protectedOverlapEpsilonSeconds": 1e-06,
+    "endpointArithmetic": "exact-decimal-rational",
+    "coverageAndContainmentSeparate": true,
+    "multipleCandidatesNeverUnionedOrOptimizedAgainstLabels": true,
+    "incompleteEvaluationsBlocked": true,
+    "productionResult": false,
+    "independentHeldout": false
+  },
+  "newSources": [
+    {
+      "id": "B3",
+      "episodeKey": "beverly-hillbillies:3",
+      "sha256": "00154986acf87d2cefcbb4ebcd503db4fd6a4c3fffbe26cd79d2ef4d891eb850",
+      "bytes": 153810344,
+      "metadataURL": "https://archive.org/metadata/Beverly_Hillbillies_Ep03_Meanwhile_Back_At_The_Cabin",
+      "metadataSHA256": "1063b1bd25e0a5b782b0f9d933ab10117782b56eb971933658ddc7074987d095",
+      "rendition": "Archive H.264 derivative",
+      "openingSampleCount": 120,
+      "contextSampleCount": 60
+    },
+    {
+      "id": "B4",
+      "episodeKey": "beverly-hillbillies:4",
+      "sha256": "8443c69f235ea496eaf7595ebb02ba135a1e9ce162549224aeafdd807262db73",
+      "bytes": 153751833,
+      "metadataURL": "https://archive.org/metadata/Beverly_Hillbillies_Ep04_The_Clampetts_Meet_Mrs_Drysdale",
+      "metadataSHA256": "be955791b27d94cc88811c3a93849b58b26fb64245ca9f9ea058c2beab69e90e",
+      "rendition": "Archive H.264 derivative",
+      "openingSampleCount": 120,
+      "contextSampleCount": 60
+    },
+    {
+      "id": "B5",
+      "episodeKey": "beverly-hillbillies:5",
+      "sha256": "d97bd6af9e86f0fbd1ff1754da41d23db3f00bd21a7c125756cd300acee85841",
+      "bytes": 148502035,
+      "metadataURL": "https://archive.org/metadata/Beverly_Hillbillies_Ep05_Jed_Buys_Stock",
+      "metadataSHA256": "7a93d6a45e3c1b2eb5db0cd4fd5a2fdef829b058d12e6c8bb58ec462403ea2ee",
+      "rendition": "Archive H.264 derivative",
+      "openingSampleCount": 120,
+      "contextSampleCount": 60
+    },
+    {
+      "id": "B6",
+      "episodeKey": "beverly-hillbillies:6",
+      "sha256": "0402e7e2cf19bb7394ead725b5993653c00d954b14b93d7217524c3b03122c11",
+      "bytes": 149433073,
+      "metadataURL": "https://archive.org/metadata/Beverly_Hillbillies_Ep06_Trick_Or_Treat",
+      "metadataSHA256": "6d71e8c78a70058b62176571506ecda08a390a39eb7ee7627783f93cc8a7b0b8",
+      "rendition": "Archive H.264 derivative",
+      "openingSampleCount": 120,
+      "contextSampleCount": 60
+    }
+  ],
+  "newMediaBytes": 605497285,
+  "newSourceCount": 4,
+  "newIndependentAccuracyClaim": false,
+  "newNegativeCohortEvaluated": false,
+  "review": {
+    "method": "independent-assistant-source-only-visual",
+    "oneFreshReviewerPerEpisode": true,
+    "algorithmHistoryInheritedBySourceReviewers": false,
+    "coordinatorHadAlgorithmContext": true,
+    "humanReviewed": false,
+    "audioReviewed": false,
+    "continuousPlaybackReviewed": false,
+    "openingHorizonLastSampleSeconds": 119.099249,
+    "contextHorizonLastSampleSeconds": 590.492077,
+    "primaryLabelsAndBlackSeparatorConventionsPreserved": true
+  },
+  "sourceSelection": {
+    "initialNewCohort": [
+      "B3",
+      "B4",
+      "B5"
+    ],
+    "naturalNextSourceOnlySupplement": "B6",
+    "supplementSelectedBeforeB345Matcher": true,
+    "initialCohortRetained": true,
+    "followupCohort": [
+      "B3",
+      "B5",
+      "B6"
+    ],
+    "followupHasAlreadySeenB3AndB5": true,
+    "fullTargetVariantSupport": "unknown"
+  },
+  "regionalImplementationSHA256": "66e54013928949a4e647aa0a0cf931a308734ac0b3f0035c907a208c185231e8",
+  "cohorts": [
+    {
+      "name": "robin",
+      "sources": [
+        "R19",
+        "R20",
+        "R21"
+      ],
+      "report": {
+        "file": "robin/cli-first01.json",
+        "bytes": 55091,
+        "sha256": "8b4b23546bac05ed99454887a063c1b94dc62cf84a670138a4b861cb77c06fc7"
+      },
+      "score": {
+        "file": "scoring/robin-final02.json",
+        "bytes": 6455,
+        "sha256": "4857f09b147188dbd02e6e5dd2d6f8000eb809c3e1cfd728a71e4e0ef5c4a369"
+      },
+      "labelsSHA256": "51d6bf7138e29f2e55c21b0208c560495b517b81382f1bb069391f47683d327f",
+      "completed": true,
+      "processExitCode": null,
+      "groups": 0,
+      "positiveMisses": 3,
+      "stageCounts": {
+        "clockCombinations": 48,
+        "aggregateAppearancePass": 0,
+        "aggregateGroupMotionPass": 0,
+        "windowAppearancePass": 0,
+        "boundaryCandidates": 0
+      },
+      "work": {
+        "patchComparisons": 168011239,
+        "clockLookups": 34804800,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 19
+      },
+      "limits": {
+        "clockLookups": 100000000,
+        "deadlineSeconds": 120,
+        "extractionManifestBytes": 2097152,
+        "gzipBytesPerSource": 12582912,
+        "inputManifestBytes": 1048576,
+        "patchComparisons": 200000000,
+        "rawBytesPerSource": 11059200,
+        "renderPixels": 360000000,
+        "retainedHypotheses": 128
+      },
+      "targets": [
+        {
+          "id": "R19",
+          "targetSeconds": [
+            0.500417,
+            16.513761
+          ],
+          "protectedRanges": [
+            {
+              "kind": "protectedNarrativeSeconds",
+              "seconds": [
+                17.014178,
+                590.492077
+              ]
+            },
+            {
+              "kind": "additionalSegments:episode_specific_title",
+              "seconds": [
+                17.514596,
+                25.521268
+              ]
+            },
+            {
+              "kind": "additionalSegments:narrative_action",
+              "seconds": [
+                25.521268,
+                590.492077
+              ]
+            }
+          ]
+        },
+        {
+          "id": "R20",
+          "targetSeconds": [
+            0.500417,
+            14.512093
+          ],
+          "protectedRanges": [
+            {
+              "kind": "protectedNarrativeSeconds",
+              "seconds": [
+                15.01251,
+                590.492077
+              ]
+            },
+            {
+              "kind": "additionalSegments:episode_specific_title",
+              "seconds": [
+                15.512927,
+                23.5196
+              ]
+            },
+            {
+              "kind": "additionalSegments:narrative_action",
+              "seconds": [
+                23.5196,
+                590.492077
+              ]
+            }
+          ]
+        },
+        {
+          "id": "R21",
+          "targetSeconds": [
+            0.500417,
+            15.512927
+          ],
+          "protectedRanges": [
+            {
+              "kind": "protectedNarrativeSeconds",
+              "seconds": [
+                16.013344,
+                590.492077
+              ]
+            },
+            {
+              "kind": "additionalSegments:episode_specific_title",
+              "seconds": [
+                16.513761,
+                23.5196
+              ]
+            },
+            {
+              "kind": "additionalSegments:narrative_action",
+              "seconds": [
+                23.5196,
+                590.492077
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "beverly",
+      "sources": [
+        "B3",
+        "B4",
+        "B5"
+      ],
+      "report": {
+        "file": "beverly/cli-first01.json",
+        "bytes": 63212,
+        "sha256": "45539528fcf9486c182b7f26571db13db4dbd0782ee3bd9efab696735890e778"
+      },
+      "score": {
+        "file": "scoring/beverly-fresh-final02.json",
+        "bytes": 6469,
+        "sha256": "eca91abb592da948413aef4f3c6c6dd0c8aedb45dd0e39c19ca7c195ba27848e"
+      },
+      "labelsSHA256": "2553bfae363066df0162788f98be3837eaba394a451cec491fc77ef82b7a2bc6",
+      "completed": true,
+      "processExitCode": 0,
+      "groups": 0,
+      "positiveMisses": 3,
+      "stageCounts": {
+        "clockCombinations": 1296,
+        "aggregateAppearancePass": 245,
+        "aggregateGroupMotionPass": 0,
+        "windowAppearancePass": 0,
+        "boundaryCandidates": 0
+      },
+      "work": {
+        "patchComparisons": 170845724,
+        "clockLookups": 40795200,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 78
+      },
+      "limits": {
+        "clockLookups": 100000000,
+        "deadlineSeconds": 120,
+        "extractionManifestBytes": 2097152,
+        "gzipBytesPerSource": 12582912,
+        "inputManifestBytes": 1048576,
+        "patchComparisons": 200000000,
+        "rawBytesPerSource": 11059200,
+        "renderPixels": 360000000,
+        "retainedHypotheses": 128
+      },
+      "targets": [
+        {
+          "id": "B3",
+          "targetSeconds": [
+            0,
+            26.522102
+          ],
+          "protectedRanges": [
+            {
+              "kind": "episode-specific narrative, including credits over narrative",
+              "seconds": [
+                28.023353,
+                590.492077
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B4",
+          "targetSeconds": [
+            2.502085,
+            55.546289
+          ],
+          "protectedRanges": [
+            {
+              "kind": "episode_specific_narrative_including_overlaid_credits",
+              "seconds": [
+                56.547123,
+                590.492077
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B5",
+          "targetSeconds": [
+            1.501251,
+            29.024187
+          ],
+          "protectedRanges": [
+            {
+              "kind": "episode_specific_credits_and_narrative",
+              "seconds": [
+                29.524604,
+                590.492077
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "beverly-b356",
+      "sources": [
+        "B3",
+        "B5",
+        "B6"
+      ],
+      "report": {
+        "file": "beverly-b356/cli-first01.json",
+        "bytes": 67097,
+        "sha256": "3b805e63690c4b32e7f01eb3477331eac58b1594d75de934273ca1649c00f45e"
+      },
+      "score": {
+        "file": "scoring/beverly-b356-final01.json",
+        "bytes": 6468,
+        "sha256": "f2980fffdf73bb286b2a67d5f3e2b3292a4c0f65596dd032b293c4f23be454a0"
+      },
+      "labelsSHA256": "6d8fc90f7297189583c20ea72e72712a99b97b6ab72f74535511f01dd69112cd",
+      "completed": true,
+      "processExitCode": 0,
+      "groups": 0,
+      "positiveMisses": 3,
+      "stageCounts": {
+        "clockCombinations": 2754,
+        "aggregateAppearancePass": 2469,
+        "aggregateGroupMotionPass": 42,
+        "windowAppearancePass": 0,
+        "boundaryCandidates": 0
+      },
+      "work": {
+        "patchComparisons": 173300033,
+        "clockLookups": 72173016,
+        "renderPixels": 274944000,
+        "retainedHypotheses": 105
+      },
+      "limits": {
+        "clockLookups": 100000000,
+        "deadlineSeconds": 120,
+        "extractionManifestBytes": 2097152,
+        "gzipBytesPerSource": 12582912,
+        "inputManifestBytes": 1048576,
+        "patchComparisons": 200000000,
+        "rawBytesPerSource": 11059200,
+        "renderPixels": 360000000,
+        "retainedHypotheses": 128
+      },
+      "targets": [
+        {
+          "id": "B3",
+          "targetSeconds": [
+            0,
+            26.522102
+          ],
+          "protectedRanges": [
+            {
+              "kind": "episode-specific narrative, including credits over narrative",
+              "seconds": [
+                28.023353,
+                590.492077
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B5",
+          "targetSeconds": [
+            1.501251,
+            29.024187
+          ],
+          "protectedRanges": [
+            {
+              "kind": "episode_specific_credits_and_narrative",
+              "seconds": [
+                29.524604,
+                590.492077
+              ]
+            }
+          ]
+        },
+        {
+          "id": "B6",
+          "targetSeconds": [
+            1.501251,
+            28.52377
+          ],
+          "protectedRanges": [
+            {
+              "kind": "episode_credits_and_narrative",
+              "seconds": [
+                30.025021,
+                590.492077
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "knownAndBlockedScoring": [
+    {
+      "name": "beverly-known-final02",
+      "path": "/opt/goby-intro-quality-20261001-round7-01/scoring/beverly-known-final02.json",
+      "sha256": "ab296056b888859ff684118d4026116ca5ed633ff7408530553f2677ef2f2b82",
+      "exitCode": 0,
+      "status": "scored",
+      "scoreAvailable": true,
+      "caseOutcomes": {
+        "B1": "miss",
+        "B2": "miss",
+        "B7": "miss"
+      },
+      "missReasons": {
+        "B1": "no_candidate",
+        "B2": "no_candidate",
+        "B7": "no_candidate"
+      },
+      "reportSHA256": "741d8c255a4cbcdd93d56b7097f85a3ec21032e4de4883d2f739d40ae54d5eaf",
+      "labelsSHA256": "8100ede1ff31a981d0ce8b3f97a6218c3c91020e238bc07129891ed0e4496197",
+      "evaluatedImplementationSHA256": "66e54013928949a4e647aa0a0cf931a308734ac0b3f0035c907a208c185231e8"
+    },
+    {
+      "name": "deadline-final02",
+      "path": "/opt/goby-intro-quality-20261001-round7-01/scoring/deadline-final02.json",
+      "sha256": "4b33172fbbc4434a67e3df210aa0f5ec7c25a4937139f9546d5d70e50d67c82c",
+      "exitCode": 1,
+      "status": "evaluation-blocked",
+      "scoreAvailable": false,
+      "caseOutcomes": {
+        "B1": "blocked",
+        "B2": "blocked",
+        "B7": "blocked"
+      },
+      "missReasons": {
+        "B1": null,
+        "B2": null,
+        "B7": null
+      },
+      "reportSHA256": "675cdf74cc37227b34bbd34c00cb15e2d2e5fb1f07aa9feecba171698f352e87",
+      "labelsSHA256": "8100ede1ff31a981d0ce8b3f97a6218c3c91020e238bc07129891ed0e4496197",
+      "evaluatedImplementationSHA256": "66e54013928949a4e647aa0a0cf931a308734ac0b3f0035c907a208c185231e8"
+    }
+  ],
+  "extraction": {
+    "uniqueNewRasterSources": [
+      "B3",
+      "B4",
+      "B5",
+      "B6",
+      "R19",
+      "R20",
+      "R21"
+    ],
+    "count": 7,
+    "rawBytes": 77414400,
+    "sourceProbeAdaptersAreProductionFeatures": false,
+    "legacyFrozenFeaturePathMeaning": "Source metadata adapter for new media; pre-existing frozen features for Robin.",
+    "containerSourceToolGeometryPTSAndReadbackAuditRetained": true
+  },
+  "retainedFailureNotes": [
+    "Robin driver mode 0600 prevented first container probe; only file readability changed.",
+    "Robin outer postprocessing failed after report publication; child exit status remains unknown and matcher was not rerun.",
+    "Archive TLS failed remotely; local download-only transport was followed by all verification remotely.",
+    "Transient SSH signing failures recovered on normal retry without local verification.",
+    "B356 preflight assumed a wrong label archive path; unchanged actual archive hashes resolved before matcher execution."
+  ],
+  "nextTask": "Diagnose selected fixed geometry and candidate-window appearance coverage on B356, preserving complete labels, protection and boundary counterexamples.",
+  "evidenceRoot": "/opt/goby-intro-quality-20261001-round7-01",
+  "evidenceFiles": [
+    {
+      "file": "source-evidence-binding01.json",
+      "bytes": 3526,
+      "sha256": "d53b412ea3649dee1eb4c748073da632817366d526c609ab164fa866d93131c8"
+    },
+    {
+      "file": "resource-closure-final01.json",
+      "bytes": 416,
+      "sha256": "b5d746a79f905eec9bfc0f4af1733a79c0b4799913c280c8985c35f09518c9af"
+    },
+    {
+      "file": "score-review.md",
+      "bytes": 7251,
+      "sha256": "00f05a21c8b875c061da6d6d39196c3e7c17879ffed38eda1d421f25504be4b8"
+    },
+    {
+      "file": "scoring/score-final-freeze01.json",
+      "bytes": 3184,
+      "sha256": "b59e66f0f25c7042f968d6579d54627b63e2090b382eff5a09f8ba7444137f74"
+    },
+    {
+      "file": "scoring/score-final-verification01.json",
+      "bytes": 7577,
+      "sha256": "e0e9f1358cc84ef5427d956bed028b135571b848c244aad4a8c0e932badf2b06"
+    },
+    {
+      "file": "scoring/score-local-binding02.json",
+      "bytes": 2361,
+      "sha256": "c577b3c6597b8a17f9add2b6b95afe914c8a4f00fdd9a07b85918afce740d64e"
+    },
+    {
+      "file": "scoring/default02.jsonl",
+      "bytes": 120957,
+      "sha256": "45044dfb8b9cc55cb98cf417638b02b738ac9449dbe1adea32a1d717ae9894b2"
+    },
+    {
+      "file": "scoring/race02.jsonl",
+      "bytes": 121081,
+      "sha256": "53e2cd102ad5da8eb4b6febab0deecd5d7369750f5dffd7e80ae9ef382c17733"
+    },
+    {
+      "file": "scoring/beverly-known-final02.json",
+      "bytes": 6469,
+      "sha256": "ab296056b888859ff684118d4026116ca5ed633ff7408530553f2677ef2f2b82"
+    },
+    {
+      "file": "scoring/deadline-final02.json",
+      "bytes": 6390,
+      "sha256": "4b33172fbbc4434a67e3df210aa0f5ec7c25a4937139f9546d5d70e50d67c82c"
+    },
+    {
+      "file": "scoring/known-label-adaptation01.json",
+      "bytes": 1080,
+      "sha256": "09734b43cc783f215bac1452c2bf359e530ebc9c9d9c23d6b4a82b3c6c37624f"
+    },
+    {
+      "file": "new-sources/source-metadata-summary.json",
+      "bytes": 15020,
+      "sha256": "2f4be940e51bb2c5d1332e406fe2042419c926bc07480e65eb959c0ca98611af"
+    },
+    {
+      "file": "new-sources/sequential-candidates-v2.json",
+      "bytes": 7805,
+      "sha256": "9315c4b76538dcbd39e6d1c6add48c011f2439f0ccf52e0fd6ca15c03bbdeed4"
+    },
+    {
+      "file": "new-sources/source-review-complete.json",
+      "bytes": 12674,
+      "sha256": "600b88e582bdd025f2fc0dc20db1ac4bbf42b26bbdc78ea7d1822b64f006df74"
+    },
+    {
+      "file": "new-sources/sequential-candidates-amendment-b6-v1.json",
+      "bytes": 4219,
+      "sha256": "a56bdcd042f77def791005db3c611b77359010f07180c7ac6fe2eb174d9ed84b"
+    },
+    {
+      "file": "new-sources/b6-source-review-complete.json",
+      "bytes": 4372,
+      "sha256": "966fe43d13e30b227ae9407e20e3f8cf5be3c211ccdd933a46f39df013ddf334"
+    },
+    {
+      "file": "beverly/labels-b345.tar",
+      "bytes": 49664,
+      "sha256": "e3d33eb9dd26028864cdca73005ccab89332dd7c168afd459aa5a201719b7f65"
+    },
+    {
+      "file": "new-sources/labels-b6.tar",
+      "bytes": 18432,
+      "sha256": "8679f7640e1db09cc23d22e1c9035ed602f32e53d01ba4d6ab40d7480317a042"
+    },
+    {
+      "file": "robin/pre-evaluation-freeze01.json",
+      "bytes": 8416,
+      "sha256": "ff265673006eee21c9bc68aa861fbfc4156b903114e8cb105e9c90399a692a72"
+    },
+    {
+      "file": "robin/frame-extraction-failure01.json",
+      "bytes": 457,
+      "sha256": "393235abd9a15a5f150db63f297d319a6888fbff5dad9b1ca70700924d4ee9de"
+    },
+    {
+      "file": "robin/driver-permission-amendment01.json",
+      "bytes": 1026,
+      "sha256": "4d0a5fbeee5a3fae64d5f7e49a0e52c87591ecc430838b5a7283db871fbc1ccd"
+    },
+    {
+      "file": "robin/postprocess-failure01.json",
+      "bytes": 667,
+      "sha256": "563844d7f4a3a901fa9621fbec62690d0b9f9cb15219432a7ad7e89fb1cfab2f"
+    },
+    {
+      "file": "beverly/extraction-freeze01.json",
+      "bytes": 4418,
+      "sha256": "5c29fb41f91d8b95c2fbb7aefb5ccf5ccffa06db4b8bc90a0e80a05b8a01138d"
+    },
+    {
+      "file": "beverly/labels-freeze01.json",
+      "bytes": 3145,
+      "sha256": "8a399d47e4db8bd76bff05ff71c4643f1bfae11f52712b833a823d06162853af"
+    },
+    {
+      "file": "beverly-b356/extraction-freeze01.json",
+      "bytes": 4595,
+      "sha256": "1ee4b3c8bec752a9fe2d7612aa275ed90ceb5dc8117a86aba0ad61a00a5ae1de"
+    },
+    {
+      "file": "beverly-b356/labels-freeze01.json",
+      "bytes": 2324,
+      "sha256": "a5e89b673b1300adabb7b1219c71765eaea318228d27bf2abd9357b649d41528"
+    },
+    {
+      "file": "beverly-b356/preflight-resolution01.json",
+      "bytes": 1384,
+      "sha256": "51029a8b9bf96da6c6589e12d43ec0b64628cc5d39fe3bdb1a1b36024b28f09b"
+    },
+    {
+      "file": "beverly-b356/transport-failure01.json",
+      "bytes": 525,
+      "sha256": "b57d8e909c5a4908e191c71412661a480b3570bca44ae754e29fb4b1a668668c"
+    },
+    {
+      "file": "robin/invocation-freeze01.json",
+      "bytes": 1240,
+      "sha256": "421e73ef46dd7537e553b4a469328dd31d1de60ad5008a8bf8394451f366067f"
+    },
+    {
+      "file": "robin/cli-first01.json",
+      "bytes": 55091,
+      "sha256": "8b4b23546bac05ed99454887a063c1b94dc62cf84a670138a4b861cb77c06fc7"
+    },
+    {
+      "file": "robin/cli-first01-receipt.json",
+      "bytes": 57282,
+      "sha256": "003f426655edbcf062d9f414c054256cce036ea3afe0803fa8cd0ae8da5ab9b4"
+    },
+    {
+      "file": "robin/score-labels-frozen01.json",
+      "bytes": 4889,
+      "sha256": "51d6bf7138e29f2e55c21b0208c560495b517b81382f1bb069391f47683d327f"
+    },
+    {
+      "file": "robin/result.md",
+      "bytes": 6039,
+      "sha256": "7e6c263adeca60331322c3a295e08516a722039546eea56a4046d90fe89c2117"
+    },
+    {
+      "file": "robin/resource-closure01.json",
+      "bytes": 887,
+      "sha256": "2c473533b88c00b69f1473901d97245fc5accbd91b822242e3f92e8e2ad88e12"
+    },
+    {
+      "file": "scoring/robin-final02.json",
+      "bytes": 6455,
+      "sha256": "4857f09b147188dbd02e6e5dd2d6f8000eb809c3e1cfd728a71e4e0ef5c4a369"
+    },
+    {
+      "file": "beverly/invocation-freeze01.json",
+      "bytes": 4628,
+      "sha256": "d8864e83bddff079b3b3af990d326d6c4c65d3c0df0fcfb2dbe83efd73c08f7b"
+    },
+    {
+      "file": "beverly/cli-first01.json",
+      "bytes": 63212,
+      "sha256": "45539528fcf9486c182b7f26571db13db4dbd0782ee3bd9efab696735890e778"
+    },
+    {
+      "file": "beverly/cli-first01-receipt.json",
+      "bytes": 5774,
+      "sha256": "bc3272dfd71a2576fc896fccf065454deacbc9a1edc43e4751d8e24186070f4d"
+    },
+    {
+      "file": "beverly/score-labels-frozen01.json",
+      "bytes": 3347,
+      "sha256": "2553bfae363066df0162788f98be3837eaba394a451cec491fc77ef82b7a2bc6"
+    },
+    {
+      "file": "beverly/result.md",
+      "bytes": 5891,
+      "sha256": "6a90d888149c66597d920584b7dbd8073ac1e8bd0b96d411e9bf2a31c956fb94"
+    },
+    {
+      "file": "beverly/resource-closure01.json",
+      "bytes": 851,
+      "sha256": "a931e8bcf1d1c212ba05050c5bbf2795bc47c43e4718a60803ba15775af4fe69"
+    },
+    {
+      "file": "scoring/beverly-fresh-final02.json",
+      "bytes": 6469,
+      "sha256": "eca91abb592da948413aef4f3c6c6dd0c8aedb45dd0e39c19ca7c195ba27848e"
+    },
+    {
+      "file": "beverly-b356/invocation-freeze01.json",
+      "bytes": 4549,
+      "sha256": "07468946054cf8e3c9f48c83710d95898d9758103663b066ec725625c9de7e50"
+    },
+    {
+      "file": "beverly-b356/cli-first01.json",
+      "bytes": 67097,
+      "sha256": "3b805e63690c4b32e7f01eb3477331eac58b1594d75de934273ca1649c00f45e"
+    },
+    {
+      "file": "beverly-b356/cli-first01-receipt.json",
+      "bytes": 5798,
+      "sha256": "5bda119245900aa2c01a2c182f814b28364529597ee53ebc111c5af1ddec7aff"
+    },
+    {
+      "file": "beverly-b356/score-labels-frozen01.json",
+      "bytes": 3279,
+      "sha256": "6d8fc90f7297189583c20ea72e72712a99b97b6ab72f74535511f01dd69112cd"
+    },
+    {
+      "file": "beverly-b356/result.md",
+      "bytes": 5785,
+      "sha256": "16dd4f32bc9256e590a9294af48c0c1ee2da2563a90b34fd4f9f451b38c47c30"
+    },
+    {
+      "file": "beverly-b356/resource-closure01.json",
+      "bytes": 888,
+      "sha256": "879e121ff953c9c4bfaa8f21165981a995616903883dfd619859170d66f2292c"
+    },
+    {
+      "file": "scoring/beverly-b356-final01.json",
+      "bytes": 6468,
+      "sha256": "f2980fffdf73bb286b2a67d5f3e2b3292a4c0f65596dd032b293c4f23be454a0"
+    }
+  ],
+  "closure": {
+    "timeUTC": "2026-09-30T18:54:08.489938+00:00",
+    "ownedContainersRemaining": [],
+    "activeEvaluators": [],
+    "newDatabaseStarted": false,
+    "previousPostgresPort56000Stopped": true,
+    "newDependenciesInstalled": false,
+    "mediaFramesAndFailedEvidenceRetained": true,
+    "localRecoveryArchivesRetained": true,
+    "sharedCachesDeleted": false,
+    "largeTaskArtifactsKeptOnTmpfs": true,
+    "rootFreeBytes": 167768064
+  },
+  "delivery": {
+    "localCommitOnly": true,
+    "pushed": false,
+    "merged": false,
+    "deployed": false,
+    "privateMediaOrLabelsCommitted": false
+  }
+}

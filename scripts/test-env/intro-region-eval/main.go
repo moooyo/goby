@@ -191,7 +191,12 @@ func evaluate(ctx context.Context, path string, runner prefixRunner) evaluationR
 func runCLI(ctx context.Context, args []string, stderr io.Writer, runner prefixRunner) int {
 	flags := flag.NewFlagSet("intro-region-eval", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	mode := flags.String("mode", "evaluate", "evaluate a frozen cohort or score a frozen research report")
 	manifest := flags.String("manifest", "", "frozen three-source JSON manifest")
+	reportPath := flags.String("report", "", "frozen research report for score mode")
+	reportHash := flags.String("report-sha256", "", "exact research report SHA256 for score mode")
+	labelsPath := flags.String("labels", "", "frozen source-only labels for score mode")
+	labelsHash := flags.String("labels-sha256", "", "exact source-only label SHA256 for score mode")
 	output := flags.String("output", "", "new private research report path (must not exist)")
 	timeout := flags.Duration("timeout", executionDeadline, "operational timeout, greater than zero and at most 10m; detection budgets remain fixed")
 	if err := flags.Parse(args); err != nil {
@@ -200,7 +205,20 @@ func runCLI(ctx context.Context, args []string, stderr io.Writer, runner prefixR
 		}
 		return 2
 	}
-	if *manifest == "" || *output == "" || flags.NArg() != 0 {
+	if *mode == "score" {
+		if *manifest != "" || *output == "" || *reportPath == "" || *labelsPath == "" || !validHash(*reportHash) || !validHash(*labelsHash) || flags.NArg() != 0 {
+			fmt.Fprintln(stderr, "score requires -report, -report-sha256, -labels, -labels-sha256 and -output; -manifest is not permitted")
+			return 2
+		}
+		if *timeout <= 0 || *timeout > maximumDeadline {
+			fmt.Fprintln(stderr, "timeout must be greater than zero and at most 10m")
+			return 2
+		}
+		scoreCtx, cancel := context.WithTimeout(ctx, *timeout)
+		defer cancel()
+		return runScoreCLI(scoreCtx, *reportPath, *reportHash, *labelsPath, *labelsHash, *output, stderr)
+	}
+	if *mode != "evaluate" || *reportPath != "" || *reportHash != "" || *labelsPath != "" || *labelsHash != "" || *manifest == "" || *output == "" || flags.NArg() != 0 {
 		fmt.Fprintln(stderr, "exactly -manifest and -output are required")
 		return 2
 	}
