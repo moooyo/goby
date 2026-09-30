@@ -5,7 +5,17 @@ BIF automation is complete; the accuracy assessment is complete, but recognition
 extension remains unaccepted. Short intros and differing audio/video versions
 are substantive remaining work.
 
-Application candidate `0014befd68420e593f0855cdd1c0991f3079abfc` uses schema 52.
+The dashboard-integrated application source
+`33445db2e2e64b6871116332c44605261a1bf2d4` uses schema 52.
+Current software image:
+`sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d`.
+Current AMD image:
+`sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0`.
+Both passed actual administrator UI and BIF-preservation checks after the
+Material 3 merge. Final closure passed with zero owned containers, networks and
+database clients, private PostgreSQL stopped, and unrelated services unchanged.
+The earlier `0014bef` artifacts are historical, not current installation inputs.
+
 Enable **Automatic seek previews** in a Movies, TV shows or Mixed media library;
 its new option defaults to off. Enablement, successful scans and profile changes
 request background work, with a daily/event default schedule. Tasks exposes
@@ -13,11 +23,12 @@ progress, failures and stopping. There is no required manual build/Force step.
 Disabling the option preserves existing valid previews. BIF delivery and the
 default 10-second interval remain unchanged.
 
-The selected BIF checks report 168 backend, 13 Node and 33 UI passes; one historical
+The initial BIF checks report 168 backend, 13 Node and 33 UI passes; one historical
 fixture-dependent UI skip is retained. The actual Docker journey passed enabled
 generation, scan reuse, rebuilding after a 10-to-20-second interval change,
 and retention through disable/container recreation. Counts are scoped and do not
-claim a new full-product suite or GPU profile.
+claim a new full-product suite or GPU profile. These pre-merge counts retain their
+original source scope; final integration results are recorded separately.
 
 The unchanged detector v3 missed all 12 reviewed positive intros among 15
 evaluable files from five series. Three NASA short-ident negative cases produced

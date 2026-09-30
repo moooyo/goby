@@ -2,7 +2,11 @@
 
 Use the current schema 52 software or AMD Docker image and its matching
 `current-release.json`. Both application profiles use source
-`0014befd68420e593f0855cdd1c0991f3079abfc` for automatic library seek previews.
+`33445db2e2e64b6871116332c44605261a1bf2d4` for automatic library seek previews.
+The integrated Material 3 dashboard and retained BIF outputs passed actual checks
+in both final profiles. Owned containers, networks and database clients are
+absent; private PostgreSQL is stopped and unrelated services are unchanged.
+Use the current catalog rather than the earlier `0014bef` image receipts.
 The repository result is `docs/development/bif-intro-expansion-20260930.md`;
 Git integration is recorded separately. The earlier Docker operations journey,
 14 helper tests and closure remain evidence for the existing helper contract.

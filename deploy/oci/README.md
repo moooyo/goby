@@ -15,9 +15,15 @@ The separate small toolkit is
 `D:/Code/goby/.artifacts/bif-intro-20260930/goby-docker-operations.zip`.
 The software image is in
 `D:/Code/goby/.artifacts/bif-intro-20260930/software`; application source
-is `0014befd68420e593f0855cdd1c0991f3079abfc`, with schema 52. The toolkit does not
+is `33445db2e2e64b6871116332c44605261a1bf2d4`, with schema 52. The toolkit does not
 include another copy of the image archive. The manual configuration, source-build
 and recovery details below remain reference material for the selected profile.
+The current software image is
+`sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d`.
+It includes the integrated Material 3 dashboard. Both final profiles passed actual
+administrator UI and BIF-preservation checks. Owned containers, networks and
+database clients are absent; private PostgreSQL is stopped and unrelated services
+are unchanged. Earlier `0014bef` images are not the current installation target.
 Further TMDB/OpenSubtitles work and new scraper research are deferred; provider
 credentials are not required by this installation path.
 

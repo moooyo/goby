@@ -3,7 +3,8 @@
 ## Current status
 
 The latest [BIF automation and intro assessment increment](development/bif-intro-expansion-20260930.md)
-uses application candidate `0014befd68420e593f0855cdd1c0991f3079abfc`, schema 52.
+uses the dashboard-integrated application source
+`33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.
 BIF automation is complete within its scope. The expanded intro assessment is
 complete, but broader recognition remains unaccepted and requires improvement.
 
@@ -14,11 +15,15 @@ failures and stop controls; no manual build/Force step is needed. Disabling
 preview generation preserves existing valid outputs. The 10-second default and
 BIF delivery protocol are unchanged.
 
-The [result manifest](development/bif-intro-expansion-results-20260930.json)
-records 168 focused backend checks, 13 Node tests and 33 UI passes, with one
+The initial BIF scope recorded 168 focused backend checks, 13 Node tests and 33 UI passes, with one
 historical fixture-dependent UI skip. The actual Docker generation, scan reuse,
 10-to-20-second profile rebuild, disable and recreation journey passed.
-These are scoped results, not a full-product or new GPU acceptance claim.
+Those pre-merge results retain their source scope. The
+[result manifest](development/bif-intro-expansion-results-20260930.json) separately
+binds the final dashboard integration and both current Docker profiles' actual
+administrator UI and retained-BIF checks. Final closure passed: no owned
+containers, networks or database clients remain, private PostgreSQL is stopped,
+and unrelated services are unchanged. This is not a new full-product or GPU claim.
 
 The expanded intro sample has 15 evaluable files from five series. All 12
 visually/source-reviewed positive intros returned `no_result` and were missed;

@@ -1,9 +1,20 @@
 # Current implementation and delivery status
 
 The current [BIF automation and intro assessment increment](bif-intro-expansion-20260930.md)
-uses application candidate `0014befd68420e593f0855cdd1c0991f3079abfc`, schema 52.
+uses the dashboard-integrated application source
+`33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.
 **BIF automation is complete within its selected scope. The expanded accuracy
 assessment is complete; broader intro recognition is not accepted.**
+
+| Current Docker profile | Immutable image ID |
+| --- | --- |
+| Software | `sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d` |
+| AMD | `sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0` |
+
+Both final profiles passed actual administrator UI and retained-BIF checks after
+the Material 3 dashboard merge. Owned containers, networks and database clients
+are absent, private PostgreSQL is stopped, and unrelated services are unchanged.
+Initial `0014bef` application/image receipts remain historical evidence.
 
 Enable **Automatic seek previews** in a Movies, TV shows or Mixed media library.
 `EnablePreviewGeneration` defaults to false, including existing libraries.
@@ -13,10 +24,12 @@ Tasks shows progress, failures and stop controls. Manual selection/build/Force
 is no longer the main UI flow. Disabling generation retains existing valid
 previews. The default 10-second interval and BIF service protocol are unchanged.
 
-The selected BIF evidence includes 168 backend checks, 13 Node tests and 33 UI
+The initial BIF evidence includes 168 backend checks, 13 Node tests and 33 UI
 passes, plus one historical fixture-dependent UI skip. Actual Docker enablement,
 scan reuse, a 10-to-20-second profile rebuild, and disable/container recreation
-passed. These focused results are not a new full-product or GPU campaign.
+passed. These pre-merge results retain their original source scope; final
+integration results are recorded separately in the manifest. Neither group is
+a new full-product or GPU campaign.
 
 The expanded intro assessment covered 15 evaluable files from five series.
 All 12 visually/source-reviewed positive cases returned `no_result` and were

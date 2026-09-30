@@ -5,8 +5,14 @@
 The [current result](../development/bif-intro-expansion-20260930.md) and
 [manifest](../development/bif-intro-expansion-results-20260930.json) separate
 completed BIF automation from completed accuracy assessment and unaccepted
-recognition extension. Application candidate is
-`0014befd68420e593f0855cdd1c0991f3079abfc`, schema 52.
+recognition extension. The dashboard-integrated application source is
+`33445db2e2e64b6871116332c44605261a1bf2d4`, schema 52.
+
+Final software and AMD images passed actual administrator UI and retained-BIF
+checks after the Material 3 merge. Owned containers, networks and database clients
+are absent, private PostgreSQL is stopped, and unrelated services are unchanged.
+The manifest and current catalog bind these final images; initial `0014bef`
+application/image receipts remain historical evidence.
 
 `EnablePreviewGeneration` defaults to false and applies to Movies, TV shows and
 Mixed media libraries. Enabling it, successful scans and preview-profile changes
@@ -15,10 +21,11 @@ request background generation; untouched default scheduling is daily plus
 manual build/Force controls. Disabling generation retains existing valid previews.
 Default spacing remains 10 seconds and the BIF protocol is unchanged.
 
-BIF verification has 168 focused backend checks, 13 Node tests and 33 UI passes,
+Initial BIF verification has 168 focused backend checks, 13 Node tests and 33 UI passes,
 with one historical fixture-dependent UI skip. The actual Docker enable, scan
 reuse, profile 10-to-20-second rebuild, disable and recreation journey passed.
-These results establish that finite automation scope, not all product coverage.
+These pre-merge results retain their original source scope. Final integration
+evidence is recorded separately; neither establishes all product coverage.
 
 Expanded accuracy assessment has 15 evaluable files from five series: all 12
 reviewed positive intros were missed with `no_result`; three NASA short-ident

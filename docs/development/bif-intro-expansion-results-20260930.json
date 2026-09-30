@@ -2,12 +2,12 @@
   "kind": "goby-bif-and-intro-assessment-delivery",
   "version": 1,
   "recordedOn": "2026-09-30",
-  "status": "bif_automation_complete_intro_assessment_complete_broader_recognition_not_accepted",
+  "status": "bif_automation_complete_dashboard_integrated_intro_assessment_complete_broader_recognition_not_accepted",
   "baseline": "869c6654f6c5dd5d2430a4ae405b3c17428c953f",
   "application": {
-    "bytes": 52410067,
-    "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
-    "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc"
+    "bytes": 57194340,
+    "sha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d",
+    "sourceRevision": "33445db2e2e64b6871116332c44605261a1bf2d4"
   },
   "schemaVersion": 52,
   "deliveryForm": "Docker images and Compose only",
@@ -41,6 +41,7 @@
     "passedParents": 168,
     "failures": 0,
     "skips": 0,
+    "applicationSource": "0014befd68420e593f0855cdd1c0991f3079abfc",
     "byPackage": {
       "backuppg": 24,
       "database": 11,
@@ -61,6 +62,11 @@
           "name": "test-backuppg-01.log",
           "bytes": 12447,
           "sha256": "5c38f1b8b207fc23bcea6a838ea04097d53454527e5c7096c12684fd9d92898c"
+        },
+        "receipt": {
+          "name": "test-backuppg-01.json",
+          "bytes": 2009,
+          "sha256": "9e0efdc188bdeeaab93d46347855644169d73e81fcfe5d4657b1970cf84339f2"
         }
       },
       {
@@ -75,6 +81,11 @@
           "name": "test-database-01.log",
           "bytes": 14777,
           "sha256": "ddbf6baa26cbec92e686a900ba81e4f35c1e21ce2f5201ae65ebb884e14918b2"
+        },
+        "receipt": {
+          "name": "test-database-01.json",
+          "bytes": 1030,
+          "sha256": "9167d9239ce272526960cf51d84e2cfefeca3245f673e55b0f96652e3f0ec026"
         }
       },
       {
@@ -89,6 +100,11 @@
           "name": "test-library-01.log",
           "bytes": 19433,
           "sha256": "0aea5c687000e311d0f59a1139860b31dc835af394dda8d39813b8fcebb6feff"
+        },
+        "receipt": {
+          "name": "test-library-01.json",
+          "bytes": 5234,
+          "sha256": "0a2314d180bb9143b0e6e9b3a9664b4772d7927c631361fcaa9717def16da64e"
         }
       },
       {
@@ -103,6 +119,11 @@
           "name": "test-server-01.log",
           "bytes": 5200,
           "sha256": "499cb5b16d17126dc31b27501983c53dbdeedb7899ae113f4e5efdb54ee025d6"
+        },
+        "receipt": {
+          "name": "test-server-01.json",
+          "bytes": 1738,
+          "sha256": "a766b544052c38e233dbb9ed3059a4b44c67b14341a510669b6e920dfd5a7c61"
         }
       },
       {
@@ -117,9 +138,79 @@
           "name": "test-tasks-01.log",
           "bytes": 15073,
           "sha256": "08967519e596f44e193b5b515e6a99e7b095bd628dba1d283c102cc1602018ee"
+        },
+        "receipt": {
+          "name": "test-tasks-01.json",
+          "bytes": 3216,
+          "sha256": "e5c1ccc0749ddb829cc2b5cf5a7ed1751fb84808ab0bbdc4126dbfb924076d6a"
         }
       }
-    ]
+    ],
+    "scope": "Retained initial BIF and intro-assessment backend evidence; not a rerun at the merged revision."
+  },
+  "mergedBackendChecks": {
+    "environment": "test-env",
+    "applicationSource": "33445db2e2e64b6871116332c44605261a1bf2d4",
+    "passedParents": 7,
+    "failures": 0,
+    "skips": 0,
+    "additionalUniqueParents": 6,
+    "repeatedParents": 1,
+    "additionalParentNames": [
+      {
+        "package": "server",
+        "test": "TestAdminSystemStatusRejectsSelectorsBeforeReadingHost"
+      },
+      {
+        "package": "server",
+        "test": "TestAdminSystemStatusReturnsKnownAndUnknownValues"
+      },
+      {
+        "package": "server",
+        "test": "TestAdminTranscodingMetricsKeepDisabledUnknownAndOccupiedDistinct"
+      },
+      {
+        "package": "server",
+        "test": "TestHTTPAdminSystemStatusRejectsApplicationKeys"
+      },
+      {
+        "package": "server",
+        "test": "TestHTTPAdminSystemStatusReportsNativeHostAndConfiguredVolume"
+      },
+      {
+        "package": "server",
+        "test": "TestHTTPAdminSystemStatusRequiresCurrentNativeAdministrator"
+      }
+    ],
+    "repeatedParentNames": [
+      {
+        "package": "server",
+        "test": "TestAnalysisPreviewProviderKeepsSealedBIFReadableAfterGenerationOptOut"
+      }
+    ],
+    "runs": [
+      {
+        "name": "test-server-merged01",
+        "exitCode": 0,
+        "parentResults": {
+          "pass": 7,
+          "fail": 0,
+          "skip": 0
+        },
+        "log": {
+          "name": "test-server-merged01.log",
+          "bytes": 2219,
+          "sha256": "5f172ee5a9647d0ee7f0a9ae7c96ddac8644941c959a8da62fb0280a15ef0966"
+        },
+        "receipt": {
+          "name": "test-server-merged01.json",
+          "bytes": 748,
+          "sha256": "c2167ffd597572e6d3b03ece8eb2f7059729c3b96e4edf02d68e0d435842adaa"
+        }
+      }
+    ],
+    "composedUniqueBackendParents": 174,
+    "scope": "Focused dashboard integration checks appended to retained initial evidence; no final all-package rerun claimed."
   },
   "frontendChecks": {
     "nodePasses": 13,
@@ -139,7 +230,123 @@
         "actual-library-settings.png",
         "actual-media-analysis.png"
       ]
-    }
+    },
+    "stageEvidence": {
+      "node": {
+        "receipt": {
+          "name": "ui-node-01.json",
+          "bytes": 162,
+          "sha256": "8398e2bc1e05036ec4457e3bcf16176561690dd831f08e4a02ddf841bde9e544"
+        },
+        "log": {
+          "name": "ui-node-01.log",
+          "bytes": 3074,
+          "sha256": "3793e30dec5bb9ada35ae9b15134116b1cd24d423bb5095dca7c69af8d820150"
+        }
+      },
+      "build": {
+        "receipt": {
+          "name": "ui-build-01.json",
+          "bytes": 163,
+          "sha256": "1f9b0c2bd344606c4a31a67e36a449de0604e9585a1a5528ff56ca0aafb1155a"
+        },
+        "log": {
+          "name": "ui-build-01.log",
+          "bytes": 7154,
+          "sha256": "d20202f66c91f69badde26a2578bb52378e1557e4e95b9ad0dd411aaaa34df21"
+        }
+      },
+      "browser": {
+        "receipt": {
+          "name": "ui-browser-01.json",
+          "bytes": 166,
+          "sha256": "8556133577dd5c85bfab15a31755b19a09e5ccefd742e38f4f1a385f4fa8b257"
+        },
+        "log": {
+          "name": "ui-browser-01.log",
+          "bytes": 5483,
+          "sha256": "66b72d3bc1461b3d0730cccaaada1b9c56c22f3157628df44121900e7aafa17f"
+        }
+      }
+    },
+    "scope": "Retained initial BIF UI evidence."
+  },
+  "mergedFrontendChecks": {
+    "nodePasses": 13,
+    "nodeSkips": 0,
+    "buildPassed": true,
+    "browserPasses": 37,
+    "browserSkips": 2,
+    "stageEvidence": {
+      "node": {
+        "receipt": {
+          "name": "ui-node-merged01.json",
+          "bytes": 168,
+          "sha256": "afee7691ad48d15974c818ac4c006f9a85390d24b12444136ae15419b003de54"
+        },
+        "log": {
+          "name": "ui-node-merged01.log",
+          "bytes": 3075,
+          "sha256": "db6714510b5d650c674d5718e3bf213a3dfe8bb130f580b43f3717adcdd73fe5"
+        }
+      },
+      "build": {
+        "receipt": {
+          "name": "ui-build-merged01.json",
+          "bytes": 169,
+          "sha256": "d4332aeacebbb4f8d198aafb9111ae126038ebd85bc16266d4b74ea0ea49c33c"
+        },
+        "log": {
+          "name": "ui-build-merged01.log",
+          "bytes": 17474,
+          "sha256": "9847a7d3f746a800d55e974e2a8c65481e653bcaad1b3d1398a441bed1612f8c"
+        }
+      },
+      "browser": {
+        "receipt": {
+          "name": "ui-browser-merged01.json",
+          "bytes": 172,
+          "sha256": "3b35811ff5e452ef2eaadc6c3fbe9a71190cded633ae711eac5cdf52f94007fe"
+        },
+        "log": {
+          "name": "ui-browser-merged01.log",
+          "bytes": 6172,
+          "sha256": "bbc0a1f5829dda69672318bf88a3c0f53a836df8a81e83549c550f2f69272878"
+        }
+      }
+    },
+    "applicationSource": "33445db2e2e64b6871116332c44605261a1bf2d4",
+    "skipBoundaries": [
+      "dashboard-delivery complete real-media fixture was not configured.",
+      "phase3-admin-workflows historical complete server/restart fixture was not configured."
+    ],
+    "actualDockerUI": {
+      "software": {
+        "passed": true,
+        "actualDockerApplication": true,
+        "existingDisabledLibraryRead": true,
+        "manualCorrectionControls": 0,
+        "pageErrors": 0,
+        "librarySettingsChanged": false,
+        "screenshots": [
+          "actual-software-merged-library-settings.png",
+          "actual-software-merged-media-analysis.png"
+        ]
+      },
+      "amd": {
+        "passed": true,
+        "actualDockerApplication": true,
+        "existingDisabledLibraryRead": true,
+        "manualCorrectionControls": 0,
+        "pageErrors": 0,
+        "librarySettingsChanged": false,
+        "screenshots": [
+          "actual-amd-merged-library-settings.png",
+          "actual-amd-merged-media-analysis.png"
+        ]
+      }
+    },
+    "scope": "Merged frontend checks and separate actual Docker UI acceptance; initial and merged case counts are not summed."
   },
   "bifRuntime": {
     "passed": true,
@@ -174,7 +381,8 @@
     "disabledControlLibraryNotGenerated": true,
     "manualAnalysisStartRequests": 0,
     "forcedWork": 0,
-    "newClientDragCampaign": false
+    "newClientDragCampaign": false,
+    "scope": "Original complete BIF workflow; final image startup/persistence/UI receipts are listed separately."
   },
   "introAssessment": {
     "kind": "goby-expanded-intro-source-assessment",
@@ -475,33 +683,163 @@
     "Short opening recognition",
     "Different opening/audio version recognition"
   ],
-  "amdApplication": {
+  "softwareApplication": {
     "passed": true,
-    "imageId": "sha256:ba4a9bbdcfe10f693f092a9268a00494bbadc6e38b4003f8a9751dddb3dfae9e",
+    "imageId": "sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d",
     "actualStartup": true,
     "catalogAndDisabledPolicyPreserved": true,
     "actualUIScreenshots": true,
     "newGPUAcceptanceClaim": false,
-    "axes": "software"
+    "axes": "software",
+    "retainedBIFExactBytes": true,
+    "ui": {
+      "passed": true,
+      "actualDockerApplication": true,
+      "existingDisabledLibraryRead": true,
+      "manualCorrectionControls": 0,
+      "pageErrors": 0,
+      "librarySettingsChanged": false,
+      "screenshots": [
+        "actual-software-merged-library-settings.png",
+        "actual-software-merged-media-analysis.png"
+      ]
+    }
+  },
+  "amdApplication": {
+    "passed": true,
+    "imageId": "sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0",
+    "actualStartup": true,
+    "catalogAndDisabledPolicyPreserved": true,
+    "actualUIScreenshots": true,
+    "newGPUAcceptanceClaim": false,
+    "axes": "software",
+    "retainedBIFExactBytes": true,
+    "ui": {
+      "passed": true,
+      "actualDockerApplication": true,
+      "existingDisabledLibraryRead": true,
+      "manualCorrectionControls": 0,
+      "pageErrors": 0,
+      "librarySettingsChanged": false,
+      "screenshots": [
+        "actual-amd-merged-library-settings.png",
+        "actual-amd-merged-media-analysis.png"
+      ]
+    }
+  },
+  "mergedApplicationAcceptance": {
+    "software": {
+      "runtime": {
+        "passed": true,
+        "imageId": "sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d",
+        "actualStartup": true,
+        "catalogAndDisabledPolicyPreserved": true,
+        "actualUIScreenshots": true,
+        "newGPUAcceptanceClaim": false,
+        "axes": "software",
+        "retainedBIFExactBytes": true,
+        "ui": {
+          "passed": true,
+          "actualDockerApplication": true,
+          "existingDisabledLibraryRead": true,
+          "manualCorrectionControls": 0,
+          "pageErrors": 0,
+          "librarySettingsChanged": false,
+          "screenshots": [
+            "actual-software-merged-library-settings.png",
+            "actual-software-merged-media-analysis.png"
+          ]
+        }
+      },
+      "ui": {
+        "passed": true,
+        "actualDockerApplication": true,
+        "existingDisabledLibraryRead": true,
+        "manualCorrectionControls": 0,
+        "pageErrors": 0,
+        "librarySettingsChanged": false,
+        "screenshots": [
+          "actual-software-merged-library-settings.png",
+          "actual-software-merged-media-analysis.png"
+        ]
+      },
+      "receipt": {
+        "name": "software-application-merged.json",
+        "bytes": 635,
+        "sha256": "afa236e42b0acadf4d4e4a30a06881502a7a1c28727d0819d572670fd73dc56d"
+      },
+      "uiReceipt": {
+        "name": "actual-software-merged-ui.json",
+        "bytes": 304,
+        "sha256": "b51b71994594e8da60cefd2acb067199bae067918758b532c07b636d0c64e767"
+      }
+    },
+    "amd": {
+      "runtime": {
+        "passed": true,
+        "imageId": "sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0",
+        "actualStartup": true,
+        "catalogAndDisabledPolicyPreserved": true,
+        "actualUIScreenshots": true,
+        "newGPUAcceptanceClaim": false,
+        "axes": "software",
+        "retainedBIFExactBytes": true,
+        "ui": {
+          "passed": true,
+          "actualDockerApplication": true,
+          "existingDisabledLibraryRead": true,
+          "manualCorrectionControls": 0,
+          "pageErrors": 0,
+          "librarySettingsChanged": false,
+          "screenshots": [
+            "actual-amd-merged-library-settings.png",
+            "actual-amd-merged-media-analysis.png"
+          ]
+        }
+      },
+      "ui": {
+        "passed": true,
+        "actualDockerApplication": true,
+        "existingDisabledLibraryRead": true,
+        "manualCorrectionControls": 0,
+        "pageErrors": 0,
+        "librarySettingsChanged": false,
+        "screenshots": [
+          "actual-amd-merged-library-settings.png",
+          "actual-amd-merged-media-analysis.png"
+        ]
+      },
+      "receipt": {
+        "name": "amd-application-merged.json",
+        "bytes": 625,
+        "sha256": "ff32e34ff3a897f4708ba336e187063ad4ca66950de8d65e17148a239ee7db22"
+      },
+      "uiReceipt": {
+        "name": "actual-amd-merged-ui.json",
+        "bytes": 294,
+        "sha256": "ba0d3e22ac2dfad3a4419c81d0a925bf4aaf01d2e93889d9376a88759156c701"
+      }
+    }
   },
   "images": {
     "software": {
       "kind": "goby-bif-intro-image-delivery",
       "profile": "software",
       "baseImageId": "sha256:24aca9db2d30ab8d2e0e7275bbdc4b4d395d355c99a79e0d5421353345b86ce9",
-      "imageId": "sha256:743cb1a66e41c2343a0e0659fe8ed68d5225c18a3c9c43f3452c0f41a8420b1d",
-      "applicationSha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+      "imageId": "sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d",
+      "applicationSha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d",
       "baseLayersUnchanged": true,
-      "additionalApplicationLayers": 1,
+      "additionalApplicationLayers": 2,
+      "currentApplicationNoticesIncluded": true,
       "application": {
-        "bytes": 52410067,
-        "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
-        "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc"
+        "bytes": 57194340,
+        "sha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d",
+        "sourceRevision": "33445db2e2e64b6871116332c44605261a1bf2d4"
       },
       "archive": {
         "name": "goby-linux-amd64-image.tar",
-        "bytes": 492652032,
-        "sha256": "fe563c9d798fe8c5d4a5ff8f5e0bd5ca366355ef555e50472c47f9b181ab21eb"
+        "bytes": 499547136,
+        "sha256": "6739a08edb2f233ebf3b82ed86066fc086eb22bdcbdea1f4131b3d1e665aa350"
       },
       "companionHashes": {
         "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
@@ -509,25 +847,28 @@
         "goby.env.example": "35b4707b9f0af1e10e3f136df643cff07f1d1861377008c39e3d68082c48b14b"
       },
       "actualImportPassed": true,
-      "newGPUAcceptanceClaim": false
+      "newGPUAcceptanceClaim": false,
+      "generation": "dashboard_merged",
+      "earlierDeliveryRetained": true
     },
     "amd": {
       "kind": "goby-bif-intro-image-delivery",
       "profile": "amd",
       "baseImageId": "sha256:3a8467bcbb97c82b4675b16d06364a3b27a06c9605df2f6374e0f95ede1e12b7",
-      "imageId": "sha256:ba4a9bbdcfe10f693f092a9268a00494bbadc6e38b4003f8a9751dddb3dfae9e",
-      "applicationSha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
+      "imageId": "sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0",
+      "applicationSha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d",
       "baseLayersUnchanged": true,
-      "additionalApplicationLayers": 1,
+      "additionalApplicationLayers": 2,
+      "currentApplicationNoticesIncluded": true,
       "application": {
-        "bytes": 52410067,
-        "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5",
-        "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc"
+        "bytes": 57194340,
+        "sha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d",
+        "sourceRevision": "33445db2e2e64b6871116332c44605261a1bf2d4"
       },
       "archive": {
         "name": "goby-linux-amd64-amd-image.tar",
-        "bytes": 1045122560,
-        "sha256": "c779923d5ab44ad98cce60871a516987abab7456a1713370a8c7c4ee66e0a132"
+        "bytes": 1052017664,
+        "sha256": "9a1e02339519da2ee0713dc54d741c7e0fe3d865c2017fd4af011811e8406363"
       },
       "companionHashes": {
         "compose.yaml": "5a959475b24c1f7069440adaee3ad6cec886a7b6790206861d92f978133a3965",
@@ -537,21 +878,24 @@
         "seccomp.amd.json": "22b86c7effb4cf7189145eb12c241f0bb28f732b50270123c751d31f0766b7f0"
       },
       "actualImportPassed": true,
-      "newGPUAcceptanceClaim": false
+      "newGPUAcceptanceClaim": false,
+      "generation": "dashboard_merged",
+      "earlierDeliveryRetained": true
     }
   },
   "toolkit": {
     "passed": true,
     "archive": {
       "name": "goby-docker-operations.zip",
-      "bytes": 45858,
-      "sha256": "a86b1baeb3f7a736d847b1752ba72a256a2387467d23abf75e76fe138de53503"
+      "bytes": 46403,
+      "sha256": "eecae11afb550d7f91e3c848e9b111ee196490e4f49aecad59ffd6c574b1b8ff"
     },
     "files": 14,
     "extractionAndChecksums": true,
     "helperUnchanged": true,
     "bothCurrentProfileCompanions": true,
     "packagedGuideLinks": true,
+    "generation": "dashboard_merged",
     "helperOriginalAcceptance": "docs/development/docker-operations-results-20260930.json"
   },
   "closure": {
@@ -588,7 +932,170 @@
       }
     ]
   },
+  "finalSourceAndNotices": {
+    "passed": true,
+    "sourceRevision": "33445db2e2e64b6871116332c44605261a1bf2d4",
+    "trackedBuildInputsCompared": 2164,
+    "extraGoSources": 0,
+    "currentNoticesVerifiedInBothImages": [
+      "THIRD_PARTY_NOTICES.md",
+      "docs/development/third-party-notices-inventory.json",
+      "third_party/licenses/npm/@fontsource-variable/jetbrains-mono@5.3.0/LICENSE",
+      "third_party/licenses/npm/@fontsource-variable/noto-sans-sc@5.3.0/LICENSE"
+    ]
+  },
+  "finalSourceAndNoticesReceipt": {
+    "name": "final-source-and-notices.json",
+    "bytes": 443,
+    "sha256": "c1819454973e7955745b569c32b17e8c45a4be7e0bcfdff9b8f85710fef844d6"
+  },
+  "retainedCalibrationEvidence": [
+    {
+      "name": "beverly-analyze-01.log",
+      "bytes": 98,
+      "sha256": "3280c59bbfe04c22a7d338708f5eba8dea93a5f477e48a103ca8ed3a2688b13c"
+    },
+    {
+      "name": "beverly-diagnostic-01.json",
+      "bytes": 15207,
+      "sha256": "92e9f34d69ba01b8828ad3371671edb3b65e5d2a150b336d23f9a666a76b03f9"
+    },
+    {
+      "name": "beverly-diagnostic-01.log",
+      "bytes": 15396,
+      "sha256": "801af2d38173e007ed9753b115da121d2f34fa54361b6cbe8f17ed9b461206af"
+    },
+    {
+      "name": "beverly-extract-01.log",
+      "bytes": 123,
+      "sha256": "298b7f6680f67e216d6104c960a824d2313008816ac4d05421efc4d0722a4a85"
+    },
+    {
+      "name": "beverly-short-calibration-01.json",
+      "bytes": 2787,
+      "sha256": "190c850b1b8129a07a1d7a9540288771f8b7902e215db48809a6720409369e5e"
+    },
+    {
+      "name": "beverly-v3-01.json",
+      "bytes": 2787,
+      "sha256": "f66cf38749e47fb40d2aa36c065a1c52ef4130116ea0849d9f028fd7bd4b3c00"
+    },
+    {
+      "name": "holdout-freeze.json",
+      "bytes": 468,
+      "sha256": "cdca65b415fc85de28f8ceacf1489b57eb5ee5a2a92e18c2ab89fcffa2416e5a"
+    },
+    {
+      "name": "hubble-analyze-01.log",
+      "bytes": 89,
+      "sha256": "4785e714e317e65d99aa805a4ab33e9fecf1eda21906be0048619f4d34bd8ab9"
+    },
+    {
+      "name": "hubble-extract-01.log",
+      "bytes": 126,
+      "sha256": "057430e6028bc2faf1cc9c3c0926b3c57f544500b975e20e1dfca75d9524949f"
+    },
+    {
+      "name": "hubble-v3-01.json",
+      "bytes": 2986,
+      "sha256": "17f6e43a192a6964f36c56b76db82c4fb184b9cc980c13f267de60e77d4b0171"
+    },
+    {
+      "name": "one-step-beyond-analyze-01.log",
+      "bytes": 94,
+      "sha256": "a8f5a500e58c52f48abe2f897ba3a7ca949acf1dcbaf4ee1511c8681d6f13d47"
+    },
+    {
+      "name": "one-step-beyond-extract-01.log",
+      "bytes": 123,
+      "sha256": "f39cc0ce2894c00db366e64b7f8b4ad199f77b21cc2c5225617d8e4c6d1c52f8"
+    },
+    {
+      "name": "one-step-beyond-v3-01.json",
+      "bytes": 2757,
+      "sha256": "56d6e847ed49799521d0eadcf5da3c22511e20c2e57e08b93258b92938e4b6dd"
+    },
+    {
+      "name": "robin-analyze-01.log",
+      "bytes": 89,
+      "sha256": "9036a7f6032aa935ba1adde4c3a26f788bf86af67ca290f01dc3ff48cc671d64"
+    },
+    {
+      "name": "robin-extract-01.log",
+      "bytes": 126,
+      "sha256": "1b33e038426f108ebf273e1956410de3bb2d14c397090d14a168be3c27e70149"
+    },
+    {
+      "name": "robin-v3-01.json",
+      "bytes": 2754,
+      "sha256": "24f53c3d4ad7c38140a982b838820d557f1e0f9b408c50c553481ec59a249e92"
+    },
+    {
+      "name": "short-calibration-options.json",
+      "bytes": 1154,
+      "sha256": "17e85142cc34a2eb767b7a275f885dbc49d98d2e602ccd274fb257f34539c728"
+    },
+    {
+      "name": "space-to-ground-analyze-01.log",
+      "bytes": 94,
+      "sha256": "e17fe7ba249f08fe3e84d6d518c043b2afbae9cef97660936ccc1188b75e52a0"
+    },
+    {
+      "name": "space-to-ground-extract-01.log",
+      "bytes": 255,
+      "sha256": "54c9a6d1007069ee8af2ed7f4380bd4d0d7a355f816030ac05e5a9b690b528ae"
+    },
+    {
+      "name": "space-to-ground-extract-02.log",
+      "bytes": 126,
+      "sha256": "3660141f09d2dfd3832b2b43c1ecae17e32a246563e12c84c12c989ef1a99ce9"
+    },
+    {
+      "name": "space-to-ground-v3-01.json",
+      "bytes": 2763,
+      "sha256": "157f7be820da2a4bc4b6542bd73ed817b77e419fa7022b049093bffbeb343f86"
+    },
+    {
+      "name": "two-source-calibration-options.json",
+      "bytes": 1154,
+      "sha256": "e1a36e48138a9f9d651509191eab263fbb9dbae21f5a745f9307619838c637a7"
+    }
+  ],
+  "closureEvidence": {
+    "final": {
+      "name": "closure.json",
+      "bytes": 1007,
+      "sha256": "887ba421f400f8ec1a1e3124bbe2a4bd21d21ec2ecdd8ae476852a45b0d5eda0"
+    },
+    "beforeDashboardIntegration": {
+      "name": "closure-before-dashboard-integration.json",
+      "bytes": 1007,
+      "sha256": "887ba421f400f8ec1a1e3124bbe2a4bd21d21ec2ecdd8ae476852a45b0d5eda0"
+    }
+  },
+  "earlierDelivery": {
+    "buildReceipt": {
+      "name": "build-receipt.json",
+      "bytes": 12443,
+      "sha256": "6b737dfd43e71788289813dcc79fe762c6c18c3d9600988365be3e7fb32fa3e3"
+    },
+    "imageDeliveryReceipt": {
+      "name": "image-delivery.json",
+      "bytes": 2594,
+      "sha256": "b1ecf5d3313e53ed36bfc713cb55cda7f36d4a15c348ba806f6442ddd531ab5f"
+    },
+    "archiveDirectories": [
+      "delivery-software",
+      "delivery-amd"
+    ],
+    "packagesDirectory": "delivery"
+  },
   "retainedFailures": [
+    {
+      "attempt": "docs-check-merged01",
+      "cause": "The link-check fixture enumerated only two ancestor directory levels and missed an existing deep license directory.",
+      "resolution": "Expanded only the private checker ancestor inventory; all 19 changed Markdown files then passed."
+    },
     {
       "attempt": "compile-server-01",
       "cause": "A new test formatted an already-string revision as int64.",
@@ -617,16 +1124,23 @@
   ],
   "localDeliveryDirectory": "D:/Code/goby/.artifacts/bif-intro-20260930",
   "remoteEvidenceRoot": "/opt/goby-bif-intro-20260930-01",
+  "remoteFinalPackageDirectory": "/opt/goby-bif-intro-20260930-01/delivery-merged",
+  "remoteFinalImageDirectories": [
+    "delivery-merged-software",
+    "delivery-merged-amd"
+  ],
   "registryPublished": false,
   "productionDeployment": false,
   "newGPUAcceptanceClaim": false,
   "sourceMediaRedistributed": false,
+  "rawFeaturesRedistributed": false,
+  "rawASRRedistributed": false,
   "scraping": "user_deferred",
   "gitIntegration": "Recorded separately from immutable application and acceptance receipts.",
   "documentationCheck": {
     "kind": "goby-current-documentation-link-check",
-    "changedMarkdownFiles": 14,
-    "outgoingLinksChecked": 779,
+    "changedMarkdownFiles": 19,
+    "outgoingLinksChecked": 1082,
     "incomingAnchorLinksChecked": 6,
     "introducedIssues": [],
     "inheritedIssues": [],
@@ -635,16 +1149,21 @@
   "evidence": {
     "archive": {
       "name": "bif-intro-evidence.zip",
-      "bytes": 481317,
-      "sha256": "36f2798165b74e20add738016fd6112e33f08279bc1616095cfef487bc5d2852"
+      "bytes": 966772,
+      "sha256": "c3dcdbfcb9121ecf8b26d87c395c1f37f5fc8b97906e9b2b6b9b9d167627ed20"
     },
-    "files": 116,
+    "files": 149,
     "privateValueScanPassed": true,
+    "completeArchiveReadback": true,
+    "generation": "dashboard_merged",
     "excluded": [
       "Private credentials/configuration",
       "Database data",
-      "Source media",
+      "Source media and source frames",
+      "Raw ASR/audio transcripts",
+      "Raw audio/visual features",
       "Image archives"
-    ]
+    ],
+    "labelIdentityBoundary": "Frozen reference labels and declared provenance are retained alongside their result hashes."
   }
 }

@@ -10,7 +10,14 @@ The small operations toolkit is
 `D:/Code/goby/.artifacts/bif-intro-20260930/goby-docker-operations.zip`;
 the current AMD image archive is in
 `D:/Code/goby/.artifacts/bif-intro-20260930/amd`. Both profiles use
-application source `0014befd68420e593f0855cdd1c0991f3079abfc` and schema 52.
+application source `33445db2e2e64b6871116332c44605261a1bf2d4` and schema 52.
+The current AMD image is
+`sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0`.
+This source integrates the Material 3 dashboard. Both final profiles passed actual
+administrator UI and BIF-preservation checks; owned containers, networks and
+database clients are absent, PostgreSQL is stopped and unrelated services are
+unchanged. This does not relabel earlier GPU tests as a new full GPU campaign.
+The initial `0014bef` images retain their historical scope.
 The [BIF automation and intro assessment result](../../docs/development/bif-intro-expansion-20260930.md)
 and [manifest](../../docs/development/bif-intro-expansion-results-20260930.json)
 bind the updated application evidence. Git integration is recorded separately.

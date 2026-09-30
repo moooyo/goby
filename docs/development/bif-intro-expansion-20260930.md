@@ -9,18 +9,65 @@ It returned `no_result` for all 15 evaluable original episodes. All 12
 source-reviewed openings were missed; the three short-ident negatives correctly
 received no intro. No qualified interval was emitted. The finite assessment is
 complete, but it does not establish broader recognition or improved accuracy.
-Final image/resource/Git closeout remains a separate delivery step.
+The requested short-opening and variant-opening recognition remains work to
+improve. Both final Docker profiles passed actual UI and retained BIF checks,
+and final owned-resource closure passed. Archive/export and Git publication are
+recorded separately from this verified application scope.
 
-Application source candidate: `0014befd68420e593f0855cdd1c0991f3079abfc`.
+Final application source: `33445db2e2e64b6871116332c44605261a1bf2d4`, including
+dashboard `main` snapshot `4c4ed60`. The earlier
+`0014befd68420e593f0855cdd1c0991f3079abfc` application and images are retained
+historical verification artifacts and have been superseded.
 Database schema: **52**. Baseline: `869c665`.
 
 See the [finite execution plan](../planning/bif-and-intro-expansion-plan-20260930.md),
 [API contract](../api/media-analysis.md),
 [native workflow](media-analysis-native-ui.md) and
-[runtime contract](media-analysis-runtime.md) and
-[result manifest](bif-intro-expansion-results-20260930.json). The
+[runtime contract](media-analysis-runtime.md),
+[delivery result manifest](bif-intro-expansion-results-20260930.json) and
+[intro assessment manifest](intro-accuracy-assessment-20260930.json). The
 [previous automatic-intro increment](library-intro-automation-20260930.md)
 retains its own source, delivery and verification boundary.
+
+## Final application and image identities
+
+| Artifact | Identity | Current verification state |
+| --- | --- | --- |
+| Application source | `33445db2e2e64b6871116332c44605261a1bf2d4` | Dashboard integration included |
+| Application binary | 57,194,340 bytes; SHA-256 `8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d` | Final application build |
+| Software image | `sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d` | Actual final UI and retained BIF verification passed |
+| AMD image | `sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0` | Actual final UI and retained BIF verification passed |
+
+Final archive/export identities and completed import checks are recorded in the
+delivery result manifest. Workstation copies also passed a byte-for-byte hash
+comparison on `test-env`. Delivery uses
+`D:/Code/goby/.artifacts/bif-intro-20260930`, with `software` and `amd` profile
+directories and their matching operations toolkit. This record does not declare
+Git merge or push completion.
+
+The earlier `0014befd68420e593f0855cdd1c0991f3079abfc` application was
+52,410,067 bytes, SHA-256
+`6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5`.
+Its retained image/archive receipts are historical:
+
+| Superseded profile | Image ID | Archive bytes and SHA-256 |
+| --- | --- | --- |
+| Software | `sha256:743cb1a66e41c2343a0e0659fe8ed68d5225c18a3c9c43f3452c0f41a8420b1d` | 492,652,032 bytes; `fe563c9d798fe8c5d4a5ff8f5e0bd5ca366355ef555e50472c47f9b181ab21eb` |
+| AMD | `sha256:ba4a9bbdcfe10f693f092a9268a00494bbadc6e38b4003f8a9751dddb3dfae9e` | 1,045,122,560 bytes; `c779923d5ab44ad98cce60871a516987abab7456a1713370a8c7c4ee66e0a132` |
+
+Both historical archives passed actual export/import. The historical AMD image
+also passed startup, complete retained BIF hash/timeline checks and actual UI
+login/library-switch checks with no manual-generation entry. That application
+check used software axes and did not repeat GPU qualification. Its owned
+containers/networks were removed, the private PostgreSQL instance on port 55997
+stopped normally after zero client sessions, and HTTP port 38964 closed. Three
+protected resource identities, PIDs and process start times were unchanged.
+These historical receipts are retained. Final verification after dashboard
+integration separately passed on both profiles, including exact retained BIF
+bytes and the actual administrator UI. Final closure records zero owned
+containers, zero Compose networks, zero database clients, a stopped private
+PostgreSQL instance and unchanged protected services. Source material, private
+database state and original evidence remain retained.
 
 ## Automatic BIF behavior
 
@@ -72,10 +119,15 @@ All execution and validation in this increment use `test-env`.
 
 | Scope | Recorded result | Boundary |
 | --- | --- | --- |
-| Focused backend campaign | 168 parent tests passed | Selected automation, admission, publication, migration and related regression scope; parent/subtest events are not added together |
-| Node checks | 13 passed | Selected frontend logic checks |
-| Administrator UI campaign | 33 passed, one historical skip | Changed library/analysis workflow; the skipped full-Phase-3 case is not a new pass |
+| Initial focused backend campaign | 168 parent tests passed | Selected automation, admission, publication, migration and related regression scope |
+| Dashboard-integration backend follow-up | 7 passed: 6 new unique parent tests and 1 repeated parent | Composed total: **174 unique parent passes**; repetitions and parent/subtest events are not added together |
+| Initial Node/UI campaign | 13 Node checks and 33 UI checks passed; one historical UI skip | Original changed library/analysis scope |
+| Dashboard-integration Node/build campaign | 13 Node checks and administrator build passed | Repeated checks retain their own source boundary |
+| Dashboard-integration browser campaign | 37 passed, 2 skipped | Historical full-Phase-3 case and a separate real dashboard-delivery fixture not configured for this campaign; neither skip is a pass |
 | Actual Docker preview journey | All four phases passed | Real Goby process, library settings, automatic tasks and public preview HTTP; no manual analysis starts or Force requests |
+| Final Docker software profile | Actual UI and retained BIF verification passed | Bound to final image above |
+| Final Docker AMD profile | Actual UI and retained BIF verification passed | Separate actual check after dashboard integration; no new GPU qualification |
+| Final owned-resource closure | Passed | Zero owned containers/Compose networks/database clients; private PostgreSQL stopped; protected services unchanged |
 
 The [preview automation driver](../../scripts/test-env/preview-automation.py)
 keeps a retained checkpoint so an affected phase can be continued without
@@ -173,17 +225,29 @@ the diagnostic interval.
 The reduced-duration calibration variant (`duration10/Auto15`) did not improve
 the result and was not adopted. A proposed `MinSupport=2` variant was rejected
 by validation before execution; it is not an executed experiment or additional
-episode result. Production source `0014befd68420e593f0855cdd1c0991f3079abfc`
-retains `introdetect-v3` and all existing quality gates. Short and variant
+episode result. The evaluated production candidate
+`0014befd68420e593f0855cdd1c0991f3079abfc` retains `introdetect-v3` and all
+existing quality gates. The final dashboard-integrated application
+`33445db2e2e64b6871116332c44605261a1bf2d4` does not change that detector or its
+quality gates. Short and variant
 openings remain a demonstrated limitation of this expanded sample, rather than
 newly accepted recognition coverage.
 
-## Pending delivery closeout
+## Artifact and Git handoff
 
-- Bind final application/image identities, archive hashes and the schema-52
-  recovery catalog receipt to the delivered Docker profiles.
-- Record owned-resource closure and Git publication separately from verification.
+Final profile runtime checks, archive import checks and owned-resource closure
+have passed. The delivery manifest binds the final archives and the schema-52
+recovery catalog. The final archive identities are:
+
+| Profile | Archive bytes | Archive SHA-256 |
+| --- | ---: | --- |
+| Software | 499,547,136 | `6739a08edb2f233ebf3b82ed86066fc086eb22bdcbdea1f4131b3d1e665aa350` |
+| AMD | 1,052,017,664 | `9a1e02339519da2ee0713dc54d741c7e0fe3d865c2017fd4af011811e8406363` |
+
+The workstation delivery is `D:/Code/goby/.artifacts/bif-intro-20260930`;
+superseded artifacts are retained in its `pre-dashboard` directory. Git
+publication is recorded separately from immutable application identities.
 
 BIF verification and the finite expanded intro assessment are complete at this
 checkpoint. Broader intro recognition is not accepted, no accuracy improvement
-is claimed, and final delivery/resource closure remains to be recorded.
+is claimed, and short/variant-opening recognition remains to be improved.

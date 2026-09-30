@@ -7,11 +7,21 @@ outside scope, not unfinished or deferred release tasks.
 
 ## Current selected deliveries
 
-Current application candidate: `0014befd68420e593f0855cdd1c0991f3079abfc`,
+Current dashboard-integrated application source: `33445db2e2e64b6871116332c44605261a1bf2d4`,
 schema 52. The [BIF automation and intro assessment result](../development/bif-intro-expansion-20260930.md)
 and [manifest](../development/bif-intro-expansion-results-20260930.json) distinguish
 **completed BIF automation**, **completed accuracy assessment**, and
 **unaccepted recognition extension**. Git integration is recorded separately.
+
+| Current Docker profile | Immutable image ID |
+| --- | --- |
+| Software | `sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d` |
+| AMD | `sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0` |
+
+Both final profiles passed actual administrator UI and retained-BIF checks after
+the Material 3 merge. Final closure passed: zero owned containers, networks and
+database clients; private PostgreSQL stopped; unrelated services unchanged.
+Initial `0014bef` application/image receipts are retained at their original scope.
 
 `EnablePreviewGeneration` defaults to false in Movies, TV shows and Mixed media
 libraries. Enablement, scans and profile changes request background work, with
@@ -19,10 +29,11 @@ daily/event defaults. Tasks supplies progress, errors and stopping. The UI no
 longer requires manual build/Force controls. Disabling generation retains valid
 previews; the default interval and delivery protocol are unchanged.
 
-BIF has 168 focused backend checks, 13 Node tests and 33 UI passes, plus one
+The initial BIF scope has 168 focused backend checks, 13 Node tests and 33 UI passes, plus one
 historical fixture-dependent UI skip. The actual Docker enable/reuse/profile
 rebuild/disable/recreation journey passed its finite scope. These counts do not
-establish every product, client or hardware profile.
+establish every product, client or hardware profile. Those pre-merge counts retain
+their source boundary; final integration evidence is recorded separately.
 
 The expanded intro assessment contains 15 evaluable files from five series:
 12 reviewed positive cases were all missed with `no_result`; three NASA

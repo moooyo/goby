@@ -4,8 +4,13 @@ Current runtime contract, including schema-52 automatic seek previews. The BIF
 workflow is **verified within its selected scope**. The expanded intro assessment
 is complete, but broader recognition is **not accepted**: all 12 source-reviewed
 openings were missed, while three short-ident negatives correctly received no
-intro. The [current checkpoint](bif-intro-expansion-20260930.md)
-separates those outcomes and binds the application candidate. The previous
+intro. Short and variant opening recognition remains to be improved. The
+[current checkpoint](bif-intro-expansion-20260930.md) separates those outcomes and
+binds final application source `33445db2e2e64b6871116332c44605261a1bf2d4`.
+Both final software and AMD profiles passed actual UI and exact retained-BIF
+checks. Final owned-resource closure passed: zero owned containers, Compose
+networks and database clients, private PostgreSQL stopped, protected services
+unchanged. Artifact export and Git publication have separate receipts. The previous
 automatic-intro increment retains its completed backend, UI, Docker and
 resource-closure scope in its [record](library-intro-automation-20260930.md).
 Earlier Phase 2 verification is

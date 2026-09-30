@@ -48,7 +48,11 @@ administrator dashboard and use an external PostgreSQL 17 server.
 The current archives are under
 `D:/Code/goby/.artifacts/bif-intro-20260930/software` and `amd`, with
 `goby-docker-operations.zip` in their parent directory. Both image profiles carry
-application source `0014befd68420e593f0855cdd1c0991f3079abfc` and schema 52.
+application source `33445db2e2e64b6871116332c44605261a1bf2d4` and schema 52.
+This source integrates the Material 3 administrator dashboard. Both final Docker
+profiles passed actual administrator UI and retained-BIF checks; owned containers,
+networks and database clients are absent, PostgreSQL is stopped, and unrelated
+services are unchanged. The initial `0014bef` artifacts remain historical inputs.
 The [BIF automation and intro assessment result](docs/development/bif-intro-expansion-20260930.md)
 and [manifest](docs/development/bif-intro-expansion-results-20260930.json)
 bind current evidence and artifacts. Git integration is recorded separately.

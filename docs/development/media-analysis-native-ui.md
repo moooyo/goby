@@ -1,8 +1,12 @@
 # Native media analysis workflow
 
 Status: the automatic BIF workflow is **verified within its selected scope**:
-33 UI checks and 13 Node checks passed, with one historical full-Phase-3 UI skip.
-The real Docker BIF workflow also passed its four selected phases. The expanded
+the final dashboard-integration campaign passed 37 browser checks, 13 Node checks
+and the administrator build. Two browser cases were skipped: the historical
+full-Phase-3 case and a separate real dashboard-delivery fixture not configured
+for that campaign. The real Docker BIF workflow passed its four selected phases;
+both final software and AMD images separately passed actual UI and retained-BIF
+verification, followed by owned-resource closure. The expanded
 intro assessment is complete, but broader recognition is not accepted: all 12
 source-reviewed openings were missed, with three correct short-ident negatives
 among 15 evaluable originals. See the
@@ -110,12 +114,16 @@ claims that busy entries were immediately removed or that original media changed
 
 ## Verification coverage
 
-The current remote UI campaign passed 33 checks and retained one historical
+The initial remote UI campaign passed 33 checks and retained one historical
 full-Phase-3 skip; 13 Node checks passed. It covers the independent library
 switches, supported collection types, saved notices, both automation descriptions,
 and removal of normal manual preview-start controls. Progress, failure and
 retained-request handling remain visible. These counts describe selected checks,
-not independent accuracy samples.
+not independent accuracy samples. After dashboard `main` snapshot `4c4ed60`
+was integrated, the final application source
+`33445db2e2e64b6871116332c44605261a1bf2d4` passed 13 Node checks, the
+administrator build and 37 browser checks. The two browser skips retain their
+explicit scopes above; repeated campaigns are not summed as new coverage.
 
 The separate real Docker preview journey used library-option changes, ordinary
 scans and profile edits, with no manual analysis start or Force request. All four
@@ -127,7 +135,12 @@ ThumbnailSet positions, image tags and rejection of obsolete tags. The
 from intro recognition. The completed intro assessment produced 15 `no_result`
 outcomes and no qualified intervals. A visible automatic workflow and successful
 BIF delivery do not imply that short or variant episode openings are recognized.
-The production detector and quality gates remain unchanged.
+The production detector and quality gates remain unchanged. Final software and
+AMD images each passed a separate actual UI and exact retained-BIF check.
+Their owned containers and Compose networks were removed and the private
+PostgreSQL instance stopped with zero client sessions; protected services were
+unchanged. These are application/UI results, not a new GPU campaign or improved
+intro-recognition evidence. Short and variant openings remain to be improved.
 
 In the previous automatic-intro increment, the actual AMD-image UI check passed
 login, visibility of the TV-library

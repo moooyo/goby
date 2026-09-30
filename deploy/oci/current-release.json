@@ -1,18 +1,18 @@
 {
   "kind": "goby-docker-current-release",
   "version": 1,
-  "release": "2026-09-30-bif-intro",
+  "release": "2026-09-30-bif-intro-dashboard",
   "application": {
-    "sourceRevision": "0014befd68420e593f0855cdd1c0991f3079abfc",
-    "sha256": "6fa0bc8bd98e2b6ac0ce69f638428068e923fd2d8e7e37f61c292a3f09e5bec5"
+    "sourceRevision": "33445db2e2e64b6871116332c44605261a1bf2d4",
+    "sha256": "8b92bc462004fe1dc98609092209d6d57882c53278411fd24468fba51a9f117d"
   },
   "profiles": {
     "software": {
-      "imageId": "sha256:743cb1a66e41c2343a0e0659fe8ed68d5225c18a3c9c43f3452c0f41a8420b1d",
+      "imageId": "sha256:45dc7d9ff3eefbe79f6c8205ce2fda332777d1c1f2ecc22ef491fe7ab51bf89d",
       "archive": {
         "name": "goby-linux-amd64-image.tar",
-        "bytes": 492652032,
-        "sha256": "fe563c9d798fe8c5d4a5ff8f5e0bd5ca366355ef555e50472c47f9b181ab21eb"
+        "bytes": 499547136,
+        "sha256": "6739a08edb2f233ebf3b82ed86066fc086eb22bdcbdea1f4131b3d1e665aa350"
       },
       "companions": [
         "compose.yaml",
@@ -26,11 +26,11 @@
       }
     },
     "amd": {
-      "imageId": "sha256:ba4a9bbdcfe10f693f092a9268a00494bbadc6e38b4003f8a9751dddb3dfae9e",
+      "imageId": "sha256:d25873c96b1259da69c82b38c4939f7d37a3986b4238850be7e4b8def8707ce0",
       "archive": {
         "name": "goby-linux-amd64-amd-image.tar",
-        "bytes": 1045122560,
-        "sha256": "c779923d5ab44ad98cce60871a516987abab7456a1713370a8c7c4ee66e0a132"
+        "bytes": 1052017664,
+        "sha256": "9a1e02339519da2ee0713dc54d741c7e0fe3d865c2017fd4af011811e8406363"
       },
       "companions": [
         "compose.yaml",

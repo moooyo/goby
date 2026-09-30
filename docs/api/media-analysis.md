@@ -13,7 +13,11 @@ The schema-52 automatic BIF workflow has passed its selected backend, UI and
 actual Docker checks. The expanded intro assessment is complete, but broader
 recognition is not accepted: v3 missed all 12 source-reviewed openings among 15
 evaluable originals and correctly abstained on three short-ident negatives.
-No accuracy improvement is claimed. See the
+No accuracy improvement is claimed; short and variant opening recognition remains
+to be improved. Final application source
+`33445db2e2e64b6871116332c44605261a1bf2d4` includes the dashboard integration;
+both software and AMD profiles passed actual UI and exact retained-BIF checks,
+and owned-resource closure passed. See the
 [BIF and intro checkpoint](../development/bif-intro-expansion-20260930.md).
 The earlier automatic-intro delivery retains its completed, source-bound scope
 in the [previous increment record](../development/library-intro-automation-20260930.md).

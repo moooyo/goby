@@ -79,9 +79,17 @@ substantive recognition work. The machine-readable
 [assessment](../development/intro-accuracy-assessment-20260930.json) retains this
 negative result independently of the completed BIF implementation.
 
-Retain original failed attempts and rerun only affected checks. Generate the new
-recovery catalog from actual PostgreSQL 17. Build software/AMD Docker application
-layers after verification, bind their archive identities in the current catalog,
-close owned resources, preserve private data/evidence, and record Git publication
-separately. Online scraping, new GPU qualification and historical capacity/fault
-campaigns are not part of this increment.
+The schema 52 recovery catalog was generated from actual PostgreSQL 17. The
+concurrent dashboard update was integrated at application source
+`33445db2e2e64b6871116332c44605261a1bf2d4`. Focused checks passed 168 original
+backend parents plus six new unique parents after integration; one existing parent
+was repeated. The merged frontend passed 13 Node checks, its build, and 37 browser
+cases. Two fixture-dependent browser cases were skipped, not counted as passes.
+Both final Docker profiles passed actual UI and retained-BIF checks. Their notices
+include the new dashboard fonts. Owned containers, Compose networks and database
+clients are closed; PostgreSQL is stopped and protected services are unchanged.
+
+The result manifest and current release catalog bind the final archive identities;
+original failures and superseded image receipts remain as historical evidence.
+Git publication is recorded separately. Online scraping, new GPU qualification
+and historical capacity/fault campaigns are not part of this increment.
