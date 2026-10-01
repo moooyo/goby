@@ -25,6 +25,7 @@ const (
 	scanSpoolHeaderFixed         = 8 + 1 + 4 + 2 + 2 + 2*scanSpoolVersionSize + scanSpoolIdentitySize + 4
 	scanSpoolMaxHeader           = scanSpoolHeaderFixed + 2*scanReconciliationMaxPathBytes + sha256.Size
 	scanSpoolMaxDirectoryEntries = 262144
+	scanSpoolWriteBatchEntries   = 64
 )
 
 // Directory is an independently owned writable location outside media roots.
@@ -683,6 +684,40 @@ func scanSpoolEncodeEntry(entry scanSpoolEntry) [scanSpoolEntrySize]byte {
 	return data
 }
 
+// Bound write scratch independently from directory fanout. Individual records
+// retain their checksums and offsets while one write publishes up to 24 KiB.
+type scanSpoolEntryBatchWriter struct {
+	writer io.WriterAt
+	offset int64
+	buffer [scanSpoolWriteBatchEntries * scanSpoolEntrySize]byte
+	used   int
+}
+
+func (writer *scanSpoolEntryBatchWriter) write(entry [scanSpoolEntrySize]byte) error {
+	copy(writer.buffer[writer.used:], entry[:])
+	writer.used += len(entry)
+	if writer.used == len(writer.buffer) {
+		return writer.flush()
+	}
+	return nil
+}
+
+func (writer *scanSpoolEntryBatchWriter) flush() error {
+	if writer.used == 0 {
+		return nil
+	}
+	written, err := writer.writer.WriteAt(writer.buffer[:writer.used], writer.offset)
+	if err != nil {
+		return err
+	}
+	if written != writer.used {
+		return io.ErrShortWrite
+	}
+	writer.offset += int64(written)
+	writer.used = 0
+	return nil
+}
+
 func (record *scanSpoolDirectory) entry(index int) (scanSpoolEntry, error) {
 	if index < 0 || index >= record.count {
 		return scanSpoolEntry{}, errScanReconciliationEvidenceUnavailable
@@ -804,7 +839,8 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 	if err := scanSpoolWriteHeader(record); err != nil {
 		return evidence.Disable(err)
 	}
-	for index, entry := range ordered {
+	entryWriter := scanSpoolEntryBatchWriter{writer: file, offset: record.offset}
+	for _, entry := range ordered {
 		if err := spool.ctx.Err(); err != nil {
 			return evidence.Disable(err)
 		}
@@ -814,9 +850,15 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 			return evidence.unavailable("directory entry changed during membership capture")
 		}
 		data := scanSpoolEncodeEntry(scanSpoolEntry{name: entry.Name(), mode: entry.Type().Type(), version: version})
-		if _, err := file.WriteAt(data[:], record.offset+int64(index)*scanSpoolEntrySize); err != nil {
+		if err := entryWriter.write(data); err != nil {
 			return evidence.Disable(err)
 		}
+	}
+	if err := spool.ctx.Err(); err != nil {
+		return evidence.Disable(err)
+	}
+	if err := entryWriter.flush(); err != nil {
+		return evidence.Disable(err)
 	}
 	if err := evidence.verifySpoolDirectory(spool.ctx, record, held); err != nil {
 		return evidence.Disable(err)

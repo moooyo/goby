@@ -1,0 +1,2245 @@
+{
+  "date": "2026-10-01",
+  "host": "test-env",
+  "baseline_commit": "83e1b7f31c0f60e29fa781d078695f1ecccc6c3a",
+  "scope": "Isolated descriptor-prober scan overhead; three fresh fixture runs per source; no concurrent measurement processes.",
+  "corpus": {
+    "flat_movies": 160,
+    "flat_episodes": 192,
+    "directory_episodes": 48
+  },
+  "profile_sha256": {
+    "baseline": "5e07514ff1fa552f00f8508d8602d85f5ca87e0aa26887b2895a91c449972b7e",
+    "candidate": "5e07514ff1fa552f00f8508d8602d85f5ca87e0aa26887b2895a91c449972b7e"
+  },
+  "candidate_file_sha256": {
+    "scan.go": "46463421c6fd0ce279d8c78f0970261c02cb3a9fef5be986b8e0c84f63aec753",
+    "scan_cache.go": "7f9a77d068d3eae9ce4a65e1ddf81462d3b8aedc9be424b1cbd2db28841e34ee",
+    "scan_cache_integration_test.go": "02bbad4bce548f414743e2718c60d9295ff4c79c14b4ed92666a3767b53744ad",
+    "scan_claim_lookup_integration_test.go": "04332ac839000365434bcd14570b7eb865d96729b8633031ff5f5910f216287b",
+    "subtitles_scan.go": "bd69a9e5cda6226a0cdbcb682f1944b3da797fcbca2cd7e5d633ae14374623bd",
+    "subtitles_scan_performance_integration_test.go": "fd903533655487781e49327cb0aee41cd53ca522fb196ad5dc20509c8992942e",
+    "scan_performance_integration_test.go": "5e07514ff1fa552f00f8508d8602d85f5ca87e0aa26887b2895a91c449972b7e",
+    "scan_reconciliation_spool.go": "100328e7540a853b5caebf88c25ccf68e93f6d30b26f022eaff7cd219974ae5a",
+    "scan_reconciliation_spool_batch_test.go": "1e47812f70de66481f62d8b2da4fe9aa96246f8fa23a007dcdbb082dd55e0e4e",
+    "scan_reconciliation_spool_batch_linux_test.go": "6e7c7aad6012fcedb2b46df70522ee2068547404e8d95f5f74a82a000af2c517"
+  },
+  "raw_log_sha256": {
+    "tasks-race.jsonl": "865c16df0921d3f154578b44ed601a5bb765f8b10a26cc47dd15e0f9e99e7b24",
+    "scan-regression-race.jsonl": "111fac337d6c8cca5cfb7d7ca1183e6667b155c97bd6bd61ba7eccb263fc2926",
+    "profile-candidate.jsonl": "99a3075432f24018353b3af44cb18f244b619c1eafb5c9fd85328ddbe72d7d0b",
+    "profile-baseline.jsonl": "9cbce1383ba0bd9cb6f603abb857e2fd531564b0114c5828d0fb714521bc711e",
+    "targeted-race.jsonl": "5186f50fab06e77ce7c90a79be7c2c930a0c57f9aca8a9680ec0ee2ee5108503",
+    "baseline-compile.jsonl": "6993e261148f36f8fdb69fe027f666bd7396d63b1dd2f6e94f72d64d323f72be"
+  },
+  "measurements": [
+    {
+      "library": "flat_movies",
+      "phase": "cold",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.874521,
+        "job_seconds_min": 0.861913,
+        "job_seconds_max": 0.878539,
+        "sql": [
+          5680
+        ],
+        "begin": [
+          491
+        ],
+        "probe_calls": [
+          160
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.8688,
+        "job_seconds_min": 0.853208,
+        "job_seconds_max": 0.8768440000000001,
+        "sql": [
+          5520
+        ],
+        "begin": [
+          491
+        ],
+        "probe_calls": [
+          160
+        ]
+      },
+      "job_time_reduction_percent": 0.654186691914771,
+      "sql_reduction_percent": 2.8169014084507005
+    },
+    {
+      "library": "flat_movies",
+      "phase": "cached",
+      "baseline": {
+        "samples": 6,
+        "job_seconds_median": 0.1892605,
+        "job_seconds_min": 0.183218,
+        "job_seconds_max": 0.209953,
+        "sql": [
+          1360
+        ],
+        "begin": [
+          171
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "candidate": {
+        "samples": 6,
+        "job_seconds_median": 0.168796,
+        "job_seconds_min": 0.164618,
+        "job_seconds_max": 0.17984,
+        "sql": [
+          1200
+        ],
+        "begin": [
+          171
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "job_time_reduction_percent": 10.812874318730003,
+      "sql_reduction_percent": 11.764705882352944
+    },
+    {
+      "library": "flat_movies",
+      "phase": "incremental",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.210527,
+        "job_seconds_min": 0.205284,
+        "job_seconds_max": 0.213726,
+        "sql": [
+          1438
+        ],
+        "begin": [
+          174
+        ],
+        "probe_calls": [
+          1
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.20072800000000002,
+        "job_seconds_min": 0.188439,
+        "job_seconds_max": 0.217475,
+        "sql": [
+          1278
+        ],
+        "begin": [
+          174
+        ],
+        "probe_calls": [
+          1
+        ]
+      },
+      "job_time_reduction_percent": 4.654509872842905,
+      "sql_reduction_percent": 11.126564673157159
+    },
+    {
+      "library": "flat_movies",
+      "phase": "cached_after_incremental",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.185575,
+        "job_seconds_min": 0.18271400000000002,
+        "job_seconds_max": 0.19443700000000003,
+        "sql": [
+          1360
+        ],
+        "begin": [
+          171
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.17025800000000002,
+        "job_seconds_min": 0.161885,
+        "job_seconds_max": 0.170412,
+        "sql": [
+          1200
+        ],
+        "begin": [
+          171
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "job_time_reduction_percent": 8.253805738919562,
+      "sql_reduction_percent": 11.764705882352944
+    },
+    {
+      "library": "flat_movies",
+      "phase": "force_probe",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.7336950000000001,
+        "job_seconds_min": 0.726441,
+        "job_seconds_max": 0.740588,
+        "sql": [
+          4720
+        ],
+        "begin": [
+          331
+        ],
+        "probe_calls": [
+          160
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.701663,
+        "job_seconds_min": 0.689678,
+        "job_seconds_max": 0.704585,
+        "sql": [
+          4560
+        ],
+        "begin": [
+          331
+        ],
+        "probe_calls": [
+          160
+        ]
+      },
+      "job_time_reduction_percent": 4.365846843715726,
+      "sql_reduction_percent": 3.3898305084745783
+    },
+    {
+      "library": "flat_episodes",
+      "phase": "cold",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 2.069836,
+        "job_seconds_min": 1.996027,
+        "job_seconds_max": 2.124443,
+        "sql": [
+          13381
+        ],
+        "begin": [
+          971
+        ],
+        "probe_calls": [
+          192
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 1.062237,
+        "job_seconds_min": 1.048497,
+        "job_seconds_max": 1.070223,
+        "sql": [
+          6967
+        ],
+        "begin": [
+          605
+        ],
+        "probe_calls": [
+          192
+        ]
+      },
+      "job_time_reduction_percent": 48.68013697703586,
+      "sql_reduction_percent": 47.933637246842544
+    },
+    {
+      "library": "flat_episodes",
+      "phase": "cached",
+      "baseline": {
+        "samples": 6,
+        "job_seconds_median": 1.221902,
+        "job_seconds_min": 1.199678,
+        "job_seconds_max": 1.278479,
+        "sql": [
+          8143
+        ],
+        "begin": [
+          587
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "candidate": {
+        "samples": 6,
+        "job_seconds_median": 0.243168,
+        "job_seconds_min": 0.240087,
+        "job_seconds_max": 0.247964,
+        "sql": [
+          1729
+        ],
+        "begin": [
+          221
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "job_time_reduction_percent": 80.09922235989467,
+      "sql_reduction_percent": 78.76703917475132
+    },
+    {
+      "library": "flat_episodes",
+      "phase": "incremental",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 1.235338,
+        "job_seconds_min": 1.220729,
+        "job_seconds_max": 1.273217,
+        "sql": [
+          8223
+        ],
+        "begin": [
+          590
+        ],
+        "probe_calls": [
+          1
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.278981,
+        "job_seconds_min": 0.262104,
+        "job_seconds_max": 0.294763,
+        "sql": [
+          1809
+        ],
+        "begin": [
+          224
+        ],
+        "probe_calls": [
+          1
+        ]
+      },
+      "job_time_reduction_percent": 77.41662605699817,
+      "sql_reduction_percent": 78.00072966070776
+    },
+    {
+      "library": "flat_episodes",
+      "phase": "cached_after_incremental",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 1.230191,
+        "job_seconds_min": 1.198024,
+        "job_seconds_max": 1.255248,
+        "sql": [
+          8143
+        ],
+        "begin": [
+          587
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.242837,
+        "job_seconds_min": 0.239269,
+        "job_seconds_max": 0.258441,
+        "sql": [
+          1729
+        ],
+        "begin": [
+          221
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "job_time_reduction_percent": 80.2602197544934,
+      "sql_reduction_percent": 78.76703917475132
+    },
+    {
+      "library": "flat_episodes",
+      "phase": "force_probe",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 1.851126,
+        "job_seconds_min": 1.822099,
+        "job_seconds_max": 1.872647,
+        "sql": [
+          12175
+        ],
+        "begin": [
+          779
+        ],
+        "probe_calls": [
+          192
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.881989,
+        "job_seconds_min": 0.86403,
+        "job_seconds_max": 0.8911180000000001,
+        "sql": [
+          5761
+        ],
+        "begin": [
+          413
+        ],
+        "probe_calls": [
+          192
+        ]
+      },
+      "job_time_reduction_percent": 52.35391864195089,
+      "sql_reduction_percent": 52.681724845995895
+    },
+    {
+      "library": "directory_episodes",
+      "phase": "cold",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.332529,
+        "job_seconds_min": 0.314519,
+        "job_seconds_max": 0.33611599999999997,
+        "sql": [
+          2071
+        ],
+        "begin": [
+          179
+        ],
+        "probe_calls": [
+          48
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.320914,
+        "job_seconds_min": 0.30467,
+        "job_seconds_max": 0.331415,
+        "sql": [
+          2023
+        ],
+        "begin": [
+          179
+        ],
+        "probe_calls": [
+          48
+        ]
+      },
+      "job_time_reduction_percent": 3.4929284363168445,
+      "sql_reduction_percent": 2.3177209077740235
+    },
+    {
+      "library": "directory_episodes",
+      "phase": "cached",
+      "baseline": {
+        "samples": 6,
+        "job_seconds_median": 0.115395,
+        "job_seconds_min": 0.110003,
+        "job_seconds_max": 0.12377800000000001,
+        "sql": [
+          739
+        ],
+        "begin": [
+          83
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "candidate": {
+        "samples": 6,
+        "job_seconds_median": 0.113102,
+        "job_seconds_min": 0.107163,
+        "job_seconds_max": 0.11729200000000001,
+        "sql": [
+          691
+        ],
+        "begin": [
+          83
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "job_time_reduction_percent": 1.9870878287620797,
+      "sql_reduction_percent": 6.495263870094725
+    },
+    {
+      "library": "directory_episodes",
+      "phase": "incremental",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.137898,
+        "job_seconds_min": 0.13563999999999998,
+        "job_seconds_max": 0.146708,
+        "sql": [
+          819
+        ],
+        "begin": [
+          86
+        ],
+        "probe_calls": [
+          1
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.136509,
+        "job_seconds_min": 0.132686,
+        "job_seconds_max": 0.13763,
+        "sql": [
+          771
+        ],
+        "begin": [
+          86
+        ],
+        "probe_calls": [
+          1
+        ]
+      },
+      "job_time_reduction_percent": 1.0072662402645483,
+      "sql_reduction_percent": 5.860805860805862
+    },
+    {
+      "library": "directory_episodes",
+      "phase": "cached_after_incremental",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.115125,
+        "job_seconds_min": 0.111947,
+        "job_seconds_max": 0.12374500000000001,
+        "sql": [
+          739
+        ],
+        "begin": [
+          83
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.10632899999999999,
+        "job_seconds_min": 0.103605,
+        "job_seconds_max": 0.11741,
+        "sql": [
+          691
+        ],
+        "begin": [
+          83
+        ],
+        "probe_calls": [
+          0
+        ]
+      },
+      "job_time_reduction_percent": 7.640390879478842,
+      "sql_reduction_percent": 6.495263870094725
+    },
+    {
+      "library": "directory_episodes",
+      "phase": "force_probe",
+      "baseline": {
+        "samples": 3,
+        "job_seconds_median": 0.273533,
+        "job_seconds_min": 0.26762400000000003,
+        "job_seconds_max": 0.275123,
+        "sql": [
+          1747
+        ],
+        "begin": [
+          131
+        ],
+        "probe_calls": [
+          48
+        ]
+      },
+      "candidate": {
+        "samples": 3,
+        "job_seconds_median": 0.26771300000000003,
+        "job_seconds_min": 0.264896,
+        "job_seconds_max": 0.26802499999999996,
+        "sql": [
+          1699
+        ],
+        "begin": [
+          131
+        ],
+        "probe_calls": [
+          48
+        ]
+      },
+      "job_time_reduction_percent": 2.1277140235364644,
+      "sql_reduction_percent": 2.7475672581568356
+    }
+  ],
+  "samples": {
+    "baseline": [
+      {
+        "phase": "cold",
+        "library": "flat_movies",
+        "sql": 5680,
+        "begin": 491,
+        "commit": 491,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 160,
+        "updated": 0,
+        "elapsed_seconds": 1.003511874,
+        "job_elapsed_seconds": 0.861913
+      },
+      {
+        "phase": "cold",
+        "library": "flat_episodes",
+        "sql": 13381,
+        "begin": 971,
+        "commit": 971,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 192,
+        "updated": 0,
+        "elapsed_seconds": 2.002351138,
+        "job_elapsed_seconds": 1.996027
+      },
+      {
+        "phase": "cold",
+        "library": "directory_episodes",
+        "sql": 2071,
+        "begin": 179,
+        "commit": 179,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 48,
+        "updated": 0,
+        "elapsed_seconds": 0.502626326,
+        "job_elapsed_seconds": 0.314519
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252062564,
+        "job_elapsed_seconds": 0.193942
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.252462705,
+        "job_elapsed_seconds": 1.204806
+      },
+      {
+        "phase": "cached_1",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252164284,
+        "job_elapsed_seconds": 0.12377800000000001
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251671485,
+        "job_elapsed_seconds": 0.209953
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.503263798,
+        "job_elapsed_seconds": 1.278479
+      },
+      {
+        "phase": "cached_2",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.253086952,
+        "job_elapsed_seconds": 0.117342
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_movies",
+        "sql": 1438,
+        "begin": 174,
+        "commit": 174,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 160,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.25231453,
+        "job_elapsed_seconds": 0.213726
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_episodes",
+        "sql": 8223,
+        "begin": 590,
+        "commit": 590,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 192,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 1.251453947,
+        "job_elapsed_seconds": 1.220729
+      },
+      {
+        "phase": "incremental",
+        "library": "directory_episodes",
+        "sql": 819,
+        "begin": 86,
+        "commit": 86,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 48,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252662902,
+        "job_elapsed_seconds": 0.13563999999999998
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252001746,
+        "job_elapsed_seconds": 0.19443700000000003
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.251682573,
+        "job_elapsed_seconds": 1.198024
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252250722,
+        "job_elapsed_seconds": 0.115125
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_movies",
+        "sql": 4720,
+        "begin": 331,
+        "commit": 331,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 0,
+        "updated": 160,
+        "elapsed_seconds": 0.7522401710000001,
+        "job_elapsed_seconds": 0.726441
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_episodes",
+        "sql": 12175,
+        "begin": 779,
+        "commit": 779,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 0,
+        "updated": 192,
+        "elapsed_seconds": 2.001945572,
+        "job_elapsed_seconds": 1.822099
+      },
+      {
+        "phase": "force_probe",
+        "library": "directory_episodes",
+        "sql": 1747,
+        "begin": 131,
+        "commit": 131,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 0,
+        "updated": 48,
+        "elapsed_seconds": 0.502313802,
+        "job_elapsed_seconds": 0.273533
+      },
+      {
+        "phase": "cold",
+        "library": "flat_movies",
+        "sql": 5680,
+        "begin": 491,
+        "commit": 491,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 160,
+        "updated": 0,
+        "elapsed_seconds": 1.003153135,
+        "job_elapsed_seconds": 0.878539
+      },
+      {
+        "phase": "cold",
+        "library": "flat_episodes",
+        "sql": 13381,
+        "begin": 971,
+        "commit": 971,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 192,
+        "updated": 0,
+        "elapsed_seconds": 2.251993583,
+        "job_elapsed_seconds": 2.124443
+      },
+      {
+        "phase": "cold",
+        "library": "directory_episodes",
+        "sql": 2071,
+        "begin": 179,
+        "commit": 179,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 48,
+        "updated": 0,
+        "elapsed_seconds": 0.5024225400000001,
+        "job_elapsed_seconds": 0.33611599999999997
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251708985,
+        "job_elapsed_seconds": 0.18394300000000002
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.502602339,
+        "job_elapsed_seconds": 1.25356
+      },
+      {
+        "phase": "cached_1",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25439306,
+        "job_elapsed_seconds": 0.111868
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.253042515,
+        "job_elapsed_seconds": 0.183218
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.252568501,
+        "job_elapsed_seconds": 1.199678
+      },
+      {
+        "phase": "cached_2",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251706284,
+        "job_elapsed_seconds": 0.110003
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_movies",
+        "sql": 1438,
+        "begin": 174,
+        "commit": 174,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 160,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.25194934900000004,
+        "job_elapsed_seconds": 0.205284
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_episodes",
+        "sql": 8223,
+        "begin": 590,
+        "commit": 590,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 192,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 1.252106824,
+        "job_elapsed_seconds": 1.235338
+      },
+      {
+        "phase": "incremental",
+        "library": "directory_episodes",
+        "sql": 819,
+        "begin": 86,
+        "commit": 86,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 48,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252431018,
+        "job_elapsed_seconds": 0.137898
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252263232,
+        "job_elapsed_seconds": 0.18271400000000002
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.251654956,
+        "job_elapsed_seconds": 1.230191
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25150566,
+        "job_elapsed_seconds": 0.111947
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_movies",
+        "sql": 4720,
+        "begin": 331,
+        "commit": 331,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 0,
+        "updated": 160,
+        "elapsed_seconds": 0.752616532,
+        "job_elapsed_seconds": 0.740588
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_episodes",
+        "sql": 12175,
+        "begin": 779,
+        "commit": 779,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 0,
+        "updated": 192,
+        "elapsed_seconds": 2.002267906,
+        "job_elapsed_seconds": 1.872647
+      },
+      {
+        "phase": "force_probe",
+        "library": "directory_episodes",
+        "sql": 1747,
+        "begin": 131,
+        "commit": 131,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 0,
+        "updated": 48,
+        "elapsed_seconds": 0.5029238899999999,
+        "job_elapsed_seconds": 0.275123
+      },
+      {
+        "phase": "cold",
+        "library": "flat_movies",
+        "sql": 5680,
+        "begin": 491,
+        "commit": 491,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 160,
+        "updated": 0,
+        "elapsed_seconds": 1.003787261,
+        "job_elapsed_seconds": 0.874521
+      },
+      {
+        "phase": "cold",
+        "library": "flat_episodes",
+        "sql": 13381,
+        "begin": 971,
+        "commit": 971,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 192,
+        "updated": 0,
+        "elapsed_seconds": 2.252837488,
+        "job_elapsed_seconds": 2.069836
+      },
+      {
+        "phase": "cold",
+        "library": "directory_episodes",
+        "sql": 2071,
+        "begin": 179,
+        "commit": 179,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 48,
+        "updated": 0,
+        "elapsed_seconds": 0.503443078,
+        "job_elapsed_seconds": 0.332529
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252943726,
+        "job_elapsed_seconds": 0.18457900000000002
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.252267731,
+        "job_elapsed_seconds": 1.236063
+      },
+      {
+        "phase": "cached_1",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252126136,
+        "job_elapsed_seconds": 0.115985
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252219721,
+        "job_elapsed_seconds": 0.195858
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.25331126,
+        "job_elapsed_seconds": 1.207741
+      },
+      {
+        "phase": "cached_2",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25199983800000003,
+        "job_elapsed_seconds": 0.114805
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_movies",
+        "sql": 1438,
+        "begin": 174,
+        "commit": 174,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 160,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.25217644300000003,
+        "job_elapsed_seconds": 0.210527
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_episodes",
+        "sql": 8223,
+        "begin": 590,
+        "commit": 590,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 192,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 1.502519332,
+        "job_elapsed_seconds": 1.273217
+      },
+      {
+        "phase": "incremental",
+        "library": "directory_episodes",
+        "sql": 819,
+        "begin": 86,
+        "commit": 86,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 48,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252184013,
+        "job_elapsed_seconds": 0.146708
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_movies",
+        "sql": 1360,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25267143,
+        "job_elapsed_seconds": 0.185575
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_episodes",
+        "sql": 8143,
+        "begin": 587,
+        "commit": 587,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 1.502591613,
+        "job_elapsed_seconds": 1.255248
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "directory_episodes",
+        "sql": 739,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.253581042,
+        "job_elapsed_seconds": 0.12374500000000001
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_movies",
+        "sql": 4720,
+        "begin": 331,
+        "commit": 331,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 0,
+        "updated": 160,
+        "elapsed_seconds": 0.752505267,
+        "job_elapsed_seconds": 0.7336950000000001
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_episodes",
+        "sql": 12175,
+        "begin": 779,
+        "commit": 779,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 0,
+        "updated": 192,
+        "elapsed_seconds": 2.001517305,
+        "job_elapsed_seconds": 1.851126
+      },
+      {
+        "phase": "force_probe",
+        "library": "directory_episodes",
+        "sql": 1747,
+        "begin": 131,
+        "commit": 131,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 0,
+        "updated": 48,
+        "elapsed_seconds": 0.5025898990000001,
+        "job_elapsed_seconds": 0.26762400000000003
+      }
+    ],
+    "candidate": [
+      {
+        "phase": "cold",
+        "library": "flat_movies",
+        "sql": 5520,
+        "begin": 491,
+        "commit": 491,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 160,
+        "updated": 0,
+        "elapsed_seconds": 1.002673991,
+        "job_elapsed_seconds": 0.853208
+      },
+      {
+        "phase": "cold",
+        "library": "flat_episodes",
+        "sql": 6967,
+        "begin": 605,
+        "commit": 605,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 192,
+        "updated": 0,
+        "elapsed_seconds": 1.252717476,
+        "job_elapsed_seconds": 1.062237
+      },
+      {
+        "phase": "cold",
+        "library": "directory_episodes",
+        "sql": 2023,
+        "begin": 179,
+        "commit": 179,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 48,
+        "updated": 0,
+        "elapsed_seconds": 0.503500799,
+        "job_elapsed_seconds": 0.320914
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25158665,
+        "job_elapsed_seconds": 0.166742
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251719026,
+        "job_elapsed_seconds": 0.240087
+      },
+      {
+        "phase": "cached_1",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252126707,
+        "job_elapsed_seconds": 0.10947
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251656537,
+        "job_elapsed_seconds": 0.17984
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251898752,
+        "job_elapsed_seconds": 0.247542
+      },
+      {
+        "phase": "cached_2",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252260533,
+        "job_elapsed_seconds": 0.11729200000000001
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_movies",
+        "sql": 1278,
+        "begin": 174,
+        "commit": 174,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 160,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.25240208000000003,
+        "job_elapsed_seconds": 0.20072800000000002
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_episodes",
+        "sql": 1809,
+        "begin": 224,
+        "commit": 224,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 192,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.502597414,
+        "job_elapsed_seconds": 0.278981
+      },
+      {
+        "phase": "incremental",
+        "library": "directory_episodes",
+        "sql": 771,
+        "begin": 86,
+        "commit": 86,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 48,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.25269853200000003,
+        "job_elapsed_seconds": 0.13763
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25192444,
+        "job_elapsed_seconds": 0.17025800000000002
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25213323600000004,
+        "job_elapsed_seconds": 0.239269
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252084947,
+        "job_elapsed_seconds": 0.103605
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_movies",
+        "sql": 4560,
+        "begin": 331,
+        "commit": 331,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 0,
+        "updated": 160,
+        "elapsed_seconds": 0.752272716,
+        "job_elapsed_seconds": 0.704585
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_episodes",
+        "sql": 5761,
+        "begin": 413,
+        "commit": 413,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 0,
+        "updated": 192,
+        "elapsed_seconds": 1.001945288,
+        "job_elapsed_seconds": 0.881989
+      },
+      {
+        "phase": "force_probe",
+        "library": "directory_episodes",
+        "sql": 1699,
+        "begin": 131,
+        "commit": 131,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 0,
+        "updated": 48,
+        "elapsed_seconds": 0.50312702,
+        "job_elapsed_seconds": 0.26802499999999996
+      },
+      {
+        "phase": "cold",
+        "library": "flat_movies",
+        "sql": 5520,
+        "begin": 491,
+        "commit": 491,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 160,
+        "updated": 0,
+        "elapsed_seconds": 1.004759603,
+        "job_elapsed_seconds": 0.8688
+      },
+      {
+        "phase": "cold",
+        "library": "flat_episodes",
+        "sql": 6967,
+        "begin": 605,
+        "commit": 605,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 192,
+        "updated": 0,
+        "elapsed_seconds": 1.254438018,
+        "job_elapsed_seconds": 1.048497
+      },
+      {
+        "phase": "cold",
+        "library": "directory_episodes",
+        "sql": 2023,
+        "begin": 179,
+        "commit": 179,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 48,
+        "updated": 0,
+        "elapsed_seconds": 0.503003412,
+        "job_elapsed_seconds": 0.331415
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25220756499999997,
+        "job_elapsed_seconds": 0.171236
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25266136299999997,
+        "job_elapsed_seconds": 0.241849
+      },
+      {
+        "phase": "cached_1",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25241104999999997,
+        "job_elapsed_seconds": 0.11717400000000001
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252229003,
+        "job_elapsed_seconds": 0.169995
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.251665349,
+        "job_elapsed_seconds": 0.247964
+      },
+      {
+        "phase": "cached_2",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252441499,
+        "job_elapsed_seconds": 0.11673399999999999
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_movies",
+        "sql": 1278,
+        "begin": 174,
+        "commit": 174,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 160,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252409999,
+        "job_elapsed_seconds": 0.217475
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_episodes",
+        "sql": 1809,
+        "begin": 224,
+        "commit": 224,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 192,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.502205169,
+        "job_elapsed_seconds": 0.294763
+      },
+      {
+        "phase": "incremental",
+        "library": "directory_episodes",
+        "sql": 771,
+        "begin": 86,
+        "commit": 86,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 48,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252371582,
+        "job_elapsed_seconds": 0.132686
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252655625,
+        "job_elapsed_seconds": 0.170412
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252720901,
+        "job_elapsed_seconds": 0.242837
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252238684,
+        "job_elapsed_seconds": 0.11741
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_movies",
+        "sql": 4560,
+        "begin": 331,
+        "commit": 331,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 0,
+        "updated": 160,
+        "elapsed_seconds": 0.751900326,
+        "job_elapsed_seconds": 0.701663
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_episodes",
+        "sql": 5761,
+        "begin": 413,
+        "commit": 413,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 0,
+        "updated": 192,
+        "elapsed_seconds": 1.002276321,
+        "job_elapsed_seconds": 0.8911180000000001
+      },
+      {
+        "phase": "force_probe",
+        "library": "directory_episodes",
+        "sql": 1699,
+        "begin": 131,
+        "commit": 131,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 0,
+        "updated": 48,
+        "elapsed_seconds": 0.5021602,
+        "job_elapsed_seconds": 0.264896
+      },
+      {
+        "phase": "cold",
+        "library": "flat_movies",
+        "sql": 5520,
+        "begin": 491,
+        "commit": 491,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 160,
+        "updated": 0,
+        "elapsed_seconds": 1.003549501,
+        "job_elapsed_seconds": 0.8768440000000001
+      },
+      {
+        "phase": "cold",
+        "library": "flat_episodes",
+        "sql": 6967,
+        "begin": 605,
+        "commit": 605,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 192,
+        "updated": 0,
+        "elapsed_seconds": 1.253336933,
+        "job_elapsed_seconds": 1.070223
+      },
+      {
+        "phase": "cold",
+        "library": "directory_episodes",
+        "sql": 2023,
+        "begin": 179,
+        "commit": 179,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 48,
+        "updated": 0,
+        "elapsed_seconds": 0.5033573840000001,
+        "job_elapsed_seconds": 0.30467
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25244394800000003,
+        "job_elapsed_seconds": 0.16759700000000002
+      },
+      {
+        "phase": "cached_1",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252193174,
+        "job_elapsed_seconds": 0.244487
+      },
+      {
+        "phase": "cached_1",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25231190200000003,
+        "job_elapsed_seconds": 0.107163
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252505819,
+        "job_elapsed_seconds": 0.164618
+      },
+      {
+        "phase": "cached_2",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252188884,
+        "job_elapsed_seconds": 0.24027500000000002
+      },
+      {
+        "phase": "cached_2",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252306405,
+        "job_elapsed_seconds": 0.109072
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_movies",
+        "sql": 1278,
+        "begin": 174,
+        "commit": 174,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 160,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252240032,
+        "job_elapsed_seconds": 0.188439
+      },
+      {
+        "phase": "incremental",
+        "library": "flat_episodes",
+        "sql": 1809,
+        "begin": 224,
+        "commit": 224,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 192,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.502102944,
+        "job_elapsed_seconds": 0.262104
+      },
+      {
+        "phase": "incremental",
+        "library": "directory_episodes",
+        "sql": 771,
+        "begin": 86,
+        "commit": 86,
+        "rollback": 0,
+        "probe_calls": 1,
+        "scanned": 48,
+        "added": 1,
+        "updated": 1,
+        "elapsed_seconds": 0.252804692,
+        "job_elapsed_seconds": 0.136509
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_movies",
+        "sql": 1200,
+        "begin": 171,
+        "commit": 171,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 160,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.252019517,
+        "job_elapsed_seconds": 0.161885
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "flat_episodes",
+        "sql": 1729,
+        "begin": 221,
+        "commit": 221,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 192,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.502660411,
+        "job_elapsed_seconds": 0.258441
+      },
+      {
+        "phase": "cached_after_incremental",
+        "library": "directory_episodes",
+        "sql": 691,
+        "begin": 83,
+        "commit": 83,
+        "rollback": 0,
+        "probe_calls": 0,
+        "scanned": 48,
+        "added": 0,
+        "updated": 0,
+        "elapsed_seconds": 0.25203340700000004,
+        "job_elapsed_seconds": 0.10632899999999999
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_movies",
+        "sql": 4560,
+        "begin": 331,
+        "commit": 331,
+        "rollback": 0,
+        "probe_calls": 160,
+        "scanned": 160,
+        "added": 0,
+        "updated": 160,
+        "elapsed_seconds": 0.75250158,
+        "job_elapsed_seconds": 0.689678
+      },
+      {
+        "phase": "force_probe",
+        "library": "flat_episodes",
+        "sql": 5761,
+        "begin": 413,
+        "commit": 413,
+        "rollback": 0,
+        "probe_calls": 192,
+        "scanned": 192,
+        "added": 0,
+        "updated": 192,
+        "elapsed_seconds": 1.002790838,
+        "job_elapsed_seconds": 0.86403
+      },
+      {
+        "phase": "force_probe",
+        "library": "directory_episodes",
+        "sql": 1699,
+        "begin": 131,
+        "commit": 131,
+        "rollback": 0,
+        "probe_calls": 48,
+        "scanned": 48,
+        "added": 0,
+        "updated": 48,
+        "elapsed_seconds": 0.503255539,
+        "job_elapsed_seconds": 0.26771300000000003
+      }
+    ]
+  },
+  "verification": {
+    "tasks-race": {
+      "name": "tasks-race",
+      "source": "candidate",
+      "returncode": 0,
+      "elapsed_seconds": 83.43441942404024,
+      "output": "/dev/shm/goby-scan-perf-20261001-k9inYx/artifacts/tasks-race.jsonl",
+      "failed": [],
+      "passed_results": 242,
+      "skipped_results": 0,
+      "skipped_tests": [],
+      "passed_top_level_results": 112,
+      "skipped_top_level_results": 0
+    },
+    "scan-regression-race": {
+      "name": "scan-regression-race",
+      "source": "candidate",
+      "returncode": 0,
+      "elapsed_seconds": 319.48624850600027,
+      "output": "/dev/shm/goby-scan-perf-20261001-k9inYx/artifacts/scan-regression-race.jsonl",
+      "failed": [],
+      "passed_results": 1101,
+      "skipped_results": 5,
+      "skipped_tests": [
+        "TestProviderSubtitlePreflightActualPermissionDenial",
+        "TestProviderSubtitlePreflightActualReadOnlyMount",
+        "TestRootBindingFullScanMountNamespaceHelper",
+        "TestScanPerformanceProfile",
+        "TestScanReconciliationStagedHighDirectoryFanoutDeletionProof"
+      ],
+      "passed_top_level_results": 386,
+      "skipped_top_level_results": 5
+    },
+    "profile-candidate": {
+      "name": "profile-candidate",
+      "source": "candidate",
+      "returncode": 0,
+      "elapsed_seconds": 34.5321809379966,
+      "output": "/dev/shm/goby-scan-perf-20261001-k9inYx/artifacts/profile-candidate.jsonl",
+      "failed": [],
+      "passed_results": 3,
+      "skipped_results": 0,
+      "skipped_tests": [],
+      "passed_top_level_results": 3,
+      "skipped_top_level_results": 0
+    },
+    "profile-baseline": {
+      "name": "profile-baseline",
+      "source": "baseline",
+      "returncode": 0,
+      "elapsed_seconds": 50.98233996599447,
+      "output": "/dev/shm/goby-scan-perf-20261001-k9inYx/artifacts/profile-baseline.jsonl",
+      "failed": [],
+      "passed_results": 3,
+      "skipped_results": 0,
+      "skipped_tests": [],
+      "passed_top_level_results": 3,
+      "skipped_top_level_results": 0
+    },
+    "targeted-race": {
+      "name": "targeted-race",
+      "source": "candidate",
+      "returncode": 0,
+      "elapsed_seconds": 43.11728638398927,
+      "output": "/dev/shm/goby-scan-perf-20261001-k9inYx/artifacts/targeted-race.jsonl",
+      "failed": [],
+      "passed_results": 92,
+      "skipped_results": 0,
+      "skipped_tests": [],
+      "passed_top_level_results": 39,
+      "skipped_top_level_results": 0
+    },
+    "baseline-compile": {
+      "name": "baseline-compile",
+      "source": "baseline",
+      "returncode": 0,
+      "elapsed_seconds": 18.9978089100332,
+      "output": "/dev/shm/goby-scan-perf-20261001-k9inYx/artifacts/baseline-compile.jsonl",
+      "failed": [],
+      "passed_results": 0,
+      "skipped_results": 0,
+      "skipped_tests": [],
+      "passed_top_level_results": 0,
+      "skipped_top_level_results": 0
+    }
+  },
+  "real_media_observations": [
+    "catalog_scan_capacity_integration_test.go:148: generation elapsed=636.151355ms media_files=10000 video_template_bytes=1481 audio_template_bytes=12610 media_bytes=37068000 corpus_allocated_bytes=66355200",
+    "catalog_scan_capacity_integration_test.go:208: cold_scan library=0 job_elapsed=2m16.815599s scanned=5000 added=5000 updated=0",
+    "catalog_scan_capacity_integration_test.go:208: cold_scan library=1 job_elapsed=2m9.453327s scanned=5000 added=5000 updated=0",
+    "catalog_scan_capacity_integration_test.go:208: cold_scan elapsed=2m17.019758944s probe_calls=10000 total_probe_calls=10000",
+    "catalog_scan_capacity_integration_test.go:247: after_cold_scan read_assertions_elapsed=1.491999235s catalog_items=10688 leaf_items=10000 userdata_rows=8",
+    "catalog_scan_capacity_integration_test.go:274: after_reopen_before_scan read_assertions_elapsed=1.555519378s catalog_items=10688 leaf_items=10000 userdata_rows=8",
+    "catalog_scan_capacity_integration_test.go:275: reopen elapsed=1.67052272s additional_probe_calls=0",
+    "catalog_scan_capacity_integration_test.go:304: cached_rescan library=0 job_elapsed=22.419703s scanned=5000 added=1 updated=0",
+    "catalog_scan_capacity_integration_test.go:304: cached_rescan library=1 job_elapsed=22.431621s scanned=5000 added=0 updated=0",
+    "catalog_scan_capacity_integration_test.go:304: cached_rescan elapsed=22.524643842s probe_calls=1 total_probe_calls=10001",
+    "catalog_scan_capacity_integration_test.go:339: after_cached_rescan read_assertions_elapsed=1.490362357s catalog_items=10688 leaf_items=10000 userdata_rows=8",
+    "catalog_scan_capacity_integration_test.go:352: capacity profile complete media_bytes=37068000 corpus_allocated_bytes=66355200 real_probe_calls=10001 completed_jobs=4 store_closed=true",
+    "catalog_scan_capacity_integration_test.go:55: capacity profile total elapsed=2m46.242772924s"
+  ],
+  "runtime_closure": {
+    "marker": "goby-scan-performance-runtime-closure-v1",
+    "status": "closed",
+    "workspace": "/dev/shm/goby-scan-perf-20261001-k9inYx",
+    "closed_at_unix": 1790805370.230378,
+    "boot_id": "d0e1d7f8-3bbb-4fff-bb42-eee2a8e80e38",
+    "postgres_pid": 1697316,
+    "postgres_start_ticks": 37421117,
+    "postgres_system_identifier": "7691446779300722200",
+    "postgres_cluster_state": "shut down",
+    "postgres_stopped": true,
+    "postmaster_pid_absent": true,
+    "private_socket_absent": true,
+    "mount_released": true,
+    "loop_device": "/dev/loop0",
+    "loop_device_detached": true,
+    "loop_image_associations": "",
+    "loop_backing_file": "",
+    "loop_sysfs_backing_absent": true,
+    "results_preserved": true,
+    "files_deleted": false,
+    "existing_mounts_preserved": true,
+    "existing_postgres_processes_preserved": true,
+    "root_mount_unchanged": true,
+    "closure_verification": "Independent read-only inspection after the initial cleanup command rejected its loop-name postcondition.",
+    "cleanup_initial_exit_code": 1,
+    "cleanup_initial_failure": "The owned loop device remains attached after detachment.",
+    "cleanup_failure_reason": "losetup --list --output NAME enumerates an unattached loop block device; image association and sysfs backing are empty.",
+    "cleanup_script_original_sha256": "9e83d5eda44c093c7b3e0bba21b385567907f508143339c7ea7ee68a2ebb5199",
+    "cleanup_script_corrected_sha256": "9d470dd8e2e2117a241254204c938b6df540bda79e82585f08223f2457931929",
+    "cleanup_helper_reexecuted": false,
+    "additional_stop_unmount_detach_commands": false
+  },
+  "workspace_disposal": {
+    "marker": "goby-scan-performance-workspace-disposal-v1",
+    "status": "disposed",
+    "disposed_at_unix": 1790805453.4682467,
+    "deleted_scope": "/dev/shm/goby-scan-perf-20261001-k9inYx",
+    "workspace_deleted": true,
+    "owned_postgres_absent": true,
+    "owned_mount_absent": true,
+    "owned_loop_image_association_absent": true,
+    "active_workspace_processes": [],
+    "existing_postgres_processes_preserved": true,
+    "existing_mounts_preserved": true,
+    "other_files_deleted": false,
+    "additional_service_operations": false,
+    "closure_receipt_sha256": "c922b8d6ea1889c6f1d1529539f392590c983ed9a493c73cd0bc504d3aff8b53"
+  }
+}

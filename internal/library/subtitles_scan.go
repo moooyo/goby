@@ -24,6 +24,21 @@ type scannedSubtitle struct {
 	info   os.FileInfo
 }
 
+type subtitleScanSnapshot struct {
+	Subtitle
+	Path, RootID, Identity string
+	ChangeTimeNS           int64
+}
+
+func (snapshot subtitleScanSnapshot) matches(source storedSubtitle) bool {
+	return snapshot.Path == source.relativePath && snapshot.RootID == source.rootID &&
+		snapshot.Identity == source.identity && snapshot.ChangeTimeNS == source.changeTimeNs &&
+		snapshot.Tag == source.Tag && snapshot.Size == source.Size && snapshot.ModifiedAt.Equal(source.ModifiedAt) &&
+		snapshot.Codec == source.Codec && snapshot.Language == source.Language && snapshot.Title == source.Title &&
+		snapshot.IsDefault == source.IsDefault && snapshot.IsForced == source.IsForced &&
+		snapshot.IsHearingImpaired == source.IsHearingImpaired && snapshot.MIMEType == source.MIMEType
+}
+
 // scanSubtitles executes on cached and fresh media visits. Bytes are inspected
 // outside the owned catalog transaction, with bounded descriptors and input.
 // Only a complete stable directory listing can retire absent file identities.
@@ -346,17 +361,18 @@ func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, p
 	var total, highest int
 	// QueryRow keeps every write-side query on the cancellation-shielded owned
 	// transaction, whose session also holds the scanner's advisory lock.
-	err = tx.QueryRow(ctx, `SELECT count(*), COALESCE(max(stream_index), -1),
-		COALESCE(jsonb_agg(jsonb_build_object('Path', relative_path, 'Index', stream_index))
+	err = tx.QueryRow(ctx, `SELECT
+		COALESCE(jsonb_agg(jsonb_build_object('Path', relative_path, 'Index', stream_index,
+		'RootID', root_id, 'Identity', file_identity, 'ChangeTimeNS', change_time_ns,
+		'Tag', source_hash, 'Size', file_size, 'ModifiedAt', modified_at,
+		'Codec', codec, 'Language', language, 'Title', title,
+		'IsDefault', is_default, 'IsForced', is_forced, 'IsHearingImpaired', is_hearing_impaired, 'MIMEType', mime_type))
 		FILTER (WHERE active), '[]'::jsonb) FROM item_subtitles WHERE item_id = $1`, itemID).
-		Scan(&total, &highest, &activeJSON)
+		Scan(&activeJSON)
 	if err != nil {
 		return err
 	}
-	var active []struct {
-		Path  string
-		Index int
-	}
+	var active []subtitleScanSnapshot
 	if err := json.Unmarshal(activeJSON, &active); err != nil {
 		return err
 	}
@@ -372,16 +388,27 @@ func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, p
 	}
 	retire := make([]int, 0)
 	retained := make(map[string]int, len(active))
+	previousByPath := make(map[string]subtitleScanSnapshot, len(active))
 	for _, previous := range active {
 		if !present[previous.Path] || previous.Index <= embedded {
 			retire = append(retire, previous.Index)
 			continue
 		}
 		retained[previous.Path] = previous.Index
+		previousByPath[previous.Path] = previous
 	}
 	// Retain the locked primary and combined subtitle-capacity checks above.
-	// No retirement and no accepted input means there is no scan write to compare.
-	if len(retire) == 0 && len(inspected) == 0 {
+	// Compare freshly validated bytes and all private source facts with the
+	// current owned snapshot. A cached media probe or matching stat is not enough.
+	unchanged := len(retire) == 0
+	for path, entry := range inspected {
+		previous, exists := previousByPath[path]
+		if !exists || !previous.matches(entry.source) {
+			unchanged = false
+			break
+		}
+	}
+	if unchanged {
 		return tx.Commit(ctx)
 	}
 	beforeProjection, err := readSubtitleCatalogProjection(ctx, tx, itemID, embedded)
@@ -425,7 +452,15 @@ func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, p
 			 modified_at = EXCLUDED.modified_at, change_time_ns = EXCLUDED.change_time_ns,
 			 codec = EXCLUDED.codec, language = EXCLUDED.language, title = EXCLUDED.title,
 			 is_default = EXCLUDED.is_default, is_forced = EXCLUDED.is_forced,
-			 is_hearing_impaired = EXCLUDED.is_hearing_impaired, mime_type = EXCLUDED.mime_type`,
+			 is_hearing_impaired = EXCLUDED.is_hearing_impaired, mime_type = EXCLUDED.mime_type
+			 WHERE (item_subtitles.root_id, item_subtitles.relative_path, item_subtitles.file_identity,
+			 item_subtitles.source_hash, item_subtitles.file_size, item_subtitles.modified_at, item_subtitles.change_time_ns,
+			 item_subtitles.codec, item_subtitles.language, item_subtitles.title, item_subtitles.is_default,
+			 item_subtitles.is_forced, item_subtitles.is_hearing_impaired, item_subtitles.mime_type)
+			 IS DISTINCT FROM (EXCLUDED.root_id, EXCLUDED.relative_path, EXCLUDED.file_identity,
+			 EXCLUDED.source_hash, EXCLUDED.file_size, EXCLUDED.modified_at, EXCLUDED.change_time_ns,
+			 EXCLUDED.codec, EXCLUDED.language, EXCLUDED.title, EXCLUDED.is_default,
+			 EXCLUDED.is_forced, EXCLUDED.is_hearing_impaired, EXCLUDED.mime_type)`,
 			itemID, entry.rootID, index, entry.relativePath, entry.identity, entry.Tag,
 			entry.Size, entry.ModifiedAt, entry.changeTimeNs, entry.Codec, entry.Language, entry.Title,
 			entry.IsDefault, entry.IsForced, entry.IsHearingImpaired, entry.MIMEType)

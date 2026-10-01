@@ -110,8 +110,8 @@ func TestScanClaimLookupExactPathQueryDoesNotGrowWithClaims(t *testing.T) {
 					t.Fatalf("lookup with %d unrelated claims returned %q: %v", count, stored.id, err)
 				}
 				queries := trace.take()
-				if len(queries) != 2 {
-					t.Fatalf("exact lookup issued %d item queries, want conflict and exact lookup only", len(queries))
+				if len(queries) != 1 {
+					t.Fatalf("exact lookup issued %d item queries, want one role-aware path lookup", len(queries))
 				}
 				for _, query := range queries {
 					if !reflect.DeepEqual(query.Args, []any{state.root.id, "Film.mp4"}) {
@@ -238,10 +238,20 @@ func TestScanClaimLookupPreservesRootAndPermanentRoleBoundaries(t *testing.T) {
 			if err != nil || stored.id != fixture.id {
 				t.Fatalf("same permanent role lost its identity: %q, %v", stored.id, err)
 			}
+			acceptedMedia, err := json.Marshal(stored.media)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := pool.Exec(ctx, `UPDATE items SET media='"malformed protected resource"'::jsonb WHERE id=$1`, fixture.id); err != nil {
+				t.Fatal(err)
+			}
 			for _, role := range []scannedMediaRole{scannedRoleOrdinary, fixture.opposite} {
 				if stored, err := firstState.findStoredFileForRole(fixture.relative, info, role); !errors.Is(err, errScannedMediaRoleConflict) || stored.id != "" {
 					t.Fatalf("%s reused or replaced an inactive %s identity: %q, %v", role, fixture.allowed, stored.id, err)
 				}
+			}
+			if _, err := pool.Exec(ctx, "UPDATE items SET media=$2 WHERE id=$1", fixture.id, acceptedMedia); err != nil {
+				t.Fatal(err)
 			}
 			if runtime.GOOS == "linux" {
 				moved := "Moved" + fixture.relative

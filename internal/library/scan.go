@@ -39,6 +39,7 @@ type scanState struct {
 	imageDirectories    map[string]*imageDirectoryIndex
 	subtitleDirectories map[string]*subtitleDirectoryIndex
 	musicParents        map[string]bool
+	virtualFolders      map[string]scannedVirtualFolder
 	themes              *themeScan
 	themeLibrary        *themeLibraryScan
 	extras              *extraScan
@@ -583,6 +584,24 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if len(nfoRelative) != 0 {
 		metadataPath = nfoRelative[0]
 	}
+	virtual := scannedVirtualFolder{path: path, name: name, itemType: itemType, parentID: parentID, indexNumber: indexNumber}
+	if metadataPath == "" && strings.HasPrefix(relative, "//") {
+		if cached, exists := state.virtualFolders[relative]; exists && cached.sameInput(virtual) {
+			if err := state.task.ctx.Err(); err != nil {
+				return "", err
+			}
+			if !state.store.Available() {
+				return "", ErrUnavailable
+			}
+			if err := state.recordScanSeen(cached.id); err != nil {
+				return "", err
+			}
+			return cached.id, nil
+		}
+	}
+	// A source-backed visit or different input supersedes an earlier virtual
+	// publication at this path, even if the old input appears again later.
+	delete(state.virtualFolders, relative)
 	local, err := state.folderLocalMetadata(relative, metadataPath, itemType, indexNumber)
 	if err != nil {
 		return "", err
@@ -680,6 +699,9 @@ func (state *scanState) folder(relative, path, name, itemType, parentID string, 
 	if err := state.recordScanSeen(id); err != nil {
 		return "", err
 	}
+	if metadataPath == "" && strings.HasPrefix(relative, "//") {
+		state.cacheVirtualFolder(relative, virtual, id)
+	}
 	return id, nil
 }
 
@@ -750,22 +772,13 @@ func (state *scanState) findStoredFileForRole(relative string, info os.FileInfo,
 	default:
 		return storedFile{}, fmt.Errorf("%w: unknown scanned media role", ErrInvalidInput)
 	}
-	// A permanent opposite role at this exact pathname cannot be replaced by a
-	// fresh item either: the pathname is unique and its history is protected.
-	var conflict bool
-	if err := state.store.pool.QueryRow(state.task.ctx, `SELECT EXISTS(SELECT 1 FROM items
-		WHERE root_id=$1 AND relative_path=$2 AND NOT (`+visibility+`))`, state.root.id, relative).Scan(&conflict); err != nil {
-		return storedFile{}, err
-	}
-	if conflict {
-		return storedFile{}, errScannedMediaRoleConflict
-	}
-	// This pathname is unique within its already bound library root. Check
-	// only the returned ID instead of copying and transmitting all prior claims
-	// for every existing file in a scan.
-	stored, err := readStoredFileAccepted(state.store.pool.QueryRow(state.task.ctx,
-		"SELECT "+storedFileColumns+" FROM items WHERE root_id = $1 AND relative_path = $2 AND "+visibility,
-		state.root.id, relative), func(id string) bool { return state.scannedIDAvailable(id, relative, role) })
+	// Read role compatibility and metadata in one snapshot of the unique path.
+	// Reject a permanent opposite role before claims or JSON decoding, including
+	// inactive resources whose pathname must never acquire a fresh identity.
+	row := scannedRoleRow{row: state.store.pool.QueryRow(state.task.ctx,
+		"SELECT "+storedFileColumns+", ("+visibility+") FROM items WHERE root_id = $1 AND relative_path = $2",
+		state.root.id, relative)}
+	stored, err := readStoredFileAccepted(row, func(id string) bool { return state.scannedIDAvailable(id, relative, role) })
 	if err == nil {
 		return stored, nil
 	}
