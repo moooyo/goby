@@ -1,5 +1,16 @@
 # Goby handoff - October 3, 2026
 
+Latest source delivery is [Stop recovery and actual media-root read isolation](media-stop-read-isolation-20261003.md),
+source commit `8df2dd226e955343eb8376cdeff3e487a6d29d41`. Bounded Stop recovery
+and the declared actual read consumers are qualified. Existing file-HLS ownership
+and early Stop defaults are enabled; generated and native experimental paths
+remain disabled. Final remote checks and four Linux/Windows builds passed with
+explicit package reuse and optional skips. Exact private resource closure passed,
+with source/data/logs retained and protected services unchanged. The remaining
+performance scopes stay paused; no replacement Docker image or deployment is
+claimed. Read the linked record for source/evidence identities and limits.
+
+## Previous October 3 media performance integration
 Latest source delivery is the [October3 media performance integration](media-performance-integration-20261003.md),
 source commit6d681bc. The selected follow-up code, concurrent metadata publication
 and analysis cleanup repairs are verified. The original failure and adjacent
