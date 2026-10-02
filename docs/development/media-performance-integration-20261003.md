@@ -114,5 +114,29 @@ new full-product or full-library suite is claimed. Local source was imported
 from the final archive and every file matched the verified remote bytes.
 
 No full native, GPU, client A/V, performance matrix or replacement Docker-image
-acceptance is implied by these repairs. Git and final resource closure are
-recorded separately after publication.
+acceptance is implied by these repairs.
+
+## Source delivery and resource closure
+
+The integrated source is commit
+`6d681bc83d8d9c091c7fd4b0e57cd6351967fbb2`. It is based on the published
+October2 closeout and contains the selected source plus these verified repairs.
+Git main/origin publication is recorded in the following documentation commit
+and exact remote readback, rather than inferred from the old working tree.
+
+Private PostgreSQL PID2789380/start53505289 stopped with smart shutdown, exit0,
+after zero other database clients were observed. Final owned process references,
+reserved UID65534 processes, mounts, loops and native cgroups were empty. Shared
+PostgreSQL and the three protected Docker identities remained unchanged. Source,
+database data, fixtures, cache and logs are retained. Closure receipt SHA256:
+`99930d7a884df9078c244e0cdd7c8bb53b50ce4543336bde0a1cc90f4438bd6b`.
+
+The earlier app-managed archive restore reported a missing snapshot. Recovery
+used the independently retained remote manifest/archive and explicit patches;
+their exact byte verification is recorded above. Do not depend on the old
+archive attachment alone to reconstruct source.
+
+Only the selected first follow-up is complete. The remaining five work families
+in the October2 closeout retain their original boundaries: new Stop recovery,
+complete A/V, hard/native resource qualification, analysis PART2, scan-read
+batching and other readers, new reconciliation hints, and mixed-load capacity.

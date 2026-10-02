@@ -1,5 +1,15 @@
 # Media performance session handoff - October 2, 2026
 
+## October 3 selected follow-up completed
+
+The user resumed source integration and the metadata concurrency/analysis cleanup
+repairs. Read the [October3 integration record](media-performance-integration-20261003.md)
+for source6d681bc, exact provenance, targeted race checks, builds and closure.
+The formerly interrupted candidate was reconstructed from retained bytes and
+the two production failures are repaired and verified. This supersedes only
+the first work item in the final closeout. Remaining Stop, full A/V, native,
+scan-read batching, reconciliation and mixed-capacity work is not resumed here.
+
 ## Final user-requested closeout and publication
 
 Further development and verification were explicitly stopped. Read the

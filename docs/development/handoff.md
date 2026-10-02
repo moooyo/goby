@@ -1,4 +1,14 @@
-# Goby handoff - October 2, 2026
+# Goby handoff - October 3, 2026
+
+Latest source delivery is the [October3 media performance integration](media-performance-integration-20261003.md),
+source commit6d681bc. The selected follow-up code, concurrent metadata publication
+and analysis cleanup repairs are verified. The original failure and adjacent
+checks passed on test-env; Linux/Windows amd64 Goby and launcher builds passed.
+Private verification PostgreSQL and owned workers are closed, with data retained.
+The remaining performance scopes stay paused and experimental modes stay disabled.
+This changes source integration, not the accepted Docker image catalog.
+
+## Historical October 2 closeout
 
 Latest delivery: the verified scan improvement e37b04f is pushed to main.
 The media performance session is closed, its verification workers and private

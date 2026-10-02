@@ -1,5 +1,11 @@
 # Media performance closeout and Git delivery - October 2, 2026
 
+Subsequent selected scope: the user resumed the first follow-up on October3.
+[Source integration, metadata concurrency and analysis cleanup](media-performance-integration-20261003.md)
+are now verified at source6d681bc. The remaining work families below retain their
+scope and are not accepted by that selected integration. This document preserves
+the original October2 interruption, delivery and resource state.
+
 The user requested session closeout, an updated handoff, and publication of code
 that is ready to merge. Further development and verification were explicitly
 stopped. No new test, build, implementation campaign, feature enablement or
