@@ -32,7 +32,7 @@ func TestRootBindingReadFilesystemUsesNewNamedAnchorWithoutChangingCache(t *test
 	if err := os.MkdirAll(registered, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	store := &Store{roots: []approvedRoot{{path: approved}}}
+	store := primaryDirectoryUnitStore(t, []approvedRoot{{path: approved}})
 	root := libraryRoot{id: "registered-root", libraryID: "library", path: registered, allowedPath: approved, relativePath: "registered"}
 	before := rootBindingReadFilesystemSnapshot(t, store, root)
 	if store.roots[0].root != nil {
@@ -73,7 +73,7 @@ func TestRootBindingReadFilesystemUsesNewNamedRegisteredRoot(t *testing.T) {
 	if err := os.Mkdir(registered, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	store := &Store{roots: []approvedRoot{{path: parent}}}
+	store := primaryDirectoryUnitStore(t, []approvedRoot{{path: parent}})
 	root := libraryRoot{id: "registered-root", libraryID: "library", path: registered, allowedPath: parent, relativePath: "registered"}
 	before := rootBindingReadFilesystemSnapshot(t, store, root)
 	if err := os.Rename(registered, filepath.Join(parent, "retained-original")); err != nil {
@@ -108,7 +108,7 @@ func TestRootBindingReadFilesystemRejectsMissingSymlinkUnconfiguredAndClosedRoot
 			}
 		})
 	}
-	store := &Store{roots: []approvedRoot{{path: parent}}}
+	store := primaryDirectoryUnitStore(t, []approvedRoot{{path: parent}})
 	if err := os.Rename(registered, filepath.Join(parent, "sibling")); err != nil {
 		t.Fatal(err)
 	}

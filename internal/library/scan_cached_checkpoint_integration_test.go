@@ -231,6 +231,15 @@ func scanCachedVisitFixture(t *testing.T) (context.Context, *pgxpool.Pool, *Stor
 	library := libraryIntegrationCreate(t, ctx, store, "Combined visit", "movies", filepath.Dir(path))
 	libraryIntegrationScan(t, ctx, store, library.ID, "Completed")
 	task, _ := scanUnchangedProgressTask(t, ctx, pool, library)
+	store.mu.Lock()
+	store.active[task.job.ID] = task
+	store.mu.Unlock()
+	t.Cleanup(func() {
+		task.cancel()
+		store.mu.Lock()
+		delete(store.active, task.job.ID)
+		store.mu.Unlock()
+	})
 	state := scanClaimLookupState(t, ctx, store, library, filepath.Dir(path))
 	state.task, state.themes = task, nil
 	info, err := state.opened.Stat(".")
@@ -269,15 +278,31 @@ func TestCachedScanImageAbsenceCombinesOneCompletionCheckpoint(t *testing.T) {
 			if err := state.scanFile("Film.mp4", "video", hierarchy{parentID: state.library.ID}); err != nil {
 				t.Fatal(err)
 			}
-			wantBegins, wantCombined := int64(2), int64(0)
+			wantBegins, wantAuthority, wantCombined := int64(2), int64(6), int64(0)
 			if scenario == "stable_absence" {
-				wantBegins, wantCombined = 1, 1
+				wantBegins, wantAuthority, wantCombined = 1, 8, 1
 			} else if scenario == "valid_candidate" || scenario == "invalid_candidate" {
-				wantBegins = 3
+				wantBegins, wantAuthority = 3, 8
+			} else if scenario == "missing_directory_proof" {
+				wantAuthority = 4
 			}
-			if trace.begins.Load() != wantBegins || trace.commits.Load() != wantBegins || trace.cachedCompletionChecks.Load() != wantCombined {
+			begins, commits := trace.begins.Load(), trace.commits.Load()
+			authorityBegins, authorityCommits := trace.authorityBegins.Load(), trace.authorityCommits.Load()
+			checkpointBegins, checkpointCommits := begins-authorityBegins, commits-authorityCommits
+			combined := trace.cachedCompletionChecks.Load()
+			t.Logf("cached visit boundaries: total=%d/%d authority=%d/%d checkpoint=%d/%d combined=%d",
+				begins, commits, authorityBegins, authorityCommits, checkpointBegins, checkpointCommits, combined)
+			if checkpointBegins != wantBegins || checkpointCommits != wantBegins || combined != wantCombined {
 				t.Fatalf("cached visit checkpoint boundaries differ: begin=%d commit=%d combined=%d want_begin=%d want_combined=%d",
-					trace.begins.Load(), trace.commits.Load(), trace.cachedCompletionChecks.Load(), wantBegins, wantCombined)
+					checkpointBegins, checkpointCommits, combined, wantBegins, wantCombined)
+			}
+			if authorityBegins != wantAuthority || authorityCommits != wantAuthority || begins != wantBegins+wantAuthority || commits != wantBegins+wantAuthority {
+				t.Fatalf("cached visit authority boundaries differ: total=%d/%d authority=%d/%d want_checkpoint=%d want_authority=%d",
+					begins, commits, authorityBegins, authorityCommits, wantBegins, wantAuthority)
+			}
+			if trace.rollbacks.Load() != 0 || trace.authorityRollbacks.Load() != 0 || trace.itemRows.Load() != 0 || trace.metadataRows.Load() != 0 {
+				t.Fatalf("cached visit introduced rollback or primary writes: rollback=%d authority_rollback=%d item_rows=%d metadata_rows=%d",
+					trace.rollbacks.Load(), trace.authorityRollbacks.Load(), trace.itemRows.Load(), trace.metadataRows.Load())
 			}
 			if scenario == "invalid_candidate" || scenario == "missing_directory_proof" {
 				if state.warnings == 0 {

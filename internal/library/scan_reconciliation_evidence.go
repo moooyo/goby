@@ -8,9 +8,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 var (
@@ -139,8 +141,27 @@ func (evidence *scanReconciliationEvidence) AttachRoot(rootID string, borrowed *
 // includes ignored names, auxiliary resources, symlinks and unsupported files.
 // Ancestors must already be recorded; their walks need not yet be complete.
 func (evidence *scanReconciliationEvidence) RecordDirectory(rootID, relative string, before os.FileInfo, raw []os.DirEntry) error {
+	return evidence.RecordDirectoryFor(evidence.directoryObservationContext(), rootID, relative, before, raw)
+}
+
+// RecordDirectoryFor inherits the walk's active root phase and worker lifetime.
+// It does not mutate a collector or scan context and never acquires another
+// phase while the scanner still owns the directory-read phase.
+func (evidence *scanReconciliationEvidence) RecordDirectoryFor(ctx context.Context, rootID, relative string, before os.FileInfo, raw []os.DirEntry) error {
+	return evidence.runDirectoryObservation(ctx, func() error {
+		return evidence.recordDirectoryObserved(ctx, rootID, relative, before, raw)
+	})
+}
+
+func (evidence *scanReconciliationEvidence) recordDirectoryObserved(ctx context.Context, rootID, relative string, before os.FileInfo, raw []os.DirEntry) error {
+	if ctx == nil {
+		return ErrInvalidInput
+	}
+	if err := ctx.Err(); err != nil {
+		return evidence.Disable(err)
+	}
 	if evidence != nil && evidence.spool != nil {
-		return evidence.recordSpoolDirectory(rootID, relative, before, raw)
+		return evidence.recordSpoolDirectory(ctx, rootID, relative, before, raw)
 	}
 	if err := evidence.Err(); err != nil {
 		return err
@@ -170,7 +191,7 @@ func (evidence *scanReconciliationEvidence) RecordDirectory(rootID, relative str
 	if err := evidence.reserve(1, len(raw), 0, charge); err != nil {
 		return err
 	}
-	held, err := evidence.openDirectory(context.Background(), root, relative)
+	held, err := evidence.openDirectory(ctx, root, relative)
 	if err != nil {
 		return evidence.Disable(err)
 	}
@@ -197,7 +218,7 @@ func (evidence *scanReconciliationEvidence) RecordDirectory(rootID, relative str
 		}
 		witness.entries[strings.Clone(name)] = scanReconciliationEntryEvidence{info: info, mode: entry.Type().Type()}
 	}
-	if err := evidence.verifyDirectory(context.Background(), root, witness); err != nil {
+	if err := evidence.verifyDirectory(ctx, root, witness); err != nil {
 		return evidence.Disable(err)
 	}
 	return nil
@@ -206,8 +227,24 @@ func (evidence *scanReconciliationEvidence) RecordDirectory(rootID, relative str
 // CompleteDirectory is called only after the directory's entire walk succeeds.
 // A repeated completion is harmless; it cannot replace the original snapshot.
 func (evidence *scanReconciliationEvidence) CompleteDirectory(rootID, relative string) error {
+	return evidence.CompleteDirectoryFor(evidence.directoryObservationContext(), rootID, relative)
+}
+
+func (evidence *scanReconciliationEvidence) CompleteDirectoryFor(ctx context.Context, rootID, relative string) error {
+	return evidence.runDirectoryObservation(ctx, func() error {
+		return evidence.completeDirectoryObserved(ctx, rootID, relative)
+	})
+}
+
+func (evidence *scanReconciliationEvidence) completeDirectoryObserved(ctx context.Context, rootID, relative string) error {
+	if ctx == nil {
+		return ErrInvalidInput
+	}
+	if err := ctx.Err(); err != nil {
+		return evidence.Disable(err)
+	}
 	if evidence != nil && evidence.spool != nil {
-		return evidence.completeSpoolDirectory(rootID, relative)
+		return evidence.completeSpoolDirectory(ctx, rootID, relative)
 	}
 	if err := evidence.Err(); err != nil {
 		return err
@@ -218,7 +255,7 @@ func (evidence *scanReconciliationEvidence) CompleteDirectory(rootID, relative s
 		return evidence.unavailable("completed directory was not observed")
 	}
 	witness := root.directories[relative]
-	if err := evidence.verifyDirectory(context.Background(), root, witness); err != nil {
+	if err := evidence.verifyDirectory(ctx, root, witness); err != nil {
 		return evidence.Disable(err)
 	}
 	if !witness.complete {
@@ -229,6 +266,32 @@ func (evidence *scanReconciliationEvidence) CompleteDirectory(rootID, relative s
 		}
 	}
 	return nil
+}
+
+func (evidence *scanReconciliationEvidence) directoryObservationContext() context.Context {
+	if evidence != nil && evidence.spool != nil && evidence.spool.ctx != nil {
+		return evidence.spool.ctx
+	}
+	return context.Background()
+}
+
+func (evidence *scanReconciliationEvidence) runDirectoryObservation(ctx context.Context, work func() error) (resultErr error) {
+	if ctx == nil || work == nil {
+		return ErrInvalidInput
+	}
+	if evidence == nil || !evidence.observation.retain() {
+		return errScanReconciliationEvidenceUnavailable
+	}
+	defer func() {
+		closeErr := evidence.observation.release()
+		if closeErr != nil {
+			if operation := PrimaryRootIOFromContext(ctx); operation != nil {
+				_ = operation.MarkUnknown(closeErr)
+			}
+		}
+		resultErr = errors.Join(resultErr, closeErr)
+	}()
+	return work()
 }
 
 // MarkSeen records only a successfully accepted ordinary item, including a
@@ -268,11 +331,26 @@ func (evidence *scanReconciliationEvidence) Revalidate(ctx context.Context) erro
 	if evidence.spool != nil {
 		return evidence.revalidateSpool(ctx)
 	}
-	for _, root := range evidence.roots {
-		for _, witness := range root.directories {
-			if err := evidence.verifyDirectory(ctx, root, witness); err != nil {
-				return evidence.Disable(err)
+	rootIDs := make([]string, 0, len(evidence.roots))
+	for rootID := range evidence.roots {
+		rootIDs = append(rootIDs, rootID)
+	}
+	sort.Strings(rootIDs)
+	for _, rootID := range rootIDs {
+		root := evidence.roots[rootID]
+		err := runDirectoryPrimaryPhase(ctx, rootID, primaryio.Background, func(work context.Context) error {
+			for _, witness := range root.directories {
+				if err := evidence.verifyDirectory(work, root, witness); err != nil {
+					return err
+				}
 			}
+			return work.Err()
+		})
+		if err != nil {
+			if primaryDirectoryBusy(err) {
+				return err
+			}
+			return evidence.Disable(err)
 		}
 	}
 	if err := ctx.Err(); err != nil {
@@ -371,11 +449,7 @@ func (evidence *scanReconciliationEvidence) Disable(cause error) error {
 			evidence.err = errors.Join(errScanReconciliationEvidenceUnavailable, cause)
 		}
 	}
-	if evidence.spool != nil {
-		_ = evidence.observation.retire(evidence.release)
-	} else {
-		_ = evidence.release()
-	}
+	_ = evidence.observation.retire(evidence.release)
 	return evidence.err
 }
 

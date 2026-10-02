@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 const maxServerDirectoryEntries = 10000
@@ -90,6 +91,40 @@ func (s *Store) serverDirectoriesWithReader(ctx context.Context, administrator *
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	if path == "" {
+		return s.runServerDirectoryReader(ctx, administrator, path, start, limit, validateOnly, read)
+	}
+	remaining := maxDirectorySymlinkTraversals
+	for {
+		anchor, err := s.configuredPrimaryAnchorForPath(path)
+		if err != nil {
+			return ServerDirectoryPage{}, err
+		}
+		operation, err := s.prepareConfiguredPrimaryRootIO(ctx, anchor)
+		if err != nil {
+			return ServerDirectoryPage{}, err
+		}
+		var page ServerDirectoryPage
+		err = operation.Run(ctx, "", primaryio.Foreground, func(work context.Context) error {
+			var err error
+			work = context.WithValue(work, primaryDirectoryResolutionBudgetKey{}, remaining)
+			page, err = s.runServerDirectoryReader(work, administrator, path, start, limit, validateOnly, read)
+			return err
+		})
+		closeErr := operation.Close()
+		if redirect, ok := directoryPrimaryRedirect(err); ok && closeErr == nil {
+			remaining -= redirect.spent
+			if remaining < 0 {
+				return ServerDirectoryPage{}, ErrUnavailable
+			}
+			path = redirect.path
+			continue
+		}
+		return page, errors.Join(err, closeErr)
+	}
+}
+
+func (s *Store) runServerDirectoryReader(ctx context.Context, administrator *catalogAdministrator, path string, start, limit int, validateOnly bool, read serverDirectoryReader) (ServerDirectoryPage, error) {
 	select {
 	case serverDirectoryWorkers <- struct{}{}:
 	case <-ctx.Done():
@@ -109,15 +144,31 @@ func (s *Store) serverDirectoriesWithReader(ctx context.Context, administrator *
 		approvedPaths = append(approvedPaths, strings.Clone(root.path))
 	}
 	s.mu.Unlock()
-	completed := make(chan serverDirectoryResult)
+	releasePhase, err := retainStorageObservationPhase(ctx)
+	if err != nil {
+		s.rootOpens.Done()
+		<-serverDirectoryWorkers
+		return ServerDirectoryPage{}, err
+	}
+	completed := make(chan serverDirectoryResult, 1)
 	go func() {
 		defer s.rootOpens.Done()
 		defer func() { <-serverDirectoryWorkers }()
-		page, err := read(ctx, approvedPaths, path, start, limit, validateOnly)
-		select {
-		case completed <- serverDirectoryResult{page: page, err: err}:
-		case <-ctx.Done():
-		}
+		finished := false
+		var page ServerDirectoryPage
+		var err error
+		defer func() {
+			if recover() != nil || !finished {
+				page, err = ServerDirectoryPage{}, ErrUnavailable
+				if operation := PrimaryRootIOFromContext(ctx); operation != nil {
+					_ = operation.MarkUnknown(err)
+				}
+			}
+			err = errors.Join(err, releasePhase())
+			completed <- serverDirectoryResult{page: page, err: err}
+		}()
+		page, err = read(ctx, approvedPaths, path, start, limit, validateOnly)
+		finished = true
 	}()
 	select {
 	case result := <-completed:
@@ -133,8 +184,8 @@ func (s *Store) serverDirectoriesWithReader(ctx context.Context, administrator *
 	}
 }
 
-func (s *Store) readServerDirectories(ctx context.Context, approvedPaths []string, path string, start, limit int, validateOnly bool) (ServerDirectoryPage, error) {
-	page := ServerDirectoryPage{Path: path, StartIndex: start, Limit: limit, Items: make([]ServerDirectory, 0)}
+func (s *Store) readServerDirectories(ctx context.Context, approvedPaths []string, path string, start, limit int, validateOnly bool) (page ServerDirectoryPage, resultErr error) {
+	page = ServerDirectoryPage{Path: path, StartIndex: start, Limit: limit, Items: make([]ServerDirectory, 0)}
 	if err := ctx.Err(); err != nil {
 		return ServerDirectoryPage{}, err
 	}
@@ -143,11 +194,11 @@ func (s *Store) readServerDirectories(ctx context.Context, approvedPaths []strin
 			page.Items = append(page.Items, ServerDirectory{Name: filepath.Base(root), Path: root})
 		}
 	} else {
-		registration, err := s.authorizePath(path)
+		registration, err := s.authorizePathObserved(ctx, path)
 		if err != nil {
 			return ServerDirectoryPage{}, err
 		}
-		defer registration.Close()
+		defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, registration.Close)) }()
 		page.Path = registration.root.path
 		if page.Path != registration.root.allowedPath {
 			page.ParentPath = filepath.Dir(page.Path)
@@ -157,7 +208,7 @@ func (s *Store) readServerDirectories(ctx context.Context, approvedPaths []strin
 			if err != nil {
 				return ServerDirectoryPage{}, ErrUnavailable
 			}
-			defer directory.Close()
+			defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, directory.Close)) }()
 			seen := 0
 			for {
 				if err := ctx.Err(); err != nil {

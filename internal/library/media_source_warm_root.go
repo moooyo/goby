@@ -2,11 +2,14 @@ package library
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/moooyo/goby/internal/media"
 )
 
 // A warm source root pins an already published approved descriptor without
@@ -72,21 +75,26 @@ func (lease *warmMediaSourceRoot) currentApproved() (*os.Root, error) {
 // Release may close the last retired descriptor. The caller must retain its
 // actual IO lease or a cleanup IO charge until this method returns.
 func (lease *warmMediaSourceRoot) release() {
+	_ = lease.releaseChecked()
+}
+
+func (lease *warmMediaSourceRoot) releaseChecked() error {
 	if lease == nil || lease.store == nil {
-		return
+		return nil
 	}
 	s := lease.store
 	s.mu.Lock()
 	if lease.released {
 		s.mu.Unlock()
-		return
+		return nil
 	}
 	lease.released = true
 	reference := lease.reference
 	s.mu.Unlock()
 	if reference != nil {
-		s.releaseRootAnchor(reference)
+		return s.releaseRootAnchor(reference)
 	}
+	return nil
 }
 
 // This primitive performs only filesystem and memory-mapping validation. The
@@ -99,6 +107,19 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 	if lease == nil || lease.store == nil {
 		return nil, ErrUnavailable
 	}
+	return lease.store.runSourceMetadataOpen(ctx, snapshot, func(work context.Context) (*os.File, error) {
+		return lease.openMediaSourceFilesystem(work, snapshot)
+	})
+}
+
+func (lease *warmMediaSourceRoot) openMediaSourceAndRelease(ctx context.Context, snapshot indexedMediaSource) (*os.File, error) {
+	return lease.store.runSourceMetadataOpen(ctx, snapshot, func(work context.Context) (file *os.File, resultErr error) {
+		defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(work, lease.releaseChecked)) }()
+		return lease.openMediaSourceFilesystem(work, snapshot)
+	})
+}
+
+func (lease *warmMediaSourceRoot) openMediaSourceFilesystem(ctx context.Context, snapshot indexedMediaSource) (resultFile *os.File, resultErr error) {
 	if snapshot.root != lease.root {
 		return nil, fmt.Errorf("%w: %w: source does not match its warm media root", ErrUnavailable, ErrSourceChanged)
 	}
@@ -118,7 +139,7 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 	s.rootOpens.Add(1)
 	s.mu.Unlock()
 	defer func() {
-		s.releaseRootAnchor(opening)
+		resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, func() error { return s.releaseRootAnchor(opening) }))
 		s.rootOpens.Done()
 	}()
 	openedAt := time.Now()
@@ -127,13 +148,13 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
 	}
-	defer root.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, root.Close)) }()
 	path := filepath.FromSlash(snapshot.relativePath)
 	parent, err := openRegisteredRoot(root, filepath.Dir(path))
 	if err != nil {
 		return nil, fmt.Errorf("%w: media parent directory cannot be opened safely", ErrUnavailable)
 	}
-	defer parent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, parent.Close)) }()
 	name := filepath.Base(path)
 	before, err := parent.Lstat(name)
 	if err != nil {
@@ -149,7 +170,9 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 	success := false
 	defer func() {
 		if !success {
-			_ = file.Close()
+			if closeErr := file.Close(); closeErr != nil && !errors.Is(closeErr, os.ErrClosed) {
+				resultErr = errors.Join(resultErr, media.SourceReadRetirementError(closeErr, file))
+			}
 		}
 	}()
 	opened, err := file.Stat()
@@ -167,7 +190,7 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory cannot be opened safely", ErrUnavailable)
 	}
-	defer currentRoot.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentRoot.Close)) }()
 	if !sameMediaSourceDirectory(root, currentRoot) {
 		return nil, fmt.Errorf("%w: registered media root changed while opening", ErrUnavailable)
 	}
@@ -175,7 +198,7 @@ func (lease *warmMediaSourceRoot) openMediaSource(ctx context.Context, snapshot 
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory changed while opening", ErrUnavailable)
 	}
-	defer currentParent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentParent.Close)) }()
 	if !sameMediaSourceDirectory(parent, currentParent) {
 		return nil, fmt.Errorf("%w: media directory was replaced while opening", ErrUnavailable)
 	}

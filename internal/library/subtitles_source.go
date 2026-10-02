@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/subtitle"
 )
 
@@ -81,49 +82,78 @@ func (s *Store) ReadSubtitleFor(ctx context.Context, subject Subject, itemID, me
 		return SubtitleContent{}, ErrUnavailable
 	}
 	return runSubtitleWorker(ctx, subtitleSourceWorkers, func() (SubtitleContent, error) {
-		primary, source, err := s.readSubtitleSnapshotFor(ctx, subject, itemID, mediaSourceID, index)
+		primary, _, err := s.readSubtitleSnapshotFor(ctx, subject, itemID, mediaSourceID, index)
 		if err != nil {
 			return SubtitleContent{}, err
 		}
-		file, err := s.openPublicMediaSource(ctx, primary)
+		operation, hint, err := s.prepareSidecarRootIO(ctx, primary.root)
 		if err != nil {
 			return SubtitleContent{}, err
 		}
-		defer file.Close()
-		data, err := s.readSubtitleSource(ctx, primary, source)
+		var content SubtitleContent
+		err = operation.Run(ctx, primary.root.id, primaryio.Foreground, func(work context.Context) error {
+			if err := s.checkSidecarRootHint(work, hint); err != nil {
+				return err
+			}
+			// Admission can wait for another root consumer. Repeat both policy
+			// and source selection before the first filesystem operation.
+			current, track, err := s.readSubtitleSnapshotFor(work, subject, itemID, mediaSourceID, index)
+			if err != nil {
+				return err
+			}
+			if current.root != primary.root {
+				return fmt.Errorf("%w: %w: subtitle root changed while queued", ErrUnavailable, ErrSourceChanged)
+			}
+			content, err = s.readSubtitleContent(work, current, track)
+			return err
+		})
+		err = errors.Join(err, operation.Close())
 		if err != nil {
 			return SubtitleContent{}, err
 		}
-		// Recheck the original descriptor and pathname after sidecar storage work.
-		// Reading the video contents is unnecessary for this snapshot contract.
-		after, err := file.Stat()
-		if err != nil {
-			return SubtitleContent{}, fmt.Errorf("%w: primary media metadata cannot be rechecked during subtitle reading", ErrUnavailable)
-		}
-		if !primary.matches(after) {
-			return SubtitleContent{}, fmt.Errorf("%w: %w: primary media changed during subtitle reading", ErrUnavailable, ErrSourceChanged)
-		}
-		current, err := s.openPublicMediaSource(ctx, primary)
-		if err != nil {
-			return SubtitleContent{}, err
-		}
-		defer current.Close()
-		currentInfo, err := current.Stat()
-		if err != nil {
-			return SubtitleContent{}, fmt.Errorf("%w: current media metadata cannot be read during subtitle reading", ErrUnavailable)
-		}
-		if !sameMediaSourceFile(after, currentInfo) {
-			return SubtitleContent{}, fmt.Errorf("%w: %w: primary media was replaced during subtitle reading", ErrUnavailable, ErrSourceChanged)
-		}
-		if err := ctx.Err(); err != nil {
-			return SubtitleContent{}, err
-		}
-		modifiedAt := source.ModifiedAt
-		if changedAt := time.Unix(0, source.changeTimeNs).UTC(); changedAt.After(modifiedAt) {
-			modifiedAt = changedAt
-		}
-		return SubtitleContent{Data: data, Info: source.Subtitle, ModifiedAt: modifiedAt}, nil
+		return content, nil
 	})
+}
+
+func (s *Store) readSubtitleContent(ctx context.Context, primary indexedMediaSource, source storedSubtitle) (content SubtitleContent, resultErr error) {
+	file, err := s.openPublicMediaSource(ctx, primary)
+	if err != nil {
+		return SubtitleContent{}, err
+	}
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, file)) }()
+	data, err := s.readSubtitleSource(ctx, primary, source)
+	if err != nil {
+		return SubtitleContent{}, err
+	}
+	// Recheck the original descriptor and pathname after sidecar storage work.
+	// Reading the video contents is unnecessary for this snapshot contract.
+	after, err := file.Stat()
+	if err != nil {
+		return SubtitleContent{}, fmt.Errorf("%w: primary media metadata cannot be rechecked during subtitle reading", ErrUnavailable)
+	}
+	if !primary.matches(after) {
+		return SubtitleContent{}, fmt.Errorf("%w: %w: primary media changed during subtitle reading", ErrUnavailable, ErrSourceChanged)
+	}
+	current, err := s.openPublicMediaSource(ctx, primary)
+	if err != nil {
+		return SubtitleContent{}, err
+	}
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, current)) }()
+	currentInfo, err := current.Stat()
+	if err != nil {
+		return SubtitleContent{}, fmt.Errorf("%w: current media metadata cannot be read during subtitle reading", ErrUnavailable)
+	}
+	if !sameMediaSourceFile(after, currentInfo) {
+		return SubtitleContent{}, fmt.Errorf("%w: %w: primary media was replaced during subtitle reading", ErrUnavailable, ErrSourceChanged)
+	}
+	if err := ctx.Err(); err != nil {
+		return SubtitleContent{}, err
+	}
+	modifiedAt := source.ModifiedAt
+	if changedAt := time.Unix(0, source.changeTimeNs).UTC(); changedAt.After(modifiedAt) {
+		modifiedAt = changedAt
+	}
+	return SubtitleContent{Data: data, Info: source.Subtitle, ModifiedAt: modifiedAt}, nil
 }
 
 func (s *Store) readSubtitleSnapshot(ctx context.Context, userID, itemID, sourceID string, index int) (indexedMediaSource, storedSubtitle, error) {
@@ -228,7 +258,7 @@ func (source storedSubtitle) matches(info os.FileInfo) bool {
 		catalogModifiedTime(info).Equal(source.ModifiedAt) && media.FileChangeTime(info) == source.changeTimeNs
 }
 
-func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSource, source storedSubtitle) ([]byte, error) {
+func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSource, source storedSubtitle) (_ []byte, resultErr error) {
 	if source.Owned {
 		if err := validateOwnedSubtitle(source); err != nil {
 			return nil, err
@@ -239,13 +269,13 @@ func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSour
 	if err != nil {
 		return nil, err
 	}
-	defer root.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, root)) }()
 	directoryPath := filepath.Dir(filepath.FromSlash(source.relativePath))
 	parent, err := openRegisteredRoot(root, directoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: subtitle directory cannot be opened safely", ErrUnavailable)
 	}
-	defer parent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, parent)) }()
 	before, err := parent.Lstat(source.Filename)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("%w: %w: indexed subtitle was removed; rescan required", ErrUnavailable, ErrSourceChanged)
@@ -263,7 +293,7 @@ func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSour
 	if err != nil {
 		return nil, fmt.Errorf("%w: indexed subtitle cannot be opened safely", ErrUnavailable)
 	}
-	defer file.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, file)) }()
 	opened, err := file.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("%w: open subtitle metadata cannot be read", ErrUnavailable)
@@ -286,12 +316,12 @@ func (s *Store) readSubtitleSource(ctx context.Context, primary indexedMediaSour
 	if err != nil {
 		return nil, err
 	}
-	defer currentRoot.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, currentRoot)) }()
 	currentParent, err := openRegisteredRoot(currentRoot, directoryPath)
 	if err != nil {
 		return nil, fmt.Errorf("%w: subtitle directory changed during reading", ErrUnavailable)
 	}
-	defer currentParent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, currentParent)) }()
 	current, currentErr := currentParent.Lstat(source.Filename)
 	after, afterErr := file.Stat()
 	if !sameMediaSourceDirectory(root, currentRoot) || !sameMediaSourceDirectory(parent, currentParent) || errors.Is(currentErr, os.ErrNotExist) {

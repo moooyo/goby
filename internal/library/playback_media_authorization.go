@@ -122,6 +122,9 @@ func (s *Store) readPlaybackMediaAuthorizationPrepared(ctx context.Context, prin
 	if err := tx.Commit(ctx); err != nil {
 		return indexedMediaSource{}, PlaybackMediaAuthorization{}, fmt.Errorf("%w: complete playback media authorization: %w", ErrUnavailable, err)
 	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
+		return indexedMediaSource{}, PlaybackMediaAuthorization{}, err
+	}
 	return snapshot, PlaybackMediaAuthorization{Principal: fresh, Play: play}, nil
 }
 

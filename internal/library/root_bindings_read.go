@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/storagebinding"
 )
 
@@ -166,7 +167,12 @@ func (s *Store) getRootBinding(ctx context.Context, actor identity.Principal, li
 	if err != nil {
 		return RootBindingInfo{}, err
 	}
-	observed, observationErr := observe(ctx, row.root)
+	operation, err := s.preparePrimaryRootIO(ctx, []mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+	if err != nil {
+		return RootBindingInfo{}, err
+	}
+	defer operation.Close()
+	observed, observationErr := observe(operation.Context(ctx), row.root)
 	if err := ctx.Err(); err != nil {
 		return RootBindingInfo{}, err
 	}
@@ -323,18 +329,38 @@ func (s *Store) observeRootBindingWith(ctx context.Context, root libraryRoot, ob
 	if err != nil {
 		return RootTopologySnapshot{}, err
 	}
+	operation := PrimaryRootIOFromContext(ctx)
+	rootID := root.id
+	if operation == nil {
+		operation, err = s.prepareConfiguredPrimaryRootIO(ctx, path)
+		if err != nil {
+			return RootTopologySnapshot{}, err
+		}
+		defer operation.Close()
+		rootID = ""
+	}
 	// Copy only configuration while holding Store.mu. The worker captures no
 	// Store or database object, and owns every filesystem operation and close.
+	observationCtx, cancelObservation := context.WithTimeout(ctx, storageObservationTimeout)
+	defer cancelObservation()
 	result := make(chan RootTopologySnapshot, 1)
-	err = runStorageObservation(ctx, nil, func(work context.Context) error {
-		snapshot, err := observe(work, path, root)
-		if err == nil {
-			// A timed-out caller never races a late result or blocks its cleanup.
-			result <- snapshot
-		}
-		return err
+	err = operation.Run(observationCtx, rootID, primaryio.Foreground, func(phase context.Context) error {
+		return runStorageObservation(phase, nil, func(work context.Context) error {
+			snapshot, err := observe(work, path, root)
+			if err == nil {
+				// A timed-out caller never races a late result or blocks its cleanup.
+				result <- snapshot
+			}
+			return err
+		})
 	})
 	if err != nil {
+		if callerErr := ctx.Err(); callerErr != nil {
+			return RootTopologySnapshot{}, callerErr
+		}
+		if observationCtx.Err() != nil || primaryDirectoryBusy(err) || errors.Is(err, primaryio.ErrOwnerBusy) {
+			return RootTopologySnapshot{}, errStorageObservationUnavailable
+		}
 		return RootTopologySnapshot{}, err
 	}
 	return <-result, nil
@@ -348,17 +374,17 @@ func observeConfiguredRootBinding(ctx context.Context, path string, root library
 		return RootTopologySnapshot{}, err
 	}
 	lease := &libraryRootLease{approved: approved.root, relativePath: root.relativePath}
-	defer func() { result = errors.Join(result, lease.Close()) }()
+	defer func() { result = errors.Join(result, closeDirectoryPrimaryResource(ctx, lease.Close)) }()
 	registered, err := lease.Open()
 	if err != nil {
 		return RootTopologySnapshot{}, err
 	}
-	defer func() { result = errors.Join(result, registered.Close()) }()
+	defer func() { result = errors.Join(result, closeDirectoryPrimaryResource(ctx, registered.Close)) }()
 	capture, err := lease.CaptureTopology(ctx, RootTopologyMapping{ApprovedPath: path, RegisteredPath: root.path}, registered)
 	if err != nil {
 		return RootTopologySnapshot{}, err
 	}
-	defer func() { result = errors.Join(result, capture.Close()) }()
+	defer func() { result = errors.Join(result, closeDirectoryPrimaryResource(ctx, capture.Close)) }()
 	return capture.Snapshot()
 }
 

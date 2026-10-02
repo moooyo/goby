@@ -201,7 +201,31 @@ func (o *Owner) TransferLease(lease *PrimaryReadLease) (*Owner, *PrimaryReadLeas
 // One Owner cannot hold a lease while waiting for another lease: additional
 // roots belong in Route, and concurrent actual operations need separate owners.
 func (o *Owner) Acquire(route Route, class Class) (*PrimaryReadLease, error) {
-	if o == nil || o.state == nil {
+	return o.acquire(o.Context(), route, class, false, false)
+}
+
+// AcquireContext applies a phase deadline without canceling the retained owner.
+// Owner cancellation still fences admission. A granted lease remains charged
+// until actual phase retirement and explicit Release, even after ctx is canceled.
+func (o *Owner) AcquireContext(ctx context.Context, route Route, class Class) (*PrimaryReadLease, error) {
+	return o.acquire(ctx, route, class, false, true)
+}
+
+// TryAcquire charges one available operation without joining the admission
+// queue. It returns ErrBusy when capacity or older conflicting work prevents
+// immediate admission, and preserves Acquire's retained-owner lifecycle.
+func (o *Owner) TryAcquire(route Route, class Class) (*PrimaryReadLease, error) {
+	return o.acquire(o.Context(), route, class, true, false)
+}
+
+// TryAcquireContext combines a phase deadline with immediate admission. It
+// never queues the phase or completes the retained owner after cancellation.
+func (o *Owner) TryAcquireContext(ctx context.Context, route Route, class Class) (*PrimaryReadLease, error) {
+	return o.acquire(ctx, route, class, true, true)
+}
+
+func (o *Owner) acquire(ctx context.Context, route Route, class Class, immediate, phaseContext bool) (*PrimaryReadLease, error) {
+	if o == nil || o.state == nil || ctx == nil {
 		return nil, ErrInvalid
 	}
 	state := o.state
@@ -220,7 +244,30 @@ func (o *Owner) Acquire(route Route, class Class) (*PrimaryReadLease, error) {
 	}
 	state.acquiring++
 	state.mu.Unlock()
-	request, err := state.runtime.governor.acquire(state.ctx, route, class)
+	if phaseContext {
+		phase, cancel := context.WithCancel(ctx)
+		stop := context.AfterFunc(state.ctx, cancel)
+		defer func() { stop(); cancel() }()
+		// AfterFunc callbacks run asynchronously. An already canceled owner
+		// must fence this acquisition before its callback is scheduled.
+		if state.ctx.Err() != nil {
+			cancel()
+		}
+		ctx = phase
+	}
+	acquire := state.runtime.governor.acquire
+	if immediate {
+		acquire = state.runtime.governor.tryAcquire
+	}
+	request, err := acquire(ctx, route, class)
+	if err == nil && phaseContext {
+		// Owner cancellation may race the merge callback and a grant. No I/O
+		// has been handed to the caller yet, so retire that construction charge.
+		if ownerErr := state.ctx.Err(); ownerErr != nil {
+			state.runtime.governor.release(request)
+			err = ownerErr
+		}
+	}
 	state.mu.Lock()
 	state.acquiring--
 	if err == nil {

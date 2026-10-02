@@ -8,11 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 // This stamp binds automatic bytes to the complete indexed source and root
@@ -123,14 +123,21 @@ func readEmbeddedArtworkContent(ctx context.Context, tx pgx.Tx, itemID string) (
 }
 
 func (s *Store) checkEmbeddedArtworkContentSource(ctx context.Context, result embeddedArtworkContent) error {
-	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, result.source, func(ctx context.Context) (*os.File, MediaFile, error) {
-		file, err := s.openPublicMediaSource(ctx, result.source)
-		return file, result.source.mediaFile, err
-	})
+	operation, hint, err := s.prepareSidecarRootIO(ctx, result.source.root)
 	if err != nil {
 		return err
 	}
-	return file.Close()
+	err = operation.Run(ctx, result.source.root.id, primaryio.Foreground, func(work context.Context) error {
+		if err := s.checkSidecarRootHint(work, hint); err != nil {
+			return err
+		}
+		file, err := s.openPublicMediaSource(work, result.source)
+		if err != nil {
+			return err
+		}
+		return closePrimarySidecarResource(work, file)
+	})
+	return errors.Join(err, operation.Close())
 }
 
 // OpenEmbeddedImageFor is the lowest-priority automatic artwork source. The
@@ -167,18 +174,4 @@ func (s *Store) OpenEmbeddedImageFor(ctx context.Context, subject Subject, itemI
 		return nil, Image{}, err
 	}
 	return io.NopCloser(bytes.NewReader(result.data)), result.image, nil
-}
-
-// readEmbeddedImageContent serves already-authorized collage source selection
-// inside its shared transaction. Its bounded source worker retains its slot
-// until any blocked filesystem operation finishes after caller cancellation.
-func (s *Store) readEmbeddedImageContent(ctx context.Context, tx pgx.Tx, itemID string) ([]byte, Image, error) {
-	result, err := readEmbeddedArtworkContent(ctx, tx, itemID)
-	if err != nil {
-		return nil, Image{}, err
-	}
-	if err := s.checkEmbeddedArtworkContentSource(ctx, result); err != nil {
-		return nil, Image{}, err
-	}
-	return result.data, result.image, nil
 }

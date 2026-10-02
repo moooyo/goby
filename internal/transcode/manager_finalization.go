@@ -3,7 +3,6 @@ package transcode
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
 )
 
@@ -72,21 +71,7 @@ func (m *Manager) enqueueFinalization(j *managedJob, runErr error, progressFailu
 }
 
 func closeFinalizationInputs(j *managedJob) error {
-	closeInput := func(file *os.File) error {
-		if file == nil {
-			return nil
-		}
-		err := file.Close()
-		if errors.Is(err, os.ErrClosed) {
-			return nil
-		}
-		return err
-	}
-	err := closeInput(j.input)
-	if j.bitmap != j.input {
-		err = errors.Join(err, closeInput(j.bitmap))
-	}
-	return err
+	return closeSourceReadInputs(StreamInputs{Media: j.input, Bitmap: j.bitmap}, j.sourceRead)
 }
 
 func copyFinalizationProgressFailure(failure *ProgressFailure) *ProgressFailure {

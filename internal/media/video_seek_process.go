@@ -3,6 +3,7 @@ package media
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -95,7 +96,7 @@ func videoSeekToolIdentity(ctx context.Context, executable string, cache *videoS
 
 // AnalyzeVideoSeekIndexes performs optional library analysis. Unsupported or
 // budget-exhausted evidence leaves a playable source without indexes. Caller
-// cancellation and mutation of the borrowed source remain hard failures.
+// cancellation, source mutation, and unproved retirement remain hard failures.
 func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.File, info Info, probeExecutables ...string) (indexes []VideoSeekIndex, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -112,10 +113,10 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 	}
 	defer func() {
 		if err := videoSeekCheckSource(file, before); err != nil {
-			indexes, resultErr = nil, err
+			indexes, resultErr = nil, errors.Join(resultErr, err)
 		}
 		if err := ctx.Err(); err != nil {
-			indexes, resultErr = nil, err
+			indexes, resultErr = nil, errors.Join(resultErr, err)
 		}
 	}()
 	if runtime.GOOS != "linux" || !info.FormatStartKnown || info.DurationTicks <= 0 || info.DurationTicks > MaxVideoSeekDurationTicks || strings.TrimSpace(executable) == "" {
@@ -141,7 +142,7 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 	}
 	resolved, toolIdentity, err := VideoSeekToolIdentity(analysisContext, executable)
 	if err != nil {
-		return nil, nil
+		return nil, videoSeekRetirementError(err)
 	}
 	remainingEntries := MaxVideoSeekEntries
 	for _, stream := range streams {
@@ -177,9 +178,15 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 			}
 		}
 		if err != nil {
+			if errors.Is(err, ErrProcessRetirementUnknown) {
+				return nil, err
+			}
 			continue
 		}
-		index = analyzeVideoCopySeekAudio(analysisContext, resolved, file, info, index)
+		index, err = analyzeVideoCopySeekAudio(analysisContext, resolved, file, info, index)
+		if err != nil {
+			return nil, err
+		}
 		proposed := append(indexes, index)
 		data, err := json.Marshal(proposed)
 		if err != nil || len(data) > MaxVideoSeekIndexBytes {
@@ -191,7 +198,7 @@ func AnalyzeVideoSeekIndexes(ctx context.Context, executable string, file *os.Fi
 	if len(indexes) > 0 {
 		afterPath, afterTool, err := VideoSeekToolIdentity(analysisContext, executable)
 		if err != nil || afterPath != resolved || afterTool != toolIdentity {
-			return nil, nil
+			return nil, videoSeekRetirementError(err)
 		}
 	}
 	return indexes, nil
@@ -231,16 +238,16 @@ func runVideoSeekFrameHash(ctx context.Context, executable string, file *os.File
 		return parseErr
 	})
 	if startErr != nil {
-		return VideoSeekIndex{}, startErr
+		return VideoSeekIndex{}, errors.Join(startErr, parseErr, waitErr)
 	}
 	if err := ctx.Err(); err != nil {
-		return VideoSeekIndex{}, err
+		return VideoSeekIndex{}, errors.Join(err, parseErr, waitErr)
 	}
 	if stderr.exceeded {
-		return VideoSeekIndex{}, ErrOutputLimit
+		return VideoSeekIndex{}, errors.Join(ErrOutputLimit, parseErr, waitErr)
 	}
 	if parseErr != nil {
-		return VideoSeekIndex{}, parseErr
+		return VideoSeekIndex{}, errors.Join(parseErr, waitErr)
 	}
 	if waitErr != nil {
 		return VideoSeekIndex{}, fmt.Errorf("execute video seek analysis: %w", waitErr)
@@ -260,6 +267,14 @@ type VideoSeekVerification struct {
 	InputSeekTicks int64
 }
 
+// Optional evidence may fall back only after actual process retirement is known.
+func videoSeekRetirementError(err error) error {
+	if errors.Is(err, ErrProcessRetirementUnknown) {
+		return err
+	}
+	return nil
+}
+
 // VerifyVideoSeekCandidate repeats the bounded restart proof on every run.
 func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.File, encoded string, decoderThreads int) (verification VideoSeekVerification, resultErr error) {
 	if err := ctx.Err(); err != nil {
@@ -277,10 +292,10 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 	}
 	defer func() {
 		if err := videoSeekCheckSource(file, before); err != nil {
-			verification, resultErr = VideoSeekVerification{}, err
+			verification, resultErr = VideoSeekVerification{}, errors.Join(resultErr, err)
 		}
 		if err := ctx.Err(); err != nil {
-			verification, resultErr = VideoSeekVerification{}, err
+			verification, resultErr = VideoSeekVerification{}, errors.Join(resultErr, err)
 		}
 	}()
 	candidate, err := ValidateVideoSeekCandidate(encoded)
@@ -295,7 +310,7 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 	defer cancel()
 	resolved, toolIdentity, err := VideoSeekToolIdentity(proofContext, executable)
 	if err != nil || toolIdentity != candidate.Index.ToolIdentity {
-		return verification, nil
+		return verification, videoSeekRetirementError(err)
 	}
 	for _, inputTicks := range videoSeekCandidateAttempts(candidate) {
 		if proofContext.Err() != nil {
@@ -309,9 +324,12 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 		}
 		actual, err := runVideoSeekFrameHash(proofContext, resolved, file, args, candidate.Index, 2, 64*1024)
 		if sourceErr := videoSeekCheckSource(file, before); sourceErr != nil {
-			return verification, sourceErr
+			return verification, errors.Join(err, sourceErr)
 		}
 		if err != nil || len(actual.Entries) != 1 {
+			if errors.Is(err, ErrProcessRetirementUnknown) {
+				return verification, err
+			}
 			continue
 		}
 		point := actual.Entries[0]
@@ -327,7 +345,7 @@ func VerifyVideoSeekCandidate(ctx context.Context, executable string, file *os.F
 		}
 		afterPath, afterTool, err := VideoSeekToolIdentity(proofContext, executable)
 		if err != nil || afterPath != resolved || afterTool != toolIdentity {
-			return verification, nil
+			return verification, videoSeekRetirementError(err)
 		}
 		return VideoSeekVerification{Verified: true, InputSeekTicks: inputTicks}, nil
 	}

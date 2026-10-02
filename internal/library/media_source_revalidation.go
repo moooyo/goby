@@ -71,6 +71,9 @@ func (s *Store) readMediaRevalidationFor(ctx context.Context, subject Subject, i
 	if err := tx.Commit(ctx); err != nil {
 		return indexedMediaSource{}, fmt.Errorf("%w: complete authorized media revalidation: %w", ErrUnavailable, err)
 	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
+		return indexedMediaSource{}, err
+	}
 	return snapshot, nil
 }
 
@@ -81,14 +84,14 @@ func readIndexedMediaRevalidation(ctx context.Context, tx pgx.Tx, access library
 	item := &snapshot.mediaFile.Item
 	err := tx.QueryRow(ctx, `SELECT i.id, i.library_id, i.type, i.path, i.media,
 		i.relative_path, i.file_identity, i.file_size, i.modified_at,
-		r.id, r.library_id, r.path, r.allowed_path, r.relative_path
+		r.id, r.library_id, r.path, r.allowed_path, r.relative_path, r.binding_revision
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
 		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i"), itemID, access.all, access.folders).
 		Scan(&item.ID, &item.LibraryID, &item.Type, &item.Path, &encoded,
 			&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
-			&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath)
+			&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath, &snapshot.rootBindingRevision)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return indexedMediaSource{}, ErrNotFound
 	}

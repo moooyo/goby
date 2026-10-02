@@ -14,6 +14,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/moooyo/goby/internal/commanddomain"
+	"github.com/moooyo/goby/internal/media"
 )
 
 const (
@@ -32,6 +35,23 @@ const (
 // the codec bitstream. Ordinary B-frame presentation reordering remains valid.
 // The format and selected stream must agree with the caller's probed duration.
 func Keyframes(ctx context.Context, ffprobe string, input *os.File, streamIndex int, durationTicks int64) ([]int64, error) {
+	// Source-reader admission shares the probe's bounded lifetime rather than
+	// starting a fresh process deadline only after actual-reader queueing.
+	phaseCtx, cancel := context.WithTimeout(ctx, timelineProbeTimeout)
+	defer cancel()
+	var keys []int64
+	err := media.RunSourceReadPhase(phaseCtx, func(readCtx context.Context) error {
+		var err error
+		keys, err = readKeyframes(readCtx, ffprobe, input, streamIndex, durationTicks)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return keys, nil
+}
+
+func readKeyframes(ctx context.Context, ffprobe string, input *os.File, streamIndex int, durationTicks int64) ([]int64, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -85,30 +105,39 @@ func Keyframes(ctx context.Context, ffprobe string, input *os.File, streamIndex 
 			return err
 		}
 	}
-	if err := cmd.Start(); err != nil {
-		return nil, ErrStart
+	_, nativeRequired := commanddomain.CommandScopeFromContext(processCtx)
+	var waitErr error
+	runErr := media.RunProcessWithRetirement(processCtx, cmd, func() error {
+		// Retire the group while WNOWAIT still pins the leader's numeric PID.
+		// The runner joins this callback before Wait reaps or joins copiers.
+		waitErr = waitWithoutReaping(cmd.Process.Pid)
+		groupMu.Lock()
+		defer groupMu.Unlock()
+		var signalErr error
+		if !errors.Is(waitErr, syscall.ECHILD) {
+			signalErr = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			if errors.Is(signalErr, syscall.ESRCH) {
+				signalErr = nil
+			}
+		}
+		retired = true
+		return errors.Join(waitErr, signalErr)
+	})
+	if !nativeRequired && cmd.Process == nil && runErr != nil {
+		return nil, errors.Join(ErrStart, runErr)
 	}
-	// Retire the process group while WNOWAIT still pins the leader's PID.
-	waitErr := waitWithoutReaping(cmd.Process.Pid)
-	groupMu.Lock()
-	if !errors.Is(waitErr, syscall.ECHILD) {
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	}
-	retired = true
-	groupMu.Unlock()
-	runErr := cmd.Wait()
 	output.finish()
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, errors.Join(err, runErr)
 	}
 	if output.err != nil {
-		return nil, output.err
+		return nil, errors.Join(output.err, runErr)
 	}
 	if err := processCtx.Err(); err != nil {
-		return nil, err
+		return nil, errors.Join(err, runErr)
 	}
 	if waitErr != nil || runErr != nil {
-		return nil, ErrTimelineProbe
+		return nil, errors.Join(ErrTimelineProbe, runErr)
 	}
 	after, err := input.Stat()
 	if err != nil {

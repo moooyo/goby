@@ -14,6 +14,17 @@ func TestScanVirtualFolderCacheRetainsLatestInputAndSkipsRepeatedWrites(t *testi
 	path := libraryIntegrationFile(t, root, "shows/Film.mp4", "video:virtual-folder-cache")
 	library := libraryIntegrationCreate(t, ctx, store, "Virtual folders", "tvshows", filepath.Dir(path))
 	state := scanClaimLookupState(t, ctx, store, library, filepath.Dir(path))
+	task, _ := scanUnchangedProgressTask(t, ctx, pool, library)
+	state.task = task
+	store.mu.Lock()
+	store.active[task.job.ID] = task
+	store.mu.Unlock()
+	t.Cleanup(func() {
+		task.cancel()
+		store.mu.Lock()
+		delete(store.active, task.job.ID)
+		store.mu.Unlock()
+	})
 	const relative = "//series/show"
 	publish := func(name string) string {
 		t.Helper()

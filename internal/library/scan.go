@@ -1,6 +1,7 @@
 package library
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,10 +11,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 var episodePattern = regexp.MustCompile(`(?i)^(.*?)[ ._-]*s([0-9]{1,3})e([0-9]{1,4})(?:[^0-9].*)?$`)
@@ -45,6 +48,11 @@ type scanState struct {
 	extras              *extraScan
 	reconciliation      *scanReconciliationEvidence
 	reconciliationPass  *scanReconciliationPass
+	walkIO              *PrimaryRootIO
+	walkRow             rootBindingRow
+	primaryReadMu       sync.Mutex
+	primaryReadErr      error
+	primaryReadParent   *scanState
 }
 
 type storedFile struct {
@@ -133,7 +141,8 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 		if err == nil && state.warnings == 0 {
 			err = state.finishThemeScan()
 		}
-		_ = opened.Close()
+		closeErr := opened.Close()
+		err = errors.Join(err, state.primaryScanReadError(), closeErr)
 		state.opened = nil
 		for parentID := range state.musicParents {
 			musicParents[parentID] = true
@@ -149,6 +158,10 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 			if errors.As(err, &recordingFailure) {
 				return "Accepted scan identities could not be retained safely", err
 			}
+			var readFailure *primaryScanReadFailure
+			if errors.As(err, &readFailure) || closeErr != nil {
+				return "Scan input ownership or cleanup could not be completed", err
+			}
 			failedRoots++
 		}
 	}
@@ -158,6 +171,9 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 	}
 	warnings += themeWarnings
 	for _, state := range themeOwners.roots {
+		if err := state.primaryScanReadError(); err != nil {
+			return "Scan input cleanup could not be completed", err
+		}
 		for parentID := range state.musicParents {
 			musicParents[parentID] = true
 		}
@@ -188,7 +204,8 @@ func (s *Store) scanLibrary(task *scanTask) (message string, resultErr error) {
 	return strings.TrimPrefix(reconciliationMessage, "; "), nil
 }
 
-func (state *scanState) walk(relative string, current hierarchy, depth int) error {
+func (state *scanState) walk(relative string, current hierarchy, depth int) (resultErr error) {
+	defer func() { resultErr = errors.Join(resultErr, state.primaryScanReadError()) }()
 	if err := state.task.ctx.Err(); err != nil {
 		return err
 	}
@@ -196,27 +213,61 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		state.warnings++
 		return nil
 	}
-	directory, err := openScanFile(state.opened, relative)
-	if err != nil {
-		return err
+	if state.walkIO == nil {
+		row, err := state.readPrimaryScanAuthority(state.task.ctx)
+		if err != nil {
+			return err
+		}
+		if state.reconciliationPass != nil {
+			if capture := state.reconciliationPass.byRoot[state.root.id]; capture != nil && !capture.row.same(row) {
+				return ErrRootBindingConflict
+			}
+		}
+		operation, err := state.store.preparePrimaryRootIO(state.task.ctx,
+			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+		if err != nil {
+			return err
+		}
+		state.walkIO, state.walkRow = operation, row
+		defer func() {
+			resultErr = errors.Join(resultErr, operation.Close())
+			state.walkIO = nil
+		}()
 	}
-	info, err := directory.Stat()
-	if err != nil || !info.IsDir() {
-		_ = directory.Close()
-		return fmt.Errorf("media directory is unavailable")
-	}
+	var directory *os.File
+	var info os.FileInfo
+	var entries []os.DirEntry
 	// Hold the observed directory while its NFO and children are processed so
 	// its identity cannot be recycled after a concurrent rename or removal.
-	defer directory.Close()
-	if state.reconciliation != nil {
-		_ = state.reconciliation.BeginDirectoryObservation(state.root.id, relative, directory, info)
-	}
-	entries, err := readScanDirectoryEntries(state.task.ctx, directory)
+	defer func() {
+		if directory != nil {
+			resultErr = errors.Join(resultErr, directory.Close())
+		}
+	}()
+	err := state.walkIO.Run(state.task.ctx, state.root.id, primaryio.Background, func(ctx context.Context) error {
+		fresh, err := state.readPrimaryScanAuthority(ctx)
+		if err != nil || !state.walkRow.same(fresh) {
+			return errors.Join(err, ErrRootBindingConflict)
+		}
+		directory, err = openScanFile(state.opened, relative)
+		if err != nil {
+			return err
+		}
+		info, err = directory.Stat()
+		if err != nil || !info.IsDir() {
+			return fmt.Errorf("media directory is unavailable")
+		}
+		if state.reconciliation != nil {
+			_ = state.reconciliation.BeginDirectoryObservationFor(ctx, state.root.id, relative, directory, info)
+		}
+		entries, err = readScanDirectoryEntries(ctx, directory)
+		if err == nil && state.reconciliation != nil {
+			_ = state.reconciliation.RecordDirectoryFor(ctx, state.root.id, relative, info, entries)
+		}
+		return err
+	})
 	if err != nil {
 		return err
-	}
-	if state.reconciliation != nil {
-		_ = state.reconciliation.RecordDirectory(state.root.id, relative, info, entries)
 	}
 	entries, err = state.classifyExtraDirectory(relative, entries, info)
 	if err == nil {
@@ -273,7 +324,7 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 	if probes != nil {
 		// A failed prepare or publication must cancel and join the other probe
 		// before any directory or root descriptor can be retired.
-		defer probes.close()
+		defer func() { resultErr = errors.Join(resultErr, probes.close()) }()
 	}
 	for _, entry := range entries {
 		if err := state.task.ctx.Err(); err != nil {
@@ -339,23 +390,72 @@ func (state *scanState) walk(relative string, current hierarchy, depth int) erro
 		return err
 	}
 	if state.reconciliation != nil && state.warnings == 0 {
-		_ = state.reconciliation.CompleteDirectory(state.root.id, relative)
+		if err := state.walkIO.Run(state.task.ctx, state.root.id, primaryio.Background, func(ctx context.Context) error {
+			fresh, err := state.readPrimaryScanAuthority(ctx)
+			if err != nil || !state.walkRow.same(fresh) {
+				return errors.Join(err, ErrRootBindingConflict)
+			}
+			_ = state.reconciliation.CompleteDirectoryFor(ctx, state.root.id, relative)
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (state *scanState) scanFile(path, kind string, current hierarchy) error {
+func (state *scanState) scanFile(path, kind string, current hierarchy) (resultErr error) {
 	input, err := state.inspectScannedMedia(path, kind, scannedRoleOrdinary)
 	if err != nil || input == nil {
 		return err
 	}
-	defer input.file.Close()
+	defer func() { resultErr = errors.Join(resultErr, input.close()) }()
 	return state.publishScannedMedia(path, kind, current, input)
 }
 
 // publishScannedMedia runs only on the scan worker. Probe workers never mutate
 // counters, claims, hierarchy, sidecars, evidence, or the catalog.
-func (state *scanState) publishScannedMedia(path, kind string, current hierarchy, input *scannedMediaInput) error {
+func (state *scanState) publishScannedMedia(path, kind string, current hierarchy, input *scannedMediaInput) (resultErr error) {
+	if input == nil || input.primary == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	for {
+		warnings := state.warnings
+		committed := false
+		err := func() (resultErr error) {
+			operation, err := input.primary.preparePublicationIO()
+			if err != nil {
+				return scanReadFailure(err)
+			}
+			input.primary.publicationIO = operation
+			defer func() {
+				resultErr = errors.Join(resultErr, closeScanPublicationIO(operation))
+				input.primary.publicationIO = nil
+			}()
+			return state.publishScannedMediaAttempt(path, kind, current, input, &committed)
+		}()
+		if committed || !sidecarAdmissionRetryable(err) {
+			return err
+		}
+		// The attempt has rolled back and closed its publication handle. The
+		// original bounded input remains owned until actual scan retirement.
+		state.warnings = warnings
+		if err := state.waitSidecarScanAdmission(); err != nil {
+			return scanReadFailure(err)
+		}
+	}
+}
+
+func (state *scanState) publishScannedMediaAttempt(path, kind string, current hierarchy, input *scannedMediaInput, committed *bool) (resultErr error) {
+	completionRequired, completionChecked := false, false
+	defer func() {
+		if completionRequired && !completionChecked {
+			// Fresh sidecar admission may reject a stopped parent before its
+			// optional work begins. Preserve that error while the canonical
+			// completion path repairs cancellation and the accepted prefix.
+			resultErr = errors.Join(resultErr, state.store.checkCachedTaskScanProgress(state.task))
+		}
+	}()
 	if input.authority != nil {
 		if err := state.checkScanProbeFile(path, input); err != nil {
 			return err
@@ -420,7 +520,14 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	name, sortName, overview := describeFromLocal(name, local)
 	// Sidecar absence is authoritative only while this media pathname still
 	// names the opened file. A concurrent directory move is not NFO deletion.
-	currentInfo, pathErr := state.opened.Lstat(path)
+	var currentInfo os.FileInfo
+	var pathErr error
+	if err := input.primary.runPublicationMetadata(input.primary.publicationIO, func(context.Context) error {
+		currentInfo, pathErr = state.opened.Lstat(path)
+		return nil
+	}); err != nil {
+		return err
+	}
 	if pathErr != nil || !currentInfo.Mode().IsRegular() || !os.SameFile(info, currentInfo) ||
 		currentInfo.Size() != info.Size() || !currentInfo.ModTime().Equal(info.ModTime()) ||
 		(checksVersion && media.FileChangeTime(currentInfo) != media.FileChangeTime(info)) {
@@ -461,6 +568,7 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 		previousSort != comparisonSortName || previousOverview != overview || previousIndex != indexNumber || previousParentIndex != parentIndex ||
 		stored.local.hash != local.hash || stored.local.path != local.path || !reflect.DeepEqual(stored.local.value, local.value)
 	if stored.id != "" && !changed {
+		completionRequired = state.task.job.TaskChildID != ""
 		if err := state.scanSubtitles(stored.id, path, probe); err != nil {
 			return err
 		}
@@ -486,6 +594,7 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 			// last. Its complete stable-absence owner query can also be the final
 			// fresh task fence. No sidecar/staging write follows that check.
 			completionCheck := func() error {
+				completionChecked = true
 				err := state.store.checkCachedTaskScanProgress(state.task)
 				checked = err == nil
 				return err
@@ -499,6 +608,7 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 		if state.task.job.TaskChildID == "" || checked {
 			return state.task.ctx.Err()
 		}
+		completionChecked = true
 		return state.store.persistProgress(state.task)
 	}
 	mediaJSON, err := json.Marshal(probe)
@@ -520,7 +630,11 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	if err != nil {
 		return err
 	}
-	defer rollback(tx)
+	defer func() {
+		if !*committed {
+			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
+		}
+	}()
 	var publicationProgress *taskScanRelation
 	if state.task.job.TaskChildID != "" {
 		relation, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task)
@@ -643,6 +757,7 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	if err := tx.Commit(state.task.ctx); err != nil {
 		return err
 	}
+	*committed = true
 	if publicationProgress != nil {
 		state.task.job = committedProgress
 	} else {
@@ -650,6 +765,9 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	}
 	if progressInItemTx {
 		state.store.notifyScanUpdate()
+	}
+	if publicationProgress != nil {
+		completionRequired = true
 	}
 	if err := state.scanSubtitles(id, path, probe); err != nil {
 		return err
@@ -665,12 +783,6 @@ func (state *scanState) publishScannedMedia(path, kind string, current hierarchy
 	state.recordThemePrimary(path, id, itemType)
 	if err := state.recordScanSeen(id); err != nil {
 		return err
-	}
-	if publicationProgress != nil {
-		// Sidecars and accepted-identity staging remain outside the item
-		// transaction. Recheck current task authority after those operations;
-		// this standalone shared-lock check still has an autocommit transaction.
-		return state.store.checkCachedTaskScanProgress(state.task)
 	}
 	return state.task.ctx.Err()
 }

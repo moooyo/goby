@@ -45,8 +45,8 @@ func (s *Server) serveArtworkImage(w http.ResponseWriter, r *http.Request, open 
 	key := imageVariantKey(source.Tag, request.options)
 	result, found := s.images.get(key)
 	if !found {
-		rendered, renderErr := artwork.Render(ctx, reader, request.options)
-		_ = reader.Close()
+		rendered, renderErr := artwork.RenderJoined(ctx, reader, request.options)
+		renderErr = errors.Join(renderErr, reader.Close())
 		if renderErr != nil {
 			s.artworkManagementError(w, r, renderErr)
 			return
@@ -58,14 +58,20 @@ func (s *Server) serveArtworkImage(w http.ResponseWriter, r *http.Request, open 
 		result = cachedImage{key: key, contentType: rendered.MIMEType, etag: imageETag(source.Tag, request.options), data: rendered.Bytes}
 		s.images.put(result)
 	} else {
-		_ = reader.Close()
+		if err := reader.Close(); err != nil {
+			s.artworkManagementError(w, r, err)
+			return
+		}
 	}
 	fresh, current, err := open(ctx)
 	if err != nil {
 		s.artworkManagementError(w, r, err)
 		return
 	}
-	_ = fresh.Close()
+	if err := fresh.Close(); err != nil {
+		s.artworkManagementError(w, r, err)
+		return
+	}
 	if source.Tag != current.Tag || source.ContentDigest() != current.ContentDigest() {
 		s.artworkManagementError(w, r, library.ErrRevisionConflict)
 		return

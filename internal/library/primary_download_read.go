@@ -50,5 +50,8 @@ func (s *Store) readOriginalDownloadRevalidationFor(ctx context.Context, subject
 	if err := tx.Commit(ctx); err != nil {
 		return indexedMediaSource{}, fmt.Errorf("%w: complete authorized download revalidation: %w", ErrUnavailable, err)
 	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
+		return indexedMediaSource{}, err
+	}
 	return snapshot, nil
 }

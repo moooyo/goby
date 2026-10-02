@@ -19,6 +19,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/moooyo/goby/internal/commanddomain"
 	"github.com/moooyo/goby/internal/media"
 )
 
@@ -38,10 +39,14 @@ const (
 func Run(ctx context.Context, executable, directory string, input *os.File, plan Plan, threads int, onProgress func(Progress)) (result RunResult, runErr error) {
 	result = RunResult{ExitCode: -1}
 	lifecycle := resourceLifecycleFromContext(ctx)
+	admitted := false
 	if lifecycle != nil {
-		// This is registered before every runner-owned close, so the lifecycle
-		// boundary is observed only after those defers have released their files.
+		// Validation and source-phase admission failures still observe the
+		// return boundary. Once work begins, the admitted body owns this join.
 		defer func() {
+			if admitted {
+				return
+			}
 			if err := lifecycle.runnerReturned(context.WithoutCancel(ctx)); err != nil {
 				result.ProductionSealSafe = false
 				result.WindowInputEvidence = nil
@@ -51,6 +56,11 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	}
 	if err := ctx.Err(); err != nil {
 		return result, err
+	}
+	if _, required := commanddomain.CommandScopeFromContext(ctx); required {
+		// Observer startup requires the conventional runner's post-Start
+		// retirement callback, which native command templates do not invoke.
+		return result, errors.Join(ErrStart, commanddomain.ErrUnavailable)
 	}
 	var err error
 	threads, err = ExecutionThreads(plan, threads)
@@ -90,6 +100,35 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 			return result, err
 		}
 	}
+	// External subtitle loading can acquire a second source. Finish asset
+	// preparation before holding the main source's actual-reader phase.
+	runErr = media.RunSourceReadPhase(ctx, func(readCtx context.Context) error {
+		admitted = true
+		var err error
+		result, err = runAdmittedSource(readCtx, executable, directory, input, plan, threads, args, info, liveConfig, onProgress)
+		return err
+	})
+	if errors.Is(runErr, media.ErrProcessRetirementUnknown) {
+		result.ProductionSealSafe = false
+		result.WindowInputEvidence = nil
+	}
+	return result, runErr
+}
+
+func runAdmittedSource(ctx context.Context, executable, directory string, input *os.File, plan Plan, threads int, args []string, info os.FileInfo, liveConfig liveRuntime, onProgress func(Progress)) (result RunResult, runErr error) {
+	result = RunResult{ExitCode: -1}
+	lifecycle := resourceLifecycleFromContext(ctx)
+	if lifecycle != nil {
+		// This is registered before every runner-owned close, so the lifecycle
+		// boundary and its proof finish before the actual-reader phase returns.
+		defer func() {
+			if err := lifecycle.runnerReturned(context.WithoutCancel(ctx)); err != nil {
+				result.ProductionSealSafe = false
+				result.WindowInputEvidence = nil
+				runErr = errors.Join(runErr, ErrProcess, err)
+			}
+		}()
+	}
 	resolved, err := exec.LookPath(executable)
 	if err != nil || !filepath.IsAbs(resolved) {
 		return result, ErrStart
@@ -97,23 +136,23 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 	if plan.VideoCopySeekCandidate != "" {
 		verification, err := media.VerifyVideoCopySeekCandidate(ctx, resolved, input, plan.VideoCopySeekCandidate, threads)
 		if ctx.Err() != nil {
-			return result, ctx.Err()
+			return result, errors.Join(ctx.Err(), err)
 		}
 		// A copy plan cannot fall back to an unverified packet boundary. The
 		// planner may choose encoding before a job exists; a failed fresh proof
 		// must fail this immutable copy job before it publishes any bytes.
 		if err != nil || !verification.Verified || !transcodeSourceUnchanged(input, info) {
-			return result, ErrInvalidInput
+			return result, errors.Join(ErrInvalidInput, err)
 		}
 		args = buildProgressiveVideoArgsWithSeek(plan, threads, verification.InputSeekTicks)
 	}
 	if progressiveVideoSeekPreflightEnabled(plan) {
 		verification, err := media.VerifyVideoSeekCandidate(ctx, resolved, input, plan.VideoSeekCandidate, threads)
 		if ctx.Err() != nil {
-			return result, ctx.Err()
+			return result, errors.Join(ctx.Err(), err)
 		}
 		if err != nil || !transcodeSourceUnchanged(input, info) {
-			return result, ErrInvalidInput
+			return result, errors.Join(ErrInvalidInput, err)
 		}
 		if verification.Verified {
 			args = buildProgressiveVideoArgsWithSeek(plan, threads, verification.InputSeekTicks)
@@ -231,21 +270,6 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		})
 		return err
 	}
-	if err := cmd.Start(); err != nil {
-		return result, ErrStart
-	}
-	if progressive != nil {
-		progressive.start()
-	}
-	if hlsClock != nil {
-		hlsClock.start()
-	}
-	if windowInput != nil {
-		windowInput.start()
-	}
-	if live != nil {
-		live.start()
-	}
 	var publish func(bool) error
 	var publicationErr error
 	var publishStop, publishDone chan struct{}
@@ -256,44 +280,76 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		publisher := &packedHLSPublisher{directory: directory, plan: plan}
 		publish = publisher.publish
 	}
-	if publish != nil {
-		publishStop, publishDone = make(chan struct{}), make(chan struct{})
-		go func() {
-			defer close(publishDone)
-			ticker := time.NewTicker(25 * time.Millisecond)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-publishStop:
-					return
-				case <-ticker.C:
-					if err := publish(false); err != nil {
-						publicationErr = err
-						cancel()
+	var waitErr error
+	var cancelWasSignalled bool
+	err = media.RunProcessWithRetirement(processCtx, cmd, func() error {
+		// This callback begins only after the child inherited its descriptors.
+		// The admitted runner joins it before returning or reaping the leader.
+		if progressive != nil {
+			progressive.start()
+		}
+		if hlsClock != nil {
+			hlsClock.start()
+		}
+		if windowInput != nil {
+			windowInput.start()
+		}
+		if live != nil {
+			live.start()
+		}
+		if publish != nil {
+			publishStop, publishDone = make(chan struct{}), make(chan struct{})
+			go func() {
+				defer close(publishDone)
+				ticker := time.NewTicker(25 * time.Millisecond)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-publishStop:
 						return
+					case <-ticker.C:
+						if err := publish(false); err != nil {
+							publicationErr = err
+							cancel()
+							return
+						}
 					}
 				}
+			}()
+		}
+		// Keep the exited leader waitable: its PID also identifies our process
+		// group and must not be recycled until every group signal has been sent.
+		// exec's context watcher can signal/close pipes, but only Cmd.Wait reaps.
+		waitErr = waitWithoutReaping(cmd.Process.Pid)
+		groupMu.Lock()
+		defer groupMu.Unlock()
+		if timer != nil {
+			timer.Stop()
+		}
+		// ECHILD means an external reaper violated exclusive ownership, so
+		// the old numeric PGID is no longer safe to signal or prove retired.
+		var signalErr error
+		if !errors.Is(waitErr, syscall.ECHILD) {
+			signalErr = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			if errors.Is(signalErr, syscall.ESRCH) {
+				signalErr = nil
 			}
-		}()
+		}
+		retired = true
+		cancelWasSignalled = cancelSignalled
+		return errors.Join(waitErr, signalErr)
+	})
+	if cmd.Process == nil {
+		return result, errors.Join(ErrStart, err)
 	}
-	// Keep the exited leader waitable: its PID also identifies our process
-	// group and must not be recycled until every group signal has been sent.
-	// exec's context watcher can signal/close pipes, but only Cmd.Wait reaps.
-	waitErr := waitWithoutReaping(cmd.Process.Pid)
-	groupMu.Lock()
-	if timer != nil {
-		timer.Stop()
+	if errors.Is(err, media.ErrProcessRetirementUnknown) {
+		cancel()
+		// Unproved descendants may still hold inherited clock pipes. Close
+		// the local reader ends so observer shutdown cannot await their EOF.
+		if hlsClock != nil {
+			hlsClock.close()
+		}
 	}
-	// WNOWAIT pins the leader's identity through group retirement. ECHILD
-	// indicates that some external reaper violated our exclusive ownership;
-	// in that case its old numeric PGID is no longer safe to signal.
-	if !errors.Is(waitErr, syscall.ECHILD) {
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-	}
-	retired = true
-	cancelWasSignalled := cancelSignalled
-	groupMu.Unlock()
-	err = cmd.Wait()
 	var retirementErr error
 	if plan.SourceMode != "stream" && lifecycle != nil {
 		retirementErr = lifecycle.retireProcesses(context.WithoutCancel(ctx))
@@ -336,12 +392,13 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 	progress.finish()
+	processErr := errors.Join(err, retirementErr, hlsClockErr, windowInputErr, liveErr, progressiveErr, publicationErr)
 	// Context cancellation intentionally remains the public error priority.
 	// Retaining a partial VOD window needs a separate proof after all stdout,
 	// stderr, clock and private-publication workers have drained. Recheck the
 	// input here: the earlier source observation preceded publisher shutdown.
 	result.ProductionSealSafe = plan.SegmentMode == "vod" && plan.OutputMode == "" && plan.SourceMode == "" && !GeneratedHLS(plan) &&
-		transcodeSourceUnchanged(input, info) && waitErr == nil && retirementErr == nil &&
+		transcodeSourceUnchanged(input, info) && waitErr == nil && retirementErr == nil && !errors.Is(processErr, media.ErrProcessRetirementUnknown) &&
 		progress.err == nil && !stderr.failed && hlsClockErr == nil && liveErr == nil && progressiveErr == nil && publicationErr == nil &&
 		productionSealProcessExitSafe(err, cancelWasSignalled)
 	if failure := progress.failure; failure != nil {
@@ -351,16 +408,16 @@ func Run(ctx context.Context, executable, directory string, input *os.File, plan
 		result.ProgressFailure = failure
 	}
 	if ctx.Err() != nil {
-		return result, ctx.Err()
+		return result, errors.Join(ctx.Err(), processErr)
 	}
 	if !unchanged {
-		return result, ErrInvalidInput
+		return result, errors.Join(ErrInvalidInput, processErr)
 	}
 	if progress.err != nil {
-		return result, ErrProgress
+		return result, errors.Join(ErrProgress, processErr)
 	}
 	if waitErr != nil || err != nil || stderr.failed || progressiveErr != nil || publicationErr != nil || hlsClockErr != nil || liveErr != nil || retirementErr != nil || windowInputErr != nil {
-		return result, ErrProcess
+		return result, errors.Join(ErrProcess, processErr)
 	}
 	if windowInput != nil {
 		if !transcodeSourceUnchanged(input, info) {

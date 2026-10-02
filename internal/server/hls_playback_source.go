@@ -7,6 +7,7 @@ import (
 
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/library"
+	"github.com/moooyo/goby/internal/media"
 )
 
 // A source loan preserves the existing raw-file APIs for timeline/byte proofs,
@@ -15,6 +16,7 @@ type hlsPlaybackSource struct {
 	runtime     *hlsRuntime
 	file        *os.File
 	owned       *playbackOwnedInput
+	read        *library.MediaSourceReadIO
 	work        context.Context
 	cancel      context.CancelFunc
 	stopSession func() bool
@@ -22,7 +24,10 @@ type hlsPlaybackSource struct {
 
 func (source *hlsPlaybackSource) context(ctx context.Context) context.Context {
 	if source != nil && source.owned != nil {
-		return context.WithValue(source.work, playbackAdmissionContextKey{}, source.owned.reference)
+		ctx = context.WithValue(source.work, playbackAdmissionContextKey{}, source.owned.reference)
+	}
+	if source != nil && source.read != nil {
+		ctx = source.read.Context(ctx)
 	}
 	return ctx
 }
@@ -37,13 +42,23 @@ func (source *hlsPlaybackSource) close() error {
 	if source.cancel != nil {
 		source.cancel()
 	}
+	var err error
 	if source.owned != nil {
-		return source.runtime.closePlaybackInput(source.owned)
+		err = source.runtime.closePlaybackInput(source.owned)
+	} else if source.file != nil {
+		err = source.file.Close()
+		if errors.Is(err, os.ErrClosed) {
+			err = nil
+		}
 	}
-	if source.file != nil {
-		return source.file.Close()
+	if source.read != nil {
+		if err != nil {
+			err = media.SourceReadRetirementError(err, source.file)
+			err = errors.Join(err, source.read.MarkUnknown(err))
+		}
+		err = errors.Join(err, source.read.Close())
 	}
-	return nil
+	return err
 }
 
 // authorizePlaybackSource forks an existing actual registration parent before
@@ -75,6 +90,12 @@ func (h *hlsRuntime) authorizePlaybackSource(ctx context.Context, principal iden
 	}
 	if err != nil {
 		return nil, library.MediaFile{}, errors.Join(err, loan.close())
+	}
+	if h.server != nil && h.server.library != nil {
+		loan.read, err = h.server.library.PrepareMediaSourceIO(loan.work, current)
+		if err != nil {
+			return nil, library.MediaFile{}, errors.Join(err, loan.close())
+		}
 	}
 	return loan, current, nil
 }

@@ -1,0 +1,539 @@
+package library
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
+)
+
+// JoinedProbeCallbacks is an explicit synchronous input borrowing contract.
+// Implementations join every direct read and use the actual media gateway for
+// all children; they cannot leave an external reader alive after ProbeFile.
+// This declaration is not an operating-system or native-domain certificate.
+type JoinedProbeCallbacks interface{ ProbeFileJoinedContract() bool }
+
+type primaryScanRead struct {
+	state          *scanState
+	work           context.Context
+	finish         func()
+	owner          *primaryio.Owner
+	route          primaryio.Route
+	claim          *originalMediaReadDomainClaim
+	row            rootBindingRow
+	file           *os.File
+	stamp          os.FileInfo
+	path           string
+	namedRoot      *os.Root
+	ownedRoot      bool
+	phase          *primaryio.PrimaryReadLease
+	receipt        *media.ProbeRetirementReceipt
+	publicationIO  *PrimaryRootIO
+	missingReceipt bool
+	mu             sync.Mutex
+	closeOnce      sync.Once
+	closeErr       error
+	closed         chan struct{}
+}
+
+type primaryScanReadFailure struct{ err error }
+
+var errScanPublicationRetirementUnknown = errors.New("scan publication operation retirement is unknown")
+
+func (failure *primaryScanReadFailure) Error() string { return failure.err.Error() }
+func (failure *primaryScanReadFailure) Unwrap() error { return failure.err }
+
+func scanReadFailure(err error) error {
+	if err == nil {
+		return nil
+	}
+	var failure *primaryScanReadFailure
+	if errors.As(err, &failure) {
+		return err
+	}
+	return &primaryScanReadFailure{err: err}
+}
+
+func (state *scanState) recordPrimaryScanReadFailure(err error) {
+	if err == nil {
+		return
+	}
+	if state.primaryReadParent != nil {
+		state.primaryReadParent.recordPrimaryScanReadFailure(err)
+		return
+	}
+	state.primaryReadMu.Lock()
+	state.primaryReadErr = errors.Join(state.primaryReadErr, scanReadFailure(err))
+	state.primaryReadMu.Unlock()
+}
+
+func (state *scanState) primaryScanReadError() error {
+	if state.primaryReadParent != nil {
+		return state.primaryReadParent.primaryScanReadError()
+	}
+	state.primaryReadMu.Lock()
+	defer state.primaryReadMu.Unlock()
+	return state.primaryReadErr
+}
+
+// Authority preparation is database-only. It commits before any read queue or
+// source FD delivery; no cached mapping grants task or root authority.
+func (state *scanState) readPrimaryScanAuthority(ctx context.Context) (rootBindingRow, error) {
+	if ctx == nil || state == nil || state.store == nil || state.task == nil {
+		return rootBindingRow{}, ErrUnavailable
+	}
+	return (&primaryScanRead{state: state, work: ctx}).readAuthority()
+}
+
+func (state *scanState) runPrimaryScanMetadata(ctx context.Context, work func(context.Context) error) (resultErr error) {
+	row, err := state.readPrimaryScanAuthority(ctx)
+	if err != nil {
+		return err
+	}
+	if state.walkRow.root.id != "" && !state.walkRow.same(row) {
+		return ErrRootBindingConflict
+	}
+	operation := state.walkIO
+	if operation == nil {
+		operation, err = state.store.preparePrimaryRootIO(ctx,
+			[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+		if err != nil {
+			return err
+		}
+		defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
+	}
+	return operation.Run(ctx, row.root.id, primaryio.Background, func(workContext context.Context) error {
+		fresh, err := state.readPrimaryScanAuthority(workContext)
+		if err != nil || !row.same(fresh) {
+			return errors.Join(err, ErrRootBindingConflict)
+		}
+		return work(workContext)
+	})
+}
+
+func (input *primaryScanRead) preparePublicationIO() (*PrimaryRootIO, error) {
+	if input == nil || input.state == nil || input.row.root != input.state.root || input.row.validateMapping() != nil {
+		return nil, ErrRootBindingConflict
+	}
+	state := input.state
+	if state.walkIO != nil {
+		if !state.walkRow.same(input.row) {
+			return nil, ErrRootBindingConflict
+		}
+		return state.walkIO.Fork(input.work)
+	}
+	if pass := state.reconciliationPass; pass != nil {
+		if capture := pass.byRoot[input.row.root.id]; capture != nil && capture.primaryIO != nil {
+			if !capture.row.same(input.row) {
+				return nil, ErrRootBindingConflict
+			}
+			return capture.primaryIO.Fork(input.work)
+		}
+	}
+	return state.store.preparePrimaryRootIO(input.work,
+		[]mediaSourceRootHint{{root: input.row.root, bindingRevision: input.row.revision}})
+}
+
+func (input *primaryScanRead) runPublicationMetadata(operation *PrimaryRootIO, work func(context.Context) error) error {
+	if operation == nil || work == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	return operation.Run(input.work, input.row.root.id, primaryio.Background, func(ctx context.Context) error {
+		row, err := (&primaryScanRead{state: input.state, work: ctx}).readAuthorityForPublication(true)
+		if err != nil {
+			return scanReadFailure(err)
+		}
+		if !input.row.same(row) {
+			return scanReadFailure(ErrRootBindingConflict)
+		}
+		return work(ctx)
+	})
+}
+
+func closeScanPublicationIO(operation *PrimaryRootIO) error {
+	if operation == nil {
+		return nil
+	}
+	if err := operation.Close(); err != nil {
+		return scanReadFailure(errors.Join(errScanPublicationRetirementUnknown, err))
+	}
+	return nil
+}
+
+func (state *scanState) preparePrimaryScanRead() (_ *primaryScanRead, resultErr error) {
+	if state == nil || state.store == nil || state.task == nil {
+		return nil, ErrUnavailable
+	}
+	work, finish, err := state.store.beginMediaSourceLifetime(state.task.ctx)
+	if err != nil {
+		return nil, err
+	}
+	owner, err := originalMediaReadOwners.Register(work)
+	if err != nil {
+		finish()
+		if errors.Is(err, primaryio.ErrBusy) {
+			return nil, scanReadFailure(fmt.Errorf("%w: retain scan input: %w", ErrBusy, err))
+		}
+		return nil, fmt.Errorf("%w: retain scan input: %w", ErrUnavailable, err)
+	}
+	input := &primaryScanRead{state: state, work: work, finish: finish, owner: owner, namedRoot: state.opened, closed: make(chan struct{})}
+	accepted := false
+	defer func() {
+		if !accepted {
+			resultErr = errors.Join(resultErr, input.retireRegistration())
+			resultErr = scanReadFailure(resultErr)
+		}
+	}()
+	row, err := input.readAuthority()
+	if err != nil {
+		return nil, err
+	}
+	input.row = row
+	route, err := state.store.primaryReadRoute(mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
+	if err != nil {
+		return nil, err
+	}
+	_, domain, err := state.store.mediaSourceRootLane(mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
+	if err != nil {
+		return nil, err
+	}
+	claim, err := originalMediaReadDomains.acquire(domain)
+	if err != nil {
+		return nil, err
+	}
+	input.route, input.claim = route, claim
+	accepted = true
+	return input, nil
+}
+
+func (input *primaryScanRead) readAuthority() (rootBindingRow, error) {
+	return input.readAuthorityForPublication(false)
+}
+
+func (input *primaryScanRead) readAuthorityForPublication(publication bool) (_ rootBindingRow, resultErr error) {
+	state := input.state
+	if err := input.work.Err(); err != nil {
+		return rootBindingRow{}, err
+	}
+	state.store.mu.Lock()
+	active := !state.store.closed && !state.store.closing.Load() && state.store.active[state.task.job.ID] == state.task &&
+		state.store.rootBindingPathConfiguredLocked(state.root.allowedPath)
+	state.store.mu.Unlock()
+	if !active {
+		return rootBindingRow{}, ErrTaskScanInactive
+	}
+	tx, err := state.store.pool.Begin(input.work)
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr))
+		}
+	}()
+	adapter := scanProbeAuthorityTx{ctx: input.work, tx: tx}
+	var relation taskScanRelation
+	if publication {
+		// Preserve publication's existing terminal/history cancellation contract
+		// even though queued metadata now checks authority before taking ownership.
+		relation, err = lockScanPublicationProgress(adapter, state.task)
+	} else {
+		relation, err = lockTaskScanRelation(adapter, state.task.job.ID, state.task.job.TaskChildID)
+	}
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	if relation.missing || relation.job.ID != state.task.job.ID || relation.job.LibraryID != state.task.job.LibraryID ||
+		relation.job.Status != "Running" || relation.job.TaskChildID != state.task.job.TaskChildID || relation.job.ForceProbe != state.task.job.ForceProbe {
+		return rootBindingRow{}, ErrTaskScanInactive
+	}
+	if relation.job.CancelRequested || relation.child != nil && (!activeTaskRun(relation.child.runState) || relation.child.state != "running") {
+		return rootBindingRow{}, context.Canceled
+	}
+	row, err := readRootBindingScanRow(adapter, state.task.job.LibraryID, state.root.id)
+	if err != nil {
+		return rootBindingRow{}, err
+	}
+	if row.root != state.root || row.validateMapping() != nil {
+		return rootBindingRow{}, ErrRootBindingConflict
+	}
+	if err := tx.Commit(input.work); err != nil {
+		return rootBindingRow{}, err
+	}
+	committed = true
+	return row, nil
+}
+
+func (input *primaryScanRead) attach(file *os.File, path string) error {
+	input.file, input.path = file, path
+	if file == nil || input.namedRoot == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	stamp, err := file.Stat()
+	if err != nil || !stamp.Mode().IsRegular() {
+		return scanReadFailure(errors.Join(err, errScanProbeSourceChanged))
+	}
+	input.stamp = stamp
+	return input.checkSource()
+}
+
+func (input *primaryScanRead) checkSource() (resultErr error) {
+	if input.file == nil || input.stamp == nil || input.namedRoot == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	work := input.owner.Context()
+	if err := work.Err(); err != nil {
+		return scanReadFailure(err)
+	}
+	if capture := input.state.reconciliationPass; capture != nil {
+		if retained := capture.byRoot[input.row.root.id]; retained != nil && retained.status == RootBindingVerified {
+			if !retained.row.same(input.row) {
+				return scanReadFailure(ErrRootBindingConflict)
+			}
+			if err := retained.Revalidate(work); err != nil {
+				return scanReadFailure(err)
+			}
+		}
+	}
+	current, err := input.state.store.openLibraryRoot(input.row.root)
+	if err != nil {
+		return scanReadFailure(err)
+	}
+	defer func() {
+		if err := current.Close(); err != nil {
+			resultErr = errors.Join(resultErr, scanReadFailure(err))
+		}
+	}()
+	if !sameMediaSourceDirectory(input.namedRoot, current) {
+		return scanReadFailure(ErrRootBindingConflict)
+	}
+	err = checkScanProbeFileAt(work, current, input.file, input.stamp, input.path)
+	if err == errScanProbeSourceChanged {
+		input.mu.Lock()
+		receipt, phase, missing := input.receipt, input.phase, input.missingReceipt
+		input.mu.Unlock()
+		// A joined, known-retired probe can reject stale source facts without
+		// turning that ordinary rejection into an ownership failure. Before a
+		// backend is called, its acquired phase must still retire in the caller.
+		// Root and close failures above remain fatal when joined with this error.
+		if receipt != nil && receipt.RetirementComplete() && !receipt.UnknownObserved() ||
+			receipt == nil && phase != nil && !missing {
+			return err
+		}
+	}
+	return scanReadFailure(err)
+}
+
+func (input *primaryScanRead) probe(prober Prober, file *os.File) (media.Info, error) {
+	return input.probeContext(input.work, prober, file)
+}
+
+func (input *primaryScanRead) probeContext(ctx context.Context, prober Prober, file *os.File) (_ media.Info, resultErr error) {
+	if ctx == nil || file == nil || file != input.file {
+		return media.Info{}, scanReadFailure(ErrUnavailable)
+	}
+	stop := context.AfterFunc(ctx, func() { _ = input.owner.Cancel() })
+	defer stop()
+	phase, err := input.owner.Acquire(input.route, primaryio.Background)
+	if err != nil {
+		if errors.Is(err, primaryio.ErrBusy) {
+			return media.Info{}, scanReadFailure(fmt.Errorf("%w: admit scan primary read: %w", ErrBusy, err))
+		}
+		return media.Info{}, scanReadFailure(fmt.Errorf("%w: admit scan primary read: %w", ErrUnavailable, err))
+	}
+	input.mu.Lock()
+	input.phase = phase
+	input.mu.Unlock()
+	called := false
+	defer func() {
+		if !called {
+			releaseErr := phase.Release()
+			input.mu.Lock()
+			input.phase = nil
+			input.mu.Unlock()
+			if releaseErr != nil || resultErr != errScanProbeSourceChanged {
+				resultErr = scanReadFailure(errors.Join(resultErr, releaseErr))
+			}
+		}
+	}()
+	if err := ctx.Err(); err != nil {
+		return media.Info{}, err
+	}
+	if err := input.owner.Context().Err(); err != nil {
+		return media.Info{}, err
+	}
+	row, err := input.readAuthority()
+	if err != nil || !row.same(input.row) {
+		if err == nil {
+			err = ErrRootBindingConflict
+		}
+		return media.Info{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return media.Info{}, err
+	}
+	if err := input.owner.Context().Err(); err != nil {
+		return media.Info{}, err
+	}
+	if err := input.checkSource(); err != nil {
+		return media.Info{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return media.Info{}, err
+	}
+	if err := input.owner.Context().Err(); err != nil {
+		return media.Info{}, err
+	}
+	var info media.Info
+	var receipt *media.ProbeRetirementReceipt
+	work, cancelProbe := context.WithCancel(media.WithBackgroundProcess(ctx))
+	stopOwner := context.AfterFunc(input.owner.Context(), cancelProbe)
+	defer func() { stopOwner(); cancelProbe() }()
+	if err := input.owner.Context().Err(); err != nil {
+		return media.Info{}, err
+	}
+	if !media.ProbeFileOwnershipAvailable(work) {
+		return media.Info{}, ErrUnavailable
+	}
+	// An explicit callback declaration wins over an embedded Owned method, so
+	// a custom ProbeFile barrier/override is never bypassed by method promotion.
+	if joined, ok := prober.(JoinedProbeCallbacks); ok {
+		if !joined.ProbeFileJoinedContract() {
+			return media.Info{}, ErrUnavailable
+		}
+		called = true
+		input.mu.Lock()
+		input.missingReceipt = true
+		input.mu.Unlock()
+		info, receipt, err = media.ProbeFileJoinedCallbacks(work, file, prober.ProbeFile)
+	} else if owned, ok := prober.(interface {
+		ProbeFileOwned(context.Context, *os.File) (media.Info, *media.ProbeRetirementReceipt, error)
+	}); ok {
+		called = true
+		input.mu.Lock()
+		input.missingReceipt = true
+		input.mu.Unlock()
+		info, receipt, err = owned.ProbeFileOwned(work, file)
+	} else {
+		err = fmt.Errorf("%w: probe requires explicit joined input ownership", ErrUnavailable)
+	}
+	input.mu.Lock()
+	input.receipt = receipt
+	input.missingReceipt = called && receipt == nil
+	input.mu.Unlock()
+	if receipt == nil {
+		// Only a branch that never invoked a backend can retire without a
+		// receipt. A backend violating its opaque contract stays quarantined.
+		if called {
+			input.mu.Lock()
+			input.missingReceipt = true
+			input.mu.Unlock()
+			err = errors.Join(err, media.ErrProcessRetirementUnknown)
+		}
+		if called {
+			return media.Info{}, scanReadFailure(err)
+		}
+		return media.Info{}, err
+	}
+	complete := receipt.RetirementComplete()
+	var sourceErr error
+	if complete && !receipt.UnknownObserved() {
+		sourceErr = input.checkSource()
+	}
+	if complete {
+		if releaseErr := phase.Release(); releaseErr != nil {
+			return media.Info{}, scanReadFailure(errors.Join(err, sourceErr, releaseErr))
+		}
+		input.mu.Lock()
+		input.phase = nil
+		input.mu.Unlock()
+	}
+	if receipt.UnknownObserved() || !complete {
+		return media.Info{}, scanReadFailure(errors.Join(err, media.ErrProcessRetirementUnknown))
+	}
+	if sourceErr != nil {
+		return media.Info{}, errors.Join(err, sourceErr)
+	}
+	return info, err
+}
+
+func (input *primaryScanRead) retireRegistration() error {
+	if err := input.owner.Complete(); err != nil {
+		return fmt.Errorf("%w: retire scan registration: %w", ErrUnavailable, err)
+	}
+	if input.claim != nil {
+		input.claim.release()
+	}
+	input.finish()
+	return nil
+}
+
+func (input *primaryScanRead) close(closeFile func() error) error {
+	input.closeOnce.Do(func() {
+		input.mu.Lock()
+		receipt, phase, missing := input.receipt, input.phase, input.missingReceipt
+		input.mu.Unlock()
+		for missing {
+			time.Sleep(time.Second)
+		}
+		if receipt != nil {
+			// The exact child cleanup owner remains alive across caller deadlines.
+			// Do not return to the walker while it still owns borrowed root data.
+			for !receipt.RetirementComplete() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				_ = receipt.Close(ctx)
+				cancel()
+				if !receipt.RetirementComplete() {
+					time.Sleep(time.Millisecond)
+				}
+			}
+			if receipt.UnknownObserved() {
+				input.closeErr = errors.Join(input.closeErr, media.ErrProcessRetirementUnknown)
+			}
+		}
+		if phase != nil {
+			if err := phase.Release(); err != nil {
+				input.closeErr = errors.Join(input.closeErr, err)
+				return
+			}
+			input.mu.Lock()
+			input.phase = nil
+			input.mu.Unlock()
+		}
+		if closeFile != nil {
+			if err := closeFile(); err != nil && !errors.Is(err, os.ErrClosed) {
+				input.closeErr = errors.Join(input.closeErr, err)
+				// Keep the actual named root alive until the exact descriptor is
+				// demonstrably closed, even when a cleanup callback reports a fault.
+				for input.file != nil {
+					if _, statErr := input.file.Stat(); errors.Is(statErr, os.ErrClosed) {
+						break
+					}
+					_ = input.file.Close()
+					time.Sleep(time.Millisecond)
+				}
+			}
+		}
+		if input.ownedRoot && input.namedRoot != nil {
+			if err := input.namedRoot.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+				input.closeErr = errors.Join(input.closeErr, err)
+			}
+			for {
+				if _, err := input.namedRoot.Stat("."); errors.Is(err, os.ErrClosed) {
+					break
+				}
+				_ = input.namedRoot.Close()
+				time.Sleep(time.Millisecond)
+			}
+		}
+		input.closeErr = errors.Join(input.closeErr, input.retireRegistration())
+		close(input.closed)
+	})
+	return scanReadFailure(input.closeErr)
+}

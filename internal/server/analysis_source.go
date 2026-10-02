@@ -12,6 +12,23 @@ import (
 	"github.com/moooyo/goby/internal/media"
 )
 
+func closeAnalysisSourceRead(file *os.File, read *library.MediaSourceReadIO) error {
+	var err error
+	if file != nil {
+		err = file.Close()
+		if errors.Is(err, os.ErrClosed) {
+			err = nil
+		}
+	}
+	if err != nil {
+		err = media.SourceReadRetirementError(err, file)
+		if read != nil {
+			err = errors.Join(err, read.MarkUnknown(err))
+		}
+	}
+	return errors.Join(err, read.Close())
+}
+
 // Stream selection is deterministic across catalog ordering. An explicitly
 // default local stream precedes other local streams, with original index as the
 // tie breaker. Attached pictures and external resources are never inputs.
@@ -61,7 +78,15 @@ func analysisSourceDigest(ctx context.Context, file *os.File, expectedSize, maxi
 			return "", err
 		}
 		count := min(int64(len(buffer)), expectedSize-position)
-		n, err := file.ReadAt(buffer[:int(count)], position)
+		var n int
+		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+			if err := work.Err(); err != nil {
+				return err
+			}
+			var err error
+			n, err = file.ReadAt(buffer[:int(count)], position)
+			return err
+		})
 		if err != nil && !errors.Is(err, io.EOF) {
 			return "", err
 		}

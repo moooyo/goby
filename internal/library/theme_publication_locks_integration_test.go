@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 func holdThemePublicationGate(t *testing.T, ctx context.Context, pool *pgxpool.Pool) pgx.Tx {
@@ -219,8 +220,22 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 		_ = file.Close()
 		t.Fatal(err)
 	}
-	task := &scanTask{ctx: ctx}
+	task, _ := scanUnchangedProgressTask(t, ctx, pool, lib)
+	store.mu.Lock()
+	store.active[task.job.ID] = task
+	store.mu.Unlock()
+	t.Cleanup(func() {
+		task.cancel()
+		store.mu.Lock()
+		delete(store.active, task.job.ID)
+		store.mu.Unlock()
+	})
 	state := &scanState{store: store, task: task, library: lib, root: record, themes: &themeScan{directories: make(map[string]os.FileInfo)}}
+	row, err := state.readPrimaryScanAuthority(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.walkRow = row
 	for _, relative := range []string{".", "theme-music"} {
 		observed, err := os.Stat(filepath.Join(record.path, relative))
 		if err != nil {
@@ -231,19 +246,19 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	}
 	files := []*preparedThemeFile{{state: state, role: scannedRoleTheme,
 		candidate: themeCandidate{relative: "theme-music/Theme.mp3", kind: themePathKindSong, layout: themePathLayoutMusic},
-		input:     &scannedMediaInput{file: file, info: info}}}
+		input:     &scannedMediaInput{file: file, info: info}, sourceRow: row}}
 	defer closeThemeFiles(files)
+	beforeOwners := originalMediaReadOwners.Stats().RegisteredOwners
 	witness, err := store.prepareAuxiliaryPublicationWitness(task, lib, files, map[string]bool{record.id: true},
 		map[string]*scanState{record.id: state}, themePublicationPlan{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer witness.Close()
-	held := witness.files[0].input.file
-	if held == nil || held == file {
-		t.Fatal("the observation witness borrowed the caller's media descriptor")
+	if witness.files[0].input.file != nil {
+		t.Fatal("the closed-facts witness retained a media descriptor between observations")
 	}
-	entered, release := make(chan struct{}), make(chan struct{})
+	entered, release := make(chan *os.File, 1), make(chan struct{})
 	defer func() {
 		select {
 		case <-release:
@@ -256,16 +271,29 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	slots := make(chan struct{}, 1)
 	go func() {
 		finished <- runStorageObservationWithLimit(ctx, slots, 25*time.Millisecond,
-			[]*storageObservationLifetime{&witness.observation}, func(context.Context) error {
-				close(entered)
-				<-release
-				_, err := held.Stat()
-				observed <- err
-				return err
+			[]*storageObservationLifetime{&witness.observation}, func(proof context.Context) error {
+				return witness.operation.Run(proof, record.id, primaryio.Background, func(context.Context) error {
+					opened, err := witness.openFileRoot(witness.files[0].state)
+					if err != nil {
+						return err
+					}
+					defer closeAuxiliaryRoot(opened)
+					held, err := openScanFile(opened, "theme-music/Theme.mp3")
+					if err != nil {
+						return err
+					}
+					defer held.Close()
+					entered <- held
+					<-release
+					_, err = held.Stat()
+					observed <- err
+					return err
+				})
 			})
 	}()
+	var held *os.File
 	select {
-	case <-entered:
+	case held = <-entered:
 	case <-ctx.Done():
 		t.Fatal("the bounded observation worker did not enter")
 	}
@@ -283,6 +311,9 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	}
 	if _, err := held.Stat(); err != nil || len(slots) != 1 {
 		t.Fatal("retirement closed the active worker's independent descriptor or released its slot")
+	}
+	if _, err := witness.sources[record.id].lease.approved.Stat("."); err != nil || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners+1 {
+		t.Fatal("retirement released the root lease or operation owner before the actual worker returned")
 	}
 	close(release)
 	select {
@@ -304,5 +335,8 @@ func TestAuxiliaryPublicationWitnessRetainsIndependentFilesAfterObservationTimeo
 	}
 	if _, err := held.Stat(); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("the finished worker did not close its retired descriptor: %v", err)
+	}
+	if _, err := witness.sources[record.id].lease.approved.Stat("."); !errors.Is(err, os.ErrClosed) || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {
+		t.Fatal("the finished observation did not retire its root lease and operation owner")
 	}
 }

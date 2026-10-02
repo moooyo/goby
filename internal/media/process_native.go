@@ -315,10 +315,17 @@ func runMediaStdout(ctx context.Context, command *exec.Cmd, parse func(io.Reader
 	}
 	process, err := startMediaProcess(ctx, command)
 	if err != nil {
+		if process != nil {
+			err = errors.Join(err, process.Close())
+		}
 		_ = reader.Close()
 		return nil, nil, err
 	}
-	defer process.Close()
+	if process == nil {
+		_ = reader.Close()
+		return nil, nil, ErrProcessRetirementUnknown
+	}
+	defer func() { waitErr = errors.Join(waitErr, process.Close()) }()
 	parseErr = parse(reader)
 	if parseErr != nil && command.Cancel != nil {
 		_ = command.Cancel()

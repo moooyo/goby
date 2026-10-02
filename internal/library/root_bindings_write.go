@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/activity"
 	"github.com/moooyo/goby/internal/identity"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/storagebinding"
 )
 
@@ -44,6 +45,16 @@ type rootBindingWriteCapture interface {
 }
 
 func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal, libraryID, rootID string, input RootBindingUpdate, captureRoot rootBindingCaptureFactory) (RootBindingInfo, error) {
+	for {
+		result, err := s.updateRootBindingAttempt(ctx, actor, libraryID, rootID, input, captureRoot)
+		retry, waitErr := waitDirectoryPrimaryError(ctx, err)
+		if !retry || waitErr != nil {
+			return result, waitErr
+		}
+	}
+}
+
+func (s *Store) updateRootBindingAttempt(ctx context.Context, actor identity.Principal, libraryID, rootID string, input RootBindingUpdate, captureRoot rootBindingCaptureFactory) (RootBindingInfo, error) {
 	if ctx == nil || !validCatalogLibraryIdentifier(libraryID) || !validCatalogLibraryIdentifier(rootID) || captureRoot == nil {
 		return RootBindingInfo{}, ErrInvalidInput
 	}
@@ -66,15 +77,32 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	if previous.revision != revision || revision == math.MaxInt64 {
 		return RootBindingInfo{}, ErrRootBindingConflict
 	}
-	capture, err := captureRoot(ctx, previous.root)
+	operation, err := s.preparePrimaryRootIO(ctx, []mediaSourceRootHint{{root: previous.root, bindingRevision: previous.revision}})
 	if err != nil {
+		return RootBindingInfo{}, err
+	}
+	defer operation.Close()
+	var capture rootBindingWriteCapture
+	err = operation.Run(ctx, rootID, primaryio.Foreground, func(work context.Context) error {
+		var err error
+		capture, err = captureRoot(work, previous.root)
+		return err
+	})
+	if err != nil {
+		if capture != nil {
+			err = errors.Join(err, closeDirectoryPrimaryResource(operation.Context(ctx), capture.Close))
+		}
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
 	if capture == nil {
 		return RootBindingInfo{}, ErrUnavailable
 	}
 	var observation storageObservationLifetime
-	defer observation.retire(capture.Close)
+	defer func() {
+		if err := observation.retire(capture.Close); err != nil {
+			_ = operation.MarkUnknown(err)
+		}
+	}()
 	observed, err := capture.Snapshot()
 	if err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
@@ -95,7 +123,12 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	if fingerprint != input.ObservedFingerprint {
 		return RootBindingInfo{}, ErrRootBindingConflict
 	}
-	anchor, err := capture.CloneApprovedAnchor()
+	var anchor *os.Root
+	err = operation.Run(ctx, rootID, primaryio.Foreground, func(context.Context) error {
+		var err error
+		anchor, err = capture.CloneApprovedAnchor()
+		return err
+	})
 	if err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
@@ -104,10 +137,10 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	}
 	defer func() {
 		if anchor != nil {
-			_ = anchor.Close()
+			_ = closeDirectoryPrimaryResource(operation.Context(ctx), anchor.Close)
 		}
 	}()
-	if err := capture.Revalidate(ctx); err != nil {
+	if err := operation.Run(ctx, rootID, primaryio.Foreground, capture.Revalidate); err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
 
@@ -184,7 +217,9 @@ func (s *Store) updateRootBinding(ctx context.Context, actor identity.Principal,
 	}
 	// The held named paths, mount namespace, and every boundary must still match
 	// before commit. Request cancellation cannot cancel the owned session here.
-	if err := runStorageObservation(protected, []*storageObservationLifetime{&observation}, capture.Revalidate); err != nil {
+	if err := runDirectoryPrimaryImmediate(protected, operation, rootID, primaryio.Foreground, func(work context.Context) error {
+		return runStorageObservation(work, []*storageObservationLifetime{&observation}, capture.Revalidate)
+	}); err != nil {
 		return RootBindingInfo{}, rootBindingObservationError(err)
 	}
 	if err := administrator.check(protected, tx, false); err != nil {

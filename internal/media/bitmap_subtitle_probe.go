@@ -76,11 +76,16 @@ func walkBitmapSubtitles(ctx context.Context, config BitmapSubtitleConfig, input
 		return nil, fmt.Errorf("%w: %w", ErrBitmapSubtitle, err)
 	}
 	defer executable.Close()
-	output, err := runLimitedFilesOutput(ctx, 2*time.Minute, maxBitmapSubtitleProbeBytes, "/proc/self/fd/4", []*os.File{input, executable},
-		"-v", "error", "-threads", "1", "-max_alloc", "67108864", "-probesize", "16777216", "-analyzeduration", "30000000", "-select_streams", strconv.Itoa(stream.Index),
-		"-show_packets", "-show_streams", "-show_format", "-show_data",
-		"-show_entries", "packet=stream_index,pts,duration,size,data:stream=index,codec_name,codec_type,time_base,extradata:format=start_time,duration",
-		"-of", "json", "-protocol_whitelist", "file,pipe", "-format_whitelist", probeFormats, "-i", "/proc/self/fd/3")
+	var output mediaProcessOutput
+	err = RunSourceReadPhase(ctx, func(work context.Context) error {
+		var err error
+		output, err = runLimitedFilesOutput(work, 2*time.Minute, maxBitmapSubtitleProbeBytes, "/proc/self/fd/4", []*os.File{input, executable},
+			"-v", "error", "-threads", "1", "-max_alloc", "67108864", "-probesize", "16777216", "-analyzeduration", "30000000", "-select_streams", strconv.Itoa(stream.Index),
+			"-show_packets", "-show_streams", "-show_format", "-show_data",
+			"-show_entries", "packet=stream_index,pts,duration,size,data:stream=index,codec_name,codec_type,time_base,extradata:format=start_time,duration",
+			"-of", "json", "-protocol_whitelist", "file,pipe", "-format_whitelist", probeFormats, "-i", "/proc/self/fd/3")
+		return err
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: packet scan: %w", ErrBitmapSubtitle, err)
 	}

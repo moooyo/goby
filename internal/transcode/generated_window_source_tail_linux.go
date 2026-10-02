@@ -28,6 +28,19 @@ import (
 // existing source-range contract stays unchanged. A later shared probe pipeline
 // can consolidate these settings while preserving the different endpoint guard.
 func MeasureGeneratedMP4SourceTail(ctx context.Context, ffprobe string, source *os.File, plan Plan, certificate GeneratedSourceEndpointCertificate) (GeneratedSourceRange, error) {
+	var result GeneratedSourceRange
+	if ctx == nil {
+		return result, ErrInvalidOptions
+	}
+	err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+		var err error
+		result, err = measureGeneratedMP4SourceTail(work, ffprobe, source, plan, certificate)
+		return err
+	})
+	return result, err
+}
+
+func measureGeneratedMP4SourceTail(ctx context.Context, ffprobe string, source *os.File, plan Plan, certificate GeneratedSourceEndpointCertificate) (_ GeneratedSourceRange, resultErr error) {
 	var empty GeneratedSourceRange
 	if ctx == nil {
 		return empty, ErrInvalidOptions
@@ -43,7 +56,7 @@ func MeasureGeneratedMP4SourceTail(ctx context.Context, ffprobe string, source *
 	if err != nil {
 		return empty, err
 	}
-	defer file.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeSourceReadInput(file)) }()
 	before, err := file.Stat()
 	if err != nil || !before.Mode().IsRegular() || before.Size() <= 0 {
 		return empty, ErrInvalidInput

@@ -105,7 +105,13 @@ func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Sub
 	if err != nil {
 		return library.SubtitleContent{}, err
 	}
-	defer file.Close()
+	read, err := s.library.PrepareMediaSourceIO(ctx, source)
+	if err != nil {
+		_ = file.Close()
+		return library.SubtitleContent{}, err
+	}
+	defer closePrimaryMediaSource(file, read)
+	ctx = read.Context(ctx)
 	if source.Item.Media == nil {
 		return library.SubtitleContent{}, library.ErrNotFound
 	}
@@ -125,7 +131,12 @@ func (s *Server) readSubtitleContentFor(ctx context.Context, subject library.Sub
 		if native != "ass" && format != "" {
 			native = string(format)
 		}
-		data, err := media.ExtractSubtitle(ctx, s.cfg.FFmpegPath, file, stream, native)
+		var data []byte
+		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+			var err error
+			data, err = media.ExtractSubtitle(work, s.cfg.FFmpegPath, file, stream, native)
+			return err
+		})
 		if err != nil {
 			return library.SubtitleContent{}, err
 		}
@@ -235,7 +246,14 @@ func (s *Server) subtitleAttachment(w http.ResponseWriter, r *http.Request) {
 		s.playbackError(w, r, err)
 		return
 	}
-	defer file.Close()
+	read, err := s.library.PrepareMediaSourceIO(ctx, source)
+	if err != nil {
+		_ = file.Close()
+		s.subtitleError(w, r, err)
+		return
+	}
+	defer closePrimaryMediaSource(file, read)
+	ctx = read.Context(ctx)
 	if source.Item.Media == nil {
 		s.playbackError(w, r, library.ErrNotFound)
 		return
@@ -244,7 +262,12 @@ func (s *Server) subtitleAttachment(w http.ResponseWriter, r *http.Request) {
 		if stream.Index != index || !media.FontAttachment(stream) {
 			continue
 		}
-		data, err := media.ExtractFontAttachment(ctx, s.cfg.FFmpegPath, file, stream)
+		var data []byte
+		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+			var err error
+			data, err = media.ExtractFontAttachment(work, s.cfg.FFmpegPath, file, stream)
+			return err
+		})
 		if err != nil {
 			s.subtitleError(w, r, err)
 			return

@@ -69,6 +69,11 @@ type Options struct {
 	// Neither hook changes the manager-owned lifetime context of an accepted job.
 	PlaybackAdmission func(context.Context, Spec) (context.Context, func(), error)
 	PlaybackStopped   func(Spec) bool
+	// SourceRead prepares an opaque route from fresh committed authority before
+	// the input enters the manager queue. The first context bounds preparation;
+	// the second is the accepted job lifetime, independent of HTTP completion.
+	// It runs outside all manager locks and must not classify from Spec paths.
+	SourceRead func(context.Context, context.Context, Spec, *os.File) (SourceReadLifetime, error)
 	// ValidateHardware rechecks the captured device against the process's
 	// startup-authorized inventory after queue waits and before execution. It
 	// must be bounded and must not execute a hardware capability probe.
@@ -94,6 +99,7 @@ type managedJob struct {
 	record     Record
 	input      *os.File
 	bitmap     *os.File
+	sourceRead SourceReadLifetime
 	ctx        context.Context
 	cancel     context.CancelFunc
 	created    chan struct{}
@@ -330,11 +336,13 @@ func (m *Manager) Ensure(ctx context.Context, spec Spec, input *os.File) (Record
 	return m.ensureInputs(ctx, spec, StreamInputs{Media: input})
 }
 
-func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInputs) (Record, error) {
+func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInputs) (result Record, resultErr error) {
 	input := inputs.Media
 	owned := false
 	returned, locked := false, false
 	var admissionRelease func()
+	var sourceRead SourceReadLifetime
+	var sourceCancel context.CancelFunc
 	lock := func() { m.mu.Lock(); locked = true }
 	unlock := func() { locked = false; m.mu.Unlock() }
 	defer func() {
@@ -344,7 +352,10 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			unlock()
 		}
 		if !owned {
-			inputs.close()
+			resultErr = errors.Join(resultErr, closeSourceReadInputs(inputs, sourceRead))
+			if sourceCancel != nil {
+				sourceCancel()
+			}
 		}
 		if returned && admissionRelease != nil {
 			m.releasePlaybackAdmission(admissionRelease)
@@ -386,6 +397,17 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		_, err := validateSourceInput(input, spec.Plan)
 		if err != nil {
 			return Record{}, ErrInvalidInput
+		}
+		jobCtx, cancel := context.WithCancel(m.ctx)
+		sourceCancel = cancel
+		if spec.Plan.SourceMode != "stream" && m.options.SourceRead != nil {
+			sourceRead, err = m.options.SourceRead(ctx, jobCtx, spec, input)
+			if err != nil {
+				return Record{}, err
+			}
+			if sourceRead == nil {
+				return Record{}, ErrInvalidScope
+			}
 		}
 	retryAdmission:
 		if err := ctx.Err(); err != nil {
@@ -482,41 +504,34 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 			return Record{}, ErrBusy
 		}
 		now := time.Now().UTC()
-		jobCtx, cancel := context.WithCancel(m.ctx)
 		j := &managedJob{record: Record{ID: hex.EncodeToString(randomID[:]), Spec: spec, State: "queued", CreatedAt: now, UpdatedAt: now, LastAccessAt: now},
-			input: input, bitmap: inputs.Bitmap, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
+			input: input, bitmap: inputs.Bitmap, sourceRead: sourceRead, ctx: jobCtx, cancel: cancel, created: make(chan struct{}), launch: make(chan struct{}), done: make(chan struct{}), changed: make(chan struct{})}
 		lock()
 		if m.closing {
 			unlock()
-			cancel()
 			return Record{}, ErrManagerClosed
 		}
 		if m.cacheFailed {
 			unlock()
-			cancel()
 			return Record{}, ErrOutputUnavailable
 		}
 		if m.playbackStoppedLocked(spec) {
 			unlock()
-			cancel()
 			return Record{}, ErrJobCancelled
 		}
 		// Admission is repeated after the filesystem call: another request may have
 		// inserted the same spec or filled the queue while that call was in flight.
 		if existing := m.bySpec[spec]; existing != nil && existing.stopCode == "" {
 			unlock()
-			cancel()
 			goto retryAdmission
 		}
 		if m.unaccountedJobs != 0 || m.pendingAccountingJobs != 0 {
 			unlock()
-			cancel()
 			return Record{}, ErrOutputUnavailable
 		}
 		if !m.admissionAvailableLocked(spec.Scope) {
 			workAvailable := m.workAdmissionAvailableLocked(spec.Scope)
 			unlock()
-			cancel()
 			if !workAvailable {
 				return Record{}, ErrBusy
 			}
@@ -531,13 +546,11 @@ func (m *Manager) ensureInputs(ctx context.Context, spec Spec, inputs StreamInpu
 		}
 		if m.bytes >= m.options.MaxBytes {
 			unlock()
-			cancel()
 			return Record{}, ErrQuota
 		}
 		completion, err := m.completions.reserve()
 		if err != nil {
 			unlock()
-			cancel()
 			return Record{}, err
 		}
 		// This fresh ticket belongs to j before any worker can observe it. Every
@@ -1390,6 +1403,9 @@ func (m *Manager) runJob(j *managedJob) {
 		}
 	}
 	runContext := withSubtitleSource(j.ctx, j.record.Spec, m.options.SubtitleSource)
+	if j.sourceRead != nil {
+		runContext = j.sourceRead.Context(runContext)
+	}
 	if j.record.Spec.Plan.SourceMode == "stream" {
 		runContext = withLiveRuntime(runContext, liveRuntime{spec: j.record.Spec, jobID: j.record.ID, inputs: StreamInputs{Media: j.input, Bitmap: j.bitmap},
 			maxBytes: min(MaxLiveScratchBytes, m.options.MaxJobBytes), timeout: m.options.NoProgressTimeout, publish: m.options.LivePublish, subtitle: m.options.LiveSubtitle, caption: m.options.LiveCaption})

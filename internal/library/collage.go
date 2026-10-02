@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -37,6 +36,16 @@ type collageManifest struct {
 	Members []collageMember
 	Tag     string    `json:"-"`
 	Changed time.Time `json:"-"`
+}
+
+// Members retain the exact source selected in the authorized manifest snapshot.
+// Filesystem admission and physical source checks start only after its commit.
+type preparedCollageMember struct {
+	member   collageMember
+	image    Image
+	data     []byte
+	sidecar  storedImage
+	embedded embeddedArtworkContent
 }
 
 func (manifest *collageManifest) image() Image {
@@ -237,19 +246,24 @@ func (s *Store) openCollageInSnapshot(ctx context.Context, tx pgx.Tx, access lib
 	if manifest == nil {
 		return nil, Image{}, ErrNotFound
 	}
-	sources := make([][]byte, 0, len(manifest.Members))
+	prepared := make([]preparedCollageMember, 0, len(manifest.Members))
 	for _, member := range manifest.Members {
-		data, source, err := s.readCollageMember(ctx, tx, member)
+		content, err := prepareCollageMember(ctx, tx, member)
 		if err != nil {
 			return nil, Image{}, err
 		}
-		if source.Tag != member.Tag {
-			return nil, Image{}, ErrRevisionConflict
-		}
-		sources = append(sources, data)
+		prepared = append(prepared, content)
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, Image{}, err
+	}
+	sources := make([][]byte, 0, len(prepared))
+	for _, content := range prepared {
+		data, err := s.readPreparedCollageMember(ctx, content)
+		if err != nil {
+			return nil, Image{}, err
+		}
+		sources = append(sources, data)
 	}
 	// Every source descriptor and digest has been checked before this lookup.
 	// The response handler repeats authorization/selection after rendering.
@@ -262,61 +276,86 @@ func (s *Store) openCollageInSnapshot(ctx context.Context, tx pgx.Tx, access lib
 	return io.NopCloser(bytes.NewReader(rendered.Bytes)), image, nil
 }
 
-func (s *Store) readCollageMember(ctx context.Context, tx pgx.Tx, member collageMember) ([]byte, Image, error) {
+func prepareCollageMember(ctx context.Context, tx pgx.Tx, member collageMember) (preparedCollageMember, error) {
+	prepared := preparedCollageMember{member: member}
 	switch member.Source {
 	case "managed":
 		image, owned, err := artwork.ReadManagedImage(ctx, tx, artwork.Target{Kind: "item", ID: member.ItemID}, "Primary", 0)
 		if err != nil {
-			return nil, Image{}, err
+			return preparedCollageMember{}, err
 		}
 		if !owned || image.Tag == "" {
-			return nil, Image{}, ErrRevisionConflict
+			return preparedCollageMember{}, ErrRevisionConflict
 		}
-		return image.Content, imageFromManaged(image), nil
+		prepared.data, prepared.image = image.Content, imageFromManaged(image)
 	case "embedded":
-		return s.readEmbeddedImageContent(ctx, tx, member.ItemID)
+		content, err := readEmbeddedArtworkContent(ctx, tx, member.ItemID)
+		if err != nil {
+			return preparedCollageMember{}, err
+		}
+		prepared.embedded, prepared.data, prepared.image = content, content.data, content.image
 	case "provider":
 		var data []byte
 		image := Image{ImageType: "Primary", Source: "provider"}
 		err := tx.QueryRow(ctx, `SELECT content,mime_type,width,height,source_hash,fetched_at FROM item_provider_images WHERE item_id=$1 AND image_type='Primary' AND image_index=0`, member.ItemID).
 			Scan(&data, &image.MIMEType, &image.Width, &image.Height, &image.Tag, &image.ModifiedAt)
 		if err != nil {
-			return nil, Image{}, err
+			return preparedCollageMember{}, err
 		}
 		if len(data) == 0 || int64(len(data)) > storedImageReadLimit {
-			return nil, Image{}, ErrUnavailable
+			return preparedCollageMember{}, ErrUnavailable
 		}
 		digest := sha256.Sum256(data)
 		if hex.EncodeToString(digest[:]) != image.Tag {
-			return nil, Image{}, ErrUnavailable
+			return preparedCollageMember{}, ErrUnavailable
 		}
 		image.Size = int64(len(data))
-		return data, image, nil
+		prepared.data, prepared.image = data, image
 	case "sidecar":
 		stored, err := scanStoredImage(tx.QueryRow(ctx, "SELECT "+storedImageColumns+storedImageSource+` WHERE i.id=$1 AND im.image_type='Primary' AND im.image_index=0`, member.ItemID))
 		if err != nil {
-			return nil, Image{}, err
+			return preparedCollageMember{}, err
 		}
-		var data []byte
-		_, _, err = runPublicImageWorker(ctx, publicImageWorkers, func() (*os.File, Image, error) {
-			file, err := s.openStoredImage(ctx, stored)
-			if err != nil {
-				return nil, Image{}, err
-			}
-			defer file.Close()
-			data, err = io.ReadAll(io.LimitReader(imageContextReader{ctx: ctx, reader: file}, storedImageReadLimit+1))
-			return nil, stored.Image, err
+		prepared.sidecar, prepared.image = stored, stored.Image
+	default:
+		return preparedCollageMember{}, ErrUnavailable
+	}
+	if prepared.image.Tag != member.Tag {
+		return preparedCollageMember{}, ErrRevisionConflict
+	}
+	return prepared, nil
+}
+
+func (s *Store) readPreparedCollageMember(ctx context.Context, prepared preparedCollageMember) ([]byte, error) {
+	switch prepared.member.Source {
+	case "sidecar":
+		// Root routing is refreshed by the content helper, while both snapshot
+		// callbacks retain this manifest's selected metadata and source identity.
+		reader, _, err := s.openSidecarImageContent(ctx, func(context.Context) (storedImage, error) {
+			return prepared.sidecar, nil
 		})
 		if err != nil {
-			return nil, Image{}, err
+			return nil, err
+		}
+		data, err := io.ReadAll(io.LimitReader(imageContextReader{ctx: ctx, reader: reader}, storedImageReadLimit+1))
+		err = errors.Join(err, reader.Close())
+		if err != nil {
+			return nil, err
 		}
 		digest := sha256.Sum256(data)
-		if int64(len(data)) != stored.Size || hex.EncodeToString(digest[:]) != stored.Tag {
-			return nil, Image{}, ErrUnavailable
+		if int64(len(data)) > storedImageReadLimit || int64(len(data)) != prepared.image.Size || hex.EncodeToString(digest[:]) != prepared.image.Tag {
+			return nil, ErrUnavailable
 		}
-		return data, stored.Image, nil
+		return data, nil
+	case "embedded":
+		if err := s.checkEmbeddedArtworkContentSource(ctx, prepared.embedded); err != nil {
+			return nil, err
+		}
+		return prepared.data, nil
+	case "managed", "provider":
+		return prepared.data, nil
 	default:
-		return nil, Image{}, ErrUnavailable
+		return nil, ErrUnavailable
 	}
 }
 

@@ -54,24 +54,30 @@ func (s *Store) retireRootAnchorLocked(approved *os.Root) {
 	}
 }
 
-func (s *Store) releaseRootAnchor(reference *rootAnchorReference) {
+func (s *Store) releaseRootAnchor(reference *rootAnchorReference) error {
 	s.mu.Lock()
 	reference.borrowed--
 	closeRoot := reference.retired && reference.borrowed == 0
 	s.mu.Unlock()
 	if closeRoot {
-		s.closeRetiredRootAnchor(reference)
+		return s.closeRetiredRootAnchor(reference)
 	}
+	return nil
 }
 
-func (s *Store) closeRetiredRootAnchor(reference *rootAnchorReference) {
-	_ = reference.approved.Close()
+func (s *Store) closeRetiredRootAnchor(reference *rootAnchorReference) error {
+	if err := reference.approved.Close(); err != nil {
+		// A failed first close leaves this exact anchor and its Store closure
+		// charged. A later ErrClosed cannot prove the first close retired it.
+		return err
+	}
 	s.mu.Lock()
 	if s.rootAnchorReferences[reference.approved] == reference {
 		delete(s.rootAnchorReferences, reference.approved)
 	}
 	s.mu.Unlock()
 	s.rootClosures.Done()
+	return nil
 }
 
 // The caller holds Store.mu across the successful binding commit and this

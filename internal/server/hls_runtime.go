@@ -160,12 +160,19 @@ func newHLSRuntime(ctx context.Context, server *Server) (*hlsRuntime, error) {
 	managerOptions.LiveCaption = server.receiveDynamicCaption
 	managerOptions.PlaybackAdmission = server.holdCorrelatedHLSAdmission
 	managerOptions.PlaybackStopped = server.correlatedHLSPlaybackStopped
+	var runtime *hlsRuntime
+	managerOptions.SourceRead = func(ctx, lifetime context.Context, spec transcode.Spec, input *os.File) (transcode.SourceReadLifetime, error) {
+		if runtime == nil {
+			return nil, transcode.ErrManagerClosed
+		}
+		return runtime.prepareTranscodeSourceRead(ctx, lifetime, spec, input)
+	}
 	manager, err := transcode.NewManager(ctx, managerOptions)
 	if err != nil {
 		return nil, err
 	}
 	lifetime, cancel := context.WithCancel(context.Background())
-	runtime := &hlsRuntime{server: server, manager: manager, ctx: lifetime, cancel: cancel, sessions: make(map[string]*hlsSession),
+	runtime = &hlsRuntime{server: server, manager: manager, ctx: lifetime, cancel: cancel, sessions: make(map[string]*hlsSession),
 		byKey: make(map[hlsKey]*hlsSession), byScope: make(map[transcode.Scope]map[string]*hlsSession),
 		done: make(chan struct{}), probes: make(chan struct{}, 2), slots: make(chan struct{}, 32)}
 	runtime.verify = server.authorizeHLS
@@ -625,7 +632,7 @@ func (h *hlsRuntime) timeline(ctx context.Context, session *hlsSession, input *o
 // existing producer; distant seeks start an immutable revision at the requested
 // source boundary. Earlier published files may remain reusable until eviction.
 func (h *hlsRuntime) segment(ctx context.Context, session *hlsSession, input *os.File, number int) (*transcode.ReadHandle, error) {
-	defer input.Close()
+	defer closeHLSConsumedSource(ctx, input)
 	timeline, err := h.timeline(ctx, session, input)
 	if err != nil {
 		return nil, err
@@ -792,7 +799,7 @@ func (h *hlsRuntime) maintain() {
 		}
 		h.mu.Unlock()
 		cycle, cancel := context.WithTimeout(h.ctx, 4*time.Second)
-		h.maintainSessions(cycle, sessions)
+		h.maintainPlaybackCycle(cycle, sessions)
 		cancel()
 	}
 }

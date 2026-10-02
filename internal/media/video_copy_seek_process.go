@@ -3,6 +3,7 @@ package media
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -35,10 +36,10 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 	}
 	defer func() {
 		if err := videoSeekCheckSource(file, before); err != nil {
-			verification, resultErr = VideoSeekVerification{}, err
+			verification, resultErr = VideoSeekVerification{}, errors.Join(resultErr, err)
 		}
 		if err := ctx.Err(); err != nil {
-			verification, resultErr = VideoSeekVerification{}, err
+			verification, resultErr = VideoSeekVerification{}, errors.Join(resultErr, err)
 		}
 	}()
 	candidate, err := ValidateVideoCopySeekCandidate(encoded)
@@ -57,10 +58,10 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 	defer cancel()
 	resolved, toolIdentity, err := VideoSeekToolIdentity(proofContext, executable)
 	if err != nil || toolIdentity != candidate.Index.ToolIdentity {
-		return verification, nil
+		return verification, videoSeekRetirementError(err)
 	}
 	if err := runVideoCopySeekProof(proofContext, resolved, file, args, candidate); err != nil {
-		return verification, nil
+		return verification, videoSeekRetirementError(err)
 	}
 	if candidate.Audio != nil {
 		audioArgs, err := BuildVideoCopySeekAudioCommandArgs(encoded, threads)
@@ -70,7 +71,7 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 		if err := runVideoCopySeekHashProof(proofContext, resolved, file, audioArgs, func(input io.Reader) error {
 			return parseVideoCopySeekAudioProof(input, candidate)
 		}); err != nil {
-			return verification, nil
+			return verification, videoSeekRetirementError(err)
 		}
 	}
 	if err := videoSeekCheckSource(file, before); err != nil {
@@ -78,7 +79,7 @@ func VerifyVideoCopySeekCandidate(ctx context.Context, executable string, file *
 	}
 	afterPath, afterTool, err := VideoSeekToolIdentity(proofContext, executable)
 	if err != nil || afterPath != resolved || afterTool != toolIdentity {
-		return verification, nil
+		return verification, videoSeekRetirementError(err)
 	}
 	return VideoSeekVerification{Verified: true, InputSeekTicks: candidate.RequestedStartTicks}, nil
 }
@@ -99,17 +100,22 @@ func runVideoCopySeekHashProof(ctx context.Context, executable string, file *os.
 	command.Env = mediaProbeEnvironment()
 	command.Stdout, command.Stderr = stdout, stderr
 	command.WaitDelay = time.Second
-	process, err := startMediaProcess(processContext, command)
-	if err != nil {
-		return err
+	process, startErr := startMediaProcess(processContext, command)
+	var waitErr error
+	if process != nil {
+		if startErr == nil {
+			waitErr = process.Wait()
+		}
+		waitErr = errors.Join(waitErr, process.Close())
 	}
-	defer process.Close()
-	waitErr := process.Wait()
+	if startErr != nil {
+		return errors.Join(startErr, waitErr)
+	}
 	if err := ctx.Err(); err != nil {
-		return err
+		return errors.Join(err, waitErr)
 	}
 	if stdout.exceeded || stderr.exceeded {
-		return ErrOutputLimit
+		return errors.Join(ErrOutputLimit, waitErr)
 	}
 	if waitErr != nil {
 		return fmt.Errorf("execute video copy seek proof: %w", waitErr)

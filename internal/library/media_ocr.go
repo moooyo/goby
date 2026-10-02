@@ -21,7 +21,7 @@ import (
 // PrepareMediaOCR produces reviewable observations without changing the media
 // source or publishing any subtitle. The caller owns the durable job claim and
 // must persist this result only while that claim remains current.
-func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, configuration media.SubtitleOCRConfig) (MediaOperationResult, error) {
+func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, configuration media.SubtitleOCRConfig) (response MediaOperationResult, resultErr error) {
 	operation := work.Operation
 	if operation.Kind != MediaOperationOCR || work.Apply || work.Discard || !validMediaOperationWork(work) ||
 		operation.SourceRevision == "" || operation.StreamIndex < 0 {
@@ -42,6 +42,26 @@ func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, co
 	if !found {
 		return MediaOperationResult{}, ErrNotFound
 	}
+	read, err := s.PrepareMediaSourceIO(ctx, snapshot.mediaFile)
+	if err != nil {
+		return MediaOperationResult{}, err
+	}
+	var sourceFiles []*os.File
+	defer func() {
+		var closeErr error
+		for _, sourceFile := range sourceFiles {
+			err := sourceFile.Close()
+			if !errors.Is(err, os.ErrClosed) {
+				closeErr = errors.Join(closeErr, err)
+			}
+		}
+		if closeErr != nil {
+			closeErr = media.SourceReadRetirementError(closeErr, sourceFiles...)
+			closeErr = errors.Join(closeErr, read.MarkUnknown(closeErr))
+		}
+		resultErr = errors.Join(resultErr, closeErr, read.Close())
+	}()
+	ctx = read.Context(ctx)
 	file, _, err := s.runIndexedMediaSourceWorker(ctx, false, snapshot, func(ctx context.Context) (*os.File, MediaFile, error) {
 		file, err := s.openMediaSource(ctx, snapshot)
 		return file, snapshot.mediaFile, err
@@ -49,7 +69,7 @@ func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, co
 	if err != nil {
 		return MediaOperationResult{}, err
 	}
-	defer file.Close()
+	sourceFiles = append(sourceFiles, file)
 	result, err := media.RecognizeBitmapSubtitles(ctx, configuration, file, selected, *snapshot.mediaFile.Item.Media, operation.Parameters.ModelIDs)
 	if err != nil {
 		return MediaOperationResult{}, err
@@ -71,7 +91,7 @@ func (s *Store) PrepareMediaOCR(ctx context.Context, work MediaOperationWork, co
 	if err != nil {
 		return MediaOperationResult{}, err
 	}
-	defer check.Close()
+	sourceFiles = append(sourceFiles, check)
 	currentInfo, err := check.Stat()
 	if err != nil || !sameMediaSourceFile(info, currentInfo) {
 		return MediaOperationResult{}, errors.Join(ErrSourceChanged, err)
@@ -101,6 +121,9 @@ func (s *Store) readMediaOCRSnapshot(ctx context.Context, operation MediaOperati
 		return indexedMediaSource{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
+		return indexedMediaSource{}, err
+	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
 		return indexedMediaSource{}, err
 	}
 	return snapshot, nil

@@ -26,6 +26,19 @@ const generatedSourceRangeTimeout = 30 * time.Second
 // The borrowed descriptor's identity and ctime remain fenced across the entire
 // process lifetime; opening it through procfs preserves its shared file offset.
 func MeasureGeneratedSourceRange(ctx context.Context, ffprobe string, source *os.File, plan Plan, formatOriginTicks int64) (GeneratedSourceRange, error) {
+	var result GeneratedSourceRange
+	if ctx == nil {
+		return result, ErrInvalidOptions
+	}
+	err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+		var err error
+		result, err = measureGeneratedSourceRange(work, ffprobe, source, plan, formatOriginTicks)
+		return err
+	})
+	return result, err
+}
+
+func measureGeneratedSourceRange(ctx context.Context, ffprobe string, source *os.File, plan Plan, formatOriginTicks int64) (_ GeneratedSourceRange, resultErr error) {
 	var empty GeneratedSourceRange
 	if ctx == nil {
 		return empty, ErrInvalidOptions
@@ -40,7 +53,7 @@ func MeasureGeneratedSourceRange(ctx context.Context, ffprobe string, source *os
 	if err != nil {
 		return empty, err
 	}
-	defer file.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeSourceReadInput(file)) }()
 	before, err := file.Stat()
 	if err != nil || !before.Mode().IsRegular() || before.Size() <= 0 {
 		return empty, ErrInvalidInput

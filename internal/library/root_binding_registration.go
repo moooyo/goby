@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/storagebinding"
 )
 
@@ -16,6 +17,7 @@ import (
 // shared anchors. Unsupported storage can remain unbound without releasing the
 // directories whose safe names were accepted for this registration.
 type rootBindingRegistration struct {
+	primaryIO   *PrimaryRootIO
 	observation storageObservationLifetime
 	root        libraryRoot
 	lease       *libraryRootLease
@@ -53,6 +55,15 @@ func captureRootBindingRegistrationTopology(ctx context.Context, lease *libraryR
 }
 
 func (registration *rootBindingRegistration) prepare(ctx context.Context, captureRoot rootBindingRegistrationCaptureFactory) error {
+	if registration != nil && registration.primaryIO != nil {
+		return registration.primaryIO.Run(ctx, "", primaryio.Foreground, func(work context.Context) error {
+			return registration.prepareObserved(work, captureRoot)
+		})
+	}
+	return registration.prepareObserved(ctx, captureRoot)
+}
+
+func (registration *rootBindingRegistration) prepareObserved(ctx context.Context, captureRoot rootBindingRegistrationCaptureFactory) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -66,7 +77,9 @@ func (registration *rootBindingRegistration) prepare(ctx context.Context, captur
 	topology, err := captureRoot(ctx, registration.lease, mapping, registration.registered)
 	if err != nil {
 		if topology != nil {
-			_ = topology.Close()
+			if closeErr := closeDirectoryPrimaryResource(ctx, topology.Close); closeErr != nil {
+				return errors.Join(rootBindingRegistrationError(err), closeErr)
+			}
 		}
 		if contextErr := ctx.Err(); contextErr != nil {
 			return contextErr
@@ -217,7 +230,12 @@ func (registration *rootBindingRegistration) Close() error {
 	if registration == nil {
 		return nil
 	}
-	return registration.observation.retire(registration.closeResources)
+	err := registration.observation.retire(registration.closeResources)
+	if err != nil && registration.primaryIO != nil {
+		_ = registration.primaryIO.MarkUnknown(err)
+		_ = registration.primaryIO.Close()
+	}
+	return err
 }
 
 // RevalidateBounded preserves final registration evidence without allowing a
@@ -227,26 +245,64 @@ func (registration *rootBindingRegistration) RevalidateBounded(ctx context.Conte
 	if registration == nil {
 		return ErrUnavailable
 	}
-	return runStorageObservation(ctx, []*storageObservationLifetime{&registration.observation}, registration.Revalidate)
+	if registration.primaryIO == nil {
+		return ErrUnavailable
+	}
+	return runDirectoryPrimaryImmediate(ctx, registration.primaryIO, "", primaryio.Foreground, func(work context.Context) error {
+		return runStorageObservation(work, []*storageObservationLifetime{&registration.observation}, registration.Revalidate)
+	})
+}
+
+func (registration *rootBindingRegistration) RevalidateQueued(ctx context.Context) error {
+	if registration == nil || registration.primaryIO == nil {
+		return ErrUnavailable
+	}
+	return registration.primaryIO.Run(ctx, "", primaryio.Foreground, func(work context.Context) error {
+		return registration.Revalidate(work)
+	})
 }
 
 func (registration *rootBindingRegistration) closeResources() error {
 	var result error
 	if registration.topology != nil {
-		result = errors.Join(result, registration.topology.Close())
-		registration.topology = nil
+		closeErr := registration.topology.Close()
+		result = errors.Join(result, closeErr)
+		if closeErr == nil {
+			registration.topology = nil
+		}
 	}
 	if registration.registered != nil {
-		result = errors.Join(result, registration.registered.Close())
-		registration.registered = nil
+		closeErr := registration.registered.Close()
+		result = errors.Join(result, closeErr)
+		if closeErr == nil {
+			registration.registered = nil
+		}
 	}
 	if registration.lease != nil {
-		result = errors.Join(result, registration.lease.Close())
-		registration.lease = nil
+		closeErr := registration.lease.Close()
+		result = errors.Join(result, closeErr)
+		if closeErr == nil {
+			registration.lease = nil
+		}
 	}
 	if registration.anchor != nil {
-		result = errors.Join(result, registration.anchor.Close())
-		registration.anchor = nil
+		closeErr := registration.anchor.Close()
+		result = errors.Join(result, closeErr)
+		if closeErr == nil {
+			registration.anchor = nil
+		}
+	}
+	if result != nil {
+		if registration.primaryIO != nil {
+			failure := &storageObservationRetirementFailure{closer: registration.closeResources, err: result}
+			_ = registration.primaryIO.MarkUnknown(failure)
+			_ = registration.primaryIO.Close()
+		}
+		return result
+	}
+	if registration.primaryIO != nil {
+		result = errors.Join(result, registration.primaryIO.Close())
+		registration.primaryIO = nil
 	}
 	return result
 }

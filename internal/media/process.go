@@ -83,15 +83,19 @@ func runLimitedFilesOutput(ctx context.Context, timeout time.Duration, maxStdout
 	cmd.Stderr = stderr
 	cmd.WaitDelay = time.Second
 	process, err := startMediaProcess(processContext, cmd)
-	if err == nil {
-		defer process.Close()
-		err = process.Wait()
+	if process != nil {
+		if err == nil {
+			err = process.Wait()
+		}
+		// Start may return an owned child together with a capture failure. Join
+		// cleanup before reading its output, and retain any retirement fault.
+		err = errors.Join(err, process.Close())
 	}
 	if stdout.exceeded || stderr.exceeded {
-		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), ErrOutputLimit)
+		return mediaProcessOutput{}, errors.Join(fmt.Errorf("%s: %w", filepath.Base(executable), ErrOutputLimit), err)
 	}
 	if processContext.Err() != nil {
-		return mediaProcessOutput{}, fmt.Errorf("%s: %w", filepath.Base(executable), processContext.Err())
+		return mediaProcessOutput{}, errors.Join(fmt.Errorf("%s: %w", filepath.Base(executable), processContext.Err()), err)
 	}
 	if err != nil {
 		detail := stderr.buffer.String()

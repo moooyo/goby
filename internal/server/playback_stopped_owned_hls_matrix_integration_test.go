@@ -44,8 +44,10 @@ func newStoppedOwnedHLSMatrixFixture(t *testing.T) stoppedOwnedHLSMatrixFixture 
 	}
 	real := newPlaybackStopAliasRealFixture(t)
 	f, h := real.control, real.hls
-	// Fixture-owned qualification switches; production remains disabled.
-	f.app.correlatedHLSOwnershipEnabled, f.app.correlatedHLSEarlyStopEnabled = true, true
+	// Actual ownership must come from the production constructor defaults.
+	if !f.app.correlatedHLSOwnershipEnabled || !f.app.correlatedHLSEarlyStopEnabled {
+		t.Fatal("Server.New did not enable the qualified correlated file-HLS owner chain")
+	}
 	principal, headers := f.principal(t, "normal")
 	graph := h.graph(t, clientSessionHTTPLogin{id: principal.SessionID, userID: principal.User.ID,
 		deviceID: principal.Client.DeviceID, headers: headers}, 0)
@@ -92,17 +94,26 @@ func (fixture stoppedOwnedHLSMatrixFixture) startActualEncoder(t *testing.T) pla
 func stoppedOwnedHLSMatrixRetired(t *testing.T, process playbackStopAliasEncoder) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
+	var firstUnknown, last stoppedRetirementObservationFacts
+	retries := 0
 	for time.Now().Before(deadline) {
-		exited, reaped, group, known := stoppedUserDataEncoderRetirement(process)
+		exited, reaped, group, known, facts := stoppedEncoderRetirementObservation(process)
+		last = facts
 		if !known {
-			t.Fatal("the exact matrix encoder retirement became unknown")
-		}
-		if exited && reaped && group {
+			if !facts.retryExitedStatESRCH(exited) {
+				t.Fatalf("the exact matrix encoder retirement became unknown: %+v", facts)
+			}
+			if retries == 0 {
+				firstUnknown = facts
+				t.Logf("retry the strict same-pidfd retirement observation after stat ESRCH: first_unknown=%+v", firstUnknown)
+			}
+			retries++
+		} else if exited && reaped && group {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("the exact actual matrix encoder did not exit/reap its owned group")
+	t.Fatalf("the exact actual matrix encoder did not exit/reap its owned group: first_unknown=%+v last_observation=%+v retryable_unknown_observations=%d", firstUnknown, last, retries)
 }
 
 func (fixture stoppedOwnedHLSMatrixFixture) stop(t *testing.T, ctx context.Context) int {
@@ -374,10 +385,9 @@ func TestHTTPPlaybackStoppedOwnedHLSShareWaitExpiryDoesNotMint(t *testing.T) {
 	t.Log("actual_canonical_share_wait_expiry_rejected_before_mint=true producer_acceptance_claimed=false")
 }
 
-// This is the required negative availability boundary of the disabled first
-// cut. Four abandoned durable reports retain four restrictive reservations;
-// recovery by fresh terminal witness is required before production enablement.
-func TestHTTPPlaybackStoppedOwnedHLSFourFailedStopsMakeFifthBusy(t *testing.T) {
+// Four abandoned durable reports retain their existing restrictive reservations.
+// A full early lane must still permit the fifth report's normal durable Stop.
+func TestHTTPPlaybackStoppedOwnedHLSFourFailedStopsKeepFifthFallbackAvailable(t *testing.T) {
 	first := newStoppedOwnedHLSMatrixFixture(t)
 	f, h := first.real.control, first.real.hls
 	fixtures := []stoppedOwnedHLSMatrixFixture{first}
@@ -428,23 +438,27 @@ func TestHTTPPlaybackStoppedOwnedHLSFourFailedStopsMakeFifthBusy(t *testing.T) {
 			t.Fatal("an actual abandoned durable report did not retain its one Stop reservation")
 		}
 	}
-	ctx, cancel := context.WithTimeout(f.ctx, 3*time.Second)
-	started := time.Now()
+	ctx, cancel := context.WithTimeout(f.ctx, 500*time.Millisecond)
 	status := fixtures[4].stop(t, ctx)
-	elapsed := time.Since(started)
 	cancel()
-	if status != http.StatusTooManyRequests || elapsed >= 1500*time.Millisecond || f.app.playbackStopIntents.usage().StopReservations != 4 ||
+	if status != http.StatusServiceUnavailable || f.app.playbackStopIntents.usage().StopReservations != 4 ||
 		f.app.playbackStopIntents.blocked(fixtures[4].session.key.scope) {
-		t.Fatalf("the fifth scoped early Stop did not expose its bounded Busy boundary: status=%d elapsed_ms=%d reservations=%d blocked=%t",
-			status, elapsed.Milliseconds(), f.app.playbackStopIntents.usage().StopReservations,
+		t.Fatalf("a failed fifth normal Stop invented early intent or exhausted the bounded lane: status=%d reservations=%d blocked=%t",
+			status, f.app.playbackStopIntents.usage().StopReservations,
 			f.app.playbackStopIntents.blocked(fixtures[4].session.key.scope))
 	}
 	var state string
 	if err := f.control.QueryRow(f.ctx, "SELECT state FROM play_sessions WHERE id=$1", fixtures[4].graph.playID).Scan(&state); err != nil || state != "Playing" {
-		t.Fatal("Busy invented a terminal fifth playback report")
+		t.Fatal("a failed full-lane fallback invented a terminal fifth playback report")
 	}
 	release()
-	for _, fixture := range fixtures {
+	if status := fixtures[4].stop(t, f.ctx); status != http.StatusNoContent {
+		t.Fatalf("a full early lane denied the fifth normal Stop after userdata release: status=%d", status)
+	}
+	if usage := f.app.playbackStopIntents.usage(); usage.StopReservations != 4 || usage.StopOwners != 0 {
+		t.Fatal("a successful fifth fallback changed the four uncommitted reservations")
+	}
+	for _, fixture := range fixtures[:4] {
 		if status := fixture.stop(t, f.ctx); status != http.StatusNoContent {
 			t.Fatal("fresh same-play retry did not drain the actual reserved Stop lane after release")
 		}
@@ -452,5 +466,5 @@ func TestHTTPPlaybackStoppedOwnedHLSFourFailedStopsMakeFifthBusy(t *testing.T) {
 	if usage := f.app.playbackStopIntents.usage(); usage != (playbackStopIntentUsage{}) {
 		t.Fatal("all terminal retries and registry owners did not drain the bounded lane")
 	}
-	t.Log("actual_failed_stops=4 fifth_busy_before_userdata_wait=true recovery_required_before_enablement=true producer_acceptance_claimed=false")
+	t.Log("actual_failed_stops=4 fifth_normal_commit204=true bounded_lane_unchanged=true producer_acceptance_claimed=false")
 }

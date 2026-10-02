@@ -139,6 +139,10 @@ func TestSubtitleCatalogChangesUnstableDirectoryRetainsProjectionWithoutNotifica
 		t.Fatal("a stale directory listing authorized subtitle retirement")
 	}
 	assertNoCatalogTestNotification(t, notifications)
+	if err := state.opened.Close(); err != nil {
+		t.Fatal(err)
+	}
+	imageScanTestRetireTask(t, fixture.pool, fixture.store, state.task)
 	scanSubtitleCatalogFixture(t, fixture)
 	assertScanCatalogChanges(t, notifications, subtitleCatalogTestUpdate(fixture))
 	if len(subtitleTestTracks(t, fixture)) != 0 {

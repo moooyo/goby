@@ -55,6 +55,23 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 	if ctx == nil || runtime.GOOS != "linux" || executable == "" || stderr == nil || parse == nil || stdoutLimit < 1 || stdoutLimit > 8<<30 || timeout <= 0 || timeout > 2*time.Hour {
 		return ErrAnalysisUnavailable
 	}
+	if input != nil {
+		err := RunSourceReadPhase(ctx, func(work context.Context) error {
+			return runAnalysisProcessJoined(work, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, executables...)
+		})
+		if err != nil {
+			stderr.Close(err)
+		}
+		return err
+	}
+	return runAnalysisProcessJoined(ctx, executable, input, stdin, args, timeout, stdoutLimit, stderr, parse, executables...)
+}
+
+// The source phase includes the synchronous stdout parser, the stderr reader,
+// every actual child join and final pipe cleanup. Tool and stdin-only helpers
+// enter this runner directly because they do not read an original media root.
+func runAnalysisProcessJoined(ctx context.Context, executable string, input *os.File, stdin io.Reader, args []string, timeout time.Duration, stdoutLimit int64,
+	stderr analysisStderrSink, parse func(io.Reader) error, executables ...*os.File) (resultErr error) {
 	processContext, cancel := context.WithTimeout(WithBackgroundProcess(ctx), timeout)
 	defer cancel()
 	if err := processContext.Err(); err != nil {
@@ -113,7 +130,7 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 		if !stderrJoined {
 			<-stderrDone
 		}
-		_ = process.Close()
+		resultErr = errors.Join(resultErr, process.Close())
 	}()
 	go func() {
 		_, err := io.Copy(&analysisProcessStderr{sink: stderr, cancel: cancel, remaining: 256 << 20}, errorPipe)
@@ -132,7 +149,7 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 		}
 	}
 	if bounded.N <= 0 {
-		parseErr = ErrAnalysisBudget
+		parseErr = errors.Join(ErrAnalysisBudget, parseErr)
 	}
 	if parseErr != nil {
 		cancel()
@@ -140,26 +157,27 @@ func runAnalysisProcess(ctx context.Context, executable string, input *os.File, 
 	}
 	// Wait for retirement before Wait, retaining the process-group leader as a
 	// waitable child until all descendant signals have been delivered.
-	_ = process.Retire()
+	retireErr := process.Retire()
 	stderrErr := <-stderrDone
 	stderrJoined = true
 	waitErr := process.Wait()
+	joinedErr := errors.Join(retireErr, waitErr)
 	if err := ctx.Err(); err != nil {
-		return err
+		return errors.Join(err, parseErr, stderrErr, joinedErr)
 	}
 	if errors.Is(parseErr, ErrAnalysisBudget) || errors.Is(stderrErr, ErrAnalysisBudget) {
-		return ErrAnalysisBudget
+		return errors.Join(ErrAnalysisBudget, parseErr, stderrErr, joinedErr)
 	}
 	if parseErr != nil {
-		return parseErr
+		return errors.Join(parseErr, stderrErr, joinedErr)
 	}
 	if stderrErr != nil {
-		return stderrErr
+		return errors.Join(stderrErr, joinedErr)
 	}
 	if err := processContext.Err(); err != nil {
-		return err
+		return errors.Join(err, joinedErr)
 	}
-	if err := waitErr; err != nil {
+	if err := joinedErr; err != nil {
 		return fmt.Errorf("analysis process did not exit cleanly: %w", err)
 	}
 	return nil

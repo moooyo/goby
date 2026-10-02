@@ -4,6 +4,7 @@ package transcode
 
 import (
 	"context"
+	"errors"
 	"os"
 	"time"
 
@@ -24,6 +25,19 @@ const generatedSourceEndpointTimeout = 30 * time.Second
 // it before publication. Separate successful inspection fences do not establish
 // that their evidence came from the same source version.
 func MeasureGeneratedMP4SourceEndpoint(ctx context.Context, source *os.File, videoStreamIndex int) (GeneratedSourceEndpointCertificate, error) {
+	var result GeneratedSourceEndpointCertificate
+	if ctx == nil {
+		return result, ErrInvalidOptions
+	}
+	err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+		var err error
+		result, err = measureGeneratedMP4SourceEndpoint(work, source, videoStreamIndex)
+		return err
+	})
+	return result, err
+}
+
+func measureGeneratedMP4SourceEndpoint(ctx context.Context, source *os.File, videoStreamIndex int) (_ GeneratedSourceEndpointCertificate, resultErr error) {
 	var empty GeneratedSourceEndpointCertificate
 	if ctx == nil {
 		return empty, ErrInvalidOptions
@@ -35,7 +49,7 @@ func MeasureGeneratedMP4SourceEndpoint(ctx context.Context, source *os.File, vid
 	if err != nil {
 		return empty, err
 	}
-	defer file.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeSourceReadInput(file)) }()
 	before, err := file.Stat()
 	if err != nil || !before.Mode().IsRegular() || before.Size() <= 0 {
 		return empty, ErrInvalidInput

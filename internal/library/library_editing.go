@@ -135,6 +135,16 @@ func libraryEditPath(value string) (string, error) {
 }
 
 func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdministrator, id string, input LibraryUpdate) (LibraryEditing, error) {
+	for {
+		result, err := s.updateLibraryAttempt(ctx, administrator, id, input)
+		retry, waitErr := waitDirectoryPrimaryError(ctx, err)
+		if !retry || waitErr != nil {
+			return result, waitErr
+		}
+	}
+}
+
+func (s *Store) updateLibraryAttempt(ctx context.Context, administrator *catalogAdministrator, id string, input LibraryUpdate) (LibraryEditing, error) {
 	if ctx == nil || !validCatalogLibraryIdentifier(id) || len(input.PathReplacements) > 32 {
 		return LibraryEditing{}, ErrInvalidInput
 	}
@@ -194,7 +204,7 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 		}
 		canonical := path
 		if _, unchanged := oldPaths[path]; !unchanged {
-			registration, err := s.authorizePath(path)
+			registration, err := s.authorizePathContext(ctx, path)
 			if err != nil {
 				return LibraryEditing{}, err
 			}
@@ -274,7 +284,7 @@ func (s *Store) updateLibrary(ctx context.Context, administrator *catalogAdminis
 		if err := registration.prepare(ctx, captureRootBindingRegistrationTopology); err != nil {
 			return LibraryEditing{}, err
 		}
-		if err := registration.Revalidate(ctx); err != nil {
+		if err := registration.RevalidateQueued(ctx); err != nil {
 			return LibraryEditing{}, err
 		}
 	}

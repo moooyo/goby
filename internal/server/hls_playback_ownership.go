@@ -55,35 +55,49 @@ func playbackScopeForValidatedStop(stop library.ValidatedPlaybackStop) transcode
 		PlaySessionID: stop.PlaySessionID(), ItemID: stop.ItemID(), SourceID: stop.MediaSourceID()}
 }
 
-// This factory is intentionally inactive until the entire production owner
-// chain is qualified. It accepts only an already owned correlated HLS scope,
-// including a retained failed Stop reservation for a complete fresh retry.
+// This factory is intentionally inactive until the production owner chain is
+// qualified. Early retirement requires an owned correlated file-HLS scope.
+// A committed normal report also fences current owners that arrived while its
+// userdata write was waiting, without minting a new entry or reservation.
 func (s *Server) correlatedHLSValidatedStop(stop library.ValidatedPlaybackStop) (library.PlaybackValidatedStopAction, error) {
 	if !s.correlatedHLSOwnershipEnabled || !s.correlatedHLSEarlyStopEnabled || stop.IsDynamic() {
 		return library.PlaybackValidatedStopAction{}, nil
 	}
 	scope := playbackScopeForValidatedStop(stop)
 	gate := &s.playbackStopIntents
+	// A successful complete report fences whichever exact entry exists at
+	// commit, including owners minted while userdata was waiting. This action
+	// does not mint an entry or claim an early intent on a failed report.
+	action := library.PlaybackValidatedStopAction{Finish: func(committed bool) {
+		if committed {
+			gate.publishCommittedTerminal(scope)
+		}
+	}}
 	gate.mu.Lock()
 	entry := gate.entries[playbackStopIntentKeyFor(scope)]
 	owned := entry != nil && entry.scope == scope && (entry.references > 0 || entry.stopReserved || entry.stopOwners > 0)
 	gate.mu.Unlock()
 	if !owned {
-		return library.PlaybackValidatedStopAction{}, nil
+		return action, nil
 	}
 	reference, err := gate.acceptValidatedStop(scope)
 	if err != nil {
 		if errors.Is(err, transcode.ErrBusy) {
-			return library.PlaybackValidatedStopAction{}, library.ErrBusy
+			// Pressure withholds the early optimization, never the ordinary
+			// fully validated durable Stop and its post-commit cancellation.
+			return action, nil
 		}
 		return library.PlaybackValidatedStopAction{}, library.ErrUnavailable
 	}
-	return library.PlaybackValidatedStopAction{
-		Cancel: func(context.Context) error {
-			// Cancellation is restrictive and belongs to the accepted intent,
-			// even when the originating HTTP context has been canceled.
-			return s.hls.cancelFileHLSPlayback(scope.AuthSessionID, scope.PlaySessionID)
-		},
-		Finish: reference.finish,
-	}, nil
+	committedFinish := action.Finish
+	action.Cancel = func(context.Context) error {
+		// Cancellation is restrictive and belongs to the accepted intent,
+		// even when the originating HTTP context has been canceled.
+		return s.hls.cancelFileHLSPlayback(scope.AuthSessionID, scope.PlaySessionID)
+	}
+	action.Finish = func(committed bool) {
+		committedFinish(committed)
+		reference.finish(committed)
+	}
+	return action, nil
 }

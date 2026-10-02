@@ -16,6 +16,15 @@ import (
 func scanPrimaryPublicationFixture(t *testing.T, update bool) (context.Context, *pgxpool.Pool, *Store, *scanState, *scannedMediaInput, string, string) {
 	t.Helper()
 	ctx, pool, store, state, _, root := scanCachedVisitFixture(t)
+	store.mu.Lock()
+	store.active[state.task.job.ID] = state.task
+	store.mu.Unlock()
+	t.Cleanup(func() {
+		state.task.cancel()
+		store.mu.Lock()
+		delete(store.active, state.task.job.ID)
+		store.mu.Unlock()
+	})
 	options := DefaultLibraryOptions()
 	options.EnableLocalImages = false
 	state.library.Options = &options
@@ -35,9 +44,13 @@ func scanPrimaryPublicationFixture(t *testing.T, update bool) (context.Context, 
 	if err != nil || input == nil {
 		t.Fatalf("prepare publication input: input=%v error=%v", input, err)
 	}
-	t.Cleanup(input.close)
+	t.Cleanup(func() {
+		if err := input.close(); err != nil {
+			t.Errorf("close publication input: %v", err)
+		}
+	})
 	if input.probe == nil {
-		probe, err := store.prober.ProbeFile(state.task.ctx, input.file)
+		probe, err := input.primary.probe(store.prober, input.file)
 		if err != nil {
 			t.Fatal(err)
 		}

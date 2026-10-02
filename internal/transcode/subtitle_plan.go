@@ -283,7 +283,11 @@ func PrepareSubtitleAssets(ctx context.Context, executable, directory string, in
 			return ErrInvalidInput
 		}
 	} else {
-		data, err = media.ExtractSubtitle(ctx, executable, input, media.Stream{Index: p.Subtitle.StreamIndex, Codec: p.Subtitle.Codec, CodecType: "subtitle"}, "ass")
+		err = media.RunSourceReadPhase(ctx, func(work context.Context) error {
+			var err error
+			data, err = media.ExtractSubtitle(work, executable, input, media.Stream{Index: p.Subtitle.StreamIndex, Codec: p.Subtitle.Codec, CodecType: "subtitle"}, "ass")
+			return err
+		})
 	}
 	if err != nil {
 		return err
@@ -309,7 +313,12 @@ func PrepareSubtitleAssets(ctx context.Context, executable, directory string, in
 	indexes, _ := subtitleFontIndexes(p.Subtitle.FontStreams)
 	total := 0
 	for slot, index := range indexes {
-		data, err := media.ExtractFontAttachment(ctx, executable, input, media.Stream{Index: index, Codec: "ttf", CodecType: "attachment"})
+		var data []byte
+		err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+			var err error
+			data, err = media.ExtractFontAttachment(work, executable, input, media.Stream{Index: index, Codec: "ttf", CodecType: "attachment"})
+			return err
+		})
 		if err != nil {
 			return err
 		}

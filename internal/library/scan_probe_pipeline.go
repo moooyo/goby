@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 const (
@@ -41,6 +42,36 @@ type scanProbeAuthority struct {
 type scanProbeResult struct {
 	info media.Info
 	err  error
+}
+
+type scanInputInspectionRejection struct{ err error }
+
+func (rejection *scanInputInspectionRejection) Error() string { return rejection.err.Error() }
+func (rejection *scanInputInspectionRejection) Unwrap() error { return rejection.err }
+
+// Only the original business rejection may pass through RootIO's nested joins.
+// A separate close, release or ownership failure must never become a warning.
+func scanInputInspectionRejectedOnly(err error, rejection *scanInputInspectionRejection) bool {
+	if rejection == nil || err == nil {
+		return false
+	}
+	if current, ok := err.(*scanInputInspectionRejection); ok {
+		return current == rejection
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return false
+	}
+	children := joined.Unwrap()
+	if len(children) == 0 {
+		return false
+	}
+	for _, child := range children {
+		if child != nil && !scanInputInspectionRejectedOnly(child, rejection) {
+			return false
+		}
+	}
+	return true
 }
 
 type scanProbePending struct {
@@ -76,7 +107,7 @@ func (state *scanState) newScanProbeWindow() *scanProbeWindow {
 		pending: make([]*scanProbePending, 0, scanProbeWindowLimit)}
 }
 
-func (window *scanProbeWindow) submit(path, kind string, current hierarchy) error {
+func (window *scanProbeWindow) submit(path, kind string, current hierarchy) (resultErr error) {
 	if window.closed {
 		return ErrUnavailable
 	}
@@ -100,7 +131,9 @@ func (window *scanProbeWindow) submit(path, kind string, current hierarchy) erro
 		return err
 	}
 	if !scanProbeFactsFit(input.stored, scanProbeFactsBytes) {
-		_ = input.file.Close()
+		if err := input.close(); err != nil {
+			return err
+		}
 		state.warnings++
 		state.failThemeDirectory(filepath.Dir(path))
 		return state.store.persistProgress(state.task)
@@ -108,7 +141,7 @@ func (window *scanProbeWindow) submit(path, kind string, current hierarchy) erro
 	if input.unchanged {
 		// Warm scans preserve the original cached visit and no-op write path.
 		// Flush earlier cold inputs before sidecars, hierarchy, or evidence.
-		defer input.file.Close()
+		defer func() { resultErr = errors.Join(resultErr, input.close()) }()
 		if err := window.flush(); err != nil {
 			return err
 		}
@@ -133,13 +166,24 @@ func (window *scanProbeWindow) submit(path, kind string, current hierarchy) erro
 	window.workers.Add(1)
 	go func() {
 		defer window.workers.Done()
+		returned := false
+		defer func() {
+			_ = recover()
+			if !returned {
+				work.result <- scanProbeResult{err: scanReadFailure(media.ErrProcessRetirementUnknown)}
+			}
+		}()
 		work.result <- runScanProbe(window.ctx, state.store.prober, input)
+		returned = true
 	}()
 	return nil
 }
 
 func runScanProbe(ctx context.Context, prober Prober, input *scannedMediaInput) scanProbeResult {
-	info, err := prober.ProbeFile(ctx, input.file)
+	if input.primary == nil {
+		return scanProbeResult{err: scanReadFailure(ErrUnavailable)}
+	}
+	info, err := input.primary.probeContext(ctx, prober, input.file)
 	if err != nil {
 		return scanProbeResult{err: err}
 	}
@@ -184,7 +228,7 @@ func (window *scanProbeWindow) acceptOldest() (resultErr error) {
 			// rather than depending on walk's later window-close defer.
 			window.cancel()
 		}
-		work.input.close()
+		resultErr = errors.Join(resultErr, work.input.close())
 	}()
 	state := window.state
 	warnings := state.warnings
@@ -206,7 +250,10 @@ func (window *scanProbeWindow) acceptOldest() (resultErr error) {
 		return err
 	}
 	err = state.publishScannedMedia(work.path, work.kind, work.hierarchy, work.input)
-	if errors.Is(err, errScanProbeSourceChanged) || errors.Is(err, errScannedMediaRoleConflict) {
+	var failure *primaryScanReadFailure
+	if !errors.As(err, &failure) && !errors.Is(err, media.ErrProcessRetirementUnknown) &&
+		!errors.Is(err, errScanPublicationRetirementUnknown) && !errors.Is(err, errSidecarRollbackUnknown) &&
+		(errors.Is(err, errScanProbeSourceChanged) || errors.Is(err, errScannedMediaRoleConflict)) {
 		// publishScannedMedia has already rolled back and released ownership.
 		// Rejected facts never reach sidecars or accepted-identity evidence.
 		state.warnings++
@@ -215,9 +262,9 @@ func (window *scanProbeWindow) acceptOldest() (resultErr error) {
 	return err
 }
 
-func (window *scanProbeWindow) close() {
+func (window *scanProbeWindow) close() (resultErr error) {
 	if window.closed {
-		return
+		return nil
 	}
 	window.closed = true
 	window.cancel()
@@ -225,47 +272,83 @@ func (window *scanProbeWindow) close() {
 	// stuck in I/O keeps its descriptor and scan ownership until it returns.
 	window.workers.Wait()
 	for _, work := range window.pending {
-		work.input.close()
+		resultErr = errors.Join(resultErr, work.input.close())
 	}
 	window.pending = nil
+	return resultErr
 }
 
 // The walker owns both this input and its rooted directory. It joins each
 // actual observation before returning to walk's directory/root close. A timed
 // out proof therefore releases the writer transaction while retaining borrowed
 // descriptors until the underlying filesystem operation actually finishes.
-func (input *scannedMediaInput) close() {
-	if input.authority == nil {
-		_ = input.file.Close()
-		return
+func (input *scannedMediaInput) close() error {
+	if input == nil {
+		return nil
 	}
-	authority := input.authority
-	_ = authority.observation.retire(func() error {
-		err := input.file.Close()
-		close(authority.closed)
+	closeFile := func() error {
+		if input.file == nil {
+			return nil
+		}
+		if input.authority == nil {
+			return input.file.Close()
+		}
+		authority := input.authority
+		var closeErr error
+		err := authority.observation.retire(func() error { defer close(authority.closed); closeErr = input.file.Close(); return closeErr })
+		<-authority.closed
+		return errors.Join(err, closeErr)
+	}
+	if input.primary != nil {
+		err := input.primary.close(closeFile)
+		if err != nil {
+			input.primary.state.recordPrimaryScanReadFailure(err)
+		}
 		return err
-	})
-	<-authority.closed
+	}
+	return closeFile()
 }
 
 // prepareScannedMedia is owned by the serial walker. Claim ordering remains
 // the directory order even if probes finish in the opposite order.
-func (state *scanState) prepareScannedMedia(path, kind string, role scannedMediaRole) (*scannedMediaInput, error) {
-	file, err := openScanFile(state.opened, path)
+func (state *scanState) prepareScannedMedia(path, kind string, role scannedMediaRole) (_ *scannedMediaInput, resultErr error) {
+	primary, err := state.preparePrimaryScanRead()
 	if err != nil {
-		state.warnings++
-		return nil, nil
+		return nil, scanReadFailure(err)
 	}
+	input := &scannedMediaInput{primary: primary}
 	accepted := false
 	defer func() {
 		if !accepted {
-			_ = file.Close()
+			resultErr = errors.Join(resultErr, input.close())
 		}
 	}()
-	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() {
-		state.warnings++
-		return nil, nil
+	var file *os.File
+	var info os.FileInfo
+	var rejected *scanInputInspectionRejection
+	err = state.runPrimaryScanMetadata(state.task.ctx, func(context.Context) error {
+		var err error
+		file, err = openScanFile(state.opened, path)
+		if err != nil {
+			rejected = &scanInputInspectionRejection{err: err}
+			return rejected
+		}
+		input.file = file
+		// Retain the exact FD even if its first Stat rejects a nonregular input.
+		primary.file, primary.path = file, path
+		info, err = file.Stat()
+		if err != nil || !info.Mode().IsRegular() {
+			rejected = &scanInputInspectionRejection{err: errors.Join(err, errScanProbeSourceChanged)}
+			return rejected
+		}
+		return primary.attach(file, path)
+	})
+	if err != nil {
+		if scanInputInspectionRejectedOnly(err, rejected) {
+			state.warnings++
+			return nil, nil
+		}
+		return nil, scanReadFailure(err)
 	}
 	state.task.job.Scanned++
 	if err := state.store.persistProgress(state.task); err != nil {
@@ -303,12 +386,17 @@ func (state *scanState) prepareScannedMedia(path, kind string, role scannedMedia
 		unchanged = unchanged && probe.EmbeddedMusic != nil && probe.EmbeddedMusic.Version == versioned.MusicMetadataVersion()
 	}
 	accepted = true
-	return &scannedMediaInput{file: file, info: info, stored: stored, probe: probe,
-		unchanged: unchanged, checksVersion: checksVersion}, nil
+	input.info, input.stored, input.probe = info, stored, probe
+	input.unchanged, input.checksVersion = unchanged, checksVersion
+	return input, nil
 }
 
-func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string, probeErr error) (bool, error) {
+func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string, probeErr error) (accepted bool, resultErr error) {
 	if probeErr != nil {
+		var failure *primaryScanReadFailure
+		if errors.As(probeErr, &failure) || errors.Is(probeErr, media.ErrProcessRetirementUnknown) {
+			return false, probeErr
+		}
 		if state.task.ctx.Err() != nil {
 			return false, state.task.ctx.Err()
 		}
@@ -316,7 +404,28 @@ func (state *scanState) acceptScannedMedia(input *scannedMediaInput, kind string
 		return false, state.store.persistProgress(state.task)
 	}
 	if !input.unchanged {
-		after, err := input.file.Stat()
+		if input.primary == nil {
+			return false, scanReadFailure(ErrUnavailable)
+		}
+		operation, err := input.primary.preparePublicationIO()
+		if err != nil {
+			return false, scanReadFailure(err)
+		}
+		defer func() {
+			if err := closeScanPublicationIO(operation); err != nil {
+				accepted = false
+				resultErr = errors.Join(resultErr, err)
+			}
+		}()
+		var after os.FileInfo
+		var statErr error
+		if err := input.primary.runPublicationMetadata(operation, func(context.Context) error {
+			after, statErr = input.file.Stat()
+			return nil
+		}); err != nil {
+			return false, err
+		}
+		err = statErr
 		if err != nil || !os.SameFile(input.info, after) || after.Size() != input.info.Size() ||
 			!after.ModTime().Equal(input.info.ModTime()) ||
 			((input.authority != nil || input.checksVersion) && media.FileChangeTime(after) != media.FileChangeTime(input.info)) {
@@ -534,7 +643,12 @@ func (state *scanState) checkScanProbeAuthorityWithRelation(tx pgx.Tx, path stri
 }
 
 func (state *scanState) checkScanProbeFile(path string, input *scannedMediaInput) error {
-	return checkScanProbeFileAt(state.task.ctx, state.opened, input.file, input.info, path)
+	if input.primary == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	return input.primary.runPublicationMetadata(input.primary.publicationIO, func(ctx context.Context) error {
+		return checkScanProbeFileAt(ctx, state.opened, input.file, input.info, path)
+	})
 }
 
 func (state *scanState) revalidateScanProbeStorage(tx pgx.Tx, path string, input *scannedMediaInput) error {
@@ -558,13 +672,18 @@ func (state *scanState) revalidateScanProbeStorage(tx pgx.Tx, path string, input
 	defer cancel()
 	root, file, expected := state.opened, input.file, input.info
 	capture := authority.capture
-	err := runStorageObservation(ctx, []*storageObservationLifetime{&capture.observation, &authority.observation},
-		func(observation context.Context) error {
-			if err := capture.Revalidate(observation); err != nil {
-				return err
-			}
-			return checkScanProbeFileAt(observation, root, file, expected, path)
-		})
+	if input.primary == nil || input.primary.publicationIO == nil {
+		return scanReadFailure(ErrUnavailable)
+	}
+	err := input.primary.publicationIO.RunImmediate(ctx, authority.root.id, primaryio.Background, func(work context.Context) error {
+		return runStorageObservation(work, []*storageObservationLifetime{&capture.observation, &authority.observation},
+			func(observation context.Context) error {
+				if err := capture.Revalidate(observation); err != nil {
+					return err
+				}
+				return checkScanProbeFileAt(observation, root, file, expected, path)
+			})
+	})
 	if err != nil {
 		return fmt.Errorf("revalidate cold probe storage: %w", err)
 	}

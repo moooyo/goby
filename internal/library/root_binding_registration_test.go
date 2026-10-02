@@ -26,7 +26,7 @@ func rootBindingRegistrationDirectory(t *testing.T) (*Store, string, string) {
 		t.Fatal(err)
 	}
 	approved, registered = canonical, filepath.Join(canonical, "registered")
-	return &Store{roots: []approvedRoot{{path: approved}}}, approved, registered
+	return primaryDirectoryUnitStore(t, []approvedRoot{{path: approved}}), approved, registered
 }
 
 func rootBindingRegistrationUnsupported(context.Context, *libraryRootLease, RootTopologyMapping, *os.Root) (rootBindingRegistrationTopology, error) {

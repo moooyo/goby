@@ -30,20 +30,33 @@ func playbackAdmissionNoopActualOptIn(t *testing.T) {
 	}
 }
 
-func TestHTTPPlaybackAdmissionNoopDefaultHLSAndEnabledProgressiveEnsure(t *testing.T) {
+func TestHTTPPlaybackAdmissionNoopDisabledHLSAndEnabledProgressiveEnsure(t *testing.T) {
 	playbackAdmissionNoopActualOptIn(t)
 	for _, progressive := range []bool{false, true} {
-		name := "default_file_hls"
+		name := "explicitly_disabled_file_hls"
 		if progressive {
-			name = "enabled_uncovered_progressive"
+			name = "default_enabled_uncovered_progressive"
 		}
 		t.Run(name, func(t *testing.T) {
 			real := newPlaybackStopAliasRealFixture(t)
 			f, h := real.control, real.hls
-			if f.app.correlatedHLSOwnershipEnabled || f.app.correlatedHLSEarlyStopEnabled {
-				t.Fatal("the actual default fixture enabled private ownership flags")
+			if !f.app.correlatedHLSOwnershipEnabled || !f.app.correlatedHLSEarlyStopEnabled {
+				t.Fatal("Server.New did not enable the qualified file-HLS ownership and Stop defaults")
 			}
-			f.app.correlatedHLSOwnershipEnabled, f.app.correlatedHLSEarlyStopEnabled = progressive, progressive
+			if !f.app.hls.usesPlaybackOwnership(transcode.Plan{}) || !f.app.hls.usesPlaybackOwnership(transcode.Plan{OutputMode: "hls"}) ||
+				f.app.hls.usesPlaybackOwnership(transcode.Plan{OutputMode: "progressive"}) ||
+				f.app.hls.usesPlaybackOwnership(transcode.Plan{SourceMode: "stream", OutputMode: "hls"}) ||
+				f.app.hls.usesPlaybackOwnership(transcode.Plan{SourceMode: "stream"}) {
+				t.Fatal("the default constructor qualified an uncovered media transport")
+			}
+			if f.app.hls.generatedWindowsEnabled {
+				t.Fatal("the default constructor enabled the experimental generated-window graph")
+			}
+			if !progressive {
+				// Keep the disabled-hook compatibility case explicit. Progressive
+				// delivery below retains Server.New's enabled defaults unchanged.
+				f.app.correlatedHLSOwnershipEnabled, f.app.correlatedHLSEarlyStopEnabled = false, false
+			}
 			principal, headers := f.principal(t, "normal")
 			graph := h.graph(t, clientSessionHTTPLogin{id: principal.SessionID, userID: principal.User.ID,
 				deviceID: principal.Client.DeviceID, headers: headers}, 0)
@@ -125,7 +138,10 @@ func TestHTTPPlaybackAdmissionNoopEnabledDynamicEnsureStream(t *testing.T) {
 	playbackAdmissionNoopActualOptIn(t)
 	d := newDynamicTimeshiftHTTPFixture(t, false)
 	h, app := d.h, d.h.f.app
-	app.correlatedHLSOwnershipEnabled, app.correlatedHLSEarlyStopEnabled = true, true
+	if !app.correlatedHLSOwnershipEnabled || !app.correlatedHLSEarlyStopEnabled ||
+		app.hls.usesPlaybackOwnership(transcode.Plan{SourceMode: "stream", OutputMode: "hls"}) {
+		t.Fatal("Server.New did not preserve the uncovered dynamic admission boundary")
+	}
 	presentation := d.open(t)
 	d.waitWindow(t, presentation, func(window dynamicHTTPWindow) bool {
 		return window.LiveEdgeTicks-window.EarliestTicks >= 6*media.TicksPerSecond

@@ -375,6 +375,46 @@ func (g *Governor) acquire(ctx context.Context, route Route, class Class) (*requ
 	}
 }
 
+// tryAcquire uses the same dispatch and compound-waiter fences as acquire, but
+// never queues the candidate or waits for a capacity change. Earlier eligible
+// requests are dispatched first; unavailable capacity or a fairness fence is busy.
+func (g *Governor) tryAcquire(ctx context.Context, route Route, class Class) (*request, error) {
+	if g == nil || ctx == nil || (class != Foreground && class != Background) {
+		return nil, ErrInvalid
+	}
+	route, err := copyRoute(route)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r := &request{ctx: ctx, route: route, class: class, ready: make(chan struct{})}
+	g.mu.Lock()
+	if g.closed {
+		g.mu.Unlock()
+		return nil, ErrClosed
+	}
+	g.dispatchLocked()
+	if err := ctx.Err(); err != nil {
+		g.mu.Unlock()
+		return nil, err
+	}
+	if !g.eligibleLocked(r) || g.blockedByOlderLocked(r, len(g.waiters)) {
+		g.mu.Unlock()
+		return nil, ErrBusy
+	}
+	r.granted = true
+	g.chargeLocked(r, 1)
+	close(r.ready)
+	g.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		g.release(r)
+		return nil, err
+	}
+	return r, nil
+}
+
 func (g *Governor) release(r *request) {
 	g.mu.Lock()
 	defer g.mu.Unlock()

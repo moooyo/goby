@@ -28,6 +28,19 @@ const generatedAVSourceTimeout = 30 * time.Second
 // must not choose that classification. Decoded coverage and actual effective
 // AAC samples require additional evidence before any publication decision.
 func MeasureGeneratedMP4AVSourceEndpoint(ctx context.Context, ffprobe string, source *os.File, videoIndex, audioIndex int) (GeneratedAVSourceCertificate, error) {
+	var result GeneratedAVSourceCertificate
+	if ctx == nil {
+		return result, ErrInvalidOptions
+	}
+	err := media.RunSourceReadPhase(ctx, func(work context.Context) error {
+		var err error
+		result, err = measureGeneratedMP4AVSourceEndpoint(work, ffprobe, source, videoIndex, audioIndex)
+		return err
+	})
+	return result, err
+}
+
+func measureGeneratedMP4AVSourceEndpoint(ctx context.Context, ffprobe string, source *os.File, videoIndex, audioIndex int) (_ GeneratedAVSourceCertificate, resultErr error) {
 	var empty GeneratedAVSourceCertificate
 	if ctx == nil {
 		return empty, ErrInvalidOptions
@@ -39,7 +52,7 @@ func MeasureGeneratedMP4AVSourceEndpoint(ctx context.Context, ffprobe string, so
 	if err != nil {
 		return empty, err
 	}
-	defer file.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeSourceReadInput(file)) }()
 	before, err := file.Stat()
 	if err != nil || !before.Mode().IsRegular() || before.Size() <= 0 {
 		return empty, ErrInvalidInput
@@ -109,7 +122,7 @@ func MeasureGeneratedMP4AVSourceEndpoint(ctx context.Context, ffprobe string, so
 		return err
 	})
 	if !transcodeSourceUnchanged(file, before) {
-		return empty, ErrInvalidInput
+		return empty, errors.Join(ErrInvalidInput, runErr)
 	}
 	if err := ctx.Err(); err != nil {
 		return empty, errors.Join(err, runErr)

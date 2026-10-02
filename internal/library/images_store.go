@@ -251,7 +251,7 @@ func (s *Store) ImagesForItemsFor(ctx context.Context, subject Subject, ids []st
 
 // OpenImageFor authorizes the item and its image in one policy snapshot before
 // any cache hit or filesystem open can expose media artwork.
-func (s *Store) OpenImageFor(ctx context.Context, subject Subject, itemID, imageType string, index int) (*os.File, Image, error) {
+func (s *Store) OpenImageFor(ctx context.Context, subject Subject, itemID, imageType string, index int) (io.ReadCloser, Image, error) {
 	if !validImageItemID(itemID) {
 		return nil, Image{}, ErrInvalidInput
 	}
@@ -259,34 +259,12 @@ func (s *Store) OpenImageFor(ctx context.Context, subject Subject, itemID, image
 	if err != nil {
 		return nil, Image{}, err
 	}
-	return runPublicImageWorker(ctx, publicImageWorkers, func() (*os.File, Image, error) {
-		tx, access, err := s.beginSubjectRead(ctx, subject)
-		if err != nil {
-			return nil, Image{}, err
-		}
-		defer rollback(tx)
-		stored, err := scanStoredImage(tx.QueryRow(ctx, "SELECT "+storedImageColumns+storedImageSource+`
-			WHERE i.id=$1 AND im.image_type=$2 AND im.image_index=$3 AND `+access.directSQL("i"), itemID, imageType, index))
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, Image{}, ErrNotFound
-		}
-		if err != nil {
-			return nil, Image{}, err
-		}
-		if err := tx.Commit(ctx); err != nil {
-			return nil, Image{}, fmt.Errorf("complete authorized image source read: %w", err)
-		}
-		file, err := s.openStoredImage(ctx, stored)
-		if err != nil {
-			return nil, Image{}, err
-		}
-		return file, stored.Image, nil
-	})
+	return s.openSidecarImageContentFor(ctx, subject, itemID, imageType, index)
 }
 
 // OpenPublicImage is retained for internal source-integrity fixtures. HTTP item
 // image handlers must use OpenImageFor so media policies cover cached artwork.
-func (s *Store) OpenPublicImage(ctx context.Context, itemID, imageType string, index int) (*os.File, Image, error) {
+func (s *Store) OpenPublicImage(ctx context.Context, itemID, imageType string, index int) (io.ReadCloser, Image, error) {
 	if !validImageItemID(itemID) {
 		return nil, Image{}, ErrInvalidInput
 	}
@@ -297,20 +275,16 @@ func (s *Store) OpenPublicImage(ctx context.Context, itemID, imageType string, i
 	if s == nil || s.pool == nil {
 		return nil, Image{}, ErrUnavailable
 	}
-	return runPublicImageWorker(ctx, publicImageWorkers, func() (*os.File, Image, error) {
-		stored, err := scanStoredImage(s.pool.QueryRow(ctx, "SELECT "+storedImageColumns+storedImageSource+`
+	return s.openSidecarImageContent(ctx, func(work context.Context) (storedImage, error) {
+		stored, err := scanStoredImage(s.pool.QueryRow(work, "SELECT "+storedImageColumns+storedImageSource+`
 			WHERE i.id = $1 AND im.image_type = $2 AND im.image_index = $3 AND `+directItemSQL("i"), itemID, imageType, index))
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, Image{}, ErrNotFound
+			return storedImage{}, ErrNotFound
 		}
 		if err != nil {
-			return nil, Image{}, err
+			return storedImage{}, err
 		}
-		file, err := s.openStoredImage(ctx, stored)
-		if err != nil {
-			return nil, Image{}, err
-		}
-		return file, stored.Image, nil
+		return stored, nil
 	})
 }
 
@@ -428,7 +402,7 @@ func normalizeStoredImageType(value string, index int) (string, error) {
 	return canonical, nil
 }
 
-func (s *Store) openStoredImage(ctx context.Context, image storedImage) (*os.File, error) {
+func (s *Store) openStoredImage(ctx context.Context, image storedImage) (_ *os.File, resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -436,13 +410,13 @@ func (s *Store) openStoredImage(ctx context.Context, image storedImage) (*os.Fil
 	if err != nil {
 		return nil, err
 	}
-	defer root.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, root)) }()
 	path := filepath.FromSlash(image.relativePath)
 	parent, err := openRegisteredRoot(root, filepath.Dir(path))
 	if err != nil {
 		return nil, fmt.Errorf("%w: image directory cannot be opened safely", ErrUnavailable)
 	}
-	defer parent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, parent)) }()
 	name := filepath.Base(path)
 	before, err := parent.Lstat(name)
 	if err != nil || !image.matchesFile(before) {
@@ -455,7 +429,7 @@ func (s *Store) openStoredImage(ctx context.Context, image storedImage) (*os.Fil
 	success := false
 	defer func() {
 		if !success {
-			_ = file.Close()
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, file))
 		}
 	}()
 	opened, err := file.Stat()
@@ -483,7 +457,7 @@ func (s *Store) openStoredImage(ctx context.Context, image storedImage) (*os.Fil
 	if err != nil {
 		return nil, err
 	}
-	defer currentRoot.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, currentRoot)) }()
 	if !sameImageDirectory(root, currentRoot) {
 		return nil, fmt.Errorf("%w: registered image root changed while reading", ErrUnavailable)
 	}
@@ -491,7 +465,7 @@ func (s *Store) openStoredImage(ctx context.Context, image storedImage) (*os.Fil
 	if err != nil {
 		return nil, fmt.Errorf("%w: image directory changed while reading", ErrUnavailable)
 	}
-	defer currentParent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, currentParent)) }()
 	if !sameImageDirectory(parent, currentParent) {
 		return nil, fmt.Errorf("%w: image directory changed while reading", ErrUnavailable)
 	}

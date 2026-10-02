@@ -13,17 +13,36 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/providers"
 	"github.com/moooyo/goby/internal/subtitle"
 )
 
 var providerSubtitleWorkers = make(chan struct{}, 4)
+
+// An uncertain retirement keeps its exact descriptors strongly reachable. The
+// shared retained-owner limit bounds this quarantine without adding workers.
+var providerSubtitleRetainedResources = struct {
+	sync.Mutex
+	prepared map[*preparedProviderSubtitle]struct{}
+}{prepared: make(map[*preparedProviderSubtitle]struct{})}
+
+type providerSubtitlePhaseContext struct{ context context.Context }
+type providerSubtitleRetirementFailure struct{ err error }
+type providerSubtitleAdmissionBusy struct{ err error }
+type providerSubtitleAttemptBusy struct{ err error }
+
+func (failure *providerSubtitleAdmissionBusy) Error() string { return failure.err.Error() }
+func (failure *providerSubtitleAdmissionBusy) Unwrap() error { return failure.err }
+func (failure *providerSubtitleAttemptBusy) Error() string   { return failure.err.Error() }
+func (failure *providerSubtitleAttemptBusy) Unwrap() error   { return failure.err }
 
 // ErrSubtitleTargetNotWritable distinguishes an unusable sidecar destination
 // before a caller spends a provider's download quota.
@@ -37,6 +56,13 @@ type providerSubtitleSnapshot struct {
 
 type preparedProviderSubtitle struct {
 	observation         storageObservationLifetime
+	primaryIO           *PrimaryRootIO
+	ioClass             primaryio.Class
+	cleanupPhase        atomic.Pointer[providerSubtitlePhaseContext]
+	retirementFailure   atomic.Pointer[providerSubtitleRetirementFailure]
+	retirementCompleted atomic.Bool
+	retirementMu        sync.Mutex
+	uncertainClosers    []io.Closer
 	keep                atomic.Bool
 	publicationFinished atomic.Bool
 	created             bool
@@ -85,18 +111,24 @@ func (s *Store) checkWritableSubtitleTarget(ctx context.Context, actor *identity
 		if expectedSourceTag != "" && tag != expectedSourceTag {
 			return SubtitleContent{}, ErrSourceChanged
 		}
-		prepared, err := s.openProviderSubtitleTarget(snapshot)
+		prepared, err := s.openProviderSubtitleTarget(ctx, actor, snapshot, providerSubtitleIOClass(actor))
 		if err != nil {
 			return SubtitleContent{}, err
 		}
 		defer func() { err = errors.Join(err, prepared.closeTarget()) }()
-		if err := prepared.verify(ctx, nil); err != nil {
-			return SubtitleContent{}, err
-		}
-		if err := probeWritableSubtitleParent(ctx, prepared.parent); err != nil {
-			return SubtitleContent{}, err
-		}
-		if err := prepared.verify(ctx, nil); err != nil {
+		if err := prepared.primaryIO.Run(ctx, snapshot.primary.root.id, prepared.ioClass, func(work context.Context) error {
+			prepared.rememberPhase(work)
+			if err := s.checkProviderSubtitleSnapshot(work, actor, snapshot); err != nil {
+				return err
+			}
+			if err := prepared.verify(work, nil); err != nil {
+				return err
+			}
+			if err := probeWritableSubtitleParentOwned(work, prepared.parent, prepared); err != nil {
+				return err
+			}
+			return prepared.verify(work, nil)
+		}); err != nil {
 			return SubtitleContent{}, err
 		}
 		current, err := s.readProviderSubtitleSnapshot(ctx, actor, itemID)
@@ -118,6 +150,10 @@ func (s *Store) checkWritableSubtitleTarget(ctx context.Context, actor *identity
 // including ACLs. Cleanup ignores cancellation, checks the private name against
 // the still-open inode, and contributes close or removal failures to the error.
 func probeWritableSubtitleParent(ctx context.Context, parent *os.Root) (err error) {
+	return probeWritableSubtitleParentOwned(ctx, parent, nil)
+}
+
+func probeWritableSubtitleParentOwned(ctx context.Context, parent *os.Root, prepared *preparedProviderSubtitle) (err error) {
 	if ctx == nil || parent == nil {
 		return ErrInvalidInput
 	}
@@ -142,7 +178,14 @@ func probeWritableSubtitleParent(ctx context.Context, parent *os.Root) (err erro
 			info, retryErr = file.Stat()
 			err = errors.Join(err, retryErr)
 		}
-		err = errors.Join(err, removeSubtitlePreflightFile(parent, name, info), file.Close())
+		removeErr := removeSubtitlePreflightFile(parent, name, info)
+		var closeErr error
+		if prepared == nil {
+			closeErr = file.Close()
+		} else {
+			closeErr = prepared.closeTemporary(file)
+		}
+		err = errors.Join(err, removeErr, closeErr)
 		if err != nil {
 			err = fmt.Errorf("%w: %w: subtitle preflight did not complete: %w", ErrUnavailable, ErrSubtitleTargetNotWritable, err)
 		}
@@ -247,14 +290,46 @@ func (s *Store) registerDownloadedSubtitleWithSource(ctx context.Context, actor 
 		if expectedSourceTag != "" && mediaSnapshotTag(snapshot.primary) != expectedSourceTag {
 			return SubtitleContent{}, fmt.Errorf("%w: %w: subtitle selection belongs to a changed media source", ErrUnavailable, ErrSourceChanged)
 		}
-		prepared, err := s.prepareProviderSubtitle(ctx, snapshot, download.RemoteID, language, string(format), download.IsForced, download.HearingImpaired, data)
-		if err != nil {
-			return SubtitleContent{}, err
-		}
-		defer prepared.close()
-		return SubtitleContent{}, s.publishProviderSubtitle(ctx, actor, prepared, download)
+		return SubtitleContent{}, s.registerProviderSubtitleSnapshot(ctx, actor, snapshot, download, language, string(format), data, s.publishProviderSubtitle)
 	})
 	return err
+}
+
+// Retry only complete, retired attempts. Every restart stays bound to the
+// initial authorized source, including requests without an expected source tag.
+func (s *Store) registerProviderSubtitleSnapshot(ctx context.Context, actor *identity.Principal, snapshot providerSubtitleSnapshot,
+	download providers.SubtitleDownload, language, codec string, data []byte,
+	publish func(context.Context, *identity.Principal, *preparedProviderSubtitle, providers.SubtitleDownload) error) error {
+	class := providerSubtitleIOClass(actor)
+	hint := mediaSourceRootHint{root: snapshot.primary.root, bindingRevision: snapshot.bindingRevision}
+	for {
+		prepared, err := s.prepareProviderSubtitle(ctx, actor, snapshot, class, download.RemoteID, language, codec, download.IsForced, download.HearingImpaired, data)
+		if err == nil {
+			err = publish(ctx, actor, prepared, download)
+			closeErr := prepared.close()
+			if closeErr != nil {
+				return errors.Join(err, closeErr)
+			}
+			if _, retryable := err.(*providerSubtitleAttemptBusy); !retryable {
+				return err
+			}
+			// Pure admission Busy launches no unfinished observation. An
+			// unexpected retained operation is a hard retirement failure.
+			if failure := prepared.retirementFailure.Load(); failure != nil {
+				return errors.Join(err, failure.err)
+			}
+			if !prepared.retirementCompleted.Load() {
+				return errors.Join(err, errSidecarRetirementUnknown)
+			}
+		} else if !sidecarAdmissionRetryable(err) {
+			return err
+		}
+		if err := s.waitSidecarAdmission(ctx, hint, class, func(work context.Context) error {
+			return s.checkProviderSubtitleSnapshot(work, actor, snapshot)
+		}); err != nil {
+			return err
+		}
+	}
 }
 
 func (s *Store) readProviderSubtitleSnapshot(ctx context.Context, actor *identity.Principal, itemID string) (providerSubtitleSnapshot, error) {
@@ -332,74 +407,243 @@ func (snapshot providerSubtitleSnapshot) same(other providerSubtitleSnapshot) bo
 		first.mediaFile.ModifiedAt.Equal(second.mediaFile.ModifiedAt) && bytes.Equal(snapshot.mediaJSON, other.mediaJSON)
 }
 
-func (s *Store) openProviderSubtitleTarget(snapshot providerSubtitleSnapshot) (prepared *preparedProviderSubtitle, err error) {
-	prepared = &preparedProviderSubtitle{snapshot: snapshot}
+func providerSubtitleIOClass(actor *identity.Principal) primaryio.Class {
+	if actor == nil {
+		return primaryio.Background
+	}
+	return primaryio.Foreground
+}
+
+// A queue grants capacity only. Repeat the committed principal, source and
+// binding checks after admission before touching the originally selected root.
+func (s *Store) checkProviderSubtitleSnapshot(ctx context.Context, actor *identity.Principal, expected providerSubtitleSnapshot) error {
+	current, err := s.readProviderSubtitleSnapshot(ctx, actor, expected.primary.mediaFile.Item.ID)
+	if err != nil {
+		return err
+	}
+	if !expected.same(current) {
+		return fmt.Errorf("%w: %w: subtitle target changed while queued", ErrUnavailable, ErrSourceChanged)
+	}
+	return ctx.Err()
+}
+
+func (s *Store) openProviderSubtitleTarget(ctx context.Context, actor *identity.Principal, snapshot providerSubtitleSnapshot, class primaryio.Class) (prepared *preparedProviderSubtitle, err error) {
+	operation, err := s.preparePrimaryRootIO(ctx,
+		[]mediaSourceRootHint{{root: snapshot.primary.root, bindingRevision: snapshot.bindingRevision}})
+	if err != nil {
+		return nil, err
+	}
+	prepared = &preparedProviderSubtitle{snapshot: snapshot, primaryIO: operation, ioClass: class}
 	defer func() {
 		if err != nil {
 			err = errors.Join(err, prepared.closeTarget())
 			prepared = nil
 		}
 	}()
+	err = operation.Run(ctx, snapshot.primary.root.id, class, func(work context.Context) error {
+		prepared.rememberPhase(work)
+		if err := s.checkProviderSubtitleSnapshot(work, actor, snapshot); err != nil {
+			return err
+		}
+		return s.openProviderSubtitleTargetObserved(work, prepared)
+	})
+	return prepared, err
+}
+
+func (s *Store) openProviderSubtitleTargetObserved(ctx context.Context, prepared *preparedProviderSubtitle) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	snapshot := prepared.snapshot
+	var err error
 	prepared.lease, err = s.leaseLibraryRoot(snapshot.primary.root)
 	if err != nil {
-		return prepared, err
+		return err
 	}
 	prepared.root, err = prepared.lease.Open()
 	if err != nil {
-		return prepared, err
+		return err
 	}
 	path := filepath.FromSlash(snapshot.primary.relativePath)
 	prepared.parent, err = openRegisteredRoot(prepared.root, filepath.Dir(path))
 	if err != nil {
-		return prepared, fmt.Errorf("%w: subtitle parent cannot be opened", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle parent cannot be opened", ErrUnavailable)
 	}
 	before, err := prepared.parent.Lstat(filepath.Base(path))
 	if err != nil || !snapshot.primary.matches(before) {
-		return prepared, fmt.Errorf("%w: subtitle primary changed", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle primary changed", ErrUnavailable)
 	}
 	prepared.primary, err = openScanFile(prepared.parent, filepath.Base(path))
 	if err != nil {
-		return prepared, fmt.Errorf("%w: subtitle primary cannot be opened safely", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle primary cannot be opened safely", ErrUnavailable)
 	}
 	prepared.primaryInfo, err = prepared.primary.Stat()
 	if err != nil || !snapshot.primary.matches(prepared.primaryInfo) || !sameMediaSourceFile(before, prepared.primaryInfo) {
-		return prepared, fmt.Errorf("%w: subtitle primary changed while opening", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle primary changed while opening", ErrUnavailable)
 	}
-	return prepared, nil
+	return ctx.Err()
 }
 
 func (prepared *preparedProviderSubtitle) closeTarget() error {
+	return prepared.retireResources(prepared.closeTargetResources, prepared.closeTargetResources)
+}
+
+func (prepared *preparedProviderSubtitle) closeTargetResources() error {
 	var err error
 	if prepared.primary != nil {
-		err = errors.Join(err, prepared.primary.Close())
-		prepared.primary = nil
+		closeErr := prepared.primary.Close()
+		if closeErr == nil || errors.Is(closeErr, os.ErrClosed) {
+			prepared.primary = nil
+		} else {
+			err = errors.Join(err, closeErr)
+		}
 	}
 	if prepared.parent != nil {
-		err = errors.Join(err, prepared.parent.Close())
-		prepared.parent = nil
+		closeErr := prepared.parent.Close()
+		if closeErr == nil || errors.Is(closeErr, os.ErrClosed) {
+			prepared.parent = nil
+		} else {
+			err = errors.Join(err, closeErr)
+		}
 	}
 	if prepared.root != nil {
-		err = errors.Join(err, prepared.root.Close())
-		prepared.root = nil
+		closeErr := prepared.root.Close()
+		if closeErr == nil || errors.Is(closeErr, os.ErrClosed) {
+			prepared.root = nil
+		} else {
+			err = errors.Join(err, closeErr)
+		}
 	}
 	if prepared.lease != nil {
-		err = errors.Join(err, prepared.lease.Close())
-		prepared.lease = nil
+		closeErr := prepared.lease.Close()
+		if closeErr == nil {
+			prepared.lease = nil
+		} else {
+			err = errors.Join(err, closeErr)
+		}
 	}
 	return err
 }
 
-func (s *Store) prepareProviderSubtitle(ctx context.Context, snapshot providerSubtitleSnapshot, remoteID, language, codec string, forced, hearingImpaired bool, data []byte) (*preparedProviderSubtitle, error) {
-	prepared, err := s.openProviderSubtitleTarget(snapshot)
+func (prepared *preparedProviderSubtitle) rememberPhase(ctx context.Context) {
+	prepared.cleanupPhase.Store(&providerSubtitlePhaseContext{context: ctx})
+}
+
+func (prepared *preparedProviderSubtitle) retainUncertainRetirement(err error) {
+	err = errors.Join(errSidecarRetirementUnknown, err)
+	prepared.retirementFailure.CompareAndSwap(nil, &providerSubtitleRetirementFailure{err: err})
+	if prepared.primaryIO != nil {
+		_ = prepared.primaryIO.MarkUnknown(err)
+	}
+	providerSubtitleRetainedResources.Lock()
+	providerSubtitleRetainedResources.prepared[prepared] = struct{}{}
+	providerSubtitleRetainedResources.Unlock()
+}
+
+// A later ErrClosed cannot prove that an earlier failed close retired the exact
+// OS descriptor. Keep that closer and all of its surrounding root resources.
+func (prepared *preparedProviderSubtitle) closeTemporary(closer io.Closer) error {
+	err := closer.Close()
+	if err != nil && !errors.Is(err, os.ErrClosed) {
+		prepared.retirementMu.Lock()
+		prepared.uncertainClosers = append(prepared.uncertainClosers, closer)
+		prepared.retirementMu.Unlock()
+		prepared.retainUncertainRetirement(err)
+	}
+	return err
+}
+
+// Retirement reuses an observation worker's still-held phase, or queues only
+// after database ownership has ended. Caller cancellation cannot skip cleanup.
+func (prepared *preparedProviderSubtitle) retireResources(closeResources, closeIdleResources func() error) error {
+	if failure := prepared.retirementFailure.Load(); failure != nil {
+		return failure.err
+	}
+	operation := prepared.primaryIO
+	if operation == nil {
+		return closeResources()
+	}
+	if prepared.primary == nil && prepared.parent == nil && prepared.root == nil &&
+		prepared.lease == nil && prepared.entry == nil {
+		prepared.primaryIO = nil
+		err := operation.Close()
+		if err == nil {
+			prepared.retirementCompleted.Store(true)
+		}
+		return err
+	}
+	called := false
+	var closeErr error
+	work := func(context.Context) error {
+		called = true
+		closeErr = closeResources()
+		return closeErr
+	}
+	var err error
+	if phase := prepared.cleanupPhase.Load(); phase != nil {
+		err = operation.Run(context.WithoutCancel(phase.context), prepared.snapshot.primary.root.id, prepared.ioClass, work)
+	}
+	if !called {
+		for {
+			err = operation.Run(context.Background(), prepared.snapshot.primary.root.id, prepared.ioClass, work)
+			if called || !errors.Is(err, ErrBusy) {
+				break
+			}
+			// The observation can report zero lifetimes while its final phase
+			// release is still completing. Join that short transition instead
+			// of treating a known worker's retirement as an unknown owner.
+			time.Sleep(time.Millisecond)
+		}
+	}
+	if !called && errors.Is(err, context.Canceled) {
+		// Shutdown can reject new admission after every actual observation
+		// has joined. Closing idle descriptors performs no payload read; keep
+		// registration until it completes and leave private names untouched.
+		called = true
+		closeErr = closeIdleResources()
+		err = closeErr
+	}
+	if !called || closeErr != nil {
+		prepared.retainUncertainRetirement(err)
+		return prepared.retirementFailure.Load().err
+	}
+	prepared.primaryIO = nil
+	completionErr := operation.Close()
+	if completionErr == nil {
+		prepared.retirementCompleted.Store(true)
+	}
+	return errors.Join(err, completionErr)
+}
+
+func (s *Store) prepareProviderSubtitle(ctx context.Context, actor *identity.Principal, snapshot providerSubtitleSnapshot, class primaryio.Class, remoteID, language, codec string, forced, hearingImpaired bool, data []byte) (_ *preparedProviderSubtitle, resultErr error) {
+	prepared, err := s.openProviderSubtitleTarget(ctx, actor, snapshot, class)
 	if err != nil {
 		return nil, err
 	}
 	success := false
 	defer func() {
 		if !success {
-			prepared.close()
+			if closeErr := prepared.close(); closeErr != nil {
+				resultErr = errors.Join(resultErr, errSidecarRetirementUnknown, closeErr)
+			}
 		}
 	}()
+	err = prepared.primaryIO.Run(ctx, snapshot.primary.root.id, class, func(work context.Context) error {
+		prepared.rememberPhase(work)
+		if err := s.checkProviderSubtitleSnapshot(work, actor, snapshot); err != nil {
+			return err
+		}
+		return prepared.preparePayload(work, remoteID, language, codec, forced, hearingImpaired, data)
+	})
+	if err != nil {
+		return nil, err
+	}
+	success = true
+	return prepared, nil
+}
+
+func (prepared *preparedProviderSubtitle) preparePayload(ctx context.Context, remoteID, language, codec string, forced, hearingImpaired bool, data []byte) error {
+	snapshot := prepared.snapshot
 	path := filepath.FromSlash(snapshot.primary.relativePath)
 	stem := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 	digest := sha256.Sum256([]byte(remoteID))
@@ -412,62 +656,61 @@ func (s *Store) prepareProviderSubtitle(ctx context.Context, snapshot providerSu
 	}
 	name := stem + suffix + "." + codec
 	if len(name) > 255 || !safeSubtitleFilename(name) {
-		return nil, fmt.Errorf("%w: downloaded subtitle filename is too long", ErrInvalidInput)
+		return fmt.Errorf("%w: downloaded subtitle filename is too long", ErrInvalidInput)
 	}
 	track, ok := subtitleNameMetadata(name, suffix, codec)
 	if !ok {
-		return nil, ErrInvalidInput
+		return ErrInvalidInput
 	}
 	prepared.candidate = subtitleCandidate{filename: name, info: track}
 	prepared.relativePath = filepath.ToSlash(filepath.Join(filepath.Dir(path), name))
 	contentDigest := sha256.Sum256(data)
 	prepared.digest = hex.EncodeToString(contentDigest[:])
 	if err := prepared.verify(ctx, nil); err != nil {
-		return nil, err
+		return err
 	}
 	if err := prepared.checkFilenameOwner(ctx); err != nil {
-		return nil, err
+		return err
 	}
 	var nonce [16]byte
 	if _, err := rand.Read(nonce[:]); err != nil {
-		return nil, fmt.Errorf("prepare subtitle staging name: %w", err)
+		return fmt.Errorf("prepare subtitle staging name: %w", err)
 	}
 	prepared.stageName = ".goby-provider-subtitle-" + hex.EncodeToString(nonce[:]) + ".tmp"
 	staged, err := prepared.parent.OpenFile(prepared.stageName, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		prepared.stageName = ""
-		return nil, fmt.Errorf("%w: subtitle staging file cannot be created", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle staging file cannot be created", ErrUnavailable)
 	}
-	defer staged.Close()
+	defer prepared.closeTemporary(staged)
 	prepared.stageInfo, err = staged.Stat()
 	if err != nil || !prepared.stageInfo.Mode().IsRegular() {
-		return nil, fmt.Errorf("%w: subtitle staging identity is unavailable", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle staging identity is unavailable", ErrUnavailable)
 	}
 	reader := subtitleContextReader{ctx: ctx, reader: bytes.NewReader(data)}
 	if written, err := io.Copy(staged, reader); err != nil || written != int64(len(data)) {
-		return nil, fmt.Errorf("%w: subtitle staging write did not complete", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle staging write did not complete", ErrUnavailable)
 	}
 	if err := staged.Sync(); err != nil {
-		return nil, fmt.Errorf("%w: subtitle staging write could not be synchronized", ErrUnavailable)
+		return fmt.Errorf("%w: subtitle staging write could not be synchronized", ErrUnavailable)
 	}
-	if err := staged.Close(); err != nil {
-		return nil, fmt.Errorf("%w: subtitle staging file could not be closed", ErrUnavailable)
+	if err := prepared.closeTemporary(staged); err != nil {
+		return fmt.Errorf("%w: subtitle staging file could not be closed", ErrUnavailable)
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
 	}
-	success = true
-	return prepared, nil
+	return nil
 }
 
 // A more specific media stem must not take ownership of this sidecar on the
 // next ordinary scan. Bound the directory walk independently from the payload.
-func (prepared *preparedProviderSubtitle) checkFilenameOwner(ctx context.Context) error {
+func (prepared *preparedProviderSubtitle) checkFilenameOwner(ctx context.Context) (resultErr error) {
 	directory, err := openScanFile(prepared.parent, ".")
 	if err != nil {
 		return fmt.Errorf("%w: subtitle directory cannot be inspected", ErrUnavailable)
 	}
-	defer directory.Close()
+	defer func() { resultErr = errors.Join(resultErr, prepared.closeTemporary(directory)) }()
 	primaryName := filepath.Base(filepath.FromSlash(prepared.snapshot.primary.relativePath))
 	owner := strings.ToLower(strings.TrimSuffix(primaryName, filepath.Ext(primaryName)))
 	filename := prepared.candidate.filename
@@ -501,7 +744,7 @@ func (prepared *preparedProviderSubtitle) checkFilenameOwner(ctx context.Context
 	}
 }
 
-func (prepared *preparedProviderSubtitle) verify(ctx context.Context, entry *scannedSubtitle) error {
+func (prepared *preparedProviderSubtitle) verify(ctx context.Context, entry *scannedSubtitle) (resultErr error) {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -509,13 +752,13 @@ func (prepared *preparedProviderSubtitle) verify(ctx context.Context, entry *sca
 	if err != nil {
 		return err
 	}
-	defer currentRoot.Close()
+	defer func() { resultErr = errors.Join(resultErr, prepared.closeTemporary(currentRoot)) }()
 	path := filepath.FromSlash(prepared.snapshot.primary.relativePath)
 	currentParent, err := openRegisteredRoot(currentRoot, filepath.Dir(path))
 	if err != nil {
 		return fmt.Errorf("%w: subtitle directory changed", ErrUnavailable)
 	}
-	defer currentParent.Close()
+	defer func() { resultErr = errors.Join(resultErr, prepared.closeTemporary(currentParent)) }()
 	current, currentErr := currentParent.Lstat(filepath.Base(path))
 	after, afterErr := prepared.primary.Stat()
 	if !sameMediaSourceDirectory(prepared.root, currentRoot) || !sameMediaSourceDirectory(prepared.parent, currentParent) ||
@@ -532,35 +775,45 @@ func (prepared *preparedProviderSubtitle) verify(ctx context.Context, entry *sca
 	return ctx.Err()
 }
 
-func (prepared *preparedProviderSubtitle) close() {
-	_ = prepared.observation.retire(func() error {
-		prepared.closeResources()
-		return nil
-	})
+func (prepared *preparedProviderSubtitle) close() error {
+	err := prepared.observation.retire(prepared.closeResources)
+	if err != nil && !prepared.retirementCompleted.Load() && prepared.retirementFailure.Load() == nil {
+		prepared.retainUncertainRetirement(err)
+		return prepared.retirementFailure.Load().err
+	}
+	return err
 }
 
-func (prepared *preparedProviderSubtitle) closeResources() {
+func (prepared *preparedProviderSubtitle) closeResources() error {
+	return prepared.retireResources(prepared.closePublicationResources, prepared.closeIdlePublicationResources)
+}
+
+func (prepared *preparedProviderSubtitle) closePublicationEntry() error {
+	var err error
 	if prepared.entry != nil {
-		_ = prepared.entry.file.Close()
+		closeErr := prepared.entry.file.Close()
+		if closeErr == nil || errors.Is(closeErr, os.ErrClosed) {
+			prepared.entry = nil
+		} else {
+			err = errors.Join(err, closeErr)
+		}
 	}
+	return err
+}
+
+func (prepared *preparedProviderSubtitle) closeIdlePublicationResources() error {
+	return errors.Join(prepared.closePublicationEntry(), prepared.closeTargetResources())
+}
+
+func (prepared *preparedProviderSubtitle) closePublicationResources() error {
+	err := prepared.closePublicationEntry()
 	if prepared.created && !prepared.keep.Load() {
 		prepared.removeCreated(prepared.candidate.filename, prepared.stageInfo)
 	}
 	if prepared.parent != nil {
 		prepared.removeCreated(prepared.stageName, prepared.stageInfo)
 	}
-	if prepared.primary != nil {
-		_ = prepared.primary.Close()
-	}
-	if prepared.parent != nil {
-		_ = prepared.parent.Close()
-	}
-	if prepared.root != nil {
-		_ = prepared.root.Close()
-	}
-	if prepared.lease != nil {
-		_ = prepared.lease.Close()
-	}
+	return errors.Join(err, prepared.closeTargetResources())
 }
 
 func (prepared *preparedProviderSubtitle) removeCreated(name string, expected os.FileInfo) {
@@ -573,12 +826,50 @@ func (prepared *preparedProviderSubtitle) removeCreated(name string, expected os
 	}
 }
 
+// Admission while catalog ownership is held must never wait for a root lane.
+// The observation retains the admitted phase through its actual worker and any
+// deferred resource retirement, even when its caller stops waiting.
+func (prepared *preparedProviderSubtitle) observeImmediate(ctx context.Context, work func(context.Context) error) error {
+	if prepared.primaryIO == nil {
+		return ErrUnavailable
+	}
+	started := false
+	err := prepared.primaryIO.RunImmediate(ctx, prepared.snapshot.primary.root.id, prepared.ioClass, func(observed context.Context) error {
+		started = true
+		prepared.rememberPhase(observed)
+		return runStorageObservation(observed, []*storageObservationLifetime{&prepared.observation}, work)
+	})
+	if !started && sidecarAdmissionRetryable(err) {
+		return &providerSubtitleAdmissionBusy{err: err}
+	}
+	return err
+}
+
 func (s *Store) publishProviderSubtitle(ctx context.Context, actor *identity.Principal, prepared *preparedProviderSubtitle, download providers.SubtitleDownload) error {
+	return s.publishProviderSubtitleBeforeFinal(ctx, actor, prepared, download, nil)
+}
+
+// The private hook supports memory-only contention fixtures. Production callers
+// pass nil and preserve the ordinary atomic publication and payload proof.
+func (s *Store) publishProviderSubtitleBeforeFinal(ctx context.Context, actor *identity.Principal, prepared *preparedProviderSubtitle,
+	download providers.SubtitleDownload, beforeFinal func() error) (resultErr error) {
 	tx, err := s.beginOwnedTx(ctx)
 	if err != nil {
 		return err
 	}
-	defer rollback(tx)
+	admissionBusy := false
+	defer func() {
+		cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		rollbackErr := tx.Rollback(cleanup)
+		cancel()
+		if rollbackErr != nil && (admissionBusy || !errors.Is(rollbackErr, pgx.ErrTxClosed)) {
+			admissionBusy = false
+			resultErr = errors.Join(resultErr, rollbackErr)
+		}
+		if admissionBusy {
+			resultErr = &providerSubtitleAttemptBusy{err: resultErr}
+		}
+	}()
 	protected := tx.(*ownedTx).ctx
 	// Remove a failed publication while catalog writers are still excluded. If
 	// storage has not returned, retain the sidecar instead of deleting a file a
@@ -588,7 +879,13 @@ func (s *Store) publishProviderSubtitle(ctx context.Context, actor *identity.Pri
 			return
 		}
 		if prepared.publicationFinished.Load() {
-			_ = runStorageObservation(protected, []*storageObservationLifetime{&prepared.observation}, prepared.cleanupFinal)
+			cleanupErr := prepared.observeImmediate(protected, prepared.cleanupFinal)
+			if cleanupErr != nil {
+				if _, retryable := cleanupErr.(*providerSubtitleAdmissionBusy); !retryable {
+					admissionBusy = false
+				}
+			}
+			resultErr = errors.Join(resultErr, cleanupErr)
 		}
 		prepared.keep.Store(true)
 	}()
@@ -608,7 +905,8 @@ func (s *Store) publishProviderSubtitle(ctx context.Context, actor *identity.Pri
 	}
 	// Link is an atomic no-replace publication in the already opened directory.
 	// Slow payload writes and fsync have finished before the owned transaction.
-	if err := runStorageObservation(protected, []*storageObservationLifetime{&prepared.observation}, prepared.publishFile); err != nil {
+	if err := prepared.observeImmediate(protected, prepared.publishFile); err != nil {
+		_, admissionBusy = err.(*providerSubtitleAdmissionBusy)
 		return fmt.Errorf("%w: subtitle publication did not complete: %w", ErrUnavailable, err)
 	}
 	entry := prepared.entry
@@ -690,12 +988,18 @@ func (s *Store) publishProviderSubtitle(ctx context.Context, actor *identity.Pri
 			return err
 		}
 	}
-	if err := runStorageObservation(protected, []*storageObservationLifetime{&prepared.observation}, func(observed context.Context) error {
+	if beforeFinal != nil {
+		if err := beforeFinal(); err != nil {
+			return err
+		}
+	}
+	if err := prepared.observeImmediate(protected, func(observed context.Context) error {
 		if err := prepared.checkFilenameOwner(observed); err != nil {
 			return err
 		}
 		return prepared.verify(observed, entry)
 	}); err != nil {
+		_, admissionBusy = err.(*providerSubtitleAdmissionBusy)
 		return fmt.Errorf("%w: subtitle final observation did not complete: %w", ErrUnavailable, err)
 	}
 	if err := checkSubtitleProviderActor(protected, tx, actor, itemID, false); err != nil {
@@ -752,7 +1056,9 @@ func (prepared *preparedProviderSubtitle) cleanupFinal(ctx context.Context) erro
 		return nil
 	}
 	if prepared.entry != nil {
-		_ = prepared.entry.file.Close()
+		if err := prepared.closeTemporary(prepared.entry.file); err != nil && !errors.Is(err, os.ErrClosed) {
+			return err
+		}
 	}
 	current, err := prepared.parent.Lstat(prepared.candidate.filename)
 	if err != nil {

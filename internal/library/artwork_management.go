@@ -297,8 +297,11 @@ func (s *Store) mutateArtwork(ctx context.Context, actor identity.Principal, aud
 			return ArtworkCollection{}, err
 		}
 		content, readErr := io.ReadAll(io.LimitReader(reader, artwork.ManagedUploadBytes+1))
-		_ = reader.Close()
-		if readErr != nil || len(content) > artwork.ManagedUploadBytes || actual.Tag != image.Tag {
+		readErr = errors.Join(readErr, reader.Close())
+		if readErr != nil {
+			return ArtworkCollection{}, errors.Join(ErrUnavailable, readErr)
+		}
+		if len(content) > artwork.ManagedUploadBytes || actual.Tag != image.Tag {
 			return ArtworkCollection{}, ErrRevisionConflict
 		}
 		copy, err := artwork.PrepareManagedImage(ctx, imageType, image.ImageIndex, content)

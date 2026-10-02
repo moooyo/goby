@@ -5,6 +5,7 @@ package library
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -14,19 +15,45 @@ import (
 func TestRootBindingObservationReadUsesNoStoreOrSQLLockAndRechecksAdministrator(t *testing.T) {
 	fixture := newRootBindingReadFixture(t)
 	fixture.bind(t, 4)
-	if StorageObservationSnapshot().Active != 0 {
+	if originalMediaReadGovernor.Stats().Active != 0 {
 		t.Fatal("unexpected preexisting observation")
 	}
 	started, release, returned := make(chan struct{}), make(chan struct{}), make(chan error, 1)
+	opened := make(chan *os.File, 1)
+	ownerReady := make(chan (<-chan struct{}), 1)
+	var actualOwner <-chan struct{}
+	beforeOwners := originalMediaReadOwners.Stats().RegisteredOwners
 	wanted := fixture.snapshot
-	defer func() { close(release); waitRootBindingObservationIdle(t) }()
+	defer func() {
+		close(release)
+		if actualOwner != nil {
+			select {
+			case <-actualOwner:
+			case <-time.After(5 * time.Second):
+				t.Error("actual filesystem observation owner did not retire")
+			}
+		}
+	}()
 	fixture.store.ownership.mu.Lock()
 	defer fixture.store.ownership.mu.Unlock()
 	go func() {
 		result, err := fixture.read(func(ctx context.Context, root libraryRoot) (RootTopologySnapshot, error) {
-			return fixture.store.observeRootBindingWith(ctx, root, func(context.Context, string, libraryRoot) (RootTopologySnapshot, error) {
+			return fixture.store.observeRootBindingWith(ctx, root, func(work context.Context, path string, _ libraryRoot) (RootTopologySnapshot, error) {
+				directory, err := os.Open(path)
+				if err != nil {
+					return RootTopologySnapshot{}, err
+				}
+				defer directory.Close()
+				if _, err := directory.ReadDir(1); err != nil && !errors.Is(err, io.EOF) {
+					return RootTopologySnapshot{}, err
+				}
+				ownerReady <- PrimaryRootIOFromContext(work).handle.state.done
+				opened <- directory
 				close(started)
 				<-release
+				if _, err := directory.Stat(); err != nil {
+					return RootTopologySnapshot{}, err
+				}
 				return wanted, nil
 			})
 		})
@@ -41,6 +68,8 @@ func TestRootBindingObservationReadUsesNoStoreOrSQLLockAndRechecksAdministrator(
 	case <-time.After(5 * time.Second):
 		t.Fatal("binding read attempted to acquire catalog ownership during filesystem observation")
 	}
+	held := <-opened
+	actualOwner = <-ownerReady
 	if !fixture.store.mu.TryLock() {
 		t.Fatal("binding worker retained Store.mu")
 	}
@@ -61,8 +90,14 @@ func TestRootBindingObservationReadUsesNoStoreOrSQLLockAndRechecksAdministrator(
 	case <-time.After(8 * time.Second):
 		t.Fatal("binding read did not return after its bounded observation")
 	}
-	if StorageObservationSnapshot().Active != 1 {
-		t.Fatal("bounded return hid the still-blocked filesystem worker")
+	if status := originalMediaReadGovernor.Stats(); status.Active != 1 || status.Background != 0 || status.Queued != 0 || status.ActiveRoots != 1 || status.ActiveDomains != 1 {
+		t.Fatalf("bounded return hid or changed the retained foreground filesystem phase: %+v", status)
+	}
+	if owners := originalMediaReadOwners.Stats().RegisteredOwners; owners != beforeOwners+1 {
+		t.Fatalf("bounded return dropped its actual retained worker owner: before=%d after=%d", beforeOwners, owners)
+	}
+	if _, err := held.Stat(); err != nil {
+		t.Fatalf("bounded return closed the descriptor still held by its filesystem worker: %v", err)
 	}
 }
 
@@ -71,14 +106,22 @@ func TestRootBindingObservationFullCapacityIsUnavailableRatherThanBindingProject
 	fixture.bind(t, 5)
 	root := libraryRoot{allowedPath: fixture.root.AllowedPath, path: fixture.root.Path, relativePath: fixture.root.RelativePath}
 	occupyRootBindingObservationSlots(t, fixture.store, root)
+	beforeOwners := originalMediaReadOwners.Stats().RegisteredOwners
+	started := time.Now()
 	value, err := fixture.store.GetRootBinding(fixture.ctx, fixture.actor, fixture.library.ID, fixture.root.RootID)
 	// The existing native library error mapping turns this domain sentinel into
 	// HTTP 503; a nil error with BindingUnavailable would incorrectly be HTTP 200.
 	if !errors.Is(err, ErrUnavailable) || !reflect.DeepEqual(value, RootBindingInfo{}) {
 		t.Fatalf("full capacity returned a normal binding projection: %+v, %v", value, err)
 	}
-	if status := StorageObservationSnapshot(); status.Active != status.Capacity {
-		t.Fatal("read changed occupied observation capacity")
+	if elapsed := time.Since(started); elapsed > storageObservationTimeout+3*time.Second {
+		t.Fatalf("root binding admission escaped its bounded observation deadline: %v", elapsed)
+	}
+	if status := originalMediaReadGovernor.Stats(); status.Active != 3 || status.Background != 0 || status.Queued != 0 || status.ActiveRoots != 1 || status.ActiveDomains != 1 {
+		t.Fatalf("read changed the saturated configured-domain foreground phases: %+v", status)
+	}
+	if owners := originalMediaReadOwners.Stats().RegisteredOwners; owners != beforeOwners {
+		t.Fatalf("failed admission retained another worker owner: before=%d after=%d", beforeOwners, owners)
 	}
 }
 
@@ -98,7 +141,7 @@ func TestRootBindingObservationOrdinaryMissingPathPreservesUnavailableProjection
 	if err != nil || value.Status != RootBindingUnavailable || value.Approved == nil || value.ApprovedFingerprint == "" || value.Observed != nil {
 		t.Fatalf("ordinary unreachable storage lost its approved unavailable projection: %+v, %v", value, err)
 	}
-	if StorageObservationSnapshot().Active != 0 {
+	if originalMediaReadGovernor.Stats().Active != 0 {
 		t.Fatal("completed unavailable observation retained capacity")
 	}
 }

@@ -486,12 +486,48 @@ func TestScanProbeFactsBudget(t *testing.T) {
 
 func scanProbeTestTime(value time.Time) *time.Time { return &value }
 
+func TestScanInputInspectionRejectionPreservesMixedFailures(t *testing.T) {
+	rejection := &scanInputInspectionRejection{err: errScanProbeSourceChanged}
+	for _, test := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"business-only", rejection, true},
+		{"nested-business-only", errors.Join(errors.Join(rejection)), true},
+		{"unknown-retirement", errors.Join(rejection, media.ErrProcessRetirementUnknown), false},
+		{"close-fault", errors.Join(rejection, scanReadFailure(errors.New("actual resource close failed"))), false},
+		{"release-fault", errors.Join(rejection, ErrUnavailable), false},
+		{"foreign-rejection", errors.Join(rejection, &scanInputInspectionRejection{err: errScanProbeSourceChanged}), false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := scanInputInspectionRejectedOnly(test.err, rejection); got != test.want {
+				t.Fatalf("inspection rejection classification = %t, want %t: %v", got, test.want, test.err)
+			}
+		})
+	}
+}
+
 func TestScanProbeReadyResultRejectsOversizedFactsBeforeHandoff(t *testing.T) {
 	ready := make(chan scanProbeResult, 1)
+	var calls atomic.Int64
 	prober := scanProberFunc(func(context.Context, *os.File) (media.Info, error) {
+		calls.Add(1)
 		return media.Info{Container: strings.Repeat("x", scanProbeFactsBytes)}, nil
 	})
-	go func() { ready <- runScanProbe(context.Background(), prober, &scannedMediaInput{}) }()
+	fixture := primaryScanReadFixtureAt(t, prober, "")
+	beforeIO, beforeOwners := originalMediaReadGovernor.Stats(), originalMediaReadOwners.Stats().RegisteredOwners
+	fixture.prepare(t)
+	input := &scannedMediaInput{primary: fixture.input, file: fixture.file}
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		ready <- runScanProbe(fixture.ctx, prober, input)
+	}()
+	t.Cleanup(func() {
+		fixture.state.task.cancel()
+		scanProbeWaitSignal(t, finished, "actual over-budget source worker retirement")
+	})
 	select {
 	case result := <-ready:
 		if !errors.Is(result.err, errScanProbeFactsBudget) || !reflect.DeepEqual(result.info, media.Info{}) {
@@ -500,16 +536,35 @@ func TestScanProbeReadyResultRejectsOversizedFactsBeforeHandoff(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("over-budget result handoff blocked")
 	}
+	if calls.Load() != 1 {
+		t.Fatalf("over-budget fixture did not reach the actual joined backend: %d", calls.Load())
+	}
+	if err := input.close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fixture.file.Stat(); !errors.Is(err, os.ErrClosed) {
+		t.Fatalf("over-budget actual input descriptor did not retire: %v", err)
+	}
+	if originalMediaReadGovernor.Stats() != beforeIO || originalMediaReadOwners.Stats().RegisteredOwners != beforeOwners {
+		t.Fatal("over-budget actual input retained phase or owner charges")
+	}
 }
 
 type scanProbeBlockedCapture struct {
 	rootBindingWriteCapture
-	entered chan struct{}
-	release chan struct{}
-	once    sync.Once
+	observation *storageObservationLifetime
+	entered     chan struct{}
+	release     chan struct{}
+	once        sync.Once
 }
 
 func (capture *scanProbeBlockedCapture) Revalidate(ctx context.Context) error {
+	capture.observation.mu.Lock()
+	observing := capture.observation.active != 0
+	capture.observation.mu.Unlock()
+	if !observing {
+		return capture.rootBindingWriteCapture.Revalidate(ctx)
+	}
 	capture.once.Do(func() { close(capture.entered) })
 	<-capture.release // Model a named-storage syscall that cannot observe cancel.
 	return capture.rootBindingWriteCapture.Revalidate(ctx)
@@ -570,25 +625,63 @@ func TestScanProbePipelineIntegrationTimedOutProofCancelsSiblingAndRetainsBorrow
 		t.Fatal("proof fixture has no independently verified capture")
 	}
 	gate := &scanProbeBlockedCapture{rootBindingWriteCapture: capture.capture,
-		entered: make(chan struct{}), release: make(chan struct{})}
-	capture.capture = gate
+		observation: &capture.observation, entered: make(chan struct{}), release: make(chan struct{})}
+	window := state.newScanProbeWindow()
+	if window == nil {
+		_ = opened.Close()
+		_ = pass.Close()
+		t.Fatal("proof fixture has no bounded primary scan window")
+	}
 	var releaseOnce sync.Once
+	var proveOnce sync.Once
+	prove := make(chan struct{})
+	ready := make(chan error, 1)
 	finished, result := make(chan struct{}), make(chan error, 1)
 	go func() {
 		defer close(finished)
 		defer pass.Close()
 		defer opened.Close()
-		result <- state.walk(".", hierarchy{parentID: library.ID}, 0)
+		result <- func() (resultErr error) {
+			defer func() { resultErr = errors.Join(resultErr, window.close()) }()
+			for _, name := range names {
+				if err := window.submit(name, "video", hierarchy{parentID: library.ID}); err != nil {
+					ready <- err
+					return err
+				}
+			}
+			// Finish the first input's new preparation and post-probe source proofs
+			// before installing a gate for its original final publication proof.
+			first := <-window.pending[0].result
+			window.pending[0].result <- first
+			ready <- first.err
+			select {
+			case <-prove:
+			case <-task.ctx.Done():
+				return task.ctx.Err()
+			}
+			return window.flush()
+		}()
 	}()
 	t.Cleanup(func() {
 		task.cancel()
 		releaseOnce.Do(func() { close(gate.release) })
+		proveOnce.Do(func() { close(prove) })
 		scanProbeWaitSignal(t, finished, "actual proof retirement")
 		store.mu.Lock()
 		delete(store.active, task.job.ID)
 		store.mu.Unlock()
 	})
 	scanProbeWaitSignal(t, siblingEntered, "the retained sibling probe")
+	select {
+	case err := <-ready:
+		if err != nil {
+			t.Fatalf("new source preparation failed before the final proof fixture: %v", err)
+		}
+	case <-ctx.Done():
+		t.Fatal("first source did not complete its joined probe and fresh proof")
+	}
+	capture.capture = gate
+	proveOnce.Do(func() { close(prove) })
 	scanProbeWaitSignal(t, gate.entered, "the authoritative named-storage proof")
 	// Let the proof's own five-second limit expire while the scan's task context
 	// remains live. The error path must cancel the sibling before it waits for
@@ -609,7 +702,7 @@ func TestScanProbePipelineIntegrationTimedOutProofCancelsSiblingAndRetainsBorrow
 	}
 	select {
 	case <-finished:
-		t.Fatal("walk returned while a proof still borrowed its root and file")
+		t.Fatal("scan window returned while a proof still borrowed its root and file")
 	default:
 	}
 	if counts := scanProbeOpenDescriptors(t, []string{path, siblingPath}); !reflect.DeepEqual(counts, []int{1, 1}) {
@@ -621,7 +714,7 @@ func TestScanProbePipelineIntegrationTimedOutProofCancelsSiblingAndRetainsBorrow
 	releaseOnce.Do(func() { close(gate.release) })
 	scanProbeWaitSignal(t, finished, "joined named-storage proof")
 	if err := <-result; !errors.Is(err, errStorageObservationUnavailable) {
-		t.Fatalf("interrupted walk result = %v", err)
+		t.Fatalf("interrupted scan window result = %v", err)
 	}
 	if counts := scanProbeOpenDescriptors(t, []string{path, siblingPath}); !reflect.DeepEqual(counts, []int{0, 0}) {
 		t.Fatalf("proof retirement leaked input descriptor: %v", counts)

@@ -90,44 +90,50 @@ func (state *scanState) classifyExtraDirectory(relative string, entries []os.Dir
 	ordinary := make([]os.DirEntry, 0, len(entries))
 	markers := make(map[string]bool)
 	directories := []string{}
-	for _, entry := range entries {
-		name := filepath.ToSlash(filepath.Join(relative, entry.Name()))
-		classification := extraPathClassification{}
-		var err error
-		if state.library.CollectionType == "movies" {
-			classification, err = classifyExtraPath(name, entry.Type())
-		}
-		retained := state.extraPathReserved(name)
-		if err != nil {
-			shape, _ := classifyExtraPath(name, os.ModeDir)
-			if retained || shape.Reserved {
+	err := state.runPrimaryScanMetadata(state.task.ctx, func(context.Context) error {
+		for _, entry := range entries {
+			name := filepath.ToSlash(filepath.Join(relative, entry.Name()))
+			classification := extraPathClassification{}
+			var err error
+			if state.library.CollectionType == "movies" {
+				classification, err = classifyExtraPath(name, entry.Type())
+			}
+			retained := state.extraPathReserved(name)
+			if err != nil {
+				shape, _ := classifyExtraPath(name, os.ModeDir)
+				if retained || shape.Reserved {
+					state.warnings++
+					state.extraGroup(relative).failed = true
+					continue
+				}
+				ordinary = append(ordinary, entry)
+				continue
+			}
+			if !retained && !classification.Reserved {
+				ordinary = append(ordinary, entry)
+				continue
+			}
+			observed, observeErr := state.opened.Lstat(filepath.FromSlash(name))
+			if observeErr != nil || (!observed.Mode().IsRegular() && !observed.IsDir()) || observed.IsDir() != entry.IsDir() {
 				state.warnings++
 				state.extraGroup(relative).failed = true
 				continue
 			}
-			ordinary = append(ordinary, entry)
-			continue
+			// Existing theme reservations retain their role. Reserving the outer
+			// extra boundary may hide an old owner, but does not convert its items.
+			markers[name] = entry.IsDir()
+			if entry.IsDir() && classification.Reserved && classification.OwnerDirectory == filepath.ToSlash(relative) {
+				directories = append(directories, name)
+			}
 		}
-		if !retained && !classification.Reserved {
-			ordinary = append(ordinary, entry)
-			continue
+		after, err := state.opened.Lstat(relative)
+		if err != nil || !themeSnapshotEqual(info, after) {
+			return fmt.Errorf("%w: extra classification directory changed during enumeration", ErrUnavailable)
 		}
-		observed, observeErr := state.opened.Lstat(filepath.FromSlash(name))
-		if observeErr != nil || (!observed.Mode().IsRegular() && !observed.IsDir()) || observed.IsDir() != entry.IsDir() {
-			state.warnings++
-			state.extraGroup(relative).failed = true
-			continue
-		}
-		// Existing theme reservations retain their role. Reserving the outer
-		// extra boundary may hide an old owner, but does not convert its items.
-		markers[name] = entry.IsDir()
-		if entry.IsDir() && classification.Reserved && classification.OwnerDirectory == filepath.ToSlash(relative) {
-			directories = append(directories, name)
-		}
-	}
-	after, err := state.opened.Lstat(relative)
-	if err != nil || !themeSnapshotEqual(info, after) {
-		return nil, fmt.Errorf("%w: extra classification directory changed during enumeration", ErrUnavailable)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	if err := state.persistAuxiliaryMarkers(markers, true); err != nil {
 		return nil, err
@@ -146,21 +152,27 @@ func (state *scanState) classifyExtraDirectory(relative string, entries []os.Dir
 }
 
 func (state *scanState) enumerateExtraDirectory(group *extraDirectoryScan, relative string) error {
+	return state.runPrimaryScanMetadata(state.task.ctx, func(ctx context.Context) error {
+		return state.enumerateExtraDirectoryObserved(ctx, group, relative)
+	})
+}
+
+func (state *scanState) enumerateExtraDirectoryObserved(ctx context.Context, group *extraDirectoryScan, relative string) (resultErr error) {
 	parent, err := openRegisteredRoot(state.opened, filepath.Dir(relative))
 	if err != nil {
 		return err
 	}
-	defer parent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(parent)) }()
 	directory, err := openScanFile(parent, filepath.Base(relative))
 	if err != nil {
 		return err
 	}
-	defer directory.Close()
+	defer func() { resultErr = errors.Join(resultErr, directory.Close()) }()
 	before, err := directory.Stat()
 	if err != nil || !before.IsDir() {
 		return fmt.Errorf("extra directory is unavailable")
 	}
-	entries, err := directory.ReadDir(-1)
+	entries, err := readScanDirectoryEntries(ctx, directory)
 	if err != nil {
 		return err
 	}
@@ -278,14 +290,15 @@ func (state *scanState) publishExtraOwner(ownerID string, files []*preparedTheme
 		return err
 	}
 	defer rollback(tx)
-	var status string
-	var cancelled bool
-	if err := tx.QueryRow(state.task.ctx, `SELECT status,cancel_requested FROM scan_jobs WHERE id=$1 AND library_id=$2 FOR UPDATE`,
-		state.task.job.ID, state.library.ID).Scan(&status, &cancelled); err != nil {
+	relation, err := lockScanPublicationProgress(scanProbeAuthorityTx{ctx: state.task.ctx, tx: tx}, state.task)
+	if err != nil {
 		return err
 	}
-	if cancelled || status != "Running" || state.task.ctx.Err() != nil {
-		return context.Canceled
+	if relation.job.LibraryID != state.library.ID {
+		return taskScanAssociationError()
+	}
+	if err := witness.lockRoots(state.task.ctx, tx); err != nil {
+		return err
 	}
 	var locked []string
 	if err := tx.QueryRow(state.task.ctx, `SELECT COALESCE(array_agg(id),'{}'::text[]) FROM (

@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/storagebinding"
 )
 
@@ -15,6 +16,7 @@ import (
 // it does not establish complete walking or authorize missing-item deletion.
 // The caller must Close every result, including non-verified observations.
 type rootBindingScanCapture struct {
+	primaryIO   *PrimaryRootIO
 	observation storageObservationLifetime
 	row         rootBindingRow
 	status      RootBindingStatus
@@ -46,7 +48,12 @@ func (capture *rootBindingScanCapture) Close() error {
 	if capture == nil {
 		return nil
 	}
-	return capture.observation.retire(capture.closeResources)
+	err := capture.observation.retire(capture.closeResources)
+	if err != nil && capture.primaryIO != nil {
+		_ = capture.primaryIO.MarkUnknown(err)
+		_ = capture.primaryIO.Close()
+	}
+	return err
 }
 
 func (capture *rootBindingScanCapture) closeResources() error {
@@ -57,11 +64,28 @@ func (capture *rootBindingScanCapture) closeResources() error {
 	var err error
 	if capture.opened != nil {
 		err = capture.opened.Close()
-		capture.opened = nil
+		if err == nil {
+			capture.opened = nil
+		}
 	}
 	if capture.capture != nil {
-		err = errors.Join(err, capture.capture.Close())
-		capture.capture = nil
+		closeErr := capture.capture.Close()
+		err = errors.Join(err, closeErr)
+		if closeErr == nil {
+			capture.capture = nil
+		}
+	}
+	if err != nil {
+		if capture.primaryIO != nil {
+			failure := &storageObservationRetirementFailure{closer: capture.closeResources, err: err}
+			_ = capture.primaryIO.MarkUnknown(failure)
+			_ = capture.primaryIO.Close()
+		}
+		return err
+	}
+	if capture.primaryIO != nil {
+		err = errors.Join(err, capture.primaryIO.Close())
+		capture.primaryIO = nil
 	}
 	return err
 }
@@ -87,7 +111,7 @@ func (s *Store) prepareRootBindingScan(task *scanTask, root libraryRoot) (*rootB
 	return s.prepareRootBindingScanWithCapture(task, root, s.captureRootBindingWrite)
 }
 
-func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRoot, captureRoot rootBindingCaptureFactory) (*rootBindingScanCapture, error) {
+func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRoot, captureRoot rootBindingCaptureFactory, prepared ...*PrimaryRootIO) (*rootBindingScanCapture, error) {
 	if task == nil || task.ctx == nil || captureRoot == nil || !validCatalogLibraryIdentifier(task.job.ID) ||
 		!validCatalogLibraryIdentifier(task.job.LibraryID) || !validCatalogLibraryIdentifier(root.id) || root.libraryID != task.job.LibraryID {
 		return nil, ErrInvalidInput
@@ -111,6 +135,23 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid scan root approval", ErrUnavailable)
 	}
+	if len(prepared) > 1 {
+		return nil, ErrInvalidInput
+	}
+	var operation *PrimaryRootIO
+	if len(prepared) == 1 {
+		operation = prepared[0]
+	} else {
+		operation, err = s.preparePrimaryRootIO(task.ctx, []mediaSourceRootHint{{root: previous.root, bindingRevision: previous.revision}})
+		if err != nil {
+			return nil, err
+		}
+		defer operation.Close()
+	}
+	result.primaryIO, err = operation.Fork(task.ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// Every descriptor is acquired before the second owned transaction. A
 	// caller-owned scan root and the Store candidate are separate from the
@@ -119,35 +160,37 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 	retained := false
 	defer func() {
 		if anchor != nil {
-			_ = anchor.Close()
+			_ = closeDirectoryPrimaryResource(operation.Context(task.ctx), anchor.Close)
 		}
 		if !retained {
 			_ = result.Close()
 		}
 	}()
 	result.status = RootBindingUnavailable
-	result.capture, err = captureRoot(task.ctx, previous.root)
-	if err == nil && result.capture != nil {
-		var observed RootTopologySnapshot
-		observed, err = result.capture.Snapshot()
-		if err == nil {
-			if observed.Mapping.ApprovedPath != previous.root.allowedPath || observed.Mapping.RegisteredPath != previous.root.path {
-				return nil, ErrRootBindingConflict
-			}
-			var fingerprint string
-			fingerprint, err = observed.Fingerprint()
+	err = operation.Run(task.ctx, root.id, primaryio.Background, func(work context.Context) error {
+		result.capture, err = captureRoot(work, previous.root)
+		if err == nil && result.capture != nil {
+			var observed RootTopologySnapshot
+			observed, err = result.capture.Snapshot()
 			if err == nil {
-				result.status = RootBindingMismatch
-				if fingerprint == approvedFingerprint {
-					result.status = RootBindingUnavailable
-					anchor, err = result.capture.CloneApprovedAnchor()
-					if err == nil && anchor != nil {
-						if cloner, ok := result.capture.(rootBindingScanRootCloner); ok {
-							result.opened, err = cloner.CloneRegisteredRoot()
-							if err == nil && result.opened != nil {
-								err = result.capture.Revalidate(task.ctx)
-								if err == nil {
-									result.status = RootBindingVerified
+				if observed.Mapping.ApprovedPath != previous.root.allowedPath || observed.Mapping.RegisteredPath != previous.root.path {
+					return ErrRootBindingConflict
+				}
+				var fingerprint string
+				fingerprint, err = observed.Fingerprint()
+				if err == nil {
+					result.status = RootBindingMismatch
+					if fingerprint == approvedFingerprint {
+						result.status = RootBindingUnavailable
+						anchor, err = result.capture.CloneApprovedAnchor()
+						if err == nil && anchor != nil {
+							if cloner, ok := result.capture.(rootBindingScanRootCloner); ok {
+								result.opened, err = cloner.CloneRegisteredRoot()
+								if err == nil && result.opened != nil {
+									err = result.capture.Revalidate(work)
+									if err == nil {
+										result.status = RootBindingVerified
+									}
 								}
 							}
 						}
@@ -155,6 +198,10 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 				}
 			}
 		}
+		return err
+	})
+	if errors.Is(err, ErrRootBindingConflict) {
+		return nil, err
 	}
 	if contextErr := task.ctx.Err(); contextErr != nil {
 		return nil, contextErr
@@ -170,7 +217,14 @@ func (s *Store) prepareRootBindingScanWithCapture(task *scanTask, root libraryRo
 	// Recheck the job and exact row even after an unavailable observation. Only
 	// filesystem observation errors are recoverable; a lost owner or changed
 	// mapping must not accidentally authorize ordinary scan work with stale data.
-	_, err = s.admitRootBindingScan(task, root, &previous, matched, candidate)
+	for {
+		_, err = s.admitRootBindingScan(task, root, &previous, matched, candidate)
+		retry, waitErr := waitDirectoryPrimaryError(task.ctx, err)
+		if !retry || waitErr != nil {
+			err = waitErr
+			break
+		}
+	}
 	if err != nil {
 		observationErr, observationOnly := rootBindingScanObservationOnly(err)
 		if !observationOnly {
@@ -279,7 +333,12 @@ func (s *Store) admitRootBindingScan(task *scanTask, root libraryRoot, previous 
 			return ErrRootBindingConflict
 		}
 		if capture != nil {
-			if err := runStorageObservation(task.ctx, scanObservationLifetimes([]*rootBindingScanCapture{capture}, nil), capture.Revalidate); err != nil {
+			if capture.primaryIO == nil {
+				return ErrUnavailable
+			}
+			if err := runDirectoryPrimaryImmediate(task.ctx, capture.primaryIO, root.id, primaryio.Background, func(work context.Context) error {
+				return runStorageObservation(work, scanObservationLifetimes([]*rootBindingScanCapture{capture}, nil), capture.Revalidate)
+			}); err != nil {
 				return rootBindingScanObservationFailure{err: err}
 			}
 		}

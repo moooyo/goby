@@ -114,7 +114,7 @@ func TestServerDirectoryLifecycleRechecksAccountAndCredentialAfterRealRead(t *te
 	}
 }
 
-func TestServerDirectoryLifecycleCancellationKeepsFourSlotsAndShutdownDrains(t *testing.T) {
+func TestServerDirectoryLifecycleCancellationKeepsActualSlotsAndShutdownDrains(t *testing.T) {
 	ctx, pool, store, approved, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
 	actor := metadataEditTestActor(t, ctx, pool, "directory-cancel-admin")
 	libraryIntegrationFile(t, approved, "visible/marker.txt", "directory fixture")
@@ -135,7 +135,9 @@ func TestServerDirectoryLifecycleCancellationKeepsFourSlotsAndShutdownDrains(t *
 	}
 	requestCtx, cancelRequests := context.WithCancel(ctx)
 	defer cancelRequests()
-	finished := make([]<-chan serverDirectoryResult, 4)
+	// The directory worker pool keeps its four-slot bound. Shared primary
+	// admission limits this exact root/domain to three foreground readers.
+	finished := make([]<-chan serverDirectoryResult, 3)
 	for index := range finished {
 		finished[index] = startDirectoryLifecycleRequest(t, requestCtx, store, actor, approved, reader)
 	}
@@ -149,13 +151,13 @@ func TestServerDirectoryLifecycleCancellationKeepsFourSlotsAndShutdownDrains(t *
 			t.Fatalf("cancelled caller retained a listing or waited for storage: %v", result.err)
 		}
 	}
-	if len(serverDirectoryWorkers) != 4 {
+	if len(serverDirectoryWorkers) != 3 {
 		t.Fatal("caller cancellation released a still-running directory worker")
 	}
 	fifthCtx, cancelFifth := context.WithTimeout(ctx, 250*time.Millisecond)
 	_, fifthErr := store.serverDirectoriesWithReader(fifthCtx, &catalogAdministrator{actor: actor, audience: identity.AdministratorNative}, approved, 0, 100, false, reader)
 	cancelFifth()
-	if !errors.Is(fifthErr, context.DeadlineExceeded) || reads.Load() != 4 || len(serverDirectoryWorkers) != 4 {
+	if !errors.Is(fifthErr, context.DeadlineExceeded) || reads.Load() != 3 || len(serverDirectoryWorkers) != 3 {
 		t.Fatalf("a fifth request bypassed the occupied worker bound: %v reads=%d", fifthErr, reads.Load())
 	}
 	closeCtx, cancelClose := context.WithTimeout(ctx, 250*time.Millisecond)
@@ -173,7 +175,7 @@ func TestServerDirectoryLifecycleCancellationKeepsFourSlotsAndShutdownDrains(t *
 	if err := store.Close(ctx); err != nil {
 		t.Fatalf("shutdown did not drain released directory work: %v", err)
 	}
-	if reads.Load() != 4 || len(serverDirectoryWorkers) != 0 {
+	if reads.Load() != 3 || len(serverDirectoryWorkers) != 0 {
 		t.Fatal("shutdown leaked a slot or executed an unadmitted reader")
 	}
 	if _, err := store.BrowseServerDirectories(ctx, actor, identity.AdministratorNative, approved, 0, 100); !errors.Is(err, ErrUnavailable) {
@@ -209,5 +211,44 @@ func TestServerDirectoryLifecycleReauthorizesNamedPathBeforeDelayedRead(t *testi
 	result := awaitDirectoryLifecycleResult(t, finished)
 	if !errors.Is(result.err, ErrForbidden) || result.page.Path != "" || len(result.page.Items) != 0 {
 		t.Fatalf("a delayed directory read followed a new outside target: %v", result.err)
+	}
+}
+
+func TestServerDirectoryLifecycleCrossAnchorSharesEvalSymlinksBudget(t *testing.T) {
+	for _, extraLink := range []bool{false, true} {
+		name := "final-directory-at-link-255"
+		if extraLink {
+			name = "shared-budget-rejects-link-256"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx, pool, store, approved, _ := libraryIntegrationStore(t, &libraryFixtureProber{})
+			actor := metadataEditTestActor(t, ctx, pool, "directory-symlink-budget-admin")
+			second := t.TempDir()
+			registered := filepath.Join(second, "registered")
+			if err := os.Mkdir(registered, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			store.mu.Lock()
+			store.roots = append(store.roots, approvedRoot{path: second})
+			store.mu.Unlock()
+			target := registered
+			if extraLink {
+				target = filepath.Join(second, "target-link")
+				if err := os.Symlink("registered", target); err != nil {
+					t.Fatal(err)
+				}
+			}
+			first := rootBindingRegistrationSymlinkChain(t, approved, 255, target)
+			page, err := store.BrowseServerDirectories(ctx, actor, identity.AdministratorNative, first, 0, 100)
+			if extraLink {
+				if !errors.Is(err, ErrUnavailable) || page.Path != "" || len(page.Items) != 0 {
+					t.Fatalf("browsing reset the exhausted budget after an anchor transfer: page=%+v err=%v", page, err)
+				}
+				return
+			}
+			if err != nil || page.Path != registered || page.TotalRecordCount != 0 {
+				t.Fatalf("browsing refused the final ordinary directory after link 255: page=%+v err=%v", page, err)
+			}
+		})
 	}
 }

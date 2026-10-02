@@ -364,7 +364,7 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 	key := imageVariantKey(source.Tag, request.options)
 	result, found := s.images.get(key)
 	if !found {
-		rendered, renderErr := artwork.Render(ctx, file, request.options)
+		rendered, renderErr := artwork.RenderJoined(ctx, file, request.options)
 		if renderErr != nil {
 			s.imageError(w, r, renderErr)
 			return
@@ -378,6 +378,10 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 		result = cachedImage{key: key, contentType: rendered.MIMEType, etag: imageETag(source.Tag, request.options), data: rendered.Bytes}
 		s.images.put(result)
 	}
+	if err := file.Close(); err != nil {
+		s.imageError(w, r, err)
+		return
+	}
 	// Recompute current source selection and permissions before every response,
 	// including a generated-image cache hit or conditional 304.
 	fresh, current, err := s.library.OpenImageContentFor(ctx, requestLibrarySubject(r, userID), r.PathValue("Id"), request.typeName, request.index)
@@ -385,7 +389,10 @@ func (s *Server) embyImage(w http.ResponseWriter, r *http.Request) {
 		s.imageError(w, r, err)
 		return
 	}
-	_ = fresh.Close()
+	if err := fresh.Close(); err != nil {
+		s.imageError(w, r, err)
+		return
+	}
 	if source.Tag != current.Tag || source.ContentDigest() != current.ContentDigest() {
 		s.imageError(w, r, library.ErrRevisionConflict)
 		return
@@ -437,6 +444,9 @@ func (s *Server) imageError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, context.Canceled):
 		return
+	case errors.Is(err, library.ErrBusy):
+		w.Header().Set("Retry-After", "2")
+		apiError(w, r, http.StatusTooManyRequests, "image_read_limit", "The active image source read limit has been reached.")
 	case errors.Is(err, context.DeadlineExceeded):
 		apiError(w, r, http.StatusServiceUnavailable, "image_timeout", "The image could not be processed within the time limit.")
 	case errors.Is(err, artwork.ErrInvalidImage), errors.Is(err, artwork.ErrLimitExceeded), errors.Is(err, artwork.ErrUnsupportedFormat):

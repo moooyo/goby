@@ -14,15 +14,75 @@ var (
 	errStorageObservationUnavailable = errors.New("bounded storage observation is unavailable")
 )
 
+type storageObservationPhaseRetentionKey struct{}
+
+// withStorageObservationPhaseRetention carries only a memory-only retention
+// capability. An observation transfers its phase ownership to the actual
+// worker before launch, so a caller deadline cannot retire a still-used phase.
+func withStorageObservationPhaseRetention(ctx context.Context, retain func() (func() error, error)) context.Context {
+	return context.WithValue(ctx, storageObservationPhaseRetentionKey{}, retain)
+}
+
+func retainStorageObservationPhase(ctx context.Context) (func() error, error) {
+	retain, _ := ctx.Value(storageObservationPhaseRetentionKey{}).(func() (func() error, error))
+	if retain == nil {
+		return func() error { return nil }, nil
+	}
+	return retain()
+}
+
 // storageObservationLifetime keeps filesystem-only work alive after its caller
 // stops waiting. Retirement never closes a descriptor that an admitted worker
 // still uses. The final worker releases retired resources without application or
 // database locks; a blocked close continues to occupy its observation slot.
 type storageObservationLifetime struct {
-	mu      sync.Mutex
-	active  int
-	retired bool
-	close   func() error
+	mu       sync.Mutex
+	active   int
+	retired  bool
+	close    func() error
+	closeErr error
+}
+
+type storageObservationRetirementFailure struct {
+	closer func() error
+	err    error
+}
+
+func (failure *storageObservationRetirementFailure) Error() string { return failure.err.Error() }
+func (failure *storageObservationRetirementFailure) Unwrap() error { return failure.err }
+
+// Join a close callback independently. Goexit and a panic in an outer defer
+// otherwise skip that worker's remaining retirement code. A failed callback
+// stays reachable through the error retained by its opaque operation owner.
+func closeStorageObservationResources(closer func() error) error {
+	finished := make(chan error, 1)
+	go func() {
+		completed := false
+		var result error
+		defer func() {
+			if recover() != nil || !completed {
+				result = ErrUnavailable
+			}
+			if result != nil {
+				result = &storageObservationRetirementFailure{closer: closer, err: result}
+			}
+			finished <- result
+		}()
+		result = closer()
+		completed = true
+	}()
+	return <-finished
+}
+
+func (lifetime *storageObservationLifetime) closeResources(closer func() error) error {
+	err := closeStorageObservationResources(closer)
+	if err != nil {
+		lifetime.mu.Lock()
+		lifetime.close = closer
+		lifetime.closeErr = err
+		lifetime.mu.Unlock()
+	}
+	return err
 }
 
 func (lifetime *storageObservationLifetime) retain() bool {
@@ -35,7 +95,7 @@ func (lifetime *storageObservationLifetime) retain() bool {
 	return true
 }
 
-func (lifetime *storageObservationLifetime) release() {
+func (lifetime *storageObservationLifetime) release() error {
 	lifetime.mu.Lock()
 	lifetime.active--
 	var closeResources func() error
@@ -44,15 +104,17 @@ func (lifetime *storageObservationLifetime) release() {
 	}
 	lifetime.mu.Unlock()
 	if closeResources != nil {
-		_ = closeResources()
+		return lifetime.closeResources(closeResources)
 	}
+	return nil
 }
 
 func (lifetime *storageObservationLifetime) retire(closeResources func() error) error {
 	lifetime.mu.Lock()
 	if lifetime.retired {
+		err := lifetime.closeErr
 		lifetime.mu.Unlock()
-		return nil
+		return err
 	}
 	lifetime.retired = true
 	if lifetime.active != 0 {
@@ -61,7 +123,7 @@ func (lifetime *storageObservationLifetime) retire(closeResources func() error) 
 		return nil
 	}
 	lifetime.mu.Unlock()
-	return closeResources()
+	return lifetime.closeResources(closeResources)
 }
 
 // runStorageObservation admits only a bounded number of filesystem workers.
@@ -69,6 +131,12 @@ func (lifetime *storageObservationLifetime) retire(closeResources func() error) 
 // resource lifetimes are retained before launch and released by that worker,
 // including when the caller times out and rolls back its database transaction.
 func runStorageObservation(ctx context.Context, lifetimes []*storageObservationLifetime, work func(context.Context) error) error {
+	if PrimaryRootIOFromContext(ctx) != nil {
+		// Trusted operation and phase references already supply the process,
+		// root, domain and retained-worker bounds. A separate global storage
+		// gate would let two stalled domains block an unrelated admitted root.
+		return runStorageObservationWithLimit(ctx, make(chan struct{}, 1), storageObservationTimeout, lifetimes, work)
+	}
 	return runStorageObservationWithLimit(ctx, storageObservationSlots, storageObservationTimeout, lifetimes, work)
 }
 
@@ -87,34 +155,44 @@ func runStorageObservationWithLimit(ctx context.Context, slots chan struct{}, ti
 	retained := make([]*storageObservationLifetime, 0, len(lifetimes))
 	for _, lifetime := range lifetimes {
 		if lifetime == nil || !lifetime.retain() {
-			for _, held := range retained {
-				held.release()
-			}
+			closeErr := releaseStorageObservationLifetimes(ctx, retained)
 			<-slots
-			return errStorageObservationUnavailable
+			return errors.Join(errStorageObservationUnavailable, closeErr)
 		}
 		retained = append(retained, lifetime)
+	}
+	releasePhase, err := retainStorageObservationPhase(ctx)
+	if err != nil {
+		closeErr := releaseStorageObservationLifetimes(ctx, retained)
+		<-slots
+		return errors.Join(err, closeErr)
 	}
 	observation, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	finished := make(chan error, 1)
 	go func() {
 		err := errStorageObservationUnavailable
+		completed := false
 		defer func() {
-			if recover() != nil {
+			if recover() != nil || !completed {
 				err = errStorageObservationUnavailable
+				if operation := PrimaryRootIOFromContext(observation); operation != nil {
+					_ = operation.MarkUnknown(err)
+				}
 			}
-			for _, lifetime := range retained {
-				lifetime.release()
-			}
+			retirementErr := releaseStorageObservationLifetimes(observation, retained)
+			err = errors.Join(err, retirementErr)
+			err = errors.Join(err, releasePhase())
 			<-slots
 			finished <- err
 		}()
 		if observation.Err() != nil {
 			err = observation.Err()
+			completed = true
 			return
 		}
 		err = work(observation)
+		completed = true
 	}()
 	select {
 	case err := <-finished:
@@ -131,6 +209,19 @@ func runStorageObservationWithLimit(ctx context.Context, slots chan struct{}, ti
 		}
 		return errStorageObservationUnavailable
 	}
+}
+
+func releaseStorageObservationLifetimes(ctx context.Context, lifetimes []*storageObservationLifetime) error {
+	var closeErr error
+	for _, lifetime := range lifetimes {
+		closeErr = errors.Join(closeErr, lifetime.release())
+	}
+	if closeErr != nil {
+		if operation := PrimaryRootIOFromContext(ctx); operation != nil {
+			_ = operation.MarkUnknown(closeErr)
+		}
+	}
+	return closeErr
 }
 
 func scanObservationLifetimes(captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence) []*storageObservationLifetime {

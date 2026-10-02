@@ -15,6 +15,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 	"github.com/moooyo/goby/internal/subtitle"
 )
 
@@ -43,6 +44,10 @@ func (snapshot subtitleScanSnapshot) matches(source storedSubtitle) bool {
 // outside the owned catalog transaction, with bounded descriptors and input.
 // Only a complete stable directory listing can retire absent file identities.
 func (state *scanState) scanSubtitles(itemID, relative string, probe *media.Info) error {
+	return state.retrySidecarScan(func() error { return state.scanSubtitlesAttempt(itemID, relative, probe) })
+}
+
+func (state *scanState) scanSubtitlesAttempt(itemID, relative string, probe *media.Info) (resultErr error) {
 	ctx := state.task.ctx
 	if err := ctx.Err(); err != nil {
 		return err
@@ -57,108 +62,154 @@ func (state *scanState) scanSubtitles(itemID, relative string, probe *media.Info
 		state.warnings++
 		return nil
 	}
-	root, err := openRegisteredRoot(state.opened, directoryPath)
+	operation, row, err := state.prepareSidecarScanIO()
 	if err != nil {
-		state.warnings++
-		return nil
+		return scanReadFailure(err)
 	}
-	defer root.Close()
-	directory, err := openScanFile(root, ".")
-	if err != nil {
-		state.warnings++
-		return nil
-	}
-	defer directory.Close()
-	directoryInfo, err := directory.Stat()
-	if err != nil || !directoryInfo.IsDir() || !os.SameFile(expected, directoryInfo) {
-		state.warnings++
-		return nil
-	}
-	index := state.subtitleDirectories[directoryPath]
-	if index == nil {
-		entries, err := directory.ReadDir(-1)
+	cleanupContext := operation.Context(ctx)
+	var root, currentRoot, currentDirectory *os.Root
+	var directory *os.File
+	var directoryInfo, primary os.FileInfo
+	inspected := make(map[string]*scannedSubtitle)
+	present := make(map[string]bool)
+	defer func() {
+		for _, entry := range inspected {
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, entry.file))
+		}
+		if currentDirectory != nil {
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, currentDirectory))
+		}
+		if currentRoot != nil {
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, currentRoot))
+		}
+		if directory != nil {
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, directory))
+		}
+		if root != nil {
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(cleanupContext, root))
+		}
+		resultErr = scanReadFailure(errors.Join(resultErr, operation.Close()))
+	}()
+	ready, empty := false, false
+	err = operation.Run(ctx, state.root.id, primaryio.Background, func(work context.Context) error {
+		if err := state.checkSidecarScanAuthority(work, row); err != nil {
+			return err
+		}
+		root, err = openRegisteredRoot(state.opened, directoryPath)
 		if err != nil {
 			state.warnings++
 			return nil
 		}
-		index = newSubtitleDirectoryIndex(entries, state.library.CollectionType, directoryInfo)
-		if state.subtitleDirectories == nil {
-			state.subtitleDirectories = make(map[string]*subtitleDirectoryIndex)
-		}
-		state.subtitleDirectories[directoryPath] = index
-	} else if !sameSubtitleDirectoryInfo(index.info, directoryInfo) {
-		state.warnings++
-		return nil
-	}
-	candidates, overflow := index.candidates(relative)
-	if overflow {
-		state.warnings++
-		return nil
-	}
-	primary, err := root.Lstat(filepath.Base(relative))
-	if err != nil || !primary.Mode().IsRegular() ||
-		(probe.FileChangeTimeNs > 0 && media.FileChangeTime(primary) != probe.FileChangeTimeNs) {
-		state.warnings++
-		return nil
-	}
-	inspected := make(map[string]*scannedSubtitle, len(candidates))
-	present := make(map[string]bool, len(candidates))
-	defer func() {
-		for _, entry := range inspected {
-			_ = entry.file.Close()
-		}
-	}()
-	for _, candidate := range candidates {
-		path := filepath.ToSlash(filepath.Join(directoryPath, candidate.filename))
-		present[path] = true
-		entry, err := inspectLocalSubtitle(ctx, root, candidate)
+		directory, err = openScanFile(root, ".")
 		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
+			state.warnings++
+			return nil
+		}
+		directoryInfo, err = directory.Stat()
+		if err != nil || !directoryInfo.IsDir() || !os.SameFile(expected, directoryInfo) {
+			state.warnings++
+			return nil
+		}
+		index := state.subtitleDirectories[directoryPath]
+		if index == nil {
+			entries, err := directory.ReadDir(-1)
+			if err != nil {
+				state.warnings++
+				return nil
 			}
+			index = newSubtitleDirectoryIndex(entries, state.library.CollectionType, directoryInfo)
+			if state.subtitleDirectories == nil {
+				state.subtitleDirectories = make(map[string]*subtitleDirectoryIndex)
+			}
+			state.subtitleDirectories[directoryPath] = index
+		} else if !sameSubtitleDirectoryInfo(index.info, directoryInfo) {
 			state.warnings++
-			continue
+			return nil
 		}
-		entry.source.relativePath = path
-		entry.source.rootID = state.root.id
-		inspected[path] = entry
-	}
-	// Root and directory identities must still refer to the held objects. A
-	// renamed tree or a changed listing cannot authorize sidecar deletion.
-	currentRoot, err := state.store.openLibraryRoot(state.root)
-	if err != nil {
-		state.warnings++
-		return nil
-	}
-	defer currentRoot.Close()
-	currentDirectory, err := openRegisteredRoot(currentRoot, directoryPath)
-	if err != nil {
-		state.warnings++
-		return nil
-	}
-	defer currentDirectory.Close()
-	if !state.subtitleSourceStable(relative, directoryInfo, primary, directory, currentRoot, currentDirectory) {
-		state.warnings++
-		return nil
-	}
-	for path, entry := range inspected {
-		if err := verifyScannedSubtitle(currentDirectory, entry); err != nil {
-			_ = entry.file.Close()
-			delete(inspected, path)
+		candidates, overflow := index.candidates(relative)
+		if overflow {
 			state.warnings++
+			return nil
 		}
+		primary, err = root.Lstat(filepath.Base(relative))
+		if err != nil || !primary.Mode().IsRegular() ||
+			(probe.FileChangeTimeNs > 0 && media.FileChangeTime(primary) != probe.FileChangeTimeNs) {
+			state.warnings++
+			return nil
+		}
+		for _, candidate := range candidates {
+			path := filepath.ToSlash(filepath.Join(directoryPath, candidate.filename))
+			present[path] = true
+			entry, err := inspectLocalSubtitle(work, root, candidate)
+			if err != nil {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+				state.warnings++
+				continue
+			}
+			entry.source.relativePath = path
+			entry.source.rootID = state.root.id
+			inspected[path] = entry
+		}
+		// Root and directory identities must still refer to the held objects. A
+		// renamed tree or a changed listing cannot authorize sidecar deletion.
+		currentRoot, err = state.store.openLibraryRoot(state.root)
+		if err != nil {
+			state.warnings++
+			return nil
+		}
+		currentDirectory, err = openRegisteredRoot(currentRoot, directoryPath)
+		if err != nil {
+			state.warnings++
+			return nil
+		}
+		if !state.subtitleSourceStable(relative, directoryInfo, primary, directory, currentRoot, currentDirectory) {
+			state.warnings++
+			return nil
+		}
+		for path, entry := range inspected {
+			if err := verifyScannedSubtitle(currentDirectory, entry); err != nil {
+				if err := closePrimarySidecarResource(work, entry.file); err != nil {
+					return err
+				}
+				delete(inspected, path)
+				state.warnings++
+			}
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		ready, empty = true, len(candidates) == 0
+		return nil
+	})
+	if err != nil {
+		return scanReadFailure(err)
 	}
-	if err := ctx.Err(); err != nil {
-		return err
+	if !ready {
+		return nil
 	}
-	if len(candidates) == 0 {
+	finalProof := func() error {
+		return operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(context.Context) error {
+			if !state.subtitleSourceStable(relative, directoryInfo, primary, directory, currentRoot, currentDirectory) {
+				return ErrSourceChanged
+			}
+			for _, entry := range inspected {
+				if err := verifyScannedSubtitle(currentDirectory, entry); err != nil {
+					return errors.Join(ErrSourceChanged, err)
+				}
+			}
+			return nil
+		})
+	}
+	if empty {
 		tx, handled, err := state.prepareEmptySubtitleScan(itemID, relative, primary)
 		if err != nil || handled {
 			return err
 		}
-		return state.persistSubtitlesTx(tx, itemID, relative, primary, present, inspected)
+		return state.persistSubtitlesTx(tx, itemID, relative, primary, present, inspected, row, finalProof)
 	}
-	return state.persistSubtitles(itemID, relative, primary, present, inspected)
+	return state.persistSubtitles(itemID, relative, primary, present, inspected, row, finalProof)
 }
 
 func (state *scanState) subtitleSourceStable(relative string, directoryInfo, primary os.FileInfo, directory *os.File, currentRoot, currentDirectory *os.Root) bool {
@@ -242,7 +293,7 @@ func sameSubtitleDirectoryInfo(first, second os.FileInfo) bool {
 		first.ModTime().Equal(second.ModTime()) && media.FileChangeTime(first) == media.FileChangeTime(second)
 }
 
-func inspectLocalSubtitle(ctx context.Context, root *os.Root, candidate subtitleCandidate) (*scannedSubtitle, error) {
+func inspectLocalSubtitle(ctx context.Context, root *os.Root, candidate subtitleCandidate) (_ *scannedSubtitle, resultErr error) {
 	before, err := root.Lstat(candidate.filename)
 	if err != nil || !before.Mode().IsRegular() || before.Size() < 1 || before.Size() > subtitle.MaxInputBytes {
 		return nil, fmt.Errorf("local subtitle is not a regular file within the size limit")
@@ -254,7 +305,7 @@ func inspectLocalSubtitle(ctx context.Context, root *os.Root, candidate subtitle
 	keep := false
 	defer func() {
 		if !keep {
-			_ = file.Close()
+			resultErr = errors.Join(resultErr, closePrimarySidecarResource(ctx, file))
 		}
 	}()
 	opened, err := file.Stat()
@@ -320,17 +371,20 @@ func readSubtitleBytes(ctx context.Context, file *os.File) ([]byte, error) {
 	return data, nil
 }
 
-func (state *scanState) persistSubtitles(itemID, relative string, primary os.FileInfo, present map[string]bool, inspected map[string]*scannedSubtitle) error {
+func (state *scanState) persistSubtitles(itemID, relative string, primary os.FileInfo, present map[string]bool, inspected map[string]*scannedSubtitle, root rootBindingRow, finalProof func() error) error {
 	tx, err := state.store.beginOwnedTx(state.task.ctx)
 	if err != nil {
 		return err
 	}
-	return state.persistSubtitlesTx(tx, itemID, relative, primary, present, inspected)
+	return state.persistSubtitlesTx(tx, itemID, relative, primary, present, inspected, root, finalProof)
 }
 
-func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, primary os.FileInfo, present map[string]bool, inspected map[string]*scannedSubtitle) error {
+func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, primary os.FileInfo, present map[string]bool, inspected map[string]*scannedSubtitle, root rootBindingRow, finalProof func() error) (resultErr error) {
 	ctx := state.task.ctx
-	defer rollback(tx)
+	defer func() { resultErr = errors.Join(resultErr, rollbackSidecarTransaction(tx, resultErr)) }()
+	if err := state.checkSidecarScanRootTx(tx, root); err != nil {
+		return err
+	}
 	var identity string
 	var size int64
 	var modified *time.Time
@@ -409,6 +463,9 @@ func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, p
 		}
 	}
 	if unchanged {
+		if err := finalProof(); err != nil {
+			return scanReadFailure(err)
+		}
 		return tx.Commit(ctx)
 	}
 	beforeProjection, err := readSubtitleCatalogProjection(ctx, tx, itemID, embedded)
@@ -476,6 +533,9 @@ func (state *scanState) persistSubtitlesTx(tx pgx.Tx, itemID, relative string, p
 		if err := recordCatalogChanges(tx, change); err != nil {
 			return err
 		}
+	}
+	if err := finalProof(); err != nil {
+		return scanReadFailure(err)
 	}
 	return tx.Commit(ctx)
 }

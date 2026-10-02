@@ -29,11 +29,24 @@ func (h *hlsRuntime) progressive(ctx context.Context, session *hlsSession, input
 		_ = input.Close()
 		return nil, nil, transcode.ErrJobNotFound
 	}
+	// Fresh source authority and its retained I/O capability can consult the
+	// runtime registry. Do not reverse its runtime -> session lock order while
+	// Ensure prepares an input or waits for repository admission.
+	session.mu.Unlock()
 	record, err := h.manager.Ensure(ctx, transcode.Spec{Scope: session.key.scope,
 		SourceStamp: session.key.stamp, Plan: session.key.plan}, input)
+	session.mu.Lock()
 	if err != nil {
 		session.mu.Unlock()
 		return nil, nil, err
+	}
+	if session.closed || ctx.Err() != nil {
+		session.mu.Unlock()
+		h.cancelUnattachedProducer(session.key.scope, record.ID)
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+		return nil, nil, transcode.ErrJobNotFound
 	}
 	producer, err := h.ownProducer(session.key.scope, record.ID, 0, 0)
 	if err != nil {

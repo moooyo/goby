@@ -68,5 +68,8 @@ func (s *Store) readDownloadSource(ctx context.Context, subject Subject, itemID,
 	if err := tx.Commit(ctx); err != nil {
 		return indexedMediaSource{}, fmt.Errorf("%w: complete authorized download source read: %w", ErrUnavailable, err)
 	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
+		return indexedMediaSource{}, err
+	}
 	return snapshot, nil
 }

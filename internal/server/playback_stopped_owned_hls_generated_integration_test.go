@@ -43,7 +43,9 @@ func TestHTTPPlaybackStoppedOwnedHLSGeneratedWorkerLifetimes(t *testing.T) {
 				t.Fatal("stat the genuine generated source before retaining worker inputs")
 			}
 			app := h.f.app
-			app.correlatedHLSOwnershipEnabled, app.correlatedHLSEarlyStopEnabled = true, true
+			if !app.correlatedHLSOwnershipEnabled || !app.correlatedHLSEarlyStopEnabled {
+				t.Fatal("Server.New did not enable the qualified correlated file-HLS owner chain")
+			}
 			// This existing experimental selector chooses the actual production
 			// branch. Neither the negotiated plan nor source metadata is changed.
 			app.hls.generatedWindowsEnabled = finite

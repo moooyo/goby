@@ -7,12 +7,15 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 // scanReconciliationPass retains every root approval before any root is walked.
 // Additions and updates retain their existing transactions. An incomplete proof
 // disables the one final deletion transaction for the entire library.
 type scanReconciliationPass struct {
+	primaryIO  *PrimaryRootIO
 	captures   []*rootBindingScanCapture
 	byRoot     map[string]*rootBindingScanCapture
 	evidence   *scanReconciliationEvidence
@@ -35,6 +38,21 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 	}
 	pass.eligible = true
 	var err error
+	hints := make([]mediaSourceRootHint, 0, len(roots))
+	for _, root := range roots {
+		row, err := s.admitRootBindingScan(task, root, nil, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := row.validate(); err != nil {
+			return nil, err
+		}
+		hints = append(hints, mediaSourceRootHint{root: row.root, bindingRevision: row.revision})
+	}
+	pass.primaryIO, err = s.preparePrimaryRootIO(task.ctx, hints)
+	if err != nil {
+		return nil, err
+	}
 	pass.evidence, err = s.newScanReconciliationEvidence(task.ctx)
 	if err != nil {
 		if pass.evidence == nil {
@@ -46,7 +64,7 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 	}
 	retainedBytes, retainedHandles := int64(0), 0
 	for _, root := range roots {
-		capture, err := s.prepareRootBindingScan(task, root)
+		capture, err := s.prepareRootBindingScanWithCapture(task, root, s.captureRootBindingWrite, pass.primaryIO)
 		if err != nil {
 			_ = capture.Close()
 			return nil, errors.Join(err, pass.Close())
@@ -65,7 +83,11 @@ func (s *Store) prepareScanReconciliation(task *scanTask, roots []libraryRoot) (
 		retainedBytes += bytes
 		retainedHandles += handles
 		if pass.eligible && pass.evidence.Err() == nil {
-			_ = pass.evidence.AttachRoot(root.id, capture.opened)
+			if err := pass.primaryIO.Run(task.ctx, root.id, primaryio.Background, func(context.Context) error {
+				return pass.evidence.AttachRoot(root.id, capture.opened)
+			}); err != nil {
+				pass.evidence.Disable(err)
+			}
 		}
 	}
 	if pass.evidence.Err() == nil {
@@ -110,19 +132,26 @@ func (pass *scanReconciliationPass) Close() error {
 	if pass == nil {
 		return nil
 	}
-	var err error
+	var catalogErr, resourceErr error
 	if pass.staging != nil {
-		err = pass.staging.Close()
+		catalogErr = pass.staging.Close()
 		pass.staging = nil
 	}
 	if pass.evidence != nil {
-		err = errors.Join(err, pass.evidence.Close())
+		resourceErr = errors.Join(resourceErr, pass.evidence.Close())
 	}
 	for _, capture := range pass.captures {
-		err = errors.Join(err, capture.Close())
+		resourceErr = errors.Join(resourceErr, capture.Close())
+	}
+	if pass.primaryIO != nil {
+		if resourceErr != nil {
+			_ = pass.primaryIO.MarkUnknown(resourceErr)
+		}
+		resourceErr = errors.Join(resourceErr, pass.primaryIO.Close())
+		pass.primaryIO = nil
 	}
 	pass.captures, pass.byRoot = nil, nil
-	pass.closeErr = errors.Join(pass.closeErr, err)
+	pass.closeErr = errors.Join(pass.closeErr, catalogErr, resourceErr)
 	return pass.closeErr
 }
 
@@ -135,13 +164,25 @@ func (pass *scanReconciliationPass) openRoot(s *Store, root libraryRoot) (*os.Ro
 		}
 		defer capture.Close()
 		if capture != nil && capture.status == RootBindingVerified {
-			return capture.opened.OpenRoot(".")
+			var opened *os.Root
+			err := capture.primaryIO.Run(pass.task.ctx, root.id, primaryio.Background, func(context.Context) error {
+				var err error
+				opened, err = capture.opened.OpenRoot(".")
+				return err
+			})
+			return opened, err
 		}
 		return s.openLibraryRoot(root)
 	}
 	if capture := pass.byRoot[root.id]; capture != nil && capture.status == RootBindingVerified {
 		// Keep the binding capture alive after the walker releases its own root.
-		return capture.opened.OpenRoot(".")
+		var opened *os.Root
+		err := pass.primaryIO.Run(pass.task.ctx, root.id, primaryio.Background, func(context.Context) error {
+			var err error
+			opened, err = capture.opened.OpenRoot(".")
+			return err
+		})
+		return opened, err
 	}
 	return s.openLibraryRoot(root)
 }

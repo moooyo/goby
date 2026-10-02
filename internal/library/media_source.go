@@ -26,6 +26,7 @@ type MediaFile struct {
 	ETag                          string
 	Size                          int64
 	ModifiedAt                    time.Time
+	primaryReadProof              *primaryMediaReadProof
 }
 
 type indexedMediaSource struct {
@@ -197,6 +198,9 @@ func (s *Store) readMediaSourceFor(ctx context.Context, subject Subject, itemID,
 	if err := tx.Commit(ctx); err != nil {
 		return indexedMediaSource{}, fmt.Errorf("%w: complete authorized media source read: %w", ErrUnavailable, err)
 	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
+		return indexedMediaSource{}, err
+	}
 	return snapshot, nil
 }
 
@@ -208,14 +212,14 @@ func readIndexedMediaSource(ctx context.Context, tx pgx.Tx, access libraryAccess
 	var analysisSourceRevision string
 	item, err := scanItem(tx.QueryRow(ctx, "SELECT "+access.itemColumnsSQL()+`,
 		i.relative_path, i.file_identity, i.file_size, i.modified_at,
-		r.id, r.library_id, r.path, r.allowed_path, r.relative_path,
+		r.id, r.library_id, r.path, r.allowed_path, r.relative_path, r.binding_revision,
 		CASE WHEN i.type='Episode' THEN `+introSourceRevisionSQL+` ELSE '' END
 		FROM items i JOIN library_roots r ON r.id = i.root_id AND r.library_id = i.library_id
 		WHERE i.id = $1 AND NOT i.is_folder AND i.media IS NOT NULL
 		AND i.type IN ('Movie', 'Episode', 'Video', 'Audio')
 		AND ($2::boolean OR i.library_id = ANY($3::text[])) AND `+access.directSQL("i"), itemID, access.all, access.folders),
 		&snapshot.relativePath, &snapshot.identity, &snapshot.mediaFile.Size, &modified,
-		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath, &analysisSourceRevision)
+		&snapshot.root.id, &snapshot.root.libraryID, &snapshot.root.path, &snapshot.root.allowedPath, &snapshot.root.relativePath, &snapshot.rootBindingRevision, &analysisSourceRevision)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return indexedMediaSource{}, ErrNotFound
 	}
@@ -306,19 +310,26 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	if err := s.checkMediaSourceRootAdmission(ctx, snapshot); err != nil {
 		return nil, err
 	}
+	return s.runSourceMetadataOpen(ctx, snapshot, func(work context.Context) (*os.File, error) {
+		return s.openMediaSourceFilesystem(work, snapshot)
+	})
+}
+
+// Binding SQL has completed before this primitive enters its shared phase.
+func (s *Store) openMediaSourceFilesystem(ctx context.Context, snapshot indexedMediaSource) (resultFile *os.File, resultErr error) {
 	openedAt := time.Now()
 	defer func() { mediaSourceAdmissionMeasurement.fileOpenNS.Add(uint64(time.Since(openedAt))) }()
 	root, err := s.openLibraryRoot(snapshot.root)
 	if err != nil {
 		return nil, err
 	}
-	defer root.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, root.Close)) }()
 	path := filepath.FromSlash(snapshot.relativePath)
 	parent, err := openRegisteredRoot(root, filepath.Dir(path))
 	if err != nil {
 		return nil, fmt.Errorf("%w: media parent directory cannot be opened safely", ErrUnavailable)
 	}
-	defer parent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, parent.Close)) }()
 	name := filepath.Base(path)
 	before, err := parent.Lstat(name)
 	if err != nil {
@@ -334,7 +345,9 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	success := false
 	defer func() {
 		if !success {
-			_ = file.Close()
+			if closeErr := file.Close(); closeErr != nil && !errors.Is(closeErr, os.ErrClosed) {
+				resultErr = errors.Join(resultErr, media.SourceReadRetirementError(closeErr, file))
+			}
 		}
 	}()
 	opened, err := file.Stat()
@@ -348,7 +361,7 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	if err != nil {
 		return nil, err
 	}
-	defer currentRoot.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentRoot.Close)) }()
 	if !sameMediaSourceDirectory(root, currentRoot) {
 		return nil, fmt.Errorf("%w: registered media root changed while opening", ErrUnavailable)
 	}
@@ -356,7 +369,7 @@ func (s *Store) openMediaSource(ctx context.Context, snapshot indexedMediaSource
 	if err != nil {
 		return nil, fmt.Errorf("%w: media directory changed while opening", ErrUnavailable)
 	}
-	defer currentParent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeDirectoryPrimaryResource(ctx, currentParent.Close)) }()
 	if !sameMediaSourceDirectory(parent, currentParent) {
 		return nil, fmt.Errorf("%w: media directory was replaced while opening", ErrUnavailable)
 	}

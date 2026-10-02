@@ -93,6 +93,8 @@ func New(ctx context.Context, cfg config.Config, db *pgxpool.Pool, users *identi
 		return nil, err
 	}
 	app := &Server{cfg: cfg, db: db, identity: users, log: logger, version: version, serverID: id, limiter: newLoginLimiter(), images: newImageCache(), streamSlots: make(chan struct{}, 64), subtitleSlots: make(chan struct{}, 4), sockets: newSocketRuntime()}
+	app.correlatedHLSOwnershipEnabled = true
+	app.correlatedHLSEarlyStopEnabled = true
 	for _, option := range options {
 		if option != nil {
 			option(app)

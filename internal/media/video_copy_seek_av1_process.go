@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -66,7 +67,7 @@ func analyzeAV1CopySeekIndex(ctx context.Context, executable, probe string, file
 	}
 	afterPath, afterIdentity, err := VideoSeekToolIdentity(ctx, probe)
 	if err != nil || afterPath != resolvedProbe || afterIdentity != probeIdentity {
-		return VideoSeekIndex{}, fmt.Errorf("AV1 copy seek probe changed during analysis")
+		return VideoSeekIndex{}, errors.Join(fmt.Errorf("AV1 copy seek probe changed during analysis"), err)
 	}
 	index.Entries = verified
 	index.PacketRestartChecked = true
@@ -92,17 +93,22 @@ func runVideoCopySeekAV1Command(ctx context.Context, timeout time.Duration, maxO
 	command.Env = mediaProbeEnvironment()
 	command.Stdout, command.Stderr = stdout, stderr
 	command.WaitDelay = time.Second
-	process, err := startMediaProcess(processContext, command)
-	if err != nil {
-		return nil, err
+	process, startErr := startMediaProcess(processContext, command)
+	var waitErr error
+	if process != nil {
+		if startErr == nil {
+			waitErr = process.Wait()
+		}
+		waitErr = errors.Join(waitErr, process.Close())
 	}
-	defer process.Close()
-	waitErr := process.Wait()
+	if startErr != nil {
+		return nil, errors.Join(startErr, waitErr)
+	}
 	if stdout.exceeded || stderr.exceeded {
-		return nil, ErrOutputLimit
+		return nil, errors.Join(ErrOutputLimit, waitErr)
 	}
 	if err := processContext.Err(); err != nil {
-		return nil, err
+		return nil, errors.Join(err, waitErr)
 	}
 	if waitErr != nil {
 		return nil, fmt.Errorf("execute AV1 copy seek analysis: %w", waitErr)

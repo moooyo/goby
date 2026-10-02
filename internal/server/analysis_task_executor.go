@@ -133,7 +133,7 @@ func (r *mediaAnalysisRuntime) executeIntroAnalysis(ctx context.Context, task ta
 	return progress(tasks.Progress{Processed: int64(len(work.Sources)), Updated: targets})
 }
 
-func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (library.AnalysisFeatures, error) {
+func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tasks.Work, work library.AnalysisWork, source library.AnalysisSource) (result library.AnalysisFeatures, resultErr error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(work.Profile.MaxItemRuntimeSeconds)*time.Second)
 	defer cancel()
 	task = task.WithContext(ctx)
@@ -141,7 +141,13 @@ func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tas
 	if err != nil {
 		return library.AnalysisFeatures{}, err
 	}
-	defer file.Close()
+	read, err := r.server.library.PrepareMediaSourceIO(ctx, opened)
+	defer func() { resultErr = errors.Join(resultErr, closeAnalysisSourceRead(file, read)) }()
+	if err != nil {
+		return library.AnalysisFeatures{}, err
+	}
+	ctx = read.Context(ctx)
+	task = task.WithContext(ctx)
 	if opened.Item.Media == nil || opened.Size != source.Size || opened.Size > work.Profile.MaxSourceBytes ||
 		opened.Item.Media.DurationTicks != source.DurationTicks {
 		return library.AnalysisFeatures{}, media.ErrAnalysisUnproven
@@ -193,7 +199,7 @@ func (r *mediaAnalysisRuntime) introSourceFeatures(ctx context.Context, task tas
 	return value, nil
 }
 
-func (r *mediaAnalysisRuntime) executePreviewAnalysis(ctx context.Context, task tasks.Work, work library.AnalysisWork, progress func(tasks.Progress) error) error {
+func (r *mediaAnalysisRuntime) executePreviewAnalysis(ctx context.Context, task tasks.Work, work library.AnalysisWork, progress func(tasks.Progress) error) (resultErr error) {
 	if len(work.Sources) != 1 || !work.Sources[0].Target {
 		return library.ErrInvalidInput
 	}
@@ -205,7 +211,13 @@ func (r *mediaAnalysisRuntime) executePreviewAnalysis(ctx context.Context, task 
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	read, err := r.server.library.PrepareMediaSourceIO(ctx, opened)
+	defer func() { resultErr = errors.Join(resultErr, closeAnalysisSourceRead(file, read)) }()
+	if err != nil {
+		return err
+	}
+	ctx = read.Context(ctx)
+	task = task.WithContext(ctx)
 	if opened.Item.Media == nil || opened.Size != source.Size || opened.Size > work.Profile.MaxSourceBytes ||
 		opened.Item.Media.DurationTicks != source.DurationTicks {
 		return media.ErrAnalysisUnproven

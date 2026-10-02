@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/artwork"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 const maxEmbeddedArtworkCacheBytes int64 = 1 << 30
@@ -25,6 +26,12 @@ type embeddedArtworkExtractor interface {
 // Source replacement invalidates visibility immediately through the projection
 // predicate, before a later scan can replace or remove the persisted row.
 func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, file *os.File, probe media.Info) error {
+	return state.retrySidecarScan(func() error {
+		return state.scanEmbeddedArtworkAttempt(itemID, itemType, relative, file, probe)
+	})
+}
+
+func (state *scanState) scanEmbeddedArtworkAttempt(itemID, itemType, relative string, file *os.File, probe media.Info) (resultErr error) {
 	options := EffectiveLibraryOptions(state.library)
 	if itemType != "Audio" || !options.EnableLocalImages || !options.EnableEmbeddedArtwork {
 		return nil
@@ -65,20 +72,49 @@ func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, f
 		state.warnings++
 		return nil
 	}
-	if err := state.checkEmbeddedArtworkSource(relative, file, snapshot); err != nil {
-		state.warnings++
+	operation, row, err := state.prepareSidecarScanIO()
+	if err != nil {
+		return scanReadFailure(err)
+	}
+	defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
+	var result media.EmbeddedArtworkResult
+	var extractErr error
+	stable, cached := false, false
+	if err := operation.Run(ctx, state.root.id, primaryio.Background, func(work context.Context) error {
+		if err := state.checkSidecarScanAuthority(work, row); err != nil {
+			return err
+		}
+		if err := state.checkEmbeddedArtworkSource(relative, file, snapshot); err != nil {
+			state.warnings++
+			return nil
+		}
+		if source == cachedSource && cachedVersion == media.EmbeddedArtworkVersion && (cachedStatus == "ready" || cachedStatus == "none") && !state.task.job.ForceProbe {
+			stable, cached = true, true
+			return nil
+		}
+		// Extraction joins each exact FFprobe/FFmpeg reader and its cleanup.
+		// Unknown retirement keeps this operation and phase quarantined.
+		result, extractErr = extractor.ExtractEmbeddedArtwork(work, file, probe)
+		if errors.Is(extractErr, media.ErrProcessRetirementUnknown) {
+			return extractErr
+		}
+		if err := work.Err(); err != nil {
+			return err
+		}
+		if err := state.checkEmbeddedArtworkSource(relative, file, snapshot); err != nil {
+			state.warnings++
+			return nil
+		}
+		stable = true
+		return nil
+	}); err != nil {
+		return scanReadFailure(err)
+	}
+	if !stable || cached {
 		return nil
 	}
-	if source == cachedSource && cachedVersion == media.EmbeddedArtworkVersion && (cachedStatus == "ready" || cachedStatus == "none") && !state.task.job.ForceProbe {
-		return nil
-	}
-	result, extractErr := extractor.ExtractEmbeddedArtwork(ctx, file, probe)
 	if err := ctx.Err(); err != nil {
 		return err
-	}
-	if err := state.checkEmbeddedArtworkSource(relative, file, snapshot); err != nil {
-		state.warnings++
-		return nil
 	}
 	status, failure := "none", ""
 	var chosen *media.EmbeddedPicture
@@ -98,7 +134,10 @@ func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, f
 	if err != nil {
 		return err
 	}
-	defer rollback(writeTx)
+	defer func() { resultErr = errors.Join(resultErr, rollbackSidecarTransaction(writeTx, resultErr)) }()
+	if err := state.checkSidecarScanRootTx(writeTx, row); err != nil {
+		return err
+	}
 	var currentSource, libraryID, parentID string
 	if err := writeTx.QueryRow(ctx, `SELECT `+embeddedArtworkSourceRevisionSQL+`,i.library_id,COALESCE(i.parent_id,'') FROM items i
 		WHERE i.id=$1 AND i.root_id=$2 AND i.type='Audio' AND NOT i.is_folder FOR UPDATE OF i`, itemID, state.root.id).Scan(&currentSource, &libraryID, &parentID); err != nil {
@@ -109,10 +148,6 @@ func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, f
 		return err
 	}
 	if currentSource != source || libraryID != state.library.ID {
-		state.warnings++
-		return nil
-	}
-	if err := state.checkEmbeddedArtworkSource(relative, file, snapshot); err != nil {
 		state.warnings++
 		return nil
 	}
@@ -150,6 +185,11 @@ func (state *scanState) scanEmbeddedArtwork(itemID, itemType, relative string, f
 		if err := recordCatalogChanges(writeTx, CatalogChange{Kind: CatalogUpdated, ItemID: itemID, LibraryID: libraryID, ParentID: parentID}); err != nil {
 			return err
 		}
+	}
+	if err := operation.RunImmediate(ctx, state.root.id, primaryio.Background, func(context.Context) error {
+		return state.checkEmbeddedArtworkSource(relative, file, snapshot)
+	}); err != nil {
+		return scanReadFailure(err)
 	}
 	return writeTx.Commit(ctx)
 }

@@ -16,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 const (
@@ -467,6 +468,22 @@ func (spool *scanReconciliationSpool) watchDirectory(held *os.Root, expected os.
 // its raw membership before descending. A caller cannot reconstruct this
 // missing pre-read boundary after receiving a possibly stale raw listing.
 func (evidence *scanReconciliationEvidence) BeginDirectoryObservation(rootID, relative string, directory *os.File, before os.FileInfo) error {
+	return evidence.BeginDirectoryObservationFor(evidence.directoryObservationContext(), rootID, relative, directory, before)
+}
+
+func (evidence *scanReconciliationEvidence) BeginDirectoryObservationFor(ctx context.Context, rootID, relative string, directory *os.File, before os.FileInfo) error {
+	return evidence.runDirectoryObservation(ctx, func() error {
+		return evidence.beginDirectoryObservationObserved(ctx, rootID, relative, directory, before)
+	})
+}
+
+func (evidence *scanReconciliationEvidence) beginDirectoryObservationObserved(ctx context.Context, rootID, relative string, directory *os.File, before os.FileInfo) error {
+	if ctx == nil {
+		return ErrInvalidInput
+	}
+	if err := ctx.Err(); err != nil {
+		return evidence.Disable(err)
+	}
 	if err := evidence.Err(); err != nil {
 		return err
 	}
@@ -478,7 +495,7 @@ func (evidence *scanReconciliationEvidence) BeginDirectoryObservation(rootID, re
 	}
 	defer evidence.observation.release()
 	spool := evidence.spool
-	if err := spool.ctx.Err(); err != nil {
+	if err := ctx.Err(); err != nil {
 		return evidence.Disable(err)
 	}
 	relative, valid := scanReconciliationRelative(relative, true)
@@ -791,7 +808,7 @@ func scanSpoolLookup(name string, count int, read func(int) (scanSpoolEntry, err
 	return entry, low, err == nil && entry.name == name, err
 }
 
-func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relative string, before os.FileInfo, raw []os.DirEntry) (result error) {
+func (evidence *scanReconciliationEvidence) recordSpoolDirectory(ctx context.Context, rootID, relative string, before os.FileInfo, raw []os.DirEntry) (result error) {
 	if err := evidence.Err(); err != nil {
 		return err
 	}
@@ -800,7 +817,7 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 	}
 	defer evidence.observation.release()
 	spool := evidence.spool
-	if err := spool.ctx.Err(); err != nil {
+	if err := ctx.Err(); err != nil {
 		return evidence.Disable(err)
 	}
 	relative, valid := scanReconciliationRelative(relative, true)
@@ -832,7 +849,7 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 			return evidence.unavailable("directory membership contains a duplicate raw name")
 		}
 	}
-	held, err := evidence.openSpoolDirectory(spool.ctx, rootID, relative, false)
+	held, err := evidence.openSpoolDirectory(ctx, rootID, relative, false)
 	if err != nil {
 		return evidence.Disable(err)
 	}
@@ -869,7 +886,7 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 	}
 	entryWriter := scanSpoolEntryBatchWriter{writer: file, offset: record.offset}
 	for _, entry := range ordered {
-		if err := spool.ctx.Err(); err != nil {
+		if err := ctx.Err(); err != nil {
 			return evidence.Disable(err)
 		}
 		info, err := held.Lstat(entry.Name())
@@ -882,19 +899,19 @@ func (evidence *scanReconciliationEvidence) recordSpoolDirectory(rootID, relativ
 			return evidence.Disable(err)
 		}
 	}
-	if err := spool.ctx.Err(); err != nil {
+	if err := ctx.Err(); err != nil {
 		return evidence.Disable(err)
 	}
 	if err := entryWriter.flush(); err != nil {
 		return evidence.Disable(err)
 	}
-	if err := evidence.verifySpoolDirectory(spool.ctx, record, held); err != nil {
+	if err := evidence.verifySpoolDirectory(ctx, record, held); err != nil {
 		return evidence.Disable(err)
 	}
 	return nil
 }
 
-func (evidence *scanReconciliationEvidence) completeSpoolDirectory(rootID, relative string) (result error) {
+func (evidence *scanReconciliationEvidence) completeSpoolDirectory(ctx context.Context, rootID, relative string) (result error) {
 	if err := evidence.Err(); err != nil {
 		return err
 	}
@@ -903,7 +920,7 @@ func (evidence *scanReconciliationEvidence) completeSpoolDirectory(rootID, relat
 	}
 	defer evidence.observation.release()
 	spool := evidence.spool
-	if err := spool.ctx.Err(); err != nil {
+	if err := ctx.Err(); err != nil {
 		return evidence.Disable(err)
 	}
 	relative, valid := scanReconciliationRelative(relative, true)
@@ -919,7 +936,7 @@ func (evidence *scanReconciliationEvidence) completeSpoolDirectory(rootID, relat
 			result = errors.Join(result, evidence.Disable(err))
 		}
 	}()
-	if err := evidence.verifySpoolDirectory(spool.ctx, record, nil); err != nil {
+	if err := evidence.verifySpoolDirectory(ctx, record, nil); err != nil {
 		return evidence.Disable(err)
 	}
 	if !record.complete {
@@ -1167,10 +1184,15 @@ func (evidence *scanReconciliationEvidence) revalidateSpool(ctx context.Context)
 				}
 			}
 			if err == nil {
-				err = evidence.verifySpoolDirectory(ctx, record, nil)
+				err = runDirectoryPrimaryPhase(ctx, record.rootID, primaryio.Background, func(work context.Context) error {
+					return evidence.verifySpoolDirectory(work, record, nil)
+				})
 			}
 			_ = recordFile.Close()
 			if err != nil {
+				if primaryDirectoryBusy(err) {
+					return err
+				}
 				return evidence.Disable(err)
 			}
 			count++

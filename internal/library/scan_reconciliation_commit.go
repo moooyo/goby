@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/moooyo/goby/internal/database"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 const (
@@ -285,6 +286,19 @@ func readScanReconciliationStatement(tx OwnedTx, budget *scanReconciliationBudge
 // and collection-theme completion. Its proof is bounded observation, not an
 // atomic lock shared by the filesystem and PostgreSQL. No media is removed.
 func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence, musicParents map[string]bool, staged ...*scanReconciliationStaging) (result []string, resultErr error) {
+	for {
+		result, err := s.reconcileMissingScanItemsAttempt(task, library, captures, evidence, musicParents, staged...)
+		if task == nil || task.ctx == nil {
+			return result, err
+		}
+		retry, waitErr := waitDirectoryPrimaryError(task.ctx, err)
+		if !retry || waitErr != nil {
+			return result, waitErr
+		}
+	}
+}
+
+func (s *Store) reconcileMissingScanItemsAttempt(task *scanTask, library Library, captures []*rootBindingScanCapture, evidence *scanReconciliationEvidence, musicParents map[string]bool, staged ...*scanReconciliationStaging) (result []string, resultErr error) {
 	started := time.Now()
 	proofStarted := time.Time{}
 	stage := "scope"
@@ -323,6 +337,16 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	if err != nil {
 		return nil, err
 	}
+	hints := make([]mediaSourceRootHint, 0, len(captures))
+	for _, capture := range scanReconciliationCaptureValues(roots) {
+		hints = append(hints, mediaSourceRootHint{root: capture.row.root, bindingRevision: capture.row.revision})
+	}
+	operation, err := s.preparePrimaryRootIO(task.ctx, hints)
+	if err != nil {
+		return nil, err
+	}
+	defer operation.Close()
+	observationCtx := operation.Context(task.ctx)
 	if err := evidence.requireComplete(task.ctx); err != nil {
 		return nil, err
 	}
@@ -331,7 +355,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 	// sealed production pass moves its first complete filesystem observation
 	// outside ownership; successful observation is only a preflight hint.
 	if staging == nil {
-		if err := revalidateScanReconciliation(task.ctx, captures, evidence); err != nil {
+		if err := revalidateScanReconciliation(observationCtx, captures, evidence); err != nil {
 			return nil, err
 		}
 	} else {
@@ -342,7 +366,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 		}
 		if preflight.hasCandidates {
 			stage = "preflight_observation"
-			preflight.observationErr = revalidateScanReconciliation(task.ctx, captures, evidence)
+			preflight.observationErr = revalidateScanReconciliation(observationCtx, captures, evidence)
 			// Always reenter final owned authority, including on observation
 			// failure. SQL/owner/rollback failure must remain fatal rather than
 			// being mistaken for an observation-only retained pass.
@@ -374,6 +398,7 @@ func (s *Store) reconcileMissingScanItems(task *scanTask, library Library, captu
 			return err
 		}
 		defer cancelProof()
+		proofCtx = operation.Context(immediateDirectoryPrimaryContext(proofCtx))
 		stage = "task_lock"
 		if err := lockScanReconciliationTask(tx, task, library.ID); err != nil {
 			return err
@@ -691,17 +716,24 @@ func revalidateScanReconciliationNow(ctx context.Context, captures []*rootBindin
 	if len(evidence.roots) != len(captures) {
 		return scanReconciliationUnavailable("directory evidence has a different registered root set")
 	}
-	for _, capture := range captures {
-		if err := capture.Revalidate(ctx); err != nil {
+	ordered := append([]*rootBindingScanCapture(nil), captures...)
+	sort.Slice(ordered, func(i, j int) bool { return ordered[i].row.root.id < ordered[j].row.root.id })
+	for _, capture := range ordered {
+		if err := runDirectoryPrimaryPhase(ctx, capture.row.root.id, primaryio.Background, func(work context.Context) error {
+			if err := capture.Revalidate(work); err != nil {
+				return scanReconciliationObservation(work, err)
+			}
+			root := evidence.roots[capture.row.root.id]
+			if root == nil || root.anchor == nil {
+				return scanReconciliationUnavailable("directory evidence has no matching root anchor")
+			}
+			info, err := capture.opened.Stat(".")
+			if err != nil || !scanReconciliationSameInfo(root.info, info) {
+				return scanReconciliationUnavailable("directory evidence belongs to a different approved root")
+			}
+			return nil
+		}); err != nil {
 			return scanReconciliationObservation(ctx, err)
-		}
-		root := evidence.roots[capture.row.root.id]
-		if root == nil || root.anchor == nil {
-			return scanReconciliationUnavailable("directory evidence has no matching root anchor")
-		}
-		info, err := capture.opened.Stat(".")
-		if err != nil || !scanReconciliationSameInfo(root.info, info) {
-			return scanReconciliationUnavailable("directory evidence belongs to a different approved root")
 		}
 	}
 	return scanReconciliationObservation(ctx, evidence.Revalidate(ctx))
@@ -729,6 +761,7 @@ func proveScanReconciliationMembers(ctx context.Context, libraryID string, roots
 }
 
 func proveScanReconciliationMembersNow(ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, members map[string]scanReconciliationItem, seen map[string]bool) error {
+	byRoot := make(map[string][]scanReconciliationItem)
 	for _, item := range members {
 		if err := validateScanReconciliationPhysical(item, libraryID, roots); err != nil {
 			return err
@@ -736,12 +769,26 @@ func proveScanReconciliationMembersNow(ctx context.Context, libraryID string, ro
 		if seen[item.id] {
 			return scanReconciliationUnavailable("a deletion descendant was observed during this scan")
 		}
-		absent, err := evidence.PathAbsent(ctx, item.rootID, item.relative)
-		if err != nil {
-			return scanReconciliationObservation(ctx, err)
+		byRoot[item.rootID] = append(byRoot[item.rootID], item)
+	}
+	for _, capture := range scanReconciliationCaptureValues(roots) {
+		items := byRoot[capture.row.root.id]
+		if len(items) == 0 {
+			continue
 		}
-		if !absent {
-			return scanReconciliationUnavailable("a deletion descendant has no positive absence proof")
+		if err := runDirectoryPrimaryPhase(ctx, capture.row.root.id, primaryio.Background, func(work context.Context) error {
+			for _, item := range items {
+				absent, err := evidence.PathAbsent(work, item.rootID, item.relative)
+				if err != nil {
+					return scanReconciliationObservation(work, err)
+				}
+				if !absent {
+					return scanReconciliationUnavailable("a deletion descendant has no positive absence proof")
+				}
+			}
+			return work.Err()
+		}); err != nil {
+			return scanReconciliationObservation(ctx, err)
 		}
 	}
 	return ctx.Err()
@@ -752,13 +799,15 @@ func scanReconciliationCaptureValues(roots map[string]*rootBindingScanCapture) [
 	for _, capture := range roots {
 		captures = append(captures, capture)
 	}
+	sort.Slice(captures, func(i, j int) bool { return captures[i].row.root.id < captures[j].row.root.id })
 	return captures
 }
 
 func observeScanReconciliationCandidates(ctx context.Context, libraryID string, roots map[string]*rootBindingScanCapture, evidence *scanReconciliationEvidence, candidates []scanReconciliationItem, seen map[string]bool) (map[string]scanReconciliationItem, error) {
-	var members map[string]scanReconciliationItem
+	completed := make(chan map[string]scanReconciliationItem, 1)
 	err := runStorageObservation(ctx, scanObservationLifetimes(scanReconciliationCaptureValues(roots), evidence), func(observation context.Context) error {
 		observed := make(map[string]scanReconciliationItem)
+		byRoot := make(map[string][]scanReconciliationItem)
 		for _, item := range candidates {
 			if seen[item.id] {
 				continue
@@ -766,21 +815,35 @@ func observeScanReconciliationCandidates(ctx context.Context, libraryID string, 
 			if err := validateScanReconciliationPhysical(item, libraryID, roots); err != nil {
 				return err
 			}
-			absent, err := evidence.PathAbsent(observation, item.rootID, item.relative)
-			if err != nil {
+			byRoot[item.rootID] = append(byRoot[item.rootID], item)
+		}
+		for _, capture := range scanReconciliationCaptureValues(roots) {
+			items := byRoot[capture.row.root.id]
+			if len(items) == 0 {
+				continue
+			}
+			if err := runDirectoryPrimaryPhase(observation, capture.row.root.id, primaryio.Background, func(work context.Context) error {
+				for _, item := range items {
+					absent, err := evidence.PathAbsent(work, item.rootID, item.relative)
+					if err != nil {
+						return err
+					}
+					if absent {
+						observed[item.id] = item
+					}
+				}
+				return work.Err()
+			}); err != nil {
 				return err
 			}
-			if absent {
-				observed[item.id] = item
-			}
 		}
-		members = observed
+		completed <- observed
 		return observation.Err()
 	})
 	if err != nil {
 		return nil, scanReconciliationObservation(ctx, err)
 	}
-	return members, nil
+	return <-completed, nil
 }
 
 func scanReconciliationIDs(items map[string]scanReconciliationItem) []string {

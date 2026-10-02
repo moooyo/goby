@@ -30,6 +30,8 @@ type originalMediaReadDomainClaim struct {
 	registry *originalMediaReadDomainRegistry
 	domain   string
 	once     sync.Once
+	backing  *originalMediaReadDomainClaim
+	refs     int // Only a registry entry owns refs; registry.mu protects it.
 }
 
 // acquire rejects inconsistent live configurations rather than splitting one
@@ -49,7 +51,40 @@ func (r *originalMediaReadDomainRegistry) acquire(domain string) (*originalMedia
 			return nil, fmt.Errorf("%w: configured original media read domains overlap", ErrUnavailable)
 		}
 	}
-	claim := &originalMediaReadDomainClaim{registry: r, domain: domain}
+	claim := &originalMediaReadDomainClaim{registry: r, domain: domain, refs: 1}
+	if r.claims == nil {
+		r.claims = make(map[*originalMediaReadDomainClaim]struct{})
+	}
+	r.claims[claim] = struct{}{}
+	return claim, nil
+}
+
+// acquireShared borrows only an exact configured domain. It grants no catalog
+// or source authority and checks every conflicting configuration before using
+// an existing entry. An alias does not consume another retained-body entry.
+func (r *originalMediaReadDomainRegistry) acquireShared(domain string) (*originalMediaReadDomainClaim, error) {
+	if r == nil || domain == "" || !filepath.IsAbs(domain) || filepath.Clean(domain) != domain {
+		return nil, ErrUnavailable
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var backing *originalMediaReadDomainClaim
+	for claim := range r.claims {
+		if claim.domain != domain && (pathWithin(claim.domain, domain) || pathWithin(domain, claim.domain)) {
+			return nil, fmt.Errorf("%w: configured original media read domains overlap", ErrUnavailable)
+		}
+		if claim.domain == domain {
+			backing = claim
+		}
+	}
+	if backing != nil {
+		backing.refs++
+		return &originalMediaReadDomainClaim{registry: r, domain: domain, backing: backing}, nil
+	}
+	if len(r.claims) >= 64 {
+		return nil, ErrBusy
+	}
+	claim := &originalMediaReadDomainClaim{registry: r, domain: domain, refs: 1}
 	if r.claims == nil {
 		r.claims = make(map[*originalMediaReadDomainClaim]struct{})
 	}
@@ -63,7 +98,14 @@ func (c *originalMediaReadDomainClaim) release() {
 	}
 	c.once.Do(func() {
 		c.registry.mu.Lock()
-		delete(c.registry.claims, c)
+		backing := c
+		if c.backing != nil {
+			backing = c.backing
+		}
+		backing.refs--
+		if backing.refs == 0 {
+			delete(c.registry.claims, backing)
+		}
 		c.registry.mu.Unlock()
 	})
 }

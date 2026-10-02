@@ -2,8 +2,10 @@ package library
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/moooyo/goby/internal/identity"
@@ -69,6 +71,9 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 	var domain string
 	var warm *warmMediaSourceRoot
 	var authorized PlaybackMediaAuthorization
+	var metadataReservation *sourceMetadataReservation
+	var cleanupError error
+	var cleanupErrorMu sync.Mutex
 	var handedAt time.Time
 	cleanup := func(file *os.File) {
 		if file == nil && warm == nil && ioRelease == nil {
@@ -88,7 +93,10 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 			_ = file.Close()
 		}
 		if warm != nil {
-			warm.release()
+			warmErr := closeSourceMetadataWarm(worker, metadataReservation, warm)
+			cleanupErrorMu.Lock()
+			cleanupError = errors.Join(cleanupError, warmErr)
+			cleanupErrorMu.Unlock()
 			warm = nil
 		}
 		ioRelease()
@@ -97,6 +105,7 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 	}
 	file, source, err := runOwnedMediaSourceHandoff(worker, func() {
 		cleanup(nil)
+		metadataReservation.finishUnused()
 		if !handedAt.IsZero() {
 			mediaSourceAdmissionMeasurement.ackNS.Add(uint64(time.Since(handedAt)))
 		}
@@ -105,6 +114,11 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 		}
 		finish()
 	}, func() (*os.File, MediaFile, error) {
+		var err error
+		worker, metadataReservation, err = s.reserveSourceMetadata(worker)
+		if err != nil {
+			return nil, MediaFile{}, err
+		}
 		var opened *os.File
 		returned := false
 		defer func() {
@@ -134,6 +148,11 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 		if err != nil {
 			return failedAdmission(err)
 		}
+		metadataRoutes, err := s.sourceMetadataRoutes(hint)
+		if err != nil {
+			return failedAdmission(err)
+		}
+		metadataReservation.setRoutes(metadataRoutes)
 		worker = mediaSourceAuthorizationContext(worker, root, domain, false)
 		waited := time.Now()
 		releaseHandoff, err := mediaSourceHandoffAdmission.acquireRoot(worker, false, root, domain)
@@ -233,7 +252,7 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 			worker = context.WithValue(worker, mediaSourceRootContextKey{}, hint)
 			opened, err = s.openPublicMediaSource(worker, snapshot)
 		} else {
-			opened, err = warm.openMediaSource(worker, snapshot)
+			opened, err = warm.openMediaSourceAndRelease(worker, snapshot)
 			if err == nil {
 				// All original named/root/parent/descriptor checks have completed.
 				// A retired last anchor pin can Close, so release it inside IO.
@@ -255,7 +274,10 @@ func (s *Store) openPlaybackMediaAuthorization(ctx context.Context, principal id
 		return opened, snapshot.mediaFile, nil
 	}, cleanup)
 	if err != nil {
-		return nil, PlaybackMediaAuthorization{}, err
+		cleanupErrorMu.Lock()
+		observedCleanupError := cleanupError
+		cleanupErrorMu.Unlock()
+		return nil, PlaybackMediaAuthorization{}, errors.Join(err, observedCleanupError)
 	}
 	authorized.Source = source
 	return file, authorized, nil

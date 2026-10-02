@@ -35,8 +35,57 @@ func imageScanTestWrite(t *testing.T, path string, pixel color.Color) []byte {
 	return data
 }
 
+func imageScanTestTask(t *testing.T, ctx context.Context, pool *pgxpool.Pool, store *Store, library Library) *scanTask {
+	t.Helper()
+	// Fresh directory states in one test still belong to the same active scan.
+	// The catalog permits only one running job per library.
+	store.mu.Lock()
+	for _, task := range store.active {
+		if task.job.LibraryID == library.ID && task.job.Status == "Running" && task.ctx.Err() == nil {
+			store.mu.Unlock()
+			return task
+		}
+	}
+	store.mu.Unlock()
+	jobID, err := randomID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := scanJob(pool.QueryRow(ctx, `INSERT INTO scan_jobs (id, library_id, status, started_at)
+		VALUES ($1, $2, 'Running', clock_timestamp()) RETURNING `+jobColumns, jobID, library.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	scanCtx, cancel := context.WithCancel(ctx)
+	task := &scanTask{job: job, ctx: scanCtx, cancel: cancel}
+	store.mu.Lock()
+	store.active[job.ID] = task
+	store.mu.Unlock()
+	t.Cleanup(func() {
+		imageScanTestRetireTask(t, pool, store, task)
+	})
+	return task
+}
+
+func imageScanTestRetireTask(t *testing.T, pool *pgxpool.Pool, store *Store, task *scanTask) {
+	t.Helper()
+	task.cancel()
+	store.mu.Lock()
+	if store.active[task.job.ID] == task {
+		delete(store.active, task.job.ID)
+	}
+	store.mu.Unlock()
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cleanupCancel()
+	if _, err := pool.Exec(cleanupCtx, `UPDATE scan_jobs SET status='Completed', finished_at=clock_timestamp()
+		WHERE id=$1 AND status='Running'`, task.job.ID); err != nil {
+		t.Errorf("retire artwork scan fixture: %v", err)
+	}
+}
+
 func imageScanTestState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, store *Store, library Library, directory string) *scanState {
 	t.Helper()
+	task := imageScanTestTask(t, ctx, pool, store, library)
 	var root libraryRoot
 	err := pool.QueryRow(ctx, `SELECT id, library_id, path, allowed_path, relative_path FROM library_roots
 		WHERE library_id = $1 ORDER BY path LIMIT 1`, library.ID).
@@ -53,7 +102,7 @@ func imageScanTestState(t *testing.T, ctx context.Context, pool *pgxpool.Pool, s
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &scanState{store: store, task: &scanTask{ctx: ctx}, library: library, root: root,
+	return &scanState{store: store, task: task, library: library, root: root,
 		opened: opened, directoryIdentities: map[string]os.FileInfo{filepath.Clean(directory): info}}
 }
 

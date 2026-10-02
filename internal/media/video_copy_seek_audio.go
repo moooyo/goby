@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -39,7 +40,7 @@ func validateVideoCopySeekAudio(audio VideoCopySeekAudio) error {
 	return nil
 }
 
-func analyzeVideoCopySeekAudio(ctx context.Context, executable string, file *os.File, info Info, index VideoSeekIndex) VideoSeekIndex {
+func analyzeVideoCopySeekAudio(ctx context.Context, executable string, file *os.File, info Info, index VideoSeekIndex) (VideoSeekIndex, error) {
 	count := 0
 	for _, stream := range info.Streams {
 		if stream.CodecType != "audio" || stream.Codec != "aac" || stream.IsExternal ||
@@ -59,6 +60,9 @@ func analyzeVideoCopySeekAudio(ctx context.Context, executable string, file *os.
 			"-avoid_negative_ts", "disabled", "-f", "framehash", "-hash", "sha256", "pipe:1"}
 		output, err := runLimitedFiles(ctx, videoSeekAnalysisTimeout, maxVideoSeekScanBytes, executable, []*os.File{file}, args...)
 		if err != nil {
+			if errors.Is(err, ErrProcessRetirementUnknown) {
+				return VideoSeekIndex{}, err
+			}
 			continue
 		}
 		proofs, err := parseVideoCopySeekAudio(bytes.NewReader(output), stream, timeBase, index)
@@ -71,7 +75,7 @@ func analyzeVideoCopySeekAudio(ctx context.Context, executable string, file *os.
 			}
 		}
 	}
-	return index
+	return index, nil
 }
 
 func parseVideoCopySeekAudio(input io.Reader, source Stream, timeBase *big.Rat, index VideoSeekIndex) ([]*VideoCopySeekAudio, error) {

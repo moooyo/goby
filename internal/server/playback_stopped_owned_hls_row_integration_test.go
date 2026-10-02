@@ -68,9 +68,10 @@ func TestHTTPPlaybackStoppedOwnedHLSReapsBeforeUserDataCommit(t *testing.T) {
 	evidence.ProcessBefore = media.GetProcessCapacityStats()
 	fixture := newPlaybackStopAliasRealFixture(t)
 	f, h := fixture.control, fixture.hls
-	// Test-only qualification switches; production defaults remain false.
-	f.app.correlatedHLSOwnershipEnabled = true
-	f.app.correlatedHLSEarlyStopEnabled = true
+	// The qualified owner chain must be selected by the production constructor.
+	if !f.app.correlatedHLSOwnershipEnabled || !f.app.correlatedHLSEarlyStopEnabled {
+		t.Fatal("Server.New did not enable the qualified correlated file-HLS owner chain")
+	}
 	if f.app.hls.generatedWindowsEnabled {
 		t.Fatal("stopped-row-lock fixture enabled the experimental generated-window graph")
 	}

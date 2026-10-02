@@ -109,6 +109,16 @@ func (s *Store) createLibrary(ctx context.Context, administrator *catalogAdminis
 }
 
 func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string, captureRoot rootBindingRegistrationCaptureFactory, configuredOptions ...LibraryOptions) (Library, error) {
+	for {
+		library, err := s.createLibraryWithCaptureAttempt(ctx, administrator, name, collectionType, paths, captureRoot, configuredOptions...)
+		retry, waitErr := waitDirectoryPrimaryError(ctx, err)
+		if !retry || waitErr != nil {
+			return library, waitErr
+		}
+	}
+}
+
+func (s *Store) createLibraryWithCaptureAttempt(ctx context.Context, administrator *catalogAdministrator, name, collectionType string, paths []string, captureRoot rootBindingRegistrationCaptureFactory, configuredOptions ...LibraryOptions) (Library, error) {
 	if ctx == nil || captureRoot == nil {
 		return Library{}, ErrInvalidInput
 	}
@@ -158,7 +168,7 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		if err := ctx.Err(); err != nil {
 			return Library{}, err
 		}
-		registration, err := s.authorizePath(path)
+		registration, err := s.authorizePathContext(ctx, path)
 		if err != nil {
 			return Library{}, err
 		}
@@ -184,7 +194,7 @@ func (s *Store) createLibraryWithCapture(ctx context.Context, administrator *cat
 		}
 	}
 	for _, registration := range roots {
-		if err := registration.Revalidate(ctx); err != nil {
+		if err := registration.RevalidateQueued(ctx); err != nil {
 			return Library{}, err
 		}
 	}

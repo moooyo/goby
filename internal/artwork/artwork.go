@@ -102,18 +102,25 @@ type jobResult[T any] struct {
 	err   error
 }
 
+func acquireDecodeSlot(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	select {
+	case decodeSlots <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // withSlot keeps the slot until the worker exits, even when cancellation has
 // already returned to its caller. Consequently, arbitrary blocking readers
 // cannot create unlimited abandoned decode jobs. The reader remains caller-owned.
 func withSlot[T any](ctx context.Context, work func() (T, error)) (T, error) {
 	var zero T
-	if err := ctx.Err(); err != nil {
+	if err := acquireDecodeSlot(ctx); err != nil {
 		return zero, err
-	}
-	select {
-	case decodeSlots <- struct{}{}:
-	case <-ctx.Done():
-		return zero, ctx.Err()
 	}
 	result := make(chan jobResult[T], 1)
 	go func() {
@@ -136,6 +143,25 @@ func withSlot[T any](ctx context.Context, work func() (T, error)) (T, error) {
 	}
 }
 
+// withSlotJoined runs work in the caller so its return also marks completion of
+// every read and decode. Cancellation remains prompt while waiting for a slot,
+// but an active blocking reader must return before the caller can release it.
+func withSlotJoined[T any](ctx context.Context, work func() (T, error)) (T, error) {
+	var zero T
+	if err := acquireDecodeSlot(ctx); err != nil {
+		return zero, err
+	}
+	defer func() { <-decodeSlots }()
+	if err := ctx.Err(); err != nil {
+		return zero, err
+	}
+	value, err := work()
+	if canceled := ctx.Err(); canceled != nil {
+		return zero, canceled
+	}
+	return value, err
+}
+
 // Inspect fully validates the image, including every GIF frame, before returning
 // metadata. It shares the two decode slots with Render and does not close reader.
 func Inspect(reader io.Reader) (Info, error) {
@@ -151,11 +177,34 @@ func InspectContext(ctx context.Context, reader io.Reader) (Info, error) {
 	})
 }
 
+// InspectJoined validates an image synchronously using the same two decode slots
+// as InspectContext and Render. Once reading has started, cancellation waits for
+// the active read and decode to exit before returning. It never closes reader;
+// callers may safely release reader ownership after this function returns.
+func InspectJoined(ctx context.Context, reader io.Reader) (Info, error) {
+	return withSlotJoined(ctx, func() (Info, error) {
+		source, err := loadImage(ctx, reader)
+		return source.info, err
+	})
+}
+
 // Render returns promptly when ctx is canceled, including while queued. A
 // currently blocked Read is not closed forcibly: its worker keeps its slot until
 // the Read returns. Decoding uses bounded standard-library decoders; reading,
 // row conversion/resampling, and encoding writes also check cancellation.
 func Render(ctx context.Context, reader io.Reader, options Options) (Result, error) {
+	return render(ctx, reader, options, withSlot[Result])
+}
+
+// RenderJoined renders synchronously using Render's resource limits and shared
+// decode slots. Once work has started, cancellation waits for the active read,
+// decode, and render to exit before returning. It never closes reader; callers
+// may safely release reader ownership after this function returns.
+func RenderJoined(ctx context.Context, reader io.Reader, options Options) (Result, error) {
+	return render(ctx, reader, options, withSlotJoined[Result])
+}
+
+func render(ctx context.Context, reader io.Reader, options Options, run func(context.Context, func() (Result, error)) (Result, error)) (Result, error) {
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
 	}
@@ -164,7 +213,7 @@ func Render(ctx context.Context, reader io.Reader, options Options) (Result, err
 		return Result{}, err
 	}
 	format := options.Format
-	return withSlot(ctx, func() (Result, error) {
+	return run(ctx, func() (Result, error) {
 		source, err := loadImage(ctx, reader)
 		if err != nil {
 			return Result{}, err

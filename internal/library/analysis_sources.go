@@ -10,6 +10,7 @@ import (
 	"github.com/moooyo/goby/internal/identity"
 	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/notificationjournal"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 const analysisHierarchyRevisionSQL = `('analysis-hierarchy-v1-'||md5(jsonb_build_array(i.library_id,i.root_id,i.parent_id,i.type,i.index_number,i.parent_index_number,
@@ -329,6 +330,10 @@ func (s *Store) readAdmittedAnalysisSource(ctx context.Context, expected Analysi
 	if err := tx.Commit(ctx); err != nil {
 		return indexedMediaSource{}, err
 	}
+	if err := s.sealPrimaryMediaReadSnapshot(ctx, &snapshot); err != nil {
+		return indexedMediaSource{}, err
+	}
+	snapshot.mediaFile.primaryReadProof.class = primaryio.Background
 	return snapshot, nil
 }
 

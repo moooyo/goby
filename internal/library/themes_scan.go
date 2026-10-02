@@ -10,10 +10,12 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/moooyo/goby/internal/database"
 	"github.com/moooyo/goby/internal/media"
+	"github.com/moooyo/goby/internal/primaryio"
 )
 
 type scannedMediaRole string
@@ -34,13 +36,14 @@ type scannedMediaInput struct {
 	unchanged     bool
 	checksVersion bool
 	authority     *scanProbeAuthority
+	primary       *primaryScanRead
 }
 
 // inspectScannedMedia is shared by ordinary, theme, and extra files. It retains the
 // opened descriptor, probe version/ctime cache checks, and accepted music-source
 // validation; callers must close a successful input after their final identity
 // check and owned transaction. No owner NFO is read by this helper.
-func (state *scanState) inspectScannedMedia(path, kind string, role scannedMediaRole) (*scannedMediaInput, error) {
+func (state *scanState) inspectScannedMedia(path, kind string, role scannedMediaRole) (_ *scannedMediaInput, resultErr error) {
 	input, err := state.prepareScannedMedia(path, kind, role)
 	if err != nil || input == nil {
 		return nil, err
@@ -48,12 +51,12 @@ func (state *scanState) inspectScannedMedia(path, kind string, role scannedMedia
 	accepted := false
 	defer func() {
 		if !accepted {
-			_ = input.file.Close()
+			resultErr = errors.Join(resultErr, input.close())
 		}
 	}()
 	var probeErr error
 	if !input.unchanged {
-		probed, err := state.store.prober.ProbeFile(media.WithBackgroundProcess(state.task.ctx), input.file)
+		probed, err := input.primary.probe(state.store.prober, input.file)
 		input.probe, probeErr = &probed, err
 	}
 	accepted, err = state.acceptScannedMedia(input, kind, probeErr)
@@ -119,6 +122,7 @@ type preparedThemeFile struct {
 	sortName  string
 	itemType  string
 	changed   bool
+	sourceRow rootBindingRow
 }
 
 func (state *scanState) startThemeScan() error {
@@ -297,41 +301,47 @@ func (state *scanState) classifyThemeDirectory(relative string, entries []os.Dir
 	markers := make(map[string]bool)
 	var resources []themeCandidate
 	var directories []string
-	for _, entry := range entries {
-		name := filepath.ToSlash(filepath.Join(relative, entry.Name()))
-		classification, err := state.classifyScannedThemePath(name, entry.Type())
-		retained := state.themePathReserved(name)
-		if err != nil {
-			fileShape, _ := state.classifyScannedThemePath(name, 0)
-			directoryShape, _ := state.classifyScannedThemePath(name, os.ModeDir)
-			if retained || fileShape.Reserved || directoryShape.Reserved {
+	err := state.runPrimaryScanMetadata(state.task.ctx, func(context.Context) error {
+		for _, entry := range entries {
+			name := filepath.ToSlash(filepath.Join(relative, entry.Name()))
+			classification, err := state.classifyScannedThemePath(name, entry.Type())
+			retained := state.themePathReserved(name)
+			if err != nil {
+				fileShape, _ := state.classifyScannedThemePath(name, 0)
+				directoryShape, _ := state.classifyScannedThemePath(name, os.ModeDir)
+				if retained || fileShape.Reserved || directoryShape.Reserved {
+					state.warnings++
+					state.failThemeDirectory(relative)
+					continue
+				}
+				ordinary = append(ordinary, entry)
+				continue
+			}
+			if !retained && !classification.Reserved {
+				ordinary = append(ordinary, entry)
+				continue
+			}
+			observed, observeErr := state.opened.Lstat(filepath.FromSlash(name))
+			if observeErr != nil || (!observed.Mode().IsRegular() && !observed.IsDir()) || observed.IsDir() != entry.IsDir() {
 				state.warnings++
 				state.failThemeDirectory(relative)
 				continue
 			}
-			ordinary = append(ordinary, entry)
-			continue
+			markers[name] = entry.IsDir()
+			if classification.Reserved && classification.Kind != themePathKindNone {
+				resources = append(resources, themeCandidate{relative: name, kind: classification.Kind, layout: classification.Layout})
+			} else if entry.IsDir() && classification.Reserved && classification.OwnerDirectory == key {
+				directories = append(directories, name)
+			}
 		}
-		if !retained && !classification.Reserved {
-			ordinary = append(ordinary, entry)
-			continue
+		after, err := state.opened.Lstat(relative)
+		if err != nil || !themeSnapshotEqual(info, after) {
+			return fmt.Errorf("%w: theme classification directory changed during enumeration", ErrUnavailable)
 		}
-		observed, observeErr := state.opened.Lstat(filepath.FromSlash(name))
-		if observeErr != nil || (!observed.Mode().IsRegular() && !observed.IsDir()) || observed.IsDir() != entry.IsDir() {
-			state.warnings++
-			state.failThemeDirectory(relative)
-			continue
-		}
-		markers[name] = entry.IsDir()
-		if classification.Reserved && classification.Kind != themePathKindNone {
-			resources = append(resources, themeCandidate{relative: name, kind: classification.Kind, layout: classification.Layout})
-		} else if entry.IsDir() && classification.Reserved && classification.OwnerDirectory == key {
-			directories = append(directories, name)
-		}
-	}
-	after, err := state.opened.Lstat(relative)
-	if err != nil || !themeSnapshotEqual(info, after) {
-		return nil, fmt.Errorf("%w: theme classification directory changed during enumeration", ErrUnavailable)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	if err := state.persistThemeMarkers(markers); err != nil {
 		return nil, err
@@ -361,21 +371,27 @@ func (state *scanState) addThemeCandidate(group *themeDirectoryScan, candidate t
 }
 
 func (state *scanState) enumerateThemeDirectory(group *themeDirectoryScan, relative string) error {
+	return state.runPrimaryScanMetadata(state.task.ctx, func(ctx context.Context) error {
+		return state.enumerateThemeDirectoryObserved(ctx, group, relative)
+	})
+}
+
+func (state *scanState) enumerateThemeDirectoryObserved(ctx context.Context, group *themeDirectoryScan, relative string) (resultErr error) {
 	parent, err := openRegisteredRoot(state.opened, filepath.Dir(relative))
 	if err != nil {
 		return err
 	}
-	defer parent.Close()
+	defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(parent)) }()
 	directory, err := openScanFile(parent, filepath.Base(relative))
 	if err != nil {
 		return err
 	}
-	defer directory.Close()
+	defer func() { resultErr = errors.Join(resultErr, directory.Close()) }()
 	before, err := directory.Stat()
 	if err != nil || !before.IsDir() {
 		return fmt.Errorf("theme directory is unavailable")
 	}
-	entries, err := directory.ReadDir(-1)
+	entries, err := readScanDirectoryEntries(ctx, directory)
 	if err != nil {
 		return err
 	}
@@ -511,13 +527,14 @@ func themeProbeMatches(kind themePathKind, probe *media.Info) bool {
 	return kind == themePathKindSong && audio && !video || kind == themePathKindVideo && video
 }
 
-func closeThemeFiles(files []*preparedThemeFile) {
+func closeThemeFiles(files []*preparedThemeFile) (resultErr error) {
 	for _, file := range files {
 		if file.input.file != nil {
-			_ = file.input.file.Close()
+			resultErr = errors.Join(resultErr, file.input.close())
 			file.input.file = nil
 		}
 	}
+	return resultErr
 }
 
 func (state *scanState) resolveThemeOwner(group *themeDirectoryScan) error {
@@ -561,12 +578,12 @@ func (state *scanState) prepareThemeFiles(group *themeDirectoryScan) ([]*prepare
 	return state.prepareAuxiliaryFiles(group, scannedRoleTheme)
 }
 
-func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role scannedMediaRole) ([]*preparedThemeFile, error) {
+func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role scannedMediaRole) (_ []*preparedThemeFile, resultErr error) {
 	files := make([]*preparedThemeFile, 0, len(group.candidates))
 	complete := false
 	defer func() {
 		if !complete {
-			closeThemeFiles(files)
+			resultErr = errors.Join(resultErr, closeThemeFiles(files))
 		}
 	}()
 	for _, candidate := range group.candidates {
@@ -614,12 +631,28 @@ func (state *scanState) prepareAuxiliaryFiles(group *themeDirectoryScan, role sc
 			stored.path != filepath.Join(state.root.path, filepath.FromSlash(candidate.relative)) || stored.parentID != group.owner.id ||
 			stored.itemType != itemType || previousName != file.name || previousSort != file.sortName || previousOverview != "" ||
 			stored.indexNumber != 0 || stored.parentIndexNumber != 0 || !reflect.DeepEqual(stored.local, localMetadata{})
+		file.sourceRow = input.primary.row
+		// The complete owner population remains one atomic publication. Only
+		// immutable facts cross this boundary; each actual probe, descriptor,
+		// domain claim and retained owner retires before the next candidate.
+		if !auxiliaryProbeFactsFit(files) {
+			state.warnings++
+			return nil, nil
+		}
+		if err := input.close(); err != nil {
+			return nil, err
+		}
+		input.file, input.primary, input.authority = nil, nil, nil
 	}
 	if err := state.verifyThemeDirectories(group.relative, false); err != nil {
 		state.warnings++
 		return nil, nil
 	}
 	if err := verifyPreparedThemeFiles(files); err != nil {
+		var failure *primaryScanReadFailure
+		if errors.As(err, &failure) {
+			return nil, err
+		}
 		state.warnings++
 		return nil, nil
 	}
@@ -635,48 +668,93 @@ func verifyPreparedThemeFiles(files []*preparedThemeFile) error {
 
 func verifyPreparedThemeFilesWithRoots(files []*preparedThemeFile, openRoot func(*scanState) (*os.Root, error)) error {
 	for _, file := range files {
-		if err := file.state.task.ctx.Err(); err != nil {
+		if err := verifyPreparedThemeFile(file, openRoot); err != nil {
 			return err
-		}
-		root, err := openRoot(file.state)
-		if err != nil {
-			return err
-		}
-		parent, err := openRegisteredRoot(root, filepath.Dir(filepath.FromSlash(file.candidate.relative)))
-		_ = root.Close()
-		if err != nil {
-			return err
-		}
-		current, err := openScanFile(parent, filepath.Base(file.candidate.relative))
-		_ = parent.Close()
-		if err != nil {
-			return err
-		}
-		info, err := current.Stat()
-		if err != nil || !info.Mode().IsRegular() || !themeSnapshotEqual(file.input.info, info) {
-			_ = current.Close()
-			return fmt.Errorf("theme media descriptor or pathname changed before publication")
-		}
-		if file.input.file == nil {
-			file.input.file = current
-		} else {
-			_ = current.Close()
-			held, err := file.input.file.Stat()
-			if err != nil || !themeSnapshotEqual(file.input.info, held) {
-				return fmt.Errorf("opened theme media changed before publication")
-			}
 		}
 	}
 	return nil
 }
 
-func (state *scanState) verifyThemeDirectories(ownerDirectory string, all bool) error {
-	root, err := state.store.openLibraryRoot(state.root)
+func verifyPreparedThemeFile(file *preparedThemeFile, openRoot func(*scanState) (*os.Root, error)) (resultErr error) {
+	row, err := file.state.readPrimaryScanAuthority(file.state.task.ctx)
+	if err != nil {
+		return scanReadFailure(err)
+	}
+	if !row.same(file.sourceRow) {
+		return scanReadFailure(ErrRootBindingConflict)
+	}
+	operation, err := file.state.store.preparePrimaryRootIO(file.state.task.ctx,
+		[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
 	if err != nil {
 		return err
 	}
-	defer root.Close()
-	return state.verifyThemeDirectoriesAt(root, ownerDirectory, all)
+	defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
+	return runAuxiliaryRootIO(file.state.task.ctx, operation, row.root.id, false, func(ctx context.Context) error {
+		fresh, err := file.state.readPrimaryScanAuthority(ctx)
+		if err != nil {
+			return err
+		}
+		if !fresh.same(file.sourceRow) {
+			return ErrRootBindingConflict
+		}
+		return verifyAuxiliaryFile(ctx, file, openRoot)
+	})
+}
+
+// Run joins this synchronous callback. An outer storage observation can roll
+// back on its deadline while the worker retains the operation and witnesses.
+func runAuxiliaryRootIO(ctx context.Context, operation *PrimaryRootIO, rootID string, immediate bool, work func(context.Context) error) error {
+	if immediate {
+		return operation.RunImmediate(ctx, rootID, primaryio.Background, work)
+	}
+	return operation.Run(ctx, rootID, primaryio.Background, work)
+}
+
+// Charge the complete retained fact projection, without following scanner,
+// process, descriptor or ownership graphs. A rejected envelope retains the
+// previous complete population instead of publishing a truncated subset.
+func auxiliaryProbeFactsFit(files []*preparedThemeFile) bool {
+	type facts struct {
+		Stored                       storedFile
+		Probe                        *media.Info
+		Row                          rootBindingRow
+		Candidate                    themeCandidate
+		ID, Name, SortName, ItemType string
+	}
+	values := make([]facts, 0, len(files))
+	for _, file := range files {
+		values = append(values, facts{file.input.stored, file.input.probe, file.sourceRow,
+			file.candidate, file.id, file.name, file.sortName, file.itemType})
+	}
+	return scanProbeFactsFit(values, scanProbeFactsBytes)
+}
+
+func (state *scanState) verifyThemeDirectories(ownerDirectory string, all bool) (resultErr error) {
+	row, err := state.readPrimaryScanAuthority(state.task.ctx)
+	if err != nil {
+		return err
+	}
+	if state.walkRow.root.id != "" && !state.walkRow.same(row) {
+		return ErrRootBindingConflict
+	}
+	operation, err := state.store.preparePrimaryRootIO(state.task.ctx,
+		[]mediaSourceRootHint{{root: row.root, bindingRevision: row.revision}})
+	if err != nil {
+		return err
+	}
+	defer func() { resultErr = errors.Join(resultErr, operation.Close()) }()
+	return operation.Run(state.task.ctx, row.root.id, primaryio.Background, func(ctx context.Context) (resultErr error) {
+		fresh, err := state.readPrimaryScanAuthority(ctx)
+		if err != nil || !row.same(fresh) {
+			return errors.Join(err, ErrRootBindingConflict)
+		}
+		root, err := state.store.openLibraryRoot(state.root)
+		if err != nil {
+			return err
+		}
+		defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(root)) }()
+		return state.verifyThemeDirectoriesAt(root, ownerDirectory, all)
+	})
 }
 
 func (state *scanState) verifyThemeDirectoriesAt(root *os.Root, ownerDirectory string, all bool) error {
@@ -698,7 +776,9 @@ func (state *scanState) verifyThemeDirectoriesAt(root *os.Root, ownerDirectory s
 			return err
 		}
 		after, err := directory.Stat(".")
-		_ = directory.Close()
+		if closeErr := closeAuxiliaryRoot(directory); closeErr != nil {
+			return closeErr
+		}
 		if err != nil || !themeSnapshotEqual(before, after) {
 			return fmt.Errorf("an enumerated theme source directory changed during scanning")
 		}
@@ -706,7 +786,7 @@ func (state *scanState) verifyThemeDirectoriesAt(root *os.Root, ownerDirectory s
 	return nil
 }
 
-func (state *scanState) publishThemeDirectory(relative string) error {
+func (state *scanState) publishThemeDirectory(relative string) (resultErr error) {
 	if state.themes == nil {
 		return nil
 	}
@@ -741,7 +821,9 @@ func (state *scanState) publishThemeDirectory(relative string) error {
 			state.themeLibrary.failed = true
 			state.warnings++
 			state.noteThemeIssue("cross-root collection count exceeded the complete owner bound")
-			closeThemeFiles(state.themeLibrary.collection)
+			if err := closeThemeFiles(state.themeLibrary.collection); err != nil {
+				return err
+			}
 			state.themeLibrary.collection = nil
 			return nil
 		}
@@ -758,7 +840,7 @@ func (state *scanState) publishThemeDirectory(relative string) error {
 		}
 		return nil
 	}
-	defer closeThemeFiles(files)
+	defer func() { resultErr = errors.Join(resultErr, closeThemeFiles(files)) }()
 	if collection {
 		if state.themeLibrary == nil {
 			return fmt.Errorf("theme collection owner lacks its cross-root inventory")
@@ -766,6 +848,12 @@ func (state *scanState) publishThemeDirectory(relative string) error {
 		// Keep only the bounded probe snapshots between roots. Reopen and
 		// revalidate every descriptor together before the owner transaction.
 		state.themeLibrary.collection = append(state.themeLibrary.collection, files...)
+		if !auxiliaryProbeFactsFit(state.themeLibrary.collection) {
+			state.warnings++
+			state.themeLibrary.failed = true
+			state.themeLibrary.collection = nil
+			state.noteThemeIssue("complete owner probe facts exceeded their retained budget")
+		}
 		return nil
 	}
 	deferred, err := state.store.publishThemeOwner(state.task, state.library, group.owner, files, nil,
@@ -797,6 +885,29 @@ func persistThemeFile(ctx context.Context, tx pgx.Tx, file *preparedThemeFile) e
 	}
 	if conflict {
 		return fmt.Errorf("%w: a permanently assigned auxiliary identity cannot change roles", ErrUnavailable)
+	}
+	stored := file.input.stored
+	if stored.id != "" {
+		current, err := readStoredFile(tx.QueryRow(ctx, "SELECT "+storedFileColumns+" FROM items WHERE id=$1 AND library_id=$2",
+			stored.id, file.state.library.ID))
+		if err != nil {
+			return err
+		}
+		if !sameScanProbeSource(current, stored) {
+			return errScanProbeSourceChanged
+		}
+	}
+	var occupant string
+	err := tx.QueryRow(ctx, "SELECT id FROM items WHERE root_id=$1 AND relative_path=$2", file.state.root.id, file.candidate.relative).Scan(&occupant)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return err
+	}
+	wantOccupant := ""
+	if stored.rootID == file.state.root.id && stored.relativePath == file.candidate.relative {
+		wantOccupant = stored.id
+	}
+	if occupant != wantOccupant {
+		return errScanProbeSourceChanged
 	}
 	if !file.changed {
 		return nil
@@ -896,7 +1007,7 @@ func validateThemeLayouts(candidates []themeCandidate) error {
 // themePathAbsent proves ENOENT at the first missing component while holding
 // its existing parent. A symlink, non-directory parent, access error, or a
 // changed parent is uncertainty, never evidence authorizing retirement.
-func themePathAbsent(root *os.Root, relative string) (bool, error) {
+func themePathAbsent(root *os.Root, relative string) (_ bool, resultErr error) {
 	if _, err := classifyThemePath(relative, 0); err != nil {
 		return false, err
 	}
@@ -904,7 +1015,7 @@ func themePathAbsent(root *os.Root, relative string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer func() { _ = current.Close() }()
+	defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(current)) }()
 	components := strings.Split(relative, "/")
 	for index, component := range components {
 		before, err := current.Stat(".")
@@ -932,7 +1043,10 @@ func themePathAbsent(root *os.Root, relative string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		_ = current.Close()
+		if err := closeAuxiliaryRoot(current); err != nil {
+			_ = closeAuxiliaryRoot(next)
+			return false, err
+		}
 		current = next
 	}
 	return false, nil
@@ -948,6 +1062,7 @@ type auxiliaryPublicationSource struct {
 	lease       *libraryRootLease
 	directories map[string]bool
 	complete    bool
+	row         rootBindingRow
 }
 
 type auxiliaryPublicationWitness struct {
@@ -955,6 +1070,8 @@ type auxiliaryPublicationWitness struct {
 	sources     map[string]*auxiliaryPublicationSource
 	files       []*preparedThemeFile
 	plan        themePublicationPlan
+	work        context.Context
+	operation   *PrimaryRootIO
 }
 
 func (witness *auxiliaryPublicationWitness) Close() error {
@@ -964,14 +1081,34 @@ func (witness *auxiliaryPublicationWitness) Close() error {
 	return witness.observation.retire(witness.closeResources)
 }
 
-func (witness *auxiliaryPublicationWitness) closeResources() error {
-	closeThemeFiles(witness.files)
+func (witness *auxiliaryPublicationWitness) closeResources() (resultErr error) {
+	resultErr = closeThemeFiles(witness.files)
 	for _, source := range witness.sources {
 		if source.lease != nil {
-			_ = source.lease.Close()
+			resultErr = errors.Join(resultErr, closeAuxiliaryRoot(source.lease.approved))
 		}
 	}
-	return nil
+	if witness.operation != nil {
+		resultErr = errors.Join(resultErr, witness.operation.Close())
+	}
+	return resultErr
+}
+
+func closeAuxiliaryRoot(root *os.Root) error {
+	if root == nil {
+		return nil
+	}
+	err := root.Close()
+	if err == nil || errors.Is(err, os.ErrClosed) {
+		return nil
+	}
+	for {
+		if _, statErr := root.Stat("."); errors.Is(statErr, os.ErrClosed) {
+			return scanReadFailure(err)
+		}
+		_ = root.Close()
+		time.Sleep(time.Millisecond)
+	}
 }
 
 // Retain approved anchors before taking ownership.mu. Final publication checks
@@ -979,12 +1116,13 @@ func (witness *auxiliaryPublicationWitness) closeResources() error {
 // Independent file descriptors and directory snapshots let a timed-out caller
 // release its scan state while the bounded observation worker finishes safely.
 func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Library, files []*preparedThemeFile,
-	completedRoots map[string]bool, states map[string]*scanState, plan themePublicationPlan) (*auxiliaryPublicationWitness, error) {
+	completedRoots map[string]bool, states map[string]*scanState, plan themePublicationPlan) (_ *auxiliaryPublicationWitness, resultErr error) {
 	witness := &auxiliaryPublicationWitness{sources: make(map[string]*auxiliaryPublicationSource), plan: plan}
+	witness.work = task.ctx
 	accepted := false
 	defer func() {
 		if !accepted {
-			_ = witness.Close()
+			resultErr = errors.Join(resultErr, witness.Close())
 		}
 	}()
 	add := func(rootID string) (*auxiliaryPublicationSource, error) {
@@ -996,16 +1134,28 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 			state.root.id != rootID || state.themes == nil {
 			return nil, fmt.Errorf("%w: auxiliary publication lacks its observed source root", ErrUnavailable)
 		}
-		lease, err := s.leaseLibraryRoot(state.root)
+		// This preparation is database-only and finishes before catalog
+		// ownership. One retained operation protects the serial metadata proof;
+		// it never keeps several actual media descriptors behind one charge.
+		row, err := state.readPrimaryScanAuthority(witness.work)
 		if err != nil {
 			return nil, err
+		}
+		initial := state.walkRow
+		if initial.root.id == "" && state.reconciliationPass != nil {
+			if capture := state.reconciliationPass.byRoot[state.root.id]; capture != nil {
+				initial = capture.row
+			}
+		}
+		if initial.root.id != "" && !initial.same(row) {
+			return nil, ErrRootBindingConflict
 		}
 		directories := make(map[string]os.FileInfo, len(state.themes.directories))
 		for relative, info := range state.themes.directories {
 			directories[relative] = info
 		}
-		observed := &scanState{task: task, root: state.root, themes: &themeScan{directories: directories}}
-		source := &auxiliaryPublicationSource{state: observed, lease: lease, directories: make(map[string]bool), complete: completedRoots[rootID]}
+		observed := &scanState{store: s, library: library, task: task, root: state.root, primaryReadParent: state, themes: &themeScan{directories: directories}}
+		source := &auxiliaryPublicationSource{state: observed, directories: make(map[string]bool), complete: completedRoots[rootID], row: row}
 		witness.sources[rootID] = source
 		return source, nil
 	}
@@ -1024,6 +1174,9 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 		if states[file.state.root.id] != file.state {
 			return nil, fmt.Errorf("%w: auxiliary publication changed its observed source", ErrUnavailable)
 		}
+		if !source.row.same(file.sourceRow) {
+			return nil, ErrRootBindingConflict
+		}
 		if file.role == scannedRoleExtra {
 			classification, err := classifyExtraPath(file.candidate.relative, 0)
 			if err != nil || classification.Kind == "" || file.candidate.kind != themePathKindVideo {
@@ -1039,14 +1192,76 @@ func (s *Store) prepareAuxiliaryPublicationWitness(task *scanTask, library Libra
 		}
 		copyFile, copyInput := *file, *file.input
 		copyInput.file = nil
+		copyInput.primary, copyInput.authority = nil, nil
 		copyFile.state, copyFile.input = source.state, &copyInput
 		witness.files = append(witness.files, &copyFile)
 	}
-	if err := verifyPreparedThemeFilesWithRoots(witness.files, witness.openFileRoot); err != nil {
-		return nil, fmt.Errorf("%w: auxiliary sources changed before publication", ErrUnavailable)
+	ids := make([]string, 0, len(witness.sources))
+	for id := range witness.sources {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	hints := make([]mediaSourceRootHint, 0, len(ids))
+	for _, id := range ids {
+		source := witness.sources[id]
+		hints = append(hints, mediaSourceRootHint{root: source.row.root, bindingRevision: source.row.revision})
+	}
+	var err error
+	witness.operation, err = s.preparePrimaryRootIO(task.ctx, hints)
+	if err != nil {
+		return nil, err
+	}
+	witness.work = witness.operation.Context()
+	for _, id := range ids {
+		source := witness.sources[id]
+		if err := runAuxiliaryRootIO(task.ctx, witness.operation, id, false, func(ctx context.Context) error {
+			fresh, err := source.state.readPrimaryScanAuthority(ctx)
+			if err != nil || !source.row.same(fresh) {
+				return errors.Join(err, ErrRootBindingConflict)
+			}
+			source.lease, err = s.leaseLibraryRoot(source.row.root)
+			return err
+		}); err != nil {
+			return nil, err
+		}
+	}
+	for _, file := range witness.files {
+		if err := runAuxiliaryRootIO(task.ctx, witness.operation, file.state.root.id, false, func(ctx context.Context) error {
+			fresh, err := file.state.readPrimaryScanAuthority(ctx)
+			if err != nil || !file.sourceRow.same(fresh) {
+				return errors.Join(err, ErrRootBindingConflict)
+			}
+			return witness.verifyFile(ctx, file)
+		}); err != nil {
+			return nil, fmt.Errorf("%w: auxiliary sources changed before publication: %w", ErrUnavailable, err)
+		}
 	}
 	accepted = true
 	return witness, nil
+}
+
+// The caller first locks the task relation, then every source root in stable
+// order, before locking owner/item rows. Final storage workers perform no SQL.
+func (witness *auxiliaryPublicationWitness) lockRoots(ctx context.Context, tx pgx.Tx) error {
+	if witness == nil {
+		return nil
+	}
+	ids := make([]string, 0, len(witness.sources))
+	for id := range witness.sources {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		source := witness.sources[id]
+		row, err := readRootBindingForUpdate(ctx, tx, source.row.root.libraryID, id)
+		if err != nil {
+			return err
+		}
+		if !source.row.same(row) {
+			return ErrRootBindingConflict
+		}
+	}
+	return ctx.Err()
 }
 
 func (witness *auxiliaryPublicationWitness) openFileRoot(state *scanState) (*os.Root, error) {
@@ -1058,6 +1273,12 @@ func (witness *auxiliaryPublicationWitness) openFileRoot(state *scanState) (*os.
 }
 
 func (witness *auxiliaryPublicationWitness) validate(ctx context.Context) error {
+	if err := witness.work.Err(); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	stop := context.AfterFunc(witness.work, cancel)
+	defer func() { stop(); cancel() }()
 	retire := make(map[string]bool, len(witness.plan.retire))
 	for _, id := range witness.plan.retire {
 		retire[id] = true
@@ -1066,12 +1287,15 @@ func (witness *auxiliaryPublicationWitness) validate(ctx context.Context) error 
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		root, err := source.lease.Open()
-		if err != nil {
-			return fmt.Errorf("%w: auxiliary source root changed before commit", ErrUnavailable)
-		}
-		verify := func() error {
-			defer root.Close()
+		verify := func(proof context.Context) (resultErr error) {
+			if err := proof.Err(); err != nil {
+				return err
+			}
+			root, err := source.lease.Open()
+			if err != nil {
+				return err
+			}
+			defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(root)) }()
 			if source.complete {
 				if err := source.state.verifyThemeDirectoriesAt(root, ".", true); err != nil {
 					return err
@@ -1094,19 +1318,66 @@ func (witness *auxiliaryPublicationWitness) validate(ctx context.Context) error 
 			}
 			return nil
 		}
-		if err := verify(); err != nil {
-			return fmt.Errorf("%w: auxiliary source directories changed before commit", ErrUnavailable)
+		if err := runAuxiliaryRootIO(ctx, witness.operation, rootID, true, verify); err != nil {
+			return fmt.Errorf("%w: auxiliary source directories changed before commit: %w", ErrUnavailable, err)
 		}
 	}
-	if err := verifyPreparedThemeFilesWithRoots(witness.files, func(state *scanState) (*os.Root, error) {
-		if err := ctx.Err(); err != nil {
-			return nil, err
+	for _, file := range witness.files {
+		if err := runAuxiliaryRootIO(ctx, witness.operation, file.state.root.id, true, func(proof context.Context) error {
+			return witness.verifyFile(proof, file)
+		}); err != nil {
+			return fmt.Errorf("%w: auxiliary sources changed before commit: %w", ErrUnavailable, err)
 		}
-		return witness.openFileRoot(state)
-	}); err != nil {
-		return fmt.Errorf("%w: auxiliary sources changed before commit", ErrUnavailable)
 	}
 	return nil
+}
+
+// This final observation uses only frozen facts and captured root leases. Its
+// one actual media descriptor closes before the next file is opened. The
+// retained witness owner survives a caller deadline until the worker returns.
+func (witness *auxiliaryPublicationWitness) verifyFile(ctx context.Context, file *preparedThemeFile) (resultErr error) {
+	return verifyAuxiliaryFile(ctx, file, witness.openFileRoot)
+}
+
+func verifyAuxiliaryFile(ctx context.Context, file *preparedThemeFile, openRoot func(*scanState) (*os.Root, error)) (resultErr error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	root, err := openRoot(file.state)
+	if err != nil {
+		return err
+	}
+	defer func() { resultErr = errors.Join(resultErr, closeAuxiliaryRoot(root)) }()
+	parent, err := openRegisteredRoot(root, filepath.Dir(filepath.FromSlash(file.candidate.relative)))
+	if err != nil {
+		return err
+	}
+	current, err := openScanFile(parent, filepath.Base(file.candidate.relative))
+	parentErr := closeAuxiliaryRoot(parent)
+	if err != nil {
+		return errors.Join(err, parentErr)
+	}
+	defer func() {
+		closeErr := current.Close()
+		if closeErr != nil && !errors.Is(closeErr, os.ErrClosed) {
+			for {
+				if _, err := current.Stat(); errors.Is(err, os.ErrClosed) {
+					break
+				}
+				_ = current.Close()
+				time.Sleep(time.Millisecond)
+			}
+			resultErr = errors.Join(resultErr, scanReadFailure(closeErr))
+		}
+	}()
+	if parentErr != nil {
+		return scanReadFailure(parentErr)
+	}
+	info, err := current.Stat()
+	if err != nil || !info.Mode().IsRegular() || !themeSnapshotEqual(file.input.info, info) {
+		return fmt.Errorf("auxiliary media descriptor changed before publication")
+	}
+	return checkScanProbeFileAt(ctx, root, current, file.input.info, filepath.FromSlash(file.candidate.relative))
 }
 
 func (s *Store) planThemePublication(task *scanTask, library Library, owner themeDirectoryOwner,
@@ -1238,6 +1509,9 @@ func (s *Store) publishThemeOwner(task *scanTask, library Library, owner themeDi
 	}
 	if relation.job.LibraryID != library.ID {
 		return false, taskScanAssociationError()
+	}
+	if err := witness.lockRoots(task.ctx, tx); err != nil {
+		return false, err
 	}
 	// Lock both the owner and affected resource rows in a stable order. This
 	// also serializes role activation/retirement with direct UserData writers.
@@ -1423,7 +1697,7 @@ func (state *scanState) finishThemeScan() error {
 		}
 		deferred, err := state.store.publishThemeOwner(state.task, state.library, group.owner, files,
 			map[string]bool{state.root.id: true}, map[string]*scanState{state.root.id: state})
-		closeThemeFiles(files)
+		err = errors.Join(err, closeThemeFiles(files))
 		if errors.Is(err, ErrInvalidInput) || deferred {
 			state.warnings++
 			state.noteThemeIssue("deferred replacement could not prove a complete supported owner set")
@@ -1501,11 +1775,11 @@ func (state *scanState) finishThemeScan() error {
 	return nil
 }
 
-func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *themeLibraryScan, completeRoots map[string]bool) (int, error) {
+func (s *Store) finishCollectionThemes(task *scanTask, library Library, shared *themeLibraryScan, completeRoots map[string]bool) (_ int, resultErr error) {
 	if shared == nil {
 		return 0, nil
 	}
-	defer closeThemeFiles(shared.collection)
+	defer func() { resultErr = errors.Join(resultErr, closeThemeFiles(shared.collection)) }()
 	if shared.failed {
 		return 0, nil
 	}

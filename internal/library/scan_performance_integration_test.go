@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,22 +23,77 @@ import (
 type scanPerformanceObserverContextKey struct{}
 type scanPerformanceWriteContextKey struct{}
 type scanPerformanceTimingContextKey struct{}
+type scanPerformanceStatementContextKey struct{}
 
 type scanPerformanceQueryTiming struct {
 	started  time.Time
 	category string
 }
 
+type scanPerformanceAuthorityTransaction struct {
+	eligible       bool
+	statements     [6]string
+	statementCount int
+}
+
+var scanPerformanceAuthorityStatements = func() []string {
+	statements := []string{
+		"SELECT COALESCE(task_child_id, '') FROM scan_jobs WHERE id = $1",
+		"SELECT run_id FROM task_run_children WHERE id = $1",
+		"SELECT state, stop_reason, task_key FROM task_runs WHERE id = $1 FOR UPDATE",
+		`SELECT library_id, state, COALESCE(scan_job_id, ''), scanned, added, updated,
+			error_code, error_message, started_at, finished_at FROM task_run_children
+			WHERE id = $1 AND run_id = $2 FOR UPDATE`,
+		"SELECT " + jobColumns + " FROM scan_jobs WHERE id = $1 FOR UPDATE",
+		`SELECT ` + rootBindingMetadataColumns + `, r.storage_binding IS NOT NULL,
+			CASE WHEN octet_length(r.storage_binding::text) <= $3 THEN r.storage_binding::text END,
+			r.bound_at, CASE WHEN r.bound_by IS NULL THEN NULL WHEN octet_length(r.bound_by) <= 256 THEN r.bound_by ELSE '' END
+			FROM library_roots r WHERE r.library_id = $1 AND r.id = $2 FOR UPDATE OF r`,
+	}
+	for index, statement := range statements {
+		statements[index] = scanPerformanceNormalizeSQL(statement)
+	}
+	return statements
+}()
+
+func scanPerformanceNormalizeSQL(statement string) string {
+	return strings.Join(strings.Fields(strings.ToLower(statement)), " ")
+}
+
+func (transaction *scanPerformanceAuthorityTransaction) isAuthority() bool {
+	if !transaction.eligible {
+		return false
+	}
+	if transaction.statementCount == 3 {
+		return transaction.statements[0] == scanPerformanceAuthorityStatements[0] &&
+			transaction.statements[1] == scanPerformanceAuthorityStatements[4] &&
+			transaction.statements[2] == scanPerformanceAuthorityStatements[5]
+	}
+	if transaction.statementCount != len(scanPerformanceAuthorityStatements) {
+		return false
+	}
+	for index, statement := range scanPerformanceAuthorityStatements {
+		if transaction.statements[index] != statement {
+			return false
+		}
+	}
+	return true
+}
+
 type scanPerformanceSQLTracer struct {
-	queries, begins, commits, rollbacks         atomic.Int64
-	itemRows, metadataRows, scanRows, childRows atomic.Int64
-	cachedCompletionChecks                      atomic.Int64
-	relationshipQueries, relationshipNanos      atomic.Int64
-	completionNanos                             atomic.Int64
-	timingEnabled                               bool
+	queries, begins, commits, rollbacks                   atomic.Int64
+	authorityBegins, authorityCommits, authorityRollbacks atomic.Int64
+	itemRows, metadataRows, scanRows, childRows           atomic.Int64
+	cachedCompletionChecks                                atomic.Int64
+	relationshipQueries, relationshipNanos                atomic.Int64
+	completionNanos                                       atomic.Int64
+	timingEnabled                                         bool
+	authorityMu                                           sync.Mutex
+	authorityTransactions                                 map[*pgx.Conn]*scanPerformanceAuthorityTransaction
 }
 
 func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	ctx = context.WithValue(ctx, scanPerformanceStatementContextKey{}, scanPerformanceNormalizeSQL(data.SQL))
 	if ignored, _ := ctx.Value(scanPerformanceObserverContextKey{}).(bool); ignored {
 		return ctx
 	}
@@ -83,8 +139,11 @@ func (trace *scanPerformanceSQLTracer) TraceQueryStart(ctx context.Context, _ *p
 	return ctx
 }
 
-func (trace *scanPerformanceSQLTracer) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryEndData) {
-	if ignored, _ := ctx.Value(scanPerformanceObserverContextKey{}).(bool); ignored || data.Err != nil {
+func (trace *scanPerformanceSQLTracer) TraceQueryEnd(ctx context.Context, connection *pgx.Conn, data pgx.TraceQueryEndData) {
+	ignored, _ := ctx.Value(scanPerformanceObserverContextKey{}).(bool)
+	statement, _ := ctx.Value(scanPerformanceStatementContextKey{}).(string)
+	trace.recordAuthorityStatement(connection, statement, ignored, data)
+	if ignored || data.Err != nil {
 		return
 	}
 	if timing, ok := ctx.Value(scanPerformanceTimingContextKey{}).(scanPerformanceQueryTiming); ok {
@@ -110,11 +169,75 @@ func (trace *scanPerformanceSQLTracer) TraceQueryEnd(ctx context.Context, _ *pgx
 	}
 }
 
+func (trace *scanPerformanceSQLTracer) recordAuthorityStatement(connection *pgx.Conn, statement string, ignored bool, data pgx.TraceQueryEndData) {
+	trace.authorityMu.Lock()
+	defer trace.authorityMu.Unlock()
+	transaction := trace.authorityTransactions[connection]
+	boundary := strings.HasPrefix(statement, "begin") || statement == "commit" || statement == "rollback"
+	if ignored || data.Err != nil {
+		if boundary {
+			delete(trace.authorityTransactions, connection)
+		} else if transaction != nil {
+			transaction.eligible = false
+		}
+		return
+	}
+	if strings.HasPrefix(statement, "begin") {
+		if trace.authorityTransactions == nil {
+			trace.authorityTransactions = make(map[*pgx.Conn]*scanPerformanceAuthorityTransaction)
+		}
+		// An unobserved boundary or an unfamiliar BEGIN form cannot be deducted.
+		trace.authorityTransactions[connection] = &scanPerformanceAuthorityTransaction{
+			eligible: transaction == nil && statement == "begin" && data.CommandTag.String() == "BEGIN",
+		}
+		return
+	}
+	if statement == "commit" || statement == "rollback" {
+		// pgx reports a server ROLLBACK tag before Commit returns its error.
+		if transaction != nil && transaction.isAuthority() && data.CommandTag.String() == strings.ToUpper(statement) {
+			trace.authorityBegins.Add(1)
+			if statement == "commit" {
+				trace.authorityCommits.Add(1)
+			} else {
+				trace.authorityRollbacks.Add(1)
+			}
+		}
+		delete(trace.authorityTransactions, connection)
+		return
+	}
+	if transaction == nil || !transaction.eligible {
+		return
+	}
+	// These complete read-authority transactions still acquire FOR UPDATE locks.
+	// Unknown statements, DML, repeats and incomplete sequences remain in totals.
+	allowed := false
+	for _, expected := range scanPerformanceAuthorityStatements {
+		if statement == expected {
+			allowed = true
+			break
+		}
+	}
+	// QueryRow can report ErrNoRows after TraceQueryEnd; each authority lookup
+	// must have produced its single unique row before it can be attributed.
+	if !allowed || data.CommandTag.RowsAffected() != 1 || transaction.statementCount == len(transaction.statements) {
+		transaction.eligible = false
+		return
+	}
+	transaction.statements[transaction.statementCount] = statement
+	transaction.statementCount++
+}
+
 func (trace *scanPerformanceSQLTracer) reset() {
 	trace.queries.Store(0)
 	trace.begins.Store(0)
 	trace.commits.Store(0)
 	trace.rollbacks.Store(0)
+	trace.authorityMu.Lock()
+	trace.authorityTransactions = nil
+	trace.authorityBegins.Store(0)
+	trace.authorityCommits.Store(0)
+	trace.authorityRollbacks.Store(0)
+	trace.authorityMu.Unlock()
 	trace.itemRows.Store(0)
 	trace.metadataRows.Store(0)
 	trace.scanRows.Store(0)

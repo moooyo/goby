@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/moooyo/goby/internal/media"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -83,12 +84,18 @@ func (pending *hlsAdmission) installPlaybackInput(input *playbackOwnedInput, wor
 }
 
 func (h *hlsRuntime) closeAdmissionInput(pending *hlsAdmission, file *os.File, consumed bool) {
+	var err error
 	if pending.playbackInput != nil {
-		_ = h.closePlaybackInput(pending.playbackInput)
-		return
+		err = h.closePlaybackInput(pending.playbackInput)
+	} else if !consumed {
+		err = file.Close()
 	}
-	if !consumed {
-		_ = file.Close()
+	if pending.sourceRead != nil {
+		if err != nil {
+			err = media.SourceReadRetirementError(err, file)
+			_ = pending.sourceRead.MarkUnknown(err)
+		}
+		_ = pending.sourceRead.Close()
 	}
 }
 

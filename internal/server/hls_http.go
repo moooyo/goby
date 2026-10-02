@@ -235,7 +235,12 @@ func (s *Server) resolveHLS(ctx context.Context, r *http.Request, values map[str
 		loan, current, err := s.hls.authorizePlaybackSource(ctx, principal, session)
 		return session, loan, current, err
 	}
-	return session, &hlsPlaybackSource{runtime: s.hls, file: file, work: ctx}, source, nil
+	read, err := s.library.PrepareMediaSourceIO(ctx, source)
+	if err != nil {
+		_ = file.Close()
+		return nil, nil, library.MediaFile{}, err
+	}
+	return session, &hlsPlaybackSource{runtime: s.hls, file: file, read: read, work: ctx}, source, nil
 }
 
 func (s *Server) hlsPlaylist(audioOnly, master bool) http.HandlerFunc {

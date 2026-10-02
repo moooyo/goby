@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/moooyo/goby/internal/library"
 	"github.com/moooyo/goby/internal/transcode"
 )
 
@@ -137,6 +138,8 @@ type hlsAdmission struct {
 	err               error
 	playbackInput     *playbackOwnedInput
 	playbackReference *playbackAdmissionReference
+	sourceRead        *library.MediaSourceReadIO
+	sourceReadError   error
 }
 
 // reserveAdmission is called without session.mu. Registration with workers and
@@ -191,8 +194,17 @@ func (h *hlsRuntime) releaseAdmission(key hlsKey, gate *hlsAdmissionGate) {
 func newHLSAdmission(ctx context.Context, session *hlsSession, spec transcode.Spec, first, last int) *hlsAdmission {
 	session.admissionRevision++
 	work, cancel := context.WithCancel(ctx)
-	return &hlsAdmission{first: first, last: last, revision: session.admissionRevision, spec: spec, request: ctx, ctx: work, cancel: cancel,
+	pending := &hlsAdmission{first: first, last: last, revision: session.admissionRevision, spec: spec, request: ctx, ctx: work, cancel: cancel,
 		stopSession: context.AfterFunc(session.ctx, cancel), done: make(chan struct{})}
+	if sourceRead := library.MediaSourceReadIOFromContext(ctx); sourceRead != nil {
+		pending.sourceRead, pending.sourceReadError = sourceRead.Fork(work)
+		if pending.sourceReadError != nil {
+			cancel()
+		} else {
+			pending.ctx = pending.sourceRead.Context(work)
+		}
+	}
+	return pending
 }
 
 // runAdmission consumes input in every case. Ensure owns it once called, even

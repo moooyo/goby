@@ -115,6 +115,9 @@ func newHLSGeneratedAVWindowDiagnosticFixture(t *testing.T) *hlsHTTPFixture {
 		t.Fatal("actual A/V diagnostic requires the pinned media executables")
 	}
 	f, accounts := newClientSessionHTTPAccounts(t, 10*time.Minute)
+	// This diagnostic owns raw Manager inputs without correlated playback
+	// admission. Keep its baseline explicitly outside that owner chain.
+	f.app.correlatedHLSOwnershipEnabled, f.app.correlatedHLSEarlyStopEnabled = false, false
 	root := t.TempDir()
 	name := filepath.Join(root, "Generated.AV.Window.Markers.mp4")
 	hlsGeneratedAVSourceCommand(t, f.ctx, ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-filter_threads", "1",

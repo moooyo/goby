@@ -11,7 +11,7 @@ import (
 // An uncached authorized HEAD exposes its representation type without claiming
 // a Content-Length or validator for bytes that do not exist yet.
 func (h *hlsRuntime) segmentHeader(ctx context.Context, session *hlsSession, input *os.File, number int) (*transcode.ReadHandle, error) {
-	defer input.Close()
+	defer closeHLSConsumedSource(ctx, input)
 	timeline, err := h.timeline(ctx, session, input)
 	if err != nil {
 		return nil, err
