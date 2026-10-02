@@ -1,4 +1,16 @@
-# Goby handoff - September 30, 2026
+# Goby handoff - October 2, 2026
+
+Latest delivery: the verified scan improvement e37b04f is pushed to main.
+The media performance session is closed, its verification workers and private
+PostgreSQL are stopped, and source/data/failure evidence are retained. Read the
+[final closeout record](media-performance-closeout-20261002.md) and
+[October 2 media performance handoff](session-handoff-20261002-media-performance.md)
+before selecting further work. The seven-priority program remains incomplete.
+Later source, proposed fixes and experimental increments remain unpublished;
+the final integration run was interrupted at the user's request. No new test,
+build, worker restart, feature enablement or deployment is part of this handoff.
+
+## Previous September 30 checkpoint
 
 Latest source work is now [fixed spatial intro refinement](intro-quality-round2-20260930.md),
 detector v5/schema 53. The first independent same-series three-positive and
